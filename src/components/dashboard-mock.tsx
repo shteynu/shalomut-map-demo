@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BarChart3, ChevronLeft, Lightbulb, Move } from "lucide-react";
+import { BarChart3, ChevronLeft, House, Lightbulb, Move } from "lucide-react";
 import { DashboardMapInteractive } from "@/components/dashboard-map-interactive";
 import { activeRound, organization, type ResponseMetric, type WellbeingDimension } from "@/lib/demo-data";
 
@@ -14,6 +14,10 @@ const recommendationBlobClasses = [
 function DashboardHeading({ title }: { title: string }) {
   return (
     <header className="dashboard-heading">
+      <Link className="dashboard-home-link" href="/" aria-label="חזרה למסך הראשי">
+        <House size={19} aria-hidden="true" />
+        <span>חזרה למסך הראשי</span>
+      </Link>
       <h1>{title}</h1>
       <p>
         {organization.name}, {activeRound.period}
