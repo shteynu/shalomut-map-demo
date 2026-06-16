@@ -656,6 +656,124 @@ textarea {
   line-height: 1.7;
 }
 
+.survey-builder-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(18rem, 0.9fr);
+  gap: 1rem;
+  margin-top: 1rem;
+  align-items: start;
+}
+
+.survey-builder-main,
+.survey-builder-side {
+  display: grid;
+  gap: 1rem;
+}
+
+.survey-builder-panel,
+.survey-builder-question-card,
+.survey-builder-suggestion {
+  border: 1px solid rgba(56, 56, 56, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 250, 240, 0.82);
+  box-shadow: var(--shadow);
+}
+
+.survey-builder-panel {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.survey-builder-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.survey-builder-heading h2 {
+  margin: 0.25rem 0 0;
+  font-size: 1.5rem;
+}
+
+.builder-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.survey-builder-question-list,
+.builder-response-list {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.survey-builder-question-card {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1rem;
+}
+
+.survey-builder-question-card.is-disabled {
+  opacity: 0.7;
+}
+
+.survey-builder-question-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.9rem;
+  align-items: start;
+}
+
+.survey-builder-order {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2.2rem;
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  background: var(--ink);
+  color: white;
+  font-weight: 800;
+}
+
+.survey-builder-question-copy {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.survey-builder-question-copy strong {
+  color: var(--accent-dark);
+  font-size: 0.92rem;
+}
+
+.survey-builder-question-copy p,
+.survey-builder-suggestion p {
+  margin: 0;
+  color: var(--ink);
+  font-size: 1.08rem;
+  line-height: 1.7;
+}
+
+.survey-builder-tags,
+.survey-builder-question-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+}
+
+.survey-builder-suggestion {
+  display: grid;
+  gap: 0.8rem;
+  padding: 1rem;
+}
+
+.survey-builder-suggestion strong {
+  color: var(--accent-dark);
+  font-size: 1rem;
+}
+
 .summary-statuses {
   display: grid;
   grid-template-columns: repeat(3, minmax(8rem, 1fr));
@@ -1374,7 +1492,8 @@ textarea {
 
   .round-layout,
   .stone-map-layout,
-  .detail-hero {
+  .detail-hero,
+  .survey-builder-layout {
     grid-template-columns: 1fr;
   }
 
@@ -1453,6 +1572,7 @@ textarea {
   .metric-grid,
   .workflow-grid,
   .form-grid,
+  .builder-form-grid,
   .legend-row,
   .answer-grid,
   .recommendation-list,
@@ -1543,6 +1663,27 @@ textarea {
     min-height: auto;
   }
 
+  .survey-builder-heading,
+  .survey-builder-question-row,
+  .survey-builder-question-actions {
+    grid-template-columns: 1fr;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .survey-builder-heading {
+    display: grid;
+  }
+
+  .survey-builder-order {
+    width: fit-content;
+  }
+
+  .survey-builder-question-actions > *,
+  .survey-builder-heading > .secondary-button {
+    width: 100%;
+  }
+
   .stone-map-panel {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1603,6 +1744,20 @@ textarea {
 
   .page-intro p,
   .survey-header p {
+    font-size: 1rem;
+  }
+
+  .survey-builder-panel,
+  .survey-builder-question-card,
+  .survey-builder-suggestion {
+    padding: 0.9rem;
+  }
+
+  .survey-builder-heading h2 {
+    font-size: 1.3rem;
+  }
+
+  .survey-builder-question-copy p {
     font-size: 1rem;
   }
 

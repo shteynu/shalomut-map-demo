@@ -13,7 +13,7 @@ export default function RoundPage() {
         description="מסך המעקב מציג כמות תשובות בלבד. אין בו רשימת משיבים, שמות, מיילים או פרטים מזהים."
         actions={
           <Link className="secondary-button" href="/survey">
-            פתיחת שאלון לדוגמה
+            ניהול שאלון
             <ClipboardList size={18} aria-hidden="true" />
           </Link>
         }

@@ -13,7 +13,7 @@ export default function SetupPage() {
         description={`הסבב הנוכחי מוגדר עבור ${activeRound.period}. הנתונים כאן מוצגים כרקע לדשבורד ואינם מזהים משיבים.`}
         actions={
           <Link className="secondary-button" href="/survey">
-            תצוגת שאלון
+            עריכת שאלון
             <ClipboardList size={18} aria-hidden="true" />
           </Link>
         }

@@ -6,7 +6,7 @@ const navItems = [
   { href: "/", label: "מרכז ניהול", icon: Home },
   { href: "/setup", label: "הגדרת סבב", icon: Activity },
   { href: "/round", label: "מעקב סבב", icon: Send },
-  { href: "/survey", label: "שאלון", icon: ClipboardList },
+  { href: "/survey", label: "בניית שאלון", icon: ClipboardList },
   { href: "/dashboard", label: "מפת השלומות", icon: Map },
 ];
 
