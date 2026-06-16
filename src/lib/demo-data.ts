@@ -92,7 +92,7 @@ export const activeRound: Round = {
   responseCount: 18,
   minimumResponses: 10,
   expectedResponses: 34,
-  shareUrl: "https://shalomut.demo/survey/dror-q1",
+  shareUrl: "https://shteynu.github.io/shalomut-map-demo/survey/dror-q1/",
   backgroundInputs: {
     teachingStaff: 34,
     sicknessDaysThisQuarter: 91,
