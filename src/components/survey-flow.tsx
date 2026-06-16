@@ -7,9 +7,14 @@ import { responseOptions, surveyQuestions } from "@/lib/demo-data";
 
 type AnswerValue = (typeof responseOptions)[number]["value"];
 
-export function SurveyFlow() {
+type SurveyFlowProps = {
+  variant?: "internal" | "public";
+};
+
+export function SurveyFlow({ variant = "internal" }: SurveyFlowProps) {
   const [answers, setAnswers] = useState<Record<string, AnswerValue>>({});
   const [submitted, setSubmitted] = useState(false);
+  const isPublicLink = variant === "public";
 
   const answeredCount = Object.keys(answers).length;
   const progress = Math.round((answeredCount / surveyQuestions.length) * 100);
@@ -22,10 +27,14 @@ export function SurveyFlow() {
         <ShieldCheck size={42} aria-hidden="true" />
         <h1>תודה, התשובות נקלטו</h1>
         <p>התשובות נשמרות בדמו בצורה מצרפית בלבד. אין במסך ניהול מקום שבו ניתן לראות מי ענה.</p>
-        <Link className="primary-button" href="/round">
-          חזרה לסטטוס הסבב
-          <ChevronLeft size={18} aria-hidden="true" />
-        </Link>
+        {isPublicLink ? (
+          <p className="quiet-note">אפשר לסגור את החלון. תודה על המענה.</p>
+        ) : (
+          <Link className="primary-button" href="/round">
+            חזרה לסטטוס הסבב
+            <ChevronLeft size={18} aria-hidden="true" />
+          </Link>
+        )}
       </section>
     );
   }

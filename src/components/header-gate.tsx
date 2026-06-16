@@ -6,7 +6,7 @@ import { AppHeader } from "@/components/app-shell";
 export function HeaderGate() {
   const pathname = usePathname();
 
-  if (pathname?.startsWith("/dashboard")) {
+  if (pathname?.startsWith("/dashboard") || pathname?.startsWith("/survey/dror-q1")) {
     return null;
   }
 
