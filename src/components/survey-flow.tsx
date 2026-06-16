@@ -2,14 +2,18 @@
 
 import Link from "next/link";
 import { Check, ChevronLeft, ShieldCheck } from "lucide-react";
-import { useMemo, useState } from "react";
-import { responseOptions, surveyQuestions } from "@/lib/demo-data";
+import { useMemo, useState, type CSSProperties } from "react";
+import { responseOptions, surveyQuestions, wellbeingDimensions } from "@/lib/demo-data";
 
 type AnswerValue = (typeof responseOptions)[number]["value"];
 
 type SurveyFlowProps = {
   variant?: "internal" | "public";
 };
+
+function getDimensionColor(dimensionId: string) {
+  return wellbeingDimensions.find((dimension) => dimension.id === dimensionId)?.conceptColor ?? "#e49902";
+}
 
 export function SurveyFlow({ variant = "internal" }: SurveyFlowProps) {
   const [answers, setAnswers] = useState<Record<string, AnswerValue>>({});
@@ -23,24 +27,26 @@ export function SurveyFlow({ variant = "internal" }: SurveyFlowProps) {
 
   if (submitted) {
     return (
-      <section className="survey-complete">
-        <ShieldCheck size={42} aria-hidden="true" />
-        <h1>תודה, התשובות נקלטו</h1>
-        <p>התשובות נשמרות בדמו בצורה מצרפית בלבד. אין במסך ניהול מקום שבו ניתן לראות מי ענה.</p>
-        {isPublicLink ? (
-          <p className="quiet-note">אפשר לסגור את החלון. תודה על המענה.</p>
-        ) : (
-          <Link className="primary-button" href="/round">
-            חזרה לסטטוס הסבב
-            <ChevronLeft size={18} aria-hidden="true" />
-          </Link>
-        )}
+      <section className="survey-shell stone-page survey-builder-stone-page" style={{ maxWidth: "38rem", margin: "2rem auto" }}>
+        <div className="survey-complete">
+          <ShieldCheck size={42} aria-hidden="true" />
+          <h1>תודה, התשובות נקלטו</h1>
+          <p>התשובות נשמרות בדמו בצורה מצרפית בלבד. אין במסך ניהול מקום שבו ניתן לראות מי ענה.</p>
+          {isPublicLink ? (
+            <p className="quiet-note">אפשר לסגור את החלון. תודה על המענה.</p>
+          ) : (
+            <Link className="primary-button" href="/round">
+              חזרה לסטטוס הסבב
+              <ChevronLeft size={18} aria-hidden="true" />
+            </Link>
+          )}
+        </div>
       </section>
     );
   }
 
   return (
-    <section className="survey-shell">
+    <section className="survey-shell stone-page survey-builder-stone-page">
       <div className="survey-header">
         <p className="eyebrow">שאלון אנונימי לצוות</p>
         <h1>מפת השלומות</h1>
@@ -66,7 +72,11 @@ export function SurveyFlow({ variant = "internal" }: SurveyFlowProps) {
 
       <div className="question-list">
         {groupedQuestions.map((question, index) => (
-          <article className="question-card" key={question.id}>
+          <article
+            className="question-card"
+            key={question.id}
+            style={{ "--question-color": getDimensionColor(question.dimensionId) } as CSSProperties}
+          >
             <span className="question-index">{index + 1}</span>
             <h2>{question.text}</h2>
             <div className="answer-grid">

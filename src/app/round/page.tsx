@@ -6,7 +6,7 @@ import { activeRound, organization } from "@/lib/demo-data";
 
 export default function RoundPage() {
   return (
-    <div className="page">
+    <div className="page stone-page">
       <PageIntro
         eyebrow="מעקב סבב"
         title={`${organization.name}: ${activeRound.period}`}
@@ -20,10 +20,10 @@ export default function RoundPage() {
       />
 
       <section className="metric-grid" aria-label="נתוני סבב">
-        <MetricCard value={activeRound.openedAt} label="פתיחה" helper="מועד הפצת הלינק" />
-        <MetricCard value={activeRound.closesAt} label="סגירה" helper="סיום איסוף מתוכנן" />
-        <MetricCard value={`${activeRound.responseCount}`} label="תשובות" helper="מספר מצרפי בלבד" />
-        <MetricCard value={`${activeRound.minimumResponses}`} label="סף הצגה" helper="הגנה על אנונימיות" />
+        <MetricCard className="stone-variant-navy" value={activeRound.openedAt} label="פתיחה" helper="מועד הפצת הלינק" />
+        <MetricCard className="stone-variant-teal" value={activeRound.closesAt} label="סגירה" helper="סיום איסוף מתוכנן" />
+        <MetricCard className="stone-variant-orange" value={`${activeRound.responseCount}`} label="תשובות" helper="מספר מצרפי בלבד" />
+        <MetricCard className="stone-variant-green" value={`${activeRound.minimumResponses}`} label="סף הצגה" helper="הגנה על אנונימיות" />
       </section>
 
       <RoundControls />

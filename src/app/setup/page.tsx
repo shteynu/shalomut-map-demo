@@ -6,7 +6,7 @@ import { activeRound, organization } from "@/lib/demo-data";
 
 export default function SetupPage() {
   return (
-    <div className="page">
+    <div className="page stone-page">
       <PageIntro
         eyebrow="הגדרת סבב"
         title={`פתיחת מדידה עבור ${organization.name}`}
