@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { CheckCircle2, Clipboard, ClipboardList, Clock3, Copy, Eye, GripVertical, Plus, Settings2, ShieldCheck } from "lucide-react";
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { PageIntro } from "@/components/app-shell";
 import { activeRound, responseOptions, surveyQuestions, wellbeingDimensions } from "@/lib/demo-data";
 
@@ -49,6 +49,10 @@ function getDimensionLabel(dimensionId: string) {
   return wellbeingDimensions.find((dimension) => dimension.id === dimensionId)?.conceptLabel ?? dimensionId;
 }
 
+function getDimensionColor(dimensionId: string) {
+  return wellbeingDimensions.find((dimension) => dimension.id === dimensionId)?.conceptColor ?? "#e49902";
+}
+
 function createDraftId(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2, 7)}`;
 }
@@ -73,6 +77,32 @@ export function SurveyBuilderDemo() {
   const requiredQuestions = enabledQuestions.filter((question) => question.required);
   const activeDimensions = new Set(enabledQuestions.map((question) => question.dimensionId)).size;
   const nextSuggestedQuestion = questionBank[bankCursor % questionBank.length];
+  const summaryStones = [
+    {
+      value: enabledQuestions.length,
+      label: "שאלות פעילות",
+      helper: `מתוכן ${requiredQuestions.length} שאלות חובה`,
+      className: "stone-variant-navy",
+    },
+    {
+      value: activeDimensions,
+      label: "מרכיבי שלומות",
+      helper: "פריסה על פני כל ממדי הדשבורד",
+      className: "stone-variant-teal",
+    },
+    {
+      value: estimatedMinutes,
+      label: "דקות למילוי",
+      helper: "הערכת זמן להצגת הקישור לצוות",
+      className: "stone-variant-orange",
+    },
+    {
+      value: minimumResponses,
+      label: "סף פרטיות",
+      helper: "תוצאות ייפתחו רק לאחר מינימום משיבים",
+      className: "stone-variant-green",
+    },
+  ];
 
   function updateQuestion(id: string, updater: (question: BuilderQuestion) => BuilderQuestion) {
     setQuestions((current) => current.map((question) => (question.id === id ? updater(question) : question)));
@@ -117,7 +147,7 @@ export function SurveyBuilderDemo() {
   }
 
   return (
-    <div className="page">
+    <div className="page survey-builder-stone-page">
       <PageIntro
         eyebrow="בניית שאלון"
         title={title}
@@ -142,32 +172,19 @@ export function SurveyBuilderDemo() {
         }
       />
 
-      <section className="metric-grid" aria-label="תקציר שאלון">
-        <article className="metric-card">
-          <strong>{enabledQuestions.length}</strong>
-          <span>שאלות פעילות</span>
-          <small>מתוכן {requiredQuestions.length} שאלות חובה</small>
-        </article>
-        <article className="metric-card">
-          <strong>{activeDimensions}</strong>
-          <span>מרכיבי שלומות</span>
-          <small>פריסה על פני כל ממדי הדשבורד</small>
-        </article>
-        <article className="metric-card">
-          <strong>{estimatedMinutes}</strong>
-          <span>דקות למילוי</span>
-          <small>הערכת זמן להצגת הקישור לצוות</small>
-        </article>
-        <article className="metric-card">
-          <strong>{minimumResponses}</strong>
-          <span>סף פרטיות</span>
-          <small>תוצאות ייפתחו רק לאחר מינימום משיבים</small>
-        </article>
+      <section className="metric-grid survey-builder-metric-grid" aria-label="תקציר שאלון">
+        {summaryStones.map((stone) => (
+          <article key={stone.label} className={`metric-card survey-builder-metric-stone ${stone.className}`}>
+            <strong>{stone.value}</strong>
+            <span>{stone.label}</span>
+            <small>{stone.helper}</small>
+          </article>
+        ))}
       </section>
 
       <div className="survey-builder-layout">
         <div className="survey-builder-main">
-          <section className="survey-builder-panel">
+          <section className="survey-builder-panel survey-builder-settings-panel">
             <div className="survey-builder-heading">
               <div>
                 <p className="eyebrow">הגדרות בסיס</p>
@@ -217,7 +234,7 @@ export function SurveyBuilderDemo() {
             </label>
           </section>
 
-          <section className="survey-builder-panel">
+          <section className="survey-builder-panel survey-builder-questions-panel">
             <div className="survey-builder-heading">
               <div>
                 <p className="eyebrow">מבנה השאלון</p>
@@ -234,6 +251,7 @@ export function SurveyBuilderDemo() {
                 <article
                   key={question.id}
                   className={`survey-builder-question-card${question.enabled ? "" : " is-disabled"}`}
+                  style={{ "--question-color": getDimensionColor(question.dimensionId) } as CSSProperties}
                 >
                   <div className="survey-builder-question-row">
                     <span className="survey-builder-order">
@@ -242,7 +260,7 @@ export function SurveyBuilderDemo() {
                     </span>
 
                     <div className="survey-builder-question-copy">
-                      <strong>{getDimensionLabel(question.dimensionId)}</strong>
+                      <strong className="survey-builder-dimension-stone">{getDimensionLabel(question.dimensionId)}</strong>
                       <p>{question.text}</p>
                     </div>
                   </div>
@@ -298,7 +316,7 @@ export function SurveyBuilderDemo() {
         </div>
 
         <aside className="survey-builder-side">
-          <section className="survey-builder-panel">
+          <section className="survey-builder-panel survey-builder-share-panel">
             <div className="survey-builder-heading">
               <div>
                 <p className="eyebrow">הפצה חיצונית</p>
@@ -331,7 +349,7 @@ export function SurveyBuilderDemo() {
             </div>
           </section>
 
-          <section className="survey-builder-panel">
+          <section className="survey-builder-panel survey-builder-legend-panel">
             <div className="survey-builder-heading">
               <div>
                 <p className="eyebrow">מקרא מענה</p>
@@ -349,7 +367,7 @@ export function SurveyBuilderDemo() {
             </div>
           </section>
 
-          <section className="survey-builder-panel">
+          <section className="survey-builder-panel survey-builder-library-panel">
             <div className="survey-builder-heading">
               <div>
                 <p className="eyebrow">שאלה מומלצת הבאה</p>
@@ -357,8 +375,13 @@ export function SurveyBuilderDemo() {
               </div>
             </div>
 
-            <article className="survey-builder-suggestion">
-              <strong>{getDimensionLabel(nextSuggestedQuestion.dimensionId)}</strong>
+            <article
+              className="survey-builder-suggestion"
+              style={{ "--suggestion-color": getDimensionColor(nextSuggestedQuestion.dimensionId) } as CSSProperties}
+            >
+              <strong className="survey-builder-dimension-stone">
+                {getDimensionLabel(nextSuggestedQuestion.dimensionId)}
+              </strong>
               <p>{nextSuggestedQuestion.text}</p>
               <button className="secondary-button" type="button" onClick={addQuestionFromBank}>
                 הוספת השאלה
