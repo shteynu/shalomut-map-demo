@@ -34,7 +34,7 @@ export default function HomePage() {
   const responsePercent = Math.round((activeRound.responseCount / activeRound.expectedResponses) * 100);
 
   return (
-    <div className="page">
+    <div className="page stone-page">
       <PageIntro
         eyebrow={`${organization.name}, ${activeRound.period}`}
         title={`שלום ${organization.managerName}, תמונת הסבב מוכנה`}
@@ -54,10 +54,10 @@ export default function HomePage() {
       />
 
       <section className="metric-grid" aria-label="מדדי סבב">
-        <MetricCard value={`${activeRound.responseCount}/${activeRound.expectedResponses}`} label="השיבו עד כה" helper={`${responsePercent}% מצוות בית הספר`} />
-        <MetricCard value={`${activeRound.minimumResponses}`} label="סף פרטיות" helper="מינימום תשובות לפני הצגת תוצאות" />
-        <MetricCard value={`${getStatusCount("red")}`} label="מוקדי טיפול" helper="אבנים אדומות במפה" />
-        <MetricCard value={`${getStatusCount("green")}`} label="חוזקות לשימור" helper="אבנים ירוקות במפה" />
+        <MetricCard className="stone-variant-navy" value={`${activeRound.responseCount}/${activeRound.expectedResponses}`} label="השיבו עד כה" helper={`${responsePercent}% מצוות בית הספר`} />
+        <MetricCard className="stone-variant-teal" value={`${activeRound.minimumResponses}`} label="סף פרטיות" helper="מינימום תשובות לפני הצגת תוצאות" />
+        <MetricCard className="stone-variant-red" value={`${getStatusCount("red")}`} label="מוקדי טיפול" helper="אבנים אדומות במפה" />
+        <MetricCard className="stone-variant-green" value={`${getStatusCount("green")}`} label="חוזקות לשימור" helper="אבנים ירוקות במפה" />
       </section>
 
       <section className="workflow-grid" aria-label="זרימת הדמו">

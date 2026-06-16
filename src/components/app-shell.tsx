@@ -62,11 +62,12 @@ type MetricCardProps = {
   value: string;
   label: string;
   helper: string;
+  className?: string;
 };
 
-export function MetricCard({ value, label, helper }: MetricCardProps) {
+export function MetricCard({ value, label, helper, className = "" }: MetricCardProps) {
   return (
-    <article className="metric-card">
+    <article className={`metric-card ${className}`.trim()}>
       <strong>{value}</strong>
       <span>{label}</span>
       <small>{helper}</small>
