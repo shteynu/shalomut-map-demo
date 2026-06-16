@@ -45,6 +45,7 @@ html {
 body {
   min-height: 100vh;
   margin: 0;
+  overflow-x: hidden;
   background:
     linear-gradient(180deg, rgba(255, 250, 240, 0.86), rgba(251, 244, 221, 0.95) 42%),
     var(--cream);
@@ -207,6 +208,9 @@ button:disabled {
   border-radius: 8px;
   border: 1px solid transparent;
   font-weight: 800;
+  max-width: 100%;
+  text-align: center;
+  white-space: normal;
   transition:
     transform 150ms ease,
     border-color 150ms ease,
@@ -394,6 +398,7 @@ label {
 input,
 textarea {
   width: 100%;
+  min-width: 0;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.65);
@@ -471,6 +476,10 @@ textarea {
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 0.55rem;
   margin: 0.75rem 0;
+}
+
+.copy-row input {
+  min-width: 0;
 }
 
 .closed-note {
@@ -1215,6 +1224,8 @@ textarea {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 1rem;
     min-height: 0;
+    overflow: hidden;
+    padding: 0.25rem;
   }
 
   .dashboard-map-blob {
@@ -1223,6 +1234,13 @@ textarea {
     right: auto !important;
     width: 100% !important;
     height: 13.5rem !important;
+    transform: translate(var(--drag-x, 0px), var(--drag-y, 0px));
+  }
+
+  .dashboard-map-blob-plus,
+  .dashboard-map-blob-copy,
+  .dashboard-map-blob-status {
+    transform: none;
   }
 
   .dashboard-metrics-stage {
@@ -1372,23 +1390,64 @@ textarea {
 @media (max-width: 760px) {
   .site-header {
     position: static;
+    gap: 0.8rem;
+    padding: 0.8rem;
+  }
+
+  .brand-mark {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .brand-mark > span:last-child {
+    min-width: 0;
   }
 
   .top-nav {
-    justify-content: flex-start;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    justify-content: stretch;
   }
 
   .top-nav a {
+    justify-content: center;
+    min-width: 0;
+    padding-inline: 0.45rem;
     font-size: 0.82rem;
+    text-align: center;
   }
 
   .page {
     width: min(100% - 1rem, 1180px);
+    padding-top: 1rem;
   }
 
   .page-intro h1,
   .survey-header h1 {
+    max-width: none;
     font-size: 2.65rem;
+    line-height: 1.05;
+    overflow-wrap: anywhere;
+  }
+
+  .page-intro,
+  .survey-header {
+    padding-block: 1.15rem;
+  }
+
+  .intro-actions,
+  .form-actions,
+  .round-actions {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .intro-actions > *,
+  .form-actions > *,
+  .round-actions > * {
+    width: 100%;
   }
 
   .metric-grid,
@@ -1403,6 +1462,84 @@ textarea {
 
   .workflow-card,
   .metric-card {
+    min-height: auto;
+  }
+
+  .metric-card strong {
+    font-size: 1.85rem;
+    overflow-wrap: anywhere;
+  }
+
+  .privacy-band,
+  .next-step-band,
+  .focus-band,
+  .map-summary {
+    align-items: stretch;
+  }
+
+  .next-step-band a {
+    width: 100%;
+    min-width: 0;
+    justify-content: center;
+  }
+
+  input,
+  textarea {
+    font-size: 16px;
+  }
+
+  .round-progress,
+  .share-panel {
+    padding: 0.9rem;
+  }
+
+  .progress-ring {
+    width: min(11rem, 70vw);
+    height: min(11rem, 70vw);
+  }
+
+  .progress-ring strong,
+  .detail-score strong {
+    font-size: 2.65rem;
+  }
+
+  .survey-shell {
+    width: min(920px, calc(100% - 1rem));
+    padding: 1rem 0 calc(6.5rem + env(safe-area-inset-bottom));
+  }
+
+  .legend-card {
+    min-height: 0;
+  }
+
+  .question-card {
+    padding: 0.9rem;
+  }
+
+  .answer-button {
+    width: 100%;
+  }
+
+  .sticky-submit {
+    padding: 0.75rem 0.75rem calc(0.75rem + env(safe-area-inset-bottom));
+  }
+
+  .survey-complete {
+    width: min(620px, calc(100% - 1rem));
+    padding: 1rem 0;
+  }
+
+  .survey-complete h1 {
+    font-size: 2.2rem;
+    line-height: 1.08;
+  }
+
+  .section-title {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .recommendation-card {
     min-height: auto;
   }
 
@@ -1438,6 +1575,37 @@ textarea {
 }
 
 @media (max-width: 430px) {
+  .brand-symbol {
+    width: 2.4rem;
+    height: 2.4rem;
+  }
+
+  .brand-mark strong {
+    font-size: 1rem;
+  }
+
+  .brand-mark small {
+    font-size: 0.72rem;
+  }
+
+  .top-nav a {
+    min-height: 2.55rem;
+  }
+
+  .page {
+    width: min(100% - 0.75rem, 1180px);
+  }
+
+  .page-intro h1,
+  .survey-header h1 {
+    font-size: 2.2rem;
+  }
+
+  .page-intro p,
+  .survey-header p {
+    font-size: 1rem;
+  }
+
   .stone-map-panel {
     grid-template-columns: 1fr;
   }
@@ -1448,5 +1616,96 @@ textarea {
 
   .icon-button {
     width: 100%;
+  }
+
+  .dashboard-mock-page {
+    width: min(100% - 0.75rem, 1240px);
+    padding-top: 0.75rem;
+  }
+
+  .dashboard-home-link {
+    width: 100%;
+  }
+
+  .dashboard-heading h1 {
+    font-size: 2.35rem;
+    line-height: 1.04;
+  }
+
+  .dashboard-heading p {
+    font-size: 1.05rem;
+  }
+
+  .dashboard-map-hint {
+    border-radius: 8px;
+    font-size: 0.9rem;
+    line-height: 1.45;
+  }
+
+  .dashboard-map-stage {
+    gap: 0.75rem;
+    margin-top: 0.9rem;
+    padding: 0;
+  }
+
+  .dashboard-map-blob {
+    min-height: 10.75rem;
+  }
+
+  .dashboard-map-blob-plus {
+    top: 0.75rem;
+    left: 0.85rem;
+  }
+
+  .dashboard-map-blob-copy strong {
+    font-size: 1.35rem;
+  }
+
+  .dashboard-map-blob-copy span,
+  .dashboard-single-blob-copy p {
+    font-size: 1rem;
+  }
+
+  .dashboard-map-blob-status {
+    font-size: 0.78rem;
+  }
+
+  .dashboard-single-blob,
+  .dashboard-metric-blob,
+  .dashboard-recommendation-blob,
+  .dashboard-recommendation-blob-generic {
+    border-radius: 8px;
+  }
+
+  .dashboard-single-blob {
+    min-height: 20rem;
+    padding: 1.25rem;
+  }
+
+  .dashboard-single-blob-copy {
+    text-align: right;
+  }
+
+  .dashboard-metrics-stage,
+  .dashboard-recommendations-stage {
+    margin-top: 1.35rem;
+  }
+
+  .dashboard-metric-blob {
+    min-height: 11rem;
+    padding: 1.2rem;
+  }
+
+  .dashboard-recommendation-blob {
+    min-height: auto;
+    padding: 1.2rem;
+  }
+
+  .dashboard-recommendation-blob h2 {
+    font-size: 1.18rem;
+  }
+
+  .dashboard-recommendation-blob p {
+    font-size: 0.96rem;
   }
 }
