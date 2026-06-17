@@ -1784,6 +1784,8 @@ textarea {
     width: 100% !important;
     height: 13.5rem !important;
     transform: translate(var(--drag-x, 0px), var(--drag-y, 0px));
+    touch-action: auto !important;
+    cursor: pointer !important;
   }
 
   .dashboard-map-blob-plus,

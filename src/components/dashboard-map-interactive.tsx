@@ -181,6 +181,10 @@ export function DashboardMapInteractive() {
         return;
       }
 
+      if (typeof window !== "undefined" && window.innerWidth <= 980) {
+        return;
+      }
+
       event.preventDefault();
 
       const stage = stageRef.current;
