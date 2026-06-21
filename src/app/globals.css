@@ -1486,7 +1486,7 @@ textarea {
 
 .dashboard-heading h1 {
   margin: 0;
-  font-size: clamp(3.6rem, 7vw, 5.9rem);
+  font-size: clamp(2.4rem, 4.5vw, 3.6rem);
   font-weight: 900;
   line-height: 0.94;
 }
@@ -1494,7 +1494,7 @@ textarea {
 .dashboard-heading p {
   margin: 0.55rem 0 0;
   color: #4f4c49;
-  font-size: clamp(1.5rem, 3vw, 2.5rem);
+  font-size: clamp(1.1rem, 1.8vw, 1.45rem);
   line-height: 1.2;
 }
 
@@ -1907,11 +1907,11 @@ textarea {
   }
 
   .dashboard-heading h1 {
-    font-size: 3.15rem;
+    font-size: 2.1rem;
   }
 
   .dashboard-heading p {
-    font-size: 1.35rem;
+    font-size: 1.15rem;
   }
 
   .dashboard-map-hint {
@@ -2318,12 +2318,12 @@ textarea {
   }
 
   .dashboard-heading h1 {
-    font-size: 2.35rem;
+    font-size: 1.75rem;
     line-height: 1.04;
   }
 
   .dashboard-heading p {
-    font-size: 1.05rem;
+    font-size: 0.95rem;
   }
 
   .dashboard-map-hint {
