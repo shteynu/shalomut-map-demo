@@ -3057,6 +3057,20 @@ label .custom-tooltip-wrapper:hover .custom-tooltip-icon {
   margin: 0 !important;
 }
 
+.custom-tooltip-content strong {
+  font-size: 0.88rem !important;
+  font-weight: 800 !important;
+  color: var(--ink) !important;
+  line-height: inherit !important;
+}
+
+.custom-tooltip-content > strong:first-of-type {
+  font-size: 1.05rem !important;
+  display: block !important;
+  margin-bottom: 0.4rem !important;
+}
+
+
 .custom-tooltip-content::before {
   content: "" !important;
   position: absolute !important;
