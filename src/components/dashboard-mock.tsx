@@ -4,8 +4,57 @@ import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import { BarChart3, ChevronLeft, House, Lightbulb, Move } from "lucide-react";
 import { DashboardMapInteractive } from "@/components/dashboard-map-interactive";
-import { useBlobFit } from "@/lib/use-blob-fit";
 import { activeRound, organization, type ResponseMetric, type WellbeingDimension } from "@/lib/demo-data";
+
+function useBlobFit(dependencies: any[]) {
+  const containerRef = useRef<HTMLDivElement | HTMLElement | null>(null);
+  const contentRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    const content = contentRef.current;
+    if (!container || !content) return;
+
+    const adjust = () => {
+      content.style.fontSize = "1em";
+
+      const containerRect = container.getBoundingClientRect();
+      const contentRect = content.getBoundingClientRect();
+
+      const W = containerRect.width;
+      const H = containerRect.height;
+      const w = contentRect.width;
+      const h = contentRect.height;
+
+      if (W === 0 || H === 0 || w === 0 || h === 0) return;
+
+      const widthRatio = w / W;
+      const heightRatio = h / H;
+      const diagonalRatio = Math.sqrt(widthRatio * widthRatio + heightRatio * heightRatio);
+
+      const maxSafeW = W - 32;
+      const maxSafeH = H - 32;
+
+      const scaleW = maxSafeW / w;
+      const scaleH = maxSafeH / h;
+      const scaleDiag = 0.83 / diagonalRatio;
+
+      const neededScale = Math.max(0.65, Math.min(1.0, scaleW, scaleH, scaleDiag));
+      content.style.fontSize = `${neededScale}em`;
+    };
+
+    adjust();
+
+    const resizeObserver = new ResizeObserver(adjust);
+    resizeObserver.observe(container);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, dependencies);
+
+  return { containerRef, contentRef };
+}
 
 const recommendationBlobClasses = [
   "dashboard-recommendation-blob dashboard-recommendation-blob-top-left",
@@ -94,13 +143,12 @@ export function DashboardMapPage() {
 }
 
 export function DashboardDimensionPage({ dimension }: { dimension: WellbeingDimension }) {
-  const { containerRef, contentRef } = useBlobFit([dimension.summary]);
   return (
     <div className="dashboard-mock-page dashboard-detail-screen">
       <DashboardHeading title={`תמונת מצב | ${dimension.conceptLabel}`} />
 
-      <section ref={containerRef as any} className="dashboard-single-blob" style={{ backgroundColor: dimension.conceptColor }}>
-        <div ref={contentRef as any} className="dashboard-single-blob-copy">
+      <section className="dashboard-single-blob" style={{ backgroundColor: dimension.conceptColor }}>
+        <div className="dashboard-single-blob-copy">
           {dimension.summary.map((paragraph) => (
             <p key={paragraph}>{paragraph}</p>
           ))}

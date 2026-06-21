@@ -4,7 +4,6 @@ import Link from "next/link";
 import { CheckCircle2, Clipboard, ClipboardList, Clock3, Copy, Eye, GripVertical, Plus, Settings2, ShieldCheck } from "lucide-react";
 import { useState, type CSSProperties } from "react";
 import { PageIntro } from "@/components/app-shell";
-import { useBlobFit } from "@/lib/use-blob-fit";
 import { activeRound, responseOptions, surveyQuestions, wellbeingDimensions } from "@/lib/demo-data";
 
 type BuilderQuestion = {
@@ -56,19 +55,6 @@ function getDimensionColor(dimensionId: string) {
 
 function createDraftId(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2, 7)}`;
-}
-
-function SurveySummaryStone({ stone }: { stone: { value: string | number; label: string; helper: string; className: string } }) {
-  const { containerRef, contentRef } = useBlobFit([stone.value, stone.label, stone.helper]);
-  return (
-    <article ref={containerRef as any} className={`metric-card survey-builder-metric-stone ${stone.className}`}>
-      <div ref={contentRef as any} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>
-        <strong>{stone.value}</strong>
-        <span>{stone.label}</span>
-        <small>{stone.helper}</small>
-      </div>
-    </article>
-  );
 }
 
 export function SurveyBuilderDemo() {
@@ -188,7 +174,11 @@ export function SurveyBuilderDemo() {
 
       <section className="metric-grid survey-builder-metric-grid" aria-label="תקציר שאלון">
         {summaryStones.map((stone) => (
-          <SurveySummaryStone key={stone.label} stone={stone} />
+          <article key={stone.label} className={`metric-card survey-builder-metric-stone ${stone.className}`}>
+            <strong>{stone.value}</strong>
+            <span>{stone.label}</span>
+            <small>{stone.helper}</small>
+          </article>
         ))}
       </section>
 

@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { Activity, ClipboardList, Home, Map, Send } from "lucide-react";
-import { useBlobFit } from "@/lib/use-blob-fit";
 
 const navItems = [
   { href: "/", label: "מרכז ניהול", icon: Home },
@@ -78,14 +77,11 @@ type MetricCardProps = {
 };
 
 export function MetricCard({ value, label, helper, className = "" }: MetricCardProps) {
-  const { containerRef, contentRef } = useBlobFit([value, label, helper]);
   return (
-    <article ref={containerRef as any} className={`metric-card ${className}`.trim()}>
-      <div ref={contentRef as any} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>
-        <strong>{value}</strong>
-        <span>{label}</span>
-        <small>{helper}</small>
-      </div>
+    <article className={`metric-card ${className}`.trim()}>
+      <strong>{value}</strong>
+      <span>{label}</span>
+      <small>{helper}</small>
     </article>
   );
 }
