@@ -2875,7 +2875,8 @@ textarea {
 
 /* Respondent Survey Flow Compact styling */
 .stone-page.survey-shell {
-  padding-block: 1rem;
+  padding-top: 1rem;
+  padding-bottom: 6.5rem;
 }
 
 .stone-page .question-card {
