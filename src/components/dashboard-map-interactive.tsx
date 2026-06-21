@@ -53,6 +53,29 @@ function isValidOffsetMap(value: unknown): value is StoneOffsetMap {
   });
 }
 
+function getPlusPosition(dimensionId: string) {
+  switch (dimensionId) {
+    case "self-expression": // קול אישי
+      return { top: "1.4rem", left: "2.0rem" };
+    case "professional-competence": // מומחיות בטוחה
+      return { top: "1.2rem", left: "2.8rem" };
+    case "social-resource": // משאב חברתי
+      return { top: "1.8rem", left: "2.4rem" };
+    case "balance": // איזון
+      return { top: "1.5rem", left: "2.9rem" };
+    case "management-support": // עורף מקצועי
+      return { top: "1.3rem", left: "3.6rem" };
+    case "certainty": // ודאות
+      return { top: "1.7rem", left: "2.1rem" };
+    case "organizational-climate": // אקלים ארגוני
+      return { top: "1.2rem", left: "3.3rem" };
+    case "meaning": // משמעות
+      return { top: "1.6rem", left: "2.7rem" };
+    default:
+      return { top: "1.4rem", left: "2.0rem" };
+  }
+}
+
 export function DashboardMapInteractive() {
   const stageRef = useRef<HTMLElement | null>(null);
   const stoneRefs = useRef<Record<string, HTMLAnchorElement | null>>({});
@@ -249,6 +272,8 @@ export function DashboardMapInteractive() {
                 "--blob-counter-rotate": `${dimension.conceptPosition.rotate * -1}deg`,
                 "--drag-x": `${dragX}px`,
                 "--drag-y": `${dragY}px`,
+                "--plus-top": getPlusPosition(dimension.id).top,
+                "--plus-left": getPlusPosition(dimension.id).left,
                 top: dimension.conceptPosition.top,
                 right: dimension.conceptPosition.right,
                 width: dimension.conceptPosition.width,

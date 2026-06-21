@@ -1860,6 +1860,11 @@ textarea {
     transform: none;
   }
 
+  .dashboard-map-blob-plus {
+    top: var(--plus-top) !important;
+    left: var(--plus-left) !important;
+  }
+
   .dashboard-metrics-stage {
     grid-template-columns: 1fr;
   }
@@ -1926,11 +1931,6 @@ textarea {
   .dashboard-map-blob {
     height: auto !important;
     min-height: 12.2rem;
-  }
-
-  .dashboard-map-blob-plus {
-    top: 1.4rem;
-    left: 2rem;
   }
 
   .dashboard-map-blob-copy {
@@ -2340,11 +2340,6 @@ textarea {
 
   .dashboard-map-blob {
     min-height: 10.75rem;
-  }
-
-  .dashboard-map-blob-plus {
-    top: 1.2rem;
-    left: 1.7rem;
   }
 
   .dashboard-map-blob-copy strong {
