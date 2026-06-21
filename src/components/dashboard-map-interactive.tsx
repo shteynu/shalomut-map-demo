@@ -4,7 +4,8 @@ import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import Link from "next/link";
 import { ArrowDown, ArrowUp, Plus } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { wellbeingDimensions } from "@/lib/demo-data";
+import { wellbeingDimensions, type WellbeingDimension } from "@/lib/demo-data";
+import { useBlobFit } from "@/lib/use-blob-fit";
 
 const DRAG_THRESHOLD = 6;
 const LAYOUT_STORAGE_KEY = "shalomut-map-stones-v2";
@@ -36,6 +37,91 @@ const zeroOffsets = wellbeingDimensions.reduce<StoneOffsetMap>((accumulator, dim
 
 function getDimensionHref(dimensionId: string) {
   return `/dashboard/${dimensionId}`;
+}
+
+function MapStone({
+  dimension,
+  offset,
+  draggingId,
+  onPointerDown,
+  onClick,
+  registerRef,
+}: {
+  dimension: WellbeingDimension;
+  offset: StoneOffset;
+  draggingId: string | null;
+  onPointerDown: (event: ReactPointerEvent<HTMLAnchorElement>) => void;
+  onClick: (event: React.MouseEvent<HTMLAnchorElement>) => void;
+  registerRef: (node: HTMLAnchorElement | null) => void;
+}) {
+  const { containerRef, contentRef } = useBlobFit([dimension.conceptLabel, dimension.subtitle, dimension.conceptStatusText]);
+
+  const setRefs = useCallback(
+    (node: HTMLAnchorElement | null) => {
+      containerRef.current = node;
+      registerRef(node);
+    },
+    [containerRef, registerRef],
+  );
+
+  const DirectionIcon = dimension.conceptStatusDirection === "up" ? ArrowUp : ArrowDown;
+  const dragX = offset.x;
+  const dragY = offset.y;
+
+  return (
+    <Link
+      ref={setRefs}
+      href={getDimensionHref(dimension.id)}
+      className={`dashboard-map-blob${draggingId === dimension.id ? " is-dragging" : ""}`}
+      style={
+        {
+          "--blob-rotate": `${dimension.conceptPosition.rotate}deg`,
+          "--blob-counter-rotate": `${dimension.conceptPosition.rotate * -1}deg`,
+          "--drag-x": `${dragX}px`,
+          "--drag-y": `${dragY}px`,
+          top: dimension.conceptPosition.top,
+          right: dimension.conceptPosition.right,
+          width: dimension.conceptPosition.width,
+          height: dimension.conceptPosition.height,
+          borderRadius: dimension.conceptPosition.radius,
+          backgroundColor: dimension.conceptColor,
+          zIndex: draggingId === dimension.id ? 20 : undefined,
+        } as CSSProperties
+      }
+      data-drag-x={Math.round(dragX)}
+      data-drag-y={Math.round(dragY)}
+      aria-label={`${dimension.conceptLabel}: ${dimension.subtitle}`}
+      draggable={false}
+      onPointerDown={onPointerDown}
+      onClick={onClick}
+      onDragStart={(event) => event.preventDefault()}
+    >
+      <div
+        ref={contentRef as any}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          width: "100%",
+          height: "100%",
+          position: "relative",
+        }}
+      >
+        <span className="dashboard-map-blob-plus" aria-hidden="true">
+          <Plus size={42} strokeWidth={2.25} />
+        </span>
+        <span className="dashboard-map-blob-copy">
+          <strong>{dimension.conceptLabel}</strong>
+          <span>{dimension.subtitle}</span>
+        </span>
+        <span className="dashboard-map-blob-status">
+          <DirectionIcon size={15} aria-hidden="true" />
+          {dimension.conceptStatusText}
+        </span>
+      </div>
+    </Link>
+  );
 }
 
 function clamp(value: number, min: number, max: number) {
@@ -233,52 +319,18 @@ export function DashboardMapInteractive() {
   return (
     <section ref={stageRef} className={stageClassName} aria-label="מפת השלומות לפי ממדים">
       {wellbeingDimensions.map((dimension) => {
-        const DirectionIcon = dimension.conceptStatusDirection === "up" ? ArrowUp : ArrowDown;
         const offset = offsets[dimension.id] ?? zeroOffsets[dimension.id];
-        const dragX = offset.x;
-        const dragY = offset.y;
 
         return (
-          <Link
+          <MapStone
             key={dimension.id}
-            ref={registerStoneRef(dimension.id)}
-            href={getDimensionHref(dimension.id)}
-            className={`dashboard-map-blob${draggingId === dimension.id ? " is-dragging" : ""}`}
-            style={
-              {
-                "--blob-rotate": `${dimension.conceptPosition.rotate}deg`,
-                "--blob-counter-rotate": `${dimension.conceptPosition.rotate * -1}deg`,
-                "--drag-x": `${dragX}px`,
-                "--drag-y": `${dragY}px`,
-                top: dimension.conceptPosition.top,
-                right: dimension.conceptPosition.right,
-                width: dimension.conceptPosition.width,
-                height: dimension.conceptPosition.height,
-                borderRadius: dimension.conceptPosition.radius,
-                backgroundColor: dimension.conceptColor,
-                zIndex: draggingId === dimension.id ? 20 : undefined,
-              } as CSSProperties
-            }
-            data-drag-x={Math.round(dragX)}
-            data-drag-y={Math.round(dragY)}
-            aria-label={`${dimension.conceptLabel}: ${dimension.subtitle}`}
-            draggable={false}
+            dimension={dimension}
+            offset={offset}
+            draggingId={draggingId}
             onPointerDown={handlePointerDown(dimension.id)}
             onClick={handleClick(dimension.id)}
-            onDragStart={(event) => event.preventDefault()}
-          >
-            <span className="dashboard-map-blob-plus" aria-hidden="true">
-              <Plus size={42} strokeWidth={2.25} />
-            </span>
-            <span className="dashboard-map-blob-copy">
-              <strong>{dimension.conceptLabel}</strong>
-              <span>{dimension.subtitle}</span>
-            </span>
-            <span className="dashboard-map-blob-status">
-              <DirectionIcon size={15} aria-hidden="true" />
-              {dimension.conceptStatusText}
-            </span>
-          </Link>
+            registerRef={registerStoneRef(dimension.id)}
+          />
         );
       })}
     </section>

@@ -314,7 +314,7 @@ button:disabled {
 
 .metric-card strong {
   color: var(--navy);
-  font-size: 2.1rem;
+  font-size: 2.1em;
   line-height: 1;
 }
 
@@ -819,13 +819,13 @@ textarea {
 
 .survey-builder-metric-stone strong,
 .stone-page .metric-card strong {
-  font-size: clamp(2.3rem, 4vw, 2.7rem);
+  font-size: clamp(2.3em, 4vw, 2.7em);
   line-height: 1;
 }
 
 .survey-builder-metric-stone span,
 .stone-page .metric-card span {
-  font-size: 0.95rem;
+  font-size: 0.95em;
   margin-top: 0.35rem;
   font-weight: 700;
   line-height: 1.25;
@@ -834,7 +834,7 @@ textarea {
 .survey-builder-metric-stone small,
 .stone-page .metric-card small {
   color: rgba(255, 255, 255, 0.92);
-  font-size: 0.8rem;
+  font-size: 0.8em;
   margin-top: 0.25rem;
   line-height: 1.25;
 }
@@ -1560,7 +1560,7 @@ textarea {
 }
 
 .dashboard-map-blob-copy strong {
-  font-size: clamp(1.7rem, 2vw, 2.25rem);
+  font-size: clamp(1.7em, 2vw, 2.25em);
   font-weight: 800;
   line-height: 1.05;
 }
@@ -1568,7 +1568,7 @@ textarea {
 .dashboard-map-blob-copy span {
   display: block;
   margin-top: 0.55rem;
-  font-size: 1.06rem;
+  font-size: 1.06em;
   line-height: 1.38;
 }
 
@@ -1581,7 +1581,7 @@ textarea {
   align-items: center;
   justify-content: center;
   gap: 0.28rem;
-  font-size: 0.88rem;
+  font-size: 0.88em;
   font-weight: 700;
   text-align: center;
 }
@@ -1607,7 +1607,7 @@ textarea {
 
 .dashboard-single-blob-copy p {
   margin: 0;
-  font-size: clamp(1.05rem, 1.35vw, 1.35rem);
+  font-size: clamp(1.05em, 1.35vw, 1.35em);
   line-height: 1.68;
 }
 
@@ -1684,13 +1684,13 @@ textarea {
 }
 
 .dashboard-metric-blob strong {
-  font-size: clamp(3.2rem, 6vw, 4.9rem);
+  font-size: clamp(3.2em, 6vw, 4.9em);
   line-height: 1;
 }
 
 .dashboard-metric-blob p {
   margin: 0.8rem 0 0;
-  font-size: clamp(1rem, 1.25vw, 1.25rem);
+  font-size: clamp(1em, 1.25vw, 1.25em);
   line-height: 1.5;
 }
 
@@ -1724,13 +1724,13 @@ textarea {
 
 .dashboard-recommendation-blob h2 {
   margin: 0 0 0.8rem;
-  font-size: clamp(1.3rem, 1.75vw, 1.95rem);
+  font-size: clamp(1.3em, 1.75vw, 1.95em);
   line-height: 1.24;
 }
 
 .dashboard-recommendation-blob p {
   margin: 0;
-  font-size: clamp(0.92rem, 1vw, 1.12rem);
+  font-size: clamp(0.92em, 1vw, 1.12em);
   line-height: 1.5;
 }
 
