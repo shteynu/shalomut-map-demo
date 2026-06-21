@@ -2939,3 +2939,27 @@ textarea {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+
+/* Design System visual overflow warning */
+.blob-overflow-warning {
+  outline: 3px solid #ff3b30 !important;
+  outline-offset: -3px;
+  position: relative !important;
+}
+
+.blob-overflow-warning::after {
+  content: "גלישת טקסט!";
+  position: absolute;
+  bottom: 0.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #ff3b30;
+  color: white;
+  font-size: 0.72rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  font-weight: 800;
+  z-index: 10;
+  white-space: nowrap;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}

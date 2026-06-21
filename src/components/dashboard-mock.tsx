@@ -1,7 +1,53 @@
+"use client";
+
 import Link from "next/link";
+import { useState, useEffect, useRef } from "react";
 import { BarChart3, ChevronLeft, House, Lightbulb, Move } from "lucide-react";
 import { DashboardMapInteractive } from "@/components/dashboard-map-interactive";
 import { activeRound, organization, type ResponseMetric, type WellbeingDimension } from "@/lib/demo-data";
+
+function useBlobOverflow() {
+  const containerRef = useRef<HTMLDivElement | HTMLElement | null>(null);
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  const [overflows, setOverflows] = useState(false);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    const content = contentRef.current;
+    if (!container || !content) return;
+
+    const check = () => {
+      const containerRect = container.getBoundingClientRect();
+      const contentRect = content.getBoundingClientRect();
+
+      const W = containerRect.width;
+      const H = containerRect.height;
+      const w = contentRect.width;
+      const h = contentRect.height;
+
+      if (W === 0 || H === 0) return;
+
+      const widthRatio = w / W;
+      const heightRatio = h / H;
+      const diagonalRatio = Math.sqrt(widthRatio * widthRatio + heightRatio * heightRatio);
+
+      // Safe threshold for organic blobs: if diagonal ratio > 0.88, or if bounding box is too close to border
+      const isOverflowing = diagonalRatio > 0.88 || h > H - 20 || w > W - 20;
+      setOverflows(isOverflowing);
+    };
+
+    check();
+    const observer = new ResizeObserver(check);
+    observer.observe(container);
+    observer.observe(content);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
+  return { containerRef, contentRef, overflows };
+}
 
 const recommendationBlobClasses = [
   "dashboard-recommendation-blob dashboard-recommendation-blob-top-left",
@@ -47,10 +93,37 @@ function getDisplayRecommendations(dimension: WellbeingDimension) {
 }
 
 function MetricBlob({ metric }: { metric: ResponseMetric }) {
+  const { containerRef, contentRef, overflows } = useBlobOverflow();
   return (
-    <article className="dashboard-metric-blob">
-      <strong>{metric.value}</strong>
-      <p>{metric.highlightText ?? metric.helper}</p>
+    <article
+      ref={containerRef as any}
+      className={`dashboard-metric-blob ${overflows ? "blob-overflow-warning" : ""}`}
+    >
+      <div ref={contentRef as any}>
+        <strong>{metric.value}</strong>
+        <p>{metric.highlightText ?? metric.helper}</p>
+      </div>
+    </article>
+  );
+}
+
+function RecommendationBlob({
+  recommendation,
+  className,
+}: {
+  recommendation: { title: string; body: string };
+  className: string;
+}) {
+  const { containerRef, contentRef, overflows } = useBlobOverflow();
+  return (
+    <article
+      ref={containerRef as any}
+      className={`${className} ${overflows ? "blob-overflow-warning" : ""}`}
+    >
+      <div ref={contentRef as any}>
+        <h2>{recommendation.title}</h2>
+        <p>{recommendation.body}</p>
+      </div>
     </article>
   );
 }
@@ -138,17 +211,15 @@ export function DashboardRecommendationsPage({ dimension }: { dimension: Wellbei
         aria-label={`המלצות לשיפור עבור ${dimension.conceptLabel}`}
       >
         {recommendations.map((recommendation, index) => (
-          <article
+          <RecommendationBlob
             key={recommendation.title}
+            recommendation={recommendation}
             className={
               isFiveItemLayout
                 ? recommendationBlobClasses[index] ?? recommendationBlobClasses.at(-1)!
                 : "dashboard-recommendation-blob dashboard-recommendation-blob-generic"
             }
-          >
-            <h2>{recommendation.title}</h2>
-            <p>{recommendation.body}</p>
-          </article>
+          />
         ))}
       </section>
 
