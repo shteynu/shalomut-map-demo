@@ -2971,6 +2971,15 @@ textarea {
   vertical-align: middle;
 }
 
+.custom-tooltip-wrapper:hover {
+  z-index: 10002 !important;
+}
+
+/* Ensure hovered metric cards containing tooltips stack above sibling page elements */
+.metric-card:hover {
+  z-index: 10002 !important;
+}
+
 .custom-tooltip-icon {
   color: rgba(255, 255, 255, 0.76) !important;
   transition: color 150ms ease;
