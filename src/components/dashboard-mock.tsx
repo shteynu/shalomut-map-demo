@@ -99,10 +99,10 @@ function getDisplayRecommendations(dimension: WellbeingDimension) {
   return dimension.recommendations;
 }
 
-function MetricBlob({ metric }: { metric: ResponseMetric }) {
+function MetricBlob({ metric, color }: { metric: ResponseMetric; color?: string }) {
   const { containerRef, contentRef } = useBlobFit([metric]);
   return (
-    <article ref={containerRef as any} className="dashboard-metric-blob">
+    <article ref={containerRef as any} className="dashboard-metric-blob" style={{ backgroundColor: color }}>
       <div ref={contentRef as any} style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
         <strong>{metric.value}</strong>
         <p>{metric.highlightText ?? metric.helper}</p>
@@ -114,13 +114,15 @@ function MetricBlob({ metric }: { metric: ResponseMetric }) {
 function RecommendationBlob({
   recommendation,
   className,
+  color,
 }: {
   recommendation: { title: string; body: string };
   className: string;
+  color?: string;
 }) {
   const { containerRef, contentRef } = useBlobFit([recommendation]);
   return (
-    <article ref={containerRef as any} className={className}>
+    <article ref={containerRef as any} className={className} style={{ backgroundColor: color }}>
       <div ref={contentRef as any} style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
         <h2>{recommendation.title}</h2>
         <p>{recommendation.body}</p>
@@ -178,7 +180,7 @@ export function DashboardMetricsPage({ dimension }: { dimension: WellbeingDimens
 
       <section className="dashboard-metrics-stage" aria-label={`נתונים בולטים עבור ${dimension.conceptLabel}`}>
         {metrics.map((metric) => (
-          <MetricBlob key={`${metric.label}-${metric.value}`} metric={metric} />
+          <MetricBlob key={`${metric.label}-${metric.value}`} metric={metric} color={dimension.conceptColor} />
         ))}
       </section>
 
@@ -215,6 +217,7 @@ export function DashboardRecommendationsPage({ dimension }: { dimension: Wellbei
           <RecommendationBlob
             key={recommendation.title}
             recommendation={recommendation}
+            color={dimension.conceptColor}
             className={
               isFiveItemLayout
                 ? recommendationBlobClasses[index] ?? recommendationBlobClasses.at(-1)!
