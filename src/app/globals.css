@@ -1665,9 +1665,9 @@ textarea {
 
 .dashboard-metric-blob {
   display: grid;
-  min-height: 15rem;
+  min-height: 16rem;
   place-content: center;
-  padding: 2rem 2.5rem;
+  padding: 2.2rem 3.4rem;
   border-radius: 42% 58% 38% 62% / 38% 34% 66% 62%;
   background: var(--accent);
   color: white;
@@ -1689,9 +1689,9 @@ textarea {
 }
 
 .dashboard-metric-blob p {
-  margin: 0.9rem 0 0;
-  font-size: clamp(1.15rem, 1.6vw, 1.6rem);
-  line-height: 1.45;
+  margin: 0.8rem 0 0;
+  font-size: clamp(1rem, 1.25vw, 1.25rem);
+  line-height: 1.5;
 }
 
 .dashboard-recommendations-stage {
@@ -1715,7 +1715,7 @@ textarea {
 .dashboard-recommendation-blob {
   display: grid;
   align-content: center;
-  padding: 1.8rem 1.65rem;
+  padding: 2.2rem 2.5rem;
   background: var(--accent);
   color: white;
   text-align: center;
@@ -1730,8 +1730,8 @@ textarea {
 
 .dashboard-recommendation-blob p {
   margin: 0;
-  font-size: clamp(1rem, 1.05vw, 1.2rem);
-  line-height: 1.55;
+  font-size: clamp(0.92rem, 1vw, 1.12rem);
+  line-height: 1.5;
 }
 
 .dashboard-recommendation-blob-top-left {
