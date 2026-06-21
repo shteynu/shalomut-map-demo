@@ -2,7 +2,7 @@
 
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import Link from "next/link";
-import { ArrowDown, ArrowUp, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { wellbeingDimensions } from "@/lib/demo-data";
 
@@ -233,7 +233,6 @@ export function DashboardMapInteractive() {
   return (
     <section ref={stageRef} className={stageClassName} aria-label="מפת השלומות לפי ממדים">
       {wellbeingDimensions.map((dimension) => {
-        const DirectionIcon = dimension.conceptStatusDirection === "up" ? ArrowUp : ArrowDown;
         const offset = offsets[dimension.id] ?? zeroOffsets[dimension.id];
         const dragX = offset.x;
         const dragY = offset.y;
@@ -275,7 +274,6 @@ export function DashboardMapInteractive() {
               <span>{dimension.subtitle}</span>
             </span>
             <span className="dashboard-map-blob-status">
-              <DirectionIcon size={15} aria-hidden="true" />
               {dimension.conceptStatusText}
             </span>
           </Link>

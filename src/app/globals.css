@@ -1513,6 +1513,11 @@ textarea {
   font-weight: 700;
 }
 
+.hint-icon-mobile,
+.hint-text-mobile {
+  display: none !important;
+}
+
 .dashboard-map-stage {
   position: relative;
   width: min(74rem, 100%);
@@ -1816,13 +1821,26 @@ textarea {
     width: min(100% - 1rem, 1240px);
   }
 
+  .hint-icon-desktop,
+  .hint-text-desktop {
+    display: none !important;
+  }
+
+  .hint-icon-mobile {
+    display: inline-block !important;
+  }
+
+  .hint-text-mobile {
+    display: inline !important;
+  }
+
   .dashboard-map-stage {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 1rem;
     min-height: 0;
     overflow: hidden;
-    padding: 0.25rem;
+    padding: 0.25rem 0.75rem;
   }
 
   .dashboard-map-blob {
@@ -1831,7 +1849,8 @@ textarea {
     right: auto !important;
     width: 100% !important;
     height: 13.5rem !important;
-    transform: translate(var(--drag-x, 0px), var(--drag-y, 0px));
+    transform: none !important;
+    border-radius: 1.5rem !important;
     touch-action: auto !important;
     cursor: pointer !important;
   }
@@ -2212,6 +2231,7 @@ textarea {
     width: 100%;
     height: 7.2rem;
     transform: none;
+    border-radius: 1.25rem !important;
   }
 
   .stone-button span,
@@ -2317,7 +2337,7 @@ textarea {
   .dashboard-map-stage {
     gap: 0.75rem;
     margin-top: 0.9rem;
-    padding: 0;
+    padding: 0 0.5rem;
   }
 
   .dashboard-map-blob {

@@ -84,7 +84,7 @@ export function SetupForm() {
         <div className="grades-grid">
           {Object.entries(activeRound.backgroundInputs.classesPerGrade).map(([grade, count]) => (
             <label key={grade} className="grade-label">
-              שכבה {grade}'
+              שכבה {grade}{"'"}
               <input type="number" min="0" defaultValue={count} className="grade-input" />
             </label>
           ))}

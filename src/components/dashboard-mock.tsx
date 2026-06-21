@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
-import { BarChart3, ChevronLeft, House, Lightbulb, Move } from "lucide-react";
+import { BarChart3, ChevronLeft, House, Lightbulb, MousePointer2, Move } from "lucide-react";
 import { DashboardMapInteractive } from "@/components/dashboard-map-interactive";
 import { activeRound, organization, type ResponseMetric, type WellbeingDimension } from "@/lib/demo-data";
 
@@ -146,8 +146,10 @@ export function DashboardMapPage() {
     <div className="dashboard-mock-page">
       <DashboardHeading title="מפת השלומות" />
       <div className="dashboard-map-hint" aria-label="הנחיית שימוש במפה">
-        <Move size={18} aria-hidden="true" />
-        <span>גררו את האבנים כדי לסדר את המפה, או לחצו על אבן כדי לפתוח פירוט.</span>
+        <Move className="hint-icon-desktop" size={18} aria-hidden="true" />
+        <MousePointer2 className="hint-icon-mobile" size={18} aria-hidden="true" />
+        <span className="hint-text-desktop">גררו את האבנים כדי לסדר את המפה, או לחצו על אבן כדי לפתוח פירוט.</span>
+        <span className="hint-text-mobile">לחצו על אבן כדי לפתוח פירוט.</span>
       </div>
       <DashboardMapInteractive />
     </div>
