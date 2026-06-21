@@ -184,21 +184,18 @@ export function SurveyBuilderDemo() {
                   <span className="custom-tooltip-wrapper">
                     <HelpCircle size={14} className="custom-tooltip-icon" />
                     <span className="custom-tooltip-content">
-                      <strong>«Саф пратиют» (סף פרטיות — порог конфиденциальности)</strong> — это минимальное количество ответивших сотрудников, при достижении которого менеджеру открывается доступ к карте/результатам опроса (по умолчанию в демо-данных это 10 человек).
-                      <br /><br />
-                      <strong>Зачем это нужно?</strong>
-                      <span style={{ display: "block", marginTop: "0.25rem" }}>
-                        1. <strong>Защита анонимности</strong>: Если заполнили всего 2-3 человека, легко догадаться по ответам, кто это написал. Порог исключает эту возможность.
+                      <strong>סף פרטיות (סף מינימום להצגת תוצאות)</strong>
+                      <span style={{ display: "block", marginTop: "0.4rem", marginBottom: "0.8rem", fontSize: "0.88rem", lineHeight: 1.45 }}>
+                        זהו מספר המשיבים המינימלי הנדרש כדי לפתוח את מפת השלומות והתוצאות לצפייה (בברירת המחדל: 10 אנשי צוות).
                       </span>
-                      <span style={{ display: "block", marginTop: "0.25rem" }}>
-                        2. <strong>Честность ответов</strong>: Зная, что результаты скрыты до достижения порога, сотрудники чувствуют себя в безопасности и дают более искреннюю обратную связь.
-                      </span>
-                      <span style={{ display: "block", marginTop: "0.25rem" }}>
-                        3. <strong>Релевантность данных</strong>: Агрегированные данные от 10+ человек дают более объективную картину.
-                      </span>
-                      <br />
-                      <span style={{ fontSize: "0.78rem", opacity: 0.9 }}>
-                        Если порог не пройден, карта («מפת השלומות») останется заблокированной.
+                      <strong style={{ fontSize: "0.88rem", display: "block", marginBottom: "0.35rem" }}>למה זה חשוב?</strong>
+                      <ul style={{ margin: 0, paddingRight: "1.1rem", fontSize: "0.84rem", lineHeight: 1.5, listStyleType: "disc" }}>
+                        <li style={{ marginBottom: "0.3rem" }}><strong>הגנה על אנונימיות</strong>: מניעת אפשרות לזהות משיב בודד לפי תשובותיו או הערותיו.</li>
+                        <li style={{ marginBottom: "0.3rem" }}><strong>שיקוף משוב כנה</strong>: הצוות מרגיש בטוח לתת ביקורת בונה כשהתוצאות מצרפיות בלבד.</li>
+                        <li style={{ marginBottom: "0.3rem" }}><strong>מהימנות הנתונים</strong>: קבלת תמונת מצב אובייקטיבית ומקצועית המייצגת את כלל בית הספר.</li>
+                      </ul>
+                      <span style={{ display: "block", marginTop: "0.8rem", fontSize: "0.8rem", opacity: 0.85, borderTop: "1px dashed rgba(87, 79, 58, 0.2)", paddingTop: "0.5rem", lineHeight: 1.4 }}>
+                        כל עוד לא התקבלו מספיק תשובות, המפה תישאר נעולה ויוצג רק מספר המשיבים הכללי.
                       </span>
                     </span>
                   </span>
