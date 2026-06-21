@@ -2981,7 +2981,7 @@ textarea {
 }
 
 /* Keep the tooltip icon on the same line as the label and center them */
-.metric-card span {
+.metric-card > span {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
