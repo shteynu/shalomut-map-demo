@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
-import { Activity, ClipboardList, Home, Map, Send } from "lucide-react";
+import { Activity, ClipboardList, HelpCircle, Home, Map, Send } from "lucide-react";
 
 const navItems = [
   { href: "/", label: "מרכז ניהול", icon: Home },
@@ -77,10 +77,37 @@ type MetricCardProps = {
 };
 
 export function MetricCard({ value, label, helper, className = "" }: MetricCardProps) {
+  const showTooltip = label === "סף פרטיות" || label === "סף הצגה";
+
   return (
     <article className={`metric-card ${className}`.trim()}>
       <strong>{value}</strong>
-      <span>{label}</span>
+      <span>
+        {label}
+        {showTooltip && (
+          <span className="custom-tooltip-wrapper">
+            <HelpCircle size={14} className="custom-tooltip-icon" />
+            <span className="custom-tooltip-content">
+              <strong>«Саф пратиют» (סף פרטיות — порог конфиденциальности)</strong> — это минимальное количество ответивших сотрудников, при достижении которого менеджеру открывается доступ к карте/результатам опроса (по умолчанию в демо-данных это 10 человек).
+              <br /><br />
+              <strong>Зачем это нужно?</strong>
+              <span style={{ display: "block", marginTop: "0.25rem" }}>
+                1. <strong>Защита анонимности</strong>: Если заполнили всего 2-3 человека, легко догадаться по ответам, кто это написал. Порог исключает эту возможность.
+              </span>
+              <span style={{ display: "block", marginTop: "0.25rem" }}>
+                2. <strong>Честность ответов</strong>: Зная, что результаты скрыты до достижения порога, сотрудники чувствуют себя в безопасности и дают более искреннюю обратную связь.
+              </span>
+              <span style={{ display: "block", marginTop: "0.25rem" }}>
+                3. <strong>Релевантность данных</strong>: Агрегированные данные от 10+ человек дают более объективную картину.
+              </span>
+              <br />
+              <span style={{ fontSize: "0.78rem", opacity: 0.9 }}>
+                Если порог не пройден, карта («מפת השלומות») останется заблокированной.
+              </span>
+            </span>
+          </span>
+        )}
+      </span>
       <small>{helper}</small>
     </article>
   );

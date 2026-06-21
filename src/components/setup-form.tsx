@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Check, ChevronLeft } from "lucide-react";
+import { Check, ChevronLeft, HelpCircle } from "lucide-react";
 import { useState } from "react";
 import { activeRound, organization } from "@/lib/demo-data";
 
@@ -38,7 +38,30 @@ export function SetupForm() {
           <input type="number" defaultValue={activeRound.backgroundInputs.teachingStaff} />
         </label>
         <label>
-          סף מינימום להצגת תוצאות
+          <span style={{ display: "inline-flex", alignItems: "center" }}>
+            סף מינימום להצגת תוצאות
+            <span className="custom-tooltip-wrapper">
+              <HelpCircle size={14} className="custom-tooltip-icon" />
+              <span className="custom-tooltip-content">
+                <strong>«Саф пратиют» (סף פרטיות — порог конфиденциальности)</strong> — это минимальное количество ответивших сотрудников, при достижении которого менеджеру открывается доступ к карте/результатам опроса (по умолчанию в демо-данных это 10 человек).
+                <br /><br />
+                <strong>Зачем это нужно?</strong>
+                <span style={{ display: "block", marginTop: "0.25rem" }}>
+                  1. <strong>Защита анонимности</strong>: Если заполнили всего 2-3 человека, легко догадаться по ответам, кто это написал. Порог исключает эту возможность.
+                </span>
+                <span style={{ display: "block", marginTop: "0.25rem" }}>
+                  2. <strong>Честность ответов</strong>: Зная, что результаты скрыты до достижения порога, сотрудники чувствуют себя в безопасности и дают более искреннюю обратную связь.
+                </span>
+                <span style={{ display: "block", marginTop: "0.25rem" }}>
+                  3. <strong>Релевантность данных</strong>: Агрегированные данные от 10+ человек дают более объективную картину.
+                </span>
+                <br />
+                <span style={{ fontSize: "0.78rem", opacity: 0.9 }}>
+                  Если порог не пройден, карта («מפת השלומות») останется заблокированной.
+                </span>
+              </span>
+            </span>
+          </span>
           <input type="number" defaultValue={activeRound.minimumResponses} />
         </label>
         <label>
