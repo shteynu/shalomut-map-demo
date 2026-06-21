@@ -763,7 +763,7 @@ textarea {
 .survey-builder-metric-stone,
 .stone-page .metric-card {
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   min-height: 11.2rem;
   border: none;
   color: white;
@@ -2972,58 +2972,60 @@ textarea {
 }
 
 .custom-tooltip-icon {
-  color: rgba(255, 255, 255, 0.76);
+  color: rgba(255, 255, 255, 0.76) !important;
   transition: color 150ms ease;
 }
 
 .custom-tooltip-wrapper:hover .custom-tooltip-icon {
-  color: white;
+  color: white !important;
 }
 
 label .custom-tooltip-icon {
-  color: #8a8a93;
+  color: #8a8a93 !important;
 }
 
 label .custom-tooltip-wrapper:hover .custom-tooltip-icon {
-  color: var(--navy);
+  color: var(--navy) !important;
 }
 
 .custom-tooltip-content {
-  visibility: hidden;
-  opacity: 0;
-  width: 21rem;
-  background-color: #1e1e24;
-  color: #f5f5f7;
-  text-align: left;
-  direction: ltr;
-  border-radius: 8px;
-  padding: 0.85rem 1rem;
-  position: absolute;
-  z-index: 99;
-  bottom: 130%;
-  left: 50%;
-  transform: translateX(-50%);
-  transition: opacity 200ms ease, visibility 200ms ease;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
-  font-size: 0.82rem;
-  font-weight: normal;
-  line-height: 1.5;
-  white-space: normal;
+  display: block !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  width: 21rem !important;
+  background-color: #1e1e24 !important;
+  color: #f5f5f7 !important;
+  text-align: left !important;
+  direction: ltr !important;
+  border-radius: 8px !important;
+  padding: 0.85rem 1rem !important;
+  position: absolute !important;
+  z-index: 9999 !important;
+  bottom: 130% !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  transition: opacity 200ms ease, visibility 200ms ease !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25) !important;
+  font-size: 0.82rem !important;
+  font-weight: normal !important;
+  line-height: 1.5 !important;
+  white-space: normal !important;
+  margin: 0 !important;
 }
 
 .custom-tooltip-content::after {
-  content: "";
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  margin-left: -5px;
-  border-width: 5px;
-  border-style: solid;
-  border-color: #1e1e24 transparent transparent transparent;
+  content: "" !important;
+  position: absolute !important;
+  top: 100% !important;
+  left: 50% !important;
+  margin-left: -5px !important;
+  border-width: 5px !important;
+  border-style: solid !important;
+  border-color: #1e1e24 transparent transparent transparent !important;
 }
 
 .custom-tooltip-wrapper:hover .custom-tooltip-content {
-  visibility: visible;
-  opacity: 1;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
