@@ -6,17 +6,18 @@ import { BarChart3, ChevronLeft, House, Lightbulb, Move } from "lucide-react";
 import { DashboardMapInteractive } from "@/components/dashboard-map-interactive";
 import { activeRound, organization, type ResponseMetric, type WellbeingDimension } from "@/lib/demo-data";
 
-function useBlobOverflow() {
+function useBlobFit(dependencies: any[]) {
   const containerRef = useRef<HTMLDivElement | HTMLElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
-  const [overflows, setOverflows] = useState(false);
 
   useEffect(() => {
     const container = containerRef.current;
     const content = contentRef.current;
     if (!container || !content) return;
 
-    const check = () => {
+    const adjust = () => {
+      content.style.fontSize = "1em";
+
       const containerRect = container.getBoundingClientRect();
       const contentRect = content.getBoundingClientRect();
 
@@ -25,28 +26,34 @@ function useBlobOverflow() {
       const w = contentRect.width;
       const h = contentRect.height;
 
-      if (W === 0 || H === 0) return;
+      if (W === 0 || H === 0 || w === 0 || h === 0) return;
 
       const widthRatio = w / W;
       const heightRatio = h / H;
       const diagonalRatio = Math.sqrt(widthRatio * widthRatio + heightRatio * heightRatio);
 
-      // Safe threshold for organic blobs: if diagonal ratio > 0.88, or if bounding box is too close to border
-      const isOverflowing = diagonalRatio > 0.88 || h > H - 20 || w > W - 20;
-      setOverflows(isOverflowing);
+      const maxSafeW = W - 32;
+      const maxSafeH = H - 32;
+
+      const scaleW = maxSafeW / w;
+      const scaleH = maxSafeH / h;
+      const scaleDiag = 0.83 / diagonalRatio;
+
+      const neededScale = Math.max(0.65, Math.min(1.0, scaleW, scaleH, scaleDiag));
+      content.style.fontSize = `${neededScale}em`;
     };
 
-    check();
-    const observer = new ResizeObserver(check);
-    observer.observe(container);
-    observer.observe(content);
+    adjust();
+
+    const resizeObserver = new ResizeObserver(adjust);
+    resizeObserver.observe(container);
 
     return () => {
-      observer.disconnect();
+      resizeObserver.disconnect();
     };
-  }, []);
+  }, dependencies);
 
-  return { containerRef, contentRef, overflows };
+  return { containerRef, contentRef };
 }
 
 const recommendationBlobClasses = [
@@ -93,13 +100,10 @@ function getDisplayRecommendations(dimension: WellbeingDimension) {
 }
 
 function MetricBlob({ metric }: { metric: ResponseMetric }) {
-  const { containerRef, contentRef, overflows } = useBlobOverflow();
+  const { containerRef, contentRef } = useBlobFit([metric]);
   return (
-    <article
-      ref={containerRef as any}
-      className={`dashboard-metric-blob ${overflows ? "blob-overflow-warning" : ""}`}
-    >
-      <div ref={contentRef as any}>
+    <article ref={containerRef as any} className="dashboard-metric-blob">
+      <div ref={contentRef as any} style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
         <strong>{metric.value}</strong>
         <p>{metric.highlightText ?? metric.helper}</p>
       </div>
@@ -114,13 +118,10 @@ function RecommendationBlob({
   recommendation: { title: string; body: string };
   className: string;
 }) {
-  const { containerRef, contentRef, overflows } = useBlobOverflow();
+  const { containerRef, contentRef } = useBlobFit([recommendation]);
   return (
-    <article
-      ref={containerRef as any}
-      className={`${className} ${overflows ? "blob-overflow-warning" : ""}`}
-    >
-      <div ref={contentRef as any}>
+    <article ref={containerRef as any} className={className}>
+      <div ref={contentRef as any} style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
         <h2>{recommendation.title}</h2>
         <p>{recommendation.body}</p>
       </div>
