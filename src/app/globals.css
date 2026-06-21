@@ -1596,6 +1596,13 @@ textarea {
   border-radius: 36% 64% 40% 60% / 28% 28% 72% 72%;
   color: white;
   box-shadow: 0 26px 56px rgba(56, 56, 56, 0.18);
+  transition: filter 160ms ease, box-shadow 160ms ease;
+  cursor: pointer;
+}
+
+.dashboard-single-blob:hover {
+  filter: brightness(1.03) saturate(1.02);
+  box-shadow: 0 32px 64px rgba(56, 56, 56, 0.24);
 }
 
 .dashboard-single-blob-copy {
@@ -1673,6 +1680,13 @@ textarea {
   color: white;
   text-align: center;
   box-shadow: 0 24px 48px rgba(56, 56, 56, 0.17);
+  transition: filter 160ms ease, box-shadow 160ms ease;
+  cursor: pointer;
+}
+
+.dashboard-metric-blob:hover {
+  filter: brightness(1.05) saturate(1.02);
+  box-shadow: 0 30px 60px rgba(56, 56, 56, 0.24);
 }
 
 .dashboard-metric-blob:nth-child(1) {
@@ -1720,6 +1734,13 @@ textarea {
   color: white;
   text-align: center;
   box-shadow: 0 24px 48px rgba(56, 56, 56, 0.17);
+  transition: filter 160ms ease, box-shadow 160ms ease;
+  cursor: pointer;
+}
+
+.dashboard-recommendation-blob:hover {
+  filter: brightness(1.05) saturate(1.02);
+  box-shadow: 0 30px 60px rgba(56, 56, 56, 0.24);
 }
 
 .dashboard-recommendation-blob h2 {

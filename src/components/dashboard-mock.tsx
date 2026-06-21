@@ -99,15 +99,20 @@ function getDisplayRecommendations(dimension: WellbeingDimension) {
   return dimension.recommendations;
 }
 
-function MetricBlob({ metric, color }: { metric: ResponseMetric; color?: string }) {
+function MetricBlob({ metric, color, dimensionId }: { metric: ResponseMetric; color?: string; dimensionId: string }) {
   const { containerRef, contentRef } = useBlobFit([metric]);
   return (
-    <article ref={containerRef as any} className="dashboard-metric-blob" style={{ backgroundColor: color }}>
+    <Link
+      href={`/dashboard/${dimensionId}/recommendations`}
+      ref={containerRef as any}
+      className="dashboard-metric-blob"
+      style={{ backgroundColor: color, textDecoration: "none" }}
+    >
       <div ref={contentRef as any} style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
         <strong>{metric.value}</strong>
         <p>{metric.highlightText ?? metric.helper}</p>
       </div>
-    </article>
+    </Link>
   );
 }
 
@@ -122,12 +127,17 @@ function RecommendationBlob({
 }) {
   const { containerRef, contentRef } = useBlobFit([recommendation]);
   return (
-    <article ref={containerRef as any} className={className} style={{ backgroundColor: color }}>
+    <Link
+      href="/dashboard"
+      ref={containerRef as any}
+      className={className}
+      style={{ backgroundColor: color, textDecoration: "none" }}
+    >
       <div ref={contentRef as any} style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
         <h2>{recommendation.title}</h2>
         <p>{recommendation.body}</p>
       </div>
-    </article>
+    </Link>
   );
 }
 
@@ -145,17 +155,23 @@ export function DashboardMapPage() {
 }
 
 export function DashboardDimensionPage({ dimension }: { dimension: WellbeingDimension }) {
+  const { containerRef, contentRef } = useBlobFit([dimension]);
   return (
     <div className="dashboard-mock-page dashboard-detail-screen">
       <DashboardHeading title={`תמונת מצב | ${dimension.conceptLabel}`} />
 
-      <section className="dashboard-single-blob" style={{ backgroundColor: dimension.conceptColor }}>
-        <div className="dashboard-single-blob-copy">
+      <Link
+        href={`/dashboard/${dimension.id}/metrics`}
+        ref={containerRef as any}
+        className="dashboard-single-blob"
+        style={{ backgroundColor: dimension.conceptColor, textDecoration: "none", display: "grid" }}
+      >
+        <div ref={contentRef as any} className="dashboard-single-blob-copy">
           {dimension.summary.map((paragraph) => (
             <p key={paragraph}>{paragraph}</p>
           ))}
         </div>
-      </section>
+      </Link>
 
       <nav className="dashboard-cta-row" aria-label="ניווט מסך">
         <Link className="dashboard-pill-button dashboard-pill-button-primary" href={`/dashboard/${dimension.id}/metrics`}>
@@ -180,7 +196,7 @@ export function DashboardMetricsPage({ dimension }: { dimension: WellbeingDimens
 
       <section className="dashboard-metrics-stage" aria-label={`נתונים בולטים עבור ${dimension.conceptLabel}`}>
         {metrics.map((metric) => (
-          <MetricBlob key={`${metric.label}-${metric.value}`} metric={metric} color={dimension.conceptColor} />
+          <MetricBlob key={`${metric.label}-${metric.value}`} metric={metric} color={dimension.conceptColor} dimensionId={dimension.id} />
         ))}
       </section>
 
