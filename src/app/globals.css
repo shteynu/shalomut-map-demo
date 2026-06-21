@@ -2980,6 +2980,14 @@ textarea {
   z-index: 10002 !important;
 }
 
+/* Keep the tooltip icon on the same line as the label and center them */
+.metric-card span {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  white-space: nowrap !important;
+}
+
 .custom-tooltip-icon {
   color: rgba(255, 255, 255, 0.76) !important;
   transition: color 150ms ease;
