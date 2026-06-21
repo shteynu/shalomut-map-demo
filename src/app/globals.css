@@ -2998,11 +2998,11 @@ label .custom-tooltip-wrapper:hover .custom-tooltip-icon {
   color: var(--ink) !important;
   text-align: right !important;
   direction: rtl !important;
-  border-radius: 20px 8px 20px 20px !important;
+  border-radius: 8px 20px 20px 20px !important;
   padding: 1rem 1.15rem !important;
   position: absolute !important;
   z-index: 9999 !important;
-  bottom: 135% !important;
+  top: 135% !important;
   left: 50% !important;
   transform: translateX(-50%) !important;
   transition: opacity 200ms ease, visibility 200ms ease !important;
@@ -3017,24 +3017,25 @@ label .custom-tooltip-wrapper:hover .custom-tooltip-icon {
 .custom-tooltip-content::before {
   content: "" !important;
   position: absolute !important;
-  top: 100% !important;
+  bottom: 100% !important;
   left: 50% !important;
   margin-left: -8px !important;
   border-width: 8px !important;
   border-style: solid !important;
-  border-color: var(--line) transparent transparent transparent !important;
+  border-color: transparent transparent var(--line) transparent !important;
   z-index: 10000 !important;
 }
 
 .custom-tooltip-content::after {
   content: "" !important;
   position: absolute !important;
-  top: calc(100% - 1.5px) !important;
+  top: auto !important;
+  bottom: calc(100% - 1.5px) !important;
   left: 50% !important;
   margin-left: -7px !important;
   border-width: 7px !important;
   border-style: solid !important;
-  border-color: var(--surface) transparent transparent transparent !important;
+  border-color: transparent transparent var(--surface) transparent !important;
   z-index: 10001 !important;
 }
 
