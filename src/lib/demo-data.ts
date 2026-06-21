@@ -200,8 +200,8 @@ export const wellbeingDimensions: WellbeingDimension[] = [
       rotate: 0,
       radius: "44% 56% 52% 48% / 48% 38% 62% 52%",
     },
-    conceptColor: "#e43e5d",
-    conceptStatusText: "המצב מעולה וחשוב לשמר אותו",
+    conceptColor: "#24bf10",
+    conceptStatusText: "הכל טוב",
     conceptStatusDirection: "up",
     summary: [
       "ממצאי האבחון מראים כי רוב חברי הצוות חשים בנוח להביע את דעתם המקצועית והאישית ומדווחים על תחושת שייכות גבוהה. מרבית המורים מרגישים כי קולם נשמע בפורומים השונים ושמנהלי בית הספר פתוחים לשמוע יוזמות חדשות ורעיונות פדגוגיים יצירתיים.",
@@ -262,8 +262,8 @@ export const wellbeingDimensions: WellbeingDimension[] = [
       rotate: 7,
       radius: "42% 58% 40% 60% / 47% 38% 62% 53%",
     },
-    conceptColor: "#23ca10",
-    conceptStatusText: "המצב מעולה וחשוב לשמר אותו",
+    conceptColor: "#24bf10",
+    conceptStatusText: "הכל טוב",
     conceptStatusDirection: "up",
     summary: [
       "ממדי המסוגלות המקצועית והמומחיות בקרב אנשי הצוות מציגים תמונה יציבה וחיובית מאוד. רוב המורים מדווחים כי הם מחזיקים בידע, בכלים ובכישורים הנדרשים לניהול יעיל של כיתותיהם ולהתמודדות עם אתגרים פדגוגיים מורכבים בשגרה.",
@@ -324,8 +324,8 @@ export const wellbeingDimensions: WellbeingDimension[] = [
       rotate: 0,
       radius: "36% 64% 40% 60% / 44% 34% 66% 56%",
     },
-    conceptColor: "#efa300",
-    conceptStatusText: "המצב מעולה וחשוב לשמר אותו",
+    conceptColor: "#e49902",
+    conceptStatusText: "מצב סביר",
     conceptStatusDirection: "up",
     summary: [
       "האווירה החברתית הכללית בבית הספר נתפסת כחיובית ומכבדת, ורוב אנשי הצוות מדווחים על יחסי עבודה טובים ונעימים בחדר המורים. קיימת נכונות עקרונית לסייע זה לזה במשימות טכניות והחלפות נקודתיות של שיעורים בעת הצורך.",
@@ -396,8 +396,8 @@ export const wellbeingDimensions: WellbeingDimension[] = [
       rotate: 0,
       radius: "40% 60% 37% 63% / 44% 40% 60% 56%",
     },
-    conceptColor: "#ea7fb1",
-    conceptStatusText: "המצב סביר",
+    conceptColor: "#e43e5d",
+    conceptStatusText: "נדרש טיפול מיידי",
     conceptStatusDirection: "down",
     summary: [
       "נושא עומס העבודה והיעדר האיזון מהווה את מוקד הסיכון והתורפה המשמעותי ביותר באבחון הנוכחי. מרבית אנשי הצוות מדווחים על שחיקה מצטברת, תחושת הצפה קבועה וקושי ממשי לנתק בין עבודת ההוראה לחיים האישיים בבית.",
@@ -458,8 +458,8 @@ export const wellbeingDimensions: WellbeingDimension[] = [
       rotate: 4,
       radius: "39% 61% 41% 59% / 48% 36% 64% 52%",
     },
-    conceptColor: "#b93ee6",
-    conceptStatusText: "המצב סביר",
+    conceptColor: "#e49902",
+    conceptStatusText: "מצב סביר",
     conceptStatusDirection: "down",
     summary: [
       "חברי הצוות מביעים הערכה רבה לזמינות הפיזית והנכונות של צוות הניהול להקשיב, ומרגישים שיש להם אוזן קשבת עקרונית בבית הספר. עם זאת, קיים פער בין התפיסה הכללית של תמיכה לבין קבלת ליווי וסיוע אפקטיביים ברגעי משבר או מול אתגרים יומיומיים.",
@@ -520,8 +520,8 @@ export const wellbeingDimensions: WellbeingDimension[] = [
       rotate: -3,
       radius: "45% 55% 42% 58% / 36% 46% 54% 64%",
     },
-    conceptColor: "#e43e5d",
-    conceptStatusText: "המצב סביר",
+    conceptColor: "#e49902",
+    conceptStatusText: "מצב סביר",
     conceptStatusDirection: "down",
     summary: [
       "רמת הוודאות והיציבות בסביבת העבודה נתפסת כבינונית ומעוררת דאגה מסוימת בקרב הצוות. מורים רבים מדווחים כי שינויים תכופים במערכת השעות, ביטולי שיעורים ברגע האחרון והנחיות סותרות לגבי פרויקטים פוגעים ביכולת התכנון שלהם.",
@@ -582,8 +582,8 @@ export const wellbeingDimensions: WellbeingDimension[] = [
       rotate: 0,
       radius: "42% 58% 38% 62% / 49% 39% 61% 51%",
     },
-    conceptColor: "#34398d",
-    conceptStatusText: "המצב מעולה וחשוב לשמר אותו",
+    conceptColor: "#24bf10",
+    conceptStatusText: "הכל טוב",
     conceptStatusDirection: "up",
     summary: [
       "האקלים הארגוני בבית הספר תומך באופן יחסי ברווחה האישית של המורים, וניכר כי קיים רצון אמיתי לשמור על יחסים חמים ותרבות מכבדת. השיח על קשיים רגשיים או שחיקה מתאפשר בעיקר בתוך צוותי המקצוע או צוותי השכבות המצומצמים המהווים סביבה בטוחה.",
@@ -644,8 +644,8 @@ export const wellbeingDimensions: WellbeingDimension[] = [
       rotate: 0,
       radius: "44% 56% 40% 60% / 44% 34% 66% 56%",
     },
-    conceptColor: "#18a6d0",
-    conceptStatusText: "המצב סביר",
+    conceptColor: "#24bf10",
+    conceptStatusText: "הכל טוב",
     conceptStatusDirection: "down",
     summary: [
       "תחושת הערך והמשמעות המקצועית עולה כחוזקה הגבוהה והבולטת ביותר באבחון הנוכחי. אנשי הצוות חשים חיבור עמוק לשליחות המקצועית שלהם, ורואים ערך רב בעבודה היומיומית שלהם עם התלמידים ובתרומה לעתידם.",
@@ -693,9 +693,9 @@ export const wellbeingDimensions: WellbeingDimension[] = [
 ];
 
 export const statusLabels: Record<WellbeingStatus, string> = {
-  green: "המצב מעולה וחשוב לשמר אותו",
-  yellow: "המצב סביר ודורש תשומת לב",
-  red: "דרוש טיפול דחוף",
+  green: "הכל טוב",
+  yellow: "מצב סביר",
+  red: "נדרש טיפול מיידי",
 };
 
 export function getDimensionById(id: string) {
