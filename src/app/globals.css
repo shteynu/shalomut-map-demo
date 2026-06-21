@@ -539,6 +539,21 @@ textarea {
   max-width: none;
 }
 
+.survey-progress-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(251, 244, 221, 0.92);
+  backdrop-filter: blur(8px);
+  padding: 0.75rem 0;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(56, 56, 56, 0.08);
+}
+
+.survey-progress-sticky .progress-bar {
+  margin: 0.25rem 0 0.35rem;
+}
+
 .progress-bar {
   height: 0.65rem;
   margin: 1.2rem 0 0.5rem;

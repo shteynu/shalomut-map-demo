@@ -53,6 +53,9 @@ export function SurveyFlow({ variant = "internal" }: SurveyFlowProps) {
         <p>
           בחרו את הצבע שמתאר בצורה הטובה ביותר את המצב הנוכחי שלכם. אין צורך בשם, מייל או סיסמה.
         </p>
+      </div>
+
+      <div className="survey-progress-sticky">
         <div className="progress-bar" aria-label={`התקדמות ${progress} אחוז`}>
           <span style={{ width: `${progress}%` }} />
         </div>
