@@ -6,7 +6,7 @@ import { activeRound, getStatusCount, organization } from "@/lib/demo-data";
 const steps = [
   {
     href: "/setup",
-    title: "הגדרת סבב מדידה",
+    title: "הגדרת סבב אבחון",
     body: "פתיחת רבעון, הזנת נתוני רקע וקביעת סף פרטיות להצגת תוצאות.",
     icon: Settings2,
   },
@@ -37,12 +37,12 @@ export default function HomePage() {
     <div className="page stone-page">
       <PageIntro
         eyebrow={`${organization.name}, ${activeRound.period}`}
-        title={`שלום ${organization.managerName}, תמונת הסבב מוכנה`}
-        description="מרכז הניהול מציג את מסלול הפיילוט מקצה לקצה: פתיחת סבב, שאלון אנונימי, מעקב מצרפי ודשבורד שלומות."
+        title={`שלום ${organization.managerName}, תמונת סבב האבחון מוכנה`}
+        description="מרכז הניהול מציג את מסלול הפיילוט מקצה לקצה: פתיחת סבב אבחון, שאלון אנונימי, מעקב מצרפי ודשבורד שלומות."
         actions={
           <>
             <Link className="primary-button" href="/setup">
-              התחלת סבב
+              התחלת סבב אבחון
               <ArrowLeft size={18} aria-hidden="true" />
             </Link>
             <Link className="secondary-button" href="/dashboard">
@@ -53,7 +53,7 @@ export default function HomePage() {
         }
       />
 
-      <section className="metric-grid" aria-label="מדדי סבב">
+      <section className="metric-grid" aria-label="מדדי סבב אבחון">
         <MetricCard className="stone-variant-navy" value={`${activeRound.responseCount}/${activeRound.expectedResponses}`} label="השיבו עד כה" helper={`${responsePercent}% מצוות בית הספר`} />
         <MetricCard className="stone-variant-teal" value={`${activeRound.minimumResponses}`} label="סף פרטיות" helper="מינימום תשובות לפני הצגת תוצאות" />
         <MetricCard className="stone-variant-red" value={`${getStatusCount("red")}`} label="מוקדי טיפול" helper="אבנים אדומות במפה" />

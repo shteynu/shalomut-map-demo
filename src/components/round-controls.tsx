@@ -44,7 +44,7 @@ export function RoundControls() {
         <div className="round-actions">
           <button className="secondary-button" type="button" onClick={() => setClosed(true)}>
             <Lock size={18} aria-hidden="true" />
-            סגירת סבב ידנית
+            סגירת סבב אבחון ידנית
           </button>
           <Link className="primary-button" href="/dashboard">
             <Map size={18} aria-hidden="true" />
@@ -55,7 +55,7 @@ export function RoundControls() {
         {closed ? (
           <div className="closed-note">
             <CheckCircle2 size={18} aria-hidden="true" />
-            הסבב מסומן כסגור בדמו. הדשבורד זמין לצפייה.
+            סבב האבחון מסומן כסגור בדמו. הדשבורד זמין לצפייה.
           </div>
         ) : null}
       </div>

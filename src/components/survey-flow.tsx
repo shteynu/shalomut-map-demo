@@ -36,7 +36,7 @@ export function SurveyFlow({ variant = "internal" }: SurveyFlowProps) {
             <p className="quiet-note">אפשר לסגור את החלון. תודה על המענה.</p>
           ) : (
             <Link className="primary-button" href="/round">
-              חזרה לסטטוס הסבב
+              חזרה לסטטוס סבב האבחון
               <ChevronLeft size={18} aria-hidden="true" />
             </Link>
           )}

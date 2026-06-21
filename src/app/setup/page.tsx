@@ -8,9 +8,9 @@ export default function SetupPage() {
   return (
     <div className="page stone-page">
       <PageIntro
-        eyebrow="הגדרת סבב"
+        eyebrow="הגדרת סבב אבחון"
         title={`פתיחת מדידה עבור ${organization.name}`}
-        description={`הסבב הנוכחי מוגדר עבור ${activeRound.period}. הנתונים כאן מוצגים כרקע לדשבורד ואינם מזהים משיבים.`}
+        description={`סבב האבחון הנוכחי מוגדר עבור ${activeRound.period}. הנתונים כאן מוצגים כרקע לדשבורד ואינם מזהים משיבים.`}
         actions={
           <Link className="secondary-button" href="/survey">
             עריכת שאלון
@@ -22,9 +22,9 @@ export default function SetupPage() {
       <SetupForm />
 
       <div className="next-step-band">
-        <span>לאחר שמירת הסבב ניתן להפיץ את הלינק האנונימי לצוות.</span>
+        <span>לאחר שמירת סבב האבחון ניתן להפיץ את הלינק האנונימי לצוות.</span>
         <Link href="/round">
-          מעבר למעקב סבב
+          מעבר למעקב סבב אבחון
           <ArrowLeft size={16} aria-hidden="true" />
         </Link>
       </div>

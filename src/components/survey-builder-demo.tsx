@@ -58,7 +58,7 @@ function createDraftId(prefix: string) {
 }
 
 export function SurveyBuilderDemo() {
-  const [title, setTitle] = useState("שאלון שלומות צוות - סבב חורף");
+  const [title, setTitle] = useState("שאלון שלומות צוות - סבב אבחון חורף");
   const [audience, setAudience] = useState("כלל צוות ההוראה");
   const [estimatedMinutes, setEstimatedMinutes] = useState(15);
   const [minimumResponses, setMinimumResponses] = useState(activeRound.minimumResponses);
@@ -188,7 +188,7 @@ export function SurveyBuilderDemo() {
             <div className="survey-builder-heading">
               <div>
                 <p className="eyebrow">הגדרות בסיס</p>
-                <h2>תצורת שאלון לסבב</h2>
+                <h2>תצורת שאלון לסבב אבחון</h2>
               </div>
               <span className="status-badge status-green">
                 <Settings2 size={16} aria-hidden="true" />
@@ -268,7 +268,7 @@ export function SurveyBuilderDemo() {
                   <div className="survey-builder-tags">
                     <span className={`status-badge ${question.enabled ? "status-green" : "status-yellow"}`}>
                       <ClipboardList size={15} aria-hidden="true" />
-                      {question.enabled ? "פעילה בסבב" : "מוסתרת מהמשיבים"}
+                      {question.enabled ? "פעילה בסבב האבחון" : "מוסתרת מהמשיבים"}
                     </span>
                     <span className={`status-badge ${question.required ? "status-green" : "status-yellow"}`}>
                       <ShieldCheck size={15} aria-hidden="true" />
@@ -303,7 +303,7 @@ export function SurveyBuilderDemo() {
                         }))
                       }
                     >
-                      {question.enabled ? "להסתיר מהסבב" : "להחזיר לסבב"}
+                      {question.enabled ? "להסתיר מסבב האבחון" : "להחזיר לסבב האבחון"}
                     </button>
                     <button className="ghost-button" type="button" onClick={() => duplicateQuestion(question.id)}>
                       שכפול שאלה

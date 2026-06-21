@@ -8,7 +8,7 @@ export default function RoundPage() {
   return (
     <div className="page stone-page">
       <PageIntro
-        eyebrow="מעקב סבב"
+        eyebrow="מעקב סבב אבחון"
         title={`${organization.name}: ${activeRound.period}`}
         description="מסך המעקב מציג כמות תשובות בלבד. אין בו רשימת משיבים, שמות, מיילים או פרטים מזהים."
         actions={
@@ -19,7 +19,7 @@ export default function RoundPage() {
         }
       />
 
-      <section className="metric-grid" aria-label="נתוני סבב">
+      <section className="metric-grid" aria-label="נתוני סבב אבחון">
         <MetricCard className="stone-variant-navy" value={activeRound.openedAt} label="פתיחה" helper="מועד הפצת הלינק" />
         <MetricCard className="stone-variant-teal" value={activeRound.closesAt} label="סגירה" helper="סיום איסוף מתוכנן" />
         <MetricCard className="stone-variant-orange" value={`${activeRound.responseCount}`} label="תשובות" helper="מספר מצרפי בלבד" />
@@ -29,7 +29,7 @@ export default function RoundPage() {
       <RoundControls />
 
       <div className="next-step-band">
-        <span>אחרי סגירת הסבב, המפה מציגה חוזקות, סיכונים ופירוט לפי ממדים.</span>
+        <span>אחרי סגירת סבב האבחון, המפה מציגה חוזקות, סיכונים ופירוט לפי ממדים.</span>
         <Link href="/dashboard">
           צפייה בדשבורד
           <ArrowLeft size={16} aria-hidden="true" />

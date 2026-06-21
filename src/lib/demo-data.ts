@@ -24,6 +24,9 @@ export type Round = {
     teachingStaff: number;
     sicknessDaysThisQuarter: number;
     newStaffMembers: number;
+    studentCount: number;
+    socioEconomicIndex: number;
+    classesPerGrade: Record<string, number>;
     notes: string;
   };
 };
@@ -97,6 +100,16 @@ export const activeRound: Round = {
     teachingStaff: 34,
     sicknessDaysThisQuarter: 91,
     newStaffMembers: 5,
+    studentCount: 420,
+    socioEconomicIndex: 4,
+    classesPerGrade: {
+      "א": 2,
+      "ב": 2,
+      "ג": 2,
+      "ד": 2,
+      "ה": 3,
+      "ו": 2
+    },
     notes: "שינוי מערכת שעות בחטיבה הצעירה וכניסת צוות חדש בתחילת השנה.",
   },
 };
@@ -352,7 +365,7 @@ export const wellbeingDimensions: WellbeingDimension[] = [
     conceptStatusText: "המצב סביר",
     conceptStatusDirection: "down",
     summary: [
-      "עומס העבודה הוא מוקד הסיכון המרכזי בסבב הנוכחי.",
+      "עומס העבודה הוא מוקד הסיכון המרכזי בסבב האבחון הנוכחי.",
       "הצוות מתאר פער בין היקף המשימות לבין זמן ההתאוששות, בעיקר סביב תקופות הערכה וישיבות.",
     ],
     metrics: [
@@ -539,8 +552,8 @@ export const wellbeingDimensions: WellbeingDimension[] = [
       {
         value: "88",
         label: "ציון ממד",
-        helper: "הגבוה בסבב הנוכחי",
-        highlightText: "המשמעות היא החוזקה הבולטת ביותר בסבב הנוכחי.",
+        helper: "הגבוה בסבב האבחון הנוכחי",
+        highlightText: "המשמעות היא החוזקה הבולטת ביותר בסבב האבחון הנוכחי.",
       },
       {
         value: "91%",

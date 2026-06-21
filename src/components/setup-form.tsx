@@ -49,6 +49,26 @@ export function SetupForm() {
           אנשי צוות חדשים
           <input type="number" defaultValue={activeRound.backgroundInputs.newStaffMembers} />
         </label>
+        <label>
+          מספר תלמידים בבית הספר
+          <input type="number" defaultValue={activeRound.backgroundInputs.studentCount} />
+        </label>
+        <label>
+          מדד טיפוח (דירוג סוציו-אקונומי 1-10)
+          <input type="number" min="1" max="10" defaultValue={activeRound.backgroundInputs.socioEconomicIndex} />
+        </label>
+      </div>
+
+      <div className="form-section">
+        <h3>מספר כיתות בכל שכבה</h3>
+        <div className="grades-grid">
+          {Object.entries(activeRound.backgroundInputs.classesPerGrade).map(([grade, count]) => (
+            <label key={grade} className="grade-label">
+              שכבה {grade}'
+              <input type="number" min="0" defaultValue={count} className="grade-input" />
+            </label>
+          ))}
+        </div>
       </div>
 
       <label>
@@ -59,7 +79,7 @@ export function SetupForm() {
       <div className="form-actions">
         <button className="primary-button" type="submit">
           <Check size={18} aria-hidden="true" />
-          שמירת סבב
+          שמירת סבב אבחון
         </button>
         {saved ? (
           <Link className="secondary-button" href="/round">
@@ -69,7 +89,7 @@ export function SetupForm() {
         ) : null}
       </div>
 
-      {saved ? <p className="success-note">הסבב נשמר והלינק האנונימי מוכן להפצה.</p> : null}
+      {saved ? <p className="success-note">סבב האבחון נשמר והלינק האנונימי מוכן להפצה.</p> : null}
     </form>
   );
 }

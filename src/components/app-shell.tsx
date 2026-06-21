@@ -1,16 +1,21 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { Activity, ClipboardList, Home, Map, Send } from "lucide-react";
 
 const navItems = [
   { href: "/", label: "מרכז ניהול", icon: Home },
-  { href: "/setup", label: "הגדרת סבב", icon: Activity },
-  { href: "/round", label: "מעקב סבב", icon: Send },
+  { href: "/setup", label: "הגדרת סבב אבחון", icon: Activity },
+  { href: "/round", label: "מעקב סבב אבחון", icon: Send },
   { href: "/survey", label: "בניית שאלון", icon: ClipboardList },
   { href: "/dashboard", label: "מפת השלומות", icon: Map },
 ];
 
 export function AppHeader() {
+  const pathname = usePathname() ?? "";
+
   return (
     <header className="site-header">
       <Link href="/" className="brand-mark" aria-label="מפת השלומות - דף הבית">
@@ -26,8 +31,14 @@ export function AppHeader() {
       <nav className="top-nav" aria-label="ניווט ראשי">
         {navItems.map((item) => {
           const Icon = item.icon;
+          const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
           return (
-            <Link key={item.href} href={item.href}>
+            <Link
+              key={item.href}
+              href={item.href}
+              className={isActive ? "active" : ""}
+              aria-current={isActive ? "page" : undefined}
+            >
               <Icon size={16} aria-hidden="true" />
               <span>{item.label}</span>
             </Link>
