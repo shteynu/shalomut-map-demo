@@ -8,9 +8,9 @@ export default function RoundPage() {
   return (
     <div className="page stone-page">
       <PageIntro
-        eyebrow="מעקב סבב אבחון"
-        title={`${organization.name}: ${activeRound.period}`}
-        description="מסך המעקב מציג כמות תשובות בלבד. אין בו רשימת משיבים, שמות, מיילים או פרטים מזהים."
+        eyebrow={`${organization.name}, ${activeRound.period}`}
+        title="מעקב סבב אבחון"
+        description="מסך המעקב מציг כמות תשובות בלבד. אין בו רשימת משיבים, שמות, מיילים או פרטים מזהים."
         actions={
           <Link className="secondary-button" href="/survey">
             ניהול שאלון
@@ -21,9 +21,9 @@ export default function RoundPage() {
 
       <section className="metric-grid" aria-label="נתוני סבב אבחון">
         <MetricCard className="stone-variant-navy" value={activeRound.openedAt} label="פתיחה" helper="מועד הפצת הלינק" />
-        <MetricCard className="stone-variant-teal" value={activeRound.closesAt} label="סגירה" helper="סיום איסוף מתוכנן" />
+        <MetricCard className="stone-variant-green" value={activeRound.closesAt} label="סגירה" helper="סיום איסוף מתוכנן" />
         <MetricCard className="stone-variant-orange" value={`${activeRound.responseCount}`} label="תשובות" helper="מספר מצרפי בלבד" />
-        <MetricCard className="stone-variant-green" value={`${activeRound.minimumResponses}`} label="סף פרטיות" helper="הגנה על אנונימיות" />
+        <MetricCard className="stone-variant-teal" value={`${activeRound.minimumResponses}`} label="סף פרטיות" helper="הגנה על אנונימיות" />
       </section>
 
       <RoundControls />

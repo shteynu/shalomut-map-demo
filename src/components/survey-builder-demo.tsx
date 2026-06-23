@@ -4,7 +4,7 @@ import Link from "next/link";
 import { CheckCircle2, Clipboard, ClipboardList, HelpCircle, Clock3, Copy, Eye, GripVertical, Plus, Settings2, ShieldCheck } from "lucide-react";
 import { useState, type CSSProperties } from "react";
 import { PageIntro } from "@/components/app-shell";
-import { activeRound, responseOptions, surveyQuestions, wellbeingDimensions } from "@/lib/demo-data";
+import { activeRound, organization, responseOptions, surveyQuestions, wellbeingDimensions } from "@/lib/demo-data";
 
 type BuilderQuestion = {
   id: string;
@@ -88,7 +88,7 @@ export function SurveyBuilderDemo() {
       value: activeDimensions,
       label: "מרכיבי שלומות",
       helper: "פריסה על פני כל ממדי הדשבורד",
-      className: "stone-variant-teal",
+      className: "stone-variant-green",
     },
     {
       value: estimatedMinutes,
@@ -100,7 +100,7 @@ export function SurveyBuilderDemo() {
       value: minimumResponses,
       label: "סף פרטיות",
       helper: "תוצאות ייפתחו רק לאחר מינימום משיבים",
-      className: "stone-variant-green",
+      className: "stone-variant-teal",
     },
   ];
 
@@ -149,7 +149,7 @@ export function SurveyBuilderDemo() {
   return (
     <div className="page survey-builder-stone-page">
       <PageIntro
-        eyebrow="בניית שאלון"
+        eyebrow={`${organization.name}, ${activeRound.period} | בניית שאלון`}
         title={title}
         description="מסך זה מדגים עריכת שאלון לפני הפצה: קהל יעד, ניסוח פתיח, שאלות פעילות וקישור המשיבים החיצוני."
         actions={

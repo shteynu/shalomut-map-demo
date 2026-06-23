@@ -8,9 +8,9 @@ export default function SetupPage() {
   return (
     <div className="page stone-page">
       <PageIntro
-        eyebrow="הגדרת סבב אבחון"
-        title={`פתיחת מדידה עבור ${organization.name}`}
-        description={`סבב האבחון הנוכחי מוגדר עבור ${activeRound.period}. הנתונים כאן מוצגים כרקע לדשבורד ואינם מזהים משיבים.`}
+        eyebrow={`${organization.name}, ${activeRound.period}`}
+        title="הגדרת סבב אבחון"
+        description="פתיחת רבעון, הזנת נתוני רקע וקביעת סף פרטיות להצגת תוצאות (הנתונים מוצגים כרקע לדשבורד ואינם מזהים משיבים)."
         actions={
           <Link className="secondary-button" href="/survey">
             עריכת שאלון
