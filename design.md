@@ -14,7 +14,7 @@ colors:
   danger: "#e43e5d"
   surface: "#fffaf0"
   surface-strong: "#fff5d6"
-  muted: "#6f674f"
+  muted: "#383838"
   line: "#e6d9b7"
 typography:
   fontFamily: "Arial, Noto Sans Hebrew, system-ui, sans-serif"
@@ -25,10 +25,11 @@ typography:
   body:
     fontSize: "1.08rem"
     lineHeight: "1.8"
-    color: "#6f674f"
+    color: "#383838"
   eyebrow:
     fontSize: "0.82rem"
-    fontWeight: "800"
+    fontWeight: "900"
+    textTransform: "uppercase"
     color: "#9f6500"
 rounded:
   default: "8px"
@@ -76,7 +77,7 @@ Colors are selected to balance high visual appeal with professional school dashb
 | `navy` | `--navy` | `#2d307e` | Secondary brand focus color, solid icons, or active filters. |
 | `surface` | `--surface` | `#fffaf0` | Card background, input backgrounds, and form panel bodies. |
 | `surface-strong`| `--surface-strong`| `#fff5d6`| Highlighted alert cards, banner bands, or focused form blocks. |
-| `muted` | `--muted` | `#6f674f` | Secondary text, helper labels, captions, and descriptions. |
+| `muted` | `--muted` | `#383838` | Secondary text, helper labels, captions, and descriptions. |
 | `line` | `--line` | `#e6d9b7` | Subtle borders, section dividers, and grid lines. |
 | `success` | `--green` | `#24bf10` | Green stone status (Score 75+): "הכל טוב" (Everything is fine). |
 | `warning` | `--yellow` | `#e49902` | Yellow stone status (Score 50-74): "מצב סביר" (Fair / Needs attention). |
@@ -84,7 +85,7 @@ Colors are selected to balance high visual appeal with professional school dashb
 
 ### Accessibility Guidance
 - Always pair text written in `{colors.ink}` with backgrounds in `{colors.cream}` or `{colors.surface}` to achieve a WCAG AA contrast ratio of over 7:1.
-- Saturated status colors (`success`, `warning`, `danger`) should be used as background blobs with high-contrast text (`#ffffff` or `{colors.ink}`) layered on top.
+- Saturated status colors (`success`, `warning`, `danger`) must be paired with high-contrast `{colors.ink}` (Ink) text layered on top. White text (`#ffffff`) fails WCAG AA contrast requirements on these bright background blobs.
 
 ---
 
@@ -94,19 +95,19 @@ The font scale is tailored for Hebrew letters, which have a blockier, wider form
 
 * **Font Stack:** `"Arial", "Noto Sans Hebrew", system-ui, sans-serif`
 * **Text Flow:** `dir="rtl"` (Right-to-Left).
-* **Headings:** Large headings use ultra-bold weights (`800`) and very tight line-heights (`0.95` to `1.05`) to create a modern, compressed layout.
+* **Headings:** Large headings use ultra-bold weights (`800`) and very tight line-heights (`0.95`) to create a modern, compressed layout.
 
 ### Type scale
 
 * **Hero H1:** `clamp(2.4rem, 6vw, 5.2rem)` | weight: `800` | line-height: `0.95`
   * *Usage:* Screen intros, page headers.
-* **Section H2:** `clamp(1.8rem, 4vw, 2.5rem)` | weight: `700` | line-height: `1.1`
+* **Section H2:** `clamp(1.4rem, 3vw, 1.8rem)` | weight: `800` | line-height: `0.95`
   * *Usage:* Card headers, main layout sub-headings.
-* **Component H3:** `1.25rem` | weight: `700` | line-height: `1.2`
-  * *Usage:* Form sections, card subtitles.
+* **Component H3:** `clamp(1rem, 1.5vw, 1.15rem)` | weight: `800` | line-height: `0.95`
+  * *Usage:* Form sections, card subtitles, recommendation headings.
 * **Body Text:** `1.08rem` | weight: `400` | line-height: `1.8` | color: `{colors.muted}`
   * *Usage:* Long paragraphs, summaries, descriptions.
-* **Eyebrows / Kickers:** `0.82rem` | weight: `800` | line-height: `1.0` | color: `{colors.accent-dark}`
+* **Eyebrows / Kickers:** `0.82rem` | weight: `900` | text-transform: `uppercase` | line-height: `1.0` | color: `{colors.accent-dark}`
   * *Usage:* Small categorizing labels placed directly above main titles.
 
 ---

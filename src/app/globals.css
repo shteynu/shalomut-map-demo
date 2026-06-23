@@ -19,7 +19,7 @@
   --surface: #fffaf0;
   --surface-strong: #fff5d6;
   --ink: #383838;
-  --muted: #6f674f;
+  --muted: #383838;
   --line: #e6d9b7;
   --accent: #e49902;
   --accent-dark: #9f6500;
@@ -40,6 +40,8 @@ html {
   color: var(--ink);
   font-family: var(--font-sans);
   letter-spacing: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
@@ -50,6 +52,16 @@ body {
     linear-gradient(180deg, rgba(255, 250, 240, 0.86), rgba(251, 244, 221, 0.95) 42%),
     var(--cream);
   color: var(--ink);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: 800;
+  line-height: 0.95;
 }
 
 a {
@@ -219,7 +231,8 @@ button:disabled {
   margin: 0;
   color: var(--accent-dark);
   font-size: 0.82rem;
-  font-weight: 800;
+  font-weight: 900;
+  text-transform: uppercase;
 }
 
 .intro-actions,
@@ -614,8 +627,9 @@ textarea {
 
 .question-card h2 {
   margin: 0;
-  font-size: 1.15rem;
-  line-height: 1.55;
+  font-size: clamp(1rem, 1.8vw, 1.15rem);
+  line-height: 0.95;
+  font-weight: 800;
 }
 
 .question-index {
@@ -781,7 +795,7 @@ textarea {
   overflow: visible;
   min-height: 11.2rem;
   border: none;
-  color: white;
+  color: var(--ink);
   box-shadow: var(--survey-stone-shadow);
   display: flex;
   flex-direction: column;
@@ -856,7 +870,7 @@ textarea {
 
 .survey-builder-metric-stone.stone-variant-navy,
 .stone-page .metric-card.stone-variant-navy {
-  background: var(--navy);
+  background: #b2b6f4;
   border-radius: 34% 66% 42% 58% / 38% 34% 66% 62%;
   transform: rotate(-2deg);
 }
@@ -1012,7 +1026,7 @@ textarea {
 .survey-builder-heading h2 {
   margin: 0.25rem 0 0;
   font-size: clamp(1.5rem, 2vw, 1.85rem);
-  line-height: 1.18;
+  line-height: 0.95;
 }
 
 .survey-builder-stone-page .status-badge,
@@ -1099,7 +1113,7 @@ textarea {
   padding: 0.32rem 0.82rem;
   border-radius: 999px;
   background: var(--question-color);
-  color: white;
+  color: var(--ink);
   font-weight: 800;
   box-shadow: 0 14px 26px rgba(56, 56, 56, 0.12);
 }
@@ -1178,18 +1192,18 @@ textarea {
   min-height: 8.3rem;
   border: none;
   border-radius: 34px 42px 30px 38px / 28px 34px 42px 30px;
-  color: white;
+  color: var(--ink);
   box-shadow: 0 18px 34px rgba(56, 56, 56, 0.14);
 }
 
 .survey-builder-legend-panel .legend-card strong,
 .survey-builder-legend-panel .legend-card span {
-  color: white;
+  color: var(--ink);
 }
 
 .survey-builder-legend-panel .legend-card span {
   margin-top: 0.5rem;
-  color: rgba(255, 255, 255, 0.92);
+  color: rgba(56, 56, 56, 0.92);
 }
 
 .survey-builder-legend-panel .legend-card.option-green,
@@ -1275,7 +1289,7 @@ textarea {
   transform: rotate(var(--stone-rotate));
   border: 2px solid rgba(56, 56, 56, 0.22);
   border-radius: 48% 52% 43% 57%;
-  color: white;
+  color: var(--ink);
   font-weight: 900;
   text-align: center;
   box-shadow: 0 16px 32px rgba(56, 56, 56, 0.16);
@@ -1326,7 +1340,7 @@ textarea {
 .detail-hero h2,
 .content-section h2 {
   margin: 0;
-  font-size: 1.8rem;
+  font-size: clamp(1.4rem, 3vw, 1.8rem);
 }
 
 .stone-detail-panel p,
@@ -1440,7 +1454,7 @@ textarea {
 
 .recommendation-card h3 {
   margin: 0 0 0.35rem;
-  font-size: 1.1rem;
+  font-size: clamp(1rem, 1.5vw, 1.15rem);
 }
 
 .dashboard-mock-page {
@@ -1487,8 +1501,8 @@ textarea {
 .dashboard-heading h1 {
   margin: 0;
   font-size: clamp(2.4rem, 4.5vw, 3.6rem);
-  font-weight: 900;
-  line-height: 0.94;
+  font-weight: 800;
+  line-height: 0.95;
 }
 
 .dashboard-heading p {
@@ -1528,7 +1542,7 @@ textarea {
 .dashboard-map-blob {
   position: absolute;
   display: block;
-  color: white;
+  color: var(--ink);
   box-shadow: 0 26px 54px rgba(56, 56, 56, 0.16);
   cursor: grab;
   user-select: none;
@@ -1614,7 +1628,7 @@ textarea {
   margin: 2.2rem auto 0;
   padding: clamp(2.5rem, 5vw, 4.5rem);
   border-radius: 36% 64% 40% 60% / 28% 28% 72% 72%;
-  color: white;
+  color: var(--ink);
   box-shadow: 0 26px 56px rgba(56, 56, 56, 0.18);
   transition: filter 160ms ease, box-shadow 160ms ease;
   cursor: pointer;
@@ -1673,7 +1687,7 @@ textarea {
 
 .dashboard-pill-button-primary {
   background: var(--accent);
-  color: white;
+  color: var(--ink);
 }
 
 .dashboard-pill-button-secondary {
@@ -1697,7 +1711,7 @@ textarea {
   padding: 2.2rem 3.4rem;
   border-radius: 42% 58% 38% 62% / 38% 34% 66% 62%;
   background: var(--accent);
-  color: white;
+  color: var(--ink);
   text-align: center;
   box-shadow: 0 24px 48px rgba(56, 56, 56, 0.17);
   transition: filter 160ms ease, box-shadow 160ms ease;
@@ -1751,7 +1765,7 @@ textarea {
   align-content: center;
   padding: 2.2rem 2.5rem;
   background: var(--accent);
-  color: white;
+  color: var(--ink);
   text-align: center;
   box-shadow: 0 24px 48px rgba(56, 56, 56, 0.17);
   transition: filter 160ms ease, box-shadow 160ms ease;
@@ -1766,7 +1780,8 @@ textarea {
 .dashboard-recommendation-blob h2 {
   margin: 0 0 0.8rem;
   font-size: clamp(1.3rem, 1.75vw, 1.95rem);
-  line-height: 1.24;
+  font-weight: 800;
+  line-height: 0.95;
 }
 
 .dashboard-recommendation-blob p {
@@ -2626,19 +2641,19 @@ textarea {
 .stone-page .legend-row .legend-card {
   border: none;
   border-radius: 34px 42px 30px 38px / 28px 34px 42px 30px;
-  color: white;
+  color: var(--ink);
   box-shadow: 0 18px 34px rgba(56, 56, 56, 0.14);
   transition: transform 150ms ease;
 }
 
 .stone-page .legend-row .legend-card strong,
 .stone-page .legend-row .legend-card span {
-  color: white;
+  color: var(--ink);
 }
 
 .stone-page .legend-row .legend-card span {
   margin-top: 0.5rem;
-  color: rgba(255, 255, 255, 0.92);
+  color: rgba(56, 56, 56, 0.92);
 }
 
 .stone-page .legend-row .legend-card.option-green {
@@ -2702,7 +2717,7 @@ textarea {
   padding: 0.2rem 0.7rem;
   border-radius: 999px;
   background: var(--question-color);
-  color: white;
+  color: var(--ink);
   font-weight: 800;
   box-shadow: 0 10px 22px rgba(56, 56, 56, 0.08);
 }
@@ -2725,19 +2740,19 @@ textarea {
 
 .stone-page .answer-button.option-green[aria-pressed="true"] {
   background: var(--green);
-  color: white;
+  color: var(--ink);
   border-color: transparent;
 }
 
 .stone-page .answer-button.option-yellow[aria-pressed="true"] {
   background: var(--accent);
-  color: white;
+  color: var(--ink);
   border-color: transparent;
 }
 
 .stone-page .answer-button.option-red[aria-pressed="true"] {
   background: var(--red);
-  color: white;
+  color: var(--ink);
   border-color: transparent;
 }
 
@@ -2818,7 +2833,7 @@ textarea {
 .stone-page .page-intro h1 {
   font-size: clamp(1.8rem, 3.2vw, 2.5rem);
   max-width: 40ch;
-  line-height: 1.15;
+  line-height: 0.95;
   margin-bottom: 0.3rem;
 }
 
@@ -2877,7 +2892,7 @@ textarea {
 }
 
 .stone-page .privacy-band h2 {
-  font-size: 1.15rem;
+  font-size: clamp(1rem, 1.6vw, 1.15rem);
   margin: 0;
 }
 
@@ -2957,7 +2972,7 @@ textarea {
 
 .stone-page .form-section h3 {
   margin: 0;
-  font-size: 0.95rem;
+  font-size: clamp(0.85rem, 1.2vw, 0.98rem);
   color: #574f3a;
   font-weight: 800;
 }

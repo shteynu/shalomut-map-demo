@@ -23,7 +23,7 @@ export default function RoundPage() {
         <MetricCard className="stone-variant-navy" value={activeRound.openedAt} label="פתיחה" helper="מועד הפצת הלינק" />
         <MetricCard className="stone-variant-teal" value={activeRound.closesAt} label="סגירה" helper="סיום איסוף מתוכנן" />
         <MetricCard className="stone-variant-orange" value={`${activeRound.responseCount}`} label="תשובות" helper="מספר מצרפי בלבד" />
-        <MetricCard className="stone-variant-green" value={`${activeRound.minimumResponses}`} label="סף הצגה" helper="הגנה על אנונימיות" />
+        <MetricCard className="stone-variant-green" value={`${activeRound.minimumResponses}`} label="סף פרטיות" helper="הגנה על אנונימיות" />
       </section>
 
       <RoundControls />
