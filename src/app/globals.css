@@ -1630,11 +1630,12 @@ textarea {
   border-radius: 36% 64% 40% 60% / 28% 28% 72% 72%;
   color: var(--ink);
   box-shadow: 0 26px 56px rgba(56, 56, 56, 0.18);
-  transition: filter 160ms ease, box-shadow 160ms ease;
+  transition: transform 160ms ease, filter 160ms ease, box-shadow 160ms ease;
   cursor: pointer;
 }
 
 .dashboard-single-blob:hover {
+  transform: scale(1.02) translateY(-4px);
   filter: brightness(1.03) saturate(1.02);
   box-shadow: 0 32px 64px rgba(56, 56, 56, 0.24);
 }
@@ -1714,21 +1715,26 @@ textarea {
   color: var(--ink);
   text-align: center;
   box-shadow: 0 24px 48px rgba(56, 56, 56, 0.17);
-  transition: filter 160ms ease, box-shadow 160ms ease;
+  transform: translateY(calc(var(--base-ty, 0px) + var(--hover-ty, 0px))) rotate(var(--base-r, 0deg)) scale(var(--hover-s, 1));
+  transition: transform 160ms ease, filter 160ms ease, box-shadow 160ms ease;
   cursor: pointer;
 }
 
 .dashboard-metric-blob:hover {
+  --hover-ty: -4px;
+  --hover-s: 1.02;
   filter: brightness(1.05) saturate(1.02);
   box-shadow: 0 30px 60px rgba(56, 56, 56, 0.24);
 }
 
 .dashboard-metric-blob:nth-child(1) {
-  transform: translateY(-0.5rem) rotate(2deg);
+  --base-ty: -0.5rem;
+  --base-r: 2deg;
 }
 
 .dashboard-metric-blob:nth-child(2) {
-  transform: translateY(1.4rem) rotate(-4deg);
+  --base-ty: 1.4rem;
+  --base-r: -4deg;
 }
 
 .dashboard-metric-blob strong {
@@ -1768,11 +1774,14 @@ textarea {
   color: var(--ink);
   text-align: center;
   box-shadow: 0 24px 48px rgba(56, 56, 56, 0.17);
-  transition: filter 160ms ease, box-shadow 160ms ease;
+  transform: translateY(calc(var(--base-ty, 0px) + var(--hover-ty, 0px))) rotate(var(--base-r, 0deg)) scale(var(--hover-s, 1));
+  transition: transform 160ms ease, filter 160ms ease, box-shadow 160ms ease;
   cursor: pointer;
 }
 
 .dashboard-recommendation-blob:hover {
+  --hover-ty: -4px;
+  --hover-s: 1.02;
   filter: brightness(1.05) saturate(1.02);
   box-shadow: 0 30px 60px rgba(56, 56, 56, 0.24);
 }
@@ -1794,21 +1803,21 @@ textarea {
   grid-column: 1 / span 3;
   min-height: 13.6rem;
   border-radius: 42% 58% 48% 52% / 38% 28% 72% 62%;
-  transform: rotate(-4deg);
+  --base-r: -4deg;
 }
 
 .dashboard-recommendation-blob-top-right {
   grid-column: 4 / span 3;
   min-height: 13.6rem;
   border-radius: 38% 62% 43% 57% / 36% 32% 68% 64%;
-  transform: rotate(2deg);
+  --base-r: 2deg;
 }
 
 .dashboard-recommendation-blob-bottom-left {
   grid-column: 1 / span 2;
   min-height: 15.8rem;
   border-radius: 39% 61% 45% 55% / 42% 30% 70% 58%;
-  transform: rotate(-2deg);
+  --base-r: -2deg;
 }
 
 .dashboard-recommendation-blob-bottom-center {
@@ -1823,7 +1832,7 @@ textarea {
   min-height: 15rem;
   margin-top: 0.8rem;
   border-radius: 37% 63% 41% 59% / 36% 32% 68% 64%;
-  transform: rotate(2deg);
+  --base-r: 2deg;
 }
 
 .dashboard-recommendation-blob-generic {
