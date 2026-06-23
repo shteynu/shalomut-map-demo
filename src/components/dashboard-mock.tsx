@@ -207,7 +207,7 @@ export function DashboardMetricsPage({ dimension }: { dimension: WellbeingDimens
           className="dashboard-pill-button dashboard-pill-button-primary"
           href={`/dashboard/${dimension.id}/recommendations`}
         >
-          המלצות לשיפור
+          מטרות ויעדים
           <Lightbulb size={22} aria-hidden="true" />
         </Link>
         <Link className="dashboard-pill-button dashboard-pill-button-secondary" href="/dashboard">
@@ -225,11 +225,11 @@ export function DashboardRecommendationsPage({ dimension }: { dimension: Wellbei
 
   return (
     <div className="dashboard-mock-page dashboard-recommendations-screen">
-      <DashboardHeading title={`המלצות לשיפור | ${dimension.conceptLabel}`} />
+      <DashboardHeading title={`מטרות ויעדים | ${dimension.conceptLabel}`} />
 
       <section
         className={`dashboard-recommendations-stage${isFiveItemLayout ? " is-five-items" : " is-generic-items"}`}
-        aria-label={`המלצות לשיפור עבור ${dimension.conceptLabel}`}
+        aria-label={`מטרות ויעדים עבור ${dimension.conceptLabel}`}
       >
         {recommendations.map((recommendation, index) => (
           <RecommendationBlob
