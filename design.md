@@ -12,27 +12,48 @@ colors:
   success: "#24bf10"
   warning: "#e49902"
   danger: "#e43e5d"
+  danger-surface: "#cf2c4e"
+  on-danger: "#ffffff"
+  pastel-ink: "#504936"
+  success-ink: "#1e7b17"
+  warning-ink: "#8a5800"
+  danger-ink: "#a8203d"
+  teal-surface: "#29b6dd"
   surface: "#fffaf0"
   surface-strong: "#fff5d6"
-  muted: "#383838"
+  surface-panel: "rgba(255, 250, 240, 0.88)"
+  surface-panel-strong: "rgba(255, 250, 240, 0.96)"
+  muted: "#6f674f"
   line: "#e6d9b7"
+  border-soft: "rgba(56, 56, 56, 0.1)"
+  pastel-yellow: "#fef1c7"
+  pastel-lavender: "#e1e7ff"
+  pastel-green: "#d4ebcf"
+  pastel-mint: "#ccfbf1"
+  pastel-peach: "#ffe1cc"
+  pastel-sky: "#d6ecfb"
+  pastel-pink: "#fde7f3"
+  pastel-lilac: "#eee4fb"
 typography:
-  fontFamily: "Arial, Noto Sans Hebrew, system-ui, sans-serif"
+  fontFamily: "Noto Sans Hebrew, Arial, system-ui, sans-serif"
   h1:
     fontSize: "clamp(2.4rem, 6vw, 5.2rem)"
     fontWeight: "800"
-    lineHeight: "0.95"
+    lineHeight: "1.08"
   body:
     fontSize: "1.08rem"
     lineHeight: "1.8"
     color: "#383838"
   eyebrow:
-    fontSize: "0.82rem"
-    fontWeight: "900"
-    textTransform: "uppercase"
+    fontSize: "0.78rem"
+    fontWeight: "800"
     color: "#9f6500"
 rounded:
   default: "8px"
+  control: "8px"
+  panel: "14px"
+  panel-organic: "18px 24px 16px 22px / 22px 16px 20px 18px"
+  organic-mobile: "18px"
   pill: "999px"
   header: "24px 38px 24px 38px / 32px 24px 32px 24px"
   organic-stone:
@@ -47,6 +68,16 @@ rounded:
 spacing:
   container: "min(1180px, calc(100% - 2rem))"
   page-padding: "clamp(1.4rem, 3vw, 3.5rem) 0 4rem"
+elevation:
+  shadow: "0 6px 14px rgba(70, 56, 21, 0.08)"
+  shadow-ambient: "0 4px 10px rgba(70, 56, 21, 0.07)"
+  shadow-raised: "0 8px 18px rgba(70, 56, 21, 0.09)"
+  shadow-stone: "0 14px 32px rgba(70, 56, 21, 0.12)"
+zIndex:
+  sticky: 20
+  floating: 30
+  popover: 80
+  tooltip: 90
 ---
 
 # Overview
@@ -77,15 +108,20 @@ Colors are selected to balance high visual appeal with professional school dashb
 | `navy` | `--navy` | `#2d307e` | Secondary brand focus color, solid icons, or active filters. |
 | `surface` | `--surface` | `#fffaf0` | Card background, input backgrounds, and form panel bodies. |
 | `surface-strong`| `--surface-strong`| `#fff5d6`| Highlighted alert cards, banner bands, or focused form blocks. |
+| `surface-panel` | `--surface-panel` | `rgba(255, 250, 240, 0.88)` | Standard product panels where the task should stay quiet. |
+| `surface-panel-strong` | `--surface-panel-strong` | `rgba(255, 250, 240, 0.96)` | Compact rows and repeated editable items. |
 | `muted` | `--muted` | `#383838` | Secondary text, helper labels, captions, and descriptions. |
 | `line` | `--line` | `#e6d9b7` | Subtle borders, section dividers, and grid lines. |
+| `border-soft` | `--border-soft` | `rgba(56, 56, 56, 0.1)` | Product-panel border that pairs with low elevation. |
 | `success` | `--green` | `#24bf10` | Green stone status (Score 75+): "הכל טוב" (Everything is fine). |
 | `warning` | `--yellow` | `#e49902` | Yellow stone status (Score 50-74): "מצב סביר" (Fair / Needs attention). |
 | `danger` | `--red` | `#e43e5d` | Red stone status (Score <50): "נדרש טיפול מיידי" (Requires immediate action). |
 
 ### Accessibility Guidance
 - Always pair text written in `{colors.ink}` with backgrounds in `{colors.cream}` or `{colors.surface}` to achieve a WCAG AA contrast ratio of over 7:1.
-- Saturated status colors (`success`, `warning`, `danger`) must be paired with high-contrast `{colors.ink}` (Ink) text layered on top. White text (`#ffffff`) fails WCAG AA contrast requirements on these bright background blobs.
+- Saturated status colors `success` (#24bf10) and `warning` (#e49902) must be paired with `{colors.ink}` text (measured 4.7:1 and 4.9:1). White text fails WCAG AA on them.
+- The bright `danger` (#e43e5d) passes AA with **neither** ink (2.85:1) nor white (4.1:1). Any red surface that carries text uses `danger-surface` (#cf2c4e) with `on-danger` white text (5.1:1). Bright `danger` is reserved for non-text accents (dots, borders).
+- Teal surfaces that carry text use `teal-surface` (#29b6dd) with ink (4.9:1); the brand `teal` (#05a4cd) with ink is only 4.0:1 and stays non-text.
 
 ---
 
@@ -93,22 +129,22 @@ Colors are selected to balance high visual appeal with professional school dashb
 
 The font scale is tailored for Hebrew letters, which have a blockier, wider form factor than Latin characters. 
 
-* **Font Stack:** `"Arial", "Noto Sans Hebrew", system-ui, sans-serif`
+* **Font Stack:** `"Noto Sans Hebrew", "Arial", system-ui, sans-serif`
 * **Text Flow:** `dir="rtl"` (Right-to-Left).
-* **Headings:** Large headings use ultra-bold weights (`800`) and very tight line-heights (`0.95`) to create a modern, compressed layout.
+* **Headings:** Large headings use ultra-bold weights (`800`) with line-height `1.12` — Hebrew ascenders (lamed) and final-letter descenders collide below ~1.1, so tighter values are forbidden.
 
 ### Type scale
 
-* **Hero H1:** `clamp(2.4rem, 6vw, 5.2rem)` | weight: `800` | line-height: `0.95`
+* **Hero H1:** `clamp(2.4rem, 6vw, 5.2rem)` | weight: `800` | line-height: `1.08`
   * *Usage:* Screen intros, page headers.
-* **Section H2:** `clamp(1.4rem, 3vw, 1.8rem)` | weight: `800` | line-height: `0.95`
+* **Section H2:** `clamp(1.4rem, 3vw, 1.8rem)` | weight: `800` | line-height: `1.12`
   * *Usage:* Card headers, main layout sub-headings.
-* **Component H3:** `clamp(1rem, 1.5vw, 1.15rem)` | weight: `800` | line-height: `0.95`
+* **Component H3:** `clamp(1rem, 1.5vw, 1.15rem)` | weight: `800` | line-height: `1.12`
   * *Usage:* Form sections, card subtitles, recommendation headings.
 * **Body Text:** `1.08rem` | weight: `400` | line-height: `1.8` | color: `{colors.muted}`
   * *Usage:* Long paragraphs, summaries, descriptions.
-* **Eyebrows / Kickers:** `0.82rem` | weight: `900` | text-transform: `uppercase` | line-height: `1.0` | color: `{colors.accent-dark}`
-  * *Usage:* Small categorizing labels placed directly above main titles.
+* **Eyebrows / Kickers:** `0.78rem` | weight: `800` | line-height: `1.0` | color: `{colors.accent-dark}`
+  * *Usage:* Small categorizing labels above main titles. Never uppercase and never letter-spaced — both are dead styles in Hebrew.
 
 ---
 
@@ -130,13 +166,20 @@ Layout structures support responsive viewport sizes and adapt dynamically using 
 The signature element of the design system is the **asymmetric rounded shapes**, giving panels and cards an organic look.
 
 ### Border-Radius Rules
-- **Standard Cards / Headers:** Rather than standard circular borders, cards use a skewed border-radius using the slash (`/`) CSS shorthand to define horizontal and vertical radii independently:
+- **Controls:** Buttons, inputs, compact rows, and editable survey rows use `--radius-control` (`8px`) or `--radius-panel` (`14px`). These product surfaces should feel familiar and efficient.
+- **Product Panels:** Admin panels use `--radius-panel-organic` (`18px 24px 16px 22px / 22px 16px 20px 18px`) when they need the Shalomut tone without becoming stones.
+- **Headers / Feature Panels:** Large feature panels and headers may use the stronger header radius:
   ```css
   border-radius: 24px 38px 24px 38px / 32px 24px 32px 24px;
   ```
 - **Stone Blobs:** The interactive map "stones" use extreme percentage values to create irregular oval-like shapes:
   - *Example (Self-Expression Stone):* `border-radius: 44% 56% 52% 48% / 48% 38% 62% 52%`
   - *Example (Social Resource Stone):* `border-radius: 36% 64% 40% 60% / 44% 34% 66% 56%`
+
+### Elevation Rules
+- Ordinary product panels pair a soft border with `--shadow` or `--shadow-ambient`; do not combine `1px` borders with wide decorative blur.
+- Signature stones, dashboard blobs, and floating stat pebbles may use `--shadow-stone` because they are the product metaphor, not standard cards.
+- Semantic stacking is tokenized: `--z-sticky`, `--z-floating`, `--z-popover`, and `--z-tooltip`. Avoid arbitrary values such as `9999`.
 
 ---
 
@@ -163,14 +206,31 @@ Displays key performance/privacy metrics.
   * `.stone-variant-green`: Success green highlight.
 
 ### 3. Interactive Map Stone (`.dashboard-map-blob`)
-An interactive component rendered inside the map canvas.
+An interactive component rendered inside the map canvas (dotted-paper background).
 * **Properties:**
-  * Draggable by cursor/touch on desktop viewports.
+  * Draggable by cursor/touch on desktop viewports; a reset button appears once the layout is customized.
   * Uses CSS variables `--drag-x` and `--drag-y` to persist offsets via local storage.
-  * Positioned absolutely on the map canvas using `{colors.success}`, `{colors.warning}`, or `{colors.danger}` backgrounds.
-  * Rotated slightly to mimic scattered stones.
-  * Renders a large plus symbol (`+`) inside as an invite to click.
-  * Houses a labels section: Bold Dimension Title + Subtitle + Status text.
+  * Positioned absolutely on the map canvas using one of three soft status surfaces: green, yellow, or red/pink.
+  * Status is carried both by the stone surface and by a small `.status-dot` plus explicit status label, so the map does not rely on color alone.
+  * Rotated slightly to mimic scattered stones; shows dimension icon, name, and score (`NN%`).
+  * Renders a small plus symbol (`+`) as an invite to click through to the dimension page.
+
+### 4. Stat Stone (`.stat-stone`) & Action Card (`.action-card`)
+Dashboard home building blocks.
+* **Stat Stone:** pastel pebble (`organic-shape-1..4`) with a large value, label, and helper; floats gently (`gentle-float`, 4.5s ease-in-out, staggered delays; paused and lifted on hover, fully disabled under `prefers-reduced-motion`).
+* **Action Card:** surface card with icon circle, copy, «מעבר למסך» link, and a blurred pastel glow blob behind the leading corner.
+
+### 5. Score Ring (`ScoreRing`)
+SVG progress ring for the overall wellbeing score: navy track at 18% opacity, teal fill, sweeps counter-clockwise from 12 o'clock (RTL reading direction).
+
+### 6. Survey Answer Stones (`.answer-stone`)
+The respondent survey shows one question per screen with three large answer stones: pastel fill + status-colored border + face icon (Smile / Meh / Frown). Selection auto-advances after 260ms; the previous-question button lets respondents revise.
+
+### 7. Survey Builder (`.survey-builder-*`)
+The admin builder keeps the full 8-dimension / 24-question model but presents questions through dimension filter pills. Summary metric stones retain the organic metaphor; repeated editable question rows use compact product-panel geometry and icon actions with accessible labels/tooltips.
+
+### 8. Dashboard Detail Suite
+Dimension detail, metrics, and recommendations stay fullscreen and no-header. Metrics display a label chip plus primary/secondary visual emphasis. Recommendations use priority chips ("יעד ראשון", "יעד 2"...) so principals can identify the next action without relying on shape or color alone.
 
 ---
 
@@ -179,9 +239,13 @@ An interactive component rendered inside the map canvas.
 ### Do:
 - **Do** align all text layouts to the right (`text-align: right`) and ensure arrows point left for forwarding movements (`←` or Lucide `<ArrowLeft />`).
 - **Do** use organic border-radius values (`border-radius: 24px 38px 24px 38px / 32px 24px 32px 24px`) for card and container modules.
+- **Do** reserve extreme organic radii for stones/blobs and use the quieter panel/control radii for forms, rows, and repeated admin items.
+- **Do** use semantic z-index tokens for sticky headers, floating map controls, popovers, and tooltips.
 - **Do** enforce privacy thresholds. When building views that display data, verify if the response count is below the minimum threshold before displaying results.
 
 ### Don't:
 - **Don't** use standard Tailwind CSS gray-scales (such as `bg-gray-100`, `text-gray-900`). Always map to `{colors.cream}`, `{colors.surface}`, `{colors.muted}`, or `{colors.ink}`.
 - **Don't** align components strictly to clean rectangular grids on the wellbeing dashboard. The wellbeing map must look scattered, organic, and hand-placed.
 - **Don't** use animations with heavy spring metrics. Keep transitions smooth and subtle (`transition: transform 150ms ease`).
+- **Don't** pair soft 1px borders with wide decorative shadows on standard product panels.
+- **Don't** use arbitrary z-index values like `9999`; add or reuse a semantic stacking token.

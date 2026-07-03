@@ -1,12 +1,43 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect, useRef } from "react";
-import { BarChart3, ChevronLeft, House, Lightbulb, MousePointer2, Move } from "lucide-react";
+import { useEffect, useRef, type CSSProperties } from "react";
+import {
+  ArrowLeft,
+  BarChart3,
+  ChevronRight,
+  Download,
+  House,
+  Info,
+  Lightbulb,
+  LockKeyhole,
+  MousePointer2,
+  Move,
+  type LucideIcon,
+} from "lucide-react";
 import { DashboardMapInteractive } from "@/components/dashboard-map-interactive";
-import { activeRound, organization, type ResponseMetric, type WellbeingDimension } from "@/lib/demo-data";
+import { ScoreRing } from "@/components/score-ring";
+import {
+  activeRound,
+  getDimensionSurface,
+  organization,
+  overallScore,
+  statusLabels,
+  type ResponseMetric,
+  type WellbeingDimension,
+} from "@/lib/demo-data";
+import { DimensionIcon } from "@/components/dimension-icon";
+import {
+  getDashboardDetailActions,
+  getDashboardMetricsActions,
+  getDashboardRecommendationsActions,
+  getNavigationAction,
+  navigationLabels,
+  type DashboardActionId,
+  type DashboardNavigationAction,
+} from "@/lib/navigation";
 
-function useBlobFit(dependencies: any[]) {
+function useBlobFit(dependencyKey: string) {
   const containerRef = useRef<HTMLDivElement | HTMLElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
 
@@ -51,7 +82,7 @@ function useBlobFit(dependencies: any[]) {
     return () => {
       resizeObserver.disconnect();
     };
-  }, dependencies);
+  }, [dependencyKey]);
 
   return { containerRef, contentRef };
 }
@@ -64,18 +95,62 @@ const recommendationBlobClasses = [
   "dashboard-recommendation-blob dashboard-recommendation-blob-bottom-right",
 ];
 
+const dashboardActionIcons: Record<DashboardActionId, LucideIcon> = {
+  dimensionMetrics: BarChart3,
+  dimensionRecommendations: Lightbulb,
+  dashboardMap: ChevronRight,
+};
+
+function DashboardHomeLink() {
+  const backToMainAction = getNavigationAction("backToMain");
+
+  return (
+    <Link className="dashboard-home-link" href={backToMainAction.href} aria-label={backToMainAction.label}>
+      <House size={19} aria-hidden="true" />
+      <span>{backToMainAction.label}</span>
+    </Link>
+  );
+}
+
+function DashboardCtaRow({ actions, center = false }: { actions: DashboardNavigationAction[]; center?: boolean }) {
+  return (
+    <nav className={`dashboard-cta-row${center ? " dashboard-cta-row-center" : ""}`} aria-label="ניווט מסך">
+      {actions.map((action) => {
+        const Icon = dashboardActionIcons[action.id];
+        return (
+          <Link
+            key={`${action.href}-${action.label}`}
+            className={`dashboard-pill-button dashboard-pill-button-${action.variant}`}
+            href={action.href}
+          >
+            {action.label}
+            <Icon size={22} aria-hidden="true" />
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
 function DashboardHeading({ title }: { title: string }) {
   return (
     <header className="dashboard-heading">
-      <Link className="dashboard-home-link" href="/" aria-label="חזרה למסך הראשי">
-        <House size={19} aria-hidden="true" />
-        <span>חזרה למסך הראשי</span>
-      </Link>
+      <DashboardHomeLink />
       <h1>{title}</h1>
       <p>
         {organization.name}, {activeRound.period}
       </p>
     </header>
+  );
+}
+
+function DimensionIdentityChip({ dimension }: { dimension: WellbeingDimension }) {
+  return (
+    <div className="dashboard-dimension-chip" aria-label={`${dimension.conceptLabel}, ${statusLabels[dimension.status]}`}>
+      <DimensionIcon dimensionId={dimension.id} size={18} />
+      <span>{dimension.conceptLabel}</span>
+      <small>{statusLabels[dimension.status]}</small>
+    </div>
   );
 }
 
@@ -99,20 +174,31 @@ function getDisplayRecommendations(dimension: WellbeingDimension) {
   return dimension.recommendations;
 }
 
-function MetricBlob({ metric, color, dimensionId }: { metric: ResponseMetric; color?: string; dimensionId: string }) {
-  const { containerRef, contentRef } = useBlobFit([metric]);
+function MetricBlob({
+  metric,
+  color,
+  emphasis = "secondary",
+  onRed = false,
+}: {
+  metric: ResponseMetric;
+  color?: string;
+  emphasis?: "primary" | "secondary";
+  onRed?: boolean;
+}) {
+  const fitKey = `${metric.label}-${metric.value}-${metric.highlightText ?? metric.helper}`;
+  const { containerRef, contentRef } = useBlobFit(fitKey);
   return (
-    <Link
-      href={`/dashboard/${dimensionId}/recommendations`}
+    <article
       ref={containerRef as any}
-      className="dashboard-metric-blob"
-      style={{ backgroundColor: color, textDecoration: "none" }}
+      className={`dashboard-metric-blob dashboard-metric-blob-${emphasis}${onRed ? " is-on-red" : ""}`}
+      style={{ "--dimension-surface": color } as CSSProperties}
     >
       <div ref={contentRef as any} style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
+        <span className="dashboard-metric-label">{metric.label}</span>
         <strong>{metric.value}</strong>
         <p>{metric.highlightText ?? metric.helper}</p>
       </div>
-    </Link>
+    </article>
   );
 }
 
@@ -120,101 +206,173 @@ function RecommendationBlob({
   recommendation,
   className,
   color,
+  priority,
+  featured = false,
+  onRed = false,
 }: {
   recommendation: { title: string; body: string };
   className: string;
   color?: string;
+  priority: number;
+  featured?: boolean;
+  onRed?: boolean;
 }) {
-  const { containerRef, contentRef } = useBlobFit([recommendation]);
+  const { containerRef, contentRef } = useBlobFit(`${recommendation.title}-${recommendation.body}`);
   return (
-    <Link
-      href="/dashboard"
+    <article
       ref={containerRef as any}
-      className={className}
-      style={{ backgroundColor: color, textDecoration: "none" }}
+      className={`${className}${featured ? " is-featured" : ""}${onRed ? " is-on-red" : ""}`}
+      style={{ "--dimension-surface": color } as CSSProperties}
     >
       <div ref={contentRef as any} style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
+        <span className="dashboard-recommendation-priority">{priority === 1 ? "יעד ראשון" : `יעד ${priority}`}</span>
         <h2>{recommendation.title}</h2>
         <p>{recommendation.body}</p>
       </div>
-    </Link>
+    </article>
+  );
+}
+
+function DashboardMapLocked() {
+  const remaining = activeRound.minimumResponses - activeRound.responseCount;
+  const distributeSurveyAction = getNavigationAction("distributeSurvey");
+
+  return (
+    <section className="map-locked-stone" aria-label="המפה נעולה עד להגעה לסף הפרטיות">
+      <LockKeyhole size={42} aria-hidden="true" />
+      <h2>המפה עדיין נעולה</h2>
+      <span className="map-locked-count">
+        <strong>{activeRound.responseCount}</strong>
+        <span>מתוך {activeRound.minimumResponses} תשובות נדרשות</span>
+      </span>
+      <p>
+        עוד {remaining} תשובות והמפה תיפתח. הסף הזה שומר על האנונימיות של הצוות: התוצאות מוצגות רק
+        כשאי אפשר לזהות משיב בודד. בינתיים מוצג מספר המשיבים הכללי בלבד.
+      </p>
+      <Link className="primary-button" href={distributeSurveyAction.href}>
+        {distributeSurveyAction.label}
+        <ArrowLeft size={18} aria-hidden="true" />
+      </Link>
+    </section>
   );
 }
 
 export function DashboardMapPage() {
-  return (
-    <div className="dashboard-mock-page">
-      <DashboardHeading title="מפת השלומות" />
-      <div className="dashboard-map-hint" aria-label="הנחיית שימוש במפה">
-        <Move className="hint-icon-desktop" size={18} aria-hidden="true" />
-        <MousePointer2 className="hint-icon-mobile" size={18} aria-hidden="true" />
-        <span className="hint-text-desktop">גררו את האבנים כדי לסדר את המפה, או לחצו על אבן כדי לפתוח פירוט.</span>
-        <span className="hint-text-mobile">לחצו על אבן כדי לפתוח פירוט.</span>
+  const isLocked = activeRound.responseCount < activeRound.minimumResponses;
+
+  if (isLocked) {
+    return (
+      <div className="dashboard-mock-page stone-page">
+        <DashboardHeading title="מפת השלומות" />
+        <DashboardMapLocked />
       </div>
-      <DashboardMapInteractive />
+    );
+  }
+
+  return (
+    <div className="dashboard-mock-page stone-page dashboard-map-screen">
+      <DashboardHomeLink />
+
+      <div className="dashboard-map-layout">
+        <aside className="map-sidebar" aria-label="סיכום מצב נוכחי">
+          <p className="eyebrow">מצב נוכחי</p>
+          <h1>מפת השלומות</h1>
+          <p className="map-sidebar-org">
+            {organization.name}, {activeRound.period}
+          </p>
+
+          <div className="score-ring-card">
+            <div className="score-ring-value">
+              <small>ציון כולל</small>
+              <strong>{overallScore}</strong>
+              <small>מתוך 100</small>
+            </div>
+            <ScoreRing value={overallScore} />
+          </div>
+
+          <p className="map-sidebar-desc">
+            המפה מציגה תמונת מצב עדכנית של ממדי השלומות בבית הספר. כל אבן מייצגת ממד אחד,
+            והנקודה הצבעונית לצידה מסמנת את הסטטוס שלו.
+          </p>
+
+          <button type="button" className="primary-button" onClick={() => window.print()}>
+            <Download size={18} aria-hidden="true" />
+            הורדת דוח
+          </button>
+
+          <div className="map-privacy-note">
+            <Info size={20} aria-hidden="true" />
+            <p>
+              הגנת פרטיות מופעלת: הנתונים מוצגים ברמה מצרפית בלבד (מינימום{" "}
+              {activeRound.minimumResponses} משיבים) כדי לשמור על אנונימיות.
+            </p>
+          </div>
+        </aside>
+
+        <div className="map-stage-column">
+          <div className="dashboard-map-hint" aria-label="הנחיית שימוש במפה">
+            <Move className="hint-icon-desktop" size={18} aria-hidden="true" />
+            <MousePointer2 className="hint-icon-mobile" size={18} aria-hidden="true" />
+            <span className="hint-text-desktop">גררו את האבנים כדי לסדר את המפה, או לחצו על אבן כדי לפתוח פירוט.</span>
+            <span className="hint-text-mobile">לחצו על אבן כדי לפתוח פירוט.</span>
+          </div>
+          <DashboardMapInteractive />
+        </div>
+      </div>
     </div>
   );
 }
 
 export function DashboardDimensionPage({ dimension }: { dimension: WellbeingDimension }) {
-  const { containerRef, contentRef } = useBlobFit([dimension]);
+  const dimensionSurface = getDimensionSurface(dimension);
+  const { containerRef, contentRef } = useBlobFit(`${dimension.id}-${dimension.summary.join("|")}`);
   return (
     <div className="dashboard-mock-page dashboard-detail-screen">
       <DashboardHeading title={`תמונת מצב | ${dimension.conceptLabel}`} />
+      <DimensionIdentityChip dimension={dimension} />
 
-      <Link
-        href={`/dashboard/${dimension.id}/metrics`}
+      <article
         ref={containerRef as any}
         className="dashboard-single-blob"
-        style={{ backgroundColor: dimension.conceptColor, textDecoration: "none", display: "grid" }}
+        style={{ backgroundColor: dimensionSurface, display: "grid" }}
       >
         <div ref={contentRef as any} className="dashboard-single-blob-copy">
           {dimension.summary.map((paragraph) => (
             <p key={paragraph}>{paragraph}</p>
           ))}
         </div>
-      </Link>
+      </article>
 
-      <nav className="dashboard-cta-row" aria-label="ניווט מסך">
-        <Link className="dashboard-pill-button dashboard-pill-button-primary" href={`/dashboard/${dimension.id}/metrics`}>
-          נתונים בולטים
-          <BarChart3 size={22} aria-hidden="true" />
-        </Link>
-        <Link className="dashboard-pill-button dashboard-pill-button-secondary" href="/dashboard">
-          חזרה למפת השלומות
-          <ChevronLeft size={22} aria-hidden="true" />
-        </Link>
-      </nav>
+      <DashboardCtaRow
+        actions={getDashboardDetailActions(dimension.id)}
+      />
     </div>
   );
 }
 
 export function DashboardMetricsPage({ dimension }: { dimension: WellbeingDimension }) {
   const metrics = getHighlightedMetrics(dimension).reverse();
+  const dimensionSurface = getDimensionSurface(dimension);
 
   return (
     <div className="dashboard-mock-page dashboard-metrics-screen">
-      <DashboardHeading title={`נתונים בולטים | ${dimension.conceptLabel}`} />
+      <DashboardHeading title={`${navigationLabels.highlightedMetrics} | ${dimension.conceptLabel}`} />
+      <DimensionIdentityChip dimension={dimension} />
 
-      <section className="dashboard-metrics-stage" aria-label={`נתונים בולטים עבור ${dimension.conceptLabel}`}>
-        {metrics.map((metric) => (
-          <MetricBlob key={`${metric.label}-${metric.value}`} metric={metric} color={dimension.conceptColor} dimensionId={dimension.id} />
+      <section className="dashboard-metrics-stage" aria-label={`${navigationLabels.highlightedMetrics} עבור ${dimension.conceptLabel}`}>
+        {metrics.map((metric, index) => (
+          <MetricBlob
+            key={`${metric.label}-${metric.value}`}
+            metric={metric}
+            color={dimensionSurface}
+            emphasis={index === 0 ? "primary" : "secondary"}
+          />
         ))}
       </section>
 
-      <nav className="dashboard-cta-row" aria-label="ניווט מסך">
-        <Link
-          className="dashboard-pill-button dashboard-pill-button-primary"
-          href={`/dashboard/${dimension.id}/recommendations`}
-        >
-          מטרות ויעדים
-          <Lightbulb size={22} aria-hidden="true" />
-        </Link>
-        <Link className="dashboard-pill-button dashboard-pill-button-secondary" href="/dashboard">
-          חזרה למפת השלומות
-          <ChevronLeft size={22} aria-hidden="true" />
-        </Link>
-      </nav>
+      <DashboardCtaRow
+        actions={getDashboardMetricsActions(dimension.id)}
+      />
     </div>
   );
 }
@@ -222,20 +380,24 @@ export function DashboardMetricsPage({ dimension }: { dimension: WellbeingDimens
 export function DashboardRecommendationsPage({ dimension }: { dimension: WellbeingDimension }) {
   const recommendations = getDisplayRecommendations(dimension);
   const isFiveItemLayout = recommendations.length >= 5;
+  const dimensionSurface = getDimensionSurface(dimension);
 
   return (
     <div className="dashboard-mock-page dashboard-recommendations-screen">
-      <DashboardHeading title={`מטרות ויעדים | ${dimension.conceptLabel}`} />
+      <DashboardHeading title={`${navigationLabels.goals} | ${dimension.conceptLabel}`} />
+      <DimensionIdentityChip dimension={dimension} />
 
       <section
         className={`dashboard-recommendations-stage${isFiveItemLayout ? " is-five-items" : " is-generic-items"}`}
-        aria-label={`מטרות ויעדים עבור ${dimension.conceptLabel}`}
+        aria-label={`${navigationLabels.goals} עבור ${dimension.conceptLabel}`}
       >
         {recommendations.map((recommendation, index) => (
           <RecommendationBlob
             key={recommendation.title}
             recommendation={recommendation}
-            color={dimension.conceptColor}
+            color={dimensionSurface}
+            priority={index + 1}
+            featured={index === 0}
             className={
               isFiveItemLayout
                 ? recommendationBlobClasses[index] ?? recommendationBlobClasses.at(-1)!
@@ -245,12 +407,10 @@ export function DashboardRecommendationsPage({ dimension }: { dimension: Wellbei
         ))}
       </section>
 
-      <nav className="dashboard-cta-row dashboard-cta-row-center" aria-label="ניווט מסך">
-        <Link className="dashboard-pill-button dashboard-pill-button-secondary" href="/dashboard">
-          חזרה למפת השלומות
-          <ChevronLeft size={22} aria-hidden="true" />
-        </Link>
-      </nav>
+      <DashboardCtaRow
+        center
+        actions={getDashboardRecommendationsActions()}
+      />
     </div>
   );
 }

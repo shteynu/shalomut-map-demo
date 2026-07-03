@@ -1,5 +1,3 @@
-import Link from "next/link";
-import { ArrowLeft, ClipboardList } from "lucide-react";
 import { MetricCard, PageIntro } from "@/components/app-shell";
 import { RoundControls } from "@/components/round-controls";
 import { activeRound, organization } from "@/lib/demo-data";
@@ -10,13 +8,7 @@ export default function RoundPage() {
       <PageIntro
         eyebrow={`${organization.name}, ${activeRound.period}`}
         title="מעקב סבב אבחון"
-        description="מסך המעקב מציг כמות תשובות בלבד. אין בו רשימת משיבים, שמות, מיילים או פרטים מזהים."
-        actions={
-          <Link className="secondary-button" href="/survey">
-            ניהול שאלון
-            <ClipboardList size={18} aria-hidden="true" />
-          </Link>
-        }
+        description="מסך המעקב מציג כמות תשובות בלבד. אין בו רשימת משיבים, שמות, מיילים או פרטים מזהים."
       />
 
       <section className="metric-grid" aria-label="נתוני סבב אבחון">
@@ -30,10 +22,6 @@ export default function RoundPage() {
 
       <div className="next-step-band">
         <span>אחרי סגירת סבב האבחון, המפה מציגה חוזקות, סיכונים ופירוט לפי ממדים.</span>
-        <Link href="/dashboard">
-          צפייה בדשבורד
-          <ArrowLeft size={16} aria-hidden="true" />
-        </Link>
       </div>
     </div>
   );
