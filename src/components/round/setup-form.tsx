@@ -4,11 +4,30 @@ import Link from "next/link";
 import { Check, ChevronLeft, ClipboardPen, Lightbulb, ShieldCheck, Users } from "lucide-react";
 import { useState } from "react";
 import { PrivacyTooltip } from "@/components/ui/privacy-tooltip";
-import { activeRound, organization } from "@/lib/demo-data";
 import { getNavigationAction } from "@/lib/navigation";
 
-export function SetupForm() {
+type SetupFormProps = {
+  organization: {
+    id: string;
+    name: string;
+    city: string;
+    schoolType: string;
+    totalStaffCount: number;
+  } | null;
+  round: {
+    id: string;
+    title: string;
+    startDate: string;
+    endDate: string;
+    privacyThreshold: number;
+  } | null;
+};
+
+const gradeLabels = ["א", "ב", "ג", "ד", "ה", "ו", "ז", "ח", "ט", "י", "יא", "יב"];
+
+export function SetupForm({ organization, round }: SetupFormProps) {
   const [saved, setSaved] = useState(false);
+  const [minimumResponses, setMinimumResponses] = useState(round?.privacyThreshold ?? 10);
   const distributeSurveyAction = getNavigationAction("distributeSurvey");
 
   return (
@@ -29,24 +48,32 @@ export function SetupForm() {
         <div className="form-grid">
           <label>
             שם בית הספר
-            <input defaultValue={organization.name} />
+            <input name="organizationName" defaultValue={organization?.name ?? ""} required />
+          </label>
+          <label>
+            עיר
+            <input name="city" defaultValue={organization?.city ?? ""} required />
+          </label>
+          <label>
+            סוג בית הספר
+            <input name="schoolType" defaultValue={organization?.schoolType ?? ""} required />
           </label>
           <label>
             תקופת מדידה
-            <input defaultValue={activeRound.period} />
+            <input name="title" defaultValue={round?.title ?? ""} required />
           </label>
           <label>
             תאריך פתיחה
-            <input defaultValue={activeRound.openedAt} />
+            <input name="startDate" type="date" defaultValue={round?.startDate ?? ""} required />
           </label>
           <label>
             תאריך סגירה
-            <input defaultValue={activeRound.closesAt} />
+            <input name="endDate" type="date" defaultValue={round?.endDate ?? ""} />
           </label>
         </div>
         <label>
           הערת רקע למנהלת
-          <textarea defaultValue={activeRound.backgroundInputs.notes} rows={3} />
+          <textarea name="notes" defaultValue="" rows={3} />
         </label>
       </section>
 
@@ -68,32 +95,44 @@ export function SetupForm() {
           </label>
           <label>
             מספר אנשי צוות
-            <input type="number" defaultValue={activeRound.backgroundInputs.teachingStaff} />
+            <input
+              name="totalStaffCount"
+              type="number"
+              min="1"
+              defaultValue={organization?.totalStaffCount || ""}
+              required
+            />
           </label>
           <label>
             ימי מחלה ברבעון
-            <input type="number" defaultValue={activeRound.backgroundInputs.sicknessDaysThisQuarter} />
+            <input name="sicknessDaysThisQuarter" type="number" min="0" defaultValue="0" />
           </label>
           <label>
             אנשי צוות חדשים
-            <input type="number" defaultValue={activeRound.backgroundInputs.newStaffMembers} />
+            <input name="newStaffMembers" type="number" min="0" defaultValue="0" />
           </label>
           <label>
             מספר תלמידים בבית הספר
-            <input type="number" defaultValue={activeRound.backgroundInputs.studentCount} />
+            <input name="studentCount" type="number" min="0" defaultValue="0" />
           </label>
           <label>
             מדד טיפוח (דירוג סוציו-אקונומי 1-10)
-            <input type="number" min="1" max="10" defaultValue={activeRound.backgroundInputs.socioEconomicIndex} />
+            <input name="socioEconomicIndex" type="number" min="1" max="10" defaultValue="1" />
           </label>
         </div>
         <div className="form-subsection">
           <h3>מספר כיתות בכל שכבה</h3>
           <div className="grades-grid">
-            {Object.entries(activeRound.backgroundInputs.classesPerGrade).map(([grade, count]) => (
+            {gradeLabels.map((grade) => (
               <label key={grade} className="grade-label">
                 שכבה {grade}{"'"}
-                <input type="number" min="0" defaultValue={count} className="grade-input" />
+                <input
+                  name={`grade-${grade}`}
+                  type="number"
+                  min="0"
+                  defaultValue="0"
+                  className="grade-input"
+                />
               </label>
             ))}
           </div>
@@ -121,15 +160,22 @@ export function SetupForm() {
           <label>
             <span style={{ display: "inline-flex", alignItems: "center" }}>
               סף פרטיות (מינימום להצגת תוצאות)
-              <PrivacyTooltip />
+              <PrivacyTooltip minimumResponses={minimumResponses} />
             </span>
-            <input type="number" defaultValue={activeRound.minimumResponses} />
+            <input
+              name="privacyThreshold"
+              type="number"
+              min="10"
+              value={minimumResponses}
+              onChange={(event) => setMinimumResponses(Number(event.target.value))}
+              required
+            />
           </label>
         </div>
         <div className="map-privacy-note">
           <ShieldCheck size={20} aria-hidden="true" />
           <p>
-            התוצאות ייפתחו רק לאחר {activeRound.minimumResponses} תשובות לפחות, ותמיד ברמה מצרפית —
+            התוצאות ייפתחו רק לאחר {minimumResponses} תשובות לפחות, ותמיד ברמה מצרפית —
             בלי שמות, בלי מיילים ובלי אפשרות לזהות משיב בודד.
           </p>
         </div>

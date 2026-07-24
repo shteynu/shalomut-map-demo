@@ -1,15 +1,21 @@
 import { NextResponse } from 'next/server';
 import { getRepositories } from '@/lib/repositories';
-import { RoundService } from '@/lib/services';
+import { ManagerContextService, RoundService } from '@/lib/services';
 import { CreateRoundInput } from '@/lib/types/backend';
 
-export const dynamic = 'force-static';
-
-export async function GET() {
+export async function GET(request?: Request) {
   try {
-    const { roundRepo } = getRepositories();
-    const defaultRound = await roundRepo.findById('round_demo_1');
-    return NextResponse.json({ round: defaultRound });
+    const { orgRepo, roundRepo, surveyRepo } = getRepositories();
+    const roundId = request
+      ? new URL(request.url).searchParams.get('roundId')?.trim()
+      : undefined;
+    const round = roundId
+      ? await roundRepo.findById(roundId)
+      : (
+          await ManagerContextService.load(orgRepo, roundRepo, surveyRepo)
+        ).currentRound;
+
+    return NextResponse.json({ round });
   } catch (error) {
     return NextResponse.json(
       { error: 'Failed to fetch round' },

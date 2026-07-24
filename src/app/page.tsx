@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { ArrowLeft, ClipboardList, LockKeyhole, Map, Send, Settings2, TrendingUp, TriangleAlert, Users } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { ManagerOnboarding } from "@/components/manager";
 import { ActionCard, PrivacyTooltip, StatStone } from "@/components/ui";
 import { calculatePercentage } from "@/lib/utils/math";
-import { activeRound, getStatusCount, organization } from "@/lib/demo-data";
 import { getNavigationAction, homeActionRouteIds, routeMetadata } from "@/lib/navigation";
+import { loadManagerContext } from "@/lib/server/manager-context";
+import type { WellbeingStatus } from "@/lib/shalomut-source";
 
 const actionIcons: Record<(typeof homeActionRouteIds)[number], LucideIcon> = {
   setup: Settings2,
@@ -13,18 +15,31 @@ const actionIcons: Record<(typeof homeActionRouteIds)[number], LucideIcon> = {
   dashboard: Map,
 };
 
-export default function HomePage() {
-  const responsePercent = calculatePercentage(activeRound.responseCount, activeRound.expectedResponses);
+export default async function HomePage() {
+  const context = await loadManagerContext();
+
+  if (!context.organization || !context.currentRound) {
+    return <ManagerOnboarding organizationName={context.organization?.name} />;
+  }
+
+  const { organization, currentRound, responseCount, analytics } = context;
+  const responsePercent = calculatePercentage(responseCount, organization.totalStaffCount);
   const startSetupAction = getNavigationAction("startSetup");
   const openDashboardAction = getNavigationAction("openDashboard");
+  const getStatusCount = (status: WellbeingStatus) =>
+    analytics && !analytics.isLocked
+      ? Object.values(analytics.dimensionScores).filter(
+          (dimension) => dimension.computedStatus === status,
+        ).length
+      : 0;
 
   return (
     <div className="page stone-page home-page">
       <section className="page-intro">
         <div>
-          <p className="eyebrow">{`${organization.name}, ${activeRound.period}`}</p>
-          <h1>שלום {organization.managerName},</h1>
-          <p className="home-hero-subtitle">תמונת סבב האבחון מוכנה.</p>
+          <p className="eyebrow">{`${organization.name}, ${currentRound.title}`}</p>
+          <h1>שלום,</h1>
+          <p className="home-hero-subtitle">תמונת סבב האבחון מחוברת לנתוני בית הספר.</p>
         </div>
         <div className="intro-actions">
           <Link className="primary-button" href={startSetupAction.href}>
@@ -40,7 +55,7 @@ export default function HomePage() {
 
       <section className="home-stat-grid" aria-label="מדדי סבב אבחון">
         <StatStone
-          value={`${activeRound.responseCount}/${activeRound.expectedResponses}`}
+          value={`${responseCount}/${organization.totalStaffCount}`}
           label="השיבו עד כה"
           helper={`${responsePercent}% מצוות בית הספר`}
           shape={1}
@@ -49,13 +64,13 @@ export default function HomePage() {
           corner={<Users size={22} aria-hidden="true" />}
         />
         <StatStone
-          value={`${activeRound.minimumResponses}`}
+          value={`${currentRound.privacyThreshold}`}
           label="סף פרטיות"
           helper="מינימום תשובות לפני הצגת תוצאות"
           shape={2}
           tint="var(--pastel-sky)"
           rotate={3}
-          corner={<PrivacyTooltip />}
+          corner={<PrivacyTooltip minimumResponses={currentRound.privacyThreshold} />}
         />
         <StatStone
           value={`${getStatusCount("red")}`}

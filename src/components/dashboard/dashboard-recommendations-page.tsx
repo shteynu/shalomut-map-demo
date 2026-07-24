@@ -35,9 +35,13 @@ function getDisplayRecommendations(dimension: WellbeingDimension) {
 export function DashboardRecommendationsPage({
   dimension,
   roundId,
+  organizationName,
+  roundTitle,
 }: {
   dimension: WellbeingDimension;
   roundId: string;
+  organizationName: string;
+  roundTitle: string;
 }) {
   const resolvedRoundId = useDashboardRoundId(roundId);
   const { state, reload } = useAiInsights(resolvedRoundId);
@@ -49,7 +53,11 @@ export function DashboardRecommendationsPage({
   if (state.status !== "ready") {
     return (
       <div className="dashboard-mock-page dashboard-recommendations-screen">
-        <DashboardHeading title={`${navigationLabels.goals} | ${dimension.conceptLabel}`} />
+        <DashboardHeading
+          title={`${navigationLabels.goals} | ${dimension.conceptLabel}`}
+          organizationName={organizationName}
+          roundTitle={roundTitle}
+        />
         <DashboardAiInsightsState state={state} onRetry={reload} />
         <DashboardCtaRow
           center
@@ -63,7 +71,11 @@ export function DashboardRecommendationsPage({
   if (!stone) {
     return (
       <div className="dashboard-mock-page dashboard-recommendations-screen">
-        <DashboardHeading title={`${navigationLabels.goals} | ${dimension.conceptLabel}`} />
+        <DashboardHeading
+          title={`${navigationLabels.goals} | ${dimension.conceptLabel}`}
+          organizationName={organizationName}
+          roundTitle={roundTitle}
+        />
         <DashboardAiInsightsState
           state={{ status: "error", error: "Missing dimension insight." }}
           onRetry={reload}
@@ -83,7 +95,11 @@ export function DashboardRecommendationsPage({
 
   return (
     <div className="dashboard-mock-page dashboard-recommendations-screen">
-      <DashboardHeading title={`${navigationLabels.goals} | ${displayDimension.conceptLabel}`} />
+      <DashboardHeading
+        title={`${navigationLabels.goals} | ${displayDimension.conceptLabel}`}
+        organizationName={organizationName}
+        roundTitle={roundTitle}
+      />
       <DimensionIdentityChip dimension={displayDimension} />
 
       <section

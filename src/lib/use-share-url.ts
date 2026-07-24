@@ -1,8 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { activeRound } from "@/lib/demo-data";
-import { appRoutePrefixes, routes } from "@/lib/navigation";
+import { appRoutePrefixes, respondentSurveyRoute } from "@/lib/navigation";
 
 /* The respondent link must point at the environment the admin is actually
    running (localhost in dev, GitHub Pages in prod). basePath is baked in at
@@ -18,21 +17,17 @@ function deriveBasePath(pathname: string) {
   return pathname.replace(/\/$/, "");
 }
 
-export function useShareUrl() {
-  return useSyncExternalStore(subscribeToLocation, getClientShareUrl, getServerShareUrl);
-}
+export function useShareUrl(shareCode: string) {
+  const relativePath = respondentSurveyRoute(shareCode);
 
-function getServerShareUrl() {
-  return activeRound.shareUrl;
-}
-
-function getClientShareUrl() {
-  if (typeof window === "undefined") {
-    return getServerShareUrl();
-  }
-
-  const basePath = deriveBasePath(window.location.pathname);
-  return `${window.location.origin}${basePath}${routes.respondentSurvey}`;
+  return useSyncExternalStore(
+    subscribeToLocation,
+    () => {
+      const basePath = deriveBasePath(window.location.pathname);
+      return `${window.location.origin}${basePath}${relativePath}`;
+    },
+    () => relativePath,
+  );
 }
 
 function subscribeToLocation(onStoreChange: () => void) {

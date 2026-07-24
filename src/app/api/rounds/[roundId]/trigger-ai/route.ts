@@ -1,16 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createSharedSecretHeaders } from '@/lib/server/shared-secret';
 
-export const dynamic = 'force-static';
-export const revalidate = false;
-
-export async function generateStaticParams() {
-  return [
-    { roundId: 'SHALOM-DEMO-ROUND-1' },
-    { roundId: 'round-unlocked-sample' },
-  ];
-}
-
 interface RouteParams {
   params: Promise<{
     roundId: string;

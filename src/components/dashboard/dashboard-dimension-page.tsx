@@ -18,9 +18,13 @@ import { DimensionIdentityChip } from "./dimension-identity-chip";
 export function DashboardDimensionPage({
   dimension,
   roundId,
+  organizationName,
+  roundTitle,
 }: {
   dimension: WellbeingDimension;
   roundId: string;
+  organizationName: string;
+  roundTitle: string;
 }) {
   const resolvedRoundId = useDashboardRoundId(roundId);
   const { state, reload } = useAiInsights(resolvedRoundId);
@@ -45,7 +49,11 @@ export function DashboardDimensionPage({
   if (state.status !== "ready") {
     return (
       <div className="dashboard-mock-page dashboard-detail-screen">
-        <DashboardHeading title={`תמונת מצב | ${dimension.conceptLabel}`} />
+        <DashboardHeading
+          title={`תמונת מצב | ${dimension.conceptLabel}`}
+          organizationName={organizationName}
+          roundTitle={roundTitle}
+        />
         <DashboardAiInsightsState state={state} onRetry={reload} />
         <DashboardCtaRow
           actions={getDashboardDetailActions(dimension.id)}
@@ -58,7 +66,11 @@ export function DashboardDimensionPage({
   if (!stone) {
     return (
       <div className="dashboard-mock-page dashboard-detail-screen">
-        <DashboardHeading title={`תמונת מצב | ${dimension.conceptLabel}`} />
+        <DashboardHeading
+          title={`תמונת מצב | ${dimension.conceptLabel}`}
+          organizationName={organizationName}
+          roundTitle={roundTitle}
+        />
         <DashboardAiInsightsState
           state={{ status: "error", error: "Missing dimension insight." }}
           onRetry={reload}
@@ -69,7 +81,11 @@ export function DashboardDimensionPage({
 
   return (
     <div className="dashboard-mock-page dashboard-detail-screen">
-      <DashboardHeading title={`תמונת מצב | ${displayDimension.conceptLabel}`} />
+      <DashboardHeading
+        title={`תמונת מצב | ${displayDimension.conceptLabel}`}
+        organizationName={organizationName}
+        roundTitle={roundTitle}
+      />
       <DimensionIdentityChip dimension={displayDimension} />
 
       <article

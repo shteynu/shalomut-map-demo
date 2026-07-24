@@ -3,12 +3,6 @@ import { getRepositories } from '@/lib/repositories';
 import { RoundService, SurveyService } from '@/lib/services';
 import { QuestionAnswerInput } from '@/lib/types/backend';
 
-export const dynamic = 'force-static';
-
-export function generateStaticParams() {
-  return [{ shareCode: 'SHALOM-DEMO' }];
-}
-
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ shareCode: string }> }

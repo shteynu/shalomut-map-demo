@@ -6,8 +6,9 @@ import { useState } from "react";
 import { PageIntro } from "@/components/ui/page-intro";
 import { PrivacyTooltip } from "@/components/ui/privacy-tooltip";
 import { useClipboard } from "@/lib/hooks/use-clipboard";
-import { activeRound, organization, surveyQuestions, wellbeingDimensions } from "@/lib/demo-data";
+import { wellbeingDimensions } from "@/lib/demo-data";
 import { getNavigationAction } from "@/lib/navigation";
+import { surveyInstrument } from "@/lib/shalomut-source";
 import { useShareUrl } from "@/lib/use-share-url";
 import { SurveyBuilderQuestions } from "./survey-builder/survey-builder-questions";
 import { SurveyBuilderSettings } from "./survey-builder/survey-builder-settings";
@@ -38,7 +39,7 @@ const questionBank = [
   },
 ];
 
-const initialQuestions: BuilderQuestion[] = surveyQuestions.map((question) => ({
+const initialQuestions: BuilderQuestion[] = surveyInstrument.questions.map((question) => ({
   ...question,
   enabled: true,
   answerMode: "סקאלת צבעים",
@@ -63,11 +64,25 @@ function createDraftId(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2, 7)}`;
 }
 
-export function SurveyBuilder() {
-  const [title, setTitle] = useState("שאלון שלומות צוות - סבב אבחון חורף");
+type SurveyBuilderProps = {
+  organizationName: string;
+  roundId: string;
+  roundTitle: string;
+  shareCode: string;
+  initialMinimumResponses: number;
+};
+
+export function SurveyBuilder({
+  organizationName,
+  roundId,
+  roundTitle,
+  shareCode,
+  initialMinimumResponses,
+}: SurveyBuilderProps) {
+  const [title, setTitle] = useState(roundTitle);
   const [audience, setAudience] = useState("כלל צוות ההוראה");
   const [estimatedMinutes, setEstimatedMinutes] = useState(15);
-  const [minimumResponses, setMinimumResponses] = useState(activeRound.minimumResponses);
+  const [minimumResponses, setMinimumResponses] = useState(initialMinimumResponses);
   const [introText, setIntroText] = useState(
     "השאלון נשלח כקישור אנונימי לצוות. התוצאות מוצגות רק ברמה מצרפית אחרי הגעה לסף פרטיות.",
   );
@@ -77,7 +92,7 @@ export function SurveyBuilder() {
   const [questions, setQuestions] = useState<BuilderQuestion[]>(initialQuestions);
   const [saved, setSaved] = useState(false);
   const { copied, copy } = useClipboard();
-  const shareUrl = useShareUrl();
+  const shareUrl = useShareUrl(shareCode);
   const openRespondentSurveyAction = getNavigationAction("openRespondentSurvey");
   const [bankCursor, setBankCursor] = useState(0);
   const [selectedDimensionId, setSelectedDimensionId] = useState(wellbeingDimensions[0]?.id ?? "all");
@@ -155,7 +170,7 @@ export function SurveyBuilder() {
   return (
     <div className="page survey-builder-stone-page">
       <PageIntro
-        eyebrow={`${organization.name}, ${activeRound.period} | בניית שאלון`}
+        eyebrow={`${organizationName}, ${roundTitle} | בניית שאלון`}
         title={title}
         description="מסך זה מאפשר עריכת שאלון לפני הפצה: קהל יעד, ניסוח פתיח, שאלות פעילות וקישור המשיבים החיצוני."
         actions={
@@ -166,6 +181,7 @@ export function SurveyBuilder() {
               onClick={() => {
                 setSaved(true);
               }}
+              data-round-id={roundId}
             >
               שמירת טיוטה
               <CheckCircle2 size={18} aria-hidden="true" />
@@ -186,7 +202,9 @@ export function SurveyBuilder() {
               <strong>{stone.value}</strong>
               <span>
                 {stone.label}
-                {showTooltip && <PrivacyTooltip />}
+                {showTooltip && (
+                  <PrivacyTooltip minimumResponses={minimumResponses} />
+                )}
               </span>
               <small>{stone.helper}</small>
             </article>

@@ -6,17 +6,32 @@ import type { CSSProperties } from "react";
 import { useState } from "react";
 import { useClipboard } from "@/lib/hooks/use-clipboard";
 import { calculatePercentage } from "@/lib/utils/math";
-import { activeRound } from "@/lib/demo-data";
 import { getNavigationAction } from "@/lib/navigation";
 import { useShareUrl } from "@/lib/use-share-url";
 
-export function RoundControls() {
-  const [closed, setClosed] = useState(false);
-  const shareUrl = useShareUrl();
+type RoundControlsProps = {
+  roundId: string;
+  shareCode: string;
+  responseCount: number;
+  expectedResponses: number;
+  minimumResponses: number;
+  status: "draft" | "active" | "closed" | "archived";
+};
+
+export function RoundControls({
+  roundId,
+  shareCode,
+  responseCount,
+  expectedResponses,
+  minimumResponses,
+  status,
+}: RoundControlsProps) {
+  const [closed, setClosed] = useState(status === "closed");
+  const shareUrl = useShareUrl(shareCode);
   const { copied, copy } = useClipboard();
   const openDashboardAction = getNavigationAction("openDashboard");
 
-  const progress = calculatePercentage(activeRound.responseCount, activeRound.expectedResponses);
+  const progress = calculatePercentage(responseCount, expectedResponses);
 
   return (
     <section className="round-layout">
@@ -24,16 +39,16 @@ export function RoundControls() {
         className="round-progress"
         role="progressbar"
         aria-label="התקדמות מילוי סבב האבחון"
-        aria-valuenow={activeRound.responseCount}
+        aria-valuenow={responseCount}
         aria-valuemin={0}
-        aria-valuemax={activeRound.expectedResponses}
-        aria-valuetext={`${activeRound.responseCount} מתוך ${activeRound.expectedResponses} תשובות`}
+        aria-valuemax={expectedResponses}
+        aria-valuetext={`${responseCount} מתוך ${expectedResponses} תשובות`}
       >
         <div className="progress-ring" style={{ "--progress": `${progress}%` } as CSSProperties}>
-          <strong>{activeRound.responseCount}</strong>
-          <span>מתוך {activeRound.expectedResponses}</span>
+          <strong>{responseCount}</strong>
+          <span>מתוך {expectedResponses}</span>
         </div>
-        <p>התוצאות יוצגו רק אחרי לפחות {activeRound.minimumResponses} תשובות, ללא שמות או פרטי זיהוי.</p>
+        <p>התוצאות יוצגו רק אחרי לפחות {minimumResponses} תשובות, ללא שמות או פרטי זיהוי.</p>
       </div>
 
       <div className="share-panel">
@@ -47,7 +62,13 @@ export function RoundControls() {
         {copied ? <p className="success-note">הלינק הועתק. אפשר לשלוח לצוות.</p> : null}
 
         <div className="round-actions">
-          <button className="secondary-button" type="button" onClick={() => setClosed(true)}>
+          <button
+            className="secondary-button"
+            type="button"
+            disabled={closed}
+            data-round-id={roundId}
+            onClick={() => setClosed(true)}
+          >
             <Lock size={18} aria-hidden="true" />
             סגירת סבב אבחון ידנית
           </button>

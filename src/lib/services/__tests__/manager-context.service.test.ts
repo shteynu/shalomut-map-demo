@@ -53,6 +53,7 @@ test("ManagerContextService returns organization onboarding for empty persistenc
     organization: null,
     currentRound: null,
     responseCount: 0,
+    analytics: null,
   });
 });
 
@@ -67,6 +68,7 @@ test("ManagerContextService returns round onboarding when the school has no roun
   assert.strictEqual(context.organization?.id, organization.id);
   assert.strictEqual(context.currentRound, null);
   assert.strictEqual(context.responseCount, 0);
+  assert.strictEqual(context.analytics, null);
 });
 
 test("ManagerContextService selects the active round and returns its aggregate response count", async () => {
@@ -88,6 +90,7 @@ test("ManagerContextService selects the active round and returns its aggregate r
   assert.strictEqual(context.state, "round-ready");
   assert.strictEqual(context.currentRound?.id, activeRound.id);
   assert.strictEqual(context.responseCount, 1);
+  assert.strictEqual(context.analytics?.isLocked, true);
 });
 
 test("selectCurrentRound uses the newest round within the same status", () => {

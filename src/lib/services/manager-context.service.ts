@@ -3,7 +3,12 @@ import type {
   IRoundRepository,
   ISurveyRepository,
 } from "../repositories";
-import type { Organization, SurveyRound } from "../types/backend";
+import type {
+  Organization,
+  RoundAnalyticsResult,
+  SurveyRound,
+} from "../types/backend";
+import { AnalyticsService } from "./analytics.service";
 
 export type ManagerOnboardingState =
   | "needs-organization"
@@ -15,6 +20,7 @@ export interface ManagerContext {
   organization: Organization | null;
   currentRound: SurveyRound | null;
   responseCount: number;
+  analytics: RoundAnalyticsResult | null;
 }
 
 const roundStatusPriority: Record<SurveyRound["status"], number> = {
@@ -57,6 +63,7 @@ export class ManagerContextService {
         organization: null,
         currentRound: null,
         responseCount: 0,
+        analytics: null,
       };
     }
 
@@ -70,14 +77,22 @@ export class ManagerContextService {
         organization,
         currentRound: null,
         responseCount: 0,
+        analytics: null,
       };
     }
+
+    const analytics = await AnalyticsService.getAnalyticsForRound(
+      currentRound.id,
+      roundRepo,
+      surveyRepo,
+    );
 
     return {
       state: "round-ready",
       organization,
       currentRound,
-      responseCount: await surveyRepo.getResponseCount(currentRound.id),
+      responseCount: analytics?.totalResponses ?? 0,
+      analytics,
     };
   }
 }

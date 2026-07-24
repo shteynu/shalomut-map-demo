@@ -519,6 +519,31 @@ button:disabled {
   padding: clamp(1rem, 2vw, 1.4rem);
 }
 
+.manager-onboarding-page {
+  min-height: 100vh;
+}
+
+.manager-onboarding-panel {
+  justify-items: start;
+  max-width: 48rem;
+}
+
+.manager-onboarding-panel h2,
+.manager-onboarding-panel p {
+  position: relative;
+  z-index: 1;
+}
+
+.manager-onboarding-panel h2 {
+  margin: 0 0 0.45rem;
+}
+
+.manager-onboarding-panel p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -559,6 +584,16 @@ textarea {
 .quiet-note {
   color: var(--muted);
   line-height: 1.6;
+}
+
+.survey-submit-error {
+  margin: 0;
+  border: 1px solid var(--danger-surface);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--danger-ink);
+  padding: 0.85rem 1rem;
+  font-weight: 800;
 }
 
 .round-layout {

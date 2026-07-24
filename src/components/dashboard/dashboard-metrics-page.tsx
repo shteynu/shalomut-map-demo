@@ -29,9 +29,13 @@ function getHighlightedMetrics(dimension: WellbeingDimension) {
 export function DashboardMetricsPage({
   dimension,
   roundId,
+  organizationName,
+  roundTitle,
 }: {
   dimension: WellbeingDimension;
   roundId: string;
+  organizationName: string;
+  roundTitle: string;
 }) {
   const resolvedRoundId = useDashboardRoundId(roundId);
   const { state, reload } = useAiInsights(resolvedRoundId);
@@ -43,7 +47,11 @@ export function DashboardMetricsPage({
   if (state.status !== "ready") {
     return (
       <div className="dashboard-mock-page dashboard-metrics-screen">
-        <DashboardHeading title={`${navigationLabels.highlightedMetrics} | ${dimension.conceptLabel}`} />
+        <DashboardHeading
+          title={`${navigationLabels.highlightedMetrics} | ${dimension.conceptLabel}`}
+          organizationName={organizationName}
+          roundTitle={roundTitle}
+        />
         <DashboardAiInsightsState state={state} onRetry={reload} />
         <DashboardCtaRow
           actions={getDashboardMetricsActions(dimension.id)}
@@ -56,7 +64,11 @@ export function DashboardMetricsPage({
   if (!stone) {
     return (
       <div className="dashboard-mock-page dashboard-metrics-screen">
-        <DashboardHeading title={`${navigationLabels.highlightedMetrics} | ${dimension.conceptLabel}`} />
+        <DashboardHeading
+          title={`${navigationLabels.highlightedMetrics} | ${dimension.conceptLabel}`}
+          organizationName={organizationName}
+          roundTitle={roundTitle}
+        />
         <DashboardAiInsightsState
           state={{ status: "error", error: "Missing dimension insight." }}
           onRetry={reload}
@@ -75,7 +87,11 @@ export function DashboardMetricsPage({
 
   return (
     <div className="dashboard-mock-page dashboard-metrics-screen">
-      <DashboardHeading title={`${navigationLabels.highlightedMetrics} | ${displayDimension.conceptLabel}`} />
+      <DashboardHeading
+        title={`${navigationLabels.highlightedMetrics} | ${displayDimension.conceptLabel}`}
+        organizationName={organizationName}
+        roundTitle={roundTitle}
+      />
       <DimensionIdentityChip dimension={displayDimension} />
 
       <section className="dashboard-metrics-stage" aria-label={`${navigationLabels.highlightedMetrics} עבור ${displayDimension.conceptLabel}`}>
