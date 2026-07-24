@@ -1,9 +1,10 @@
 # PROGRESS: Shalomut Map
 
 ## 📌 Текущий статус
-- **Текущий этап**: PR #5 смержен в `main` squash commit `6b369bf`. В ветке `agent/database-backed-manager-ui` завершён database-backed manager slice: реальные organization/current round/counts/analytics, onboarding для пустой БД, persistence setup/survey builder, реальные share codes/round IDs и сохранение статуса раунда.
+- **Текущий этап**: PR #5 смержен в `main` squash commit `6b369bf`. Database-backed manager slice опубликован в draft PR [#6](https://github.com/shteynu/shalomut-map-demo/pull/6), code/docs commit `b87bf87`: реальные organization/current round/counts/analytics, onboarding для пустой БД, persistence setup/survey builder, реальные share codes/round IDs и сохранение статуса раунда.
 - **Состояние БД**: создана, но намеренно не применена миграция `20260724180000_add_round_configuration` (`background_context`, `survey_definition`). Единственная найденная локальная Supabase-цель ранее использовалась как production/shared; отдельный staging target не подтверждён.
 - **Staging**: alias `https://shalomut-map-demo-ui-redesign.vercel.app/` всё ещё указывает на ранее проверенный preview commit `a20ac66` и честно показывает пустое состояние. В Vercel Preview и Production нет настроенных env vars; отдельного проекта AI-сервиса также нет.
+- **PR preview**: deployment `dpl_E1sxTZh4aX6QW6Ro5emRSnQEY9ZQ` для PR #6 имеет статус READY; `/` показывает empty onboarding, `/api/rounds/` возвращает `{"round":null}`, а `PUT /api/manager/setup/` без БД — `503`.
 - **Runtime**: static export/GitHub Pages удалены, потому что DB-backed App Router требует server runtime. FastAPI-сервис подготовлен к Vercel entrypoint, работает fail-closed без shared secrets вне development и не полагается на in-process background task.
 - **Граница деплоя**: production data, alias, secrets и deployment не изменялись. Для реального staging E2E нужны подтверждённая staging-БД, manager authentication/deployment protection и отдельное разрешение на внешние изменения.
 - **Актуальный handoff**: см. [`docs/shalomut-tracker-handoff.md`](docs/shalomut-tracker-handoff.md). AI-детали: [`docs/ai-analytics-handoff.md`](docs/ai-analytics-handoff.md).
@@ -29,6 +30,7 @@
   - Локальные in-memory repositories разделяют один development state между Route Handlers и Server Components; deployed runtime без `DATABASE_URL` отклоняет любые data writes с `503`, а не показывает ложный success.
   - OpenAPI JSON/YAML синхронизированы с manager persistence routes, demo identifiers удалены из runtime examples.
   - Проверки: 70/70 TypeScript tests, локальный setup → survey → submit → locked analytics runtime smoke, 9/9 full Python pytest, 7/7 Python smoke suite, lint, Next.js production build, Prisma validate/generate.
+  - Draft PR #6 опубликован; GitHub `Build & Validate` и Vercel preview прошли, merge state `CLEAN`. Staging alias и production не менялись.
 - [x] **2026-07-24**: **Исправлено ложное demo-состояние при пустой БД и обновлён staging**:
   - Установлено две причины: staging alias указывал на старый commit `3083051`, а `getRepositories()` неявно подставлял `DEMO_ORGANIZATION` и `DEMO_ROUND` при отсутствии `DATABASE_URL`.
   - Default in-memory repositories теперь пустые; demo fixtures подключаются только явно в тестах/opt-in demo.
