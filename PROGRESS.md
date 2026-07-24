@@ -12,8 +12,9 @@
 ---
 
 ## ✅ Завершенные задачи (Completed)
-- [x] **2026-07-24**: **Сброшены макетные данные UI до состояния 0 ответов (Empty Round State)**:
-  - В [`src/lib/demo-data.ts`](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/src/lib/demo-data.ts) сброшены захардкоженные показатели (0 משיבים, 0 מתוך 10 תשובות).
+- [x] **2026-07-24**: **Полностью сброшены данные макета UI и счетчики главных страниц (Empty Round State)**:
+  - В [`src/lib/demo-data.ts`](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/src/lib/demo-data.ts) сброшены показатели организации, раунда и всех 8 измерений (0/0 השיבו עד כה, 0 מוקדי טיפול, 0 חוזקות, ציון 0).
+  - Хелперы `getStatusCount()` и `overallScore` возвращают `0`, когда количество ответов ниже порога анонимности (`< 10`).
   - Дашборд `/dashboard` переведен в защищенный заблокированный режим (`DashboardMapLocked`), отображающий `0 מתוך 10 תשובות נדרשות` и кнопку запуска нового опроса.
   - Прогнаны 31/31 тестов и успешен production-билд.
 - [x] **2026-07-24**: **Созданы Prisma Migrations (`0_init`) и разделены URL для Pooler/Direct соединения**:
