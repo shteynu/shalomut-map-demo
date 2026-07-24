@@ -93,12 +93,23 @@ Why it matters:
 
 ### 7. Demo Data Boundaries
 
-Current state: methodology source and demo runtime data are separated, but the app still runs entirely on mock data.
+Current state: methodology source and visual mock data are separated. PostgreSQL,
+Prisma repositories, APIs, and AI-insights persistence exist, and implicit
+runtime demo seeding has been removed. However, manager-facing UI routes still
+import `src/lib/demo-data.ts`, and demo IDs remain in some runtime/static-param
+paths.
 
 Proposal:
-- Add a small docs note or UI badge clarifying which values are mock demo data.
-- Prepare an adapter boundary for future pilot data ingestion.
+- Add a database-backed manager view model for organization, current round,
+  response counts, threshold, and analytics status.
+- Render explicit onboarding states for no organization and no round.
+- Remove demo IDs from production runtime or isolate them behind an explicit
+  static-demo/export mode.
+- Keep only stone geometry and other non-record visual metadata in the mock
+  layer.
 - Keep scoring thresholds configurable and avoid hard-coding status assumptions in view components.
 
 Why it matters:
-- The demo is closer to a real product now, so mock-data boundaries need to stay visible to maintain trust.
+- A zeroed mock screen can look correct while still not reflecting PostgreSQL.
+- Runtime data provenance must be unambiguous for school leaders to trust the
+  product.

@@ -165,7 +165,7 @@ erDiagram
 
 ## 5. Чек-лист для следующей сессии
 
-1. [ ] Определить выбор хранилища данных (Prisma + PostgreSQL / Supabase / In-Memory Mock Store / LocalStorage Adapter).
-2. [ ] Имплементировать интерфейсы `SurveyRepository` и `AnalyticsRepository`.
-3. [ ] Заменить захардкоженные данные `src/lib/demo-data.ts` на сервисные вызовы Data Layer с фаллбэком на демо-режим.
-4. [ ] Добавить интеграционные тесты для алгоритма агрегации и соблюдения порога анонимности (`privacyThreshold`).
+1. [x] Выбрано хранилище: Prisma + PostgreSQL/Supabase; empty in-memory repositories используются только без настроенной persistence.
+2. [x] Имплементированы organization, round и survey repository interfaces/adapters; агрегация находится в `AnalyticsService`.
+3. [ ] Подключить manager-facing UI к Data Layer. Скрытый demo fallback запрещён; явный static-demo режим можно сохранить отдельно.
+4. [x] Добавлены интеграционные тесты агрегации, privacy threshold и empty-runtime поведения.

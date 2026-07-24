@@ -1,11 +1,16 @@
 # AI Analytics — handoff
 
+> Status update, 2026-07-24: implementation PR #4 has been merged into
+> `main` at `19401a6`. This file keeps the AI-specific handoff. Current staging,
+> empty-runtime, and manager UI status is tracked in
+> `docs/shalomut-tracker-handoff.md`.
+
 ## Snapshot
 
-- Branch: `feature/ai-analytics-microservice-mcp`
-- Latest commits: `c96716b` implementation, `1d0b040` migration status docs
+- Original branch: `feature/ai-analytics-microservice-mcp`
+- Merged to `main`: PR #4, merge commit `19401a6`
+- Latest original branch commits: `c96716b` implementation, `1d0b040` migration status docs
 - Working tree at handoff: clean
-- Merge to `main`: not performed
 - AI service deployment: not performed
 - Shared secrets in Vercel/AI runtime: not configured by this work
 
@@ -68,8 +73,8 @@
    intended staging environments.
 3. Deploy the Python service and run a real staging webhook → callback smoke
    test. Verify both ready and privacy-locked rounds.
-4. Review the result and decide whether to merge this branch into `main` and
-   promote to production.
+4. Review the real staging result and decide whether to promote the verified
+   `main` deployment to production.
 5. Decide separately whether the runtime should adopt real LangGraph/ChromaDB;
    this is not required for the current contract or local E2E path.
 
@@ -80,8 +85,8 @@
   confirmed and a backup/PITR checkpoint is available.
 - Do not invoke a real staging webhook until the AI service URL and callback
   URL are configured on both sides.
-- Do not merge to `main` or promote production until staging smoke-test evidence
-  is recorded.
+- Do not promote production until real AI-service staging smoke-test evidence is
+  recorded.
 
 ## First next action
 
