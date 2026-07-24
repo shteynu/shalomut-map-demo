@@ -1,0 +1,65 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Organization {
+  id              String        @id @default(uuid())
+  name            String
+  city            String
+  schoolType      String        @map("school_type")
+  totalStaffCount Int           @map("total_staff_count")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  rounds          SurveyRound[]
+
+  @@map("organizations")
+}
+
+model SurveyRound {
+  id               String           @id @default(uuid())
+  organizationId   String           @map("organization_id")
+  title            String
+  status           String           // 'draft' | 'active' | 'closed' | 'archived'
+  shareCode        String           @unique @map("share_code")
+  privacyThreshold Int              @default(10) @map("privacy_threshold")
+  startDate        DateTime         @default(now()) @map("start_date")
+  endDate          DateTime?        @map("end_date")
+  createdAt        DateTime         @default(now()) @map("created_at")
+
+  organization     Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  responses        SurveyResponse[]
+
+  @@map("survey_rounds")
+}
+
+model SurveyResponse {
+  id                 String           @id @default(uuid())
+  roundId            String           @map("round_id")
+  anonymousTokenHash String?          @map("anonymous_token_hash")
+  submittedAt        DateTime         @default(now()) @map("submitted_at")
+
+  round              SurveyRound      @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  answers            QuestionAnswer[]
+
+  @@map("survey_responses")
+}
+
+model QuestionAnswer {
+  id          String         @id @default(uuid())
+  responseId  String         @map("response_id")
+  questionId  String         @map("question_id")
+  dimensionId String         @map("dimension_id")
+  value       String         // 'green' | 'yellow' | 'red'
+  score       Int            // 100 | 60 | 0
+
+  response    SurveyResponse @relation(fields: [responseId], references: [id], onDelete: Cascade)
+
+  @@map("question_answers")
+}

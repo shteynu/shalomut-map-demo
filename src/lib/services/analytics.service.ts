@@ -1,3 +1,4 @@
+import { IRoundRepository, ISurveyRepository } from '../repositories/interfaces';
 import {
   WellbeingDimensionId,
   WellbeingStatus,
@@ -92,4 +93,24 @@ export class AnalyticsService {
       calculatedAt,
     };
   }
+
+  /**
+   * Fetch round metadata and responses from repositories, then compute analytics
+   */
+  public static async getAnalyticsForRound(
+    roundId: string,
+    roundRepo: IRoundRepository,
+    surveyRepo: ISurveyRepository
+  ): Promise<RoundAnalyticsResult | null> {
+    const round = await roundRepo.findById(roundId);
+    if (!round) return null;
+
+    const responses = await surveyRepo.findResponsesByRoundId(roundId);
+    return this.calculateRoundAnalytics(
+      roundId,
+      round.privacyThreshold,
+      responses
+    );
+  }
 }
+

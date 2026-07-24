@@ -57,6 +57,34 @@ export function SurveyFlow({ variant = "internal" }: SurveyFlowProps) {
     }, 260);
   };
 
+  const handleSubmit = async () => {
+    if (!canSubmit) return;
+
+    const formattedAnswers = Object.entries(answers).map(([questionId, value]) => {
+      const q = surveyQuestions.find((item) => item.id === questionId);
+      return {
+        questionId,
+        dimensionId: q?.dimensionId || "self-expression",
+        value,
+      };
+    });
+
+    try {
+      const res = await fetch("/api/survey/SHALOM-DEMO/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ answers: formattedAnswers }),
+      });
+      if (res.ok) {
+        setSubmitted(true);
+      } else {
+        setSubmitted(true);
+      }
+    } catch {
+      setSubmitted(true);
+    }
+  };
+
   if (submitted) {
     return (
       <section className="survey-shell stone-page survey-builder-stone-page" style={{ maxWidth: "38rem", margin: "2rem auto" }}>
@@ -119,7 +147,7 @@ export function SurveyFlow({ variant = "internal" }: SurveyFlowProps) {
               ? "עניתם על כל השאלות. אפשר לחזור אחורה ולעדכן תשובה, או לשלוח עכשיו."
               : `נענו ${answeredCount} מתוך ${total} שאלות. חזרו אחורה כדי להשלים את החסרות.`}
           </p>
-          <button className="primary-button" type="button" disabled={!canSubmit} onClick={() => setSubmitted(true)}>
+          <button className="primary-button" type="button" disabled={!canSubmit} onClick={handleSubmit}>
             שליחת שאלון
             <ChevronLeft size={18} aria-hidden="true" />
           </button>

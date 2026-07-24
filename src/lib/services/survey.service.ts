@@ -1,3 +1,4 @@
+import { ISurveyRepository } from '../repositories/interfaces';
 import { responseScale, surveyInstrument } from '../shalomut-source';
 import {
   AnswerValue,
@@ -94,4 +95,34 @@ export class SurveyService {
       record,
     };
   }
+
+  /**
+   * Submit and persist a survey response using ISurveyRepository with double-submission check
+   */
+  public static async submitAndSaveResponse(
+    input: SurveyResponseInput,
+    surveyRepo: ISurveyRepository
+  ): Promise<SubmitSurveyResult> {
+    if (input.anonymousTokenHash) {
+      const alreadySubmitted = await surveyRepo.hasTokenSubmitted(
+        input.roundId,
+        input.anonymousTokenHash
+      );
+      if (alreadySubmitted) {
+        return {
+          success: false,
+          error: 'You have already submitted a response for this survey round.',
+        };
+      }
+    }
+
+    const { result, record } = this.processSubmission(input);
+    if (!result.success || !record) {
+      return result;
+    }
+
+    await surveyRepo.saveResponse(record);
+    return result;
+  }
 }
+

@@ -1,3 +1,4 @@
+import { IRoundRepository } from '../repositories/interfaces';
 import {
   CreateRoundInput,
   RoundStatus,
@@ -31,6 +32,27 @@ export class RoundService {
   }
 
   /**
+   * Create and persist a new round in the given repository
+   */
+  public static async createAndSaveRound(
+    input: CreateRoundInput,
+    roundRepo: IRoundRepository
+  ): Promise<SurveyRound> {
+    const round = this.createRound(input);
+    return roundRepo.create(round);
+  }
+
+  /**
+   * Find an active survey round by its share code
+   */
+  public static async getRoundByShareCode(
+    shareCode: string,
+    roundRepo: IRoundRepository
+  ): Promise<SurveyRound | null> {
+    return roundRepo.findByShareCode(shareCode);
+  }
+
+  /**
    * Validate status transition logic
    */
   public static isTransitionAllowed(
@@ -47,3 +69,4 @@ export class RoundService {
     return transitions[current]?.includes(target) ?? false;
   }
 }
+

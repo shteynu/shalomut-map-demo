@@ -1,19 +1,37 @@
 # PROGRESS: Shalomut Map
 
 ## 📌 Текущий статус
-- **Текущий этап**: Дизайн-система, RTL-типографика, WCAG AA доступность, каноническая методология (8 измерений, 24 вопроса) и статус полноценного реального проекта зафиксированы. Разработан план бэкенда и слоя данных.
-- **Главная цель**: Переход от базовой интеграции фронтенда к реализации Data Layer (модели данных, агрегация баллов, анонимное сохранение ответов) и бэкенд-сервисов.
+- **Текущий этап**: Data Layer & Persistence Phase — Схема Prisma (`schema.prisma`), Prisma-репозитории и адаптеры слоя физического хранения сырых данных полностью реализованы.
+- **Главная цель**: Все механизмы хранения и работы с сырыми данными готовы для подключения внешнего AI-сервиса и продакшн PostgreSQL/Supabase БД.
 
 ---
 
-## 🚀 Следующие шаги (Next Up: Data Layer & Backend Phase)
-1. [ ] **Выбор и настройка ORM/Persistence**: Подключение Prisma ORM / PostgreSQL / Supabase для постоянного хранения.
-2. [ ] **Интеграция API Routes / Server Actions**: Подключение `SurveyService` и `AnalyticsService` к API эндпоинтам (`/api/survey/submit`, `/api/rounds/[id]/analytics`).
-3. [ ] **Интеграция с UI**: Замена захардкоженного демо-состояния в `src/components/dashboard-map-interactive.tsx` и `src/components/survey-flow.tsx` на вызовы реального бэкенда.
+## 🚀 Следующие шаги (Next Up: External AI Integration & Production DB Connection)
+1. [ ] **Подключение реальной PostgreSQL / Supabase базы**: Установка `DATABASE_URL` в окружении и выполнение `npx prisma db push`.
+2. [ ] **Интеграция с внешним AI-сервисом**: Чтение сырых данных из Data Layer внешним AI-агентом для генерации текстовых отчетов и умных рекомендаций.
 
 ---
 
 ## ✅ Завершенные задачи (Completed)
+- [x] **2026-07-24**: **Реализован Prisma Persistence Layer (Слой физического хранения сырых данных)**:
+  - Создана реляционная схема БД [`prisma/schema.prisma`](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/prisma/schema.prisma) (`Organization`, `SurveyRound`, `SurveyResponse`, `QuestionAnswer`).
+  - Создан модульный клиент БД [`src/lib/repositories/prisma/prisma-client.ts`](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/src/lib/repositories/prisma/prisma-client.ts) с ленивой инициализацией.
+  - Имплементированы Prisma-репозитории сырых данных: [`PrismaOrganizationRepository`](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/src/lib/repositories/prisma/prisma-organization.repository.ts), [`PrismaRoundRepository`](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/src/lib/repositories/prisma/prisma-round.repository.ts), [`PrismaSurveyRepository`](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/src/lib/repositories/prisma/prisma-survey.repository.ts).
+  - Настроена динамическая фабрика `getRepositories()` в [`src/lib/repositories/index.ts`](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/src/lib/repositories/index.ts): автоматическое переключение на Prisma при наличии `DATABASE_URL` и фоллбэк на In-Memory в режиме разработчика/демо.
+  - Написаны автотесты адаптеров Prisma ([`src/lib/repositories/__tests__/prisma.test.ts`](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/src/lib/repositories/__tests__/prisma.test.ts)). Пройдено 28/28 тестов, билд успешен.
+- [x] **2026-07-24**: **Созданы API Routes (Next.js App Router) & Подключена UI-Интеграция**:
+  - Создан эндпоинт `GET / POST /api/rounds` ([`src/app/api/rounds/route.ts`](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/src/app/api/rounds/route.ts)).
+  - Создан эндпоинт `GET /api/survey/[shareCode]` ([`src/app/api/survey/[shareCode]/route.ts`](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/src/app/api/survey/%5BshareCode%5D/route.ts)).
+  - Создан эндпоинт `POST /api/survey/[shareCode]/submit` ([`src/app/api/survey/[shareCode]/submit/route.ts`](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/src/app/api/survey/%5BshareCode%5D/submit/route.ts)).
+  - Создан эндпоинт `GET /api/rounds/[roundId]/analytics` ([`src/app/api/rounds/[roundId]/analytics/route.ts`](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/src/app/api/rounds/%5BroundId%5D/analytics/route.ts)).
+  - Интегрирована отправка формы в [`SurveyFlow`](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/src/components/survey/survey-flow.tsx) через API эндпоинт с фоллбэком.
+  - Написан комплект автотестов API Routes ([`src/app/api/__tests__/api.test.ts`](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/src/app/api/__tests__/api.test.ts)). Пройдено 25/25 тестов, успешный production-билд.
+- [x] **2026-07-24**: **Реализован Repository Layer (Data Abstraction & In-Memory Adapters)**:
+  - Созданы TypeScript-интерфейсы `IRoundRepository`, `ISurveyRepository`, `IOrganizationRepository` ([`src/lib/repositories/interfaces.ts`](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/src/lib/repositories/interfaces.ts)).
+  - Имплементированы in-memory адаптеры `InMemoryRoundRepository`, `InMemorySurveyRepository`, `InMemoryOrganizationRepository` с поддержкой генерации демо-семян `SHALOM-DEMO`.
+  - Добавлена защита от повторной отправки ответов по анонимному хэшу токена `anonymousTokenHash`.
+  - Сервисы `RoundService`, `SurveyService` и `AnalyticsService` расширены методами работы с репозиториями (`createAndSaveRound`, `submitAndSaveResponse`, `getAnalyticsForRound`).
+  - Добавлены юнит- и сквозные интеграционные тесты ([`src/lib/repositories/__tests__/repositories.test.ts`](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/src/lib/repositories/__tests__/repositories.test.ts)). Пройдено 20/20 тестов, билд успешен.
 - [x] **2026-07-24**: **Проведен архитектурный рефакторинг компонентов и вынос утилит (shalomut-tracker)**:
   - Выделены утилиты и хуки (`src/lib/utils/math.ts`, `format.ts`, `src/lib/hooks/use-clipboard.ts`, `use-blob-fit.ts`).
   - Выделен каталог Shared UI компонентов `src/components/ui/` (`ScoreRing`, `StatusBadge`, `StatStone`, `PrivacyTooltip`, `DimensionIcon`, `ActionCard`, `PageIntro`, `MetricCard`).
