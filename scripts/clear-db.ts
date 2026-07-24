@@ -1,17 +1,19 @@
 import 'dotenv/config';
-import { PrismaClient } from '@prisma/client';
-import { PrismaPg } from '@prisma/adapter-pg';
-import pg from 'pg';
 
 async function clearDatabase() {
   console.log('🔄 Connecting to PostgreSQL database (Supabase)...');
   
-  if (!process.env.DATABASE_URL) {
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
     throw new Error('DATABASE_URL environment variable is missing.');
   }
 
+  const { PrismaClient } = require('@prisma/client');
+  const { PrismaPg } = require('@prisma/adapter-pg');
+  const pg = require('pg');
+
   const pool = new pg.Pool({
-    connectionString: process.env.DATABASE_URL,
+    connectionString,
     ssl: { rejectUnauthorized: false },
   });
 
