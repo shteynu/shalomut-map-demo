@@ -20,9 +20,9 @@ interface RouteParams {
 export async function GET(request: Request, { params }: RouteParams) {
   try {
     const { roundId } = await params;
-    const repositories = await getRepositories();
+    const repositories = getRepositories();
     
-    const insights = await repositories.rounds.getAiInsights(roundId);
+    const insights = await repositories.roundRepo.getAiInsights(roundId);
     if (!insights) {
       return NextResponse.json(
         { error: 'AI insights not found for this round', roundId },
@@ -51,8 +51,8 @@ export async function POST(request: Request, { params }: RouteParams) {
       );
     }
 
-    const repositories = await getRepositories();
-    const saved = await repositories.rounds.saveAiInsights(roundId, payload);
+    const repositories = getRepositories();
+    const saved = await repositories.roundRepo.saveAiInsights(roundId, payload);
 
     return NextResponse.json({
       status: 'success',

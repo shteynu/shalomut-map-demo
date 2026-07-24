@@ -63,13 +63,13 @@ export async function POST(request: Request) {
           }, { status: 400 });
         }
 
-        const repositories = await getRepositories();
-        const analyticsService = new AnalyticsService(
-          repositories.rounds,
-          repositories.surveys
-        );
+        const repositories = getRepositories();
 
-        const result = await analyticsService.getAnalyticsForRound(roundId);
+        const result = await AnalyticsService.getAnalyticsForRound(
+          roundId,
+          repositories.roundRepo,
+          repositories.surveyRepo
+        );
         if (!result) {
           return NextResponse.json({
             jsonrpc: '2.0',
