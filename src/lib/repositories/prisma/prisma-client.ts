@@ -31,10 +31,18 @@ export function getPrismaClient(): MinimalPrismaClient | null {
 
   if (!globalPrisma) {
     try {
-      // Lazy load @prisma/client if DATABASE_URL is set
       const { PrismaClient } = require('@prisma/client');
-      globalPrisma = new PrismaClient();
-    } catch {
+      const { PrismaPg } = require('@prisma/adapter-pg');
+      const { Pool } = require('pg');
+
+      const pool = new Pool({
+        connectionString: process.env.DATABASE_URL,
+        ssl: { rejectUnauthorized: false },
+      });
+      const adapter = new PrismaPg(pool);
+      globalPrisma = new PrismaClient({ adapter });
+    } catch (error) {
+      console.error('Failed to initialize Prisma client with adapter:', error);
       return null;
     }
   }

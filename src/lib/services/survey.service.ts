@@ -70,7 +70,7 @@ export class SurveyService {
       };
     }
 
-    const responseId = `resp_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    const responseId = crypto.randomUUID();
 
     const answerRecords: QuestionAnswerRecord[] = input.answers.map(
       (answer) => ({

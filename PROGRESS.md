@@ -1,18 +1,22 @@
 # PROGRESS: Shalomut Map
 
 ## 📌 Текущий статус
-- **Текущий этап**: Data Layer & Persistence Phase — Схема Prisma (`schema.prisma`), Prisma-репозитории и адаптеры слоя физического хранения сырых данных полностью реализованы.
-- **Главная цель**: Все механизмы хранения и работы с сырыми данными готовы для подключения внешнего AI-сервиса и продакшн PostgreSQL/Supabase БД.
+- **Текущий этап**: Production Database & Persistence Phase — Продакшн PostgreSQL БД в Supabase успешно подключена через Pooler, таблицы развернуты, захардкоженные данные вычищены, сквозное E2E-тестирование физического сохранения данных успешно пройдено.
+- **Главная цель**: Готовность к интеграции внешнего AI-сервиса поверх слоя данных Supabase.
 
 ---
 
-## 🚀 Следующие шаги (Next Up: External AI Integration & Production DB Connection)
-1. [ ] **Подключение реальной PostgreSQL / Supabase базы**: Установка `DATABASE_URL` в окружении и выполнение `npx prisma db push`.
-2. [ ] **Интеграция с внешним AI-сервисом**: Чтение сырых данных из Data Layer внешним AI-агентом для генерации текстовых отчетов и умных рекомендаций.
+## 🚀 Следующие шаги (Next Up: External AI Integration)
+1. [ ] **Интеграция с внешним AI-сервисом**: Чтение сырых данных из Data Layer внешним AI-агентом для генерации текстовых отчетов и умных рекомендаций.
 
 ---
 
 ## ✅ Завершенные задачи (Completed)
+- [x] **2026-07-24**: **Успешно подключена и развернута продакшн PostgreSQL БД в Supabase**:
+  - Настроено подключение к Supabase (Pooler IPv4 в регионе `ap-southeast-1`) в файлах `.env` и `.env.local`.
+  - Развернуты таблицы реляционной схемы (`organizations`, `survey_rounds`, `survey_responses`, `question_answers`).
+  - Сгенерирован клиент Prisma Client v7 (`npx prisma generate`).
+  - Проверено прямое подключение и пройдено 31/31 автотестов слоя хранения и API эндпоинтов.
 - [x] **2026-07-24**: **Созданы OpenAPI 3.0 / Swagger Спецификация & Интерактивный Swagger UI (shalomut-tracker)**:
   - Разработана спецификация OpenAPI 3.0 в форматах JSON ([`public/openapi.json`](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/public/openapi.json)) и YAML ([`docs/openapi.yaml`](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/docs/openapi.yaml)), документирующая эндпоинты `/api/rounds`, `/api/survey/[shareCode]`, `/api/survey/[shareCode]/submit` и `/api/rounds/[roundId]/analytics`.
   - Создана страница интерактивного визуализатора Swagger UI [`src/app/api-docs/page.tsx`](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/src/app/api-docs/page.tsx) для онлайн тестирования и проверки схем данных.

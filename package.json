@@ -10,6 +10,7 @@
     "test": "npx tsx --test \"src/**/__tests__/*.test.ts\""
   },
   "dependencies": {
+    "@prisma/adapter-pg": "^7.9.0",
     "lucide-react": "1.18.0",
     "next": "16.2.9",
     "pg": "^8.22.0",

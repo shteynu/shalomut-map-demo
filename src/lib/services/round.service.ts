@@ -18,7 +18,7 @@ export class RoundService {
    * Initialize a new survey round configuration
    */
   public static createRound(input: CreateRoundInput): SurveyRound {
-    const roundId = `round_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const roundId = crypto.randomUUID();
     return {
       id: roundId,
       organizationId: input.organizationId,
