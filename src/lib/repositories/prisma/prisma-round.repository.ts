@@ -76,4 +76,29 @@ export class PrismaRoundRepository implements IRoundRepository {
       return null;
     }
   }
+
+  public async saveAiInsights(id: string, insights: Record<string, any>): Promise<boolean> {
+    try {
+      await this.prisma.surveyRound.update({
+        where: { id },
+        data: {
+          aiInsights: insights,
+          aiInsightsUpdatedAt: new Date(),
+        },
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  public async getAiInsights(id: string): Promise<Record<string, any> | null> {
+    const found = await this.prisma.surveyRound.findUnique({
+      where: { id },
+    });
+    const insights = found?.aiInsights;
+    return insights && typeof insights === 'object'
+      ? { ...insights }
+      : null;
+  }
 }

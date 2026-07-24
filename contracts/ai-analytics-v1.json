@@ -1,0 +1,37 @@
+{
+  "version": "1.0",
+  "dimensions": [
+    {
+      "id": "self-expression",
+      "nameHebrew": "ביטוי עצמי"
+    },
+    {
+      "id": "professional-competence",
+      "nameHebrew": "מסוגלות מקצועית"
+    },
+    {
+      "id": "social-resource",
+      "nameHebrew": "קשרים חברתיים"
+    },
+    {
+      "id": "balance",
+      "nameHebrew": "איזון"
+    },
+    {
+      "id": "management-support",
+      "nameHebrew": "עורף מקצועי"
+    },
+    {
+      "id": "certainty",
+      "nameHebrew": "ודאות"
+    },
+    {
+      "id": "organizational-climate",
+      "nameHebrew": "אקלים ארגוני"
+    },
+    {
+      "id": "meaning",
+      "nameHebrew": "משמעות"
+    }
+  ]
+}

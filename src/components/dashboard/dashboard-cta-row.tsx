@@ -8,16 +8,27 @@ const dashboardActionIcons: Record<DashboardActionId, LucideIcon> = {
   dashboardMap: ChevronRight,
 };
 
-export function DashboardCtaRow({ actions, center = false }: { actions: DashboardNavigationAction[]; center?: boolean }) {
+export function DashboardCtaRow({
+  actions,
+  center = false,
+  roundId,
+}: {
+  actions: DashboardNavigationAction[];
+  center?: boolean;
+  roundId?: string;
+}) {
   return (
     <nav className={`dashboard-cta-row${center ? " dashboard-cta-row-center" : ""}`} aria-label="ניווט מסך">
       {actions.map((action) => {
         const Icon = dashboardActionIcons[action.id];
+        const href = roundId
+          ? `${action.href}?roundId=${encodeURIComponent(roundId)}`
+          : action.href;
         return (
           <Link
             key={`${action.href}-${action.label}`}
             className={`dashboard-pill-button dashboard-pill-button-${action.variant}`}
-            href={action.href}
+            href={href}
           >
             {action.label}
             <Icon size={22} aria-hidden="true" />

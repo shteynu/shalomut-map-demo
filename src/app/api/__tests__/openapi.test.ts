@@ -24,6 +24,9 @@ describe('OpenAPI Specification Integrity', () => {
     assert.ok(paths.includes('/api/survey/{shareCode}'), 'Must include /api/survey/{shareCode} path');
     assert.ok(paths.includes('/api/survey/{shareCode}/submit'), 'Must include /api/survey/{shareCode}/submit path');
     assert.ok(paths.includes('/api/rounds/{roundId}/analytics'), 'Must include /api/rounds/{roundId}/analytics path');
+    assert.ok(paths.includes('/api/mcp'), 'Must include /api/mcp path');
+    assert.ok(paths.includes('/api/rounds/{roundId}/ai-insights'), 'Must include AI insights callback/read path');
+    assert.ok(paths.includes('/api/rounds/{roundId}/trigger-ai'), 'Must include AI analytics trigger path');
   });
 
   it('should define essential data schemas matching backend types', () => {
@@ -37,5 +40,8 @@ describe('OpenAPI Specification Integrity', () => {
     assert.ok(schemas.RoundAnalyticsResult, 'Must include RoundAnalyticsResult schema');
     assert.ok(schemas.RoundDimensionScore, 'Must include RoundDimensionScore schema');
     assert.ok(schemas.WellbeingDimensionId, 'Must include WellbeingDimensionId schema');
+    assert.ok(schemas.StoneMapResult, 'Must include StoneMapResult schema');
+    assert.ok(schemas.StoneDetail, 'Must include StoneDetail schema');
+    assert.strictEqual(schemas.StoneMapResult.properties.contractVersion.example, '1.0');
   });
 });

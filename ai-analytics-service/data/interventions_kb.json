@@ -1,0 +1,134 @@
+[
+  {
+    "id": "iso45003-wb-01",
+    "dimension_id": "balance",
+    "source": "ISO 45003:2021 Clause 6.1.2.1 (Workload and work pace)",
+    "title": "Workload Assessment & Meeting-Free Time Blocks",
+    "summary": "Establish weekly focus windows without non-urgent admin meetings. Re-evaluate duty distribution using transparent capacity mapping.",
+    "actionable_steps": [
+      "Define 2 dedicated blocks weekly reserved exclusively for lesson prep without staff meetings.",
+      "Conduct a monthly review of non-teaching administrative burdens."
+    ],
+    "target_status": ["yellow", "red"]
+  },
+  {
+    "id": "oecd-wb-02",
+    "dimension_id": "balance",
+    "source": "OECD Wellbeing Framework - Work-Life Balance Guidelines",
+    "title": "Digital Communication Boundaries Protocol",
+    "summary": "Implement school-wide 'right to disconnect' guidelines restricting work emails and chat messaging past 18:00 on school evenings.",
+    "actionable_steps": [
+      "Set automated response templates for non-urgent parent communications after school hours.",
+      "Agree on emergency-only contact channels for leadership."
+    ],
+    "target_status": ["yellow", "red"]
+  },
+  {
+    "id": "iso45003-ms-01",
+    "dimension_id": "management-support",
+    "source": "ISO 45003:2021 Clause 6.1.2.3 (Leadership and support)",
+    "title": "Structured Leadership 1-on-1 Check-ins",
+    "summary": "Provide regular non-evaluative support sessions focusing on teacher psychological safety and resource obstacles rather than performance audits.",
+    "actionable_steps": [
+      "Schedule bi-weekly 20-minute empathetic check-in sessions with department heads.",
+      "Track operational friction points raised by teachers in an open feedback log."
+    ],
+    "target_status": ["yellow", "red"]
+  },
+  {
+    "id": "oecd-ms-02",
+    "dimension_id": "management-support",
+    "source": "OECD Education 2030 Leadership Standards",
+    "title": "Transparent Resource Allocation & Decision Clarity",
+    "summary": "Publish criteria for classroom budget allocations and invite teacher representation on resource planning committees.",
+    "actionable_steps": [
+      "Form a joint teacher-admin resource advisory group.",
+      "Provide written rationales for key administrative decisions affecting classroom teaching."
+    ],
+    "target_status": ["yellow", "red"]
+  },
+  {
+    "id": "iso45003-ps-01",
+    "dimension_id": "organizational-climate",
+    "source": "ISO 45003:2021 Clause 6.1.2.2 (Organizational culture & psychological safety)",
+    "title": "Blameless Retrospectives & Incident Reviews",
+    "summary": "Adopt psychological safety frameworks for analyzing pedagogical challenges or disciplinary issues without individual blame.",
+    "actionable_steps": [
+      "Replace punitive error reviews with structured 'lessons learned' peer discussions.",
+      "Encourage leadership to share vulnerability and past mistakes in staff meetings."
+    ],
+    "target_status": ["yellow", "red"]
+  },
+  {
+    "id": "oecd-ps-02",
+    "dimension_id": "organizational-climate",
+    "source": "OECD TALIS Recommendations on Trust in Schools",
+    "title": "Anonymous Feedback Channels & Action Commitments",
+    "summary": "Establish safe continuous feedback loops where staff can express concerns without fear of reprisal, paired with visible management action.",
+    "actionable_steps": [
+      "Maintain a monthly digital suggestion box reviewed publicly in staff meetings.",
+      "Publish leadership action plans responding to top staff concerns within 14 days."
+    ],
+    "target_status": ["yellow", "red"]
+  },
+  {
+    "id": "iso45003-pr-01",
+    "dimension_id": "social-resource",
+    "source": "ISO 45003:2021 Clause 6.1.2.4 (Interpersonal relationships)",
+    "title": "Structured Peer Co-Working & Mentorship Circles",
+    "summary": "Facilitate collaborative lesson planning triads to foster professional solidarity and reduce teacher isolation.",
+    "actionable_steps": [
+      "Form cross-subject peer trios for shared curriculum design.",
+      "Allocate 1 hour monthly for informal peer wisdom sharing."
+    ],
+    "target_status": ["yellow", "red"]
+  },
+  {
+    "id": "oecd-pg-01",
+    "dimension_id": "professional-competence",
+    "source": "OECD Teachers' Professional Learning Framework",
+    "title": "Teacher-Led Professional Learning Communities (PLCs)",
+    "summary": "Empower teachers to direct their own professional development budgets towards action research and peer observation.",
+    "actionable_steps": [
+      "Allocate dedicated micro-grants for teacher-led classroom research.",
+      "Facilitate voluntary peer classroom visits with structured observation rubrics."
+    ],
+    "target_status": ["yellow", "red"]
+  },
+  {
+    "id": "iso45003-certainty-01",
+    "dimension_id": "certainty",
+    "source": "ISO 45003:2021 guidance on role clarity and organizational change",
+    "title": "Role Clarity & Change Communication Protocol",
+    "summary": "Publish stable role expectations and communicate upcoming operational changes early enough for staff to plan and ask questions.",
+    "actionable_steps": [
+      "Maintain a single written source for current responsibilities and decision owners.",
+      "Announce material schedule or policy changes with a clear rationale and transition window."
+    ],
+    "target_status": ["yellow", "red"]
+  },
+  {
+    "id": "oecd-se-01",
+    "dimension_id": "self-expression",
+    "source": "OECD TALIS guidance on teacher agency and participation",
+    "title": "Teacher Voice & Safe Feedback Forum",
+    "summary": "Create recurring channels where teachers can raise ideas, concerns, and dissenting perspectives without fear of retaliation.",
+    "actionable_steps": [
+      "Reserve a structured teacher-led agenda slot in monthly staff meetings.",
+      "Offer an anonymous feedback channel and publish leadership responses to recurring themes."
+    ],
+    "target_status": ["yellow", "red"]
+  },
+  {
+    "id": "oecd-meaning-01",
+    "dimension_id": "meaning",
+    "source": "OECD teacher wellbeing guidance on purpose and professional agency",
+    "title": "Purpose Alignment & Impact Reflection",
+    "summary": "Reconnect daily responsibilities with visible student and community outcomes while reducing tasks that staff experience as disconnected from educational purpose.",
+    "actionable_steps": [
+      "Open quarterly planning with short examples of meaningful student or community impact.",
+      "Review recurring administrative tasks and remove or simplify work with no clear educational value."
+    ],
+    "target_status": ["yellow", "red"]
+  }
+]

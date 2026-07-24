@@ -1,4 +1,5 @@
 export * from "./dashboard-cta-row";
+export * from "./dashboard-ai-insights-state";
 export * from "./dashboard-dimension-page";
 export * from "./dashboard-heading";
 export * from "./dashboard-home-link";

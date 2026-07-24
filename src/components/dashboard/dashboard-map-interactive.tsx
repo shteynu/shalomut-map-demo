@@ -6,6 +6,7 @@ import { Plus, Undo2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DimensionIcon } from "@/components/ui/dimension-icon";
 import { getDimensionSurface, statusLabels, wellbeingDimensions } from "@/lib/demo-data";
+import { useDashboardRoundId } from "@/lib/hooks/use-dashboard-round-id";
 import { dashboardDimensionRoute } from "@/lib/navigation";
 import { clamp } from "@/lib/utils/math";
 
@@ -71,7 +72,8 @@ function getPlusPosition(dimensionId: string) {
   }
 }
 
-export function DashboardMapInteractive() {
+export function DashboardMapInteractive({ roundId }: { roundId: string }) {
+  const resolvedRoundId = useDashboardRoundId(roundId);
   const stageRef = useRef<HTMLElement | null>(null);
   const stoneRefs = useRef<Record<string, HTMLAnchorElement | null>>({});
   const dragStateRef = useRef<DragState | null>(null);
@@ -283,7 +285,7 @@ export function DashboardMapInteractive() {
           <Link
             key={dimension.id}
             ref={registerStoneRef(dimension.id)}
-            href={dashboardDimensionRoute(dimension.id)}
+            href={`${dashboardDimensionRoute(dimension.id)}?roundId=${encodeURIComponent(resolvedRoundId)}`}
             className={`dashboard-map-blob${draggingId === dimension.id ? " is-dragging" : ""}`}
             style={
               {
