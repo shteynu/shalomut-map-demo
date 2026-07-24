@@ -52,22 +52,31 @@ def privacy_gate_node(state: AnalyticsState) -> AnalyticsState:
 
 def _call_llm_psychologist(dim_id: str, dim_hebrew: str, score: float, status: str) -> str:
     """
-    Calls live LLM API (OpenAI GPT-4o) if OPENAI_API_KEY is configured.
+    Calls live LLM API with token-optimization strategies:
+    - 0 tokens spent on 'green' dimensions when only_llm_for_problematic is True
+    - Fast lightweight model (gpt-4o-mini)
+    - Strict max_tokens cap
     """
+    # TOKEN OPTIMIZATION 1: Skip LLM call for green (healthy) dimensions
+    if settings.only_llm_for_problematic and status == "green":
+        logger.info(f"[Token Optimization] Skipped LLM call for green dimension '{dim_id}' (0 tokens spent).")
+        return f"מדד '{dim_hebrew}' מצוי באזור ירוק (ציון {score:.1f}). הצוות מביע שביעות רצון גבוהה וחיבור חיובי לתחום זה."
+
     if settings.openai_api_key:
         try:
             prompt = (
                 f"You are an expert Organizational Psychologist analyzing teacher wellbeing.\n"
                 f"Dimension: '{dim_hebrew}' ({dim_id}). Score: {score:.1f}/100. Status: {status.upper()}.\n"
-                f"Write a 2-3 sentence deep psychological interpretation in HEBREW explaining the organizational causes and impact on teachers."
+                f"Write a concise 2-sentence psychological interpretation in HEBREW explaining organizational causes and impact."
             )
             req_data = json.dumps({
-                "model": settings.openai_model,
+                "model": settings.openai_model_fast,
                 "messages": [
-                    {"role": "system", "content": "You are a senior organizational psychologist specializing in educational staff mental health."},
+                    {"role": "system", "content": "You are a concise organizational psychologist for educational staff."},
                     {"role": "user", "content": prompt}
                 ],
-                "temperature": 0.3
+                "max_tokens": settings.max_tokens_per_dimension,
+                "temperature": 0.2
             }).encode("utf-8")
 
             req = urllib.request.Request(
@@ -148,6 +157,7 @@ def agent_rag_intervention_node(state: AnalyticsState) -> AnalyticsState:
     Node 3: Agent RAG Intervention (Tool Node)
     Queries local Vector DB (ChromaDB) to extract top-3 relevant structural interventions
     for problematic ('yellow'/'red') dimensions and adds them to the state.
+    0 LLM tokens spent (uses local vector embeddings).
     """
     round_data = state.get("round_data", {})
     dim_scores = round_data.get("dimensionScores", {})
@@ -173,9 +183,10 @@ def agent_rag_intervention_node(state: AnalyticsState) -> AnalyticsState:
 
 def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
     """
-    Node 4: Agent Safety Validator (LLM Critique Node)
+    Node 4: Agent Safety Validator (Critique Node)
     Acts as a quality controller. Checks combined text for AI hallucinations
     (e.g., claiming a score is bad when it's 'green') and privacy leaks.
+    Uses fast zero-cost rule checks before falling back to critique LLM.
     """
     round_data = state.get("round_data", {})
     dim_scores = round_data.get("dimensionScores", {})
