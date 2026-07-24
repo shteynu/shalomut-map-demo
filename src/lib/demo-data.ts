@@ -75,39 +75,32 @@ export type WellbeingDimension = {
 };
 
 export const organization: Organization = {
-  id: "org-dror",
-  name: "בית ספר דרור",
+  id: "org-main",
+  name: "בית ספר",
   city: "חיפה",
-  managerName: "דנה לוי",
-  staffSize: 34,
+  managerName: "מנהל/ת",
+  staffSize: 0,
 };
 
 export const activeRound: Round = {
-  id: "round-2026-q1",
+  id: "round-current",
   organizationId: organization.id,
-  period: "רבעון 1, תשפ״ה",
-  openedAt: "12.01.2026",
-  closesAt: "26.01.2026",
+  period: "סבב אבחון חדש",
+  openedAt: "-",
+  closesAt: "-",
   status: "open",
-  responseCount: 18,
+  responseCount: 0,
   minimumResponses: 10,
-  expectedResponses: 34,
-  shareUrl: "https://shteynu.github.io/shalomut-map/survey/dror-q1/",
+  expectedResponses: 0,
+  shareUrl: "",
   backgroundInputs: {
-    teachingStaff: 34,
-    sicknessDaysThisQuarter: 91,
-    newStaffMembers: 5,
-    studentCount: 420,
-    socioEconomicIndex: 4,
-    classesPerGrade: {
-      "א": 2,
-      "ב": 2,
-      "ג": 2,
-      "ד": 2,
-      "ה": 3,
-      "ו": 2
-    },
-    notes: "שינוי מערכת שעות בחטיבה הצעירה וכניסת צוות חדש בתחילת השנה.",
+    teachingStaff: 0,
+    sicknessDaysThisQuarter: 0,
+    newStaffMembers: 0,
+    studentCount: 0,
+    socioEconomicIndex: 0,
+    classesPerGrade: {},
+    notes: "",
   },
 };
 

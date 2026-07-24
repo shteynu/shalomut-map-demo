@@ -12,6 +12,10 @@
 ---
 
 ## ✅ Завершенные задачи (Completed)
+- [x] **2026-07-24**: **Сброшены макетные данные UI до состояния 0 ответов (Empty Round State)**:
+  - В [`src/lib/demo-data.ts`](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/src/lib/demo-data.ts) сброшены захардкоженные показатели (0 משיבים, 0 מתוך 10 תשובות).
+  - Дашборд `/dashboard` переведен в защищенный заблокированный режим (`DashboardMapLocked`), отображающий `0 מתוך 10 תשובות נדרשות` и кнопку запуска нового опроса.
+  - Прогнаны 31/31 тестов и успешен production-билд.
 - [x] **2026-07-24**: **Созданы Prisma Migrations (`0_init`) и разделены URL для Pooler/Direct соединения**:
   - Создана базовая миграция [`prisma/migrations/0_init/migration.sql`](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/prisma/migrations/0_init/migration.sql).
   - Разделено подключение к БД: `DATABASE_URL` через Pooler (порт 6543, `pgbouncer=true`) для рантайма и `DIRECT_URL` (порт 5432) для DDL/миграций в [`prisma.config.ts`](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/prisma.config.ts), `.env` и `.env.local`.
