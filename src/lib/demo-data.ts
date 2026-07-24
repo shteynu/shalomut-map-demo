@@ -114,8 +114,8 @@ export const wellbeingDimensions: WellbeingDimension[] = [
     label: "קול אישי",
     conceptLabel: "קול אישי",
     subtitle: "אפשרות לביטוי עצמי",
-    score: 82,
-    status: "green",
+    score: 0,
+    status: "yellow",
     mapPosition: { top: "10%", right: "12%", size: "8.6rem", rotate: -9 },
     conceptPosition: {
       top: "2%",
@@ -176,8 +176,8 @@ export const wellbeingDimensions: WellbeingDimension[] = [
     label: "מומחיות בטוחה",
     conceptLabel: "מומחיות בטוחה",
     subtitle: "תחושת מסוגלות מקצועית",
-    score: 76,
-    status: "green",
+    score: 0,
+    status: "yellow",
     mapPosition: { top: "18%", right: "34%", size: "7.9rem", rotate: 7 },
     conceptPosition: {
       top: "30%",
@@ -238,7 +238,7 @@ export const wellbeingDimensions: WellbeingDimension[] = [
     label: "משאב חברתי",
     conceptLabel: "משאב חברתי",
     subtitle: "קשרים חיוביים עם עמיתות ועמיתים",
-    score: 64,
+    score: 0,
     status: "yellow",
     mapPosition: { top: "37%", right: "22%", size: "10.2rem", rotate: -3 },
     conceptPosition: {
@@ -310,8 +310,8 @@ export const wellbeingDimensions: WellbeingDimension[] = [
     label: "איזון",
     conceptLabel: "איזון",
     subtitle: "יחס מאוזן בין כמות המשימות לזמן לביצוען",
-    score: 42,
-    status: "red",
+    score: 0,
+    status: "yellow",
     mapPosition: { top: "58%", right: "11%", size: "9.4rem", rotate: 10 },
     conceptPosition: {
       top: "32%",
@@ -496,8 +496,8 @@ export const wellbeingDimensions: WellbeingDimension[] = [
     label: "אקלים ארגוני",
     conceptLabel: "אקלים ארגוני",
     subtitle: "קידום רווחה נפשית כחלק מתרבות הארגון",
-    score: 71,
-    status: "green",
+    score: 0,
+    status: "yellow",
     mapPosition: { top: "57%", right: "42%", size: "8rem", rotate: -5 },
     conceptPosition: {
       top: "62%",
@@ -558,8 +558,8 @@ export const wellbeingDimensions: WellbeingDimension[] = [
     label: "משמעות",
     conceptLabel: "משמעות",
     subtitle: "תחושת ערך ומשמעות בעבודה",
-    score: 88,
-    status: "green",
+    score: 0,
+    status: "yellow",
     mapPosition: { top: "32%", right: "75%", size: "8.8rem", rotate: 5 },
     conceptPosition: {
       top: "64%",
@@ -630,6 +630,9 @@ export function getDimensionStaticParams() {
 }
 
 export function getStatusCount(status: WellbeingStatus) {
+  if (activeRound.responseCount < activeRound.minimumResponses) {
+    return 0;
+  }
   return wellbeingDimensions.filter((dimension) => dimension.status === status).length;
 }
 
@@ -646,6 +649,10 @@ export function getDimensionSurface(dimension: Pick<WellbeingDimension, "status"
   return statusSurfaces[dimension.status];
 }
 
-export const overallScore = Math.round(
-  wellbeingDimensions.reduce((sum, dimension) => sum + dimension.score, 0) / wellbeingDimensions.length,
-);
+export const overallScore =
+  activeRound.responseCount < activeRound.minimumResponses
+    ? 0
+    : Math.round(
+        wellbeingDimensions.reduce((sum, dimension) => sum + dimension.score, 0) /
+          wellbeingDimensions.length
+      );
