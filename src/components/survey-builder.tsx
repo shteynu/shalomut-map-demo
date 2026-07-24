@@ -75,7 +75,7 @@ function createDraftId(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2, 7)}`;
 }
 
-export function SurveyBuilderDemo() {
+export function SurveyBuilder() {
   const [title, setTitle] = useState("שאלון שלומות צוות - סבב אבחון חורף");
   const [audience, setAudience] = useState("כלל צוות ההוראה");
   const [estimatedMinutes, setEstimatedMinutes] = useState(15);
@@ -179,7 +179,7 @@ export function SurveyBuilderDemo() {
       <PageIntro
         eyebrow={`${organization.name}, ${activeRound.period} | בניית שאלון`}
         title={title}
-        description="מסך זה מדגים עריכת שאלון לפני הפצה: קהל יעד, ניסוח פתיח, שאלות פעילות וקישור המשיבים החיצוני."
+        description="מסך זה מאפשר עריכת שאלון לפני הפצה: קהל יעד, ניסוח פתיח, שאלות פעילות וקישור המשיבים החיצוני."
         actions={
           <>
             <button
@@ -318,7 +318,7 @@ export function SurveyBuilderDemo() {
             </div>
 
             <p className="quiet-note survey-builder-filter-note">
-              מוצגות {visibleQuestions.length} שאלות ב{selectedDimensionLabel}. המודל המלא נשמר: 8 ממדים ו-24 שאלות מקור בדמו.
+              מוצגות {visibleQuestions.length} שאלות ב{selectedDimensionLabel}. המודל המלא נשמר: 8 ממדים ו-24 שאלות מקור.
             </p>
 
             <div className="survey-builder-question-list">
@@ -459,7 +459,7 @@ export function SurveyBuilderDemo() {
             <div className="survey-builder-heading">
               <div>
                 <p className="eyebrow">שאלה מומלצת הבאה</p>
-                <h2>ספריית דמו</h2>
+                <h2>ספריית שאלות</h2>
               </div>
             </div>
 
@@ -477,7 +477,7 @@ export function SurveyBuilderDemo() {
               </button>
             </article>
 
-            {saved ? <p className="success-note">טיוטת השאלון נשמרה בדמו וניתן להמשיך להפצה.</p> : null}
+            {saved ? <p className="success-note">טיוטת השאלון נשמרה וניתן להמשיך להפצה.</p> : null}
           </section>
         </aside>
       </div>

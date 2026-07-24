@@ -13,8 +13,8 @@ const notoSansHebrew = Noto_Sans_Hebrew({
 });
 
 export const metadata: Metadata = {
-  title: "מפת השלומות | דמו",
-  description: "דמו UI למפת שלומות ארגונית בבתי ספר",
+  title: "מפת השלומות",
+  description: "מפת שלומות ארגונית בבתי ספר",
 };
 
 export default function RootLayout({

@@ -1,6 +1,6 @@
 ---
 version: "alpha"
-name: "Shalomut Map Demo"
+name: "Shalomut Map"
 description: "A school wellbeing platform design system featuring Hebrew RTL support, warm organic aesthetics, and interactive 'stone' layout structures."
 colors:
   cream: "#fbf4dd"
@@ -82,7 +82,7 @@ zIndex:
 
 # Overview
 
-The **Shalomut Map Demo** design language is structured around an **organic stone metaphor** representing the multi-dimensional aspects of school wellbeing (שלומות). Instead of rigid grids and industrial rectangles, this system uses hand-drawn, asymmetrical layouts that mirror natural elements—such as stones, pebbles, and soft gradients. 
+The **Shalomut Map** design language is structured around an **organic stone metaphor** representing the multi-dimensional aspects of school wellbeing (שלומות). Instead of rigid grids and industrial rectangles, this system uses hand-drawn, asymmetrical layouts that mirror natural elements—such as stones, pebbles, and soft gradients. 
 
 This design system is implemented in a **Next.js** web application with **Tailwind CSS 4.0** and custom stylesheet values in `src/app/globals.css`.
 

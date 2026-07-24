@@ -1,5 +1,5 @@
-import { SurveyBuilderDemo } from "@/components/survey-builder-demo";
+import { SurveyBuilder } from "@/components/survey-builder";
 
 export default function SurveyPage() {
-  return <SurveyBuilderDemo />;
+  return <SurveyBuilder />;
 }

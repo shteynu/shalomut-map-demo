@@ -1,6 +1,6 @@
-# Shalomut Map Demo
+# Shalomut Map
 
-Hebrew RTL Next.js demo for a school wellbeing platform.
+Hebrew RTL Next.js application for a school wellbeing platform.
 
 ## Local development
 
@@ -23,7 +23,7 @@ generates the deployable site in `out/`.
 
 ### Cloudflare Pages
 
-Recommended for this demo because static asset hosting on the free plan is generous.
+Recommended for this application because static asset hosting on the free plan is generous.
 
 1. Push this project to GitHub.
 2. In Cloudflare Pages, create a new project from that repository.
@@ -34,8 +34,8 @@ Recommended for this demo because static asset hosting on the free plan is gener
 If deploying from the CLI after authenticating Wrangler:
 
 ```bash
-npx wrangler pages project create shalomut-map-demo
-npx wrangler pages deploy out --project-name shalomut-map-demo
+npx wrangler pages project create shalomut-map
+npx wrangler pages deploy out --project-name shalomut-map
 ```
 
 ### GitHub Pages

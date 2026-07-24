@@ -67,7 +67,7 @@ export function RoundControls() {
         {closed ? (
           <div className="closed-note">
             <CheckCircle2 size={18} aria-hidden="true" />
-            סבב האבחון מסומן כסגור בדמו. הדשבורד זמין לצפייה.
+            סבב האבחון מסומן כסגור. הדשבורד זמין לצפייה.
           </div>
         ) : null}
       </div>

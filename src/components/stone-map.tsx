@@ -45,7 +45,7 @@ export function StoneMap() {
             <ChevronLeft size={18} aria-hidden="true" />
           </Link>
         ) : (
-          <span className="quiet-note">בדמו הפירוט המלא מוצג עבור משאב חברתי.</span>
+          <span className="quiet-note">הפירוט המלא מוצג עבור משאב חברתי.</span>
         )}
       </aside>
     </section>

@@ -78,7 +78,7 @@ export default function HomePage() {
         />
       </section>
 
-      <section className="home-action-grid" aria-label="זרימת הדמו">
+      <section className="home-action-grid" aria-label="זרימת העבודה">
         {homeActionRouteIds.map((routeId) => {
           const action = routeMetadata[routeId];
           const Icon = actionIcons[routeId];
