@@ -1,9 +1,7 @@
 import logging
 from typing import Optional
-from fastapi import FastAPI, BackgroundTasks, Header, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, Header, HTTPException
 from src.schemas.webhook import WebhookEventPayload
-from src.schemas.mcp_types import StoneMapResult
 from src.services.analytics_runner import analytics_runner_service
 from src.config import settings
 
@@ -14,14 +12,6 @@ app = FastAPI(
     title="Shalomut AI Analytics Microservice",
     description="Standalone Python AI Analytics Service for Teachers' Wellbeing Map (מפת שלומות)",
     version="0.1.0"
-)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
 )
 
 @app.get("/health")
@@ -36,13 +26,18 @@ def health_check():
 @app.post("/api/v1/webhook/events")
 async def handle_webhook_event(
     payload: WebhookEventPayload,
-    background_tasks: BackgroundTasks,
     authorization: Optional[str] = Header(default=None),
 ):
     """
     Webhook handler for Data Layer triggers.
     Listens for {"event": "round_closed", "roundId": "uuid"}
     """
+    if settings.env != "development" and not settings.ai_webhook_secret:
+        raise HTTPException(
+            status_code=503,
+            detail="AI_WEBHOOK_SECRET is required outside development",
+        )
+
     if (
         settings.ai_webhook_secret
         and authorization != f"Bearer {settings.ai_webhook_secret}"
@@ -54,17 +49,16 @@ async def handle_webhook_event(
     if payload.event not in ["round_closed", "analytics_requested"]:
         raise HTTPException(status_code=400, detail=f"Unsupported event type: {payload.event}")
 
-    # Dispatch the graph-style analytics workflow asynchronously
-    background_tasks.add_task(
-        analytics_runner_service.process_round,
+    result = await analytics_runner_service.process_round(
         round_id=payload.roundId,
-        callback_url=payload.callbackUrl
+        callback_url=payload.callbackUrl,
     )
 
     return {
-        "status": "accepted",
-        "message": f"Analytics processing queued for round {payload.roundId}",
-        "roundId": payload.roundId
+        "status": "completed",
+        "message": f"Analytics processing completed for round {payload.roundId}",
+        "roundId": payload.roundId,
+        "resultStatus": result.get("status"),
     }
 
 @app.post("/api/v1/rounds/{round_id}/analyze")

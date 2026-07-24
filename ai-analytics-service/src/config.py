@@ -5,7 +5,7 @@ class Settings:
         self.app_name: str = "Shalomut AI Analytics Microservice"
         self.port: int = int(os.getenv("PORT", "8000"))
         self.host: str = os.getenv("HOST", "0.0.0.0")
-        self.env: str = os.getenv("ENV", "development")
+        self.env: str = os.getenv("ENV") or os.getenv("VERCEL_ENV", "development")
         
         # Data Layer & MCP Settings
         self.data_layer_mcp_url: str = os.getenv("DATA_LAYER_MCP_URL", "http://localhost:3000/api/mcp")

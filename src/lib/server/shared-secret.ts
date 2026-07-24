@@ -4,7 +4,7 @@ export function hasConfiguredSharedSecret(
 ): boolean {
   const expectedSecret = process.env[environmentVariable];
   if (!expectedSecret) {
-    return true;
+    return !process.env.VERCEL_ENV;
   }
 
   const authorization = request.headers.get('authorization');

@@ -121,6 +121,16 @@ class MockDataLayerMCPServer:
         for dim_id, s in data.get("dimensionScores", {}).items():
             scores_dict[dim_id] = RoundDimensionScore(**s)
 
+        if data["isLocked"] and not scores_dict:
+            scores_dict = {
+                dimension_id: RoundDimensionScore(
+                    dimensionId=dimension_id,
+                    averageScore=0,
+                    computedStatus="yellow",
+                )
+                for dimension_id in AI_ANALYTICS_DIMENSION_IDS
+            }
+
         if set(scores_dict) != set(AI_ANALYTICS_DIMENSION_IDS):
             raise ValueError("Mock round does not match the canonical AI analytics dimensions.")
 

@@ -1,3 +1,18 @@
+Metadata-Version: 2.4
+Name: shalomut-ai-analytics
+Version: 0.1.0
+Summary: Decoupled AI Analytics Microservice for Teachers' Wellbeing Map (מפת שלומות)
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+Requires-Dist: fastapi>=0.110.0
+Requires-Dist: uvicorn[standard]>=0.28.0
+Requires-Dist: pydantic>=2.6.0
+Requires-Dist: httpx>=0.27.0
+Provides-Extra: dev
+Requires-Dist: pytest>=8.1.0; extra == "dev"
+Requires-Dist: pytest-asyncio>=0.23.0; extra == "dev"
+Requires-Dist: httpx>=0.27.0; extra == "dev"
+
 # Shalomut AI Analytics Service
 
 Standalone FastAPI service that turns privacy-safe round analytics into the
@@ -13,8 +28,9 @@ The current implementation is deliberately small:
   `data/interventions_kb.json` catalog, scoped strictly by dimension;
 - it posts the validated result back to the core app.
 
-The service does not currently use LangGraph or ChromaDB at runtime, so those
-heavy packages are intentionally absent from the deployment manifest.
+The service does not currently use LangGraph or ChromaDB at runtime. Their
+dependencies remain in the package manifest while that architecture is being
+evaluated.
 
 ## Contract
 
@@ -57,9 +73,6 @@ sides:
 - `AI_WEBHOOK_SECRET`: core trigger → AI webhook;
 - `AI_CALLBACK_SECRET`: AI callback → core persistence endpoint.
 
-On Vercel, missing shared secrets fail closed. Local development may run
-without them.
-
 ## Endpoints
 
 - `GET /health`
@@ -68,16 +81,6 @@ without them.
 
 The core application API is documented in `../public/openapi.json` and
 `../docs/openapi.yaml`.
-
-## Vercel preview deployment
-
-The package declares `src.main:app` as its Vercel FastAPI entrypoint. Create a
-separate Vercel project whose root directory is `ai-analytics-service`, then
-configure Preview variables from `.env.example`. Keep `USE_MOCK_MCP=false`.
-
-The webhook executes the pipeline and callback within the request instead of
-using an in-process background task, which is not a durable queue in a
-serverless runtime.
 
 ## Verification
 

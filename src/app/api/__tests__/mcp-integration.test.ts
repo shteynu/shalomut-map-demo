@@ -106,6 +106,40 @@ test('MCP Server requires its shared secret when configured', async () => {
   }
 });
 
+test('MCP Server fails closed on Vercel when its shared secret is missing', async () => {
+  const previousSecret = process.env.MCP_SHARED_SECRET;
+  const previousVercelEnvironment = process.env.VERCEL_ENV;
+  delete process.env.MCP_SHARED_SECRET;
+  process.env.VERCEL_ENV = 'preview';
+
+  try {
+    const req = new Request('http://localhost:3000/api/mcp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: 'missing-secret',
+        method: 'tools/list',
+      }),
+    });
+
+    const res = await mcpHandler(req);
+    assert.strictEqual(res.status, 401);
+  } finally {
+    if (previousSecret === undefined) {
+      delete process.env.MCP_SHARED_SECRET;
+    } else {
+      process.env.MCP_SHARED_SECRET = previousSecret;
+    }
+
+    if (previousVercelEnvironment === undefined) {
+      delete process.env.VERCEL_ENV;
+    } else {
+      process.env.VERCEL_ENV = previousVercelEnvironment;
+    }
+  }
+});
+
 test('MCP Server returns error for invalid tool call', async () => {
   const req = new Request('http://localhost:3000/api/mcp', {
     method: 'POST',
