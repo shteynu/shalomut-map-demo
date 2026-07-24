@@ -19,6 +19,7 @@
 - [design.md](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/design.md) — Полный гайд по дизайн-системе, цветам и компонентам.
 - [ROADMAP.md](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/ROADMAP.md) — Завершенные типографические оптимизации и WCAG AA адаптация.
 - [PROGRESS.md](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/PROGRESS.md) — **Память сессий**: текущий статус и следующие шаги.
+- [docs/shalomut-tracker-handoff.md](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/docs/shalomut-tracker-handoff.md) — актуальный operational handoff: staging, empty-runtime fix, доказательства и оставшаяся миграция UI с mock data.
 - [docs/ai-analytics-handoff.md](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/docs/ai-analytics-handoff.md) — handoff: сделано, подтверждено, осталось и approval gates.
 - [contracts/ai-analytics-v1.json](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/contracts/ai-analytics-v1.json) — каноническая версия и ID восьми измерений для TypeScript/Python интеграции.
 - [ai-analytics-service/README.md](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/ai-analytics-service/README.md) — локальный запуск, границы runtime и переменные AI-сервиса.
@@ -39,15 +40,22 @@
 - **Транспорт**: MCP, webhook и callback поддерживают независимые Bearer secrets. При недоступности удалённого MCP/AI-сервиса обработка завершается ошибкой; mock data разрешены только при явном `USE_MOCK_MCP=true`.
 - **UI**: Dashboard читает AI-insights по `roundId`, валидирует контракт на клиентской границе и отдельно отображает loading, privacy-locked, not-found и error состояния.
 
+### ADR-003: Empty persistence must remain empty
+- **Решение**: отсутствие `DATABASE_URL`, недоступный Prisma client или пустая БД не должны автоматически создавать школу, раунд или ответы. Default in-memory repositories стартуют пустыми.
+- **Demo boundary**: `DEMO_ORGANIZATION`, `DEMO_ROUND`, `SHALOM-DEMO` и `src/lib/demo-data.ts` разрешены только как явные test/demo fixtures и визуальные mock metadata, но не как скрытый production fallback.
+- **UI gap**: manager UI пока ещё читает нулевые mock values из `src/lib/demo-data.ts`. Следующий обязательный этап — database-backed view model и отдельные onboarding states для отсутствующей организации/раунда.
+
 ---
 
 ## 🌐 Окружения и Деплой (Environments & Deployment)
 - **Staging (`stg`)**:
   - **URL**: `https://shalomut-map-demo-ui-redesign.vercel.app/`
-  - **Источник**: бранч `main`
-  - **Правило**: Автоматический деплой при каждом коммите/пуше в ветку `main`.
+  - **Текущее состояние**: вручную направлен на preview deployment `dpl_35S9VvwN8V9Bq7da3iP2SJwT4349`, commit `a20ac66`, branch `agent/empty-runtime-repositories`, draft PR #5.
+  - **Проверка**: `/` → `0/0`, `/api/rounds/` → `{"round":null}`, HTTP 200.
+  - **Целевое правило после merge PR #5**: staging должен указывать на проверенный deployment ветки `main`.
 - **Production (`prod`)**:
-  - **URL**: Основной production-хост (сохранен без изменений)
+  - **URL**: `https://shalomut-map-demo.vercel.app/`
+  - **Состояние**: в рамках empty-runtime fix не изменялся.
   - **Правило**: Мануальный деплой только по прямому указанию (через Vercel Dashboard *Promote to Production* или GitHub Actions `workflow_dispatch`).
 
 ### Переменные AI-интеграции

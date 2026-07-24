@@ -1,23 +1,33 @@
 # PROGRESS: Shalomut Map
 
 ## 📌 Текущий статус
-- **Текущий этап**: Реализация AI Analytics стабилизирована и запушена в `feature/ai-analytics-microservice-mcp`: единый контракт, Prisma-персистентность, fail-closed транспорт, сквозной Next.js → Python → Next.js тест и dashboard UI.
+- **Текущий этап**: переход от статического demo к `shalomut-tracker`. AI Analytics из PR #4 уже смержена в `main` (`19401a6`). Исправление неявного runtime demo-seed находится в draft PR #5, commit `a20ac66`.
 - **Состояние БД**: `20260724170000_add_ai_insights` применена к Supabase-цели из `DIRECT_URL`; `prisma migrate status` сообщает `Database schema is up to date!`. Точное разделение этой цели на staging/production ещё нужно подтвердить через Supabase/Vercel.
-- **Граница деплоя**: Код находится в feature branch; AI-сервис и shared secrets не деплоились, merge в `main` не выполнялся.
-- **Handoff-документ**: См. [`docs/ai-analytics-handoff.md`](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/docs/ai-analytics-handoff.md).
+- **Staging**: `https://shalomut-map-demo-ui-redesign.vercel.app/` вручную направлен на READY preview `dpl_35S9VvwN8V9Bq7da3iP2SJwT4349` для commit `a20ac66`; `/` показывает `0/0`, `/api/rounds/` возвращает `{"round":null}`.
+- **Граница деплоя**: production alias не менялся. Python AI-сервис и shared secrets не развернуты.
+- **Ограничение текущего UI**: manager-facing страницы всё ещё используют `src/lib/demo-data.ts`; нулевой экран безопасен от ложных записей, но пока не является живым чтением из PostgreSQL.
+- **Актуальный handoff**: см. [`docs/shalomut-tracker-handoff.md`](docs/shalomut-tracker-handoff.md). AI-детали: [`docs/ai-analytics-handoff.md`](docs/ai-analytics-handoff.md).
 
 ---
 
-## 🚀 Следующие шаги (Next Up: Staging Readiness)
-1. [ ] Подтвердить владельца и назначение текущей Supabase-цели в Supabase/Vercel.
-2. [ ] Настроить `APP_BASE_URL`, `AI_SERVICE_URL`, `MCP_SHARED_SECRET`, `AI_WEBHOOK_SECRET` и `AI_CALLBACK_SECRET` в staging и AI-сервисе.
-3. [ ] Развернуть AI-сервис и выполнить staging smoke-test полного webhook/callback сценария.
-4. [ ] После smoke-test решить вопрос о merge в `main` и production promotion.
-5. [ ] Отдельно решить, нужны ли реальные LangGraph/ChromaDB; текущий runtime использует собственный async graph-style workflow и локальный JSON-каталог.
+## 🚀 Следующие шаги (Next Up: Database-backed Manager UI)
+1. [ ] Провести review и merge draft PR #5 в `main`, затем вернуть staging alias на проверенный `main` deployment.
+2. [ ] Определить контракт выбора организации и текущего раунда; убрать фиксированный lookup `round_demo_1`.
+3. [ ] Подключить главную, setup, round tracking и dashboard к Data Layer; для пустой БД показывать настоящий onboarding state.
+4. [ ] Убрать `SHALOM-DEMO` и другие demo ID из production runtime либо изолировать их в явном static-demo режиме.
+5. [ ] Подтвердить владельца Supabase target, развернуть Python AI-сервис, настроить shared secrets и выполнить реальный staging webhook/callback E2E.
+6. [ ] Production promotion — только после smoke evidence и отдельного подтверждения.
 
 ---
 
 ## ✅ Завершенные задачи (Completed)
+- [x] **2026-07-24**: **Исправлено ложное demo-состояние при пустой БД и обновлён staging**:
+  - Установлено две причины: staging alias указывал на старый commit `3083051`, а `getRepositories()` неявно подставлял `DEMO_ORGANIZATION` и `DEMO_ROUND` при отсутствии `DATABASE_URL`.
+  - Default in-memory repositories теперь пустые; demo fixtures подключаются только явно в тестах/opt-in demo.
+  - Добавлены regression tests для пустых repositories и ответа `GET /api/rounds` → `{"round":null}`.
+  - Создан commit `a20ac66`, draft PR #5 и READY preview `dpl_35S9VvwN8V9Bq7da3iP2SJwT4349`.
+  - Staging alias переназначен на проверенный preview. Production не изменялся.
+  - Проверки: 53/53 tests, lint, production build, GitHub Build & Validate, Vercel smoke.
 - [x] **2026-07-24**: **Стабилизирована сквозная AI Analytics интеграция и подключён dashboard**:
   - Добавлен общий versioned contract `contracts/ai-analytics-v1.json`; TypeScript callback отклоняет legacy/mismatched payloads и требует ровно 8 канонических измерений.
   - Python pipeline, mock MCP и intervention catalog синхронизированы с каноническими ID; рекомендации больше не переходят между измерениями.
