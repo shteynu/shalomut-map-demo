@@ -3,6 +3,8 @@ import { getRepositories } from '@/lib/repositories';
 import { RoundService } from '@/lib/services';
 import { CreateRoundInput } from '@/lib/types/backend';
 
+export const dynamic = 'force-static';
+
 export async function GET() {
   try {
     const { roundRepo } = getRepositories();

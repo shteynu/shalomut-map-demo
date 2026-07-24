@@ -35,10 +35,12 @@ jobs:
         run: npm install
 
       - name: Build static export
+        env:
+          NEXT_EXPORT: "true"
         run: npm run build
 
       - name: Disable Jekyll processing
-        run: touch out/.nojekyll
+        run: mkdir -p out && touch out/.nojekyll
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
