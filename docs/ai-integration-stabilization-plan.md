@@ -44,7 +44,7 @@ Python pipeline tests.
 Для другого staging/production target миграцию нужно запускать отдельно после
 подтверждения окружения и backup/status check.
 
-### 4. Transport hardening — Done locally
+### 4. Transport hardening — Done locally / deployment pending
 
 - Независимые secrets: `MCP_SHARED_SECRET`, `AI_WEBHOOK_SECRET`,
   `AI_CALLBACK_SECRET`.
@@ -59,11 +59,12 @@ Python pipeline tests.
 
 Проверка: headed browser scenarios для ready, missing и privacy-locked rounds.
 
-### 6. Documentation and verification — In progress / local checks green
+### 6. Documentation and verification — Done locally
 
 - OpenAPI JSON/YAML расширены MCP, trigger, callback/read и Stone Map schemas.
 - `ai-analytics-service/README.md`, `.env.example`, `PROJECT_CONTEXT.md` и
   `PROGRESS.md` синхронизированы с фактическим runtime.
+- Handoff зафиксирован в `docs/ai-analytics-handoff.md`.
 
 ## Dependency map
 
@@ -84,6 +85,7 @@ Contract → Python/catalog → persistence → transport → dashboard
 - [x] No real secrets committed.
 - [ ] Staging secrets configured and webhook smoke-test completed.
 - [x] Migration applied to the configured external database after explicit approval.
+- [x] Status documentation updated after migration and push.
 
 ## Stop-lines and handoff
 

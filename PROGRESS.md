@@ -1,17 +1,19 @@
 # PROGRESS: Shalomut Map
 
 ## 📌 Текущий статус
-- **Текущий этап**: Стабилизация AI Analytics интеграции реализована локально в `feature/ai-analytics-microservice-mcp`: единый контракт, Prisma-персистентность, fail-closed транспорт, сквозной Next.js → Python → Next.js тест и подключение результатов к dashboard.
-- **Ограничение**: Миграция `20260724170000_add_ai_insights` применена к текущей настроенной Supabase-цели и проверена. Точное разделение этой цели на staging/production в Vercel/Supabase всё ещё нужно подтвердить; секреты и AI-сервис не деплоились.
-- **Следующая цель**: Проверить diff, получить отдельное разрешение на миграцию/настройку окружения и провести staging smoke-test.
+- **Текущий этап**: Реализация AI Analytics стабилизирована и запушена в `feature/ai-analytics-microservice-mcp`: единый контракт, Prisma-персистентность, fail-closed транспорт, сквозной Next.js → Python → Next.js тест и dashboard UI.
+- **Состояние БД**: `20260724170000_add_ai_insights` применена к Supabase-цели из `DIRECT_URL`; `prisma migrate status` сообщает `Database schema is up to date!`. Точное разделение этой цели на staging/production ещё нужно подтвердить через Supabase/Vercel.
+- **Граница деплоя**: Код находится в feature branch; AI-сервис и shared secrets не деплоились, merge в `main` не выполнялся.
+- **Handoff-документ**: См. [`docs/ai-analytics-handoff.md`](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/docs/ai-analytics-handoff.md).
 
 ---
 
 ## 🚀 Следующие шаги (Next Up: Staging Readiness)
-1. [ ] **Ревью локального diff** и фиксация изменений отдельным коммитом.
+1. [ ] Подтвердить владельца и назначение текущей Supabase-цели в Supabase/Vercel.
 2. [ ] Настроить `APP_BASE_URL`, `AI_SERVICE_URL`, `MCP_SHARED_SECRET`, `AI_WEBHOOK_SECRET` и `AI_CALLBACK_SECRET` в staging и AI-сервисе.
-3. [ ] Выполнить staging smoke-test полного webhook/callback сценария и только затем решать вопрос о merge в `main`.
-4. [ ] Отдельно решить, нужны ли реальные LangGraph/ChromaDB; текущий runtime использует собственный async graph-style workflow и локальный JSON-каталог.
+3. [ ] Развернуть AI-сервис и выполнить staging smoke-test полного webhook/callback сценария.
+4. [ ] После smoke-test решить вопрос о merge в `main` и production promotion.
+5. [ ] Отдельно решить, нужны ли реальные LangGraph/ChromaDB; текущий runtime использует собственный async graph-style workflow и локальный JSON-каталог.
 
 ---
 
