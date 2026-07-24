@@ -175,6 +175,32 @@ test('API Route PUT /api/manager/setup persists the first organization and round
   }
 });
 
+test('API Route PUT /api/manager/setup fails closed on a deployment without a database', async () => {
+  const previousVercelEnvironment = process.env.VERCEL_ENV;
+  process.env.VERCEL_ENV = 'preview';
+
+  try {
+    const response = await saveManagerSetup(
+      new Request('http://localhost/api/manager/setup', {
+        method: 'PUT',
+        body: JSON.stringify({}),
+      }),
+    );
+
+    assert.strictEqual(response.status, 503);
+    assert.match(
+      (await response.json()).error,
+      /Persistent storage is not configured/,
+    );
+  } finally {
+    if (previousVercelEnvironment === undefined) {
+      delete process.env.VERCEL_ENV;
+    } else {
+      process.env.VERCEL_ENV = previousVercelEnvironment;
+    }
+  }
+});
+
 test('Survey definition API persists a validated canonical definition', async () => {
   const definition = createCanonicalSurveyDefinition('שאלון שמור', 10);
   const params = Promise.resolve({ roundId: DEMO_ROUND.id });

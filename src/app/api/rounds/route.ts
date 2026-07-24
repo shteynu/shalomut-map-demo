@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getRepositories } from '@/lib/repositories';
 import { ManagerContextService, RoundService } from '@/lib/services';
+import { getDurableWriteGuardResponse } from '@/lib/server/durable-write-guard';
 import { CreateRoundInput } from '@/lib/types/backend';
 
 export async function GET(request?: Request) {
@@ -26,6 +27,9 @@ export async function GET(request?: Request) {
 
 export async function POST(request: Request) {
   try {
+    const unavailable = getDurableWriteGuardResponse();
+    if (unavailable) return unavailable;
+
     const body = (await request.json()) as CreateRoundInput;
     if (!body.organizationId || !body.title) {
       return NextResponse.json(

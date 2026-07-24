@@ -13,13 +13,11 @@ Status: remaining product behaviour proposals after the redesign pass
 
 ### 1. Draft Persistence And Recovery
 
-Current state: setup and survey-builder edits are demo-local React state. Refreshing the page resets the form.
+Current state: setup and survey-builder edits persist through the Data Layer into the current organization/round. The 24 canonical questions are protected from disabling or reassignment.
 
-Proposal:
-- Decide whether this demo should behave as an ephemeral prototype or persist manager draft state.
-- If persistence is desired, store setup and survey-builder drafts in `localStorage` with an explicit demo-only namespace.
+Remaining proposal:
 - Add a visible "last saved" timestamp after save actions.
-- Add a reset-to-demo-data action so reviewers can recover the original demo state.
+- Add explicit draft/version history if editors need recovery beyond the latest persisted definition.
 
 Why it matters:
 - Principals will expect setup and survey edits to survive accidental refreshes.
@@ -80,11 +78,9 @@ Why it matters:
 
 ### 6. Privacy Threshold States Across Routes
 
-Current state: the dashboard has a locked state when responses are below the threshold, while setup/round explain the threshold.
+Current state: manager context exposes one persisted threshold/count model; home, round, dashboard and dimension routes use it, and detailed analytics stay locked below threshold.
 
-Proposal:
-- Add one shared threshold state model for all manager-facing routes.
-- Make the round page explicitly show when the dashboard is locked vs ready.
+Remaining proposal:
 - Add a clear "what happens next" message when the threshold is reached.
 
 Why it matters:
@@ -93,18 +89,12 @@ Why it matters:
 
 ### 7. Demo Data Boundaries
 
-Current state: methodology source and visual mock data are separated. PostgreSQL,
-Prisma repositories, APIs, and AI-insights persistence exist, and implicit
-runtime demo seeding has been removed. However, manager-facing UI routes still
-import `src/lib/demo-data.ts`, and demo IDs remain in some runtime/static-param
-paths.
+Current state: methodology source and visual metadata are separated from
+runtime records. Manager routes use persisted organization/current-round data,
+explicit empty onboarding states, real share codes and real round IDs. Demo
+records are not a production fallback.
 
-Proposal:
-- Add a database-backed manager view model for organization, current round,
-  response counts, threshold, and analytics status.
-- Render explicit onboarding states for no organization and no round.
-- Remove demo IDs from production runtime or isolate them behind an explicit
-  static-demo/export mode.
+Remaining proposal:
 - Keep only stone geometry and other non-record visual metadata in the mock
   layer.
 - Keep scoring thresholds configurable and avoid hard-coding status assumptions in view components.

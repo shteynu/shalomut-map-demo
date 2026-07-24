@@ -11,7 +11,7 @@
 - Merged to `main`: PR #4, merge commit `19401a6`
 - Latest original branch commits: `c96716b` implementation, `1d0b040` migration status docs
 - Working tree at handoff: clean
-- AI service deployment: not performed
+- AI service deployment: not performed; no separate Vercel project exists
 - Shared secrets in Vercel/AI runtime: not configured by this work
 
 ## What is complete
@@ -33,6 +33,13 @@
 - The current runtime is an async graph-style workflow with a structured local
   intervention catalog. It does not currently execute LangGraph or ChromaDB.
 - Recommendations are dimension-scoped and use the OECD/ISO 45003 catalog.
+- `pyproject.toml` declares the Vercel FastAPI entrypoint
+  `src.main:app`; runtime dependencies were reduced to the packages actually
+  used by the service.
+- Webhook processing and callback complete within the serverless request
+  instead of relying on an in-process background task.
+- Outside development, the webhook fails closed when `AI_WEBHOOK_SECRET` is
+  missing or invalid.
 
 ### Core app and persistence
 
@@ -54,9 +61,9 @@
 
 ## Verification evidence
 
-- `npm test` — 51 tests pass.
+- `npm test` — 66 tests pass.
 - `python3 ai-analytics-service/run_tests.py` — 7/7 pass.
-- `npx tsc --noEmit` — pass.
+- Full Python pytest in a disposable virtualenv — 9/9 pass.
 - `npm run lint` — pass.
 - `npm run build` — pass.
 - `npx prisma validate` — pass.
@@ -65,17 +72,19 @@
 
 ## What remains
 
-1. Confirm whether the current Supabase project is staging or shared/production
-   by comparing its project ref with Vercel Preview/Production environment
-   variables. The database target alone is not labelled by the code.
-2. Configure matching `APP_BASE_URL`, `AI_SERVICE_URL`,
+1. Provide or confirm a dedicated staging Supabase target. Vercel currently has
+   no Preview or Production env vars, so the existing local project ref cannot
+   be safely classified there.
+2. Create a separate staging Vercel project rooted at
+   `ai-analytics-service/`.
+3. Configure matching `APP_BASE_URL`, `AI_SERVICE_URL`,
    `MCP_SHARED_SECRET`, `AI_WEBHOOK_SECRET`, and `AI_CALLBACK_SECRET` in the
    intended staging environments.
-3. Deploy the Python service and run a real staging webhook → callback smoke
+4. Deploy the Python service and run a real staging webhook → callback smoke
    test. Verify both ready and privacy-locked rounds.
-4. Review the real staging result and decide whether to promote the verified
+5. Review the real staging result and decide whether to promote the verified
    `main` deployment to production.
-5. Decide separately whether the runtime should adopt real LangGraph/ChromaDB;
+6. Decide separately whether the runtime should adopt real LangGraph/ChromaDB;
    this is not required for the current contract or local E2E path.
 
 ## Approval gates
@@ -90,6 +99,6 @@
 
 ## First next action
 
-Compare the Supabase project ref for `DIRECT_URL` with the Vercel Preview and
-Production environment settings, then mark the target explicitly as
-`staging` or `production` in the deployment handoff.
+Confirm a dedicated staging Supabase project and authorize creation of a
+separate Vercel project for `ai-analytics-service`; do not reuse the only known
+local database target by assumption.

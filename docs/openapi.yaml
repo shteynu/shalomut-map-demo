@@ -13,6 +13,8 @@ servers:
 tags:
   - name: Rounds
     description: Management of survey rounds and org access codes
+  - name: Manager Setup
+    description: Persistence of school, round, and survey-builder configuration
   - name: Survey
     description: Respondent questionnaire delivery and anonymous response submission
   - name: Analytics
@@ -73,6 +75,40 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         "500":
           description: Failed to create round
+        "503":
+          description: Persistent storage is not configured for this deployment
+
+  /api/manager/setup:
+    put:
+      tags: [Manager Setup]
+      summary: Create or update manager setup
+      description: Persists the school profile, survey round, privacy threshold, dates, and background context. Existing records are updated when their IDs are supplied.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ManagerSetupInput'
+      responses:
+        "200":
+          description: Manager setup saved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  organization:
+                    $ref: '#/components/schemas/Organization'
+                  round:
+                    $ref: '#/components/schemas/SurveyRound'
+        "400":
+          description: Invalid manager setup payload
+        "500":
+          description: Failed to save manager setup
+        "503":
+          description: Persistent storage is not configured for this deployment
 
   /api/survey/{shareCode}:
     get:
@@ -83,10 +119,10 @@ paths:
         - name: shareCode
           in: path
           required: true
-          description: Access share code (e.g. SHALOM-DEMO)
+          description: Access share code (e.g. SHALOM-7K2M)
           schema:
             type: string
-            example: SHALOM-DEMO
+            example: SHALOM-7K2M
       responses:
         "200":
           description: Questionnaire metadata and active round details
@@ -128,7 +164,7 @@ paths:
           required: true
           schema:
             type: string
-            example: SHALOM-DEMO
+            example: SHALOM-7K2M
       requestBody:
         required: true
         content:
@@ -161,6 +197,89 @@ paths:
           description: Survey round not found
         "500":
           description: Internal server error
+        "503":
+          description: Persistent storage is not configured for this deployment
+
+  /api/rounds/{roundId}:
+    patch:
+      tags: [Rounds]
+      summary: Transition a survey round status
+      parameters:
+        - name: roundId
+          in: path
+          required: true
+          schema:
+            type: string
+            example: 4f88af95-0ec4-4872-85ac-67466c3cd8f2
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  $ref: '#/components/schemas/RoundStatus'
+      responses:
+        "200":
+          description: Round status updated
+        "400":
+          description: Invalid status
+        "404":
+          description: Survey round not found
+        "409":
+          description: Status transition is not allowed
+        "500":
+          description: Failed to update survey round
+        "503":
+          description: Persistent storage is not configured for this deployment
+
+  /api/rounds/{roundId}/survey-definition:
+    parameters:
+      - name: roundId
+        in: path
+        required: true
+        schema:
+          type: string
+          example: 4f88af95-0ec4-4872-85ac-67466c3cd8f2
+    get:
+      tags: [Manager Setup]
+      summary: Fetch the saved survey definition
+      description: Returns the saved definition or the canonical 24-question definition when the round has not been customized.
+      responses:
+        "200":
+          description: Survey definition retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  definition:
+                    $ref: '#/components/schemas/SurveyDefinition'
+        "404":
+          description: Survey round not found
+    put:
+      tags: [Manager Setup]
+      summary: Save the survey definition
+      description: Persists survey copy and optional questions. The 24 canonical questions must remain enabled, required, unique, and assigned to their canonical dimensions.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SurveyDefinition'
+      responses:
+        "200":
+          description: Survey definition saved
+        "400":
+          description: Invalid survey definition
+        "404":
+          description: Survey round not found
+        "500":
+          description: Failed to save survey definition
+        "503":
+          description: Persistent storage is not configured for this deployment
 
   /api/rounds/{roundId}/analytics:
     get:
@@ -173,7 +292,7 @@ paths:
           required: true
           schema:
             type: string
-            example: round_demo_1
+            example: 4f88af95-0ec4-4872-85ac-67466c3cd8f2
       responses:
         "200":
           description: Aggregated analytics and dimension scores
@@ -227,7 +346,7 @@ paths:
         required: true
         schema:
           type: string
-          example: round_demo_1
+          example: 4f88af95-0ec4-4872-85ac-67466c3cd8f2
     get:
       tags: [AI Integration]
       summary: Fetch persisted AI insights
@@ -266,6 +385,8 @@ paths:
           description: Survey round not found
         "500":
           description: Failed to persist AI insights
+        "503":
+          description: Persistent storage is not configured for this deployment
 
   /api/rounds/{roundId}/trigger-ai:
     post:
@@ -278,7 +399,7 @@ paths:
           required: true
           schema:
             type: string
-            example: round_demo_1
+            example: 4f88af95-0ec4-4872-85ac-67466c3cd8f2
       responses:
         "202":
           description: AI service accepted the event
@@ -319,6 +440,7 @@ components:
       properties:
         organizationId:
           type: string
+          format: uuid
         title:
           type: string
         privacyThreshold:
@@ -327,13 +449,139 @@ components:
         startDate:
           type: string
           format: date-time
+    Organization:
+      type: object
+      required: [id, name, city, schoolType, totalStaffCount, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        city:
+          type: string
+        schoolType:
+          type: string
+        totalStaffCount:
+          type: integer
+          minimum: 1
+        createdAt:
+          type: string
+          format: date-time
+    RoundBackgroundContext:
+      type: object
+      required: [notes, audience, sicknessDaysThisQuarter, newStaffMembers, studentCount, socioEconomicIndex, classesPerGrade]
+      properties:
+        notes:
+          type: string
+        audience:
+          type: string
+        sicknessDaysThisQuarter:
+          type: integer
+          minimum: 0
+        newStaffMembers:
+          type: integer
+          minimum: 0
+        studentCount:
+          type: integer
+          minimum: 0
+        socioEconomicIndex:
+          type: integer
+          minimum: 1
+          maximum: 10
+        classesPerGrade:
+          type: object
+          additionalProperties:
+            type: integer
+            minimum: 0
+    ManagerSetupInput:
+      type: object
+      required: [organization, round]
+      properties:
+        organization:
+          type: object
+          required: [name, city, schoolType, totalStaffCount]
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
+              type: string
+            city:
+              type: string
+            schoolType:
+              type: string
+            totalStaffCount:
+              type: integer
+              minimum: 1
+        round:
+          type: object
+          required: [title, privacyThreshold, startDate, backgroundContext]
+          properties:
+            id:
+              type: string
+              format: uuid
+            title:
+              type: string
+            privacyThreshold:
+              type: integer
+              minimum: 10
+            startDate:
+              type: string
+              format: date
+            endDate:
+              type: string
+              format: date
+            backgroundContext:
+              $ref: '#/components/schemas/RoundBackgroundContext'
+    SurveyDefinitionQuestion:
+      type: object
+      required: [id, text, dimensionId, required, enabled, answerMode]
+      properties:
+        id:
+          type: string
+        text:
+          type: string
+        dimensionId:
+          $ref: '#/components/schemas/WellbeingDimensionId'
+        required:
+          type: boolean
+        enabled:
+          type: boolean
+        answerMode:
+          type: string
+    SurveyDefinition:
+      type: object
+      required: [title, audience, estimatedMinutes, minimumResponses, introText, anonymityText, questions]
+      properties:
+        title:
+          type: string
+        audience:
+          type: string
+        estimatedMinutes:
+          type: number
+          minimum: 1
+        minimumResponses:
+          type: integer
+          minimum: 10
+        introText:
+          type: string
+        anonymityText:
+          type: string
+        questions:
+          type: array
+          minItems: 24
+          items:
+            $ref: '#/components/schemas/SurveyDefinitionQuestion'
     SurveyRound:
       type: object
       properties:
         id:
           type: string
+          format: uuid
         organizationId:
           type: string
+          format: uuid
         title:
           type: string
         status:
@@ -348,6 +596,10 @@ components:
         endDate:
           type: string
           format: date-time
+        backgroundContext:
+          $ref: '#/components/schemas/RoundBackgroundContext'
+        surveyDefinition:
+          $ref: '#/components/schemas/SurveyDefinition'
         createdAt:
           type: string
           format: date-time
@@ -402,6 +654,7 @@ components:
       properties:
         roundId:
           type: string
+          format: uuid
         totalResponses:
           type: integer
         privacyThreshold:
@@ -494,7 +747,7 @@ components:
           example: "1.0"
         roundId:
           type: string
-          example: round_demo_1
+          example: 4f88af95-0ec4-4872-85ac-67466c3cd8f2
         processedAt:
           type: string
           format: date-time

@@ -10,17 +10,17 @@ Shalomut Map к `shalomut-tracker`, где сохранённые данные �
 
 ## Текущий snapshot
 
-- Базовая ветка: `main`, merge commit `19401a6` (PR #4, AI analytics).
-- Активная fix-ветка: `agent/empty-runtime-repositories`.
-- Commit исправления: `a20ac66`
-  (`fix: keep empty databases free of demo records`).
-- Draft pull request: [#5](https://github.com/shteynu/shalomut-map-demo/pull/5).
-- Рабочее дерево перед этим обновлением документации: чистое.
+- PR #5 смержен в `main` squash commit `6b369bf`.
+- Активная ветка: `agent/database-backed-manager-ui`.
+- Реализация разбита на проверяемые commits: manager context, DB-backed UI,
+  persistence, full-stack runtime и serverless AI hardening.
+- Новая миграция `20260724180000_add_round_configuration` создана, но не
+  применена ни к одной внешней БД.
 - Staging:
   [shalomut-map-demo-ui-redesign.vercel.app](https://shalomut-map-demo-ui-redesign.vercel.app/).
 - Staging deployment: `dpl_35S9VvwN8V9Bq7da3iP2SJwT4349`, состояние `READY`,
   source commit `a20ac66`.
-- Production alias не изменялся.
+- Production data, alias и deployment не изменялись.
 
 ## Инцидент: непустой UI при пустой БД
 
@@ -52,11 +52,18 @@ Staging показывал старую demo-школу, имя менеджер
 
 ## Доказательства проверки
 
-- `npm test`: 53/53 теста прошли.
+- `npm test`: 70/70 тестов прошли.
 - `npm run lint`: прошёл.
 - `npm run build`: прошёл.
-- GitHub `Build & Validate`: прошёл.
-- Vercel preview: `READY`.
+- `npx prisma validate` и `npx prisma generate`: прошли.
+- `python3 ai-analytics-service/run_tests.py`: 7/7.
+- Полный Python pytest в одноразовом virtualenv: 9/9.
+- OpenAPI JSON и YAML валидны; integrity tests покрывают новые manager routes.
+- Локальный runtime smoke без внешней БД: setup создал UUID/share code, server
+  UI показал школу и `1/34`, 24 вопроса были выданы и приняты, analytics
+  сохранил privacy lock.
+- GitHub/Vercel проверки новой ветки фиксируются в draft PR после push.
+- Предыдущий Vercel preview для empty-runtime fix: `READY`.
 - Staging `/`: HTTP 200, содержит `0/0`, строка `18/34` отсутствует.
 - Staging `/api/rounds/`: HTTP 200, ответ `{"round":null}`.
 - Vercel check для draft PR #5: прошёл.
@@ -87,80 +94,63 @@ Staging показывал старую demo-школу, имя менеджер
   раундом.
 - Staging возвращает пустое API-состояние и нулевые manager counters.
 
+### Database-backed manager UI
+
+- `ManagerContextService` выбирает текущий раунд и возвращает organization,
+  aggregate response count, privacy state и analytics.
+- Home, setup, round tracking, dashboard и dimension pages читают этот context;
+  пустая БД показывает отдельные states «нет школы» и «нет раунда».
+- Setup сохраняет organization, round dates, threshold и background context.
+- Survey builder сохраняет definition; 24 канонических вопроса остаются
+  обязательными и включёнными.
+- Respondent route использует настоящий share code, а submit валидируется
+  против сохранённого definition и использует анонимный per-round token hash.
+- Закрытие раунда сохраняет status через API; сетевые ошибки больше не
+  маскируются success-состоянием.
+- Static export/GitHub Pages удалены; приложение переведено на Next.js server
+  runtime.
+- Локальный in-memory fallback разделяется между Route Handlers и Server
+  Components; deployed runtime без `DATABASE_URL` отвечает `503` на writes.
+
 ## Что не завершено
 
-Staging уже защищён от fake-записей, но manager UI пока не является полностью
-database-driven.
+### 1. Безопасная staging persistence
 
-### 1. Merge и deployment lifecycle
+- В Vercel Preview/Production нет env vars.
+- Единственный обнаруженный локальный Supabase project ref ранее использовался
+  как production/shared; применять к нему новую migration без подтверждения
+  нельзя.
+- Нужна выделенная staging Supabase с PITR/rollback path, после чего можно
+  применить `20260724180000_add_round_configuration` и проверить CRUD.
 
-- PR #5 остаётся draft и ещё не смержен в `main`.
-- Staging alias сейчас указывает прямо на PR preview, а не на новый deployment
-  ветки `main`.
-- Production ещё не получил это исправление.
+### 2. Manager authentication
 
-### 2. Manager UI всё ещё использует visual mock data
+- Manager write routes сейчас не привязаны к аутентифицированной организации.
+- До публичного подключения реальной БД нужно добавить authentication/
+  authorization либо закрыть preview через Vercel Deployment Protection.
 
-Главная, setup, round tracking, survey builder и части dashboard продолжают
-импортировать `src/lib/demo-data.ts`. Значения `0/0`, общее имя школы, privacy
-threshold, расположение map и locked dashboard сейчас являются статическими
-mock values, а не живым чтением PostgreSQL.
+### 3. Реальный staging AI service
 
-Следующий обязательный slice:
-
-- добавить database-backed manager view model для organization, current round,
-  response count, threshold и analytics status;
-- показывать отдельный onboarding state, если нет организации или раунда;
-- передавать реальные round IDs через home, tracking, dashboard и respondent
-  links;
-- оставить в mock layer только геометрию камней и визуальные metadata, не
-  являющиеся записями БД.
-
-### 3. Контракт current-round API не завершён
-
-`GET /api/rounds` всё ещё ищет исторический фиксированный ID `round_demo_1`.
-Production contract должен явно делать одно из двух:
-
-- возвращать список раундов аутентифицированной организации; или
-- возвращать последний/текущий раунд этой организации.
-
-До выбора варианта нужно определить organization/authentication context.
-
-### 4. Demo identifiers остаются в runtime paths
-
-Static params и survey submission всё ещё используют `SHALOM-DEMO`,
-`round_demo_1` и другие demo-only ID. Их нужно удалить из production runtime
-или изолировать за явным static-demo/export mode.
-
-### 5. Persistence setup и survey builder
-
-Manager forms пока используют локальный React state. Сохранение setup или
-builder ещё не создаёт и не обновляет persisted organization/round end to end.
-
-### 6. Реальный staging AI service
-
-- Python AI service не развёрнут в подтверждённом staging runtime.
-- Совпадающие Vercel/AI shared secrets ещё не настроены и не проверены.
-- Реальный staging round-close → webhook → MCP → callback smoke test не
+- В Vercel team нет отдельного project для `ai-analytics-service`.
+- Python entrypoint и runtime manifests готовы, но deployment не создавался.
+- Shared secrets и URLs не настроены; реальный webhook → MCP → callback E2E не
   выполнялся.
-- Владелец и назначение текущего Supabase target
-  (staging или shared/production) требуют явного подтверждения.
+
+### 4. Alias и production
+
+- Staging alias остаётся на последнем безопасном empty-runtime preview.
+- Переназначение alias допустимо после миграции, access protection и smoke
+  evidence. Production требует отдельного подтверждения.
 
 ## Рекомендуемый порядок продолжения
 
-1. Провести review и merge PR #5 в `main`.
-2. Переназначить staging на получившийся проверенный `main` deployment.
-3. Определить правила выбора organization/current round и authentication
-   assumptions.
-4. Реализовать database-backed manager home и настоящие onboarding states
-   «нет организации» / «нет раунда».
-5. Персистить setup и survey-builder; заменить demo share codes и round IDs в
-   respondent flows.
-6. Подключить round и dashboard routes к реальным response counts и analytics.
-7. Подтвердить staging Supabase target, развернуть Python service, настроить
-   shared secrets и провести полный staging E2E.
-8. Продвигать в production только после отдельного подтверждения и
-   зафиксированных smoke-test evidence.
+1. Завершить review/CI draft PR database-backed manager UI.
+2. Получить подтверждение выделенной staging Supabase и применить новую
+   migration только к ней.
+3. Добавить manager auth/deployment protection.
+4. Создать staging AI Vercel project, настроить URLs/secrets и выполнить полный
+   staging E2E.
+5. После evidence отдельно согласовать staging alias; production не затрагивать.
 
 ## Approval gates
 

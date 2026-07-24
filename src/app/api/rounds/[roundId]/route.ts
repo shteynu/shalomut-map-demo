@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getRepositories } from "@/lib/repositories";
 import { RoundService } from "@/lib/services";
+import { getDurableWriteGuardResponse } from "@/lib/server/durable-write-guard";
 import type { RoundStatus } from "@/lib/types/backend";
 
 const validStatuses: RoundStatus[] = [
@@ -15,6 +16,9 @@ export async function PATCH(
   { params }: { params: Promise<{ roundId: string }> },
 ) {
   try {
+    const unavailable = getDurableWriteGuardResponse();
+    if (unavailable) return unavailable;
+
     const { roundId } = await params;
     const body = (await request.json()) as { status?: unknown };
 

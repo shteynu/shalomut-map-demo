@@ -43,9 +43,31 @@ export const DEMO_ROUND: SurveyRound = {
   createdAt: new Date('2026-01-15T00:00:00.000Z'),
 };
 
-let defaultOrgRepo: IOrganizationRepository = new InMemoryOrganizationRepository();
-let defaultRoundRepo: IRoundRepository = new InMemoryRoundRepository();
-let defaultSurveyRepo: ISurveyRepository = new InMemorySurveyRepository([]);
+interface RepositoryState {
+  orgRepo: IOrganizationRepository;
+  roundRepo: IRoundRepository;
+  surveyRepo: ISurveyRepository;
+}
+
+const globalForRepositories = globalThis as typeof globalThis & {
+  shalomutRepositoryState?: RepositoryState;
+};
+
+function createEmptyRepositoryState(): RepositoryState {
+  return {
+    orgRepo: new InMemoryOrganizationRepository(),
+    roundRepo: new InMemoryRoundRepository(),
+    surveyRepo: new InMemorySurveyRepository([]),
+  };
+}
+
+// Next.js compiles route handlers and React Server Components into separate
+// module graphs. Keeping the local fallback on globalThis lets both graphs see
+// the same explicitly ephemeral development state.
+const repositoryState =
+  globalForRepositories.shalomutRepositoryState ??
+  createEmptyRepositoryState();
+globalForRepositories.shalomutRepositoryState = repositoryState;
 
 export function getRepositories(): {
   orgRepo: IOrganizationRepository;
@@ -62,9 +84,9 @@ export function getRepositories(): {
   }
 
   return {
-    orgRepo: defaultOrgRepo,
-    roundRepo: defaultRoundRepo,
-    surveyRepo: defaultSurveyRepo,
+    orgRepo: repositoryState.orgRepo,
+    roundRepo: repositoryState.roundRepo,
+    surveyRepo: repositoryState.surveyRepo,
   };
 }
 
@@ -73,13 +95,11 @@ export function setRepositories(repos: {
   roundRepo?: IRoundRepository;
   surveyRepo?: ISurveyRepository;
 }): void {
-  if (repos.orgRepo) defaultOrgRepo = repos.orgRepo;
-  if (repos.roundRepo) defaultRoundRepo = repos.roundRepo;
-  if (repos.surveyRepo) defaultSurveyRepo = repos.surveyRepo;
+  if (repos.orgRepo) repositoryState.orgRepo = repos.orgRepo;
+  if (repos.roundRepo) repositoryState.roundRepo = repos.roundRepo;
+  if (repos.surveyRepo) repositoryState.surveyRepo = repos.surveyRepo;
 }
 
 export function resetDefaultRepositories(): void {
-  defaultOrgRepo = new InMemoryOrganizationRepository();
-  defaultRoundRepo = new InMemoryRoundRepository();
-  defaultSurveyRepo = new InMemorySurveyRepository([]);
+  Object.assign(repositoryState, createEmptyRepositoryState());
 }

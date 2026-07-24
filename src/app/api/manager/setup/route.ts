@@ -4,6 +4,7 @@ import {
   ManagerSetupService,
   type ManagerSetupInput,
 } from "@/lib/services";
+import { getDurableWriteGuardResponse } from "@/lib/server/durable-write-guard";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -129,6 +130,9 @@ function parsePayload(value: unknown): ManagerSetupInput | null {
 
 export async function PUT(request: Request) {
   try {
+    const unavailable = getDurableWriteGuardResponse();
+    if (unavailable) return unavailable;
+
     const input = parsePayload(await request.json());
     if (!input) {
       return NextResponse.json(

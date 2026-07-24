@@ -4,6 +4,7 @@ import {
   createCanonicalSurveyDefinition,
   parseSurveyDefinition,
 } from "@/lib/survey-definition";
+import { getDurableWriteGuardResponse } from "@/lib/server/durable-write-guard";
 
 interface RouteParams {
   params: Promise<{ roundId: string }>;
@@ -27,6 +28,9 @@ export async function GET(_request: Request, { params }: RouteParams) {
 
 export async function PUT(request: Request, { params }: RouteParams) {
   try {
+    const unavailable = getDurableWriteGuardResponse();
+    if (unavailable) return unavailable;
+
     const { roundId } = await params;
     const parsed = parseSurveyDefinition(await request.json());
 

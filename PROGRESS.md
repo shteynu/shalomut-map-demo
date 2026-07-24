@@ -1,24 +1,34 @@
 # PROGRESS: Shalomut Map
 
 ## 📌 Текущий статус
-- **Текущий этап**: переход от статического demo к `shalomut-tracker`. AI Analytics из PR #4 уже смержена в `main` (`19401a6`). Исправление неявного runtime demo-seed находится в draft PR #5, commit `a20ac66`.
-- **Состояние БД**: `20260724170000_add_ai_insights` применена к Supabase-цели из `DIRECT_URL`; `prisma migrate status` сообщает `Database schema is up to date!`. Точное разделение этой цели на staging/production ещё нужно подтвердить через Supabase/Vercel.
-- **Staging**: `https://shalomut-map-demo-ui-redesign.vercel.app/` вручную направлен на READY preview `dpl_35S9VvwN8V9Bq7da3iP2SJwT4349` для commit `a20ac66`; `/` показывает `0/0`, `/api/rounds/` возвращает `{"round":null}`.
-- **Граница деплоя**: production alias не менялся. Python AI-сервис и shared secrets не развернуты.
-- **Ограничение текущего UI**: manager-facing страницы всё ещё используют `src/lib/demo-data.ts`; нулевой экран безопасен от ложных записей, но пока не является живым чтением из PostgreSQL.
+- **Текущий этап**: PR #5 смержен в `main` squash commit `6b369bf`. В ветке `agent/database-backed-manager-ui` завершён database-backed manager slice: реальные organization/current round/counts/analytics, onboarding для пустой БД, persistence setup/survey builder, реальные share codes/round IDs и сохранение статуса раунда.
+- **Состояние БД**: создана, но намеренно не применена миграция `20260724180000_add_round_configuration` (`background_context`, `survey_definition`). Единственная найденная локальная Supabase-цель ранее использовалась как production/shared; отдельный staging target не подтверждён.
+- **Staging**: alias `https://shalomut-map-demo-ui-redesign.vercel.app/` всё ещё указывает на ранее проверенный preview commit `a20ac66` и честно показывает пустое состояние. В Vercel Preview и Production нет настроенных env vars; отдельного проекта AI-сервиса также нет.
+- **Runtime**: static export/GitHub Pages удалены, потому что DB-backed App Router требует server runtime. FastAPI-сервис подготовлен к Vercel entrypoint, работает fail-closed без shared secrets вне development и не полагается на in-process background task.
+- **Граница деплоя**: production data, alias, secrets и deployment не изменялись. Для реального staging E2E нужны подтверждённая staging-БД, manager authentication/deployment protection и отдельное разрешение на внешние изменения.
 - **Актуальный handoff**: см. [`docs/shalomut-tracker-handoff.md`](docs/shalomut-tracker-handoff.md). AI-детали: [`docs/ai-analytics-handoff.md`](docs/ai-analytics-handoff.md).
 
 ---
 
-## 🚀 Следующие шаги (Next Up: Database-backed Manager UI)
-1. [ ] Провести review и merge draft PR #5 в `main`, затем вернуть staging alias на проверенный `main` deployment.
-2. [ ] Определить контракт organization/current round и подключить home, setup, round tracking и dashboard к Data Layer с настоящими onboarding states для пустой БД.
-3. [ ] Персистить setup/survey builder и убрать `round_demo_1`, `SHALOM-DEMO` и другие demo ID из production runtime либо изолировать их в явном static-demo режиме.
-4. [ ] Подтвердить Supabase target, развернуть staging AI-сервис, настроить shared secrets и выполнить реальный webhook/callback E2E; production promotion — только после smoke evidence и отдельного подтверждения.
+## 🚀 Следующие шаги (Next Up: Safe Staging)
+1. [ ] Провести review/CI нового draft PR и после подтверждения применить `20260724180000_add_round_configuration` только к выделенной staging Supabase с PITR/rollback path.
+2. [ ] Добавить manager authentication или как минимум Vercel Deployment Protection до включения публичных manager write endpoints.
+3. [ ] Создать staging Vercel project для `ai-analytics-service`, настроить совпадающие shared secrets и staging URLs, затем выполнить реальный round-close → MCP → callback E2E.
+4. [ ] После зафиксированных smoke evidence и отдельного подтверждения обновить staging alias; production promotion оставить отдельным approval gate.
 
 ---
 
 ## ✅ Завершенные задачи (Completed)
+- [x] **2026-07-24**: **Manager UI переведён на реальные persisted records и подготовлен безопасный full-stack runtime**:
+  - PR #5 смержен в `main` (`6b369bf`); работа продолжена в `agent/database-backed-manager-ui`.
+  - Home, setup, round tracking, survey builder, dashboard и respondent flow используют настоящий organization/current round context, response counts, analytics, share code и round ID; пустая БД показывает onboarding, а не demo-записи.
+  - `PUT /api/manager/setup`, `PATCH /api/rounds/[roundId]` и `GET/PUT /api/rounds/[roundId]/survey-definition` сохраняют manager setup, статус и definition; 24 канонических вопроса нельзя отключить или переназначить.
+  - Добавлены Prisma-поля `background_context` и `survey_definition` с отдельной неприменённой миграцией `20260724180000_add_round_configuration`.
+  - Анонимная отправка использует per-round local token и SHA-256 hash, проверяет сохранённый набор вопросов и не показывает ложный success при API/network error.
+  - Static export/GitHub Pages удалены; Next.js работает как full-stack server runtime. FastAPI-сервис подготовлен к Vercel, fail-closed secrets и синхронной serverless обработке.
+  - Локальные in-memory repositories разделяют один development state между Route Handlers и Server Components; deployed runtime без `DATABASE_URL` отклоняет любые data writes с `503`, а не показывает ложный success.
+  - OpenAPI JSON/YAML синхронизированы с manager persistence routes, demo identifiers удалены из runtime examples.
+  - Проверки: 70/70 TypeScript tests, локальный setup → survey → submit → locked analytics runtime smoke, 9/9 full Python pytest, 7/7 Python smoke suite, lint, Next.js production build, Prisma validate/generate.
 - [x] **2026-07-24**: **Исправлено ложное demo-состояние при пустой БД и обновлён staging**:
   - Установлено две причины: staging alias указывал на старый commit `3083051`, а `getRepositories()` неявно подставлял `DEMO_ORGANIZATION` и `DEMO_ROUND` при отсутствии `DATABASE_URL`.
   - Default in-memory repositories теперь пустые; demo fixtures подключаются только явно в тестах/opt-in demo.
@@ -89,6 +99,7 @@
   - Устранена ошибка `touch out/.nojekyll` путем добавления переменной `NEXT_EXPORT: "true"` в [.github/workflows/deploy-github-pages.yml](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/.github/workflows/deploy-github-pages.yml) и безопасного `mkdir -p out`.
   - Добавлены статические декларации роутов для `src/app/api/` для корректного статического экспорта Next.js.
   - Проведены локальные тесты (28/28 пройдено), билд замерджен и отправлен в `origin/main`.
+  - Историческая запись: этот workflow позднее удалён, когда manager UI стал database-backed и приложению понадобился полноценный server runtime.
 - [x] **2026-07-24**: **Реализован Prisma Persistence Layer (Слой физического хранения сырых данных)**:
   - Создана реляционная схема БД [`prisma/schema.prisma`](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/prisma/schema.prisma) (`Organization`, `SurveyRound`, `SurveyResponse`, `QuestionAnswer`).
   - Создан модульный клиент БД [`src/lib/repositories/prisma/prisma-client.ts`](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/src/lib/repositories/prisma/prisma-client.ts) с ленивой инициализацией.

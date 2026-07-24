@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getRepositories } from '@/lib/repositories';
 import { RoundService, SurveyService } from '@/lib/services';
+import { getDurableWriteGuardResponse } from '@/lib/server/durable-write-guard';
 import { QuestionAnswerInput } from '@/lib/types/backend';
 
 export async function POST(
@@ -8,6 +9,9 @@ export async function POST(
   { params }: { params: Promise<{ shareCode: string }> }
 ) {
   try {
+    const unavailable = getDurableWriteGuardResponse();
+    if (unavailable) return unavailable;
+
     const { shareCode } = await params;
     const body = await request.json();
     const { answers, anonymousTokenHash } = body as {
