@@ -1,10 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { CheckCircle2, Clipboard, ClipboardList, HelpCircle, Clock3, Copy, Eye, GripVertical, Plus, Settings2, ShieldCheck } from "lucide-react";
+import { CheckCircle2, Clipboard, ClipboardList, Clock3, Copy, Eye, GripVertical, Plus, Settings2, ShieldCheck } from "lucide-react";
 import { useState, type CSSProperties } from "react";
 import { PageIntro } from "@/components/app-shell";
+import { PrivacyTooltip } from "@/components/privacy-tooltip";
 import { activeRound, organization, responseOptions, surveyQuestions, wellbeingDimensions } from "@/lib/demo-data";
+import { getNavigationAction } from "@/lib/navigation";
+import { useShareUrl } from "@/lib/use-share-url";
 
 type BuilderQuestion = {
   id: string;
@@ -45,6 +48,21 @@ const initialQuestions: BuilderQuestion[] = surveyQuestions.map((question) => ({
   answerMode: "סקאלת צבעים",
 }));
 
+const builderFlowSteps = [
+  {
+    title: "הגדרות",
+    helper: "שם, קהל יעד וסף פרטיות",
+  },
+  {
+    title: "שאלות",
+    helper: "8 ממדים ו-24 שאלות מקור",
+  },
+  {
+    title: "הפצה",
+    helper: "קישור אנונימי למשיבים",
+  },
+];
+
 function getDimensionLabel(dimensionId: string) {
   return wellbeingDimensions.find((dimension) => dimension.id === dimensionId)?.conceptLabel ?? dimensionId;
 }
@@ -71,12 +89,21 @@ export function SurveyBuilderDemo() {
   const [questions, setQuestions] = useState<BuilderQuestion[]>(initialQuestions);
   const [saved, setSaved] = useState(false);
   const [copied, setCopied] = useState(false);
+  const shareUrl = useShareUrl();
+  const openRespondentSurveyAction = getNavigationAction("openRespondentSurvey");
   const [bankCursor, setBankCursor] = useState(0);
+  const [selectedDimensionId, setSelectedDimensionId] = useState(wellbeingDimensions[0]?.id ?? "all");
 
   const enabledQuestions = questions.filter((question) => question.enabled);
   const requiredQuestions = enabledQuestions.filter((question) => question.required);
   const activeDimensions = new Set(enabledQuestions.map((question) => question.dimensionId)).size;
   const nextSuggestedQuestion = questionBank[bankCursor % questionBank.length];
+  const visibleQuestions =
+    selectedDimensionId === "all"
+      ? questions
+      : questions.filter((question) => question.dimensionId === selectedDimensionId);
+  const selectedDimensionLabel =
+    selectedDimensionId === "all" ? "כל השאלות" : getDimensionLabel(selectedDimensionId);
   const summaryStones = [
     {
       value: enabledQuestions.length,
@@ -135,11 +162,12 @@ export function SurveyBuilderDemo() {
 
     setQuestions((current) => [...current, nextQuestion]);
     setBankCursor((current) => current + 1);
+    setSelectedDimensionId(nextQuestion.dimensionId);
   }
 
   async function copyRespondentLink() {
     try {
-      await navigator.clipboard.writeText(activeRound.shareUrl);
+      await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
     } catch {
       setCopied(true);
@@ -164,8 +192,8 @@ export function SurveyBuilderDemo() {
               שמירת טיוטה
               <CheckCircle2 size={18} aria-hidden="true" />
             </button>
-            <Link className="secondary-button" href={activeRound.shareUrl} target="_blank" rel="noreferrer">
-              פתיחת קישור המשיבים
+            <Link className="secondary-button" href={shareUrl} target="_blank" rel="noreferrer">
+              {openRespondentSurveyAction.label}
               <Eye size={18} aria-hidden="true" />
             </Link>
           </>
@@ -180,31 +208,22 @@ export function SurveyBuilderDemo() {
               <strong>{stone.value}</strong>
               <span>
                 {stone.label}
-                {showTooltip && (
-                  <span className="custom-tooltip-wrapper">
-                    <HelpCircle size={14} className="custom-tooltip-icon" />
-                    <span className="custom-tooltip-content">
-                      <strong>סף פרטיות (סף מינימום להצגת תוצאות)</strong>
-                      <span style={{ display: "block", marginTop: "0.4rem", marginBottom: "0.8rem", fontSize: "0.88rem", lineHeight: 1.45 }}>
-                        זהו מספר המשיבים המינימלי הנדרש כדי לפתוח את מפת השלומות והתוצאות לצפייה (בברירת המחדל: 10 אנשי צוות).
-                      </span>
-                      <strong style={{ fontSize: "0.88rem", display: "block", marginBottom: "0.35rem" }}>למה זה חשוב?</strong>
-                      <ul style={{ margin: 0, paddingRight: "1.1rem", fontSize: "0.84rem", lineHeight: 1.5, listStyleType: "disc" }}>
-                        <li style={{ marginBottom: "0.3rem" }}><strong>הגנה על אנונימיות</strong>: מניעת אפשרות לזהות משיב בודד לפי תשובותיו או הערותיו.</li>
-                        <li style={{ marginBottom: "0.3rem" }}><strong>שיקוף משוב כנה</strong>: הצוות מרגיש בטוח לתת ביקורת בונה כשהתוצאות מצרפיות בלבד.</li>
-                        <li style={{ marginBottom: "0.3rem" }}><strong>מהימנות הנתונים</strong>: קבלת תמונת מצב אובייקטיבית ומקצועית המייצגת את כלל בית הספר.</li>
-                      </ul>
-                      <span style={{ display: "block", marginTop: "0.8rem", fontSize: "0.8rem", opacity: 0.85, borderTop: "1px dashed rgba(87, 79, 58, 0.2)", paddingTop: "0.5rem", lineHeight: 1.4 }}>
-                        כל עוד לא התקבלו מספיק תשובות, המפה תישאר נעולה ויוצג רק מספר המשיבים הכללי.
-                      </span>
-                    </span>
-                  </span>
-                )}
+                {showTooltip && <PrivacyTooltip />}
               </span>
               <small>{stone.helper}</small>
             </article>
           );
         })}
+      </section>
+
+      <section className="survey-builder-flow" aria-label="רצף עבודה בשאלון">
+        {builderFlowSteps.map((step, index) => (
+          <article key={step.title} className="survey-builder-flow-step">
+            <span>{String(index + 1).padStart(2, "0")}</span>
+            <strong>{step.title}</strong>
+            <small>{step.helper}</small>
+          </article>
+        ))}
       </section>
 
       <div className="survey-builder-layout">
@@ -271,71 +290,115 @@ export function SurveyBuilderDemo() {
               </button>
             </div>
 
+            <div className="survey-builder-dimension-tabs" role="group" aria-label="סינון שאלות לפי ממד שלומות">
+              {wellbeingDimensions.map((dimension) => {
+                const dimensionQuestions = questions.filter((question) => question.dimensionId === dimension.id);
+                return (
+                  <button
+                    key={dimension.id}
+                    type="button"
+                    className={`survey-builder-dimension-tab${selectedDimensionId === dimension.id ? " is-active" : ""}`}
+                    onClick={() => setSelectedDimensionId(dimension.id)}
+                    aria-pressed={selectedDimensionId === dimension.id}
+                  >
+                    <span>{dimension.conceptLabel}</span>
+                    <small>{dimensionQuestions.length}</small>
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                className={`survey-builder-dimension-tab${selectedDimensionId === "all" ? " is-active" : ""}`}
+                onClick={() => setSelectedDimensionId("all")}
+                aria-pressed={selectedDimensionId === "all"}
+              >
+                <span>כל השאלות</span>
+                <small>{questions.length}</small>
+              </button>
+            </div>
+
+            <p className="quiet-note survey-builder-filter-note">
+              מוצגות {visibleQuestions.length} שאלות ב{selectedDimensionLabel}. המודל המלא נשמר: 8 ממדים ו-24 שאלות מקור בדמו.
+            </p>
+
             <div className="survey-builder-question-list">
-              {questions.map((question, index) => (
-                <article
-                  key={question.id}
-                  className={`survey-builder-question-card${question.enabled ? "" : " is-disabled"}`}
-                  style={{ "--question-color": getDimensionColor(question.dimensionId) } as CSSProperties}
-                >
-                  <div className="survey-builder-question-row">
-                    <span className="survey-builder-order">
-                      <GripVertical size={16} aria-hidden="true" />
-                      {index + 1}
-                    </span>
+              {visibleQuestions.map((question) => {
+                const questionIndex = questions.findIndex((current) => current.id === question.id) + 1;
+                return (
+                  <article
+                    key={question.id}
+                    className={`survey-builder-question-card${question.enabled ? "" : " is-disabled"}`}
+                    style={{ "--question-color": getDimensionColor(question.dimensionId) } as CSSProperties}
+                  >
+                    <div className="survey-builder-question-row">
+                      <span className="survey-builder-order">
+                        <GripVertical size={16} aria-hidden="true" />
+                        {questionIndex}
+                      </span>
 
-                    <div className="survey-builder-question-copy">
-                      <strong className="survey-builder-dimension-stone">{getDimensionLabel(question.dimensionId)}</strong>
-                      <p>{question.text}</p>
+                      <div className="survey-builder-question-copy">
+                        <strong className="survey-builder-dimension-stone">{getDimensionLabel(question.dimensionId)}</strong>
+                        <p>{question.text}</p>
+                      </div>
+
+                      <div className="survey-builder-question-actions" aria-label={`פעולות עבור שאלה ${questionIndex}`}>
+                        <button
+                          className="question-icon-button"
+                          type="button"
+                          title={question.required ? "להפוך לרשות" : "להפוך לחובה"}
+                          aria-label={question.required ? "להפוך לרשות" : "להפוך לחובה"}
+                          onClick={() =>
+                            updateQuestion(question.id, (current) => ({
+                              ...current,
+                              required: !current.required,
+                            }))
+                          }
+                        >
+                          <ShieldCheck size={17} aria-hidden="true" />
+                        </button>
+                        <button
+                          className="question-icon-button"
+                          type="button"
+                          title={question.enabled ? "להסתיר מסבב האבחון" : "להחזיר לסבב האבחון"}
+                          aria-label={question.enabled ? "להסתיר מסבב האבחון" : "להחזיר לסבב האבחון"}
+                          onClick={() =>
+                            updateQuestion(question.id, (current) => ({
+                              ...current,
+                              enabled: !current.enabled,
+                            }))
+                          }
+                        >
+                          <Eye size={17} aria-hidden="true" />
+                        </button>
+                        <button
+                          className="question-icon-button"
+                          type="button"
+                          title="שכפול שאלה"
+                          aria-label="שכפול שאלה"
+                          onClick={() => duplicateQuestion(question.id)}
+                        >
+                          <Copy size={17} aria-hidden="true" />
+                        </button>
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="survey-builder-tags">
-                    <span className={`status-badge ${question.enabled ? "status-green" : "status-yellow"}`}>
-                      <ClipboardList size={15} aria-hidden="true" />
-                      {question.enabled ? "פעילה בסבב האבחון" : "מוסתרת מהמשיבים"}
-                    </span>
-                    <span className={`status-badge ${question.required ? "status-green" : "status-yellow"}`}>
-                      <ShieldCheck size={15} aria-hidden="true" />
-                      {question.required ? "שאלת חובה" : "שאלת רשות"}
-                    </span>
-                    <span className="status-badge status-yellow">
-                      <Clock3 size={15} aria-hidden="true" />
-                      {question.answerMode}
-                    </span>
-                  </div>
-
-                  <div className="survey-builder-question-actions">
-                    <button
-                      className="ghost-button"
-                      type="button"
-                      onClick={() =>
-                        updateQuestion(question.id, (current) => ({
-                          ...current,
-                          required: !current.required,
-                        }))
-                      }
-                    >
-                      {question.required ? "להפוך לרשות" : "להפוך לחובה"}
-                    </button>
-                    <button
-                      className="ghost-button"
-                      type="button"
-                      onClick={() =>
-                        updateQuestion(question.id, (current) => ({
-                          ...current,
-                          enabled: !current.enabled,
-                        }))
-                      }
-                    >
-                      {question.enabled ? "להסתיר מסבב האבחון" : "להחזיר לסבב האבחון"}
-                    </button>
-                    <button className="ghost-button" type="button" onClick={() => duplicateQuestion(question.id)}>
-                      שכפול שאלה
-                    </button>
-                  </div>
-                </article>
-              ))}
+                    <div className="survey-builder-tags">
+                      <span className={`status-badge ${question.enabled ? "status-green" : "status-yellow"}`}>
+                        <ClipboardList size={15} aria-hidden="true" />
+                        {question.enabled ? "פעילה" : "מוסתרת"}
+                      </span>
+                      <span className={`status-badge ${question.required ? "status-green" : "status-yellow"}`}>
+                        <ShieldCheck size={15} aria-hidden="true" />
+                        {question.required ? "חובה" : "רשות"}
+                      </span>
+                      <span className="status-badge status-yellow">
+                        <Clock3 size={15} aria-hidden="true" />
+                        {question.answerMode}
+                      </span>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           </section>
         </div>
@@ -354,7 +417,7 @@ export function SurveyBuilderDemo() {
             </div>
 
             <div className="copy-row">
-              <input readOnly value={activeRound.shareUrl} aria-label="קישור משיבים חיצוני" />
+              <input readOnly dir="ltr" value={shareUrl} aria-label="קישור משיבים חיצוני" />
               <button className="icon-button" type="button" onClick={copyRespondentLink} aria-label="העתקת קישור">
                 <Clipboard size={18} aria-hidden="true" />
               </button>
@@ -363,8 +426,8 @@ export function SurveyBuilderDemo() {
             {copied ? <p className="success-note">קישור המשיבים הועתק ומוכן לשליחה לצוות.</p> : null}
 
             <div className="round-actions">
-              <Link className="secondary-button" href={activeRound.shareUrl} target="_blank" rel="noreferrer">
-                תצוגת המשיב
+              <Link className="secondary-button" href={shareUrl} target="_blank" rel="noreferrer">
+                {openRespondentSurveyAction.label}
                 <Eye size={18} aria-hidden="true" />
               </Link>
               <button className="ghost-button" type="button" onClick={copyRespondentLink}>

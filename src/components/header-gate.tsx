@@ -2,11 +2,12 @@
 
 import { usePathname } from "next/navigation";
 import { AppHeader } from "@/components/app-shell";
+import { shouldHideGlobalHeader } from "@/lib/navigation";
 
 export function HeaderGate() {
   const pathname = usePathname();
 
-  if (pathname?.startsWith("/dashboard") || pathname?.startsWith("/survey/dror-q1")) {
+  if (shouldHideGlobalHeader(pathname)) {
     return null;
   }
 

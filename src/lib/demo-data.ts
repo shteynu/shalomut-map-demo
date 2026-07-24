@@ -1,5 +1,9 @@
+import { responseScale, statusLabels as canonicalStatusLabels, surveyInstrument } from "@/lib/shalomut-source";
+import type { SurveyQuestion, WellbeingStatus } from "@/lib/shalomut-source";
+
+export type { SurveyQuestion, WellbeingStatus } from "@/lib/shalomut-source";
+
 export type RoundStatus = "open" | "closed";
-export type WellbeingStatus = "green" | "yellow" | "red";
 
 export type Organization = {
   id: string;
@@ -29,13 +33,6 @@ export type Round = {
     classesPerGrade: Record<string, number>;
     notes: string;
   };
-};
-
-export type SurveyQuestion = {
-  id: string;
-  dimensionId: string;
-  text: string;
-  required: boolean;
 };
 
 export type ResponseMetric = {
@@ -114,74 +111,9 @@ export const activeRound: Round = {
   },
 };
 
-export const surveyQuestions: SurveyQuestion[] = [
-  {
-    id: "expression-1",
-    dimensionId: "self-expression",
-    text: "אני יכולה להביע בחופשיות את הרעיונות והמחשבות שלי בעבודה.",
-    required: true,
-  },
-  {
-    id: "competence-1",
-    dimensionId: "professional-competence",
-    text: "אני מקבלת באופן קבוע חיזוק לכך שהמאמצים והכישורים שלי בעלי ערך.",
-    required: true,
-  },
-  {
-    id: "social-1",
-    dimensionId: "social-resource",
-    text: "יש לי לפחות אדם אחד בעבודה שאני סומכת עליו או עליה ושאני יכולה לדבר איתו או איתה בפתיחות.",
-    required: true,
-  },
-  {
-    id: "balance-1",
-    dimensionId: "balance",
-    text: "אני מרגישה שהעומס בעבודה מתאים לי והוא בר ביצוע עבורי.",
-    required: true,
-  },
-  {
-    id: "support-1",
-    dimensionId: "management-support",
-    text: "אני יכולה לפנות למנהל או למנהלת לעזרה בלי חשש.",
-    required: true,
-  },
-  {
-    id: "certainty-1",
-    dimensionId: "certainty",
-    text: "המשימות והאחריות שלי מוגדרות בבירור ואינן משתנות ללא התראה מראש.",
-    required: true,
-  },
-  {
-    id: "climate-1",
-    dimensionId: "organizational-climate",
-    text: "בארגון מקובל לדבר באופן פתוח על קשיים רגשיים ופסיכולוגיים.",
-    required: true,
-  },
-  {
-    id: "meaning-1",
-    dimensionId: "meaning",
-    text: "אני מרגישה שלעבודה שלי יש משמעות והיא חשובה לי באופן אישי.",
-    required: true,
-  },
-];
+export const surveyQuestions: SurveyQuestion[] = [...surveyInstrument.questions];
 
-export const responseOptions = [
-  {
-    value: "green",
-    title: "ירוק",
-    text: "ההיגד משקף באופן מלא את מצבי הנוכחי.",
-  },
-  {
-    value: "yellow",
-    title: "צהוב",
-    text: "המצב סביר, אך יש נקודות שכדאי לתת להן תשומת לב.",
-  },
-  {
-    value: "red",
-    title: "אדום",
-    text: "ההיבט הזה יוצר מתח או חוסר נוחות ודורש פעולה.",
-  },
-] as const;
+export const responseOptions = responseScale;
 
 export const wellbeingDimensions: WellbeingDimension[] = [
   {
@@ -193,10 +125,10 @@ export const wellbeingDimensions: WellbeingDimension[] = [
     status: "green",
     mapPosition: { top: "10%", right: "12%", size: "8.6rem", rotate: -9 },
     conceptPosition: {
-      top: "12.5%",
-      right: "29.5%",
-      width: "24rem",
-      height: "11rem",
+      top: "2%",
+      right: "2%",
+      width: "17rem",
+      height: "9.5rem",
       rotate: 0,
       radius: "44% 56% 52% 48% / 48% 38% 62% 52%",
     },
@@ -255,10 +187,10 @@ export const wellbeingDimensions: WellbeingDimension[] = [
     status: "green",
     mapPosition: { top: "18%", right: "34%", size: "7.9rem", rotate: 7 },
     conceptPosition: {
-      top: "15.5%",
-      right: "12%",
-      width: "15rem",
-      height: "15rem",
+      top: "30%",
+      right: "6%",
+      width: "14rem",
+      height: "10.5rem",
       rotate: 7,
       radius: "42% 58% 40% 60% / 47% 38% 62% 53%",
     },
@@ -317,10 +249,10 @@ export const wellbeingDimensions: WellbeingDimension[] = [
     status: "yellow",
     mapPosition: { top: "37%", right: "22%", size: "10.2rem", rotate: -3 },
     conceptPosition: {
-      top: "45%",
-      right: "23%",
-      width: "25rem",
-      height: "11rem",
+      top: "34%",
+      right: "36%",
+      width: "16rem",
+      height: "10rem",
       rotate: 0,
       radius: "36% 64% 40% 60% / 44% 34% 66% 56%",
     },
@@ -389,14 +321,14 @@ export const wellbeingDimensions: WellbeingDimension[] = [
     status: "red",
     mapPosition: { top: "58%", right: "11%", size: "9.4rem", rotate: 10 },
     conceptPosition: {
-      top: "54.5%",
-      right: "58%",
-      width: "22rem",
-      height: "12rem",
+      top: "32%",
+      right: "70%",
+      width: "14rem",
+      height: "9.5rem",
       rotate: 0,
       radius: "40% 60% 37% 63% / 44% 40% 60% 56%",
     },
-    conceptColor: "#e43e5d",
+    conceptColor: "#cf2c4e",
     conceptStatusText: "נדרש טיפול מיידי",
     conceptStatusDirection: "down",
     summary: [
@@ -451,9 +383,9 @@ export const wellbeingDimensions: WellbeingDimension[] = [
     status: "yellow",
     mapPosition: { top: "15%", right: "57%", size: "8.8rem", rotate: -11 },
     conceptPosition: {
-      top: "14%",
-      right: "57%",
-      width: "23rem",
+      top: "5%",
+      right: "72%",
+      width: "13rem",
       height: "9.5rem",
       rotate: 4,
       radius: "39% 61% 41% 59% / 48% 36% 64% 52%",
@@ -513,10 +445,10 @@ export const wellbeingDimensions: WellbeingDimension[] = [
     status: "yellow",
     mapPosition: { top: "38%", right: "52%", size: "8.4rem", rotate: 8 },
     conceptPosition: {
-      top: "35.5%",
-      right: "46%",
+      top: "4%",
+      right: "42%",
       width: "15rem",
-      height: "11rem",
+      height: "9rem",
       rotate: -3,
       radius: "45% 55% 42% 58% / 36% 46% 54% 64%",
     },
@@ -568,17 +500,17 @@ export const wellbeingDimensions: WellbeingDimension[] = [
   },
   {
     id: "organizational-climate",
-    label: "עורף מקצועי",
+    label: "אקלים ארגוני",
     conceptLabel: "אקלים ארגוני",
     subtitle: "קידום רווחה נפשית כחלק מתרבות הארגון",
     score: 71,
     status: "green",
     mapPosition: { top: "57%", right: "42%", size: "8rem", rotate: -5 },
     conceptPosition: {
-      top: "70.5%",
-      right: "26.5%",
-      width: "25rem",
-      height: "11rem",
+      top: "62%",
+      right: "22%",
+      width: "16rem",
+      height: "10.5rem",
       rotate: 0,
       radius: "42% 58% 38% 62% / 49% 39% 61% 51%",
     },
@@ -637,10 +569,10 @@ export const wellbeingDimensions: WellbeingDimension[] = [
     status: "green",
     mapPosition: { top: "32%", right: "75%", size: "8.8rem", rotate: 5 },
     conceptPosition: {
-      top: "55%",
-      right: "4%",
-      width: "19rem",
-      height: "10.5rem",
+      top: "64%",
+      right: "58%",
+      width: "16rem",
+      height: "10rem",
       rotate: 0,
       radius: "44% 56% 40% 60% / 44% 34% 66% 56%",
     },
@@ -692,11 +624,7 @@ export const wellbeingDimensions: WellbeingDimension[] = [
   },
 ];
 
-export const statusLabels: Record<WellbeingStatus, string> = {
-  green: "הכל טוב",
-  yellow: "מצב סביר",
-  red: "נדרש טיפול מיידי",
-};
+export const statusLabels: Record<WellbeingStatus, string> = canonicalStatusLabels;
 
 export function getDimensionById(id: string) {
   return wellbeingDimensions.find((dimension) => dimension.id === id);
@@ -711,3 +639,20 @@ export function getDimensionStaticParams() {
 export function getStatusCount(status: WellbeingStatus) {
   return wellbeingDimensions.filter((dimension) => dimension.status === status).length;
 }
+
+/* Dashboard stone surfaces stay soft, but use the same three-status model as
+   the main branch: green / yellow / red. Labels and dots still duplicate the
+   status so the map does not rely on color alone. */
+export const statusSurfaces: Record<WellbeingStatus, string> = {
+  green: "var(--pastel-green)",
+  yellow: "var(--pastel-yellow)",
+  red: "var(--pastel-pink)",
+};
+
+export function getDimensionSurface(dimension: Pick<WellbeingDimension, "status">) {
+  return statusSurfaces[dimension.status];
+}
+
+export const overallScore = Math.round(
+  wellbeingDimensions.reduce((sum, dimension) => sum + dimension.score, 0) / wellbeingDimensions.length,
+);

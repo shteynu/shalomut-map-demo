@@ -2,9 +2,11 @@
 
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Plus, Undo2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { wellbeingDimensions } from "@/lib/demo-data";
+import { DimensionIcon } from "@/components/dimension-icon";
+import { getDimensionSurface, statusLabels, wellbeingDimensions } from "@/lib/demo-data";
+import { dashboardDimensionRoute } from "@/lib/navigation";
 
 const DRAG_THRESHOLD = 6;
 const LAYOUT_STORAGE_KEY = "shalomut-map-stones-v2";
@@ -33,10 +35,6 @@ const zeroOffsets = wellbeingDimensions.reduce<StoneOffsetMap>((accumulator, dim
   accumulator[dimension.id] = { x: 0, y: 0 };
   return accumulator;
 }, {});
-
-function getDimensionHref(dimensionId: string) {
-  return `/dashboard/${dimensionId}`;
-}
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
@@ -253,9 +251,32 @@ export function DashboardMapInteractive() {
 
   const stageClassName = useMemo(() => `dashboard-map-stage${draggingId ? " is-dragging" : ""}`, [draggingId]);
 
+  const hasCustomLayout = useMemo(
+    () => wellbeingDimensions.some((dimension) => {
+      const offset = offsets[dimension.id];
+      return Boolean(offset) && (offset.x !== 0 || offset.y !== 0);
+    }),
+    [offsets],
+  );
+
+  const resetLayout = useCallback(() => {
+    setOffsets(zeroOffsets);
+    offsetsRef.current = zeroOffsets;
+
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(LAYOUT_STORAGE_KEY);
+    }
+  }, []);
+
   return (
     <section ref={stageRef} className={stageClassName} aria-label="מפת השלומות לפי ממדים">
-      {wellbeingDimensions.map((dimension) => {
+      {hasCustomLayout ? (
+        <button type="button" className="map-reset-button" onClick={resetLayout}>
+          <Undo2 size={16} aria-hidden="true" />
+          איפוס סידור המפה
+        </button>
+      ) : null}
+      {wellbeingDimensions.map((dimension, index) => {
         const offset = offsets[dimension.id] ?? zeroOffsets[dimension.id];
         const dragX = offset.x;
         const dragY = offset.y;
@@ -264,7 +285,7 @@ export function DashboardMapInteractive() {
           <Link
             key={dimension.id}
             ref={registerStoneRef(dimension.id)}
-            href={getDimensionHref(dimension.id)}
+            href={dashboardDimensionRoute(dimension.id)}
             className={`dashboard-map-blob${draggingId === dimension.id ? " is-dragging" : ""}`}
             style={
               {
@@ -279,27 +300,33 @@ export function DashboardMapInteractive() {
                 width: dimension.conceptPosition.width,
                 height: dimension.conceptPosition.height,
                 borderRadius: dimension.conceptPosition.radius,
-                backgroundColor: dimension.conceptColor,
+                backgroundColor: getDimensionSurface(dimension),
                 zIndex: draggingId === dimension.id ? 20 : undefined,
               } as CSSProperties
             }
             data-drag-x={Math.round(dragX)}
             data-drag-y={Math.round(dragY)}
-            aria-label={`${dimension.conceptLabel}: ${dimension.subtitle}`}
+            data-dimension={dimension.id}
+            data-stone-index={String(index + 1).padStart(2, "0")}
+            aria-label={`${dimension.conceptLabel}: ${dimension.subtitle}. ציון ${dimension.score}, ${statusLabels[dimension.status]}`}
             draggable={false}
             onPointerDown={handlePointerDown(dimension.id)}
             onClick={handleClick(dimension.id)}
             onDragStart={(event) => event.preventDefault()}
           >
             <span className="dashboard-map-blob-plus" aria-hidden="true">
-              <Plus size={42} strokeWidth={2.25} />
+              <Plus size={30} strokeWidth={2.25} />
             </span>
             <span className="dashboard-map-blob-copy">
+              <span className="dashboard-map-blob-icon" aria-hidden="true">
+                <DimensionIcon dimensionId={dimension.id} size={22} />
+              </span>
               <strong>{dimension.conceptLabel}</strong>
-              <span>{dimension.subtitle}</span>
+              <span className="dashboard-map-blob-score">{dimension.score}%</span>
             </span>
             <span className="dashboard-map-blob-status">
-              {dimension.conceptStatusText}
+              <span className={`status-dot status-${dimension.status}`} aria-hidden="true" />
+              {statusLabels[dimension.status]}
             </span>
           </Link>
         );

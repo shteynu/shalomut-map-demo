@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { Check, ChevronLeft, ShieldCheck } from "lucide-react";
-import { useMemo, useState, type CSSProperties } from "react";
-import { responseOptions, surveyQuestions, wellbeingDimensions } from "@/lib/demo-data";
+import { Check, ChevronLeft, ChevronRight, Frown, Meh, ShieldCheck, Smile, type LucideIcon } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { responseOptions, surveyQuestions } from "@/lib/demo-data";
+import { getNavigationAction } from "@/lib/navigation";
 
 type AnswerValue = (typeof responseOptions)[number]["value"];
 
@@ -11,19 +12,49 @@ type SurveyFlowProps = {
   variant?: "internal" | "public";
 };
 
-function getDimensionColor(dimensionId: string) {
-  return wellbeingDimensions.find((dimension) => dimension.id === dimensionId)?.conceptColor ?? "#e49902";
-}
+const optionIcons: Record<AnswerValue, LucideIcon> = {
+  green: Smile,
+  yellow: Meh,
+  red: Frown,
+};
 
 export function SurveyFlow({ variant = "internal" }: SurveyFlowProps) {
   const [answers, setAnswers] = useState<Record<string, AnswerValue>>({});
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [submitted, setSubmitted] = useState(false);
+  const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isPublicLink = variant === "public";
+  const trackRoundAction = getNavigationAction("trackRound");
 
+  const total = surveyQuestions.length;
   const answeredCount = Object.keys(answers).length;
-  const progress = Math.round((answeredCount / surveyQuestions.length) * 100);
-  const canSubmit = answeredCount === surveyQuestions.length;
-  const groupedQuestions = useMemo(() => surveyQuestions, []);
+  const canSubmit = answeredCount === total;
+  const isReviewStep = currentIndex === total;
+  const question = surveyQuestions[currentIndex];
+
+  useEffect(() => {
+    return () => {
+      if (advanceTimer.current) {
+        clearTimeout(advanceTimer.current);
+      }
+    };
+  }, []);
+
+  const selectAnswer = (value: AnswerValue) => {
+    if (!question) {
+      return;
+    }
+
+    setAnswers((current) => ({ ...current, [question.id]: value }));
+
+    if (advanceTimer.current) {
+      clearTimeout(advanceTimer.current);
+    }
+
+    advanceTimer.current = setTimeout(() => {
+      setCurrentIndex((index) => Math.min(index + 1, total));
+    }, 260);
+  };
 
   if (submitted) {
     return (
@@ -31,13 +62,20 @@ export function SurveyFlow({ variant = "internal" }: SurveyFlowProps) {
         <div className="survey-complete">
           <ShieldCheck size={42} aria-hidden="true" />
           <h1>תודה, התשובות נקלטו</h1>
-          <p>התשובות נשמרות בדמו בצורה מצרפית בלבד. אין במסך ניהול מקום שבו ניתן לראות מי ענה.</p>
+          {isPublicLink ? (
+            <p>
+              התשובות נשמרות בצורה מצרפית בלבד — אין מסך שבו אפשר לראות מי ענה. כשכל הצוות יסיים,
+              התמונה המשותפת תוצג ותשמש בסיס לשיחה על מה שחשוב לכם.
+            </p>
+          ) : (
+            <p>התשובות נשמרות בדמו בצורה מצרפית בלבד. אין במסך ניהול מקום שבו ניתן לראות מי ענה.</p>
+          )}
           {isPublicLink ? (
             <p className="quiet-note">אפשר לסגור את החלון. תודה על המענה.</p>
           ) : (
-            <Link className="primary-button" href="/round">
-              חזרה לסטטוס סבב האבחון
-              <ChevronLeft size={18} aria-hidden="true" />
+            <Link className="primary-button" href={trackRoundAction.href}>
+              {trackRoundAction.label}
+              <ChevronRight size={18} aria-hidden="true" />
             </Link>
           )}
         </div>
@@ -45,74 +83,95 @@ export function SurveyFlow({ variant = "internal" }: SurveyFlowProps) {
     );
   }
 
+  const progressPercent = Math.round((answeredCount / total) * 100);
+
   return (
-    <section className="survey-shell stone-page survey-builder-stone-page">
-      <div className="survey-header">
+    <section className="survey-shell stone-page survey-builder-stone-page survey-focus-shell">
+      <div className="survey-header survey-focus-header">
         <p className="eyebrow">שאלון אנונימי לצוות</p>
         <h1>מפת השלומות</h1>
-        <p>
-          בחרו את הצבע שמתאר בצורה הטובה ביותר את המצב הנוכחי שלכם. אין צורך בשם, מייל או סיסמה.
-        </p>
+        <p>בחרו את התשובה שמתארת בצורה הטובה ביותר את המצב הנוכחי שלכם. אין צורך בשם, מייל או סיסמה.</p>
       </div>
 
       <div className="survey-progress-sticky">
-        <div className="progress-bar" aria-label={`התקדמות ${progress} אחוז`}>
-          <span style={{ width: `${progress}%` }} />
+        <div
+          className="progress-bar"
+          role="progressbar"
+          aria-label="התקדמות מילוי השאלון"
+          aria-valuenow={progressPercent}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuetext={
+            isReviewStep ? `כל ${total} השאלות נענו` : `שאלה ${currentIndex + 1} מתוך ${total}`
+          }
+        >
+          <span style={{ transform: `scaleX(${progressPercent / 100})` }} />
         </div>
-        <small>
-          {answeredCount} מתוך {surveyQuestions.length} שאלות
-        </small>
+        <small>{isReviewStep ? `נענו ${answeredCount} מתוך ${total}` : `שאלה ${currentIndex + 1} מתוך ${total}`}</small>
       </div>
 
-      <div className="legend-row" aria-label="מקרא צבעים">
-        {responseOptions.map((option) => (
-          <article key={option.value} className={`legend-card option-${option.value}`}>
-            <strong>{option.title}</strong>
-            <span>{option.text}</span>
-          </article>
-        ))}
-      </div>
+      {isReviewStep ? (
+        <div className="survey-focus-card survey-review-card">
+          <h2>{canSubmit ? "הכל מוכן לשליחה" : "נותרו שאלות ללא מענה"}</h2>
+          <p>
+            {canSubmit
+              ? "עניתם על כל השאלות. אפשר לחזור אחורה ולעדכן תשובה, או לשלוח עכשיו."
+              : `נענו ${answeredCount} מתוך ${total} שאלות. חזרו אחורה כדי להשלים את החסרות.`}
+          </p>
+          <button className="primary-button" type="button" disabled={!canSubmit} onClick={() => setSubmitted(true)}>
+            שליחת שאלון
+            <ChevronLeft size={18} aria-hidden="true" />
+          </button>
+        </div>
+      ) : (
+        <div className="survey-focus-card" key={question.id}>
+          <span className="question-index" aria-hidden="true">
+            {currentIndex + 1}
+          </span>
+          <h2>{question.text}</h2>
+          <div className="survey-answer-stones">
+            {responseOptions.map((option) => {
+              const Icon = optionIcons[option.value];
+              const selected = answers[question.id] === option.value;
+              return (
+                <button
+                  key={option.value}
+                  className={`answer-stone answer-stone-${option.value}`}
+                  type="button"
+                  aria-pressed={selected}
+                  onClick={() => selectAnswer(option.value)}
+                >
+                  <Icon size={30} aria-hidden="true" />
+                  <strong>{option.title}</strong>
+                  <span>{option.text}</span>
+                  {selected ? <Check className="answer-stone-check" size={18} aria-hidden="true" /> : null}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
-      <div className="question-list">
-        {groupedQuestions.map((question, index) => (
-          <article
-            className="question-card"
-            key={question.id}
-            style={{ "--question-color": getDimensionColor(question.dimensionId) } as CSSProperties}
-          >
-            <span className="question-index">{index + 1}</span>
-            <h2>{question.text}</h2>
-            <div className="answer-grid">
-              {responseOptions.map((option) => {
-                const selected = answers[question.id] === option.value;
-                return (
-                  <button
-                    key={option.value}
-                    className={`answer-button option-${option.value}`}
-                    type="button"
-                    aria-pressed={selected}
-                    onClick={() =>
-                      setAnswers((current) => ({
-                        ...current,
-                        [question.id]: option.value,
-                      }))
-                    }
-                  >
-                    <span>{option.title}</span>
-                    {selected ? <Check size={18} aria-hidden="true" /> : null}
-                  </button>
-                );
-              })}
-            </div>
-          </article>
-        ))}
-      </div>
-
-      <div className="sticky-submit">
-        <button className="primary-button" type="button" disabled={!canSubmit} onClick={() => setSubmitted(true)}>
-          שליחת שאלון
-          <ChevronLeft size={18} aria-hidden="true" />
+      <div className="survey-focus-nav">
+        <button
+          className="secondary-button"
+          type="button"
+          disabled={currentIndex === 0}
+          onClick={() => setCurrentIndex((index) => Math.max(index - 1, 0))}
+        >
+          <ChevronRight size={18} aria-hidden="true" />
+          לשאלה הקודמת
         </button>
+        {!isReviewStep && answers[question.id] ? (
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={() => setCurrentIndex((index) => Math.min(index + 1, total))}
+          >
+            לשאלה הבאה
+            <ChevronLeft size={18} aria-hidden="true" />
+          </button>
+        ) : null}
       </div>
     </section>
   );
