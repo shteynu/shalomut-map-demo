@@ -34,7 +34,7 @@
 
 ### ADR-002: Versioned AI Analytics Contract и fail-closed transport
 - **Решение**: Core app и Python-сервис используют общий manifest `contracts/ai-analytics-v1.json`. Callback принимает только `contractVersion: "1.0"`, совпадающий `roundId` и корректный privacy/status payload; successful payload содержит ровно восемь канонических stones.
-- **Персистентность**: В production-режиме результат хранится в `SurveyRound.aiInsights`; локальная migration `20260724170000_add_ai_insights` должна применяться к внешней БД только после отдельного разрешения.
+- **Персистентность**: В production-режиме результат хранится в `SurveyRound.aiInsights`; migration `20260724170000_add_ai_insights` применена к текущей настроенной Supabase-цели. Для других окружений миграция запускается отдельно после подтверждения target.
 - **Транспорт**: MCP, webhook и callback поддерживают независимые Bearer secrets. При недоступности удалённого MCP/AI-сервиса обработка завершается ошибкой; mock data разрешены только при явном `USE_MOCK_MCP=true`.
 - **UI**: Dashboard читает AI-insights по `roundId`, валидирует контракт на клиентской границе и отдельно отображает loading, privacy-locked, not-found и error состояния.
 
@@ -59,4 +59,3 @@
 2. Никаких холодных корпоративных серок: всегда используем теплые токены бренда.
 3. WCAG AA: текст внутри цветных камней должен быть читаемым (`#383838`).
 4. Соблюдение ADR-001: Data Layer только формирует и хранит данные; вся аналитическая рефлексия — задача внешнего AI-сервиса.
-

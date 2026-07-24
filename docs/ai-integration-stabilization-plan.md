@@ -9,8 +9,8 @@ fallback-данных.
 
 ## Текущее состояние
 
-Локальная реализация готова и проверена. В production/staging ничего не
-мигрировалось и не деплоилось.
+Локальная реализация готова и проверена. Migration применена к текущей
+настроенной Supabase-цели; AI-сервис и секреты не деплоились.
 
 ## Work packet
 
@@ -33,14 +33,16 @@ Python pipeline tests.
 
 Проверка: `cd ai-analytics-service && python3 run_tests.py` (7/7).
 
-### 3. Persistence — Done locally / approval pending
+### 3. Persistence — Done for the configured Supabase target
 
 - `SurveyRound.aiInsights` и `aiInsightsUpdatedAt` добавлены в Prisma.
 - Migration: `prisma/migrations/20260724170000_add_ai_insights/migration.sql`.
 - In-memory и Prisma repositories используют одинаковый контракт.
+- `npx prisma migrate deploy` выполнен успешно; `npx prisma migrate status`
+  reports the database is up to date.
 
-Approval gate: применение migration к Supabase допускается только отдельным
-явным разрешением после backup/status check.
+Для другого staging/production target миграцию нужно запускать отдельно после
+подтверждения окружения и backup/status check.
 
 ### 4. Transport hardening — Done locally
 
@@ -81,13 +83,12 @@ Contract → Python/catalog → persistence → transport → dashboard
 - [x] Local boundary E2E and browser state checks — pass.
 - [x] No real secrets committed.
 - [ ] Staging secrets configured and webhook smoke-test completed.
-- [ ] Migration applied to the intended external database after approval.
+- [x] Migration applied to the configured external database after explicit approval.
 
 ## Stop-lines and handoff
 
 Pause before any of the following:
 
-- applying Prisma migration to Supabase;
 - setting or rotating shared secrets in Vercel/AI runtime;
 - invoking a real staging webhook;
 - merging/pushing this work to `main`.

@@ -2,17 +2,16 @@
 
 ## 📌 Текущий статус
 - **Текущий этап**: Стабилизация AI Analytics интеграции реализована локально в `feature/ai-analytics-microservice-mcp`: единый контракт, Prisma-персистентность, fail-closed транспорт, сквозной Next.js → Python → Next.js тест и подключение результатов к dashboard.
-- **Ограничение**: Миграция `20260724170000_add_ai_insights` только подготовлена и локально провалидирована. Она не применялась к Supabase; секреты и AI-сервис не деплоились.
+- **Ограничение**: Миграция `20260724170000_add_ai_insights` применена к текущей настроенной Supabase-цели и проверена. Точное разделение этой цели на staging/production в Vercel/Supabase всё ещё нужно подтвердить; секреты и AI-сервис не деплоились.
 - **Следующая цель**: Проверить diff, получить отдельное разрешение на миграцию/настройку окружения и провести staging smoke-test.
 
 ---
 
 ## 🚀 Следующие шаги (Next Up: Staging Readiness)
 1. [ ] **Ревью локального diff** и фиксация изменений отдельным коммитом.
-2. [ ] **После явного разрешения** применить Prisma migration к целевой Supabase БД.
-3. [ ] Настроить `APP_BASE_URL`, `AI_SERVICE_URL`, `MCP_SHARED_SECRET`, `AI_WEBHOOK_SECRET` и `AI_CALLBACK_SECRET` в staging и AI-сервисе.
-4. [ ] Выполнить staging smoke-test полного webhook/callback сценария и только затем решать вопрос о merge в `main`.
-5. [ ] Отдельно решить, нужны ли реальные LangGraph/ChromaDB; текущий runtime использует собственный async graph-style workflow и локальный JSON-каталог.
+2. [ ] Настроить `APP_BASE_URL`, `AI_SERVICE_URL`, `MCP_SHARED_SECRET`, `AI_WEBHOOK_SECRET` и `AI_CALLBACK_SECRET` в staging и AI-сервисе.
+3. [ ] Выполнить staging smoke-test полного webhook/callback сценария и только затем решать вопрос о merge в `main`.
+4. [ ] Отдельно решить, нужны ли реальные LangGraph/ChromaDB; текущий runtime использует собственный async graph-style workflow и локальный JSON-каталог.
 
 ---
 
@@ -20,7 +19,7 @@
 - [x] **2026-07-24**: **Стабилизирована сквозная AI Analytics интеграция и подключён dashboard**:
   - Добавлен общий versioned contract `contracts/ai-analytics-v1.json`; TypeScript callback отклоняет legacy/mismatched payloads и требует ровно 8 канонических измерений.
   - Python pipeline, mock MCP и intervention catalog синхронизированы с каноническими ID; рекомендации больше не переходят между измерениями.
-  - `aiInsights` и `aiInsightsUpdatedAt` добавлены в Prisma; подготовлена миграция `20260724170000_add_ai_insights`, но к внешней БД она не применялась.
+  - `aiInsights` и `aiInsightsUpdatedAt` добавлены в Prisma; миграция `20260724170000_add_ai_insights` применена к настроенной Supabase-цели, статус проверен как up to date.
   - MCP, webhook и callback поддерживают отдельные shared secrets; mock MCP включается только явным `USE_MOCK_MCP=true`; сетевые ошибки больше не маскируются fake-success.
   - Добавлен настоящий локальный boundary E2E: Next.js MCP → Python pipeline CLI → Next.js callback → persistence GET, включая privacy-lock.
   - Dashboard detail/metrics/recommendations читает валидированные AI-инсайты и показывает loading, locked, not-found и error состояния, сохраняя `roundId` в навигации.
