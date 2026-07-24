@@ -1,7 +1,7 @@
 # Data Layer & Backend Services Blueprint (מפת שלומות)
 
 **Дата создания**: 2026-07-24  
-**Статус**: Имплементирован (Data Layer & Prisma Persistence Phase Completed)  
+**Статус**: Имплементирован локально; новая round-configuration migration ожидает подтверждённый staging target
 **Контекст**: Выделение чистого Data Layer и API-слоя.  
 **Архитектурное решение (ADR-001)**: Вся аналитическая рефлексия, генерация выводов и рекомендации вынесены во внешний AI-сервис. Данный сервис выступает как чистый Data Layer & Raw Data Storage.
 
@@ -70,6 +70,8 @@ erDiagram
         int privacy_threshold "default 10"
         datetime start_date
         datetime end_date
+        json background_context
+        json survey_definition
         datetime created_at
     }
 
@@ -153,13 +155,16 @@ erDiagram
 
 ## 4. REST / Server Actions API Routes Structure
 
-Будущая структура API в Next.js App Router (`src/app/api/` или React Server Actions):
+Реализованная структура API в Next.js App Router:
 
 - `POST /api/rounds` — создание раунда опроса
+- `PUT /api/manager/setup` — создание/обновление школы, раунда и background context
+- `PATCH /api/rounds/[roundId]` — разрешённый переход статуса раунда
+- `GET/PUT /api/rounds/[roundId]/survey-definition` — чтение/сохранение определения анкеты
 - `GET /api/survey/[shareCode]` — получение анкеты по коду
 - `POST /api/survey/[shareCode]/submit` — отправка результатов опроса
 - `GET /api/rounds/[roundId]/analytics` — получение агрегированной карты и баллов (с проверкой порога анонимности)
-- `GET /api/rounds/[roundId]/recommendations` — получение рекомендаций по действиям
+- `POST /api/rounds/[roundId]/trigger-ai` и `GET/POST /api/rounds/[roundId]/ai-insights` — граница внешнего AI-сервиса
 
 ---
 
@@ -167,5 +172,9 @@ erDiagram
 
 1. [x] Выбрано хранилище: Prisma + PostgreSQL/Supabase; empty in-memory repositories используются только без настроенной persistence.
 2. [x] Имплементированы organization, round и survey repository interfaces/adapters; агрегация находится в `AnalyticsService`.
-3. [ ] Подключить manager-facing UI к Data Layer. Скрытый demo fallback запрещён; явный static-demo режим можно сохранить отдельно.
+3. [x] Manager-facing UI подключён к Data Layer; пустые organization/round показывают onboarding, runtime demo IDs удалены.
 4. [x] Добавлены интеграционные тесты агрегации, privacy threshold и empty-runtime поведения.
+5. [x] Setup и survey builder сохраняются через API; 24 канонических вопроса защищены валидатором.
+6. [ ] Применить `20260724180000_add_round_configuration` к подтверждённой staging-БД и выполнить реальный CRUD smoke.
+7. [ ] Добавить manager authentication/authorization до публичного доступа к write endpoints.
+8. [x] Deployed runtime без `DATABASE_URL` отклоняет data writes с `503`; локальный in-memory state согласован между Next.js server bundles.

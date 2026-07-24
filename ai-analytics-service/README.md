@@ -13,9 +13,8 @@ The current implementation is deliberately small:
   `data/interventions_kb.json` catalog, scoped strictly by dimension;
 - it posts the validated result back to the core app.
 
-The service does not currently use LangGraph or ChromaDB at runtime. Their
-dependencies remain in the package manifest while that architecture is being
-evaluated.
+The service does not currently use LangGraph or ChromaDB at runtime, so those
+heavy packages are intentionally absent from the deployment manifest.
 
 ## Contract
 
@@ -58,6 +57,9 @@ sides:
 - `AI_WEBHOOK_SECRET`: core trigger → AI webhook;
 - `AI_CALLBACK_SECRET`: AI callback → core persistence endpoint.
 
+On Vercel, missing shared secrets fail closed. Local development may run
+without them.
+
 ## Endpoints
 
 - `GET /health`
@@ -66,6 +68,16 @@ sides:
 
 The core application API is documented in `../public/openapi.json` and
 `../docs/openapi.yaml`.
+
+## Vercel preview deployment
+
+The package declares `src.main:app` as its Vercel FastAPI entrypoint. Create a
+separate Vercel project whose root directory is `ai-analytics-service`, then
+configure Preview variables from `.env.example`. Keep `USE_MOCK_MCP=false`.
+
+The webhook executes the pipeline and callback within the request instead of
+using an in-process background task, which is not a durable queue in a
+serverless runtime.
 
 ## Verification
 

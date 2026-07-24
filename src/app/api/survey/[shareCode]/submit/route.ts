@@ -1,19 +1,17 @@
 import { NextResponse } from 'next/server';
 import { getRepositories } from '@/lib/repositories';
 import { RoundService, SurveyService } from '@/lib/services';
+import { getDurableWriteGuardResponse } from '@/lib/server/durable-write-guard';
 import { QuestionAnswerInput } from '@/lib/types/backend';
-
-export const dynamic = 'force-static';
-
-export function generateStaticParams() {
-  return [{ shareCode: 'SHALOM-DEMO' }];
-}
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ shareCode: string }> }
 ) {
   try {
+    const unavailable = getDurableWriteGuardResponse();
+    if (unavailable) return unavailable;
+
     const { shareCode } = await params;
     const body = await request.json();
     const { answers, anonymousTokenHash } = body as {
@@ -44,7 +42,8 @@ export async function POST(
         answers,
         anonymousTokenHash,
       },
-      surveyRepo
+      surveyRepo,
+      round.surveyDefinition?.questions.filter((question) => question.enabled)
     );
 
     if (!result.success) {

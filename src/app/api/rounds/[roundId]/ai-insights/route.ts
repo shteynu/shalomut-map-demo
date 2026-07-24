@@ -1,17 +1,8 @@
 import { NextResponse } from 'next/server';
 import { validateStoneMapResult } from '@/lib/ai-contract';
 import { getRepositories } from '@/lib/repositories';
+import { getDurableWriteGuardResponse } from '@/lib/server/durable-write-guard';
 import { hasConfiguredSharedSecret } from '@/lib/server/shared-secret';
-
-export const dynamic = 'force-static';
-export const revalidate = false;
-
-export async function generateStaticParams() {
-  return [
-    { roundId: 'SHALOM-DEMO-ROUND-1' },
-    { roundId: 'round-unlocked-sample' },
-  ];
-}
 
 interface RouteParams {
   params: Promise<{
@@ -49,6 +40,9 @@ export async function POST(request: Request, { params }: RouteParams) {
         { status: 401 },
       );
     }
+
+    const unavailable = getDurableWriteGuardResponse();
+    if (unavailable) return unavailable;
 
     const { roundId } = await params;
     const payload: unknown = await request.json();

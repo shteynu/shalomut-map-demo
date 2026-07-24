@@ -21,6 +21,10 @@
       "description": "Management of survey rounds and org access codes"
     },
     {
+      "name": "Manager Setup",
+      "description": "Persistence of school, round, and survey-builder configuration"
+    },
+    {
       "name": "Survey",
       "description": "Respondent questionnaire delivery and anonymous response submission"
     },
@@ -120,6 +124,62 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Persistent storage is not configured for this deployment"
+          }
+        }
+      }
+    },
+    "/api/manager/setup": {
+      "put": {
+        "tags": ["Manager Setup"],
+        "summary": "Create or update manager setup",
+        "description": "Persists the school profile, survey round, privacy threshold, dates, and background context. Existing records are updated when their IDs are supplied.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ManagerSetupInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Manager setup saved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "organization": { "$ref": "#/components/schemas/Organization" },
+                    "round": { "$ref": "#/components/schemas/SurveyRound" }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid manager setup payload",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "500": {
+            "description": "Failed to save manager setup",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "503": {
+            "description": "Persistent storage is not configured for this deployment"
           }
         }
       }
@@ -134,10 +194,10 @@
             "name": "shareCode",
             "in": "path",
             "required": true,
-            "description": "Access share code (e.g. SHALOM-DEMO or SHALOM-7492)",
+            "description": "Access share code (e.g. SHALOM-7K2M)",
             "schema": {
               "type": "string",
-              "example": "SHALOM-DEMO"
+              "example": "SHALOM-7K2M"
             }
           }
         ],
@@ -214,10 +274,10 @@
             "name": "shareCode",
             "in": "path",
             "required": true,
-            "description": "Access share code (e.g. SHALOM-DEMO)",
+            "description": "Access share code (e.g. SHALOM-7K2M)",
             "schema": {
               "type": "string",
-              "example": "SHALOM-DEMO"
+              "example": "SHALOM-7K2M"
             }
           }
         ],
@@ -288,8 +348,130 @@
                   }
                 }
               }
+            },
+            "503": {
+              "description": "Persistent storage is not configured for this deployment"
             }
           }
+        }
+      }
+    },
+    "/api/rounds/{roundId}": {
+      "patch": {
+        "tags": ["Rounds"],
+        "summary": "Transition a survey round status",
+        "parameters": [
+          {
+            "name": "roundId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "4f88af95-0ec4-4872-85ac-67466c3cd8f2"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["status"],
+                "properties": {
+                  "status": { "$ref": "#/components/schemas/RoundStatus" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Round status updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "round": { "$ref": "#/components/schemas/SurveyRound" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Invalid status" },
+          "404": { "description": "Survey round not found" },
+          "409": { "description": "Status transition is not allowed" },
+          "500": { "description": "Failed to update survey round" },
+          "503": { "description": "Persistent storage is not configured for this deployment" }
+        }
+      }
+    },
+    "/api/rounds/{roundId}/survey-definition": {
+      "parameters": [
+        {
+          "name": "roundId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "example": "4f88af95-0ec4-4872-85ac-67466c3cd8f2"
+          }
+        }
+      ],
+      "get": {
+        "tags": ["Manager Setup"],
+        "summary": "Fetch the saved survey definition",
+        "description": "Returns the saved definition or the canonical 24-question definition when the round has not been customized.",
+        "responses": {
+          "200": {
+            "description": "Survey definition retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "definition": { "$ref": "#/components/schemas/SurveyDefinition" }
+                  }
+                }
+              }
+            }
+          },
+          "404": { "description": "Survey round not found" }
+        }
+      },
+      "put": {
+        "tags": ["Manager Setup"],
+        "summary": "Save the survey definition",
+        "description": "Persists survey copy and optional questions. The 24 canonical questions must remain enabled, required, unique, and assigned to their canonical dimensions.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/SurveyDefinition" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Survey definition saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "definition": { "$ref": "#/components/schemas/SurveyDefinition" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Invalid survey definition" },
+          "404": { "description": "Survey round not found" },
+          "500": { "description": "Failed to save survey definition" },
+          "503": { "description": "Persistent storage is not configured for this deployment" }
         }
       }
     },
@@ -303,10 +485,10 @@
             "name": "roundId",
             "in": "path",
             "required": true,
-            "description": "Unique Survey Round ID (e.g. round_demo_1)",
+            "description": "Unique survey round ID",
             "schema": {
               "type": "string",
-              "example": "round_demo_1"
+              "example": "4f88af95-0ec4-4872-85ac-67466c3cd8f2"
             }
           }
         ],
@@ -403,7 +585,7 @@
           "required": true,
           "schema": {
             "type": "string",
-            "example": "round_demo_1"
+            "example": "4f88af95-0ec4-4872-85ac-67466c3cd8f2"
           }
         }
       ],
@@ -462,6 +644,9 @@
           },
           "500": {
             "description": "Failed to persist AI insights"
+          },
+          "503": {
+            "description": "Persistent storage is not configured for this deployment"
           }
         }
       }
@@ -478,7 +663,7 @@
             "required": true,
             "schema": {
               "type": "string",
-              "example": "round_demo_1"
+              "example": "4f88af95-0ec4-4872-85ac-67466c3cd8f2"
             }
           }
         ],
@@ -538,7 +723,8 @@
         "properties": {
           "organizationId": {
             "type": "string",
-            "example": "org_demo_tlv"
+            "format": "uuid",
+            "example": "c93f8832-8d0d-43cb-b8d2-cdd6e45683af"
           },
           "title": {
             "type": "string",
@@ -555,17 +741,121 @@
           }
         }
       },
+      "Organization": {
+        "type": "object",
+        "required": ["id", "name", "city", "schoolType", "totalStaffCount", "createdAt"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "name": { "type": "string", "example": "בית ספר דרור" },
+          "city": { "type": "string", "example": "תל אביב" },
+          "schoolType": { "type": "string", "example": "ממלכתי" },
+          "totalStaffCount": { "type": "integer", "minimum": 1, "example": 34 },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "RoundBackgroundContext": {
+        "type": "object",
+        "required": [
+          "notes",
+          "audience",
+          "sicknessDaysThisQuarter",
+          "newStaffMembers",
+          "studentCount",
+          "socioEconomicIndex",
+          "classesPerGrade"
+        ],
+        "properties": {
+          "notes": { "type": "string" },
+          "audience": { "type": "string", "example": "כלל צוות ההוראה" },
+          "sicknessDaysThisQuarter": { "type": "integer", "minimum": 0 },
+          "newStaffMembers": { "type": "integer", "minimum": 0 },
+          "studentCount": { "type": "integer", "minimum": 0 },
+          "socioEconomicIndex": { "type": "integer", "minimum": 1, "maximum": 10 },
+          "classesPerGrade": {
+            "type": "object",
+            "additionalProperties": { "type": "integer", "minimum": 0 }
+          }
+        }
+      },
+      "ManagerSetupInput": {
+        "type": "object",
+        "required": ["organization", "round"],
+        "properties": {
+          "organization": {
+            "type": "object",
+            "required": ["name", "city", "schoolType", "totalStaffCount"],
+            "properties": {
+              "id": { "type": "string", "format": "uuid" },
+              "name": { "type": "string" },
+              "city": { "type": "string" },
+              "schoolType": { "type": "string" },
+              "totalStaffCount": { "type": "integer", "minimum": 1 }
+            }
+          },
+          "round": {
+            "type": "object",
+            "required": ["title", "privacyThreshold", "startDate", "backgroundContext"],
+            "properties": {
+              "id": { "type": "string", "format": "uuid" },
+              "title": { "type": "string" },
+              "privacyThreshold": { "type": "integer", "minimum": 10 },
+              "startDate": { "type": "string", "format": "date" },
+              "endDate": { "type": "string", "format": "date" },
+              "backgroundContext": { "$ref": "#/components/schemas/RoundBackgroundContext" }
+            }
+          }
+        }
+      },
+      "SurveyDefinitionQuestion": {
+        "type": "object",
+        "required": ["id", "text", "dimensionId", "required", "enabled", "answerMode"],
+        "properties": {
+          "id": { "type": "string", "example": "q1" },
+          "text": { "type": "string" },
+          "dimensionId": { "$ref": "#/components/schemas/WellbeingDimensionId" },
+          "required": { "type": "boolean" },
+          "enabled": { "type": "boolean" },
+          "answerMode": { "type": "string", "example": "סקאלת צבעים" }
+        }
+      },
+      "SurveyDefinition": {
+        "type": "object",
+        "required": [
+          "title",
+          "audience",
+          "estimatedMinutes",
+          "minimumResponses",
+          "introText",
+          "anonymityText",
+          "questions"
+        ],
+        "properties": {
+          "title": { "type": "string" },
+          "audience": { "type": "string" },
+          "estimatedMinutes": { "type": "number", "minimum": 1 },
+          "minimumResponses": { "type": "integer", "minimum": 10 },
+          "introText": { "type": "string" },
+          "anonymityText": { "type": "string" },
+          "questions": {
+            "type": "array",
+            "minItems": 24,
+            "items": { "$ref": "#/components/schemas/SurveyDefinitionQuestion" }
+          }
+        }
+      },
       "SurveyRound": {
         "type": "object",
         "properties": {
-          "id": { "type": "string", "example": "round_demo_1" },
-          "organizationId": { "type": "string", "example": "org_demo_tlv" },
+          "id": { "type": "string", "format": "uuid", "example": "4f88af95-0ec4-4872-85ac-67466c3cd8f2" },
+          "organizationId": { "type": "string", "format": "uuid", "example": "c93f8832-8d0d-43cb-b8d2-cdd6e45683af" },
           "title": { "type": "string", "example": "סקר שלומות - מחצית א'" },
           "status": { "$ref": "#/components/schemas/RoundStatus" },
-          "shareCode": { "type": "string", "example": "SHALOM-DEMO" },
+          "shareCode": { "type": "string", "example": "SHALOM-7K2M" },
           "privacyThreshold": { "type": "integer", "example": 10 },
           "startDate": { "type": "string", "format": "date-time" },
           "endDate": { "type": "string", "format": "date-time" },
+          "backgroundContext": { "$ref": "#/components/schemas/RoundBackgroundContext" },
+          "surveyDefinition": { "$ref": "#/components/schemas/SurveyDefinition" },
           "createdAt": { "type": "string", "format": "date-time" }
         }
       },
@@ -609,7 +899,7 @@
       "RoundAnalyticsResult": {
         "type": "object",
         "properties": {
-          "roundId": { "type": "string", "example": "round_demo_1" },
+          "roundId": { "type": "string", "format": "uuid", "example": "4f88af95-0ec4-4872-85ac-67466c3cd8f2" },
           "totalResponses": { "type": "integer", "example": 18 },
           "privacyThreshold": { "type": "integer", "example": 10 },
           "isLocked": { "type": "boolean", "example": false },
@@ -704,7 +994,7 @@
           },
           "roundId": {
             "type": "string",
-            "example": "round_demo_1"
+            "example": "4f88af95-0ec4-4872-85ac-67466c3cd8f2"
           },
           "processedAt": {
             "type": "string",

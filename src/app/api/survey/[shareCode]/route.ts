@@ -2,12 +2,7 @@ import { NextResponse } from 'next/server';
 import { getRepositories } from '@/lib/repositories';
 import { RoundService } from '@/lib/services';
 import { surveyInstrument } from '@/lib/shalomut-source';
-
-export const dynamic = 'force-static';
-
-export function generateStaticParams() {
-  return [{ shareCode: 'SHALOM-DEMO' }];
-}
+import { createCanonicalSurveyDefinition } from '@/lib/survey-definition';
 
 export async function GET(
   _request: Request,
@@ -32,12 +27,18 @@ export async function GET(
       );
     }
 
+    const definition =
+      round.surveyDefinition ??
+      createCanonicalSurveyDefinition(round.title, round.privacyThreshold);
+
     return NextResponse.json({
       round,
       instrument: {
-        title: surveyInstrument.title,
+        title: definition.title,
+        introText: definition.introText,
+        anonymityText: definition.anonymityText,
         dimensions: surveyInstrument.dimensions,
-        questions: surveyInstrument.questions,
+        questions: definition.questions.filter((question) => question.enabled),
       },
     });
   } catch (error) {

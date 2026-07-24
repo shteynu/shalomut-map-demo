@@ -4,12 +4,15 @@ import {
   RoundStatus,
   SurveyResponseRecord,
   SurveyRound,
+  UpdateOrganizationInput,
+  UpdateRoundInput,
 } from '../types/backend';
 
 export interface IOrganizationRepository {
   create(org: Organization): Promise<Organization>;
   findById(id: string): Promise<Organization | null>;
   findAll(): Promise<Organization[]>;
+  update(id: string, input: UpdateOrganizationInput): Promise<Organization | null>;
 }
 
 export interface IRoundRepository {
@@ -17,6 +20,7 @@ export interface IRoundRepository {
   findById(id: string): Promise<SurveyRound | null>;
   findByShareCode(shareCode: string): Promise<SurveyRound | null>;
   findByOrganizationId(organizationId: string): Promise<SurveyRound[]>;
+  update(id: string, input: UpdateRoundInput): Promise<SurveyRound | null>;
   updateStatus(id: string, status: RoundStatus): Promise<SurveyRound | null>;
   saveAiInsights(id: string, insights: Record<string, any>): Promise<boolean>;
   getAiInsights(id: string): Promise<Record<string, any> | null>;

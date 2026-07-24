@@ -10,6 +10,7 @@ import {
   getNavigationAction,
   isMainNavItemActive,
   isPathWithin,
+  respondentSurveyRoute,
   routes,
   shouldHideGlobalHeader,
 } from "../navigation";
@@ -25,8 +26,8 @@ test("isPathWithin correctly matches routes and nested subroutes", () => {
 test("shouldHideGlobalHeader returns true for headerless routes (dashboard, respondent survey)", () => {
   assert.strictEqual(shouldHideGlobalHeader("/dashboard"), true);
   assert.strictEqual(shouldHideGlobalHeader("/dashboard/social-resource"), true);
-  assert.strictEqual(shouldHideGlobalHeader("/survey/dror-q1"), true);
-  assert.strictEqual(shouldHideGlobalHeader("/survey/dror-q1/"), true);
+  assert.strictEqual(shouldHideGlobalHeader("/answer/SHALOM-1234"), true);
+  assert.strictEqual(shouldHideGlobalHeader("/answer/SHALOM-1234/"), true);
 
   assert.strictEqual(shouldHideGlobalHeader("/"), false);
   assert.strictEqual(shouldHideGlobalHeader("/setup"), false);
@@ -39,6 +40,7 @@ test("isMainNavItemActive identifies active navigation items", () => {
   assert.strictEqual(isMainNavItemActive("/round", routes.round), true);
   assert.strictEqual(isMainNavItemActive("/dashboard", routes.dashboard), true);
   assert.strictEqual(isMainNavItemActive("/survey", routes.surveyBuilder), true);
+  assert.strictEqual(respondentSurveyRoute("SHALOM-1234"), "/answer/SHALOM-1234");
 });
 
 test("dashboardDimensionRoute helpers generate expected paths", () => {

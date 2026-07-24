@@ -8,6 +8,7 @@ import { DimensionIcon } from "@/components/ui/dimension-icon";
 import { getDimensionSurface, statusLabels, wellbeingDimensions } from "@/lib/demo-data";
 import { useDashboardRoundId } from "@/lib/hooks/use-dashboard-round-id";
 import { dashboardDimensionRoute } from "@/lib/navigation";
+import type { WellbeingDimensionId, WellbeingStatus } from "@/lib/shalomut-source";
 import { clamp } from "@/lib/utils/math";
 
 const DRAG_THRESHOLD = 6;
@@ -72,7 +73,18 @@ function getPlusPosition(dimensionId: string) {
   }
 }
 
-export function DashboardMapInteractive({ roundId }: { roundId: string }) {
+type DashboardMapInteractiveProps = {
+  roundId: string;
+  dimensionScores: Record<
+    WellbeingDimensionId,
+    { averageScore: number; computedStatus: WellbeingStatus }
+  >;
+};
+
+export function DashboardMapInteractive({
+  roundId,
+  dimensionScores,
+}: DashboardMapInteractiveProps) {
   const resolvedRoundId = useDashboardRoundId(roundId);
   const stageRef = useRef<HTMLElement | null>(null);
   const stoneRefs = useRef<Record<string, HTMLAnchorElement | null>>({});
@@ -277,6 +289,12 @@ export function DashboardMapInteractive({ roundId }: { roundId: string }) {
         </button>
       ) : null}
       {wellbeingDimensions.map((dimension, index) => {
+        const dimensionScore = dimensionScores[dimension.id as WellbeingDimensionId];
+        const liveDimension = {
+          ...dimension,
+          score: dimensionScore.averageScore,
+          status: dimensionScore.computedStatus,
+        };
         const offset = offsets[dimension.id] ?? zeroOffsets[dimension.id];
         const dragX = offset.x;
         const dragY = offset.y;
@@ -300,7 +318,7 @@ export function DashboardMapInteractive({ roundId }: { roundId: string }) {
                 width: dimension.conceptPosition.width,
                 height: dimension.conceptPosition.height,
                 borderRadius: dimension.conceptPosition.radius,
-                backgroundColor: getDimensionSurface(dimension),
+                backgroundColor: getDimensionSurface(liveDimension),
                 zIndex: draggingId === dimension.id ? 20 : undefined,
               } as CSSProperties
             }
@@ -308,7 +326,7 @@ export function DashboardMapInteractive({ roundId }: { roundId: string }) {
             data-drag-y={Math.round(dragY)}
             data-dimension={dimension.id}
             data-stone-index={String(index + 1).padStart(2, "0")}
-            aria-label={`${dimension.conceptLabel}: ${dimension.subtitle}. ציון ${dimension.score}, ${statusLabels[dimension.status]}`}
+            aria-label={`${dimension.conceptLabel}: ${dimension.subtitle}. ציון ${liveDimension.score}, ${statusLabels[liveDimension.status]}`}
             draggable={false}
             onPointerDown={handlePointerDown(dimension.id)}
             onClick={handleClick(dimension.id)}
@@ -322,11 +340,11 @@ export function DashboardMapInteractive({ roundId }: { roundId: string }) {
                 <DimensionIcon dimensionId={dimension.id} size={22} />
               </span>
               <strong>{dimension.conceptLabel}</strong>
-              <span className="dashboard-map-blob-score">{dimension.score}%</span>
+              <span className="dashboard-map-blob-score">{liveDimension.score}%</span>
             </span>
             <span className="dashboard-map-blob-status">
-              <span className={`status-dot status-${dimension.status}`} aria-hidden="true" />
-              {statusLabels[dimension.status]}
+              <span className={`status-dot status-${liveDimension.status}`} aria-hidden="true" />
+              {statusLabels[liveDimension.status]}
             </span>
           </Link>
         );

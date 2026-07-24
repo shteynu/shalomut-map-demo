@@ -1,10 +1,17 @@
 import Link from "next/link";
 import { ArrowLeft, LockKeyhole } from "lucide-react";
-import { activeRound } from "@/lib/demo-data";
 import { getNavigationAction } from "@/lib/navigation";
 
-export function DashboardMapLocked() {
-  const remaining = activeRound.minimumResponses - activeRound.responseCount;
+type DashboardMapLockedProps = {
+  responseCount: number;
+  minimumResponses: number;
+};
+
+export function DashboardMapLocked({
+  responseCount,
+  minimumResponses,
+}: DashboardMapLockedProps) {
+  const remaining = Math.max(minimumResponses - responseCount, 0);
   const distributeSurveyAction = getNavigationAction("distributeSurvey");
 
   return (
@@ -12,8 +19,8 @@ export function DashboardMapLocked() {
       <LockKeyhole size={42} aria-hidden="true" />
       <h2>המפה עדיין נעולה</h2>
       <span className="map-locked-count">
-        <strong>{activeRound.responseCount}</strong>
-        <span>מתוך {activeRound.minimumResponses} תשובות נדרשות</span>
+        <strong>{responseCount}</strong>
+        <span>מתוך {minimumResponses} תשובות נדרשות</span>
       </span>
       <p>
         עוד {remaining} תשובות והמפה תיפתח. הסף הזה שומר על האנונימיות של הצוות: התוצאות מוצגות רק

@@ -4,13 +4,19 @@ import Link from "next/link";
 import { Check, ChevronLeft, ChevronRight, Frown, Meh, ShieldCheck, Smile, type LucideIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { calculatePercentage } from "@/lib/utils/math";
-import { responseOptions, surveyQuestions } from "@/lib/demo-data";
 import { getNavigationAction } from "@/lib/navigation";
+import { responseScale } from "@/lib/shalomut-source";
+import type { SurveyDefinitionQuestion } from "@/lib/types/backend";
 
-type AnswerValue = (typeof responseOptions)[number]["value"];
+type AnswerValue = (typeof responseScale)[number]["value"];
 
 type SurveyFlowProps = {
   variant?: "internal" | "public";
+  shareCode: string;
+  surveyTitle: string;
+  introText: string;
+  anonymityText: string;
+  questions: SurveyDefinitionQuestion[];
 };
 
 const optionIcons: Record<AnswerValue, LucideIcon> = {
@@ -19,14 +25,42 @@ const optionIcons: Record<AnswerValue, LucideIcon> = {
   red: Frown,
 };
 
-export function SurveyFlow({ variant = "internal" }: SurveyFlowProps) {
+async function getAnonymousTokenHash(shareCode: string) {
+  const storageKey = `shalomut-anonymous-token:${shareCode}`;
+  let token = window.localStorage.getItem(storageKey);
+
+  if (!token) {
+    token = crypto.randomUUID();
+    window.localStorage.setItem(storageKey, token);
+  }
+
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(token),
+  );
+
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+export function SurveyFlow({
+  variant = "internal",
+  shareCode,
+  surveyTitle,
+  introText,
+  anonymityText,
+  questions,
+}: SurveyFlowProps) {
   const [answers, setAnswers] = useState<Record<string, AnswerValue>>({});
   const [currentIndex, setCurrentIndex] = useState(0);
   const [submitted, setSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isPublicLink = variant === "public";
   const trackRoundAction = getNavigationAction("trackRound");
 
+  const surveyQuestions = questions;
   const total = surveyQuestions.length;
   const answeredCount = Object.keys(answers).length;
   const canSubmit = answeredCount === total;
@@ -59,6 +93,7 @@ export function SurveyFlow({ variant = "internal" }: SurveyFlowProps) {
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
+    setSubmitError(null);
 
     const formattedAnswers = Object.entries(answers).map(([questionId, value]) => {
       const q = surveyQuestions.find((item) => item.id === questionId);
@@ -70,18 +105,22 @@ export function SurveyFlow({ variant = "internal" }: SurveyFlowProps) {
     });
 
     try {
-      const res = await fetch("/api/survey/SHALOM-DEMO/submit", {
+      const anonymousTokenHash = await getAnonymousTokenHash(shareCode);
+      const res = await fetch(`/api/survey/${encodeURIComponent(shareCode)}/submit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ answers: formattedAnswers }),
+        body: JSON.stringify({ answers: formattedAnswers, anonymousTokenHash }),
       });
       if (res.ok) {
         setSubmitted(true);
       } else {
-        setSubmitted(true);
+        const payload = (await res.json().catch(() => null)) as
+          | { error?: string }
+          | null;
+        setSubmitError(payload?.error ?? "לא ניתן היה לשמור את התשובות. נסו שוב.");
       }
     } catch {
-      setSubmitted(true);
+      setSubmitError("לא ניתן להתחבר לשרת. בדקו את החיבור ונסו שוב.");
     }
   };
 
@@ -93,8 +132,7 @@ export function SurveyFlow({ variant = "internal" }: SurveyFlowProps) {
           <h1>תודה, התשובות נקלטו</h1>
           {isPublicLink ? (
             <p>
-              התשובות נשמרות בצורה מצרפית בלבד — אין מסך שבו אפשר לראות מי ענה. כשכל הצוות יסיים,
-              התמונה המשותפת תוצג ותשמש בסיס לשיחה על מה שחשוב לכם.
+              {anonymityText}
             </p>
           ) : (
             <p>התשובות נשמרות בצורה מצרפית בלבד. אין במסך ניהול מקום שבו ניתן לראות מי ענה.</p>
@@ -118,8 +156,8 @@ export function SurveyFlow({ variant = "internal" }: SurveyFlowProps) {
     <section className="survey-shell stone-page survey-builder-stone-page survey-focus-shell">
       <div className="survey-header survey-focus-header">
         <p className="eyebrow">שאלון אנונימי לצוות</p>
-        <h1>מפת השלומות</h1>
-        <p>בחרו את התשובה שמתארת בצורה הטובה ביותר את המצב הנוכחי שלכם. אין צורך בשם, מייל או סיסמה.</p>
+        <h1>{surveyTitle}</h1>
+        <p>{introText}</p>
       </div>
 
       <div className="survey-progress-sticky">
@@ -159,7 +197,7 @@ export function SurveyFlow({ variant = "internal" }: SurveyFlowProps) {
           </span>
           <h2>{question.text}</h2>
           <div className="survey-answer-stones">
-            {responseOptions.map((option) => {
+            {responseScale.map((option) => {
               const Icon = optionIcons[option.value];
               const selected = answers[question.id] === option.value;
               return (
@@ -202,6 +240,11 @@ export function SurveyFlow({ variant = "internal" }: SurveyFlowProps) {
           </button>
         ) : null}
       </div>
+      {submitError ? (
+        <p className="survey-submit-error" role="alert">
+          {submitError}
+        </p>
+      ) : null}
     </section>
   );
 }

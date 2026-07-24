@@ -3,7 +3,7 @@ export const routes = {
   setup: "/setup",
   round: "/round",
   surveyBuilder: "/survey",
-  respondentSurvey: "/survey/dror-q1/",
+  respondentSurvey: "/answer",
   dashboard: "/dashboard",
 } as const;
 
@@ -175,6 +175,10 @@ export function dashboardDimensionMetricsRoute(dimensionId: string) {
 
 export function dashboardDimensionRecommendationsRoute(dimensionId: string) {
   return `${dashboardDimensionRoute(dimensionId)}/recommendations`;
+}
+
+export function respondentSurveyRoute(shareCode: string) {
+  return `${routes.respondentSurvey}/${encodeURIComponent(shareCode)}`;
 }
 
 export type DashboardActionId = "dimensionMetrics" | "dimensionRecommendations" | "dashboardMap";

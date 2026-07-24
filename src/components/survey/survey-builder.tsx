@@ -6,15 +6,16 @@ import { useState } from "react";
 import { PageIntro } from "@/components/ui/page-intro";
 import { PrivacyTooltip } from "@/components/ui/privacy-tooltip";
 import { useClipboard } from "@/lib/hooks/use-clipboard";
-import { activeRound, organization, surveyQuestions, wellbeingDimensions } from "@/lib/demo-data";
+import { wellbeingDimensions } from "@/lib/demo-data";
 import { getNavigationAction } from "@/lib/navigation";
 import { useShareUrl } from "@/lib/use-share-url";
+import type { SurveyDefinition } from "@/lib/types/backend";
 import { SurveyBuilderQuestions } from "./survey-builder/survey-builder-questions";
 import { SurveyBuilderSettings } from "./survey-builder/survey-builder-settings";
 import { SurveyBuilderSidebar } from "./survey-builder/survey-builder-sidebar";
 import type { BuilderQuestion } from "./survey-builder/types";
 
-const questionBank = [
+const questionBank: Omit<BuilderQuestion, "id">[] = [
   {
     text: "אני יודעת למי לפנות כשאני זקוקה לעזרה מקצועית או רגשית במהלך יום העבודה.",
     dimensionId: "management-support",
@@ -38,12 +39,6 @@ const questionBank = [
   },
 ];
 
-const initialQuestions: BuilderQuestion[] = surveyQuestions.map((question) => ({
-  ...question,
-  enabled: true,
-  answerMode: "סקאלת צבעים",
-}));
-
 const builderFlowSteps = [
   {
     title: "הגדרות",
@@ -63,21 +58,41 @@ function createDraftId(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2, 7)}`;
 }
 
-export function SurveyBuilder() {
-  const [title, setTitle] = useState("שאלון שלומות צוות - סבב אבחון חורף");
-  const [audience, setAudience] = useState("כלל צוות ההוראה");
-  const [estimatedMinutes, setEstimatedMinutes] = useState(15);
-  const [minimumResponses, setMinimumResponses] = useState(activeRound.minimumResponses);
-  const [introText, setIntroText] = useState(
-    "השאלון נשלח כקישור אנונימי לצוות. התוצאות מוצגות רק ברמה מצרפית אחרי הגעה לסף פרטיות.",
+type SurveyBuilderProps = {
+  organizationName: string;
+  roundId: string;
+  roundTitle: string;
+  shareCode: string;
+  initialDefinition: SurveyDefinition;
+};
+
+export function SurveyBuilder({
+  organizationName,
+  roundId,
+  roundTitle,
+  shareCode,
+  initialDefinition,
+}: SurveyBuilderProps) {
+  const [title, setTitle] = useState(initialDefinition.title);
+  const [audience, setAudience] = useState(initialDefinition.audience);
+  const [estimatedMinutes, setEstimatedMinutes] = useState(
+    initialDefinition.estimatedMinutes,
   );
+  const [minimumResponses, setMinimumResponses] = useState(
+    initialDefinition.minimumResponses,
+  );
+  const [introText, setIntroText] = useState(initialDefinition.introText);
   const [anonymityText, setAnonymityText] = useState(
-    "לא נאספים שם, כתובת מייל או פרטים מזהים. רק מנהלת בית הספר רואה תמונת מצב מצרפית.",
+    initialDefinition.anonymityText,
   );
-  const [questions, setQuestions] = useState<BuilderQuestion[]>(initialQuestions);
+  const [questions, setQuestions] = useState<BuilderQuestion[]>(
+    initialDefinition.questions,
+  );
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const { copied, copy } = useClipboard();
-  const shareUrl = useShareUrl();
+  const shareUrl = useShareUrl(shareCode);
   const openRespondentSurveyAction = getNavigationAction("openRespondentSurvey");
   const [bankCursor, setBankCursor] = useState(0);
   const [selectedDimensionId, setSelectedDimensionId] = useState(wellbeingDimensions[0]?.id ?? "all");
@@ -152,10 +167,48 @@ export function SurveyBuilder() {
     setSelectedDimensionId(nextQuestion.dimensionId);
   }
 
+  async function saveDefinition() {
+    setSaving(true);
+    setSaved(false);
+    setSaveError(null);
+
+    const response = await fetch(
+      `/api/rounds/${encodeURIComponent(roundId)}/survey-definition`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title,
+          audience,
+          estimatedMinutes,
+          minimumResponses,
+          introText,
+          anonymityText,
+          questions,
+        }),
+      },
+    ).catch(() => null);
+
+    if (!response?.ok) {
+      const payload = response
+        ? ((await response.json().catch(() => null)) as { error?: string } | null)
+        : null;
+      setSaveError(
+        payload?.error ??
+          "לא ניתן היה לשמור את טיוטת השאלון. נסו שוב.",
+      );
+      setSaving(false);
+      return;
+    }
+
+    setSaved(true);
+    setSaving(false);
+  }
+
   return (
     <div className="page survey-builder-stone-page">
       <PageIntro
-        eyebrow={`${organization.name}, ${activeRound.period} | בניית שאלון`}
+        eyebrow={`${organizationName}, ${roundTitle} | בניית שאלון`}
         title={title}
         description="מסך זה מאפשר עריכת שאלון לפני הפצה: קהל יעד, ניסוח פתיח, שאלות פעילות וקישור המשיבים החיצוני."
         actions={
@@ -163,11 +216,11 @@ export function SurveyBuilder() {
             <button
               className="primary-button"
               type="button"
-              onClick={() => {
-                setSaved(true);
-              }}
+              onClick={saveDefinition}
+              disabled={saving}
+              data-round-id={roundId}
             >
-              שמירת טיוטה
+              {saving ? "שומר..." : "שמירת טיוטה"}
               <CheckCircle2 size={18} aria-hidden="true" />
             </button>
             <Link className="secondary-button" href={shareUrl} target="_blank" rel="noreferrer">
@@ -178,6 +231,12 @@ export function SurveyBuilder() {
         }
       />
 
+      {saveError ? (
+        <p className="survey-submit-error" role="alert">
+          {saveError}
+        </p>
+      ) : null}
+
       <section className="metric-grid survey-builder-metric-grid" aria-label="תקציר שאלון">
         {summaryStones.map((stone) => {
           const showTooltip = stone.label === "סף פרטיות" || stone.label === "סף הצגה";
@@ -186,7 +245,9 @@ export function SurveyBuilder() {
               <strong>{stone.value}</strong>
               <span>
                 {stone.label}
-                {showTooltip && <PrivacyTooltip />}
+                {showTooltip && (
+                  <PrivacyTooltip minimumResponses={minimumResponses} />
+                )}
               </span>
               <small>{stone.helper}</small>
             </article>

@@ -1,13 +1,22 @@
-import { activeRound, organization } from "@/lib/demo-data";
 import { DashboardHomeLink } from "./dashboard-home-link";
 
-export function DashboardHeading({ title }: { title: string }) {
+type DashboardHeadingProps = {
+  title: string;
+  organizationName: string;
+  roundTitle: string;
+};
+
+export function DashboardHeading({
+  title,
+  organizationName,
+  roundTitle,
+}: DashboardHeadingProps) {
   return (
     <header className="dashboard-heading">
       <DashboardHomeLink />
       <h1>{title}</h1>
       <p>
-        {organization.name}, {activeRound.period}
+        {organizationName}, {roundTitle}
       </p>
     </header>
   );

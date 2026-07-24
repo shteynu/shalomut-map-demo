@@ -2,14 +2,13 @@
 
 import { HelpCircle } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
-import { activeRound } from "@/lib/demo-data";
 
 /**
  * Explains the privacy threshold ("סף פרטיות"). The trigger is a real button so
  * the tooltip works with keyboard (:focus-within) and touch (tap toggles
  * is-open); hover keeps working via CSS.
  */
-export function PrivacyTooltip() {
+export function PrivacyTooltip({ minimumResponses = 10 }: { minimumResponses?: number }) {
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLSpanElement | null>(null);
   const tooltipId = useId();
@@ -55,7 +54,7 @@ export function PrivacyTooltip() {
       <span id={tooltipId} className="custom-tooltip-content" role="tooltip">
         <strong>סף פרטיות (סף מינימום להצגת תוצאות)</strong>
         <span style={{ display: "block", marginTop: "0.4rem", marginBottom: "0.8rem", fontSize: "0.88rem", lineHeight: 1.45 }}>
-          זהו מספר המשיבים המינימלי הנדרש כדי לפתוח את מפת השלומות והתוצאות לצפייה (בסבב הנוכחי: {activeRound.minimumResponses} אנשי צוות).
+          זהו מספר המשיבים המינימלי הנדרש כדי לפתוח את מפת השלומות והתוצאות לצפייה (בסבב הנוכחי: {minimumResponses} אנשי צוות).
         </span>
         <strong style={{ fontSize: "0.88rem", display: "block", marginBottom: "0.35rem" }}>למה זה חשוב?</strong>
         <ul style={{ margin: 0, paddingInlineStart: "1.1rem", fontSize: "0.84rem", lineHeight: 1.5, listStyleType: "disc" }}>

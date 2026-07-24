@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
-    "start": "npx serve@14.2.4 out -l 3000",
+    "start": "next start",
     "lint": "eslint",
     "test": "npx tsx --test \"src/**/__tests__/*.test.ts\"",
     "db:clear": "npx tsx scripts/clear-db.ts",

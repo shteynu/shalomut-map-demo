@@ -55,6 +55,7 @@ export function SurveyBuilderSettings({
           זמן מילוי משוער
           <input
             type="number"
+            min="1"
             value={estimatedMinutes}
             onChange={(event) => setEstimatedMinutes(Number(event.target.value) || 0)}
           />
@@ -63,6 +64,7 @@ export function SurveyBuilderSettings({
           סף מינימום להצגת תוצאות
           <input
             type="number"
+            min="10"
             value={minimumResponses}
             onChange={(event) => setMinimumResponses(Number(event.target.value) || 0)}
           />

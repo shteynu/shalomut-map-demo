@@ -1,4 +1,4 @@
-import { Organization } from '../../types/backend';
+import { Organization, UpdateOrganizationInput } from '../../types/backend';
 import { IOrganizationRepository } from '../interfaces';
 import { MinimalPrismaClient } from './prisma-client';
 
@@ -42,7 +42,9 @@ export class PrismaOrganizationRepository implements IOrganizationRepository {
   }
 
   public async findAll(): Promise<Organization[]> {
-    const list = await this.prisma.organization.findMany({});
+    const list = await this.prisma.organization.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
     return list.map((item) => ({
       id: item.id,
       name: item.name,
@@ -51,5 +53,27 @@ export class PrismaOrganizationRepository implements IOrganizationRepository {
       totalStaffCount: item.totalStaffCount,
       createdAt: new Date(item.createdAt),
     }));
+  }
+
+  public async update(
+    id: string,
+    input: UpdateOrganizationInput
+  ): Promise<Organization | null> {
+    try {
+      const updated = await this.prisma.organization.update({
+        where: { id },
+        data: input,
+      });
+      return {
+        id: updated.id,
+        name: updated.name,
+        city: updated.city,
+        schoolType: updated.schoolType,
+        totalStaffCount: updated.totalStaffCount,
+        createdAt: new Date(updated.createdAt),
+      };
+    } catch {
+      return null;
+    }
   }
 }

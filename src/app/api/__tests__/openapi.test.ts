@@ -21,6 +21,9 @@ describe('OpenAPI Specification Integrity', () => {
     const paths = Object.keys(spec.paths);
 
     assert.ok(paths.includes('/api/rounds'), 'Must include /api/rounds path');
+    assert.ok(paths.includes('/api/manager/setup'), 'Must include manager setup persistence path');
+    assert.ok(paths.includes('/api/rounds/{roundId}'), 'Must include survey round update path');
+    assert.ok(paths.includes('/api/rounds/{roundId}/survey-definition'), 'Must include survey definition persistence path');
     assert.ok(paths.includes('/api/survey/{shareCode}'), 'Must include /api/survey/{shareCode} path');
     assert.ok(paths.includes('/api/survey/{shareCode}/submit'), 'Must include /api/survey/{shareCode}/submit path');
     assert.ok(paths.includes('/api/rounds/{roundId}/analytics'), 'Must include /api/rounds/{roundId}/analytics path');
@@ -36,6 +39,8 @@ describe('OpenAPI Specification Integrity', () => {
 
     assert.ok(schemas.SurveyRound, 'Must include SurveyRound schema');
     assert.ok(schemas.CreateRoundInput, 'Must include CreateRoundInput schema');
+    assert.ok(schemas.ManagerSetupInput, 'Must include ManagerSetupInput schema');
+    assert.ok(schemas.SurveyDefinition, 'Must include SurveyDefinition schema');
     assert.ok(schemas.QuestionAnswerInput, 'Must include QuestionAnswerInput schema');
     assert.ok(schemas.RoundAnalyticsResult, 'Must include RoundAnalyticsResult schema');
     assert.ok(schemas.RoundDimensionScore, 'Must include RoundDimensionScore schema');

@@ -13,6 +13,35 @@ export interface Organization {
   createdAt: Date;
 }
 
+export interface RoundBackgroundContext {
+  notes: string;
+  audience: string;
+  sicknessDaysThisQuarter: number;
+  newStaffMembers: number;
+  studentCount: number;
+  socioEconomicIndex: number;
+  classesPerGrade: Record<string, number>;
+}
+
+export interface SurveyDefinitionQuestion {
+  id: string;
+  dimensionId: WellbeingDimensionId;
+  text: string;
+  required: boolean;
+  enabled: boolean;
+  answerMode: string;
+}
+
+export interface SurveyDefinition {
+  title: string;
+  audience: string;
+  estimatedMinutes: number;
+  minimumResponses: number;
+  introText: string;
+  anonymityText: string;
+  questions: SurveyDefinitionQuestion[];
+}
+
 export interface SurveyRound {
   id: string;
   organizationId: string;
@@ -22,6 +51,8 @@ export interface SurveyRound {
   privacyThreshold: number; // default 10
   startDate: Date;
   endDate?: Date;
+  backgroundContext?: RoundBackgroundContext;
+  surveyDefinition?: SurveyDefinition;
   createdAt: Date;
 }
 
@@ -78,4 +109,23 @@ export interface CreateRoundInput {
   title: string;
   privacyThreshold?: number; // defaults to 10
   startDate?: Date;
+  endDate?: Date;
+  backgroundContext?: RoundBackgroundContext;
+  surveyDefinition?: SurveyDefinition;
+}
+
+export interface UpdateOrganizationInput {
+  name?: string;
+  city?: string;
+  schoolType?: string;
+  totalStaffCount?: number;
+}
+
+export interface UpdateRoundInput {
+  title?: string;
+  privacyThreshold?: number;
+  startDate?: Date;
+  endDate?: Date;
+  backgroundContext?: RoundBackgroundContext;
+  surveyDefinition?: SurveyDefinition;
 }

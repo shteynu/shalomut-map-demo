@@ -27,6 +27,9 @@ export class RoundService {
       shareCode: this.generateShareCode(),
       privacyThreshold: input.privacyThreshold ?? 10,
       startDate: input.startDate ?? new Date(),
+      endDate: input.endDate,
+      backgroundContext: input.backgroundContext,
+      surveyDefinition: input.surveyDefinition,
       createdAt: new Date(),
     };
   }
@@ -69,4 +72,3 @@ export class RoundService {
     return transitions[current]?.includes(target) ?? false;
   }
 }
-

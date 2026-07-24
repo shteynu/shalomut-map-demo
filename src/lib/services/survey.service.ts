@@ -6,6 +6,7 @@ import {
   SubmitSurveyResult,
   SurveyResponseInput,
   SurveyResponseRecord,
+  SurveyDefinitionQuestion,
 } from '../types/backend';
 
 export class SurveyService {
@@ -21,7 +22,13 @@ export class SurveyService {
   /**
    * Validate that all 24 questions of the canonical questionnaire are answered
    */
-  public static validateInput(input: SurveyResponseInput): {
+  public static validateInput(
+    input: SurveyResponseInput,
+    expectedQuestions: Pick<
+      SurveyDefinitionQuestion,
+      'id' | 'dimensionId'
+    >[] = surveyInstrument.questions,
+  ): {
     valid: boolean;
     error?: string;
   } {
@@ -33,7 +40,7 @@ export class SurveyService {
       return { valid: false, error: 'Answers array is required' };
     }
 
-    const requiredQuestionCount = surveyInstrument.questions.length; // 24
+    const requiredQuestionCount = expectedQuestions.length;
     if (input.answers.length !== requiredQuestionCount) {
       return {
         valid: false,
@@ -42,6 +49,11 @@ export class SurveyService {
     }
 
     const validValues: AnswerValue[] = ['green', 'yellow', 'red'];
+    const expectedById = new Map(
+      expectedQuestions.map((question) => [question.id, question.dimensionId]),
+    );
+    const seenQuestionIds = new Set<string>();
+
     for (const answer of input.answers) {
       if (!validValues.includes(answer.value)) {
         return {
@@ -49,6 +61,20 @@ export class SurveyService {
           error: `Invalid answer value '${answer.value}' for question ${answer.questionId}`,
         };
       }
+
+      const expectedDimensionId = expectedById.get(answer.questionId);
+      if (
+        !expectedDimensionId ||
+        expectedDimensionId !== answer.dimensionId ||
+        seenQuestionIds.has(answer.questionId)
+      ) {
+        return {
+          valid: false,
+          error: `Question '${answer.questionId}' is missing, duplicated, or assigned to the wrong dimension.`,
+        };
+      }
+
+      seenQuestionIds.add(answer.questionId);
     }
 
     return { valid: true };
@@ -58,9 +84,13 @@ export class SurveyService {
    * Process and format a valid survey submission into a persistence record
    */
   public static processSubmission(
-    input: SurveyResponseInput
+    input: SurveyResponseInput,
+    expectedQuestions: Pick<
+      SurveyDefinitionQuestion,
+      'id' | 'dimensionId'
+    >[] = surveyInstrument.questions,
   ): { result: SubmitSurveyResult; record?: SurveyResponseRecord } {
-    const validation = this.validateInput(input);
+    const validation = this.validateInput(input, expectedQuestions);
     if (!validation.valid) {
       return {
         result: {
@@ -101,7 +131,11 @@ export class SurveyService {
    */
   public static async submitAndSaveResponse(
     input: SurveyResponseInput,
-    surveyRepo: ISurveyRepository
+    surveyRepo: ISurveyRepository,
+    expectedQuestions: Pick<
+      SurveyDefinitionQuestion,
+      'id' | 'dimensionId'
+    >[] = surveyInstrument.questions,
   ): Promise<SubmitSurveyResult> {
     if (input.anonymousTokenHash) {
       const alreadySubmitted = await surveyRepo.hasTokenSubmitted(
@@ -116,7 +150,10 @@ export class SurveyService {
       }
     }
 
-    const { result, record } = this.processSubmission(input);
+    const { result, record } = this.processSubmission(
+      input,
+      expectedQuestions,
+    );
     if (!result.success || !record) {
       return result;
     }
@@ -125,4 +162,3 @@ export class SurveyService {
     return result;
   }
 }
-

@@ -2,20 +2,48 @@
 
 import { Download, Info, MousePointer2, Move } from "lucide-react";
 import { ScoreRing } from "@/components/ui/score-ring";
-import { activeRound, organization, overallScore } from "@/lib/demo-data";
+import type { WellbeingDimensionId, WellbeingStatus } from "@/lib/shalomut-source";
 import { DashboardMapInteractive } from "./dashboard-map-interactive";
 import { DashboardHeading } from "./dashboard-heading";
 import { DashboardHomeLink } from "./dashboard-home-link";
 import { DashboardMapLocked } from "./dashboard-map-locked";
 
-export function DashboardMapPage({ roundId }: { roundId: string }) {
-  const isLocked = activeRound.responseCount < activeRound.minimumResponses;
+type DashboardMapPageProps = {
+  roundId: string;
+  organizationName: string;
+  roundTitle: string;
+  responseCount: number;
+  minimumResponses: number;
+  overallScore: number;
+  dimensionScores: Record<
+    WellbeingDimensionId,
+    { averageScore: number; computedStatus: WellbeingStatus }
+  >;
+};
+
+export function DashboardMapPage({
+  roundId,
+  organizationName,
+  roundTitle,
+  responseCount,
+  minimumResponses,
+  overallScore,
+  dimensionScores,
+}: DashboardMapPageProps) {
+  const isLocked = responseCount < minimumResponses;
 
   if (isLocked) {
     return (
       <div className="dashboard-mock-page stone-page">
-        <DashboardHeading title="מפת השלומות" />
-        <DashboardMapLocked />
+        <DashboardHeading
+          title="מפת השלומות"
+          organizationName={organizationName}
+          roundTitle={roundTitle}
+        />
+        <DashboardMapLocked
+          responseCount={responseCount}
+          minimumResponses={minimumResponses}
+        />
       </div>
     );
   }
@@ -29,7 +57,7 @@ export function DashboardMapPage({ roundId }: { roundId: string }) {
           <p className="eyebrow">מצב נוכחי</p>
           <h1>מפת השלומות</h1>
           <p className="map-sidebar-org">
-            {organization.name}, {activeRound.period}
+            {organizationName}, {roundTitle}
           </p>
 
           <div className="score-ring-card">
@@ -55,7 +83,7 @@ export function DashboardMapPage({ roundId }: { roundId: string }) {
             <Info size={20} aria-hidden="true" />
             <p>
               הגנת פרטיות מופעלת: הנתונים מוצגים ברמה מצרפית בלבד (מינימום{" "}
-              {activeRound.minimumResponses} משיבים) כדי לשמור על אנונימיות.
+              {minimumResponses} משיבים) כדי לשמור על אנונימיות.
             </p>
           </div>
         </aside>
@@ -67,7 +95,7 @@ export function DashboardMapPage({ roundId }: { roundId: string }) {
             <span className="hint-text-desktop">גררו את האבנים כדי לסדר את המפה, או לחצו על אבן כדי לפתוח פירוט.</span>
             <span className="hint-text-mobile">לחצו על אבן כדי לפתוח פירוט.</span>
           </div>
-          <DashboardMapInteractive roundId={roundId} />
+          <DashboardMapInteractive roundId={roundId} dimensionScores={dimensionScores} />
         </div>
       </div>
     </div>

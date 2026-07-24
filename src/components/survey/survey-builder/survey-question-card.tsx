@@ -14,11 +14,18 @@ function getDimensionColor(dimensionId: string) {
 type QuestionCardProps = {
   question: BuilderQuestion;
   questionIndex: number;
+  locked: boolean;
   onUpdate: (id: string, updater: (question: BuilderQuestion) => BuilderQuestion) => void;
   onDuplicate: (id: string) => void;
 };
 
-export function SurveyQuestionCard({ question, questionIndex, onUpdate, onDuplicate }: QuestionCardProps) {
+export function SurveyQuestionCard({
+  question,
+  questionIndex,
+  locked,
+  onUpdate,
+  onDuplicate,
+}: QuestionCardProps) {
   return (
     <article
       className={`survey-builder-question-card${question.enabled ? "" : " is-disabled"}`}
@@ -39,8 +46,21 @@ export function SurveyQuestionCard({ question, questionIndex, onUpdate, onDuplic
           <button
             className="question-icon-button"
             type="button"
-            title={question.required ? "להפוך לרשות" : "להפוך לחובה"}
-            aria-label={question.required ? "להפוך לרשות" : "להפוך לחובה"}
+            title={
+              locked
+                ? "שאלת מקור נשארת חובה"
+                : question.required
+                  ? "להפוך לרשות"
+                  : "להפוך לחובה"
+            }
+            aria-label={
+              locked
+                ? "שאלת מקור נשארת חובה"
+                : question.required
+                  ? "להפוך לרשות"
+                  : "להפוך לחובה"
+            }
+            disabled={locked}
             onClick={() =>
               onUpdate(question.id, (current) => ({
                 ...current,
@@ -53,8 +73,21 @@ export function SurveyQuestionCard({ question, questionIndex, onUpdate, onDuplic
           <button
             className="question-icon-button"
             type="button"
-            title={question.enabled ? "להסתיר מסבב האבחון" : "להחזיר לסבב האבחון"}
-            aria-label={question.enabled ? "להסתיר מסבב האבחון" : "להחזיר לסבב האבחון"}
+            title={
+              locked
+                ? "שאלת מקור נשארת פעילה"
+                : question.enabled
+                  ? "להסתיר מסבב האבחון"
+                  : "להחזיר לסבב האבחון"
+            }
+            aria-label={
+              locked
+                ? "שאלת מקור נשארת פעילה"
+                : question.enabled
+                  ? "להסתיר מסבב האבחון"
+                  : "להחזיר לסבב האבחון"
+            }
+            disabled={locked}
             onClick={() =>
               onUpdate(question.id, (current) => ({
                 ...current,

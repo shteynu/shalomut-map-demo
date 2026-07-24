@@ -9,41 +9,20 @@ npm install
 npm run dev
 ```
 
-## Static build
+## Production build
 
-This project is configured for static export. Running:
+Running:
 
 ```bash
 npm run build
+npm start
 ```
 
-generates the deployable site in `out/`.
+starts the full-stack Next.js application. Manager pages and API routes render
+at request time and read PostgreSQL through Prisma.
 
-## Free deployment options
+## Deployment
 
-### Cloudflare Pages
-
-Recommended for this application because static asset hosting on the free plan is generous.
-
-1. Push this project to GitHub.
-2. In Cloudflare Pages, create a new project from that repository.
-3. Use:
-   - Build command: `npm run build`
-   - Build output directory: `out`
-
-If deploying from the CLI after authenticating Wrangler:
-
-```bash
-npx wrangler pages project create shalomut-map
-npx wrangler pages deploy out --project-name shalomut-map
-```
-
-### GitHub Pages
-
-This repo also includes a GitHub Actions workflow at `.github/workflows/deploy-github-pages.yml`.
-
-After pushing to GitHub:
-
-1. Enable Pages for the repository and set the build type to GitHub Actions.
-2. Push to `main`.
-3. GitHub will publish the static export automatically.
+Deploy the application to a Next.js server runtime such as Vercel and configure
+`DATABASE_URL`. GitHub Pages and other static-only hosts are not supported:
+they cannot execute the request-time database reads or mutation endpoints.

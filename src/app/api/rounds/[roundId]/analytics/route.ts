@@ -2,12 +2,6 @@ import { NextResponse } from 'next/server';
 import { getRepositories } from '@/lib/repositories';
 import { AnalyticsService } from '@/lib/services';
 
-export const dynamic = 'force-static';
-
-export function generateStaticParams() {
-  return [{ roundId: 'round_demo_1' }];
-}
-
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ roundId: string }> }
