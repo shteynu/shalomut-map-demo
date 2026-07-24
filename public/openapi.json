@@ -27,6 +27,10 @@
     {
       "name": "Analytics",
       "description": "Aggregated wellbeing scores and privacy threshold enforcement"
+    },
+    {
+      "name": "AI Integration",
+      "description": "MCP transport, AI processing trigger, and versioned Stone Map insights"
     }
   ],
   "paths": {
@@ -344,9 +348,165 @@
           }
         }
       }
+    },
+    "/api/mcp": {
+      "post": {
+        "tags": ["AI Integration"],
+        "summary": "Call the Shalomut MCP endpoint",
+        "description": "JSON-RPC 2.0 endpoint exposing tools/list and get_round_analytics through tools/call. Bearer authentication is required when MCP_SHARED_SECRET is configured.",
+        "security": [
+          { "bearerAuth": [] },
+          {}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/McpJsonRpcRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "JSON-RPC result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid JSON-RPC request"
+          },
+          "401": {
+            "description": "Missing or invalid configured shared secret"
+          },
+          "404": {
+            "description": "Tool, method, or round not found"
+          },
+          "500": {
+            "description": "MCP server error"
+          }
+        }
+      }
+    },
+    "/api/rounds/{roundId}/ai-insights": {
+      "parameters": [
+        {
+          "name": "roundId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "example": "round_demo_1"
+          }
+        }
+      ],
+      "get": {
+        "tags": ["AI Integration"],
+        "summary": "Fetch persisted AI insights",
+        "responses": {
+          "200": {
+            "description": "Validated, versioned Stone Map result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoneMapResult"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "AI insights have not been persisted for this round"
+          },
+          "500": {
+            "description": "Failed to fetch AI insights"
+          }
+        }
+      },
+      "post": {
+        "tags": ["AI Integration"],
+        "summary": "Persist the AI service callback",
+        "description": "Validates contract version 1.0, route/payload round identity, privacy semantics, and all eight canonical dimensions before persistence. Bearer authentication is required when AI_CALLBACK_SECRET is configured.",
+        "security": [
+          { "bearerAuth": [] },
+          {}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StoneMapResult"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Insights persisted successfully"
+          },
+          "400": {
+            "description": "Payload violates the AI analytics contract"
+          },
+          "401": {
+            "description": "Missing or invalid configured callback secret"
+          },
+          "404": {
+            "description": "Survey round not found"
+          },
+          "500": {
+            "description": "Failed to persist AI insights"
+          }
+        }
+      }
+    },
+    "/api/rounds/{roundId}/trigger-ai": {
+      "post": {
+        "tags": ["AI Integration"],
+        "summary": "Request AI processing for a survey round",
+        "description": "Forwards a round_closed event to AI_SERVICE_URL. The callback URL is derived from APP_BASE_URL or the incoming request origin. The endpoint fails closed when the AI service is unavailable.",
+        "parameters": [
+          {
+            "name": "roundId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "round_demo_1"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "AI service accepted the event"
+          },
+          "502": {
+            "description": "AI service returned a non-success response"
+          },
+          "503": {
+            "description": "AI service could not be reached"
+          },
+          "500": {
+            "description": "Failed to construct or dispatch the request"
+          }
+        }
+      }
     }
   },
   "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Shared service secret. Required only when the corresponding environment variable is configured."
+      }
+    },
     "schemas": {
       "RoundStatus": {
         "type": "string",
@@ -460,6 +620,117 @@
             }
           },
           "calculatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "McpJsonRpcRequest": {
+        "type": "object",
+        "required": ["jsonrpc", "id", "method"],
+        "properties": {
+          "jsonrpc": {
+            "type": "string",
+            "enum": ["2.0"]
+          },
+          "id": {
+            "oneOf": [
+              { "type": "string" },
+              { "type": "integer" }
+            ]
+          },
+          "method": {
+            "type": "string",
+            "enum": ["tools/list", "tools/call"]
+          },
+          "params": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "StoneMetric": {
+        "type": "object",
+        "required": ["label", "value"],
+        "properties": {
+          "label": { "type": "string" },
+          "value": { "type": "string" },
+          "trend": { "type": "string" }
+        }
+      },
+      "StoneIntervention": {
+        "type": "object",
+        "required": ["id", "dimensionId", "source", "title", "summary", "actionable_steps"],
+        "properties": {
+          "id": { "type": "string" },
+          "dimensionId": { "$ref": "#/components/schemas/WellbeingDimensionId" },
+          "source": { "type": "string" },
+          "title": { "type": "string" },
+          "summary": { "type": "string" },
+          "actionable_steps": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      },
+      "StoneDetail": {
+        "type": "object",
+        "required": ["dimensionId", "dimensionNameHebrew", "status", "score", "psychologicalInterpretation", "recommendedInterventions", "metrics"],
+        "properties": {
+          "dimensionId": { "$ref": "#/components/schemas/WellbeingDimensionId" },
+          "dimensionNameHebrew": { "type": "string" },
+          "status": { "$ref": "#/components/schemas/WellbeingStatus" },
+          "score": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "psychologicalInterpretation": { "type": "string" },
+          "recommendedInterventions": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/StoneIntervention" }
+          },
+          "metrics": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/StoneMetric" }
+          }
+        }
+      },
+      "StoneMapResult": {
+        "type": "object",
+        "required": ["contractVersion", "roundId", "isLocked", "status"],
+        "properties": {
+          "contractVersion": {
+            "type": "string",
+            "enum": ["1.0"],
+            "example": "1.0"
+          },
+          "roundId": {
+            "type": "string",
+            "example": "round_demo_1"
+          },
+          "processedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "isLocked": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["success", "locked_error", "validation_failed"]
+          },
+          "errorMessage": {
+            "type": "string"
+          },
+          "overallPsychologicalSummary": {
+            "type": "string"
+          },
+          "stones": {
+            "type": "object",
+            "minProperties": 8,
+            "maxProperties": 8,
+            "additionalProperties": {
+              "$ref": "#/components/schemas/StoneDetail"
+            }
+          }
         }
       },
       "ErrorResponse": {

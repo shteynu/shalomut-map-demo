@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { DashboardDimensionPage } from "@/components/dashboard";
-import { getDimensionById, getDimensionStaticParams } from "@/lib/demo-data";
+import { activeRound, getDimensionById, getDimensionStaticParams } from "@/lib/demo-data";
 
 export const dynamicParams = false;
 
@@ -20,5 +20,5 @@ export default async function DimensionPage({
     notFound();
   }
 
-  return <DashboardDimensionPage dimension={entry} />;
+  return <DashboardDimensionPage dimension={entry} roundId={activeRound.id} />;
 }

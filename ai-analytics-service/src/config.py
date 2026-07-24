@@ -10,6 +10,10 @@ class Settings:
         # Data Layer & MCP Settings
         self.data_layer_mcp_url: str = os.getenv("DATA_LAYER_MCP_URL", "http://localhost:3000/api/mcp")
         self.data_layer_callback_url: str = os.getenv("DATA_LAYER_CALLBACK_URL", "http://localhost:3000/api/rounds")
+        self.use_mock_mcp: bool = os.getenv("USE_MOCK_MCP", "false").lower() == "true"
+        self.mcp_shared_secret: str = os.getenv("MCP_SHARED_SECRET", "")
+        self.ai_webhook_secret: str = os.getenv("AI_WEBHOOK_SECRET", "")
+        self.ai_callback_secret: str = os.getenv("AI_CALLBACK_SECRET", "")
         
         # LLM Settings & Token Optimization
         self.openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
@@ -22,7 +26,7 @@ class Settings:
         # Token Saving: Only invoke LLM for problematic ('yellow' / 'red') dimensions
         self.only_llm_for_problematic: bool = os.getenv("ONLY_LLM_FOR_PROBLEMATIC", "true").lower() == "true"
         
-        # Vector DB
+        # Reserved persistence setting for a future vector-backed catalog.
         self.chroma_persist_dir: str = os.getenv("CHROMA_PERSIST_DIR", "./chroma_db")
         
         # Privacy Constraint

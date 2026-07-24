@@ -4,21 +4,15 @@ from src.agents.state import AnalyticsState
 from src.rag.store import LocalInterventionVectorStore
 from src.services.llm_provider import llm_provider_service
 from src.config import settings
+from src.contracts import (
+    AI_ANALYTICS_CONTRACT_VERSION,
+    AI_ANALYTICS_DIMENSION_NAMES_HEBREW,
+)
 
 logger = logging.getLogger(__name__)
 vector_store = LocalInterventionVectorStore()
 
-# Hebrew dimension labels mapping
-DIMENSION_NAMES_HEBREW = {
-    "workload_balance": "איזון עומס עבודה",
-    "management_support": "תמיכת הנהלה",
-    "peer_relationships": "תמיכת עמיתים",
-    "psychological_safety": "ביטחון פסיכולוגי",
-    "professional_growth": "פיתוח מקצועי",
-    "work_environment": "סביבת עבודה",
-    "sense_of_meaning": "תחושת משמעות",
-    "recognition_compensation": "הערכה ותגמול"
-}
+DIMENSION_NAMES_HEBREW = AI_ANALYTICS_DIMENSION_NAMES_HEBREW
 
 def privacy_gate_node(state: AnalyticsState) -> AnalyticsState:
     """
@@ -37,6 +31,7 @@ def privacy_gate_node(state: AnalyticsState) -> AnalyticsState:
             **state,
             "safety_status": "privacy_locked",
             "final_payload": {
+                "contractVersion": AI_ANALYTICS_CONTRACT_VERSION,
                 "roundId": round_data.get("roundId", ""),
                 "isLocked": True,
                 "status": "locked_error",
@@ -99,9 +94,9 @@ def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
 
 def agent_rag_intervention_node(state: AnalyticsState) -> AnalyticsState:
     """
-    Node 3: Agent RAG Intervention (Tool Node)
-    Queries local Vector DB (ChromaDB) to extract top-3 relevant structural interventions
-    for problematic ('yellow'/'red') dimensions and adds them to the state.
+    Node 3: Intervention Catalog (Tool Node)
+    Queries the local structured catalog to extract top-3 relevant organizational
+    interventions for each dimension and adds them to the state.
     """
     round_data = state.get("round_data", {})
     dim_scores = round_data.get("dimensionScores", {})

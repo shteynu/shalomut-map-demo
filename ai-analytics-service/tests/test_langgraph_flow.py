@@ -26,10 +26,10 @@ async def test_langgraph_flow_unlocked():
     assert "stones" in final_payload
     assert len(final_payload["stones"]) == 8
     
-    workload_stone = final_payload["stones"].get("workload_balance")
-    assert workload_stone is not None
-    assert workload_stone["status"] == "red"
-    assert len(workload_stone["recommendedInterventions"]) > 0
+    balance_stone = final_payload["stones"].get("balance")
+    assert balance_stone is not None
+    assert balance_stone["status"] == "red"
+    assert len(balance_stone["recommendedInterventions"]) > 0
 
 @pytest.mark.asyncio
 async def test_langgraph_flow_locked():

@@ -31,7 +31,7 @@ class LocalInterventionVectorStore:
     ) -> List[StoneIntervention]:
         """
         Retrieves top-N relevant organizational interventions for a specific dimension & status.
-        Uses structured dimension filtering and fallback semantic keyword match.
+        Recommendations never cross dimension boundaries.
         """
         matched = [
             item for item in self.raw_data
@@ -44,19 +44,13 @@ class LocalInterventionVectorStore:
                 item for item in self.raw_data
                 if item.get("dimension_id") == dimension_id and item not in matched
             ])
-            
-        # Fallback to general interventions if still under limit
-        if len(matched) < limit:
-            matched.extend([
-                item for item in self.raw_data
-                if item not in matched
-            ])
-            
+
         selected = matched[:limit]
         
         return [
             StoneIntervention(
                 id=item["id"],
+                dimensionId=item["dimension_id"],
                 source=item["source"],
                 title=item["title"],
                 summary=item["summary"],

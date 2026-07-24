@@ -21,8 +21,7 @@ class MCPClientManager:
         """
         Invokes MCP tool `get_round_analytics(roundId)`
         """
-        # In mock/dev environment or if URL is local fallback, use mock_mcp_server directly
-        if settings.env == "development" or "localhost" in self.mcp_server_url:
+        if settings.use_mock_mcp:
             logger.info(f"[MCP Client] Using Mock Data Layer MCP Server for round: {round_id}")
             return mock_mcp_server.get_round_analytics(round_id)
 
@@ -37,22 +36,32 @@ class MCPClientManager:
                 }
             }).encode("utf-8")
 
+            headers = {"Content-Type": "application/json"}
+            if settings.mcp_shared_secret:
+                headers["Authorization"] = f"Bearer {settings.mcp_shared_secret}"
+
             req = urllib.request.Request(
                 self.mcp_server_url,
                 data=req_payload,
-                headers={"Content-Type": "application/json"},
+                headers=headers,
                 method="POST"
             )
 
             with urllib.request.urlopen(req, timeout=5.0) as response:
-                if response.status == 200:
-                    data = json.loads(response.read().decode("utf-8"))
-                    result_content = data.get("result", {}).get("content", [{}])[0].get("text", "{}")
-                    parsed_json = json.loads(result_content)
-                    return RoundAnalyticsResult.from_dict(parsed_json)
-        except Exception as e:
-            logger.warning(f"[MCP Client] Remote MCP call failed ({e}), using mock server fallback.")
+                if response.status != 200:
+                    raise RuntimeError(f"MCP server returned HTTP {response.status}")
 
-        return mock_mcp_server.get_round_analytics(round_id)
+                data = json.loads(response.read().decode("utf-8"))
+                result_content = data.get("result", {}).get("content", [{}])[0].get("text")
+                if not result_content:
+                    error = data.get("error", {}).get("message", "missing tool result")
+                    raise RuntimeError(f"MCP server returned an invalid response: {error}")
+
+                parsed_json = json.loads(result_content)
+                return RoundAnalyticsResult.from_dict(parsed_json)
+        except Exception as e:
+            raise RuntimeError(
+                f"Unable to fetch round analytics from MCP server: {e}"
+            ) from e
 
 mcp_client_manager = MCPClientManager()

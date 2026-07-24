@@ -1,5 +1,6 @@
 import logging
-from fastapi import FastAPI, BackgroundTasks, HTTPException
+from typing import Optional
+from fastapi import FastAPI, BackgroundTasks, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from src.schemas.webhook import WebhookEventPayload
 from src.schemas.mcp_types import StoneMapResult
@@ -33,17 +34,27 @@ def health_check():
     }
 
 @app.post("/api/v1/webhook/events")
-async def handle_webhook_event(payload: WebhookEventPayload, background_tasks: BackgroundTasks):
+async def handle_webhook_event(
+    payload: WebhookEventPayload,
+    background_tasks: BackgroundTasks,
+    authorization: Optional[str] = Header(default=None),
+):
     """
     Webhook handler for Data Layer triggers.
     Listens for {"event": "round_closed", "roundId": "uuid"}
     """
+    if (
+        settings.ai_webhook_secret
+        and authorization != f"Bearer {settings.ai_webhook_secret}"
+    ):
+        raise HTTPException(status_code=401, detail="Unauthorized webhook")
+
     logger.info(f"[Webhook Receiver] Received event: {payload.event} for roundId: {payload.roundId}")
     
     if payload.event not in ["round_closed", "analytics_requested"]:
         raise HTTPException(status_code=400, detail=f"Unsupported event type: {payload.event}")
 
-    # Dispatch background task to execute LangGraph pipeline asynchronously
+    # Dispatch the graph-style analytics workflow asynchronously
     background_tasks.add_task(
         analytics_runner_service.process_round,
         round_id=payload.roundId,

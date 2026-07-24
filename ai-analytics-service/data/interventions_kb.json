@@ -1,7 +1,7 @@
 [
   {
     "id": "iso45003-wb-01",
-    "dimension_id": "workload_balance",
+    "dimension_id": "balance",
     "source": "ISO 45003:2021 Clause 6.1.2.1 (Workload and work pace)",
     "title": "Workload Assessment & Meeting-Free Time Blocks",
     "summary": "Establish weekly focus windows without non-urgent admin meetings. Re-evaluate duty distribution using transparent capacity mapping.",
@@ -13,7 +13,7 @@
   },
   {
     "id": "oecd-wb-02",
-    "dimension_id": "workload_balance",
+    "dimension_id": "balance",
     "source": "OECD Wellbeing Framework - Work-Life Balance Guidelines",
     "title": "Digital Communication Boundaries Protocol",
     "summary": "Implement school-wide 'right to disconnect' guidelines restricting work emails and chat messaging past 18:00 on school evenings.",
@@ -25,7 +25,7 @@
   },
   {
     "id": "iso45003-ms-01",
-    "dimension_id": "management_support",
+    "dimension_id": "management-support",
     "source": "ISO 45003:2021 Clause 6.1.2.3 (Leadership and support)",
     "title": "Structured Leadership 1-on-1 Check-ins",
     "summary": "Provide regular non-evaluative support sessions focusing on teacher psychological safety and resource obstacles rather than performance audits.",
@@ -37,7 +37,7 @@
   },
   {
     "id": "oecd-ms-02",
-    "dimension_id": "management_support",
+    "dimension_id": "management-support",
     "source": "OECD Education 2030 Leadership Standards",
     "title": "Transparent Resource Allocation & Decision Clarity",
     "summary": "Publish criteria for classroom budget allocations and invite teacher representation on resource planning committees.",
@@ -49,7 +49,7 @@
   },
   {
     "id": "iso45003-ps-01",
-    "dimension_id": "psychological_safety",
+    "dimension_id": "organizational-climate",
     "source": "ISO 45003:2021 Clause 6.1.2.2 (Organizational culture & psychological safety)",
     "title": "Blameless Retrospectives & Incident Reviews",
     "summary": "Adopt psychological safety frameworks for analyzing pedagogical challenges or disciplinary issues without individual blame.",
@@ -61,7 +61,7 @@
   },
   {
     "id": "oecd-ps-02",
-    "dimension_id": "psychological_safety",
+    "dimension_id": "organizational-climate",
     "source": "OECD TALIS Recommendations on Trust in Schools",
     "title": "Anonymous Feedback Channels & Action Commitments",
     "summary": "Establish safe continuous feedback loops where staff can express concerns without fear of reprisal, paired with visible management action.",
@@ -73,7 +73,7 @@
   },
   {
     "id": "iso45003-pr-01",
-    "dimension_id": "peer_relationships",
+    "dimension_id": "social-resource",
     "source": "ISO 45003:2021 Clause 6.1.2.4 (Interpersonal relationships)",
     "title": "Structured Peer Co-Working & Mentorship Circles",
     "summary": "Facilitate collaborative lesson planning triads to foster professional solidarity and reduce teacher isolation.",
@@ -85,7 +85,7 @@
   },
   {
     "id": "oecd-pg-01",
-    "dimension_id": "professional_growth",
+    "dimension_id": "professional-competence",
     "source": "OECD Teachers' Professional Learning Framework",
     "title": "Teacher-Led Professional Learning Communities (PLCs)",
     "summary": "Empower teachers to direct their own professional development budgets towards action research and peer observation.",
@@ -96,26 +96,38 @@
     "target_status": ["yellow", "red"]
   },
   {
-    "id": "iso45003-we-01",
-    "dimension_id": "work_environment",
-    "source": "ISO 45003:2021 Clause 6.1.2.5 (Physical environment & equipment)",
-    "title": "Staff Sanctuary & Physical Ergonomics Audit",
-    "summary": "Upgrade staff lounge facilities into quiet relaxation spaces and audit classroom acoustic/thermal conditions.",
+    "id": "iso45003-certainty-01",
+    "dimension_id": "certainty",
+    "source": "ISO 45003:2021 guidance on role clarity and organizational change",
+    "title": "Role Clarity & Change Communication Protocol",
+    "summary": "Publish stable role expectations and communicate upcoming operational changes early enough for staff to plan and ask questions.",
     "actionable_steps": [
-      "Designate a silent rest room separate from the active staff kitchen.",
-      "Address urgent thermal/lighting issues reported in staff classrooms."
+      "Maintain a single written source for current responsibilities and decision owners.",
+      "Announce material schedule or policy changes with a clear rationale and transition window."
     ],
     "target_status": ["yellow", "red"]
   },
   {
-    "id": "oecd-rc-01",
-    "dimension_id": "recognition_compensation",
-    "source": "OECD High-Performing School Systems Recognition Report",
-    "title": "Peer Recognition & Milestone Celebration Framework",
-    "summary": "Build structured peer-to-peer appreciation programs highlighting daily teacher contributions and innovation.",
+    "id": "oecd-se-01",
+    "dimension_id": "self-expression",
+    "source": "OECD TALIS guidance on teacher agency and participation",
+    "title": "Teacher Voice & Safe Feedback Forum",
+    "summary": "Create recurring channels where teachers can raise ideas, concerns, and dissenting perspectives without fear of retaliation.",
     "actionable_steps": [
-      "Establish a weekly 'Shout-Out' board in staff meetings for peer recognition.",
-      "Celebrate milestone contributions in school newsletters."
+      "Reserve a structured teacher-led agenda slot in monthly staff meetings.",
+      "Offer an anonymous feedback channel and publish leadership responses to recurring themes."
+    ],
+    "target_status": ["yellow", "red"]
+  },
+  {
+    "id": "oecd-meaning-01",
+    "dimension_id": "meaning",
+    "source": "OECD teacher wellbeing guidance on purpose and professional agency",
+    "title": "Purpose Alignment & Impact Reflection",
+    "summary": "Reconnect daily responsibilities with visible student and community outcomes while reducing tasks that staff experience as disconnected from educational purpose.",
+    "actionable_steps": [
+      "Open quarterly planning with short examples of meaningful student or community impact.",
+      "Review recurring administrative tasks and remove or simplify work with no clear educational value."
     ],
     "target_status": ["yellow", "red"]
   }

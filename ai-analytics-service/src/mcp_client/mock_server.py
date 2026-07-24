@@ -1,5 +1,6 @@
 from typing import Dict, Any
 from src.schemas.mcp_types import RoundAnalyticsResult, RoundDimensionScore
+from src.contracts import AI_ANALYTICS_DIMENSION_IDS
 
 class MockDataLayerMCPServer:
     """
@@ -15,45 +16,45 @@ class MockDataLayerMCPServer:
                 "privacyThreshold": 10,
                 "isLocked": False,
                 "dimensionScores": {
-                    "workload_balance": {
-                        "dimensionId": "workload_balance",
-                        "averageScore": 42.5,
-                        "computedStatus": "red"
-                    },
-                    "management_support": {
-                        "dimensionId": "management_support",
-                        "averageScore": 58.0,
-                        "computedStatus": "yellow"
-                    },
-                    "peer_relationships": {
-                        "dimensionId": "peer_relationships",
-                        "averageScore": 84.0,
-                        "computedStatus": "green"
-                    },
-                    "psychological_safety": {
-                        "dimensionId": "psychological_safety",
+                    "self-expression": {
+                        "dimensionId": "self-expression",
                         "averageScore": 61.5,
                         "computedStatus": "yellow"
                     },
-                    "professional_growth": {
-                        "dimensionId": "professional_growth",
+                    "professional-competence": {
+                        "dimensionId": "professional-competence",
                         "averageScore": 77.0,
                         "computedStatus": "green"
                     },
-                    "work_environment": {
-                        "dimensionId": "work_environment",
+                    "social-resource": {
+                        "dimensionId": "social-resource",
+                        "averageScore": 84.0,
+                        "computedStatus": "green"
+                    },
+                    "balance": {
+                        "dimensionId": "balance",
+                        "averageScore": 42.5,
+                        "computedStatus": "red"
+                    },
+                    "management-support": {
+                        "dimensionId": "management-support",
+                        "averageScore": 58.0,
+                        "computedStatus": "yellow"
+                    },
+                    "certainty": {
+                        "dimensionId": "certainty",
+                        "averageScore": 52.0,
+                        "computedStatus": "yellow"
+                    },
+                    "organizational-climate": {
+                        "dimensionId": "organizational-climate",
                         "averageScore": 48.0,
                         "computedStatus": "red"
                     },
-                    "sense_of_meaning": {
-                        "dimensionId": "sense_of_meaning",
+                    "meaning": {
+                        "dimensionId": "meaning",
                         "averageScore": 88.5,
                         "computedStatus": "green"
-                    },
-                    "recognition_compensation": {
-                        "dimensionId": "recognition_compensation",
-                        "averageScore": 54.0,
-                        "computedStatus": "yellow"
                     }
                 },
                 "organizationContext": {
@@ -87,29 +88,29 @@ class MockDataLayerMCPServer:
                 privacyThreshold=10,
                 isLocked=False,
                 dimensionScores={
-                    "workload_balance": RoundDimensionScore(
-                        dimensionId="workload_balance", averageScore=45.0, computedStatus="red"
+                    "self-expression": RoundDimensionScore(
+                        dimensionId="self-expression", averageScore=61.0, computedStatus="yellow"
                     ),
-                    "management_support": RoundDimensionScore(
-                        dimensionId="management_support", averageScore=62.0, computedStatus="yellow"
+                    "professional-competence": RoundDimensionScore(
+                        dimensionId="professional-competence", averageScore=75.0, computedStatus="green"
                     ),
-                    "peer_relationships": RoundDimensionScore(
-                        dimensionId="peer_relationships", averageScore=81.0, computedStatus="green"
+                    "social-resource": RoundDimensionScore(
+                        dimensionId="social-resource", averageScore=81.0, computedStatus="green"
                     ),
-                    "psychological_safety": RoundDimensionScore(
-                        dimensionId="psychological_safety", averageScore=59.0, computedStatus="yellow"
+                    "balance": RoundDimensionScore(
+                        dimensionId="balance", averageScore=45.0, computedStatus="red"
                     ),
-                    "professional_growth": RoundDimensionScore(
-                        dimensionId="professional_growth", averageScore=75.0, computedStatus="green"
+                    "management-support": RoundDimensionScore(
+                        dimensionId="management-support", averageScore=62.0, computedStatus="yellow"
                     ),
-                    "work_environment": RoundDimensionScore(
-                        dimensionId="work_environment", averageScore=52.0, computedStatus="yellow"
+                    "certainty": RoundDimensionScore(
+                        dimensionId="certainty", averageScore=52.0, computedStatus="yellow"
                     ),
-                    "sense_of_meaning": RoundDimensionScore(
-                        dimensionId="sense_of_meaning", averageScore=85.0, computedStatus="green"
+                    "organizational-climate": RoundDimensionScore(
+                        dimensionId="organizational-climate", averageScore=48.0, computedStatus="red"
                     ),
-                    "recognition_compensation": RoundDimensionScore(
-                        dimensionId="recognition_compensation", averageScore=40.0, computedStatus="red"
+                    "meaning": RoundDimensionScore(
+                        dimensionId="meaning", averageScore=85.0, computedStatus="green"
                     )
                 },
                 organizationContext={"schoolType": "Comprehensive", "staffCount": 35}
@@ -119,6 +120,9 @@ class MockDataLayerMCPServer:
         scores_dict = {}
         for dim_id, s in data.get("dimensionScores", {}).items():
             scores_dict[dim_id] = RoundDimensionScore(**s)
+
+        if set(scores_dict) != set(AI_ANALYTICS_DIMENSION_IDS):
+            raise ValueError("Mock round does not match the canonical AI analytics dimensions.")
 
         return RoundAnalyticsResult(
             roundId=data["roundId"],

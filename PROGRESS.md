@@ -1,18 +1,30 @@
 # PROGRESS: Shalomut Map
 
 ## 📌 Текущий статус
-- **Текущий этап**: AI Analytics Microservice полностью разработан, протестирован, декаплинг-проверен и запушен в ветку `feature/ai-analytics-microservice-mcp`. TypeScript build fix применён. Сессия закрыта.
-- **Следующая цель**: Подключение AI-инсайтов к UI дашборда (отображение результатов "Stone Map" при клике на проблемные измерения).
+- **Текущий этап**: Стабилизация AI Analytics интеграции реализована локально в `feature/ai-analytics-microservice-mcp`: единый контракт, Prisma-персистентность, fail-closed транспорт, сквозной Next.js → Python → Next.js тест и подключение результатов к dashboard.
+- **Ограничение**: Миграция `20260724170000_add_ai_insights` только подготовлена и локально провалидирована. Она не применялась к Supabase; секреты и AI-сервис не деплоились.
+- **Следующая цель**: Проверить diff, получить отдельное разрешение на миграцию/настройку окружения и провести staging smoke-test.
 
 ---
 
-## 🚀 Следующие шаги (Next Up: UI AI Insights Display)
-1. [ ] **Подключение отображения AI-инсайтов в UI Дашборда**: Вызов `GET /api/rounds/[roundId]/ai-insights` в UI при нажатии на модальные карточки проблемных зон.
-2. [ ] **Мерج `feature/ai-analytics-microservice-mcp` в `main`** после финального ревью.
+## 🚀 Следующие шаги (Next Up: Staging Readiness)
+1. [ ] **Ревью локального diff** и фиксация изменений отдельным коммитом.
+2. [ ] **После явного разрешения** применить Prisma migration к целевой Supabase БД.
+3. [ ] Настроить `APP_BASE_URL`, `AI_SERVICE_URL`, `MCP_SHARED_SECRET`, `AI_WEBHOOK_SECRET` и `AI_CALLBACK_SECRET` в staging и AI-сервисе.
+4. [ ] Выполнить staging smoke-test полного webhook/callback сценария и только затем решать вопрос о merge в `main`.
+5. [ ] Отдельно решить, нужны ли реальные LangGraph/ChromaDB; текущий runtime использует собственный async graph-style workflow и локальный JSON-каталог.
 
 ---
 
 ## ✅ Завершенные задачи (Completed)
+- [x] **2026-07-24**: **Стабилизирована сквозная AI Analytics интеграция и подключён dashboard**:
+  - Добавлен общий versioned contract `contracts/ai-analytics-v1.json`; TypeScript callback отклоняет legacy/mismatched payloads и требует ровно 8 канонических измерений.
+  - Python pipeline, mock MCP и intervention catalog синхронизированы с каноническими ID; рекомендации больше не переходят между измерениями.
+  - `aiInsights` и `aiInsightsUpdatedAt` добавлены в Prisma; подготовлена миграция `20260724170000_add_ai_insights`, но к внешней БД она не применялась.
+  - MCP, webhook и callback поддерживают отдельные shared secrets; mock MCP включается только явным `USE_MOCK_MCP=true`; сетевые ошибки больше не маскируются fake-success.
+  - Добавлен настоящий локальный boundary E2E: Next.js MCP → Python pipeline CLI → Next.js callback → persistence GET, включая privacy-lock.
+  - Dashboard detail/metrics/recommendations читает валидированные AI-инсайты и показывает loading, locked, not-found и error состояния, сохраняя `roundId` в навигации.
+  - Обновлены OpenAPI JSON/YAML и README AI-сервиса; браузерно проверены ready/not-found/locked состояния.
 - [x] **2026-07-24**: **Hotfix: TypeScript build ошибки в MCP Server route (`/api/mcp`)**:
   - `AnalyticsService` — статический класс. Убрали неверный `new AnalyticsService(...)`, заменили на прямой вызов статического метода `AnalyticsService.getAnalyticsForRound(roundId, roundRepo, surveyRepo)`.
   - Исправлены ключи репозитория: `repositories.rounds` → `repositories.roundRepo`, `repositories.surveys` → `repositories.surveyRepo`.
@@ -20,26 +32,26 @@
   - `tsc --noEmit` проходит без ошибок. Изменения запушены в `feature/ai-analytics-microservice-mcp`.
 - [x] **2026-07-24**: **Архитектурный аудит декаплинга AI-сервиса + Выделен `LLMProviderService`**:
   - Создан изолированный [`src/services/llm_provider.py`](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/ai-analytics-service/src/services/llm_provider.py): скрывает всю токеномику, выбор модели (`gpt-4o-mini` vs `gpt-4o`), правила «0 токенов для green-измерений» и фоллбэк-генератор.
-  - Узлы LangGraph в `nodes.py` полностью очищены от прямых LLM API вызовов — делегируют `LLMProviderService`.
-  - Аудит подтвердил 100% изоляцию на 5 уровнях: MCP Protocol Boundary, FastAPI Boundary, LangGraph Agents, LLM Provider Layer, RAG Vector Store.
+  - Узлы graph-style workflow в `nodes.py` не содержат прямых LLM API вызовов — они делегируют `LLMProviderService`.
+  - Границы разделены на MCP transport, FastAPI boundary, workflow nodes, LLM provider и structured intervention catalog.
 - [x] **2026-07-24**: **Оптимизация токенов: Multi-Tier Model Strategy**:
   - Правило 0 токенов для здоровых (`green`) измерений (`only_llm_for_problematic = True`).
   - Дешевая быстрая модель `gpt-4o-mini` по умолчанию (в 15 раз дешевле `gpt-4o`).
   - Лимит длины генерации `max_tokens_per_dimension = 180`.
-  - RAG через ChromaDB — 0 LLM-токенов на векторный поиск.
+  - Поиск рекомендаций в локальном JSON-каталоге не расходует LLM-токены.
 - [x] **2026-07-24**: **Реализованы Next.js MCP Server, AI Webhook Trigger & AI Insights Callback**:
-  - **MCP Server HTTP JSON-RPC (`/api/mcp`)**: Экспортирует инструмент `get_round_analytics(roundId)` по стандарту MCP 2024-11-05.
+  - **MCP-compatible HTTP JSON-RPC endpoint (`/api/mcp`)**: Экспортирует `tools/list` и инструмент `get_round_analytics(roundId)`.
   - **AI Insights Callback Endpoint (`/api/rounds/[roundId]/ai-insights`)**: Принимает (`POST`) и отдает (`GET`) сгенерированный AI-микросервисом JSON-пейлоאד *"Stone Map"*.
   - **Webhook Trigger Endpoint (`/api/rounds/[roundId]/trigger-ai`)**: Генерирует и отправляет событие `{"event": "round_closed", "roundId": roundId}` на вебхук AI-сервиса.
-  - **Хранилище**: Расширены репозитории `IRoundRepository` (In-Memory и Prisma) для физического сохранения AI-инсайтов.
+  - **Хранилище**: Расширен контракт `IRoundRepository`; первоначальная версия хранила результат in-memory, а Prisma-персистентность добавлена в последующем stabilization slice.
   - **Автотесты**: Создан набор автотестов ([`src/app/api/__tests__/mcp-integration.test.ts`](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/src/app/api/__tests__/mcp-integration.test.ts)).
 - [x] **2026-07-24**: **Разработан и протестирован Decoupled AI Analytics Microservice (`ai-analytics-service/`)**:
-  - **Архитектура**: Полностью изолированный Python 3.11+ микросервис на **FastAPI**, **LangGraph** и **MCP Client**.
+  - **Архитектура**: Изолированный Python 3.11+ микросервис на **FastAPI** с HTTP JSON-RPC MCP-клиентом и собственным асинхронным graph-style workflow.
   - **Privacy Gate**: Автоматическая блокировка анализа при `isLocked=True` (количество ответов `< 10`) для предотвращения דאנונימיזציה.
-  - **Multi-Agent LangGraph Flow**: `Privacy_Gate` -> `Agent_Psychologist` -> `Agent_RAG_Intervention` -> `Agent_Safety_Validator` (Loop back) -> `Stone Map Output Formatter`.
-  - **RAG & Стандарты**: Локальная база знаний с рекомендациями **OECD Wellbeing Framework** и **ISO 45003:2021** (Psychological Health & Safety at Work) для всех 8 измерений.
+  - **Workflow**: `Privacy_Gate` -> `Agent_Psychologist` -> `Agent_Intervention` -> `Agent_Safety_Validator` (loop) -> `Stone Map Output Formatter`.
+  - **Каталог рекомендаций**: Локальная структурированная база знаний с рекомендациями **OECD Wellbeing Framework** и **ISO 45003:2021** для всех 8 измерений.
   - **MCP Client & Mock Data Layer**: Реализован клиенский менеджер MCP и автономный `MockDataLayerMCPServer` для работы в оф라인/дев-режиме.
-  - **Тестирование**: Создан набор тестов ([`ai-analytics-service/run_tests.py`](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/ai-analytics-service/run_tests.py)). 5/5 тестов успешно пройдено (`OK`).
+  - **Тестирование**: Создан набор тестов ([`ai-analytics-service/run_tests.py`](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/ai-analytics-service/run_tests.py)); после stabilization suite содержит 7 проверок.
 - [x] **2026-07-24**: **Полностью сброшены данные макета UI и счетчики главных страниц (Empty Round State)**:
   - В [`src/lib/demo-data.ts`](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/src/lib/demo-data.ts) сброшены показатели организации, раунда и всех 8 измерений (0/0 השיבו עד כה, 0 מוקדי טיפול, 0 חוזקות, ציון 0).
   - Хелперы `getStatusCount()` и `overallScore` возвращают `0`, когда количество ответов ниже порога анонимности (`< 10`).
@@ -113,4 +125,3 @@
 ## ⚠️ Известные вопросы и заметки
 - При добавлении новых вариантов камней сохранять контраст инкового текста (`#383838`) к фону камня не менее 4.5:1.
 - Результаты опроса должны оставаться заблокированными на уровне бэкенда (`isLocked: true`), если количество респондентов в раунде менее `privacyThreshold` (по умолчанию 10).
-

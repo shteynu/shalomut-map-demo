@@ -2,7 +2,14 @@
 
 import type { WellbeingDimension } from "@/lib/demo-data";
 import { getDimensionSurface } from "@/lib/demo-data";
+import {
+  applyStoneInsightToDimension,
+  getStoneInsight,
+} from "@/lib/ai-insights-view-model";
+import { useDashboardRoundId } from "@/lib/hooks/use-dashboard-round-id";
+import { useAiInsights } from "@/lib/hooks/use-ai-insights";
 import { getDashboardMetricsActions, navigationLabels } from "@/lib/navigation";
+import { DashboardAiInsightsState } from "./dashboard-ai-insights-state";
 import { DashboardCtaRow } from "./dashboard-cta-row";
 import { DashboardHeading } from "./dashboard-heading";
 import { DimensionIdentityChip } from "./dimension-identity-chip";
@@ -19,16 +26,59 @@ function getHighlightedMetrics(dimension: WellbeingDimension) {
   return [...highlighted, ...fallback].slice(0, 2);
 }
 
-export function DashboardMetricsPage({ dimension }: { dimension: WellbeingDimension }) {
-  const metrics = getHighlightedMetrics(dimension).reverse();
-  const dimensionSurface = getDimensionSurface(dimension);
+export function DashboardMetricsPage({
+  dimension,
+  roundId,
+}: {
+  dimension: WellbeingDimension;
+  roundId: string;
+}) {
+  const resolvedRoundId = useDashboardRoundId(roundId);
+  const { state, reload } = useAiInsights(resolvedRoundId);
+  const stone =
+    state.status === "ready"
+      ? getStoneInsight(state.value, dimension.id)
+      : undefined;
+
+  if (state.status !== "ready") {
+    return (
+      <div className="dashboard-mock-page dashboard-metrics-screen">
+        <DashboardHeading title={`${navigationLabels.highlightedMetrics} | ${dimension.conceptLabel}`} />
+        <DashboardAiInsightsState state={state} onRetry={reload} />
+        <DashboardCtaRow
+          actions={getDashboardMetricsActions(dimension.id)}
+          roundId={resolvedRoundId}
+        />
+      </div>
+    );
+  }
+
+  if (!stone) {
+    return (
+      <div className="dashboard-mock-page dashboard-metrics-screen">
+        <DashboardHeading title={`${navigationLabels.highlightedMetrics} | ${dimension.conceptLabel}`} />
+        <DashboardAiInsightsState
+          state={{ status: "error", error: "Missing dimension insight." }}
+          onRetry={reload}
+        />
+      </div>
+    );
+  }
+
+  const displayDimension = applyStoneInsightToDimension(
+    dimension,
+    stone,
+    state.value.overallPsychologicalSummary,
+  );
+  const metrics = getHighlightedMetrics(displayDimension).reverse();
+  const dimensionSurface = getDimensionSurface(displayDimension);
 
   return (
     <div className="dashboard-mock-page dashboard-metrics-screen">
-      <DashboardHeading title={`${navigationLabels.highlightedMetrics} | ${dimension.conceptLabel}`} />
-      <DimensionIdentityChip dimension={dimension} />
+      <DashboardHeading title={`${navigationLabels.highlightedMetrics} | ${displayDimension.conceptLabel}`} />
+      <DimensionIdentityChip dimension={displayDimension} />
 
-      <section className="dashboard-metrics-stage" aria-label={`${navigationLabels.highlightedMetrics} עבור ${dimension.conceptLabel}`}>
+      <section className="dashboard-metrics-stage" aria-label={`${navigationLabels.highlightedMetrics} עבור ${displayDimension.conceptLabel}`}>
         {metrics.map((metric, index) => (
           <MetricBlob
             key={`${metric.label}-${metric.value}`}
@@ -39,7 +89,10 @@ export function DashboardMetricsPage({ dimension }: { dimension: WellbeingDimens
         ))}
       </section>
 
-      <DashboardCtaRow actions={getDashboardMetricsActions(dimension.id)} />
+      <DashboardCtaRow
+        actions={getDashboardMetricsActions(displayDimension.id)}
+        roundId={resolvedRoundId}
+      />
     </div>
   );
 }

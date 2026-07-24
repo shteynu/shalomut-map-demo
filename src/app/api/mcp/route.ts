@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { AnalyticsService } from '@/lib/services/analytics.service';
 import { getRepositories } from '@/lib/repositories';
+import { hasConfiguredSharedSecret } from '@/lib/server/shared-secret';
 
 export const dynamic = 'force-static';
 export const revalidate = false;
@@ -11,6 +12,17 @@ export const revalidate = false;
  */
 export async function POST(request: Request) {
   try {
+    if (!hasConfiguredSharedSecret(request, 'MCP_SHARED_SECRET')) {
+      return NextResponse.json(
+        {
+          jsonrpc: '2.0',
+          id: null,
+          error: { code: -32001, message: 'Unauthorized' },
+        },
+        { status: 401 },
+      );
+    }
+
     const body = await request.json();
     const { jsonrpc, id, method, params } = body || {};
 

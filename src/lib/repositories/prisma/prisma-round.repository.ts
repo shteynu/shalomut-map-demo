@@ -77,15 +77,28 @@ export class PrismaRoundRepository implements IRoundRepository {
     }
   }
 
-  private aiInsightsMemoryCache: Map<string, Record<string, any>> = new Map();
-
   public async saveAiInsights(id: string, insights: Record<string, any>): Promise<boolean> {
-    this.aiInsightsMemoryCache.set(id, { ...insights });
-    return true;
+    try {
+      await this.prisma.surveyRound.update({
+        where: { id },
+        data: {
+          aiInsights: insights,
+          aiInsightsUpdatedAt: new Date(),
+        },
+      });
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   public async getAiInsights(id: string): Promise<Record<string, any> | null> {
-    const found = this.aiInsightsMemoryCache.get(id);
-    return found ? { ...found } : null;
+    const found = await this.prisma.surveyRound.findUnique({
+      where: { id },
+    });
+    const insights = found?.aiInsights;
+    return insights && typeof insights === 'object'
+      ? { ...insights }
+      : null;
   }
 }

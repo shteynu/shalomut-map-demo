@@ -70,6 +70,7 @@ class StoneMetric:
 @dataclass
 class StoneIntervention:
     id: str
+    dimensionId: str
     source: str
     title: str
     summary: str
@@ -104,6 +105,7 @@ class StoneDetail:
 
 @dataclass
 class StoneMapResult:
+    contractVersion: str
     roundId: str
     processedAt: str
     isLocked: bool
@@ -114,6 +116,7 @@ class StoneMapResult:
 
     def to_dict(self) -> Dict[str, Any]:
         return {
+            "contractVersion": self.contractVersion,
             "roundId": self.roundId,
             "processedAt": self.processedAt,
             "isLocked": self.isLocked,

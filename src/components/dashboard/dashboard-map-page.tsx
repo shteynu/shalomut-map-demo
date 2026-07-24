@@ -8,7 +8,7 @@ import { DashboardHeading } from "./dashboard-heading";
 import { DashboardHomeLink } from "./dashboard-home-link";
 import { DashboardMapLocked } from "./dashboard-map-locked";
 
-export function DashboardMapPage() {
+export function DashboardMapPage({ roundId }: { roundId: string }) {
   const isLocked = activeRound.responseCount < activeRound.minimumResponses;
 
   if (isLocked) {
@@ -67,7 +67,7 @@ export function DashboardMapPage() {
             <span className="hint-text-desktop">גררו את האבנים כדי לסדר את המפה, או לחצו על אבן כדי לפתוח פירוט.</span>
             <span className="hint-text-mobile">לחצו על אבן כדי לפתוח פירוט.</span>
           </div>
-          <DashboardMapInteractive />
+          <DashboardMapInteractive roundId={roundId} />
         </div>
       </div>
     </div>

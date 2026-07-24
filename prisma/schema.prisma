@@ -22,15 +22,17 @@ model Organization {
 }
 
 model SurveyRound {
-  id               String           @id @default(uuid())
-  organizationId   String           @map("organization_id")
-  title            String
-  status           String           // 'draft' | 'active' | 'closed' | 'archived'
-  shareCode        String           @unique @map("share_code")
-  privacyThreshold Int              @default(10) @map("privacy_threshold")
-  startDate        DateTime         @default(now()) @map("start_date")
-  endDate          DateTime?        @map("end_date")
-  createdAt        DateTime         @default(now()) @map("created_at")
+  id                  String           @id @default(uuid())
+  organizationId      String           @map("organization_id")
+  title               String
+  status              String           // 'draft' | 'active' | 'closed' | 'archived'
+  shareCode           String           @unique @map("share_code")
+  privacyThreshold    Int              @default(10) @map("privacy_threshold")
+  startDate           DateTime         @default(now()) @map("start_date")
+  endDate             DateTime?        @map("end_date")
+  createdAt           DateTime         @default(now()) @map("created_at")
+  aiInsights          Json?            @map("ai_insights")
+  aiInsightsUpdatedAt DateTime?        @map("ai_insights_updated_at")
 
   organization     Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   responses        SurveyResponse[]

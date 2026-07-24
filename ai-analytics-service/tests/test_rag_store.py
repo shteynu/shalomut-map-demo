@@ -3,7 +3,7 @@ from src.rag.store import LocalInterventionVectorStore
 def test_rag_store_query():
     store = LocalInterventionVectorStore()
     interventions = store.get_interventions_for_dimension(
-        dimension_id="workload_balance",
+        dimension_id="balance",
         status="red",
         limit=3
     )

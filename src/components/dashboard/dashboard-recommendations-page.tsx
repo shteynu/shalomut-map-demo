@@ -2,7 +2,14 @@
 
 import type { WellbeingDimension } from "@/lib/demo-data";
 import { getDimensionSurface } from "@/lib/demo-data";
+import {
+  applyStoneInsightToDimension,
+  getStoneInsight,
+} from "@/lib/ai-insights-view-model";
+import { useDashboardRoundId } from "@/lib/hooks/use-dashboard-round-id";
+import { useAiInsights } from "@/lib/hooks/use-ai-insights";
 import { getDashboardRecommendationsActions, navigationLabels } from "@/lib/navigation";
+import { DashboardAiInsightsState } from "./dashboard-ai-insights-state";
 import { DashboardCtaRow } from "./dashboard-cta-row";
 import { DashboardHeading } from "./dashboard-heading";
 import { DimensionIdentityChip } from "./dimension-identity-chip";
@@ -25,19 +32,63 @@ function getDisplayRecommendations(dimension: WellbeingDimension) {
   return dimension.recommendations;
 }
 
-export function DashboardRecommendationsPage({ dimension }: { dimension: WellbeingDimension }) {
-  const recommendations = getDisplayRecommendations(dimension);
+export function DashboardRecommendationsPage({
+  dimension,
+  roundId,
+}: {
+  dimension: WellbeingDimension;
+  roundId: string;
+}) {
+  const resolvedRoundId = useDashboardRoundId(roundId);
+  const { state, reload } = useAiInsights(resolvedRoundId);
+  const stone =
+    state.status === "ready"
+      ? getStoneInsight(state.value, dimension.id)
+      : undefined;
+
+  if (state.status !== "ready") {
+    return (
+      <div className="dashboard-mock-page dashboard-recommendations-screen">
+        <DashboardHeading title={`${navigationLabels.goals} | ${dimension.conceptLabel}`} />
+        <DashboardAiInsightsState state={state} onRetry={reload} />
+        <DashboardCtaRow
+          center
+          actions={getDashboardRecommendationsActions()}
+          roundId={resolvedRoundId}
+        />
+      </div>
+    );
+  }
+
+  if (!stone) {
+    return (
+      <div className="dashboard-mock-page dashboard-recommendations-screen">
+        <DashboardHeading title={`${navigationLabels.goals} | ${dimension.conceptLabel}`} />
+        <DashboardAiInsightsState
+          state={{ status: "error", error: "Missing dimension insight." }}
+          onRetry={reload}
+        />
+      </div>
+    );
+  }
+
+  const displayDimension = applyStoneInsightToDimension(
+    dimension,
+    stone,
+    state.value.overallPsychologicalSummary,
+  );
+  const recommendations = getDisplayRecommendations(displayDimension);
   const isFiveItemLayout = recommendations.length >= 5;
-  const dimensionSurface = getDimensionSurface(dimension);
+  const dimensionSurface = getDimensionSurface(displayDimension);
 
   return (
     <div className="dashboard-mock-page dashboard-recommendations-screen">
-      <DashboardHeading title={`${navigationLabels.goals} | ${dimension.conceptLabel}`} />
-      <DimensionIdentityChip dimension={dimension} />
+      <DashboardHeading title={`${navigationLabels.goals} | ${displayDimension.conceptLabel}`} />
+      <DimensionIdentityChip dimension={displayDimension} />
 
       <section
         className={`dashboard-recommendations-stage${isFiveItemLayout ? " is-five-items" : " is-generic-items"}`}
-        aria-label={`${navigationLabels.goals} עבור ${dimension.conceptLabel}`}
+        aria-label={`${navigationLabels.goals} עבור ${displayDimension.conceptLabel}`}
       >
         {recommendations.map((recommendation, index) => (
           <RecommendationBlob
@@ -55,7 +106,11 @@ export function DashboardRecommendationsPage({ dimension }: { dimension: Wellbei
         ))}
       </section>
 
-      <DashboardCtaRow center actions={getDashboardRecommendationsActions()} />
+      <DashboardCtaRow
+        center
+        actions={getDashboardRecommendationsActions()}
+        roundId={resolvedRoundId}
+      />
     </div>
   );
 }

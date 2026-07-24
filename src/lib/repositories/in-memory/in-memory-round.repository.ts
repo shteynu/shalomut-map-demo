@@ -55,6 +55,10 @@ export class InMemoryRoundRepository implements IRoundRepository {
   private aiInsightsStore: Map<string, Record<string, any>> = new Map();
 
   public async saveAiInsights(id: string, insights: Record<string, any>): Promise<boolean> {
+    if (!this.rounds.has(id)) {
+      return false;
+    }
+
     this.aiInsightsStore.set(id, { ...insights });
     return true;
   }

@@ -8,11 +8,12 @@ from src.agents.nodes import (
     agent_safety_validator_node,
     DIMENSION_NAMES_HEBREW
 )
+from src.contracts import AI_ANALYTICS_CONTRACT_VERSION
 
 class AnalyticsGraphEngine:
     """
-    StateGraph state machine engine implementing the directed cyclic graph:
-    Privacy_Gate -> Psychologist -> RAG Intervention -> Safety Validator (Loop / Pass) -> Output Formatter
+    Async graph-style engine implementing the directed cyclic workflow:
+    Privacy_Gate -> Psychologist -> Intervention Catalog -> Safety Validator (Loop / Pass) -> Output Formatter
     """
     async def ainvoke(self, state: AnalyticsState) -> AnalyticsState:
         # Step 1: Privacy Gate
@@ -74,6 +75,7 @@ def format_stone_map_output_node(state: AnalyticsState) -> AnalyticsState:
         }
 
     final_payload = {
+        "contractVersion": AI_ANALYTICS_CONTRACT_VERSION,
         "roundId": round_data.get("roundId", ""),
         "processedAt": datetime.now(timezone.utc).isoformat(),
         "isLocked": False,

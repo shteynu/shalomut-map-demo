@@ -140,6 +140,43 @@ test('PrismaRoundRepository creates rounds and updates status', async () => {
   assert.strictEqual(updated?.status, 'closed');
 });
 
+test('PrismaRoundRepository persists AI insights across repository instances', async () => {
+  const mockPrisma = createMockPrismaClient();
+  const writer = new PrismaRoundRepository(mockPrisma);
+
+  await writer.create({
+    id: 'round_ai_insights',
+    organizationId: 'org_prisma_1',
+    title: 'AI insights persistence',
+    status: 'closed',
+    shareCode: 'SHALOM-AI',
+    privacyThreshold: 10,
+    startDate: new Date(),
+    createdAt: new Date(),
+  });
+
+  const insights = {
+    contractVersion: '1.0',
+    roundId: 'round_ai_insights',
+    status: 'success',
+  };
+
+  assert.strictEqual(
+    await writer.saveAiInsights('round_ai_insights', insights),
+    true,
+  );
+
+  const reader = new PrismaRoundRepository(mockPrisma);
+  assert.deepStrictEqual(
+    await reader.getAiInsights('round_ai_insights'),
+    insights,
+  );
+  assert.strictEqual(
+    await reader.saveAiInsights('missing_round', insights),
+    false,
+  );
+});
+
 test('PrismaSurveyRepository saves responses and counts total submissions', async () => {
   const mockPrisma = createMockPrismaClient();
   const surveyRepo = new PrismaSurveyRepository(mockPrisma);
