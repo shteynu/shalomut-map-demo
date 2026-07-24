@@ -1,9 +1,8 @@
-import json
 import logging
-import urllib.request
 from typing import Dict, Any
 from src.agents.state import AnalyticsState
 from src.rag.store import LocalInterventionVectorStore
+from src.services.llm_provider import llm_provider_service
 from src.config import settings
 
 logger = logging.getLogger(__name__)
@@ -50,80 +49,20 @@ def privacy_gate_node(state: AnalyticsState) -> AnalyticsState:
         "safety_status": "pass_privacy"
     }
 
-def _call_llm_psychologist(dim_id: str, dim_hebrew: str, score: float, status: str) -> str:
-    """
-    Calls live LLM API with token-optimization strategies:
-    - 0 tokens spent on 'green' dimensions when only_llm_for_problematic is True
-    - Fast lightweight model (gpt-4o-mini)
-    - Strict max_tokens cap
-    """
-    # TOKEN OPTIMIZATION 1: Skip LLM call for green (healthy) dimensions
-    if settings.only_llm_for_problematic and status == "green":
-        logger.info(f"[Token Optimization] Skipped LLM call for green dimension '{dim_id}' (0 tokens spent).")
-        return f"מדד '{dim_hebrew}' מצוי באזור ירוק (ציון {score:.1f}). הצוות מביע שביעות רצון גבוהה וחיבור חיובי לתחום זה."
-
-    if settings.openai_api_key:
-        try:
-            prompt = (
-                f"You are an expert Organizational Psychologist analyzing teacher wellbeing.\n"
-                f"Dimension: '{dim_hebrew}' ({dim_id}). Score: {score:.1f}/100. Status: {status.upper()}.\n"
-                f"Write a concise 2-sentence psychological interpretation in HEBREW explaining organizational causes and impact."
-            )
-            req_data = json.dumps({
-                "model": settings.openai_model_fast,
-                "messages": [
-                    {"role": "system", "content": "You are a concise organizational psychologist for educational staff."},
-                    {"role": "user", "content": prompt}
-                ],
-                "max_tokens": settings.max_tokens_per_dimension,
-                "temperature": 0.2
-            }).encode("utf-8")
-
-            req = urllib.request.Request(
-                "https://api.openai.com/v1/chat/completions",
-                data=req_data,
-                headers={
-                    "Content-Type": "application/json",
-                    "Authorization": f"Bearer {settings.openai_api_key}"
-                },
-                method="POST"
-            )
-            with urllib.request.urlopen(req, timeout=10.0) as response:
-                if response.status == 200:
-                    res = json.loads(response.read().decode("utf-8"))
-                    return res["choices"][0]["message"]["content"].strip()
-        except Exception as e:
-            logger.warning(f"[Agent Psychologist] LLM API call failed ({e}), using domain heuristic fallback.")
-
-    # Domain heuristic fallback
-    if status == "red":
-        return (
-            f"מדד '{dim_hebrew}' מצוי באזור אדום (ציון {score:.1f}). "
-            f"ניתוח פסיכולוגי ארגוני מצביע על שחיקה גבוהה ותחושת מצוקה מבנית בקרב צוות ההוראה. "
-            f"יש לנקוט בצעדים מיידיים להפחתת הלחץ ולמתן מענה ארגוני תומך."
-        )
-    elif status == "yellow":
-        return (
-            f"מדד '{dim_hebrew}' מצוי באזור צהוב (ציון {score:.1f}). "
-            f"נצפית מגמת שחיקה מתונה הדורשת תשומת לב מונעת מצד הנהלת בית הספר. "
-            f"מומלץ לחזק את ערוצי התקשורת ולהטמיע שיפורים תהליכיים."
-        )
-    return (
-        f"מדד '{dim_hebrew}' מצוי באזור ירוק (ציון {score:.1f}). "
-        f"הצוות מביע שביעות רצון גבוהה וחיבור חיובי לתחום זה."
-    )
-
 def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
     """
     Node 2: Agent Psychologist (LLM Node)
     Takes dimensionScores (focusing on 'yellow' and 'red' statuses)
-    and generates deep organizational psychology interpretations.
+    and delegates generation to the decoupled LLMProviderService.
     """
     round_data = state.get("round_data", {})
     dim_scores = round_data.get("dimensionScores", {})
+    retry_count = state.get("retry_count", 0)
     interpretations = {}
 
     yellow_red_dims = []
+    retry_tier = "heavy" if retry_count > 0 else "fast"
+
     for dim_id, score_obj in dim_scores.items():
         if isinstance(score_obj, dict):
             status = score_obj.get("computedStatus", "green")
@@ -136,7 +75,13 @@ def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
             yellow_red_dims.append(dim_id)
 
         dim_hebrew = DIMENSION_NAMES_HEBREW.get(dim_id, dim_id)
-        interp = _call_llm_psychologist(dim_id, dim_hebrew, score, status)
+        interp = llm_provider_service.generate_psychological_interpretation(
+            dim_id=dim_id,
+            dim_hebrew=dim_hebrew,
+            score=score,
+            status=status,
+            retry_tier=retry_tier
+        )
         interpretations[dim_id] = interp
 
     overall_summary = (
@@ -157,7 +102,6 @@ def agent_rag_intervention_node(state: AnalyticsState) -> AnalyticsState:
     Node 3: Agent RAG Intervention (Tool Node)
     Queries local Vector DB (ChromaDB) to extract top-3 relevant structural interventions
     for problematic ('yellow'/'red') dimensions and adds them to the state.
-    0 LLM tokens spent (uses local vector embeddings).
     """
     round_data = state.get("round_data", {})
     dim_scores = round_data.get("dimensionScores", {})
@@ -186,7 +130,6 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
     Node 4: Agent Safety Validator (Critique Node)
     Acts as a quality controller. Checks combined text for AI hallucinations
     (e.g., claiming a score is bad when it's 'green') and privacy leaks.
-    Uses fast zero-cost rule checks before falling back to critique LLM.
     """
     round_data = state.get("round_data", {})
     dim_scores = round_data.get("dimensionScores", {})
