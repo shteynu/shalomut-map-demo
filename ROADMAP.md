@@ -1,36 +1,39 @@
-# Project Roadmap - Hebrew Typography & Accessibility Optimizations
+# Product Roadmap - Shalomut Map (מפת שלומות)
 
-This document outlines the design and typography system updates implemented locally to improve reading clarity, rendering quality, and WCAG AA accessibility standards across the Shalomut Map wellbeing platform.
+This document details the overall product roadmap and architectural evolution of the Shalomut Map platform.
 
-## 1. Font Stack & Crisp Rendering
+---
 
-- **Hebrew-Optimized Font Stack**: Applied `"Arial", "Noto Sans Hebrew", system-ui, sans-serif` globally. This stack guarantees that Hebrew characters are displayed using correct RTL proportions without synthetic distortion.
-- **Subpixel Antialiasing**: Enabled `-webkit-font-smoothing: antialiased;` and `-moz-osx-font-smoothing: grayscale;` on the `html` element. This eliminates subpixel color fringing and visual noise, providing crisp and clean outlines for Hebrew letterforms on high-density (Retina) and standard displays.
+## 🟢 Phase 1: Design System, RTL & Accessibility (Completed)
 
-## 2. Global Headings (h1 through h6)
+- **Hebrew Font Stack**: Implemented `"Arial", "Noto Sans Hebrew", system-ui, sans-serif` with subpixel antialiasing.
+- **Fluid Typography**: Responsive `clamp()` scaling for headings across desktop and mobile.
+- **WCAG AA Compliance**: High-contrast text (`--ink: #383838`) across all organic wellbeing stones (Green, Yellow, Red, Periwinkle).
+- **Interactive UI Components**: Stone map dashboard, survey flow, and survey builder.
 
-- **Weight**: Updated all heading levels to use `font-weight: 800` (Ultra-Bold).
-- **Line Height**: Configured a tight `line-height: 0.95`. This tight tracking gives Hebrew titles a dense, modern, and publication-grade organic structure, reducing layout fragmentation in RTL reading flows.
-- **Overrides Removal**: Removed specific line-height and font-weight overrides from individual heading selectors (like question card headers, recommendation cards, and intro page headers) to establish a unified, standard typographic rhythm.
+---
 
-## 3. Fluid Typography
+## 🔵 Phase 2: Data Layer & Service Layer (Current - In Progress)
 
-- **CSS `clamp()` scaling**: Implemented fluid scaling for primary typography elements. This allows the text size to transition smoothly between mobile and desktop viewports without breaking layout columns or overflowing their borders:
-  - **Hero H1**: `clamp(2.4rem, 6vw, 5.2rem)`
-  - **Section H2 (Detail Pages)**: `clamp(1.4rem, 3vw, 1.8rem)`
-  - **Subheadings / Question Cards**: `clamp(1rem, 1.8vw, 1.15rem)`
-  - **Legend Card Titles**: Inherited/fluid font sizes.
+- [x] **Data Models & Blueprint**: ERD and service specification defined in `docs/data-layer-and-backend-plan.md`.
+- [x] **Backend Domain Types**: Created TypeScript models (`src/lib/types/backend.ts`) for organizations, survey rounds, responses, and scores.
+- [x] **AnalyticsService**: Implemented 8-dimension math aggregation, 100/60/0 scoring scale, and strict `privacyThreshold >= 10` anonymity locking.
+- [x] **SurveyService**: Implemented submission validation for 24 canonical questions and anonymous response processing.
+- [x] **RoundService**: Implemented survey round creation, share code generation (`SHALOM-XXXX`), and status transitions.
+- [x] **Unit Testing**: 100% test coverage on backend services in `src/lib/services/__tests__/analytics.service.test.ts`.
 
-## 4. Visual Hierarchy & Eyebrows
+---
 
-- **Eyebrow elements** (small categorizing labels) and **kicker elements** (like `.eyebrow` and `.panel-kicker`) now stand out clearly:
-  - Increased weight to `font-weight: 900`.
-  - Applied `text-transform: uppercase` to add structural emphasis and clean separation from surrounding block text.
+## 🟡 Phase 3: Persistence & API Route Integration (Next Up)
 
-## 5. WCAG AA Compliance on Colored Backgrounds
+- [ ] **Database & ORM Setup**: Select and configure Prisma ORM / PostgreSQL / Supabase for persistent data storage.
+- [ ] **API Routes & Server Actions**: Expose `/api/survey/submit`, `/api/rounds/[roundId]/analytics`, and `/api/rounds`.
+- [ ] **UI Integration**: Connect React components (`dashboard-map-interactive.tsx`, `survey-flow.tsx`) to live backend services.
 
-- **Text Color Redefinition**: Replaced low-contrast gray text colors (by updating the `--muted` variable definition in `:root` from `#6f674f` to `#383838`) to ensure all secondary and caption text achieves a WCAG AA contrast ratio of at least 4.5:1 against the light cream paper background (`#fbf4dd`).
-- **Contrast on Wellbeing Stones**:
-  - Replaced `color: white;` with `color: var(--ink);` (`#383838`) on all interactive stones (`.dashboard-map-blob`, `.stone-button`, `.dashboard-metric-blob`, `.dashboard-single-blob`, `.dashboard-recommendation-blob`, and option buttons in pressed states).
-  - Since the background states of wellbeing stones use bright, saturated colors (Green `#24bf10`, Yellow/Orange `#e49902`, Red `#e43e5d`), white text fails WCAG AA contrast requirements. Replacing it with the deep ink color variable (`#383838`) ensures a contrast ratio of > 4.5:1, fulfilling WCAG AA compliance across the interactive layout.
-  - To support this text color update, the background color of the navy/purple stones (`.stone-variant-navy`) was changed from a deep navy (`#2d307e`) to a light periwinkle (`#b2b6f4`). This ensures that the dark ink text (`#383838`) is clearly readable and compliant with WCAG AA standards (6:1 contrast ratio), while still retaining a distinct purple/lavender tone in the visual dashboard hierarchy.
+---
+
+## 🟣 Phase 4: Extended Features & Monorepo Scaling (Future)
+
+- [ ] **Recommendations Engine**: Automated action recommendations for principals based on red/yellow dimensions.
+- [ ] **Comparative Multi-Round Analytics**: Track wellbeing progress over time across school semesters.
+- [ ] **Nx Monorepo Migration**: If splitting into distinct apps (`apps/survey`, `apps/admin`, `apps/mobile`), migrate to an Nx Workspace.

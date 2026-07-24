@@ -23,4 +23,5 @@ yarn-error.log*
 .env*
 .vercel
 .gemini/
+*.tsbuildinfo
 

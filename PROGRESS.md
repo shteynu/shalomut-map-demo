@@ -7,15 +7,19 @@
 ---
 
 ## 🚀 Следующие шаги (Next Up: Data Layer & Backend Phase)
-1. [ ] **Выбор и настройка хранилища данных**: Определение формата Persistence (Prisma + PostgreSQL / Supabase / Repository pattern с адаптерами).
-2. [ ] **Реализация `SurveyService`**: Обработка анонимной отправки ответов на опрос (24 вопроса, шкала 100/60/0) с защитой от повторной отправки.
-3. [ ] **Реализация `AnalyticsService`**: Агрегация баллов по 8 измерениям, расчет средних значений и жесткий контроль порога анонимности (`privacyThreshold >= 10`).
-4. [ ] **Реализация `RoundService` & `OrganizationService`**: Управление раундами опросов, генерация шеринг-ссылок и статусами раунда (`draft`, `active`, `closed`).
-5. [ ] **Интеграция с UI**: Подключение React Server Actions / API Routes к фронтенд-компонентам интерактивной карты и дашборда.
+1. [ ] **Выбор и настройка ORM/Persistence**: Подключение Prisma ORM / PostgreSQL / Supabase для постоянного хранения.
+2. [ ] **Интеграция API Routes / Server Actions**: Подключение `SurveyService` и `AnalyticsService` к API эндпоинтам (`/api/survey/submit`, `/api/rounds/[id]/analytics`).
+3. [ ] **Интеграция с UI**: Замена захардкоженного демо-состояния в `src/components/dashboard-map-interactive.tsx` и `src/components/survey-flow.tsx` на вызовы реального бэкенда.
 
 ---
 
 ## ✅ Завершенные задачи (Completed)
+- [x] **2026-07-24**: **Создан Service Layer бэкенда**:
+  - Созданы типы данных ([`src/lib/types/backend.ts`](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/src/lib/types/backend.ts)).
+  - Реализован [`AnalyticsService`](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/src/lib/services/analytics.service.ts) (агрегация 8 измерений, шкала 100/60/0, порог анонимности `privacyThreshold >= 10`).
+  - Реализован [`SurveyService`](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/src/lib/services/survey.service.ts) (валидация 24 вопросов, обработка анонимных ответов).
+  - Реализован [`RoundService`](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/src/lib/services/round.service.ts) (генерация кодов доступа `SHALOM-XXXX`, переходы статусов раундов).
+  - Написаны и успешно пройдены юнит-тесты ([`src/lib/services/__tests__/analytics.service.test.ts`](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/src/lib/services/__tests__/analytics.service.test.ts)).
 - [x] **2026-07-24**: Проект переведен из статуса «демо» в статус реального продукта (`shalomut-map`). Удалены обозначения Demo из UI copy, метаданных, `package.json`, CI/CD workflows и документации. Компонент `SurveyBuilderDemo` переименован в `SurveyBuilder`.
 - [x] **2026-07-24**: Все изменения редизайна и конфигурации деплоя замерджены в ветку `main` и запушены в `origin/main`.
 - [x] **2026-07-24**: Разделены деплой-окружения (`stg` на `https://shalomut-map-demo-ui-redesign.vercel.app/` с авто-деплоем из `main` и `prod` с ручным деплоем по указанию). Настроен пайплайн GitHub Actions ([.github/workflows/deploy-vercel.yml](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/.github/workflows/deploy-vercel.yml)).
