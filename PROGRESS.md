@@ -1,17 +1,32 @@
 # PROGRESS: Shalomut Map
 
 ## 📌 Текущий статус
-- **Текущий этап**: End-to-End AI Integration Complete — MCP Server JSON-RPC (`/api/mcp`), Webhook Trigger (`/api/rounds/[roundId]/trigger-ai`) и Callback AI Insights storage (`/api/rounds/[roundId]/ai-insights`) полностью имплементированы и состыкованы с AI Analytics Microservice.
-- **Главная цель**: Запуск и валидация сквозной генерации отчетов в UI дашборде.
+- **Текущий этап**: AI Analytics Microservice полностью разработан, протестирован, декаплинг-проверен и запушен в ветку `feature/ai-analytics-microservice-mcp`. TypeScript build fix применён. Сессия закрыта.
+- **Следующая цель**: Подключение AI-инсайтов к UI дашборда (отображение результатов "Stone Map" при клике на проблемные измерения).
 
 ---
 
 ## 🚀 Следующие шаги (Next Up: UI AI Insights Display)
 1. [ ] **Подключение отображения AI-инсайтов в UI Дашборда**: Вызов `GET /api/rounds/[roundId]/ai-insights` в UI при нажатии на модальные карточки проблемных зон.
+2. [ ] **Мерج `feature/ai-analytics-microservice-mcp` в `main`** после финального ревью.
 
 ---
 
 ## ✅ Завершенные задачи (Completed)
+- [x] **2026-07-24**: **Hotfix: TypeScript build ошибки в MCP Server route (`/api/mcp`)**:
+  - `AnalyticsService` — статический класс. Убрали неверный `new AnalyticsService(...)`, заменили на прямой вызов статического метода `AnalyticsService.getAnalyticsForRound(roundId, roundRepo, surveyRepo)`.
+  - Исправлены ключи репозитория: `repositories.rounds` → `repositories.roundRepo`, `repositories.surveys` → `repositories.surveyRepo`.
+  - Убран `await` с синхронной функции `getRepositories()`.
+  - `tsc --noEmit` проходит без ошибок. Изменения запушены в `feature/ai-analytics-microservice-mcp`.
+- [x] **2026-07-24**: **Архитектурный аудит декаплинга AI-сервиса + Выделен `LLMProviderService`**:
+  - Создан изолированный [`src/services/llm_provider.py`](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/ai-analytics-service/src/services/llm_provider.py): скрывает всю токеномику, выбор модели (`gpt-4o-mini` vs `gpt-4o`), правила «0 токенов для green-измерений» и фоллбэк-генератор.
+  - Узлы LangGraph в `nodes.py` полностью очищены от прямых LLM API вызовов — делегируют `LLMProviderService`.
+  - Аудит подтвердил 100% изоляцию на 5 уровнях: MCP Protocol Boundary, FastAPI Boundary, LangGraph Agents, LLM Provider Layer, RAG Vector Store.
+- [x] **2026-07-24**: **Оптимизация токенов: Multi-Tier Model Strategy**:
+  - Правило 0 токенов для здоровых (`green`) измерений (`only_llm_for_problematic = True`).
+  - Дешевая быстрая модель `gpt-4o-mini` по умолчанию (в 15 раз дешевле `gpt-4o`).
+  - Лимит длины генерации `max_tokens_per_dimension = 180`.
+  - RAG через ChromaDB — 0 LLM-токенов на векторный поиск.
 - [x] **2026-07-24**: **Реализованы Next.js MCP Server, AI Webhook Trigger & AI Insights Callback**:
   - **MCP Server HTTP JSON-RPC (`/api/mcp`)**: Экспортирует инструмент `get_round_analytics(roundId)` по стандарту MCP 2024-11-05.
   - **AI Insights Callback Endpoint (`/api/rounds/[roundId]/ai-insights`)**: Принимает (`POST`) и отдает (`GET`) сгенерированный AI-микросервисом JSON-пейлоאד *"Stone Map"*.
