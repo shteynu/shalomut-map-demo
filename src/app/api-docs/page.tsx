@@ -18,11 +18,16 @@ export default function ApiDocsPage() {
 
     const scriptId = 'swagger-ui-js';
     const initSwagger = () => {
+      const openapiUrl =
+        typeof window !== 'undefined' && window.location.pathname.includes('/shalomut-map-demo')
+          ? '/shalomut-map-demo/openapi.json'
+          : '/openapi.json';
+
       // @ts-expect-error SwaggerUIBundle is loaded globally from CDN
       if (window.SwaggerUIBundle) {
         // @ts-expect-error SwaggerUIBundle is loaded globally from CDN
         window.SwaggerUIBundle({
-          url: '/openapi.json',
+          url: openapiUrl,
           dom_id: '#swagger-ui',
           deepLinking: true,
           presets: [
@@ -67,7 +72,11 @@ export default function ApiDocsPage() {
 
           <div className="flex items-center gap-3">
             <a
-              href="/openapi.json"
+              href={
+                typeof window !== 'undefined' && window.location.pathname.includes('/shalomut-map-demo')
+                  ? '/shalomut-map-demo/openapi.json'
+                  : '/openapi.json'
+              }
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 text-xs font-semibold px-3 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg border border-stone-300 transition-colors"
