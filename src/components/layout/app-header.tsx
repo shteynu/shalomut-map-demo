@@ -2,9 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
 import { Activity, ClipboardList, Home, Map, Send, type LucideIcon } from "lucide-react";
-import { PrivacyTooltip } from "@/components/privacy-tooltip";
 import { isMainNavItemActive, mainNavItems, navigationLabels, routes, type MainNavItemId } from "@/lib/navigation";
 
 const navIcons: Record<MainNavItemId, LucideIcon> = {
@@ -48,47 +46,5 @@ export function AppHeader() {
         })}
       </nav>
     </header>
-  );
-}
-
-type PageIntroProps = {
-  eyebrow: string;
-  title: string;
-  description: string;
-  actions?: ReactNode;
-};
-
-export function PageIntro({ eyebrow, title, description, actions }: PageIntroProps) {
-  return (
-    <section className="page-intro">
-      <div>
-        <p className="eyebrow">{eyebrow}</p>
-        <h1>{title}</h1>
-        <p>{description}</p>
-      </div>
-      {actions ? <div className="intro-actions">{actions}</div> : null}
-    </section>
-  );
-}
-
-type MetricCardProps = {
-  value: string;
-  label: string;
-  helper: string;
-  className?: string;
-};
-
-export function MetricCard({ value, label, helper, className = "" }: MetricCardProps) {
-  const showTooltip = label === "סף פרטיות" || label === "סף הצגה";
-
-  return (
-    <article className={`metric-card ${className}`.trim()}>
-      <strong>{value}</strong>
-      <span>
-        {label}
-        {showTooltip && <PrivacyTooltip />}
-      </span>
-      <small>{helper}</small>
-    </article>
   );
 }

@@ -1,3 +1,5 @@
+import { clamp } from "@/lib/utils/math";
+
 type ScoreRingProps = {
   value: number;
   size?: number;
@@ -9,7 +11,7 @@ type ScoreRingProps = {
 export function ScoreRing({ value, size = 96, strokeWidth = 10 }: ScoreRingProps) {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  const clamped = Math.max(0, Math.min(100, value));
+  const clamped = clamp(value, 0, 100);
   const filled = (clamped / 100) * circumference;
 
   return (

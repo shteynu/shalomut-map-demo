@@ -4,9 +4,10 @@ import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import Link from "next/link";
 import { Plus, Undo2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { DimensionIcon } from "@/components/dimension-icon";
+import { DimensionIcon } from "@/components/ui/dimension-icon";
 import { getDimensionSurface, statusLabels, wellbeingDimensions } from "@/lib/demo-data";
 import { dashboardDimensionRoute } from "@/lib/navigation";
+import { clamp } from "@/lib/utils/math";
 
 const DRAG_THRESHOLD = 6;
 const LAYOUT_STORAGE_KEY = "shalomut-map-stones-v2";
@@ -35,10 +36,6 @@ const zeroOffsets = wellbeingDimensions.reduce<StoneOffsetMap>((accumulator, dim
   accumulator[dimension.id] = { x: 0, y: 0 };
   return accumulator;
 }, {});
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(Math.max(value, min), max);
-}
 
 function isValidOffsetMap(value: unknown): value is StoneOffsetMap {
   if (!value || typeof value !== "object") {
@@ -252,10 +249,11 @@ export function DashboardMapInteractive() {
   const stageClassName = useMemo(() => `dashboard-map-stage${draggingId ? " is-dragging" : ""}`, [draggingId]);
 
   const hasCustomLayout = useMemo(
-    () => wellbeingDimensions.some((dimension) => {
-      const offset = offsets[dimension.id];
-      return Boolean(offset) && (offset.x !== 0 || offset.y !== 0);
-    }),
+    () =>
+      wellbeingDimensions.some((dimension) => {
+        const offset = offsets[dimension.id];
+        return Boolean(offset) && (offset.x !== 0 || offset.y !== 0);
+      }),
     [offsets],
   );
 

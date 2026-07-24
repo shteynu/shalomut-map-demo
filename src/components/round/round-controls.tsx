@@ -4,26 +4,19 @@ import Link from "next/link";
 import { CheckCircle2, Clipboard, Lock, Map } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useState } from "react";
+import { useClipboard } from "@/lib/hooks/use-clipboard";
+import { calculatePercentage } from "@/lib/utils/math";
 import { activeRound } from "@/lib/demo-data";
 import { getNavigationAction } from "@/lib/navigation";
 import { useShareUrl } from "@/lib/use-share-url";
 
 export function RoundControls() {
-  const [copied, setCopied] = useState(false);
   const [closed, setClosed] = useState(false);
   const shareUrl = useShareUrl();
+  const { copied, copy } = useClipboard();
   const openDashboardAction = getNavigationAction("openDashboard");
 
-  async function copyLink() {
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      setCopied(true);
-    } catch {
-      setCopied(true);
-    }
-  }
-
-  const progress = Math.round((activeRound.responseCount / activeRound.expectedResponses) * 100);
+  const progress = calculatePercentage(activeRound.responseCount, activeRound.expectedResponses);
 
   return (
     <section className="round-layout">
@@ -47,7 +40,7 @@ export function RoundControls() {
         <p className="eyebrow">לינק הפצה</p>
         <div className="copy-row">
           <input readOnly dir="ltr" value={shareUrl} aria-label="לינק אנונימי לשאלון" />
-          <button className="icon-button" type="button" onClick={copyLink} aria-label="העתקת לינק">
+          <button className="icon-button" type="button" onClick={() => copy(shareUrl)} aria-label="העתקת לינק">
             <Clipboard size={18} aria-hidden="true" />
           </button>
         </div>

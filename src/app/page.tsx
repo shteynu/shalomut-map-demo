@@ -1,9 +1,8 @@
 import Link from "next/link";
 import { ArrowLeft, ClipboardList, LockKeyhole, Map, Send, Settings2, TrendingUp, TriangleAlert, Users } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { ActionCard } from "@/components/action-card";
-import { StatStone } from "@/components/stat-stone";
-import { PrivacyTooltip } from "@/components/privacy-tooltip";
+import { ActionCard, PrivacyTooltip, StatStone } from "@/components/ui";
+import { calculatePercentage } from "@/lib/utils/math";
 import { activeRound, getStatusCount, organization } from "@/lib/demo-data";
 import { getNavigationAction, homeActionRouteIds, routeMetadata } from "@/lib/navigation";
 
@@ -15,7 +14,7 @@ const actionIcons: Record<(typeof homeActionRouteIds)[number], LucideIcon> = {
 };
 
 export default function HomePage() {
-  const responsePercent = Math.round((activeRound.responseCount / activeRound.expectedResponses) * 100);
+  const responsePercent = calculatePercentage(activeRound.responseCount, activeRound.expectedResponses);
   const startSetupAction = getNavigationAction("startSetup");
   const openDashboardAction = getNavigationAction("openDashboard");
 

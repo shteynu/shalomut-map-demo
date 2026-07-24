@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Noto_Sans_Hebrew } from "next/font/google";
 import "./globals.css";
-import { HeaderGate } from "@/components/header-gate";
+import { HeaderGate } from "@/components/layout/header-gate";
 
 const notoSansHebrew = Noto_Sans_Hebrew({
   subsets: ["hebrew", "latin"],

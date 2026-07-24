@@ -4,10 +4,10 @@ import Link from "next/link";
 import { ChevronLeft, MousePointer2 } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useState } from "react";
+import { StatusBadge } from "@/components/ui/status-badge";
 import type { WellbeingDimension } from "@/lib/demo-data";
 import { statusLabels, wellbeingDimensions } from "@/lib/demo-data";
 import { dashboardDimensionRoute } from "@/lib/navigation";
-import { StatusBadge } from "@/components/status";
 
 export function StoneMap() {
   const [selectedId, setSelectedId] = useState("social-resource");

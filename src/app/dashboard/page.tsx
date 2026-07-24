@@ -1,4 +1,4 @@
-import { DashboardMapPage } from "@/components/dashboard-mock";
+import { DashboardMapPage } from "@/components/dashboard";
 
 export default function DashboardPage() {
   return <DashboardMapPage />;

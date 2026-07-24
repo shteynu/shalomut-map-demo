@@ -1,5 +1,5 @@
-import { PageIntro } from "@/components/app-shell";
-import { SetupForm } from "@/components/setup-form";
+import { PageIntro } from "@/components/ui";
+import { SetupForm } from "@/components/round";
 import { activeRound, organization } from "@/lib/demo-data";
 
 export default function SetupPage() {

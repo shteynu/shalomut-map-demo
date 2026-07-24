@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Check, ChevronLeft, ChevronRight, Frown, Meh, ShieldCheck, Smile, type LucideIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { calculatePercentage } from "@/lib/utils/math";
 import { responseOptions, surveyQuestions } from "@/lib/demo-data";
 import { getNavigationAction } from "@/lib/navigation";
 
@@ -83,7 +84,7 @@ export function SurveyFlow({ variant = "internal" }: SurveyFlowProps) {
     );
   }
 
-  const progressPercent = Math.round((answeredCount / total) * 100);
+  const progressPercent = calculatePercentage(answeredCount, total);
 
   return (
     <section className="survey-shell stone-page survey-builder-stone-page survey-focus-shell">

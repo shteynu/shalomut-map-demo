@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { Check, ChevronLeft, ClipboardPen, Lightbulb, ShieldCheck, Users } from "lucide-react";
 import { useState } from "react";
+import { PrivacyTooltip } from "@/components/ui/privacy-tooltip";
 import { activeRound, organization } from "@/lib/demo-data";
-import { PrivacyTooltip } from "@/components/privacy-tooltip";
 import { getNavigationAction } from "@/lib/navigation";
 
 export function SetupForm() {

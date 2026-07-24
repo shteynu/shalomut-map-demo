@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { DashboardDimensionPage } from "@/components/dashboard-mock";
+import { DashboardDimensionPage } from "@/components/dashboard";
 import { getDimensionById, getDimensionStaticParams } from "@/lib/demo-data";
 
 export const dynamicParams = false;

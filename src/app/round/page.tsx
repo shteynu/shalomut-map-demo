@@ -1,5 +1,5 @@
-import { MetricCard, PageIntro } from "@/components/app-shell";
-import { RoundControls } from "@/components/round-controls";
+import { MetricCard, PageIntro } from "@/components/ui";
+import { RoundControls } from "@/components/round";
 import { activeRound, organization } from "@/lib/demo-data";
 
 export default function RoundPage() {
