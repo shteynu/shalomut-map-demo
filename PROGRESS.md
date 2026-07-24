@@ -12,11 +12,9 @@
 
 ## 🚀 Следующие шаги (Next Up: Database-backed Manager UI)
 1. [ ] Провести review и merge draft PR #5 в `main`, затем вернуть staging alias на проверенный `main` deployment.
-2. [ ] Определить контракт выбора организации и текущего раунда; убрать фиксированный lookup `round_demo_1`.
-3. [ ] Подключить главную, setup, round tracking и dashboard к Data Layer; для пустой БД показывать настоящий onboarding state.
-4. [ ] Убрать `SHALOM-DEMO` и другие demo ID из production runtime либо изолировать их в явном static-demo режиме.
-5. [ ] Подтвердить владельца Supabase target, развернуть Python AI-сервис, настроить shared secrets и выполнить реальный staging webhook/callback E2E.
-6. [ ] Production promotion — только после smoke evidence и отдельного подтверждения.
+2. [ ] Определить контракт organization/current round и подключить home, setup, round tracking и dashboard к Data Layer с настоящими onboarding states для пустой БД.
+3. [ ] Персистить setup/survey builder и убрать `round_demo_1`, `SHALOM-DEMO` и другие demo ID из production runtime либо изолировать их в явном static-demo режиме.
+4. [ ] Подтвердить Supabase target, развернуть staging AI-сервис, настроить shared secrets и выполнить реальный webhook/callback E2E; production promotion — только после smoke evidence и отдельного подтверждения.
 
 ---
 
