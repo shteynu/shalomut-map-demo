@@ -18,6 +18,8 @@ export interface IRoundRepository {
   findByShareCode(shareCode: string): Promise<SurveyRound | null>;
   findByOrganizationId(organizationId: string): Promise<SurveyRound[]>;
   updateStatus(id: string, status: RoundStatus): Promise<SurveyRound | null>;
+  saveAiInsights(id: string, insights: Record<string, any>): Promise<boolean>;
+  getAiInsights(id: string): Promise<Record<string, any> | null>;
 }
 
 export interface ISurveyRepository {

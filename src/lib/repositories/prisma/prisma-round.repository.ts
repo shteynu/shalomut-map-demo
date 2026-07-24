@@ -76,4 +76,16 @@ export class PrismaRoundRepository implements IRoundRepository {
       return null;
     }
   }
+
+  private aiInsightsMemoryCache: Map<string, Record<string, any>> = new Map();
+
+  public async saveAiInsights(id: string, insights: Record<string, any>): Promise<boolean> {
+    this.aiInsightsMemoryCache.set(id, { ...insights });
+    return true;
+  }
+
+  public async getAiInsights(id: string): Promise<Record<string, any> | null> {
+    const found = this.aiInsightsMemoryCache.get(id);
+    return found ? { ...found } : null;
+  }
 }

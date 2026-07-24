@@ -1,17 +1,30 @@
 # PROGRESS: Shalomut Map
 
 ## 📌 Текущий статус
-- **Текущий этап**: Production Database & Persistence Phase — Продакшн PostgreSQL БД в Supabase успешно подключена через Pooler, таблицы развернуты, захардкоженные данные вычищены, сквозное E2E-тестирование физического сохранения данных успешно пройдено.
-- **Главная цель**: Готовность к интеграции внешнего AI-сервиса поверх слоя данных Supabase.
+- **Текущий этап**: End-to-End AI Integration Complete — MCP Server JSON-RPC (`/api/mcp`), Webhook Trigger (`/api/rounds/[roundId]/trigger-ai`) и Callback AI Insights storage (`/api/rounds/[roundId]/ai-insights`) полностью имплементированы и состыкованы с AI Analytics Microservice.
+- **Главная цель**: Запуск и валидация сквозной генерации отчетов в UI дашборде.
 
 ---
 
-## 🚀 Следующие шаги (Next Up: External AI Integration)
-1. [ ] **Интеграция с внешним AI-сервисом**: Чтение сырых данных из Data Layer внешним AI-агентом для генерации текстовых отчетов и умных рекомендаций.
+## 🚀 Следующие шаги (Next Up: UI AI Insights Display)
+1. [ ] **Подключение отображения AI-инсайтов в UI Дашборда**: Вызов `GET /api/rounds/[roundId]/ai-insights` в UI при нажатии на модальные карточки проблемных зон.
 
 ---
 
 ## ✅ Завершенные задачи (Completed)
+- [x] **2026-07-24**: **Реализованы Next.js MCP Server, AI Webhook Trigger & AI Insights Callback**:
+  - **MCP Server HTTP JSON-RPC (`/api/mcp`)**: Экспортирует инструмент `get_round_analytics(roundId)` по стандарту MCP 2024-11-05.
+  - **AI Insights Callback Endpoint (`/api/rounds/[roundId]/ai-insights`)**: Принимает (`POST`) и отдает (`GET`) сгенерированный AI-микросервисом JSON-пейлоאד *"Stone Map"*.
+  - **Webhook Trigger Endpoint (`/api/rounds/[roundId]/trigger-ai`)**: Генерирует и отправляет событие `{"event": "round_closed", "roundId": roundId}` на вебхук AI-сервиса.
+  - **Хранилище**: Расширены репозитории `IRoundRepository` (In-Memory и Prisma) для физического сохранения AI-инсайтов.
+  - **Автотесты**: Создан набор автотестов ([`src/app/api/__tests__/mcp-integration.test.ts`](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/src/app/api/__tests__/mcp-integration.test.ts)).
+- [x] **2026-07-24**: **Разработан и протестирован Decoupled AI Analytics Microservice (`ai-analytics-service/`)**:
+  - **Архитектура**: Полностью изолированный Python 3.11+ микросервис на **FastAPI**, **LangGraph** и **MCP Client**.
+  - **Privacy Gate**: Автоматическая блокировка анализа при `isLocked=True` (количество ответов `< 10`) для предотвращения דאנונימיזציה.
+  - **Multi-Agent LangGraph Flow**: `Privacy_Gate` -> `Agent_Psychologist` -> `Agent_RAG_Intervention` -> `Agent_Safety_Validator` (Loop back) -> `Stone Map Output Formatter`.
+  - **RAG & Стандарты**: Локальная база знаний с рекомендациями **OECD Wellbeing Framework** и **ISO 45003:2021** (Psychological Health & Safety at Work) для всех 8 измерений.
+  - **MCP Client & Mock Data Layer**: Реализован клиенский менеджер MCP и автономный `MockDataLayerMCPServer` для работы в оф라인/дев-режиме.
+  - **Тестирование**: Создан набор тестов ([`ai-analytics-service/run_tests.py`](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/ai-analytics-service/run_tests.py)). 5/5 тестов успешно пройдено (`OK`).
 - [x] **2026-07-24**: **Полностью сброшены данные макета UI и счетчики главных страниц (Empty Round State)**:
   - В [`src/lib/demo-data.ts`](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/src/lib/demo-data.ts) сброшены показатели организации, раунда и всех 8 измерений (0/0 השיבו עד כה, 0 מוקדי טיפול, 0 חוזקות, ציון 0).
   - Хелперы `getStatusCount()` и `overallScore` возвращают `0`, когда количество ответов ниже порога анонимности (`< 10`).
