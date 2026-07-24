@@ -21,7 +21,8 @@ export * from './prisma/prisma-organization.repository';
 export * from './prisma/prisma-round.repository';
 export * from './prisma/prisma-survey.repository';
 
-// Default Seed Data for Dev/Testing/Demo
+// Explicit fixtures for tests and opt-in demos. Runtime repositories must start
+// empty so a missing database connection cannot masquerade as real data.
 export const DEMO_ORGANIZATION: Organization = {
   id: 'org_demo_1',
   name: 'בית ספר שלום',
@@ -42,12 +43,8 @@ export const DEMO_ROUND: SurveyRound = {
   createdAt: new Date('2026-01-15T00:00:00.000Z'),
 };
 
-let defaultOrgRepo: IOrganizationRepository = new InMemoryOrganizationRepository([
-  DEMO_ORGANIZATION,
-]);
-let defaultRoundRepo: IRoundRepository = new InMemoryRoundRepository([
-  DEMO_ROUND,
-]);
+let defaultOrgRepo: IOrganizationRepository = new InMemoryOrganizationRepository();
+let defaultRoundRepo: IRoundRepository = new InMemoryRoundRepository();
 let defaultSurveyRepo: ISurveyRepository = new InMemorySurveyRepository([]);
 
 export function getRepositories(): {
@@ -82,8 +79,7 @@ export function setRepositories(repos: {
 }
 
 export function resetDefaultRepositories(): void {
-  defaultOrgRepo = new InMemoryOrganizationRepository([DEMO_ORGANIZATION]);
-  defaultRoundRepo = new InMemoryRoundRepository([DEMO_ROUND]);
+  defaultOrgRepo = new InMemoryOrganizationRepository();
+  defaultRoundRepo = new InMemoryRoundRepository();
   defaultSurveyRepo = new InMemorySurveyRepository([]);
 }
-

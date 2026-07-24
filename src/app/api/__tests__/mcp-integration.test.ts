@@ -1,11 +1,40 @@
 import assert from 'node:assert';
-import test from 'node:test';
+import test, { after, before } from 'node:test';
 import { POST as mcpHandler } from '../mcp/route';
 import { GET as getInsightsHandler, POST as postInsightsHandler } from '../rounds/[roundId]/ai-insights/route';
 import { POST as triggerAiHandler } from '../rounds/[roundId]/trigger-ai/route';
 import { AI_ANALYTICS_DIMENSION_IDS } from '@/lib/ai-contract';
+import {
+  DEMO_ORGANIZATION,
+  DEMO_ROUND,
+  InMemoryOrganizationRepository,
+  InMemoryRoundRepository,
+  InMemorySurveyRepository,
+  resetDefaultRepositories,
+  setRepositories,
+} from '@/lib/repositories';
 
 const testRoundId = 'round_demo_1';
+let previousDatabaseUrl: string | undefined;
+
+before(() => {
+  previousDatabaseUrl = process.env.DATABASE_URL;
+  delete process.env.DATABASE_URL;
+  setRepositories({
+    orgRepo: new InMemoryOrganizationRepository([DEMO_ORGANIZATION]),
+    roundRepo: new InMemoryRoundRepository([DEMO_ROUND]),
+    surveyRepo: new InMemorySurveyRepository(),
+  });
+});
+
+after(() => {
+  resetDefaultRepositories();
+  if (previousDatabaseUrl === undefined) {
+    delete process.env.DATABASE_URL;
+  } else {
+    process.env.DATABASE_URL = previousDatabaseUrl;
+  }
+});
 
 function createValidInsightsPayload(roundId = testRoundId) {
   return {

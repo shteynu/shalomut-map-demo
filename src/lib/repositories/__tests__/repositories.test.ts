@@ -7,6 +7,7 @@ import {
   InMemoryRoundRepository,
   InMemorySurveyRepository,
   getRepositories,
+  resetDefaultRepositories,
 } from '..';
 import { AnalyticsService, RoundService, SurveyService } from '../../services';
 import { surveyInstrument } from '../../shalomut-source';
@@ -145,9 +146,29 @@ test('End-to-End Workflow: Round creation -> 10 submissions -> Analytics Unlocki
   assert.strictEqual(typeof analytics?.dimensionScores['self-expression'].averageScore, 'number');
 });
 
-test('getRepositories returns default seeded singletons', () => {
+test('getRepositories returns default repository singletons', () => {
   const { orgRepo, roundRepo, surveyRepo } = getRepositories();
   assert.notStrictEqual(orgRepo, undefined);
   assert.notStrictEqual(roundRepo, undefined);
   assert.notStrictEqual(surveyRepo, undefined);
+});
+
+test('default repositories do not invent demo records when no database is configured', async () => {
+  const previousDatabaseUrl = process.env.DATABASE_URL;
+  delete process.env.DATABASE_URL;
+  resetDefaultRepositories();
+
+  try {
+    const { orgRepo, roundRepo, surveyRepo } = getRepositories();
+
+    assert.deepStrictEqual(await orgRepo.findAll(), []);
+    assert.strictEqual(await roundRepo.findById(DEMO_ROUND.id), null);
+    assert.strictEqual(await surveyRepo.getResponseCount(DEMO_ROUND.id), 0);
+  } finally {
+    if (previousDatabaseUrl === undefined) {
+      delete process.env.DATABASE_URL;
+    } else {
+      process.env.DATABASE_URL = previousDatabaseUrl;
+    }
+  }
 });

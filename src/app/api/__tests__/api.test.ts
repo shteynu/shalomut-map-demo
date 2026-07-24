@@ -1,11 +1,45 @@
 import assert from 'node:assert';
-import test from 'node:test';
+import test, { after, before } from 'node:test';
 import { GET as getRoundAnalytics } from '../rounds/[roundId]/analytics/route';
 import { GET as getRounds, POST as createRound } from '../rounds/route';
 import { GET as getSurveyMeta } from '../survey/[shareCode]/route';
 import { POST as submitSurvey } from '../survey/[shareCode]/submit/route';
+import {
+  DEMO_ORGANIZATION,
+  DEMO_ROUND,
+  InMemoryOrganizationRepository,
+  InMemoryRoundRepository,
+  InMemorySurveyRepository,
+  resetDefaultRepositories,
+  setRepositories,
+} from '@/lib/repositories';
 import { surveyInstrument } from '@/lib/shalomut-source';
 import { QuestionAnswerInput } from '@/lib/types/backend';
+
+let previousDatabaseUrl: string | undefined;
+
+function useDemoRepositories() {
+  setRepositories({
+    orgRepo: new InMemoryOrganizationRepository([DEMO_ORGANIZATION]),
+    roundRepo: new InMemoryRoundRepository([DEMO_ROUND]),
+    surveyRepo: new InMemorySurveyRepository(),
+  });
+}
+
+before(() => {
+  previousDatabaseUrl = process.env.DATABASE_URL;
+  delete process.env.DATABASE_URL;
+  useDemoRepositories();
+});
+
+after(() => {
+  resetDefaultRepositories();
+  if (previousDatabaseUrl === undefined) {
+    delete process.env.DATABASE_URL;
+  } else {
+    process.env.DATABASE_URL = previousDatabaseUrl;
+  }
+});
 
 function buildAnswers(): QuestionAnswerInput[] {
   return surveyInstrument.questions.map((q) => ({
@@ -20,6 +54,18 @@ test('API Route GET /api/rounds returns demo round', async () => {
   assert.strictEqual(res.status, 200);
   const data = await res.json();
   assert.strictEqual(data.round.shareCode, 'SHALOM-DEMO');
+});
+
+test('API Route GET /api/rounds returns an empty state instead of an implicit demo round', async () => {
+  resetDefaultRepositories();
+
+  try {
+    const res = await getRounds();
+    assert.strictEqual(res.status, 200);
+    assert.deepStrictEqual(await res.json(), { round: null });
+  } finally {
+    useDemoRepositories();
+  }
 });
 
 test('API Route POST /api/rounds creates a new round', async () => {
