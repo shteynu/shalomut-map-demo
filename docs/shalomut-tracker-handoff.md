@@ -10,10 +10,10 @@ Shalomut Map к `shalomut-tracker`, где сохранённые данные �
 
 ## Текущий snapshot
 
+- Активная ветка: `main`.
 - PR #5 смержен в `main` squash commit `6b369bf`.
-- Активная ветка: `agent/database-backed-manager-ui`.
-- Draft PR: [#6](https://github.com/shteynu/shalomut-map-demo/pull/6),
-  verified implementation commit `b87bf87`.
+- PR [#6](https://github.com/shteynu/shalomut-map-demo/pull/6) смержен в
+  `main` squash commit `043f54d`.
 - Реализация разбита на проверяемые commits: manager context, DB-backed UI,
   persistence, full-stack runtime и serverless AI hardening.
 - Новая миграция `20260724180000_add_round_configuration` создана, но не
@@ -22,9 +22,10 @@ Shalomut Map к `shalomut-tracker`, где сохранённые данные �
   [shalomut-map-demo-ui-redesign.vercel.app](https://shalomut-map-demo-ui-redesign.vercel.app/).
 - Staging deployment: `dpl_35S9VvwN8V9Bq7da3iP2SJwT4349`, состояние `READY`,
   source commit `a20ac66`.
-- PR #6 preview: `dpl_E1sxTZh4aX6QW6Ro5emRSnQEY9ZQ`, состояние `READY`,
+- Финальный PR #6 preview: `dpl_3KrHd5nbcvqdnSAup2sY1L1jjzmT`, состояние
+  `READY`,
   URL
-  `https://shalomut-map-demo-pg7r1znfp-shteynumaks-1343s-projects.vercel.app`.
+  `https://shalomut-map-demo-16cvkgov9-shteynumaks-1343s-projects.vercel.app`.
 - Production data, alias и deployment не изменялись.
 
 ## Инцидент: непустой UI при пустой БД
@@ -67,7 +68,7 @@ Staging показывал старую demo-школу, имя менеджер
 - Локальный runtime smoke без внешней БД: setup создал UUID/share code, server
   UI показал школу и `1/34`, 24 вопроса были выданы и приняты, analytics
   сохранил privacy lock.
-- PR #6 `Build & Validate` и Vercel checks прошли; merge state `CLEAN`.
+- PR #6 `Build & Validate` и Vercel checks прошли; PR смержен в `main`.
 - PR preview `/` показывает empty onboarding, `/api/rounds/` возвращает
   `{"round":null}`, `PUT /api/manager/setup/` без БД возвращает `503`.
 - Предыдущий Vercel preview для empty-runtime fix: `READY`.
@@ -151,13 +152,12 @@ Staging показывал старую demo-школу, имя менеджер
 
 ## Рекомендуемый порядок продолжения
 
-1. Завершить review/CI draft PR database-backed manager UI.
-2. Получить подтверждение выделенной staging Supabase и применить новую
+1. Получить подтверждение выделенной staging Supabase и применить новую
    migration только к ней.
-3. Добавить manager auth/deployment protection.
-4. Создать staging AI Vercel project, настроить URLs/secrets и выполнить полный
+2. Добавить manager auth/deployment protection.
+3. Создать staging AI Vercel project, настроить URLs/secrets и выполнить полный
    staging E2E.
-5. После evidence отдельно согласовать staging alias; production не затрагивать.
+4. После evidence отдельно согласовать staging alias; production не затрагивать.
 
 ## Approval gates
 

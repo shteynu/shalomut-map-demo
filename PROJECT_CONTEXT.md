@@ -57,7 +57,7 @@
 ## 🌐 Окружения и Деплой (Environments & Deployment)
 - **Staging (`stg`)**:
   - **URL**: `https://shalomut-map-demo-ui-redesign.vercel.app/`
-  - **Текущее состояние**: alias пока указывает на проверенный preview deployment `dpl_35S9VvwN8V9Bq7da3iP2SJwT4349`, commit `a20ac66`. PR #5 уже смержен в `main` (`6b369bf`), но новый database-backed slice ещё не назначен на alias.
+  - **Текущее состояние**: database-backed slice из PR #6 смержен в `main` (`043f54d`), но alias пока остаётся на проверенном empty-runtime preview `dpl_35S9VvwN8V9Bq7da3iP2SJwT4349`, commit `a20ac66`.
   - **Проверка**: `/` → `0/0`, `/api/rounds/` → `{"round":null}`, HTTP 200.
   - **Обнаруженная конфигурация**: Vercel Preview/Production env vars отсутствуют; отдельной подтверждённой staging Supabase и AI-service project нет.
   - **Целевое правило**: обновлять alias только после миграции выделенной staging-БД, защиты manager routes и полного smoke/E2E.
