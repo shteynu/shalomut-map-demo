@@ -12,6 +12,11 @@
 ---
 
 ## ✅ Завершенные задачи (Completed)
+- [x] **2026-07-24**: **Старт новой сессии shalomut-tracker & полная очистка продакшн-данных**:
+  - Создан скрипт `scripts/clear-db.ts` и добавлен npm-скрипт `npm run db:clear`.
+  - Выполнена полная очистка данных в продакшн PostgreSQL БД Supabase (`QuestionAnswer`, `SurveyResponse`, `SurveyRound`, `Organization`).
+  - Проверено обнуление всех таблиц (организации: 0, раунды: 0, ответы: 0, ответы на вопросы: 0).
+  - Успешно прогнаны 31/31 интеграционных и API автотестов.
 - [x] **2026-07-24**: **Успешно подключена и развернута продакшн PostgreSQL БД в Supabase**:
   - Настроено подключение к Supabase (Pooler IPv4 в регионе `ap-southeast-1`) в файлах `.env` и `.env.local`.
   - Развернуты таблицы реляционной схемы (`organizations`, `survey_rounds`, `survey_responses`, `question_answers`).
