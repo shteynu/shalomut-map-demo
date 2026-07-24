@@ -1,0 +1,315 @@
+openapi: 3.0.3
+info:
+  title: Shalomut Map API (מפת שלומות)
+  version: 1.0.0
+  description: Clean Data Layer & REST API for Shalomut Map — visualizing school staff wellbeing across 8 organic dimensions. Implements ADR-001 (Raw Data & Privacy Threshold Control).
+
+servers:
+  - url: https://shalomut-map-demo-ui-redesign.vercel.app
+    description: Staging Environment
+  - url: http://localhost:3000
+    description: Local Development Server
+
+tags:
+  - name: Rounds
+    description: Management of survey rounds and org access codes
+  - name: Survey
+    description: Respondent questionnaire delivery and anonymous response submission
+  - name: Analytics
+    description: Aggregated wellbeing scores and privacy threshold enforcement
+
+paths:
+  /api/rounds:
+    get:
+      tags: [Rounds]
+      summary: Fetch default survey round
+      description: Returns details of the default active survey round.
+      responses:
+        "200":
+          description: Successful retrieval of round details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  round:
+                    $ref: '#/components/schemas/SurveyRound'
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags: [Rounds]
+      summary: Create new survey round
+      description: Generates a new survey round for an organization with a unique share code (SHALOM-XXXX).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRoundInput'
+      responses:
+        "201":
+          description: Survey round created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  round:
+                    $ref: '#/components/schemas/SurveyRound'
+        "400":
+          description: Missing required fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Failed to create round
+
+  /api/survey/{shareCode}:
+    get:
+      tags: [Survey]
+      summary: Fetch survey questionnaire by share code
+      description: Retrieves the survey questionnaire (24 items across 8 wellbeing dimensions) for active survey round.
+      parameters:
+        - name: shareCode
+          in: path
+          required: true
+          description: Access share code (e.g. SHALOM-DEMO)
+          schema:
+            type: string
+            example: SHALOM-DEMO
+      responses:
+        "200":
+          description: Questionnaire metadata and active round details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  round:
+                    $ref: '#/components/schemas/SurveyRound'
+                  instrument:
+                    type: object
+                    properties:
+                      title:
+                        type: string
+                      dimensions:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/WellbeingDimension'
+                      questions:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Question'
+        "400":
+          description: Survey round is not active
+        "404":
+          description: Survey code not found
+        "500":
+          description: Failed to fetch survey
+
+  /api/survey/{shareCode}/submit:
+    post:
+      tags: [Survey]
+      summary: Submit anonymous survey answers
+      description: Submits answers for all 24 questions. Preserves participant anonymity strictly.
+      parameters:
+        - name: shareCode
+          in: path
+          required: true
+          schema:
+            type: string
+            example: SHALOM-DEMO
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [answers]
+              properties:
+                answers:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/QuestionAnswerInput'
+                anonymousTokenHash:
+                  type: string
+      responses:
+        "200":
+          description: Response recorded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  responseId:
+                    type: string
+        "400":
+          description: Invalid submission or duplicate response
+        "404":
+          description: Survey round not found
+        "500":
+          description: Internal server error
+
+  /api/rounds/{roundId}/analytics:
+    get:
+      tags: [Analytics]
+      summary: Fetch aggregated round analytics
+      description: Calculates 8 organic wellbeing stone scores (0-100 scale). Enforces privacy threshold (privacyThreshold >= 10). Locks detailed scores if total responses < privacyThreshold.
+      parameters:
+        - name: roundId
+          in: path
+          required: true
+          schema:
+            type: string
+            example: round_demo_1
+      responses:
+        "200":
+          description: Aggregated analytics and dimension scores
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  analytics:
+                    $ref: '#/components/schemas/RoundAnalyticsResult'
+        "404":
+          description: Survey round not found
+        "500":
+          description: Failed to fetch analytics
+
+components:
+  schemas:
+    RoundStatus:
+      type: string
+      enum: [draft, active, closed, archived]
+    WellbeingStatus:
+      type: string
+      enum: [green, yellow, red]
+    WellbeingDimensionId:
+      type: string
+      enum:
+        - self-expression
+        - professional-competence
+        - social-resource
+        - balance
+        - management-support
+        - certainty
+        - organizational-climate
+        - meaning
+    CreateRoundInput:
+      type: object
+      required: [organizationId, title]
+      properties:
+        organizationId:
+          type: string
+        title:
+          type: string
+        privacyThreshold:
+          type: integer
+          default: 10
+        startDate:
+          type: string
+          format: date-time
+    SurveyRound:
+      type: object
+      properties:
+        id:
+          type: string
+        organizationId:
+          type: string
+        title:
+          type: string
+        status:
+          $ref: '#/components/schemas/RoundStatus'
+        shareCode:
+          type: string
+        privacyThreshold:
+          type: integer
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+    WellbeingDimension:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/WellbeingDimensionId'
+        titleHe:
+          type: string
+        descriptionHe:
+          type: string
+        icon:
+          type: string
+    Question:
+      type: object
+      properties:
+        id:
+          type: string
+        dimensionId:
+          $ref: '#/components/schemas/WellbeingDimensionId'
+        textHe:
+          type: string
+    QuestionAnswerInput:
+      type: object
+      required: [questionId, dimensionId, value]
+      properties:
+        questionId:
+          type: string
+        dimensionId:
+          $ref: '#/components/schemas/WellbeingDimensionId'
+        value:
+          $ref: '#/components/schemas/WellbeingStatus'
+    RoundDimensionScore:
+      type: object
+      properties:
+        dimensionId:
+          $ref: '#/components/schemas/WellbeingDimensionId'
+        averageScore:
+          type: number
+        computedStatus:
+          $ref: '#/components/schemas/WellbeingStatus'
+        totalResponses:
+          type: integer
+        isLocked:
+          type: boolean
+        calculatedAt:
+          type: string
+          format: date-time
+    RoundAnalyticsResult:
+      type: object
+      properties:
+        roundId:
+          type: string
+        totalResponses:
+          type: integer
+        privacyThreshold:
+          type: integer
+        isLocked:
+          type: boolean
+        dimensionScores:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/RoundDimensionScore'
+        calculatedAt:
+          type: string
+          format: date-time
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string

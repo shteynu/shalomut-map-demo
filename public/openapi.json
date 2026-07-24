@@ -1,0 +1,473 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Shalomut Map API (מפת שלומות)",
+    "version": "1.0.0",
+    "description": "Clean Data Layer & REST API for Shalomut Map — visualizing school staff wellbeing across 8 organic dimensions. Implements ADR-001 (Raw Data & Privacy Threshold Control)."
+  },
+  "servers": [
+    {
+      "url": "https://shalomut-map-demo-ui-redesign.vercel.app",
+      "description": "Staging Environment"
+    },
+    {
+      "url": "http://localhost:3000",
+      "description": "Local Development Server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Rounds",
+      "description": "Management of survey rounds and org access codes"
+    },
+    {
+      "name": "Survey",
+      "description": "Respondent questionnaire delivery and anonymous response submission"
+    },
+    {
+      "name": "Analytics",
+      "description": "Aggregated wellbeing scores and privacy threshold enforcement"
+    }
+  ],
+  "paths": {
+    "/api/rounds": {
+      "get": {
+        "tags": ["Rounds"],
+        "summary": "Fetch default survey round",
+        "description": "Returns details of the default active survey round.",
+        "responses": {
+          "200": {
+            "description": "Successful retrieval of round details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "round": {
+                      "$ref": "#/components/schemas/SurveyRound"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Rounds"],
+        "summary": "Create new survey round",
+        "description": "Generates a new survey round for an organization with a unique share code (SHALOM-XXXX).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRoundInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Survey round created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "round": {
+                      "$ref": "#/components/schemas/SurveyRound"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing required fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Failed to create round",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/survey/{shareCode}": {
+      "get": {
+        "tags": ["Survey"],
+        "summary": "Fetch survey questionnaire by share code",
+        "description": "Retrieves the survey questionnaire (24 items across 8 wellbeing dimensions) for active survey round.",
+        "parameters": [
+          {
+            "name": "shareCode",
+            "in": "path",
+            "required": true,
+            "description": "Access share code (e.g. SHALOM-DEMO or SHALOM-7492)",
+            "schema": {
+              "type": "string",
+              "example": "SHALOM-DEMO"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Questionnaire metadata and active round details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "round": {
+                      "$ref": "#/components/schemas/SurveyRound"
+                    },
+                    "instrument": {
+                      "type": "object",
+                      "properties": {
+                        "title": { "type": "string", "example": "שאלון שלומות צוות הוראה" },
+                        "dimensions": {
+                          "type": "array",
+                          "items": { "$ref": "#/components/schemas/WellbeingDimension" }
+                        },
+                        "questions": {
+                          "type": "array",
+                          "items": { "$ref": "#/components/schemas/Question" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Survey round is not active",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Survey code not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Failed to fetch survey",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/survey/{shareCode}/submit": {
+      "post": {
+        "tags": ["Survey"],
+        "summary": "Submit anonymous survey answers",
+        "description": "Submits answers for all 24 questions. Preserves participant anonymity strictly.",
+        "parameters": [
+          {
+            "name": "shareCode",
+            "in": "path",
+            "required": true,
+            "description": "Access share code (e.g. SHALOM-DEMO)",
+            "schema": {
+              "type": "string",
+              "example": "SHALOM-DEMO"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["answers"],
+                "properties": {
+                  "answers": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/QuestionAnswerInput"
+                    }
+                  },
+                  "anonymousTokenHash": {
+                    "type": "string",
+                    "description": "Optional hash to prevent double submission",
+                    "example": "a3f8c9b2e1d0458..."
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Response recorded successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": { "type": "boolean", "example": true },
+                      "responseId": { "type": "string", "example": "resp_1721829482910_a83b" }
+                    }
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Invalid submission or duplicate response",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Survey round not found",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal server error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/rounds/{roundId}/analytics": {
+      "get": {
+        "tags": ["Analytics"],
+        "summary": "Fetch aggregated round analytics",
+        "description": "Calculates 8 organic wellbeing stone scores (0-100 scale). Enforces privacy threshold (privacyThreshold >= 10). Locks detailed scores if total responses < privacyThreshold.",
+        "parameters": [
+          {
+            "name": "roundId",
+            "in": "path",
+            "required": true,
+            "description": "Unique Survey Round ID (e.g. round_demo_1)",
+            "schema": {
+              "type": "string",
+              "example": "round_demo_1"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Aggregated analytics and dimension scores",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "analytics": {
+                      "$ref": "#/components/schemas/RoundAnalyticsResult"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Survey round not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Failed to fetch analytics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "RoundStatus": {
+        "type": "string",
+        "enum": ["draft", "active", "closed", "archived"],
+        "example": "active"
+      },
+      "WellbeingStatus": {
+        "type": "string",
+        "enum": ["green", "yellow", "red"],
+        "example": "green"
+      },
+      "WellbeingDimensionId": {
+        "type": "string",
+        "enum": [
+          "self-expression",
+          "professional-competence",
+          "social-resource",
+          "balance",
+          "management-support",
+          "certainty",
+          "organizational-climate",
+          "meaning"
+        ],
+        "example": "self-expression"
+      },
+      "CreateRoundInput": {
+        "type": "object",
+        "required": ["organizationId", "title"],
+        "properties": {
+          "organizationId": {
+            "type": "string",
+            "example": "org_demo_tlv"
+          },
+          "title": {
+            "type": "string",
+            "example": "סקר שלומות - מחצית א' תשפ\"ו"
+          },
+          "privacyThreshold": {
+            "type": "integer",
+            "default": 10,
+            "example": 10
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "SurveyRound": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "example": "round_demo_1" },
+          "organizationId": { "type": "string", "example": "org_demo_tlv" },
+          "title": { "type": "string", "example": "סקר שלומות - מחצית א'" },
+          "status": { "$ref": "#/components/schemas/RoundStatus" },
+          "shareCode": { "type": "string", "example": "SHALOM-DEMO" },
+          "privacyThreshold": { "type": "integer", "example": 10 },
+          "startDate": { "type": "string", "format": "date-time" },
+          "endDate": { "type": "string", "format": "date-time" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "WellbeingDimension": {
+        "type": "object",
+        "properties": {
+          "id": { "$ref": "#/components/schemas/WellbeingDimensionId" },
+          "titleHe": { "type": "string", "example": "ביטוי עצמי" },
+          "descriptionHe": { "type": "string", "example": "תחושת חופש להביע דעות ורעיונות" },
+          "icon": { "type": "string", "example": "Sparkles" }
+        }
+      },
+      "Question": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "example": "q1" },
+          "dimensionId": { "$ref": "#/components/schemas/WellbeingDimensionId" },
+          "textHe": { "type": "string", "example": "אני מרגיש/ה שקולי נשמע בבית הספר" }
+        }
+      },
+      "QuestionAnswerInput": {
+        "type": "object",
+        "required": ["questionId", "dimensionId", "value"],
+        "properties": {
+          "questionId": { "type": "string", "example": "q1" },
+          "dimensionId": { "$ref": "#/components/schemas/WellbeingDimensionId" },
+          "value": { "$ref": "#/components/schemas/WellbeingStatus" }
+        }
+      },
+      "RoundDimensionScore": {
+        "type": "object",
+        "properties": {
+          "dimensionId": { "$ref": "#/components/schemas/WellbeingDimensionId" },
+          "averageScore": { "type": "number", "example": 84.5 },
+          "computedStatus": { "$ref": "#/components/schemas/WellbeingStatus" },
+          "totalResponses": { "type": "integer", "example": 18 },
+          "isLocked": { "type": "boolean", "example": false },
+          "calculatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "RoundAnalyticsResult": {
+        "type": "object",
+        "properties": {
+          "roundId": { "type": "string", "example": "round_demo_1" },
+          "totalResponses": { "type": "integer", "example": 18 },
+          "privacyThreshold": { "type": "integer", "example": 10 },
+          "isLocked": { "type": "boolean", "example": false },
+          "dimensionScores": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/RoundDimensionScore"
+            }
+          },
+          "calculatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string", "example": "Failed to process request" }
+        }
+      }
+    }
+  }
+}
