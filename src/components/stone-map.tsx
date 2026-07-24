@@ -6,6 +6,7 @@ import type { CSSProperties } from "react";
 import { useState } from "react";
 import type { WellbeingDimension } from "@/lib/demo-data";
 import { statusLabels, wellbeingDimensions } from "@/lib/demo-data";
+import { dashboardDimensionRoute } from "@/lib/navigation";
 import { StatusBadge } from "@/components/status";
 
 export function StoneMap() {
@@ -39,7 +40,7 @@ export function StoneMap() {
         </div>
         <p>{selected.summary[0]}</p>
         {selected.id === "social-resource" ? (
-          <Link className="primary-button" href={`/dashboard/${selected.id}`}>
+          <Link className="primary-button" href={dashboardDimensionRoute(selected.id)}>
             פתיחת פירוט מלא
             <ChevronLeft size={18} aria-hidden="true" />
           </Link>

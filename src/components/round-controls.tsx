@@ -5,14 +5,18 @@ import { CheckCircle2, Clipboard, Lock, Map } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useState } from "react";
 import { activeRound } from "@/lib/demo-data";
+import { getNavigationAction } from "@/lib/navigation";
+import { useShareUrl } from "@/lib/use-share-url";
 
 export function RoundControls() {
   const [copied, setCopied] = useState(false);
   const [closed, setClosed] = useState(false);
+  const shareUrl = useShareUrl();
+  const openDashboardAction = getNavigationAction("openDashboard");
 
   async function copyLink() {
     try {
-      await navigator.clipboard.writeText(activeRound.shareUrl);
+      await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
     } catch {
       setCopied(true);
@@ -23,7 +27,15 @@ export function RoundControls() {
 
   return (
     <section className="round-layout">
-      <div className="round-progress" aria-label={`התקדמות מילוי ${progress} אחוז`}>
+      <div
+        className="round-progress"
+        role="progressbar"
+        aria-label="התקדמות מילוי סבב האבחון"
+        aria-valuenow={activeRound.responseCount}
+        aria-valuemin={0}
+        aria-valuemax={activeRound.expectedResponses}
+        aria-valuetext={`${activeRound.responseCount} מתוך ${activeRound.expectedResponses} תשובות`}
+      >
         <div className="progress-ring" style={{ "--progress": `${progress}%` } as CSSProperties}>
           <strong>{activeRound.responseCount}</strong>
           <span>מתוך {activeRound.expectedResponses}</span>
@@ -34,7 +46,7 @@ export function RoundControls() {
       <div className="share-panel">
         <p className="eyebrow">לינק הפצה</p>
         <div className="copy-row">
-          <input readOnly value={activeRound.shareUrl} aria-label="לינק אנונימי לשאלון" />
+          <input readOnly dir="ltr" value={shareUrl} aria-label="לינק אנונימי לשאלון" />
           <button className="icon-button" type="button" onClick={copyLink} aria-label="העתקת לינק">
             <Clipboard size={18} aria-hidden="true" />
           </button>
@@ -46,9 +58,9 @@ export function RoundControls() {
             <Lock size={18} aria-hidden="true" />
             סגירת סבב אבחון ידנית
           </button>
-          <Link className="primary-button" href="/dashboard">
+          <Link className="primary-button" href={openDashboardAction.href}>
             <Map size={18} aria-hidden="true" />
-            פתיחת מפת השלומות
+            {openDashboardAction.label}
           </Link>
         </div>
 
