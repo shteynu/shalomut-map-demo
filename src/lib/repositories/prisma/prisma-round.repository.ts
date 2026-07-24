@@ -1,4 +1,4 @@
-import { RoundStatus, SurveyRound } from '../../types/backend';
+import { RoundStatus, SurveyRound, UpdateRoundInput } from '../../types/backend';
 import { IRoundRepository } from '../interfaces';
 import { MinimalPrismaClient } from './prisma-client';
 
@@ -15,6 +15,18 @@ export class PrismaRoundRepository implements IRoundRepository {
       privacyThreshold: record.privacyThreshold,
       startDate: new Date(record.startDate),
       endDate: record.endDate ? new Date(record.endDate) : undefined,
+      backgroundContext:
+        record.backgroundContext &&
+        typeof record.backgroundContext === 'object' &&
+        !Array.isArray(record.backgroundContext)
+          ? { ...record.backgroundContext }
+          : undefined,
+      surveyDefinition:
+        record.surveyDefinition &&
+        typeof record.surveyDefinition === 'object' &&
+        !Array.isArray(record.surveyDefinition)
+          ? { ...record.surveyDefinition }
+          : undefined,
       createdAt: new Date(record.createdAt),
     };
   }
@@ -30,6 +42,8 @@ export class PrismaRoundRepository implements IRoundRepository {
         privacyThreshold: round.privacyThreshold,
         startDate: round.startDate,
         endDate: round.endDate,
+        backgroundContext: round.backgroundContext,
+        surveyDefinition: round.surveyDefinition,
         createdAt: round.createdAt,
       },
     });
@@ -58,8 +72,24 @@ export class PrismaRoundRepository implements IRoundRepository {
   public async findByOrganizationId(organizationId: string): Promise<SurveyRound[]> {
     const list = await this.prisma.surveyRound.findMany({
       where: { organizationId },
+      orderBy: { createdAt: 'desc' },
     });
     return list.map((r) => this.mapToDomain(r));
+  }
+
+  public async update(
+    id: string,
+    input: UpdateRoundInput
+  ): Promise<SurveyRound | null> {
+    try {
+      const updated = await this.prisma.surveyRound.update({
+        where: { id },
+        data: input,
+      });
+      return this.mapToDomain(updated);
+    } catch {
+      return null;
+    }
   }
 
   public async updateStatus(

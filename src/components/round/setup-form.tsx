@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { Check, ChevronLeft, ClipboardPen, Lightbulb, ShieldCheck, Users } from "lucide-react";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { type FormEvent, useState } from "react";
 import { PrivacyTooltip } from "@/components/ui/privacy-tooltip";
 import { getNavigationAction } from "@/lib/navigation";
 
@@ -20,6 +21,15 @@ type SetupFormProps = {
     startDate: string;
     endDate: string;
     privacyThreshold: number;
+    backgroundContext?: {
+      notes: string;
+      audience: string;
+      sicknessDaysThisQuarter: number;
+      newStaffMembers: number;
+      studentCount: number;
+      socioEconomicIndex: number;
+      classesPerGrade: Record<string, number>;
+    };
   } | null;
 };
 
@@ -27,16 +37,78 @@ const gradeLabels = ["א", "ב", "ג", "ד", "ה", "ו", "ז", "ח", "ט", "י",
 
 export function SetupForm({ organization, round }: SetupFormProps) {
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [minimumResponses, setMinimumResponses] = useState(round?.privacyThreshold ?? 10);
+  const router = useRouter();
   const distributeSurveyAction = getNavigationAction("distributeSurvey");
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSaving(true);
+    setSaved(false);
+    setErrorMessage(null);
+
+    const formData = new FormData(event.currentTarget);
+    const classesPerGrade = Object.fromEntries(
+      gradeLabels.map((grade) => [
+        grade,
+        Number(formData.get(`grade-${grade}`) ?? 0),
+      ]),
+    );
+
+    const response = await fetch("/api/manager/setup", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        organization: {
+          id: organization?.id,
+          name: formData.get("organizationName"),
+          city: formData.get("city"),
+          schoolType: formData.get("schoolType"),
+          totalStaffCount: Number(formData.get("totalStaffCount")),
+        },
+        round: {
+          id: round?.id,
+          title: formData.get("title"),
+          startDate: formData.get("startDate"),
+          endDate: formData.get("endDate"),
+          privacyThreshold: minimumResponses,
+          backgroundContext: {
+            notes: formData.get("notes"),
+            audience: formData.get("audience"),
+            sicknessDaysThisQuarter: Number(
+              formData.get("sicknessDaysThisQuarter"),
+            ),
+            newStaffMembers: Number(formData.get("newStaffMembers")),
+            studentCount: Number(formData.get("studentCount")),
+            socioEconomicIndex: Number(formData.get("socioEconomicIndex")),
+            classesPerGrade,
+          },
+        },
+      }),
+    }).catch(() => null);
+
+    if (!response?.ok) {
+      const payload = response
+        ? ((await response.json().catch(() => null)) as { error?: string } | null)
+        : null;
+      setErrorMessage(
+        payload?.error ?? "לא ניתן היה לשמור את ההגדרה. נסו שוב.",
+      );
+      setSaving(false);
+      return;
+    }
+
+    setSaved(true);
+    setSaving(false);
+    router.refresh();
+  }
 
   return (
     <form
       className="form-panel setup-form"
-      onSubmit={(event) => {
-        event.preventDefault();
-        setSaved(true);
-      }}
+      onSubmit={handleSubmit}
     >
       <section className="form-section-card">
         <header className="form-section-header">
@@ -73,7 +145,11 @@ export function SetupForm({ organization, round }: SetupFormProps) {
         </div>
         <label>
           הערת רקע למנהלת
-          <textarea name="notes" defaultValue="" rows={3} />
+          <textarea
+            name="notes"
+            defaultValue={round?.backgroundContext?.notes ?? ""}
+            rows={3}
+          />
         </label>
       </section>
 
@@ -87,7 +163,10 @@ export function SetupForm({ organization, round }: SetupFormProps) {
         <div className="form-grid">
           <label>
             קהל יעד
-            <select defaultValue="all-staff">
+            <select
+              name="audience"
+              defaultValue={round?.backgroundContext?.audience ?? "all-staff"}
+            >
               <option value="all-staff">כלל צוות בית הספר</option>
               <option value="teachers">צוות הוראה בלבד</option>
               <option value="administration">צוות מינהלה</option>
@@ -105,19 +184,42 @@ export function SetupForm({ organization, round }: SetupFormProps) {
           </label>
           <label>
             ימי מחלה ברבעון
-            <input name="sicknessDaysThisQuarter" type="number" min="0" defaultValue="0" />
+            <input
+              name="sicknessDaysThisQuarter"
+              type="number"
+              min="0"
+              defaultValue={
+                round?.backgroundContext?.sicknessDaysThisQuarter ?? 0
+              }
+            />
           </label>
           <label>
             אנשי צוות חדשים
-            <input name="newStaffMembers" type="number" min="0" defaultValue="0" />
+            <input
+              name="newStaffMembers"
+              type="number"
+              min="0"
+              defaultValue={round?.backgroundContext?.newStaffMembers ?? 0}
+            />
           </label>
           <label>
             מספר תלמידים בבית הספר
-            <input name="studentCount" type="number" min="0" defaultValue="0" />
+            <input
+              name="studentCount"
+              type="number"
+              min="0"
+              defaultValue={round?.backgroundContext?.studentCount ?? 0}
+            />
           </label>
           <label>
             מדד טיפוח (דירוג סוציו-אקונומי 1-10)
-            <input name="socioEconomicIndex" type="number" min="1" max="10" defaultValue="1" />
+            <input
+              name="socioEconomicIndex"
+              type="number"
+              min="1"
+              max="10"
+              defaultValue={round?.backgroundContext?.socioEconomicIndex ?? 1}
+            />
           </label>
         </div>
         <div className="form-subsection">
@@ -130,7 +232,9 @@ export function SetupForm({ organization, round }: SetupFormProps) {
                   name={`grade-${grade}`}
                   type="number"
                   min="0"
-                  defaultValue="0"
+                  defaultValue={
+                    round?.backgroundContext?.classesPerGrade[grade] ?? 0
+                  }
                   className="grade-input"
                 />
               </label>
@@ -190,9 +294,9 @@ export function SetupForm({ organization, round }: SetupFormProps) {
       </aside>
 
       <div className="form-actions">
-        <button className="primary-button" type="submit">
+        <button className="primary-button" type="submit" disabled={saving}>
           <Check size={18} aria-hidden="true" />
-          שמירת סבב אבחון
+          {saving ? "שומר..." : "שמירת סבב אבחון"}
         </button>
         {saved ? (
           <Link className="secondary-button" href={distributeSurveyAction.href}>
@@ -203,6 +307,11 @@ export function SetupForm({ organization, round }: SetupFormProps) {
       </div>
 
       {saved ? <p className="success-note">סבב האבחון נשמר והלינק האנונימי מוכן להפצה.</p> : null}
+      {errorMessage ? (
+        <p className="survey-submit-error" role="alert">
+          {errorMessage}
+        </p>
+      ) : null}
     </form>
   );
 }

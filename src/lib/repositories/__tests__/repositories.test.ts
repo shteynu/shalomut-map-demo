@@ -38,6 +38,9 @@ test('InMemoryOrganizationRepository manages organizations correctly', async () 
   const all = await repo.findAll();
   assert.strictEqual(all.length, 2);
   assert.strictEqual(newOrg.id, 'org_test_2');
+
+  const updated = await repo.update('org_test_2', { totalStaffCount: 34 });
+  assert.strictEqual(updated?.totalStaffCount, 34);
 });
 
 test('InMemoryRoundRepository handles lookup by share code and status updates', async () => {
@@ -54,6 +57,19 @@ test('InMemoryRoundRepository handles lookup by share code and status updates', 
 
   const afterUpdate = await repo.findById(DEMO_ROUND.id);
   assert.strictEqual(afterUpdate?.status, 'closed');
+
+  const configured = await repo.update(DEMO_ROUND.id, {
+    surveyDefinition: {
+      title: 'שאלון שמור',
+      audience: 'כלל הצוות',
+      estimatedMinutes: 12,
+      minimumResponses: 10,
+      introText: 'פתיח',
+      anonymityText: 'אנונימי',
+      questions: [],
+    },
+  });
+  assert.strictEqual(configured?.surveyDefinition?.title, 'שאלון שמור');
 });
 
 test('InMemorySurveyRepository prevents duplicate token submissions', async () => {

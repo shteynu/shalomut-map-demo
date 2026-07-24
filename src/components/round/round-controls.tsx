@@ -27,11 +27,39 @@ export function RoundControls({
   status,
 }: RoundControlsProps) {
   const [closed, setClosed] = useState(status === "closed");
+  const [closing, setClosing] = useState(false);
+  const [closeError, setCloseError] = useState<string | null>(null);
   const shareUrl = useShareUrl(shareCode);
   const { copied, copy } = useClipboard();
   const openDashboardAction = getNavigationAction("openDashboard");
 
   const progress = calculatePercentage(responseCount, expectedResponses);
+
+  async function closeRound() {
+    setClosing(true);
+    setCloseError(null);
+
+    const response = await fetch(
+      `/api/rounds/${encodeURIComponent(roundId)}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "closed" }),
+      },
+    ).catch(() => null);
+
+    if (!response?.ok) {
+      const payload = response
+        ? ((await response.json().catch(() => null)) as { error?: string } | null)
+        : null;
+      setCloseError(payload?.error ?? "לא ניתן היה לסגור את הסבב.");
+      setClosing(false);
+      return;
+    }
+
+    setClosed(true);
+    setClosing(false);
+  }
 
   return (
     <section className="round-layout">
@@ -65,12 +93,12 @@ export function RoundControls({
           <button
             className="secondary-button"
             type="button"
-            disabled={closed}
+            disabled={closed || closing}
             data-round-id={roundId}
-            onClick={() => setClosed(true)}
+            onClick={closeRound}
           >
             <Lock size={18} aria-hidden="true" />
-            סגירת סבב אבחון ידנית
+            {closing ? "סוגר..." : "סגירת סבב אבחון ידנית"}
           </button>
           <Link className="primary-button" href={openDashboardAction.href}>
             <Map size={18} aria-hidden="true" />
@@ -83,6 +111,11 @@ export function RoundControls({
             <CheckCircle2 size={18} aria-hidden="true" />
             סבב האבחון מסומן כסגור. הדשבורד זמין לצפייה.
           </div>
+        ) : null}
+        {closeError ? (
+          <p className="survey-submit-error" role="alert">
+            {closeError}
+          </p>
         ) : null}
       </div>
     </section>

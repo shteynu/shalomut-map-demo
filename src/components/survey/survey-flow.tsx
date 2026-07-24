@@ -5,14 +5,18 @@ import { Check, ChevronLeft, ChevronRight, Frown, Meh, ShieldCheck, Smile, type 
 import { useEffect, useRef, useState } from "react";
 import { calculatePercentage } from "@/lib/utils/math";
 import { getNavigationAction } from "@/lib/navigation";
-import { responseScale, surveyInstrument } from "@/lib/shalomut-source";
+import { responseScale } from "@/lib/shalomut-source";
+import type { SurveyDefinitionQuestion } from "@/lib/types/backend";
 
 type AnswerValue = (typeof responseScale)[number]["value"];
 
 type SurveyFlowProps = {
   variant?: "internal" | "public";
   shareCode: string;
-  surveyTitle?: string;
+  surveyTitle: string;
+  introText: string;
+  anonymityText: string;
+  questions: SurveyDefinitionQuestion[];
 };
 
 const optionIcons: Record<AnswerValue, LucideIcon> = {
@@ -21,10 +25,32 @@ const optionIcons: Record<AnswerValue, LucideIcon> = {
   red: Frown,
 };
 
+async function getAnonymousTokenHash(shareCode: string) {
+  const storageKey = `shalomut-anonymous-token:${shareCode}`;
+  let token = window.localStorage.getItem(storageKey);
+
+  if (!token) {
+    token = crypto.randomUUID();
+    window.localStorage.setItem(storageKey, token);
+  }
+
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(token),
+  );
+
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
 export function SurveyFlow({
   variant = "internal",
   shareCode,
-  surveyTitle = surveyInstrument.title,
+  surveyTitle,
+  introText,
+  anonymityText,
+  questions,
 }: SurveyFlowProps) {
   const [answers, setAnswers] = useState<Record<string, AnswerValue>>({});
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -34,7 +60,7 @@ export function SurveyFlow({
   const isPublicLink = variant === "public";
   const trackRoundAction = getNavigationAction("trackRound");
 
-  const surveyQuestions = surveyInstrument.questions;
+  const surveyQuestions = questions;
   const total = surveyQuestions.length;
   const answeredCount = Object.keys(answers).length;
   const canSubmit = answeredCount === total;
@@ -79,10 +105,11 @@ export function SurveyFlow({
     });
 
     try {
+      const anonymousTokenHash = await getAnonymousTokenHash(shareCode);
       const res = await fetch(`/api/survey/${encodeURIComponent(shareCode)}/submit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ answers: formattedAnswers }),
+        body: JSON.stringify({ answers: formattedAnswers, anonymousTokenHash }),
       });
       if (res.ok) {
         setSubmitted(true);
@@ -105,8 +132,7 @@ export function SurveyFlow({
           <h1>תודה, התשובות נקלטו</h1>
           {isPublicLink ? (
             <p>
-              התשובות נשמרות בצורה מצרפית בלבד — אין מסך שבו אפשר לראות מי ענה. כשכל הצוות יסיים,
-              התמונה המשותפת תוצג ותשמש בסיס לשיחה על מה שחשוב לכם.
+              {anonymityText}
             </p>
           ) : (
             <p>התשובות נשמרות בצורה מצרפית בלבד. אין במסך ניהול מקום שבו ניתן לראות מי ענה.</p>
@@ -131,7 +157,7 @@ export function SurveyFlow({
       <div className="survey-header survey-focus-header">
         <p className="eyebrow">שאלון אנונימי לצוות</p>
         <h1>{surveyTitle}</h1>
-        <p>בחרו את התשובה שמתארת בצורה הטובה ביותר את המצב הנוכחי שלכם. אין צורך בשם, מייל או סיסמה.</p>
+        <p>{introText}</p>
       </div>
 
       <div className="survey-progress-sticky">

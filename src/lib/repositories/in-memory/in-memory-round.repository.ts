@@ -1,4 +1,4 @@
-import { RoundStatus, SurveyRound } from '../../types/backend';
+import { RoundStatus, SurveyRound, UpdateRoundInput } from '../../types/backend';
 import { IRoundRepository } from '../interfaces';
 
 export class InMemoryRoundRepository implements IRoundRepository {
@@ -39,6 +39,18 @@ export class InMemoryRoundRepository implements IRoundRepository {
       }
     }
     return results;
+  }
+
+  public async update(
+    id: string,
+    input: UpdateRoundInput
+  ): Promise<SurveyRound | null> {
+    const round = this.rounds.get(id);
+    if (!round) return null;
+
+    const updated = { ...round, ...input };
+    this.rounds.set(id, updated);
+    return { ...updated };
   }
 
   public async updateStatus(

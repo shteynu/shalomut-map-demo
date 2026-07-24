@@ -1,11 +1,16 @@
 import { Plus } from "lucide-react";
 import { wellbeingDimensions } from "@/lib/demo-data";
+import { surveyInstrument } from "@/lib/shalomut-source";
 import { SurveyQuestionCard } from "./survey-question-card";
 import type { BuilderQuestion } from "./types";
 
 function getDimensionLabel(dimensionId: string) {
   return wellbeingDimensions.find((dimension) => dimension.id === dimensionId)?.conceptLabel ?? dimensionId;
 }
+
+const canonicalQuestionIds = new Set(
+  surveyInstrument.questions.map((question) => question.id),
+);
 
 type QuestionsPanelProps = {
   questions: BuilderQuestion[];
@@ -70,7 +75,7 @@ export function SurveyBuilderQuestions({
       </div>
 
       <p className="quiet-note survey-builder-filter-note">
-        מוצגות {visibleQuestions.length} שאלות ב{selectedDimensionLabel}. המודל המלא נשמר: 8 ממדים ו-24 שאלות מקור.
+        מוצגות {visibleQuestions.length} שאלות ב{selectedDimensionLabel}. 24 שאלות המקור נשארות פעילות וחובה; ניתן להוסיף שאלות משלימות.
       </p>
 
       <div className="survey-builder-question-list">
@@ -81,6 +86,7 @@ export function SurveyBuilderQuestions({
               key={question.id}
               question={question}
               questionIndex={questionIndex}
+              locked={canonicalQuestionIds.has(question.id)}
               onUpdate={onUpdateQuestion}
               onDuplicate={onDuplicateQuestion}
             />

@@ -20,6 +20,13 @@ function createMockPrismaClient(): MinimalPrismaClient {
       },
       findUnique: async ({ where }: any) => orgs.get(where.id) || null,
       findMany: async () => Array.from(orgs.values()),
+      update: async ({ where, data }: any) => {
+        const existing = orgs.get(where.id);
+        if (!existing) throw new Error('Not found');
+        const updated = { ...existing, ...data };
+        orgs.set(where.id, updated);
+        return updated;
+      },
     },
     surveyRound: {
       create: async ({ data }: any) => {
@@ -114,6 +121,11 @@ test('PrismaOrganizationRepository integrates with Prisma Client contract', asyn
   assert.strictEqual(org.id, 'org_prisma_1');
   const found = await orgRepo.findById('org_prisma_1');
   assert.strictEqual(found?.name, 'בית ספר גורדון');
+
+  const updated = await orgRepo.update('org_prisma_1', {
+    totalStaffCount: 31,
+  });
+  assert.strictEqual(updated?.totalStaffCount, 31);
 });
 
 test('PrismaRoundRepository creates rounds and updates status', async () => {
@@ -138,6 +150,19 @@ test('PrismaRoundRepository creates rounds and updates status', async () => {
 
   const updated = await roundRepo.updateStatus('round_prisma_1', 'closed');
   assert.strictEqual(updated?.status, 'closed');
+
+  const configured = await roundRepo.update('round_prisma_1', {
+    backgroundContext: {
+      notes: 'רקע ניהולי',
+      audience: 'all-staff',
+      sicknessDaysThisQuarter: 3,
+      newStaffMembers: 2,
+      studentCount: 400,
+      socioEconomicIndex: 6,
+      classesPerGrade: { א: 3 },
+    },
+  });
+  assert.strictEqual(configured?.backgroundContext?.notes, 'רקע ניהולי');
 });
 
 test('PrismaRoundRepository persists AI insights across repository instances', async () => {

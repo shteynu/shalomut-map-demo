@@ -38,7 +38,8 @@ export async function POST(
         answers,
         anonymousTokenHash,
       },
-      surveyRepo
+      surveyRepo,
+      round.surveyDefinition?.questions.filter((question) => question.enabled)
     );
 
     if (!result.success) {

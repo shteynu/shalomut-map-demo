@@ -1,6 +1,7 @@
 import { ManagerOnboarding } from "@/components/manager";
 import { SurveyBuilder } from "@/components/survey";
 import { loadManagerContext } from "@/lib/server/manager-context";
+import { createCanonicalSurveyDefinition } from "@/lib/survey-definition";
 
 export default async function SurveyPage() {
   const context = await loadManagerContext();
@@ -15,7 +16,13 @@ export default async function SurveyPage() {
       roundId={context.currentRound.id}
       roundTitle={context.currentRound.title}
       shareCode={context.currentRound.shareCode}
-      initialMinimumResponses={context.currentRound.privacyThreshold}
+      initialDefinition={
+        context.currentRound.surveyDefinition ??
+        createCanonicalSurveyDefinition(
+          context.currentRound.title,
+          context.currentRound.privacyThreshold,
+        )
+      }
     />
   );
 }

@@ -1,4 +1,4 @@
-import { Organization } from '../../types/backend';
+import { Organization, UpdateOrganizationInput } from '../../types/backend';
 import { IOrganizationRepository } from '../interfaces';
 
 export class InMemoryOrganizationRepository implements IOrganizationRepository {
@@ -23,6 +23,18 @@ export class InMemoryOrganizationRepository implements IOrganizationRepository {
 
   public async findAll(): Promise<Organization[]> {
     return Array.from(this.organizations.values()).map((o) => ({ ...o }));
+  }
+
+  public async update(
+    id: string,
+    input: UpdateOrganizationInput
+  ): Promise<Organization | null> {
+    const organization = this.organizations.get(id);
+    if (!organization) return null;
+
+    const updated = { ...organization, ...input };
+    this.organizations.set(id, updated);
+    return { ...updated };
   }
 
   public clear(): void {

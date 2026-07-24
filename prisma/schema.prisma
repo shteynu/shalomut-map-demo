@@ -30,6 +30,8 @@ model SurveyRound {
   privacyThreshold    Int              @default(10) @map("privacy_threshold")
   startDate           DateTime         @default(now()) @map("start_date")
   endDate             DateTime?        @map("end_date")
+  backgroundContext   Json?            @map("background_context")
+  surveyDefinition    Json?            @map("survey_definition")
   createdAt           DateTime         @default(now()) @map("created_at")
   aiInsights          Json?            @map("ai_insights")
   aiInsightsUpdatedAt DateTime?        @map("ai_insights_updated_at")

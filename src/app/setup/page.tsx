@@ -35,6 +35,7 @@ export default async function SetupPage() {
                 startDate: context.currentRound.startDate.toISOString().slice(0, 10),
                 endDate: context.currentRound.endDate?.toISOString().slice(0, 10) ?? "",
                 privacyThreshold: context.currentRound.privacyThreshold,
+                backgroundContext: context.currentRound.backgroundContext,
               }
             : null
         }
