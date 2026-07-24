@@ -8,7 +8,10 @@
     "start": "npx serve@14.2.4 out -l 3000",
     "lint": "eslint",
     "test": "npx tsx --test \"src/**/__tests__/*.test.ts\"",
-    "db:clear": "npx tsx scripts/clear-db.ts"
+    "db:clear": "npx tsx scripts/clear-db.ts",
+    "db:migrate:dev": "npx prisma migrate dev",
+    "db:migrate:deploy": "npx prisma migrate deploy",
+    "db:status": "npx prisma migrate status"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.9.0",

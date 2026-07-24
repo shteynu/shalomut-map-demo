@@ -12,6 +12,11 @@
 ---
 
 ## ✅ Завершенные задачи (Completed)
+- [x] **2026-07-24**: **Созданы Prisma Migrations (`0_init`) и разделены URL для Pooler/Direct соединения**:
+  - Создана базовая миграция [`prisma/migrations/0_init/migration.sql`](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/prisma/migrations/0_init/migration.sql).
+  - Разделено подключение к БД: `DATABASE_URL` через Pooler (порт 6543, `pgbouncer=true`) для рантайма и `DIRECT_URL` (порт 5432) для DDL/миграций в [`prisma.config.ts`](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/prisma.config.ts), `.env` и `.env.local`.
+  - Зафиксирован статус миграции `0_init` в БД (`npx prisma migrate resolve --applied 0_init`). Проверено статусом `Database schema is up to date!`.
+  - Добавлены npm-скрипты `db:migrate:dev`, `db:migrate:deploy` и `db:status`.
 - [x] **2026-07-24**: **Старт новой сессии shalomut-tracker & полная очистка продакшн-данных**:
   - Создан скрипт `scripts/clear-db.ts` и добавлен npm-скрипт `npm run db:clear`.
   - Выполнена полная очистка данных в продакшн PostgreSQL БД Supabase (`QuestionAnswer`, `SurveyResponse`, `SurveyRound`, `Organization`).
