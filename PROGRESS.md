@@ -2,25 +2,43 @@
 
 ## 📌 Текущий статус
 - **Текущий этап**: database-backed manager slice из PR [#6](https://github.com/shteynu/shalomut-map-demo/pull/6) смержен в `main` squash commit `043f54d`: реальные organization/current round/counts/analytics, onboarding для пустой БД, persistence setup/survey builder, реальные share codes/round IDs и сохранение статуса раунда.
-- **Состояние БД**: создана, но намеренно не применена миграция `20260724180000_add_round_configuration` (`background_context`, `survey_definition`). Единственная найденная локальная Supabase-цель ранее использовалась как production/shared; отдельный staging target не подтверждён.
-- **Staging**: alias `https://shalomut-map-demo-ui-redesign.vercel.app/` всё ещё указывает на ранее проверенный preview commit `a20ac66` и честно показывает пустое состояние. В Vercel Preview и Production нет настроенных env vars; отдельного проекта AI-сервиса также нет.
+- **Состояние БД**: создан отдельный Supabase staging project `shalomut-map-staging` (`tpfzhyalaftotljmlont`, `ap-northeast-2`). Все три Prisma migration, включая `20260724180000_add_round_configuration`, применены только к нему; status — up to date, доменные таблицы после транзакционного CRUD smoke пусты.
+- **Staging**: DB credentials изолированы в ignored `.env.staging.local` с правами `600`. Vercel alias `https://shalomut-map-demo-ui-redesign.vercel.app/` всё ещё указывает на ранее проверенный preview commit `a20ac66`; Vercel Preview/Production env vars не менялись.
 - **Проверенный preview**: финальный deployment PR #6 `dpl_3KrHd5nbcvqdnSAup2sY1L1jjzmT` имеет статус READY; `/` показывает empty onboarding, `/api/rounds/` возвращает `{"round":null}`, а `PUT /api/manager/setup/` без БД — `503`.
-- **Runtime**: static export/GitHub Pages удалены, потому что DB-backed App Router требует server runtime. FastAPI-сервис подготовлен к Vercel entrypoint, работает fail-closed без shared secrets вне development и не полагается на in-process background task.
-- **Граница деплоя**: production data, alias, secrets и deployment не изменялись. Для реального staging E2E нужны подтверждённая staging-БД, manager authentication/deployment protection и отдельное разрешение на внешние изменения.
+- **Runtime**: static export/GitHub Pages удалены, потому что DB-backed App Router требует server runtime. FastAPI-сервис собирается корневым `Dockerfile` в отдельный container image (цель — Cloud Run, альтернатива — Render по `render.yaml`), работает fail-closed без shared secrets вне явного `ENV=development` и не полагается на in-process background task.
+- **Граница деплоя**: исходный Supabase ref `fvnulyirrqjrnjbahmsn` подтверждён как Production и не изменялся; production data, alias, secrets и deployment не затрагивались. До подключения staging-БД к Vercel нужны manager authentication/deployment protection и отдельное разрешение на env/deployment changes.
 - **AI coding workflow**: канонические repo-level skills `shalomut-map`, `shalomut-tracker` и `shalomut-verification` находятся в `.agents/skills/`; инструкции для Codex, Gemini, Claude и GitHub Copilot закоммичены в `main`, локальная и удалённая ветки синхронизированы.
 - **Актуальный handoff**: см. [`docs/shalomut-tracker-handoff.md`](docs/shalomut-tracker-handoff.md). AI-детали: [`docs/ai-analytics-handoff.md`](docs/ai-analytics-handoff.md).
 
 ---
 
 ## 🚀 Следующие шаги (Next Up: Safe Staging)
-1. [ ] После подтверждения применить `20260724180000_add_round_configuration` только к выделенной staging Supabase с PITR/rollback path.
-2. [ ] Добавить manager authentication или как минимум Vercel Deployment Protection до включения публичных manager write endpoints.
-3. [ ] Создать staging Vercel project для `ai-analytics-service`, настроить совпадающие shared secrets и staging URLs, затем выполнить реальный round-close → MCP → callback E2E.
+1. [ ] Добавить manager authentication или как минимум Vercel Deployment Protection до включения публичных manager write endpoints.
+2. [ ] После отдельного подтверждения настроить Vercel Preview env vars на выделенную staging-БД и выполнить protected runtime smoke.
+3. [ ] Задеплоить container image AI-сервиса на Cloud Run или Render, настроить совпадающие shared secrets и staging URLs, затем выполнить реальный round-close → MCP → callback E2E.
 4. [ ] После зафиксированных smoke evidence и отдельного подтверждения обновить staging alias; production promotion оставить отдельным approval gate.
 
 ---
 
 ## ✅ Завершенные задачи (Completed)
+- [x] **2026-07-25**: **AI-сервис подготовлен к бесплатному контейнерному хостингу** (commit `c0166e0` в `origin/main`):
+  - Добавлены корневой `Dockerfile`, `.dockerignore`, `.gcloudignore` и `render.yaml`. Build context — корень репозитория, чтобы общий `contracts/ai-analytics-v1.json` остался единственным источником контракта; образ сохраняет относительную раскладку, поэтому пути в коде не менялись.
+  - Выбор площадки: Cloud Run как основной вариант (free tier, scale-to-zero, длинный лимит запроса), Render Free — запасной без привязки карты. Vercel отклонён: нет entrypoint в `api/`, а секция `[tool.vercel]` в `pyproject.toml` не была конвенцией Vercel и удалена.
+  - Интерпретации восьми измерений выполняются параллельно через `asyncio.to_thread` + `gather`; MCP-запрос и доставка callback больше не блокируют event loop.
+  - `ENV` стал fail-closed: без `ENV`/`VERCEL_ENV` сервис считает себя production и требует `AI_WEBHOOK_SECRET`. Локальный запуск теперь требует явного `ENV=development` (отражено в README и `.env.example`).
+  - `POST /api/rounds/[roundId]/trigger-ai` получил таймаут `AI_SERVICE_TIMEOUT_MS` (30s по умолчанию) и отдельный ответ `504`.
+  - Проверки (local): `run_tests.py` 8/8, полный pytest в venv 10/10, `npm test` 70/70, `tsc --noEmit`, `npm run lint`, `docker build` (образ 266 МБ, процесс от непривилегированного пользователя).
+  - Контейнерный smoke: `/health` → 200 с `env: production`; вебхук без настроенного секрета → 503; без заголовка и с неверным секретом → 401; с верным секретом полный проход конвейера доставил callback с `contractVersion 1.0`, `status success` и восемью каноническими измерениями.
+  - Параллельность измерена на заглушке с задержкой 0.5s на измерение: последовательно 4.00s, фактически 0.51s.
+  - Реальный LLM-путь не проверялся: ключа OpenAI не было, использовался эвристический fallback. Деплой не выполнялся.
+- [x] **2026-07-25**: **Создана и проверена отдельная Supabase staging persistence**:
+  - Dashboard подтвердил, что исходный ref `fvnulyirrqjrnjbahmsn` — Production; он не изменялся.
+  - Создан Free project `shalomut-map-staging` с отдельным ref `tpfzhyalaftotljmlont` в регионе `ap-northeast-2`; Data API отключён.
+  - Staging DB URLs сохранены только в ignored `.env.staging.local` с правами `600`; production env files не менялись.
+  - `prisma migrate deploy` применил `0_init`, `20260724170000_add_ai_insights` и `20260724180000_add_round_configuration`; повторный status подтвердил up to date.
+  - Transactional CRUD smoke через runtime pooler проверил round configuration JSONB, AI-insights fields и cascade delete; после rollback все четыре доменные таблицы пусты.
+  - Проверки: `prisma validate`, `prisma generate`, 70/70 TypeScript tests, lint и production build прошли.
+  - На Free plan нет backups/PITR; пока staging пуст и disposable, согласованный rollback — удалить и пересоздать только staging project.
 - [x] **2026-07-25**: **Добавлена переносимая система инструкций и verification для AI coding agents**:
   - Канонические repo-level skills `shalomut-map`, `shalomut-tracker` и `shalomut-verification` добавлены в `.agents/skills/`.
   - `AGENTS.md`, `GEMINI.md`, `CLAUDE.md` и `.github/copilot-instructions.md` направляют совместимых агентов к этим skills и содержат direct-read fallback.

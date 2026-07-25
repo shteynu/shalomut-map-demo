@@ -33,9 +33,13 @@
 - The current runtime is an async graph-style workflow with a structured local
   intervention catalog. It does not currently execute LangGraph or ChromaDB.
 - Recommendations are dimension-scoped and use the OECD/ISO 45003 catalog.
-- `pyproject.toml` declares the Vercel FastAPI entrypoint
-  `src.main:app`; runtime dependencies were reduced to the packages actually
-  used by the service.
+- Runtime dependencies were reduced to the packages actually used by the
+  service.
+- Update, 2026-07-25 (commit `c0166e0`): the service ships as a container image
+  built by the repository-root `Dockerfile`, targeting Cloud Run with Render as
+  the fallback. The former `[tool.vercel]` block was not a Vercel convention
+  and was removed; a Vercel deployment would additionally need an `api/`
+  entrypoint that this package does not provide.
 - Webhook processing and callback complete within the serverless request
   instead of relying on an in-process background task.
 - Outside development, the webhook fails closed when `AI_WEBHOOK_SECRET` is
@@ -75,8 +79,8 @@
 1. Provide or confirm a dedicated staging Supabase target. Vercel currently has
    no Preview or Production env vars, so the existing local project ref cannot
    be safely classified there.
-2. Create a separate staging Vercel project rooted at
-   `ai-analytics-service/`.
+2. Deploy the container image to Cloud Run (or Render) from the repository
+   root; no hosting environment exists yet.
 3. Configure matching `APP_BASE_URL`, `AI_SERVICE_URL`,
    `MCP_SHARED_SECRET`, `AI_WEBHOOK_SECRET`, and `AI_CALLBACK_SECRET` in the
    intended staging environments.
@@ -99,6 +103,6 @@
 
 ## First next action
 
-Confirm a dedicated staging Supabase project and authorize creation of a
-separate Vercel project for `ai-analytics-service`; do not reuse the only known
-local database target by assumption.
+Authorize a hosting environment for the AI service container — Cloud Run is the
+recommended target — and set the shared secrets and URLs on both sides before
+any real webhook is invoked.

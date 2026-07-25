@@ -1,6 +1,6 @@
 # Shalomut Tracker — актуальный handoff
 
-Обновлено: 2026-07-24
+Обновлено: 2026-07-25
 
 Это оперативная точка входа для перехода от исходного статического demo
 Shalomut Map к `shalomut-tracker`, где сохранённые данные должны быть единственным
@@ -16,8 +16,16 @@ Shalomut Map к `shalomut-tracker`, где сохранённые данные �
   `main` squash commit `043f54d`.
 - Реализация разбита на проверяемые commits: manager context, DB-backed UI,
   persistence, full-stack runtime и serverless AI hardening.
-- Новая миграция `20260724180000_add_round_configuration` создана, но не
-  применена ни к одной внешней БД.
+- Создан отдельный Supabase staging project `shalomut-map-staging`:
+  project ref `tpfzhyalaftotljmlont`, состояние `Healthy`, регион
+  `ap-northeast-2` (Seoul), Data API отключён.
+- Все три Prisma migration, включая
+  `20260724180000_add_round_configuration`, применены только к выделенной
+  staging-БД; `prisma migrate status` сообщает `Database schema is up to date!`.
+- Staging credentials находятся только в ignored `.env.staging.local` с
+  правами `600`; production `.env` и `.env.local` не менялись.
+- Исходный Supabase project ref `fvnulyirrqjrnjbahmsn` подтверждён Dashboard как
+  `main / Production` и в этой сессии не изменялся.
 - Staging:
   [shalomut-map-demo-ui-redesign.vercel.app](https://shalomut-map-demo-ui-redesign.vercel.app/).
 - Staging deployment: `dpl_35S9VvwN8V9Bq7da3iP2SJwT4349`, состояние `READY`,
@@ -27,6 +35,11 @@ Shalomut Map к `shalomut-tracker`, где сохранённые данные �
   URL
   `https://shalomut-map-demo-16cvkgov9-shteynumaks-1343s-projects.vercel.app`.
 - Production data, alias и deployment не изменялись.
+- Commit `c0166e0` («containerize the AI analytics service») находится в
+  `origin/main`; локальная и удалённая ветки совпадают. Deployment AI-сервиса
+  по-прежнему не создавался.
+- В рабочем дереве остаются незакоммиченные изменения `PROGRESS.md` и этого
+  файла из параллельной работы по staging-персистентности.
 
 ## Инцидент: непустой UI при пустой БД
 
@@ -58,6 +71,17 @@ Staging показывал старую demo-школу, имя менеджер
 
 ## Доказательства проверки
 
+- Staging target identity: URL, transaction/session pooler и DB credentials
+  ссылаются на `tpfzhyalaftotljmlont`; production ref отсутствует.
+- До миграции staging содержал `0` public tables; Prisma status показал ровно
+  три pending migrations.
+- `prisma migrate deploy` применил `0_init`,
+  `20260724170000_add_ai_insights` и
+  `20260724180000_add_round_configuration`; повторный status прошёл.
+- Staging CRUD smoke через runtime transaction pooler (`:6543`) проверил
+  create/read/update/delete, JSONB round configuration, AI-insights columns и
+  cascade delete. Smoke выполнен транзакционно; финальные counts организаций,
+  раундов, ответов и question answers равны `0`.
 - `npm test`: 70/70 тестов прошли.
 - `npm run lint`: прошёл.
 - `npm run build`: прошёл.
@@ -76,7 +100,30 @@ Staging показывал старую demo-школу, имя менеджер
 - Staging `/api/rounds/`: HTTP 200, ответ `{"round":null}`.
 - Vercel check для draft PR #5: прошёл.
 
+### Контейнеризация AI-сервиса (сессия 2026-07-25, local)
+
+- `python3 ai-analytics-service/run_tests.py`: 8/8 (добавлен тест дефолта `ENV`).
+- Полный Python pytest в venv: 10/10.
+- `npm test`: 70/70, `npx tsc --noEmit` и `npm run lint`: прошли.
+- `docker build`: образ 266 МБ, запуск от непривилегированного `appuser`.
+- Контейнерный smoke: `/health` → 200 с `env: production`; вебхук без
+  настроенного секрета → 503; без заголовка и с неверным секретом → 401; с
+  верным секретом конвейер доставил callback с `contractVersion 1.0`,
+  `status success` и восемью каноническими измерениями.
+- Параллельность измерена на заглушке 0.5s на измерение: последовательная
+  стоимость 4.00s, фактически 0.51s.
+
 ## Что завершено
+
+### Безопасная staging persistence
+
+- Выделенный Supabase staging project создан отдельно от production/shared
+  target.
+- Миграционная история полностью применена и проверена как up to date.
+- Runtime pooler и migration pooler проверены; staging после CRUD smoke остался
+  пустым.
+- Проект работает на Free plan без backups/PITR. Пока он пуст и disposable,
+  согласованный rollback — удалить и пересоздать только staging project.
 
 ### Data Layer и API
 
@@ -89,6 +136,9 @@ Staging показывал старую demo-школу, имя менеджер
 
 ### AI analytics
 
+- Сервис упакован в container image (корневой `Dockerfile`, `render.yaml`);
+  интерпретации измерений считаются параллельно, `ENV` fail-closed, core app
+  ограничивает ожидание вебхука `AI_SERVICE_TIMEOUT_MS` и отвечает `504`.
 - PR #4 смержен в `main`.
 - TypeScript и Python используют общий versioned contract
   `contracts/ai-analytics-v1.json`.
@@ -122,27 +172,26 @@ Staging показывал старую demo-школу, имя менеджер
 
 ## Что не завершено
 
-### 1. Безопасная staging persistence
-
-- В Vercel Preview/Production нет env vars.
-- Единственный обнаруженный локальный Supabase project ref ранее использовался
-  как production/shared; применять к нему новую migration без подтверждения
-  нельзя.
-- Нужна выделенная staging Supabase с PITR/rollback path, после чего можно
-  применить `20260724180000_add_round_configuration` и проверить CRUD.
-
-### 2. Manager authentication
+### 1. Manager authentication
 
 - Manager write routes сейчас не привязаны к аутентифицированной организации.
 - До публичного подключения реальной БД нужно добавить authentication/
   authorization либо закрыть preview через Vercel Deployment Protection.
 
+### 2. Подключение staging runtime
+
+- В Vercel Preview/Production всё ещё нет database env vars.
+- Выделенную staging-БД нельзя подключать к публичным manager writes до
+  authentication/authorization или Vercel Deployment Protection.
+
 ### 3. Реальный staging AI service
 
-- В Vercel team нет отдельного project для `ai-analytics-service`.
-- Python entrypoint и runtime manifests готовы, но deployment не создавался.
+- Container image собирается и проверен локально, но нигде не задеплоен: ни
+  Cloud Run service, ни Render service не создавались.
 - Shared secrets и URLs не настроены; реальный webhook → MCP → callback E2E не
   выполнялся.
+- Реальный LLM-путь не проверялся: без `OPENAI_API_KEY` конвейер идёт по
+  эвристическому fallback.
 
 ### 4. Alias и production
 
@@ -152,11 +201,11 @@ Staging показывал старую demo-школу, имя менеджер
 
 ## Рекомендуемый порядок продолжения
 
-1. Получить подтверждение выделенной staging Supabase и применить новую
-   migration только к ней.
-2. Добавить manager auth/deployment protection.
-3. Создать staging AI Vercel project, настроить URLs/secrets и выполнить полный
-   staging E2E.
+1. Добавить manager auth или как минимум Vercel Deployment Protection.
+2. После отдельного подтверждения настроить Preview env vars на выделенную
+   staging-БД и выполнить protected runtime smoke.
+3. Задеплоить container image AI-сервиса на Cloud Run (или Render), настроить
+   URLs/secrets на обеих сторонах и выполнить полный staging E2E.
 4. После evidence отдельно согласовать staging alias; production не затрагивать.
 
 ## Approval gates
@@ -165,5 +214,7 @@ Staging показывал старую demo-школу, имя менеджер
   ограниченного подтверждения.
 - Не применять migrations к другой БД, пока не подтверждены environment и
   rollback/PITR path.
+- Не хранить недиспозабельные staging data на текущем Free project без
+  отдельного backup/PITR решения.
 - Никогда не раскрывать личность респондента или детальные результаты ниже
   настроенного privacy threshold.

@@ -52,6 +52,12 @@
 - **Security boundary**: manager write API пока не имеет полноценной authentication/authorization модели. До публичного staging с реальной БД требуется manager auth или ограничение доступа на уровне deployment.
 - **Fail-closed persistence**: deployed runtime (`NODE_ENV=production` или Vercel) без `DATABASE_URL` может показывать пустой onboarding, но отклоняет data writes с `503`. Локальный development fallback хранится в общем `globalThis` state между server bundles.
 
+### ADR-005: AI analytics service поставляется как контейнер, а не как Vercel-функция
+- **Решение**: изолированный FastAPI-сервис собирается корневым `Dockerfile` в отдельный образ. Build context — корень репозитория, потому что `src/contracts.py` читает общий `contracts/ai-analytics-v1.json`; образ сохраняет ту же относительную раскладку. Целевая площадка — Google Cloud Run (scale-to-zero, free tier); `render.yaml` описывает тот же образ для Render.
+- **Почему не Vercel**: пакет не содержит Python entrypoint в `api/`, а секция `[tool.vercel]` в `pyproject.toml` не была конвенцией Vercel и удалена как вводящая в заблуждение.
+- **Fail-closed environment**: если не заданы ни `ENV`, ни `VERCEL_ENV`, сервис считает окружение production и требует `AI_WEBHOOK_SECRET`. Локальный запуск без секретов требует явного `ENV=development`.
+- **Транспорт**: интерпретации всех измерений выполняются параллельно в worker threads, MCP-запрос и доставка callback не блокируют event loop. Core app ограничивает ожидание вебхука `AI_SERVICE_TIMEOUT_MS` (30s по умолчанию) и отвечает `504` вместо бесконечного ожидания.
+
 ---
 
 ## 🌐 Окружения и Деплой (Environments & Deployment)
@@ -67,8 +73,8 @@
   - **Правило**: Мануальный деплой только по прямому указанию (через Vercel Dashboard *Promote to Production* или GitHub Actions `workflow_dispatch`).
 
 ### Переменные AI-интеграции
-- Core app: `APP_BASE_URL`, `AI_SERVICE_URL`, `MCP_SHARED_SECRET`, `AI_WEBHOOK_SECRET`, `AI_CALLBACK_SECRET`.
-- AI service: `DATA_LAYER_MCP_URL`, `DATA_LAYER_CALLBACK_URL`, те же три shared secrets и `USE_MOCK_MCP`.
+- Core app: `APP_BASE_URL`, `AI_SERVICE_URL`, `AI_SERVICE_TIMEOUT_MS`, `MCP_SHARED_SECRET`, `AI_WEBHOOK_SECRET`, `AI_CALLBACK_SECRET`.
+- AI service: `ENV`, `DATA_LAYER_MCP_URL`, `DATA_LAYER_CALLBACK_URL`, те же три shared secrets и `USE_MOCK_MCP`.
 - Безопасные шаблоны находятся в `.env.example` и `ai-analytics-service/.env.example`; реальные значения не коммитятся.
 
 ## ⚠️ Правила разработки
