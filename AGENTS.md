@@ -12,8 +12,11 @@ agent guidance. Do not prefer user-local or ignored copies of the same skills.
 - When the user asks to start, continue or resume work, report project status,
   choose next steps, save progress, close a session or prepare a handoff, read
   `.agents/skills/shalomut-tracker/SKILL.md` fully.
-- When both skills apply, use `shalomut-tracker` first to establish current
-  state, then `shalomut-map` for implementation.
+- When the user asks to verify, test, prove a fix, check readiness or review
+  evidence, or before claiming a substantive change is complete, read
+  `.agents/skills/shalomut-verification/SKILL.md` fully.
+- When multiple skills apply, use `shalomut-tracker` first to establish state,
+  `shalomut-map` for implementation and `shalomut-verification` for evidence.
 - If the current agent does not implement automatic Agent Skills discovery,
   open the matching `SKILL.md` files directly and follow them as repository
   instructions.

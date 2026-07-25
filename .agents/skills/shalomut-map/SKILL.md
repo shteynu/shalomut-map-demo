@@ -66,9 +66,8 @@ description: Работай с продуктом и кодом Shalomut Map в 
 
 ## Проверка
 
-- Начинай с targeted tests для изменённого поведения.
-- По релевантности запускай `npm test`, `npm run lint`, `npm run build`, Prisma
-  validation и Python tests.
+- Перед утверждением о готовности прочитай и соблюдай
+  `../shalomut-verification/SKILL.md`.
 - После изменения survey source проверяй respondent и dashboard flows.
 - После изменения API синхронизируй и проверяй OpenAPI JSON/YAML и contract
   tests.
