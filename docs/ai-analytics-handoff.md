@@ -1,9 +1,11 @@
 # AI Analytics — handoff
 
-> Status update, 2026-07-25: AI callback/entrypoint hardening commit `7e0e1fd`
-> is in `main` and `origin/main`; the parallel MCP dynamic-route fix `35a190b`
-> was pushed on top of it. This session did not invoke push or deployment.
-> Current staging, empty-runtime, and manager UI status is tracked in
+> Status update, 2026-07-25: canonical POST route fix `6473a88` is in `main`
+> and `origin/main`; Vercel and Render deployments for that commit are live.
+> A real Vercel → Render → Vercel transport/persistence E2E passed for one
+> explicitly approved staging round. OpenAI returned `429` for four calls, so
+> the pipeline completed through its heuristic fallback rather than proving the
+> real LLM path. Broader operational state is tracked in
 > `docs/shalomut-tracker-handoff.md`.
 
 ## Snapshot
@@ -13,9 +15,17 @@
 - Current AI hardening: `main` commit `7e0e1fd`
 - Parallel follow-up: `35a190b` keeps `/api/mcp` dynamic so deployed requests
   retain the Authorization header.
-- Working tree at handoff: clean after the local session-memory commit
-- AI service deployment: not performed; no separate Vercel project exists
-- Shared secrets in Vercel/AI runtime: not configured by this work
+- Current transport fix: `6473a88` canonicalizes MCP and callback POST routes
+  to trailing-slash URLs required by the Next.js deployment.
+- Vercel core deployment: `dpl_7FxfrtHYUdaKbD4AMVH6J7V4cx3j`, `READY`,
+  production alias currently used as a staging endpoint.
+- Render AI deployment: `dep-d9iamf3eo5us73cndcu0`, `Live`,
+  `https://shalomut-ai-analytics.onrender.com`.
+- Shared secrets match across the two runtimes; raw values were neither printed
+  nor committed. The obsolete preview URLs and placeholder Vercel bypass were
+  removed from the actual Render configuration.
+- Session-memory update is kept in a separate local commit; no additional push
+  is performed at close because it would trigger new production deployments.
 
 ## What is complete
 
@@ -54,6 +64,9 @@
 - Callback destination is derived only from `DATA_LAYER_CALLBACK_URL` and the
   URL-encoded round ID. Payload `callbackUrl` is accepted for compatibility but
   ignored; origin validation applies regardless of Vercel bypass.
+- MCP configured URL is normalized to one trailing slash, and the callback
+  target ends in `/ai-insights/`, preventing POST `308` responses from the
+  Next.js `trailingSlash: true` deployment.
 
 ### Core app and persistence
 
@@ -75,9 +88,10 @@
 
 ## Verification evidence
 
-- `npm test` — 78/78 pass on final `main`, including the parallel MCP
-  dynamic-route regression.
-- `python3 ai-analytics-service/run_tests.py` — 11/11 pass.
+- TDD RED: both new regression tests received slashless MCP/callback URLs before
+  the fix and failed with the exact URL mismatch.
+- `npm test` — 81/81 pass on `6473a88`.
+- `python3 ai-analytics-service/run_tests.py` — 13/13 pass.
 - Full Python pytest — 15/15 pass, with one existing Starlette
   `TestClient`/httpx deprecation warning.
 - `npx tsc --noEmit` — pass.
@@ -85,25 +99,33 @@
 - `npm run build` — pass, with a Next.js warning that the `middleware`
   convention will be replaced by `proxy`.
 - OpenAPI JSON and YAML parse successfully.
-- A fresh Docker build was attempted but could not start because the local
-  Docker daemon was unavailable. The earlier container build/smoke remains
-  recorded in `docs/shalomut-tracker-handoff.md`.
-- No staging or production runtime was exercised in this session.
+- Vercel deployment `dpl_7FxfrtHYUdaKbD4AMVH6J7V4cx3j` reached `READY`;
+  Render deployment `dep-d9iamf3eo5us73cndcu0` reached `Live`; both point to
+  commit `6473a88`.
+- Render `/health` and authenticated Vercel `/` returned HTTP 200.
+- Approved round `80e78f3e-1240-42d4-8a9e-23a3467bb650`: trigger `202`, MCP
+  POST `200`, Render webhook `200`, callback POST `200`, persisted GET `200`.
+- Persisted result has contract `1.0`, `status: success`, `isLocked: false` and
+  all eight canonical dimension IDs.
+- Vercel error/fatal scan for the exact deployment and E2E window found no
+  matching logs.
+- Render recorded four OpenAI `429 Too Many Requests` warnings; the documented
+  heuristic fallback completed the result. This is residual evidence, not a
+  passed real-LLM check.
 - No real secrets were committed.
 
 ## What remains
 
-1. Add strict request/output/privacy models and explicit fail-closed safety
+1. Read-only investigate whether the OpenAI `429` responses come from account
+   quota, request rate limits or provider configuration. Do not mutate key,
+   billing or limits without bounded approval.
+2. After the provider issue is resolved, repeat one explicitly approved round
+   and prove the real LLM path without heuristic fallback.
+3. Add strict request/output/privacy models and explicit fail-closed safety
    semantics as the next isolated AI-service change.
-2. Deploy the container image to Cloud Run (or Render) from the repository
-   root; no hosting environment exists yet.
-3. Configure matching `AI_SERVICE_URL`, `DATA_LAYER_MCP_URL`,
-   `DATA_LAYER_CALLBACK_URL`, `MCP_SHARED_SECRET`, `AI_WEBHOOK_SECRET`, and
-   `AI_CALLBACK_SECRET` in the intended staging environments.
-4. Deploy the Python service and run a real staging webhook → callback smoke
-   test. Verify both ready and privacy-locked rounds.
-5. Review the real staging result and decide whether to promote the verified
-   `main` deployment to production.
+4. Verify a privacy-locked real round separately before broader rollout.
+5. Separate staging and production aliases/env; the current production alias
+   is being used as a staging core endpoint and is not production-ready.
 6. Decide separately whether the runtime should adopt real LangGraph/ChromaDB;
    this is not required for the current contract or local E2E path.
 
@@ -112,14 +134,18 @@
 - Do not rotate or copy secrets without the environment owner.
 - Do not run a second migration against another database until its target is
   confirmed and a backup/PITR checkpoint is available.
-- Do not invoke a real staging webhook until the AI service URL and callback
-  URL are configured on both sides.
-- Do not promote production until real AI-service staging smoke-test evidence is
-  recorded.
+- Do not change OpenAI key, billing or limits without explicit bounded
+  approval.
+- Do not invoke another real webhook without an explicitly selected
+  environment and round; the completed approval covered only
+  `80e78f3e-1240-42d4-8a9e-23a3467bb650`.
+- Do not treat the fallback-backed result as proof of real LLM generation.
+- Do not promote production until aliases/env are separated and the real LLM
+  plus privacy-locked staging scenarios are verified.
 
 ## First next action
 
-Implement the strict AI request/output/privacy contract as a small isolated
-change. After that, authorize a hosting environment — Cloud Run is the
-recommended target — and set the shared secrets and trusted Data Layer URLs on
-both sides before any real webhook is invoked.
+Read-only inspect the OpenAI `429` cause using account/provider evidence. If a
+key, quota, billing or limit mutation is needed, stop at the approval gate.
+After an approved correction, repeat one bounded staging round E2E and require
+logs that show the LLM path completed without heuristic fallback.

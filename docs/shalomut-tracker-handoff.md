@@ -11,11 +11,10 @@ Shalomut Map к `shalomut-tracker`, где сохранённые данные �
 ## Текущий snapshot
 
 - Активная ветка: `main`.
-- `main` содержит shared Basic manager gate `7a4d04d`, AI hardening
-  `7e0e1fd` и выполненный параллельной сессией MCP dynamic-route fix
-  `35a190b`. Последний отправлен в `origin/main` и включает первые два
-  изменения. Текущая сессия push не выполняет; session-memory update
-  сохраняется отдельным локальным коммитом.
+- `origin/main` содержит commit `6473a88`, который добавляет canonical trailing
+  slash для MCP и callback POST routes. Локальный `main` содержит поверх него
+  только session-memory close commit; новый push не выполняется, потому что он
+  снова запустит production deployments.
 - PR #5 смержен в `main` squash commit `6b369bf`.
 - PR [#6](https://github.com/shteynu/shalomut-map-demo/pull/6) смержен в
   `main` squash commit `043f54d`.
@@ -31,11 +30,12 @@ Shalomut Map к `shalomut-tracker`, где сохранённые данные �
   правами `600`; production `.env` и `.env.local` не менялись.
 - В Vercel включена Vercel Authentication с точным scope
   `deploymentType: preview`; production domains этим режимом не изменяются.
-- `DATABASE_URL` staging сохранён в Vercel как Sensitive variable только для
-  Preview. В Production project environment variables отсутствуют;
+- Production alias `https://shalomut-map-demo.vercel.app` сейчас используется
+  как staging core endpoint и подключён к выделенной staging-БД. Это
+  operational staging configuration, а не подтверждение production readiness;
   `DIRECT_URL` в Vercel не добавлялся.
 - Исходный Supabase project ref `fvnulyirrqjrnjbahmsn` подтверждён Dashboard как
-  `main / Production` и в этой сессии не изменялся.
+  `main / Production` и не изменялся.
 - Staging:
   [shalomut-map-demo-ui-redesign.vercel.app](https://shalomut-map-demo-ui-redesign.vercel.app/).
 - Staging deployment: `dpl_35S9VvwN8V9Bq7da3iP2SJwT4349`, состояние `READY`,
@@ -48,15 +48,20 @@ Shalomut Map к `shalomut-tracker`, где сохранённые данные �
   `READY`,
   URL
   `https://shalomut-map-demo-16cvkgov9-shteynumaks-1343s-projects.vercel.app`.
-- Protected-preview операция не выполняла production promotion и не меняла
-  production env/aliases. Последний проверенный перед session-close merge
-  Git-connected production deployment `dpl_3PmjUaFv8xEdS1WAEWq9U3CwKa9b`
-  автоматически собран из `origin/main` commit `ed7b44d` и имеет состояние
-  `READY`; production project env vars отсутствуют.
-- Commit `ed7b44d` с поддержкой protected Vercel core app, shared Basic gate
-  `7a4d04d`, AI callback/entrypoint hardening `7e0e1fd` и MCP dynamic-route fix
-  `35a190b` находятся в `origin/main`.
-- Deployment AI-сервиса по-прежнему не создавался.
+- Текущий Vercel production deployment
+  `dpl_7FxfrtHYUdaKbD4AMVH6J7V4cx3j` автоматически собран из commit `6473a88`,
+  имеет состояние `READY` и обслуживает production alias.
+- AI-сервис развёрнут на Render:
+  `https://shalomut-ai-analytics.onrender.com`. Deployment
+  `dep-d9iamf3eo5us73cndcu0` собран из commit `6473a88`, имеет состояние `Live`;
+  `/health` отвечает HTTP 200 с `env: production`.
+- Разрешённый real E2E для round
+  `80e78f3e-1240-42d4-8a9e-23a3467bb650` завершён: trigger `202`, MCP `200`,
+  Render webhook `200`, callback `200`, persisted GET `200`; сохранён payload
+  contract `1.0` с восемью canonical stones.
+- Real LLM path остаётся частично недоказанным: четыре запроса к OpenAI получили
+  `429 Too Many Requests`, после чего сервис штатно использовал domain
+  heuristic fallback.
 
 ## Инцидент: непустой UI при пустой БД
 
@@ -168,6 +173,37 @@ Staging показывал старую demo-школу, имя менеджер
 - Повторный Docker build был заблокирован выключенным локальным Docker daemon;
   staging/production runtime этой сессией не проверялся.
 
+### Canonical POST routes и real staging E2E (сессия 2026-07-25)
+
+- Первоначальная версия о несовпадающем `MCP_SHARED_SECRET` опровергнута:
+  fingerprints Render/Vercel совпали. HTTP `401` возвращал Vercel Deployment
+  Protection старого preview, а после смены origin точный runtime blocker
+  воспроизвёлся как POST `308 Permanent Redirect`.
+- Root cause: `next.config.ts` включает `trailingSlash: true`, а Python
+  `urllib` не повторяет POST после `308`. MCP client теперь нормализует URL к
+  одному конечному `/`, callback строится как `/ai-insights/`.
+- Regression guards в `ai-analytics-service/run_tests.py` сначала получили
+  фактические slashless URL и упали, затем прошли после минимального fix.
+- Локально прошли: Python smoke 13/13, full pytest 15/15, TypeScript suite
+  81/81, `npx tsc --noEmit`, `npm run lint`, `npm run build`,
+  `git diff --check`.
+- Render env использует production-alias core URLs; placeholder
+  `VERCEL_PROTECTION_BYPASS` удалён, три machine-to-machine secret не
+  изменялись и raw values не выводились.
+- Vercel deployment `dpl_7FxfrtHYUdaKbD4AMVH6J7V4cx3j` — `READY`; Render
+  deployment `dep-d9iamf3eo5us73cndcu0` — `Live`; оба относятся к
+  `6473a88`.
+- Real E2E: core trigger `202`; Vercel logs подтверждают POST `/api/mcp/`
+  `200`, callback POST `/api/rounds/<roundId>/ai-insights/` `200` и GET
+  persisted insights `200`; Render logs подтверждают webhook `200` и callback
+  response `200`.
+- Persisted result: `status: success`, `isLocked: false`, contract `1.0`,
+  восемь canonical stones. Ни identity респондентов, ни individual results не
+  выводились.
+- Остаточный риск: четыре OpenAI-вызова получили `429`; pipeline использовал
+  предусмотренный heuristic fallback. Это не отменяет transport/persistence
+  evidence, но не доказывает real LLM generation.
+
 ## Что завершено
 
 ### Безопасная staging persistence
@@ -184,16 +220,18 @@ Staging показывал старую demo-школу, имя менеджер
 
 - Preview deployments закрыты Vercel Authentication; unauthenticated manager
   writes не доступны.
-- В локальном `main` manager UI/API дополнительно закрыты shared Basic
-  credential. Эта защита ещё не задеплоена и не заменяет identity/org
-  authorization.
-- Только Preview получает Sensitive `DATABASE_URL` выделенной staging-БД.
+- Manager UI/API на текущем deployment дополнительно закрыты shared Basic
+  credential. Эта защита не заменяет identity/org authorization.
+- Protected Preview сохраняет отдельную staging persistence; текущий
+  production alias также временно подключён к той же выделенной staging-БД для
+  Render E2E и требует последующего разведения environments.
 - Новый Preview имеет target `preview`, проходит authenticated read/write/read
   smoke и после cleanup оставляет staging пустым.
 - Временный project-wide automation bypass после проверки отозван; постоянного
   bypass secret не оставлено.
-- Production environment variables и production aliases в этой операции не
-  изменялись.
+- Отдельно от protected preview текущий production alias используется как
+  staging core endpoint для Render E2E; разделение staging/production aliases
+  остаётся открытым operational решением.
 
 ### Data Layer и API
 
@@ -206,7 +244,8 @@ Staging показывал старую demo-школу, имя менеджер
 
 ### AI analytics
 
-- Сервис упакован в container image (корневой `Dockerfile`, `render.yaml`);
+- Сервис упакован в container image и развёрнут на Render (корневой
+  `Dockerfile`, `render.yaml`);
   интерпретации измерений считаются параллельно, `ENV` fail-closed, core app
   ограничивает ожидание вебхука `AI_SERVICE_TIMEOUT_MS` и отвечает `504`.
 - Для protected Vercel core app сервис умеет явно передавать
@@ -220,7 +259,8 @@ Staging показывал старую demo-школу, имя менеджер
   `contracts/ai-analytics-v1.json`.
 - Реализованы callback validation, Prisma persistence, fail-closed transport и
   отдельные dashboard states.
-- Локальные Next.js → Python → callback E2E и тесты Python-сервиса проходят.
+- Локальные Next.js → Python → callback tests и реальный
+  Vercel → Render → Vercel transport/persistence E2E проходят.
 
 ### Пустой runtime
 
@@ -255,44 +295,44 @@ Staging показывал старую demo-школу, имя менеджер
 - Для публичного rollout всё ещё нужны application-level authentication,
   roles/organization authorization, audit boundary и isolation tests.
 
-### 2. Реальный staging AI service
+### 2. Real LLM provider path
 
-- Container image собирается и проверен локально, но нигде не задеплоен: ни
-  Cloud Run service, ни Render service не создавались.
-- Shared secrets и URLs не настроены; реальный webhook → MCP → callback E2E не
-  выполнялся.
-- Постоянного Vercel automation bypass сейчас нет (`automationBypassCount: 0`).
-  Создание отдельного runtime credential для AI-сервиса или настройка другого
-  trusted access требует нового bounded approval; callback в текущем коде
-  всегда строится на origin `DATA_LAYER_CALLBACK_URL`.
-- Реальный LLM-путь не проверялся: без `OPENAI_API_KEY` конвейер идёт по
-  эвристическому fallback.
+- Runtime transport и persistence E2E доказаны, но OpenAI вернул четыре
+  `429 Too Many Requests`; результат был сформирован через domain heuristic
+  fallback.
+- Следующая проверка должна сначала read-only локализовать quota/rate-limit
+  причину. Изменение key, billing, limits или provider configuration требует
+  отдельного bounded approval.
 
-### 3. Alias и production
+### 3. Staging/production boundary
 
-- Staging alias остаётся на последнем безопасном empty-runtime preview.
-- Новый protected Preview проверен, но переназначение staging alias требует
-  отдельного ограниченного подтверждения. Production promotion остаётся
-  отдельным approval gate.
+- Legacy staging alias остаётся на проверенном empty-runtime preview, а
+  production alias временно используется как staging core endpoint для Render.
+- Перед production rollout нужно явно развести aliases/env, повторно проверить
+  target DB и не считать текущую конфигурацию production-ready.
 
 ## Рекомендуемый порядок продолжения
 
-1. Заменить или расширить shared Basic gate до application-level manager
-   identity, organization authorization и isolation tests.
-2. Отдельным малым PR ввести строгие Pydantic/request/output/privacy contracts
+1. Read-only проверить OpenAI quota/rate-limit evidence для четырёх `429`.
+2. После отдельного approval на нужную provider mutation повторить один
+   явно выбранный round E2E и доказать LLM path без fallback.
+3. Отдельным малым PR ввести строгие Pydantic/request/output/privacy contracts
    и явные fail-closed safety semantics внутри AI-сервиса.
-3. После отдельного approval создать runtime-доступ к protected Preview,
-   задеплоить container image AI-сервиса на Cloud Run (или Render), настроить
-   URLs/secrets на обеих сторонах и выполнить полный staging E2E.
-4. Отдельно согласовать переназначение staging alias на проверенный protected
-   Preview.
-5. Production data/env/alias/deployment не затрагивать без нового bounded
+4. Заменить shared Basic gate на application-level manager identity,
+   organization authorization и isolation tests.
+5. Согласовать окончательное разделение staging/production aliases и env;
+   production data/env/alias/deployment не затрагивать без нового bounded
    approval.
 
 ## Approval gates
 
 - Не изменять production data, secrets, aliases или deployments без явного
   ограниченного подтверждения.
+- Не изменять OpenAI key, billing, limits или provider configuration без
+  отдельного bounded approval.
+- Не запускать следующий real webhook без явно выбранных environment и round;
+  завершённое подтверждение покрывало только round
+  `80e78f3e-1240-42d4-8a9e-23a3467bb650`.
 - Не применять migrations к другой БД, пока не подтверждены environment и
   rollback/PITR path.
 - Не хранить недиспозабельные staging data на текущем Free project без
