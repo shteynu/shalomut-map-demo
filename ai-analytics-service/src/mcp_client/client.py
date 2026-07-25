@@ -18,7 +18,8 @@ class MCPClientManager:
     Falls back to local mock MCP server when offline or in dev mode.
     """
     def __init__(self, mcp_server_url: Optional[str] = None):
-        self.mcp_server_url = mcp_server_url or settings.data_layer_mcp_url
+        configured_url = mcp_server_url or settings.data_layer_mcp_url
+        self.mcp_server_url = f"{configured_url.rstrip('/')}/"
 
     async def fetch_round_analytics(self, round_id: str) -> RoundAnalyticsResult:
         """

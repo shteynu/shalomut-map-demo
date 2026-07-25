@@ -56,7 +56,7 @@ class AnalyticsRunnerService:
         # Step 4: Callback / Output delivery
         callback_base = settings.data_layer_callback_url.rstrip("/")
         encoded_round_id = quote(round_id, safe="")
-        target_callback = f"{callback_base}/{encoded_round_id}/ai-insights"
+        target_callback = f"{callback_base}/{encoded_round_id}/ai-insights/"
         await self._send_callback(target_callback, final_payload)
 
         return final_payload

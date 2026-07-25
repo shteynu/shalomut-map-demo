@@ -3,7 +3,7 @@ import json
 import os
 import sys
 import unittest
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 # Add project src directory to path
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
@@ -20,7 +20,7 @@ from src.contracts import (
     AI_ANALYTICS_DIMENSION_IDS,
 )
 from src.config import Settings, settings
-from src.mcp_client.client import MCPClientManager
+from src.mcp_client.client import MCPClientManager, mcp_client_manager
 from src.services.analytics_runner import analytics_runner_service
 
 class TestShalomutAIService(unittest.TestCase):
@@ -288,6 +288,82 @@ class TestShalomutAIService(unittest.TestCase):
             settings.data_layer_callback_url = previous_callback_url
 
         print("✔ Test 11 Passed: Callback transport rejects every untrusted origin.")
+
+    def test_12_mcp_post_uses_canonical_trailing_slash_url(self):
+        captured = []
+
+        def capture_request(req, timeout=None):
+            captured.append(req)
+            raise OSError("captured before transport")
+
+        async def fetch_round():
+            client = MCPClientManager("https://data-layer.example/api/mcp")
+            with patch("urllib.request.urlopen", side_effect=capture_request):
+                with self.assertRaises(RuntimeError):
+                    await client.fetch_round_analytics("round-trailing-slash")
+
+        previous_use_mock = settings.use_mock_mcp
+        settings.use_mock_mcp = False
+        try:
+            asyncio.run(fetch_round())
+            self.assertEqual(len(captured), 1)
+            self.assertEqual(
+                captured[0].full_url,
+                "https://data-layer.example/api/mcp/",
+            )
+        finally:
+            settings.use_mock_mcp = previous_use_mock
+
+        print("✔ Test 12 Passed: MCP POST uses the canonical trailing-slash route.")
+
+    def test_13_callback_post_uses_canonical_trailing_slash_url(self):
+        async def process_round():
+            round_data = mock_mcp_server.get_round_analytics(
+                "round-unlocked-sample"
+            )
+            final_payload = {
+                "contractVersion": AI_ANALYTICS_CONTRACT_VERSION,
+                "roundId": "round/with space",
+                "status": "success",
+                "stones": {},
+            }
+            send_callback = AsyncMock()
+
+            with (
+                patch.object(
+                    mcp_client_manager,
+                    "fetch_round_analytics",
+                    new=AsyncMock(return_value=round_data),
+                ),
+                patch.object(
+                    analytics_graph,
+                    "ainvoke",
+                    new=AsyncMock(return_value={"final_payload": final_payload}),
+                ),
+                patch.object(
+                    analytics_runner_service,
+                    "_send_callback",
+                    new=send_callback,
+                ),
+            ):
+                await analytics_runner_service.process_round("round/with space")
+
+            send_callback.assert_awaited_once_with(
+                "https://data-layer.example/api/rounds/"
+                "round%2Fwith%20space/ai-insights/",
+                final_payload,
+            )
+
+        previous_callback_url = settings.data_layer_callback_url
+        try:
+            settings.data_layer_callback_url = (
+                "https://data-layer.example/api/rounds"
+            )
+            asyncio.run(process_round())
+        finally:
+            settings.data_layer_callback_url = previous_callback_url
+
+        print("✔ Test 13 Passed: Callback POST uses the canonical trailing-slash route.")
 
 if __name__ == "__main__":
     unittest.main()
