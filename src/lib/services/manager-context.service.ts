@@ -9,11 +9,16 @@ import type {
   SurveyRound,
 } from "../types/backend";
 import { AnalyticsService } from "./analytics.service";
+import {
+  ManagerScopeRequiredError,
+  ManagerScopeService,
+} from "./manager-scope.service";
 
 export type ManagerOnboardingState =
   | "needs-organization"
   | "needs-round"
-  | "round-ready";
+  | "round-ready"
+  | "scope-required";
 
 export interface ManagerContext {
   state: ManagerOnboardingState;
@@ -29,14 +34,6 @@ const roundStatusPriority: Record<SurveyRound["status"], number> = {
   closed: 2,
   archived: 3,
 };
-
-function selectOrganization(organizations: Organization[]): Organization | null {
-  return (
-    [...organizations].sort(
-      (left, right) => right.createdAt.getTime() - left.createdAt.getTime(),
-    )[0] ?? null
-  );
-}
 
 export function selectCurrentRound(rounds: SurveyRound[]): SurveyRound | null {
   return (
@@ -54,8 +51,29 @@ export class ManagerContextService {
     orgRepo: IOrganizationRepository,
     roundRepo: IRoundRepository,
     surveyRepo: ISurveyRepository,
+    requestedOrganizationId?: string,
   ): Promise<ManagerContext> {
-    const organization = selectOrganization(await orgRepo.findAll());
+    let organizationId: string | null;
+    try {
+      organizationId = await ManagerScopeService.resolveOrganizationId(
+        orgRepo,
+        requestedOrganizationId,
+      );
+    } catch (error) {
+      if (!(error instanceof ManagerScopeRequiredError)) throw error;
+
+      return {
+        state: "scope-required",
+        organization: null,
+        currentRound: null,
+        responseCount: 0,
+        analytics: null,
+      };
+    }
+
+    const organization = organizationId
+      ? await orgRepo.findById(organizationId)
+      : null;
 
     if (!organization) {
       return {

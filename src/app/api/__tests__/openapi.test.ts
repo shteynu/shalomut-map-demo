@@ -49,4 +49,29 @@ describe('OpenAPI Specification Integrity', () => {
     assert.ok(schemas.StoneDetail, 'Must include StoneDetail schema');
     assert.strictEqual(schemas.StoneMapResult.properties.contractVersion.example, '1.0');
   });
+
+  it('should document organization-scoped manager authentication', () => {
+    const fileContent = fs.readFileSync(openapiPath, 'utf8');
+    const spec = JSON.parse(fileContent);
+    const managerOperations = [
+      spec.paths['/api/rounds'].get,
+      spec.paths['/api/rounds'].post,
+      spec.paths['/api/manager/setup'].put,
+      spec.paths['/api/rounds/{roundId}'].patch,
+      spec.paths['/api/rounds/{roundId}/survey-definition'].get,
+      spec.paths['/api/rounds/{roundId}/survey-definition'].put,
+      spec.paths['/api/rounds/{roundId}/analytics'].get,
+      spec.paths['/api/rounds/{roundId}/ai-insights'].get,
+      spec.paths['/api/rounds/{roundId}/trigger-ai'].post,
+    ];
+
+    assert.ok(spec.components.securitySchemes.basicAuth);
+    for (const operation of managerOperations) {
+      assert.deepStrictEqual(operation.security, [{ basicAuth: [] }]);
+      assert.ok(
+        operation.responses['403'] || operation.responses['404'],
+        'Scoped manager operations must document a hidden or forbidden foreign resource',
+      );
+    }
+  });
 });

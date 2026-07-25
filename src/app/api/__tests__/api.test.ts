@@ -79,7 +79,7 @@ test('API Route POST /api/rounds creates a new round', async () => {
   const req = new Request('http://localhost/api/rounds', {
     method: 'POST',
     body: JSON.stringify({
-      organizationId: 'org_test_1',
+      organizationId: DEMO_ORGANIZATION.id,
       title: 'סקר מחצית ב',
       privacyThreshold: 12,
     }),
@@ -91,6 +91,41 @@ test('API Route POST /api/rounds creates a new round', async () => {
   assert.strictEqual(data.success, true);
   assert.strictEqual(data.round.title, 'סקר מחצית ב');
   assert.strictEqual(data.round.privacyThreshold, 12);
+});
+
+test('API Route POST /api/rounds rejects an organization outside the manager scope', async () => {
+  const otherOrganization = {
+    ...DEMO_ORGANIZATION,
+    id: 'org_other_school',
+    name: 'בית ספר אחר',
+  };
+  setRepositories({
+    orgRepo: new InMemoryOrganizationRepository([
+      DEMO_ORGANIZATION,
+      otherOrganization,
+    ]),
+    roundRepo: new InMemoryRoundRepository([DEMO_ROUND]),
+    surveyRepo: new InMemorySurveyRepository(),
+  });
+
+  try {
+    const response = await createRound(
+      new Request('http://localhost/api/rounds', {
+        method: 'POST',
+        headers: {
+          'x-shalomut-manager-organization-id': DEMO_ORGANIZATION.id,
+        },
+        body: JSON.stringify({
+          organizationId: otherOrganization.id,
+          title: 'סקר זר',
+        }),
+      }),
+    );
+
+    assert.strictEqual(response.status, 404);
+  } finally {
+    useDemoRepositories();
+  }
 });
 
 test('API Route GET /api/survey/[shareCode] returns survey metadata for valid code', async () => {
@@ -134,6 +169,48 @@ test('API Route GET /api/rounds/[roundId]/analytics returns calculated analytics
   assert.notStrictEqual(data.analytics.privacyThreshold, undefined);
 });
 
+test('API Route analytics hides a round owned by another organization', async () => {
+  const otherOrganization = {
+    ...DEMO_ORGANIZATION,
+    id: 'org_other_school',
+    name: 'בית ספר אחר',
+    createdAt: new Date('2026-07-25T00:00:00.000Z'),
+  };
+  const otherRound = {
+    ...DEMO_ROUND,
+    id: 'round_other_school',
+    organizationId: otherOrganization.id,
+    shareCode: 'SHALOM-OTHER',
+  };
+
+  setRepositories({
+    orgRepo: new InMemoryOrganizationRepository([
+      DEMO_ORGANIZATION,
+      otherOrganization,
+    ]),
+    roundRepo: new InMemoryRoundRepository([DEMO_ROUND, otherRound]),
+    surveyRepo: new InMemorySurveyRepository(),
+  });
+
+  try {
+    const response = await getRoundAnalytics(
+      new Request(
+        `http://localhost/api/rounds/${otherRound.id}/analytics`,
+        {
+          headers: {
+            'x-shalomut-manager-organization-id': DEMO_ORGANIZATION.id,
+          },
+        },
+      ),
+      { params: Promise.resolve({ roundId: otherRound.id }) },
+    );
+
+    assert.strictEqual(response.status, 404);
+  } finally {
+    useDemoRepositories();
+  }
+});
+
 test('API Route PUT /api/manager/setup persists the first organization and round', async () => {
   resetDefaultRepositories();
 
@@ -170,6 +247,51 @@ test('API Route PUT /api/manager/setup persists the first organization and round
     const payload = await response.json();
     assert.strictEqual(payload.success, true);
     assert.strictEqual(payload.round.surveyDefinition.questions.length, 24);
+  } finally {
+    useDemoRepositories();
+  }
+});
+
+test('API Route PUT /api/manager/setup creates the configured scoped organization ID', async () => {
+  resetDefaultRepositories();
+
+  try {
+    const scopedOrganizationId = 'org_scoped_school';
+    const request = new Request('http://localhost/api/manager/setup', {
+      method: 'PUT',
+      headers: {
+        'x-shalomut-manager-organization-id': scopedOrganizationId,
+      },
+      body: JSON.stringify({
+        organization: {
+          name: 'בית ספר משויך',
+          city: 'חיפה',
+          schoolType: 'יסודי',
+          totalStaffCount: 30,
+        },
+        round: {
+          title: 'סבב ראשון',
+          privacyThreshold: 10,
+          startDate: '2026-09-01',
+          endDate: '',
+          backgroundContext: {
+            notes: '',
+            audience: 'all-staff',
+            sicknessDaysThisQuarter: 0,
+            newStaffMembers: 0,
+            studentCount: 300,
+            socioEconomicIndex: 5,
+            classesPerGrade: { א: 2 },
+          },
+        },
+      }),
+    });
+
+    const response = await saveManagerSetup(request);
+    assert.strictEqual(response.status, 200);
+    const payload = await response.json();
+    assert.strictEqual(payload.organization.id, scopedOrganizationId);
+    assert.strictEqual(payload.round.organizationId, scopedOrganizationId);
   } finally {
     useDemoRepositories();
   }

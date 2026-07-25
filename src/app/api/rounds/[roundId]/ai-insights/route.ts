@@ -3,6 +3,7 @@ import { validateStoneMapResult } from '@/lib/ai-contract';
 import { getRepositories } from '@/lib/repositories';
 import { getDurableWriteGuardResponse } from '@/lib/server/durable-write-guard';
 import { hasConfiguredSharedSecret } from '@/lib/server/shared-secret';
+import { authorizeManagerRound } from '@/lib/server/manager-scope';
 
 interface RouteParams {
   params: Promise<{
@@ -14,7 +15,14 @@ export async function GET(request: Request, { params }: RouteParams) {
   try {
     const { roundId } = await params;
     const repositories = getRepositories();
-    
+    const authorization = await authorizeManagerRound(
+      request,
+      roundId,
+      repositories.orgRepo,
+      repositories.roundRepo,
+    );
+    if (!authorization.ok) return authorization.response;
+
     const insights = await repositories.roundRepo.getAiInsights(roundId);
     if (!insights) {
       return NextResponse.json(

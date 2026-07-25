@@ -5,6 +5,7 @@ import { decideBasicAuth } from "../basic-auth";
 const CONFIGURED = {
   BASIC_AUTH_USER: "manager",
   BASIC_AUTH_PASSWORD: "correct-horse",
+  MANAGER_ORGANIZATION_ID: "org-school-a",
   NODE_ENV: "production",
   VERCEL_ENV: "production",
 };
@@ -70,6 +71,25 @@ test("a deployment without credentials fails closed", () => {
     decideBasicAuth(
       { pathname: "/setup", method: "GET", authorization: null },
       { NODE_ENV: "production", VERCEL_ENV: "production" },
+    ),
+    "unconfigured",
+  );
+});
+
+test("configured manager credentials without an organization scope fail closed", () => {
+  assert.strictEqual(
+    decideBasicAuth(
+      {
+        pathname: "/dashboard",
+        method: "GET",
+        authorization: basicHeader("manager", "correct-horse"),
+      },
+      {
+        BASIC_AUTH_USER: "manager",
+        BASIC_AUTH_PASSWORD: "correct-horse",
+        NODE_ENV: "production",
+        VERCEL_ENV: "production",
+      },
     ),
     "unconfigured",
   );

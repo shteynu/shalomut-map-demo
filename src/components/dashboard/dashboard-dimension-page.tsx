@@ -7,7 +7,6 @@ import {
   applyStoneInsightToDimension,
   getStoneInsight,
 } from "@/lib/ai-insights-view-model";
-import { useDashboardRoundId } from "@/lib/hooks/use-dashboard-round-id";
 import { useAiInsights } from "@/lib/hooks/use-ai-insights";
 import { getDashboardDetailActions } from "@/lib/navigation";
 import { DashboardAiInsightsState } from "./dashboard-ai-insights-state";
@@ -26,8 +25,7 @@ export function DashboardDimensionPage({
   organizationName: string;
   roundTitle: string;
 }) {
-  const resolvedRoundId = useDashboardRoundId(roundId);
-  const { state, reload } = useAiInsights(resolvedRoundId);
+  const { state, reload } = useAiInsights(roundId);
   const stone =
     state.status === "ready"
       ? getStoneInsight(state.value, dimension.id)
@@ -57,7 +55,6 @@ export function DashboardDimensionPage({
         <DashboardAiInsightsState state={state} onRetry={reload} />
         <DashboardCtaRow
           actions={getDashboardDetailActions(dimension.id)}
-          roundId={resolvedRoundId}
         />
       </div>
     );
@@ -102,7 +99,6 @@ export function DashboardDimensionPage({
 
       <DashboardCtaRow
         actions={getDashboardDetailActions(displayDimension.id)}
-        roundId={resolvedRoundId}
       />
     </div>
   );

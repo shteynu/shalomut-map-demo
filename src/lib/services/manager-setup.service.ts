@@ -39,15 +39,18 @@ export class ManagerSetupService {
     orgRepo: IOrganizationRepository,
     roundRepo: IRoundRepository,
   ): Promise<ManagerSetupResult> {
-    const organization = input.organization.id
-      ? await orgRepo.update(input.organization.id, {
+    const existingOrganization = input.organization.id
+      ? await orgRepo.findById(input.organization.id)
+      : null;
+    const organization = existingOrganization
+      ? await orgRepo.update(existingOrganization.id, {
           name: input.organization.name,
           city: input.organization.city,
           schoolType: input.organization.schoolType,
           totalStaffCount: input.organization.totalStaffCount,
         })
       : await orgRepo.create({
-          id: crypto.randomUUID(),
+          id: input.organization.id ?? crypto.randomUUID(),
           name: input.organization.name,
           city: input.organization.city,
           schoolType: input.organization.schoolType,

@@ -5,25 +5,36 @@ import {
   parseSurveyDefinition,
 } from "@/lib/survey-definition";
 import { getDurableWriteGuardResponse } from "@/lib/server/durable-write-guard";
+import { authorizeManagerRound } from "@/lib/server/manager-scope";
 
 interface RouteParams {
   params: Promise<{ roundId: string }>;
 }
 
-export async function GET(_request: Request, { params }: RouteParams) {
-  const { roundId } = await params;
-  const { roundRepo } = getRepositories();
-  const round = await roundRepo.findById(roundId);
+export async function GET(request: Request, { params }: RouteParams) {
+  try {
+    const { roundId } = await params;
+    const { orgRepo, roundRepo } = getRepositories();
+    const authorization = await authorizeManagerRound(
+      request,
+      roundId,
+      orgRepo,
+      roundRepo,
+    );
+    if (!authorization.ok) return authorization.response;
 
-  if (!round) {
-    return NextResponse.json({ error: "Survey round not found." }, { status: 404 });
+    const { round } = authorization;
+    return NextResponse.json({
+      definition:
+        round.surveyDefinition ??
+        createCanonicalSurveyDefinition(round.title, round.privacyThreshold),
+    });
+  } catch {
+    return NextResponse.json(
+      { error: "Failed to fetch survey definition." },
+      { status: 500 },
+    );
   }
-
-  return NextResponse.json({
-    definition:
-      round.surveyDefinition ??
-      createCanonicalSurveyDefinition(round.title, round.privacyThreshold),
-  });
 }
 
 export async function PUT(request: Request, { params }: RouteParams) {
@@ -32,19 +43,19 @@ export async function PUT(request: Request, { params }: RouteParams) {
     if (unavailable) return unavailable;
 
     const { roundId } = await params;
+    const { orgRepo, roundRepo } = getRepositories();
+    const authorization = await authorizeManagerRound(
+      request,
+      roundId,
+      orgRepo,
+      roundRepo,
+    );
+    if (!authorization.ok) return authorization.response;
+
     const parsed = parseSurveyDefinition(await request.json());
 
     if (!parsed.ok) {
       return NextResponse.json({ error: parsed.error }, { status: 400 });
-    }
-
-    const { roundRepo } = getRepositories();
-    const round = await roundRepo.findById(roundId);
-    if (!round) {
-      return NextResponse.json(
-        { error: "Survey round not found." },
-        { status: 404 },
-      );
     }
 
     const updated = await roundRepo.update(roundId, {

@@ -43,6 +43,9 @@
         "tags": ["Rounds"],
         "summary": "Fetch default survey round",
         "description": "Returns details of the default active survey round.",
+        "security": [
+          { "basicAuth": [] }
+        ],
         "responses": {
           "200": {
             "description": "Successful retrieval of round details",
@@ -58,6 +61,9 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Manager organization scope is required"
           },
           "500": {
             "description": "Internal server error",
@@ -75,6 +81,9 @@
         "tags": ["Rounds"],
         "summary": "Create new survey round",
         "description": "Generates a new survey round for an organization with a unique share code (SHALOM-XXXX).",
+        "security": [
+          { "basicAuth": [] }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -115,6 +124,9 @@
               }
             }
           },
+          "404": {
+            "description": "Organization not found in the manager scope"
+          },
           "500": {
             "description": "Failed to create round",
             "content": {
@@ -136,6 +148,9 @@
         "tags": ["Manager Setup"],
         "summary": "Create or update manager setup",
         "description": "Persists the school profile, survey round, privacy threshold, dates, and background context. Existing records are updated when their IDs are supplied.",
+        "security": [
+          { "basicAuth": [] }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -169,6 +184,9 @@
                 "schema": { "$ref": "#/components/schemas/ErrorResponse" }
               }
             }
+          },
+          "404": {
+            "description": "Organization or survey round not found in the manager scope"
           },
           "500": {
             "description": "Failed to save manager setup",
@@ -360,6 +378,9 @@
       "patch": {
         "tags": ["Rounds"],
         "summary": "Transition a survey round status",
+        "security": [
+          { "basicAuth": [] }
+        ],
         "parameters": [
           {
             "name": "roundId",
@@ -424,6 +445,9 @@
         "tags": ["Manager Setup"],
         "summary": "Fetch the saved survey definition",
         "description": "Returns the saved definition or the canonical 24-question definition when the round has not been customized.",
+        "security": [
+          { "basicAuth": [] }
+        ],
         "responses": {
           "200": {
             "description": "Survey definition retrieved",
@@ -445,6 +469,9 @@
         "tags": ["Manager Setup"],
         "summary": "Save the survey definition",
         "description": "Persists survey copy and optional questions. The 24 canonical questions must remain enabled, required, unique, and assigned to their canonical dimensions.",
+        "security": [
+          { "basicAuth": [] }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -480,6 +507,9 @@
         "tags": ["Analytics"],
         "summary": "Fetch aggregated round analytics",
         "description": "Calculates 8 organic wellbeing stone scores (0-100 scale). Enforces privacy threshold (privacyThreshold >= 10). Locks detailed scores if total responses < privacyThreshold.",
+        "security": [
+          { "basicAuth": [] }
+        ],
         "parameters": [
           {
             "name": "roundId",
@@ -592,6 +622,9 @@
       "get": {
         "tags": ["AI Integration"],
         "summary": "Fetch persisted AI insights",
+        "security": [
+          { "basicAuth": [] }
+        ],
         "responses": {
           "200": {
             "description": "Validated, versioned Stone Map result",
@@ -656,6 +689,9 @@
         "tags": ["AI Integration"],
         "summary": "Request AI processing for a survey round",
         "description": "Forwards a round_closed event to AI_SERVICE_URL without a dynamic callback target. The AI service derives its callback URL from its trusted DATA_LAYER_CALLBACK_URL configuration and the round ID. The endpoint fails closed when the AI service is unavailable.",
+        "security": [
+          { "basicAuth": [] }
+        ],
         "parameters": [
           {
             "name": "roundId",
@@ -670,6 +706,9 @@
         "responses": {
           "202": {
             "description": "AI service accepted the event"
+          },
+          "404": {
+            "description": "Survey round not found in the manager scope"
           },
           "502": {
             "description": "AI service returned a non-success response"
@@ -686,6 +725,11 @@
   },
   "components": {
     "securitySchemes": {
+      "basicAuth": {
+        "type": "http",
+        "scheme": "basic",
+        "description": "Manager credential bound server-side to MANAGER_ORGANIZATION_ID."
+      },
       "bearerAuth": {
         "type": "http",
         "scheme": "bearer",

@@ -1,10 +1,16 @@
 import { NextResponse } from "next/server";
 import { getRepositories } from "@/lib/repositories";
 import {
+  ManagerScopeService,
   ManagerSetupService,
   type ManagerSetupInput,
 } from "@/lib/services";
 import { getDurableWriteGuardResponse } from "@/lib/server/durable-write-guard";
+import {
+  authorizeManagerRound,
+  getManagerOrganizationId,
+  getManagerScopeErrorResponse,
+} from "@/lib/server/manager-scope";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -142,10 +148,48 @@ export async function PUT(request: Request) {
     }
 
     const { orgRepo, roundRepo } = getRepositories();
-    const result = await ManagerSetupService.save(input, orgRepo, roundRepo);
+    const organizationId = await ManagerScopeService.resolveOrganizationId(
+      orgRepo,
+      getManagerOrganizationId(request),
+    );
+    if (
+      organizationId &&
+      input.organization.id &&
+      input.organization.id !== organizationId
+    ) {
+      return NextResponse.json(
+        { error: "Organization not found." },
+        { status: 404 },
+      );
+    }
+
+    if (input.round.id) {
+      const authorization = await authorizeManagerRound(
+        request,
+        input.round.id,
+        orgRepo,
+        roundRepo,
+      );
+      if (!authorization.ok) return authorization.response;
+    }
+
+    const result = await ManagerSetupService.save(
+      {
+        ...input,
+        organization: {
+          ...input.organization,
+          id: organizationId ?? input.organization.id,
+        },
+      },
+      orgRepo,
+      roundRepo,
+    );
 
     return NextResponse.json({ success: true, ...result });
   } catch (error) {
+    const scopeResponse = getManagerScopeErrorResponse(error);
+    if (scopeResponse) return scopeResponse;
+
     return NextResponse.json(
       {
         error:

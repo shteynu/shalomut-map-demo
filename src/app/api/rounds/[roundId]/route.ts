@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getRepositories } from "@/lib/repositories";
 import { RoundService } from "@/lib/services";
 import { getDurableWriteGuardResponse } from "@/lib/server/durable-write-guard";
+import { authorizeManagerRound } from "@/lib/server/manager-scope";
 import type { RoundStatus } from "@/lib/types/backend";
 
 const validStatuses: RoundStatus[] = [
@@ -20,8 +21,16 @@ export async function PATCH(
     if (unavailable) return unavailable;
 
     const { roundId } = await params;
-    const body = (await request.json()) as { status?: unknown };
+    const { orgRepo, roundRepo } = getRepositories();
+    const authorization = await authorizeManagerRound(
+      request,
+      roundId,
+      orgRepo,
+      roundRepo,
+    );
+    if (!authorization.ok) return authorization.response;
 
+    const body = (await request.json()) as { status?: unknown };
     if (
       typeof body.status !== "string" ||
       !validStatuses.includes(body.status as RoundStatus)
@@ -32,11 +41,7 @@ export async function PATCH(
       );
     }
 
-    const { roundRepo } = getRepositories();
-    const round = await roundRepo.findById(roundId);
-    if (!round) {
-      return NextResponse.json({ error: "Survey round not found." }, { status: 404 });
-    }
+    const { round } = authorization;
 
     const targetStatus = body.status as RoundStatus;
     if (!RoundService.isTransitionAllowed(round.status, targetStatus)) {

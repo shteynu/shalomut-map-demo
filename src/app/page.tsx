@@ -19,7 +19,12 @@ export default async function HomePage() {
   const context = await loadManagerContext();
 
   if (!context.organization || !context.currentRound) {
-    return <ManagerOnboarding organizationName={context.organization?.name} />;
+    return (
+      <ManagerOnboarding
+        organizationName={context.organization?.name}
+        state={context.state}
+      />
+    );
   }
 
   const { organization, currentRound, responseCount, analytics } = context;

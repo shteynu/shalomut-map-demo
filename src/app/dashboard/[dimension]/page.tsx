@@ -28,6 +28,7 @@ export default async function DimensionPage({
       <ManagerOnboarding
         organizationName={context.organization?.name}
         surface="dashboard"
+        state={context.state}
       />
     );
   }

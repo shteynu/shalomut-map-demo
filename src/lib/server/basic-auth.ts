@@ -1,6 +1,7 @@
 interface RuntimeEnvironment {
   BASIC_AUTH_USER?: string;
   BASIC_AUTH_PASSWORD?: string;
+  MANAGER_ORGANIZATION_ID?: string;
   NODE_ENV?: string;
   VERCEL_ENV?: string;
 }
@@ -46,6 +47,7 @@ export function decideBasicAuth(
 
   const expectedUser = environment.BASIC_AUTH_USER?.trim();
   const expectedPassword = environment.BASIC_AUTH_PASSWORD;
+  const organizationId = environment.MANAGER_ORGANIZATION_ID?.trim();
 
   if (!expectedUser || !expectedPassword) {
     const isDeployedRuntime =
@@ -56,6 +58,8 @@ export function decideBasicAuth(
     // manager surfaces to anyone who finds the URL.
     return isDeployedRuntime ? "unconfigured" : "allow";
   }
+
+  if (!organizationId) return "unconfigured";
 
   const supplied = decodeBasicCredentials(request.authorization);
   if (!supplied) return "challenge";

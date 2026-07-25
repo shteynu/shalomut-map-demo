@@ -1,9 +1,14 @@
 import { PageIntro } from "@/components/ui";
 import { SetupForm } from "@/components/round";
+import { ManagerOnboarding } from "@/components/manager";
 import { loadManagerContext } from "@/lib/server/manager-context";
 
 export default async function SetupPage() {
   const context = await loadManagerContext();
+  if (context.state === "scope-required") {
+    return <ManagerOnboarding state={context.state} />;
+  }
+
   const organizationName = context.organization?.name ?? "בית ספר חדש";
   const roundTitle = context.currentRound?.title ?? "סבב אבחון חדש";
 

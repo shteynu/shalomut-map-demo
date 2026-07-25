@@ -1,14 +1,22 @@
 import { NextResponse } from 'next/server';
 import { getRepositories } from '@/lib/repositories';
 import { AnalyticsService } from '@/lib/services';
+import { authorizeManagerRound } from '@/lib/server/manager-scope';
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ roundId: string }> }
 ) {
   try {
     const { roundId } = await params;
-    const { roundRepo, surveyRepo } = getRepositories();
+    const { orgRepo, roundRepo, surveyRepo } = getRepositories();
+    const authorization = await authorizeManagerRound(
+      request,
+      roundId,
+      orgRepo,
+      roundRepo,
+    );
+    if (!authorization.ok) return authorization.response;
 
     const analytics = await AnalyticsService.getAnalyticsForRound(
       roundId,

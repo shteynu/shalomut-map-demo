@@ -1,21 +1,39 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { decideBasicAuth } from "@/lib/server/basic-auth";
+import {
+  decideBasicAuth,
+  isMachineAuthenticatedRoute,
+  isRespondentRoute,
+} from "@/lib/server/basic-auth";
+import { createScopedManagerHeaders } from "@/lib/server/manager-scope";
 
 /**
- * Manager surfaces have no application-level authentication yet, so a single
- * shared Basic credential keeps a public deployment from accepting anonymous
- * writes. It gates access; it does not identify a manager or scope an
- * organization.
+ * The shared manager credential is bound to exactly one configured
+ * organization. The internal scope header is always replaced here so clients
+ * cannot select a different school.
  */
 export function middleware(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+  const method = request.method;
   const decision = decideBasicAuth({
-    pathname: request.nextUrl.pathname,
-    method: request.method,
+    pathname,
+    method,
     authorization: request.headers.get("authorization"),
   });
 
-  if (decision === "allow") return NextResponse.next();
+  if (decision === "allow") {
+    const bypassesManagerScope =
+      isRespondentRoute(pathname) ||
+      isMachineAuthenticatedRoute(pathname, method);
+    const headers = createScopedManagerHeaders(
+      request.headers,
+      bypassesManagerScope
+        ? undefined
+        : process.env.MANAGER_ORGANIZATION_ID,
+    );
+
+    return NextResponse.next({ request: { headers } });
+  }
 
   if (decision === "unconfigured") {
     return new NextResponse(

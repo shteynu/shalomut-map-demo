@@ -7,7 +7,12 @@ export default async function SurveyPage() {
   const context = await loadManagerContext();
 
   if (!context.organization || !context.currentRound) {
-    return <ManagerOnboarding organizationName={context.organization?.name} />;
+    return (
+      <ManagerOnboarding
+        organizationName={context.organization?.name}
+        state={context.state}
+      />
+    );
   }
 
   return (

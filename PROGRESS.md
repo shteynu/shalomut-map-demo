@@ -1,41 +1,96 @@
 # PROGRESS: Shalomut Map
 
 ## 📌 Текущий статус
-- **Текущий этап**: transport boundary реального AI-конвейера исправлен и проверен. Commit `6473a88` канонизирует исходящие POST URL к trailing-slash routes для MCP и callback и находится в `origin/main`; локальный `main` содержит поверх него только session-close documentation commit.
+- **Текущий этап**: real Gemini path доказан end-to-end на functional baseline
+  `a9b6c34`. Финальный session-close slice добавляет organization scope для
+  manager boundary: server-owned scope header, route-level round ownership и
+  удаление клиентского выбора dashboard `roundId`.
 - **Состояние БД**: отдельный Supabase staging project `shalomut-map-staging` (`tpfzhyalaftotljmlont`, `ap-northeast-2`) остаётся целевой persistence для текущей проверки. Все три Prisma migration применены; E2E разрешённо обновил `aiInsights` только для round `80e78f3e-1240-42d4-8a9e-23a3467bb650`. Миграции и cleanup данных в этой сессии не выполнялись.
-- **Core app runtime**: production alias [shalomut-map-demo.vercel.app](https://shalomut-map-demo.vercel.app/) сейчас используется как staging core endpoint и подключён к выделенной staging-БД. Deployment `dpl_7FxfrtHYUdaKbD4AMVH6J7V4cx3j` для commit `6473a88` имеет статус `READY`.
-- **AI runtime**: FastAPI-сервис развёрнут на Render: [shalomut-ai-analytics.onrender.com](https://shalomut-ai-analytics.onrender.com), deployment `dep-d9iamf3eo5us73cndcu0` для commit `6473a88` имеет статус `Live`; `/health` отвечает HTTP 200 с `env: production`.
-- **Real E2E**: для разрешённого round core trigger вернул `202`, MCP POST `/api/mcp/` — `200`, Render webhook — `200`, callback POST — `200`, сохранённый GET — `200`. Persisted payload имеет `contractVersion: "1.0"`, `status: "success"`, `isLocked: false` и восемь canonical stones.
-- **Остаточный runtime-риск**: read-only проверка OpenAI Platform локализовала
-  четыре `429` как API quota/billing failure: текущая API-организация предлагает
-  `Add credits — Run your next API request by adding credits`, а успешный API
-  usage для ключа ещё не зафиксирован. Сервис штатно использовал domain
-  heuristic fallback, поэтому transport и persistence доказаны, но real LLM
-  path без fallback не доказан.
+- **Core app runtime**: production alias [shalomut-map-demo.vercel.app](https://shalomut-map-demo.vercel.app/) сейчас используется как staging core endpoint и подключён к выделенной staging-БД. Workflow [30160539496](https://github.com/shteynu/shalomut-map-demo/actions/runs/30160539496) для `a9b6c34` прошёл; manual production deploy job был пропущен.
+- **AI runtime**: FastAPI-сервис развёрнут на Render: [shalomut-ai-analytics.onrender.com](https://shalomut-ai-analytics.onrender.com), deployment `dep-d9ibutgk1i2s73b2oolg` для commit `a9b6c34` имеет статус `Live`; `/health` отвечает HTTP 200.
+- **Real E2E**: для разрешённого round core trigger вернул `202`, MCP POST
+  `/api/mcp/` — `200`, Render webhook — `200`, callback POST — `200`,
+  сохранённый GET — `200`. Четыре non-green dimensions завершились как
+  Gemini `outcome=llm` с первой попытки; retry и heuristic fallback не
+  использовались. Persisted payload имеет `contractVersion: "1.0"`,
+  `status: "success"`, `isLocked: false` и восемь canonical stones.
+- **Изоляция AI persistence**: локальный исполняемый сценарий с тремя
+  раундами — два одной школы и один другой — подтвердил, что повторная запись
+  меняет `aiInsights` только выбранного `SurveyRound.id`. Результаты предыдущего
+  раунда и другой школы сохранились. Это доказывает изоляцию хранения, но не
+  application-level tenant authorization.
+- **Остаточный runtime-риск**: provenance LLM/fallback пока фиксируется только
+  в service logs, а не в versioned persisted payload. Real privacy-locked
+  round после текущей смены provider/deploy не проверялся.
 - **Защита и секреты**: три machine-to-machine secret совпадают; raw values не выводились и не коммитились. Старый preview URL и placeholder Vercel bypass удалены из фактической Render-конфигурации. Исходный Supabase ref `fvnulyirrqjrnjbahmsn` не изменялся.
-- **Git-состояние**: в начале session-close `main` совпадал с `origin/main` на
-  `6ec9e21`. Диагноз `429` сохраняется отдельным локальным docs-only commit;
-  push не выполняется, чтобы не запускать ещё один production deployment без
-  отдельного approval.
+- **Manager deployment gate**: новый код требует
+  `MANAGER_ORGANIZATION_ID` вместе с Basic credential. Текущий снимок deployed
+  env этой переменной не содержит, поэтому core production deployment не
+  выполнялся; перед ним нужны отдельное подтверждение target organization и
+  bounded approval на env mutation.
+- **Git-состояние**: functional AI baseline `a9b6c34` находится в
+  `origin/main`; финальный manager-scope/session-memory slice проходит merge
+  gate. Tracked repository и code diff не содержат provider key.
 - **AI coding workflow**: канонические repo-level skills `shalomut-map`, `shalomut-tracker` и `shalomut-verification` находятся в `.agents/skills/`; инструкции для Codex, Gemini, Claude и GitHub Copilot закоммичены в `main`.
 - **Актуальный handoff**: см. [`docs/shalomut-tracker-handoff.md`](docs/shalomut-tracker-handoff.md). AI-детали: [`docs/ai-analytics-handoff.md`](docs/ai-analytics-handoff.md).
 
 ---
 
 ## 🚀 Следующие шаги (Next Up: Safe Staging)
-1. [ ] После отдельного bounded approval включить API billing/add credits для
-   правильной OpenAI organization/project и проверить ненулевой project budget.
-2. [ ] Укрепить LLM provider: различать quota и transient rate limit, безопасно
-   логировать error code/request ID, делать bounded backoff только для
-   временного throttling и явно маркировать `llm`/`heuristic` provenance.
-3. [ ] После исправления провайдера повторить один явно разрешённый round E2E и доказать real LLM path без heuristic fallback.
-4. [ ] Ввести строгие request/output/privacy contracts и явные fail-closed safety semantics внутри AI-сервиса.
-5. [ ] Заменить shared Basic gate на application-level manager identity, organization authorization и isolation tests.
-6. [ ] Развести staging и production aliases/env окончательно; текущий production alias используется как staging endpoint и не должен считаться production-ready.
+1. [ ] Если продукту нужна auditability, добавить versioned
+   `llm`/`heuristic` provenance в persisted payload.
+2. [ ] После отдельного bounded approval проверить один real privacy-locked
+   round без раскрытия detailed results.
+3. [ ] Ввести строгие request/output/privacy contracts и явные fail-closed safety semantics внутри AI-сервиса.
+4. [ ] Заменить organization-scoped shared Basic gate на application-level
+   manager identity/roles и полноценную tenant authorization; убрать hardcoded
+   `organizationContext` из MCP payload.
+5. [ ] Развести staging и production aliases/env окончательно; текущий production alias используется как staging endpoint и не должен считаться production-ready.
 
 ---
 
 ## ✅ Завершенные задачи (Completed)
+- [x] **2026-07-25**: **Manager boundary привязан к одной организации**:
+  - Middleware удаляет клиентский organization header и передаёт downstream
+    только `MANAGER_ORGANIZATION_ID`; deployed manager surfaces fail closed,
+    если Basic credential или scope не настроены.
+  - Manager pages, round APIs, survey definition, analytics, AI-insights GET и
+    trigger проверяют scoped organization/round. Query-controlled dashboard
+    `roundId` удалён; respondent и machine-authenticated routes сохраняют
+    отдельные boundaries.
+  - OpenAPI JSON/YAML документируют Basic auth и scoped 403/404; regression
+    coverage включает подмену header, cross-organization create/read и
+    multi-school fail-closed context.
+  - Local verification: TypeScript suite 90/90, lint и production build
+    прошли. Core runtime не деплоился: сначала нужно явно настроить
+    `MANAGER_ORGANIZATION_ID` для подтверждённой staging organization.
+- [x] **2026-07-25**: **Проверена изоляция AI-результатов по раундам и школам**:
+  - Prisma хранит `aiInsights` в строке `SurveyRound`, а update/read выполняются
+    по уникальному `roundId`; payload обязан содержать тот же `roundId`, что и
+    callback route.
+  - Локальный сценарий с двумя раундами школы A и одним раундом школы B
+    подтвердил: повторный анализ A2 перезаписал только A2, сохранив A1 и B1.
+  - Targeted repository/API tests прошли 15/15; полный TypeScript suite —
+    81/81; `npx prisma validate`, lint и production build прошли.
+  - На этом этапе shared Basic gate ещё не был scoped; текущий session-close
+    slice закрыл автоматический выбор школы. MCP по-прежнему передаёт hardcoded
+    organization context.
+- [x] **2026-07-25**: **Real Gemini path доказан с bounded latency и без fallback**:
+  - Commits `38575e5`, `c8f9242`, `98b27c3` и `a9b6c34` добавили
+    source-aware provider resolution, безопасную классификацию ошибок,
+    bounded retry/backoff, один retry transport timeout и общий
+    per-dimension budget (`20s` request, `25s` total, `8s` minimum retry
+    window).
+  - TDD и full local verification: Python pytest 35/35,
+    dependency-light suite 13/13, TypeScript suite 81/81, lint и production
+    build прошли.
+  - Render deployment `dep-d9ibutgk1i2s73b2oolg` для `a9b6c34` — `Live`;
+    GitHub/Vercel pipeline checks прошли.
+  - Ровно один подтверждённый webhook для staging round дал 4/4 Gemini
+    `outcome=llm`, все `attempt=1`, 0 retry, 0 heuristic; callback и
+    persisted GET вернули `200`, `processedAt` изменился.
+  - Provider key не добавлялся в tracked repository; raw secret values не
+    выводились и не записывались в session memory.
 - [x] **2026-07-25**: **Добавлена универсальная поддержка LLM-провайдеров и ключей в `ai-analytics-service`**:
   - `config.py` поддерживает `LLM_API_KEY`, `LLM_BASE_URL`, `LLM_PROVIDER`, `LLM_MODEL_FAST`, `LLM_MODEL_HEAVY` с полным сохранением свойств обратной совместимости (`openai_api_key`, `openai_model_fast`, `openai_model_heavy`).
   - `llm_provider.py` добавляет `_resolve_endpoint` для автоопределения Google Gemini (через OpenAI-совместимый эндпоинт `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions`), OpenRouter, OpenAI и кастомных `LLM_BASE_URL` (Ollama/vLLM).

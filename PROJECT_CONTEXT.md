@@ -49,7 +49,16 @@
 - **Решение**: Home, setup, round tracking, survey builder, dashboard и respondent survey используют request-time Data Layer. Setup и definition сохраняются через manager API; текущий раунд выбирается по явному приоритету статуса и времени создания.
 - **Хранилище**: `SurveyRound.backgroundContext` и `SurveyRound.surveyDefinition` хранятся как JSON. Миграция `20260724180000_add_round_configuration` должна применяться отдельно к каждому подтверждённому окружению.
 - **Deployment**: `output: "export"`, GitHub Pages workflow и demo `generateStaticParams` несовместимы с database-backed route handlers и удалены. Поддерживаемая модель — Next.js server runtime (Vercel или эквивалент).
-- **Security boundary**: shared `BASIC_AUTH_USER`/`BASIC_AUTH_PASSWORD` закрывает manager UI/API одним deployment credential и fail-closed отвечает `503`, если credential не настроен вне local development. Respondent routes и machine-to-machine MCP/callback endpoints остаются вне browser challenge. Это временный access gate, а не manager identity, role model или organization authorization; публичный multi-tenant rollout требует application-level auth и isolation tests.
+- **Security boundary**: shared `BASIC_AUTH_USER`/`BASIC_AUTH_PASSWORD` вместе
+  с `MANAGER_ORGANIZATION_ID` закрывают manager UI/API и привязывают один
+  deployment credential ровно к одной организации. Middleware всегда удаляет
+  клиентский scope header и добавляет server-owned organization ID; manager
+  routes повторно проверяют принадлежность раунда и скрывают чужие ресурсы как
+  `404`. Вне local development отсутствие любого из трёх значений fail-closed
+  отвечает `503`. Respondent routes и machine-to-machine MCP/callback
+  endpoints остаются вне browser challenge и используют свои boundaries. Это
+  всё ещё временный deployment gate, а не manager identity, role model или
+  полноценная multi-tenant authorization.
 - **Fail-closed persistence**: deployed runtime (`NODE_ENV=production` или Vercel) без `DATABASE_URL` может показывать пустой onboarding, но отклоняет data writes с `503`. Локальный development fallback хранится в общем `globalThis` state между server bundles.
 
 ### ADR-005: AI analytics service поставляется как контейнер, а не как Vercel-функция
@@ -72,10 +81,17 @@
 - **Production (`prod`)**:
   - **URL**: `https://shalomut-map-demo.vercel.app/`
   - **Состояние**: в рамках database-backed manager slice не изменялся.
+  - **Новый deployment gate**: перед следующим core deploy нужно подтвердить
+    organization ID для staging target и отдельно добавить
+    `MANAGER_ORGANIZATION_ID`; текущий снимок deployed env этой переменной не
+    содержит.
   - **Правило**: Мануальный деплой только по прямому указанию (через Vercel Dashboard *Promote to Production* или GitHub Actions `workflow_dispatch`).
 
 ### Переменные AI-интеграции
-- Core app: `AI_SERVICE_URL`, `AI_SERVICE_TIMEOUT_MS`, `MCP_SHARED_SECRET`, `AI_WEBHOOK_SECRET`, `AI_CALLBACK_SECRET`, а также временные manager-gate credentials `BASIC_AUTH_USER`/`BASIC_AUTH_PASSWORD`.
+- Core app: `AI_SERVICE_URL`, `AI_SERVICE_TIMEOUT_MS`, `MCP_SHARED_SECRET`,
+  `AI_WEBHOOK_SECRET`, `AI_CALLBACK_SECRET`, а также временные manager-gate
+  настройки `BASIC_AUTH_USER`, `BASIC_AUTH_PASSWORD` и
+  `MANAGER_ORGANIZATION_ID`.
 - AI service: `ENV`, `DATA_LAYER_MCP_URL`, `DATA_LAYER_CALLBACK_URL`, те же три shared secrets и `USE_MOCK_MCP`.
 - Безопасные шаблоны находятся в `.env.example` и `ai-analytics-service/.env.example`; реальные значения не коммитятся.
 

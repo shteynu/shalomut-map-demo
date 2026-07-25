@@ -24,14 +24,24 @@ const organization: Organization = {
   createdAt: new Date("2026-07-01T00:00:00.000Z"),
 };
 
+const otherOrganization: Organization = {
+  id: "org-2",
+  name: "בית ספר אחר",
+  city: "ירושלים",
+  schoolType: "תיכון",
+  totalStaffCount: 45,
+  createdAt: new Date("2026-07-20T00:00:00.000Z"),
+};
+
 function round(
   id: string,
   status: SurveyRound["status"],
   createdAt: string,
+  organizationId = organization.id,
 ): SurveyRound {
   return {
     id,
-    organizationId: organization.id,
+    organizationId,
     title: id,
     status,
     shareCode: `SHALOM-${id.toUpperCase()}`,
@@ -98,4 +108,42 @@ test("selectCurrentRound uses the newest round within the same status", () => {
   const newer = round("newer", "closed", "2026-07-01T00:00:00.000Z");
 
   assert.strictEqual(selectCurrentRound([older, newer])?.id, newer.id);
+});
+
+test("ManagerContextService uses the explicitly scoped organization instead of the newest school", async () => {
+  const scopedRound = round(
+    "scoped-round",
+    "active",
+    "2026-07-02T00:00:00.000Z",
+    organization.id,
+  );
+  const otherRound = round(
+    "other-round",
+    "active",
+    "2026-07-21T00:00:00.000Z",
+    otherOrganization.id,
+  );
+
+  const context = await ManagerContextService.load(
+    new InMemoryOrganizationRepository([organization, otherOrganization]),
+    new InMemoryRoundRepository([scopedRound, otherRound]),
+    new InMemorySurveyRepository(),
+    organization.id,
+  );
+
+  assert.strictEqual(context.organization?.id, organization.id);
+  assert.strictEqual(context.currentRound?.id, scopedRound.id);
+});
+
+test("ManagerContextService fails closed when multiple schools exist without a scope", async () => {
+  const context = await ManagerContextService.load(
+    new InMemoryOrganizationRepository([organization, otherOrganization]),
+    new InMemoryRoundRepository(),
+    new InMemorySurveyRepository(),
+  );
+
+  assert.strictEqual(context.state, "scope-required");
+  assert.strictEqual(context.organization, null);
+  assert.strictEqual(context.currentRound, null);
+  assert.strictEqual(context.analytics, null);
 });

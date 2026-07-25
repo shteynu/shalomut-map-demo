@@ -9,7 +9,6 @@ import { DashboardHomeLink } from "./dashboard-home-link";
 import { DashboardMapLocked } from "./dashboard-map-locked";
 
 type DashboardMapPageProps = {
-  roundId: string;
   organizationName: string;
   roundTitle: string;
   responseCount: number;
@@ -22,7 +21,6 @@ type DashboardMapPageProps = {
 };
 
 export function DashboardMapPage({
-  roundId,
   organizationName,
   roundTitle,
   responseCount,
@@ -95,7 +93,7 @@ export function DashboardMapPage({
             <span className="hint-text-desktop">גררו את האבנים כדי לסדר את המפה, או לחצו על אבן כדי לפתוח פירוט.</span>
             <span className="hint-text-mobile">לחצו על אבן כדי לפתוח פירוט.</span>
           </div>
-          <DashboardMapInteractive roundId={roundId} dimensionScores={dimensionScores} />
+          <DashboardMapInteractive dimensionScores={dimensionScores} />
         </div>
       </div>
     </div>

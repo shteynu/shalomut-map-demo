@@ -11,10 +11,11 @@ Shalomut Map к `shalomut-tracker`, где сохранённые данные �
 ## Текущий snapshot
 
 - Активная ветка: `main`.
-- `origin/main` содержит commit `6473a88`, который добавляет canonical trailing
-  slash для MCP и callback POST routes. Локальный `main` содержит поверх него
-  только session-memory close commit; новый push не выполняется, потому что он
-  снова запустит production deployments.
+- Functional AI baseline `a9b6c34` ограничивает latency Gemini-запросов общим
+  retry budget; перед ним находятся `38575e5` (provider определяется по
+  источнику credential), `c8f9242` (bounded HTTP retry/backoff) и `98b27c3`
+  (один retry transport timeout). Финальный session-close slice поверх него
+  добавляет organization-scoped manager boundary и обновляет project memory.
 - PR #5 смержен в `main` squash commit `6b369bf`.
 - PR [#6](https://github.com/shteynu/shalomut-map-demo/pull/6) смержен в
   `main` squash commit `043f54d`.
@@ -34,6 +35,10 @@ Shalomut Map к `shalomut-tracker`, где сохранённые данные �
   как staging core endpoint и подключён к выделенной staging-БД. Это
   operational staging configuration, а не подтверждение production readiness;
   `DIRECT_URL` в Vercel не добавлялся.
+- Новый manager-scope code требует `MANAGER_ORGANIZATION_ID`; текущий снимок
+  deployed env этой переменной не содержит. Поэтому core deployment текущего
+  slice не выполнялся: сначала нужно подтвердить target organization и
+  получить bounded approval на env mutation.
 - Исходный Supabase project ref `fvnulyirrqjrnjbahmsn` подтверждён Dashboard как
   `main / Production` и не изменялся.
 - Staging:
@@ -48,23 +53,25 @@ Shalomut Map к `shalomut-tracker`, где сохранённые данные �
   `READY`,
   URL
   `https://shalomut-map-demo-16cvkgov9-shteynumaks-1343s-projects.vercel.app`.
-- Текущий Vercel production deployment
-  `dpl_7FxfrtHYUdaKbD4AMVH6J7V4cx3j` автоматически собран из commit `6473a88`,
-  имеет состояние `READY` и обслуживает production alias.
+- Core production alias продолжает использоваться как operational staging
+  endpoint. GitHub workflow
+  [30160539496](https://github.com/shteynu/shalomut-map-demo/actions/runs/30160539496)
+  для commit `a9b6c34` завершился успешно; manual production deploy job
+  ожидаемо был пропущен.
 - AI-сервис развёрнут на Render:
   `https://shalomut-ai-analytics.onrender.com`. Deployment
-  `dep-d9iamf3eo5us73cndcu0` собран из commit `6473a88`, имеет состояние `Live`;
-  `/health` отвечает HTTP 200 с `env: production`.
+  `dep-d9ibutgk1i2s73b2oolg` собран из commit `a9b6c34`, имеет состояние `Live`;
+  `/health` отвечает HTTP 200.
 - Разрешённый real E2E для round
   `80e78f3e-1240-42d4-8a9e-23a3467bb650` завершён: trigger `202`, MCP `200`,
   Render webhook `200`, callback `200`, persisted GET `200`; сохранён payload
   contract `1.0` с восемью canonical stones.
-- Real LLM path остаётся частично недоказанным: четыре запроса к OpenAI получили
-  `429 Too Many Requests`, после чего сервис штатно использовал domain
-  heuristic fallback. Последующая read-only проверка текущей OpenAI
-  API-организации показала `Add credits — Run your next API request by adding
-  credits` и отсутствие успешного API usage, поэтому инцидент локализован как
-  API quota/billing failure.
+- Повторный явно подтверждённый E2E после перехода на Gemini доказал real LLM
+  path: четыре non-green dimensions дали `outcome=llm` с первой попытки,
+  `outcome=retry` — `0`, `outcome=heuristic` — `0`; четыре green dimensions
+  ожидаемо были пропущены правилом 0-token. Callback получил `200`, а
+  `processedAt` persisted payload изменился на
+  `2026-07-25T13:54:46.160682+00:00`.
 
 ## Инцидент: непустой UI при пустой БД
 
@@ -223,6 +230,47 @@ Staging показывал старую demo-школу, имя менеджер
 - OpenAI key, billing, limits, Render environment и deployments не менялись.
   ChatGPT subscription не является балансом OpenAI API.
 
+### Gemini provider, bounded retry и real LLM E2E (сессия 2026-07-25)
+
+- Provider теперь определяется по имени provider-specific credential
+  (`GEMINI_API_KEY`, `OPENAI_API_KEY`, `OPENROUTER_API_KEY`), а
+  provider-neutral `LLM_API_KEY` вне development требует явного
+  `LLM_PROVIDER` или `LLM_BASE_URL`.
+- Safe observability различает `outcome=llm`, `outcome=retry` и
+  `outcome=heuristic`, не логируя ключи, prompts, responses или respondent
+  data. Known hard-quota ошибки не ретраятся; transient `408`, `429`, `5xx` и
+  transport timeouts используют bounded retry/backoff.
+- Один provider request ограничен `20s`; полный цикл одного измерения —
+  `25s`; новый retry начинается только если остаётся не менее `8s`. Это
+  оставляет время MCP/callback внутри core timeout `30s`.
+- TDD и full local verification: Python pytest 35/35, dependency-light suite
+  13/13, TypeScript suite 81/81, lint и production build прошли.
+- Commit `a9b6c34` развёрнут на Render как
+  `dep-d9ibutgk1i2s73b2oolg` (`Live`). Health и MCP preflight прошли.
+- Ровно один подтверждённый webhook дал четыре Gemini
+  `outcome=llm`, все `attempt=1`, без retry и heuristic fallback; trigger
+  вернул `202`, callback — `200`, persisted GET — `200`.
+- Provider key не добавлялся в tracked repository; raw credential values в
+  verification evidence и документацию не выводились.
+
+### Organization-scoped manager boundary (session close, local)
+
+- `MANAGER_ORGANIZATION_ID` связывает shared Basic credential с одной
+  persisted organization. Middleware заменяет любой клиентский scope header
+  server-owned значением.
+- Manager context, round reads/writes, survey definition, analytics,
+  AI-insights GET и AI trigger проверяют organization ownership; foreign
+  resources возвращают `404`. Dashboard больше не принимает client-controlled
+  `roundId` из query string.
+- Respondent routes и machine-authenticated MCP/callback endpoints не получают
+  manager scope и сохраняют свои отдельные auth boundaries.
+- OpenAPI JSON/YAML синхронизированы. Local TypeScript suite 90/90, lint и
+  production build прошли; build сохранил только существующее предупреждение
+  Next.js `middleware` → `proxy`.
+- Core deployment не выполнялся. Перед ним нужно подтвердить staging
+  organization ID и получить bounded approval на добавление
+  `MANAGER_ORGANIZATION_ID` в точное Vercel environment.
+
 ## Что завершено
 
 ### Безопасная staging persistence
@@ -239,8 +287,9 @@ Staging показывал старую demo-школу, имя менеджер
 
 - Preview deployments закрыты Vercel Authentication; unauthenticated manager
   writes не доступны.
-- Manager UI/API на текущем deployment дополнительно закрыты shared Basic
-  credential. Эта защита не заменяет identity/org authorization.
+- Текущий deployment закрыт shared Basic credential. Следующий code slice
+  дополнительно привязывает credential к `MANAGER_ORGANIZATION_ID`, но ещё не
+  развёрнут: deployed env сначала нужно явно дополнить этим ID.
 - Protected Preview сохраняет отдельную staging persistence; текущий
   production alias также временно подключён к той же выделенной staging-БД для
   Render E2E и требует последующего разведения environments.
@@ -258,6 +307,10 @@ Staging показывал старую demo-школу, имя менеджер
   раундов, анонимных ответов, ответов на вопросы и сохранённых AI insights.
 - Реализованы endpoints раундов, отправки опроса, analytics, MCP, webhook trigger
   и AI-insights callback.
+- Session-close manager-scope slice удаляет клиентский scope header в
+  middleware, добавляет server-owned organization ID и проверяет ownership во
+  всех manager round routes. Respondent routes и MCP/callback сохраняют свои
+  отдельные auth boundaries.
 - Privacy lock применяется до возврата детальной аналитики.
 - Анонимные ответы не содержат имён или email респондентов.
 
@@ -280,6 +333,21 @@ Staging показывал старую demo-школу, имя менеджер
   отдельные dashboard states.
 - Локальные Next.js → Python → callback tests и реальный
   Vercel → Render → Vercel transport/persistence E2E проходят.
+
+### Изоляция AI persistence
+
+- `aiInsights` и `aiInsightsUpdatedAt` принадлежат конкретной строке
+  `SurveyRound`; сохранение и чтение выполняются по уникальному `roundId`.
+- Callback validation требует совпадения `roundId` в route и payload, поэтому
+  payload одного раунда нельзя случайно сохранить по route другого.
+- Локальный исполняемый сценарий с двумя раундами школы A и одним раундом
+  школы B подтвердил, что повторная запись A2 сохраняет A1 и B1 без изменений.
+- Targeted repository/API tests прошли 15/15; полный TypeScript suite — 81/81;
+  `npx prisma validate`, lint и production build прошли.
+- Это доказательство изоляции хранения, а не полноценной tenant security.
+  Текущий session-close slice отдельно закрыл автоматический глобальный выбор
+  школы и query-controlled dashboard round; MCP `organizationContext` пока
+  hardcoded.
 
 ### Пустой runtime
 
@@ -309,21 +377,22 @@ Staging показывал старую demo-школу, имя менеджер
 
 ### 1. Application-level manager authentication
 
-- Shared Basic gate закрывает manager routes одним deployment credential, но
-  не идентифицирует менеджера и не привязывает запрос к организации.
+- Shared Basic gate теперь связывает один deployment credential с одной
+  настроенной организацией, но по-прежнему не идентифицирует конкретного
+  менеджера, не поддерживает roles и не является полноценной multi-tenant
+  authorization.
 - Для публичного rollout всё ещё нужны application-level authentication,
   roles/organization authorization, audit boundary и isolation tests.
 
-### 2. Real LLM provider path
+### 2. AI provenance и privacy-locked runtime
 
-- Runtime transport и persistence E2E доказаны, но OpenAI вернул четыре
-  `429 Too Many Requests`; результат был сформирован через domain heuristic
-  fallback.
-- Read-only диагностика завершена: текущая API-организация не имеет доступного
-  API balance/billing и предлагает добавить credits.
-- Изменение key, billing, limits или provider configuration по-прежнему требует
-  отдельного bounded approval. После исправления provider state нужен новый
-  явно разрешённый E2E без fallback.
+- Real Gemini generation, transport и persistence доказаны для одного
+  explicitly approved unlocked round, но `llm`/`heuristic` provenance пока
+  доступен только в service logs и не сохраняется в versioned payload.
+- Отдельный реальный privacy-locked round после текущего provider/deploy slice
+  не проверялся.
+- Любое изменение key, billing, limits или provider configuration и следующий
+  webhook по-прежнему требуют отдельного bounded approval.
 
 ### 3. Staging/production boundary
 
@@ -334,18 +403,17 @@ Staging показывал старую demo-школу, имя менеджер
 
 ## Рекомендуемый порядок продолжения
 
-1. После отдельного bounded approval включить API billing/add credits для
-   правильной OpenAI organization/project и проверить ненулевой project budget.
-2. Отдельным малым PR различить quota и transient throttling, добавить bounded
-   backoff только для временного rate limit и явный `llm`/`heuristic`
-   provenance.
-3. После provider correction повторить один явно выбранный round E2E и доказать
-   LLM path без fallback.
-4. Отдельным малым PR ввести строгие Pydantic/request/output/privacy contracts
+1. Отдельным малым PR добавить versioned `llm`/`heuristic` provenance в
+   результат, если это требуется продукту; текущие service logs уже различают
+   outcomes.
+2. После отдельного bounded approval проверить один real privacy-locked round
+   без раскрытия detailed results.
+3. Отдельным малым PR ввести строгие Pydantic/request/output/privacy contracts
    и явные fail-closed safety semantics внутри AI-сервиса.
-5. Заменить shared Basic gate на application-level manager identity,
-   organization authorization и isolation tests.
-6. Согласовать окончательное разделение staging/production aliases и env;
+4. Заменить organization-scoped shared Basic gate на application-level manager
+   identity/roles и полноценную tenant authorization; передавать реальный
+   organization context в MCP payload.
+5. Согласовать окончательное разделение staging/production aliases и env;
    production data/env/alias/deployment не затрагивать без нового bounded
    approval.
 
@@ -353,7 +421,10 @@ Staging показывал старую demo-школу, имя менеджер
 
 - Не изменять production data, secrets, aliases или deployments без явного
   ограниченного подтверждения.
-- Не изменять OpenAI key, billing, limits или provider configuration без
+- Не развёртывать manager-scope slice на core runtime, пока не подтверждён
+  target organization ID и не одобрено добавление
+  `MANAGER_ORGANIZATION_ID` в точное environment.
+- Не изменять provider key, billing, limits или provider configuration без
   отдельного bounded approval.
 - Не запускать следующий real webhook без явно выбранных environment и round;
   завершённое подтверждение покрывало только round

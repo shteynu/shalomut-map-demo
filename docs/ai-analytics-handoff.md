@@ -1,14 +1,13 @@
 # AI Analytics — handoff
 
-> Status update, 2026-07-25: canonical POST route fix `6473a88` is in `main`
-> and `origin/main`; Vercel and Render deployments for that commit are live.
-> A real Vercel → Render → Vercel transport/persistence E2E passed for one
-> explicitly approved staging round. OpenAI returned `429` for four calls, so
-> the pipeline completed through its heuristic fallback rather than proving the
-> real LLM path. A later read-only account check localized the `429` responses
-> as API quota/billing failure: the current API organization prompts to add
-> credits and has no successful API usage. Broader operational state is tracked
-> in `docs/shalomut-tracker-handoff.md`.
+> Status update, 2026-07-25: functional AI code is at `a9b6c34`; the later
+> session-close slice changes core manager scoping and project memory, not the
+> Python provider. Provider resolution is credential-source-aware, transient
+> failures use bounded retry/backoff, and a per-dimension time budget leaves
+> room for MCP and callback. One explicitly approved Gemini staging E2E
+> completed with four `outcome=llm`, zero retry and zero heuristic fallback.
+> Broader operational state is tracked in
+> `docs/shalomut-tracker-handoff.md`.
 
 ## Snapshot
 
@@ -17,20 +16,19 @@
 - Current AI hardening: `main` commit `7e0e1fd`
 - Parallel follow-up: `35a190b` keeps `/api/mcp` dynamic so deployed requests
   retain the Authorization header.
-- Current transport fix: `6473a88` canonicalizes MCP and callback POST routes
-  to trailing-slash URLs required by the Next.js deployment.
-- Vercel core deployment: `dpl_7FxfrtHYUdaKbD4AMVH6J7V4cx3j`, `READY`,
-  production alias currently used as a staging endpoint.
-- Render AI deployment: `dep-d9iamf3eo5us73cndcu0`, `Live`,
+- Current provider/latency commits: `38575e5` resolves provider from the
+  credential source, `c8f9242` adds transient HTTP retry/backoff, `98b27c3`
+  retries transport timeout once, and `a9b6c34` caps the full retry loop.
+- Core production alias remains an operational staging endpoint. Workflow
+  [30160539496](https://github.com/shteynu/shalomut-map-demo/actions/runs/30160539496)
+  passed for `a9b6c34`; its manual production deployment job was skipped.
+- Render AI deployment: `dep-d9ibutgk1i2s73b2oolg`, `Live`,
   `https://shalomut-ai-analytics.onrender.com`.
 - Shared secrets match across the two runtimes; raw values were neither printed
   nor committed. The obsolete preview URLs and placeholder Vercel bypass were
   removed from the actual Render configuration.
-- Session-memory update is kept in a separate local commit; no additional push
-  is performed at close because it would trigger new production deployments.
-- Read-only OpenAI Platform evidence shows an active `Shalomut` API key,
-  no successful usage and `Add credits — Run your next API request by adding
-  credits`. No key, billing, limit or provider setting was changed.
+- Provider key exists only in deployed environment configuration; no raw value
+  is tracked or recorded in this handoff.
 
 ## What is complete
 
@@ -72,6 +70,14 @@
 - MCP configured URL is normalized to one trailing slash, and the callback
   target ends in `/ai-insights/`, preventing POST `308` responses from the
   Next.js `trailingSlash: true` deployment.
+- Provider is inferred from the provider-specific credential variable, not
+  from a secret prefix or model name. A neutral `LLM_API_KEY` outside
+  development requires explicit `LLM_PROVIDER` or `LLM_BASE_URL`.
+- Transient HTTP `408`, `429` and `5xx` failures use bounded exponential
+  backoff; known hard-quota failures do not retry. Transport timeout retries at
+  most once. Logs safely distinguish `llm`, `retry` and `heuristic` outcomes.
+- One request may use up to `20s`; the full per-dimension loop is capped at
+  `25s`; a retry starts only if at least `8s` remain.
 
 ### Core app and persistence
 
@@ -95,52 +101,35 @@
 
 - TDD RED: both new regression tests received slashless MCP/callback URLs before
   the fix and failed with the exact URL mismatch.
-- `npm test` — 81/81 pass on `6473a88`.
+- `npm test` — 81/81 pass on `a9b6c34`.
 - `python3 ai-analytics-service/run_tests.py` — 13/13 pass.
-- Full Python pytest — 15/15 pass, with one existing Starlette
+- Full Python pytest — 35/35 pass, with one existing Starlette
   `TestClient`/httpx deprecation warning.
-- `npx tsc --noEmit` — pass.
 - `npm run lint` — pass.
 - `npm run build` — pass, with a Next.js warning that the `middleware`
   convention will be replaced by `proxy`.
-- OpenAPI JSON and YAML parse successfully.
-- Vercel deployment `dpl_7FxfrtHYUdaKbD4AMVH6J7V4cx3j` reached `READY`;
-  Render deployment `dep-d9iamf3eo5us73cndcu0` reached `Live`; both point to
-  commit `6473a88`.
-- Render `/health` and authenticated Vercel `/` returned HTTP 200.
+- Render deployment `dep-d9ibutgk1i2s73b2oolg` reached `Live` on commit
+  `a9b6c34`; `/health` returned HTTP 200.
 - Approved round `80e78f3e-1240-42d4-8a9e-23a3467bb650`: trigger `202`, MCP
   POST `200`, Render webhook `200`, callback POST `200`, persisted GET `200`.
 - Persisted result has contract `1.0`, `status: success`, `isLocked: false` and
   all eight canonical dimension IDs.
-- Vercel error/fatal scan for the exact deployment and E2E window found no
-  matching logs.
-- Render recorded four OpenAI `429 Too Many Requests` warnings; the documented
-  heuristic fallback completed the result. This is residual evidence, not a
-  passed real-LLM check.
-- Render logs show four green dimensions were skipped locally and four
-  non-green dimensions called OpenAI concurrently. OpenAI Platform account
-  state classifies these `429` responses as quota/billing failure rather than a
-  demonstrated transient RPM/TPM burst.
-- Session-close docs-only checks passed: `git diff --check` and relative
-  Markdown link validation. Runtime suites were not run because code and
-  configuration did not change.
+- Render logs for the exact E2E window show four Gemini `outcome=llm`, all
+  `attempt=1`, zero retry, zero heuristic and callback status `200`. Four green
+  dimensions were intentionally skipped by the 0-token rule.
 - No real secrets were committed.
 
 ## What remains
 
-1. After bounded approval, enable API billing/add credits for the correct
-   organization/project and confirm a non-zero project budget.
-2. Distinguish quota from transient rate limits in the provider, safely record
-   error code/request ID, retry only transient throttling with bounded backoff,
-   and expose `llm` versus `heuristic` provenance.
-3. After the provider issue is resolved, repeat one explicitly approved round
-   and prove the real LLM path without heuristic fallback.
-4. Add strict request/output/privacy models and explicit fail-closed safety
+1. If product auditability requires it, version and persist `llm` versus
+   `heuristic` provenance; it currently exists only in service logs.
+2. Verify a privacy-locked real round separately before broader rollout, after
+   explicit bounded approval.
+3. Add strict request/output/privacy models and explicit fail-closed safety
    semantics as the next isolated AI-service change.
-5. Verify a privacy-locked real round separately before broader rollout.
-6. Separate staging and production aliases/env; the current production alias
+4. Separate staging and production aliases/env; the current production alias
    is being used as a staging core endpoint and is not production-ready.
-7. Decide separately whether the runtime should adopt real LangGraph/ChromaDB;
+5. Decide separately whether the runtime should adopt real LangGraph/ChromaDB;
    this is not required for the current contract or local E2E path.
 
 ## Approval gates
@@ -148,18 +137,16 @@
 - Do not rotate or copy secrets without the environment owner.
 - Do not run a second migration against another database until its target is
   confirmed and a backup/PITR checkpoint is available.
-- Do not change OpenAI key, billing or limits without explicit bounded
-  approval.
+- Do not change any provider key, billing, limits or provider configuration
+  without explicit bounded approval.
 - Do not invoke another real webhook without an explicitly selected
   environment and round; the completed approval covered only
   `80e78f3e-1240-42d4-8a9e-23a3467bb650`.
-- Do not treat the fallback-backed result as proof of real LLM generation.
 - Do not promote production until aliases/env are separated and the real LLM
   plus privacy-locked staging scenarios are verified.
 
 ## First next action
 
-Obtain bounded approval for the OpenAI API billing/credits change. Before the
-next real webhook, harden provider error classification and provenance. After
-an approved provider correction, repeat one bounded staging round E2E and
-require logs that show the LLM path completed without heuristic fallback.
+Choose the next isolated slice: persisted provider provenance or strict
+request/output/privacy models. Any new real webhook still needs an explicitly
+selected environment and round plus bounded approval.

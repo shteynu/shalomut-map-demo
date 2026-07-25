@@ -15,6 +15,7 @@ export default async function DashboardPage() {
       <ManagerOnboarding
         organizationName={context.organization?.name}
         surface="dashboard"
+        state={context.state}
       />
     );
   }
@@ -33,7 +34,6 @@ export default async function DashboardPage() {
 
   return (
     <DashboardMapPage
-      roundId={currentRound.id}
       organizationName={organization.name}
       roundTitle={currentRound.title}
       responseCount={context.responseCount}
