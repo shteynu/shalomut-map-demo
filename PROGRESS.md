@@ -1,24 +1,24 @@
 # PROGRESS: Shalomut Map
 
 ## 📌 Текущий статус
-- **Текущий этап**: organization-scoped manager boundary находится в
-  `origin/main`: `7a451fd` добавляет server-owned organization scope и
-  round ownership, `508410a` сохраняет понятный пользователю fail-closed UI.
-  Текущая локальная сессия начата от чистого `main@54c2eaa`.
+- **Текущий этап**: breaking AI analytics contract `2.0` сделан GREEN и
+  опубликован consumer-first в `main`: commit `82f7194` сначала развернул
+  dual-version Python consumer, затем `ba99a23` включил Core producer,
+  OpenAPI и Dashboard UX.
 - **Состояние БД**: отдельный Supabase staging project
   `shalomut-map-staging` (`tpfzhyalaftotljmlont`, `ap-northeast-2`) содержит
   ровно одну organization `34d05e66-fa4d-4a07-a2af-c9d5c41b6088` и один
   round `80e78f3e-1240-42d4-8a9e-23a3467bb650`. Это подтверждено read-only
   запросом; миграции, cleanup и другие data writes в финальной проверке не
   выполнялись.
-- **Core app runtime**: production alias
+- **Core app runtime**: проверенный implementation deployment
+  `dpl_4eNSv1WpVvhjGBqgUCbbrBGuBbSe` для `ba99a23` имеет состояние `READY`;
+  production alias
   [shalomut-map-demo.vercel.app](https://shalomut-map-demo.vercel.app/) сейчас
   используется как operational staging endpoint и подключён к выделенной
-  staging-БД. Первый проверенный post-env production deployment
-  `dpl_Hb1WZR9hHdUKsWhJdXDXDMS8ExPe` получил состояние `READY` и прошёл
-  manager-scope smoke. На момент alias verification docs-only deployment
-  `dpl_9PrHZzeVrTWJ3YNzCbHKQtxr8Zdq` для `ace5ba8` имел состояние `READY`;
-  session-close docs merge может создать более новый deployment ID.
+  staging-БД. `/setup/` partial-JSON regression уже исправлен в этом baseline
+  и задеплоен. Session-close docs publish может создать более новый deployment
+  без изменения application runtime. Это не подтверждает production readiness.
 - **Legacy staging alias**:
   [shalomut-map-demo-ui-redesign.vercel.app](https://shalomut-map-demo-ui-redesign.vercel.app/)
   после bounded approval указывает на protected Preview
@@ -27,22 +27,23 @@
   runtime-содержимое. Unauthenticated запрос сохраняет `302` на Vercel SSO.
   Runtime smoke подтвердил тот же staging round и threshold `10`, read-only
   БД — `12` responses.
-- **Последний Manager UI browser-smoke**: изолированный локальный Playwright
-  открыл актуальный manager runtime на read-only staging persistence.
-  После локального regression fix `/setup/`, `/`, `/round/`, `/survey/` и
-  `/dashboard/` вернули HTTP `200`; setup показал безопасные defaults для
-  legacy `backgroundContext: {note: ...}`. Staging data не менялись.
-- **Dashboard content-quality blocker**: persisted AI payload формально валиден,
-  но содержательно непригоден для rollout. Ни один из четырёх non-green
-  insights не выполнил требование двух законченных предложений; все четыре
-  green dimensions получили improvement recommendations; все `11`
-  recommendations остались на английском; все восемь metric sets повторяют
-  технический шаблон score/status/risk вместо агрегатов канонических вопросов.
-  Следующий versioned semantic contract описан, а executable RED tests
-  воспроизводят 10 TypeScript и 10 Python gaps. Runtime/Core/MCP contract ещё
-  не изменён. Отдельный catalog slice уже удалил cross-status fallback,
-  локализовал `11` записей и добавил `8` green-only «חוזקה לשימור» действий.
-- **AI runtime**: FastAPI-сервис развёрнут на Render: [shalomut-ai-analytics.onrender.com](https://shalomut-ai-analytics.onrender.com), deployment `dep-d9ibutgk1i2s73b2oolg` для commit `a9b6c34` имеет статус `Live`; `/health` отвечает HTTP 200.
+- **Последний локальный browser-smoke**: изолированный Playwright на ephemeral
+  in-memory runtime подтвердил `/setup/`, unlocked overview, dimension,
+  question metrics, green recommendations и privacy-locked dashboard. Summary
+  показан один раз; green UX использует `חוזקה לשימור` и `פעולות לשימור`.
+  Console: 0 errors/0 warnings. Процесс остановлен, внешние данные не менялись.
+- **Dashboard semantic quality**: опубликован contract `2.0`, при этом
+  `contracts/ai-analytics-v1.json` не изменён. Core отдаёт 24 privacy-safe
+  question aggregates только после threshold gate; Python отклоняет
+  provider-invalid/truncated/non-Hebrew/status-inconsistent output, применяет
+  bounded retry и question-grounded deterministic fallback с provenance;
+  Dashboard показывает реальные metrics без cross-status fallback.
+- **AI runtime**: FastAPI-сервис развёрнут на Render; проверенный implementation
+  deployment:
+  [shalomut-ai-analytics.onrender.com](https://shalomut-ai-analytics.onrender.com),
+  deployment `dep-d9ij9unlk1mc739jao30` для `ba99a23` имеет статус `Live`;
+  consumer-first deployment `dep-d9ij96mq1p3s73fhsncg` для `82f7194` также
+  успешно завершился. `/health` отвечает HTTP 200.
 - **Real E2E**: для разрешённого round core trigger вернул `202`, MCP POST
   `/api/mcp/` — `200`, Render webhook — `200`, callback POST — `200`,
   сохранённый GET — `200`. Четыре non-green dimensions завершились как
@@ -54,9 +55,11 @@
   меняет `aiInsights` только выбранного `SurveyRound.id`. Результаты предыдущего
   раунда и другой школы сохранились. Это доказывает изоляцию хранения, но не
   application-level tenant authorization.
-- **Остаточный runtime-риск**: provenance LLM/fallback пока фиксируется только
-  в service logs, а не в versioned persisted payload. Real privacy-locked
-  round после текущей смены provider/deploy не проверялся.
+- **Остаточный runtime-риск**: код `2.0` развёрнут на Core и Render, но real
+  webhook/callback не запускался, поэтому новый persisted `2.0` payload в
+  staging ещё не создан. Locked/unlocked staging E2E требует отдельного
+  bounded approval; application-level manager authorization и разделение
+  staging/production aliases/env остаются открытыми.
 - **Защита и секреты**: три machine-to-machine secret совпадают; raw values не выводились и не коммитились. Старый preview URL и placeholder Vercel bypass удалены из фактической Render-конфигурации. Исходный Supabase ref `fvnulyirrqjrnjbahmsn` не изменялся.
 - **Manager deployment gate**: `MANAGER_ORGANIZATION_ID` добавлен в Vercel как
   Sensitive variable для Preview и Production и указывает на единственную
@@ -64,37 +67,49 @@
   `.env.staging.local`; production `.env` и `.env.local` не менялись.
   Deployed read-only smoke подтвердил anonymous `401`, authenticated `200`,
   правильные organization/round и игнорирование поддельного client scope.
-- **Git-состояние**: baseline текущей сессии — `main@54c2eaa`. Изменения
-  текущей сессии включают setup fix, semantic RED tests/contract, Hebrew
-  intervention catalog и подтверждённые handoff updates; unrelated user
-  changes не обнаружены. Локальный `main` содержит commits `d8042b3` и
-  `783335d`; `origin/main` остаётся на `54c2eaa`, потому что push может
-  запустить Vercel Git deployment и требует отдельного bounded approval.
+- **Git-состояние**: implementation commits `82f7194` и `ba99a23` находятся в
+  `origin/main`; текущий session-close diff содержит только подтверждённые
+  handoff updates. Unrelated user changes не обнаружены.
 - **AI coding workflow**: канонические repo-level skills `shalomut-map`, `shalomut-tracker` и `shalomut-verification` находятся в `.agents/skills/`; инструкции для Codex, Gemini, Claude и GitHub Copilot закоммичены в `main`.
 - **Актуальный handoff**: см. [`docs/shalomut-tracker-handoff.md`](docs/shalomut-tracker-handoff.md). AI-детали: [`docs/ai-analytics-handoff.md`](docs/ai-analytics-handoff.md).
 
 ---
 
 ## 🚀 Следующие шаги (Next Up: Safe Staging)
-1. [ ] Выбрать и опубликовать следующую версию AI analytics contract, затем
-   сделать GREEN Core Data → MCP RED tests: 24 privacy-safe canonical question
-   aggregates и пустые detailed maps ниже privacy threshold.
-2. [ ] Сделать GREEN provider/output tests: `finish_reason`, Hebrew,
-   completeness, status consistency и deterministic question-grounded fallback.
-3. [ ] Заменить generic score/status/risk metrics реальными question-level
-   metrics и показывать общий summary ровно один раз на dashboard overview.
-4. [ ] Интегрировать подтверждённую green semantics «חוזקה לשימור» /
-   `פעולות לשימור` в conditional dashboard UX; catalog boundary уже готов.
-5. [ ] Заменить organization-scoped shared Basic gate на application-level
-   manager identity/roles и полноценную tenant authorization; убрать hardcoded
-   `organizationContext` из MCP payload.
-6. [ ] Развести staging и production aliases/env окончательно; legacy staging
+1. [ ] С отдельным bounded approval выполнить staging unlocked и locked E2E,
+   проверить persisted provenance, 24 aggregates и отсутствие detailed maps
+   ниже threshold.
+2. [ ] Заменить organization-scoped shared Basic gate на application-level
+   manager identity/roles и полноценную tenant authorization; `2.0`
+   MCP уже не передаёт выдуманный `organizationContext`.
+3. [ ] Развести staging и production aliases/env окончательно; legacy staging
    alias уже выровнен по Git tree, но текущий production alias используется
    как staging endpoint и не должен считаться production-ready.
 
 ---
 
 ## ✅ Завершенные задачи (Completed)
+- [x] **2026-07-26**: **Dashboard semantic contract `2.0` сделан GREEN и
+  развёрнут consumer-first**:
+  - immutable `1.0` сохранён; `2.0` фиксирует восемь canonical dimensions,
+    24 обязательных вопроса, privacy-safe aggregates и provenance. TypeScript,
+    Python и OpenAPI принимают consumer-first compatibility boundary.
+  - Core/MCP возвращает question aggregates только при полном threshold;
+    locked round возвращает пустые `dimensionScores` и `questionAggregates`.
+  - Python проверяет `finish_reason`, две законченные Hebrew-only фразы и
+    status consistency, делает bounded retry и deterministic fallback от
+    question aggregates; intervention lookup не пересекает status.
+  - Dashboard показывает реальные question metrics, summary ровно один раз и
+    green supporting actions без improvement goals.
+  - Consumer `82f7194` был Live на Render до публикации producer `ba99a23`.
+    Проверенные implementation deployments: Vercel
+    `dpl_4eNSv1WpVvhjGBqgUCbbrBGuBbSe` READY,
+    Render `dep-d9ij9unlk1mc739jao30` Live; GitHub pipeline для обоих commits
+    прошёл.
+  - Verification: `npm test` 109/109, full pytest 65/65, dependency-light
+    Python 13/13, OpenAPI 5/5 + JSON/YAML parse/sync, lint, build и
+    `git diff --check` прошли. Local real-runtime boundary дал `2.0`, 8/24,
+    callback 200; Playwright подтвердил ready и locked flows без внешних writes.
 - [x] **2026-07-25**: **Зафиксирован dashboard semantic RED и локализован
   intervention catalog**:
   - `docs/dashboard-semantic-contract.md` отделяет deployed structural `1.0`

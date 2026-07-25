@@ -1,6 +1,6 @@
 # Shalomut Tracker — актуальный handoff
 
-Обновлено: 2026-07-25
+Обновлено: 2026-07-26
 
 Это оперативная точка входа для перехода от исходного статического demo
 Shalomut Map к `shalomut-tracker`, где сохранённые данные должны быть единственным
@@ -10,12 +10,10 @@ Shalomut Map к `shalomut-tracker`, где сохранённые данные �
 
 ## Текущий snapshot
 
-- Активная ветка: `main`; baseline текущей локальной сессии — `54c2eaa`
-  (`HEAD`, `main` и `origin/main` совпадали, worktree был чистым до начала
-  изменений). Session changes зафиксированы локально commits `d8042b3`
-  (setup fix) и `783335d` (semantic boundary/catalog/handoff). `origin/main`
-  не обновлялся: push может запустить Vercel Git deployment и остаётся за
-  отдельным bounded approval.
+- Активная ветка: `main`; сессия началась от `6555c34`. Contract `2.0`
+  опубликован consumer-first: `82f7194` содержит dual-version Python consumer,
+  `ba99a23` — Core producer, OpenAPI и Dashboard UX. Оба commit находятся в
+  `origin/main`; текущий diff — только session-close handoff.
 - Functional AI baseline `a9b6c34` ограничивает latency Gemini-запросов общим
   retry budget. Поверх него `7a451fd` добавляет organization-scoped manager
   boundary, а `508410a` сохраняет понятный пользователю fail-closed UI; оба
@@ -47,12 +45,11 @@ Shalomut Map к `shalomut-tracker`, где сохранённые данные �
   Sensitive variable со scope Preview и Production. Локальная копия находится
   только в ignored `.env.staging.local`; production `.env` и `.env.local` не
   менялись.
-- Первый проверенный post-env production deployment
-  `dpl_Hb1WZR9hHdUKsWhJdXDXDMS8ExPe` получил состояние `READY` и на момент
-  smoke обслуживал `shalomut-map-demo.vercel.app`. На момент alias verification
-  production deployment `dpl_9PrHZzeVrTWJ3YNzCbHKQtxr8Zdq` для `ace5ba8`
-  имел состояние `READY` и обслуживал production alias; последующий docs-only
-  merge может создать более новый deployment ID через Git integration.
+- Проверенный Vercel implementation deployment
+  `dpl_4eNSv1WpVvhjGBqgUCbbrBGuBbSe` для `ba99a23` имеет состояние `READY` и
+  обслуживает `shalomut-map-demo.vercel.app`. `/setup/` partial-JSON regression
+  уже исправлен и задеплоен в этом baseline. Session-close docs publish может
+  создать более новый deployment без изменения application runtime.
 - Исходный Supabase project ref `fvnulyirrqjrnjbahmsn` подтверждён Dashboard как
   `main / Production` и не изменялся.
 - Staging:
@@ -80,8 +77,9 @@ Shalomut Map к `shalomut-tracker`, где сохранённые данные �
   ожидаемо был пропущен.
 - AI-сервис развёрнут на Render:
   `https://shalomut-ai-analytics.onrender.com`. Deployment
-  `dep-d9ibutgk1i2s73b2oolg` собран из commit `a9b6c34`, имеет состояние `Live`;
-  `/health` отвечает HTTP 200.
+  `dep-d9ij9unlk1mc739jao30` собран из `ba99a23`, имеет состояние `Live`;
+  `/health` отвечает HTTP 200. Предшествующий consumer-first deployment
+  `dep-d9ij96mq1p3s73fhsncg` для `82f7194` также успешно завершился.
 - Разрешённый real E2E для round
   `80e78f3e-1240-42d4-8a9e-23a3467bb650` завершён: trigger `202`, MCP `200`,
   Render webhook `200`, callback `200`, persisted GET `200`; сохранён payload
@@ -92,6 +90,46 @@ Shalomut Map к `shalomut-tracker`, где сохранённые данные �
   ожидаемо были пропущены правилом 0-token. Callback получил `200`, а
   `processedAt` persisted payload изменился на
   `2026-07-25T13:54:46.160682+00:00`.
+
+### Dashboard semantic contract `2.0` (rollout 2026-07-26)
+
+- Breaking boundary зафиксирован как `2.0`; immutable manifest `1.0` не
+  изменён. Новый manifest сохраняет восемь canonical dimensions и ровно 24
+  обязательных вопроса. TypeScript, Python и OpenAPI описывают обе версии.
+- Consumer-first compatibility: Python принимает missing/`1.0` как legacy и
+  explicit `2.0` как strict input; callback validator принимает обе версии.
+  Rollout выполнен в правильном порядке: `82f7194` стал Live на Render до push
+  Core producer `ba99a23`.
+- Core/MCP формирует privacy-safe aggregates для всех 24 вопросов с round и
+  organization isolation. Если total или хотя бы один canonical question не
+  достигает threshold, `isLocked=true`, а `dimensionScores` и
+  `questionAggregates` равны `{}`.
+- Python quality gate проверяет provider `finish_reason`, ровно две законченные
+  Hebrew-only пользовательские фразы и status consistency. Invalid,
+  truncated и incomplete output получает bounded retry; после исчерпания
+  используется deterministic fallback, grounded в question aggregates.
+  Payload сохраняет `llm`/`deterministic_fallback` provenance, попытки и три
+  source question IDs.
+- Intervention lookup не делает cross-status fallback. Dashboard показывает
+  реальные question metrics, один organization summary на overview и green UX
+  `חוזקה לשימור` / `פעולות לשימור` без improvement goals.
+- Verification GREEN: `npm test` 109/109; full Python pytest 65/65 (одно
+  существующее Starlette/httpx2 deprecation warning); dependency-light Python
+  13/13; OpenAPI 5/5 и независимый JSON/YAML parse/sync; lint; production build;
+  `git diff --check`.
+- Local Next.js → Python CLI → local callback real-runtime boundary без внешних
+  writes подтвердил contract `2.0`, 8 dimension aggregates, 24 question
+  aggregates, 8 stones, deterministic provenance и callback `200`.
+- Local Playwright на явно изолированном in-memory runtime подтвердил `/setup/`,
+  unlocked overview/detail/metrics/recommendations и locked dashboard/API.
+  Summary показан один раз, metrics содержат три реальных вопроса по 10 ответов,
+  green action label корректен; browser console: 0 errors/0 warnings. После
+  smoke dev process остановлен, ephemeral данные исчезли.
+- Production/staging data, migrations, secrets, provider settings и aliases не
+  менялись. Real webhook/callback не запускался. Vercel
+  `dpl_4eNSv1WpVvhjGBqgUCbbrBGuBbSe` — READY, Render
+  `dep-d9ij9unlk1mc739jao30` — Live; обе runtime association указывают на
+  `ba99a23`.
 
 ## Инцидент: непустой UI при пустой БД
 
@@ -436,8 +474,9 @@ Staging показывал старую demo-школу, имя менеджер
 - Direct analyze endpoint ограничен development; production/preview
   configuration проходит fail-closed startup validation.
 - PR #4 смержен в `main`.
-- TypeScript и Python используют общий versioned contract
-  `contracts/ai-analytics-v1.json`.
+- Deployed runtime сохраняет immutable `contracts/ai-analytics-v1.json` и
+  добавляет `contracts/ai-analytics-v2.json`; validators совместимы с обеими
+  версиями.
 - Реализованы callback validation, Prisma persistence, fail-closed transport и
   отдельные dashboard states.
 - Локальные Next.js → Python → callback tests и реальный
@@ -454,9 +493,9 @@ Staging показывал старую demo-школу, имя менеджер
 - Targeted repository/API tests прошли 15/15; полный TypeScript suite — 81/81;
   `npx prisma validate`, lint и production build прошли.
 - Это доказательство изоляции хранения, а не полноценной tenant security.
-  Текущий session-close slice отдельно закрыл автоматический глобальный выбор
-  школы и query-controlled dashboard round; MCP `organizationContext` пока
-  hardcoded.
+  Manager scope закрывает автоматический глобальный выбор школы и
+  query-controlled dashboard round; `2.0` MCP удаляет прежний
+  hardcoded `organizationContext`.
 
 ### Пустой runtime
 
@@ -484,16 +523,13 @@ Staging показывал старую demo-школу, имя менеджер
 
 ## Что не завершено
 
-### 1. Dashboard semantic quality
+### 1. Dashboard semantic staging evidence
 
-- Structural contract и успешный provider transport не гарантируют
-  содержательный result. Текущий payload содержит оборванные interpretations,
-  generic metrics и повтор общего summary. Catalog и green semantics уже
-  исправлены локально, но deployed/runtime payload остаётся прежним.
-- Semantic contract и failing tests готовы; следующая реализация должна
-  versioned-передавать только privacy-safe aggregates канонических вопросов
-  после threshold gate, валидировать Hebrew/completeness/status consistency и
-  использовать deterministic grounded fallback.
+- Contract/Core/Python/Dashboard semantics `2.0` развёрнуты consumer-first на
+  Core и Render. Immutable `1.0` сохранён как compatibility/rollback boundary.
+- Real staging webhook/callback после rollout не запускался: persisted payload
+  всё ещё может быть историческим `1.0`. Для нового unlocked/locked `2.0`
+  evidence нужен отдельный exact round/environment approval.
 
 ### 2. Application-level manager authentication
 
@@ -504,13 +540,15 @@ Staging показывал старую demo-школу, имя менеджер
 - Для публичного rollout всё ещё нужны application-level authentication,
   roles/organization authorization, audit boundary и isolation tests.
 
-### 3. AI provenance и privacy-locked runtime
+### 3. Deployed AI provenance и privacy-locked runtime
 
 - Real Gemini generation, transport и persistence доказаны для одного
-  explicitly approved unlocked round, но `llm`/`heuristic` provenance пока
-  доступен только в service logs и не сохраняется в versioned payload.
-- Отдельный реальный privacy-locked round после текущего provider/deploy slice
-  не проверялся.
+  explicitly approved unlocked `1.0` round. Развёрнутый `2.0` сохраняет
+  provenance, но real staging webhook/callback после rollout не запускался,
+  поэтому persisted `2.0` evidence пока отсутствует.
+- Locked behavior доказано unit/integration tests и локальным browser/API
+  runtime; отдельный реальный staging privacy-locked round после consumer-first
+  deploy не проверялся.
 - Любое изменение key, billing, limits или provider configuration и следующий
   webhook по-прежнему требуют отдельного bounded approval.
 
@@ -524,23 +562,13 @@ Staging показывал старую demo-школу, имя менеджер
 
 ## Рекомендуемый порядок продолжения
 
-1. Выбрать и опубликовать следующую версию shared AI analytics contract, затем
-   сделать GREEN готовые Core Data/MCP RED tests: 24 privacy-safe canonical
-   question aggregates и empty detailed maps для locked round.
-2. Синхронно обновить versioned TypeScript/Python contracts и OpenAPI, сохранив
-   fail-closed privacy behavior и проверяемую совместимость deployed `1.0`.
-3. Усилить provider/output quality gate: проверять `finish_reason`, полноту,
-   Hebrew и status consistency; после bounded retry использовать
-   deterministic question-grounded fallback. Добавить persisted provenance.
-4. Подключить готовый Hebrew catalog к status-aware dashboard UX, заменить
-   generic metrics и перенести общий summary в одно overview-место.
-6. Выполнить full local TypeScript/Python/build/browser verification. Любой
-   новый real staging webhook/callback write — только после отдельного
-   bounded approval для точных environment и round.
-7. Заменить organization-scoped shared Basic gate на application-level manager
+1. С отдельным bounded approval выполнить точные unlocked и privacy-locked
+   staging E2E, включая persisted provenance, question metrics и пустые locked
+   maps. Не использовать production data.
+2. Заменить organization-scoped shared Basic gate на application-level manager
    identity/roles и полноценную tenant authorization; передавать реальный
    organization context в MCP payload.
-8. Согласовать окончательное разделение staging/production aliases и env;
+3. Согласовать окончательное разделение staging/production aliases и env;
    текущий legacy staging alias уже выровнен по Git tree, но production alias
    всё ещё используется как staging core endpoint. Production
    data/env/alias/deployment не затрагивать без нового bounded approval.
@@ -551,10 +579,9 @@ Staging показывал старую demo-школу, имя менеджер
   ограниченного подтверждения.
 - Следующий core deployment, alias mutation или write-smoke требуют отдельного
   bounded approval; persisted data не менять без дополнительного разрешения.
-- Push текущих local `main` commits в `origin/main` требует явного bounded
-  approval, потому что Vercel Git integration может автоматически создать
-  deployment. Semantic suites при этом намеренно остаются RED (`10` failures в
-  TypeScript и `10` в Python) как следующий TDD checkpoint.
+- Следующий push/deployment после session close снова требует bounded approval.
+  Текущий consumer-first rollout завершён, но это не равно production
+  readiness без manager authorization и разделения aliases/env.
 - Не изменять provider key, billing, limits или provider configuration без
   отдельного bounded approval.
 - Не запускать следующий real webhook без явно выбранных environment и round;

@@ -1,20 +1,24 @@
 # AI Analytics — handoff
 
-> Status update, 2026-07-25: functional AI code is at `a9b6c34`; the later
-> session-close slice changes core manager scoping and project memory, not the
-> Python provider. Provider resolution is credential-source-aware, transient
-> failures use bounded retry/backoff, and a per-dimension time budget leaves
-> room for MCP and callback. One explicitly approved Gemini staging E2E
-> completed with four `outcome=llm`, zero retry and zero heuristic fallback.
-> A later local session from `main@54c2eaa` defined the next versioned semantic
-> contract, added executable RED quality tests, and completed the independent
-> Hebrew intervention-catalog slice. Core/MCP/provider/output runtime remains
-> on contract `1.0` until the RED tests are implemented.
+> Status update, 2026-07-26: consumer `82f7194` and producer `ba99a23` are
+> published in `origin/main`; Vercel implementation deployment
+> `dpl_4eNSv1WpVvhjGBqgUCbbrBGuBbSe` is `READY`, and Render deployment
+> `dep-d9ij9unlk1mc739jao30` is `Live` on `ba99a23`. `main` now implements the
+> breaking shared contract `2.0` while preserving
+> immutable `1.0`. Prepared TypeScript and Python semantic suites
+> are GREEN, including 24 privacy-safe question aggregates, strict Hebrew and
+> completeness validation, bounded retry, grounded fallback, persisted
+> provenance and status-aware Dashboard UX. Consumer commit `82f7194` reached
+> Render first; producer commit `ba99a23` then reached Vercel and Render. A
+> session-close docs publish can create newer deployment IDs without changing
+> the application runtime.
 > Broader operational state is tracked in
 > `docs/shalomut-tracker-handoff.md`.
 
 ## Snapshot
 
+- Session baseline: clean start from `main@6555c34`. Consumer `82f7194` and
+  producer `ba99a23` are published in `origin/main`.
 - Original branch: `feature/ai-analytics-microservice-mcp`
 - Merged to `main`: PR #4, merge commit `19401a6`
 - Current AI hardening: `main` commit `7e0e1fd`
@@ -26,7 +30,7 @@
 - Core production alias remains an operational staging endpoint. Workflow
   [30160539496](https://github.com/shteynu/shalomut-map-demo/actions/runs/30160539496)
   passed for `a9b6c34`; its manual production deployment job was skipped.
-- Render AI deployment: `dep-d9ibutgk1i2s73b2oolg`, `Live`,
+- Render AI implementation deployment: `dep-d9ij9unlk1mc739jao30`, `Live`,
   `https://shalomut-ai-analytics.onrender.com`.
 - Shared secrets match across the two runtimes; raw values were neither printed
   nor committed. The obsolete preview URLs and placeholder Vercel bypass were
@@ -38,16 +42,19 @@
 
 ### Contract and data boundaries
 
-- `contracts/ai-analytics-v1.json` is the shared source of truth for contract
-  version `1.0`, eight canonical dimension IDs, and Hebrew labels.
-- TypeScript validates callback payloads before persistence.
-- Python loads the same manifest through `ai-analytics-service/src/contracts.py`.
+- `contracts/ai-analytics-v1.json` remains the immutable source of truth for
+  legacy `1.0`; its semantics were not silently tightened.
+- `contracts/ai-analytics-v2.json` publishes the breaking `2.0` boundary with
+  the same eight canonical dimensions and exactly 24 required canonical
+  questions. TypeScript, Python and OpenAPI load/describe both versions.
+- TypeScript validates legacy `1.0` and strict `2.0` callback payloads before
+  persistence. Python accepts missing/`1.0` input as legacy and explicit `2.0`
+  input as strict, returning the effective input version.
 - Privacy lock prevents stones from being generated or displayed below the
-  configured response threshold.
-- `docs/dashboard-semantic-contract.md` now specifies the next breaking,
-  explicitly versioned boundary: 24 privacy-safe canonical question aggregates,
-  strict Hebrew/completeness/status quality, real question metrics and one
-  round-level summary. No version number or runtime rollout has been published.
+  configured response threshold. In `2.0`, locked input must also contain empty
+  `dimensionScores` and `questionAggregates`.
+- `docs/dashboard-semantic-contract.md` specifies the published `2.0` schema,
+  compatibility rules and consumer-first rollout.
 
 ### Python service
 
@@ -61,6 +68,15 @@
   catalog is Hebrew, covers all eight dimensions across green/yellow/red, and
   has eight green-only «חוזקה לשימור» supporting-action entries. Exact lookup
   no longer backfills from another status.
+- Strict `2.0` provider validation requires `finish_reason=stop`, exactly two
+  complete Hebrew-only user-facing sentences and score/status consistency.
+  Malformed, truncated and provider-invalid output is rejected.
+- Retries are bounded. Exhausted invalid output uses a deterministic fallback
+  grounded in the dimension's three question aggregates, never in a generic
+  score/status/risk template.
+- Every `2.0` stone persists verifiable generation provenance:
+  `llm` or `deterministic_fallback`, attempts/retry count and the three source
+  question IDs.
 - Runtime dependencies were reduced to the packages actually used by the
   service.
 - Update, 2026-07-25 (commit `c0166e0`): the service ships as a container image
@@ -93,6 +109,11 @@
 ### Core app and persistence
 
 - `/api/mcp` exposes `tools/list` and `get_round_analytics`.
+- `2.0` MCP output contains all 24 canonical question aggregates only
+  when the total and every question meet the privacy threshold; otherwise both
+  detailed maps are empty. Response data is filtered by exact round and
+  organization ownership, and the former fabricated organization context was
+  removed.
 - `/api/rounds/[roundId]/trigger-ai` forwards `round_closed` events.
 - `/api/rounds/[roundId]/ai-insights` validates, persists, and reads Stone Map
   payloads.
@@ -107,20 +128,36 @@
 - Detail, metrics, and recommendations pages load AI insights by `roundId`.
 - UI states are explicit: loading, ready, locked, not-found, and error.
 - Browser scenarios were checked for ready, missing, and privacy-locked rounds.
-- A later local Playwright audit against read-only staging persistence proved
-  that structural validity is not content quality: `0/4` non-green
-  interpretations fulfilled the requested two complete sentences, all four
-  green dimensions received improvement recommendations, all `11`
-  recommendation titles were English, and all eight metric sets repeated the
-  same score/status/risk template.
-- The current prompt receives only dimension score/status, the provider accepts
-  any HTTP `200` text without checking `finish_reason` or completeness, the
-  formatter emits generic metrics, and the UI appends the same overall summary
-  to every dimension. The catalog fallback issue is fixed locally; deployed
-  runtime and remaining semantic behaviors are not yet changed.
+- `2.0` UI uses all three real question metrics per dimension, renders the
+  organization summary exactly once on overview and drops any explicit
+  cross-status intervention.
+- Green dimensions render `חוזקה לשימור` and `פעולות לשימור`, without
+  improvement goals. Existing persisted `1.0` payloads remain readable.
 
 ## Verification evidence
 
+- Consumer-first deployment: Render `dep-d9ij96mq1p3s73fhsncg` reached Live on
+  `82f7194` before Core producer `ba99a23` was pushed.
+- Final runtime association: Vercel
+  `dpl_4eNSv1WpVvhjGBqgUCbbrBGuBbSe` is READY on `ba99a23` with production
+  alias; Render `dep-d9ij9unlk1mc739jao30` is Live on the same commit. GitHub
+  build runs `30177097867` and `30177151317` passed.
+- Post-deploy read-only smoke: Render health HTTP 200, unauthenticated webhook
+  HTTP 401 and unauthenticated Core HTTP 401. No real webhook/callback or data
+  write was invoked.
+- Current local semantic verification: `npm test` 109/109; full Python pytest
+  65/65; `python3 ai-analytics-service/run_tests.py` 13/13; OpenAPI integrity
+  5/5 plus independent JSON/YAML parse/synchronization; lint; production build;
+  `git diff --check`.
+- Local real-runtime Next.js → Python CLI → local callback E2E returned
+  `contractVersion: 2.0`, 8 dimensions, 24 question aggregates, 8 stones,
+  deterministic provenance and callback HTTP 200. No external callback or
+  webhook was invoked.
+- Local Playwright on an explicitly database-free in-memory runtime verified
+  `/setup/`, unlocked overview/dimension/metrics/recommendations and a separate
+  privacy-locked dashboard/API state. The three question metrics reached the UI,
+  organization summary appeared once, green supporting actions were used, and
+  browser console had 0 errors/0 warnings.
 - TDD RED: both new regression tests received slashless MCP/callback URLs before
   the fix and failed with the exact URL mismatch.
 - `npm test` — 81/81 pass on `a9b6c34`.
@@ -144,7 +181,7 @@
   deployed Vercel SSO/Basic-auth browser chain was not re-tested.
 - Targeted manager-context/setup/view-model tests passed `9/9`; they do not
   cover partial persisted JSON rendering or AI content quality.
-- Current semantic RED evidence: TypeScript `91 passed / 10 failed`; Python
+- Historical pre-implementation RED evidence: TypeScript `91 passed / 10 failed`; Python
   `41 passed / 10 failed`. The failures reproduce absent question aggregates,
   locked placeholder detail, missing `finish_reason`/Hebrew/completeness checks,
   ungrounded fallback, status contradiction, generic metrics, weak callback
@@ -158,22 +195,12 @@
 
 ## What remains
 
-1. Select and publish the next shared contract version; the semantic contract
-   and RED tests are ready, but deployed `1.0` must not be silently tightened.
-2. Add privacy-safe aggregates for the 24 canonical questions to the Core
-   Data → MCP request boundary; locked rounds must expose none.
-3. Add strict versioned request/output/privacy models plus quality validation
-   for `finish_reason`, completeness, Hebrew, status consistency and
-   deterministic question-grounded fallback.
-4. Connect the completed Hebrew/status-aware intervention catalog to the next
-   output/UI contract and stop repeating the overall summary on every dimension.
-5. Version and persist `llm` versus `heuristic` provenance; it currently exists
-   only in service logs.
-6. Verify a privacy-locked real round separately before broader rollout, after
-   explicit bounded approval.
-7. Separate staging and production aliases/env; the current production alias
+1. With an exact environment/round approval, verify real staging unlocked and
+   privacy-locked `2.0` paths, persisted provenance and empty locked maps.
+2. Separate staging and production aliases/env; the current production alias
    is being used as a staging core endpoint and is not production-ready.
-8. Decide separately whether the runtime should adopt real LangGraph/ChromaDB;
+3. Implement application-level manager identity/roles and tenant authorization.
+4. Decide separately whether the runtime should adopt real LangGraph/ChromaDB;
    this is not required for the current contract or local E2E path.
 
 ## Approval gates
@@ -191,8 +218,6 @@
 
 ## First next action
 
-Make the prepared Core Data/MCP semantic RED tests green behind an explicitly
-selected next contract version, then update the Python consumer and output
-validation in the same compatibility plan. Do not invoke another real webhook:
-it still needs an explicitly selected environment and round plus bounded
-approval.
+With a separate bounded approval, run the first real staging `2.0` unlocked and
+privacy-locked E2E. Do not invoke a real webhook or external callback without an
+explicitly selected environment and round.
