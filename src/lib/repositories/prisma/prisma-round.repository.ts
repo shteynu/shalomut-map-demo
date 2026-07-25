@@ -1,6 +1,46 @@
-import { RoundStatus, SurveyRound, UpdateRoundInput } from '../../types/backend';
+import {
+  RoundBackgroundContext,
+  RoundStatus,
+  SurveyRound,
+  UpdateRoundInput,
+} from '../../types/backend';
 import { IRoundRepository } from '../interfaces';
 import { MinimalPrismaClient } from './prisma-client';
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function finiteNumber(value: unknown, fallback: number): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
+
+function normalizeClassesPerGrade(value: unknown): Record<string, number> {
+  if (!isRecord(value)) return {};
+
+  return Object.fromEntries(
+    Object.entries(value).filter(
+      (entry): entry is [string, number] =>
+        typeof entry[1] === 'number' && Number.isFinite(entry[1]),
+    ),
+  );
+}
+
+function normalizeBackgroundContext(
+  value: unknown,
+): RoundBackgroundContext | undefined {
+  if (!isRecord(value)) return undefined;
+
+  return {
+    notes: typeof value.notes === 'string' ? value.notes : '',
+    audience: typeof value.audience === 'string' ? value.audience : 'all-staff',
+    sicknessDaysThisQuarter: finiteNumber(value.sicknessDaysThisQuarter, 0),
+    newStaffMembers: finiteNumber(value.newStaffMembers, 0),
+    studentCount: finiteNumber(value.studentCount, 0),
+    socioEconomicIndex: finiteNumber(value.socioEconomicIndex, 1),
+    classesPerGrade: normalizeClassesPerGrade(value.classesPerGrade),
+  };
+}
 
 export class PrismaRoundRepository implements IRoundRepository {
   constructor(private prisma: MinimalPrismaClient) {}
@@ -15,12 +55,7 @@ export class PrismaRoundRepository implements IRoundRepository {
       privacyThreshold: record.privacyThreshold,
       startDate: new Date(record.startDate),
       endDate: record.endDate ? new Date(record.endDate) : undefined,
-      backgroundContext:
-        record.backgroundContext &&
-        typeof record.backgroundContext === 'object' &&
-        !Array.isArray(record.backgroundContext)
-          ? { ...record.backgroundContext }
-          : undefined,
+      backgroundContext: normalizeBackgroundContext(record.backgroundContext),
       surveyDefinition:
         record.surveyDefinition &&
         typeof record.surveyDefinition === 'object' &&

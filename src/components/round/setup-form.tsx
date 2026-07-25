@@ -233,7 +233,7 @@ export function SetupForm({ organization, round }: SetupFormProps) {
                   type="number"
                   min="0"
                   defaultValue={
-                    round?.backgroundContext?.classesPerGrade[grade] ?? 0
+                    round?.backgroundContext?.classesPerGrade?.[grade] ?? 0
                   }
                   className="grade-input"
                 />

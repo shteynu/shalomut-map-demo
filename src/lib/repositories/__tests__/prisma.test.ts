@@ -144,6 +144,7 @@ test('PrismaRoundRepository creates rounds and updates status', async () => {
   });
 
   assert.strictEqual(round.shareCode, 'SHALOM-PRISMA');
+  assert.strictEqual(round.backgroundContext, undefined);
 
   const byCode = await roundRepo.findByShareCode('SHALOM-PRISMA');
   assert.strictEqual(byCode?.id, 'round_prisma_1');
@@ -162,7 +163,49 @@ test('PrismaRoundRepository creates rounds and updates status', async () => {
       classesPerGrade: { א: 3 },
     },
   });
-  assert.strictEqual(configured?.backgroundContext?.notes, 'רקע ניהולי');
+  assert.deepStrictEqual(configured?.backgroundContext, {
+    notes: 'רקע ניהולי',
+    audience: 'all-staff',
+    sicknessDaysThisQuarter: 3,
+    newStaffMembers: 2,
+    studentCount: 400,
+    socioEconomicIndex: 6,
+    classesPerGrade: { א: 3 },
+  });
+});
+
+test('PrismaRoundRepository normalizes partial persisted background context', async () => {
+  const mockPrisma = createMockPrismaClient();
+  const roundRepo = new PrismaRoundRepository(mockPrisma);
+
+  await mockPrisma.surveyRound.create({
+    data: {
+      id: 'round_legacy_background',
+      organizationId: 'org_prisma_1',
+      title: 'Legacy background context',
+      status: 'active',
+      shareCode: 'SHALOM-LEGACY',
+      privacyThreshold: 10,
+      startDate: new Date('2026-07-01T00:00:00.000Z'),
+      backgroundContext: {
+        note: 'Disposable E2E smoke round. Safe to delete.',
+      },
+      createdAt: new Date('2026-07-01T00:00:00.000Z'),
+    },
+  });
+
+  const persisted = await roundRepo.findById('round_legacy_background');
+
+  assert.deepStrictEqual(persisted?.backgroundContext, {
+    notes: '',
+    audience: 'all-staff',
+    sicknessDaysThisQuarter: 0,
+    newStaffMembers: 0,
+    studentCount: 0,
+    socioEconomicIndex: 1,
+    classesPerGrade: {},
+  });
+  assert.strictEqual(persisted?.backgroundContext?.classesPerGrade['א'], undefined);
 });
 
 test('PrismaRoundRepository persists AI insights across repository instances', async () => {
