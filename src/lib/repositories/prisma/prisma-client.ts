@@ -25,28 +25,47 @@ export interface MinimalPrismaClient {
 
 let globalPrisma: MinimalPrismaClient | null = null;
 
-export function getPrismaClient(): MinimalPrismaClient | null {
+function createAdapterBackedClient(connectionString: string): MinimalPrismaClient {
+  const { PrismaClient } = require('@prisma/client');
+  const { PrismaPg } = require('@prisma/adapter-pg');
+  const { Pool } = require('pg');
+
+  const pool = new Pool({
+    connectionString,
+    ssl: { rejectUnauthorized: false },
+  });
+
+  return new PrismaClient({ adapter: new PrismaPg(pool) });
+}
+
+export function getPrismaClient(
+  createClient: (connectionString: string) => MinimalPrismaClient =
+    createAdapterBackedClient,
+): MinimalPrismaClient | null {
   if (typeof process === 'undefined' || !process.env.DATABASE_URL) {
     return null;
   }
 
   if (!globalPrisma) {
     try {
-      const { PrismaClient } = require('@prisma/client');
-      const { PrismaPg } = require('@prisma/adapter-pg');
-      const { Pool } = require('pg');
-
-      const pool = new Pool({
-        connectionString: process.env.DATABASE_URL,
-        ssl: { rejectUnauthorized: false },
-      });
-      const adapter = new PrismaPg(pool);
-      globalPrisma = new PrismaClient({ adapter });
+      globalPrisma = createClient(process.env.DATABASE_URL);
     } catch (error) {
-      console.error('Failed to initialize Prisma client with adapter:', error);
-      return null;
+      // Fail loudly. Returning null here degraded a configured-but-broken
+      // database into empty in-memory repositories, where a client that never
+      // initialized is indistinguishable from a database with no rows. That
+      // hid a missing `prisma generate` behind plausible empty states.
+      throw new Error(
+        "DATABASE_URL is configured but the Prisma client could not be " +
+          "initialized, so persistence is unavailable: " +
+          (error instanceof Error ? error.message : String(error)),
+      );
     }
   }
 
   return globalPrisma;
+}
+
+/** Test seam: drops the cached client so a test can supply its own factory. */
+export function resetPrismaClientForTests() {
+  globalPrisma = null;
 }
