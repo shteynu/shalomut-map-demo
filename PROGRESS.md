@@ -67,7 +67,9 @@
 - **Git-состояние**: baseline текущей сессии — `main@54c2eaa`. Изменения
   текущей сессии включают setup fix, semantic RED tests/contract, Hebrew
   intervention catalog и подтверждённые handoff updates; unrelated user
-  changes не обнаружены.
+  changes не обнаружены. Локальный `main` содержит commits `d8042b3` и
+  `783335d`; `origin/main` остаётся на `54c2eaa`, потому что push может
+  запустить Vercel Git deployment и требует отдельного bounded approval.
 - **AI coding workflow**: канонические repo-level skills `shalomut-map`, `shalomut-tracker` и `shalomut-verification` находятся в `.agents/skills/`; инструкции для Codex, Gemini, Claude и GitHub Copilot закоммичены в `main`.
 - **Актуальный handoff**: см. [`docs/shalomut-tracker-handoff.md`](docs/shalomut-tracker-handoff.md). AI-детали: [`docs/ai-analytics-handoff.md`](docs/ai-analytics-handoff.md).
 

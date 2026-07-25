@@ -12,7 +12,10 @@ Shalomut Map к `shalomut-tracker`, где сохранённые данные �
 
 - Активная ветка: `main`; baseline текущей локальной сессии — `54c2eaa`
   (`HEAD`, `main` и `origin/main` совпадали, worktree был чистым до начала
-  изменений).
+  изменений). Session changes зафиксированы локально commits `d8042b3`
+  (setup fix) и `783335d` (semantic boundary/catalog/handoff). `origin/main`
+  не обновлялся: push может запустить Vercel Git deployment и остаётся за
+  отдельным bounded approval.
 - Functional AI baseline `a9b6c34` ограничивает latency Gemini-запросов общим
   retry budget. Поверх него `7a451fd` добавляет organization-scoped manager
   boundary, а `508410a` сохраняет понятный пользователю fail-closed UI; оба
@@ -548,6 +551,10 @@ Staging показывал старую demo-школу, имя менеджер
   ограниченного подтверждения.
 - Следующий core deployment, alias mutation или write-smoke требуют отдельного
   bounded approval; persisted data не менять без дополнительного разрешения.
+- Push текущих local `main` commits в `origin/main` требует явного bounded
+  approval, потому что Vercel Git integration может автоматически создать
+  deployment. Semantic suites при этом намеренно остаются RED (`10` failures в
+  TypeScript и `10` в Python) как следующий TDD checkpoint.
 - Не изменять provider key, billing, limits или provider configuration без
   отдельного bounded approval.
 - Не запускать следующий real webhook без явно выбранных environment и round;
