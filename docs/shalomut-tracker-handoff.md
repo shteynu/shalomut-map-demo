@@ -10,7 +10,9 @@ Shalomut Map к `shalomut-tracker`, где сохранённые данные �
 
 ## Текущий snapshot
 
-- Активная ветка: `main`.
+- Активная ветка: `main`; подтверждённый application baseline перед
+  session-close документацией — `ace5ba8`. Текущий session-close diff изменяет
+  только operational Markdown, не runtime-код.
 - Functional AI baseline `a9b6c34` ограничивает latency Gemini-запросов общим
   retry budget. Поверх него `7a451fd` добавляет organization-scoped manager
   boundary, а `508410a` сохраняет понятный пользователю fail-closed UI; оба
@@ -44,15 +46,22 @@ Shalomut Map к `shalomut-tracker`, где сохранённые данные �
   менялись.
 - Первый проверенный post-env production deployment
   `dpl_Hb1WZR9hHdUKsWhJdXDXDMS8ExPe` получил состояние `READY` и на момент
-  smoke обслуживал `shalomut-map-demo.vercel.app`. Последующие docs-only merges
-  могут создавать новые deployment ID через Vercel Git integration; отдельный
-  alias mutation не выполнялся.
+  smoke обслуживал `shalomut-map-demo.vercel.app`. На момент alias verification
+  production deployment `dpl_9PrHZzeVrTWJ3YNzCbHKQtxr8Zdq` для `ace5ba8`
+  имел состояние `READY` и обслуживал production alias; последующий docs-only
+  merge может создать более новый deployment ID через Git integration.
 - Исходный Supabase project ref `fvnulyirrqjrnjbahmsn` подтверждён Dashboard как
   `main / Production` и не изменялся.
 - Staging:
   [shalomut-map-demo-ui-redesign.vercel.app](https://shalomut-map-demo-ui-redesign.vercel.app/).
-- Staging deployment: `dpl_35S9VvwN8V9Bq7da3iP2SJwT4349`, состояние `READY`,
-  source commit `a20ac66`.
+- После явного bounded approval legacy staging alias переназначен с
+  `dpl_35S9VvwN8V9Bq7da3iP2SJwT4349` (`a20ac66`) на protected Preview
+  `dpl_FjVVtXibnMwWRXHHAaPEW5wgj3bR`, состояние `READY`, source commit
+  `91bb8d4`. Git tree этого Preview
+  (`e6ec733e140cf5af1c0e98c87c3cfcbea3a8c37d`) идентичен application
+  baseline `ace5ba8`; последующая session-close документация не меняет
+  runtime-содержимое. Production deployment и alias этой операцией не
+  менялись.
 - Новый protected Preview со staging persistence:
   `dpl_E7pQnJXMDHzoeeMQa5hWskxicCLz`, состояние `READY`, target `preview`, URL
   `https://shalomut-map-demo-3b0szbymo-shteynumaks-1343s-projects.vercel.app`.
@@ -154,6 +163,32 @@ Staging показывал старую demo-школу, имя менеджер
 - Staging `/`: HTTP 200, содержит `0/0`, строка `18/34` отсутствует.
 - Staging `/api/rounds/`: HTTP 200, ответ `{"round":null}`.
 - Vercel check для draft PR #5: прошёл.
+
+### Выравнивание legacy staging alias (session close, 2026-07-25)
+
+- `vercel alias set` атомарно переназначил
+  `shalomut-map-demo-ui-redesign.vercel.app` на
+  `dpl_FjVVtXibnMwWRXHHAaPEW5wgj3bR`; повторный `vercel inspect` разрешил alias
+  в тот же deployment с target `preview`, состоянием `READY`.
+- Неавторизованный запрос к alias по-прежнему получает HTTP `302` на Vercel
+  SSO; Deployment Protection не ослаблялась.
+- Read-only protected runtime smoke через respondent API вернул round
+  `80e78f3e-1240-42d4-8a9e-23a3467bb650`, privacy threshold `10` и 24
+  обязательных вопроса. Отдельный read-only запрос к staging PostgreSQL
+  подтвердил `12` сохранённых responses для того же round.
+- Targeted privacy regression
+  `npx tsx --test src/lib/services/__tests__/analytics.service.test.ts` прошёл
+  `5/5`, включая unlock при `responseCount >= privacyThreshold`.
+- Vercel CLI дважды создавал временный automation bypass для protected
+  read-only smoke. Оба секрета сразу отозваны через Deployment Protection UI;
+  финальное состояние — `0` automation bypass secrets.
+- Автоматизированный manager UI smoke не выполнен: управляемая Chrome-вкладка
+  вернула `ERR_BLOCKED_BY_CLIENT`, а CLI после Vercel protection достиг
+  ожидаемого application Basic gate. Это browser/auth limitation проверки, а
+  не доказанный runtime failure.
+- До записи session-close handoff tracked repository не содержал code changes
+  на application baseline `ace5ba8`; session-close diff затрагивает только
+  `PROGRESS.md` и этот handoff.
 
 ### Контейнеризация и protected-origin hardening AI-сервиса (сессия 2026-07-25, local)
 
@@ -409,8 +444,9 @@ Staging показывал старую demo-школу, имя менеджер
 
 ### 3. Staging/production boundary
 
-- Legacy staging alias остаётся на проверенном empty-runtime preview, а
-  production alias временно используется как staging core endpoint для Render.
+- Legacy staging alias выровнен с Git tree текущего `main` и указывает на
+  protected Preview, а production alias по-прежнему временно используется как
+  staging core endpoint для Render.
 - Перед production rollout нужно явно развести aliases/env, повторно проверить
   target DB и не считать текущую конфигурацию production-ready.
 
@@ -427,8 +463,9 @@ Staging показывал старую demo-школу, имя менеджер
    identity/roles и полноценную tenant authorization; передавать реальный
    organization context в MCP payload.
 5. Согласовать окончательное разделение staging/production aliases и env;
-   production data/env/alias/deployment не затрагивать без нового bounded
-   approval.
+   текущий legacy staging alias уже выровнен по Git tree, но production alias
+   всё ещё используется как staging core endpoint. Production
+   data/env/alias/deployment не затрагивать без нового bounded approval.
 
 ## Approval gates
 
