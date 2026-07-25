@@ -12,14 +12,52 @@ LLM_KEY_ENV_VARS = (
     "OPENROUTER_API_KEY",
 )
 
+BALANCE_QUESTION_AGGREGATES = [
+    {
+        "questionId": "balance-1",
+        "dimensionId": "balance",
+        "questionTextHebrew": (
+            "אני מצליחה לבצע את משימות העבודה בזמן שנקבע."
+        ),
+        "averageScore": 80.0,
+        "responseCount": 12,
+    },
+    {
+        "questionId": "balance-2",
+        "dimensionId": "balance",
+        "questionTextHebrew": (
+            "יש לי מספיק זמן למנוחה ולהתאוששות אחרי העבודה."
+        ),
+        "averageScore": 20.0,
+        "responseCount": 12,
+    },
+    {
+        "questionId": "balance-3",
+        "dimensionId": "balance",
+        "questionTextHebrew": (
+            "אני מרגישה שהעומס בעבודה מתאים לי והוא בהישג יד."
+        ),
+        "averageScore": 40.0,
+        "responseCount": 12,
+    },
+]
+
 
 class FakeLLMResponse:
-    def __init__(self, content="תוצאה ממודל"):
+    def __init__(
+        self,
+        content=(
+            "הנתונים המצרפיים התקבלו מן המודל. "
+            "הפירוש נשען על מדדי השאלות בלבד."
+        ),
+        finish_reason="stop",
+    ):
         self.status = 200
         self._body = json.dumps(
             {
                 "choices": [
                     {
+                        "finish_reason": finish_reason,
                         "message": {
                             "content": content,
                         },
@@ -27,6 +65,21 @@ class FakeLLMResponse:
                 ],
             },
         ).encode("utf-8")
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        return False
+
+    def read(self):
+        return self._body
+
+
+class FakeRawResponse:
+    def __init__(self, body: bytes):
+        self.status = 200
+        self._body = body
 
     def __enter__(self):
         return self
@@ -120,7 +173,10 @@ def test_transient_503_retries_then_returns_llm_result(
     responses = iter(
         [
             create_http_error(503),
-            FakeLLMResponse("תוצאה אמיתית מג׳מיני"),
+            FakeLLMResponse(
+                "התקבלה תוצאה אמיתית מן המודל. "
+                "הפירוש נשען על הנתונים המצרפיים."
+            ),
         ],
     )
     attempts = []
@@ -141,7 +197,10 @@ def test_transient_503_retries_then_returns_llm_result(
         "red",
     )
 
-    assert result == "תוצאה אמיתית מג׳מיני"
+    assert result == (
+        "התקבלה תוצאה אמיתית מן המודל. "
+        "הפירוש נשען על הנתונים המצרפיים."
+    )
     assert len(attempts) == 2
     assert "outcome=retry" in caplog.text
     assert "outcome=llm" in caplog.text
@@ -190,6 +249,119 @@ def test_transient_failures_fall_back_after_bounded_attempts(monkeypatch):
     assert len(attempts) == 3
 
 
+def test_semantically_invalid_output_retries_then_records_llm_provenance(
+    monkeypatch,
+):
+    configure_gemini_retry_test(monkeypatch, max_attempts=2)
+    responses = iter(
+        [
+            FakeLLMResponse(
+                "הפלט נקטע לפני שהושלם",
+                finish_reason="length",
+            ),
+            FakeLLMResponse(
+                "ממוצעי השאלות מצביעים על פער בתחום האיזון. "
+                "השאלה על זמן ההתאוששות דורשת תשומת לב."
+            ),
+        ],
+    )
+    attempts = []
+
+    def fake_urlopen(*_args, **_kwargs):
+        attempts.append(True)
+        return next(responses)
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+
+    generation = (
+        llm_provider_service.generate_psychological_interpretation_result(
+            "balance",
+            "איזון",
+            46.7,
+            "red",
+            question_aggregates=BALANCE_QUESTION_AGGREGATES,
+        )
+    )
+
+    assert generation.outcome == "llm"
+    assert generation.attempts == 2
+    assert generation.retry_count == 1
+    assert len(attempts) == 2
+
+
+def test_invalid_provider_output_records_grounded_fallback_provenance(
+    monkeypatch,
+):
+    configure_gemini_retry_test(monkeypatch, max_attempts=2)
+    attempts = []
+
+    def fake_urlopen(*_args, **_kwargs):
+        attempts.append(True)
+        return FakeLLMResponse(
+            "Provider output remained incomplete",
+            finish_reason="length",
+        )
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+
+    generation = (
+        llm_provider_service.generate_psychological_interpretation_result(
+            "balance",
+            "איזון",
+            46.7,
+            "red",
+            question_aggregates=BALANCE_QUESTION_AGGREGATES,
+        )
+    )
+
+    assert generation.outcome == "deterministic_fallback"
+    assert generation.attempts == 2
+    assert generation.retry_count == 1
+    assert len(attempts) == 2
+    assert (
+        BALANCE_QUESTION_AGGREGATES[1]["questionTextHebrew"]
+        in generation.text
+    )
+    assert "20" in generation.text
+
+
+def test_malformed_provider_response_uses_the_same_bounded_retry(
+    monkeypatch,
+):
+    configure_gemini_retry_test(monkeypatch, max_attempts=2)
+    responses = iter(
+        [
+            FakeRawResponse(b"{truncated-json"),
+            FakeLLMResponse(
+                "ממוצעי השאלות מצביעים על פער בתחום האיזון. "
+                "השאלה על זמן ההתאוששות דורשת תשומת לב."
+            ),
+        ],
+    )
+    attempts = []
+
+    def fake_urlopen(*_args, **_kwargs):
+        attempts.append(True)
+        return next(responses)
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+
+    generation = (
+        llm_provider_service.generate_psychological_interpretation_result(
+            "balance",
+            "איזון",
+            46.7,
+            "red",
+            question_aggregates=BALANCE_QUESTION_AGGREGATES,
+        )
+    )
+
+    assert generation.outcome == "llm"
+    assert generation.attempts == 2
+    assert generation.retry_count == 1
+    assert len(attempts) == 2
+
+
 def test_quota_429_is_not_retried(monkeypatch):
     configure_gemini_retry_test(monkeypatch)
     attempts = []
@@ -233,7 +405,10 @@ def test_transient_429_retries_when_not_a_hard_quota_error(monkeypatch):
                     },
                 ).encode("utf-8"),
             ),
-            FakeLLMResponse("תוצאה אחרי הגבלת קצב זמנית"),
+            FakeLLMResponse(
+                "התקבלה תוצאה לאחר הגבלת קצב זמנית. "
+                "הפירוש נשען על הנתונים המצרפיים."
+            ),
         ],
     )
     attempts = []
@@ -254,7 +429,10 @@ def test_transient_429_retries_when_not_a_hard_quota_error(monkeypatch):
         "red",
     )
 
-    assert result == "תוצאה אחרי הגבלת קצב זמנית"
+    assert result == (
+        "התקבלה תוצאה לאחר הגבלת קצב זמנית. "
+        "הפירוש נשען על הנתונים המצרפיים."
+    )
     assert len(attempts) == 2
 
 
@@ -283,7 +461,10 @@ def test_transport_timeout_retries_then_returns_llm_result(
     responses = iter(
         [
             TimeoutError("provider request timed out"),
-            FakeLLMResponse("תוצאה אחרי timeout זמני"),
+            FakeLLMResponse(
+                "התקבלה תוצאה לאחר עיכוב זמני. "
+                "הפירוש נשען על הנתונים המצרפיים."
+            ),
         ],
     )
     attempts = []
@@ -304,7 +485,10 @@ def test_transport_timeout_retries_then_returns_llm_result(
         "red",
     )
 
-    assert result == "תוצאה אחרי timeout זמני"
+    assert result == (
+        "התקבלה תוצאה לאחר עיכוב זמני. "
+        "הפירוש נשען על הנתונים המצרפיים."
+    )
     assert len(attempts) == 2
     assert "outcome=retry" in caplog.text
     assert "error_type=TimeoutError" in caplog.text

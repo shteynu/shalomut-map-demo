@@ -9,6 +9,12 @@ from src.agents.nodes import (
     agent_safety_validator_node,
 )
 from src.config import settings
+from src.contracts import (
+    AI_ANALYTICS_CONTRACT_VERSION,
+    AI_ANALYTICS_DIMENSION_IDS,
+    AI_ANALYTICS_QUESTIONS,
+    AI_ANALYTICS_V1_CONTRACT_VERSION,
+)
 from src.schemas.mcp_types import RoundAnalyticsResult
 from src.services.llm_provider import llm_provider_service
 
@@ -111,6 +117,37 @@ def test_unlocked_model_requires_explicit_question_aggregates():
     ).to_dict()
 
     assert normalized.get("questionAggregates") == BALANCE_QUESTIONS
+    assert normalized["contractVersion"] == AI_ANALYTICS_V1_CONTRACT_VERSION
+
+
+def test_explicit_legacy_input_preserves_legacy_effective_version():
+    normalized = RoundAnalyticsResult.from_dict(
+        {
+            "contractVersion": AI_ANALYTICS_V1_CONTRACT_VERSION,
+            "roundId": "round-legacy",
+            "totalResponses": 12,
+            "privacyThreshold": 10,
+            "isLocked": False,
+            "dimensionScores": {},
+        },
+    ).to_dict()
+
+    assert normalized["contractVersion"] == AI_ANALYTICS_V1_CONTRACT_VERSION
+
+
+def test_explicit_v2_requires_the_complete_canonical_aggregate_set():
+    with pytest.raises(ValueError, match="exactly eight"):
+        RoundAnalyticsResult.from_dict(
+            {
+                "contractVersion": AI_ANALYTICS_CONTRACT_VERSION,
+                "roundId": "round-incomplete-v2",
+                "totalResponses": 12,
+                "privacyThreshold": 10,
+                "isLocked": False,
+                "dimensionScores": {},
+                "questionAggregates": {},
+            },
+        )
 
 
 def test_locked_model_requires_empty_aggregate_maps():
@@ -161,6 +198,8 @@ def test_provider_rejects_a_non_stop_finish_reason(monkeypatch, finish_reason):
     [
         "Staff wellbeing requires immediate attention. Workload remains high.",
         "הנתונים מצביעים על קושי מתמשך ללא משפט שני",
+        "משפט עברי ראשון. משפט עברי שני. משפט עברי שלישי.",
+        "הנתונים לפי OECD דורשים תשומת לב. המעקב יימשך באופן מצרפי.",
     ],
 )
 def test_provider_rejects_non_hebrew_or_incomplete_copy(monkeypatch, invalid_text):
@@ -194,6 +233,24 @@ def test_provider_accepts_complete_hebrew_copy_with_stop(monkeypatch):
     )
 
     assert result == provider_text
+
+
+def test_provider_rejects_copy_that_contradicts_the_input_status(monkeypatch):
+    provider_text = (
+        "המדד נמצא באזור ירוק ומציג חוזקה יציבה. "
+        "הנתונים המצרפיים אינם דורשים תשומת לב."
+    )
+    configure_provider(monkeypatch, FakeLLMResponse(provider_text, "stop"))
+
+    result = llm_provider_service.generate_psychological_interpretation(
+        "balance",
+        "איזון",
+        46.7,
+        "red",
+    )
+
+    assert result != provider_text
+    assert "אזור אדום" in result
 
 
 @pytest.mark.asyncio
@@ -302,3 +359,83 @@ def test_formatter_emits_real_question_metrics_instead_of_the_generic_template()
     assert not {"ציון ממוצע", "סטטוס מחוון", "רמת סיכון"}.intersection(
         metric.get("label") for metric in metrics
     )
+
+
+def test_v2_input_rejects_status_inconsistent_with_score():
+    scores = {
+        dimension_id: {
+            "dimensionId": dimension_id,
+            "averageScore": 60,
+            "computedStatus": "yellow",
+        }
+        for dimension_id in AI_ANALYTICS_DIMENSION_IDS
+    }
+    scores["balance"]["computedStatus"] = "green"
+    question_aggregates = {
+        question["id"]: {
+            "questionId": question["id"],
+            "dimensionId": question["dimensionId"],
+            "questionTextHebrew": question["textHebrew"],
+            "averageScore": 60,
+            "responseCount": 12,
+        }
+        for question in AI_ANALYTICS_QUESTIONS
+    }
+
+    with pytest.raises(ValueError, match="inconsistent with its score"):
+        RoundAnalyticsResult.from_dict(
+            {
+                "contractVersion": AI_ANALYTICS_CONTRACT_VERSION,
+                "roundId": "round-status-mismatch",
+                "totalResponses": 12,
+                "privacyThreshold": 10,
+                "isLocked": False,
+                "dimensionScores": scores,
+                "questionAggregates": question_aggregates,
+            },
+        )
+
+
+@pytest.mark.parametrize(
+    ("response_count", "expected_error"),
+    [
+        (9, "below privacyThreshold"),
+        (13, "exceeds totalResponses"),
+    ],
+)
+def test_v2_input_rejects_question_counts_outside_the_privacy_safe_round(
+    response_count,
+    expected_error,
+):
+    dimension_scores = {
+        dimension_id: {
+            "dimensionId": dimension_id,
+            "averageScore": 60,
+            "computedStatus": "yellow",
+        }
+        for dimension_id in AI_ANALYTICS_DIMENSION_IDS
+    }
+    question_aggregates = {
+        question["id"]: {
+            "questionId": question["id"],
+            "dimensionId": question["dimensionId"],
+            "questionTextHebrew": question["textHebrew"],
+            "averageScore": 60,
+            "responseCount": response_count,
+        }
+        for question in AI_ANALYTICS_QUESTIONS
+    }
+
+    with pytest.raises(ValueError, match=expected_error):
+        RoundAnalyticsResult.from_dict(
+            {
+                "contractVersion": AI_ANALYTICS_CONTRACT_VERSION,
+                "roundId": "round-question-count-boundary",
+                "totalResponses": 12,
+                "privacyThreshold": 10,
+                "isLocked": False,
+                "dimensionScores": dimension_scores,
+                "questionAggregates": question_aggregates,
+                "calculatedAt": "2026-07-25T12:00:00Z",
+            },
+        )

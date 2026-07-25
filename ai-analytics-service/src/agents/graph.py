@@ -6,7 +6,9 @@ from src.agents.nodes import (
     agent_psychologist_node,
     agent_rag_intervention_node,
     agent_safety_validator_node,
-    DIMENSION_NAMES_HEBREW
+    DIMENSION_NAMES_HEBREW,
+    _effective_contract_version,
+    _question_aggregates_for_dimension,
 )
 from src.contracts import AI_ANALYTICS_CONTRACT_VERSION
 
@@ -31,6 +33,23 @@ class AnalyticsGraphEngine:
                 continue
             break
 
+        if current_state.get("safety_status") != "pass":
+            round_data = current_state.get("round_data", {})
+            return {
+                **current_state,
+                "final_payload": {
+                    "contractVersion": _effective_contract_version(
+                        round_data,
+                    ),
+                    "roundId": round_data.get("roundId", ""),
+                    "isLocked": False,
+                    "status": "validation_failed",
+                    "errorMessage": (
+                        "לא ניתן להפיק ניתוח מאומת מן הנתונים המצרפיים."
+                    ),
+                },
+            }
+
         # Step 3: Format Output
         current_state = format_stone_map_output_node(current_state)
         return current_state
@@ -44,6 +63,8 @@ def format_stone_map_output_node(state: AnalyticsState) -> AnalyticsState:
     interpretations = state.get("interpretations", {}).get("dimension_interpretations", {})
     overall_summary = state.get("interpretations", {}).get("overall_summary", "")
     recommendations = state.get("recommendations", {})
+    generation_provenance = state.get("generation_provenance", {})
+    contract_version = _effective_contract_version(round_data)
 
     stones = {}
     for dim_id, score_obj in dim_scores.items():
@@ -57,14 +78,39 @@ def format_stone_map_output_node(state: AnalyticsState) -> AnalyticsState:
         dim_hebrew = DIMENSION_NAMES_HEBREW.get(dim_id, dim_id)
         interp = interpretations.get(dim_id, "")
         recs = recommendations.get(dim_id, [])
+        question_aggregates = _question_aggregates_for_dimension(
+            round_data,
+            dim_id,
+        )
 
-        metrics = [
-            {"label": "ציון ממוצע", "value": f"{score:.1f}"},
-            {"label": "סטטוס מחוון", "value": status.upper()},
-            {"label": "רמת סיכון", "value": "גבוהה" if status == "red" else ("בינונית" if status == "yellow" else "תקינה")}
-        ]
+        if question_aggregates:
+            metrics = [
+                {
+                    "questionId": aggregate["questionId"],
+                    "label": aggregate["questionTextHebrew"],
+                    "value": (
+                        f"{aggregate['averageScore']:.1f} מתוך 100"
+                    ),
+                    "averageScore": aggregate["averageScore"],
+                    "responseCount": aggregate["responseCount"],
+                }
+                for aggregate in question_aggregates
+            ]
+        else:
+            metrics = [
+                {"label": "ציון ממוצע", "value": f"{score:.1f}"},
+                {"label": "סטטוס מחוון", "value": status.upper()},
+                {
+                    "label": "רמת סיכון",
+                    "value": (
+                        "גבוהה"
+                        if status == "red"
+                        else "בינונית" if status == "yellow" else "תקינה"
+                    ),
+                },
+            ]
 
-        stones[dim_id] = {
+        stone = {
             "dimensionId": dim_id,
             "dimensionNameHebrew": dim_hebrew,
             "status": status,
@@ -73,9 +119,16 @@ def format_stone_map_output_node(state: AnalyticsState) -> AnalyticsState:
             "recommendedInterventions": recs,
             "metrics": metrics
         }
+        if contract_version == AI_ANALYTICS_CONTRACT_VERSION:
+            if dim_id not in generation_provenance:
+                raise ValueError(
+                    f"Missing generation provenance for '{dim_id}'"
+                )
+            stone["generationProvenance"] = generation_provenance[dim_id]
+        stones[dim_id] = stone
 
     final_payload = {
-        "contractVersion": AI_ANALYTICS_CONTRACT_VERSION,
+        "contractVersion": contract_version,
         "roundId": round_data.get("roundId", ""),
         "processedAt": datetime.now(timezone.utc).isoformat(),
         "isLocked": False,

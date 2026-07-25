@@ -18,12 +18,25 @@ heavy packages are intentionally absent from the deployment manifest.
 
 ## Contract
 
-The source of truth is [`../contracts/ai-analytics-v1.json`](../contracts/ai-analytics-v1.json).
-Both TypeScript and Python load this manifest. A successful result must contain
-contract version `1.0` and exactly the eight canonical dimension IDs.
+The immutable deployed source of truth for structural contract `1.0` is
+[`../contracts/ai-analytics-v1.json`](../contracts/ai-analytics-v1.json). The
+breaking semantic contract `2.0` is published separately in
+[`../contracts/ai-analytics-v2.json`](../contracts/ai-analytics-v2.json). Both
+TypeScript and Python load the versioned manifests; `2.0` preserves the eight
+canonical dimension IDs and adds all 24 canonical question definitions.
 
-Privacy-locked rounds return a `locked_error` payload without stones. The core
-app validates callback payloads again before persisting them.
+The rollout is consumer-first. The Python service first accepts legacy input
+(missing version or `1.0`) and explicit `2.0`, returning the effective input
+version. Core then deploys dual-version callback acceptance before its MCP
+producer starts sending `2.0`. This keeps the existing Render `1.0` baseline
+compatible throughout the rollback window.
+
+A successful `2.0` result contains exactly the eight canonical dimensions,
+three canonical question metrics per Stone, strict Hebrew semantic output,
+status-scoped interventions, and persisted LLM/retry/fallback provenance.
+Privacy-locked rounds return a `locked_error` payload without stones or any
+detailed aggregates. The core app validates callback payloads again before
+persisting them.
 
 ## Local setup
 

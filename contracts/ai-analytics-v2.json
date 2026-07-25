@@ -1,0 +1,171 @@
+{
+  "version": "2.0",
+  "previousVersion": "1.0",
+  "privacy": {
+    "defaultThreshold": 10,
+    "lockedAggregatePolicy": "empty"
+  },
+  "statuses": [
+    {
+      "id": "green",
+      "minScore": 75,
+      "maxScore": 100
+    },
+    {
+      "id": "yellow",
+      "minScore": 50,
+      "maxScore": 74
+    },
+    {
+      "id": "red",
+      "minScore": 0,
+      "maxScore": 49
+    }
+  ],
+  "dimensions": [
+    {
+      "id": "self-expression",
+      "nameHebrew": "ביטוי עצמי",
+      "questions": [
+        {
+          "id": "self-expression-1",
+          "textHebrew": "אני יכולה להביע בחופשיות את הרעיונות והמחשבות שלי בעבודה."
+        },
+        {
+          "id": "self-expression-2",
+          "textHebrew": "אני מרגישה ששומעים אותי ומתחשבים בדעתי."
+        },
+        {
+          "id": "self-expression-3",
+          "textHebrew": "אני מרגישה שאני עצמי בעבודה, ושאין לי צורך להעמיד פנים."
+        }
+      ]
+    },
+    {
+      "id": "professional-competence",
+      "nameHebrew": "מסוגלות מקצועית",
+      "questions": [
+        {
+          "id": "professional-competence-1",
+          "textHebrew": "אני מקבלת באופן קבוע חיזוק לכך שהמאמצים והכישורים שלי בעלי ערך."
+        },
+        {
+          "id": "professional-competence-2",
+          "textHebrew": "אני בטוחה במומחיות המקצועית שלי וביכולות שלי."
+        },
+        {
+          "id": "professional-competence-3",
+          "textHebrew": "אני מרגישה כשירה מספיק כדי להתמודד עם המשימות שעולות."
+        }
+      ]
+    },
+    {
+      "id": "social-resource",
+      "nameHebrew": "קשרים חברתיים",
+      "questions": [
+        {
+          "id": "social-resource-1",
+          "textHebrew": "יש לי לפחות אדם אחד בעבודה שאני סומכת עליו/עליה ושאני יכולה לדבר איתו/איתה בפתיחות."
+        },
+        {
+          "id": "social-resource-2",
+          "textHebrew": "בצוות קיימים כבוד הדדי ותמיכה."
+        },
+        {
+          "id": "social-resource-3",
+          "textHebrew": "התקשורת עם הקולגות נותנת לי אנרגיה ורגשות חיוביים."
+        }
+      ]
+    },
+    {
+      "id": "balance",
+      "nameHebrew": "איזון",
+      "questions": [
+        {
+          "id": "balance-1",
+          "textHebrew": "אני מצליחה לבצע את משימות העבודה בזמן שנקבע."
+        },
+        {
+          "id": "balance-2",
+          "textHebrew": "יש לי מספיק זמן למנוחה ולהתאוששות אחרי העבודה."
+        },
+        {
+          "id": "balance-3",
+          "textHebrew": "אני מרגישה שהעומס בעבודה מתאים לי והוא בהישג יד/בר־ביצוע עבורי."
+        }
+      ]
+    },
+    {
+      "id": "management-support",
+      "nameHebrew": "עורף מקצועי",
+      "questions": [
+        {
+          "id": "management-support-1",
+          "textHebrew": "אני מקבלת באופן קבוע תמיכה ומשוב מההנהלה."
+        },
+        {
+          "id": "management-support-2",
+          "textHebrew": "אני יכולה לפנות למנהל/ת לעזרה בלי חשש."
+        },
+        {
+          "id": "management-support-3",
+          "textHebrew": "המנהל/ת מעריכ/ה את המאמצים שלי ומביע/ה זאת באופן גלוי."
+        }
+      ]
+    },
+    {
+      "id": "certainty",
+      "nameHebrew": "ודאות",
+      "questions": [
+        {
+          "id": "certainty-1",
+          "textHebrew": "אני מבינה מה מצפה לי בעבודה מחר ובזמן הקרוב."
+        },
+        {
+          "id": "certainty-2",
+          "textHebrew": "בעבודה יש מינימום שינויים בלתי צפויים ולא מתוכננים."
+        },
+        {
+          "id": "certainty-3",
+          "textHebrew": "המשימות והאחריות שלי מוגדרות בבירור ואינן משתנות ללא התראה מראש."
+        }
+      ]
+    },
+    {
+      "id": "organizational-climate",
+      "nameHebrew": "אקלים ארגוני",
+      "questions": [
+        {
+          "id": "organizational-climate-1",
+          "textHebrew": "בארגון מקובל לדבר באופן פתוח על קשיים רגשיים ופסיכולוגיים."
+        },
+        {
+          "id": "organizational-climate-2",
+          "textHebrew": "המצב הנפשי שלי נלקח בחשבון בעת חלוקת המשימות."
+        },
+        {
+          "id": "organizational-climate-3",
+          "textHebrew": "האווירה בצוות חיובית ואינה יוצרת לחץ מיותר."
+        }
+      ]
+    },
+    {
+      "id": "meaning",
+      "nameHebrew": "משמעות",
+      "questions": [
+        {
+          "id": "meaning-1",
+          "textHebrew": "אני רואה תועלת ברורה עבור אנשים אחרים בעבודה שלי."
+        },
+        {
+          "id": "meaning-2",
+          "textHebrew": "ברור לי למה אני עושה את מה שאני עושה."
+        },
+        {
+          "id": "meaning-3",
+          "textHebrew": "אני מרגישה שלעבודה שלי יש משמעות והיא חשובה לי באופן אישי."
+        }
+      ]
+    }
+  ]
+}

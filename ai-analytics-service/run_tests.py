@@ -18,6 +18,7 @@ from src.agents.state import AnalyticsState
 from src.contracts import (
     AI_ANALYTICS_CONTRACT_VERSION,
     AI_ANALYTICS_DIMENSION_IDS,
+    AI_ANALYTICS_V1_CONTRACT_VERSION,
 )
 from src.config import Settings, settings
 from src.mcp_client.client import MCPClientManager, mcp_client_manager
@@ -45,7 +46,7 @@ class TestShalomutAIService(unittest.TestCase):
         res = privacy_gate_node(state)
         self.assertEqual(res["safety_status"], "privacy_locked")
         self.assertEqual(res["final_payload"]["status"], "locked_error")
-        self.assertTrue("Privacy lock active" in res["final_payload"]["errorMessage"])
+        self.assertIn("סף הפרטיות", res["final_payload"]["errorMessage"])
         print("✔ Test 1 Passed: Privacy Gate correctly blocks locked round (<10 responses).")
 
     def test_02_privacy_gate_unlocked(self):
@@ -105,7 +106,7 @@ class TestShalomutAIService(unittest.TestCase):
             self.assertEqual(final_payload["status"], "success")
             self.assertEqual(
                 final_payload["contractVersion"],
-                AI_ANALYTICS_CONTRACT_VERSION,
+                AI_ANALYTICS_V1_CONTRACT_VERSION,
             )
             self.assertIn("stones", final_payload)
             self.assertEqual(
