@@ -7,6 +7,7 @@
 - **Проверенный preview**: финальный deployment PR #6 `dpl_3KrHd5nbcvqdnSAup2sY1L1jjzmT` имеет статус READY; `/` показывает empty onboarding, `/api/rounds/` возвращает `{"round":null}`, а `PUT /api/manager/setup/` без БД — `503`.
 - **Runtime**: static export/GitHub Pages удалены, потому что DB-backed App Router требует server runtime. FastAPI-сервис подготовлен к Vercel entrypoint, работает fail-closed без shared secrets вне development и не полагается на in-process background task.
 - **Граница деплоя**: production data, alias, secrets и deployment не изменялись. Для реального staging E2E нужны подтверждённая staging-БД, manager authentication/deployment protection и отдельное разрешение на внешние изменения.
+- **AI coding workflow**: канонические repo-level skills `shalomut-map`, `shalomut-tracker` и `shalomut-verification` находятся в `.agents/skills/`; инструкции для Codex, Gemini, Claude и GitHub Copilot закоммичены в `main`, локальная и удалённая ветки синхронизированы.
 - **Актуальный handoff**: см. [`docs/shalomut-tracker-handoff.md`](docs/shalomut-tracker-handoff.md). AI-детали: [`docs/ai-analytics-handoff.md`](docs/ai-analytics-handoff.md).
 
 ---
@@ -20,6 +21,12 @@
 ---
 
 ## ✅ Завершенные задачи (Completed)
+- [x] **2026-07-25**: **Добавлена переносимая система инструкций и verification для AI coding agents**:
+  - Канонические repo-level skills `shalomut-map`, `shalomut-tracker` и `shalomut-verification` добавлены в `.agents/skills/`.
+  - `AGENTS.md`, `GEMINI.md`, `CLAUDE.md` и `.github/copilot-instructions.md` направляют совместимых агентов к этим skills и содержат direct-read fallback.
+  - Устаревшая глобальная копия `shalomut-map` удалена из активных Codex skills; версия в репозитории остаётся source of truth.
+  - Commits `03f6ca8` и `bcc6c55` отправлены в `origin/main`; локальный и удалённый `main` совпадают.
+  - Проверены frontmatter, относительные ссылки и наличие файлов; runtime test suite не запускался, потому что код приложения не менялся.
 - [x] **2026-07-24**: **Manager UI переведён на реальные persisted records и подготовлен безопасный full-stack runtime**:
   - PR #5 смержен в `main` (`6b369bf`); database-backed manager slice смержен через PR #6 (`043f54d`).
   - Home, setup, round tracking, survey builder, dashboard и respondent flow используют настоящий organization/current round context, response counts, analytics, share code и round ID; пустая БД показывает onboarding, а не demo-записи.
