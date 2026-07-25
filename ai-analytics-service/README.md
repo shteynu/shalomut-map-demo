@@ -101,6 +101,13 @@ backoff is `0.5s`, capped at `2s`, with up to `0.25s` jitter. After the bounded
 attempts are exhausted, the existing dimension-scoped heuristic fallback is
 used and recorded as `outcome=heuristic`.
 
+Each provider request may run for up to `LLM_REQUEST_TIMEOUT_SECONDS` (`20s`
+by default). The full retry loop for one dimension is capped by
+`LLM_RETRY_BUDGET_SECONDS` (`25s`, with a hard maximum of `25s`), and a new
+attempt starts only when at least `LLM_MIN_RETRY_WINDOW_SECONDS` (`8s`) remain.
+This leaves time for MCP and callback work inside the core app's 30-second
+webhook timeout.
+
 When the core app is a protected Vercel deployment, both outbound calls — MCP
 and callback — are answered with a `302` to the SSO page unless
 `VERCEL_PROTECTION_BYPASS` is set to the project's Protection Bypass for

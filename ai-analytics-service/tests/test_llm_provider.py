@@ -91,6 +91,24 @@ def configure_gemini_retry_test(monkeypatch, max_attempts=3):
         0.0,
         raising=False,
     )
+    monkeypatch.setattr(
+        settings,
+        "llm_request_timeout_seconds",
+        20.0,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        settings,
+        "llm_retry_budget_seconds",
+        25.0,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        settings,
+        "llm_min_retry_window_seconds",
+        8.0,
+        raising=False,
+    )
 
 
 def test_transient_503_retries_then_returns_llm_result(
@@ -314,6 +332,56 @@ def test_transport_timeout_stops_after_two_total_attempts(monkeypatch):
     assert len(attempts) == 2
 
 
+def test_provider_uses_configured_request_timeout(monkeypatch):
+    configure_gemini_retry_test(monkeypatch)
+    monkeypatch.setattr(
+        "src.services.llm_provider.time.monotonic",
+        lambda: 100.0,
+    )
+    observed_timeouts = []
+
+    def fake_urlopen(*_args, **kwargs):
+        observed_timeouts.append(kwargs["timeout"])
+        return FakeLLMResponse()
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+
+    llm_provider_service.generate_psychological_interpretation(
+        "certainty",
+        "ודאות",
+        42.0,
+        "red",
+    )
+
+    assert observed_timeouts == [20.0]
+
+
+def test_timeout_does_not_retry_without_minimum_budget(monkeypatch):
+    configure_gemini_retry_test(monkeypatch, max_attempts=3)
+    clock = iter([100.0, 100.0, 120.1])
+    monkeypatch.setattr(
+        "src.services.llm_provider.time.monotonic",
+        lambda: next(clock),
+    )
+    attempts = []
+
+    def fake_urlopen(*_args, **_kwargs):
+        attempts.append(True)
+        raise TimeoutError("provider request timed out")
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+
+    result = llm_provider_service.generate_psychological_interpretation(
+        "certainty",
+        "ודאות",
+        42.0,
+        "red",
+    )
+
+    assert "אזור אדום" in result
+    assert len(attempts) == 1
+
+
 def clear_llm_key_environment(monkeypatch):
     for name in LLM_KEY_ENV_VARS:
         monkeypatch.delenv(name, raising=False)
@@ -323,6 +391,9 @@ def clear_llm_key_environment(monkeypatch):
     monkeypatch.delenv("LLM_MODEL_HEAVY", raising=False)
     monkeypatch.delenv("OPENAI_MODEL_FAST", raising=False)
     monkeypatch.delenv("OPENAI_MODEL_HEAVY", raising=False)
+    monkeypatch.delenv("LLM_REQUEST_TIMEOUT_SECONDS", raising=False)
+    monkeypatch.delenv("LLM_RETRY_BUDGET_SECONDS", raising=False)
+    monkeypatch.delenv("LLM_MIN_RETRY_WINDOW_SECONDS", raising=False)
 
 
 def configure_valid_production_environment(monkeypatch):

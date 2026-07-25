@@ -83,11 +83,31 @@ class LLMProviderService:
                     },
                     method="POST"
                 )
+                request_started_at = time.monotonic()
                 for attempt in range(1, settings.llm_max_attempts + 1):
                     try:
+                        remaining_budget = self._remaining_retry_budget(
+                            request_started_at,
+                        )
+                        if remaining_budget < 0.1:
+                            fallback_reason = "retry_budget_exhausted"
+                            logger.warning(
+                                "[LLM Service] outcome=heuristic "
+                                "provider=%s model=%s reason=%s "
+                                "attempts=%s",
+                                provider,
+                                model_name,
+                                fallback_reason,
+                                attempt - 1,
+                            )
+                            break
+                        request_timeout = min(
+                            settings.llm_request_timeout_seconds,
+                            remaining_budget,
+                        )
                         with urllib.request.urlopen(
                             req,
-                            timeout=10.0,
+                            timeout=request_timeout,
                         ) as response:
                             if response.status == 200:
                                 res = json.loads(
@@ -127,22 +147,27 @@ class LLMProviderService:
                                 error,
                                 attempt,
                             )
-                            logger.warning(
-                                "[LLM Service] outcome=retry provider=%s "
-                                "model=%s status=%s error_code=%s "
-                                "request_id=%s attempt=%s max_attempts=%s "
-                                "delay_ms=%s",
-                                provider,
-                                model_name,
-                                error.code,
-                                error_code or "unavailable",
-                                request_id,
-                                attempt,
-                                settings.llm_max_attempts,
-                                round(delay * 1000),
-                            )
-                            time.sleep(delay)
-                            continue
+                            if self._can_retry_within_budget(
+                                request_started_at,
+                                delay,
+                            ):
+                                logger.warning(
+                                    "[LLM Service] outcome=retry "
+                                    "provider=%s model=%s status=%s "
+                                    "error_code=%s request_id=%s "
+                                    "attempt=%s max_attempts=%s "
+                                    "delay_ms=%s",
+                                    provider,
+                                    model_name,
+                                    error.code,
+                                    error_code or "unavailable",
+                                    request_id,
+                                    attempt,
+                                    settings.llm_max_attempts,
+                                    round(delay * 1000),
+                                )
+                                time.sleep(delay)
+                                continue
 
                         logger.warning(
                             "[LLM Service] outcome=heuristic provider=%s "
@@ -164,19 +189,24 @@ class LLMProviderService:
                         )
                         if attempt < max_timeout_attempts:
                             delay = self._backoff_delay_seconds(attempt)
-                            logger.warning(
-                                "[LLM Service] outcome=retry provider=%s "
-                                "model=%s error_type=%s attempt=%s "
-                                "max_attempts=%s delay_ms=%s",
-                                provider,
-                                model_name,
-                                fallback_reason,
-                                attempt,
-                                max_timeout_attempts,
-                                round(delay * 1000),
-                            )
-                            time.sleep(delay)
-                            continue
+                            if self._can_retry_within_budget(
+                                request_started_at,
+                                delay,
+                            ):
+                                logger.warning(
+                                    "[LLM Service] outcome=retry "
+                                    "provider=%s model=%s error_type=%s "
+                                    "attempt=%s max_attempts=%s "
+                                    "delay_ms=%s",
+                                    provider,
+                                    model_name,
+                                    fallback_reason,
+                                    attempt,
+                                    max_timeout_attempts,
+                                    round(delay * 1000),
+                                )
+                                time.sleep(delay)
+                                continue
 
                         logger.warning(
                             "[LLM Service] outcome=heuristic provider=%s "
@@ -205,6 +235,23 @@ class LLMProviderService:
             fallback_reason,
         )
         return self._heuristic_fallback(dim_hebrew, score, status)
+
+    def _remaining_retry_budget(self, request_started_at: float) -> float:
+        elapsed = time.monotonic() - request_started_at
+        return max(0.0, settings.llm_retry_budget_seconds - elapsed)
+
+    def _can_retry_within_budget(
+        self,
+        request_started_at: float,
+        delay: float,
+    ) -> bool:
+        remaining_after_delay = (
+            self._remaining_retry_budget(request_started_at) - delay
+        )
+        return (
+            remaining_after_delay
+            >= settings.llm_min_retry_window_seconds
+        )
 
     def _extract_safe_error_code(
         self,

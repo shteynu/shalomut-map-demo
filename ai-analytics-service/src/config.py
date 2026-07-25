@@ -147,6 +147,29 @@ class Settings:
             0.0,
             float(os.getenv("LLM_RETRY_JITTER_SECONDS", "0.25")),
         )
+        # Leave room for MCP fetch and callback inside the core app's
+        # 30-second webhook timeout. Values above 25 seconds are capped.
+        self.llm_retry_budget_seconds: float = max(
+            1.0,
+            min(
+                25.0,
+                float(os.getenv("LLM_RETRY_BUDGET_SECONDS", "25.0")),
+            ),
+        )
+        self.llm_request_timeout_seconds: float = max(
+            1.0,
+            min(
+                self.llm_retry_budget_seconds,
+                float(os.getenv("LLM_REQUEST_TIMEOUT_SECONDS", "20.0")),
+            ),
+        )
+        self.llm_min_retry_window_seconds: float = max(
+            1.0,
+            min(
+                self.llm_retry_budget_seconds,
+                float(os.getenv("LLM_MIN_RETRY_WINDOW_SECONDS", "8.0")),
+            ),
+        )
         
         # Reserved persistence setting for a future vector-backed catalog.
         self.chroma_persist_dir: str = os.getenv("CHROMA_PERSIST_DIR", "./chroma_db")
