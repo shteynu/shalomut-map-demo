@@ -13,8 +13,10 @@
 - **Core app runtime**: production alias
   [shalomut-map-demo.vercel.app](https://shalomut-map-demo.vercel.app/) сейчас
   используется как operational staging endpoint и подключён к выделенной
-  staging-БД. Последний READY production deployment
-  `dpl_EE1DEssckxcCuFKpfc9YAPV7EjEm` создан до настройки нового manager scope.
+  staging-БД. Первый проверенный post-env production deployment
+  `dpl_Hb1WZR9hHdUKsWhJdXDXDMS8ExPe` получил состояние `READY` и прошёл
+  manager-scope smoke; последующие docs-only merges могут создавать новые
+  deployment ID через Vercel Git integration.
 - **AI runtime**: FastAPI-сервис развёрнут на Render: [shalomut-ai-analytics.onrender.com](https://shalomut-ai-analytics.onrender.com), deployment `dep-d9ibutgk1i2s73b2oolg` для commit `a9b6c34` имеет статус `Live`; `/health` отвечает HTTP 200.
 - **Real E2E**: для разрешённого round core trigger вернул `202`, MCP POST
   `/api/mcp/` — `200`, Render webhook — `200`, callback POST — `200`,
@@ -34,8 +36,9 @@
 - **Manager deployment gate**: `MANAGER_ORGANIZATION_ID` добавлен в Vercel как
   Sensitive variable для Preview и Production и указывает на единственную
   staging organization. То же значение хранится только в ignored
-  `.env.staging.local`; production `.env` и `.env.local` не менялись. Новая
-  переменная начнёт действовать только после отдельного deployment.
+  `.env.staging.local`; production `.env` и `.env.local` не менялись.
+  Deployed read-only smoke подтвердил anonymous `401`, authenticated `200`,
+  правильные organization/round и игнорирование поддельного client scope.
 - **Git-состояние**: manager-scope commits `7a451fd` и `508410a` находятся в
   `origin/main`. Tracked repository и code diff не содержат credentials.
 - **AI coding workflow**: канонические repo-level skills `shalomut-map`, `shalomut-tracker` и `shalomut-verification` находятся в `.agents/skills/`; инструкции для Codex, Gemini, Claude и GitHub Copilot закоммичены в `main`.
@@ -44,19 +47,16 @@
 ---
 
 ## 🚀 Следующие шаги (Next Up: Safe Staging)
-1. [ ] После отдельного bounded approval создать новый core deployment из
-   текущего `main` и выполнить read-only manager smoke для единственной
-   staging organization; aliases и данные без отдельного разрешения не менять.
-2. [ ] Если продукту нужна auditability, добавить versioned
+1. [ ] Если продукту нужна auditability, добавить versioned
    `llm`/`heuristic` provenance в persisted payload.
-3. [ ] После отдельного bounded approval проверить один real privacy-locked
+2. [ ] После отдельного bounded approval проверить один real privacy-locked
    round без раскрытия detailed results.
-4. [ ] Ввести строгие request/output/privacy contracts и явные fail-closed
+3. [ ] Ввести строгие request/output/privacy contracts и явные fail-closed
    safety semantics внутри AI-сервиса.
-5. [ ] Заменить organization-scoped shared Basic gate на application-level
+4. [ ] Заменить organization-scoped shared Basic gate на application-level
    manager identity/roles и полноценную tenant authorization; убрать hardcoded
    `organizationContext` из MCP payload.
-6. [ ] Развести staging и production aliases/env окончательно; текущий
+5. [ ] Развести staging и production aliases/env окончательно; текущий
    production alias используется как staging endpoint и не должен считаться
    production-ready.
 
@@ -77,8 +77,10 @@
   - Local verification: TypeScript suite 90/90, lint и production build
     прошли. Read-only local runtime smoke со staging persistence вернул
     configured organization и round даже при поддельном клиентском scope.
-    `MANAGER_ORGANIZATION_ID` настроен для Vercel Preview/Production, но новый
-    core deployment после env mutation не выполнялся.
+    `MANAGER_ORGANIZATION_ID` настроен для Vercel Preview/Production.
+    Post-merge deployment `dpl_Hb1WZR9hHdUKsWhJdXDXDMS8ExPe` — `READY`;
+    deployed smoke подтвердил anonymous `401`, authenticated `200` и ту же
+    organization/round isolation.
 - [x] **2026-07-25**: **Проверена изоляция AI-результатов по раундам и школам**:
   - Prisma хранит `aiInsights` в строке `SurveyRound`, а update/read выполняются
     по уникальному `roundId`; payload обязан содержать тот же `roundId`, что и
