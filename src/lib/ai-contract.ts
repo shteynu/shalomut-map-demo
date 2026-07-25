@@ -1,10 +1,19 @@
-import contractManifest from '../../contracts/ai-analytics-v1.json';
+import legacyContractManifest from '../../contracts/ai-analytics-v1.json';
+import contractManifest from '../../contracts/ai-analytics-v2.json';
 import type {
   WellbeingDimensionId,
   WellbeingStatus,
 } from './shalomut-source';
 
+export const AI_ANALYTICS_V1_CONTRACT_VERSION = legacyContractManifest.version;
 export const AI_ANALYTICS_CONTRACT_VERSION = contractManifest.version;
+export const AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS = Object.freeze([
+  AI_ANALYTICS_V1_CONTRACT_VERSION,
+  AI_ANALYTICS_CONTRACT_VERSION,
+]);
+
+export type AiAnalyticsContractVersion =
+  (typeof AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS)[number];
 
 export const AI_ANALYTICS_DIMENSION_IDS = Object.freeze(
   contractManifest.dimensions.map(
@@ -21,19 +30,58 @@ export const AI_ANALYTICS_DIMENSION_NAMES_HEBREW = Object.freeze(
   ) as Record<WellbeingDimensionId, string>,
 );
 
+export interface CanonicalAiQuestion {
+  id: string;
+  dimensionId: WellbeingDimensionId;
+  textHebrew: string;
+}
+
+export const AI_ANALYTICS_QUESTIONS = Object.freeze(
+  contractManifest.dimensions.flatMap((dimension) =>
+    dimension.questions.map(
+      (question): CanonicalAiQuestion => ({
+        id: question.id,
+        dimensionId: dimension.id as WellbeingDimensionId,
+        textHebrew: question.textHebrew,
+      }),
+    ),
+  ),
+);
+
+export const AI_ANALYTICS_QUESTION_IDS = Object.freeze(
+  AI_ANALYTICS_QUESTIONS.map((question) => question.id),
+);
+
+export const AI_ANALYTICS_QUESTIONS_BY_ID = Object.freeze(
+  Object.fromEntries(
+    AI_ANALYTICS_QUESTIONS.map((question) => [question.id, question]),
+  ) as Record<string, CanonicalAiQuestion>,
+);
+
 export interface StoneMetric {
   label: string;
   value: string;
   trend?: string;
+  questionId?: string;
+  averageScore?: number;
+  responseCount?: number;
 }
 
 export interface StoneIntervention {
   id: string;
   dimensionId: WellbeingDimensionId;
+  status?: WellbeingStatus;
   source: string;
   title: string;
   summary: string;
   actionable_steps: string[];
+}
+
+export interface StoneGenerationProvenance {
+  outcome: 'llm' | 'deterministic_fallback';
+  attempts: number;
+  retryCount: number;
+  sourceQuestionIds: string[];
 }
 
 export interface StoneDetail {
@@ -44,10 +92,11 @@ export interface StoneDetail {
   psychologicalInterpretation: string;
   recommendedInterventions: StoneIntervention[];
   metrics: StoneMetric[];
+  generationProvenance?: StoneGenerationProvenance;
 }
 
 export interface StoneMapResult {
-  contractVersion: string;
+  contractVersion: AiAnalyticsContractVersion;
   roundId: string;
   processedAt?: string;
   isLocked: boolean;
@@ -75,7 +124,7 @@ function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === 'string');
 }
 
-function isValidMetric(value: unknown): value is StoneMetric {
+function isLegacyMetric(value: unknown): value is StoneMetric {
   return (
     isRecord(value) &&
     typeof value.label === 'string' &&
@@ -84,7 +133,7 @@ function isValidMetric(value: unknown): value is StoneMetric {
   );
 }
 
-function isValidIntervention(value: unknown): value is StoneIntervention {
+function isLegacyIntervention(value: unknown): value is StoneIntervention {
   return (
     isRecord(value) &&
     typeof value.id === 'string' &&
@@ -98,15 +147,12 @@ function isValidIntervention(value: unknown): value is StoneIntervention {
   );
 }
 
-function isValidStone(
+function hasValidStoneShape(
   value: unknown,
   dimensionId: WellbeingDimensionId,
-): value is StoneDetail {
-  if (!isRecord(value)) {
-    return false;
-  }
-
+): value is Record<string, unknown> {
   return (
+    isRecord(value) &&
     value.dimensionId === dimensionId &&
     typeof value.dimensionNameHebrew === 'string' &&
     WELLBEING_STATUSES.has(value.status as WellbeingStatus) &&
@@ -116,38 +162,157 @@ function isValidStone(
     value.score <= 100 &&
     typeof value.psychologicalInterpretation === 'string' &&
     Array.isArray(value.recommendedInterventions) &&
-    value.recommendedInterventions.every(
-      (intervention) =>
-        isValidIntervention(intervention) &&
-        intervention.dimensionId === dimensionId,
-    ) &&
-    Array.isArray(value.metrics) &&
-    value.metrics.every(isValidMetric)
+    Array.isArray(value.metrics)
   );
 }
 
-export function validateStoneMapResult(
-  payload: unknown,
-  expectedRoundId: string,
-): StoneMapValidationResult {
-  if (!isRecord(payload)) {
-    return { ok: false, error: 'Stone Map payload must be a JSON object.' };
+function isValidLegacyStone(
+  value: unknown,
+  dimensionId: WellbeingDimensionId,
+): value is StoneDetail {
+  if (!hasValidStoneShape(value, dimensionId)) {
+    return false;
   }
 
-  if (payload.contractVersion !== AI_ANALYTICS_CONTRACT_VERSION) {
-    return {
-      ok: false,
-      error: `contractVersion must be ${AI_ANALYTICS_CONTRACT_VERSION}.`,
-    };
+  const interventions = value.recommendedInterventions as unknown[];
+  const metrics = value.metrics as unknown[];
+
+  return (
+    interventions.every(
+      (intervention) =>
+        isLegacyIntervention(intervention) &&
+        intervention.dimensionId === dimensionId,
+    ) && metrics.every(isLegacyMetric)
+  );
+}
+
+function containsOnlyHebrewUserText(value: string): boolean {
+  return /[\u0590-\u05ff]/u.test(value) && !/[A-Za-z]/u.test(value);
+}
+
+function hasExactlyTwoCompleteSentences(value: string): boolean {
+  const normalized = value.trim();
+  const sentences = normalized.match(/[^.!?؟]+[.!?؟]/gu) ?? [];
+  return (
+    sentences.length === 2 &&
+    sentences.join('').replace(/\s/gu, '') === normalized.replace(/\s/gu, '')
+  );
+}
+
+function statusForScore(score: number): WellbeingStatus {
+  if (score >= 75) return 'green';
+  if (score >= 50) return 'yellow';
+  return 'red';
+}
+
+function canonicalQuestionsForDimension(
+  dimensionId: WellbeingDimensionId,
+): CanonicalAiQuestion[] {
+  return AI_ANALYTICS_QUESTIONS.filter(
+    (question) => question.dimensionId === dimensionId,
+  );
+}
+
+function isValidQuestionMetric(
+  value: unknown,
+  question: CanonicalAiQuestion,
+): value is StoneMetric {
+  return (
+    isRecord(value) &&
+    value.questionId === question.id &&
+    value.label === question.textHebrew &&
+    typeof value.value === 'string' &&
+    containsOnlyHebrewUserText(value.value) &&
+    typeof value.averageScore === 'number' &&
+    Number.isFinite(value.averageScore) &&
+    value.averageScore >= 0 &&
+    value.averageScore <= 100 &&
+    Number.isInteger(value.responseCount) &&
+    Number(value.responseCount) > 0 &&
+    (value.trend === undefined ||
+      (typeof value.trend === 'string' &&
+        containsOnlyHebrewUserText(value.trend)))
+  );
+}
+
+function isValidV2Intervention(
+  value: unknown,
+  dimensionId: WellbeingDimensionId,
+  status: WellbeingStatus,
+): value is StoneIntervention {
+  return (
+    isLegacyIntervention(value) &&
+    value.dimensionId === dimensionId &&
+    value.status === status &&
+    containsOnlyHebrewUserText(value.title) &&
+    containsOnlyHebrewUserText(value.summary) &&
+    value.actionable_steps.length > 0 &&
+    value.actionable_steps.every(containsOnlyHebrewUserText)
+  );
+}
+
+function isValidGenerationProvenance(
+  value: unknown,
+  dimensionId: WellbeingDimensionId,
+): value is StoneGenerationProvenance {
+  if (!isRecord(value)) return false;
+
+  const questionIds = canonicalQuestionsForDimension(dimensionId).map(
+    (question) => question.id,
+  );
+  if (
+    !['llm', 'deterministic_fallback'].includes(String(value.outcome)) ||
+    !Number.isInteger(value.attempts) ||
+    Number(value.attempts) < 0 ||
+    !Number.isInteger(value.retryCount) ||
+    Number(value.retryCount) < 0 ||
+    Number(value.retryCount) > Math.max(0, Number(value.attempts) - 1) ||
+    !isStringArray(value.sourceQuestionIds) ||
+    value.sourceQuestionIds.length !== questionIds.length ||
+    [...value.sourceQuestionIds].sort().some(
+      (questionId, index) => questionId !== [...questionIds].sort()[index],
+    )
+  ) {
+    return false;
   }
 
-  if (payload.roundId !== expectedRoundId) {
-    return {
-      ok: false,
-      error: `Payload roundId must match route roundId "${expectedRoundId}".`,
-    };
+  return value.outcome !== 'llm' || Number(value.attempts) > 0;
+}
+
+function isValidV2Stone(
+  value: unknown,
+  dimensionId: WellbeingDimensionId,
+): value is StoneDetail {
+  if (!hasValidStoneShape(value, dimensionId)) {
+    return false;
   }
 
+  const status = value.status as WellbeingStatus;
+  const expectedQuestions = canonicalQuestionsForDimension(dimensionId);
+  const interventions = value.recommendedInterventions as unknown[];
+  const metrics = value.metrics as unknown[];
+  return (
+    value.dimensionNameHebrew ===
+      AI_ANALYTICS_DIMENSION_NAMES_HEBREW[dimensionId] &&
+    statusForScore(value.score as number) === status &&
+    containsOnlyHebrewUserText(value.psychologicalInterpretation as string) &&
+    hasExactlyTwoCompleteSentences(
+      value.psychologicalInterpretation as string,
+    ) &&
+    interventions.every((intervention) =>
+      isValidV2Intervention(intervention, dimensionId, status),
+    ) &&
+    metrics.length === expectedQuestions.length &&
+    expectedQuestions.every((question) =>
+      metrics.some((metric) => isValidQuestionMetric(metric, question)),
+    ) &&
+    isValidGenerationProvenance(value.generationProvenance, dimensionId)
+  );
+}
+
+function validateStatusFields(
+  payload: Record<string, unknown>,
+): StoneMapValidationResult | null {
   if (
     typeof payload.isLocked !== 'boolean' ||
     !['success', 'locked_error', 'validation_failed'].includes(
@@ -165,6 +330,17 @@ export function validateStoneMapResult(
       };
     }
 
+    if (
+      payload.contractVersion === AI_ANALYTICS_CONTRACT_VERSION &&
+      (payload.stones !== undefined ||
+        payload.overallPsychologicalSummary !== undefined)
+    ) {
+      return {
+        ok: false,
+        error: 'Non-success 2.0 payloads must not expose detailed results.',
+      };
+    }
+
     return { ok: true, value: payload as unknown as StoneMapResult };
   }
 
@@ -175,6 +351,38 @@ export function validateStoneMapResult(
     };
   }
 
+  return null;
+}
+
+export function validateStoneMapResult(
+  payload: unknown,
+  expectedRoundId: string,
+): StoneMapValidationResult {
+  if (!isRecord(payload)) {
+    return { ok: false, error: 'Stone Map payload must be a JSON object.' };
+  }
+
+  if (
+    !AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS.includes(
+      payload.contractVersion as AiAnalyticsContractVersion,
+    )
+  ) {
+    return {
+      ok: false,
+      error: `contractVersion must be one of ${AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS.join(', ')}.`,
+    };
+  }
+
+  if (payload.roundId !== expectedRoundId) {
+    return {
+      ok: false,
+      error: `Payload roundId must match route roundId "${expectedRoundId}".`,
+    };
+  }
+
+  const statusValidation = validateStatusFields(payload);
+  if (statusValidation) return statusValidation;
+
   if (
     typeof payload.processedAt !== 'string' ||
     Number.isNaN(Date.parse(payload.processedAt)) ||
@@ -184,6 +392,16 @@ export function validateStoneMapResult(
     return {
       ok: false,
       error: 'Successful Stone Map payload metadata is invalid.',
+    };
+  }
+
+  if (
+    payload.contractVersion === AI_ANALYTICS_CONTRACT_VERSION &&
+    !containsOnlyHebrewUserText(payload.overallPsychologicalSummary)
+  ) {
+    return {
+      ok: false,
+      error: 'The 2.0 round summary must contain Hebrew user-facing text.',
     };
   }
 
@@ -201,11 +419,15 @@ export function validateStoneMapResult(
     };
   }
 
+  const validateStone =
+    payload.contractVersion === AI_ANALYTICS_CONTRACT_VERSION
+      ? isValidV2Stone
+      : isValidLegacyStone;
   for (const dimensionId of AI_ANALYTICS_DIMENSION_IDS) {
-    if (!isValidStone(payload.stones[dimensionId], dimensionId)) {
+    if (!validateStone(payload.stones[dimensionId], dimensionId)) {
       return {
         ok: false,
-        error: `Stone "${dimensionId}" does not match the AI analytics contract.`,
+        error: `Stone "${dimensionId}" does not match AI analytics contract ${payload.contractVersion}.`,
       };
     }
   }

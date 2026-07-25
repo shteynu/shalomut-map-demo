@@ -89,12 +89,22 @@ export interface RoundDimensionScore {
   calculatedAt: Date;
 }
 
+export interface QuestionAggregate {
+  questionId: string;
+  dimensionId: WellbeingDimensionId;
+  questionTextHebrew: string;
+  averageScore: number;
+  responseCount: number;
+}
+
 export interface RoundAnalyticsResult {
+  contractVersion: '2.0';
   roundId: string;
   totalResponses: number;
   privacyThreshold: number;
   isLocked: boolean; // True if totalResponses < privacyThreshold
   dimensionScores: Record<WellbeingDimensionId, RoundDimensionScore>;
+  questionAggregates: Record<string, QuestionAggregate>;
   calculatedAt: Date;
 }
 

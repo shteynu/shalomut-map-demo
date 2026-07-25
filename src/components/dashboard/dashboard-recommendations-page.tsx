@@ -1,9 +1,12 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import type { WellbeingDimension } from "@/lib/demo-data";
 import { getDimensionSurface } from "@/lib/demo-data";
+import { useBlobFit } from "@/lib/hooks/use-blob-fit";
 import {
   applyStoneInsightToDimension,
+  getDimensionActionPresentation,
   getStoneInsight,
 } from "@/lib/ai-insights-view-model";
 import { useAiInsights } from "@/lib/hooks/use-ai-insights";
@@ -23,12 +26,46 @@ const recommendationBlobClasses = [
 ];
 
 function getDisplayRecommendations(dimension: WellbeingDimension) {
-  if (dimension.id === "social-resource" && dimension.recommendations.length >= 5) {
-    const order = [2, 0, 1, 3, 4];
-    return order.map((index) => dimension.recommendations[index]).filter(Boolean);
-  }
-
   return dimension.recommendations;
+}
+
+function PreservationRecommendationBlob({
+  recommendation,
+  className,
+  color,
+  priority,
+  featured,
+  itemLabel,
+}: {
+  recommendation: { title: string; body: string };
+  className: string;
+  color: string;
+  priority: number;
+  featured: boolean;
+  itemLabel: string;
+}) {
+  const { containerRef, contentRef } = useBlobFit(
+    `${recommendation.title}-${recommendation.body}`,
+  );
+
+  return (
+    <article
+      ref={containerRef as any}
+      className={`${className}${featured ? " is-featured" : ""}`}
+      style={{ "--dimension-surface": color } as CSSProperties}
+    >
+      <div
+        ref={contentRef as any}
+        style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}
+      >
+        <span className="dashboard-recommendation-priority">
+          {itemLabel} {priority}
+        </span>
+        <h2>{recommendation.title}</h2>
+        <p>{recommendation.body}</p>
+      </div>
+    </article>
+  );
 }
 
 export function DashboardRecommendationsPage({
@@ -84,16 +121,19 @@ export function DashboardRecommendationsPage({
   const displayDimension = applyStoneInsightToDimension(
     dimension,
     stone,
-    state.value.overallPsychologicalSummary,
   );
   const recommendations = getDisplayRecommendations(displayDimension);
   const isFiveItemLayout = recommendations.length >= 5;
   const dimensionSurface = getDimensionSurface(displayDimension);
+  const actionPresentation = getDimensionActionPresentation(
+    displayDimension.status,
+  );
+  const isPreservation = displayDimension.status === "green";
 
   return (
     <div className="dashboard-mock-page dashboard-recommendations-screen">
       <DashboardHeading
-        title={`${navigationLabels.goals} | ${displayDimension.conceptLabel}`}
+        title={`${actionPresentation.actionsTitle} | ${displayDimension.conceptLabel}`}
         organizationName={organizationName}
         roundTitle={roundTitle}
       />
@@ -101,22 +141,38 @@ export function DashboardRecommendationsPage({
 
       <section
         className={`dashboard-recommendations-stage${isFiveItemLayout ? " is-five-items" : " is-generic-items"}`}
-        aria-label={`${navigationLabels.goals} עבור ${displayDimension.conceptLabel}`}
+        aria-label={`${actionPresentation.actionsTitle} עבור ${displayDimension.conceptLabel}`}
       >
-        {recommendations.map((recommendation, index) => (
-          <RecommendationBlob
-            key={recommendation.title}
-            recommendation={recommendation}
-            color={dimensionSurface}
-            priority={index + 1}
-            featured={index === 0}
-            className={
-              isFiveItemLayout
-                ? recommendationBlobClasses[index] ?? recommendationBlobClasses.at(-1)!
-                : "dashboard-recommendation-blob dashboard-recommendation-blob-generic"
-            }
-          />
-        ))}
+        {recommendations.map((recommendation, index) => {
+          const className = isFiveItemLayout
+            ? recommendationBlobClasses[index] ?? recommendationBlobClasses.at(-1)!
+            : "dashboard-recommendation-blob dashboard-recommendation-blob-generic";
+
+          if (isPreservation) {
+            return (
+              <PreservationRecommendationBlob
+                key={recommendation.title}
+                recommendation={recommendation}
+                className={className}
+                color={dimensionSurface}
+                priority={index + 1}
+                featured={index === 0}
+                itemLabel={actionPresentation.actionItemLabel}
+              />
+            );
+          }
+
+          return (
+            <RecommendationBlob
+              key={recommendation.title}
+              recommendation={recommendation}
+              color={dimensionSurface}
+              priority={index + 1}
+              featured={index === 0}
+              className={className}
+            />
+          );
+        })}
       </section>
 
       <DashboardCtaRow

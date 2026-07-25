@@ -4,6 +4,7 @@ import type { WellbeingDimension } from "@/lib/demo-data";
 import { getDimensionSurface } from "@/lib/demo-data";
 import {
   applyStoneInsightToDimension,
+  getDimensionActionPresentation,
   getStoneInsight,
 } from "@/lib/ai-insights-view-model";
 import { useAiInsights } from "@/lib/hooks/use-ai-insights";
@@ -14,15 +15,8 @@ import { DashboardHeading } from "./dashboard-heading";
 import { DimensionIdentityChip } from "./dimension-identity-chip";
 import { MetricBlob } from "./metric-blob";
 
-function getHighlightedMetrics(dimension: WellbeingDimension) {
-  const highlighted = dimension.metrics.filter((metric) => metric.highlightText);
-
-  if (highlighted.length >= 2) {
-    return highlighted.slice(0, 2);
-  }
-
-  const fallback = dimension.metrics.filter((metric) => !highlighted.includes(metric));
-  return [...highlighted, ...fallback].slice(0, 2);
+export function getDisplayedMetrics(dimension: WellbeingDimension) {
+  return dimension.metrics;
 }
 
 export function DashboardMetricsPage({
@@ -77,9 +71,17 @@ export function DashboardMetricsPage({
   const displayDimension = applyStoneInsightToDimension(
     dimension,
     stone,
-    state.value.overallPsychologicalSummary,
   );
-  const metrics = getHighlightedMetrics(displayDimension).reverse();
+  const metrics = getDisplayedMetrics(displayDimension);
+  const actionPresentation = getDimensionActionPresentation(
+    displayDimension.status,
+  );
+  const actions = getDashboardMetricsActions(displayDimension.id).map(
+    (action) =>
+      action.id === "dimensionRecommendations"
+        ? { ...action, label: actionPresentation.actionsTitle }
+        : action,
+  );
   const dimensionSurface = getDimensionSurface(displayDimension);
 
   return (
@@ -103,7 +105,7 @@ export function DashboardMetricsPage({
       </section>
 
       <DashboardCtaRow
-        actions={getDashboardMetricsActions(displayDimension.id)}
+        actions={actions}
       />
     </div>
   );

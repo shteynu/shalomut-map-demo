@@ -35,10 +35,7 @@ test('applyStoneInsightToDimension replaces demo analysis with AI content', () =
 
   assert.strictEqual(result.status, 'red');
   assert.strictEqual(result.score, 40);
-  assert.deepStrictEqual(result.summary, [
-    'נדרש שינוי בעומס העבודה.',
-    'סיכום ארגוני',
-  ]);
+  assert.deepStrictEqual(result.summary, ['נדרש שינוי בעומס העבודה.']);
   assert.strictEqual(result.metrics[0].value, '40.0');
   assert.match(result.recommendations[0].body, /שני חלונות/);
 });

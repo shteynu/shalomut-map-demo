@@ -5,6 +5,7 @@ import {
   surveyInstrument,
 } from '../shalomut-source';
 import {
+  QuestionAggregate,
   RoundAnalyticsResult,
   RoundDimensionScore,
   SurveyResponseRecord,
@@ -33,63 +34,103 @@ export class AnalyticsService {
     privacyThreshold: number,
     responses: SurveyResponseRecord[]
   ): RoundAnalyticsResult {
-    const totalResponses = responses.length;
-    const isLocked = totalResponses < privacyThreshold;
+    const scopedResponses = responses.filter(
+      (response) => response.roundId === roundId,
+    );
+    const totalResponses = scopedResponses.length;
     const calculatedAt = new Date();
 
-    const allDimensionIds = surveyInstrument.dimensions.map((d) => d.id);
-    const dimensionScores: Record<string, RoundDimensionScore> = {};
+    const scoresByQuestion = new Map<string, number[]>(
+      surveyInstrument.questions.map((question) => [question.id, []]),
+    );
 
-    for (const dimId of allDimensionIds) {
-      if (isLocked) {
-        dimensionScores[dimId] = {
-          dimensionId: dimId,
-          averageScore: 0,
-          computedStatus: 'yellow', // default neutral status when locked
-          totalResponses,
-          isLocked: true,
-          calculatedAt,
-        };
-      } else {
-        // Gather all answer scores for this dimension across all responses
-        const scoresForDim: number[] = [];
+    for (const response of scopedResponses) {
+      const answeredQuestionIds = new Set<string>();
 
-        for (const response of responses) {
-          for (const answer of response.answers) {
-            if (answer.dimensionId === dimId) {
-              scoresForDim.push(answer.score);
-            }
-          }
-        }
+      for (const answer of response.answers) {
+        const scores = scoresByQuestion.get(answer.questionId);
+        if (!scores || answeredQuestionIds.has(answer.questionId)) continue;
 
-        const avgScore =
-          scoresForDim.length > 0
-            ? Math.round(
-                scoresForDim.reduce((acc, curr) => acc + curr, 0) /
-                  scoresForDim.length
-              )
-            : 0;
-
-        dimensionScores[dimId] = {
-          dimensionId: dimId,
-          averageScore: avgScore,
-          computedStatus: this.computeStatus(avgScore),
-          totalResponses,
-          isLocked: false,
-          calculatedAt,
-        };
+        scores.push(answer.score);
+        answeredQuestionIds.add(answer.questionId);
       }
     }
 
+    const isLocked =
+      totalResponses < privacyThreshold ||
+      surveyInstrument.questions.some(
+        (question) =>
+          (scoresByQuestion.get(question.id)?.length ?? 0) < privacyThreshold,
+      );
+
+    if (isLocked) {
+      return {
+        contractVersion: '2.0',
+        roundId,
+        totalResponses,
+        privacyThreshold,
+        isLocked: true,
+        dimensionScores: {} as Record<
+          WellbeingDimensionId,
+          RoundDimensionScore
+        >,
+        questionAggregates: {},
+        calculatedAt,
+      };
+    }
+
+    const average = (scores: number[]) =>
+      Math.round(
+        scores.reduce((sum, score) => sum + score, 0) / scores.length,
+      );
+
+    const questionAggregates: Record<string, QuestionAggregate> =
+      Object.fromEntries(
+        surveyInstrument.questions.map((question) => {
+          const scores = scoresByQuestion.get(question.id) ?? [];
+
+          return [
+            question.id,
+            {
+              questionId: question.id,
+              dimensionId: question.dimensionId,
+              questionTextHebrew: question.text,
+              averageScore: average(scores),
+              responseCount: scores.length,
+            },
+          ];
+        }),
+      );
+
+    const dimensionScores = {} as Record<
+      WellbeingDimensionId,
+      RoundDimensionScore
+    >;
+
+    for (const dimension of surveyInstrument.dimensions) {
+      const scoresForDimension = dimension.questions.flatMap(
+        (question) => scoresByQuestion.get(question.id) ?? [],
+      );
+      const averageScore = average(scoresForDimension);
+
+      dimensionScores[dimension.id] = {
+        dimensionId: dimension.id,
+        averageScore,
+        computedStatus: this.computeStatus(averageScore),
+        totalResponses,
+        isLocked: false,
+        calculatedAt,
+      };
+    }
+
     return {
+      contractVersion: '2.0',
       roundId,
       totalResponses,
       privacyThreshold,
-      isLocked,
-      dimensionScores: dimensionScores as Record<
-        WellbeingDimensionId,
-        RoundDimensionScore
-      >,
+      isLocked: false,
+      dimensionScores,
+      questionAggregates,
       calculatedAt,
     };
   }
@@ -113,4 +154,3 @@ export class AnalyticsService {
     );
   }
 }
-

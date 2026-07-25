@@ -1,7 +1,13 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
 import fs from 'node:fs';
+import { createRequire } from 'node:module';
 import path from 'node:path';
+
+const require = createRequire(import.meta.url);
+const yaml = require('js-yaml') as {
+  load(source: string): Record<string, any>;
+};
 
 describe('OpenAPI Specification Integrity', () => {
   const openapiPath = path.join(process.cwd(), 'public', 'openapi.json');
@@ -44,10 +50,22 @@ describe('OpenAPI Specification Integrity', () => {
     assert.ok(schemas.QuestionAnswerInput, 'Must include QuestionAnswerInput schema');
     assert.ok(schemas.RoundAnalyticsResult, 'Must include RoundAnalyticsResult schema');
     assert.ok(schemas.RoundDimensionScore, 'Must include RoundDimensionScore schema');
+    assert.ok(schemas.QuestionAggregate, 'Must include QuestionAggregate schema');
     assert.ok(schemas.WellbeingDimensionId, 'Must include WellbeingDimensionId schema');
     assert.ok(schemas.StoneMapResult, 'Must include StoneMapResult schema');
+    assert.ok(schemas.StoneMapResultV1, 'Must preserve StoneMapResultV1 schema');
+    assert.ok(schemas.StoneMapResultV2, 'Must include StoneMapResultV2 schema');
     assert.ok(schemas.StoneDetail, 'Must include StoneDetail schema');
-    assert.strictEqual(schemas.StoneMapResult.properties.contractVersion.example, '1.0');
+    assert.strictEqual(schemas.StoneMapResultV1.properties.contractVersion.example, '1.0');
+    assert.strictEqual(schemas.StoneMapResultV2.properties.contractVersion.example, '2.0');
+    assert.strictEqual(schemas.RoundAnalyticsResult.properties.contractVersion.example, '2.0');
+    assert.deepStrictEqual(
+      schemas.StoneMapResult.oneOf.map((entry: { $ref: string }) => entry.$ref),
+      [
+        '#/components/schemas/StoneMapResultV1',
+        '#/components/schemas/StoneMapResultV2',
+      ],
+    );
   });
 
   it('should document organization-scoped manager authentication', () => {
@@ -71,6 +89,35 @@ describe('OpenAPI Specification Integrity', () => {
       assert.ok(
         operation.responses['403'] || operation.responses['404'],
         'Scoped manager operations must document a hidden or forbidden foreign resource',
+      );
+    }
+  });
+
+  it('keeps the versioned AI schemas synchronized in JSON and YAML', () => {
+    const jsonSpec = JSON.parse(fs.readFileSync(openapiPath, 'utf8'));
+    const yamlSpec = yaml.load(
+      fs.readFileSync(
+        path.join(process.cwd(), 'docs', 'openapi.yaml'),
+        'utf8',
+      ),
+    );
+    const aiSchemas = [
+      'RoundAnalyticsResult',
+      'QuestionAggregate',
+      'StoneMapResult',
+      'StoneMapResultV1',
+      'StoneMapResultV2',
+      'StoneDetail',
+      'StoneMetric',
+      'StoneIntervention',
+      'StoneGenerationProvenance',
+    ];
+
+    for (const schemaName of aiSchemas) {
+      assert.deepStrictEqual(
+        yamlSpec.components.schemas[schemaName],
+        jsonSpec.components.schemas[schemaName],
+        `${schemaName} must stay synchronized between JSON and YAML`,
       );
     }
   });

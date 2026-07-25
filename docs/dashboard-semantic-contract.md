@@ -7,11 +7,31 @@ It guarantees the contract version, round identity, privacy state, eight
 canonical dimensions, and the basic Stone Map shape. It does not guarantee
 content quality or question-level grounding.
 
-The requirements below describe the next, explicitly versioned contract. They
-are intentionally not presented as compatible `1.0` behavior: requiring 24
-question aggregates and stricter output validation changes what producers and
-consumers must send and accept. The shared contract owner must select and
-publish the next version before runtime implementation is integrated.
+The requirements below are published as breaking contract `2.0` in
+`contracts/ai-analytics-v2.json`. They are intentionally not presented as
+compatible `1.0` behavior: requiring 24 question aggregates and stricter
+output validation changes what producers and consumers must send and accept.
+`contracts/ai-analytics-v1.json` remains immutable and retains its deployed
+structural validation semantics.
+
+### Consumer-first rollout
+
+The two transport directions roll out without a version gap:
+
+1. Deploy the Python consumer first so it accepts legacy input (missing version
+   or `1.0`) and `2.0`. It must respond with the same effective version as its
+   input, so the existing Core keeps receiving `1.0`.
+2. Deploy a Core compatibility release whose callback accepts both `1.0` and
+   `2.0`, while its MCP producer still sends the legacy shape.
+3. Switch the Core MCP producer to explicit `contractVersion: "2.0"` with the
+   complete aggregate maps. The compatible Python service then produces `2.0`,
+   which the compatible Core validates and persists.
+4. Keep `1.0` acceptance during the rollback window. A rollback of the Core
+   producer returns the exchange to `1.0` without requiring a Render rollback.
+
+This repository prepares the compatible code paths only. Render/Core deploys,
+aliases, provider configuration, and real callback writes remain outside this
+local change.
 
 ## Canonical and privacy-safe input
 
@@ -75,6 +95,19 @@ The current generic `score / status / risk` triplet is not a question-level
 metric set and MUST be rejected. A Stone's dimension score and status MUST be
 consistent with the Core aggregate and the configured thresholds: green
 `>=75`, yellow `50-74`, and red `<50`.
+
+## Generation provenance
+
+Every `2.0` Stone MUST persist verifiable `generationProvenance`:
+
+- `outcome`: `llm` or `deterministic_fallback`;
+- total provider `attempts` and derived `retryCount`;
+- exactly the three same-dimension canonical `sourceQuestionIds`.
+
+An `llm` outcome requires at least one provider attempt. A deterministic
+fallback may record zero attempts when no provider is configured or a bounded
+positive attempt count after invalid provider output. Provenance contains no
+prompt, generated response, secret, respondent row, or identity.
 
 ## Hebrew user-facing copy
 

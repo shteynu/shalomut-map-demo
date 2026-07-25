@@ -5,6 +5,7 @@ import type { WellbeingDimension } from "@/lib/demo-data";
 import { getDimensionSurface } from "@/lib/demo-data";
 import {
   applyStoneInsightToDimension,
+  getDimensionActionPresentation,
   getStoneInsight,
 } from "@/lib/ai-insights-view-model";
 import { useAiInsights } from "@/lib/hooks/use-ai-insights";
@@ -31,14 +32,11 @@ export function DashboardDimensionPage({
       ? getStoneInsight(state.value, dimension.id)
       : undefined;
   const displayDimension = stone
-    ? applyStoneInsightToDimension(
-        dimension,
-        stone,
-        state.status === "ready"
-          ? state.value.overallPsychologicalSummary
-          : undefined,
-      )
+    ? applyStoneInsightToDimension(dimension, stone)
     : dimension;
+  const actionPresentation = getDimensionActionPresentation(
+    displayDimension.status,
+  );
   const dimensionSurface = getDimensionSurface(displayDimension);
   const { containerRef, contentRef } = useBlobFit(
     `${displayDimension.id}-${displayDimension.summary.join("|")}`,
@@ -79,7 +77,7 @@ export function DashboardDimensionPage({
   return (
     <div className="dashboard-mock-page dashboard-detail-screen">
       <DashboardHeading
-        title={`תמונת מצב | ${displayDimension.conceptLabel}`}
+        title={`${actionPresentation.dimensionTitle} | ${displayDimension.conceptLabel}`}
         organizationName={organizationName}
         roundTitle={roundTitle}
       />

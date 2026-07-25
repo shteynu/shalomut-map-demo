@@ -46,7 +46,7 @@ export async function POST(request: Request) {
           tools: [
             {
               name: 'get_round_analytics',
-              description: 'Fetch aggregated wellbeing dimension scores and privacy lock status for a given survey round.',
+              description: 'Fetch privacy-safe dimension and canonical question aggregates for a given survey round.',
               inputSchema: {
                 type: 'object',
                 properties: {
@@ -95,15 +95,14 @@ export async function POST(request: Request) {
 
         // Format into strict RoundAnalyticsResult MCP payload
         const mcpPayload = {
+          contractVersion: result.contractVersion,
           roundId: result.roundId,
           totalResponses: result.totalResponses,
           privacyThreshold: result.privacyThreshold,
           isLocked: result.isLocked,
           dimensionScores: result.dimensionScores,
-          organizationContext: {
-            schoolType: 'Comprehensive School',
-            district: 'Central',
-          },
+          questionAggregates: result.questionAggregates,
+          calculatedAt: result.calculatedAt,
         };
 
         return NextResponse.json({

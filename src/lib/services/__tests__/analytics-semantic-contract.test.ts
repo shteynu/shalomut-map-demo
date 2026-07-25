@@ -51,6 +51,7 @@ test('AnalyticsService exposes exactly 24 canonical question aggregates after th
     result as typeof result & AnalyticsWithQuestionAggregates
   ).questionAggregates;
 
+  assert.strictEqual(result.contractVersion, '2.0');
   assert.ok(
     questionAggregates,
     'unlocked analytics must expose canonical questionAggregates',
@@ -79,6 +80,25 @@ test('AnalyticsService exposes exactly 24 canonical question aggregates after th
   }
 });
 
+test('AnalyticsService keeps round data isolated and dimension status consistent with its score', () => {
+  const roundId = 'round_semantic_isolated';
+  const result = AnalyticsService.calculateRoundAnalytics(roundId, 10, [
+    ...createResponses(roundId, 10),
+    ...createResponses('round_from_another_organization', 10),
+  ]);
+
+  assert.strictEqual(result.totalResponses, 10);
+  assert.strictEqual(result.questionAggregates['self-expression-1'].responseCount, 10);
+
+  for (const dimension of surveyInstrument.dimensions) {
+    const dimensionScore = result.dimensionScores[dimension.id];
+    assert.strictEqual(
+      dimensionScore.computedStatus,
+      AnalyticsService.computeStatus(dimensionScore.averageScore),
+    );
+  }
+});
+
 test('AnalyticsService exposes no detailed aggregates below the privacy threshold', () => {
   const result = AnalyticsService.calculateRoundAnalytics(
     'round_semantic_locked',
@@ -99,4 +119,23 @@ test('AnalyticsService exposes no detailed aggregates below the privacy threshol
     {},
     'locked analytics must expose an explicit empty question aggregate map',
   );
+});
+
+test('AnalyticsService fails closed when any canonical question has fewer answers than the privacy threshold', () => {
+  const roundId = 'round_semantic_incomplete';
+  const responses = createResponses(roundId, 10);
+  responses[0].answers = responses[0].answers.filter(
+    (answer) => answer.questionId !== 'balance-2',
+  );
+
+  const result = AnalyticsService.calculateRoundAnalytics(
+    roundId,
+    10,
+    responses,
+  );
+
+  assert.strictEqual(result.totalResponses, 10);
+  assert.strictEqual(result.isLocked, true);
+  assert.deepStrictEqual(result.dimensionScores, {});
+  assert.deepStrictEqual(result.questionAggregates, {});
 });

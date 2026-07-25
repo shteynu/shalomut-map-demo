@@ -1,7 +1,11 @@
 import assert from 'node:assert';
 import test from 'node:test';
 import {
+  AI_ANALYTICS_CONTRACT_VERSION,
   AI_ANALYTICS_DIMENSION_IDS,
+  AI_ANALYTICS_QUESTIONS,
+  AI_ANALYTICS_QUESTION_IDS,
+  AI_ANALYTICS_V1_CONTRACT_VERSION,
   validateStoneMapResult,
 } from '../ai-contract';
 import { surveyInstrument } from '../shalomut-source';
@@ -36,6 +40,20 @@ test('AI analytics contract uses the canonical survey dimension IDs', () => {
     AI_ANALYTICS_DIMENSION_IDS,
     surveyInstrument.dimensions.map((dimension) => dimension.id),
   );
+  assert.deepStrictEqual(
+    AI_ANALYTICS_QUESTION_IDS,
+    surveyInstrument.questions.map((question) => question.id),
+  );
+  assert.deepStrictEqual(
+    AI_ANALYTICS_QUESTIONS,
+    surveyInstrument.questions.map((question) => ({
+      id: question.id,
+      dimensionId: question.dimensionId,
+      textHebrew: question.text,
+    })),
+  );
+  assert.strictEqual(AI_ANALYTICS_V1_CONTRACT_VERSION, '1.0');
+  assert.strictEqual(AI_ANALYTICS_CONTRACT_VERSION, '2.0');
 });
 
 test('validateStoneMapResult accepts a complete canonical Stone Map', () => {
@@ -43,6 +61,16 @@ test('validateStoneMapResult accepts a complete canonical Stone Map', () => {
     createValidStoneMap(),
     'round-contract-test',
   );
+
+  assert.strictEqual(result.ok, true);
+});
+
+test('contract 1.0 keeps its deployed structural semantics', () => {
+  const legacyPayload = createValidStoneMap();
+  legacyPayload.stones.balance.psychologicalInterpretation =
+    'Legacy Latin structural copy remains accepted.';
+
+  const result = validateStoneMapResult(legacyPayload, 'round-contract-test');
 
   assert.strictEqual(result.ok, true);
 });

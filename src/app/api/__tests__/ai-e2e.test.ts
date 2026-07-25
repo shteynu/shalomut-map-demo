@@ -101,6 +101,8 @@ test('Core MCP -> Python graph -> callback persists a canonical Stone Map', asyn
   try {
     const analytics = await fetchMcpAnalytics();
     assert.strictEqual(analytics.isLocked, false);
+    assert.strictEqual(analytics.contractVersion, '2.0');
+    assert.strictEqual(Object.keys(analytics.questionAggregates).length, 24);
 
     const python = spawnSync(
       'python3',
@@ -141,9 +143,14 @@ test('Core MCP -> Python graph -> callback persists a canonical Stone Map', asyn
     assert.strictEqual(getResponse.status, 200);
 
     const persisted = await getResponse.json();
-    assert.strictEqual(persisted.contractVersion, '1.0');
+    assert.strictEqual(persisted.contractVersion, '2.0');
     assert.strictEqual(Object.keys(persisted.stones).length, 8);
     assert.strictEqual(persisted.stones.balance.status, 'red');
+    assert.strictEqual(persisted.stones.balance.metrics.length, 3);
+    assert.deepStrictEqual(
+      persisted.stones.balance.generationProvenance.sourceQuestionIds,
+      ['balance-1', 'balance-2', 'balance-3'],
+    );
     assert.strictEqual(
       persisted.stones['organizational-climate'].status,
       'yellow',
@@ -181,6 +188,9 @@ test('Cross-service pipeline preserves the privacy lock below threshold', async 
   try {
     const analytics = await fetchMcpAnalytics();
     assert.strictEqual(analytics.isLocked, true);
+    assert.strictEqual(analytics.contractVersion, '2.0');
+    assert.deepStrictEqual(analytics.dimensionScores, {});
+    assert.deepStrictEqual(analytics.questionAggregates, {});
 
     const python = spawnSync(
       'python3',
@@ -195,6 +205,7 @@ test('Cross-service pipeline preserves the privacy lock below threshold', async 
     const stoneMap = JSON.parse(python.stdout);
     assert.strictEqual(stoneMap.status, 'locked_error');
     assert.strictEqual(stoneMap.isLocked, true);
+    assert.strictEqual(stoneMap.contractVersion, '2.0');
     assert.strictEqual(stoneMap.stones, undefined);
 
     const callbackResponse = await postInsightsHandler(

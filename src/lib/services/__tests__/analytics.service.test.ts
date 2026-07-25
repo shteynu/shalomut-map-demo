@@ -24,7 +24,9 @@ test('AnalyticsService locks results when total responses < privacyThreshold', (
   assert.strictEqual(result.isLocked, true);
   assert.strictEqual(result.totalResponses, 0);
   assert.strictEqual(result.privacyThreshold, 10);
-  assert.strictEqual(result.dimensionScores['self-expression'].isLocked, true);
+  assert.strictEqual(result.contractVersion, '2.0');
+  assert.deepStrictEqual(result.dimensionScores, {});
+  assert.deepStrictEqual(result.questionAggregates, {});
 });
 
 test('AnalyticsService unlocks results and computes correct scores when responses >= privacyThreshold', () => {
@@ -51,7 +53,9 @@ test('AnalyticsService unlocks results and computes correct scores when response
   const result = AnalyticsService.calculateRoundAnalytics(roundId, 10, responses);
 
   assert.strictEqual(result.isLocked, false);
+  assert.strictEqual(result.contractVersion, '2.0');
   assert.strictEqual(result.totalResponses, 10);
+  assert.strictEqual(Object.keys(result.questionAggregates).length, 24);
   assert.strictEqual(result.dimensionScores['self-expression'].isLocked, false);
   assert.strictEqual(result.dimensionScores['self-expression'].averageScore, 100);
   assert.strictEqual(result.dimensionScores['self-expression'].computedStatus, 'green');

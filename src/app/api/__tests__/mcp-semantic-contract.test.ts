@@ -104,6 +104,7 @@ test('MCP exposes exactly 24 canonical privacy-safe question aggregates for an u
     | Record<string, Record<string, unknown>>
     | undefined;
 
+  assert.strictEqual(payload.contractVersion, '2.0');
   assert.ok(
     questionAggregates,
     'unlocked MCP payload must expose questionAggregates',
@@ -122,6 +123,14 @@ test('MCP exposes exactly 24 canonical privacy-safe question aggregates for an u
       questionAggregates[question.id].questionTextHebrew,
       question.text,
     );
+    assert.strictEqual(
+      questionAggregates[question.id].responseCount,
+      10,
+    );
+    assert.strictEqual(
+      typeof questionAggregates[question.id].averageScore,
+      'number',
+    );
   }
 
   const serialized = JSON.stringify(payload);
@@ -133,6 +142,7 @@ test('MCP exposes exactly 24 canonical privacy-safe question aggregates for an u
   ]) {
     assert.strictEqual(serialized.includes(privateField), false);
   }
+  assert.strictEqual(Object.hasOwn(payload, 'organizationContext'), false);
 });
 
 test('MCP exposes empty aggregate maps for a privacy-locked round', async () => {

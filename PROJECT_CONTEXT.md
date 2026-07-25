@@ -21,7 +21,8 @@
 - [PROGRESS.md](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/PROGRESS.md) — **Память сессий**: текущий статус и следующие шаги.
 - [docs/shalomut-tracker-handoff.md](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/docs/shalomut-tracker-handoff.md) — актуальный operational handoff: database-backed manager UI, staging blockers, доказательства и approval gates.
 - [docs/ai-analytics-handoff.md](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/docs/ai-analytics-handoff.md) — handoff: сделано, подтверждено, осталось и approval gates.
-- [contracts/ai-analytics-v1.json](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/contracts/ai-analytics-v1.json) — каноническая версия и ID восьми измерений для TypeScript/Python интеграции.
+- [contracts/ai-analytics-v1.json](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/contracts/ai-analytics-v1.json) — immutable deployed structural contract `1.0`.
+- [contracts/ai-analytics-v2.json](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/contracts/ai-analytics-v2.json) — breaking semantic contract `2.0`: те же восемь измерений, 24 canonical questions, status-scoped output и provenance.
 - [ai-analytics-service/README.md](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/ai-analytics-service/README.md) — локальный запуск, границы runtime и переменные AI-сервиса.
 
 
@@ -35,7 +36,8 @@
   3. **Запрет внутренней аналитики**: Внутри данного приложения **ЗАПРЕЩЕНО** строить внутренние экспертные движки рекомендаций или тяжёлый бизнес-анализ. Приложение выполняет роль надёжного источника и хранилища сырых данных (*Single Source of Raw Data*).
 
 ### ADR-002: Versioned AI Analytics Contract и fail-closed transport
-- **Решение**: Core app и Python-сервис используют общий manifest `contracts/ai-analytics-v1.json`. Callback принимает только `contractVersion: "1.0"`, совпадающий `roundId` и корректный privacy/status payload; successful payload содержит ровно восемь канонических stones.
+- **Решение**: `contracts/ai-analytics-v1.json` остаётся immutable deployed structural contract. Breaking semantic requirements опубликованы отдельно в `contracts/ai-analytics-v2.json`; они сохраняют 8×24 methodology и добавляют privacy-safe question aggregates, strict Hebrew/status validation, canonical metrics и persisted provenance. Callback имеет отдельные validator-ветки для `1.0` и `2.0`, поэтому семантика `1.0` не ужесточается молча.
+- **Rollout**: consumer-first. Python сначала принимает legacy/`1.0` и `2.0`, возвращая effective input version; затем Core callback принимает обе версии; только после этого Core MCP producer начинает отправлять explicit `2.0`. Во время rollback window `1.0` продолжает приниматься.
 - **Персистентность**: В production-режиме результат хранится в `SurveyRound.aiInsights`; migration `20260724170000_add_ai_insights` применена к текущей настроенной Supabase-цели. Для других окружений миграция запускается отдельно после подтверждения target.
 - **Транспорт**: MCP, webhook и callback поддерживают независимые Bearer secrets. При недоступности удалённого MCP/AI-сервиса обработка завершается ошибкой; mock data разрешены только при явном `USE_MOCK_MCP=true`.
 - **UI**: Dashboard читает AI-insights по `roundId`, валидирует контракт на клиентской границе и отдельно отображает loading, privacy-locked, not-found и error состояния.

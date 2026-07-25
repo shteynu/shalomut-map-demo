@@ -139,7 +139,8 @@ test('End-to-End Workflow: Round creation -> 10 submissions -> Analytics Unlocki
   assert.notStrictEqual(analytics, null);
   assert.strictEqual(analytics?.totalResponses, 9);
   assert.strictEqual(analytics?.isLocked, true);
-  assert.strictEqual(analytics?.dimensionScores['self-expression'].isLocked, true);
+  assert.deepStrictEqual(analytics?.dimensionScores, {});
+  assert.deepStrictEqual(analytics?.questionAggregates, {});
 
   // 4. Submit 10th response -> Analytics unlocks with score calculations
   await SurveyService.submitAndSaveResponse(
@@ -158,6 +159,8 @@ test('End-to-End Workflow: Round creation -> 10 submissions -> Analytics Unlocki
   );
   assert.strictEqual(analytics?.totalResponses, 10);
   assert.strictEqual(analytics?.isLocked, false);
+  assert.strictEqual(analytics?.contractVersion, '2.0');
+  assert.strictEqual(Object.keys(analytics?.questionAggregates ?? {}).length, 24);
   assert.strictEqual(analytics?.dimensionScores['self-expression'].isLocked, false);
   assert.strictEqual(typeof analytics?.dimensionScores['self-expression'].averageScore, 'number');
 });

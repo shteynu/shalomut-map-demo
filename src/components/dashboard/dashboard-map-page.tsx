@@ -2,13 +2,17 @@
 
 import { Download, Info, MousePointer2, Move } from "lucide-react";
 import { ScoreRing } from "@/components/ui/score-ring";
+import type { AiInsightsUiState } from "@/lib/hooks/use-ai-insights";
+import { useAiInsights } from "@/lib/hooks/use-ai-insights";
 import type { WellbeingDimensionId, WellbeingStatus } from "@/lib/shalomut-source";
+import { DashboardAiInsightsState } from "./dashboard-ai-insights-state";
 import { DashboardMapInteractive } from "./dashboard-map-interactive";
 import { DashboardHeading } from "./dashboard-heading";
 import { DashboardHomeLink } from "./dashboard-home-link";
 import { DashboardMapLocked } from "./dashboard-map-locked";
 
 type DashboardMapPageProps = {
+  roundId: string;
   organizationName: string;
   roundTitle: string;
   responseCount: number;
@@ -21,6 +25,7 @@ type DashboardMapPageProps = {
 };
 
 export function DashboardMapPage({
+  roundId,
   organizationName,
   roundTitle,
   responseCount,
@@ -47,6 +52,58 @@ export function DashboardMapPage({
   }
 
   return (
+    <DashboardMapReady
+      roundId={roundId}
+      organizationName={organizationName}
+      roundTitle={roundTitle}
+      minimumResponses={minimumResponses}
+      overallScore={overallScore}
+      dimensionScores={dimensionScores}
+    />
+  );
+}
+
+export function DashboardOverviewSummary({
+  state,
+  onRetry,
+}: {
+  state: AiInsightsUiState;
+  onRetry: () => void;
+}) {
+  if (state.status !== "ready") {
+    return <DashboardAiInsightsState state={state} onRetry={onRetry} />;
+  }
+
+  const summary = state.value.overallPsychologicalSummary?.trim();
+
+  if (!summary) {
+    return (
+      <DashboardAiInsightsState
+        state={{ status: "error", error: "Missing organization summary." }}
+        onRetry={onRetry}
+      />
+    );
+  }
+
+  return (
+    <section className="dashboard-ai-state" aria-labelledby="dashboard-overview-summary-title">
+      <h2 id="dashboard-overview-summary-title">סיכום ארגוני</h2>
+      <p>{summary}</p>
+    </section>
+  );
+}
+
+function DashboardMapReady({
+  roundId,
+  organizationName,
+  roundTitle,
+  minimumResponses,
+  overallScore,
+  dimensionScores,
+}: Omit<DashboardMapPageProps, "responseCount">) {
+  const { state, reload } = useAiInsights(roundId);
+
+  return (
     <div className="dashboard-mock-page stone-page dashboard-map-screen">
       <DashboardHomeLink />
 
@@ -71,6 +128,8 @@ export function DashboardMapPage({
             המפה מציגה תמונת מצב עדכנית של ממדי השלומות בבית הספר. כל אבן מייצגת ממד אחד,
             והנקודה הצבעונית לצידה מסמנת את הסטטוס שלו.
           </p>
+
+          <DashboardOverviewSummary state={state} onRetry={reload} />
 
           <button type="button" className="primary-button" onClick={() => window.print()}>
             <Download size={18} aria-hidden="true" />

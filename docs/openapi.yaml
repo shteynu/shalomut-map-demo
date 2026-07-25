@@ -665,6 +665,7 @@ components:
           $ref: '#/components/schemas/WellbeingStatus'
     RoundDimensionScore:
       type: object
+      required: [dimensionId, averageScore, computedStatus, totalResponses, isLocked, calculatedAt]
       properties:
         dimensionId:
           $ref: '#/components/schemas/WellbeingDimensionId'
@@ -679,22 +680,58 @@ components:
         calculatedAt:
           type: string
           format: date-time
+    QuestionAggregate:
+      type: object
+      required: [questionId, dimensionId, questionTextHebrew, averageScore, responseCount]
+      properties:
+        questionId:
+          type: string
+          example: balance-2
+        dimensionId:
+          $ref: '#/components/schemas/WellbeingDimensionId'
+        questionTextHebrew:
+          type: string
+          example: יש לי מספיק זמן למנוחה ולהתאוששות אחרי העבודה.
+        averageScore:
+          type: number
+          minimum: 0
+          maximum: 100
+          example: 40
+        responseCount:
+          type: integer
+          minimum: 1
+          example: 12
     RoundAnalyticsResult:
       type: object
+      description: AI analytics input contract 2.0. Privacy-locked rounds return explicit empty dimensionScores and questionAggregates maps.
+      required: [contractVersion, roundId, totalResponses, privacyThreshold, isLocked, dimensionScores, questionAggregates, calculatedAt]
       properties:
+        contractVersion:
+          type: string
+          enum: ["2.0"]
+          example: "2.0"
         roundId:
           type: string
           format: uuid
+          example: 4f88af95-0ec4-4872-85ac-67466c3cd8f2
         totalResponses:
           type: integer
+          example: 18
         privacyThreshold:
           type: integer
+          example: 10
         isLocked:
           type: boolean
+          example: false
         dimensionScores:
           type: object
           additionalProperties:
             $ref: '#/components/schemas/RoundDimensionScore'
+        questionAggregates:
+          type: object
+          description: Exactly 24 canonical aggregates when unlocked; empty when privacy locked.
+          additionalProperties:
+            $ref: '#/components/schemas/QuestionAggregate'
         calculatedAt:
           type: string
           format: date-time
@@ -715,7 +752,7 @@ components:
         params:
           type: object
           additionalProperties: true
-    StoneMetric:
+    StoneMetricV1:
       type: object
       required: [label, value]
       properties:
@@ -725,7 +762,7 @@ components:
           type: string
         trend:
           type: string
-    StoneIntervention:
+    StoneInterventionV1:
       type: object
       required: [id, dimensionId, source, title, summary, actionable_steps]
       properties:
@@ -743,7 +780,7 @@ components:
           type: array
           items:
             type: string
-    StoneDetail:
+    StoneDetailV1:
       type: object
       required: [dimensionId, dimensionNameHebrew, status, score, psychologicalInterpretation, recommendedInterventions, metrics]
       properties:
@@ -762,13 +799,14 @@ components:
         recommendedInterventions:
           type: array
           items:
-            $ref: '#/components/schemas/StoneIntervention'
+            $ref: '#/components/schemas/StoneInterventionV1'
         metrics:
           type: array
           items:
-            $ref: '#/components/schemas/StoneMetric'
-    StoneMapResult:
+            $ref: '#/components/schemas/StoneMetricV1'
+    StoneMapResultV1:
       type: object
+      description: Immutable deployed structural contract 1.0.
       required: [contractVersion, roundId, isLocked, status]
       properties:
         contractVersion:
@@ -795,7 +833,140 @@ components:
           minProperties: 8
           maxProperties: 8
           additionalProperties:
+            $ref: '#/components/schemas/StoneDetailV1'
+    StoneMetric:
+      type: object
+      required: [questionId, label, value, averageScore, responseCount]
+      properties:
+        questionId:
+          type: string
+          example: balance-2
+        label:
+          type: string
+          example: יש לי מספיק זמן למנוחה ולהתאוששות אחרי העבודה.
+        value:
+          type: string
+          example: 40 מתוך 100
+        averageScore:
+          type: number
+          minimum: 0
+          maximum: 100
+          example: 40
+        responseCount:
+          type: integer
+          minimum: 1
+          example: 12
+        trend:
+          type: string
+    StoneIntervention:
+      type: object
+      required: [id, dimensionId, status, source, title, summary, actionable_steps]
+      properties:
+        id:
+          type: string
+        dimensionId:
+          $ref: '#/components/schemas/WellbeingDimensionId'
+        status:
+          $ref: '#/components/schemas/WellbeingStatus'
+        source:
+          type: string
+        title:
+          type: string
+        summary:
+          type: string
+        actionable_steps:
+          type: array
+          minItems: 1
+          items:
+            type: string
+    StoneGenerationProvenance:
+      type: object
+      required: [outcome, attempts, retryCount, sourceQuestionIds]
+      properties:
+        outcome:
+          type: string
+          enum: [llm, deterministic_fallback]
+        attempts:
+          type: integer
+          minimum: 0
+        retryCount:
+          type: integer
+          minimum: 0
+        sourceQuestionIds:
+          type: array
+          minItems: 3
+          maxItems: 3
+          uniqueItems: true
+          items:
+            type: string
+    StoneDetail:
+      type: object
+      required: [dimensionId, dimensionNameHebrew, status, score, psychologicalInterpretation, recommendedInterventions, metrics, generationProvenance]
+      properties:
+        dimensionId:
+          $ref: '#/components/schemas/WellbeingDimensionId'
+        dimensionNameHebrew:
+          type: string
+        status:
+          $ref: '#/components/schemas/WellbeingStatus'
+        score:
+          type: number
+          minimum: 0
+          maximum: 100
+        psychologicalInterpretation:
+          type: string
+        recommendedInterventions:
+          type: array
+          items:
+            $ref: '#/components/schemas/StoneIntervention'
+        metrics:
+          type: array
+          minItems: 3
+          maxItems: 3
+          items:
+            $ref: '#/components/schemas/StoneMetric'
+        generationProvenance:
+          $ref: '#/components/schemas/StoneGenerationProvenance'
+    StoneMapResultV2:
+      type: object
+      description: Breaking semantic contract 2.0. Successful payloads contain exactly eight canonical stones; non-success payloads contain no detailed results.
+      required: [contractVersion, roundId, isLocked, status]
+      properties:
+        contractVersion:
+          type: string
+          enum: ["2.0"]
+          example: "2.0"
+        roundId:
+          type: string
+          example: 4f88af95-0ec4-4872-85ac-67466c3cd8f2
+        processedAt:
+          type: string
+          format: date-time
+        isLocked:
+          type: boolean
+        status:
+          type: string
+          enum: [success, locked_error, validation_failed]
+        errorMessage:
+          type: string
+        overallPsychologicalSummary:
+          type: string
+        stones:
+          type: object
+          minProperties: 8
+          maxProperties: 8
+          additionalProperties:
             $ref: '#/components/schemas/StoneDetail'
+    StoneMapResult:
+      description: Consumer-first compatibility union. Consumers accept 1.0 and 2.0; new producers emit 2.0 only after the consumer rollout.
+      oneOf:
+        - $ref: '#/components/schemas/StoneMapResultV1'
+        - $ref: '#/components/schemas/StoneMapResultV2'
+      discriminator:
+        propertyName: contractVersion
+        mapping:
+          "1.0": '#/components/schemas/StoneMapResultV1'
+          "2.0": '#/components/schemas/StoneMapResultV2'
     ErrorResponse:
       type: object
       properties:

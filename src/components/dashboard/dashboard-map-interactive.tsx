@@ -294,6 +294,10 @@ export function DashboardMapInteractive({
         const offset = offsets[dimension.id] ?? zeroOffsets[dimension.id];
         const dragX = offset.x;
         const dragY = offset.y;
+        const displayStatusLabel =
+          liveDimension.status === "green"
+            ? "חוזקה לשימור"
+            : statusLabels[liveDimension.status];
 
         return (
           <Link
@@ -322,7 +326,7 @@ export function DashboardMapInteractive({
             data-drag-y={Math.round(dragY)}
             data-dimension={dimension.id}
             data-stone-index={String(index + 1).padStart(2, "0")}
-            aria-label={`${dimension.conceptLabel}: ${dimension.subtitle}. ציון ${liveDimension.score}, ${statusLabels[liveDimension.status]}`}
+            aria-label={`${dimension.conceptLabel}: ${dimension.subtitle}. ציון ${liveDimension.score}, ${displayStatusLabel}`}
             draggable={false}
             onPointerDown={handlePointerDown(dimension.id)}
             onClick={handleClick(dimension.id)}
@@ -340,7 +344,7 @@ export function DashboardMapInteractive({
             </span>
             <span className="dashboard-map-blob-status">
               <span className={`status-dot status-${liveDimension.status}`} aria-hidden="true" />
-              {statusLabels[liveDimension.status]}
+              {displayStatusLabel}
             </span>
           </Link>
         );

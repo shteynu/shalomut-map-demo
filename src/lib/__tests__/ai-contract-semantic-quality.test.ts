@@ -42,12 +42,26 @@ function createSemanticallyValidPayload() {
               averageScore: 60,
               responseCount: 12,
             })),
+            generationProvenance: {
+              outcome: 'llm',
+              attempts: 1,
+              retryCount: 0,
+              sourceQuestionIds: dimension.questions.map(
+                (question) => question.id,
+              ),
+            },
           },
         ];
       }),
     ),
   };
 }
+
+test('validateStoneMapResult accepts the complete 2.0 semantic contract', () => {
+  const result = validate(createSemanticallyValidPayload());
+
+  assert.strictEqual(result.ok, true);
+});
 
 function validate(payload: unknown) {
   return validateStoneMapResult(payload, 'round-semantic-contract');
