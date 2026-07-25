@@ -24,20 +24,33 @@ Shalomut Map к `shalomut-tracker`, где сохранённые данные �
   staging-БД; `prisma migrate status` сообщает `Database schema is up to date!`.
 - Staging credentials находятся только в ignored `.env.staging.local` с
   правами `600`; production `.env` и `.env.local` не менялись.
+- В Vercel включена Vercel Authentication с точным scope
+  `deploymentType: preview`; production domains этим режимом не изменяются.
+- `DATABASE_URL` staging сохранён в Vercel как Sensitive variable только для
+  Preview. В Production project environment variables отсутствуют;
+  `DIRECT_URL` в Vercel не добавлялся.
 - Исходный Supabase project ref `fvnulyirrqjrnjbahmsn` подтверждён Dashboard как
   `main / Production` и в этой сессии не изменялся.
 - Staging:
   [shalomut-map-demo-ui-redesign.vercel.app](https://shalomut-map-demo-ui-redesign.vercel.app/).
 - Staging deployment: `dpl_35S9VvwN8V9Bq7da3iP2SJwT4349`, состояние `READY`,
   source commit `a20ac66`.
+- Новый protected Preview со staging persistence:
+  `dpl_E7pQnJXMDHzoeeMQa5hWskxicCLz`, состояние `READY`, target `preview`, URL
+  `https://shalomut-map-demo-3b0szbymo-shteynumaks-1343s-projects.vercel.app`.
+  Он собран из чистого Git snapshot без локальных незакоммиченных файлов.
 - Финальный PR #6 preview: `dpl_3KrHd5nbcvqdnSAup2sY1L1jjzmT`, состояние
   `READY`,
   URL
   `https://shalomut-map-demo-16cvkgov9-shteynumaks-1343s-projects.vercel.app`.
-- Production data, alias и deployment не изменялись.
-- Commits `c0166e0` («containerize the AI analytics service») и `6c07a01`
-  (project memory: staging persistence и контейнеризация) находятся в
-  `origin/main`; локальная и удалённая ветки совпадают, рабочее дерево чистое.
+- Protected-preview операция не выполняла production promotion и не меняла
+  production env/aliases. Последний проверенный перед session-close merge
+  Git-connected production deployment `dpl_3PmjUaFv8xEdS1WAEWq9U3CwKa9b`
+  автоматически собран из `origin/main` commit `ed7b44d` и имеет состояние
+  `READY`; production project env vars отсутствуют.
+- Commit `ed7b44d` с поддержкой protected Vercel core app находится в
+  `origin/main`. Session-close update сохраняет operational docs и исключает
+  локальную `ai-analytics-service/.venv` из IDE-индексации.
 - Deployment AI-сервиса по-прежнему не создавался.
 
 ## Инцидент: непустой UI при пустой БД
@@ -81,6 +94,21 @@ Staging показывал старую demo-школу, имя менеджер
   create/read/update/delete, JSONB round configuration, AI-insights columns и
   cascade delete. Smoke выполнен транзакционно; финальные counts организаций,
   раундов, ответов и question answers равны `0`.
+- Vercel Authentication с `deploymentType: preview` подтверждена чтением
+  project settings. Неавторизованный запрос к новому Preview получает `302` на
+  Vercel SSO.
+- Vercel metadata подтверждает: `DATABASE_URL` имеет тип Sensitive и scope
+  Preview; Production variables отсутствуют.
+- Protected runtime smoke через Vercel bypass создал organization и round через
+  `PUT /api/manager/setup/`, прочитал тот же round через `/api/rounds/`, затем
+  удалил только уникальные smoke records. Повторная прямая проверка staging
+  показывает `0` organizations, `0` rounds, `0` responses и `0` answers.
+- Автоматически созданный CLI automation-bypass secret отозван после smoke с
+  `regenerate: false`; повторная проверка показывает
+  `automationBypassCount: 0`, а неавторизованный запрос по-прежнему получает
+  `302` на Vercel SSO.
+- Повторный authenticated smoke нового Preview: `/` → HTTP 200,
+  `/api/rounds/` → HTTP 200 с `{"round":null}`.
 - `npm test`: 70/70 тестов прошли.
 - `npm run lint`: прошёл.
 - `npm run build`: прошёл.
@@ -99,10 +127,13 @@ Staging показывал старую demo-школу, имя менеджер
 - Staging `/api/rounds/`: HTTP 200, ответ `{"round":null}`.
 - Vercel check для draft PR #5: прошёл.
 
-### Контейнеризация AI-сервиса (сессия 2026-07-25, local)
+### Контейнеризация и protected-origin hardening AI-сервиса (сессия 2026-07-25, local)
 
-- `python3 ai-analytics-service/run_tests.py`: 8/8 (добавлен тест дефолта `ENV`).
+- `python3 ai-analytics-service/run_tests.py`: 10/10.
 - Полный Python pytest в venv: 10/10.
+- Regression tests подтверждают, что опциональный Vercel bypass отправляется в
+  MCP и callback только при явной настройке, а callback на origin, отличный от
+  `DATA_LAYER_CALLBACK_URL`, отклоняется до transport и не получает credential.
 - `npm test`: 70/70, `npx tsc --noEmit` и `npm run lint`: прошли.
 - `docker build`: образ 266 МБ, запуск от непривилегированного `appuser`.
 - Контейнерный smoke: `/health` → 200 с `env: production`; вебхук без
@@ -124,6 +155,18 @@ Staging показывал старую demo-школу, имя менеджер
 - Проект работает на Free plan без backups/PITR. Пока он пуст и disposable,
   согласованный rollback — удалить и пересоздать только staging project.
 
+### Protected staging runtime
+
+- Preview deployments закрыты Vercel Authentication; unauthenticated manager
+  writes не доступны.
+- Только Preview получает Sensitive `DATABASE_URL` выделенной staging-БД.
+- Новый Preview имеет target `preview`, проходит authenticated read/write/read
+  smoke и после cleanup оставляет staging пустым.
+- Временный project-wide automation bypass после проверки отозван; постоянного
+  bypass secret не оставлено.
+- Production environment variables и production aliases в этой операции не
+  изменялись.
+
 ### Data Layer и API
 
 - Есть PostgreSQL/Supabase schema и Prisma repositories для организаций,
@@ -138,6 +181,10 @@ Staging показывал старую demo-школу, имя менеджер
 - Сервис упакован в container image (корневой `Dockerfile`, `render.yaml`);
   интерпретации измерений считаются параллельно, `ENV` fail-closed, core app
   ограничивает ожидание вебхука `AI_SERVICE_TIMEOUT_MS` и отвечает `504`.
+- Для protected Vercel core app сервис умеет явно передавать
+  `VERCEL_PROTECTION_BYPASS` в обоих исходящих вызовах. Credential не
+  отправляется callback-хосту за пределами настроенного Data Layer origin;
+  callback URL не логируется.
 - PR #4 смержен в `main`.
 - TypeScript и Python используют общий versioned contract
   `contracts/ai-analytics-v1.json`.
@@ -171,41 +218,44 @@ Staging показывал старую demo-школу, имя менеджер
 
 ## Что не завершено
 
-### 1. Manager authentication
+### 1. Application-level manager authentication
 
 - Manager write routes сейчас не привязаны к аутентифицированной организации.
-- До публичного подключения реальной БД нужно добавить authentication/
-  authorization либо закрыть preview через Vercel Deployment Protection.
+- Protected Preview безопасно закрывает текущий staging slice, но для
+  публичного rollout всё ещё нужны application-level authentication,
+  organization authorization и isolation tests.
 
-### 2. Подключение staging runtime
-
-- В Vercel Preview/Production всё ещё нет database env vars.
-- Выделенную staging-БД нельзя подключать к публичным manager writes до
-  authentication/authorization или Vercel Deployment Protection.
-
-### 3. Реальный staging AI service
+### 2. Реальный staging AI service
 
 - Container image собирается и проверен локально, но нигде не задеплоен: ни
   Cloud Run service, ни Render service не создавались.
 - Shared secrets и URLs не настроены; реальный webhook → MCP → callback E2E не
   выполнялся.
+- Постоянного Vercel automation bypass сейчас нет (`automationBypassCount: 0`).
+  Создание отдельного runtime credential для AI-сервиса или настройка другого
+  trusted access требует нового bounded approval; при использовании bypass
+  callback обязан оставаться на origin `DATA_LAYER_CALLBACK_URL`.
 - Реальный LLM-путь не проверялся: без `OPENAI_API_KEY` конвейер идёт по
   эвристическому fallback.
 
-### 4. Alias и production
+### 3. Alias и production
 
 - Staging alias остаётся на последнем безопасном empty-runtime preview.
-- Переназначение alias допустимо после миграции, access protection и smoke
-  evidence. Production требует отдельного подтверждения.
+- Новый protected Preview проверен, но переназначение staging alias требует
+  отдельного ограниченного подтверждения. Production promotion остаётся
+  отдельным approval gate.
 
 ## Рекомендуемый порядок продолжения
 
-1. Добавить manager auth или как минимум Vercel Deployment Protection.
-2. После отдельного подтверждения настроить Preview env vars на выделенную
-   staging-БД и выполнить protected runtime smoke.
-3. Задеплоить container image AI-сервиса на Cloud Run (или Render), настроить
+1. Добавить application-level manager authentication, organization
+   authorization и isolation tests до публичного rollout.
+2. После отдельного approval создать runtime-доступ к protected Preview,
+   задеплоить container image AI-сервиса на Cloud Run (или Render), настроить
    URLs/secrets на обеих сторонах и выполнить полный staging E2E.
-4. После evidence отдельно согласовать staging alias; production не затрагивать.
+3. Отдельно согласовать переназначение staging alias на проверенный protected
+   Preview.
+4. Production data/env/alias/deployment не затрагивать без нового bounded
+   approval.
 
 ## Approval gates
 

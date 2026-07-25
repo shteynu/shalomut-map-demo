@@ -70,7 +70,9 @@ When the core app is a protected Vercel deployment, both outbound calls — MCP
 and callback — are answered with a `302` to the SSO page unless
 `VERCEL_PROTECTION_BYPASS` is set to the project's Protection Bypass for
 Automation secret. The service then sends it as `x-vercel-protection-bypass`.
-Leave it empty for unprotected targets; it is never added implicitly.
+Leave it empty for unprotected targets; it is never added implicitly. Because
+the webhook payload may supply `callbackUrl`, a configured bypass is sent only
+when that URL has the same normalized origin as `DATA_LAYER_CALLBACK_URL`.
 
 ## Endpoints
 
