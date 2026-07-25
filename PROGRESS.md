@@ -6,24 +6,53 @@
 - **Core app runtime**: production alias [shalomut-map-demo.vercel.app](https://shalomut-map-demo.vercel.app/) сейчас используется как staging core endpoint и подключён к выделенной staging-БД. Deployment `dpl_7FxfrtHYUdaKbD4AMVH6J7V4cx3j` для commit `6473a88` имеет статус `READY`.
 - **AI runtime**: FastAPI-сервис развёрнут на Render: [shalomut-ai-analytics.onrender.com](https://shalomut-ai-analytics.onrender.com), deployment `dep-d9iamf3eo5us73cndcu0` для commit `6473a88` имеет статус `Live`; `/health` отвечает HTTP 200 с `env: production`.
 - **Real E2E**: для разрешённого round core trigger вернул `202`, MCP POST `/api/mcp/` — `200`, Render webhook — `200`, callback POST — `200`, сохранённый GET — `200`. Persisted payload имеет `contractVersion: "1.0"`, `status: "success"`, `isLocked: false` и восемь canonical stones.
-- **Остаточный runtime-риск**: четыре обращения к OpenAI завершились `429 Too Many Requests`; сервис штатно использовал domain heuristic fallback. Transport и persistence доказаны, но real LLM path без fallback не доказан.
+- **Остаточный runtime-риск**: read-only проверка OpenAI Platform локализовала
+  четыре `429` как API quota/billing failure: текущая API-организация предлагает
+  `Add credits — Run your next API request by adding credits`, а успешный API
+  usage для ключа ещё не зафиксирован. Сервис штатно использовал domain
+  heuristic fallback, поэтому transport и persistence доказаны, но real LLM
+  path без fallback не доказан.
 - **Защита и секреты**: три machine-to-machine secret совпадают; raw values не выводились и не коммитились. Старый preview URL и placeholder Vercel bypass удалены из фактической Render-конфигурации. Исходный Supabase ref `fvnulyirrqjrnjbahmsn` не изменялся.
-- **Git-состояние**: session code commit `6473a88` находится в `main` и `origin/main`. Session-memory update фиксируется отдельным локальным commit; новый push не выполняется, чтобы не запускать ещё один production deployment без отдельного approval.
+- **Git-состояние**: в начале session-close `main` совпадал с `origin/main` на
+  `6ec9e21`. Диагноз `429` сохраняется отдельным локальным docs-only commit;
+  push не выполняется, чтобы не запускать ещё один production deployment без
+  отдельного approval.
 - **AI coding workflow**: канонические repo-level skills `shalomut-map`, `shalomut-tracker` и `shalomut-verification` находятся в `.agents/skills/`; инструкции для Codex, Gemini, Claude и GitHub Copilot закоммичены в `main`.
 - **Актуальный handoff**: см. [`docs/shalomut-tracker-handoff.md`](docs/shalomut-tracker-handoff.md). AI-детали: [`docs/ai-analytics-handoff.md`](docs/ai-analytics-handoff.md).
 
 ---
 
 ## 🚀 Следующие шаги (Next Up: Safe Staging)
-1. [ ] Read-only проверить причину OpenAI `429` (quota/rate limit/account state); любое изменение ключа, billing или лимитов вынести в отдельный bounded approval.
-2. [ ] После исправления провайдера повторить один явно разрешённый round E2E и доказать real LLM path без heuristic fallback.
-3. [ ] Ввести строгие request/output/privacy contracts и явные fail-closed safety semantics внутри AI-сервиса.
-4. [ ] Заменить shared Basic gate на application-level manager identity, organization authorization и isolation tests.
-5. [ ] Развести staging и production aliases/env окончательно; текущий production alias используется как staging endpoint и не должен считаться production-ready.
+1. [ ] После отдельного bounded approval включить API billing/add credits для
+   правильной OpenAI organization/project и проверить ненулевой project budget.
+2. [ ] Укрепить LLM provider: различать quota и transient rate limit, безопасно
+   логировать error code/request ID, делать bounded backoff только для
+   временного throttling и явно маркировать `llm`/`heuristic` provenance.
+3. [ ] После исправления провайдера повторить один явно разрешённый round E2E и доказать real LLM path без heuristic fallback.
+4. [ ] Ввести строгие request/output/privacy contracts и явные fail-closed safety semantics внутри AI-сервиса.
+5. [ ] Заменить shared Basic gate на application-level manager identity, organization authorization и isolation tests.
+6. [ ] Развести staging и production aliases/env окончательно; текущий production alias используется как staging endpoint и не должен считаться production-ready.
 
 ---
 
 ## ✅ Завершенные задачи (Completed)
+- [x] **2026-07-25**: **Read-only локализована причина OpenAI `429`**:
+  - Render logs подтвердили четыре LLM-вызова: четыре green dimensions были
+    пропущены правилом 0-token, а четыре non-green dimensions ушли в OpenAI
+    параллельно и получили `429`.
+  - OpenAI Platform для текущей API-организации показывает активный ключ
+    `Shalomut`, отсутствие успешного usage и прямое предложение добавить API
+    credits. Это классифицирует инцидент как quota/billing failure, а не как
+    доказанный transient RPM/TPM burst.
+  - ChatGPT subscription не считается API-балансом; billing, ключи, лимиты и
+    Render environment не изменялись.
+  - Обнаружен observability gap: `llm_provider.py` перехватывает общий
+    `Exception`, не сохраняет error body/code или rate-limit headers и
+    возвращает heuristic fallback, поэтому один текст `HTTP Error 429` ранее не
+    позволял различить quota и throttling.
+  - Session-close verification для docs-only diff: `git diff --check` и
+    проверка относительных Markdown links прошли; runtime suites не запускались,
+    потому что код и конфигурация приложения не менялись.
 - [x] **2026-07-25**: **Исправлен и доказан реальный Vercel → Render → Vercel AI E2E** (commit `6473a88` в `origin/main`):
   - Диагноз `MCP_SHARED_SECRET mismatch` опровергнут безопасными fingerprint-проверками: секреты совпадали. Первый `401` выдавал Vercel Deployment Protection старого preview; после перехода на production alias реальный blocker локализован как POST `308 Permanent Redirect`.
   - MCP client теперь канонизирует configured URL к trailing slash, callback строится как `/ai-insights/`. Два regression tests сначала зафиксировали slashless URL, затем прошли после минимального fix.

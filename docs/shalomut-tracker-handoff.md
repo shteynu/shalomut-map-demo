@@ -61,7 +61,10 @@ Shalomut Map к `shalomut-tracker`, где сохранённые данные �
   contract `1.0` с восемью canonical stones.
 - Real LLM path остаётся частично недоказанным: четыре запроса к OpenAI получили
   `429 Too Many Requests`, после чего сервис штатно использовал domain
-  heuristic fallback.
+  heuristic fallback. Последующая read-only проверка текущей OpenAI
+  API-организации показала `Add credits — Run your next API request by adding
+  credits` и отсутствие успешного API usage, поэтому инцидент локализован как
+  API quota/billing failure.
 
 ## Инцидент: непустой UI при пустой БД
 
@@ -204,6 +207,22 @@ Staging показывал старую demo-школу, имя менеджер
   предусмотренный heuristic fallback. Это не отменяет transport/persistence
   evidence, но не доказывает real LLM generation.
 
+### Read-only диагностика OpenAI `429` (сессия 2026-07-25)
+
+- Render logs подтвердили точную последовательность: четыре green dimensions
+  были обработаны без LLM, четыре non-green dimensions стартовали параллельно и
+  получили `429`.
+- OpenAI Platform для текущей API-организации показывает активный ключ
+  `Shalomut`, отсутствие успешного usage и предложение добавить API credits.
+  Корневая причина текущего инцидента — недоступная API quota/billing, а не
+  доказанный transient RPM/TPM rate limit.
+- Код `LLMProviderService` перехватывает общий `Exception` и пишет только
+  `HTTP Error 429`, не сохраняя безопасные `error.type`, `error.code`, request
+  ID или rate-limit headers. Поэтому причина не могла быть установлена только
+  по исходным Render logs.
+- OpenAI key, billing, limits, Render environment и deployments не менялись.
+  ChatGPT subscription не является балансом OpenAI API.
+
 ## Что завершено
 
 ### Безопасная staging persistence
@@ -300,9 +319,11 @@ Staging показывал старую demo-школу, имя менеджер
 - Runtime transport и persistence E2E доказаны, но OpenAI вернул четыре
   `429 Too Many Requests`; результат был сформирован через domain heuristic
   fallback.
-- Следующая проверка должна сначала read-only локализовать quota/rate-limit
-  причину. Изменение key, billing, limits или provider configuration требует
-  отдельного bounded approval.
+- Read-only диагностика завершена: текущая API-организация не имеет доступного
+  API balance/billing и предлагает добавить credits.
+- Изменение key, billing, limits или provider configuration по-прежнему требует
+  отдельного bounded approval. После исправления provider state нужен новый
+  явно разрешённый E2E без fallback.
 
 ### 3. Staging/production boundary
 
@@ -313,14 +334,18 @@ Staging показывал старую demo-школу, имя менеджер
 
 ## Рекомендуемый порядок продолжения
 
-1. Read-only проверить OpenAI quota/rate-limit evidence для четырёх `429`.
-2. После отдельного approval на нужную provider mutation повторить один
-   явно выбранный round E2E и доказать LLM path без fallback.
-3. Отдельным малым PR ввести строгие Pydantic/request/output/privacy contracts
+1. После отдельного bounded approval включить API billing/add credits для
+   правильной OpenAI organization/project и проверить ненулевой project budget.
+2. Отдельным малым PR различить quota и transient throttling, добавить bounded
+   backoff только для временного rate limit и явный `llm`/`heuristic`
+   provenance.
+3. После provider correction повторить один явно выбранный round E2E и доказать
+   LLM path без fallback.
+4. Отдельным малым PR ввести строгие Pydantic/request/output/privacy contracts
    и явные fail-closed safety semantics внутри AI-сервиса.
-4. Заменить shared Basic gate на application-level manager identity,
+5. Заменить shared Basic gate на application-level manager identity,
    organization authorization и isolation tests.
-5. Согласовать окончательное разделение staging/production aliases и env;
+6. Согласовать окончательное разделение staging/production aliases и env;
    production data/env/alias/deployment не затрагивать без нового bounded
    approval.
 

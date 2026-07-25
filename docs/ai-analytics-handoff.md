@@ -5,8 +5,10 @@
 > A real Vercel → Render → Vercel transport/persistence E2E passed for one
 > explicitly approved staging round. OpenAI returned `429` for four calls, so
 > the pipeline completed through its heuristic fallback rather than proving the
-> real LLM path. Broader operational state is tracked in
-> `docs/shalomut-tracker-handoff.md`.
+> real LLM path. A later read-only account check localized the `429` responses
+> as API quota/billing failure: the current API organization prompts to add
+> credits and has no successful API usage. Broader operational state is tracked
+> in `docs/shalomut-tracker-handoff.md`.
 
 ## Snapshot
 
@@ -26,6 +28,9 @@
   removed from the actual Render configuration.
 - Session-memory update is kept in a separate local commit; no additional push
   is performed at close because it would trigger new production deployments.
+- Read-only OpenAI Platform evidence shows an active `Shalomut` API key,
+  no successful usage and `Add credits — Run your next API request by adding
+  credits`. No key, billing, limit or provider setting was changed.
 
 ## What is complete
 
@@ -112,21 +117,30 @@
 - Render recorded four OpenAI `429 Too Many Requests` warnings; the documented
   heuristic fallback completed the result. This is residual evidence, not a
   passed real-LLM check.
+- Render logs show four green dimensions were skipped locally and four
+  non-green dimensions called OpenAI concurrently. OpenAI Platform account
+  state classifies these `429` responses as quota/billing failure rather than a
+  demonstrated transient RPM/TPM burst.
+- Session-close docs-only checks passed: `git diff --check` and relative
+  Markdown link validation. Runtime suites were not run because code and
+  configuration did not change.
 - No real secrets were committed.
 
 ## What remains
 
-1. Read-only investigate whether the OpenAI `429` responses come from account
-   quota, request rate limits or provider configuration. Do not mutate key,
-   billing or limits without bounded approval.
-2. After the provider issue is resolved, repeat one explicitly approved round
+1. After bounded approval, enable API billing/add credits for the correct
+   organization/project and confirm a non-zero project budget.
+2. Distinguish quota from transient rate limits in the provider, safely record
+   error code/request ID, retry only transient throttling with bounded backoff,
+   and expose `llm` versus `heuristic` provenance.
+3. After the provider issue is resolved, repeat one explicitly approved round
    and prove the real LLM path without heuristic fallback.
-3. Add strict request/output/privacy models and explicit fail-closed safety
+4. Add strict request/output/privacy models and explicit fail-closed safety
    semantics as the next isolated AI-service change.
-4. Verify a privacy-locked real round separately before broader rollout.
-5. Separate staging and production aliases/env; the current production alias
+5. Verify a privacy-locked real round separately before broader rollout.
+6. Separate staging and production aliases/env; the current production alias
    is being used as a staging core endpoint and is not production-ready.
-6. Decide separately whether the runtime should adopt real LangGraph/ChromaDB;
+7. Decide separately whether the runtime should adopt real LangGraph/ChromaDB;
    this is not required for the current contract or local E2E path.
 
 ## Approval gates
@@ -145,7 +159,7 @@
 
 ## First next action
 
-Read-only inspect the OpenAI `429` cause using account/provider evidence. If a
-key, quota, billing or limit mutation is needed, stop at the approval gate.
-After an approved correction, repeat one bounded staging round E2E and require
-logs that show the LLM path completed without heuristic fallback.
+Obtain bounded approval for the OpenAI API billing/credits change. Before the
+next real webhook, harden provider error classification and provenance. After
+an approved provider correction, repeat one bounded staging round E2E and
+require logs that show the LLM path completed without heuristic fallback.
