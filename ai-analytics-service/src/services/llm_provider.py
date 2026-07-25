@@ -1,11 +1,24 @@
+from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 import json
 import logging
+import random
+import time
 import urllib.error
 import urllib.request
 
 from src.config import settings
 
 logger = logging.getLogger(__name__)
+
+NON_RETRYABLE_QUOTA_CODES = frozenset(
+    {
+        "billing_hard_limit_reached",
+        "insufficient_quota",
+        "quota_exceeded",
+    },
+)
+
 
 class LLMProviderService:
     """
@@ -70,35 +83,79 @@ class LLMProviderService:
                     },
                     method="POST"
                 )
-                with urllib.request.urlopen(req, timeout=10.0) as response:
-                    if response.status == 200:
-                        res = json.loads(response.read().decode("utf-8"))
-                        result = (
-                            res["choices"][0]["message"]["content"].strip()
+                for attempt in range(1, settings.llm_max_attempts + 1):
+                    try:
+                        with urllib.request.urlopen(
+                            req,
+                            timeout=10.0,
+                        ) as response:
+                            if response.status == 200:
+                                res = json.loads(
+                                    response.read().decode("utf-8"),
+                                )
+                                result = (
+                                    res["choices"][0]["message"]["content"]
+                                    .strip()
+                                )
+                                logger.info(
+                                    "[LLM Service] outcome=llm provider=%s "
+                                    "model=%s attempt=%s",
+                                    provider,
+                                    model_name,
+                                    attempt,
+                                )
+                                return result
+                            fallback_reason = f"http_{response.status}"
+                            break
+                    except urllib.error.HTTPError as error:
+                        fallback_reason = f"http_{error.code}"
+                        error_code = self._extract_safe_error_code(error)
+                        request_id = self._safe_log_token(
+                            error.headers.get("x-request-id")
+                            or error.headers.get("x-goog-request-id")
+                            or "unavailable",
                         )
-                        logger.info(
-                            "[LLM Service] outcome=llm provider=%s "
-                            "model=%s",
+                        should_retry = self._is_retryable_http_error(
+                            error.code,
+                            error_code,
+                        )
+                        if (
+                            should_retry
+                            and attempt < settings.llm_max_attempts
+                        ):
+                            delay = self._retry_delay_seconds(
+                                error,
+                                attempt,
+                            )
+                            logger.warning(
+                                "[LLM Service] outcome=retry provider=%s "
+                                "model=%s status=%s error_code=%s "
+                                "request_id=%s attempt=%s max_attempts=%s "
+                                "delay_ms=%s",
+                                provider,
+                                model_name,
+                                error.code,
+                                error_code or "unavailable",
+                                request_id,
+                                attempt,
+                                settings.llm_max_attempts,
+                                round(delay * 1000),
+                            )
+                            time.sleep(delay)
+                            continue
+
+                        logger.warning(
+                            "[LLM Service] outcome=heuristic provider=%s "
+                            "model=%s status=%s error_code=%s "
+                            "request_id=%s attempts=%s",
                             provider,
                             model_name,
+                            error.code,
+                            error_code or "unavailable",
+                            request_id,
+                            attempt,
                         )
-                        return result
-                    fallback_reason = f"http_{response.status}"
-            except urllib.error.HTTPError as error:
-                fallback_reason = f"http_{error.code}"
-                request_id = (
-                    error.headers.get("x-request-id")
-                    or error.headers.get("x-goog-request-id")
-                    or "unavailable"
-                )
-                logger.warning(
-                    "[LLM Service] outcome=heuristic provider=%s "
-                    "model=%s status=%s request_id=%s",
-                    provider,
-                    model_name,
-                    error.code,
-                    request_id,
-                )
+                        break
             except Exception as error:
                 fallback_reason = type(error).__name__
                 logger.warning(
@@ -117,6 +174,82 @@ class LLMProviderService:
             fallback_reason,
         )
         return self._heuristic_fallback(dim_hebrew, score, status)
+
+    def _extract_safe_error_code(
+        self,
+        error: urllib.error.HTTPError,
+    ) -> str:
+        try:
+            body = error.read()
+            parsed = json.loads(body.decode("utf-8"))
+            error_payload = parsed.get("error", {})
+            candidates = (
+                error_payload.get("code"),
+                error_payload.get("type"),
+                error_payload.get("status"),
+            )
+            for candidate in candidates:
+                if isinstance(candidate, str) and candidate:
+                    return self._safe_log_token(candidate.lower())
+        except (AttributeError, UnicodeDecodeError, json.JSONDecodeError):
+            pass
+        return ""
+
+    def _is_retryable_http_error(
+        self,
+        status: int,
+        error_code: str,
+    ) -> bool:
+        if status == 429 and error_code in NON_RETRYABLE_QUOTA_CODES:
+            return False
+        return status in {408, 429} or 500 <= status <= 599
+
+    def _retry_delay_seconds(
+        self,
+        error: urllib.error.HTTPError,
+        attempt: int,
+    ) -> float:
+        retry_after = self._parse_retry_after(
+            error.headers.get("Retry-After"),
+        )
+        exponential_delay = (
+            settings.llm_retry_base_delay_seconds
+            * (2 ** (attempt - 1))
+        )
+        delay = (
+            retry_after
+            if retry_after is not None
+            else exponential_delay
+        )
+        delay += random.uniform(
+            0.0,
+            settings.llm_retry_jitter_seconds,
+        )
+        return min(delay, settings.llm_retry_max_delay_seconds)
+
+    def _parse_retry_after(self, value: str | None) -> float | None:
+        if not value:
+            return None
+        try:
+            return max(0.0, float(value))
+        except ValueError:
+            try:
+                retry_at = parsedate_to_datetime(value)
+                if retry_at.tzinfo is None:
+                    retry_at = retry_at.replace(tzinfo=timezone.utc)
+                return max(
+                    0.0,
+                    (retry_at - datetime.now(timezone.utc)).total_seconds(),
+                )
+            except (TypeError, ValueError, OverflowError):
+                return None
+
+    def _safe_log_token(self, value: object) -> str:
+        return "".join(
+            character
+            for character in str(value)[:128]
+            if character.isalnum() or character in "._:-"
+        ) or "unavailable"
 
     def _resolve_endpoint(self, model_name: str) -> str:
         """

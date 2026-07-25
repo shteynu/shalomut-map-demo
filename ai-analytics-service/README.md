@@ -91,6 +91,14 @@ LLM logs record only provider, model, outcome, HTTP status and a safe request
 identifier when available. Keys, prompts, responses and respondent data are
 never logged by the provider adapter.
 
+Transient HTTP `408`, `429`, and `5xx` responses use bounded exponential
+backoff with jitter. `Retry-After` is honored up to the configured delay cap.
+Known hard-quota errors such as `insufficient_quota` are not retried.
+`LLM_MAX_ATTEMPTS` includes the first request and defaults to `3`; the default
+backoff is `0.5s`, capped at `2s`, with up to `0.25s` jitter. After the bounded
+attempts are exhausted, the existing dimension-scoped heuristic fallback is
+used and recorded as `outcome=heuristic`.
+
 When the core app is a protected Vercel deployment, both outbound calls — MCP
 and callback — are answered with a `302` to the SSO page unless
 `VERCEL_PROTECTION_BYPASS` is set to the project's Protection Bypass for

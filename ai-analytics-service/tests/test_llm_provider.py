@@ -1,3 +1,6 @@
+import json
+import urllib.error
+
 import pytest
 from src.config import Settings, settings
 from src.services.llm_provider import llm_provider_service
@@ -8,6 +11,249 @@ LLM_KEY_ENV_VARS = (
     "GEMINI_API_KEY",
     "OPENROUTER_API_KEY",
 )
+
+
+class FakeLLMResponse:
+    def __init__(self, content="תוצאה ממודל"):
+        self.status = 200
+        self._body = json.dumps(
+            {
+                "choices": [
+                    {
+                        "message": {
+                            "content": content,
+                        },
+                    },
+                ],
+            },
+        ).encode("utf-8")
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        return False
+
+    def read(self):
+        return self._body
+
+
+class FakeErrorBody:
+    def __init__(self, body):
+        self._body = body
+
+    def read(self, *_args):
+        return self._body
+
+    def close(self):
+        return None
+
+
+def create_http_error(status, body=None, headers=None):
+    return urllib.error.HTTPError(
+        "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+        status,
+        f"HTTP {status}",
+        headers or {},
+        FakeErrorBody(body) if body is not None else None,
+    )
+
+
+def configure_gemini_retry_test(monkeypatch, max_attempts=3):
+    monkeypatch.setattr(settings, "llm_api_key", "opaque-google-key")
+    monkeypatch.setattr(settings, "llm_provider", "auto")
+    monkeypatch.setattr(settings, "llm_key_provider", "gemini", raising=False)
+    monkeypatch.setattr(settings, "llm_base_url", "")
+    monkeypatch.setattr(settings, "llm_model_fast", "gemini-test-model")
+    monkeypatch.setattr(settings, "max_tokens_per_dimension", 180)
+    monkeypatch.setattr(settings, "only_llm_for_problematic", True)
+    monkeypatch.setattr(
+        settings,
+        "llm_max_attempts",
+        max_attempts,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        settings,
+        "llm_retry_base_delay_seconds",
+        0.0,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        settings,
+        "llm_retry_max_delay_seconds",
+        0.0,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        settings,
+        "llm_retry_jitter_seconds",
+        0.0,
+        raising=False,
+    )
+
+
+def test_transient_503_retries_then_returns_llm_result(
+    monkeypatch,
+    caplog,
+):
+    configure_gemini_retry_test(monkeypatch)
+    caplog.set_level("INFO")
+    responses = iter(
+        [
+            create_http_error(503),
+            FakeLLMResponse("תוצאה אמיתית מג׳מיני"),
+        ],
+    )
+    attempts = []
+
+    def fake_urlopen(*_args, **_kwargs):
+        attempts.append(True)
+        response = next(responses)
+        if isinstance(response, Exception):
+            raise response
+        return response
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+
+    result = llm_provider_service.generate_psychological_interpretation(
+        "certainty",
+        "ודאות",
+        42.0,
+        "red",
+    )
+
+    assert result == "תוצאה אמיתית מג׳מיני"
+    assert len(attempts) == 2
+    assert "outcome=retry" in caplog.text
+    assert "outcome=llm" in caplog.text
+    assert "outcome=heuristic" not in caplog.text
+
+
+def test_non_retryable_400_falls_back_without_retry(monkeypatch):
+    configure_gemini_retry_test(monkeypatch)
+    attempts = []
+
+    def fake_urlopen(*_args, **_kwargs):
+        attempts.append(True)
+        raise create_http_error(400)
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+
+    result = llm_provider_service.generate_psychological_interpretation(
+        "certainty",
+        "ודאות",
+        42.0,
+        "red",
+    )
+
+    assert "אזור אדום" in result
+    assert len(attempts) == 1
+
+
+def test_transient_failures_fall_back_after_bounded_attempts(monkeypatch):
+    configure_gemini_retry_test(monkeypatch, max_attempts=3)
+    attempts = []
+
+    def fake_urlopen(*_args, **_kwargs):
+        attempts.append(True)
+        raise create_http_error(503)
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+
+    result = llm_provider_service.generate_psychological_interpretation(
+        "certainty",
+        "ודאות",
+        42.0,
+        "red",
+    )
+
+    assert "אזור אדום" in result
+    assert len(attempts) == 3
+
+
+def test_quota_429_is_not_retried(monkeypatch):
+    configure_gemini_retry_test(monkeypatch)
+    attempts = []
+    error_body = json.dumps(
+        {
+            "error": {
+                "type": "insufficient_quota",
+                "code": "insufficient_quota",
+            },
+        },
+    ).encode("utf-8")
+
+    def fake_urlopen(*_args, **_kwargs):
+        attempts.append(True)
+        raise create_http_error(429, body=error_body)
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+
+    result = llm_provider_service.generate_psychological_interpretation(
+        "certainty",
+        "ודאות",
+        42.0,
+        "red",
+    )
+
+    assert "אזור אדום" in result
+    assert len(attempts) == 1
+
+
+def test_transient_429_retries_when_not_a_hard_quota_error(monkeypatch):
+    configure_gemini_retry_test(monkeypatch)
+    responses = iter(
+        [
+            create_http_error(
+                429,
+                body=json.dumps(
+                    {
+                        "error": {
+                            "status": "RESOURCE_EXHAUSTED",
+                        },
+                    },
+                ).encode("utf-8"),
+            ),
+            FakeLLMResponse("תוצאה אחרי הגבלת קצב זמנית"),
+        ],
+    )
+    attempts = []
+
+    def fake_urlopen(*_args, **_kwargs):
+        attempts.append(True)
+        response = next(responses)
+        if isinstance(response, Exception):
+            raise response
+        return response
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+
+    result = llm_provider_service.generate_psychological_interpretation(
+        "certainty",
+        "ודאות",
+        42.0,
+        "red",
+    )
+
+    assert result == "תוצאה אחרי הגבלת קצב זמנית"
+    assert len(attempts) == 2
+
+
+def test_retry_after_is_honored_within_delay_cap(monkeypatch):
+    configure_gemini_retry_test(monkeypatch)
+    monkeypatch.setattr(
+        settings,
+        "llm_retry_max_delay_seconds",
+        2.0,
+    )
+
+    error = create_http_error(
+        503,
+        headers={"Retry-After": "7"},
+    )
+
+    assert llm_provider_service._retry_delay_seconds(error, 1) == 2.0
 
 
 def clear_llm_key_environment(monkeypatch):

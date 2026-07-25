@@ -129,6 +129,24 @@ class Settings:
         self.max_tokens_per_dimension: int = int(os.getenv("MAX_TOKENS_PER_DIMENSION", "180"))
         # Token Saving: Only invoke LLM for problematic ('yellow' / 'red') dimensions
         self.only_llm_for_problematic: bool = os.getenv("ONLY_LLM_FOR_PROBLEMATIC", "true").lower() == "true"
+        # Transient provider failures are retried inside the worker thread.
+        # Keep the defaults below the core app's 30-second webhook timeout.
+        self.llm_max_attempts: int = max(
+            1,
+            min(5, int(os.getenv("LLM_MAX_ATTEMPTS", "3"))),
+        )
+        self.llm_retry_base_delay_seconds: float = max(
+            0.0,
+            float(os.getenv("LLM_RETRY_BASE_DELAY_SECONDS", "0.5")),
+        )
+        self.llm_retry_max_delay_seconds: float = max(
+            0.0,
+            float(os.getenv("LLM_RETRY_MAX_DELAY_SECONDS", "2.0")),
+        )
+        self.llm_retry_jitter_seconds: float = max(
+            0.0,
+            float(os.getenv("LLM_RETRY_JITTER_SECONDS", "0.25")),
+        )
         
         # Reserved persistence setting for a future vector-backed catalog.
         self.chroma_persist_dir: str = os.getenv("CHROMA_PERSIST_DIR", "./chroma_db")
