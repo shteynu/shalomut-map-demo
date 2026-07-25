@@ -12,10 +12,9 @@ Shalomut Map к `shalomut-tracker`, где сохранённые данные �
 
 - Активная ветка: `main`.
 - Functional AI baseline `a9b6c34` ограничивает latency Gemini-запросов общим
-  retry budget; перед ним находятся `38575e5` (provider определяется по
-  источнику credential), `c8f9242` (bounded HTTP retry/backoff) и `98b27c3`
-  (один retry transport timeout). Финальный session-close slice поверх него
-  добавляет organization-scoped manager boundary и обновляет project memory.
+  retry budget. Поверх него `7a451fd` добавляет organization-scoped manager
+  boundary, а `508410a` сохраняет понятный пользователю fail-closed UI; оба
+  commit находятся в `origin/main`.
 - PR #5 смержен в `main` squash commit `6b369bf`.
 - PR [#6](https://github.com/shteynu/shalomut-map-demo/pull/6) смержен в
   `main` squash commit `043f54d`.
@@ -35,10 +34,18 @@ Shalomut Map к `shalomut-tracker`, где сохранённые данные �
   как staging core endpoint и подключён к выделенной staging-БД. Это
   operational staging configuration, а не подтверждение production readiness;
   `DIRECT_URL` в Vercel не добавлялся.
-- Новый manager-scope code требует `MANAGER_ORGANIZATION_ID`; текущий снимок
-  deployed env этой переменной не содержит. Поэтому core deployment текущего
-  slice не выполнялся: сначала нужно подтвердить target organization и
-  получить bounded approval на env mutation.
+- Staging persistence содержит ровно одну organization
+  `34d05e66-fa4d-4a07-a2af-c9d5c41b6088` (`בית ספר בדיקת E2E`) и один round
+  `80e78f3e-1240-42d4-8a9e-23a3467bb650`; это подтверждено read-only
+  запросом.
+- `MANAGER_ORGANIZATION_ID` для этой organization добавлен в Vercel как
+  Sensitive variable со scope Preview и Production. Локальная копия находится
+  только в ignored `.env.staging.local`; production `.env` и `.env.local` не
+  менялись.
+- Последний READY production deployment
+  `dpl_EE1DEssckxcCuFKpfc9YAPV7EjEm` создан до env mutation. Новый deployment,
+  alias mutation и deployed runtime smoke после настройки scope не
+  выполнялись.
 - Исходный Supabase project ref `fvnulyirrqjrnjbahmsn` подтверждён Dashboard как
   `main / Production` и не изменялся.
 - Staging:
@@ -267,9 +274,11 @@ Staging показывал старую demo-школу, имя менеджер
 - OpenAPI JSON/YAML синхронизированы. Local TypeScript suite 90/90, lint и
   production build прошли; build сохранил только существующее предупреждение
   Next.js `middleware` → `proxy`.
-- Core deployment не выполнялся. Перед ним нужно подтвердить staging
-  organization ID и получить bounded approval на добавление
-  `MANAGER_ORGANIZATION_ID` в точное Vercel environment.
+- Read-only staging lookup подтвердил одну organization и один round. Local
+  runtime smoke со staging persistence вернул configured organization/round и
+  проигнорировал поддельный client organization header.
+- `MANAGER_ORGANIZATION_ID` настроен в точном Vercel project для Preview и
+  Production. Новый core deployment после этой env mutation не выполнялся.
 
 ## Что завершено
 
@@ -287,9 +296,10 @@ Staging показывал старую demo-школу, имя менеджер
 
 - Preview deployments закрыты Vercel Authentication; unauthenticated manager
   writes не доступны.
-- Текущий deployment закрыт shared Basic credential. Следующий code slice
-  дополнительно привязывает credential к `MANAGER_ORGANIZATION_ID`, но ещё не
-  развёрнут: deployed env сначала нужно явно дополнить этим ID.
+- Shared Basic credential и `MANAGER_ORGANIZATION_ID` теперь настроены для
+  Preview/Production и привязаны к одной staging organization. Текущие
+  deployments созданы до добавления scope; для применения нужен новый
+  отдельно одобренный deployment.
 - Protected Preview сохраняет отдельную staging persistence; текущий
   production alias также временно подключён к той же выделенной staging-БД для
   Render E2E и требует последующего разведения environments.
@@ -403,17 +413,20 @@ Staging показывал старую demo-школу, имя менеджер
 
 ## Рекомендуемый порядок продолжения
 
-1. Отдельным малым PR добавить versioned `llm`/`heuristic` provenance в
+1. После отдельного bounded approval создать новый core deployment из
+   текущего `main` и выполнить read-only manager smoke для единственной
+   staging organization; aliases и persisted data не менять.
+2. Отдельным малым PR добавить versioned `llm`/`heuristic` provenance в
    результат, если это требуется продукту; текущие service logs уже различают
    outcomes.
-2. После отдельного bounded approval проверить один real privacy-locked round
+3. После отдельного bounded approval проверить один real privacy-locked round
    без раскрытия detailed results.
-3. Отдельным малым PR ввести строгие Pydantic/request/output/privacy contracts
+4. Отдельным малым PR ввести строгие Pydantic/request/output/privacy contracts
    и явные fail-closed safety semantics внутри AI-сервиса.
-4. Заменить organization-scoped shared Basic gate на application-level manager
+5. Заменить organization-scoped shared Basic gate на application-level manager
    identity/roles и полноценную tenant authorization; передавать реальный
    organization context в MCP payload.
-5. Согласовать окончательное разделение staging/production aliases и env;
+6. Согласовать окончательное разделение staging/production aliases и env;
    production data/env/alias/deployment не затрагивать без нового bounded
    approval.
 
@@ -421,9 +434,9 @@ Staging показывал старую demo-школу, имя менеджер
 
 - Не изменять production data, secrets, aliases или deployments без явного
   ограниченного подтверждения.
-- Не развёртывать manager-scope slice на core runtime, пока не подтверждён
-  target organization ID и не одобрено добавление
-  `MANAGER_ORGANIZATION_ID` в точное environment.
+- Следующий core deployment после настройки `MANAGER_ORGANIZATION_ID` и
+  read-only smoke deployed runtime требуют отдельного bounded approval; aliases
+  и persisted data не менять без дополнительного разрешения.
 - Не изменять provider key, billing, limits или provider configuration без
   отдельного bounded approval.
 - Не запускать следующий real webhook без явно выбранных environment и round;

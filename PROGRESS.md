@@ -1,12 +1,20 @@
 # PROGRESS: Shalomut Map
 
 ## 📌 Текущий статус
-- **Текущий этап**: real Gemini path доказан end-to-end на functional baseline
-  `a9b6c34`. Финальный session-close slice добавляет organization scope для
-  manager boundary: server-owned scope header, route-level round ownership и
-  удаление клиентского выбора dashboard `roundId`.
-- **Состояние БД**: отдельный Supabase staging project `shalomut-map-staging` (`tpfzhyalaftotljmlont`, `ap-northeast-2`) остаётся целевой persistence для текущей проверки. Все три Prisma migration применены; E2E разрешённо обновил `aiInsights` только для round `80e78f3e-1240-42d4-8a9e-23a3467bb650`. Миграции и cleanup данных в этой сессии не выполнялись.
-- **Core app runtime**: production alias [shalomut-map-demo.vercel.app](https://shalomut-map-demo.vercel.app/) сейчас используется как staging core endpoint и подключён к выделенной staging-БД. Workflow [30160539496](https://github.com/shteynu/shalomut-map-demo/actions/runs/30160539496) для `a9b6c34` прошёл; manual production deploy job был пропущен.
+- **Текущий этап**: organization-scoped manager boundary находится в
+  `origin/main`: `7a451fd` добавляет server-owned organization scope и
+  round ownership, `508410a` сохраняет понятный пользователю fail-closed UI.
+- **Состояние БД**: отдельный Supabase staging project
+  `shalomut-map-staging` (`tpfzhyalaftotljmlont`, `ap-northeast-2`) содержит
+  ровно одну organization `34d05e66-fa4d-4a07-a2af-c9d5c41b6088` и один
+  round `80e78f3e-1240-42d4-8a9e-23a3467bb650`. Это подтверждено read-only
+  запросом; миграции, cleanup и другие data writes в финальной проверке не
+  выполнялись.
+- **Core app runtime**: production alias
+  [shalomut-map-demo.vercel.app](https://shalomut-map-demo.vercel.app/) сейчас
+  используется как operational staging endpoint и подключён к выделенной
+  staging-БД. Последний READY production deployment
+  `dpl_EE1DEssckxcCuFKpfc9YAPV7EjEm` создан до настройки нового manager scope.
 - **AI runtime**: FastAPI-сервис развёрнут на Render: [shalomut-ai-analytics.onrender.com](https://shalomut-ai-analytics.onrender.com), deployment `dep-d9ibutgk1i2s73b2oolg` для commit `a9b6c34` имеет статус `Live`; `/health` отвечает HTTP 200.
 - **Real E2E**: для разрешённого round core trigger вернул `202`, MCP POST
   `/api/mcp/` — `200`, Render webhook — `200`, callback POST — `200`,
@@ -23,29 +31,34 @@
   в service logs, а не в versioned persisted payload. Real privacy-locked
   round после текущей смены provider/deploy не проверялся.
 - **Защита и секреты**: три machine-to-machine secret совпадают; raw values не выводились и не коммитились. Старый preview URL и placeholder Vercel bypass удалены из фактической Render-конфигурации. Исходный Supabase ref `fvnulyirrqjrnjbahmsn` не изменялся.
-- **Manager deployment gate**: новый код требует
-  `MANAGER_ORGANIZATION_ID` вместе с Basic credential. Текущий снимок deployed
-  env этой переменной не содержит, поэтому core production deployment не
-  выполнялся; перед ним нужны отдельное подтверждение target organization и
-  bounded approval на env mutation.
-- **Git-состояние**: functional AI baseline `a9b6c34` находится в
-  `origin/main`; финальный manager-scope/session-memory slice проходит merge
-  gate. Tracked repository и code diff не содержат provider key.
+- **Manager deployment gate**: `MANAGER_ORGANIZATION_ID` добавлен в Vercel как
+  Sensitive variable для Preview и Production и указывает на единственную
+  staging organization. То же значение хранится только в ignored
+  `.env.staging.local`; production `.env` и `.env.local` не менялись. Новая
+  переменная начнёт действовать только после отдельного deployment.
+- **Git-состояние**: manager-scope commits `7a451fd` и `508410a` находятся в
+  `origin/main`. Tracked repository и code diff не содержат credentials.
 - **AI coding workflow**: канонические repo-level skills `shalomut-map`, `shalomut-tracker` и `shalomut-verification` находятся в `.agents/skills/`; инструкции для Codex, Gemini, Claude и GitHub Copilot закоммичены в `main`.
 - **Актуальный handoff**: см. [`docs/shalomut-tracker-handoff.md`](docs/shalomut-tracker-handoff.md). AI-детали: [`docs/ai-analytics-handoff.md`](docs/ai-analytics-handoff.md).
 
 ---
 
 ## 🚀 Следующие шаги (Next Up: Safe Staging)
-1. [ ] Если продукту нужна auditability, добавить versioned
+1. [ ] После отдельного bounded approval создать новый core deployment из
+   текущего `main` и выполнить read-only manager smoke для единственной
+   staging organization; aliases и данные без отдельного разрешения не менять.
+2. [ ] Если продукту нужна auditability, добавить versioned
    `llm`/`heuristic` provenance в persisted payload.
-2. [ ] После отдельного bounded approval проверить один real privacy-locked
+3. [ ] После отдельного bounded approval проверить один real privacy-locked
    round без раскрытия detailed results.
-3. [ ] Ввести строгие request/output/privacy contracts и явные fail-closed safety semantics внутри AI-сервиса.
-4. [ ] Заменить organization-scoped shared Basic gate на application-level
+4. [ ] Ввести строгие request/output/privacy contracts и явные fail-closed
+   safety semantics внутри AI-сервиса.
+5. [ ] Заменить organization-scoped shared Basic gate на application-level
    manager identity/roles и полноценную tenant authorization; убрать hardcoded
    `organizationContext` из MCP payload.
-5. [ ] Развести staging и production aliases/env окончательно; текущий production alias используется как staging endpoint и не должен считаться production-ready.
+6. [ ] Развести staging и production aliases/env окончательно; текущий
+   production alias используется как staging endpoint и не должен считаться
+   production-ready.
 
 ---
 
@@ -62,8 +75,10 @@
     coverage включает подмену header, cross-organization create/read и
     multi-school fail-closed context.
   - Local verification: TypeScript suite 90/90, lint и production build
-    прошли. Core runtime не деплоился: сначала нужно явно настроить
-    `MANAGER_ORGANIZATION_ID` для подтверждённой staging organization.
+    прошли. Read-only local runtime smoke со staging persistence вернул
+    configured organization и round даже при поддельном клиентском scope.
+    `MANAGER_ORGANIZATION_ID` настроен для Vercel Preview/Production, но новый
+    core deployment после env mutation не выполнялся.
 - [x] **2026-07-25**: **Проверена изоляция AI-результатов по раундам и школам**:
   - Prisma хранит `aiInsights` в строке `SurveyRound`, а update/read выполняются
     по уникальному `roundId`; payload обязан содержать тот же `roundId`, что и
