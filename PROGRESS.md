@@ -1,10 +1,11 @@
 # PROGRESS: Shalomut Map
 
 ## 📌 Текущий статус
-- **Текущий этап**: breaking AI analytics contract `2.0` сделан GREEN и
-  опубликован consumer-first в `main`: commit `82f7194` сначала развернул
-  dual-version Python consumer, затем `ba99a23` включил Core producer,
-  OpenAPI и Dashboard UX.
+- **Текущий этап**: contract `2.0` сделан GREEN и опубликован consumer-first.
+  Следующее утверждённое продуктовое направление — dynamic questionnaire
+  input при фиксированном eight-stone Dashboard output. Exact вопросы должны
+  браться из persisted round snapshot; canonical 24 остаются default/legacy
+  template. Реализация следующей breaking version ещё не начата.
 - **Состояние БД**: отдельный Supabase staging project
   `shalomut-map-staging` (`tpfzhyalaftotljmlont`, `ap-northeast-2`) содержит
   ровно одну organization `34d05e66-fa4d-4a07-a2af-c9d5c41b6088` и один
@@ -67,28 +68,41 @@
   `.env.staging.local`; production `.env` и `.env.local` не менялись.
   Deployed read-only smoke подтвердил anonymous `401`, authenticated `200`,
   правильные organization/round и игнорирование поддельного client scope.
-- **Git-состояние**: implementation commits `82f7194` и `ba99a23` находятся в
-  `origin/main`; текущий session-close diff содержит только подтверждённые
-  handoff updates. Unrelated user changes не обнаружены.
+- **Git-состояние**: `HEAD`, `main` и `origin/main` совпадали на `8d076c9` до
+  текущего local product-decision diff. Unrelated user changes не обнаружены;
+  текущие изменения не закоммичены и не задеплоены.
 - **AI coding workflow**: канонические repo-level skills `shalomut-map`, `shalomut-tracker` и `shalomut-verification` находятся в `.agents/skills/`; инструкции для Codex, Gemini, Claude и GitHub Copilot закоммичены в `main`.
 - **Актуальный handoff**: см. [`docs/shalomut-tracker-handoff.md`](docs/shalomut-tracker-handoff.md). AI-детали: [`docs/ai-analytics-handoff.md`](docs/ai-analytics-handoff.md).
 
 ---
 
 ## 🚀 Следующие шаги (Next Up: Safe Staging)
-1. [ ] С отдельным bounded approval выполнить staging unlocked и locked E2E,
-   проверить persisted provenance, 24 aggregates и отсутствие detailed maps
-   ниже threshold.
-2. [ ] Заменить organization-scoped shared Basic gate на application-level
+1. [ ] Реализовать RED-first новый breaking AI contract для dynamic
+   round-scoped questions по
+   [`docs/dynamic-questionnaire-ai-contract.md`](docs/dynamic-questionnaire-ai-contract.md):
+   Python consumer first, затем Core producer, сохранив `1.0`/`2.0` immutable.
+2. [ ] После implementation и с отдельным bounded approval выполнить staging
+   unlocked/locked E2E, проверить persisted provenance, exact custom questions
+   и отсутствие detailed maps ниже threshold.
+3. [ ] Заменить organization-scoped shared Basic gate на application-level
    manager identity/roles и полноценную tenant authorization; `2.0`
    MCP уже не передаёт выдуманный `organizationContext`.
-3. [ ] Развести staging и production aliases/env окончательно; legacy staging
+4. [ ] Развести staging и production aliases/env окончательно; legacy staging
    alias уже выровнен по Git tree, но текущий production alias используется
    как staging endpoint и не должен считаться production-ready.
 
 ---
 
 ## ✅ Завершенные задачи (Completed)
+- [x] **2026-07-26**: **Зафиксировано продуктовое решение о dynamic
+  questionnaires**:
+  - восемь dimensions остаются стабильной Dashboard taxonomy, а exact вопросы
+    становятся persisted round-scoped content;
+  - canonical 24 остаются default/legacy template, не AI allowlist;
+  - следующий breaking contract должен принимать variable ID/text/count,
+    возвращая прежний eight-stone Hebrew/status/privacy-safe output;
+  - обновлены canonical skills/source-of-truth/ADR и подготовлен executable
+    contract для следующей сессии; runtime code/deployments не менялись.
 - [x] **2026-07-26**: **Dashboard semantic contract `2.0` сделан GREEN и
   развёрнут consumer-first**:
   - immutable `1.0` сохранён; `2.0` фиксирует восемь canonical dimensions,

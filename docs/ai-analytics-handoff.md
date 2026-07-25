@@ -12,6 +12,9 @@
 > Render first; producer commit `ba99a23` then reached Vercel and Render. A
 > session-close docs publish can create newer deployment IDs without changing
 > the application runtime.
+> The next approved product direction is a new breaking contract for dynamic
+> round-scoped questions with the same fixed eight-stone Dashboard output;
+> implementation has not started and `2.0` remains immutable.
 > Broader operational state is tracked in
 > `docs/shalomut-tracker-handoff.md`.
 
@@ -55,6 +58,10 @@
   `dimensionScores` and `questionAggregates`.
 - `docs/dashboard-semantic-contract.md` specifies the published `2.0` schema,
   compatibility rules and consumer-first rollout.
+- `docs/dynamic-questionnaire-ai-contract.md` specifies the next approved
+  boundary: actual questions come from the persisted round snapshot, while the
+  eight dimensions and Dashboard result shape stay stable. It is not yet a
+  runtime contract.
 
 ### Python service
 
@@ -195,12 +202,15 @@
 
 ## What remains
 
-1. With an exact environment/round approval, verify real staging unlocked and
+1. Publish and implement a new breaking dynamic-questionnaire contract
+   consumer-first. Keep `1.0`/`2.0` immutable and use exact persisted round
+   question IDs/text in prompt, fallback, metrics and provenance.
+2. With an exact environment/round approval, verify real staging unlocked and
    privacy-locked `2.0` paths, persisted provenance and empty locked maps.
-2. Separate staging and production aliases/env; the current production alias
+3. Separate staging and production aliases/env; the current production alias
    is being used as a staging core endpoint and is not production-ready.
-3. Implement application-level manager identity/roles and tenant authorization.
-4. Decide separately whether the runtime should adopt real LangGraph/ChromaDB;
+4. Implement application-level manager identity/roles and tenant authorization.
+5. Decide separately whether the runtime should adopt real LangGraph/ChromaDB;
    this is not required for the current contract or local E2E path.
 
 ## Approval gates
@@ -218,6 +228,7 @@
 
 ## First next action
 
-With a separate bounded approval, run the first real staging `2.0` unlocked and
-privacy-locked E2E. Do not invoke a real webhook or external callback without an
-explicitly selected environment and round.
+Start with RED tests for two different persisted round questionnaires, then
+publish the new breaking contract skeleton and update the Python consumer
+before the Core producer. Do not invoke a real webhook or external callback
+without an explicitly selected environment and round.

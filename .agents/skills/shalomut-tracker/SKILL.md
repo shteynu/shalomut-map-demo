@@ -59,9 +59,14 @@ description: Управляй контекстом, продолжением р�
 - Оставляй пустую persistence пустой; не используй demo fixtures как скрытый
   runtime fallback.
 - Не раскрывай личность респондента или результаты ниже настроенного privacy
-  threshold.
-- Сохраняй восемь измерений и 24 обязательных вопроса, пока пользователь явно
-  не запросил новую версию инструмента.
+  threshold. Не допускай partial unlocked dynamic-questionnaire result: любой
+  анализируемый вопрос ниже threshold блокирует все detailed metrics/stones.
+- Сохраняй восемь измерений как стабильную Dashboard taxonomy. Канонические 24
+  вопроса — default/legacy template, а не обязательный runtime-инструмент:
+  вопросы конкретного раунда могут иметь другие ID, количество и формулировки,
+  если они persisted, привязаны к восьми dimensions и проходят privacy gate.
+- Не изменяй immutable AI contracts `1.0`/`2.0` молча; dynamic-questionnaire
+  rollout должен получить новую breaking version и идти consumer-first.
 - Соблюдай RTL-first, WCAG AA и тёплую дизайн-систему.
 - Сохраняй границу между Core Data Layer и внешним AI analytics service.
 - Обеспечивай fail-closed поведение AI transport и persistence.

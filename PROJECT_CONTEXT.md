@@ -23,6 +23,7 @@
 - [docs/ai-analytics-handoff.md](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/docs/ai-analytics-handoff.md) — handoff: сделано, подтверждено, осталось и approval gates.
 - [contracts/ai-analytics-v1.json](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/contracts/ai-analytics-v1.json) — immutable deployed structural contract `1.0`.
 - [contracts/ai-analytics-v2.json](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/contracts/ai-analytics-v2.json) — breaking semantic contract `2.0`: те же восемь измерений, 24 canonical questions, status-scoped output и provenance.
+- [docs/dynamic-questionnaire-ai-contract.md](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/docs/dynamic-questionnaire-ai-contract.md) — утверждённое направление следующего breaking contract: динамические round-scoped вопросы при фиксированном Dashboard output.
 - [ai-analytics-service/README.md](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/ai-analytics-service/README.md) — локальный запуск, границы runtime и переменные AI-сервиса.
 
 
@@ -70,6 +71,28 @@
 - **Production readiness**: вне development сервис требует все три shared secrets, non-local `DATA_LAYER_MCP_URL`/`DATA_LAYER_CALLBACK_URL` и `USE_MOCK_MCP=false`. Невалидная конфигурация блокирует startup; webhook credentials проверяются до раскрытия transport-readiness details.
 - **Callback boundary**: callback destination строится только из доверенного `DATA_LAYER_CALLBACK_URL` и URL-encoded `roundId`. Поле `callbackUrl` входного webhook принимается для обратной совместимости, но не управляет transport. Direct `POST /api/v1/analyze` доступен только в `ENV=development`.
 - **Транспорт**: интерпретации всех измерений выполняются параллельно в worker threads, MCP-запрос и доставка callback не блокируют event loop. Core app ограничивает ожидание вебхука `AI_SERVICE_TIMEOUT_MS` (30s по умолчанию) и отвечает `504` вместо бесконечного ожидания.
+
+### ADR-006: Dynamic questionnaire input, fixed Dashboard output
+- **Решение**: вопросы являются persisted содержимым конкретного
+  `SurveyRound.surveyDefinition`, а не глобальным AI allowlist. Исходные 24
+  вопроса остаются default/legacy template. Новый раунд может использовать
+  другие ID, формулировки и количество продуктовых wellbeing-вопросов.
+- **Стабильная taxonomy**: восемь wellbeing dimensions, scoring thresholds и
+  восьмикаменная Dashboard result shape остаются фиксированными. Каждый
+  анализируемый вопрос явно привязан к одной dimension; AI не выдумывает
+  отсутствующие dimension data.
+- **Reproducibility**: Core агрегирует ответы по exact persisted round snapshot
+  и передаёт AI фактические question ID/text/dimension/score/count плюс
+  проверяемую revision/hash. После начала сбора ответов изменение snapshot
+  требует нового round/revision, чтобы старые ответы не сменили смысл.
+- **Compatibility**: deployed contracts `1.0` и `2.0` immutable. Переход от
+  exact 24 canonical questions к dynamic aggregates является breaking change;
+  следующая версия должна быть опубликована отдельно и развёрнута
+  consumer-first.
+- **Privacy**: partial unlocked analysis запрещён. AI получает полный набор
+  aggregates только когда total и каждый анализируемый вопрос достигли
+  threshold. Иначе весь detailed result остаётся locked, provider не
+  вызывается и missing stones не синтезируются.
 
 ---
 

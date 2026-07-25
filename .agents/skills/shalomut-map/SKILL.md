@@ -27,20 +27,38 @@ description: Работай с продуктом и кодом Shalomut Map в 
 
 ## Канонические границы
 
-- Используй `src/lib/shalomut-source.ts` как runtime-источник методологии.
-- Считай Google Form upstream-источником v1 questionnaire, а Adobe XD —
-  визуальной reference, согласно `docs/source-of-truth.md`.
+- Используй `src/lib/shalomut-source.ts` как источник восьми канонических
+  dashboard dimensions, scoring/status semantics и default questionnaire
+  template. Фактическим источником вопросов для конкретного раунда должен быть
+  persisted `SurveyRound.surveyDefinition` snapshot.
+- Считай Google Form upstream-источником default/v1 questionnaire template, а
+  Adobe XD — визуальной reference, согласно `docs/source-of-truth.md`.
 - Не используй `src/lib/demo-data.ts`, `DEMO_ORGANIZATION`, `DEMO_ROUND` или
   `SHALOM-DEMO` как скрытый runtime fallback. Demo data допустимы только как
   явные fixtures или визуальные mock metadata.
 - Оставляй пустую или недоступную persistence пустой; deployed writes без
   `DATABASE_URL` должны завершаться fail-closed.
-- Сохраняй восемь wellbeing dimensions и 24 обязательных вопроса, пока
-  пользователь явно не запросил новую versioned methodology.
+- Сохраняй восемь wellbeing dimensions как стабильную выходную taxonomy для
+  Dashboard Stone Map. Не считай канонические 24 вопроса обязательным runtime
+  набором: это default/legacy template, а опрос каждого раунда может содержать
+  другое количество, ID и формулировки вопросов продуктовой тематики.
+- Каждый анализируемый вопрос должен иметь стабильный round-scoped ID, точный
+  persisted текст и явную привязку к одной из восьми dimensions. AI input,
+  question metrics, fallback и provenance должны использовать именно snapshot
+  раунда, не подменяя его текстом или ID из default template.
+- Сохраняй фиксированную форму Dashboard output: восемь stones, status-aware
+  Hebrew interpretation/actions, общий summary и question-grounded metrics.
+  Если безопасных данных недостаточно для покрытия всех восьми dimensions,
+  заверши анализ locked/validation state, а не выдумывай отсутствующие stones.
+- Не меняй семантику immutable contracts `1.0` и `2.0`. Dynamic-questionnaire
+  input требует новой breaking contract version и consumer-first rollout.
 - Сохраняй configurable scoring thresholds: green `>=75`, yellow `50–74`, red
   `<50`.
 - Применяй настроенный privacy threshold, по умолчанию 10. Не раскрывай
   respondent identity, индивидуальные ответы или detailed results ниже порога.
+  Для dynamic questionnaire не делай partial unlocked analysis: если total или
+  хотя бы один анализируемый вопрос ниже threshold, весь detailed result
+  остаётся locked и provider не вызывается.
 - Сохраняй границу между Core Data Layer и внешним AI analytics service.
   Проверяй versioned contract и используй fail-closed transport.
 

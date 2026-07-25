@@ -33,6 +33,31 @@ This repository prepares the compatible code paths only. Render/Core deploys,
 aliases, provider configuration, and real callback writes remain outside this
 local change.
 
+### Approved next breaking direction: dynamic questionnaires
+
+Contract `2.0` remains immutable and continues to describe the exact canonical
+24-question exchange. The next contract version must remove that input
+allowlist without weakening the output semantics documented below.
+
+For the next version, the exact persisted `SurveyRound.surveyDefinition`
+snapshot is the questionnaire source of truth. Question IDs, text, and count
+may differ between rounds; each analyzed product-domain question must map to
+one of the same eight dimensions. Core sends only privacy-safe aggregates for
+those actual questions, and the AI prompt, deterministic fallback, metrics,
+and provenance must use their exact IDs and text.
+
+Partial unlocked analysis is forbidden. The round is unlocked only when the
+total and every analyzed question meet the configured threshold; otherwise all
+detailed maps and stones remain empty and the provider is not invoked.
+
+The Dashboard result remains fixed: exactly eight stones, Core-owned scores
+and statuses, Hebrew interpretations, status-scoped actions, one overview
+summary, and question-grounded metrics. A dimension without privacy-safe
+question evidence makes the definition/payload validation fail; below-threshold
+evidence makes the whole result locked. The AI must not invent a stone. The
+implementation contract and acceptance matrix are in
+`docs/dynamic-questionnaire-ai-contract.md`.
+
 ## Canonical and privacy-safe input
 
 An unlocked round MUST contain:

@@ -12,6 +12,14 @@ School principals, wellbeing coordinators, and district supervisors in Hebrew-sp
 
 "Shalomut Map" (מפת שלומות) visualizes multi-dimensional school-staff wellbeing as an interactive map of organic "stones" — one per wellbeing dimension (self-expression, professional competence, social resources, balance, management support, certainty, organizational climate, meaning). Each stone carries a status color (green ≥75, yellow 50–74, red <50). Success means a principal can read the school's wellbeing state at a glance, trust that individual anonymity is protected (privacy threshold: results lock below 10 respondents), and move to concrete goals/recommendations.
 
+Survey questions are configurable round content, not a fixed product-wide
+questionnaire. Managers may use different wellbeing questions, wording, IDs,
+and question counts as long as each analyzed question belongs to one of the
+eight dashboard dimensions. The original 24 questions remain the default and
+legacy template. AI must interpret the exact persisted questions and their
+privacy-safe aggregates while returning the same eight-stone Dashboard result
+shape; it must never replace round questions with the default template.
+
 Green dimensions use a distinct action semantics: they are presented as
 `חוזקה לשימור` (a strength to preserve) and lead to supporting or maintenance
 actions (`פעולות לשימור`), not improvement goals. Yellow and red dimensions may

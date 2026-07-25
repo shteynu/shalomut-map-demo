@@ -4,16 +4,23 @@
 
 Это оперативная точка входа для перехода от исходного статического demo
 Shalomut Map к `shalomut-tracker`, где сохранённые данные должны быть единственным
-источником runtime-состояния. Методология продукта остаётся канонической в
-`src/lib/shalomut-source.ts`; визуальные mock-данные изолированы в
-`src/lib/demo-data.ts`.
+источником runtime-состояния. `src/lib/shalomut-source.ts` остаётся источником
+восьми dimensions, scoring/status semantics и default questionnaire template;
+exact вопросы раунда принадлежат persisted `SurveyRound.surveyDefinition`.
+Визуальные mock-данные изолированы в `src/lib/demo-data.ts`.
 
 ## Текущий snapshot
 
 - Активная ветка: `main`; сессия началась от `6555c34`. Contract `2.0`
   опубликован consumer-first: `82f7194` содержит dual-version Python consumer,
   `ba99a23` — Core producer, OpenAPI и Dashboard UX. Оба commit находятся в
-  `origin/main`; текущий diff — только session-close handoff.
+  `origin/main`. `HEAD`, `main` и `origin/main` совпадали на `8d076c9` до
+  текущего local product-decision docs/skills diff.
+- После rollout утверждена следующая продуктовая граница: questions становятся
+  dynamic round-scoped content, а восемь Dashboard dimensions и output shape
+  остаются фиксированными. Specification находится в
+  `docs/dynamic-questionnaire-ai-contract.md`; implementation/contract version
+  ещё не созданы, текущий diff не задеплоен.
 - Functional AI baseline `a9b6c34` ограничивает latency Gemini-запросов общим
   retry budget. Поверх него `7a451fd` добавляет organization-scoped manager
   boundary, а `508410a` сохраняет понятный пользователю fail-closed UI; оба
@@ -523,7 +530,18 @@ Staging показывал старую demo-школу, имя менеджер
 
 ## Что не завершено
 
-### 1. Dashboard semantic staging evidence
+### 1. Dynamic questionnaire AI contract
+
+- Deployed `2.0` требует exact canonical 24 и остаётся immutable. Он не
+  выполняет главную продуктовую цель разных questionnaires между раундами.
+- Следующая breaking version должна анализировать exact persisted question
+  IDs/text/counts каждого раунда и возвращать прежние восемь Dashboard stones.
+- Готов implementation contract и acceptance matrix:
+  `docs/dynamic-questionnaire-ai-contract.md`. Реализация должна идти
+  RED-first и consumer-first; automatic dimension classification и изменение
+  privacy semantics не разрешены без отдельного продуктового решения.
+
+### 2. Dashboard semantic staging evidence
 
 - Contract/Core/Python/Dashboard semantics `2.0` развёрнуты consumer-first на
   Core и Render. Immutable `1.0` сохранён как compatibility/rollback boundary.
@@ -531,7 +549,7 @@ Staging показывал старую demo-школу, имя менеджер
   всё ещё может быть историческим `1.0`. Для нового unlocked/locked `2.0`
   evidence нужен отдельный exact round/environment approval.
 
-### 2. Application-level manager authentication
+### 3. Application-level manager authentication
 
 - Shared Basic gate теперь связывает один deployment credential с одной
   настроенной организацией, но по-прежнему не идентифицирует конкретного
@@ -540,7 +558,7 @@ Staging показывал старую demo-школу, имя менеджер
 - Для публичного rollout всё ещё нужны application-level authentication,
   roles/organization authorization, audit boundary и isolation tests.
 
-### 3. Deployed AI provenance и privacy-locked runtime
+### 4. Deployed AI provenance и privacy-locked runtime
 
 - Real Gemini generation, transport и persistence доказаны для одного
   explicitly approved unlocked `1.0` round. Развёрнутый `2.0` сохраняет
@@ -552,7 +570,7 @@ Staging показывал старую demo-школу, имя менеджер
 - Любое изменение key, billing, limits или provider configuration и следующий
   webhook по-прежнему требуют отдельного bounded approval.
 
-### 4. Staging/production boundary
+### 5. Staging/production boundary
 
 - Legacy staging alias выровнен с Git tree текущего `main` и указывает на
   protected Preview, а production alias по-прежнему временно используется как
@@ -562,13 +580,16 @@ Staging показывал старую demo-школу, имя менеджер
 
 ## Рекомендуемый порядок продолжения
 
-1. С отдельным bounded approval выполнить точные unlocked и privacy-locked
-   staging E2E, включая persisted provenance, question metrics и пустые locked
-   maps. Не использовать production data.
-2. Заменить organization-scoped shared Basic gate на application-level manager
+1. RED-first зафиксировать следующую breaking contract version и сделать
+   consumer-first dynamic-questionnaire rollout локально: Python compatibility,
+   затем Core aggregation/MCP, callback и Dashboard variable metrics.
+2. После implementation и с отдельным bounded approval выполнить точные
+   unlocked и privacy-locked staging E2E, включая persisted provenance, exact
+   custom questions и пустые locked maps. Не использовать production data.
+3. Заменить organization-scoped shared Basic gate на application-level manager
    identity/roles и полноценную tenant authorization; передавать реальный
    organization context в MCP payload.
-3. Согласовать окончательное разделение staging/production aliases и env;
+4. Согласовать окончательное разделение staging/production aliases и env;
    текущий legacy staging alias уже выровнен по Git tree, но production alias
    всё ещё используется как staging core endpoint. Production
    data/env/alias/deployment не затрагивать без нового bounded approval.
