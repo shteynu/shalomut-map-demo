@@ -1,13 +1,14 @@
 # PROGRESS: Shalomut Map
 
 ## 📌 Текущий статус
-- **Текущий этап**: database-backed manager slice из PR [#6](https://github.com/shteynu/shalomut-map-demo/pull/6) смержен в `main` squash commit `043f54d`: реальные organization/current round/counts/analytics, onboarding для пустой БД, persistence setup/survey builder, реальные share codes/round IDs и сохранение статуса раунда.
+- **Текущий этап**: локальный `main` содержит shared Basic gate для manager surfaces (`7a4d04d`) и первый этап hardening AI-сервиса (`7e0e1fd`). Callback теперь строится только от доверенного `DATA_LAYER_CALLBACK_URL`, прямой analyze endpoint доступен только в development, а production/preview-конфигурация AI transport валидируется fail-closed.
 - **Состояние БД**: создан отдельный Supabase staging project `shalomut-map-staging` (`tpfzhyalaftotljmlont`, `ap-northeast-2`). Все три Prisma migration, включая `20260724180000_add_round_configuration`, применены только к нему; status — up to date, доменные таблицы после транзакционного CRUD smoke пусты.
 - **Staging**: DB credentials изолированы в ignored `.env.staging.local` с правами `600`. Vercel Authentication включена строго для Preview; Sensitive `DATABASE_URL` staging существует только в Preview, Production env vars отсутствуют. Alias `https://shalomut-map-demo-ui-redesign.vercel.app/` пока остаётся на ранее проверенном DB-less preview commit `a20ac66`.
 - **Проверенный preview**: protected deployment `dpl_E7pQnJXMDHzoeeMQa5hWskxicCLz` имеет target Preview и статус READY. Неавторизованный запрос получает `302` на Vercel SSO; с временным authorized bypass `/` и `/api/rounds/` вернули HTTP 200, API — `{"round":null}`. Controlled write/read smoke через manager API прошёл, smoke records удалены, все четыре staging domain tables снова пусты. Временный project-wide automation bypass после smoke отозван (`automationBypassCount: 0`).
-- **Runtime**: static export/GitHub Pages удалены, потому что DB-backed App Router требует server runtime. FastAPI-сервис собирается корневым `Dockerfile` в отдельный container image (цель — Cloud Run, альтернатива — Render по `render.yaml`), работает fail-closed без shared secrets вне явного `ENV=development` и не полагается на in-process background task.
+- **Runtime**: static export/GitHub Pages удалены, потому что DB-backed App Router требует server runtime. FastAPI-сервис собирается корневым `Dockerfile` в отдельный container image (цель — Cloud Run, альтернатива — Render по `render.yaml`), работает fail-closed без обязательных shared secrets и доверенных non-local Data Layer URLs вне явного `ENV=development`, не принимает callback destination из webhook payload и не полагается на in-process background task.
 - **Граница деплоя**: исходный Supabase ref `fvnulyirrqjrnjbahmsn` подтверждён как Production и не изменялся. Protected-preview операция не выполняла production promotion и не меняла production env/aliases. Последний проверенный перед session-close merge Git-connected production deployment `dpl_3PmjUaFv8xEdS1WAEWq9U3CwKa9b` собран из `origin/main` commit `ed7b44d` и имеет статус READY; production project env vars по-прежнему отсутствуют.
-- **AI coding workflow**: канонические repo-level skills `shalomut-map`, `shalomut-tracker` и `shalomut-verification` находятся в `.agents/skills/`; инструкции для Codex, Gemini, Claude и GitHub Copilot закоммичены в `main`, локальная и удалённая ветки синхронизированы.
+- **Git-состояние**: AI hardening `7e0e1fd` находится в `main`. Параллельная сессия добавила и отправила MCP dynamic-route fix `35a190b`, поэтому `origin/main` уже содержит оба изменения. Этот session-memory update сохраняется отдельным локальным коммитом; текущая сессия push не выполняет.
+- **AI coding workflow**: канонические repo-level skills `shalomut-map`, `shalomut-tracker` и `shalomut-verification` находятся в `.agents/skills/`; инструкции для Codex, Gemini, Claude и GitHub Copilot закоммичены в `main`.
 - **Актуальный handoff**: см. [`docs/shalomut-tracker-handoff.md`](docs/shalomut-tracker-handoff.md). AI-детали: [`docs/ai-analytics-handoff.md`](docs/ai-analytics-handoff.md).
 
 ---
@@ -15,13 +16,25 @@
 ## 🚀 Следующие шаги (Next Up: Safe Staging)
 1. [x] Включить Vercel Authentication только для Preview.
 2. [x] Настроить Sensitive Preview `DATABASE_URL` на выделенную staging-БД и выполнить protected runtime smoke с cleanup.
-3. [ ] Добавить application-level manager authentication, organization authorization и isolation tests до публичного rollout.
-4. [ ] После отдельного approval создать runtime-доступ AI-сервиса к protected Preview, задеплоить container image на Cloud Run или Render, настроить совпадающие shared secrets/staging URLs и выполнить реальный round-close → MCP → callback E2E.
-5. [ ] После отдельного подтверждения переназначить staging alias на проверенный protected Preview; production promotion оставить отдельным approval gate.
+3. [ ] Заменить или расширить shared Basic gate до application-level manager identity, organization authorization и isolation tests; текущий credential защищает поверхность, но не определяет пользователя или tenant.
+4. [ ] Следующим изолированным AI-этапом ввести строгие request/output/privacy contracts и явные fail-closed safety semantics без изменения transport boundary.
+5. [ ] После отдельного approval создать runtime-доступ AI-сервиса к protected Preview, задеплоить container image на Cloud Run или Render, настроить совпадающие shared secrets/staging URLs и выполнить реальный round-close → MCP → callback E2E.
+6. [ ] После отдельного подтверждения переназначить staging alias на проверенный protected Preview; production promotion оставить отдельным approval gate.
 
 ---
 
 ## ✅ Завершенные задачи (Completed)
+- [x] **2026-07-25**: **Первый этап AI service hardening смержен fast-forward в `main`** (commit `7e0e1fd`; позднее вошёл в `origin/main` вместе с параллельным commit `35a190b`):
+  - Callback destination всегда строится из доверенного `DATA_LAYER_CALLBACK_URL` и URL-encoded `roundId`; входной `callbackUrl` сохраняется только для совместимости и игнорируется.
+  - Origin callback валидируется независимо от наличия Vercel bypass, поэтому transport не может отправить payload или deployment credential на произвольный host.
+  - `POST /api/v1/analyze` доступен только при `ENV=development`; вне development отвечает `404`.
+  - Production/preview startup требует `MCP_SHARED_SECRET`, `AI_WEBHOOK_SECRET`, `AI_CALLBACK_SECRET`, non-local Data Layer URLs и `USE_MOCK_MCP=false`; webhook authentication выполняется раньше возврата деталей readiness.
+  - Проверки AI commit: Python smoke 11/11, полный pytest 15/15 и parse OpenAPI JSON/YAML прошли. После параллельного MCP fix итоговый `main` прошёл TypeScript tests 78/78, `tsc --noEmit`, lint и production build.
+  - Повторный Docker build не выполнен: локальный Docker daemon был недоступен. Staging/production deployment и runtime smoke не выполнялись.
+- [x] **2026-07-25**: **Manager surfaces получили временную shared Basic protection** (commit `7a4d04d`, уже в `origin/main`):
+  - Manager UI/API закрыты одним `BASIC_AUTH_USER`/`BASIC_AUTH_PASSWORD`; deployed runtime без полного credential отвечает `503`, локальный development остаётся открытым.
+  - Respondent survey routes и machine-to-machine MCP/callback endpoints не получают browser challenge и продолжают использовать собственные security boundaries.
+  - Gate защищает deployment surface, но не является manager identity, role model или organization authorization; полноценная tenant isolation остаётся следующим security этапом.
 - [x] **2026-07-25**: **AI-сервис подготовлен к вызовам protected Vercel core app** (commit `ed7b44d` в `origin/main`):
   - Опциональный `VERCEL_PROTECTION_BYPASS` передаётся как `x-vercel-protection-bypass` в MCP-запросе и callback только при явной настройке.
   - Payload-controlled `callbackUrl` не может увести project-wide credential: при настроенном bypass callback допускается только на тот же нормализованный origin, что и `DATA_LAYER_CALLBACK_URL`, иначе transport не вызывается.

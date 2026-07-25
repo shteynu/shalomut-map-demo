@@ -1,16 +1,19 @@
 # AI Analytics — handoff
 
-> Status update, 2026-07-24: implementation PR #4 has been merged into
-> `main` at `19401a6`. This file keeps the AI-specific handoff. Current staging,
-> empty-runtime, and manager UI status is tracked in
+> Status update, 2026-07-25: AI callback/entrypoint hardening commit `7e0e1fd`
+> is in `main` and `origin/main`; the parallel MCP dynamic-route fix `35a190b`
+> was pushed on top of it. This session did not invoke push or deployment.
+> Current staging, empty-runtime, and manager UI status is tracked in
 > `docs/shalomut-tracker-handoff.md`.
 
 ## Snapshot
 
 - Original branch: `feature/ai-analytics-microservice-mcp`
 - Merged to `main`: PR #4, merge commit `19401a6`
-- Latest original branch commits: `c96716b` implementation, `1d0b040` migration status docs
-- Working tree at handoff: clean
+- Current AI hardening: `main` commit `7e0e1fd`
+- Parallel follow-up: `35a190b` keeps `/api/mcp` dynamic so deployed requests
+  retain the Authorization header.
+- Working tree at handoff: clean after the local session-memory commit
 - AI service deployment: not performed; no separate Vercel project exists
 - Shared secrets in Vercel/AI runtime: not configured by this work
 
@@ -27,7 +30,8 @@
 
 ### Python service
 
-- FastAPI webhook and direct analyze endpoints exist.
+- FastAPI webhook is the production entrypoint. The direct analyze endpoint
+  exists only for `ENV=development` and returns `404` elsewhere.
 - MCP client calls the core JSON-RPC endpoint and fails closed on transport
   errors unless `USE_MOCK_MCP=true` is explicitly enabled.
 - The current runtime is an async graph-style workflow with a structured local
@@ -44,6 +48,12 @@
   instead of relying on an in-process background task.
 - Outside development, the webhook fails closed when `AI_WEBHOOK_SECRET` is
   missing or invalid.
+- Outside development, startup additionally requires all three shared secrets,
+  non-local `DATA_LAYER_MCP_URL`/`DATA_LAYER_CALLBACK_URL`, and
+  `USE_MOCK_MCP=false`.
+- Callback destination is derived only from `DATA_LAYER_CALLBACK_URL` and the
+  URL-encoded round ID. Payload `callbackUrl` is accepted for compatibility but
+  ignored; origin validation applies regardless of Vercel bypass.
 
 ### Core app and persistence
 
@@ -65,25 +75,31 @@
 
 ## Verification evidence
 
-- `npm test` — 66 tests pass.
-- `python3 ai-analytics-service/run_tests.py` — 7/7 pass.
-- Full Python pytest in a disposable virtualenv — 9/9 pass.
+- `npm test` — 78/78 pass on final `main`, including the parallel MCP
+  dynamic-route regression.
+- `python3 ai-analytics-service/run_tests.py` — 11/11 pass.
+- Full Python pytest — 15/15 pass, with one existing Starlette
+  `TestClient`/httpx deprecation warning.
+- `npx tsc --noEmit` — pass.
 - `npm run lint` — pass.
-- `npm run build` — pass.
-- `npx prisma validate` — pass.
-- `npx prisma migrate status` — database schema is up to date.
+- `npm run build` — pass, with a Next.js warning that the `middleware`
+  convention will be replaced by `proxy`.
+- OpenAPI JSON and YAML parse successfully.
+- A fresh Docker build was attempted but could not start because the local
+  Docker daemon was unavailable. The earlier container build/smoke remains
+  recorded in `docs/shalomut-tracker-handoff.md`.
+- No staging or production runtime was exercised in this session.
 - No real secrets were committed.
 
 ## What remains
 
-1. Provide or confirm a dedicated staging Supabase target. Vercel currently has
-   no Preview or Production env vars, so the existing local project ref cannot
-   be safely classified there.
+1. Add strict request/output/privacy models and explicit fail-closed safety
+   semantics as the next isolated AI-service change.
 2. Deploy the container image to Cloud Run (or Render) from the repository
    root; no hosting environment exists yet.
-3. Configure matching `APP_BASE_URL`, `AI_SERVICE_URL`,
-   `MCP_SHARED_SECRET`, `AI_WEBHOOK_SECRET`, and `AI_CALLBACK_SECRET` in the
-   intended staging environments.
+3. Configure matching `AI_SERVICE_URL`, `DATA_LAYER_MCP_URL`,
+   `DATA_LAYER_CALLBACK_URL`, `MCP_SHARED_SECRET`, `AI_WEBHOOK_SECRET`, and
+   `AI_CALLBACK_SECRET` in the intended staging environments.
 4. Deploy the Python service and run a real staging webhook → callback smoke
    test. Verify both ready and privacy-locked rounds.
 5. Review the real staging result and decide whether to promote the verified
@@ -103,6 +119,7 @@
 
 ## First next action
 
-Authorize a hosting environment for the AI service container — Cloud Run is the
-recommended target — and set the shared secrets and URLs on both sides before
-any real webhook is invoked.
+Implement the strict AI request/output/privacy contract as a small isolated
+change. After that, authorize a hosting environment — Cloud Run is the
+recommended target — and set the shared secrets and trusted Data Layer URLs on
+both sides before any real webhook is invoked.

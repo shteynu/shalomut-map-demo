@@ -49,13 +49,15 @@
 - **Решение**: Home, setup, round tracking, survey builder, dashboard и respondent survey используют request-time Data Layer. Setup и definition сохраняются через manager API; текущий раунд выбирается по явному приоритету статуса и времени создания.
 - **Хранилище**: `SurveyRound.backgroundContext` и `SurveyRound.surveyDefinition` хранятся как JSON. Миграция `20260724180000_add_round_configuration` должна применяться отдельно к каждому подтверждённому окружению.
 - **Deployment**: `output: "export"`, GitHub Pages workflow и demo `generateStaticParams` несовместимы с database-backed route handlers и удалены. Поддерживаемая модель — Next.js server runtime (Vercel или эквивалент).
-- **Security boundary**: manager write API пока не имеет полноценной authentication/authorization модели. До публичного staging с реальной БД требуется manager auth или ограничение доступа на уровне deployment.
+- **Security boundary**: shared `BASIC_AUTH_USER`/`BASIC_AUTH_PASSWORD` закрывает manager UI/API одним deployment credential и fail-closed отвечает `503`, если credential не настроен вне local development. Respondent routes и machine-to-machine MCP/callback endpoints остаются вне browser challenge. Это временный access gate, а не manager identity, role model или organization authorization; публичный multi-tenant rollout требует application-level auth и isolation tests.
 - **Fail-closed persistence**: deployed runtime (`NODE_ENV=production` или Vercel) без `DATABASE_URL` может показывать пустой onboarding, но отклоняет data writes с `503`. Локальный development fallback хранится в общем `globalThis` state между server bundles.
 
 ### ADR-005: AI analytics service поставляется как контейнер, а не как Vercel-функция
 - **Решение**: изолированный FastAPI-сервис собирается корневым `Dockerfile` в отдельный образ. Build context — корень репозитория, потому что `src/contracts.py` читает общий `contracts/ai-analytics-v1.json`; образ сохраняет ту же относительную раскладку. Целевая площадка — Google Cloud Run (scale-to-zero, free tier); `render.yaml` описывает тот же образ для Render.
 - **Почему не Vercel**: пакет не содержит Python entrypoint в `api/`, а секция `[tool.vercel]` в `pyproject.toml` не была конвенцией Vercel и удалена как вводящая в заблуждение.
 - **Fail-closed environment**: если не заданы ни `ENV`, ни `VERCEL_ENV`, сервис считает окружение production и требует `AI_WEBHOOK_SECRET`. Локальный запуск без секретов требует явного `ENV=development`.
+- **Production readiness**: вне development сервис требует все три shared secrets, non-local `DATA_LAYER_MCP_URL`/`DATA_LAYER_CALLBACK_URL` и `USE_MOCK_MCP=false`. Невалидная конфигурация блокирует startup; webhook credentials проверяются до раскрытия transport-readiness details.
+- **Callback boundary**: callback destination строится только из доверенного `DATA_LAYER_CALLBACK_URL` и URL-encoded `roundId`. Поле `callbackUrl` входного webhook принимается для обратной совместимости, но не управляет transport. Direct `POST /api/v1/analyze` доступен только в `ENV=development`.
 - **Транспорт**: интерпретации всех измерений выполняются параллельно в worker threads, MCP-запрос и доставка callback не блокируют event loop. Core app ограничивает ожидание вебхука `AI_SERVICE_TIMEOUT_MS` (30s по умолчанию) и отвечает `504` вместо бесконечного ожидания.
 
 ---
@@ -65,15 +67,15 @@
   - **URL**: `https://shalomut-map-demo-ui-redesign.vercel.app/`
   - **Текущее состояние**: database-backed slice из PR #6 смержен в `main` (`043f54d`), но alias пока остаётся на проверенном empty-runtime preview `dpl_35S9VvwN8V9Bq7da3iP2SJwT4349`, commit `a20ac66`.
   - **Проверка**: `/` → `0/0`, `/api/rounds/` → `{"round":null}`, HTTP 200.
-  - **Обнаруженная конфигурация**: Vercel Preview/Production env vars отсутствуют; отдельной подтверждённой staging Supabase и AI-service project нет.
-  - **Целевое правило**: обновлять alias только после миграции выделенной staging-БД, защиты manager routes и полного smoke/E2E.
+  - **Обнаруженная конфигурация**: Preview использует отдельную staging Supabase и Vercel Authentication; AI-service project ещё не создан. Production env vars отсутствуют.
+  - **Целевое правило**: обновлять alias только после application-level manager authorization и полного smoke/E2E.
 - **Production (`prod`)**:
   - **URL**: `https://shalomut-map-demo.vercel.app/`
   - **Состояние**: в рамках database-backed manager slice не изменялся.
   - **Правило**: Мануальный деплой только по прямому указанию (через Vercel Dashboard *Promote to Production* или GitHub Actions `workflow_dispatch`).
 
 ### Переменные AI-интеграции
-- Core app: `APP_BASE_URL`, `AI_SERVICE_URL`, `AI_SERVICE_TIMEOUT_MS`, `MCP_SHARED_SECRET`, `AI_WEBHOOK_SECRET`, `AI_CALLBACK_SECRET`.
+- Core app: `AI_SERVICE_URL`, `AI_SERVICE_TIMEOUT_MS`, `MCP_SHARED_SECRET`, `AI_WEBHOOK_SECRET`, `AI_CALLBACK_SECRET`, а также временные manager-gate credentials `BASIC_AUTH_USER`/`BASIC_AUTH_PASSWORD`.
 - AI service: `ENV`, `DATA_LAYER_MCP_URL`, `DATA_LAYER_CALLBACK_URL`, те же три shared secrets и `USE_MOCK_MCP`.
 - Безопасные шаблоны находятся в `.env.example` и `ai-analytics-service/.env.example`; реальные значения не коммитятся.
 

@@ -11,6 +11,11 @@ Shalomut Map к `shalomut-tracker`, где сохранённые данные �
 ## Текущий snapshot
 
 - Активная ветка: `main`.
+- `main` содержит shared Basic manager gate `7a4d04d`, AI hardening
+  `7e0e1fd` и выполненный параллельной сессией MCP dynamic-route fix
+  `35a190b`. Последний отправлен в `origin/main` и включает первые два
+  изменения. Текущая сессия push не выполняет; session-memory update
+  сохраняется отдельным локальным коммитом.
 - PR #5 смержен в `main` squash commit `6b369bf`.
 - PR [#6](https://github.com/shteynu/shalomut-map-demo/pull/6) смержен в
   `main` squash commit `043f54d`.
@@ -48,9 +53,9 @@ Shalomut Map к `shalomut-tracker`, где сохранённые данные �
   Git-connected production deployment `dpl_3PmjUaFv8xEdS1WAEWq9U3CwKa9b`
   автоматически собран из `origin/main` commit `ed7b44d` и имеет состояние
   `READY`; production project env vars отсутствуют.
-- Commit `ed7b44d` с поддержкой protected Vercel core app находится в
-  `origin/main`. Session-close update сохраняет operational docs и исключает
-  локальную `ai-analytics-service/.venv` из IDE-индексации.
+- Commit `ed7b44d` с поддержкой protected Vercel core app, shared Basic gate
+  `7a4d04d`, AI callback/entrypoint hardening `7e0e1fd` и MCP dynamic-route fix
+  `35a190b` находятся в `origin/main`.
 - Deployment AI-сервиса по-прежнему не создавался.
 
 ## Инцидент: непустой UI при пустой БД
@@ -143,6 +148,26 @@ Staging показывал старую demo-школу, имя менеджер
 - Параллельность измерена на заглушке 0.5s на измерение: последовательная
   стоимость 4.00s, фактически 0.51s.
 
+### Manager gate и AI transport hardening (сессия 2026-07-25, local)
+
+- Shared Basic credential закрывает manager surfaces вне local development;
+  respondent routes, MCP и POST callback используют свои отдельные boundaries.
+- Callback destination строится только от доверенного
+  `DATA_LAYER_CALLBACK_URL`; webhook `callbackUrl` игнорируется, origin
+  проверяется независимо от Vercel bypass.
+- Direct analyze endpoint доступен только в development. Production/preview
+  startup требует три shared secrets, non-local Data Layer URLs и
+  `USE_MOCK_MCP=false`; webhook auth проверяется до readiness details.
+- `python3 ai-analytics-service/run_tests.py`: 11/11.
+- Полный Python pytest: 15/15; остаётся одно предупреждение совместимости
+  Starlette `TestClient`/httpx.
+- `npm test`: 78/78; `npx tsc --noEmit`, `npm run lint` и `npm run build`:
+  прошли. Build сообщает предупреждение Next.js о будущей замене convention
+  `middleware` на `proxy`.
+- OpenAPI JSON/YAML успешно разобраны.
+- Повторный Docker build был заблокирован выключенным локальным Docker daemon;
+  staging/production runtime этой сессией не проверялся.
+
 ## Что завершено
 
 ### Безопасная staging persistence
@@ -159,6 +184,9 @@ Staging показывал старую demo-школу, имя менеджер
 
 - Preview deployments закрыты Vercel Authentication; unauthenticated manager
   writes не доступны.
+- В локальном `main` manager UI/API дополнительно закрыты shared Basic
+  credential. Эта защита ещё не задеплоена и не заменяет identity/org
+  authorization.
 - Только Preview получает Sensitive `DATABASE_URL` выделенной staging-БД.
 - Новый Preview имеет target `preview`, проходит authenticated read/write/read
   smoke и после cleanup оставляет staging пустым.
@@ -182,9 +210,11 @@ Staging показывал старую demo-школу, имя менеджер
   интерпретации измерений считаются параллельно, `ENV` fail-closed, core app
   ограничивает ожидание вебхука `AI_SERVICE_TIMEOUT_MS` и отвечает `504`.
 - Для protected Vercel core app сервис умеет явно передавать
-  `VERCEL_PROTECTION_BYPASS` в обоих исходящих вызовах. Credential не
-  отправляется callback-хосту за пределами настроенного Data Layer origin;
-  callback URL не логируется.
+  `VERCEL_PROTECTION_BYPASS` в обоих исходящих вызовах. Callback target всегда
+  строится от `DATA_LAYER_CALLBACK_URL`, входной `callbackUrl` не управляет
+  transport, а credential не отправляется за пределы доверенного origin.
+- Direct analyze endpoint ограничен development; production/preview
+  configuration проходит fail-closed startup validation.
 - PR #4 смержен в `main`.
 - TypeScript и Python используют общий versioned contract
   `contracts/ai-analytics-v1.json`.
@@ -220,10 +250,10 @@ Staging показывал старую demo-школу, имя менеджер
 
 ### 1. Application-level manager authentication
 
-- Manager write routes сейчас не привязаны к аутентифицированной организации.
-- Protected Preview безопасно закрывает текущий staging slice, но для
-  публичного rollout всё ещё нужны application-level authentication,
-  organization authorization и isolation tests.
+- Shared Basic gate закрывает manager routes одним deployment credential, но
+  не идентифицирует менеджера и не привязывает запрос к организации.
+- Для публичного rollout всё ещё нужны application-level authentication,
+  roles/organization authorization, audit boundary и isolation tests.
 
 ### 2. Реальный staging AI service
 
@@ -233,8 +263,8 @@ Staging показывал старую demo-школу, имя менеджер
   выполнялся.
 - Постоянного Vercel automation bypass сейчас нет (`automationBypassCount: 0`).
   Создание отдельного runtime credential для AI-сервиса или настройка другого
-  trusted access требует нового bounded approval; при использовании bypass
-  callback обязан оставаться на origin `DATA_LAYER_CALLBACK_URL`.
+  trusted access требует нового bounded approval; callback в текущем коде
+  всегда строится на origin `DATA_LAYER_CALLBACK_URL`.
 - Реальный LLM-путь не проверялся: без `OPENAI_API_KEY` конвейер идёт по
   эвристическому fallback.
 
@@ -247,14 +277,16 @@ Staging показывал старую demo-школу, имя менеджер
 
 ## Рекомендуемый порядок продолжения
 
-1. Добавить application-level manager authentication, organization
-   authorization и isolation tests до публичного rollout.
-2. После отдельного approval создать runtime-доступ к protected Preview,
+1. Заменить или расширить shared Basic gate до application-level manager
+   identity, organization authorization и isolation tests.
+2. Отдельным малым PR ввести строгие Pydantic/request/output/privacy contracts
+   и явные fail-closed safety semantics внутри AI-сервиса.
+3. После отдельного approval создать runtime-доступ к protected Preview,
    задеплоить container image AI-сервиса на Cloud Run (или Render), настроить
    URLs/secrets на обеих сторонах и выполнить полный staging E2E.
-3. Отдельно согласовать переназначение staging alias на проверенный protected
+4. Отдельно согласовать переназначение staging alias на проверенный protected
    Preview.
-4. Production data/env/alias/deployment не затрагивать без нового bounded
+5. Production data/env/alias/deployment не затрагивать без нового bounded
    approval.
 
 ## Approval gates
