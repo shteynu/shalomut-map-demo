@@ -42,10 +42,11 @@ Shalomut Map к `shalomut-tracker`, где сохранённые данные �
   Sensitive variable со scope Preview и Production. Локальная копия находится
   только в ignored `.env.staging.local`; production `.env` и `.env.local` не
   менялись.
-- Последний READY production deployment
-  `dpl_EE1DEssckxcCuFKpfc9YAPV7EjEm` создан до env mutation. Новый deployment,
-  alias mutation и deployed runtime smoke после настройки scope не
-  выполнялись.
+- Первый проверенный post-env production deployment
+  `dpl_Hb1WZR9hHdUKsWhJdXDXDMS8ExPe` получил состояние `READY` и на момент
+  smoke обслуживал `shalomut-map-demo.vercel.app`. Последующие docs-only merges
+  могут создавать новые deployment ID через Vercel Git integration; отдельный
+  alias mutation не выполнялся.
 - Исходный Supabase project ref `fvnulyirrqjrnjbahmsn` подтверждён Dashboard как
   `main / Production` и не изменялся.
 - Staging:
@@ -278,7 +279,9 @@ Staging показывал старую demo-школу, имя менеджер
   runtime smoke со staging persistence вернул configured organization/round и
   проигнорировал поддельный client organization header.
 - `MANAGER_ORGANIZATION_ID` настроен в точном Vercel project для Preview и
-  Production. Новый core deployment после этой env mutation не выполнялся.
+  Production. Post-merge deployed smoke подтвердил anonymous `401`,
+  authenticated `200`, configured organization/round и игнорирование
+  поддельного client organization header.
 
 ## Что завершено
 
@@ -297,9 +300,9 @@ Staging показывал старую demo-школу, имя менеджер
 - Preview deployments закрыты Vercel Authentication; unauthenticated manager
   writes не доступны.
 - Shared Basic credential и `MANAGER_ORGANIZATION_ID` теперь настроены для
-  Preview/Production и привязаны к одной staging organization. Текущие
-  deployments созданы до добавления scope; для применения нужен новый
-  отдельно одобренный deployment.
+  Preview/Production и привязаны к одной staging organization. READY deployment
+  `dpl_Hb1WZR9hHdUKsWhJdXDXDMS8ExPe` использует этот scope; read-only smoke
+  прошёл.
 - Protected Preview сохраняет отдельную staging persistence; текущий
   production alias также временно подключён к той же выделенной staging-БД для
   Render E2E и требует последующего разведения environments.
@@ -413,20 +416,17 @@ Staging показывал старую demo-школу, имя менеджер
 
 ## Рекомендуемый порядок продолжения
 
-1. После отдельного bounded approval создать новый core deployment из
-   текущего `main` и выполнить read-only manager smoke для единственной
-   staging organization; aliases и persisted data не менять.
-2. Отдельным малым PR добавить versioned `llm`/`heuristic` provenance в
+1. Отдельным малым PR добавить versioned `llm`/`heuristic` provenance в
    результат, если это требуется продукту; текущие service logs уже различают
    outcomes.
-3. После отдельного bounded approval проверить один real privacy-locked round
+2. После отдельного bounded approval проверить один real privacy-locked round
    без раскрытия detailed results.
-4. Отдельным малым PR ввести строгие Pydantic/request/output/privacy contracts
+3. Отдельным малым PR ввести строгие Pydantic/request/output/privacy contracts
    и явные fail-closed safety semantics внутри AI-сервиса.
-5. Заменить organization-scoped shared Basic gate на application-level manager
+4. Заменить organization-scoped shared Basic gate на application-level manager
    identity/roles и полноценную tenant authorization; передавать реальный
    organization context в MCP payload.
-6. Согласовать окончательное разделение staging/production aliases и env;
+5. Согласовать окончательное разделение staging/production aliases и env;
    production data/env/alias/deployment не затрагивать без нового bounded
    approval.
 
@@ -434,9 +434,8 @@ Staging показывал старую demo-школу, имя менеджер
 
 - Не изменять production data, secrets, aliases или deployments без явного
   ограниченного подтверждения.
-- Следующий core deployment после настройки `MANAGER_ORGANIZATION_ID` и
-  read-only smoke deployed runtime требуют отдельного bounded approval; aliases
-  и persisted data не менять без дополнительного разрешения.
+- Следующий core deployment, alias mutation или write-smoke требуют отдельного
+  bounded approval; persisted data не менять без дополнительного разрешения.
 - Не изменять provider key, billing, limits или provider configuration без
   отдельного bounded approval.
 - Не запускать следующий real webhook без явно выбранных environment и round;
