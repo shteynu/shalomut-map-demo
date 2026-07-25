@@ -1,0 +1,14 @@
+# Upload for `gcloud run deploy --source .` mirrors .dockerignore: only the
+# isolated AI service, the shared contract, and the Dockerfile are needed.
+*
+!Dockerfile
+!ai-analytics-service
+!contracts
+
+ai-analytics-service/.venv
+ai-analytics-service/.pytest_cache
+ai-analytics-service/.env
+ai-analytics-service/.env.*
+**/__pycache__
+**/*.pyc
+**/*.egg-info

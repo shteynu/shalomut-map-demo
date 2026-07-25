@@ -11,6 +11,7 @@ export async function POST(request: Request, { params }: RouteParams) {
   try {
     const { roundId } = await params;
     const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://localhost:8000/api/v1/webhook/events';
+    const timeoutMs = Number(process.env.AI_SERVICE_TIMEOUT_MS) || 30_000;
     const requestOrigin = new URL(request.url).origin;
     const appBaseUrl = (process.env.APP_BASE_URL || requestOrigin).replace(/\/$/, '');
 
@@ -29,6 +30,7 @@ export async function POST(request: Request, { params }: RouteParams) {
           ...createSharedSecretHeaders('AI_WEBHOOK_SECRET'),
         },
         body: JSON.stringify(webhookPayload),
+        signal: AbortSignal.timeout(timeoutMs),
       });
 
       const serviceResponse = await response
@@ -57,6 +59,17 @@ export async function POST(request: Request, { params }: RouteParams) {
         { status: 202 },
       );
     } catch (error: any) {
+      if (error?.name === 'TimeoutError') {
+        return NextResponse.json(
+          {
+            status: 'timeout',
+            roundId,
+            error: `AI analytics service did not answer within ${timeoutMs}ms`,
+          },
+          { status: 504 },
+        );
+      }
+
       return NextResponse.json(
         {
           status: 'unavailable',

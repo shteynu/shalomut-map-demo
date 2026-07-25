@@ -1,0 +1,17 @@
+# The build context is the repository root, but only the isolated AI service
+# and the shared contract belong in the image.
+*
+!Dockerfile
+!ai-analytics-service
+!contracts
+
+# Local-only artifacts inside the service directory.
+ai-analytics-service/.venv
+ai-analytics-service/.pytest_cache
+ai-analytics-service/.env
+ai-analytics-service/.env.*
+ai-analytics-service/run_tests.py
+ai-analytics-service/tests
+**/__pycache__
+**/*.pyc
+**/*.egg-info

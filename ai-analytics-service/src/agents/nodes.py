@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from typing import Dict, Any
 from src.agents.state import AnalyticsState
@@ -44,19 +45,25 @@ def privacy_gate_node(state: AnalyticsState) -> AnalyticsState:
         "safety_status": "pass_privacy"
     }
 
-def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
+async def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
     """
     Node 2: Agent Psychologist (LLM Node)
     Takes dimensionScores (focusing on 'yellow' and 'red' statuses)
     and delegates generation to the decoupled LLMProviderService.
+
+    The provider call is blocking, so dimensions run concurrently in worker
+    threads. That keeps the event loop free and turns a per-dimension serial
+    wait into a single round trip for the whole round.
     """
     round_data = state.get("round_data", {})
     dim_scores = round_data.get("dimensionScores", {})
     retry_count = state.get("retry_count", 0)
-    interpretations = {}
 
     yellow_red_dims = []
     retry_tier = "heavy" if retry_count > 0 else "fast"
+
+    dim_ids = []
+    generations = []
 
     for dim_id, score_obj in dim_scores.items():
         if isinstance(score_obj, dict):
@@ -70,14 +77,19 @@ def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
             yellow_red_dims.append(dim_id)
 
         dim_hebrew = DIMENSION_NAMES_HEBREW.get(dim_id, dim_id)
-        interp = llm_provider_service.generate_psychological_interpretation(
-            dim_id=dim_id,
-            dim_hebrew=dim_hebrew,
-            score=score,
-            status=status,
-            retry_tier=retry_tier
+        dim_ids.append(dim_id)
+        generations.append(
+            asyncio.to_thread(
+                llm_provider_service.generate_psychological_interpretation,
+                dim_id=dim_id,
+                dim_hebrew=dim_hebrew,
+                score=score,
+                status=status,
+                retry_tier=retry_tier,
+            )
         )
-        interpretations[dim_id] = interp
+
+    interpretations = dict(zip(dim_ids, await asyncio.gather(*generations)))
 
     overall_summary = (
         f"ניתוח פסיכולוגי ארגוני כולל: זוהו {len(yellow_red_dims)} מוקדי טיפול מרכזיים (בסטטוס צהוב/אדום). "

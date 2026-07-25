@@ -5,7 +5,10 @@ class Settings:
         self.app_name: str = "Shalomut AI Analytics Microservice"
         self.port: int = int(os.getenv("PORT", "8000"))
         self.host: str = os.getenv("HOST", "0.0.0.0")
-        self.env: str = os.getenv("ENV") or os.getenv("VERCEL_ENV", "development")
+        # Fail closed: development mode disables the mandatory webhook secret,
+        # so it must be opted into explicitly instead of being the fallback for
+        # any runtime that does not set ENV (containers, VMs, CI).
+        self.env: str = os.getenv("ENV") or os.getenv("VERCEL_ENV") or "production"
         
         # Data Layer & MCP Settings
         self.data_layer_mcp_url: str = os.getenv("DATA_LAYER_MCP_URL", "http://localhost:3000/api/mcp")

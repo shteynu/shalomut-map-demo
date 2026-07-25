@@ -41,11 +41,17 @@ Export the required variables in your shell. Use
 fully local run:
 
 ```bash
+export ENV=development
 export DATA_LAYER_MCP_URL=http://localhost:3000/api/mcp
 export DATA_LAYER_CALLBACK_URL=http://localhost:3000/api/rounds
 export USE_MOCK_MCP=false
 uvicorn src.main:app --reload --port 8000
 ```
+
+`ENV=development` is required for a local run without secrets. When neither
+`ENV` nor `VERCEL_ENV` is set the service assumes `production` and rejects
+webhooks that carry no `AI_WEBHOOK_SECRET`, so a new hosting platform cannot
+silently come up with an open webhook.
 
 `USE_MOCK_MCP=true` is an explicit local/test mode. With the default `false`,
 MCP failures stop processing; the service does not invent analytics.
@@ -57,8 +63,8 @@ sides:
 - `AI_WEBHOOK_SECRET`: core trigger → AI webhook;
 - `AI_CALLBACK_SECRET`: AI callback → core persistence endpoint.
 
-On Vercel, missing shared secrets fail closed. Local development may run
-without them.
+Outside development, missing shared secrets fail closed. Local development may
+run without them.
 
 ## Endpoints
 
@@ -69,15 +75,49 @@ without them.
 The core application API is documented in `../public/openapi.json` and
 `../docs/openapi.yaml`.
 
-## Vercel preview deployment
+## Deployment
 
-The package declares `src.main:app` as its Vercel FastAPI entrypoint. Create a
-separate Vercel project whose root directory is `ai-analytics-service`, then
-configure Preview variables from `.env.example`. Keep `USE_MOCK_MCP=false`.
+The service is stateless: no database, no writable volume, four light runtime
+dependencies, and one JSON catalog. Any container platform can host it.
 
-The webhook executes the pipeline and callback within the request instead of
-using an in-process background task, which is not a durable queue in a
-serverless runtime.
+The repository-root [`Dockerfile`](../Dockerfile) builds this service alone.
+Its build context is the repository root, because `src/contracts.py` loads the
+shared contract from `contracts/ai-analytics-v1.json`; the image preserves that
+relative layout.
+
+Google Cloud Run fits the workload best — its free tier covers this traffic,
+instances scale to zero, and a request may run far longer than the pipeline
+needs:
+
+```bash
+gcloud run deploy shalomut-ai-analytics --source . --region europe-west1 --min-instances 0 --allow-unauthenticated
+```
+
+Run it from the repository root. `--allow-unauthenticated` exposes the webhook
+to the internet, where `AI_WEBHOOK_SECRET` is the access control, so that
+secret must be set. Configure the remaining variables from
+[`./.env.example`](./.env.example) and keep `USE_MOCK_MCP=false`.
+
+[`../render.yaml`](../render.yaml) describes the same image for Render's free
+plan, which needs no payment method but sleeps after 15 minutes of inactivity
+and then pays a cold start of about a minute on the next webhook.
+
+Vercel needs more than this package provides: a Python entrypoint under
+`api/`, which does not exist here. The previous `[tool.vercel]` block in
+`pyproject.toml` was not a Vercel convention and was removed.
+
+The webhook executes the pipeline and the callback within the request rather
+than using an in-process background task. LLM calls for all dimensions run
+concurrently, so a round costs roughly one model round trip rather than one per
+dimension. The core app's trigger gives up after `AI_SERVICE_TIMEOUT_MS`
+(30s by default) and answers `504`; the round can then be re-triggered.
+
+## Local container check
+
+```bash
+docker build -t shalomut-ai-analytics ..
+docker run --rm -p 8000:8000 -e ENV=development shalomut-ai-analytics
+```
 
 ## Verification
 

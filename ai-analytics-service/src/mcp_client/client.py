@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 import urllib.request
@@ -7,6 +8,8 @@ from src.mcp_client.mock_server import mock_mcp_server
 from src.config import settings
 
 logger = logging.getLogger(__name__)
+
+MCP_REQUEST_TIMEOUT_SECONDS = 5.0
 
 class MCPClientManager:
     """
@@ -47,21 +50,30 @@ class MCPClientManager:
                 method="POST"
             )
 
-            with urllib.request.urlopen(req, timeout=5.0) as response:
-                if response.status != 200:
-                    raise RuntimeError(f"MCP server returned HTTP {response.status}")
+            body = await asyncio.to_thread(self._read_response, req)
 
-                data = json.loads(response.read().decode("utf-8"))
-                result_content = data.get("result", {}).get("content", [{}])[0].get("text")
-                if not result_content:
-                    error = data.get("error", {}).get("message", "missing tool result")
-                    raise RuntimeError(f"MCP server returned an invalid response: {error}")
+            data = json.loads(body)
+            result_content = data.get("result", {}).get("content", [{}])[0].get("text")
+            if not result_content:
+                error = data.get("error", {}).get("message", "missing tool result")
+                raise RuntimeError(f"MCP server returned an invalid response: {error}")
 
-                parsed_json = json.loads(result_content)
-                return RoundAnalyticsResult.from_dict(parsed_json)
+            parsed_json = json.loads(result_content)
+            return RoundAnalyticsResult.from_dict(parsed_json)
         except Exception as e:
             raise RuntimeError(
                 f"Unable to fetch round analytics from MCP server: {e}"
             ) from e
+
+    @staticmethod
+    def _read_response(req: urllib.request.Request) -> str:
+        """
+        Blocking transport, executed in a worker thread so the event loop
+        stays responsive while the Data Layer answers.
+        """
+        with urllib.request.urlopen(req, timeout=MCP_REQUEST_TIMEOUT_SECONDS) as response:
+            if response.status != 200:
+                raise RuntimeError(f"MCP server returned HTTP {response.status}")
+            return response.read().decode("utf-8")
 
 mcp_client_manager = MCPClientManager()

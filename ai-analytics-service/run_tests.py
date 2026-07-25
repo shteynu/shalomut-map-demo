@@ -19,7 +19,7 @@ from src.contracts import (
     AI_ANALYTICS_CONTRACT_VERSION,
     AI_ANALYTICS_DIMENSION_IDS,
 )
-from src.config import settings
+from src.config import Settings, settings
 from src.mcp_client.client import MCPClientManager
 
 class TestShalomutAIService(unittest.TestCase):
@@ -146,6 +146,15 @@ class TestShalomutAIService(unittest.TestCase):
 
         asyncio.run(run_async_test())
         print("✔ Test 7 Passed: Remote MCP failures fail closed.")
+
+    def test_08_environment_defaults_to_production(self):
+        with patch.dict(os.environ, {}, clear=True):
+            self.assertEqual(Settings().env, "production")
+
+        with patch.dict(os.environ, {"ENV": "development"}, clear=True):
+            self.assertEqual(Settings().env, "development")
+
+        print("✔ Test 8 Passed: Unset ENV defaults to production so the webhook secret stays mandatory.")
 
 if __name__ == "__main__":
     unittest.main()

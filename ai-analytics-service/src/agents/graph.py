@@ -23,7 +23,7 @@ class AnalyticsGraphEngine:
 
         # Step 2: Psychologist Node & Loop
         while True:
-            current_state = agent_psychologist_node(current_state)
+            current_state = await agent_psychologist_node(current_state)
             current_state = agent_rag_intervention_node(current_state)
             current_state = agent_safety_validator_node(current_state)
 

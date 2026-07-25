@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 import urllib.request
@@ -8,6 +9,8 @@ from src.agents.state import AnalyticsState
 from src.config import settings
 
 logger = logging.getLogger(__name__)
+
+CALLBACK_TIMEOUT_SECONDS = 5.0
 
 class AnalyticsRunnerService:
     async def process_round(self, round_id: str, callback_url: Optional[str] = None) -> Dict[str, Any]:
@@ -62,15 +65,22 @@ class AnalyticsRunnerService:
         )
 
         try:
-            with urllib.request.urlopen(req, timeout=5.0) as response:
-                if response.status < 200 or response.status >= 300:
-                    raise RuntimeError(
-                        f"Callback returned HTTP {response.status}"
-                    )
-                logger.info(f"[AnalyticsRunner] Callback response status: {response.status}")
+            status = await asyncio.to_thread(self._post_callback, req)
+            logger.info(f"[AnalyticsRunner] Callback response status: {status}")
         except Exception as e:
             raise RuntimeError(
                 f"Unable to deliver AI analytics callback: {e}"
             ) from e
+
+    @staticmethod
+    def _post_callback(req: urllib.request.Request) -> int:
+        """
+        Blocking delivery, executed in a worker thread so the event loop stays
+        responsive while the Data Layer persists the Stone Map.
+        """
+        with urllib.request.urlopen(req, timeout=CALLBACK_TIMEOUT_SECONDS) as response:
+            if response.status < 200 or response.status >= 300:
+                raise RuntimeError(f"Callback returned HTTP {response.status}")
+            return response.status
 
 analytics_runner_service = AnalyticsRunnerService()

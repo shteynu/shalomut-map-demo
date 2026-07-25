@@ -1,7 +1,7 @@
 from fastapi.testclient import TestClient
 from unittest.mock import AsyncMock, patch
 from src.main import app
-from src.config import settings
+from src.config import Settings, settings
 from src.services.analytics_runner import analytics_runner_service
 
 client = TestClient(app)
@@ -18,12 +18,19 @@ def test_webhook_event_accepted():
         "roundId": "test-round-123",
         "callbackUrl": "http://localhost:3000/api/rounds/test-round-123/ai-insights"
     }
-    with patch.object(
-        analytics_runner_service,
-        "process_round",
-        new=AsyncMock(return_value={"status": "success"}),
-    ):
-        response = client.post("/api/v1/webhook/events", json=payload)
+    previous_env = settings.env
+    settings.env = "development"
+
+    try:
+        with patch.object(
+            analytics_runner_service,
+            "process_round",
+            new=AsyncMock(return_value={"status": "success"}),
+        ):
+            response = client.post("/api/v1/webhook/events", json=payload)
+    finally:
+        settings.env = previous_env
+
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "completed"
@@ -40,6 +47,12 @@ def test_analyze_round_direct():
     data = response.json()
     assert data["status"] == "success"
     assert "stones" in data
+
+def test_environment_defaults_to_production_when_unset(monkeypatch):
+    monkeypatch.delenv("ENV", raising=False)
+    monkeypatch.delenv("VERCEL_ENV", raising=False)
+
+    assert Settings().env == "production"
 
 def test_webhook_requires_a_secret_outside_development():
     previous_env = settings.env

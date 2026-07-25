@@ -1,0 +1,30 @@
+# Render blueprint for the isolated AI analytics service.
+# Free plan instances sleep after 15 minutes of inactivity; the first request
+# after a sleep pays a cold start of roughly a minute.
+services:
+  - type: web
+    name: shalomut-ai-analytics
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: ENV
+        value: production
+      - key: USE_MOCK_MCP
+        value: "false"
+      # Set in the Render dashboard; never committed.
+      - key: DATA_LAYER_MCP_URL
+        sync: false
+      - key: DATA_LAYER_CALLBACK_URL
+        sync: false
+      - key: MCP_SHARED_SECRET
+        sync: false
+      - key: AI_WEBHOOK_SECRET
+        sync: false
+      - key: AI_CALLBACK_SECRET
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
