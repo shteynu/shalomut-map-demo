@@ -10,9 +10,9 @@ Shalomut Map к `shalomut-tracker`, где сохранённые данные �
 
 ## Текущий snapshot
 
-- Активная ветка: `main`; подтверждённый application baseline перед
-  session-close документацией — `ace5ba8`. Текущий session-close diff изменяет
-  только operational Markdown, не runtime-код.
+- Активная ветка: `main`; baseline текущей локальной сессии — `54c2eaa`
+  (`HEAD`, `main` и `origin/main` совпадали, worktree был чистым до начала
+  изменений).
 - Functional AI baseline `a9b6c34` ограничивает latency Gemini-запросов общим
   retry budget. Поверх него `7a451fd` добавляет organization-scoped manager
   boundary, а `508410a` сохраняет понятный пользователю fail-closed UI; оба
@@ -222,6 +222,31 @@ Staging показывал старую demo-школу, имя менеджер
 - Deployed Vercel SSO/Basic-auth browser chain не перепроверялся. Real webhook,
   callback write, staging mutation, deploy и alias change не выполнялись.
   Tracked worktree после проверки был чистым.
+
+### Local setup regression fix и dashboard semantic RED (2026-07-25)
+
+- Prisma read mapper нормализует partial persisted `backgroundContext` в полный
+  безопасный domain shape; отсутствующий context остаётся `undefined`, а полный
+  современный context сохраняет все известные поля. `SetupForm` дополнительно
+  использует defensive read для `classesPerGrade`.
+- Regression test сначала упал с actual `{note: ...}`, затем targeted
+  repository/manager/setup/API suite прошёл `26/26`. До добавления следующего
+  намеренного semantic RED slice полный TypeScript suite прошёл `91/91`, lint и
+  production build прошли.
+- Local Playwright с read-only staging persistence подтвердил HTTP `200` для
+  `/setup/`, `/`, `/round/`, `/survey/` и `/dashboard/`. Setup показал
+  безопасные defaults; console errors и data writes отсутствовали.
+- Следующая versioned semantic boundary записана в
+  `docs/dashboard-semantic-contract.md`. Новые executable RED tests дают
+  TypeScript `91 passed / 10 failed` и Python `41 passed / 10 failed`; все
+  failures относятся к отсутствующим question aggregates, strict output
+  quality, grounded fallback, canonical metrics и single-summary behavior.
+- Product semantics green зафиксирована как «חוזקה לשימור» с
+  `פעולות לשימור`. Catalog slice удалил cross-status fallback, локализовал
+  исходные `11` entries и добавил `8` green-only entries. Catalog pytest прошёл
+  `6/6`, dependency-light suite — `13/13`.
+- Staging data, migrations, Core/MCP runtime contract, real webhook, callback
+  persistence, deployments и aliases не изменялись.
 
 ### Контейнеризация и protected-origin hardening AI-сервиса (сессия 2026-07-25, local)
 
@@ -456,27 +481,18 @@ Staging показывал старую demo-школу, имя менеджер
 
 ## Что не завершено
 
-### 1. Manager setup partial-JSON crash
-
-- Текущий staging round содержит legacy partial `backgroundContext`, который
-  проходит Prisma object check, но не соответствует полному TypeScript type.
-- `/setup/` падает до возможности редактирования. Нужны boundary normalization,
-  defensive UI read и regression test на partial JSON; migration или staging
-  data cleanup для исправления не требуются.
-
-### 2. Dashboard semantic quality
+### 1. Dashboard semantic quality
 
 - Structural contract и успешный provider transport не гарантируют
   содержательный result. Текущий payload содержит оборванные interpretations,
-  English recommendations, generic metrics и remedial actions для green
-  dimensions.
-- Следующий contract slice должен передавать только privacy-safe aggregates
-  канонических вопросов после threshold gate, валидировать Hebrew/completeness/
-  status consistency и использовать deterministic grounded fallback.
-- Рекомендуемая, но ещё не подтверждённая product semantics для green:
-  показывать «חוזקה לשימור» вместо improvement goals.
+  generic metrics и повтор общего summary. Catalog и green semantics уже
+  исправлены локально, но deployed/runtime payload остаётся прежним.
+- Semantic contract и failing tests готовы; следующая реализация должна
+  versioned-передавать только privacy-safe aggregates канонических вопросов
+  после threshold gate, валидировать Hebrew/completeness/status consistency и
+  использовать deterministic grounded fallback.
 
-### 3. Application-level manager authentication
+### 2. Application-level manager authentication
 
 - Shared Basic gate теперь связывает один deployment credential с одной
   настроенной организацией, но по-прежнему не идентифицирует конкретного
@@ -485,7 +501,7 @@ Staging показывал старую demo-школу, имя менеджер
 - Для публичного rollout всё ещё нужны application-level authentication,
   roles/organization authorization, audit boundary и isolation tests.
 
-### 4. AI provenance и privacy-locked runtime
+### 3. AI provenance и privacy-locked runtime
 
 - Real Gemini generation, transport и persistence доказаны для одного
   explicitly approved unlocked round, но `llm`/`heuristic` provenance пока
@@ -495,7 +511,7 @@ Staging показывал старую demo-школу, имя менеджер
 - Любое изменение key, billing, limits или provider configuration и следующий
   webhook по-прежнему требуют отдельного bounded approval.
 
-### 5. Staging/production boundary
+### 4. Staging/production boundary
 
 - Legacy staging alias выровнен с Git tree текущего `main` и указывает на
   protected Preview, а production alias по-прежнему временно используется как
@@ -505,21 +521,16 @@ Staging показывал старую demo-школу, имя менеджер
 
 ## Рекомендуемый порядок продолжения
 
-1. Первым независимым regression slice нормализовать partial
-   `RoundBackgroundContext`, защитить `SetupForm`, добавить legacy JSON test и
-   повторить локальный `/setup/` browser-smoke.
-2. Зафиксировать semantic contract dashboard: Hebrew-only output, grounded
-   claims, реальные question-level metrics и status-aware green/yellow/red
-   actions. Подтвердить product label/behavior для green strengths.
-3. Расширить Core Data → MCP boundary privacy-safe агрегатами 24 канонических
-   вопросов и синхронно обновить versioned TypeScript/Python contracts,
-   OpenAPI и tests.
-4. Усилить provider/output quality gate: проверять `finish_reason`, полноту,
+1. Выбрать и опубликовать следующую версию shared AI analytics contract, затем
+   сделать GREEN готовые Core Data/MCP RED tests: 24 privacy-safe canonical
+   question aggregates и empty detailed maps для locked round.
+2. Синхронно обновить versioned TypeScript/Python contracts и OpenAPI, сохранив
+   fail-closed privacy behavior и проверяемую совместимость deployed `1.0`.
+3. Усилить provider/output quality gate: проверять `finish_reason`, полноту,
    Hebrew и status consistency; после bounded retry использовать
    deterministic question-grounded fallback. Добавить persisted provenance.
-5. Локализовать intervention catalog, удалить cross-status fallback, обновить
-   dashboard detail/metrics/recommendations и перенести общий summary в одно
-   overview-место.
+4. Подключить готовый Hebrew catalog к status-aware dashboard UX, заменить
+   generic metrics и перенести общий summary в одно overview-место.
 6. Выполнить full local TypeScript/Python/build/browser verification. Любой
    новый real staging webhook/callback write — только после отдельного
    bounded approval для точных environment и round.

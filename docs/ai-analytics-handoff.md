@@ -6,6 +6,10 @@
 > failures use bounded retry/backoff, and a per-dimension time budget leaves
 > room for MCP and callback. One explicitly approved Gemini staging E2E
 > completed with four `outcome=llm`, zero retry and zero heuristic fallback.
+> A later local session from `main@54c2eaa` defined the next versioned semantic
+> contract, added executable RED quality tests, and completed the independent
+> Hebrew intervention-catalog slice. Core/MCP/provider/output runtime remains
+> on contract `1.0` until the RED tests are implemented.
 > Broader operational state is tracked in
 > `docs/shalomut-tracker-handoff.md`.
 
@@ -40,6 +44,10 @@
 - Python loads the same manifest through `ai-analytics-service/src/contracts.py`.
 - Privacy lock prevents stones from being generated or displayed below the
   configured response threshold.
+- `docs/dashboard-semantic-contract.md` now specifies the next breaking,
+  explicitly versioned boundary: 24 privacy-safe canonical question aggregates,
+  strict Hebrew/completeness/status quality, real question metrics and one
+  round-level summary. No version number or runtime rollout has been published.
 
 ### Python service
 
@@ -49,7 +57,10 @@
   errors unless `USE_MOCK_MCP=true` is explicitly enabled.
 - The current runtime is an async graph-style workflow with a structured local
   intervention catalog. It does not currently execute LangGraph or ChromaDB.
-- Recommendations are dimension-scoped and use the OECD/ISO 45003 catalog.
+- Recommendations are dimension- and status-scoped. The local OECD/ISO 45003
+  catalog is Hebrew, covers all eight dimensions across green/yellow/red, and
+  has eight green-only «חוזקה לשימור» supporting-action entries. Exact lookup
+  no longer backfills from another status.
 - Runtime dependencies were reduced to the packages actually used by the
   service.
 - Update, 2026-07-25 (commit `c0166e0`): the service ships as a container image
@@ -104,8 +115,9 @@
   same score/status/risk template.
 - The current prompt receives only dimension score/status, the provider accepts
   any HTTP `200` text without checking `finish_reason` or completeness, the
-  intervention fallback ignores status when an exact match is missing, and the
-  UI appends the same overall summary to every dimension.
+  formatter emits generic metrics, and the UI appends the same overall summary
+  to every dimension. The catalog fallback issue is fixed locally; deployed
+  runtime and remaining semantic behaviors are not yet changed.
 
 ## Verification evidence
 
@@ -132,21 +144,29 @@
   deployed Vercel SSO/Basic-auth browser chain was not re-tested.
 - Targeted manager-context/setup/view-model tests passed `9/9`; they do not
   cover partial persisted JSON rendering or AI content quality.
+- Current semantic RED evidence: TypeScript `91 passed / 10 failed`; Python
+  `41 passed / 10 failed`. The failures reproduce absent question aggregates,
+  locked placeholder detail, missing `finish_reason`/Hebrew/completeness checks,
+  ungrounded fallback, status contradiction, generic metrics, weak callback
+  validation and repeated overall summary. TypeScript compile, lint and build
+  pass.
+- Catalog GREEN evidence: targeted pytest `6/6` and
+  `python3 ai-analytics-service/run_tests.py` `13/13` pass. JSON validation
+  confirms 19 unique entries, eight green-only entries and exact 8×3 status
+  coverage.
 - No real secrets were committed.
 
 ## What remains
 
-1. Define the dashboard semantic contract: Hebrew-only, grounded
-   interpretations, question-level metrics, and status-aware actions. The
-   recommended pending product decision is «חוזקה לשימור» for green instead
-   of improvement goals.
+1. Select and publish the next shared contract version; the semantic contract
+   and RED tests are ready, but deployed `1.0` must not be silently tightened.
 2. Add privacy-safe aggregates for the 24 canonical questions to the Core
    Data → MCP request boundary; locked rounds must expose none.
 3. Add strict versioned request/output/privacy models plus quality validation
    for `finish_reason`, completeness, Hebrew, status consistency and
    deterministic question-grounded fallback.
-4. Localize the intervention catalog, remove cross-status fallback, and stop
-   repeating the overall summary on every dimension.
+4. Connect the completed Hebrew/status-aware intervention catalog to the next
+   output/UI contract and stop repeating the overall summary on every dimension.
 5. Version and persist `llm` versus `heuristic` provenance; it currently exists
    only in service logs.
 6. Verify a privacy-locked real round separately before broader rollout, after
@@ -171,7 +191,8 @@
 
 ## First next action
 
-Start locally with the independent `/setup/` partial-JSON regression fix. Then
-write the dashboard semantic contract and failing quality tests before changing
-the MCP or AI implementation. Do not invoke another real webhook: it still
-needs an explicitly selected environment and round plus bounded approval.
+Make the prepared Core Data/MCP semantic RED tests green behind an explicitly
+selected next contract version, then update the Python consumer and output
+validation in the same compatibility plan. Do not invoke another real webhook:
+it still needs an explicitly selected environment and round plus bounded
+approval.

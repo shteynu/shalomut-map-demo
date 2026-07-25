@@ -31,19 +31,12 @@ class LocalInterventionVectorStore:
     ) -> List[StoneIntervention]:
         """
         Retrieves top-N relevant organizational interventions for a specific dimension & status.
-        Recommendations never cross dimension boundaries.
+        Recommendations never cross dimension or status boundaries.
         """
         matched = [
             item for item in self.raw_data
             if item.get("dimension_id") == dimension_id and status in item.get("target_status", [])
         ]
-        
-        # Fallback to any intervention for this dimension if exact status match yields < limit
-        if len(matched) < limit:
-            matched.extend([
-                item for item in self.raw_data
-                if item.get("dimension_id") == dimension_id and item not in matched
-            ])
 
         selected = matched[:limit]
         

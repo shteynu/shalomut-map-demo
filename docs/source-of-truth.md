@@ -8,6 +8,9 @@ This project uses a small canonical source layer for the survey instrument and k
 - The Adobe XD file is a visual reference for the organic stone map and dashboard flow. It has 4 web artboards and was last modified on 2025-06-17.
 - If sources disagree, keep the 8-dimension questionnaire model unless the product owner explicitly decides to version a different instrument.
 - Runtime code should import survey methodology from `src/lib/shalomut-source.ts`; demo scores, mock school data, summaries, metrics, and recommendations may remain in `src/lib/demo-data.ts`.
+- A green dimension is a strength to preserve (`חוזקה לשימור`). Its action
+  experience offers supporting or maintenance actions (`פעולות לשימור`), not
+  improvement goals or remedial recommendations.
 
 ## Source Roles
 

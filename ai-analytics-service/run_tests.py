@@ -74,6 +74,7 @@ class TestShalomutAIService(unittest.TestCase):
         interventions = store.get_interventions_for_dimension("balance", "red", limit=3)
         self.assertGreater(len(interventions), 0)
         self.assertTrue(any("ISO 45003" in i.source or "OECD" in i.source for i in interventions))
+        self.assertRegex(interventions[0].title, r"[\u0590-\u05FF]")
         print(f"✔ Test 3 Passed: Intervention catalog retrieved {len(interventions)} OECD/ISO45003 interventions.")
 
     def test_04_mock_mcp_server(self):
@@ -115,19 +116,39 @@ class TestShalomutAIService(unittest.TestCase):
 
         asyncio.run(run_async_test())
 
-    def test_06_rag_covers_every_canonical_dimension(self):
+    def test_06_rag_covers_every_canonical_dimension_and_status(self):
         store = LocalInterventionVectorStore(kb_path="data/interventions_kb.json")
 
         for dimension_id in AI_ANALYTICS_DIMENSION_IDS:
-            interventions = store.get_interventions_for_dimension(
-                dimension_id,
-                "red",
-                limit=1,
-            )
-            self.assertGreater(len(interventions), 0)
-            self.assertEqual(interventions[0].dimensionId, dimension_id)
+            for status in ("green", "yellow", "red"):
+                expected_ids = [
+                    item["id"]
+                    for item in store.raw_data
+                    if item.get("dimension_id") == dimension_id
+                    and status in item.get("target_status", [])
+                ]
+                self.assertGreater(
+                    len(expected_ids),
+                    0,
+                    f"Missing {status} intervention for {dimension_id}",
+                )
 
-        print("✔ Test 6 Passed: Intervention catalog covers every canonical dimension.")
+                interventions = store.get_interventions_for_dimension(
+                    dimension_id,
+                    status,
+                    limit=len(store.raw_data),
+                )
+                self.assertEqual(
+                    [item.id for item in interventions],
+                    expected_ids,
+                    f"Lookup crossed status boundary for {dimension_id}/{status}",
+                )
+
+        self.assertEqual(
+            store.get_interventions_for_dimension("balance", "unknown"),
+            [],
+        )
+        print("✔ Test 6 Passed: Intervention catalog has exact 8×3 status coverage without cross-status fallback.")
 
     def test_07_remote_mcp_failure_does_not_fallback_to_mock_data(self):
         async def run_async_test():

@@ -12,6 +12,12 @@ School principals, wellbeing coordinators, and district supervisors in Hebrew-sp
 
 "Shalomut Map" (מפת שלומות) visualizes multi-dimensional school-staff wellbeing as an interactive map of organic "stones" — one per wellbeing dimension (self-expression, professional competence, social resources, balance, management support, certainty, organizational climate, meaning). Each stone carries a status color (green ≥75, yellow 50–74, red <50). Success means a principal can read the school's wellbeing state at a glance, trust that individual anonymity is protected (privacy threshold: results lock below 10 respondents), and move to concrete goals/recommendations.
 
+Green dimensions use a distinct action semantics: they are presented as
+`חוזקה לשימור` (a strength to preserve) and lead to supporting or maintenance
+actions (`פעולות לשימור`), not improvement goals. Yellow and red dimensions may
+continue to lead to attention or improvement actions appropriate to their
+status.
+
 ## Brand Personality
 
 Warm, humane, trustworthy. The stone metaphor deliberately avoids clinical dashboard coldness: wellbeing is not a rigid score but stones that shift and fit together. Tone is supportive and goal-oriented, never alarmist — even "red" states are framed as areas needing care, not failures.

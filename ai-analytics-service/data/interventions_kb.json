@@ -1,134 +1,230 @@
 [
   {
+    "id": "oecd-se-01",
+    "dimension_id": "self-expression",
+    "source": "OECD TALIS — הנחיות להשתתפות מורים ולהשפעה מקצועית",
+    "title": "מרחב בטוח לקול המורים ולהשתתפות",
+    "summary": "לקיים ערוצים קבועים שבהם מורות ומורים יכולים להעלות רעיונות, חששות ועמדות שונות ללא חשש מפגיעה.",
+    "actionable_steps": [
+      "להקצות בכל ישיבת צוות זמן קבוע לנושאים שמעלים אנשי ההוראה.",
+      "להפעיל ערוץ משוב חסוי ולפרסם מענה ניהולי לנושאים שחוזרים בו."
+    ],
+    "target_status": ["yellow", "red"]
+  },
+  {
+    "id": "oecd-se-green-01",
+    "dimension_id": "self-expression",
+    "source": "OECD TALIS — הנחיות להשתתפות מורים ולהשפעה מקצועית",
+    "title": "חוזקה לשימור: קול מורים פעיל ובטוח",
+    "summary": "פעולות לשימור הערוצים הקיימים לביטוי מקצועי יחזקו את תחושת ההשפעה לאורך זמן.",
+    "actionable_steps": [
+      "לשמר זמן קבוע להצעות של אנשי ההוראה בישיבות הצוות.",
+      "לשתף אחת לרבעון דוגמאות להחלטות שהושפעו מקול המורים."
+    ],
+    "target_status": ["green"]
+  },
+  {
+    "id": "oecd-pg-01",
+    "dimension_id": "professional-competence",
+    "source": "OECD — מסגרת ללמידה מקצועית של מורים",
+    "title": "קהילות למידה מקצועיות בהובלת מורים",
+    "summary": "לאפשר לצוותי ההוראה להוביל למידה מקצועית, חקר פעולה ותצפיות עמיתים בהתאם לצרכים שהם מזהים.",
+    "actionable_steps": [
+      "להקצות מענקים קטנים לחקר כיתתי בהובלת מורות ומורים.",
+      "לקיים ביקורי עמיתים מרצון עם כלי תצפית מוסכם ומשוב תומך."
+    ],
+    "target_status": ["yellow", "red"]
+  },
+  {
+    "id": "oecd-pg-green-01",
+    "dimension_id": "professional-competence",
+    "source": "OECD — מסגרת ללמידה מקצועית של מורים",
+    "title": "חוזקה לשימור: למידה מקצועית בהובלת הצוות",
+    "summary": "פעולות לשימור הלמידה ההדדית יעגנו את תחושת המסוגלות המקצועית שכבר קיימת בצוות.",
+    "actionable_steps": [
+      "לשמר מפגש עמיתים קבוע לשיתוף בפרקטיקות הוראה מועילות.",
+      "לתעד ולהפיץ בתוך הצוות ידע מקצועי שנוצר בבית הספר."
+    ],
+    "target_status": ["green"]
+  },
+  {
+    "id": "iso45003-pr-01",
+    "dimension_id": "social-resource",
+    "source": "ISO 45003:2021, סעיף 6.1.2.4 — יחסים בין־אישיים",
+    "title": "מעגלי עמיתים לתכנון משותף ולחניכה",
+    "summary": "ליצור מסגרות קבועות לתכנון משותף וללמידת עמיתים שמחזקות סולידריות מקצועית ומפחיתות בידוד.",
+    "actionable_steps": [
+      "להקים שלישיות עמיתים מתחומי דעת שונים לתכנון משותף.",
+      "להקצות שעה חודשית לשיתוף בלתי פורמלי בידע ובניסיון."
+    ],
+    "target_status": ["yellow", "red"]
+  },
+  {
+    "id": "iso45003-pr-green-01",
+    "dimension_id": "social-resource",
+    "source": "ISO 45003:2021, סעיף 6.1.2.4 — יחסים בין־אישיים",
+    "title": "חוזקה לשימור: רשת תמיכה הדדית בצוות",
+    "summary": "פעולות לשימור הקשרים הטובים בצוות יסייעו להמשיך להישען על אמון, שייכות ועזרה הדדית.",
+    "actionable_steps": [
+      "לשמר זמן קבוע למפגשי עמיתים ולסיוע הדדי.",
+      "לציין בישיבות צוות דוגמאות לשיתופי פעולה שתמכו בעבודה."
+    ],
+    "target_status": ["green"]
+  },
+  {
     "id": "iso45003-wb-01",
     "dimension_id": "balance",
-    "source": "ISO 45003:2021 Clause 6.1.2.1 (Workload and work pace)",
-    "title": "Workload Assessment & Meeting-Free Time Blocks",
-    "summary": "Establish weekly focus windows without non-urgent admin meetings. Re-evaluate duty distribution using transparent capacity mapping.",
+    "source": "ISO 45003:2021, סעיף 6.1.2.1 — עומס וקצב עבודה",
+    "title": "מיפוי עומסים וזמנים מוגנים ללא ישיבות",
+    "summary": "לקבוע חלונות שבועיים לעבודה ממוקדת ללא ישיבות מנהליות שאינן דחופות ולבחון מחדש את חלוקת המשימות לפי עומס בפועל.",
     "actionable_steps": [
-      "Define 2 dedicated blocks weekly reserved exclusively for lesson prep without staff meetings.",
-      "Conduct a monthly review of non-teaching administrative burdens."
+      "להגדיר שני חלונות שבועיים המיועדים להכנת שיעורים בלבד.",
+      "לבחון אחת לחודש את חלוקת המטלות המנהליות שאינן הוראה."
     ],
     "target_status": ["yellow", "red"]
   },
   {
     "id": "oecd-wb-02",
     "dimension_id": "balance",
-    "source": "OECD Wellbeing Framework - Work-Life Balance Guidelines",
-    "title": "Digital Communication Boundaries Protocol",
-    "summary": "Implement school-wide 'right to disconnect' guidelines restricting work emails and chat messaging past 18:00 on school evenings.",
+    "source": "OECD — הנחיות לאיזון בין עבודה לחיים במסגרת השלומות",
+    "title": "כללים לתקשורת דיגיטלית מחוץ לשעות העבודה",
+    "summary": "לקבוע כללים בית־ספריים שמצמצמים הודעות ודואר עבודה לאחר שעות הפעילות ומבהירים מהו ערוץ חירום.",
     "actionable_steps": [
-      "Set automated response templates for non-urgent parent communications after school hours.",
-      "Agree on emergency-only contact channels for leadership."
+      "להגדיר מענה אוטומטי לפניות לא דחופות לאחר שעות הלימודים.",
+      "להסכים על ערוץ קשר נפרד למצבי חירום בלבד."
     ],
     "target_status": ["yellow", "red"]
   },
   {
+    "id": "iso45003-wb-green-01",
+    "dimension_id": "balance",
+    "source": "ISO 45003:2021, סעיף 6.1.2.1 — עומס וקצב עבודה",
+    "title": "חוזקה לשימור: גבולות עבודה מאוזנים",
+    "summary": "פעולות לשימור הגבולות הבריאים בין עבודה לזמן אישי יגנו על האיזון שכבר מתקיים בצוות.",
+    "actionable_steps": [
+      "לשמר את הזמנים המוגנים שכבר קיימים בלוח השבועי.",
+      "לבדוק אחת לרבעון שהעומס אינו שוחק את הגבולות המוסכמים."
+    ],
+    "target_status": ["green"]
+  },
+  {
     "id": "iso45003-ms-01",
     "dimension_id": "management-support",
-    "source": "ISO 45003:2021 Clause 6.1.2.3 (Leadership and support)",
-    "title": "Structured Leadership 1-on-1 Check-ins",
-    "summary": "Provide regular non-evaluative support sessions focusing on teacher psychological safety and resource obstacles rather than performance audits.",
+    "source": "ISO 45003:2021, סעיף 6.1.2.3 — מנהיגות ותמיכה",
+    "title": "שיחות תמיכה אישיות מובנות עם ההנהלה",
+    "summary": "לקיים שיחות תמיכה קבועות שאינן הערכה, ומתמקדות בביטחון פסיכולוגי ובחסמים ארגוניים שמקשים על העבודה.",
     "actionable_steps": [
-      "Schedule bi-weekly 20-minute empathetic check-in sessions with department heads.",
-      "Track operational friction points raised by teachers in an open feedback log."
+      "לקבוע שיחת תמיכה בת עשרים דקות אחת לשבועיים עם רכזת או רכז התחום.",
+      "לתעד חסמים תפעוליים שעולים בשיחות ולעקוב בגלוי אחר הטיפול בהם."
     ],
     "target_status": ["yellow", "red"]
   },
   {
     "id": "oecd-ms-02",
     "dimension_id": "management-support",
-    "source": "OECD Education 2030 Leadership Standards",
-    "title": "Transparent Resource Allocation & Decision Clarity",
-    "summary": "Publish criteria for classroom budget allocations and invite teacher representation on resource planning committees.",
+    "source": "OECD — עקרונות למנהיגות חינוכית ולשקיפות בקבלת החלטות",
+    "title": "שקיפות בהקצאת משאבים ובהחלטות ניהוליות",
+    "summary": "לפרסם את אמות המידה להקצאת משאבים ולשלב נציגות של צוות ההוראה בתכנון ובהחלטות שמשפיעות על עבודתו.",
     "actionable_steps": [
-      "Form a joint teacher-admin resource advisory group.",
-      "Provide written rationales for key administrative decisions affecting classroom teaching."
+      "להקים צוות משותף להנהלה ולמורים לייעוץ בנושא משאבים.",
+      "לצרף הסבר כתוב להחלטות מרכזיות שמשפיעות על ההוראה."
     ],
     "target_status": ["yellow", "red"]
   },
   {
+    "id": "iso45003-ms-green-01",
+    "dimension_id": "management-support",
+    "source": "ISO 45003:2021, סעיף 6.1.2.3 — מנהיגות ותמיכה",
+    "title": "חוזקה לשימור: תמיכה ניהולית נגישה ועקבית",
+    "summary": "פעולות לשימור הנגישות והעקביות של ההנהלה יחזקו את תחושת העורף המקצועי הקיימת.",
+    "actionable_steps": [
+      "לשמר מועדים קבועים שבהם אפשר לפנות להנהלה לקבלת תמיכה.",
+      "להמשיך לעדכן את הצוות כיצד טופלו בקשות וחסמים שעלו."
+    ],
+    "target_status": ["green"]
+  },
+  {
+    "id": "iso45003-certainty-01",
+    "dimension_id": "certainty",
+    "source": "ISO 45003:2021 — הנחיות לבהירות תפקידים ולניהול שינוי ארגוני",
+    "title": "בהירות תפקידים ותקשורת מוקדמת על שינויים",
+    "summary": "לפרסם ציפיות תפקיד יציבות ולהודיע על שינויים ארגוניים מוקדם מספיק כדי לאפשר לצוות להיערך ולשאול שאלות.",
+    "actionable_steps": [
+      "לשמור מקור כתוב אחד ומעודכן לאחריות ולבעלי התפקידים.",
+      "להודיע על שינוי מהותי בלוח או במדיניות יחד עם הסבר ותקופת היערכות."
+    ],
+    "target_status": ["yellow", "red"]
+  },
+  {
+    "id": "iso45003-certainty-green-01",
+    "dimension_id": "certainty",
+    "source": "ISO 45003:2021 — הנחיות לבהירות תפקידים ולניהול שינוי ארגוני",
+    "title": "חוזקה לשימור: בהירות ויציבות ארגונית",
+    "summary": "פעולות לשימור הבהירות הקיימת יעזרו לצוות להמשיך לפעול בביטחון גם בתקופות של שינוי.",
+    "actionable_steps": [
+      "לרענן אחת לרבעון את מקור המידע המשותף על תפקידים ואחריות.",
+      "לשמר הודעה מוקדמת והסבר ברור לפני כל שינוי משמעותי."
+    ],
+    "target_status": ["green"]
+  },
+  {
     "id": "iso45003-ps-01",
     "dimension_id": "organizational-climate",
-    "source": "ISO 45003:2021 Clause 6.1.2.2 (Organizational culture & psychological safety)",
-    "title": "Blameless Retrospectives & Incident Reviews",
-    "summary": "Adopt psychological safety frameworks for analyzing pedagogical challenges or disciplinary issues without individual blame.",
+    "source": "ISO 45003:2021, סעיף 6.1.2.2 — תרבות ארגונית וביטחון פסיכולוגי",
+    "title": "למידה מאירועים ללא האשמה",
+    "summary": "לנתח אתגרים פדגוגיים ואירועים משמעתיים בדרך שמקדמת ביטחון פסיכולוגי ולמידה משותפת במקום הטלת אשמה אישית.",
     "actionable_steps": [
-      "Replace punitive error reviews with structured 'lessons learned' peer discussions.",
-      "Encourage leadership to share vulnerability and past mistakes in staff meetings."
+      "להחליף בירור ענישתי בשיח עמיתים מובנה על לקחים וצעדים להמשך.",
+      "לעודד את ההנהלה לשתף בטעויות ובלמידה מהן בישיבות הצוות."
     ],
     "target_status": ["yellow", "red"]
   },
   {
     "id": "oecd-ps-02",
     "dimension_id": "organizational-climate",
-    "source": "OECD TALIS Recommendations on Trust in Schools",
-    "title": "Anonymous Feedback Channels & Action Commitments",
-    "summary": "Establish safe continuous feedback loops where staff can express concerns without fear of reprisal, paired with visible management action.",
+    "source": "OECD TALIS — המלצות לבניית אמון בבתי ספר",
+    "title": "ערוצי משוב חסויים עם התחייבות למענה",
+    "summary": "ליצור ערוצי משוב רציפים ובטוחים שמאפשרים לצוות להביע חששות, ולחבר אותם למענה ניהולי גלוי ועקבי.",
     "actionable_steps": [
-      "Maintain a monthly digital suggestion box reviewed publicly in staff meetings.",
-      "Publish leadership action plans responding to top staff concerns within 14 days."
+      "להפעיל תיבת הצעות חסויה ולדון בנושאים המרכזיים אחת לחודש.",
+      "לפרסם בתוך שבועיים את הצעדים שנבחרו בתגובה לנושאים שחזרו."
     ],
     "target_status": ["yellow", "red"]
   },
   {
-    "id": "iso45003-pr-01",
-    "dimension_id": "social-resource",
-    "source": "ISO 45003:2021 Clause 6.1.2.4 (Interpersonal relationships)",
-    "title": "Structured Peer Co-Working & Mentorship Circles",
-    "summary": "Facilitate collaborative lesson planning triads to foster professional solidarity and reduce teacher isolation.",
+    "id": "iso45003-ps-green-01",
+    "dimension_id": "organizational-climate",
+    "source": "ISO 45003:2021, סעיף 6.1.2.2 — תרבות ארגונית וביטחון פסיכולוגי",
+    "title": "חוזקה לשימור: אקלים בטוח ומכבד",
+    "summary": "פעולות לשימור הביטחון והכבוד ההדדי יבססו את האקלים הארגוני החיובי שכבר מורגש בצוות.",
     "actionable_steps": [
-      "Form cross-subject peer trios for shared curriculum design.",
-      "Allocate 1 hour monthly for informal peer wisdom sharing."
+      "לשמר שיח למידה ללא האשמה לאחר אתגרים ואירועים מורכבים.",
+      "להכיר באופן קבוע בהתנהגויות שמחזקות אמון וכבוד הדדי."
     ],
-    "target_status": ["yellow", "red"]
-  },
-  {
-    "id": "oecd-pg-01",
-    "dimension_id": "professional-competence",
-    "source": "OECD Teachers' Professional Learning Framework",
-    "title": "Teacher-Led Professional Learning Communities (PLCs)",
-    "summary": "Empower teachers to direct their own professional development budgets towards action research and peer observation.",
-    "actionable_steps": [
-      "Allocate dedicated micro-grants for teacher-led classroom research.",
-      "Facilitate voluntary peer classroom visits with structured observation rubrics."
-    ],
-    "target_status": ["yellow", "red"]
-  },
-  {
-    "id": "iso45003-certainty-01",
-    "dimension_id": "certainty",
-    "source": "ISO 45003:2021 guidance on role clarity and organizational change",
-    "title": "Role Clarity & Change Communication Protocol",
-    "summary": "Publish stable role expectations and communicate upcoming operational changes early enough for staff to plan and ask questions.",
-    "actionable_steps": [
-      "Maintain a single written source for current responsibilities and decision owners.",
-      "Announce material schedule or policy changes with a clear rationale and transition window."
-    ],
-    "target_status": ["yellow", "red"]
-  },
-  {
-    "id": "oecd-se-01",
-    "dimension_id": "self-expression",
-    "source": "OECD TALIS guidance on teacher agency and participation",
-    "title": "Teacher Voice & Safe Feedback Forum",
-    "summary": "Create recurring channels where teachers can raise ideas, concerns, and dissenting perspectives without fear of retaliation.",
-    "actionable_steps": [
-      "Reserve a structured teacher-led agenda slot in monthly staff meetings.",
-      "Offer an anonymous feedback channel and publish leadership responses to recurring themes."
-    ],
-    "target_status": ["yellow", "red"]
+    "target_status": ["green"]
   },
   {
     "id": "oecd-meaning-01",
     "dimension_id": "meaning",
-    "source": "OECD teacher wellbeing guidance on purpose and professional agency",
-    "title": "Purpose Alignment & Impact Reflection",
-    "summary": "Reconnect daily responsibilities with visible student and community outcomes while reducing tasks that staff experience as disconnected from educational purpose.",
+    "source": "OECD — הנחיות לשלומות מורים, תחושת תכלית והשפעה מקצועית",
+    "title": "חיבור בין המשימות היומיומיות להשפעה החינוכית",
+    "summary": "לחבר את האחריות היומיומית לתוצאות נראות אצל תלמידים ובקהילה, ולצמצם משימות שנתפסות כמנותקות מן התכלית החינוכית.",
     "actionable_steps": [
-      "Open quarterly planning with short examples of meaningful student or community impact.",
-      "Review recurring administrative tasks and remove or simplify work with no clear educational value."
+      "לפתוח תכנון רבעוני בדוגמאות קצרות להשפעה משמעותית על תלמידים או על הקהילה.",
+      "לבחון משימות מנהליות חוזרות ולפשט עבודה שאין לה ערך חינוכי ברור."
     ],
     "target_status": ["yellow", "red"]
+  },
+  {
+    "id": "oecd-meaning-green-01",
+    "dimension_id": "meaning",
+    "source": "OECD — הנחיות לשלומות מורים, תחושת תכלית והשפעה מקצועית",
+    "title": "חוזקה לשימור: חיבור ברור למשמעות חינוכית",
+    "summary": "פעולות לשימור החיבור בין העבודה להשפעתה יעזרו לצוות להמשיך לחוות תכלית ומשמעות.",
+    "actionable_steps": [
+      "לשתף בקביעות סיפורים קצרים שממחישים השפעה על תלמידים ועל הקהילה.",
+      "לשמר בתכנון הצוותי שאלה קבועה על הקשר בין כל משימה לערך החינוכי."
+    ],
+    "target_status": ["green"]
   }
 ]

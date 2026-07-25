@@ -4,6 +4,7 @@
 - **Текущий этап**: organization-scoped manager boundary находится в
   `origin/main`: `7a451fd` добавляет server-owned organization scope и
   round ownership, `508410a` сохраняет понятный пользователю fail-closed UI.
+  Текущая локальная сессия начата от чистого `main@54c2eaa`.
 - **Состояние БД**: отдельный Supabase staging project
   `shalomut-map-staging` (`tpfzhyalaftotljmlont`, `ap-northeast-2`) содержит
   ровно одну organization `34d05e66-fa4d-4a07-a2af-c9d5c41b6088` и один
@@ -28,18 +29,19 @@
   БД — `12` responses.
 - **Последний Manager UI browser-smoke**: изолированный локальный Playwright
   открыл актуальный manager runtime на read-only staging persistence.
-  `/`, `/round/`, `/survey/`, `/dashboard/` и dashboard detail/metrics/
-  recommendations отработали; карта разблокировалась при `12 >= 10` и показала
-  восемь измерений. `/setup/` воспроизводимо вернул HTTP `500`, потому что
-  legacy `backgroundContext` содержит только `note`, а `SetupForm` без
-  нормализации читает отсутствующий `classesPerGrade`.
+  После локального regression fix `/setup/`, `/`, `/round/`, `/survey/` и
+  `/dashboard/` вернули HTTP `200`; setup показал безопасные defaults для
+  legacy `backgroundContext: {note: ...}`. Staging data не менялись.
 - **Dashboard content-quality blocker**: persisted AI payload формально валиден,
   но содержательно непригоден для rollout. Ни один из четырёх non-green
   insights не выполнил требование двух законченных предложений; все четыре
   green dimensions получили improvement recommendations; все `11`
   recommendations остались на английском; все восемь metric sets повторяют
   технический шаблон score/status/risk вместо агрегатов канонических вопросов.
-  Deployed Vercel SSO/Basic-auth browser chain этой проверкой не покрыт.
+  Следующий versioned semantic contract описан, а executable RED tests
+  воспроизводят 10 TypeScript и 10 Python gaps. Runtime/Core/MCP contract ещё
+  не изменён. Отдельный catalog slice уже удалил cross-status fallback,
+  локализовал `11` записей и добавил `8` green-only «חוזקה לשימור» действий.
 - **AI runtime**: FastAPI-сервис развёрнут на Render: [shalomut-ai-analytics.onrender.com](https://shalomut-ai-analytics.onrender.com), deployment `dep-d9ibutgk1i2s73b2oolg` для commit `a9b6c34` имеет статус `Live`; `/health` отвечает HTTP 200.
 - **Real E2E**: для разрешённого round core trigger вернул `202`, MCP POST
   `/api/mcp/` — `200`, Render webhook — `200`, callback POST — `200`,
@@ -62,25 +64,25 @@
   `.env.staging.local`; production `.env` и `.env.local` не менялись.
   Deployed read-only smoke подтвердил anonymous `401`, authenticated `200`,
   правильные organization/round и игнорирование поддельного client scope.
-- **Git-состояние**: подтверждённый application baseline — `ace5ba8`.
-  Session-close diff затрагивает только `PROGRESS.md` и operational handoff;
-  credentials и код приложения не изменялись.
+- **Git-состояние**: baseline текущей сессии — `main@54c2eaa`. Изменения
+  текущей сессии включают setup fix, semantic RED tests/contract, Hebrew
+  intervention catalog и подтверждённые handoff updates; unrelated user
+  changes не обнаружены.
 - **AI coding workflow**: канонические repo-level skills `shalomut-map`, `shalomut-tracker` и `shalomut-verification` находятся в `.agents/skills/`; инструкции для Codex, Gemini, Claude и GitHub Copilot закоммичены в `main`.
 - **Актуальный handoff**: см. [`docs/shalomut-tracker-handoff.md`](docs/shalomut-tracker-handoff.md). AI-детали: [`docs/ai-analytics-handoff.md`](docs/ai-analytics-handoff.md).
 
 ---
 
 ## 🚀 Следующие шаги (Next Up: Safe Staging)
-1. [ ] Закрыть `/setup/` crash малым regression fix: нормализовать partial
-   `backgroundContext`, добавить тест legacy JSON и повторить browser-smoke без
-   изменения staging data.
-2. [ ] Зафиксировать dashboard semantic contract: Hebrew-only copy,
-   grounded interpretation без выдуманных причин, status-aware действия и
-   отдельное поведение «חוזקה לשימור» для green dimensions.
-3. [ ] Добавить privacy-safe агрегаты 24 канонических вопросов в Core
-   Data → MCP boundary и строгие versioned request/output/privacy contracts.
-4. [ ] Усилить AI quality gate, локализовать intervention catalog и metrics,
-   убрать cross-status fallback и повтор общего summary на каждой dimension.
+1. [ ] Выбрать и опубликовать следующую версию AI analytics contract, затем
+   сделать GREEN Core Data → MCP RED tests: 24 privacy-safe canonical question
+   aggregates и пустые detailed maps ниже privacy threshold.
+2. [ ] Сделать GREEN provider/output tests: `finish_reason`, Hebrew,
+   completeness, status consistency и deterministic question-grounded fallback.
+3. [ ] Заменить generic score/status/risk metrics реальными question-level
+   metrics и показывать общий summary ровно один раз на dashboard overview.
+4. [ ] Интегрировать подтверждённую green semantics «חוזקה לשימור» /
+   `פעולות לשימור` в conditional dashboard UX; catalog boundary уже готов.
 5. [ ] Заменить organization-scoped shared Basic gate на application-level
    manager identity/roles и полноценную tenant authorization; убрать hardcoded
    `organizationContext` из MCP payload.
@@ -91,6 +93,32 @@
 ---
 
 ## ✅ Завершенные задачи (Completed)
+- [x] **2026-07-25**: **Зафиксирован dashboard semantic RED и локализован
+  intervention catalog**:
+  - `docs/dashboard-semantic-contract.md` отделяет deployed structural `1.0`
+    от следующей breaking/versioned boundary и фиксирует 24 privacy-safe
+    question aggregates, Hebrew/completeness/status quality, реальные metrics
+    и single-summary semantics.
+  - Product decision записано в `PRODUCT.md` и `docs/source-of-truth.md`:
+    green — «חוזקה לשימור» с `פעולות לשימור`, не improvement goals.
+  - Новые tests намеренно RED: TypeScript `91 passed / 10 failed`, Python
+    `41 passed / 10 failed`; failures точно соответствуют отсутствующим
+    aggregates/quality/metrics/summary behaviors. Lint и build прошли.
+  - Catalog tests прошли `6/6`, dependency-light Python suite — `13/13`:
+    lookup больше не делает cross-status fallback, все `11` исходных записей
+    локализованы, добавлено ровно `8` green-only entries и покрыта матрица 8×3.
+- [x] **2026-07-25**: **Исправлен `/setup/` crash на partial persisted JSON**:
+  - RED repository test получил actual `{note: ...}` вместо полного domain
+    shape; Prisma mapper теперь нормализует известные поля на read boundary, а
+    `SetupForm` defensively читает `classesPerGrade?.[grade]`.
+  - Partial JSON получает безопасные defaults, полный современный context не
+    теряет данные, а отсутствующий context остаётся `undefined`.
+  - Targeted repository/manager/setup/API suite прошёл `26/26`; до добавления
+    следующего semantic RED slice полный `npm test` прошёл `91/91`, lint и
+    build прошли.
+  - Локальный Playwright на read-only staging persistence подтвердил HTTP 200
+    для `/setup/`, `/`, `/round/`, `/survey/` и `/dashboard/`; writes,
+    migrations, webhook, deploy и alias mutation не выполнялись.
 - [x] **2026-07-25**: **Выполнен локальный Manager UI browser-smoke и
   локализованы dashboard quality blockers**:
   - Playwright на локальном Next.js runtime с read-only staging persistence
