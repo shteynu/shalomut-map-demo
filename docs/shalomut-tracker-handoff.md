@@ -35,11 +35,10 @@ Shalomut Map к `shalomut-tracker`, где сохранённые данные �
   URL
   `https://shalomut-map-demo-16cvkgov9-shteynumaks-1343s-projects.vercel.app`.
 - Production data, alias и deployment не изменялись.
-- Commit `c0166e0` («containerize the AI analytics service») находится в
-  `origin/main`; локальная и удалённая ветки совпадают. Deployment AI-сервиса
-  по-прежнему не создавался.
-- В рабочем дереве остаются незакоммиченные изменения `PROGRESS.md` и этого
-  файла из параллельной работы по staging-персистентности.
+- Commits `c0166e0` («containerize the AI analytics service») и `6c07a01`
+  (project memory: staging persistence и контейнеризация) находятся в
+  `origin/main`; локальная и удалённая ветки совпадают, рабочее дерево чистое.
+- Deployment AI-сервиса по-прежнему не создавался.
 
 ## Инцидент: непустой UI при пустой БД
 
