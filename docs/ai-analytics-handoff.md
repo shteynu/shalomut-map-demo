@@ -96,6 +96,16 @@
 - Detail, metrics, and recommendations pages load AI insights by `roundId`.
 - UI states are explicit: loading, ready, locked, not-found, and error.
 - Browser scenarios were checked for ready, missing, and privacy-locked rounds.
+- A later local Playwright audit against read-only staging persistence proved
+  that structural validity is not content quality: `0/4` non-green
+  interpretations fulfilled the requested two complete sentences, all four
+  green dimensions received improvement recommendations, all `11`
+  recommendation titles were English, and all eight metric sets repeated the
+  same score/status/risk template.
+- The current prompt receives only dimension score/status, the provider accepts
+  any HTTP `200` text without checking `finish_reason` or completeness, the
+  intervention fallback ignores status when an exact match is missing, and the
+  UI appends the same overall summary to every dimension.
 
 ## Verification evidence
 
@@ -117,19 +127,33 @@
 - Render logs for the exact E2E window show four Gemini `outcome=llm`, all
   `attempt=1`, zero retry, zero heuristic and callback status `200`. Four green
   dimensions were intentionally skipped by the 0-token rule.
+- Local read-only browser smoke opened the unlocked map plus detail, metrics,
+  and recommendations pages. It also found the semantic failures above; the
+  deployed Vercel SSO/Basic-auth browser chain was not re-tested.
+- Targeted manager-context/setup/view-model tests passed `9/9`; they do not
+  cover partial persisted JSON rendering or AI content quality.
 - No real secrets were committed.
 
 ## What remains
 
-1. If product auditability requires it, version and persist `llm` versus
-   `heuristic` provenance; it currently exists only in service logs.
-2. Verify a privacy-locked real round separately before broader rollout, after
+1. Define the dashboard semantic contract: Hebrew-only, grounded
+   interpretations, question-level metrics, and status-aware actions. The
+   recommended pending product decision is «חוזקה לשימור» for green instead
+   of improvement goals.
+2. Add privacy-safe aggregates for the 24 canonical questions to the Core
+   Data → MCP request boundary; locked rounds must expose none.
+3. Add strict versioned request/output/privacy models plus quality validation
+   for `finish_reason`, completeness, Hebrew, status consistency and
+   deterministic question-grounded fallback.
+4. Localize the intervention catalog, remove cross-status fallback, and stop
+   repeating the overall summary on every dimension.
+5. Version and persist `llm` versus `heuristic` provenance; it currently exists
+   only in service logs.
+6. Verify a privacy-locked real round separately before broader rollout, after
    explicit bounded approval.
-3. Add strict request/output/privacy models and explicit fail-closed safety
-   semantics as the next isolated AI-service change.
-4. Separate staging and production aliases/env; the current production alias
+7. Separate staging and production aliases/env; the current production alias
    is being used as a staging core endpoint and is not production-ready.
-5. Decide separately whether the runtime should adopt real LangGraph/ChromaDB;
+8. Decide separately whether the runtime should adopt real LangGraph/ChromaDB;
    this is not required for the current contract or local E2E path.
 
 ## Approval gates
@@ -147,6 +171,7 @@
 
 ## First next action
 
-Choose the next isolated slice: persisted provider provenance or strict
-request/output/privacy models. Any new real webhook still needs an explicitly
-selected environment and round plus bounded approval.
+Start locally with the independent `/setup/` partial-JSON regression fix. Then
+write the dashboard semantic contract and failing quality tests before changing
+the MCP or AI implementation. Do not invoke another real webhook: it still
+needs an explicitly selected environment and round plus bounded approval.

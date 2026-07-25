@@ -26,6 +26,20 @@
   runtime-содержимое. Unauthenticated запрос сохраняет `302` на Vercel SSO.
   Runtime smoke подтвердил тот же staging round и threshold `10`, read-only
   БД — `12` responses.
+- **Последний Manager UI browser-smoke**: изолированный локальный Playwright
+  открыл актуальный manager runtime на read-only staging persistence.
+  `/`, `/round/`, `/survey/`, `/dashboard/` и dashboard detail/metrics/
+  recommendations отработали; карта разблокировалась при `12 >= 10` и показала
+  восемь измерений. `/setup/` воспроизводимо вернул HTTP `500`, потому что
+  legacy `backgroundContext` содержит только `note`, а `SetupForm` без
+  нормализации читает отсутствующий `classesPerGrade`.
+- **Dashboard content-quality blocker**: persisted AI payload формально валиден,
+  но содержательно непригоден для rollout. Ни один из четырёх non-green
+  insights не выполнил требование двух законченных предложений; все четыре
+  green dimensions получили improvement recommendations; все `11`
+  recommendations остались на английском; все восемь metric sets повторяют
+  технический шаблон score/status/risk вместо агрегатов канонических вопросов.
+  Deployed Vercel SSO/Basic-auth browser chain этой проверкой не покрыт.
 - **AI runtime**: FastAPI-сервис развёрнут на Render: [shalomut-ai-analytics.onrender.com](https://shalomut-ai-analytics.onrender.com), deployment `dep-d9ibutgk1i2s73b2oolg` для commit `a9b6c34` имеет статус `Live`; `/health` отвечает HTTP 200.
 - **Real E2E**: для разрешённого round core trigger вернул `202`, MCP POST
   `/api/mcp/` — `200`, Render webhook — `200`, callback POST — `200`,
@@ -57,22 +71,42 @@
 ---
 
 ## 🚀 Следующие шаги (Next Up: Safe Staging)
-1. [ ] Если продукту нужна auditability, добавить versioned
-   `llm`/`heuristic` provenance в persisted payload.
-2. [ ] После отдельного bounded approval проверить один real privacy-locked
-   round без раскрытия detailed results.
-3. [ ] Ввести строгие request/output/privacy contracts и явные fail-closed
-   safety semantics внутри AI-сервиса.
-4. [ ] Заменить organization-scoped shared Basic gate на application-level
+1. [ ] Закрыть `/setup/` crash малым regression fix: нормализовать partial
+   `backgroundContext`, добавить тест legacy JSON и повторить browser-smoke без
+   изменения staging data.
+2. [ ] Зафиксировать dashboard semantic contract: Hebrew-only copy,
+   grounded interpretation без выдуманных причин, status-aware действия и
+   отдельное поведение «חוזקה לשימור» для green dimensions.
+3. [ ] Добавить privacy-safe агрегаты 24 канонических вопросов в Core
+   Data → MCP boundary и строгие versioned request/output/privacy contracts.
+4. [ ] Усилить AI quality gate, локализовать intervention catalog и metrics,
+   убрать cross-status fallback и повтор общего summary на каждой dimension.
+5. [ ] Заменить organization-scoped shared Basic gate на application-level
    manager identity/roles и полноценную tenant authorization; убрать hardcoded
    `organizationContext` из MCP payload.
-5. [ ] Развести staging и production aliases/env окончательно; legacy staging
+6. [ ] Развести staging и production aliases/env окончательно; legacy staging
    alias уже выровнен по Git tree, но текущий production alias используется
    как staging endpoint и не должен считаться production-ready.
 
 ---
 
 ## ✅ Завершенные задачи (Completed)
+- [x] **2026-07-25**: **Выполнен локальный Manager UI browser-smoke и
+  локализованы dashboard quality blockers**:
+  - Playwright на локальном Next.js runtime с read-only staging persistence
+    подтвердил manager home, round tracking, survey builder, unlocked map и
+    dashboard detail/metrics/recommendations для round с `12` responses при
+    threshold `10`.
+  - `/setup/` вернул HTTP `500`: сохранённый partial `backgroundContext`
+    содержит только `note`, а UI обращается к
+    `backgroundContext.classesPerGrade[grade]`.
+  - Content audit зафиксировал `0/4` законченных двухфразовых non-green
+    interpretations, recommendations у `4/4` green dimensions, `11/11`
+    английских recommendation titles и `8/8` generic metric sets.
+  - Targeted manager-context/setup/view-model tests прошли `9/9`, что
+    подтверждает coverage gap: partial JSON render и semantic quality ими не
+    проверяются. Staging writes, webhook, deploy и alias mutation не
+    выполнялись; tracked worktree после smoke был чистым.
 - [x] **2026-07-25**: **Legacy staging alias выровнен с актуальным Git tree**:
   - После явного bounded approval
     `shalomut-map-demo-ui-redesign.vercel.app` переназначен с

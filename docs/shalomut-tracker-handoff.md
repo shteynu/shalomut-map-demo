@@ -190,6 +190,39 @@ Staging показывал старую demo-школу, имя менеджер
   на application baseline `ace5ba8`; session-close diff затрагивает только
   `PROGRESS.md` и этот handoff.
 
+### Manager UI browser-smoke и dashboard semantic audit (2026-07-25, local/read-only staging)
+
+- Исторический `ERR_BLOCKED_BY_CLIENT` обойдён изолированным Playwright
+  browser: локальный Next.js runtime читал ту же staging persistence без
+  data writes.
+- `/`, `/round/`, `/survey/`, `/dashboard/`, dimension detail, metrics и
+  recommendations открылись. Карта корректно разблокировалась при `12`
+  responses и privacy threshold `10`, показав все восемь canonical
+  dimensions.
+- `/setup/` воспроизводимо вернул HTTP `500`:
+  `SetupForm` читает
+  `round?.backgroundContext?.classesPerGrade[grade]`, но текущий legacy
+  staging JSON равен `{"note": "Disposable E2E smoke round. Safe to delete."}`.
+  Prisma mapper принимает любой object как полный `RoundBackgroundContext`,
+  поэтому compile-time type скрывает partial persisted shape.
+- Persisted AI payload прошёл structural contract, но провалил semantic audit:
+  `0/4` non-green interpretations содержат требуемые два законченных
+  предложения; `4/4` green dimensions всё равно получили improvement
+  recommendations; все `11` recommendation titles не содержат Hebrew; все
+  восемь metric sets являются одинаковым score/status/risk шаблоном.
+- Локализованные причины: AI prompt получает только dimension score/status,
+  provider adapter принимает любой non-empty HTTP `200` content без проверки
+  `finish_reason`/полноты, safety validator проверяет только две green/red
+  фразы, intervention store fallback игнорирует status, а UI повторяет общий
+  organization summary в каждой dimension.
+- Targeted
+  `npx tsx --test src/lib/services/__tests__/manager-context.service.test.ts src/lib/services/__tests__/manager-setup.service.test.ts src/lib/__tests__/ai-insights-view-model.test.ts`
+  прошёл `9/9`. Это подтверждает coverage gap, а не корректность найденных
+  browser/content сценариев.
+- Deployed Vercel SSO/Basic-auth browser chain не перепроверялся. Real webhook,
+  callback write, staging mutation, deploy и alias change не выполнялись.
+  Tracked worktree после проверки был чистым.
+
 ### Контейнеризация и protected-origin hardening AI-сервиса (сессия 2026-07-25, local)
 
 - `python3 ai-analytics-service/run_tests.py`: 10/10.
@@ -423,7 +456,27 @@ Staging показывал старую demo-школу, имя менеджер
 
 ## Что не завершено
 
-### 1. Application-level manager authentication
+### 1. Manager setup partial-JSON crash
+
+- Текущий staging round содержит legacy partial `backgroundContext`, который
+  проходит Prisma object check, но не соответствует полному TypeScript type.
+- `/setup/` падает до возможности редактирования. Нужны boundary normalization,
+  defensive UI read и regression test на partial JSON; migration или staging
+  data cleanup для исправления не требуются.
+
+### 2. Dashboard semantic quality
+
+- Structural contract и успешный provider transport не гарантируют
+  содержательный result. Текущий payload содержит оборванные interpretations,
+  English recommendations, generic metrics и remedial actions для green
+  dimensions.
+- Следующий contract slice должен передавать только privacy-safe aggregates
+  канонических вопросов после threshold gate, валидировать Hebrew/completeness/
+  status consistency и использовать deterministic grounded fallback.
+- Рекомендуемая, но ещё не подтверждённая product semantics для green:
+  показывать «חוזקה לשימור» вместо improvement goals.
+
+### 3. Application-level manager authentication
 
 - Shared Basic gate теперь связывает один deployment credential с одной
   настроенной организацией, но по-прежнему не идентифицирует конкретного
@@ -432,7 +485,7 @@ Staging показывал старую demo-школу, имя менеджер
 - Для публичного rollout всё ещё нужны application-level authentication,
   roles/organization authorization, audit boundary и isolation tests.
 
-### 2. AI provenance и privacy-locked runtime
+### 4. AI provenance и privacy-locked runtime
 
 - Real Gemini generation, transport и persistence доказаны для одного
   explicitly approved unlocked round, но `llm`/`heuristic` provenance пока
@@ -442,7 +495,7 @@ Staging показывал старую demo-школу, имя менеджер
 - Любое изменение key, billing, limits или provider configuration и следующий
   webhook по-прежнему требуют отдельного bounded approval.
 
-### 3. Staging/production boundary
+### 5. Staging/production boundary
 
 - Legacy staging alias выровнен с Git tree текущего `main` и указывает на
   protected Preview, а production alias по-прежнему временно используется как
@@ -452,17 +505,28 @@ Staging показывал старую demo-школу, имя менеджер
 
 ## Рекомендуемый порядок продолжения
 
-1. Отдельным малым PR добавить versioned `llm`/`heuristic` provenance в
-   результат, если это требуется продукту; текущие service logs уже различают
-   outcomes.
-2. После отдельного bounded approval проверить один real privacy-locked round
-   без раскрытия detailed results.
-3. Отдельным малым PR ввести строгие Pydantic/request/output/privacy contracts
-   и явные fail-closed safety semantics внутри AI-сервиса.
-4. Заменить organization-scoped shared Basic gate на application-level manager
+1. Первым независимым regression slice нормализовать partial
+   `RoundBackgroundContext`, защитить `SetupForm`, добавить legacy JSON test и
+   повторить локальный `/setup/` browser-smoke.
+2. Зафиксировать semantic contract dashboard: Hebrew-only output, grounded
+   claims, реальные question-level metrics и status-aware green/yellow/red
+   actions. Подтвердить product label/behavior для green strengths.
+3. Расширить Core Data → MCP boundary privacy-safe агрегатами 24 канонических
+   вопросов и синхронно обновить versioned TypeScript/Python contracts,
+   OpenAPI и tests.
+4. Усилить provider/output quality gate: проверять `finish_reason`, полноту,
+   Hebrew и status consistency; после bounded retry использовать
+   deterministic question-grounded fallback. Добавить persisted provenance.
+5. Локализовать intervention catalog, удалить cross-status fallback, обновить
+   dashboard detail/metrics/recommendations и перенести общий summary в одно
+   overview-место.
+6. Выполнить full local TypeScript/Python/build/browser verification. Любой
+   новый real staging webhook/callback write — только после отдельного
+   bounded approval для точных environment и round.
+7. Заменить organization-scoped shared Basic gate на application-level manager
    identity/roles и полноценную tenant authorization; передавать реальный
    organization context в MCP payload.
-5. Согласовать окончательное разделение staging/production aliases и env;
+8. Согласовать окончательное разделение staging/production aliases и env;
    текущий legacy staging alias уже выровнен по Git tree, но production alias
    всё ещё используется как staging core endpoint. Production
    data/env/alias/deployment не затрагивать без нового bounded approval.
