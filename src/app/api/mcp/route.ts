@@ -3,8 +3,11 @@ import { AnalyticsService } from '@/lib/services/analytics.service';
 import { getRepositories } from '@/lib/repositories';
 import { hasConfiguredSharedSecret } from '@/lib/server/shared-secret';
 
-export const dynamic = 'force-static';
-export const revalidate = false;
+// The handler authenticates every call by reading the Authorization header, so
+// it must stay dynamic. Under `force-static` — left over from the static export
+// era — the deployed runtime hands the handler empty request headers, and the
+// shared-secret check rejects even a correct secret.
+export const dynamic = 'force-dynamic';
 
 /**
  * MCP Server HTTP JSON-RPC Endpoint (/api/mcp)

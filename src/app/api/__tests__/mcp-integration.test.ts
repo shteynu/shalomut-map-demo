@@ -1,6 +1,6 @@
 import assert from 'node:assert';
 import test, { after, before } from 'node:test';
-import { POST as mcpHandler } from '../mcp/route';
+import { POST as mcpHandler, dynamic as mcpDynamic } from '../mcp/route';
 import { GET as getInsightsHandler, POST as postInsightsHandler } from '../rounds/[roundId]/ai-insights/route';
 import { POST as triggerAiHandler } from '../rounds/[roundId]/trigger-ai/route';
 import { AI_ANALYTICS_DIMENSION_IDS } from '@/lib/ai-contract';
@@ -325,4 +325,11 @@ test('Trigger AI Webhook exposes upstream and network failures', async () => {
   } finally {
     globalThis.fetch = originalFetch;
   }
+});
+
+test('the MCP route stays dynamic so it can read the Authorization header', () => {
+  // Under `force-static` the deployed runtime hands the handler empty request
+  // headers, so the shared-secret check rejects even a correct secret while
+  // local development keeps passing.
+  assert.strictEqual(mcpDynamic, 'force-dynamic');
 });
