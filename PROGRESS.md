@@ -15,8 +15,17 @@
   используется как operational staging endpoint и подключён к выделенной
   staging-БД. Первый проверенный post-env production deployment
   `dpl_Hb1WZR9hHdUKsWhJdXDXDMS8ExPe` получил состояние `READY` и прошёл
-  manager-scope smoke; последующие docs-only merges могут создавать новые
-  deployment ID через Vercel Git integration.
+  manager-scope smoke. На момент alias verification docs-only deployment
+  `dpl_9PrHZzeVrTWJ3YNzCbHKQtxr8Zdq` для `ace5ba8` имел состояние `READY`;
+  session-close docs merge может создать более новый deployment ID.
+- **Legacy staging alias**:
+  [shalomut-map-demo-ui-redesign.vercel.app](https://shalomut-map-demo-ui-redesign.vercel.app/)
+  после bounded approval указывает на protected Preview
+  `dpl_FjVVtXibnMwWRXHHAaPEW5wgj3bR` (`READY`, source `91bb8d4`). Его Git tree
+  идентичен application baseline `ace5ba8`; session-close docs не меняют
+  runtime-содержимое. Unauthenticated запрос сохраняет `302` на Vercel SSO.
+  Runtime smoke подтвердил тот же staging round и threshold `10`, read-only
+  БД — `12` responses.
 - **AI runtime**: FastAPI-сервис развёрнут на Render: [shalomut-ai-analytics.onrender.com](https://shalomut-ai-analytics.onrender.com), deployment `dep-d9ibutgk1i2s73b2oolg` для commit `a9b6c34` имеет статус `Live`; `/health` отвечает HTTP 200.
 - **Real E2E**: для разрешённого round core trigger вернул `202`, MCP POST
   `/api/mcp/` — `200`, Render webhook — `200`, callback POST — `200`,
@@ -39,8 +48,9 @@
   `.env.staging.local`; production `.env` и `.env.local` не менялись.
   Deployed read-only smoke подтвердил anonymous `401`, authenticated `200`,
   правильные organization/round и игнорирование поддельного client scope.
-- **Git-состояние**: manager-scope commits `7a451fd` и `508410a` находятся в
-  `origin/main`. Tracked repository и code diff не содержат credentials.
+- **Git-состояние**: подтверждённый application baseline — `ace5ba8`.
+  Session-close diff затрагивает только `PROGRESS.md` и operational handoff;
+  credentials и код приложения не изменялись.
 - **AI coding workflow**: канонические repo-level skills `shalomut-map`, `shalomut-tracker` и `shalomut-verification` находятся в `.agents/skills/`; инструкции для Codex, Gemini, Claude и GitHub Copilot закоммичены в `main`.
 - **Актуальный handoff**: см. [`docs/shalomut-tracker-handoff.md`](docs/shalomut-tracker-handoff.md). AI-детали: [`docs/ai-analytics-handoff.md`](docs/ai-analytics-handoff.md).
 
@@ -56,13 +66,30 @@
 4. [ ] Заменить organization-scoped shared Basic gate на application-level
    manager identity/roles и полноценную tenant authorization; убрать hardcoded
    `organizationContext` из MCP payload.
-5. [ ] Развести staging и production aliases/env окончательно; текущий
-   production alias используется как staging endpoint и не должен считаться
-   production-ready.
+5. [ ] Развести staging и production aliases/env окончательно; legacy staging
+   alias уже выровнен по Git tree, но текущий production alias используется
+   как staging endpoint и не должен считаться production-ready.
 
 ---
 
 ## ✅ Завершенные задачи (Completed)
+- [x] **2026-07-25**: **Legacy staging alias выровнен с актуальным Git tree**:
+  - После явного bounded approval
+    `shalomut-map-demo-ui-redesign.vercel.app` переназначен с
+    `dpl_35S9VvwN8V9Bq7da3iP2SJwT4349` на protected Preview
+    `dpl_FjVVtXibnMwWRXHHAaPEW5wgj3bR`; production alias/deployment не
+    менялись.
+  - Source metadata Preview указывает на `91bb8d4`, но его Git tree идентичен
+    application baseline `ace5ba8`; session-close docs не меняют runtime.
+    `vercel inspect` подтвердил target `preview`, статус `READY`; unauthorized
+    request сохранил `302` на Vercel SSO.
+  - Protected respondent API вернул staging round, threshold `10` и 24
+    обязательных вопроса; read-only PostgreSQL показал `12` responses.
+    Targeted privacy tests прошли `5/5`.
+  - Временные automation bypass secrets, созданные Vercel CLI для read-only
+    smoke, отозваны; финальное состояние — `0`. Manager UI browser-smoke
+    заблокирован `ERR_BLOCKED_BY_CLIENT`, поэтому визуальный unlock не заявлен
+    как напрямую проверенный.
 - [x] **2026-07-25**: **Manager boundary привязан к одной организации**:
   - Middleware удаляет клиентский organization header и передаёт downstream
     только `MANAGER_ORGANIZATION_ID`; deployed manager surfaces fail closed,
