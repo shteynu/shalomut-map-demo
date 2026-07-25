@@ -43,11 +43,28 @@ class Settings:
         self.vercel_protection_bypass: str = os.getenv("VERCEL_PROTECTION_BYPASS", "")
 
         # LLM Settings & Token Optimization
-        self.openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
-        # Fast & Cheap model for 95% of tasks (~15x cheaper than gpt-4o)
-        self.openai_model_fast: str = os.getenv("OPENAI_MODEL_FAST", "gpt-4o-mini")
+        self.llm_api_key: str = (
+            os.getenv("LLM_API_KEY")
+            or os.getenv("OPENAI_API_KEY")
+            or os.getenv("GEMINI_API_KEY")
+            or ""
+        )
+        self.llm_base_url: str = os.getenv("LLM_BASE_URL", "")
+        self.llm_provider: str = os.getenv("LLM_PROVIDER", "auto").lower()
+
+        # Fast & Cheap model for 95% of tasks
+        self.llm_model_fast: str = (
+            os.getenv("LLM_MODEL_FAST")
+            or os.getenv("OPENAI_MODEL_FAST")
+            or "gpt-4o-mini"
+        )
         # Heavy model reserved exclusively for complex safety validation retries
-        self.openai_model_heavy: str = os.getenv("OPENAI_MODEL_HEAVY", "gpt-4o")
+        self.llm_model_heavy: str = (
+            os.getenv("LLM_MODEL_HEAVY")
+            or os.getenv("OPENAI_MODEL_HEAVY")
+            or "gpt-4o"
+        )
+
         # Strict token caps to prevent runaway token costs
         self.max_tokens_per_dimension: int = int(os.getenv("MAX_TOKENS_PER_DIMENSION", "180"))
         # Token Saving: Only invoke LLM for problematic ('yellow' / 'red') dimensions
@@ -58,6 +75,30 @@ class Settings:
         
         # Privacy Constraint
         self.privacy_threshold: int = 10
+
+    @property
+    def openai_api_key(self) -> str:
+        return self.llm_api_key
+
+    @openai_api_key.setter
+    def openai_api_key(self, value: str):
+        self.llm_api_key = value
+
+    @property
+    def openai_model_fast(self) -> str:
+        return self.llm_model_fast
+
+    @openai_model_fast.setter
+    def openai_model_fast(self, value: str):
+        self.llm_model_fast = value
+
+    @property
+    def openai_model_heavy(self) -> str:
+        return self.llm_model_heavy
+
+    @openai_model_heavy.setter
+    def openai_model_heavy(self, value: str):
+        self.llm_model_heavy = value
 
     def runtime_configuration_errors(self) -> list[str]:
         if self.env == "development":

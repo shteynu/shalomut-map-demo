@@ -34,10 +34,11 @@ class LLMProviderService:
             return f"מדד '{dim_hebrew}' מצוי באזור ירוק (ציון {score:.1f}). הצוות מביע שביעות רצון גבוהה וחיבור חיובי לתחום זה."
 
         # Model Tier Selection
-        model_name = settings.openai_model_heavy if retry_tier == "heavy" else settings.openai_model_fast
+        model_name = settings.llm_model_heavy if retry_tier == "heavy" else settings.llm_model_fast
 
-        if settings.openai_api_key:
+        if settings.llm_api_key:
             try:
+                endpoint = self._resolve_endpoint(model_name)
                 prompt = (
                     f"You are an expert Organizational Psychologist analyzing teacher wellbeing.\n"
                     f"Dimension: '{dim_hebrew}' ({dim_id}). Score: {score:.1f}/100. Status: {status.upper()}.\n"
@@ -54,11 +55,11 @@ class LLMProviderService:
                 }).encode("utf-8")
 
                 req = urllib.request.Request(
-                    "https://api.openai.com/v1/chat/completions",
+                    endpoint,
                     data=req_payload,
                     headers={
                         "Content-Type": "application/json",
-                        "Authorization": f"Bearer {settings.openai_api_key}"
+                        "Authorization": f"Bearer {settings.llm_api_key}"
                     },
                     method="POST"
                 )
@@ -71,6 +72,32 @@ class LLMProviderService:
 
         # Fallback Heuristic Generator
         return self._heuristic_fallback(dim_hebrew, score, status)
+
+    def _resolve_endpoint(self, model_name: str) -> str:
+        """
+        Resolves the appropriate REST API completion endpoint based on configuration,
+        explicit LLM_PROVIDER setting, API key pattern, or model name convention.
+        """
+        base_url = settings.llm_base_url.rstrip("/")
+        if base_url:
+            if base_url.endswith("/chat/completions"):
+                return base_url
+            return f"{base_url}/chat/completions"
+
+        provider = settings.llm_provider
+        api_key = settings.llm_api_key
+
+        if (
+            provider == "gemini"
+            or api_key.startswith("AIzaSy")
+            or model_name.lower().startswith("gemini")
+        ):
+            return "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+
+        if provider == "openrouter" or api_key.startswith("sk-or-v1-"):
+            return "https://openrouter.ai/api/v1/chat/completions"
+
+        return "https://api.openai.com/v1/chat/completions"
 
     def _heuristic_fallback(self, dim_hebrew: str, score: float, status: str) -> str:
         if status == "red":

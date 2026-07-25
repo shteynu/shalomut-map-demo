@@ -36,6 +36,10 @@
 ---
 
 ## ✅ Завершенные задачи (Completed)
+- [x] **2026-07-25**: **Добавлена универсальная поддержка LLM-провайдеров и ключей в `ai-analytics-service`**:
+  - `config.py` поддерживает `LLM_API_KEY`, `LLM_BASE_URL`, `LLM_PROVIDER`, `LLM_MODEL_FAST`, `LLM_MODEL_HEAVY` с полным сохранением свойств обратной совместимости (`openai_api_key`, `openai_model_fast`, `openai_model_heavy`).
+  - `llm_provider.py` добавляет `_resolve_endpoint` для автоопределения Google Gemini (через OpenAI-совместимый эндпоинт `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions`), OpenRouter, OpenAI и кастомных `LLM_BASE_URL` (Ollama/vLLM).
+  - Созданы новые unit-тесты `test_llm_provider.py` (5 тестов). Все 20 pytest тестов в venv и 13 системных тестов в `run_tests.py` успешно пройдены.
 - [x] **2026-07-25**: **Read-only локализована причина OpenAI `429`**:
   - Render logs подтвердили четыре LLM-вызова: четыре green dimensions были
     пропущены правилом 0-token, а четыре non-green dimensions ушли в OpenAI
