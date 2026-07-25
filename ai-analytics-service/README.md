@@ -94,6 +94,8 @@ never logged by the provider adapter.
 Transient HTTP `408`, `429`, and `5xx` responses use bounded exponential
 backoff with jitter. `Retry-After` is honored up to the configured delay cap.
 Known hard-quota errors such as `insufficient_quota` are not retried.
+Transport timeouts are retried once, limiting them to two total attempts so
+the pipeline retains room for its callback inside the core app's timeout.
 `LLM_MAX_ATTEMPTS` includes the first request and defaults to `3`; the default
 backoff is `0.5s`, capped at `2s`, with up to `0.25s` jitter. After the bounded
 attempts are exhausted, the existing dimension-scoped heuristic fallback is

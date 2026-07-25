@@ -156,6 +156,37 @@ class LLMProviderService:
                             attempt,
                         )
                         break
+                    except TimeoutError as error:
+                        fallback_reason = type(error).__name__
+                        max_timeout_attempts = min(
+                            settings.llm_max_attempts,
+                            2,
+                        )
+                        if attempt < max_timeout_attempts:
+                            delay = self._backoff_delay_seconds(attempt)
+                            logger.warning(
+                                "[LLM Service] outcome=retry provider=%s "
+                                "model=%s error_type=%s attempt=%s "
+                                "max_attempts=%s delay_ms=%s",
+                                provider,
+                                model_name,
+                                fallback_reason,
+                                attempt,
+                                max_timeout_attempts,
+                                round(delay * 1000),
+                            )
+                            time.sleep(delay)
+                            continue
+
+                        logger.warning(
+                            "[LLM Service] outcome=heuristic provider=%s "
+                            "model=%s error_type=%s attempts=%s",
+                            provider,
+                            model_name,
+                            fallback_reason,
+                            attempt,
+                        )
+                        break
             except Exception as error:
                 fallback_reason = type(error).__name__
                 logger.warning(
@@ -212,6 +243,13 @@ class LLMProviderService:
         retry_after = self._parse_retry_after(
             error.headers.get("Retry-After"),
         )
+        return self._backoff_delay_seconds(attempt, retry_after)
+
+    def _backoff_delay_seconds(
+        self,
+        attempt: int,
+        retry_after: float | None = None,
+    ) -> float:
         exponential_delay = (
             settings.llm_retry_base_delay_seconds
             * (2 ** (attempt - 1))

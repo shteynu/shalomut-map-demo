@@ -256,6 +256,64 @@ def test_retry_after_is_honored_within_delay_cap(monkeypatch):
     assert llm_provider_service._retry_delay_seconds(error, 1) == 2.0
 
 
+def test_transport_timeout_retries_then_returns_llm_result(
+    monkeypatch,
+    caplog,
+):
+    configure_gemini_retry_test(monkeypatch)
+    caplog.set_level("INFO")
+    responses = iter(
+        [
+            TimeoutError("provider request timed out"),
+            FakeLLMResponse("תוצאה אחרי timeout זמני"),
+        ],
+    )
+    attempts = []
+
+    def fake_urlopen(*_args, **_kwargs):
+        attempts.append(True)
+        response = next(responses)
+        if isinstance(response, Exception):
+            raise response
+        return response
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+
+    result = llm_provider_service.generate_psychological_interpretation(
+        "certainty",
+        "ודאות",
+        42.0,
+        "red",
+    )
+
+    assert result == "תוצאה אחרי timeout זמני"
+    assert len(attempts) == 2
+    assert "outcome=retry" in caplog.text
+    assert "error_type=TimeoutError" in caplog.text
+    assert "outcome=heuristic" not in caplog.text
+
+
+def test_transport_timeout_stops_after_two_total_attempts(monkeypatch):
+    configure_gemini_retry_test(monkeypatch, max_attempts=3)
+    attempts = []
+
+    def fake_urlopen(*_args, **_kwargs):
+        attempts.append(True)
+        raise TimeoutError("provider request timed out")
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+
+    result = llm_provider_service.generate_psychological_interpretation(
+        "certainty",
+        "ודאות",
+        42.0,
+        "red",
+    )
+
+    assert "אזור אדום" in result
+    assert len(attempts) == 2
+
+
 def clear_llm_key_environment(monkeypatch):
     for name in LLM_KEY_ENV_VARS:
         monkeypatch.delenv(name, raising=False)
