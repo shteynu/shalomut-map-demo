@@ -56,29 +56,30 @@ silently come up with an open webhook.
 `USE_MOCK_MCP=true` is an explicit local/test mode. With the default `false`,
 MCP failures stop processing; the service does not invent analytics.
 
-When shared secrets are configured, matching values must be present on both
-sides:
+Matching shared secrets must be present on both sides outside development:
 
 - `MCP_SHARED_SECRET`: AI service → core MCP endpoint;
 - `AI_WEBHOOK_SECRET`: core trigger → AI webhook;
 - `AI_CALLBACK_SECRET`: AI callback → core persistence endpoint.
 
-Outside development, missing shared secrets fail closed. Local development may
-run without them.
+Outside development, missing shared secrets, local Data Layer URLs, and
+`USE_MOCK_MCP=true` fail closed before the analytics pipeline starts. Local
+development may run without shared secrets.
 
 When the core app is a protected Vercel deployment, both outbound calls — MCP
 and callback — are answered with a `302` to the SSO page unless
 `VERCEL_PROTECTION_BYPASS` is set to the project's Protection Bypass for
 Automation secret. The service then sends it as `x-vercel-protection-bypass`.
-Leave it empty for unprotected targets; it is never added implicitly. Because
-the webhook payload may supply `callbackUrl`, a configured bypass is sent only
-when that URL has the same normalized origin as `DATA_LAYER_CALLBACK_URL`.
+Leave it empty for unprotected targets; it is never added implicitly. The
+callback target is always derived from `DATA_LAYER_CALLBACK_URL` and the
+URL-encoded `roundId`. A legacy webhook `callbackUrl` may still be accepted for
+compatibility, but it is ignored and cannot control callback transport.
 
 ## Endpoints
 
 - `GET /health`
 - `POST /api/v1/webhook/events`
-- `POST /api/v1/rounds/{round_id}/analyze`
+- `POST /api/v1/rounds/{round_id}/analyze` (`ENV=development` only)
 
 The core application API is documented in `../public/openapi.json` and
 `../docs/openapi.yaml`.

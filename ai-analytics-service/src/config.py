@@ -1,4 +1,24 @@
+import ipaddress
 import os
+from urllib.parse import urlsplit
+
+
+def _is_local_or_invalid_url(url: str) -> bool:
+    try:
+        parsed = urlsplit(url)
+        if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+            return True
+
+        hostname = parsed.hostname.lower().rstrip(".")
+        if hostname == "localhost":
+            return True
+
+        try:
+            return ipaddress.ip_address(hostname).is_loopback
+        except ValueError:
+            return False
+    except ValueError:
+        return True
 
 class Settings:
     def __init__(self):
@@ -38,5 +58,35 @@ class Settings:
         
         # Privacy Constraint
         self.privacy_threshold: int = 10
+
+    def runtime_configuration_errors(self) -> list[str]:
+        if self.env == "development":
+            return []
+
+        errors = []
+        required_secrets = {
+            "MCP_SHARED_SECRET": self.mcp_shared_secret,
+            "AI_WEBHOOK_SECRET": self.ai_webhook_secret,
+            "AI_CALLBACK_SECRET": self.ai_callback_secret,
+        }
+        for name, value in required_secrets.items():
+            if not value:
+                errors.append(f"{name} is required outside development")
+
+        required_urls = {
+            "DATA_LAYER_MCP_URL": self.data_layer_mcp_url,
+            "DATA_LAYER_CALLBACK_URL": self.data_layer_callback_url,
+        }
+        for name, value in required_urls.items():
+            if _is_local_or_invalid_url(value):
+                errors.append(
+                    f"{name} must use a valid non-local Data Layer URL "
+                    "outside development"
+                )
+
+        if self.use_mock_mcp:
+            errors.append("USE_MOCK_MCP must be false outside development")
+
+        return errors
 
 settings = Settings()

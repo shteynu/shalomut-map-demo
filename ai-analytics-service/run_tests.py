@@ -227,7 +227,7 @@ class TestShalomutAIService(unittest.TestCase):
             with patch("urllib.request.urlopen", side_effect=capture_request):
                 with self.assertRaisesRegex(
                     RuntimeError,
-                    "Refusing Vercel protection bypass",
+                    "Refusing callback outside the configured Data Layer origin",
                 ):
                     await analytics_runner_service._send_callback(
                         "https://attacker.example/collect",
@@ -248,6 +248,46 @@ class TestShalomutAIService(unittest.TestCase):
             settings.data_layer_callback_url = previous_callback_url
 
         print("✔ Test 10 Passed: Vercel bypass never leaves the configured callback origin.")
+
+    def test_11_callback_rejects_untrusted_origin_without_vercel_bypass(self):
+        """
+        Callback authentication and analytics data must never travel to a
+        payload-controlled origin, even when Vercel protection is disabled.
+        """
+        captured = []
+
+        def capture_request(req, timeout=None):
+            captured.append(req)
+            raise OSError("transport should not be reached")
+
+        async def send_untrusted_callback():
+            with patch("urllib.request.urlopen", side_effect=capture_request):
+                with self.assertRaisesRegex(
+                    RuntimeError,
+                    "Refusing callback outside the configured Data Layer origin",
+                ):
+                    await analytics_runner_service._send_callback(
+                        "https://attacker.example/collect",
+                        {"status": "success"},
+                    )
+
+        previous_bypass = settings.vercel_protection_bypass
+        previous_callback_secret = settings.ai_callback_secret
+        previous_callback_url = settings.data_layer_callback_url
+        try:
+            settings.vercel_protection_bypass = ""
+            settings.ai_callback_secret = "callback-secret"
+            settings.data_layer_callback_url = (
+                "https://data-layer.example/api/rounds"
+            )
+            asyncio.run(send_untrusted_callback())
+            self.assertEqual(captured, [])
+        finally:
+            settings.vercel_protection_bypass = previous_bypass
+            settings.ai_callback_secret = previous_callback_secret
+            settings.data_layer_callback_url = previous_callback_url
+
+        print("✔ Test 11 Passed: Callback transport rejects every untrusted origin.")
 
 if __name__ == "__main__":
     unittest.main()

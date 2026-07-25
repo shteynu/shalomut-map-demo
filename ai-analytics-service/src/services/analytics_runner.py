@@ -2,8 +2,8 @@ import asyncio
 import json
 import logging
 import urllib.request
-from urllib.parse import urlsplit
-from typing import Dict, Any, Optional
+from urllib.parse import quote, urlsplit
+from typing import Dict, Any
 from src.mcp_client.client import mcp_client_manager
 from src.agents.graph import analytics_graph
 from src.agents.state import AnalyticsState
@@ -25,7 +25,7 @@ def _url_origin(url: str):
         return None
 
 class AnalyticsRunnerService:
-    async def process_round(self, round_id: str, callback_url: Optional[str] = None) -> Dict[str, Any]:
+    async def process_round(self, round_id: str) -> Dict[str, Any]:
         """
         Executes the end-to-end AI analytics workflow:
         1. Fetch round data via MCP Client
@@ -54,7 +54,9 @@ class AnalyticsRunnerService:
         final_payload = final_state.get("final_payload", {})
 
         # Step 4: Callback / Output delivery
-        target_callback = callback_url or f"{settings.data_layer_callback_url}/{round_id}/ai-insights"
+        callback_base = settings.data_layer_callback_url.rstrip("/")
+        encoded_round_id = quote(round_id, safe="")
+        target_callback = f"{callback_base}/{encoded_round_id}/ai-insights"
         await self._send_callback(target_callback, final_payload)
 
         return final_payload
@@ -63,18 +65,22 @@ class AnalyticsRunnerService:
         """
         Sends the compiled payload back to the Data Layer HTTP callback endpoint.
         """
+        callback_origin = _url_origin(callback_url)
+        data_layer_origin = _url_origin(settings.data_layer_callback_url)
+        if (
+            callback_origin is None
+            or data_layer_origin is None
+            or callback_origin != data_layer_origin
+        ):
+            raise RuntimeError(
+                "Refusing callback outside the configured Data Layer origin"
+            )
+
         req_bytes = json.dumps(payload).encode("utf-8")
         headers = {"Content-Type": "application/json"}
         if settings.ai_callback_secret:
             headers["Authorization"] = f"Bearer {settings.ai_callback_secret}"
         if settings.vercel_protection_bypass:
-            if _url_origin(callback_url) != _url_origin(
-                settings.data_layer_callback_url
-            ):
-                raise RuntimeError(
-                    "Refusing Vercel protection bypass for a callback outside "
-                    "the configured Data Layer origin"
-                )
             headers["x-vercel-protection-bypass"] = settings.vercel_protection_bypass
 
         logger.info("[AnalyticsRunner] Posting final Stone Map payload")

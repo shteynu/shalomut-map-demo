@@ -260,7 +260,7 @@ test('AI Insights callback requires its shared secret when configured', async ()
   }
 });
 
-test('Trigger AI Webhook uses the public request origin and returns accepted', async () => {
+test('Trigger AI Webhook omits a dynamic callback target and returns accepted', async () => {
   const originalFetch = globalThis.fetch;
   let forwardedPayload: Record<string, unknown> | undefined;
 
@@ -287,8 +287,8 @@ test('Trigger AI Webhook uses the public request origin and returns accepted', a
     assert.strictEqual(data.webhookPayload.event, 'round_closed');
     assert.strictEqual(data.webhookPayload.roundId, testRoundId);
     assert.strictEqual(
-      forwardedPayload?.callbackUrl,
-      `https://shalomut.example/api/rounds/${testRoundId}/ai-insights`,
+      Object.hasOwn(forwardedPayload ?? {}, 'callbackUrl'),
+      false,
     );
   } finally {
     globalThis.fetch = originalFetch;

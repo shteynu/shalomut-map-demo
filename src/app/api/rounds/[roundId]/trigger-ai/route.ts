@@ -7,18 +7,15 @@ interface RouteParams {
   }>;
 }
 
-export async function POST(request: Request, { params }: RouteParams) {
+export async function POST(_request: Request, { params }: RouteParams) {
   try {
     const { roundId } = await params;
     const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://localhost:8000/api/v1/webhook/events';
     const timeoutMs = Number(process.env.AI_SERVICE_TIMEOUT_MS) || 30_000;
-    const requestOrigin = new URL(request.url).origin;
-    const appBaseUrl = (process.env.APP_BASE_URL || requestOrigin).replace(/\/$/, '');
 
     const webhookPayload = {
       event: 'round_closed',
       roundId,
-      callbackUrl: `${appBaseUrl}/api/rounds/${roundId}/ai-insights`,
       timestamp: new Date().toISOString(),
     };
 

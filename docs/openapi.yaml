@@ -392,7 +392,7 @@ paths:
     post:
       tags: [AI Integration]
       summary: Request AI processing for a survey round
-      description: Forwards a round_closed event to AI_SERVICE_URL. The callback URL is derived from APP_BASE_URL or the incoming request origin. The endpoint fails closed when the AI service is unavailable.
+      description: Forwards a round_closed event to AI_SERVICE_URL without a dynamic callback target. The AI service derives its callback URL from its trusted DATA_LAYER_CALLBACK_URL configuration and the round ID. The endpoint fails closed when the AI service is unavailable.
       parameters:
         - name: roundId
           in: path
