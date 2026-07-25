@@ -28,5 +28,9 @@ services:
         sync: false
       - key: VERCEL_PROTECTION_BYPASS
         sync: false
-      - key: OPENAI_API_KEY
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: LLM_MODEL_FAST
+        sync: false
+      - key: LLM_MODEL_HEAVY
         sync: false

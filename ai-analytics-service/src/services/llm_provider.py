@@ -1,7 +1,8 @@
 import json
 import logging
+import urllib.error
 import urllib.request
-from typing import Optional, Tuple
+
 from src.config import settings
 
 logger = logging.getLogger(__name__)
@@ -34,7 +35,13 @@ class LLMProviderService:
             return f"מדד '{dim_hebrew}' מצוי באזור ירוק (ציון {score:.1f}). הצוות מביע שביעות רצון גבוהה וחיבור חיובי לתחום זה."
 
         # Model Tier Selection
-        model_name = settings.llm_model_heavy if retry_tier == "heavy" else settings.llm_model_fast
+        model_name = (
+            settings.llm_model_heavy
+            if retry_tier == "heavy"
+            else settings.llm_model_fast
+        )
+        provider = settings.resolved_llm_provider(model_name)
+        fallback_reason = "missing_api_key"
 
         if settings.llm_api_key:
             try:
@@ -66,11 +73,49 @@ class LLMProviderService:
                 with urllib.request.urlopen(req, timeout=10.0) as response:
                     if response.status == 200:
                         res = json.loads(response.read().decode("utf-8"))
-                        return res["choices"][0]["message"]["content"].strip()
-            except Exception as e:
-                logger.warning(f"[LLM Service] LLM API call failed ({e}), using domain heuristic fallback.")
+                        result = (
+                            res["choices"][0]["message"]["content"].strip()
+                        )
+                        logger.info(
+                            "[LLM Service] outcome=llm provider=%s "
+                            "model=%s",
+                            provider,
+                            model_name,
+                        )
+                        return result
+                    fallback_reason = f"http_{response.status}"
+            except urllib.error.HTTPError as error:
+                fallback_reason = f"http_{error.code}"
+                request_id = (
+                    error.headers.get("x-request-id")
+                    or error.headers.get("x-goog-request-id")
+                    or "unavailable"
+                )
+                logger.warning(
+                    "[LLM Service] outcome=heuristic provider=%s "
+                    "model=%s status=%s request_id=%s",
+                    provider,
+                    model_name,
+                    error.code,
+                    request_id,
+                )
+            except Exception as error:
+                fallback_reason = type(error).__name__
+                logger.warning(
+                    "[LLM Service] outcome=heuristic provider=%s "
+                    "model=%s error_type=%s",
+                    provider,
+                    model_name,
+                    fallback_reason,
+                )
 
         # Fallback Heuristic Generator
+        logger.info(
+            "[LLM Service] outcome=heuristic provider=%s model=%s reason=%s",
+            provider,
+            model_name,
+            fallback_reason,
+        )
         return self._heuristic_fallback(dim_hebrew, score, status)
 
     def _resolve_endpoint(self, model_name: str) -> str:
@@ -84,20 +129,23 @@ class LLMProviderService:
                 return base_url
             return f"{base_url}/chat/completions"
 
-        provider = settings.llm_provider
-        api_key = settings.llm_api_key
+        provider = settings.resolved_llm_provider(model_name)
 
-        if (
-            provider == "gemini"
-            or api_key.startswith("AIzaSy")
-            or model_name.lower().startswith("gemini")
-        ):
-            return "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+        if provider == "gemini":
+            return (
+                "https://generativelanguage.googleapis.com/"
+                "v1beta/openai/chat/completions"
+            )
 
-        if provider == "openrouter" or api_key.startswith("sk-or-v1-"):
+        if provider == "openrouter":
             return "https://openrouter.ai/api/v1/chat/completions"
 
-        return "https://api.openai.com/v1/chat/completions"
+        if provider == "openai":
+            return "https://api.openai.com/v1/chat/completions"
+
+        raise ValueError(
+            f"Unsupported LLM provider '{provider}' without LLM_BASE_URL"
+        )
 
     def _heuristic_fallback(self, dim_hebrew: str, score: float, status: str) -> str:
         if status == "red":

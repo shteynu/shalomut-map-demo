@@ -2,6 +2,13 @@ import ipaddress
 import os
 from urllib.parse import urlsplit
 
+LLM_PROVIDER_KEY_ENV = {
+    "openai": "OPENAI_API_KEY",
+    "gemini": "GEMINI_API_KEY",
+    "openrouter": "OPENROUTER_API_KEY",
+}
+SUPPORTED_LLM_PROVIDERS = frozenset(LLM_PROVIDER_KEY_ENV)
+
 
 def _is_local_or_invalid_url(url: str) -> bool:
     try:
@@ -19,6 +26,50 @@ def _is_local_or_invalid_url(url: str) -> bool:
             return False
     except ValueError:
         return True
+
+
+def _select_llm_api_key(
+    explicit_provider: str,
+) -> tuple[str, str, str, str]:
+    generic_key = os.getenv("LLM_API_KEY", "")
+    if generic_key:
+        return generic_key, "LLM_API_KEY", "", ""
+
+    configured_provider_keys = [
+        (provider, env_name, os.getenv(env_name, ""))
+        for provider, env_name in LLM_PROVIDER_KEY_ENV.items()
+        if os.getenv(env_name, "")
+    ]
+
+    if explicit_provider in LLM_PROVIDER_KEY_ENV:
+        explicit_env_name = LLM_PROVIDER_KEY_ENV[explicit_provider]
+        explicit_key = os.getenv(explicit_env_name, "")
+        if explicit_key:
+            return (
+                explicit_key,
+                explicit_env_name,
+                explicit_provider,
+                "",
+            )
+
+    if len(configured_provider_keys) == 1:
+        provider, env_name, api_key = configured_provider_keys[0]
+        return api_key, env_name, provider, ""
+
+    if len(configured_provider_keys) > 1:
+        key_names = ", ".join(
+            env_name for _, env_name, _ in configured_provider_keys
+        )
+        return (
+            "",
+            "",
+            "",
+            "Multiple provider-specific API keys are configured "
+            f"({key_names}); set LLM_PROVIDER or use LLM_API_KEY.",
+        )
+
+    return "", "", "", ""
+
 
 class Settings:
     def __init__(self):
@@ -43,26 +94,35 @@ class Settings:
         self.vercel_protection_bypass: str = os.getenv("VERCEL_PROTECTION_BYPASS", "")
 
         # LLM Settings & Token Optimization
-        self.llm_api_key: str = (
-            os.getenv("LLM_API_KEY")
-            or os.getenv("OPENAI_API_KEY")
-            or os.getenv("GEMINI_API_KEY")
-            or ""
-        )
         self.llm_base_url: str = os.getenv("LLM_BASE_URL", "")
-        self.llm_provider: str = os.getenv("LLM_PROVIDER", "auto").lower()
+        self.llm_provider: str = os.getenv(
+            "LLM_PROVIDER",
+            "auto",
+        ).strip().lower()
+        (
+            self.llm_api_key,
+            self.llm_key_source,
+            self.llm_key_provider,
+            self.llm_key_configuration_error,
+        ) = _select_llm_api_key(self.llm_provider)
+
+        default_model_fast = "gpt-4o-mini"
+        default_model_heavy = "gpt-4o"
+        if self.resolved_llm_provider() == "gemini":
+            default_model_fast = "gemini-flash-latest"
+            default_model_heavy = "gemini-pro-latest"
 
         # Fast & Cheap model for 95% of tasks
         self.llm_model_fast: str = (
             os.getenv("LLM_MODEL_FAST")
             or os.getenv("OPENAI_MODEL_FAST")
-            or "gpt-4o-mini"
+            or default_model_fast
         )
         # Heavy model reserved exclusively for complex safety validation retries
         self.llm_model_heavy: str = (
             os.getenv("LLM_MODEL_HEAVY")
             or os.getenv("OPENAI_MODEL_HEAVY")
-            or "gpt-4o"
+            or default_model_heavy
         )
 
         # Strict token caps to prevent runaway token costs
@@ -75,6 +135,27 @@ class Settings:
         
         # Privacy Constraint
         self.privacy_threshold: int = 10
+
+    def resolved_llm_provider(self, model_name: str = "") -> str:
+        if self.llm_provider != "auto":
+            return self.llm_provider
+
+        if self.llm_key_provider:
+            return self.llm_key_provider
+
+        if (
+            self.llm_api_key.startswith("AIzaSy")
+            or self.llm_api_key.startswith("AQ.")
+        ):
+            return "gemini"
+
+        if self.llm_api_key.startswith("sk-or-v1-"):
+            return "openrouter"
+
+        if model_name.lower().startswith("gemini"):
+            return "gemini"
+
+        return "openai"
 
     @property
     def openai_api_key(self) -> str:
@@ -127,6 +208,31 @@ class Settings:
 
         if self.use_mock_mcp:
             errors.append("USE_MOCK_MCP must be false outside development")
+
+        if self.llm_key_configuration_error:
+            errors.append(self.llm_key_configuration_error)
+
+        if (
+            self.llm_api_key
+            and self.llm_key_source == "LLM_API_KEY"
+            and self.llm_provider == "auto"
+            and not self.llm_base_url
+        ):
+            errors.append(
+                "LLM_PROVIDER or LLM_BASE_URL is required outside "
+                "development when LLM_API_KEY is used."
+            )
+
+        if (
+            self.llm_api_key
+            and self.llm_provider != "auto"
+            and self.llm_provider not in SUPPORTED_LLM_PROVIDERS
+            and not self.llm_base_url
+        ):
+            errors.append(
+                f"Unsupported LLM_PROVIDER '{self.llm_provider}'; "
+                "configure LLM_BASE_URL for a custom provider."
+            )
 
         return errors
 

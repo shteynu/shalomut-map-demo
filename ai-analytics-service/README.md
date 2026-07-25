@@ -66,6 +66,31 @@ Outside development, missing shared secrets, local Data Layer URLs, and
 `USE_MOCK_MCP=true` fail closed before the analytics pipeline starts. Local
 development may run without shared secrets.
 
+### LLM provider configuration
+
+Use one provider-specific key whenever possible:
+
+- `GEMINI_API_KEY` selects Gemini;
+- `OPENAI_API_KEY` selects OpenAI;
+- `OPENROUTER_API_KEY` selects OpenRouter.
+
+Provider selection comes from the environment variable name, not from the
+secret's prefix or the model name. An explicit `LLM_PROVIDER` overrides that
+inference and selects the matching provider-specific key when several are
+present.
+
+`LLM_API_KEY` is the provider-neutral escape hatch. Outside development it
+must be paired with either `LLM_PROVIDER` or `LLM_BASE_URL`; otherwise startup
+fails closed instead of sending an opaque credential to a guessed endpoint.
+Multiple provider-specific keys without an explicit provider also fail closed.
+`LLM_MODEL_FAST` and `LLM_MODEL_HEAVY` override model selection. Gemini uses
+`gemini-flash-latest` and `gemini-pro-latest` as defaults; the OpenAI-compatible
+defaults remain `gpt-4o-mini` and `gpt-4o`.
+
+LLM logs record only provider, model, outcome, HTTP status and a safe request
+identifier when available. Keys, prompts, responses and respondent data are
+never logged by the provider adapter.
+
 When the core app is a protected Vercel deployment, both outbound calls — MCP
 and callback — are answered with a `302` to the SSO page unless
 `VERCEL_PROTECTION_BYPASS` is set to the project's Protection Bypass for
