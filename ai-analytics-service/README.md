@@ -66,6 +66,12 @@ sides:
 Outside development, missing shared secrets fail closed. Local development may
 run without them.
 
+When the core app is a protected Vercel deployment, both outbound calls — MCP
+and callback — are answered with a `302` to the SSO page unless
+`VERCEL_PROTECTION_BYPASS` is set to the project's Protection Bypass for
+Automation secret. The service then sends it as `x-vercel-protection-bypass`.
+Leave it empty for unprotected targets; it is never added implicitly.
+
 ## Endpoints
 
 - `GET /health`

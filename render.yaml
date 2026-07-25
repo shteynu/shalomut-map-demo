@@ -26,5 +26,7 @@ services:
         sync: false
       - key: AI_CALLBACK_SECRET
         sync: false
+      - key: VERCEL_PROTECTION_BYPASS
+        sync: false
       - key: OPENAI_API_KEY
         sync: false

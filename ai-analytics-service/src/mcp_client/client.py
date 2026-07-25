@@ -42,6 +42,8 @@ class MCPClientManager:
             headers = {"Content-Type": "application/json"}
             if settings.mcp_shared_secret:
                 headers["Authorization"] = f"Bearer {settings.mcp_shared_secret}"
+            if settings.vercel_protection_bypass:
+                headers["x-vercel-protection-bypass"] = settings.vercel_protection_bypass
 
             req = urllib.request.Request(
                 self.mcp_server_url,

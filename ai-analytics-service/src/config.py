@@ -17,7 +17,11 @@ class Settings:
         self.mcp_shared_secret: str = os.getenv("MCP_SHARED_SECRET", "")
         self.ai_webhook_secret: str = os.getenv("AI_WEBHOOK_SECRET", "")
         self.ai_callback_secret: str = os.getenv("AI_CALLBACK_SECRET", "")
-        
+        # Vercel Deployment Protection answers 302 to every unauthenticated
+        # request, so a protected staging core app is unreachable for both
+        # outbound calls unless the automation bypass travels with them.
+        self.vercel_protection_bypass: str = os.getenv("VERCEL_PROTECTION_BYPASS", "")
+
         # LLM Settings & Token Optimization
         self.openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
         # Fast & Cheap model for 95% of tasks (~15x cheaper than gpt-4o)

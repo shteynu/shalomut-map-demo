@@ -21,6 +21,7 @@ from src.contracts import (
 )
 from src.config import Settings, settings
 from src.mcp_client.client import MCPClientManager
+from src.services.analytics_runner import analytics_runner_service
 
 class TestShalomutAIService(unittest.TestCase):
     
@@ -155,6 +156,98 @@ class TestShalomutAIService(unittest.TestCase):
             self.assertEqual(Settings().env, "development")
 
         print("✔ Test 8 Passed: Unset ENV defaults to production so the webhook secret stays mandatory.")
+
+    def test_09_protection_bypass_travels_with_both_outbound_calls(self):
+        """
+        A core app behind Vercel Deployment Protection answers 302 to every
+        anonymous request, so the MCP call and the callback must both carry the
+        automation bypass whenever it is configured, and neither may leak it
+        when it is not.
+        """
+        captured = []
+
+        def capture_request(req, timeout=None):
+            captured.append({
+                name.lower(): value for name, value in req.headers.items()
+            })
+            raise OSError("captured before transport")
+
+        async def collect_outbound_headers():
+            client = MCPClientManager("https://data-layer.example/api/mcp")
+            with patch("urllib.request.urlopen", side_effect=capture_request):
+                with self.assertRaises(RuntimeError):
+                    await client.fetch_round_analytics("round-bypass")
+                with self.assertRaises(RuntimeError):
+                    await analytics_runner_service._send_callback(
+                        "https://data-layer.example/api/rounds/round-bypass/ai-insights",
+                        {},
+                    )
+
+        previous_use_mock = settings.use_mock_mcp
+        previous_bypass = settings.vercel_protection_bypass
+        previous_callback_url = settings.data_layer_callback_url
+        settings.use_mock_mcp = False
+        try:
+            settings.data_layer_callback_url = (
+                "https://data-layer.example/api/rounds"
+            )
+            settings.vercel_protection_bypass = "bypass-token"
+            asyncio.run(collect_outbound_headers())
+            self.assertEqual(len(captured), 2)
+            for headers in captured:
+                self.assertEqual(
+                    headers["x-vercel-protection-bypass"], "bypass-token"
+                )
+
+            captured.clear()
+            settings.vercel_protection_bypass = ""
+            asyncio.run(collect_outbound_headers())
+            self.assertEqual(len(captured), 2)
+            for headers in captured:
+                self.assertNotIn("x-vercel-protection-bypass", headers)
+        finally:
+            settings.use_mock_mcp = previous_use_mock
+            settings.vercel_protection_bypass = previous_bypass
+            settings.data_layer_callback_url = previous_callback_url
+
+        print("✔ Test 9 Passed: MCP and callback carry the Vercel automation bypass only when configured.")
+
+    def test_10_protection_bypass_rejects_untrusted_callback_origin(self):
+        """
+        The project-wide bypass must never travel to a callback host supplied
+        outside the configured Data Layer origin.
+        """
+        captured = []
+
+        def capture_request(req, timeout=None):
+            captured.append(req)
+            raise OSError("transport should not be reached")
+
+        async def send_untrusted_callback():
+            with patch("urllib.request.urlopen", side_effect=capture_request):
+                with self.assertRaisesRegex(
+                    RuntimeError,
+                    "Refusing Vercel protection bypass",
+                ):
+                    await analytics_runner_service._send_callback(
+                        "https://attacker.example/collect",
+                        {},
+                    )
+
+        previous_bypass = settings.vercel_protection_bypass
+        previous_callback_url = settings.data_layer_callback_url
+        try:
+            settings.vercel_protection_bypass = "bypass-token"
+            settings.data_layer_callback_url = (
+                "https://data-layer.example/api/rounds"
+            )
+            asyncio.run(send_untrusted_callback())
+            self.assertEqual(captured, [])
+        finally:
+            settings.vercel_protection_bypass = previous_bypass
+            settings.data_layer_callback_url = previous_callback_url
+
+        print("✔ Test 10 Passed: Vercel bypass never leaves the configured callback origin.")
 
 if __name__ == "__main__":
     unittest.main()

@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import urllib.request
+from urllib.parse import urlsplit
 from typing import Dict, Any, Optional
 from src.mcp_client.client import mcp_client_manager
 from src.agents.graph import analytics_graph
@@ -11,6 +12,17 @@ from src.config import settings
 logger = logging.getLogger(__name__)
 
 CALLBACK_TIMEOUT_SECONDS = 5.0
+
+def _url_origin(url: str):
+    try:
+        parsed = urlsplit(url)
+        scheme = parsed.scheme.lower()
+        if scheme not in {"http", "https"} or not parsed.hostname:
+            return None
+        port = parsed.port or (443 if scheme == "https" else 80)
+        return scheme, parsed.hostname.lower().rstrip("."), port
+    except ValueError:
+        return None
 
 class AnalyticsRunnerService:
     async def process_round(self, round_id: str, callback_url: Optional[str] = None) -> Dict[str, Any]:
@@ -51,12 +63,21 @@ class AnalyticsRunnerService:
         """
         Sends the compiled payload back to the Data Layer HTTP callback endpoint.
         """
-        logger.info(f"[AnalyticsRunner] Posting final Stone Map payload to {callback_url}")
         req_bytes = json.dumps(payload).encode("utf-8")
         headers = {"Content-Type": "application/json"}
         if settings.ai_callback_secret:
             headers["Authorization"] = f"Bearer {settings.ai_callback_secret}"
+        if settings.vercel_protection_bypass:
+            if _url_origin(callback_url) != _url_origin(
+                settings.data_layer_callback_url
+            ):
+                raise RuntimeError(
+                    "Refusing Vercel protection bypass for a callback outside "
+                    "the configured Data Layer origin"
+                )
+            headers["x-vercel-protection-bypass"] = settings.vercel_protection_bypass
 
+        logger.info("[AnalyticsRunner] Posting final Stone Map payload")
         req = urllib.request.Request(
             callback_url,
             data=req_bytes,
