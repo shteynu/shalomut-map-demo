@@ -1,14 +1,118 @@
 import { NextResponse } from 'next/server';
-import { validateStoneMapResult } from '@/lib/ai-contract';
+import {
+  AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
+  type StoneMapResult,
+  validateStoneMapResult,
+} from '@/lib/ai-contract';
 import { getRepositories } from '@/lib/repositories';
+import { AnalyticsService } from '@/lib/services/analytics.service';
+import {
+  createCanonicalSurveyDefinition,
+  parseSurveyDefinition,
+} from '@/lib/survey-definition';
+import { createSurveyDefinitionHash } from '@/lib/survey-definition-hash';
 import { getDurableWriteGuardResponse } from '@/lib/server/durable-write-guard';
 import { hasConfiguredSharedSecret } from '@/lib/server/shared-secret';
 import { authorizeManagerRound } from '@/lib/server/manager-scope';
+import type {
+  RoundAnalyticsV3Result,
+  SurveyRound,
+} from '@/lib/types/backend';
 
 interface RouteParams {
   params: Promise<{
     roundId: string;
   }>;
+}
+
+function validateDynamicResultAgainstRound(
+  result: StoneMapResult,
+  round: SurveyRound,
+  analytics: RoundAnalyticsV3Result,
+): string | null {
+  if (result.contractVersion !== AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION) {
+    return null;
+  }
+
+  const parsedDefinition = parseSurveyDefinition(
+    round.surveyDefinition ??
+      createCanonicalSurveyDefinition(round.title, round.privacyThreshold),
+  );
+  if (!parsedDefinition.ok) {
+    return 'The persisted round questionnaire is invalid.';
+  }
+
+  const enabledQuestions = parsedDefinition.value.questions.filter(
+    (question) => question.enabled,
+  );
+  const expectedHash = createSurveyDefinitionHash(enabledQuestions);
+  if (
+    result.surveyDefinitionHash !== expectedHash ||
+    result.surveyDefinitionHash !== analytics.surveyDefinitionHash
+  ) {
+    return 'The AI result questionnaire snapshot does not match the persisted round.';
+  }
+
+  if (result.isLocked !== analytics.isLocked) {
+    return 'The AI result privacy state does not match the Core analytics.';
+  }
+
+  if (analytics.isLocked) {
+    return result.status === 'locked_error'
+      ? null
+      : 'A privacy-locked round must persist a locked result without details.';
+  }
+
+  if (result.status !== 'success' || !result.stones) {
+    return null;
+  }
+
+  const expectedQuestions = new Map(
+    enabledQuestions.map((question) => [question.id, question]),
+  );
+  const seenQuestionIds = new Set<string>();
+
+  for (const [dimensionId, stone] of Object.entries(result.stones)) {
+    const expectedDimension =
+      analytics.dimensionScores[
+        dimensionId as keyof typeof analytics.dimensionScores
+      ];
+    if (
+      !expectedDimension ||
+      stone.score !== expectedDimension.averageScore ||
+      stone.status !== expectedDimension.computedStatus
+    ) {
+      return 'The AI result scores or statuses do not match the Core analytics.';
+    }
+
+    for (const metric of stone.metrics) {
+      const questionId = metric.questionId;
+      const expected = questionId
+        ? expectedQuestions.get(questionId)
+        : undefined;
+      const expectedAggregate = questionId
+        ? analytics.questionAggregates[questionId]
+        : undefined;
+      if (
+        !expected ||
+        !expectedAggregate ||
+        expected.dimensionId !== dimensionId ||
+        metric.label !== expected.text ||
+        metric.averageScore !== expectedAggregate.averageScore ||
+        metric.responseCount !== expectedAggregate.responseCount ||
+        seenQuestionIds.has(expected.id)
+      ) {
+        return 'The AI result metrics do not match the persisted round questionnaire.';
+      }
+      seenQuestionIds.add(expected.id);
+    }
+  }
+
+  if (seenQuestionIds.size !== expectedQuestions.size) {
+    return 'The AI result does not cover every persisted round question.';
+  }
+
+  return null;
 }
 
 export async function GET(request: Request, { params }: RouteParams) {
@@ -64,6 +168,33 @@ export async function POST(request: Request, { params }: RouteParams) {
     }
 
     const repositories = getRepositories();
+    const round = await repositories.roundRepo.findById(roundId);
+    if (!round) {
+      return NextResponse.json(
+        { error: 'Survey round not found', roundId },
+        { status: 404 },
+      );
+    }
+
+    const dynamicRoundError =
+      validation.value.contractVersion ===
+      AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION
+        ? validateDynamicResultAgainstRound(
+            validation.value,
+            round,
+            AnalyticsService.calculateDynamicRoundAnalytics(
+              round,
+              await repositories.surveyRepo.findResponsesByRoundId(roundId),
+            ),
+          )
+        : null;
+    if (dynamicRoundError) {
+      return NextResponse.json(
+        { error: dynamicRoundError },
+        { status: 400 },
+      );
+    }
+
     const saved = await repositories.roundRepo.saveAiInsights(
       roundId,
       validation.value,

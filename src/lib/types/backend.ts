@@ -97,7 +97,17 @@ export interface QuestionAggregate {
   responseCount: number;
 }
 
-export interface RoundAnalyticsResult {
+export type SurveyDefinitionHash = `sha256:${string}`;
+
+export interface DynamicQuestionAggregate {
+  questionId: string;
+  dimensionId: WellbeingDimensionId;
+  questionText: string;
+  averageScore: number;
+  responseCount: number;
+}
+
+export interface RoundAnalyticsV2Result {
   contractVersion: '2.0';
   roundId: string;
   totalResponses: number;
@@ -107,6 +117,23 @@ export interface RoundAnalyticsResult {
   questionAggregates: Record<string, QuestionAggregate>;
   calculatedAt: Date;
 }
+
+export interface RoundAnalyticsV3Result {
+  contractVersion: '3.0';
+  roundId: string;
+  organizationId: string;
+  surveyDefinitionHash: SurveyDefinitionHash;
+  totalResponses: number;
+  privacyThreshold: number;
+  isLocked: boolean;
+  dimensionScores: Record<WellbeingDimensionId, RoundDimensionScore>;
+  questionAggregates: Record<string, DynamicQuestionAggregate>;
+  calculatedAt: Date;
+}
+
+export type RoundAnalyticsResult =
+  | RoundAnalyticsV2Result
+  | RoundAnalyticsV3Result;
 
 export interface SubmitSurveyResult {
   success: boolean;

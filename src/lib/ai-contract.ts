@@ -1,5 +1,6 @@
 import legacyContractManifest from '../../contracts/ai-analytics-v1.json';
 import contractManifest from '../../contracts/ai-analytics-v2.json';
+import dynamicContractManifest from '../../contracts/ai-analytics-v3.json';
 import type {
   WellbeingDimensionId,
   WellbeingStatus,
@@ -7,13 +8,19 @@ import type {
 
 export const AI_ANALYTICS_V1_CONTRACT_VERSION = legacyContractManifest.version;
 export const AI_ANALYTICS_CONTRACT_VERSION = contractManifest.version;
+export const AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION =
+  dynamicContractManifest.version;
 export const AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS = Object.freeze([
   AI_ANALYTICS_V1_CONTRACT_VERSION,
   AI_ANALYTICS_CONTRACT_VERSION,
+  AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
 ]);
 
 export type AiAnalyticsContractVersion =
   (typeof AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS)[number];
+
+export type AiAnalyticsKnownContractVersion =
+  AiAnalyticsContractVersion;
 
 export const AI_ANALYTICS_DIMENSION_IDS = Object.freeze(
   contractManifest.dimensions.map(
@@ -82,6 +89,7 @@ export interface StoneGenerationProvenance {
   attempts: number;
   retryCount: number;
   sourceQuestionIds: string[];
+  surveyDefinitionHash?: string;
 }
 
 export interface StoneDetail {
@@ -96,9 +104,10 @@ export interface StoneDetail {
 }
 
 export interface StoneMapResult {
-  contractVersion: AiAnalyticsContractVersion;
+  contractVersion: AiAnalyticsKnownContractVersion;
   roundId: string;
   processedAt?: string;
+  surveyDefinitionHash?: string;
   isLocked: boolean;
   status: 'success' | 'locked_error' | 'validation_failed';
   errorMessage?: string;
@@ -279,6 +288,55 @@ function isValidGenerationProvenance(
   return value.outcome !== 'llm' || Number(value.attempts) > 0;
 }
 
+const SURVEY_DEFINITION_HASH_PATTERN = /^sha256:[a-f0-9]{64}$/u;
+
+function isValidDynamicQuestionMetric(value: unknown): value is StoneMetric {
+  return (
+    isRecord(value) &&
+    typeof value.questionId === 'string' &&
+    value.questionId.trim().length > 0 &&
+    typeof value.label === 'string' &&
+    containsOnlyHebrewUserText(value.label) &&
+    typeof value.value === 'string' &&
+    containsOnlyHebrewUserText(value.value) &&
+    typeof value.averageScore === 'number' &&
+    Number.isFinite(value.averageScore) &&
+    value.averageScore >= 0 &&
+    value.averageScore <= 100 &&
+    Number.isInteger(value.responseCount) &&
+    Number(value.responseCount) > 0 &&
+    (value.trend === undefined ||
+      (typeof value.trend === 'string' &&
+        containsOnlyHebrewUserText(value.trend)))
+  );
+}
+
+function isValidV3GenerationProvenance(
+  value: unknown,
+  metricQuestionIds: string[],
+  surveyDefinitionHash: string,
+): value is StoneGenerationProvenance {
+  if (!isRecord(value)) return false;
+
+  const sortedMetricIds = [...metricQuestionIds].sort();
+  return (
+    ['llm', 'deterministic_fallback'].includes(String(value.outcome)) &&
+    Number.isInteger(value.attempts) &&
+    Number(value.attempts) >= 0 &&
+    Number.isInteger(value.retryCount) &&
+    Number(value.retryCount) >= 0 &&
+    Number(value.retryCount) <= Math.max(0, Number(value.attempts) - 1) &&
+    isStringArray(value.sourceQuestionIds) &&
+    value.sourceQuestionIds.length === sortedMetricIds.length &&
+    new Set(value.sourceQuestionIds).size === sortedMetricIds.length &&
+    [...value.sourceQuestionIds]
+      .sort()
+      .every((questionId, index) => questionId === sortedMetricIds[index]) &&
+    value.surveyDefinitionHash === surveyDefinitionHash &&
+    (value.outcome !== 'llm' || Number(value.attempts) > 0)
+  );
+}
+
 function isValidV2Stone(
   value: unknown,
   dimensionId: WellbeingDimensionId,
@@ -310,6 +368,48 @@ function isValidV2Stone(
   );
 }
 
+function isValidV3Stone(
+  value: unknown,
+  dimensionId: WellbeingDimensionId,
+  surveyDefinitionHash: string,
+): value is StoneDetail {
+  if (!hasValidStoneShape(value, dimensionId)) {
+    return false;
+  }
+
+  const status = value.status as WellbeingStatus;
+  const interventions = value.recommendedInterventions as unknown[];
+  const metrics = value.metrics as unknown[];
+  if (
+    metrics.length < 1 ||
+    !metrics.every(isValidDynamicQuestionMetric)
+  ) {
+    return false;
+  }
+
+  const metricQuestionIds = metrics.map(
+    (metric) => (metric as StoneMetric).questionId!,
+  );
+  return (
+    new Set(metricQuestionIds).size === metricQuestionIds.length &&
+    value.dimensionNameHebrew ===
+      AI_ANALYTICS_DIMENSION_NAMES_HEBREW[dimensionId] &&
+    statusForScore(value.score as number) === status &&
+    containsOnlyHebrewUserText(value.psychologicalInterpretation as string) &&
+    hasExactlyTwoCompleteSentences(
+      value.psychologicalInterpretation as string,
+    ) &&
+    interventions.every((intervention) =>
+      isValidV2Intervention(intervention, dimensionId, status),
+    ) &&
+    isValidV3GenerationProvenance(
+      value.generationProvenance,
+      metricQuestionIds,
+      surveyDefinitionHash,
+    )
+  );
+}
+
 function validateStatusFields(
   payload: Record<string, unknown>,
 ): StoneMapValidationResult | null {
@@ -331,13 +431,16 @@ function validateStatusFields(
     }
 
     if (
-      payload.contractVersion === AI_ANALYTICS_CONTRACT_VERSION &&
+      [
+        AI_ANALYTICS_CONTRACT_VERSION,
+        AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
+      ].includes(String(payload.contractVersion)) &&
       (payload.stones !== undefined ||
         payload.overallPsychologicalSummary !== undefined)
     ) {
       return {
         ok: false,
-        error: 'Non-success 2.0 payloads must not expose detailed results.',
+        error: 'Non-success semantic payloads must not expose detailed results.',
       };
     }
 
@@ -380,6 +483,18 @@ export function validateStoneMapResult(
     };
   }
 
+
+  if (
+    payload.contractVersion === AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION &&
+    (typeof payload.surveyDefinitionHash !== 'string' ||
+      !SURVEY_DEFINITION_HASH_PATTERN.test(payload.surveyDefinitionHash))
+  ) {
+    return {
+      ok: false,
+      error: 'The 3.0 payload requires a valid surveyDefinitionHash.',
+    };
+  }
+
   const statusValidation = validateStatusFields(payload);
   if (statusValidation) return statusValidation;
 
@@ -396,12 +511,15 @@ export function validateStoneMapResult(
   }
 
   if (
-    payload.contractVersion === AI_ANALYTICS_CONTRACT_VERSION &&
+    [
+      AI_ANALYTICS_CONTRACT_VERSION,
+      AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
+    ].includes(String(payload.contractVersion)) &&
     !containsOnlyHebrewUserText(payload.overallPsychologicalSummary)
   ) {
     return {
       ok: false,
-      error: 'The 2.0 round summary must contain Hebrew user-facing text.',
+      error: 'The semantic round summary must contain Hebrew user-facing text.',
     };
   }
 
@@ -419,12 +537,18 @@ export function validateStoneMapResult(
     };
   }
 
-  const validateStone =
-    payload.contractVersion === AI_ANALYTICS_CONTRACT_VERSION
-      ? isValidV2Stone
-      : isValidLegacyStone;
   for (const dimensionId of AI_ANALYTICS_DIMENSION_IDS) {
-    if (!validateStone(payload.stones[dimensionId], dimensionId)) {
+    const isValidStone =
+      payload.contractVersion === AI_ANALYTICS_CONTRACT_VERSION
+        ? isValidV2Stone(payload.stones[dimensionId], dimensionId)
+        : payload.contractVersion === AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION
+          ? isValidV3Stone(
+              payload.stones[dimensionId],
+              dimensionId,
+              payload.surveyDefinitionHash as string,
+            )
+          : isValidLegacyStone(payload.stones[dimensionId], dimensionId);
+    if (!isValidStone) {
       return {
         ok: false,
         error: `Stone "${dimensionId}" does not match AI analytics contract ${payload.contractVersion}.`,

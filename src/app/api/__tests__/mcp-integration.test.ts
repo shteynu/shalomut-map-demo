@@ -183,6 +183,46 @@ test('AI Insights API saves and retrieves Stone Map JSON payload', async () => {
   assert.strictEqual(savedData.overallPsychologicalSummary, 'Test summary from AI Microservice');
 });
 
+test('AI Insights API keeps legacy 1.0 persistence independent from 3.0 questionnaire validation', async () => {
+  const legacyRoundId = 'round_legacy_snapshot';
+  setRepositories({
+    orgRepo: new InMemoryOrganizationRepository([DEMO_ORGANIZATION]),
+    roundRepo: new InMemoryRoundRepository([
+      {
+        ...DEMO_ROUND,
+        id: legacyRoundId,
+        surveyDefinition: {
+          ...DEMO_ROUND.surveyDefinition!,
+          questions: [],
+        },
+      },
+    ]),
+    surveyRepo: new InMemorySurveyRepository(),
+  });
+
+  try {
+    const response = await postInsightsHandler(
+      new Request(
+        `http://localhost:3000/api/rounds/${legacyRoundId}/ai-insights`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(createValidInsightsPayload(legacyRoundId)),
+        },
+      ),
+      { params: Promise.resolve({ roundId: legacyRoundId }) },
+    );
+
+    assert.strictEqual(response.status, 200);
+  } finally {
+    setRepositories({
+      orgRepo: new InMemoryOrganizationRepository([DEMO_ORGANIZATION]),
+      roundRepo: new InMemoryRoundRepository([DEMO_ROUND]),
+      surveyRepo: new InMemorySurveyRepository(),
+    });
+  }
+});
+
 test('AI Insights API rejects a legacy Stone Map contract', async () => {
   const legacyPayload = {
     ...createValidInsightsPayload(),

@@ -6,7 +6,7 @@ import type {
 import {
   ManagerScopeRequiredError,
   ManagerScopeService,
-} from "@/lib/services";
+} from "@/lib/services/manager-scope.service";
 
 export const MANAGER_ORGANIZATION_HEADER =
   "x-shalomut-manager-organization-id";

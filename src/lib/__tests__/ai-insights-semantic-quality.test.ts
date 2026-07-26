@@ -87,6 +87,93 @@ test('applyStoneInsightToDimension exposes all three canonical question aggregat
   );
 });
 
+test('applyStoneInsightToDimension preserves exact dynamic question text and variable metric counts across rounds', () => {
+  const dimension = getDimensionById('balance');
+  assert.ok(dimension);
+
+  const roundFixtures = [
+    {
+      roundId: 'round-short',
+      metrics: [
+        {
+          questionId: 'short-balance-energy',
+          label: 'בסוף יום העבודה נשארת לי אנרגיה לחיים שמחוץ לבית הספר.',
+          value: 'ערך מחושב',
+          averageScore: 67.5,
+          responseCount: 12,
+        },
+        {
+          questionId: 'short-balance-recovery',
+          label: 'יש לי מרחב קבוע להתאוששות בין ימי עבודה עמוסים.',
+          value: 'ערך מחושב',
+          averageScore: 54,
+          responseCount: 12,
+        },
+      ],
+    },
+    {
+      roundId: 'round-expanded',
+      metrics: [
+        {
+          questionId: 'expanded-balance-boundaries',
+          label: 'גבולות יום העבודה ברורים לי ונשמרים ברוב השבוע.',
+          value: 'ערך מחושב',
+          averageScore: 71,
+          responseCount: 18,
+        },
+        {
+          questionId: 'expanded-balance-breaks',
+          label: 'אני מצליחה לקחת הפסקות שמאפשרות לי לחזור מרוכזת.',
+          value: 'ערך מחושב',
+          averageScore: 63.25,
+          responseCount: 18,
+        },
+        {
+          questionId: 'expanded-balance-planning',
+          label: 'תכנון השבוע משאיר לי זמן סביר למשימות בלתי צפויות.',
+          value: 'ערך מחושב',
+          averageScore: 58,
+          responseCount: 18,
+        },
+        {
+          questionId: 'expanded-balance-home',
+          label: 'העבודה מאפשרת לי להיות פנויה גם לצרכים בבית.',
+          value: 'ערך מחושב',
+          averageScore: 61,
+          responseCount: 18,
+        },
+      ],
+    },
+  ];
+
+  for (const fixture of roundFixtures) {
+    const stone: StoneDetail = {
+      dimensionId: 'balance',
+      dimensionNameHebrew: 'איזון',
+      status: 'yellow',
+      score: 62,
+      psychologicalInterpretation:
+        'הממצאים מצביעים על איזון חלקי בשגרת העבודה. ניכרת שונות בין מקורות העומס וההתאוששות.',
+      metrics: fixture.metrics,
+      recommendedInterventions: [],
+    };
+
+    const result = applyStoneInsightToDimension(dimension, stone);
+
+    assert.strictEqual(result.metrics.length, fixture.metrics.length, fixture.roundId);
+    assert.deepStrictEqual(
+      result.metrics.map((metric) => metric.label),
+      fixture.metrics.map((metric) => metric.label),
+      fixture.roundId,
+    );
+    assert.deepStrictEqual(
+      result.metrics.map((metric) => metric.value),
+      fixture.metrics.map((metric) => `${metric.averageScore} מתוך 100`),
+      fixture.roundId,
+    );
+  }
+});
+
 test('applyStoneInsightToDimension never uses an intervention from a different status', () => {
   const dimension = getDimensionById('balance');
   assert.ok(dimension);

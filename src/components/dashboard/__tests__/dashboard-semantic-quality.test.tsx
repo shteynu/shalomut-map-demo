@@ -46,18 +46,26 @@ test("DashboardOverviewSummary localizes invalid or unavailable insight states",
   assert.match(html, /לא הצלחנו לטעון את הניתוח/);
 });
 
-test("getDisplayedMetrics forwards all three question metrics to the metrics screen", () => {
+test("getDisplayedMetrics forwards variable question metrics to the metrics screen", () => {
   const dimension = getDimensionById("balance");
   assert.ok(dimension);
 
-  const questionMetrics = [
+  const shortRoundMetrics = [
     { label: "שאלה ראשונה", value: "70 מתוך 100", helper: "12 משיבים" },
     { label: "שאלה שנייה", value: "60 מתוך 100", helper: "12 משיבים" },
-    { label: "שאלה שלישית", value: "50 מתוך 100", helper: "12 משיבים" },
+  ];
+  const expandedRoundMetrics = [
+    ...shortRoundMetrics,
+    { label: "שאלה מותאמת שלישית", value: "50 מתוך 100", helper: "16 משיבים" },
+    { label: "שאלה מותאמת רביעית", value: "80 מתוך 100", helper: "16 משיבים" },
   ];
 
   assert.deepStrictEqual(
-    getDisplayedMetrics({ ...dimension, metrics: questionMetrics }),
-    questionMetrics,
+    getDisplayedMetrics({ ...dimension, metrics: shortRoundMetrics }),
+    shortRoundMetrics,
+  );
+  assert.deepStrictEqual(
+    getDisplayedMetrics({ ...dimension, metrics: expandedRoundMetrics }),
+    expandedRoundMetrics,
   );
 });

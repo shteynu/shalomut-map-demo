@@ -49,21 +49,35 @@ describe('OpenAPI Specification Integrity', () => {
     assert.ok(schemas.SurveyDefinition, 'Must include SurveyDefinition schema');
     assert.ok(schemas.QuestionAnswerInput, 'Must include QuestionAnswerInput schema');
     assert.ok(schemas.RoundAnalyticsResult, 'Must include RoundAnalyticsResult schema');
+    assert.ok(schemas.RoundAnalyticsResultV2, 'Must preserve RoundAnalyticsResultV2 schema');
+    assert.ok(schemas.RoundAnalyticsResultV3, 'Must include dynamic RoundAnalyticsResultV3 schema');
     assert.ok(schemas.RoundDimensionScore, 'Must include RoundDimensionScore schema');
     assert.ok(schemas.QuestionAggregate, 'Must include QuestionAggregate schema');
+    assert.ok(schemas.DynamicQuestionAggregate, 'Must include DynamicQuestionAggregate schema');
     assert.ok(schemas.WellbeingDimensionId, 'Must include WellbeingDimensionId schema');
     assert.ok(schemas.StoneMapResult, 'Must include StoneMapResult schema');
     assert.ok(schemas.StoneMapResultV1, 'Must preserve StoneMapResultV1 schema');
     assert.ok(schemas.StoneMapResultV2, 'Must include StoneMapResultV2 schema');
+    assert.ok(schemas.StoneMapResultV3, 'Must include StoneMapResultV3 schema');
     assert.ok(schemas.StoneDetail, 'Must include StoneDetail schema');
     assert.strictEqual(schemas.StoneMapResultV1.properties.contractVersion.example, '1.0');
     assert.strictEqual(schemas.StoneMapResultV2.properties.contractVersion.example, '2.0');
-    assert.strictEqual(schemas.RoundAnalyticsResult.properties.contractVersion.example, '2.0');
+    assert.strictEqual(schemas.StoneMapResultV3.properties.contractVersion.example, '3.0');
+    assert.strictEqual(schemas.RoundAnalyticsResultV2.properties.contractVersion.example, '2.0');
+    assert.strictEqual(schemas.RoundAnalyticsResultV3.properties.contractVersion.example, '3.0');
+    assert.deepStrictEqual(
+      schemas.RoundAnalyticsResult.oneOf.map((entry: { $ref: string }) => entry.$ref),
+      [
+        '#/components/schemas/RoundAnalyticsResultV2',
+        '#/components/schemas/RoundAnalyticsResultV3',
+      ],
+    );
     assert.deepStrictEqual(
       schemas.StoneMapResult.oneOf.map((entry: { $ref: string }) => entry.$ref),
       [
         '#/components/schemas/StoneMapResultV1',
         '#/components/schemas/StoneMapResultV2',
+        '#/components/schemas/StoneMapResultV3',
       ],
     );
   });
@@ -103,14 +117,20 @@ describe('OpenAPI Specification Integrity', () => {
     );
     const aiSchemas = [
       'RoundAnalyticsResult',
+      'RoundAnalyticsResultV2',
+      'RoundAnalyticsResultV3',
       'QuestionAggregate',
+      'DynamicQuestionAggregate',
       'StoneMapResult',
       'StoneMapResultV1',
       'StoneMapResultV2',
+      'StoneMapResultV3',
       'StoneDetail',
+      'StoneDetailV3',
       'StoneMetric',
       'StoneIntervention',
       'StoneGenerationProvenance',
+      'StoneGenerationProvenanceV3',
     ];
 
     for (const schemaName of aiSchemas) {

@@ -136,3 +136,159 @@ test('validateStoneMapResult rejects an incomplete canonical question metric set
 
   assert.strictEqual(result.ok, false);
 });
+
+test('validateStoneMapResult accepts 3.0 stones with dynamic custom metrics and variable counts', () => {
+  const surveyDefinitionHash =
+    'sha256:4fdff8a264c71ad6433b21971268e0c9c78077d1a5894479f9132ae02dd82bd4';
+  const stones = Object.fromEntries(
+    AI_ANALYTICS_DIMENSION_IDS.map((dimensionId, dimensionIndex) => {
+      const metricCount = dimensionId === 'balance' ? 2 : 1;
+      const metrics = Array.from({ length: metricCount }, (_, metricIndex) => ({
+        questionId: `round-custom-${dimensionId}-${metricIndex + 1}`,
+        label: `שאלה מותאמת לממד ${dimensionIndex + 1} פריט ${metricIndex + 1}`,
+        value: 'שישים מתוך מאה',
+        averageScore: 60,
+        responseCount: 12,
+      }));
+
+      return [
+        dimensionId,
+        {
+          dimensionId,
+          dimensionNameHebrew:
+            AI_ANALYTICS_DIMENSION_NAMES_HEBREW[dimensionId],
+          status: 'yellow',
+          score: 60,
+          psychologicalInterpretation:
+            'ממוצעי השאלות מצביעים על מצב שדורש תשומת לב. הפירוט נשען על השאלות המותאמות של הסבב.',
+          recommendedInterventions: [],
+          metrics,
+          generationProvenance: {
+            outcome: 'llm',
+            attempts: 1,
+            retryCount: 0,
+            sourceQuestionIds: metrics.map((metric) => metric.questionId),
+            surveyDefinitionHash,
+          },
+        },
+      ];
+    }),
+  );
+  const payload = {
+    contractVersion: '3.0',
+    roundId: 'round-semantic-contract',
+    processedAt: '2026-07-26T12:00:00.000Z',
+    isLocked: false,
+    status: 'success',
+    surveyDefinitionHash,
+    overallPsychologicalSummary:
+      'הסיכום מציג דפוסים מצרפיים. הנתונים נשמרים מעל סף הפרטיות.',
+    stones,
+  };
+
+  const result = validate(payload);
+
+  assert.strictEqual(result.ok, true);
+  if (result.ok) {
+    assert.strictEqual(result.value.stones?.balance.metrics.length, 2);
+    assert.strictEqual(result.value.stones?.meaning.metrics.length, 1);
+    assert.strictEqual(
+      result.value.stones?.balance.metrics[0].label,
+      stones.balance.metrics[0].label,
+    );
+  }
+});
+
+test('validateStoneMapResult rejects 3.0 provenance that does not match its dynamic metrics', () => {
+  const surveyDefinitionHash = `sha256:${'c'.repeat(64)}`;
+  const payload = {
+    contractVersion: '3.0',
+    roundId: 'round-semantic-contract',
+    processedAt: '2026-07-26T12:00:00.000Z',
+    isLocked: false,
+    status: 'success',
+    surveyDefinitionHash,
+    overallPsychologicalSummary:
+      'הסיכום מציג דפוסים מצרפיים. הנתונים נשמרים מעל סף הפרטיות.',
+    stones: Object.fromEntries(
+      AI_ANALYTICS_DIMENSION_IDS.map((dimensionId) => [
+        dimensionId,
+        {
+          dimensionId,
+          dimensionNameHebrew:
+            AI_ANALYTICS_DIMENSION_NAMES_HEBREW[dimensionId],
+          status: 'yellow',
+          score: 60,
+          psychologicalInterpretation:
+            'ניתוח השאלה מצביע על מצב שדורש תשומת לב. הפירוט נשען על נתון מצרפי בלבד.',
+          recommendedInterventions: [],
+          metrics: [
+            {
+              questionId: `custom-${dimensionId}`,
+              label: 'שאלה מותאמת לסבב',
+              value: 'שישים מתוך מאה',
+              averageScore: 60,
+              responseCount: 12,
+            },
+          ],
+          generationProvenance: {
+            outcome: 'llm',
+            attempts: 1,
+            retryCount: 0,
+            sourceQuestionIds: [`wrong-${dimensionId}`],
+            surveyDefinitionHash,
+          },
+        },
+      ]),
+    ),
+  };
+
+  assert.strictEqual(validate(payload).ok, false);
+});
+
+test('validateStoneMapResult rejects 3.0 provenance from a different questionnaire snapshot', () => {
+  const surveyDefinitionHash = `sha256:${'d'.repeat(64)}`;
+  const payload = {
+    contractVersion: '3.0',
+    roundId: 'round-semantic-contract',
+    processedAt: '2026-07-26T12:00:00.000Z',
+    isLocked: false,
+    status: 'success',
+    surveyDefinitionHash,
+    overallPsychologicalSummary:
+      'הסיכום מציג דפוסים מצרפיים. הנתונים נשמרים מעל סף הפרטיות.',
+    stones: Object.fromEntries(
+      AI_ANALYTICS_DIMENSION_IDS.map((dimensionId) => [
+        dimensionId,
+        {
+          dimensionId,
+          dimensionNameHebrew:
+            AI_ANALYTICS_DIMENSION_NAMES_HEBREW[dimensionId],
+          status: 'yellow',
+          score: 60,
+          psychologicalInterpretation:
+            'ניתוח השאלה מצביע על מצב שדורש תשומת לב. הפירוט נשען על נתון מצרפי בלבד.',
+          recommendedInterventions: [],
+          metrics: [
+            {
+              questionId: `custom-${dimensionId}`,
+              label: 'שאלה מותאמת לסבב',
+              value: 'שישים מתוך מאה',
+              averageScore: 60,
+              responseCount: 12,
+            },
+          ],
+          generationProvenance: {
+            outcome: 'deterministic_fallback',
+            attempts: 0,
+            retryCount: 0,
+            sourceQuestionIds: [`custom-${dimensionId}`],
+            surveyDefinitionHash: `sha256:${'e'.repeat(64)}`,
+          },
+        },
+      ]),
+    ),
+  };
+
+  assert.strictEqual(validate(payload).ok, false);
+});

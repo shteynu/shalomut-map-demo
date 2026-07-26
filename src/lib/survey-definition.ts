@@ -62,6 +62,7 @@ export function parseSurveyDefinition(value: unknown):
     surveyInstrument.dimensions.map((dimension) => dimension.id),
   );
   const parsedQuestions: SurveyDefinitionQuestion[] = [];
+  const seenQuestionIds = new Set<string>();
 
   for (const question of questions) {
     if (
@@ -79,6 +80,11 @@ export function parseSurveyDefinition(value: unknown):
       return { ok: false, error: "Survey contains an invalid question." };
     }
 
+    if (seenQuestionIds.has(question.id)) {
+      return { ok: false, error: "Survey question IDs must be unique." };
+    }
+    seenQuestionIds.add(question.id);
+
     parsedQuestions.push({
       id: question.id,
       text: question.text,
@@ -90,21 +96,17 @@ export function parseSurveyDefinition(value: unknown):
     });
   }
 
-  for (const canonicalQuestion of surveyInstrument.questions) {
-    const matches = parsedQuestions.filter(
-      (question) => question.id === canonicalQuestion.id,
-    );
-
-    if (
-      matches.length !== 1 ||
-      !matches[0].enabled ||
-      !matches[0].required ||
-      matches[0].dimensionId !== canonicalQuestion.dimensionId
-    ) {
+  const enabledDimensionIds = new Set(
+    parsedQuestions
+      .filter((question) => question.enabled)
+      .map((question) => question.dimensionId),
+  );
+  for (const dimensionId of validDimensionIds) {
+    if (!enabledDimensionIds.has(dimensionId)) {
       return {
         ok: false,
         error:
-          "The 24 canonical Shalomut questions must remain enabled, required, unique, and assigned to their canonical dimensions.",
+          "Enabled survey questions must cover all eight dimensions before activation.",
       };
     }
   }
@@ -121,6 +123,26 @@ export function parseSurveyDefinition(value: unknown):
       questions: parsedQuestions,
     },
   };
+}
+
+export function hasSameQuestionSnapshot(
+  current: SurveyDefinition,
+  next: SurveyDefinition,
+): boolean {
+  if (current.questions.length !== next.questions.length) return false;
+
+  return current.questions.every((question, index) => {
+    const candidate = next.questions[index];
+    return (
+      candidate !== undefined &&
+      question.id === candidate.id &&
+      question.text === candidate.text &&
+      question.dimensionId === candidate.dimensionId &&
+      question.required === candidate.required &&
+      question.enabled === candidate.enabled &&
+      question.answerMode === candidate.answerMode
+    );
+  });
 }
 
 export function createCanonicalSurveyDefinition(

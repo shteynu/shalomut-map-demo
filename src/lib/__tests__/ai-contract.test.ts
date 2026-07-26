@@ -2,9 +2,11 @@ import assert from 'node:assert';
 import test from 'node:test';
 import {
   AI_ANALYTICS_CONTRACT_VERSION,
+  AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
   AI_ANALYTICS_DIMENSION_IDS,
   AI_ANALYTICS_QUESTIONS,
   AI_ANALYTICS_QUESTION_IDS,
+  AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS,
   AI_ANALYTICS_V1_CONTRACT_VERSION,
   validateStoneMapResult,
 } from '../ai-contract';
@@ -54,6 +56,12 @@ test('AI analytics contract uses the canonical survey dimension IDs', () => {
   );
   assert.strictEqual(AI_ANALYTICS_V1_CONTRACT_VERSION, '1.0');
   assert.strictEqual(AI_ANALYTICS_CONTRACT_VERSION, '2.0');
+  assert.strictEqual(AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION, '3.0');
+  assert.deepStrictEqual(AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS, [
+    '1.0',
+    '2.0',
+    '3.0',
+  ]);
 });
 
 test('validateStoneMapResult accepts a complete canonical Stone Map', () => {
