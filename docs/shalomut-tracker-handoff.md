@@ -21,6 +21,22 @@ exact вопросы раунда принадлежат persisted `SurveyRound.
   `dpl_FystEnZZ5rNPbJevXcNrfQmn83in` — `READY`, Staging alias —
   `https://shalomut-map-demo-ui-redesign.vercel.app`; Render
   `dep-d9iro1uk1jcs73f6kmh0` — `Live`.
+- **GitHub Pages сайт снят с публикации (2026-07-26, по явному указанию
+  пользователя)**: `DELETE /repos/shteynu/shalomut-map-demo/pages` вернул `204`,
+  `has_pages` теперь `false`. Сайт отдавал замороженный статический артефакт от
+  2026-07-24 (`Last-Modified: 24 Jul 2026 15:07 GMT`) без каких-либо API-роутов
+  (`GET /api/rounds` → `404 HTML`), а его bundle показывал экран успешной
+  отправки независимо от результата запроса и обращался к hardcoded
+  `/api/survey/SHALOM-DEMO/submit`. Единственный поддерживаемый web-деплой —
+  Vercel. Локальный устаревший `out/` (gitignored) удалён.
+- Vercel alias state (read-only, 2026-07-26): `shalomut-map-demo.vercel.app` →
+  `dpl_6EfNFk8FN2cLmLVtF3LTxwG7m7pP` (`target: production`, собран из `8bf0cff`,
+  Git-интеграция авто-деплоит `main` в Production);
+  `shalomut-map-demo-ui-redesign.vercel.app` →
+  `dpl_FystEnZZ5rNPbJevXcNrfQmn83in` (`target: preview`, Vercel SSO). Решение о
+  сведении к одному URL требует отдельного bounded approval: Render настроен на
+  `shalomut-map-demo.vercel.app`, а `docs/openapi.yaml` и `public/openapi.json`
+  указывают `-ui-redesign` как первый server URL.
 - **Manager UI Authorization & Basic Auth Sunset**: Реализованы `/login`, `/api/auth/login`, `/api/auth/logout`, `/api/auth/me`, `ManagerAuthenticationService` (Web Crypto HMAC-SHA256), шапка пользователя `ManagerUserBar` и флаг `DISABLE_BASIC_AUTH_FALLBACK` в `middleware.ts`.
 - **Contract 3.0 Live Staging E2E**: Живая проверка на Staging Supabase DB (`tpfzhyalaftotljmlont`) доказала Scenario A1 (Unlocked custom questionnaire 3.0, 10 responses, exact definition hash `sha256:88489e11...`, 8 custom question aggregates) и Scenario A2 (Privacy lock при < 10 ответов). Автоматическая SQL-очистка удалила все одноразовые записи.
 - **Verification Evidence**: `npm test` 162/162 passed, `npm run lint` 0 errors, `npm run build` прошёл успешно (39 страниц).
@@ -591,6 +607,22 @@ Staging показывал старую demo-школу, имя менеджер
   authorization.
 - Для публичного rollout всё ещё нужны application-level authentication,
   roles/organization authorization, audit boundary и isolation tests.
+- **Blocker (проверено на живом `shalomut-map-demo.vercel.app`, 2026-07-26):**
+  `/login/` отдаёт `401` вместо страницы входа. При `trailingSlash: true`
+  реальный путь — `/login/`, а `middleware.ts` сравнивает `pathname === "/login"`,
+  поэтому страница не попадает в публичный bypass и упирается в Basic Auth.
+  `/api/auth/*` не затронуты (`startsWith` устойчив к слэшу): `GET /api/auth/me`
+  отвечает `200 {"authenticated":false}`. Включение
+  `DISABLE_BASIC_AUTH_FALLBACK` до исправления заблокирует доступ полностью:
+  middleware редиректит на `/login`, который затем `308` → `/login/` → `401`.
+- **Blocker (security, проверено read-only):** в Vercel не заданы
+  `SESSION_SECRET`, `MANAGER_ADMIN_EMAIL` и `MANAGER_ADMIN_PASSWORD`, поэтому
+  рантайм использует hardcoded дефолты из публичного репозитория
+  (`jwt-session-provider.ts`, `manager-auth-service.ts`), а `/api/auth/login`
+  доступен вне Basic Auth (`POST` с пустым телом отвечает `400`, не `401`).
+  Успешная сессия обходит Basic gate в `middleware.ts`. Эксплуатация не
+  выполнялась; до задания секретов и удаления дефолтных credential-fallback
+  deployment нельзя считать защищённым.
 
 ### 4. Deployed AI provenance и privacy-locked runtime
 

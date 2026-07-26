@@ -11,12 +11,20 @@
 ---
 
 ## 🚀 Следующие шаги (Next Up)
-1. [ ] Завершить миграцию Production DB (`fvnulyirrqjrnjbahmsn`) через `prisma migrate deploy` и развести Production Vercel env variables.
-2. [ ] Выполнить включение флага `DISABLE_BASIC_AUTH_FALLBACK="true"` в Vercel Preview/Production после релиза UI-авторизации.
+1. [ ] **Blocker:** исправить публичный bypass страницы входа — при `trailingSlash: true` реальный путь `/login/` не совпадает с проверкой `pathname === "/login"` в `middleware.ts`, поэтому на живом деплое `/login/` отдаёт `401`.
+2. [ ] **Blocker (security):** задать `SESSION_SECRET`, `MANAGER_ADMIN_EMAIL`, `MANAGER_ADMIN_PASSWORD` в Vercel и убрать hardcoded credential/secret fallback из `manager-auth-service.ts` и `jwt-session-provider.ts`.
+3. [ ] Завершить миграцию Production DB (`fvnulyirrqjrnjbahmsn`) через `prisma migrate deploy` и развести Production Vercel env variables.
+4. [ ] Выполнить включение флага `DISABLE_BASIC_AUTH_FALLBACK="true"` в Vercel Preview/Production **только после** пунктов 1–2: сейчас флаг редиректит на `/login`, который `308` → `/login/` → `401`.
+5. [ ] Решить (нужен bounded approval), какой единственный Vercel URL остаётся продуктовым: `shalomut-map-demo.vercel.app` (авто-деплой `main`, Render настроен на него) или `shalomut-map-demo-ui-redesign.vercel.app` (Vercel SSO, указан первым в OpenAPI specs).
 
 ---
 
 ## ✅ Завершенные задачи (Completed)
+- [x] **2026-07-26**: **GitHub Pages снят с публикации, Vercel оставлен единственным web-деплоем** (по явному указанию пользователя):
+  - **Что удалено**: `DELETE /repos/shteynu/shalomut-map-demo/pages` → `204`, `has_pages: false`. Сайт был замороженным статическим артефактом от 2026-07-24 (`Last-Modified: 24 Jul 2026 15:07 GMT`): без API-роутов (`GET /api/rounds` → `404 HTML`), с bundle, который показывал экран успешной отправки независимо от результата `fetch`, и с hardcoded `/api/survey/SHALOM-DEMO/submit`. Именно он давал ложную картину «ответы отправлены, счётчики нули». Локальный `out/` (gitignored) удалён; в `.github/workflows` Pages-воркфлоу и раньше не было.
+  - **Проверка подключений живого Vercel-рантайма** (read-only): env `DATABASE_URL`, `AI_SERVICE_URL`, `AI_SERVICE_TIMEOUT_MS`, `AI_WEBHOOK_SECRET`, `MCP_SHARED_SECRET`, `AI_CALLBACK_SECRET`, `BASIC_AUTH_USER/PASSWORD`, `MANAGER_ORGANIZATION_ID` заданы для Production и Preview; `POST /api/mcp/` без секрета → `401` JSON-RPC; респондентский `GET /api/survey/NO-SUCH-CODE/` → `404` JSON; Render `/health` → `200 {"status":"online","env":"production","privacyThreshold":10}`; менеджерские страницы → `401 Basic realm="Shalomut Map"`.
+  - **Найденные blockers**: `/login/` отдаёт `401` из-за `trailingSlash` vs `pathname === "/login"`; `SESSION_SECRET` и `MANAGER_ADMIN_*` не заданы, поэтому используются hardcoded дефолты из публичного репозитория при публичном `/api/auth/login`. Детали — в `docs/shalomut-tracker-handoff.md`.
+  - **Не менялось**: Vercel deployments, aliases, env variables, БД и Render.
 - [x] **2026-07-26**: **Реализация UI-авторизации менеджеров и подготовка к Basic Auth Sunset** (commit `069d752`):
   - **Auth API Routes**: Созданы `POST /api/auth/login`, `POST /api/auth/logout` и `GET /api/auth/me`. Сессионная кука `shalomut_session` выдаётся как `HttpOnly`, `SameSite=Lax`, `Secure`.
   - **Manager UI & Header Bar**: Создана страница `/login` на иврите (RTL, скругленная органическая карточка, алерты ошибок) и шапка менеджера `ManagerUserBar` (отображение имени, ролевого бейджа `מנהל מערכת` / `מנהל` и кнопки выхода).
