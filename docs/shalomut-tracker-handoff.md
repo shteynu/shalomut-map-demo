@@ -20,10 +20,23 @@ exact вопросы раунда принадлежат persisted `SurveyRound.
   `docs/dynamic-questionnaire-ai-contract.md`; contracts `1.0`/`2.0` не
   изменены. Deployed Core producer формирует dynamic `3.0`; `2.0` остаётся
   совместимым legacy/rollback boundary.
-- Application runtime snapshot: Vercel Preview
-  `dpl_FystEnZZ5rNPbJevXcNrfQmn83in` — `READY`, Staging alias —
-  `https://shalomut-map-demo-ui-redesign.vercel.app`; Render
+- **Одно развёрнутое окружение (2026-07-26, по явному указанию пользователя)**:
+  единственный продуктовый URL — `https://shalomut-map-demo.vercel.app/`
+  (Vercel target `production`, авто-деплой каждого push в `main`, продуктово —
+  staging). Alias `shalomut-map-demo-ui-redesign.vercel.app` удалён
+  (`vercel alias rm` → `Success`), URL отвечает `404`; сам preview-деплой
+  `dpl_FystEnZZ5rNPbJevXcNrfQmn83in` не удалялся и остаётся `READY`. Отдельное
+  production-окружение будет создано позднее по необходимости. Render
   `dep-d9iro1uk1jcs73f6kmh0` — `Live`.
+- **Живой рантайм лежит (2026-07-26, 19:2x)**: все маршруты
+  `shalomut-map-demo.vercel.app`, включая респондентский `/answer/...`,
+  отвечают `500 MIDDLEWARE_INVOCATION_FAILED`. Логи Vercel:
+  `[Error: SESSION_SECRET environment variable must be configured in
+  production/deployed environment.]`, source `edge-middleware`. Причина:
+  `session-auth.ts` создаёт `JwtSessionProvider` на уровне модуля, конструктор
+  бросает при отсутствии `SESSION_SECRET`, а `middleware.ts` импортирует этот
+  модуль. В Vercel `SESSION_SECRET` и `MANAGER_ADMIN_PASSWORD` не заданы.
+  Восстановление: задать оба секрета для Production и Preview и передеплоить.
 - **GitHub Pages сайт снят с публикации (2026-07-26, по явному указанию
   пользователя)**: `DELETE /repos/shteynu/shalomut-map-demo/pages` вернул `204`,
   `has_pages` теперь `false`. Сайт отдавал замороженный статический артефакт от
@@ -32,14 +45,11 @@ exact вопросы раунда принадлежат persisted `SurveyRound.
   отправки независимо от результата запроса и обращался к hardcoded
   `/api/survey/SHALOM-DEMO/submit`. Единственный поддерживаемый web-деплой —
   Vercel. Локальный устаревший `out/` (gitignored) удалён.
-- Vercel alias state (read-only, 2026-07-26): `shalomut-map-demo.vercel.app` →
-  `dpl_6EfNFk8FN2cLmLVtF3LTxwG7m7pP` (`target: production`, собран из `8bf0cff`,
-  Git-интеграция авто-деплоит `main` в Production);
-  `shalomut-map-demo-ui-redesign.vercel.app` →
-  `dpl_FystEnZZ5rNPbJevXcNrfQmn83in` (`target: preview`, Vercel SSO). Решение о
-  сведении к одному URL требует отдельного bounded approval: Render настроен на
-  `shalomut-map-demo.vercel.app`, а `docs/openapi.yaml` и `public/openapi.json`
-  указывают `-ui-redesign` как первый server URL.
+- Vercel alias state после сведения к одному URL (2026-07-26):
+  `shalomut-map-demo.vercel.app` — единственный именованный alias проекта,
+  указывает на последний production-деплой из `main`. Render настроен на этот же
+  URL. `docs/openapi.yaml` и `public/openapi.json` содержат ровно два server
+  URL: этот и `http://localhost:3000`.
 - **Manager UI Authorization & Basic Auth Sunset**: Реализованы `/login`, `/api/auth/login`, `/api/auth/logout`, `/api/auth/me`, `ManagerAuthenticationService` (Web Crypto HMAC-SHA256), шапка пользователя `ManagerUserBar` и флаг `DISABLE_BASIC_AUTH_FALLBACK` в `middleware.ts`.
 - **UI Loaders & Visual Feedback (2026-07-26)**: Added `Loader2` animated spinners and disabled states across all backend-driven actions (`/login`, `ManagerUserBar`, `RoundControls`, `SetupForm`, `SurveyBuilder`, `SurveyFlow`).
 - **Contract 4.0 & 6 Quality Blocks Completed (2026-07-26)**: P0 authentication hardened (SHA-256 Web Crypto hashing, default `manager123` prohibited in production, HTTP 503 on missing secrets), `deleteMany` added to `MinimalPrismaClient`, ESLint `setState` in effect fixed, Contract `4.0` created with school `backgroundContext` in Python parser/prompt/provenance, Product UX updated (setup CTA -> `/survey/`, active questions numbered, empty draft, clear questionnaire, load template, delete confirmation, Esc / validation / preview in `QuestionEditDialog`), OpenAPI spec synced with `POST /api/rounds/{roundId}/reset`.
@@ -75,8 +85,8 @@ exact вопросы раунда принадлежат persisted `SurveyRound.
   создать более новый deployment без изменения application runtime.
 - Исходный Supabase project ref `fvnulyirrqjrnjbahmsn` подтверждён Dashboard как
   `main / Production` и не изменялся.
-- Staging:
-  [shalomut-map-demo-ui-redesign.vercel.app](https://shalomut-map-demo-ui-redesign.vercel.app/).
+- Staging: [shalomut-map-demo.vercel.app](https://shalomut-map-demo.vercel.app/)
+  — единственный развёрнутый URL с 2026-07-26.
 - После явного bounded approval legacy staging alias переназначен с
   `dpl_35S9VvwN8V9Bq7da3iP2SJwT4349` (`a20ac66`) на protected Preview
   `dpl_FjVVtXibnMwWRXHHAaPEW5wgj3bR`, состояние `READY`, source commit

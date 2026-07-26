@@ -106,24 +106,24 @@ env остаётся рабочей и явно помечена как dev-ре
 organization-isolation); `npm test`, `npm run lint`, `npm run build`;
 security-focused diff review.
 
-### Слайс 0.3 — один продуктовый URL
+### Слайс 0.3 — один продуктовый URL (выполнено 2026-07-26)
 
-**Состояние.** `shalomut-map-demo.vercel.app` → `dpl_6EfNFk8FN2cLmLVtF3LTxwG7m7pP`
-(`production`, собран из `8bf0cff`, Git-интеграция авто-деплоит `main`), закрыт
-Basic Auth приложения; Render настроен на этот URL.
-`shalomut-map-demo-ui-redesign.vercel.app` → `dpl_FystEnZZ5rNPbJevXcNrfQmn83in`
-(`preview`, Vercel SSO), указан первым server URL в `docs/openapi.yaml:8` и
-`public/openapi.json:10`.
+**Решение пользователя.** Остаётся единственный развёрнутый URL
+`https://shalomut-map-demo.vercel.app/`; он же пока играет роль staging.
+Отдельное production-окружение будет создано позднее по необходимости.
 
-**Рекомендация.** Оставить `shalomut-map-demo.vercel.app`, снять alias с
-`-ui-redesign`, привести OpenAPI specs к оставшемуся URL, удалить неиспользуемую
-env `PP_BASE_URL` (в коде не встречается).
+**Что сделано.** Alias `shalomut-map-demo-ui-redesign.vercel.app` удалён
+(`vercel alias rm` → `Success`), URL отвечает `404`; preview-деплой
+`dpl_FystEnZZ5rNPbJevXcNrfQmn83in` не удалялся и остаётся `READY`.
+`docs/openapi.yaml` и `public/openapi.json` содержат теперь только оставшийся
+URL и `http://localhost:3000`. Раздел окружений в `PROJECT_CONTEXT.md` переписан
+под одно окружение.
 
-**Approval gate.** Снятие alias и удаление env — мутация деплоя, выполняется
-только с явным подтверждением пользователя. До подтверждения ничего не менять.
+**Остаток.** Неиспользуемая env `PP_BASE_URL` (в коде не встречается) в Vercel
+пока не удалена — это отдельная мутация конфигурации, ждёт подтверждения.
 
-**Проверка.** `src/app/api/__tests__/openapi.test.ts` и независимый parse обеих
-spec после правки URL; после мутации — read-only smoke оставшегося URL.
+**Проверка.** `openapi.test.ts` 5/5 после правки спек; `vercel alias ls`
+показывает единственный именованный alias; удалённый URL отвечает `404`.
 
 ## P1 — продуктовые дефекты, видимые директору
 

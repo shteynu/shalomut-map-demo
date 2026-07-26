@@ -98,24 +98,25 @@
 ---
 
 ## 🌐 Окружения и Деплой (Environments & Deployment)
-- **Staging (`stg`)**:
-  - **URL**: `https://shalomut-map-demo-ui-redesign.vercel.app/`
-  - **Текущее состояние**: alias указывает на protected Preview
-    `dpl_FjVVtXibnMwWRXHHAaPEW5wgj3bR` (`READY`, source `91bb8d4`) с тем же
-    application tree, что и подтверждённый staging baseline.
-  - **Проверка**: unauthenticated запрос получает `302` на Vercel SSO;
-    authenticated read-only smoke видит отдельную staging Supabase.
-  - **Обнаруженная конфигурация**: Preview использует отдельную staging
-    Supabase и Vercel Authentication.
-  - **Целевое правило**: обновлять alias только после application-level manager authorization и полного smoke/E2E.
-- **Production (`prod`)**:
+
+С 2026-07-26 у продукта **одно развёрнутое окружение**. Прежний второй адрес
+`shalomut-map-demo-ui-redesign.vercel.app` снят по указанию пользователя: alias
+удалён, URL отвечает `404`, сам preview-деплой не удалялся. GitHub Pages снят с
+публикации в тот же день.
+
+- **Staging (единственное окружение)**:
   - **URL**: `https://shalomut-map-demo.vercel.app/`
-  - **Состояние**: application deployment `dpl_3mfGbz5FiEfWABkfDx8iWTdB4Ris`
-    для `3e3f43f` имеет статус `READY` и содержит dynamic producer `3.0`.
-  - **Deployment gate**: `MANAGER_ORGANIZATION_ID` настроен на единственную
-    staging organization, но shared Basic gate ещё не является полноценной
-    application-level manager authorization.
-  - **Правило**: Мануальный деплой только по прямому указанию (через Vercel Dashboard *Promote to Production* или GitHub Actions `workflow_dispatch`).
+  - **Vercel target**: `production` — Git-интеграция автоматически собирает
+    каждый push в `main` и переназначает на него этот alias. В терминах Vercel
+    это production target, в терминах продукта — staging.
+  - **Данные**: staging Supabase (`tpfzhyalaftotljmlont`); production Supabase
+    (`fvnulyirrqjrnjbahmsn`) к этому окружению не подключён.
+  - **Доступ**: Basic Auth приложения (`BASIC_AUTH_USER`/`BASIC_AUTH_PASSWORD`)
+    плюс менеджерская сессия; Vercel SSO на этом адресе не включён.
+  - **Обязательные секреты рантайма**: `SESSION_SECRET` и
+    `MANAGER_ADMIN_PASSWORD`. Без них деплой падает на инициализации middleware.
+- **Production**: отдельное окружение будет создано позднее по необходимости —
+  с собственным alias, собственной БД и явным решением о деплой-гейтах.
 
 ### Переменные AI-интеграции
 - Core app: `AI_SERVICE_URL`, `AI_SERVICE_TIMEOUT_MS`, `MCP_SHARED_SECRET`,

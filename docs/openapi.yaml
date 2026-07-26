@@ -6,9 +6,7 @@ info:
 
 servers:
   - url: https://shalomut-map-demo.vercel.app
-    description: Production Vercel Runtime
-  - url: https://shalomut-map-demo-ui-redesign.vercel.app
-    description: Staging Environment
+    description: Staging Environment (single deployed runtime; production will be created separately when needed)
   - url: http://localhost:3000
     description: Local Development Server
 

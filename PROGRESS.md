@@ -14,12 +14,17 @@ Updated: 2026-07-26
 
 ## Next Up
 
-1. [ ] Enable `DISABLE_BASIC_AUTH_FALLBACK="true"` in Vercel Preview/Production after setting `SESSION_SECRET` and `MANAGER_ADMIN_PASSWORD` in Vercel Dashboard.
-2. [ ] Staging E2E smoke test and alias alignment upon explicit user approval.
+1. [ ] **Deployment is down — restore first**: set `SESSION_SECRET` and `MANAGER_ADMIN_PASSWORD` in Vercel (Production *and* Preview scope) and redeploy. Every route of `shalomut-map-demo.vercel.app`, including the public respondent route `/answer/...`, returns `500 MIDDLEWARE_INVOCATION_FAILED` with `[Error: SESSION_SECRET environment variable must be configured in production/deployed environment.]`.
+2. [ ] Make the middleware resilient: `session-auth.ts` constructs `JwtSessionProvider` at module scope, so a missing manager secret takes down respondent routes that never needed it.
+3. [ ] Enable `DISABLE_BASIC_AUTH_FALLBACK="true"` in Vercel only after items 1–2.
+4. [ ] Staging E2E smoke test after the runtime is restored.
+5. [ ] Optional cleanup: remove the unused `PP_BASE_URL` environment variable from Vercel.
 
 ---
 
 ## Completed Tasks
+
+- [x] **2026-07-26**: **Consolidated to a single deployed environment** (explicit user approval): alias `shalomut-map-demo-ui-redesign.vercel.app` removed via `vercel alias rm` (URL now `404`; its preview deployment `dpl_FystEnZZ5rNPbJevXcNrfQmn83in` was not deleted and stays `READY`). The only product URL is `https://shalomut-map-demo.vercel.app/`, serving as staging for now; a separate production environment will be created later. `docs/openapi.yaml`, `public/openapi.json` and the environments section of `PROJECT_CONTEXT.md` updated accordingly. Verified with `openapi.test.ts` 5/5 and `vercel alias ls`.
 
 - [x] **2026-07-26**: **UI Loading Indicators Added**: Added animated `Loader2` spinners and disabled states across all screens where backend API calls occur upon clicking buttons or forms (`/login`, `ManagerUserBar`, `RoundControls`, `SetupForm`, `SurveyBuilder`, `SurveyFlow`). Executed `npm test` (168/168 passed), `npm run lint` (0 errors), and `npm run build` (39/39 pages compiled).
 
