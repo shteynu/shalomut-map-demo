@@ -3,9 +3,9 @@
 This project keeps the stable Dashboard taxonomy separate from configurable
 round questionnaires and from demo result data.
 
-> Approved target, not current runtime: deployed contract `2.0` still requires
-> the exact default 24 questions. Dynamic round questionnaires require the next
-> breaking contract and consumer-first implementation described in
+> Deployed contract `3.0` implements dynamic round questionnaires while
+> immutable contract `2.0` continues to describe the exact default 24-question
+> legacy exchange. The consumer-first boundary is described in
 > `docs/dynamic-questionnaire-ai-contract.md`.
 
 ## Canonical Decisions
@@ -26,9 +26,9 @@ round questionnaires and from demo result data.
   privacy-safe aggregates, then return the fixed eight-stone Dashboard output.
   It must not substitute canonical question text or silently ignore additional
   configured questions.
-- Existing AI contracts `1.0` and `2.0` remain immutable. Removing the exact
-  24-question restriction requires a new breaking contract version with a
-  consumer-first rollout.
+- Existing AI contracts `1.0` and `2.0` remain immutable. Breaking contract
+  `3.0` removes the exact 24-question restriction while preserving the fixed
+  eight-stone output and requires a consumer-first rollout.
 - A green dimension is a strength to preserve (`חוזקה לשימור`). Its action
   experience offers supporting or maintenance actions (`פעולות לשימור`), not
   improvement goals or remedial recommendations.
@@ -51,6 +51,10 @@ round questionnaires and from demo result data.
   scoring thresholds, status labels, eight dimensions, and the default 24-question template.
 - `SurveyRound.surveyDefinition`: exact versioned questionnaire snapshot for a
   runtime round.
+- `contracts/ai-analytics-v3.json`: deployed breaking dynamic-questionnaire AI
+  boundary.
+- `src/lib/survey-definition-hash.ts`: deterministic hash of the exact enabled
+  AI-visible question snapshot.
 - `src/lib/demo-data.ts`: demo organization, active round, mock dashboard scores, map positions, metrics, recommendations, and compatibility exports for existing components.
 - `PRODUCT.md`: product voice, users, principles, privacy posture, accessibility expectations, and brand personality.
 - `design.md`: design tokens and implementation notes for the current Next.js demo.

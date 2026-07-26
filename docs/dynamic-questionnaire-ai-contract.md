@@ -2,9 +2,13 @@
 
 ## Статус
 
-Продуктовое направление утверждено 2026-07-26. Реализация ещё не начата.
-Contracts `1.0` и `2.0` остаются immutable; это следующий breaking contract,
-предварительно `3.0` после проверки схемы.
+Продуктовое направление утверждено 2026-07-26. Schema review подтвердил
+несовместимость с exact-24 contract `2.0`, поэтому новая версия зафиксирована
+как breaking contract `3.0` в `contracts/ai-analytics-v3.json`. Contracts
+`1.0` и `2.0` остаются immutable. Реализация `3.0` завершена, проверена,
+зафиксирована в ordered commits `f1cd906`, `6833cb2` и `3e3f43f` и развёрнута
+consumer-first 2026-07-26. Deployed Core producer формирует `3.0`; `2.0`
+сохраняется как совместимый legacy/rollback contract.
 
 ## Цель
 
@@ -34,22 +38,31 @@ allowlist для новых раундов и не должны молча по�
   `dimensionId` является проверяемой domain boundary; general-purpose survey
   analysis вне восьми dimensions не входит в этот контракт.
 
-## Предлагаемый input contract `3.0`
+## Input contract `3.0`
 
 Unlocked MCP payload содержит:
 
 - `contractVersion: "3.0"`;
-- round/organization isolation metadata без respondent identity;
-- `surveyDefinitionRevision` или deterministic `surveyDefinitionHash`;
+- `roundId` и внутренний `organizationId` без respondent identity;
+- deterministic `surveyDefinitionHash`;
 - exact eight Core-owned `dimensionScores`;
 - dynamic `questionAggregates`, где каждый элемент содержит
   `questionId`, `dimensionId`, exact persisted `questionText`,
   `averageScore` и `responseCount`;
 - `calculatedAt`, `totalResponses`, `privacyThreshold`, `isLocked`.
 
-Новая версия валидирует структуру, уникальность ID, supported dimension,
-числовые границы, snapshot revision и privacy counts. Она не сравнивает ID или
-text с `src/lib/shalomut-source.ts` или `contracts/ai-analytics-v2.json`.
+`surveyDefinitionHash` имеет вид `sha256:<64 lowercase hex>`. Core строит
+semantic projection всех enabled анализируемых вопросов как compact JSON array
+объектов с ключами `questionId`, `dimensionId`, `questionText` в этом порядке,
+сортирует элементы по `questionId` по Unicode code point, кодирует UTF-8 без
+ASCII escaping и не нормализует whitespace при hashing. Python пересчитывает
+тот же hash из unlocked aggregates. Такой hash идентифицирует exact AI-visible
+snapshot без новой DB migration и не включает respondent data.
+
+Новая версия валидирует структуру, уникальность ID и map key, supported
+dimension, полное покрытие восьми dimensions, числовые границы, snapshot hash,
+score/status consistency и privacy counts. Она не сравнивает ID или text с
+`src/lib/shalomut-source.ts` или `contracts/ai-analytics-v2.json`.
 
 Core остаётся владельцем score/status facts. Dimension score рассчитывается
 только из полного privacy-safe набора фактических вопросов этой dimension. AI
@@ -75,7 +88,7 @@ Core остаётся владельцем score/status facts. Dimension score �
 - Deterministic fallback выбирает фактический strongest/weakest question и
   использует его exact text; canonical/default text запрещён как fallback.
 - LLM/retry/fallback provenance содержит exact dynamic
-  `sourceQuestionIds` и `surveyDefinitionRevision/hash`.
+  `sourceQuestionIds` и `surveyDefinitionHash`.
 - Provider-invalid, truncated, incomplete, non-Hebrew или
   status-inconsistent output по-прежнему отклоняется.
 - Intervention lookup остаётся exact dimension+status без cross-status
@@ -107,6 +120,12 @@ Persisted `1.0` и `2.0` payloads остаются читаемыми сущес
 4. Только после consumer compatibility переключить Core aggregation/MCP на
    exact persisted round questionnaire.
 5. Сохранить rollback path на producer `2.0`.
+
+Локальная история уже разделена на Python consumer `f1cd906`, Core consumers
+`6833cb2` и producer/survey UX `3e3f43f`. Их нельзя push/deploy одним release
+step: сначала должен стать live и пройти проверку Python, затем Core callback и
+Dashboard consumers, и только после этого producer может начать отправлять
+`3.0`.
 
 ## Acceptance criteria
 

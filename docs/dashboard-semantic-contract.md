@@ -14,7 +14,11 @@ output validation changes what producers and consumers must send and accept.
 `contracts/ai-analytics-v1.json` remains immutable and retains its deployed
 structural validation semantics.
 
-### Consumer-first rollout
+Breaking contract `3.0` is implemented, verified, and deployed. It keeps the
+same eight dimensions and semantic output rules, but replaces the exact-24
+input/metric allowlist with the exact persisted questions of a round.
+
+### Historical contract `2.0` consumer-first rollout
 
 The two transport directions roll out without a version gap:
 
@@ -29,15 +33,14 @@ The two transport directions roll out without a version gap:
 4. Keep `1.0` acceptance during the rollback window. A rollback of the Core
    producer returns the exchange to `1.0` without requiring a Render rollback.
 
-This repository prepares the compatible code paths only. Render/Core deploys,
-aliases, provider configuration, and real callback writes remain outside this
-local change.
+This sequence was completed before the later `3.0` rollout and remains the
+legacy compatibility boundary.
 
-### Approved next breaking direction: dynamic questionnaires
+### Breaking contract `3.0`: dynamic questionnaires
 
 Contract `2.0` remains immutable and continues to describe the exact canonical
-24-question exchange. The next contract version must remove that input
-allowlist without weakening the output semantics documented below.
+24-question exchange. Contract `3.0` removes that input allowlist without
+weakening the output semantics documented below.
 
 For the next version, the exact persisted `SurveyRound.surveyDefinition`
 snapshot is the questionnaire source of truth. Question IDs, text, and count
@@ -58,7 +61,19 @@ evidence makes the whole result locked. The AI must not invent a stone. The
 implementation contract and acceptance matrix are in
 `docs/dynamic-questionnaire-ai-contract.md`.
 
-## Canonical and privacy-safe input
+The deployed `3.0` consumer validates a deterministic questionnaire hash, unique
+question IDs, supported dimension mappings, complete eight-dimension coverage,
+Core score/status consistency and privacy-safe counts. Every successful stone
+contains all and only its actual round-question metrics; provenance references
+those same IDs and hash. Callback persistence additionally recomputes the Core
+analytics and rejects altered scores, statuses, labels, aggregates or counts.
+
+Rollout completed consumer-first on 2026-07-26: Python accepted
+`1.0`/`2.0`/`3.0`, then Core callback and Dashboard readers accepted all three,
+and only then Core MCP switched to `3.0`. Producer `2.0` remains a valid
+rollback boundary.
+
+## Contract `2.0` canonical and privacy-safe input
 
 An unlocked round MUST contain:
 
@@ -109,7 +124,7 @@ Hebrew fallback derived from same-dimension question aggregates. The fallback
 MUST describe observed aggregate patterns and MUST NOT invent respondent-level
 facts, unobserved causes, diagnoses, or identities.
 
-## Question-level metrics
+## Contract `2.0` question-level metrics
 
 Each Stone MUST contain exactly the three canonical question metrics belonging
 to that dimension. A metric MUST identify the canonical question and expose
@@ -121,7 +136,7 @@ metric set and MUST be rejected. A Stone's dimension score and status MUST be
 consistent with the Core aggregate and the configured thresholds: green
 `>=75`, yellow `50-74`, and red `<50`.
 
-## Generation provenance
+## Contract `2.0` generation provenance
 
 Every `2.0` Stone MUST persist verifiable `generationProvenance`:
 

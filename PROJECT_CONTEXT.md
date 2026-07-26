@@ -23,7 +23,8 @@
 - [docs/ai-analytics-handoff.md](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/docs/ai-analytics-handoff.md) — handoff: сделано, подтверждено, осталось и approval gates.
 - [contracts/ai-analytics-v1.json](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/contracts/ai-analytics-v1.json) — immutable deployed structural contract `1.0`.
 - [contracts/ai-analytics-v2.json](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/contracts/ai-analytics-v2.json) — breaking semantic contract `2.0`: те же восемь измерений, 24 canonical questions, status-scoped output и provenance.
-- [docs/dynamic-questionnaire-ai-contract.md](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/docs/dynamic-questionnaire-ai-contract.md) — утверждённое направление следующего breaking contract: динамические round-scoped вопросы при фиксированном Dashboard output.
+- [contracts/ai-analytics-v3.json](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/contracts/ai-analytics-v3.json) — deployed breaking contract `3.0`: dynamic exact round questions при фиксированном eight-stone output.
+- [docs/dynamic-questionnaire-ai-contract.md](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/docs/dynamic-questionnaire-ai-contract.md) — реализованный contract и завершённый consumer-first rollout для динамических round-scoped вопросов.
 - [ai-analytics-service/README.md](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/ai-analytics-service/README.md) — локальный запуск, границы runtime и переменные AI-сервиса.
 
 
@@ -37,8 +38,8 @@
   3. **Запрет внутренней аналитики**: Внутри данного приложения **ЗАПРЕЩЕНО** строить внутренние экспертные движки рекомендаций или тяжёлый бизнес-анализ. Приложение выполняет роль надёжного источника и хранилища сырых данных (*Single Source of Raw Data*).
 
 ### ADR-002: Versioned AI Analytics Contract и fail-closed transport
-- **Решение**: `contracts/ai-analytics-v1.json` остаётся immutable deployed structural contract. Breaking semantic requirements опубликованы отдельно в `contracts/ai-analytics-v2.json`; они сохраняют 8×24 methodology и добавляют privacy-safe question aggregates, strict Hebrew/status validation, canonical metrics и persisted provenance. Callback имеет отдельные validator-ветки для `1.0` и `2.0`, поэтому семантика `1.0` не ужесточается молча.
-- **Rollout**: consumer-first. Python сначала принимает legacy/`1.0` и `2.0`, возвращая effective input version; затем Core callback принимает обе версии; только после этого Core MCP producer начинает отправлять explicit `2.0`. Во время rollback window `1.0` продолжает приниматься.
+- **Решение**: `contracts/ai-analytics-v1.json` и `contracts/ai-analytics-v2.json` остаются immutable deployed contracts. Breaking dynamic requirements опубликованы отдельно в `contracts/ai-analytics-v3.json`; они заменяют exact-24 allowlist на exact persisted round questions, сохраняя восемь dimensions, strict Hebrew/status validation, metrics и provenance. Callback имеет отдельные validator-ветки для `1.0`, `2.0` и `3.0`, поэтому legacy semantics не ужесточаются молча.
+- **Rollout**: consumer-first rollout `3.0` завершён 2026-07-26: Python сначала принял все три версии, затем Core callback и Dashboard readers, после чего Core MCP producer начал отправлять `3.0`. Producer `2.0` остаётся rollback boundary.
 - **Персистентность**: В production-режиме результат хранится в `SurveyRound.aiInsights`; migration `20260724170000_add_ai_insights` применена к текущей настроенной Supabase-цели. Для других окружений миграция запускается отдельно после подтверждения target.
 - **Транспорт**: MCP, webhook и callback поддерживают независимые Bearer secrets. При недоступности удалённого MCP/AI-сервиса обработка завершается ошибкой; mock data разрешены только при явном `USE_MOCK_MCP=true`.
 - **UI**: Dashboard читает AI-insights по `roundId`, валидирует контракт на клиентской границе и отдельно отображает loading, privacy-locked, not-found и error состояния.
@@ -87,8 +88,8 @@
   требует нового round/revision, чтобы старые ответы не сменили смысл.
 - **Compatibility**: deployed contracts `1.0` и `2.0` immutable. Переход от
   exact 24 canonical questions к dynamic aggregates является breaking change;
-  следующая версия должна быть опубликована отдельно и развёрнута
-  consumer-first.
+  contract `3.0` опубликован отдельно и развёрнут consumer-first. Deployed Core
+  producer теперь формирует `3.0`; rollback на producer `2.0` остаётся валидным.
 - **Privacy**: partial unlocked analysis запрещён. AI получает полный набор
   aggregates только когда total и каждый анализируемый вопрос достигли
   threshold. Иначе весь detailed result остаётся locked, provider не
@@ -99,17 +100,21 @@
 ## 🌐 Окружения и Деплой (Environments & Deployment)
 - **Staging (`stg`)**:
   - **URL**: `https://shalomut-map-demo-ui-redesign.vercel.app/`
-  - **Текущее состояние**: database-backed slice из PR #6 смержен в `main` (`043f54d`), но alias пока остаётся на проверенном empty-runtime preview `dpl_35S9VvwN8V9Bq7da3iP2SJwT4349`, commit `a20ac66`.
-  - **Проверка**: `/` → `0/0`, `/api/rounds/` → `{"round":null}`, HTTP 200.
-  - **Обнаруженная конфигурация**: Preview использует отдельную staging Supabase и Vercel Authentication; AI-service project ещё не создан. Production env vars отсутствуют.
+  - **Текущее состояние**: alias указывает на protected Preview
+    `dpl_FjVVtXibnMwWRXHHAaPEW5wgj3bR` (`READY`, source `91bb8d4`) с тем же
+    application tree, что и подтверждённый staging baseline.
+  - **Проверка**: unauthenticated запрос получает `302` на Vercel SSO;
+    authenticated read-only smoke видит отдельную staging Supabase.
+  - **Обнаруженная конфигурация**: Preview использует отдельную staging
+    Supabase и Vercel Authentication.
   - **Целевое правило**: обновлять alias только после application-level manager authorization и полного smoke/E2E.
 - **Production (`prod`)**:
   - **URL**: `https://shalomut-map-demo.vercel.app/`
-  - **Состояние**: в рамках database-backed manager slice не изменялся.
-  - **Новый deployment gate**: перед следующим core deploy нужно подтвердить
-    organization ID для staging target и отдельно добавить
-    `MANAGER_ORGANIZATION_ID`; текущий снимок deployed env этой переменной не
-    содержит.
+  - **Состояние**: application deployment `dpl_3mfGbz5FiEfWABkfDx8iWTdB4Ris`
+    для `3e3f43f` имеет статус `READY` и содержит dynamic producer `3.0`.
+  - **Deployment gate**: `MANAGER_ORGANIZATION_ID` настроен на единственную
+    staging organization, но shared Basic gate ещё не является полноценной
+    application-level manager authorization.
   - **Правило**: Мануальный деплой только по прямому указанию (через Vercel Dashboard *Promote to Production* или GitHub Actions `workflow_dispatch`).
 
 ### Переменные AI-интеграции

@@ -28,8 +28,8 @@ Breaking dynamic-questionnaire contract `3.0` is published separately in
 [`../contracts/ai-analytics-v3.json`](../contracts/ai-analytics-v3.json). It
 keeps the same eight dimensions and score/status semantics, but replaces the
 24-question allowlist with exact persisted round question IDs, text and counts.
-This implementation is currently local and verified, not deployed; the live
-producer remains on exact-canonical-24 `2.0`.
+This implementation is deployed consumer-first; the live Core producer sends
+dynamic `3.0`, while exact-canonical-24 `2.0` remains supported for rollback.
 
 The rollout is consumer-first. The Python service first accepts legacy input
 (missing version or `1.0`) and explicit `2.0`, returning the effective input
@@ -48,10 +48,10 @@ Privacy-locked rounds return a `locked_error` payload without stones or any
 detailed aggregates. The core app validates callback payloads again before
 persisting them.
 
-The `3.0` rollout remains consumer-first: deploy a Python consumer accepting
-`1.0`, `2.0` and `3.0`; then deploy Core callback/Dashboard readers accepting
-all three; only then switch the Core MCP producer from `2.0` to `3.0`. A Core
-producer rollback to `2.0` remains valid throughout the compatibility window.
+The `3.0` rollout completed consumer-first: Python accepted `1.0`, `2.0` and
+`3.0`; Core callback/Dashboard readers then accepted all three; only afterward
+did the Core MCP producer switch from `2.0` to `3.0`. A Core producer rollback
+to `2.0` remains valid throughout the compatibility window.
 
 ## Local setup
 

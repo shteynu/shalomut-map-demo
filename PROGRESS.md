@@ -1,19 +1,19 @@
 # PROGRESS: Shalomut Map
 
 ## 📌 Текущий статус
-- **Текущий этап**: contract `2.0` сделан GREEN и опубликован consumer-first.
-  Следующее утверждённое продуктовое направление — dynamic questionnaire
-  input при фиксированном eight-stone Dashboard output. Exact вопросы должны
-  браться из persisted round snapshot; canonical 24 остаются default/legacy
-  template. Реализация следующей breaking version ещё не начата.
+- **Текущий этап**: breaking contract `3.0` для dynamic questionnaire сделан
+  GREEN и развёрнут consumer-first при неизменных `1.0`/`2.0`. Exact вопросы
+  берутся из persisted round snapshot; canonical 24 остаются default/legacy
+  template, а не AI allowlist.
 - **Состояние БД**: отдельный Supabase staging project
   `shalomut-map-staging` (`tpfzhyalaftotljmlont`, `ap-northeast-2`) содержит
   ровно одну organization `34d05e66-fa4d-4a07-a2af-c9d5c41b6088` и один
   round `80e78f3e-1240-42d4-8a9e-23a3467bb650`. Это подтверждено read-only
   запросом; миграции, cleanup и другие data writes в финальной проверке не
   выполнялись.
-- **Core app runtime**: проверенный implementation deployment
-  `dpl_4eNSv1WpVvhjGBqgUCbbrBGuBbSe` для `ba99a23` имеет состояние `READY`;
+- **Core app runtime**: application deployment
+  `dpl_3mfGbz5FiEfWABkfDx8iWTdB4Ris` для producer slice `3e3f43f` имеет
+  состояние `READY`;
   production alias
   [shalomut-map-demo.vercel.app](https://shalomut-map-demo.vercel.app/) сейчас
   используется как operational staging endpoint и подключён к выделенной
@@ -29,22 +29,23 @@
   Runtime smoke подтвердил тот же staging round и threshold `10`, read-only
   БД — `12` responses.
 - **Последний локальный browser-smoke**: изолированный Playwright на ephemeral
-  in-memory runtime подтвердил `/setup/`, unlocked overview, dimension,
-  question metrics, green recommendations и privacy-locked dashboard. Summary
-  показан один раз; green UX использует `חוזקה לשימור` и `פעולות לשימור`.
-  Console: 0 errors/0 warnings. Процесс остановлен, внешние данные не менялись.
-- **Dashboard semantic quality**: опубликован contract `2.0`, при этом
-  `contracts/ai-analytics-v1.json` не изменён. Core отдаёт 24 privacy-safe
-  question aggregates только после threshold gate; Python отклоняет
+  in-memory runtime подтвердил `/setup/`, respondent questionnaires на 8 и 11
+  exact persisted вопросов, unlocked eight-stone Dashboard с variable metrics,
+  recommendations и privacy-locked `9/10` state. Summary показан один раз;
+  green UX использует `חוזקה לשימור` и `פעולות לשימור`. Процесс остановлен,
+  внешние данные не менялись.
+- **Dashboard semantic quality**: manifest `3.0` опубликован и развёрнут, при
+  этом contracts `1.0` и `2.0` не изменены. Core отдаёт exact dynamic
+  question aggregates только после полного threshold gate; Python отклоняет
   provider-invalid/truncated/non-Hebrew/status-inconsistent output, применяет
   bounded retry и question-grounded deterministic fallback с provenance;
   Dashboard показывает реальные metrics без cross-status fallback.
-- **AI runtime**: FastAPI-сервис развёрнут на Render; проверенный implementation
-  deployment:
+- **AI runtime**: FastAPI-сервис развёрнут на Render; application deployment:
   [shalomut-ai-analytics.onrender.com](https://shalomut-ai-analytics.onrender.com),
-  deployment `dep-d9ij9unlk1mc739jao30` для `ba99a23` имеет статус `Live`;
-  consumer-first deployment `dep-d9ij96mq1p3s73fhsncg` для `82f7194` также
-  успешно завершился. `/health` отвечает HTTP 200.
+  `dep-d9iro1uk1jcs73f6kmh0` для `3e3f43f` имеет статус `Live`; Python-first
+  deployment `dep-d9irlm6k1jcs73f6je50` для `f1cd906` и compatibility
+  deployment `dep-d9irmvn41pts73aoi83g` для `6833cb2` также завершились
+  успешно. `/health` отвечает HTTP 200.
 - **Real E2E**: для разрешённого round core trigger вернул `202`, MCP POST
   `/api/mcp/` — `200`, Render webhook — `200`, callback POST — `200`,
   сохранённый GET — `200`. Четыре non-green dimensions завершились как
@@ -56,11 +57,11 @@
   меняет `aiInsights` только выбранного `SurveyRound.id`. Результаты предыдущего
   раунда и другой школы сохранились. Это доказывает изоляцию хранения, но не
   application-level tenant authorization.
-- **Остаточный runtime-риск**: код `2.0` развёрнут на Core и Render, но real
-  webhook/callback не запускался, поэтому новый persisted `2.0` payload в
-  staging ещё не создан. Locked/unlocked staging E2E требует отдельного
-  bounded approval; application-level manager authorization и разделение
-  staging/production aliases/env остаются открытыми.
+- **Остаточный runtime-риск**: deployed producer уже возвращает `3.0`, но
+  read-only MCP smoke выполнен на существующем canonical-24 round. Реальный
+  custom-questionnaire provider → callback → persistence E2E и отдельный
+  privacy-locked staging round не запускались. Application-level manager
+  authorization и разделение staging/production aliases/env остаются открытыми.
 - **Защита и секреты**: три machine-to-machine secret совпадают; raw values не выводились и не коммитились. Старый preview URL и placeholder Vercel bypass удалены из фактической Render-конфигурации. Исходный Supabase ref `fvnulyirrqjrnjbahmsn` не изменялся.
 - **Manager deployment gate**: `MANAGER_ORGANIZATION_ID` добавлен в Vercel как
   Sensitive variable для Preview и Production и указывает на единственную
@@ -68,32 +69,50 @@
   `.env.staging.local`; production `.env` и `.env.local` не менялись.
   Deployed read-only smoke подтвердил anonymous `401`, authenticated `200`,
   правильные organization/round и игнорирование поддельного client scope.
-- **Git-состояние**: `HEAD`, `main` и `origin/main` совпадали на `8d076c9` до
-  текущего local product-decision diff. Unrelated user changes не обнаружены;
-  текущие изменения не закоммичены и не задеплоены.
+- **Git-состояние**: `main`/`origin/main` содержат последовательно Python consumer
+  `f1cd906`, Core callback/Dashboard consumer `6833cb2` и Core producer/survey
+  UX `3e3f43f`; этот documentation checkpoint следует за ними. Unrelated user
+  changes не обнаружены.
+- **Последний application GitHub workflow**: `30193485699` — `success` для
+  producer slice `3e3f43f`.
 - **AI coding workflow**: канонические repo-level skills `shalomut-map`, `shalomut-tracker` и `shalomut-verification` находятся в `.agents/skills/`; инструкции для Codex, Gemini, Claude и GitHub Copilot закоммичены в `main`.
 - **Актуальный handoff**: см. [`docs/shalomut-tracker-handoff.md`](docs/shalomut-tracker-handoff.md). AI-детали: [`docs/ai-analytics-handoff.md`](docs/ai-analytics-handoff.md).
 
 ---
 
 ## 🚀 Следующие шаги (Next Up: Safe Staging)
-1. [ ] Реализовать RED-first новый breaking AI contract для dynamic
-   round-scoped questions по
-   [`docs/dynamic-questionnaire-ai-contract.md`](docs/dynamic-questionnaire-ai-contract.md):
-   Python consumer first, затем Core producer, сохранив `1.0`/`2.0` immutable.
-2. [ ] После implementation и с отдельным bounded approval выполнить staging
+1. [ ] С отдельным bounded approval выполнить staging
    unlocked/locked E2E, проверить persisted provenance, exact custom questions
    и отсутствие detailed maps ниже threshold.
-3. [ ] Заменить organization-scoped shared Basic gate на application-level
+2. [ ] Заменить organization-scoped shared Basic gate на application-level
    manager identity/roles и полноценную tenant authorization; `2.0`
    MCP уже не передаёт выдуманный `organizationContext`.
-4. [ ] Развести staging и production aliases/env окончательно; legacy staging
+3. [ ] Развести staging и production aliases/env окончательно; legacy staging
    alias уже выровнен по Git tree, но текущий production alias используется
    как staging endpoint и не должен считаться production-ready.
 
 ---
 
 ## ✅ Завершенные задачи (Completed)
+- [x] **2026-07-26**: **Dynamic questionnaire AI contract `3.0` реализован,
+  доказан локально и развёрнут consumer-first**:
+  - `SurveyRound.surveyDefinition` стал exact round snapshot с validation всех
+    восьми dimensions, unique stable IDs и immutability после первого ответа;
+  - Core считает dynamic aggregates/hash и целиком блокирует details, если
+    total или один анализируемый вопрос ниже threshold;
+  - Python принимает `1.0`/`2.0`/`3.0`, использует exact text в prompt,
+    fallback, metrics и provenance; Dashboard показывает variable metrics;
+  - callback сверяет hash, Core-owned score/status и фактические aggregates;
+  - verification: targeted TypeScript 82/82, `npm test` 131/131, Python pytest
+    88/88, dependency-light 13/13, OpenAPI 5/5 + independent parse/sync,
+    lint, typecheck, production build и local Playwright/boundary — GREEN;
+  - commits продвинуты строго по одному: `f1cd906`, `6833cb2`, `3e3f43f`;
+    GitHub workflows `30193335363`, `30193418263`, `30193485699` успешны;
+  - application deployments: Vercel `dpl_3mfGbz5FiEfWABkfDx8iWTdB4Ris`
+    `READY`, Render `dep-d9iro1uk1jcs73f6kmh0` `Live`; read-only deployed MCP
+    smoke вернул `3.0`, 8 dimension scores и 24 aggregates существующего round;
+  - migration, provider configuration, real webhook/callback и data writes не
+    выполнялись; production readiness не заявлена.
 - [x] **2026-07-26**: **Зафиксировано продуктовое решение о dynamic
   questionnaires**:
   - восемь dimensions остаются стабильной Dashboard taxonomy, а exact вопросы

@@ -1,25 +1,28 @@
 # AI Analytics — handoff
 
-> Status update, 2026-07-26: consumer `82f7194` and producer `ba99a23` are
-> published in `origin/main`; Vercel implementation deployment
-> `dpl_4eNSv1WpVvhjGBqgUCbbrBGuBbSe` is `READY`, and Render deployment
-> `dep-d9ij9unlk1mc739jao30` is `Live` on `ba99a23`. `main` now implements the
-> breaking shared contract `2.0` while preserving
-> immutable `1.0`. Prepared TypeScript and Python semantic suites
-> are GREEN, including 24 privacy-safe question aggregates, strict Hebrew and
-> completeness validation, bounded retry, grounded fallback, persisted
-> provenance and status-aware Dashboard UX. Consumer commit `82f7194` reached
-> Render first; producer commit `ba99a23` then reached Vercel and Render. A
-> session-close docs publish can create newer deployment IDs without changing
-> the application runtime.
-> The next approved product direction is a new breaking contract for dynamic
-> round-scoped questions with the same fixed eight-stone Dashboard output;
-> implementation has not started and `2.0` remains immutable.
+> Status update, 2026-07-26: dynamic questionnaire contract `3.0` is implemented,
+> GREEN, and deployed consumer-first while immutable `1.0`/`2.0` remain unchanged. Core uses the
+> exact persisted round snapshot, Python accepts all three versions, and the
+> callback/Dashboard preserve fixed eight-stone semantics with variable
+> question metrics. The application release is `3e3f43f`: Vercel
+> `dpl_3mfGbz5FiEfWABkfDx8iWTdB4Ris` is `READY`, Render
+> `dep-d9iro1uk1jcs73f6kmh0` is `Live`, and GitHub workflow `30193485699`
+> succeeded. Production readiness is not claimed.
 > Broader operational state is tracked in
 > `docs/shalomut-tracker-handoff.md`.
 
 ## Snapshot
 
+- Current Git state: `main`/`origin/main` contain Python consumer `f1cd906`, Core
+  consumer `6833cb2` and Core producer/survey UX `3e3f43f`, followed by this
+  documentation checkpoint.
+- Verified rollout sequence: `f1cd906` first (`dep-d9irlm6k1jcs73f6je50`,
+  `dpl_CyDBdFHJhw5wPYy2ZwKtxEMbrcQR`, workflow `30193335363`), then `6833cb2`
+  (`dep-d9irmvn41pts73aoi83g`, `dpl_AveukVTUW7Zr8iXeVmMng9CvSFuH`, workflow
+  `30193418263`), then `3e3f43f` (`dep-d9iro1uk1jcs73f6kmh0`,
+  `dpl_3mfGbz5FiEfWABkfDx8iWTdB4Ris`, workflow `30193485699`). All Render
+  deployments are `Live`, all Vercel deployments are `READY`, and all workflows
+  succeeded.
 - Session baseline: clean start from `main@6555c34`. Consumer `82f7194` and
   producer `ba99a23` are published in `origin/main`.
 - Original branch: `feature/ai-analytics-microservice-mcp`
@@ -50,6 +53,9 @@
 - `contracts/ai-analytics-v2.json` publishes the breaking `2.0` boundary with
   the same eight canonical dimensions and exactly 24 required canonical
   questions. TypeScript, Python and OpenAPI load/describe both versions.
+- `contracts/ai-analytics-v3.json` publishes the deployed breaking dynamic input:
+  exact persisted question ID/text/count, deterministic snapshot hash and the
+  same eight Core-owned dimension scores. `1.0`/`2.0` manifests have zero diff.
 - TypeScript validates legacy `1.0` and strict `2.0` callback payloads before
   persistence. Python accepts missing/`1.0` input as legacy and explicit `2.0`
   input as strict, returning the effective input version.
@@ -58,12 +64,18 @@
   `dimensionScores` and `questionAggregates`.
 - `docs/dashboard-semantic-contract.md` specifies the published `2.0` schema,
   compatibility rules and consumer-first rollout.
-- `docs/dynamic-questionnaire-ai-contract.md` specifies the next approved
+- `docs/dynamic-questionnaire-ai-contract.md` specifies the implemented
   boundary: actual questions come from the persisted round snapshot, while the
-  eight dimensions and Dashboard result shape stay stable. It is not yet a
-  runtime contract.
+  eight dimensions and Dashboard result shape stay stable.
 
 ### Python service
+
+- The consumer accepts `1.0`, strict canonical `2.0`, and strict dynamic `3.0`.
+  For `3.0` it validates unique IDs, supported dimensions, complete coverage,
+  counts, score/status consistency and the shared questionnaire hash.
+- Dynamic prompt, fallback, metrics and provenance use exact persisted text and
+  same-dimension question IDs. Privacy-locked input short-circuits before any
+  provider call.
 
 - FastAPI webhook is the production entrypoint. The direct analyze endpoint
   exists only for `ENV=development` and returns `404` elsewhere.
@@ -115,6 +127,16 @@
 
 ### Core app and persistence
 
+- Local `3.0` aggregation reads the exact `SurveyRound.surveyDefinition`,
+  preserves custom/supplemental questions and text, and emits organization- and
+  round-scoped dynamic aggregates only after total and every analyzed question
+  meet the threshold.
+- Question snapshots cannot change after the first accepted response. New
+  rounds still start from the canonical 24-question default template.
+- The `3.0` callback recomputes the snapshot hash and Core analytics before
+  persistence, rejecting altered dimension scores/statuses, question labels,
+  averages or response counts.
+
 - `/api/mcp` exposes `tools/list` and `get_round_analytics`.
 - `2.0` MCP output contains all 24 canonical question aggregates only
   when the total and every question meet the privacy threshold; otherwise both
@@ -132,6 +154,11 @@
 
 ### Dashboard
 
+- Deployed readers retain legacy `1.0`/`2.0` rendering and accept `3.0` variable
+  metric counts with exact persisted question labels and aggregate facts.
+- Survey builder supports stable ID/text/dimension edits and additions before
+  collection, with Hebrew duplicate-ID and missing-dimension activation errors.
+
 - Detail, metrics, and recommendations pages load AI insights by `roundId`.
 - UI states are explicit: loading, ready, locked, not-found, and error.
 - Browser scenarios were checked for ready, missing, and privacy-locked rounds.
@@ -142,6 +169,21 @@
   improvement goals. Existing persisted `1.0` payloads remain readable.
 
 ## Verification evidence
+
+- Current local `3.0` evidence: targeted TypeScript 82/82; `npm test` 131/131;
+  full Python pytest 88/88 with one existing Starlette/httpx2 deprecation
+  warning; dependency-light 13/13; OpenAPI integrity 5/5 plus independent
+  JSON/YAML parse/sync; lint; typecheck; production build; immutable `1.0`/`2.0`
+  diff check.
+- RED-first tests reproduced canonical-only Core aggregation/text, Python
+  exact-24 rejection and Dashboard three-metric assumptions before the fix.
+- Local Next.js MCP → Python CLI → callback/persistence passed for separate
+  8- and 11-question rounds, including exact custom text, fixed eight stones,
+  variable metric counts, tamper rejection and all-or-nothing privacy lock.
+- Local Playwright on an explicitly database-free in-memory runtime verified
+  `/setup/`, both respondent questionnaires, unlocked metrics/recommendations,
+  locked `9/10`, single summary and green preservation UX. No external write,
+  webhook, migration, deploy or provider call was used.
 
 - Consumer-first deployment: Render `dep-d9ij96mq1p3s73fhsncg` reached Live on
   `82f7194` before Core producer `ba99a23` was pushed.
@@ -202,15 +244,13 @@
 
 ## What remains
 
-1. Publish and implement a new breaking dynamic-questionnaire contract
-   consumer-first. Keep `1.0`/`2.0` immutable and use exact persisted round
-   question IDs/text in prompt, fallback, metrics and provenance.
-2. With an exact environment/round approval, verify real staging unlocked and
-   privacy-locked `2.0` paths, persisted provenance and empty locked maps.
-3. Separate staging and production aliases/env; the current production alias
+1. With an exact environment/round approval, verify a real custom-questionnaire
+   `3.0` provider → callback → persistence path and a privacy-locked `3.0` path,
+   including exact persisted text/provenance and empty locked maps.
+2. Separate staging and production aliases/env; the current production alias
    is being used as a staging core endpoint and is not production-ready.
-4. Implement application-level manager identity/roles and tenant authorization.
-5. Decide separately whether the runtime should adopt real LangGraph/ChromaDB;
+3. Implement application-level manager identity/roles and tenant authorization.
+4. Decide separately whether the runtime should adopt real LangGraph/ChromaDB;
    this is not required for the current contract or local E2E path.
 
 ## Approval gates
@@ -228,7 +268,7 @@
 
 ## First next action
 
-Start with RED tests for two different persisted round questionnaires, then
-publish the new breaking contract skeleton and update the Python consumer
-before the Core producer. Do not invoke a real webhook or external callback
-without an explicitly selected environment and round.
+Obtain bounded approval for an exact staging environment and dedicated custom
+questionnaire round, then verify unlocked and privacy-locked `3.0` persistence.
+Do not invoke an external callback without an explicitly selected environment
+and round.

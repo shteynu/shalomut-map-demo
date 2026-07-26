@@ -11,16 +11,19 @@ exact вопросы раунда принадлежат persisted `SurveyRound.
 
 ## Текущий snapshot
 
-- Активная ветка: `main`; сессия началась от `6555c34`. Contract `2.0`
-  опубликован consumer-first: `82f7194` содержит dual-version Python consumer,
-  `ba99a23` — Core producer, OpenAPI и Dashboard UX. Оба commit находятся в
-  `origin/main`. `HEAD`, `main` и `origin/main` совпадали на `8d076c9` до
-  текущего local product-decision docs/skills diff.
-- После rollout утверждена следующая продуктовая граница: questions становятся
-  dynamic round-scoped content, а восемь Dashboard dimensions и output shape
-  остаются фиксированными. Specification находится в
-  `docs/dynamic-questionnaire-ai-contract.md`; implementation/contract version
-  ещё не созданы, текущий diff не задеплоен.
+- Активная ветка: `main`/`origin/main` содержат consumer-first implementation
+  commits `f1cd906` (Python), `6833cb2` (Core consumers) и `3e3f43f` (Core
+  producer/survey UX), после которых следует этот documentation checkpoint.
+- Contract `3.0` реализует dynamic round-scoped questions при фиксированных
+  восьми Dashboard dimensions и output shape. Specification находится в
+  `docs/dynamic-questionnaire-ai-contract.md`; contracts `1.0`/`2.0` не
+  изменены. Deployed Core producer формирует dynamic `3.0`; `2.0` остаётся
+  совместимым legacy/rollback boundary.
+- Application runtime snapshot: Vercel
+  `dpl_3mfGbz5FiEfWABkfDx8iWTdB4Ris` — `READY`, production alias —
+  `https://shalomut-map-demo.vercel.app`; Render
+  `dep-d9iro1uk1jcs73f6kmh0` — `Live`; GitHub workflow `30193485699` —
+  `success`. Alias остаётся operational staging endpoint, не production-ready.
 - Functional AI baseline `a9b6c34` ограничивает latency Gemini-запросов общим
   retry budget. Поверх него `7a451fd` добавляет organization-scoped manager
   boundary, а `508410a` сохраняет понятный пользователю fail-closed UI; оба
@@ -52,7 +55,7 @@ exact вопросы раунда принадлежат persisted `SurveyRound.
   Sensitive variable со scope Preview и Production. Локальная копия находится
   только в ignored `.env.staging.local`; production `.env` и `.env.local` не
   менялись.
-- Проверенный Vercel implementation deployment
+- Исторический проверенный Vercel implementation deployment
   `dpl_4eNSv1WpVvhjGBqgUCbbrBGuBbSe` для `ba99a23` имеет состояние `READY` и
   обслуживает `shalomut-map-demo.vercel.app`. `/setup/` partial-JSON regression
   уже исправлен и задеплоен в этом baseline. Session-close docs publish может
@@ -82,7 +85,7 @@ exact вопросы раунда принадлежат persisted `SurveyRound.
   [30160539496](https://github.com/shteynu/shalomut-map-demo/actions/runs/30160539496)
   для commit `a9b6c34` завершился успешно; manual production deploy job
   ожидаемо был пропущен.
-- AI-сервис развёрнут на Render:
+- AI-сервис развёрнут на Render; исторический `2.0` rollout:
   `https://shalomut-ai-analytics.onrender.com`. Deployment
   `dep-d9ij9unlk1mc739jao30` собран из `ba99a23`, имеет состояние `Live`;
   `/health` отвечает HTTP 200. Предшествующий consumer-first deployment
@@ -97,6 +100,42 @@ exact вопросы раунда принадлежат persisted `SurveyRound.
   ожидаемо были пропущены правилом 0-token. Callback получил `200`, а
   `processedAt` persisted payload изменился на
   `2026-07-25T13:54:46.160682+00:00`.
+
+### Dynamic questionnaire contract `3.0` (rollout 2026-07-26)
+
+- Новый immutable manifest добавлен отдельно; manifests `1.0` и `2.0` не
+  изменены. `surveyDefinitionHash` связывает exact enabled question
+  ID/dimension/text snapshot между Core, Python, callback и provenance.
+- Core использует persisted `SurveyRound.surveyDefinition`, принимает custom и
+  supplemental questions, проверяет unique IDs и полное покрытие dimensions,
+  замораживает question snapshot после первого accepted response и целиком
+  блокирует details, если total или один question ниже threshold.
+- Python принимает `1.0`/`2.0`/`3.0`; dynamic prompt, deterministic fallback,
+  metrics и provenance используют exact round text/IDs. Locked path не
+  вызывает provider.
+- Core callback и Dashboard reader принимают все три версии. Callback для
+  `3.0` заново сверяет hash, Core-owned score/status и question aggregates;
+  Dashboard показывает variable metric counts и сохраняет eight stones,
+  single summary, exact-status interventions и green semantics.
+- RED evidence воспроизвёл canonical-only aggregation/text, exact-24 Python и
+  three-metric Dashboard assumptions. GREEN evidence: targeted TypeScript
+  82/82, `npm test` 131/131, full Python pytest 88/88, dependency-light 13/13,
+  OpenAPI 5/5 + independent parse/sync, lint, typecheck и build.
+- Local Next.js → Python CLI → callback boundary прошёл для 8- и 11-question
+  rounds; ниже-threshold question блокирует весь result. Local Playwright на
+  явно database-free in-memory runtime проверил `/setup/`, оба respondent
+  questionnaires, variable metrics/recommendations, locked `9/10` Dashboard и
+  green supporting actions. Внешних writes или webhook не было.
+- Deployment выполнен consumer-first: Python `f1cd906`, Core consumers
+  `6833cb2`, затем producer `3e3f43f`. Соответствующие Render deployments
+  `dep-d9irlm6k1jcs73f6je50`, `dep-d9irmvn41pts73aoi83g` и
+  `dep-d9iro1uk1jcs73f6kmh0` стали `Live`; Vercel deployments
+  `dpl_CyDBdFHJhw5wPYy2ZwKtxEMbrcQR`, `dpl_AveukVTUW7Zr8iXeVmMng9CvSFuH` и
+  `dpl_3mfGbz5FiEfWABkfDx8iWTdB4Ris` стали `READY`; workflows `30193335363`,
+  `30193418263`, `30193485699` завершились успешно.
+- Read-only deployed MCP smoke существующего staging round вернул `3.0`,
+  восемь dimension scores, 24 aggregates и корректный definition hash без
+  respondent identity. Реальный webhook/callback и data writes не запускались.
 
 ### Dashboard semantic contract `2.0` (rollout 2026-07-26)
 
@@ -517,8 +556,9 @@ Staging показывал старую demo-школу, имя менеджер
 - Home, setup, round tracking, dashboard и dimension pages читают этот context;
   пустая БД показывает отдельные states «нет школы» и «нет раунда».
 - Setup сохраняет organization, round dates, threshold и background context.
-- Survey builder сохраняет definition; 24 канонических вопроса остаются
-  обязательными и включёнными.
+- Survey builder сохраняет exact definition; 24 канонических вопроса остаются
+  начальным default template, но ID/text/dimension/count могут меняться до
+  первого accepted response.
 - Respondent route использует настоящий share code, а submit валидируется
   против сохранённого definition и использует анонимный per-round token hash.
 - Закрытие раунда сохраняет status через API; сетевые ошибки больше не
@@ -530,23 +570,21 @@ Staging показывал старую demo-школу, имя менеджер
 
 ## Что не завершено
 
-### 1. Dynamic questionnaire AI contract
+### 1. Dynamic questionnaire `3.0` staging evidence
 
-- Deployed `2.0` требует exact canonical 24 и остаётся immutable. Он не
-  выполняет главную продуктовую цель разных questionnaires между раундами.
-- Следующая breaking version должна анализировать exact persisted question
-  IDs/text/counts каждого раунда и возвращать прежние восемь Dashboard stones.
-- Готов implementation contract и acceptance matrix:
-  `docs/dynamic-questionnaire-ai-contract.md`. Реализация должна идти
-  RED-first и consumer-first; automatic dimension classification и изменение
-  privacy semantics не разрешены без отдельного продуктового решения.
+- Consumer-first deployment завершён, но существующий persisted staging round
+  использует canonical 24. Нужен отдельный real custom-questionnaire
+  provider → callback → persistence E2E и отдельный privacy-locked round.
+- Это evidence требует bounded approval; automatic dimension classification и
+  изменение privacy semantics не разрешены без отдельного продуктового решения.
 
 ### 2. Dashboard semantic staging evidence
 
-- Contract/Core/Python/Dashboard semantics `2.0` развёрнуты consumer-first на
-  Core и Render. Immutable `1.0` сохранён как compatibility/rollback boundary.
+- Contract/Core/Python/Dashboard semantics `3.0` развёрнуты consumer-first на
+  Core и Render. Immutable `1.0`/`2.0` сохранены как compatibility/rollback
+  boundaries.
 - Real staging webhook/callback после rollout не запускался: persisted payload
-  всё ещё может быть историческим `1.0`. Для нового unlocked/locked `2.0`
+  всё ещё может быть историческим `1.0`. Для нового unlocked/locked `3.0`
   evidence нужен отдельный exact round/environment approval.
 
 ### 3. Application-level manager authentication
@@ -561,9 +599,9 @@ Staging показывал старую demo-школу, имя менеджер
 ### 4. Deployed AI provenance и privacy-locked runtime
 
 - Real Gemini generation, transport и persistence доказаны для одного
-  explicitly approved unlocked `1.0` round. Развёрнутый `2.0` сохраняет
+  explicitly approved unlocked `1.0` round. Развёрнутый `3.0` сохраняет
   provenance, но real staging webhook/callback после rollout не запускался,
-  поэтому persisted `2.0` evidence пока отсутствует.
+  поэтому persisted `3.0` evidence пока отсутствует.
 - Locked behavior доказано unit/integration tests и локальным browser/API
   runtime; отдельный реальный staging privacy-locked round после consumer-first
   deploy не проверялся.
@@ -580,16 +618,13 @@ Staging показывал старую demo-школу, имя менеджер
 
 ## Рекомендуемый порядок продолжения
 
-1. RED-first зафиксировать следующую breaking contract version и сделать
-   consumer-first dynamic-questionnaire rollout локально: Python compatibility,
-   затем Core aggregation/MCP, callback и Dashboard variable metrics.
-2. После implementation и с отдельным bounded approval выполнить точные
+1. С отдельным bounded approval выполнить точные
    unlocked и privacy-locked staging E2E, включая persisted provenance, exact
    custom questions и пустые locked maps. Не использовать production data.
-3. Заменить organization-scoped shared Basic gate на application-level manager
+2. Заменить organization-scoped shared Basic gate на application-level manager
    identity/roles и полноценную tenant authorization; передавать реальный
    organization context в MCP payload.
-4. Согласовать окончательное разделение staging/production aliases и env;
+3. Согласовать окончательное разделение staging/production aliases и env;
    текущий legacy staging alias уже выровнен по Git tree, но production alias
    всё ещё используется как staging core endpoint. Production
    data/env/alias/deployment не затрагивать без нового bounded approval.
