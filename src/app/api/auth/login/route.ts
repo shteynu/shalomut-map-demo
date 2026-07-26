@@ -4,8 +4,6 @@ import { JwtSessionProvider } from "@/lib/auth/jwt-session-provider";
 import { ManagerAuthenticationService } from "@/lib/auth/manager-auth-service";
 import { SESSION_COOKIE_NAME } from "@/lib/server/session-auth";
 
-const sessionProvider = new JwtSessionProvider();
-
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}));
@@ -42,6 +40,20 @@ export async function POST(request: NextRequest) {
     const { manager, memberships } = authResult;
     const activeMembership = memberships.find((m) => m.status === "active") || memberships[0];
     const activeOrganizationId = activeMembership.organizationId;
+
+    let sessionProvider: JwtSessionProvider;
+    try {
+      sessionProvider = new JwtSessionProvider();
+    } catch {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "שרת התחברות המנהלים אינו מוגדר בסביבה זו (חסרים סודות מערכת)",
+          reason: "UNCONFIGURED",
+        },
+        { status: 503 },
+      );
+    }
 
     const { token, session } = await sessionProvider.createSession(
       manager,

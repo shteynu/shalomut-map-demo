@@ -12,7 +12,10 @@ function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
-export function parseSurveyDefinition(value: unknown):
+export function parseSurveyDefinition(
+  value: unknown,
+  options?: { allowIncomplete?: boolean },
+):
   | { ok: true; value: SurveyDefinition }
   | { ok: false; error: string } {
   if (!isRecord(value)) {
@@ -96,18 +99,20 @@ export function parseSurveyDefinition(value: unknown):
     });
   }
 
-  const enabledDimensionIds = new Set(
-    parsedQuestions
-      .filter((question) => question.enabled)
-      .map((question) => question.dimensionId),
-  );
-  for (const dimensionId of validDimensionIds) {
-    if (!enabledDimensionIds.has(dimensionId)) {
-      return {
-        ok: false,
-        error:
-          "Enabled survey questions must cover all eight dimensions before activation.",
-      };
+  if (!options?.allowIncomplete) {
+    const enabledDimensionIds = new Set(
+      parsedQuestions
+        .filter((question) => question.enabled)
+        .map((question) => question.dimensionId),
+    );
+    for (const dimensionId of validDimensionIds) {
+      if (!enabledDimensionIds.has(dimensionId)) {
+        return {
+          ok: false,
+          error:
+            "Enabled survey questions must cover all eight dimensions before activation.",
+        };
+      }
     }
   }
 

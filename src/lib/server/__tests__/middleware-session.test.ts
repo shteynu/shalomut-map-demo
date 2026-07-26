@@ -132,3 +132,34 @@ test("middleware allows unauthenticated access to /login and /login/ trailing sl
   const res2 = await middleware(req2);
   assert.strictEqual(res2.status, 200);
 });
+
+test("middleware and respondent routes stay functional when SESSION_SECRET is missing in deployed runtime", async () => {
+  const origNodeEnv = process.env.NODE_ENV;
+  const origVercelEnv = process.env.VERCEL_ENV;
+  const origSecret = process.env.SESSION_SECRET;
+
+  process.env.NODE_ENV = "production";
+  process.env.VERCEL_ENV = "production";
+  delete process.env.SESSION_SECRET;
+
+  try {
+    const respondentReq = new NextRequest("http://localhost:3000/answer/SHALOM-TEST1");
+    const respondentRes = await middleware(respondentReq);
+    assert.strictEqual(respondentRes.status, 200);
+
+    const loginReq = new NextRequest("http://localhost:3000/login/");
+    const loginRes = await middleware(loginReq);
+    assert.strictEqual(loginRes.status, 200);
+
+    const mcpReq = new NextRequest("http://localhost:3000/api/mcp", { method: "POST" });
+    const mcpRes = await middleware(mcpReq);
+    assert.strictEqual(mcpRes.status, 200);
+  } finally {
+    process.env.NODE_ENV = origNodeEnv;
+    process.env.VERCEL_ENV = origVercelEnv;
+    if (origSecret !== undefined) {
+      process.env.SESSION_SECRET = origSecret;
+    }
+  }
+});
+

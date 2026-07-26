@@ -10,10 +10,12 @@ export type BuilderQuestion = SurveyDefinitionQuestion & {
 
 export type BuilderQuestionnaireValidation = {
   isValid: boolean;
+  isSaveable: boolean;
   duplicateQuestionIds: string[];
   missingDimensionIds: WellbeingDimensionId[];
   invalidDraftKeys: string[];
   messages: string[];
+  activationMessages: string[];
 };
 
 const dimensionLabels = Object.fromEntries(
@@ -57,32 +59,39 @@ export function getBuilderQuestionnaireValidation(
   const missingDimensionIds = surveyInstrument.dimensions
     .map((dimension) => dimension.id)
     .filter((dimensionId) => !enabledDimensionIds.has(dimensionId));
-  const messages: string[] = [];
+
+  const structuralMessages: string[] = [];
+  const activationMessages: string[] = [];
 
   if (invalidDraftKeys.length > 0) {
-    messages.push("יש למלא מזהה קבוע ללא רווחים בתחילתו או בסופו ונוסח מלא לכל שאלה בשאלון.");
+    structuralMessages.push("יש למלא מזהה קבוע ללא רווחים בתחילתו או בסופו ונוסח מלא לכל שאלה בשאלון.");
   }
 
   if (duplicateQuestionIds.length > 0) {
-    messages.push(
+    structuralMessages.push(
       `לכל שאלה חייב להיות מזהה קבוע וייחודי. המזהים הכפולים: ${duplicateQuestionIds.join(", ")}.`,
     );
   }
 
   if (missingDimensionIds.length > 0) {
-    messages.push(
-      `לפני שמירה והפעלה יש לכלול לפחות שאלה פעילה אחת בכל שמונת ממדי השלומות. חסרים: ${missingDimensionIds
+    activationMessages.push(
+      `כדי להפעיל את השאלון יש לכלול לפחות שאלה פעילה אחת בכל שמונת ממדי השלומות (${missingDimensionIds.length}/8 חסרים: ${missingDimensionIds
         .map((dimensionId) => dimensionLabels[dimensionId])
-        .join(", ")}.`,
+        .join(", ")}).`,
     );
   }
 
+  const isSaveable = structuralMessages.length === 0;
+  const isValid = isSaveable && missingDimensionIds.length === 0;
+
   return {
-    isValid: messages.length === 0,
+    isValid,
+    isSaveable,
     duplicateQuestionIds,
     missingDimensionIds,
     invalidDraftKeys,
-    messages,
+    messages: [...structuralMessages, ...activationMessages],
+    activationMessages,
   };
 }
 

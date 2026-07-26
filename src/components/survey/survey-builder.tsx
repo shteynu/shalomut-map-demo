@@ -71,6 +71,7 @@ type SurveyBuilderProps = {
   roundTitle: string;
   shareCode: string;
   initialDefinition: SurveyDefinition;
+  isFrozen?: boolean;
 };
 
 export function SurveyBuilder({
@@ -79,6 +80,7 @@ export function SurveyBuilder({
   roundTitle,
   shareCode,
   initialDefinition,
+  isFrozen = false,
 }: SurveyBuilderProps) {
   const [title, setTitle] = useState(initialDefinition.title);
   const [audience, setAudience] = useState(initialDefinition.audience);
@@ -228,7 +230,7 @@ export function SurveyBuilder({
   }
 
   async function saveDefinition() {
-    if (!questionnaireValidation.isValid) {
+    if (!questionnaireValidation.isSaveable) {
       setSaved(false);
       setSaveError(questionnaireValidation.messages.join(" "));
       return;
@@ -282,10 +284,10 @@ export function SurveyBuilder({
               className="primary-button"
               type="button"
               onClick={saveDefinition}
-              disabled={saving || !questionnaireValidation.isValid}
+              disabled={saving || isFrozen || !questionnaireValidation.isSaveable}
               data-round-id={roundId}
               aria-describedby={
-                questionnaireValidation.isValid
+                questionnaireValidation.isSaveable
                   ? undefined
                   : "survey-builder-validation"
               }
@@ -295,7 +297,11 @@ export function SurveyBuilder({
               ) : (
                 <CheckCircle2 size={18} aria-hidden="true" />
               )}
-              {saving ? "שומר..." : "שמירה והכנה להפצה"}
+              {saving
+                ? "שומר..."
+                : questionnaireValidation.isValid
+                  ? "שמירה והכנה להפצה"
+                  : "שמירת טיוטה"}
             </button>
             <Link className="secondary-button" href={shareUrl} target="_blank" rel="noreferrer">
               {openRespondentSurveyAction.label}
@@ -384,6 +390,7 @@ export function SurveyBuilder({
             onAddQuestionFromBank={addQuestionFromBank}
             onClearQuestionnaire={clearQuestionnaire}
             onLoadTemplate={loadDefaultTemplate}
+            isFrozen={isFrozen}
           />
         </div>
 

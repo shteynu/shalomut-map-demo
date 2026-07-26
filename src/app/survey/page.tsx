@@ -28,6 +28,7 @@ export default async function SurveyPage() {
           context.currentRound.privacyThreshold,
         )
       }
+      isFrozen={context.responseCount > 0 || context.currentRound.status === "closed"}
     />
   );
 }

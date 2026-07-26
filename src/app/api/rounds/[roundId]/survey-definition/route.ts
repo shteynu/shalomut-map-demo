@@ -53,7 +53,9 @@ export async function PUT(request: Request, { params }: RouteParams) {
     );
     if (!authorization.ok) return authorization.response;
 
-    const parsed = parseSurveyDefinition(await request.json());
+    const parsed = parseSurveyDefinition(await request.json(), {
+      allowIncomplete: true,
+    });
 
     if (!parsed.ok) {
       return NextResponse.json({ error: parsed.error }, { status: 400 });

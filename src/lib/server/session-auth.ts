@@ -1,10 +1,23 @@
 import type { NextRequest } from "next/server";
 import { JwtSessionProvider } from "@/lib/auth/jwt-session-provider";
 import type { ManagerSession } from "@/lib/auth/types";
+import type { ISessionProvider } from "@/lib/auth/domain-contract";
 
 export const SESSION_COOKIE_NAME = "shalomut_session";
 
-const defaultProvider = new JwtSessionProvider();
+let cachedDefaultProvider: ISessionProvider | null | undefined;
+
+function getDefaultProvider(): ISessionProvider | null {
+  if (cachedDefaultProvider !== undefined) {
+    return cachedDefaultProvider;
+  }
+  try {
+    cachedDefaultProvider = new JwtSessionProvider();
+  } catch {
+    cachedDefaultProvider = null;
+  }
+  return cachedDefaultProvider;
+}
 
 export function extractSessionToken(request: NextRequest): string | null {
   const cookieToken = request.cookies.get(SESSION_COOKIE_NAME)?.value?.trim();
@@ -26,9 +39,14 @@ export function extractSessionToken(request: NextRequest): string | null {
 
 export async function resolveManagerSession(
   request: NextRequest,
-  provider = defaultProvider,
+  provider?: ISessionProvider,
 ): Promise<ManagerSession | null> {
   const token = extractSessionToken(request);
   if (!token) return null;
-  return provider.verifyToken(token);
+
+  const activeProvider = provider ?? getDefaultProvider();
+  if (!activeProvider) return null;
+
+  return activeProvider.verifyToken(token);
 }
+

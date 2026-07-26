@@ -42,8 +42,17 @@ export function QuestionEditDialog({
     }
   }
 
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const previousActiveElement = useRef<HTMLElement | null>(null);
+
   useEffect(() => {
     if (!isOpen) return;
+
+    previousActiveElement.current = document.activeElement as HTMLElement | null;
+
+    const timer = setTimeout(() => {
+      textareaRef.current?.focus();
+    }, 50);
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -52,7 +61,11 @@ export function QuestionEditDialog({
     };
 
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("keydown", handleKeyDown);
+      previousActiveElement.current?.focus();
+    };
   }, [isOpen, onClose]);
 
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -118,6 +131,7 @@ export function QuestionEditDialog({
               נוסח השאלה המדויק
             </label>
             <textarea
+              ref={textareaRef}
               rows={3}
               required
               className="w-full p-3 border border-stone-300 rounded-xl bg-white text-stone-900 focus:ring-2 focus:ring-amber-500 outline-none"
