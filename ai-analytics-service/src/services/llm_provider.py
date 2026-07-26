@@ -6,7 +6,7 @@ import logging
 import random
 import re
 import time
-from typing import Any, Dict, Iterable, Literal
+from typing import Any, Dict, Iterable, Literal, Optional
 import urllib.error
 import urllib.request
 
