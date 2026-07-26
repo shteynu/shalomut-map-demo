@@ -139,20 +139,6 @@ function LoginForm() {
           )}
         </button>
       </form>
-
-      {/* Dev Seed Credentials Hint */}
-      <div className="pt-4 border-t border-[#f0e4c6] text-xs text-slate-500 space-y-1">
-        <div className="flex items-center gap-1.5 font-semibold text-amber-900">
-          <Shield size={14} className="text-amber-700" />
-          <span>פרטי התחברות ברירת מחדל לפיתוח:</span>
-        </div>
-        <p className="font-mono text-slate-600 dir-ltr text-right">
-          Admin: admin@shalomut.edu.il / admin123
-        </p>
-        <p className="font-mono text-slate-600 dir-ltr text-right">
-          Manager: manager@shalomut.edu.il / manager123
-        </p>
-      </div>
     </div>
   );
 }

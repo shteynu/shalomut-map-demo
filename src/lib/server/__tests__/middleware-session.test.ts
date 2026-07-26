@@ -83,44 +83,23 @@ test("middleware strips client-supplied organization header on respondent routes
   assert.strictEqual(injectedHeader, null);
 });
 
-test("middleware falls back to Basic Auth when no session cookie or bearer token is present", async () => {
+test("middleware redirects unauthenticated UI page requests to /login without Basic Auth challenge header", async () => {
   const request = new NextRequest("http://localhost:3000/dashboard");
   const response = await middleware(request);
 
-  // Default dev runtime without env credentials allows request or challenges in production
-  assert.ok(response.status === 200 || response.status === 401 || response.status === 503);
+  assert.strictEqual(response.status, 307);
+  const location = response.headers.get("location");
+  assert.ok(location?.includes("/login?next=%2Fdashboard"));
+  assert.strictEqual(response.headers.get("www-authenticate"), null);
 });
 
-test("middleware redirects UI page requests to /login when DISABLE_BASIC_AUTH_FALLBACK is set", async () => {
-  const originalFlag = process.env.DISABLE_BASIC_AUTH_FALLBACK;
-  process.env.DISABLE_BASIC_AUTH_FALLBACK = "true";
+test("middleware returns 401 JSON for unauthenticated API requests without Basic Auth challenge header", async () => {
+  const request = new NextRequest("http://localhost:3000/api/rounds");
+  const response = await middleware(request);
 
-  try {
-    const request = new NextRequest("http://localhost:3000/setup");
-    const response = await middleware(request);
-
-    assert.strictEqual(response.status, 307);
-    const location = response.headers.get("location");
-    assert.ok(location);
-    assert.ok(location.includes("/login?next=%2Fsetup"));
-  } finally {
-    process.env.DISABLE_BASIC_AUTH_FALLBACK = originalFlag;
-  }
-});
-
-test("middleware returns 401 JSON for unauthenticated API requests when DISABLE_BASIC_AUTH_FALLBACK is set", async () => {
-  const originalFlag = process.env.DISABLE_BASIC_AUTH_FALLBACK;
-  process.env.DISABLE_BASIC_AUTH_FALLBACK = "true";
-
-  try {
-    const request = new NextRequest("http://localhost:3000/api/rounds");
-    const response = await middleware(request);
-
-    assert.strictEqual(response.status, 401);
-    assert.strictEqual(await response.json().then((d) => d.error), "Authentication required.");
-  } finally {
-    process.env.DISABLE_BASIC_AUTH_FALLBACK = originalFlag;
-  }
+  assert.strictEqual(response.status, 401);
+  assert.strictEqual(await response.json().then((d) => d.error), "Authentication required.");
+  assert.strictEqual(response.headers.get("www-authenticate"), null);
 });
 
 test("middleware allows unauthenticated access to /login and /login/ trailing slash paths", async () => {

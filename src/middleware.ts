@@ -44,54 +44,21 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next({ request: { headers } });
   }
 
-  // 2. Sunset Option: Fully Disable Basic Auth Fallback if requested via env flag
-  if (isBasicAuthFallbackDisabled()) {
-    if (pathname.startsWith("/api/")) {
-      return NextResponse.json(
-        { error: "Authentication required." },
-        { status: 401 },
-      );
-    }
-    const loginUrl = new URL("/login", request.url);
-    if (pathname !== "/") {
-      loginUrl.searchParams.set("next", pathname);
-    }
-    return NextResponse.redirect(loginUrl);
-  }
-
-  // 3. Fallback Gate: Shared Basic Auth Credential Boundary
-  const decision = decideBasicAuth({
-    pathname,
-    method,
-    authorization: request.headers.get("authorization"),
-  });
-
-  if (decision === "allow") {
-    const headers = createScopedManagerHeaders(
-      request.headers,
-      process.env.MANAGER_ORGANIZATION_ID,
-    );
-
-    return NextResponse.next({ request: { headers } });
-  }
-
-  if (decision === "unconfigured") {
-    return new NextResponse(
-      "Manager access is not configured for this deployment.",
-      {
-        status: 503,
-        headers: { "Content-Type": "text/plain; charset=utf-8" },
-      },
+  // 2. Unauthenticated Manager Surfaces:
+  // Redirect UI page requests to /login and return 401 JSON for API requests.
+  // No Basic Auth popup challenge (WWW-Authenticate) is ever issued.
+  if (pathname.startsWith("/api/")) {
+    return NextResponse.json(
+      { error: "Authentication required." },
+      { status: 401 },
     );
   }
 
-  return new NextResponse("Authentication required.", {
-    status: 401,
-    headers: {
-      "WWW-Authenticate": 'Basic realm="Shalomut Map", charset="UTF-8"',
-      "Content-Type": "text/plain; charset=utf-8",
-    },
-  });
+  const loginUrl = new URL("/login", request.url);
+  if (pathname !== "/") {
+    loginUrl.searchParams.set("next", pathname);
+  }
+  return NextResponse.redirect(loginUrl);
 }
 
 export const config = {
