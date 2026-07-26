@@ -10,7 +10,11 @@ from src.agents.nodes import (
     _effective_contract_version,
     _question_aggregates_for_dimension,
 )
-from src.contracts import AI_ANALYTICS_CONTRACT_VERSION
+from src.contracts import (
+    AI_ANALYTICS_CONTRACT_VERSION,
+    AI_ANALYTICS_DIMENSION_IDS,
+    AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
+)
 
 class AnalyticsGraphEngine:
     """
@@ -35,6 +39,16 @@ class AnalyticsGraphEngine:
 
         if current_state.get("safety_status") != "pass":
             round_data = current_state.get("round_data", {})
+            dynamic_metadata = (
+                {
+                    "surveyDefinitionHash": round_data.get(
+                        "surveyDefinitionHash",
+                    ),
+                }
+                if _effective_contract_version(round_data)
+                == AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION
+                else {}
+            )
             return {
                 **current_state,
                 "final_payload": {
@@ -42,6 +56,7 @@ class AnalyticsGraphEngine:
                         round_data,
                     ),
                     "roundId": round_data.get("roundId", ""),
+                    **dynamic_metadata,
                     "isLocked": False,
                     "status": "validation_failed",
                     "errorMessage": (
@@ -66,6 +81,14 @@ def format_stone_map_output_node(state: AnalyticsState) -> AnalyticsState:
     generation_provenance = state.get("generation_provenance", {})
     contract_version = _effective_contract_version(round_data)
 
+    if (
+        contract_version == AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION
+        and set(dim_scores) != set(AI_ANALYTICS_DIMENSION_IDS)
+    ):
+        raise ValueError(
+            "AI analytics contract 3.0 requires exactly eight stones"
+        )
+
     stones = {}
     for dim_id, score_obj in dim_scores.items():
         if isinstance(score_obj, dict):
@@ -84,10 +107,16 @@ def format_stone_map_output_node(state: AnalyticsState) -> AnalyticsState:
         )
 
         if question_aggregates:
+            question_text_field = (
+                "questionText"
+                if contract_version
+                == AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION
+                else "questionTextHebrew"
+            )
             metrics = [
                 {
                     "questionId": aggregate["questionId"],
-                    "label": aggregate["questionTextHebrew"],
+                    "label": aggregate[question_text_field],
                     "value": (
                         f"{aggregate['averageScore']:.1f} מתוך 100"
                     ),
@@ -119,7 +148,10 @@ def format_stone_map_output_node(state: AnalyticsState) -> AnalyticsState:
             "recommendedInterventions": recs,
             "metrics": metrics
         }
-        if contract_version == AI_ANALYTICS_CONTRACT_VERSION:
+        if contract_version in {
+            AI_ANALYTICS_CONTRACT_VERSION,
+            AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
+        }:
             if dim_id not in generation_provenance:
                 raise ValueError(
                     f"Missing generation provenance for '{dim_id}'"
@@ -136,6 +168,10 @@ def format_stone_map_output_node(state: AnalyticsState) -> AnalyticsState:
         "overallPsychologicalSummary": overall_summary,
         "stones": stones
     }
+    if contract_version == AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION:
+        final_payload["surveyDefinitionHash"] = round_data.get(
+            "surveyDefinitionHash",
+        )
 
     return {
         **state,

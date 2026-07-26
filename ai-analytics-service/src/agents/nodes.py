@@ -8,6 +8,7 @@ from src.config import settings
 from src.contracts import (
     AI_ANALYTICS_CONTRACT_VERSION,
     AI_ANALYTICS_DIMENSION_NAMES_HEBREW,
+    AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
     AI_ANALYTICS_QUESTIONS,
     AI_ANALYTICS_V1_CONTRACT_VERSION,
 )
@@ -31,6 +32,15 @@ def _question_aggregates_for_dimension(
     dimension_id: str,
 ) -> list[Dict[str, Any]]:
     aggregates = round_data.get("questionAggregates", {})
+    if (
+        _effective_contract_version(round_data)
+        == AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION
+    ):
+        return [
+            aggregate
+            for aggregate in aggregates.values()
+            if aggregate.get("dimensionId") == dimension_id
+        ]
     return [
         aggregates[question["id"]]
         for question in AI_ANALYTICS_QUESTIONS
@@ -54,12 +64,23 @@ def privacy_gate_node(state: AnalyticsState) -> AnalyticsState:
     logger.info(f"[Node 1: Privacy Gate] Checking privacy lock. Responses: {total_responses}, isLocked: {is_locked}")
     
     if is_locked or total_responses < privacy_threshold:
+        dynamic_metadata = (
+            {
+                "surveyDefinitionHash": round_data.get(
+                    "surveyDefinitionHash",
+                ),
+            }
+            if _effective_contract_version(round_data)
+            == AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION
+            else {}
+        )
         return {
             **state,
             "safety_status": "privacy_locked",
             "final_payload": {
                 "contractVersion": _effective_contract_version(round_data),
                 "roundId": round_data.get("roundId", ""),
+                **dynamic_metadata,
                 "isLocked": True,
                 "status": "locked_error",
                 "errorMessage": (
@@ -148,6 +169,13 @@ async def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
             "retryCount": max(0, attempts - 1),
             "sourceQuestionIds": source_question_ids,
         }
+        if (
+            _effective_contract_version(round_data)
+            == AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION
+        ):
+            generation_provenance[dim_id]["surveyDefinitionHash"] = (
+                round_data.get("surveyDefinitionHash")
+            )
 
     green_dimensions = len(dim_scores) - len(yellow_red_dims)
     overall_summary = (
@@ -216,9 +244,13 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
         "",
     )
     retry_count = state.get("retry_count", 0)
-    is_v2 = (
-        _effective_contract_version(round_data)
-        == AI_ANALYTICS_CONTRACT_VERSION
+    contract_version = _effective_contract_version(round_data)
+    is_semantic_contract = contract_version in {
+        AI_ANALYTICS_CONTRACT_VERSION,
+        AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
+    }
+    is_dynamic_contract = (
+        contract_version == AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION
     )
 
     is_safe = True
@@ -272,7 +304,7 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
                     f"Intervention is invalid for status {status}: {dim_id}"
                 )
 
-        if is_v2:
+        if is_semantic_contract:
             provenance = state.get("generation_provenance", {}).get(
                 dim_id,
                 {},
@@ -297,6 +329,11 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
                 or retry_count_value != max(0, attempts - 1)
                 or provenance.get("sourceQuestionIds")
                 != expected_question_ids
+                or (
+                    is_dynamic_contract
+                    and provenance.get("surveyDefinitionHash")
+                    != round_data.get("surveyDefinitionHash")
+                )
                 or (outcome == "llm" and attempts < 1)
             ):
                 is_safe = False
@@ -304,7 +341,7 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
                     f"Generation provenance is invalid for {dim_id}"
                 )
 
-    if is_v2 and not llm_provider_service.is_hebrew_only_copy(
+    if is_semantic_contract and not llm_provider_service.is_hebrew_only_copy(
         overall_summary,
     ):
         is_safe = False

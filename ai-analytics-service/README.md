@@ -24,6 +24,12 @@ breaking semantic contract `2.0` is published separately in
 [`../contracts/ai-analytics-v2.json`](../contracts/ai-analytics-v2.json). Both
 TypeScript and Python load the versioned manifests; `2.0` preserves the eight
 canonical dimension IDs and adds all 24 canonical question definitions.
+Breaking dynamic-questionnaire contract `3.0` is published separately in
+[`../contracts/ai-analytics-v3.json`](../contracts/ai-analytics-v3.json). It
+keeps the same eight dimensions and score/status semantics, but replaces the
+24-question allowlist with exact persisted round question IDs, text and counts.
+This implementation is currently local and verified, not deployed; the live
+producer remains on exact-canonical-24 `2.0`.
 
 The rollout is consumer-first. The Python service first accepts legacy input
 (missing version or `1.0`) and explicit `2.0`, returning the effective input
@@ -34,9 +40,18 @@ compatible throughout the rollback window.
 A successful `2.0` result contains exactly the eight canonical dimensions,
 three canonical question metrics per Stone, strict Hebrew semantic output,
 status-scoped interventions, and persisted LLM/retry/fallback provenance.
+Successful `3.0` output keeps exactly eight Stones while each Stone contains
+all and only the dynamic question metrics mapped to that dimension. Its input
+and provenance carry a deterministic `surveyDefinitionHash`; `3.0` never
+substitutes text from the default 24-question template.
 Privacy-locked rounds return a `locked_error` payload without stones or any
 detailed aggregates. The core app validates callback payloads again before
 persisting them.
+
+The `3.0` rollout remains consumer-first: deploy a Python consumer accepting
+`1.0`, `2.0` and `3.0`; then deploy Core callback/Dashboard readers accepting
+all three; only then switch the Core MCP producer from `2.0` to `3.0`. A Core
+producer rollback to `2.0` remains valid throughout the compatibility window.
 
 ## Local setup
 

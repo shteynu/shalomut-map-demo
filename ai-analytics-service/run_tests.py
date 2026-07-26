@@ -343,6 +343,7 @@ class TestShalomutAIService(unittest.TestCase):
             round_data = mock_mcp_server.get_round_analytics(
                 "round-unlocked-sample"
             )
+            round_data.roundId = "round/with space"
             final_payload = {
                 "contractVersion": AI_ANALYTICS_CONTRACT_VERSION,
                 "roundId": "round/with space",

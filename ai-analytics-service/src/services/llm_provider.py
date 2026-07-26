@@ -372,11 +372,24 @@ class LLMProviderService:
         status: str,
         question_aggregates: list[Dict[str, Any]],
     ) -> str:
+        uses_dynamic_questions = any(
+            isinstance(aggregate.get("questionText"), str)
+            for aggregate in question_aggregates
+        )
         aggregate_lines = "\n".join(
-            "- "
-            f"{aggregate['questionTextHebrew']} "
-            f"ממוצע {aggregate['averageScore']:.1f}, "
-            f"מספר תשובות {aggregate['responseCount']}"
+            "".join(
+                (
+                    "- ",
+                    (
+                        f"[{aggregate['questionId']}] "
+                        if uses_dynamic_questions
+                        else ""
+                    ),
+                    f"{self._question_text(aggregate)} ",
+                    f"ממוצע {aggregate['averageScore']:.1f}, ",
+                    f"מספר תשובות {aggregate['responseCount']}",
+                )
+            )
             for aggregate in question_aggregates
         )
         return (
@@ -384,7 +397,8 @@ class LLMProviderService:
             "privacy-safe teacher wellbeing aggregates.\n"
             f"Dimension: {dim_hebrew} ({dim_id}). "
             f"Score: {score:.1f}/100. Status: {status}.\n"
-            f"Canonical same-dimension aggregates:\n{aggregate_lines}\n"
+            f"{'Exact persisted' if uses_dynamic_questions else 'Canonical'} "
+            f"same-dimension aggregates:\n{aggregate_lines}\n"
             "Return exactly two complete Hebrew-only sentences. Base every "
             "claim on the supplied aggregates, do not invent causes, "
             "diagnoses, identities, or respondent-level facts, and keep the "
@@ -403,6 +417,14 @@ class LLMProviderService:
             for aggregate in question_aggregates
             if aggregate.get("dimensionId") == dim_id
         ]
+
+    @staticmethod
+    def _question_text(aggregate: Dict[str, Any]) -> str:
+        dynamic_text = aggregate.get("questionText")
+        if isinstance(dynamic_text, str):
+            return dynamic_text
+        legacy_text = aggregate.get("questionTextHebrew")
+        return legacy_text if isinstance(legacy_text, str) else ""
 
     def _is_valid_provider_output(
         self,
@@ -602,8 +624,12 @@ class LLMProviderService:
                     key=lambda aggregate: aggregate["averageScore"],
                 )
             )
-            question_text = str(selected["questionTextHebrew"]).strip()
-            question_text = question_text.rstrip(".!?؟").strip()
+            question_text = self._question_text(selected)
+            question_sentence = (
+                question_text
+                if re.search(r"[.!?؟]\s*$", question_text)
+                else f"{question_text}."
+            )
             aggregate_score = float(selected["averageScore"])
             score_text = (
                 str(int(aggregate_score))
@@ -617,7 +643,7 @@ class LLMProviderService:
             }.get(status, "מציג את המצב המצרפי בתחום זה")
             return (
                 f"השאלה המצרפית הבולטת במדד {dim_hebrew} היא: "
-                f"{question_text}. "
+                f"{question_sentence} "
                 f"ממוצע המענה עליה הוא {score_text} מתוך 100, והוא "
                 f"{implication}."
             )

@@ -36,11 +36,22 @@ class AnalyticsRunnerService:
 
         # Step 1: Fetch data via MCP Client
         round_analytics = await mcp_client_manager.fetch_round_analytics(round_id)
+        if round_analytics.roundId != round_id:
+            raise RuntimeError(
+                "MCP round isolation mismatch: requested round does not "
+                "match the returned analytics round"
+            )
 
         # Step 2: Initialize workflow state
+        org_context = round_analytics.organizationContext or {}
+        if round_analytics.organizationId:
+            org_context = {
+                **org_context,
+                "organizationId": round_analytics.organizationId,
+            }
         initial_state: AnalyticsState = {
             "round_data": round_analytics.model_dump() if hasattr(round_analytics, "model_dump") else round_analytics.to_dict(),
-            "org_context": round_analytics.organizationContext or {},
+            "org_context": org_context,
             "interpretations": {},
             "recommendations": {},
             "safety_status": "pending",

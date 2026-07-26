@@ -1,0 +1,126 @@
+{
+  "version": "3.0",
+  "previousVersions": ["1.0", "2.0"],
+  "breakingChange": "Replace the canonical 24-question allowlist with the exact persisted SurveyRound.surveyDefinition snapshot while preserving the fixed eight-stone Dashboard taxonomy.",
+  "questionnaire": {
+    "sourceOfTruth": "SurveyRound.surveyDefinition",
+    "defaultTemplate": "src/lib/shalomut-source.ts",
+    "minimumEnabledQuestionsPerDimension": 1,
+    "stableQuestionIdsRequired": true,
+    "uniqueQuestionIdsRequired": true,
+    "explicitDimensionMappingRequired": true,
+    "snapshotIdentity": {
+      "field": "surveyDefinitionHash",
+      "algorithm": "sha256",
+      "prefix": "sha256:",
+      "projection": ["questionId", "dimensionId", "questionText"],
+      "ordering": "questionId ascending by Unicode code point",
+      "serialization": "UTF-8 compact JSON array with the projection keys in the documented order, non-ASCII characters unescaped, and no whitespace normalization"
+    }
+  },
+  "privacy": {
+    "defaultThreshold": 10,
+    "unlockedPolicy": "total-and-every-question-at-or-above-threshold",
+    "lockedAggregatePolicy": "empty",
+    "partialUnlockedAnalysis": false,
+    "providerInvokedWhenLocked": false
+  },
+  "statuses": [
+    {
+      "id": "green",
+      "minScore": 75,
+      "maxScore": 100
+    },
+    {
+      "id": "yellow",
+      "minScore": 50,
+      "maxScore": 74
+    },
+    {
+      "id": "red",
+      "minScore": 0,
+      "maxScore": 49
+    }
+  ],
+  "dimensions": [
+    {
+      "id": "self-expression",
+      "nameHebrew": "ביטוי עצמי"
+    },
+    {
+      "id": "professional-competence",
+      "nameHebrew": "מסוגלות מקצועית"
+    },
+    {
+      "id": "social-resource",
+      "nameHebrew": "קשרים חברתיים"
+    },
+    {
+      "id": "balance",
+      "nameHebrew": "איזון"
+    },
+    {
+      "id": "management-support",
+      "nameHebrew": "עורף מקצועי"
+    },
+    {
+      "id": "certainty",
+      "nameHebrew": "ודאות"
+    },
+    {
+      "id": "organizational-climate",
+      "nameHebrew": "אקלים ארגוני"
+    },
+    {
+      "id": "meaning",
+      "nameHebrew": "משמעות"
+    }
+  ],
+  "input": {
+    "required": [
+      "contractVersion",
+      "roundId",
+      "organizationId",
+      "surveyDefinitionHash",
+      "dimensionScores",
+      "questionAggregates",
+      "calculatedAt",
+      "totalResponses",
+      "privacyThreshold",
+      "isLocked"
+    ],
+    "dimensionScoreCountWhenUnlocked": 8,
+    "questionAggregateFields": [
+      "questionId",
+      "dimensionId",
+      "questionText",
+      "averageScore",
+      "responseCount"
+    ],
+    "forbiddenFields": [
+      "respondentId",
+      "respondentName",
+      "email",
+      "anonymousTokenHash",
+      "responseId",
+      "answers",
+      "submittedAt"
+    ]
+  },
+  "output": {
+    "stoneCountWhenSuccessful": 8,
+    "dynamicMetrics": true,
+    "metricCoverage": "exactly every input question aggregate in its persisted dimension",
+    "coreOwnedFields": ["score", "status", "dimensionId"],
+    "hebrewUserFacingText": true,
+    "singleOverallSummary": true,
+    "provenanceFields": [
+      "outcome",
+      "attempts",
+      "retryCount",
+      "sourceQuestionIds",
+      "surveyDefinitionHash"
+    ],
+    "interventionLookup": "exact-dimension-and-status"
+  }
+}
