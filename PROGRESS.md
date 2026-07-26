@@ -1,24 +1,27 @@
 # PROGRESS: Shalomut Map
 
 ## 📌 Текущий статус
-- **Текущий этап**: Завершён комплексный этап подготки к staging/production readiness:
-  - **Contract 3.0 Live Staging E2E**: Скрипт живой Staging E2E проверки проверен на реальной Staging DB (`tpfzhyalaftotljmlont`). Подтверждены Scenario A1 (Unlocked custom questionnaire 3.0, exact hash, 8 custom question aggregates) и Scenario A2 (Privacy lock при < 10 ответов). Выполнена автоматическая SQL-очистка (`0` оставшихся записей).
-  - **Application-level Manager Authorization**: Слайсы 1, 2 и 3 реализованы и проверены 151 тестом (`npm test`). Доменный провайдер-независимый контракт, `JwtSessionProvider` на Web Crypto API, сессионная авторизация в middleware с Basic Auth fallback, ролевая модель (Admin/Manager), аудит действий и переключение школ функционируют стабильно.
-  - **Staging Deployment**: Деплоймент `dpl_FystEnZZ5rNPbJevXcNrfQmn83in` (`READY`) создан и привязан к Staging-алиасу [shalomut-map-demo-ui-redesign.vercel.app](https://shalomut-map-demo-ui-redesign.vercel.app/). Vercel SSO / Deployment Protection активна.
-- **Состояние БД**: Supabase staging project `shalomut-map-staging` (`tpfzhyalaftotljmlont`) находится в чистом состоянии. Одноразовые E2E записи удалены.
-- **Core app runtime**: Vercel Preview `dpl_FystEnZZ5rNPbJevXcNrfQmn83in` — `READY`, Staging alias `https://shalomut-map-demo-ui-redesign.vercel.app` указывает на данный деплоймент.
-- **Verification Evidence**: `npm test` 151/151 passed, `npm run lint` 0 errors, `npm run build` прошёл успешно.
+- **Текущий этап**: Завершён этап UI-авторизации менеджеров и подготовки к отключению Basic Auth (Basic Auth Sunset):
+  - **Manager UI & Auth API**: Реализованы эндпоинты `/api/auth/login`, `/api/auth/logout`, `/api/auth/me`, UI-страница входа `/login` (RTL-first, иврит, бумажная эстетика `#fbf4dd`, WCAG AA) и шапка пользователя `ManagerUserBar`.
+  - **Basic Auth Sunset Preparation**: В `middleware.ts` добавлена поддержка флага `DISABLE_BASIC_AUTH_FALLBACK`, обеспечивающая плавный переход с Basic Auth на UI-сессии.
+  - **Verification Evidence**: `npm test` 162/162 passed, `npm run lint` 0 errors, `npm run build` прошёл успешно (39 страниц).
+- **Состояние БД**: Supabase staging project `shalomut-map-staging` (`tpfzhyalaftotljmlont`) находится в чистом состоянии.
+- **Core app runtime**: Ветка `main` закоммичена (`069d752`) и запушена в `origin/main`.
 
 ---
 
 ## 🚀 Следующие шаги (Next Up)
-1. [ ] Реализовать UI-страницы входа менеджеров (`/login`, `/api/auth/login`, `/api/auth/logout`) для выдачи кук `shalomut_session` в веб-интерфейсе.
-2. [ ] Завершить миграцию Production DB (`fvnulyirrqjrnjbahmsn`) через `prisma migrate deploy` и развести Production Vercel env variables.
-3. [ ] Выполнить отключение legacy Basic Auth fallback в middleware после релиза UI-авторизации.
+1. [ ] Завершить миграцию Production DB (`fvnulyirrqjrnjbahmsn`) через `prisma migrate deploy` и развести Production Vercel env variables.
+2. [ ] Выполнить включение флага `DISABLE_BASIC_AUTH_FALLBACK="true"` в Vercel Preview/Production после релиза UI-авторизации.
 
 ---
 
 ## ✅ Завершенные задачи (Completed)
+- [x] **2026-07-26**: **Реализация UI-авторизации менеджеров и подготовка к Basic Auth Sunset** (commit `069d752`):
+  - **Auth API Routes**: Созданы `POST /api/auth/login`, `POST /api/auth/logout` и `GET /api/auth/me`. Сессионная кука `shalomut_session` выдаётся как `HttpOnly`, `SameSite=Lax`, `Secure`.
+  - **Manager UI & Header Bar**: Создана страница `/login` на иврите (RTL, скругленная органическая карточка, алерты ошибок) и шапка менеджера `ManagerUserBar` (отображение имени, ролевого бейджа `מנהל מערכת` / `מנהל` и кнопки выхода).
+  - **Basic Auth Sunset**: Внедрён флаг `DISABLE_BASIC_AUTH_FALLBACK` в `middleware.ts` для перенаправления неавторизованного UI-трафика на `/login` и ответа 401 для API.
+  - **Verification**: `npm test` 162/162 passed, `npm run lint` 0 errors, `npm run build` прошёл успешно (39 static/dynamic pages). Изменения запушены в `origin/main`.
 - [x] **2026-07-26**: **Подготовка проекта к безопасной manager authorization, contract 3.0 staging E2E и environment separation**:
   - **Workstream A (Contract 3.0 Live Staging E2E)**: Разработан и исполнен скрипт `scripts/live-staging-e2e-contract3.ts` на Staging Supabase DB (`tpfzhyalaftotljmlont`). Доказаны Scenario A1 (Unlocked dynamic questionnaire, 10 responses, exact definition hash `sha256:88489e11...`, 8 custom question aggregates) и Scenario A2 (Privacy lock при 9 responses < threshold 10, zero data leakage). Выполнена автоматическая очистка данных SQL-скриптом.
   - **Workstream B (Application-level Manager Authorization)**: Реализованы Слайсы 1, 2 и 3. Добавлен провайдер-независимый контракт авторизации (`types.ts`, `domain-contract.ts`), `JwtSessionProvider` (Web Crypto HMAC-SHA256), `session-auth.ts`, ролевая модель Admin vs Manager (`roles-and-permissions.ts`), логирование аудита (`manager-audit-service.ts`) и переключение школ (`membership-service.ts`). `middleware.ts` проверяет сессионную куку `shalomut_session` / Bearer токен, внедряет серверный `x-shalomut-manager-organization-id` и сохраняет Basic Auth fallback.
