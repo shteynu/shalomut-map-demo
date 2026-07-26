@@ -1,6 +1,7 @@
 import legacyContractManifest from '../../contracts/ai-analytics-v1.json';
 import contractManifest from '../../contracts/ai-analytics-v2.json';
 import dynamicContractManifest from '../../contracts/ai-analytics-v3.json';
+import v4ContractManifest from '../../contracts/ai-analytics-v4.json';
 import type {
   WellbeingDimensionId,
   WellbeingStatus,
@@ -10,10 +11,13 @@ export const AI_ANALYTICS_V1_CONTRACT_VERSION = legacyContractManifest.version;
 export const AI_ANALYTICS_CONTRACT_VERSION = contractManifest.version;
 export const AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION =
   dynamicContractManifest.version;
+export const AI_ANALYTICS_V4_CONTRACT_VERSION = v4ContractManifest.version;
+
 export const AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS = Object.freeze([
   AI_ANALYTICS_V1_CONTRACT_VERSION,
   AI_ANALYTICS_CONTRACT_VERSION,
   AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
+  AI_ANALYTICS_V4_CONTRACT_VERSION,
 ]);
 
 export type AiAnalyticsContractVersion =
@@ -90,6 +94,7 @@ export interface StoneGenerationProvenance {
   retryCount: number;
   sourceQuestionIds: string[];
   surveyDefinitionHash?: string;
+  backgroundContextIncluded?: boolean;
 }
 
 export interface StoneDetail {
@@ -333,6 +338,8 @@ function isValidV3GenerationProvenance(
       .sort()
       .every((questionId, index) => questionId === sortedMetricIds[index]) &&
     value.surveyDefinitionHash === surveyDefinitionHash &&
+    (value.backgroundContextIncluded === undefined ||
+      typeof value.backgroundContextIncluded === 'boolean') &&
     (value.outcome !== 'llm' || Number(value.attempts) > 0)
   );
 }
@@ -434,6 +441,7 @@ function validateStatusFields(
       [
         AI_ANALYTICS_CONTRACT_VERSION,
         AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
+        AI_ANALYTICS_V4_CONTRACT_VERSION,
       ].includes(String(payload.contractVersion)) &&
       (payload.stones !== undefined ||
         payload.overallPsychologicalSummary !== undefined)
@@ -483,15 +491,16 @@ export function validateStoneMapResult(
     };
   }
 
-
   if (
-    payload.contractVersion === AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION &&
+    [AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION, AI_ANALYTICS_V4_CONTRACT_VERSION].includes(
+      String(payload.contractVersion),
+    ) &&
     (typeof payload.surveyDefinitionHash !== 'string' ||
       !SURVEY_DEFINITION_HASH_PATTERN.test(payload.surveyDefinitionHash))
   ) {
     return {
       ok: false,
-      error: 'The 3.0 payload requires a valid surveyDefinitionHash.',
+      error: 'The 3.0/4.0 payload requires a valid surveyDefinitionHash.',
     };
   }
 
@@ -514,6 +523,7 @@ export function validateStoneMapResult(
     [
       AI_ANALYTICS_CONTRACT_VERSION,
       AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
+      AI_ANALYTICS_V4_CONTRACT_VERSION,
     ].includes(String(payload.contractVersion)) &&
     !containsOnlyHebrewUserText(payload.overallPsychologicalSummary)
   ) {
@@ -541,7 +551,9 @@ export function validateStoneMapResult(
     const isValidStone =
       payload.contractVersion === AI_ANALYTICS_CONTRACT_VERSION
         ? isValidV2Stone(payload.stones[dimensionId], dimensionId)
-        : payload.contractVersion === AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION
+        : [AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION, AI_ANALYTICS_V4_CONTRACT_VERSION].includes(
+            String(payload.contractVersion),
+          )
           ? isValidV3Stone(
               payload.stones[dimensionId],
               dimensionId,

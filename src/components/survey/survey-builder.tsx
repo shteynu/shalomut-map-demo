@@ -10,6 +10,7 @@ import { wellbeingDimensions } from "@/lib/demo-data";
 import { getNavigationAction } from "@/lib/navigation";
 import { useShareUrl } from "@/lib/use-share-url";
 import type { SurveyDefinition } from "@/lib/types/backend";
+import { surveyInstrument } from "@/lib/shalomut-source";
 import { SurveyBuilderQuestions } from "./survey-builder/survey-builder-questions";
 import { SurveyBuilderSettings } from "./survey-builder/survey-builder-settings";
 import { SurveyBuilderSidebar } from "./survey-builder/survey-builder-sidebar";
@@ -172,9 +173,43 @@ export function SurveyBuilder({
   }
 
   function deleteQuestion(draftKey: string) {
+    if (typeof window !== "undefined" && !window.confirm("האם למחוק שאלה זו מהשאלון?")) {
+      return;
+    }
     setSaved(false);
     setSaveError(null);
     setQuestions((current) => current.filter((q) => q.draftKey !== draftKey));
+  }
+
+  function clearQuestionnaire() {
+    if (typeof window !== "undefined" && !window.confirm("האם למחוק את כל השאלות ולהתחיל מטיוטה ריקה?")) {
+      return;
+    }
+    setSaved(false);
+    setSaveError(null);
+    setQuestions([]);
+  }
+
+  function loadDefaultTemplate() {
+    if (
+      questions.length > 0 &&
+      typeof window !== "undefined" &&
+      !window.confirm("טעינת התבנית תחליף את השאלות הקיימות. האם להמשיך?")
+    ) {
+      return;
+    }
+    const defaultQuestions: BuilderQuestion[] = surveyInstrument.questions.map((q, idx) => ({
+      id: q.id,
+      dimensionId: q.dimensionId,
+      text: q.text,
+      required: q.required,
+      enabled: true,
+      answerMode: "סקאלת צבעים",
+      draftKey: createDraftId(`default-${idx}`),
+    }));
+    setSaved(false);
+    setSaveError(null);
+    setQuestions(defaultQuestions);
   }
 
   function addQuestionFromBank() {
@@ -343,6 +378,8 @@ export function SurveyBuilder({
             onEditQuestion={(q) => setEditingQuestion(q)}
             onDeleteQuestion={deleteQuestion}
             onAddQuestionFromBank={addQuestionFromBank}
+            onClearQuestionnaire={clearQuestionnaire}
+            onLoadTemplate={loadDefaultTemplate}
           />
         </div>
 

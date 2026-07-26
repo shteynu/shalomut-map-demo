@@ -251,6 +251,45 @@ paths:
         "503":
           description: Persistent storage is not configured for this deployment
 
+  /api/rounds/{roundId}/reset:
+    post:
+      tags: [Rounds]
+      summary: Reset survey round responses and set status back to draft
+      description: Clears all collected anonymous survey responses for the given round and resets its status to draft so questions can be edited.
+      security:
+        - basicAuth: []
+      parameters:
+        - name: roundId
+          in: path
+          required: true
+          schema:
+            type: string
+            example: 4f88af95-0ec4-4872-85ac-67466c3cd8f2
+      responses:
+        "200":
+          description: Round data reset successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Round data reset successfully.
+                  round:
+                    $ref: '#/components/schemas/SurveyRound'
+        "403":
+          description: Manager organization scope is required
+        "404":
+          description: Survey round not found
+        "500":
+          description: Failed to reset round responses
+        "503":
+          description: Persistent storage is not configured for this deployment
+
   /api/rounds/{roundId}/survey-definition:
     parameters:
       - name: roundId

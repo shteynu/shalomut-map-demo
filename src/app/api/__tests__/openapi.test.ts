@@ -36,6 +36,7 @@ describe('OpenAPI Specification Integrity', () => {
     assert.ok(paths.includes('/api/mcp'), 'Must include /api/mcp path');
     assert.ok(paths.includes('/api/rounds/{roundId}/ai-insights'), 'Must include AI insights callback/read path');
     assert.ok(paths.includes('/api/rounds/{roundId}/trigger-ai'), 'Must include AI analytics trigger path');
+    assert.ok(paths.includes('/api/rounds/{roundId}/reset'), 'Must include reset round path');
   });
 
   it('should define essential data schemas matching backend types', () => {

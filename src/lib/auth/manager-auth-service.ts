@@ -4,7 +4,8 @@ import type { Manager, OrganizationMembership } from "./types";
 export type AuthFailureReason =
   | "INVALID_CREDENTIALS"
   | "USER_NOT_FOUND"
-  | "ACCOUNT_SUSPENDED";
+  | "ACCOUNT_SUSPENDED"
+  | "UNCONFIGURED";
 
 export type AuthenticateResult =
   | {
@@ -28,9 +29,6 @@ const DEFAULT_ADMIN_USER: Manager = {
   createdAt: new Date("2026-07-01T00:00:00.000Z"),
 };
 
-const DEFAULT_ADMIN_PASSWORD =
-  process.env.MANAGER_ADMIN_PASSWORD || "admin123";
-
 const DEFAULT_ADMIN_MEMBERSHIP: OrganizationMembership = {
   id: "mem-admin-001",
   managerId: DEFAULT_ADMIN_USER.id,
@@ -46,8 +44,6 @@ const DEFAULT_MANAGER_USER: Manager = {
   name: "מנהל בית ספר",
   createdAt: new Date("2026-07-01T00:00:00.000Z"),
 };
-
-const DEFAULT_MANAGER_PASSWORD = "manager123";
 
 const DEFAULT_MANAGER_MEMBERSHIP: OrganizationMembership = {
   id: "mem-user-001",
@@ -65,8 +61,6 @@ const DEFAULT_SUSPENDED_USER: Manager = {
   createdAt: new Date("2026-07-01T00:00:00.000Z"),
 };
 
-const DEFAULT_SUSPENDED_PASSWORD = "suspended123";
-
 const DEFAULT_SUSPENDED_MEMBERSHIP: OrganizationMembership = {
   id: "mem-suspended-001",
   managerId: DEFAULT_SUSPENDED_USER.id,
@@ -78,8 +72,16 @@ const DEFAULT_SUSPENDED_MEMBERSHIP: OrganizationMembership = {
 
 interface StoredAccount {
   manager: Manager;
-  password: string;
+  passwordHash: string;
   memberships: OrganizationMembership[];
+}
+
+async function hashPassword(password: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(`shalomut_salt_2026:${password}`);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 function timingSafeEqualStrings(a: string, b: string): boolean {
@@ -97,32 +99,60 @@ function timingSafeEqualStrings(a: string, b: string): boolean {
 }
 
 export class ManagerAuthenticationService {
-  private static defaultAccounts(): StoredAccount[] {
+  public static isUnconfigured(): boolean {
+    const isBuilding = process.env.NEXT_PHASE === "phase-production-build";
     const isDeployed =
-      process.env.NODE_ENV === "production" ||
-      Boolean(process.env.VERCEL_ENV?.trim());
-    const hasConfiguredPassword = Boolean(
+      (process.env.NODE_ENV === "production" ||
+        Boolean(process.env.VERCEL_ENV?.trim())) &&
+      !isBuilding;
+
+    if (!isDeployed) return false;
+
+    const hasSecret = Boolean(process.env.SESSION_SECRET?.trim());
+    const hasAdminPassword = Boolean(
       process.env.MANAGER_ADMIN_PASSWORD?.trim(),
     );
 
-    if (isDeployed && !hasConfiguredPassword) {
-      return [];
+    return !hasSecret || !hasAdminPassword;
+  }
+
+  private static async defaultAccounts(): Promise<StoredAccount[]> {
+    const isBuilding = process.env.NEXT_PHASE === "phase-production-build";
+    const isDeployed =
+      (process.env.NODE_ENV === "production" ||
+        Boolean(process.env.VERCEL_ENV?.trim())) &&
+      !isBuilding;
+
+    const configuredAdminPassword = process.env.MANAGER_ADMIN_PASSWORD?.trim();
+
+    if (isDeployed) {
+      if (!configuredAdminPassword) {
+        return [];
+      }
+      return [
+        {
+          manager: DEFAULT_ADMIN_USER,
+          passwordHash: await hashPassword(configuredAdminPassword),
+          memberships: [DEFAULT_ADMIN_MEMBERSHIP],
+        },
+      ];
     }
 
+    const adminPass = configuredAdminPassword || "admin123";
     return [
       {
         manager: DEFAULT_ADMIN_USER,
-        password: DEFAULT_ADMIN_PASSWORD,
+        passwordHash: await hashPassword(adminPass),
         memberships: [DEFAULT_ADMIN_MEMBERSHIP],
       },
       {
         manager: DEFAULT_MANAGER_USER,
-        password: DEFAULT_MANAGER_PASSWORD,
+        passwordHash: await hashPassword("manager123"),
         memberships: [DEFAULT_MANAGER_MEMBERSHIP],
       },
       {
         manager: DEFAULT_SUSPENDED_USER,
-        password: DEFAULT_SUSPENDED_PASSWORD,
+        passwordHash: await hashPassword("suspended123"),
         memberships: [DEFAULT_SUSPENDED_MEMBERSHIP],
       },
     ];
@@ -133,6 +163,14 @@ export class ManagerAuthenticationService {
     password: string,
     repository?: IManagerRepository,
   ): Promise<AuthenticateResult> {
+    if (this.isUnconfigured()) {
+      return {
+        ok: false,
+        reason: "UNCONFIGURED",
+        message: "שרת התחברות המנהלים אינו מוגדר בסביבה זו (חסרים סודות מערכת)",
+      };
+    }
+
     const normalizedEmail = email?.trim().toLowerCase();
     if (!normalizedEmail || !password) {
       return {
@@ -163,7 +201,8 @@ export class ManagerAuthenticationService {
       }
     }
 
-    const account = this.defaultAccounts().find(
+    const accounts = await this.defaultAccounts();
+    const account = accounts.find(
       (acc) => acc.manager.email.toLowerCase() === normalizedEmail,
     );
 
@@ -175,7 +214,8 @@ export class ManagerAuthenticationService {
       };
     }
 
-    const passwordMatches = timingSafeEqualStrings(password, account.password);
+    const inputHash = await hashPassword(password);
+    const passwordMatches = timingSafeEqualStrings(inputHash, account.passwordHash);
     if (!passwordMatches) {
       return {
         ok: false,
@@ -200,3 +240,4 @@ export class ManagerAuthenticationService {
     };
   }
 }
+

@@ -53,6 +53,7 @@ class LLMProviderService:
         status: str,
         retry_tier: str = "fast",
         question_aggregates: Iterable[Dict[str, Any]] | None = None,
+        background_context: Optional[Dict[str, Any]] = None,
     ) -> str:
         return self.generate_psychological_interpretation_result(
             dim_id=dim_id,
@@ -61,6 +62,7 @@ class LLMProviderService:
             status=status,
             retry_tier=retry_tier,
             question_aggregates=question_aggregates,
+            background_context=background_context,
         ).text
 
     def generate_psychological_interpretation_result(
@@ -71,6 +73,7 @@ class LLMProviderService:
         status: str,
         retry_tier: str = "fast",
         question_aggregates: Iterable[Dict[str, Any]] | None = None,
+        background_context: Optional[Dict[str, Any]] = None,
     ) -> InterpretationGeneration:
         """
         Generate a semantically validated interpretation and auditable outcome.
@@ -122,7 +125,7 @@ class LLMProviderService:
                     score=score,
                     status=status,
                     question_aggregates=questions,
-                    background_context=getattr(round_analytics, "backgroundContext", None),
+                    background_context=background_context,
                 )
                 req_payload = json.dumps({
                     "model": model_name,
@@ -144,6 +147,7 @@ class LLMProviderService:
                     method="POST"
                 )
                 request_started_at = time.monotonic()
+                fallback_reason = "provider_error"
                 for attempt in range(1, settings.llm_max_attempts + 1):
                     try:
                         remaining_budget = self._remaining_retry_budget(
@@ -399,12 +403,21 @@ class LLMProviderService:
         if isinstance(background_context, dict):
             if background_context.get("notes"):
                 bg_lines.append(f"הערות רקע מהמנהלת: {background_context['notes']}")
+            if background_context.get("audience"):
+                bg_lines.append(f"קהל יעד: {background_context['audience']}")
             if background_context.get("studentCount"):
                 bg_lines.append(f"מספר תלמידים: {background_context['studentCount']}")
             if background_context.get("socioEconomicIndex"):
                 bg_lines.append(f"מדד טיפוח: {background_context['socioEconomicIndex']}")
             if background_context.get("newStaffMembers"):
                 bg_lines.append(f"צוות חדש: {background_context['newStaffMembers']}")
+            if background_context.get("sicknessDaysThisQuarter"):
+                bg_lines.append(f"ימי מחלה ברבעון: {background_context['sicknessDaysThisQuarter']}")
+            classes = background_context.get("classesPerGrade")
+            if isinstance(classes, dict) and classes:
+                classes_str = ", ".join(f"שכבה {k}: {v}" for k, v in classes.items() if v)
+                if classes_str:
+                    bg_lines.append(f"כיתות: {classes_str}")
         bg_section = ("\nSchool Background Context:\n" + "\n".join(bg_lines)) if bg_lines else ""
 
         return (

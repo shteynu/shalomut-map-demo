@@ -41,8 +41,8 @@ exact вопросы раунда принадлежат persisted `SurveyRound.
   `shalomut-map-demo.vercel.app`, а `docs/openapi.yaml` и `public/openapi.json`
   указывают `-ui-redesign` как первый server URL.
 - **Manager UI Authorization & Basic Auth Sunset**: Реализованы `/login`, `/api/auth/login`, `/api/auth/logout`, `/api/auth/me`, `ManagerAuthenticationService` (Web Crypto HMAC-SHA256), шапка пользователя `ManagerUserBar` и флаг `DISABLE_BASIC_AUTH_FALLBACK` в `middleware.ts`.
-- **Contract 3.0 Live Staging E2E**: Живая проверка на Staging Supabase DB (`tpfzhyalaftotljmlont`) доказала Scenario A1 (Unlocked custom questionnaire 3.0, 10 responses, exact definition hash `sha256:88489e11...`, 8 custom question aggregates) и Scenario A2 (Privacy lock при < 10 ответов). Автоматическая SQL-очистка удалила все одноразовые записи.
-- **Verification Evidence**: `npm test` 162/162 passed, `npm run lint` 0 errors, `npm run build` прошёл успешно (39 страниц).
+- **Contract 4.0 & 6 Quality Blocks Completed (2026-07-26)**: P0 authentication hardened (SHA-256 Web Crypto hashing, default `manager123` prohibited in production, HTTP 503 on missing secrets), `deleteMany` added to `MinimalPrismaClient`, ESLint `setState` in effect fixed, Contract `4.0` created with school `backgroundContext` in Python parser/prompt/provenance, Product UX updated (setup CTA -> `/survey/`, active questions numbered, empty draft, clear questionnaire, load template, delete confirmation, Esc / validation / preview in `QuestionEditDialog`), OpenAPI spec synced with `POST /api/rounds/{roundId}/reset`.
+- **Verification Evidence**: `npm test` 168/168 passed, `npm run lint` 0 errors, `npm run build` 39/39 static/dynamic pages compiled, `python3 ai-analytics-service/run_tests.py` 13/13 passed, `openapi.test.ts` 5/5 passed.
 - PR #5 смержен в `main` squash commit `6b369bf`.
 - PR [#6](https://github.com/shteynu/shalomut-map-demo/pull/6) смержен в
   `main` squash commit `043f54d`.

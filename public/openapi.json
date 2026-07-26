@@ -44,11 +44,15 @@
   "paths": {
     "/api/rounds": {
       "get": {
-        "tags": ["Rounds"],
+        "tags": [
+          "Rounds"
+        ],
         "summary": "Fetch default survey round",
         "description": "Returns details of the default active survey round.",
         "security": [
-          { "basicAuth": [] }
+          {
+            "basicAuth": []
+          }
         ],
         "responses": {
           "200": {
@@ -82,11 +86,15 @@
         }
       },
       "post": {
-        "tags": ["Rounds"],
+        "tags": [
+          "Rounds"
+        ],
         "summary": "Create new survey round",
         "description": "Generates a new survey round for an organization with a unique share code (SHALOM-XXXX).",
         "security": [
-          { "basicAuth": [] }
+          {
+            "basicAuth": []
+          }
         ],
         "requestBody": {
           "required": true,
@@ -132,14 +140,7 @@
             "description": "Organization not found in the manager scope"
           },
           "500": {
-            "description": "Failed to create round",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
+            "description": "Failed to create round"
           },
           "503": {
             "description": "Persistent storage is not configured for this deployment"
@@ -149,11 +150,15 @@
     },
     "/api/manager/setup": {
       "put": {
-        "tags": ["Manager Setup"],
+        "tags": [
+          "Manager Setup"
+        ],
         "summary": "Create or update manager setup",
         "description": "Persists the school profile, survey round, privacy threshold, dates, and background context. Existing records are updated when their IDs are supplied.",
         "security": [
-          { "basicAuth": [] }
+          {
+            "basicAuth": []
+          }
         ],
         "requestBody": {
           "required": true,
@@ -173,32 +178,28 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "success": { "type": "boolean", "example": true },
-                    "organization": { "$ref": "#/components/schemas/Organization" },
-                    "round": { "$ref": "#/components/schemas/SurveyRound" }
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "organization": {
+                      "$ref": "#/components/schemas/Organization"
+                    },
+                    "round": {
+                      "$ref": "#/components/schemas/SurveyRound"
+                    }
                   }
                 }
               }
             }
           },
           "400": {
-            "description": "Invalid manager setup payload",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
-              }
-            }
+            "description": "Invalid manager setup payload"
           },
           "404": {
             "description": "Organization or survey round not found in the manager scope"
           },
           "500": {
-            "description": "Failed to save manager setup",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
-              }
-            }
+            "description": "Failed to save manager setup"
           },
           "503": {
             "description": "Persistent storage is not configured for this deployment"
@@ -208,7 +209,9 @@
     },
     "/api/survey/{shareCode}": {
       "get": {
-        "tags": ["Survey"],
+        "tags": [
+          "Survey"
+        ],
         "summary": "Fetch survey questionnaire by share code",
         "description": "Retrieves the survey questionnaire (24 items across 8 wellbeing dimensions) for active survey round.",
         "parameters": [
@@ -237,14 +240,20 @@
                     "instrument": {
                       "type": "object",
                       "properties": {
-                        "title": { "type": "string", "example": "שאלון שלומות צוות הוראה" },
+                        "title": {
+                          "type": "string"
+                        },
                         "dimensions": {
                           "type": "array",
-                          "items": { "$ref": "#/components/schemas/WellbeingDimension" }
+                          "items": {
+                            "$ref": "#/components/schemas/WellbeingDimension"
+                          }
                         },
                         "questions": {
                           "type": "array",
-                          "items": { "$ref": "#/components/schemas/Question" }
+                          "items": {
+                            "$ref": "#/components/schemas/Question"
+                          }
                         }
                       }
                     }
@@ -254,41 +263,22 @@
             }
           },
           "400": {
-            "description": "Survey round is not active",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
+            "description": "Survey round is not active"
           },
           "404": {
-            "description": "Survey code not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
+            "description": "Survey code not found"
           },
           "500": {
-            "description": "Failed to fetch survey",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
+            "description": "Failed to fetch survey"
           }
         }
       }
     },
     "/api/survey/{shareCode}/submit": {
       "post": {
-        "tags": ["Survey"],
+        "tags": [
+          "Survey"
+        ],
         "summary": "Submit anonymous survey answers",
         "description": "Submits answers for all 24 questions. Preserves participant anonymity strictly.",
         "parameters": [
@@ -296,7 +286,6 @@
             "name": "shareCode",
             "in": "path",
             "required": true,
-            "description": "Access share code (e.g. SHALOM-7K2M)",
             "schema": {
               "type": "string",
               "example": "SHALOM-7K2M"
@@ -309,7 +298,9 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["answers"],
+                "required": [
+                  "answers"
+                ],
                 "properties": {
                   "answers": {
                     "type": "array",
@@ -318,72 +309,57 @@
                     }
                   },
                   "anonymousTokenHash": {
-                    "type": "string",
-                    "description": "Optional hash to prevent double submission",
-                    "example": "a3f8c9b2e1d0458..."
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Response recorded successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "responseId": {
+                      "type": "string"
+                    }
                   }
                 }
               }
             }
           },
-          "responses": {
-            "200": {
-              "description": "Response recorded successfully",
-              "content": {
-                "application/json": {
-                  "schema": {
-                    "type": "object",
-                    "properties": {
-                      "success": { "type": "boolean", "example": true },
-                      "responseId": { "type": "string", "example": "resp_1721829482910_a83b" }
-                    }
-                  }
-                }
-              }
-            },
-            "400": {
-              "description": "Invalid submission or duplicate response",
-              "content": {
-                "application/json": {
-                  "schema": {
-                    "$ref": "#/components/schemas/ErrorResponse"
-                  }
-                }
-              }
-            },
-            "404": {
-              "description": "Survey round not found",
-              "content": {
-                "application/json": {
-                  "schema": {
-                    "$ref": "#/components/schemas/ErrorResponse"
-                  }
-                }
-              }
-            },
-            "500": {
-              "description": "Internal server error",
-              "content": {
-                "application/json": {
-                  "schema": {
-                    "$ref": "#/components/schemas/ErrorResponse"
-                  }
-                }
-              }
-            },
-            "503": {
-              "description": "Persistent storage is not configured for this deployment"
-            }
+          "400": {
+            "description": "Invalid submission or duplicate response"
+          },
+          "404": {
+            "description": "Survey round not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          },
+          "503": {
+            "description": "Persistent storage is not configured for this deployment"
           }
         }
       }
     },
     "/api/rounds/{roundId}": {
       "patch": {
-        "tags": ["Rounds"],
+        "tags": [
+          "Rounds"
+        ],
         "summary": "Transition a survey round status",
         "security": [
-          { "basicAuth": [] }
+          {
+            "basicAuth": []
+          }
         ],
         "parameters": [
           {
@@ -402,9 +378,13 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["status"],
+                "required": [
+                  "status"
+                ],
                 "properties": {
-                  "status": { "$ref": "#/components/schemas/RoundStatus" }
+                  "status": {
+                    "$ref": "#/components/schemas/RoundStatus"
+                  }
                 }
               }
             }
@@ -412,24 +392,85 @@
         },
         "responses": {
           "200": {
-            "description": "Round status updated",
+            "description": "Round status updated"
+          },
+          "400": {
+            "description": "Invalid status"
+          },
+          "404": {
+            "description": "Survey round not found"
+          },
+          "409": {
+            "description": "Status transition is not allowed"
+          },
+          "500": {
+            "description": "Failed to update survey round"
+          },
+          "503": {
+            "description": "Persistent storage is not configured for this deployment"
+          }
+        }
+      }
+    },
+    "/api/rounds/{roundId}/reset": {
+      "post": {
+        "tags": [
+          "Rounds"
+        ],
+        "summary": "Reset survey round responses and set status back to draft",
+        "description": "Clears all collected anonymous survey responses for the given round and resets its status to draft so questions can be edited.",
+        "security": [
+          {
+            "basicAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "roundId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "4f88af95-0ec4-4872-85ac-67466c3cd8f2"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Round data reset successfully",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "success": { "type": "boolean", "example": true },
-                    "round": { "$ref": "#/components/schemas/SurveyRound" }
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Round data reset successfully."
+                    },
+                    "round": {
+                      "$ref": "#/components/schemas/SurveyRound"
+                    }
                   }
                 }
               }
             }
           },
-          "400": { "description": "Invalid status" },
-          "404": { "description": "Survey round not found" },
-          "409": { "description": "Status transition is not allowed" },
-          "500": { "description": "Failed to update survey round" },
-          "503": { "description": "Persistent storage is not configured for this deployment" }
+          "403": {
+            "description": "Manager organization scope is required"
+          },
+          "404": {
+            "description": "Survey round not found"
+          },
+          "500": {
+            "description": "Failed to reset round responses"
+          },
+          "503": {
+            "description": "Persistent storage is not configured for this deployment"
+          }
         }
       }
     },
@@ -446,11 +487,15 @@
         }
       ],
       "get": {
-        "tags": ["Manager Setup"],
+        "tags": [
+          "Manager Setup"
+        ],
         "summary": "Fetch the saved survey definition",
         "description": "Returns the saved definition or the canonical 24-question definition when the round has not been customized.",
         "security": [
-          { "basicAuth": [] }
+          {
+            "basicAuth": []
+          }
         ],
         "responses": {
           "200": {
@@ -460,66 +505,76 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "definition": { "$ref": "#/components/schemas/SurveyDefinition" }
+                    "definition": {
+                      "$ref": "#/components/schemas/SurveyDefinition"
+                    }
                   }
                 }
               }
             }
           },
-          "404": { "description": "Survey round not found" }
+          "404": {
+            "description": "Survey round not found"
+          }
         }
       },
       "put": {
-        "tags": ["Manager Setup"],
+        "tags": [
+          "Manager Setup"
+        ],
         "summary": "Save the survey definition",
         "description": "Persists survey copy and optional questions. The 24 canonical questions must remain enabled, required, unique, and assigned to their canonical dimensions.",
         "security": [
-          { "basicAuth": [] }
+          {
+            "basicAuth": []
+          }
         ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/SurveyDefinition" }
+              "schema": {
+                "$ref": "#/components/schemas/SurveyDefinition"
+              }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Survey definition saved",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": { "type": "boolean", "example": true },
-                    "definition": { "$ref": "#/components/schemas/SurveyDefinition" }
-                  }
-                }
-              }
-            }
+            "description": "Survey definition saved"
           },
-          "400": { "description": "Invalid survey definition" },
-          "404": { "description": "Survey round not found" },
-          "500": { "description": "Failed to save survey definition" },
-          "503": { "description": "Persistent storage is not configured for this deployment" }
+          "400": {
+            "description": "Invalid survey definition"
+          },
+          "404": {
+            "description": "Survey round not found"
+          },
+          "500": {
+            "description": "Failed to save survey definition"
+          },
+          "503": {
+            "description": "Persistent storage is not configured for this deployment"
+          }
         }
       }
     },
     "/api/rounds/{roundId}/analytics": {
       "get": {
-        "tags": ["Analytics"],
+        "tags": [
+          "Analytics"
+        ],
         "summary": "Fetch aggregated round analytics",
         "description": "Calculates 8 organic wellbeing stone scores (0-100 scale). Enforces privacy threshold (privacyThreshold >= 10). Locks detailed scores if total responses < privacyThreshold.",
         "security": [
-          { "basicAuth": [] }
+          {
+            "basicAuth": []
+          }
         ],
         "parameters": [
           {
             "name": "roundId",
             "in": "path",
             "required": true,
-            "description": "Unique survey round ID",
             "schema": {
               "type": "string",
               "example": "4f88af95-0ec4-4872-85ac-67466c3cd8f2"
@@ -543,35 +598,25 @@
             }
           },
           "404": {
-            "description": "Survey round not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
+            "description": "Survey round not found"
           },
           "500": {
-            "description": "Failed to fetch analytics",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
+            "description": "Failed to fetch analytics"
           }
         }
       }
     },
     "/api/mcp": {
       "post": {
-        "tags": ["AI Integration"],
+        "tags": [
+          "AI Integration"
+        ],
         "summary": "Call the Shalomut MCP endpoint",
         "description": "JSON-RPC 2.0 endpoint exposing tools/list and get_round_analytics through tools/call. Bearer authentication is required when MCP_SHARED_SECRET is configured.",
         "security": [
-          { "bearerAuth": [] },
+          {
+            "bearerAuth": []
+          },
           {}
         ],
         "requestBody": {
@@ -624,10 +669,14 @@
         }
       ],
       "get": {
-        "tags": ["AI Integration"],
+        "tags": [
+          "AI Integration"
+        ],
         "summary": "Fetch persisted AI insights",
         "security": [
-          { "basicAuth": [] }
+          {
+            "basicAuth": []
+          }
         ],
         "responses": {
           "200": {
@@ -649,11 +698,15 @@
         }
       },
       "post": {
-        "tags": ["AI Integration"],
+        "tags": [
+          "AI Integration"
+        ],
         "summary": "Persist the AI service callback",
         "description": "Validates contract version 1.0, route/payload round identity, privacy semantics, and all eight canonical dimensions before persistence. Bearer authentication is required when AI_CALLBACK_SECRET is configured.",
         "security": [
-          { "bearerAuth": [] },
+          {
+            "bearerAuth": []
+          },
           {}
         ],
         "requestBody": {
@@ -690,11 +743,15 @@
     },
     "/api/rounds/{roundId}/trigger-ai": {
       "post": {
-        "tags": ["AI Integration"],
+        "tags": [
+          "AI Integration"
+        ],
         "summary": "Request AI processing for a survey round",
         "description": "Forwards a round_closed event to AI_SERVICE_URL without a dynamic callback target. The AI service derives its callback URL from its trusted DATA_LAYER_CALLBACK_URL configuration and the round ID. The endpoint fails closed when the AI service is unavailable.",
         "security": [
-          { "basicAuth": [] }
+          {
+            "basicAuth": []
+          }
         ],
         "parameters": [
           {
@@ -714,14 +771,14 @@
           "404": {
             "description": "Survey round not found in the manager scope"
           },
+          "500": {
+            "description": "Failed to construct or dispatch the request"
+          },
           "502": {
             "description": "AI service returned a non-success response"
           },
           "503": {
             "description": "AI service could not be reached"
-          },
-          "500": {
-            "description": "Failed to construct or dispatch the request"
           }
         }
       }
@@ -743,13 +800,20 @@
     "schemas": {
       "RoundStatus": {
         "type": "string",
-        "enum": ["draft", "active", "closed", "archived"],
-        "example": "active"
+        "enum": [
+          "draft",
+          "active",
+          "closed",
+          "archived"
+        ]
       },
       "WellbeingStatus": {
         "type": "string",
-        "enum": ["green", "yellow", "red"],
-        "example": "green"
+        "enum": [
+          "green",
+          "yellow",
+          "red"
+        ]
       },
       "WellbeingDimensionId": {
         "type": "string",
@@ -762,26 +826,25 @@
           "certainty",
           "organizational-climate",
           "meaning"
-        ],
-        "example": "self-expression"
+        ]
       },
       "CreateRoundInput": {
         "type": "object",
-        "required": ["organizationId", "title"],
+        "required": [
+          "organizationId",
+          "title"
+        ],
         "properties": {
           "organizationId": {
             "type": "string",
-            "format": "uuid",
-            "example": "c93f8832-8d0d-43cb-b8d2-cdd6e45683af"
+            "format": "uuid"
           },
           "title": {
-            "type": "string",
-            "example": "סקר שלומות - מחצית א' תשפ\"ו"
+            "type": "string"
           },
           "privacyThreshold": {
             "type": "integer",
-            "default": 10,
-            "example": 10
+            "default": 10
           },
           "startDate": {
             "type": "string",
@@ -791,14 +854,36 @@
       },
       "Organization": {
         "type": "object",
-        "required": ["id", "name", "city", "schoolType", "totalStaffCount", "createdAt"],
+        "required": [
+          "id",
+          "name",
+          "city",
+          "schoolType",
+          "totalStaffCount",
+          "createdAt"
+        ],
         "properties": {
-          "id": { "type": "string", "format": "uuid" },
-          "name": { "type": "string", "example": "בית ספר דרור" },
-          "city": { "type": "string", "example": "תל אביב" },
-          "schoolType": { "type": "string", "example": "ממלכתי" },
-          "totalStaffCount": { "type": "integer", "minimum": 1, "example": 34 },
-          "createdAt": { "type": "string", "format": "date-time" }
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "schoolType": {
+            "type": "string"
+          },
+          "totalStaffCount": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
         }
       },
       "RoundBackgroundContext": {
@@ -813,57 +898,137 @@
           "classesPerGrade"
         ],
         "properties": {
-          "notes": { "type": "string" },
-          "audience": { "type": "string", "example": "כלל צוות ההוראה" },
-          "sicknessDaysThisQuarter": { "type": "integer", "minimum": 0 },
-          "newStaffMembers": { "type": "integer", "minimum": 0 },
-          "studentCount": { "type": "integer", "minimum": 0 },
-          "socioEconomicIndex": { "type": "integer", "minimum": 1, "maximum": 10 },
+          "notes": {
+            "type": "string"
+          },
+          "audience": {
+            "type": "string"
+          },
+          "sicknessDaysThisQuarter": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "newStaffMembers": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "studentCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "socioEconomicIndex": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10
+          },
           "classesPerGrade": {
             "type": "object",
-            "additionalProperties": { "type": "integer", "minimum": 0 }
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 0
+            }
           }
         }
       },
       "ManagerSetupInput": {
         "type": "object",
-        "required": ["organization", "round"],
+        "required": [
+          "organization",
+          "round"
+        ],
         "properties": {
           "organization": {
             "type": "object",
-            "required": ["name", "city", "schoolType", "totalStaffCount"],
+            "required": [
+              "name",
+              "city",
+              "schoolType",
+              "totalStaffCount"
+            ],
             "properties": {
-              "id": { "type": "string", "format": "uuid" },
-              "name": { "type": "string" },
-              "city": { "type": "string" },
-              "schoolType": { "type": "string" },
-              "totalStaffCount": { "type": "integer", "minimum": 1 }
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              },
+              "city": {
+                "type": "string"
+              },
+              "schoolType": {
+                "type": "string"
+              },
+              "totalStaffCount": {
+                "type": "integer",
+                "minimum": 1
+              }
             }
           },
           "round": {
             "type": "object",
-            "required": ["title", "privacyThreshold", "startDate", "backgroundContext"],
+            "required": [
+              "title",
+              "privacyThreshold",
+              "startDate",
+              "backgroundContext"
+            ],
             "properties": {
-              "id": { "type": "string", "format": "uuid" },
-              "title": { "type": "string" },
-              "privacyThreshold": { "type": "integer", "minimum": 10 },
-              "startDate": { "type": "string", "format": "date" },
-              "endDate": { "type": "string", "format": "date" },
-              "backgroundContext": { "$ref": "#/components/schemas/RoundBackgroundContext" }
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "title": {
+                "type": "string"
+              },
+              "privacyThreshold": {
+                "type": "integer",
+                "minimum": 10
+              },
+              "startDate": {
+                "type": "string",
+                "format": "date"
+              },
+              "endDate": {
+                "type": "string",
+                "format": "date"
+              },
+              "backgroundContext": {
+                "$ref": "#/components/schemas/RoundBackgroundContext"
+              }
             }
           }
         }
       },
       "SurveyDefinitionQuestion": {
         "type": "object",
-        "required": ["id", "text", "dimensionId", "required", "enabled", "answerMode"],
+        "required": [
+          "id",
+          "text",
+          "dimensionId",
+          "required",
+          "enabled",
+          "answerMode"
+        ],
         "properties": {
-          "id": { "type": "string", "example": "q1" },
-          "text": { "type": "string" },
-          "dimensionId": { "$ref": "#/components/schemas/WellbeingDimensionId" },
-          "required": { "type": "boolean" },
-          "enabled": { "type": "boolean" },
-          "answerMode": { "type": "string", "example": "סקאלת צבעים" }
+          "id": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "dimensionId": {
+            "$ref": "#/components/schemas/WellbeingDimensionId"
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "answerMode": {
+            "type": "string"
+          }
         }
       },
       "SurveyDefinition": {
@@ -878,106 +1043,267 @@
           "questions"
         ],
         "properties": {
-          "title": { "type": "string" },
-          "audience": { "type": "string" },
-          "estimatedMinutes": { "type": "number", "minimum": 1 },
-          "minimumResponses": { "type": "integer", "minimum": 10 },
-          "introText": { "type": "string" },
-          "anonymityText": { "type": "string" },
+          "title": {
+            "type": "string"
+          },
+          "audience": {
+            "type": "string"
+          },
+          "estimatedMinutes": {
+            "type": "number",
+            "minimum": 1
+          },
+          "minimumResponses": {
+            "type": "integer",
+            "minimum": 10
+          },
+          "introText": {
+            "type": "string"
+          },
+          "anonymityText": {
+            "type": "string"
+          },
           "questions": {
             "type": "array",
             "description": "Enabled question IDs must be unique and the enabled set must cover all eight wellbeing dimensions before activation.",
             "minItems": 8,
-            "items": { "$ref": "#/components/schemas/SurveyDefinitionQuestion" }
+            "items": {
+              "$ref": "#/components/schemas/SurveyDefinitionQuestion"
+            }
           }
         }
       },
       "SurveyRound": {
         "type": "object",
         "properties": {
-          "id": { "type": "string", "format": "uuid", "example": "4f88af95-0ec4-4872-85ac-67466c3cd8f2" },
-          "organizationId": { "type": "string", "format": "uuid", "example": "c93f8832-8d0d-43cb-b8d2-cdd6e45683af" },
-          "title": { "type": "string", "example": "סקר שלומות - מחצית א'" },
-          "status": { "$ref": "#/components/schemas/RoundStatus" },
-          "shareCode": { "type": "string", "example": "SHALOM-7K2M" },
-          "privacyThreshold": { "type": "integer", "example": 10 },
-          "startDate": { "type": "string", "format": "date-time" },
-          "endDate": { "type": "string", "format": "date-time" },
-          "backgroundContext": { "$ref": "#/components/schemas/RoundBackgroundContext" },
-          "surveyDefinition": { "$ref": "#/components/schemas/SurveyDefinition" },
-          "createdAt": { "type": "string", "format": "date-time" }
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "organizationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RoundStatus"
+          },
+          "shareCode": {
+            "type": "string"
+          },
+          "privacyThreshold": {
+            "type": "integer"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "backgroundContext": {
+            "$ref": "#/components/schemas/RoundBackgroundContext"
+          },
+          "surveyDefinition": {
+            "$ref": "#/components/schemas/SurveyDefinition"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
         }
       },
       "WellbeingDimension": {
         "type": "object",
         "properties": {
-          "id": { "$ref": "#/components/schemas/WellbeingDimensionId" },
-          "titleHe": { "type": "string", "example": "ביטוי עצמי" },
-          "descriptionHe": { "type": "string", "example": "תחושת חופש להביע דעות ורעיונות" },
-          "icon": { "type": "string", "example": "Sparkles" }
+          "id": {
+            "$ref": "#/components/schemas/WellbeingDimensionId"
+          },
+          "titleHe": {
+            "type": "string"
+          },
+          "descriptionHe": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "string"
+          }
         }
       },
       "Question": {
         "type": "object",
         "properties": {
-          "id": { "type": "string", "example": "q1" },
-          "dimensionId": { "$ref": "#/components/schemas/WellbeingDimensionId" },
-          "textHe": { "type": "string", "example": "אני מרגיש/ה שקולי נשמע בבית הספר" }
+          "id": {
+            "type": "string"
+          },
+          "dimensionId": {
+            "$ref": "#/components/schemas/WellbeingDimensionId"
+          },
+          "textHe": {
+            "type": "string"
+          }
         }
       },
       "QuestionAnswerInput": {
         "type": "object",
-        "required": ["questionId", "dimensionId", "value"],
+        "required": [
+          "questionId",
+          "dimensionId",
+          "value"
+        ],
         "properties": {
-          "questionId": { "type": "string", "example": "q1" },
-          "dimensionId": { "$ref": "#/components/schemas/WellbeingDimensionId" },
-          "value": { "$ref": "#/components/schemas/WellbeingStatus" }
+          "questionId": {
+            "type": "string"
+          },
+          "dimensionId": {
+            "$ref": "#/components/schemas/WellbeingDimensionId"
+          },
+          "value": {
+            "$ref": "#/components/schemas/WellbeingStatus"
+          }
         }
       },
       "RoundDimensionScore": {
         "type": "object",
-        "required": ["dimensionId", "averageScore", "computedStatus", "totalResponses", "isLocked", "calculatedAt"],
+        "required": [
+          "dimensionId",
+          "averageScore",
+          "computedStatus",
+          "totalResponses",
+          "isLocked",
+          "calculatedAt"
+        ],
         "properties": {
-          "dimensionId": { "$ref": "#/components/schemas/WellbeingDimensionId" },
-          "averageScore": { "type": "number", "example": 84.5 },
-          "computedStatus": { "$ref": "#/components/schemas/WellbeingStatus" },
-          "totalResponses": { "type": "integer", "example": 18 },
-          "isLocked": { "type": "boolean", "example": false },
-          "calculatedAt": { "type": "string", "format": "date-time" }
+          "dimensionId": {
+            "$ref": "#/components/schemas/WellbeingDimensionId"
+          },
+          "averageScore": {
+            "type": "number"
+          },
+          "computedStatus": {
+            "$ref": "#/components/schemas/WellbeingStatus"
+          },
+          "totalResponses": {
+            "type": "integer"
+          },
+          "isLocked": {
+            "type": "boolean"
+          },
+          "calculatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
         }
       },
       "QuestionAggregate": {
         "type": "object",
-        "required": ["questionId", "dimensionId", "questionTextHebrew", "averageScore", "responseCount"],
+        "required": [
+          "questionId",
+          "dimensionId",
+          "questionTextHebrew",
+          "averageScore",
+          "responseCount"
+        ],
         "properties": {
-          "questionId": { "type": "string", "example": "balance-2" },
-          "dimensionId": { "$ref": "#/components/schemas/WellbeingDimensionId" },
-          "questionTextHebrew": { "type": "string", "example": "יש לי מספיק זמן למנוחה ולהתאוששות אחרי העבודה." },
-          "averageScore": { "type": "number", "minimum": 0, "maximum": 100, "example": 40 },
-          "responseCount": { "type": "integer", "minimum": 1, "example": 12 }
+          "questionId": {
+            "type": "string",
+            "example": "balance-2"
+          },
+          "dimensionId": {
+            "$ref": "#/components/schemas/WellbeingDimensionId"
+          },
+          "questionTextHebrew": {
+            "type": "string",
+            "example": "יש לי מספיק זמן למנוחה ולהתאוששות אחרי העבודה."
+          },
+          "averageScore": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "example": 40
+          },
+          "responseCount": {
+            "type": "integer",
+            "minimum": 1,
+            "example": 12
+          }
         }
       },
       "DynamicQuestionAggregate": {
         "type": "object",
-        "required": ["questionId", "dimensionId", "questionText", "averageScore", "responseCount"],
+        "required": [
+          "questionId",
+          "dimensionId",
+          "questionText",
+          "averageScore",
+          "responseCount"
+        ],
         "properties": {
-          "questionId": { "type": "string", "example": "round-2026-balance-recovery" },
-          "dimensionId": { "$ref": "#/components/schemas/WellbeingDimensionId" },
-          "questionText": { "type": "string", "example": "יש לי זמן קבוע להתאוששות במהלך שבוע העבודה." },
-          "averageScore": { "type": "number", "minimum": 0, "maximum": 100, "example": 40 },
-          "responseCount": { "type": "integer", "minimum": 1, "example": 12 }
+          "questionId": {
+            "type": "string",
+            "example": "round-2026-balance-recovery"
+          },
+          "dimensionId": {
+            "$ref": "#/components/schemas/WellbeingDimensionId"
+          },
+          "questionText": {
+            "type": "string",
+            "example": "יש לי זמן קבוע להתאוששות במהלך שבוע העבודה."
+          },
+          "averageScore": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "example": 40
+          },
+          "responseCount": {
+            "type": "integer",
+            "minimum": 1,
+            "example": 12
+          }
         }
       },
       "RoundAnalyticsResultV2": {
         "type": "object",
         "description": "Immutable AI analytics input contract 2.0. Privacy-locked rounds return explicit empty dimensionScores and questionAggregates maps.",
-        "required": ["contractVersion", "roundId", "totalResponses", "privacyThreshold", "isLocked", "dimensionScores", "questionAggregates", "calculatedAt"],
+        "required": [
+          "contractVersion",
+          "roundId",
+          "totalResponses",
+          "privacyThreshold",
+          "isLocked",
+          "dimensionScores",
+          "questionAggregates",
+          "calculatedAt"
+        ],
         "properties": {
-          "contractVersion": { "type": "string", "enum": ["2.0"], "example": "2.0" },
-          "roundId": { "type": "string", "format": "uuid", "example": "4f88af95-0ec4-4872-85ac-67466c3cd8f2" },
-          "totalResponses": { "type": "integer", "example": 18 },
-          "privacyThreshold": { "type": "integer", "example": 10 },
-          "isLocked": { "type": "boolean", "example": false },
+          "contractVersion": {
+            "type": "string",
+            "enum": [
+              "2.0"
+            ],
+            "example": "2.0"
+          },
+          "roundId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "4f88af95-0ec4-4872-85ac-67466c3cd8f2"
+          },
+          "totalResponses": {
+            "type": "integer",
+            "example": 18
+          },
+          "privacyThreshold": {
+            "type": "integer",
+            "example": 10
+          },
+          "isLocked": {
+            "type": "boolean",
+            "example": false
+          },
           "dimensionScores": {
             "type": "object",
             "additionalProperties": {
@@ -991,40 +1317,93 @@
               "$ref": "#/components/schemas/QuestionAggregate"
             }
           },
-          "calculatedAt": { "type": "string", "format": "date-time" }
+          "calculatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
         }
       },
       "RoundAnalyticsResultV3": {
         "type": "object",
         "description": "Breaking dynamic-questionnaire input contract 3.0. Unlocked payloads contain exactly eight Core-owned dimension scores and every enabled persisted round question; locked payloads expose empty aggregate maps.",
-        "required": ["contractVersion", "roundId", "organizationId", "surveyDefinitionHash", "totalResponses", "privacyThreshold", "isLocked", "dimensionScores", "questionAggregates", "calculatedAt"],
+        "required": [
+          "contractVersion",
+          "roundId",
+          "organizationId",
+          "surveyDefinitionHash",
+          "totalResponses",
+          "privacyThreshold",
+          "isLocked",
+          "dimensionScores",
+          "questionAggregates",
+          "calculatedAt"
+        ],
         "properties": {
-          "contractVersion": { "type": "string", "enum": ["3.0"], "example": "3.0" },
-          "roundId": { "type": "string", "format": "uuid", "example": "4f88af95-0ec4-4872-85ac-67466c3cd8f2" },
-          "organizationId": { "type": "string", "format": "uuid", "example": "c93f8832-8d0d-43cb-b8d2-cdd6e45683af" },
-          "surveyDefinitionHash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
-          "totalResponses": { "type": "integer", "minimum": 0, "example": 18 },
-          "privacyThreshold": { "type": "integer", "minimum": 10, "example": 10 },
-          "isLocked": { "type": "boolean", "example": false },
+          "contractVersion": {
+            "type": "string",
+            "enum": [
+              "3.0"
+            ],
+            "example": "3.0"
+          },
+          "roundId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "4f88af95-0ec4-4872-85ac-67466c3cd8f2"
+          },
+          "organizationId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "c93f8832-8d0d-43cb-b8d2-cdd6e45683af"
+          },
+          "surveyDefinitionHash": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          },
+          "totalResponses": {
+            "type": "integer",
+            "minimum": 0,
+            "example": 18
+          },
+          "privacyThreshold": {
+            "type": "integer",
+            "minimum": 10,
+            "example": 10
+          },
+          "isLocked": {
+            "type": "boolean",
+            "example": false
+          },
           "dimensionScores": {
             "type": "object",
             "minProperties": 0,
             "maxProperties": 8,
-            "additionalProperties": { "$ref": "#/components/schemas/RoundDimensionScore" }
+            "additionalProperties": {
+              "$ref": "#/components/schemas/RoundDimensionScore"
+            }
           },
           "questionAggregates": {
             "type": "object",
             "description": "One uniquely keyed aggregate for every enabled persisted question when unlocked; empty when privacy locked.",
-            "additionalProperties": { "$ref": "#/components/schemas/DynamicQuestionAggregate" }
+            "additionalProperties": {
+              "$ref": "#/components/schemas/DynamicQuestionAggregate"
+            }
           },
-          "calculatedAt": { "type": "string", "format": "date-time" }
+          "calculatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
         }
       },
       "RoundAnalyticsResult": {
         "description": "Consumer-first input compatibility union. Consumers accept immutable 2.0 and dynamic 3.0 during rollout.",
         "oneOf": [
-          { "$ref": "#/components/schemas/RoundAnalyticsResultV2" },
-          { "$ref": "#/components/schemas/RoundAnalyticsResultV3" }
+          {
+            "$ref": "#/components/schemas/RoundAnalyticsResultV2"
+          },
+          {
+            "$ref": "#/components/schemas/RoundAnalyticsResultV3"
+          }
         ],
         "discriminator": {
           "propertyName": "contractVersion",
@@ -1036,21 +1415,34 @@
       },
       "McpJsonRpcRequest": {
         "type": "object",
-        "required": ["jsonrpc", "id", "method"],
+        "required": [
+          "jsonrpc",
+          "id",
+          "method"
+        ],
         "properties": {
           "jsonrpc": {
             "type": "string",
-            "enum": ["2.0"]
+            "enum": [
+              "2.0"
+            ]
           },
           "id": {
             "oneOf": [
-              { "type": "string" },
-              { "type": "integer" }
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
             ]
           },
           "method": {
             "type": "string",
-            "enum": ["tools/list", "tools/call"]
+            "enum": [
+              "tools/list",
+              "tools/call"
+            ]
           },
           "params": {
             "type": "object",
@@ -1060,59 +1452,114 @@
       },
       "StoneMetricV1": {
         "type": "object",
-        "required": ["label", "value"],
+        "required": [
+          "label",
+          "value"
+        ],
         "properties": {
-          "label": { "type": "string" },
-          "value": { "type": "string" },
-          "trend": { "type": "string" }
+          "label": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          },
+          "trend": {
+            "type": "string"
+          }
         }
       },
       "StoneInterventionV1": {
         "type": "object",
-        "required": ["id", "dimensionId", "source", "title", "summary", "actionable_steps"],
+        "required": [
+          "id",
+          "dimensionId",
+          "source",
+          "title",
+          "summary",
+          "actionable_steps"
+        ],
         "properties": {
-          "id": { "type": "string" },
-          "dimensionId": { "$ref": "#/components/schemas/WellbeingDimensionId" },
-          "source": { "type": "string" },
-          "title": { "type": "string" },
-          "summary": { "type": "string" },
+          "id": {
+            "type": "string"
+          },
+          "dimensionId": {
+            "$ref": "#/components/schemas/WellbeingDimensionId"
+          },
+          "source": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
           "actionable_steps": {
             "type": "array",
-            "items": { "type": "string" }
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
       "StoneDetailV1": {
         "type": "object",
-        "required": ["dimensionId", "dimensionNameHebrew", "status", "score", "psychologicalInterpretation", "recommendedInterventions", "metrics"],
+        "required": [
+          "dimensionId",
+          "dimensionNameHebrew",
+          "status",
+          "score",
+          "psychologicalInterpretation",
+          "recommendedInterventions",
+          "metrics"
+        ],
         "properties": {
-          "dimensionId": { "$ref": "#/components/schemas/WellbeingDimensionId" },
-          "dimensionNameHebrew": { "type": "string" },
-          "status": { "$ref": "#/components/schemas/WellbeingStatus" },
+          "dimensionId": {
+            "$ref": "#/components/schemas/WellbeingDimensionId"
+          },
+          "dimensionNameHebrew": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/WellbeingStatus"
+          },
           "score": {
             "type": "number",
             "minimum": 0,
             "maximum": 100
           },
-          "psychologicalInterpretation": { "type": "string" },
+          "psychologicalInterpretation": {
+            "type": "string"
+          },
           "recommendedInterventions": {
             "type": "array",
-            "items": { "$ref": "#/components/schemas/StoneInterventionV1" }
+            "items": {
+              "$ref": "#/components/schemas/StoneInterventionV1"
+            }
           },
           "metrics": {
             "type": "array",
-            "items": { "$ref": "#/components/schemas/StoneMetricV1" }
+            "items": {
+              "$ref": "#/components/schemas/StoneMetricV1"
+            }
           }
         }
       },
       "StoneMapResultV1": {
         "type": "object",
         "description": "Immutable deployed structural contract 1.0.",
-        "required": ["contractVersion", "roundId", "isLocked", "status"],
+        "required": [
+          "contractVersion",
+          "roundId",
+          "isLocked",
+          "status"
+        ],
         "properties": {
           "contractVersion": {
             "type": "string",
-            "enum": ["1.0"],
+            "enum": [
+              "1.0"
+            ],
             "example": "1.0"
           },
           "roundId": {
@@ -1128,7 +1575,11 @@
           },
           "status": {
             "type": "string",
-            "enum": ["success", "locked_error", "validation_failed"]
+            "enum": [
+              "success",
+              "locked_error",
+              "validation_failed"
+            ]
           },
           "errorMessage": {
             "type": "string"
@@ -1148,155 +1599,373 @@
       },
       "StoneMetric": {
         "type": "object",
-        "required": ["questionId", "label", "value", "averageScore", "responseCount"],
+        "required": [
+          "questionId",
+          "label",
+          "value",
+          "averageScore",
+          "responseCount"
+        ],
         "properties": {
-          "questionId": { "type": "string", "example": "balance-2" },
-          "label": { "type": "string", "example": "יש לי מספיק זמן למנוחה ולהתאוששות אחרי העבודה." },
-          "value": { "type": "string", "example": "40 מתוך 100" },
-          "averageScore": { "type": "number", "minimum": 0, "maximum": 100, "example": 40 },
-          "responseCount": { "type": "integer", "minimum": 1, "example": 12 },
-          "trend": { "type": "string" }
+          "questionId": {
+            "type": "string",
+            "example": "balance-2"
+          },
+          "label": {
+            "type": "string",
+            "example": "יש לי מספיק זמן למנוחה ולהתאוששות אחרי העבודה."
+          },
+          "value": {
+            "type": "string",
+            "example": "40 מתוך 100"
+          },
+          "averageScore": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "example": 40
+          },
+          "responseCount": {
+            "type": "integer",
+            "minimum": 1,
+            "example": 12
+          },
+          "trend": {
+            "type": "string"
+          }
         }
       },
       "StoneIntervention": {
         "type": "object",
-        "required": ["id", "dimensionId", "status", "source", "title", "summary", "actionable_steps"],
+        "required": [
+          "id",
+          "dimensionId",
+          "status",
+          "source",
+          "title",
+          "summary",
+          "actionable_steps"
+        ],
         "properties": {
-          "id": { "type": "string" },
-          "dimensionId": { "$ref": "#/components/schemas/WellbeingDimensionId" },
-          "status": { "$ref": "#/components/schemas/WellbeingStatus" },
-          "source": { "type": "string" },
-          "title": { "type": "string" },
-          "summary": { "type": "string" },
+          "id": {
+            "type": "string"
+          },
+          "dimensionId": {
+            "$ref": "#/components/schemas/WellbeingDimensionId"
+          },
+          "status": {
+            "$ref": "#/components/schemas/WellbeingStatus"
+          },
+          "source": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
           "actionable_steps": {
             "type": "array",
             "minItems": 1,
-            "items": { "type": "string" }
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
       "StoneGenerationProvenance": {
         "type": "object",
-        "required": ["outcome", "attempts", "retryCount", "sourceQuestionIds"],
+        "required": [
+          "outcome",
+          "attempts",
+          "retryCount",
+          "sourceQuestionIds"
+        ],
         "properties": {
-          "outcome": { "type": "string", "enum": ["llm", "deterministic_fallback"] },
-          "attempts": { "type": "integer", "minimum": 0 },
-          "retryCount": { "type": "integer", "minimum": 0 },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "llm",
+              "deterministic_fallback"
+            ]
+          },
+          "attempts": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "retryCount": {
+            "type": "integer",
+            "minimum": 0
+          },
           "sourceQuestionIds": {
             "type": "array",
             "minItems": 3,
             "maxItems": 3,
             "uniqueItems": true,
-            "items": { "type": "string" }
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
       "StoneDetail": {
         "type": "object",
-        "required": ["dimensionId", "dimensionNameHebrew", "status", "score", "psychologicalInterpretation", "recommendedInterventions", "metrics", "generationProvenance"],
+        "required": [
+          "dimensionId",
+          "dimensionNameHebrew",
+          "status",
+          "score",
+          "psychologicalInterpretation",
+          "recommendedInterventions",
+          "metrics",
+          "generationProvenance"
+        ],
         "properties": {
-          "dimensionId": { "$ref": "#/components/schemas/WellbeingDimensionId" },
-          "dimensionNameHebrew": { "type": "string" },
-          "status": { "$ref": "#/components/schemas/WellbeingStatus" },
-          "score": { "type": "number", "minimum": 0, "maximum": 100 },
-          "psychologicalInterpretation": { "type": "string" },
+          "dimensionId": {
+            "$ref": "#/components/schemas/WellbeingDimensionId"
+          },
+          "dimensionNameHebrew": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/WellbeingStatus"
+          },
+          "score": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "psychologicalInterpretation": {
+            "type": "string"
+          },
           "recommendedInterventions": {
             "type": "array",
-            "items": { "$ref": "#/components/schemas/StoneIntervention" }
+            "items": {
+              "$ref": "#/components/schemas/StoneIntervention"
+            }
           },
           "metrics": {
             "type": "array",
             "minItems": 3,
             "maxItems": 3,
-            "items": { "$ref": "#/components/schemas/StoneMetric" }
+            "items": {
+              "$ref": "#/components/schemas/StoneMetric"
+            }
           },
-          "generationProvenance": { "$ref": "#/components/schemas/StoneGenerationProvenance" }
+          "generationProvenance": {
+            "$ref": "#/components/schemas/StoneGenerationProvenance"
+          }
         }
       },
       "StoneMapResultV2": {
         "type": "object",
         "description": "Breaking semantic contract 2.0. Successful payloads contain exactly eight canonical stones; non-success payloads contain no detailed results.",
-        "required": ["contractVersion", "roundId", "isLocked", "status"],
+        "required": [
+          "contractVersion",
+          "roundId",
+          "isLocked",
+          "status"
+        ],
         "properties": {
-          "contractVersion": { "type": "string", "enum": ["2.0"], "example": "2.0" },
-          "roundId": { "type": "string", "example": "4f88af95-0ec4-4872-85ac-67466c3cd8f2" },
-          "processedAt": { "type": "string", "format": "date-time" },
-          "isLocked": { "type": "boolean" },
-          "status": { "type": "string", "enum": ["success", "locked_error", "validation_failed"] },
-          "errorMessage": { "type": "string" },
-          "overallPsychologicalSummary": { "type": "string" },
+          "contractVersion": {
+            "type": "string",
+            "enum": [
+              "2.0"
+            ],
+            "example": "2.0"
+          },
+          "roundId": {
+            "type": "string",
+            "example": "4f88af95-0ec4-4872-85ac-67466c3cd8f2"
+          },
+          "processedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "isLocked": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "success",
+              "locked_error",
+              "validation_failed"
+            ]
+          },
+          "errorMessage": {
+            "type": "string"
+          },
+          "overallPsychologicalSummary": {
+            "type": "string"
+          },
           "stones": {
             "type": "object",
             "minProperties": 8,
             "maxProperties": 8,
-            "additionalProperties": { "$ref": "#/components/schemas/StoneDetail" }
+            "additionalProperties": {
+              "$ref": "#/components/schemas/StoneDetail"
+            }
           }
         }
       },
       "StoneGenerationProvenanceV3": {
         "type": "object",
-        "required": ["outcome", "attempts", "retryCount", "sourceQuestionIds", "surveyDefinitionHash"],
+        "required": [
+          "outcome",
+          "attempts",
+          "retryCount",
+          "sourceQuestionIds",
+          "surveyDefinitionHash"
+        ],
         "properties": {
-          "outcome": { "type": "string", "enum": ["llm", "deterministic_fallback"] },
-          "attempts": { "type": "integer", "minimum": 0 },
-          "retryCount": { "type": "integer", "minimum": 0 },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "llm",
+              "deterministic_fallback"
+            ]
+          },
+          "attempts": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "retryCount": {
+            "type": "integer",
+            "minimum": 0
+          },
           "sourceQuestionIds": {
             "type": "array",
             "minItems": 1,
             "uniqueItems": true,
-            "items": { "type": "string" }
+            "items": {
+              "type": "string"
+            }
           },
-          "surveyDefinitionHash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+          "surveyDefinitionHash": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          }
         }
       },
       "StoneDetailV3": {
         "type": "object",
-        "required": ["dimensionId", "dimensionNameHebrew", "status", "score", "psychologicalInterpretation", "recommendedInterventions", "metrics", "generationProvenance"],
+        "required": [
+          "dimensionId",
+          "dimensionNameHebrew",
+          "status",
+          "score",
+          "psychologicalInterpretation",
+          "recommendedInterventions",
+          "metrics",
+          "generationProvenance"
+        ],
         "properties": {
-          "dimensionId": { "$ref": "#/components/schemas/WellbeingDimensionId" },
-          "dimensionNameHebrew": { "type": "string" },
-          "status": { "$ref": "#/components/schemas/WellbeingStatus" },
-          "score": { "type": "number", "minimum": 0, "maximum": 100 },
-          "psychologicalInterpretation": { "type": "string" },
+          "dimensionId": {
+            "$ref": "#/components/schemas/WellbeingDimensionId"
+          },
+          "dimensionNameHebrew": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/WellbeingStatus"
+          },
+          "score": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "psychologicalInterpretation": {
+            "type": "string"
+          },
           "recommendedInterventions": {
             "type": "array",
-            "items": { "$ref": "#/components/schemas/StoneIntervention" }
+            "items": {
+              "$ref": "#/components/schemas/StoneIntervention"
+            }
           },
           "metrics": {
             "type": "array",
             "minItems": 1,
-            "items": { "$ref": "#/components/schemas/StoneMetric" }
+            "items": {
+              "$ref": "#/components/schemas/StoneMetric"
+            }
           },
-          "generationProvenance": { "$ref": "#/components/schemas/StoneGenerationProvenanceV3" }
+          "generationProvenance": {
+            "$ref": "#/components/schemas/StoneGenerationProvenanceV3"
+          }
         }
       },
       "StoneMapResultV3": {
         "type": "object",
         "description": "Breaking dynamic-questionnaire output contract 3.0. Successful payloads contain exactly eight stones and variable question metrics grounded in the exact round snapshot.",
-        "required": ["contractVersion", "roundId", "surveyDefinitionHash", "isLocked", "status"],
+        "required": [
+          "contractVersion",
+          "roundId",
+          "surveyDefinitionHash",
+          "isLocked",
+          "status"
+        ],
         "properties": {
-          "contractVersion": { "type": "string", "enum": ["3.0"], "example": "3.0" },
-          "roundId": { "type": "string", "example": "4f88af95-0ec4-4872-85ac-67466c3cd8f2" },
-          "surveyDefinitionHash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
-          "processedAt": { "type": "string", "format": "date-time" },
-          "isLocked": { "type": "boolean" },
-          "status": { "type": "string", "enum": ["success", "locked_error", "validation_failed"] },
-          "errorMessage": { "type": "string" },
-          "overallPsychologicalSummary": { "type": "string" },
+          "contractVersion": {
+            "type": "string",
+            "enum": [
+              "3.0"
+            ],
+            "example": "3.0"
+          },
+          "roundId": {
+            "type": "string",
+            "example": "4f88af95-0ec4-4872-85ac-67466c3cd8f2"
+          },
+          "surveyDefinitionHash": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          },
+          "processedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "isLocked": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "success",
+              "locked_error",
+              "validation_failed"
+            ]
+          },
+          "errorMessage": {
+            "type": "string"
+          },
+          "overallPsychologicalSummary": {
+            "type": "string"
+          },
           "stones": {
             "type": "object",
             "minProperties": 8,
             "maxProperties": 8,
-            "additionalProperties": { "$ref": "#/components/schemas/StoneDetailV3" }
+            "additionalProperties": {
+              "$ref": "#/components/schemas/StoneDetailV3"
+            }
           }
         }
       },
       "StoneMapResult": {
         "description": "Consumer-first compatibility union. Consumers accept immutable 1.0/2.0 and dynamic 3.0 before the Core producer switches to 3.0.",
         "oneOf": [
-          { "$ref": "#/components/schemas/StoneMapResultV1" },
-          { "$ref": "#/components/schemas/StoneMapResultV2" },
-          { "$ref": "#/components/schemas/StoneMapResultV3" }
+          {
+            "$ref": "#/components/schemas/StoneMapResultV1"
+          },
+          {
+            "$ref": "#/components/schemas/StoneMapResultV2"
+          },
+          {
+            "$ref": "#/components/schemas/StoneMapResultV3"
+          }
         ],
         "discriminator": {
           "propertyName": "contractVersion",
@@ -1310,7 +1979,9 @@
       "ErrorResponse": {
         "type": "object",
         "properties": {
-          "error": { "type": "string", "example": "Failed to process request" }
+          "error": {
+            "type": "string"
+          }
         }
       }
     }

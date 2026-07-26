@@ -36,7 +36,7 @@ export function SurveyQuestionCard({
       <div className="survey-builder-question-row">
         <span className="survey-builder-order">
           <GripVertical size={16} aria-hidden="true" />
-          {questionIndex}
+          {question.enabled && questionIndex > 0 ? questionIndex : "-"}
         </span>
 
         <div className="survey-builder-question-copy">

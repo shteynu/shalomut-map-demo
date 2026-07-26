@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Check, ShieldCheck, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Check, Eye, ShieldCheck, X } from "lucide-react";
 import { wellbeingDimensions } from "@/lib/demo-data";
 import type { BuilderQuestion } from "./types";
 
@@ -20,36 +20,68 @@ export function QuestionEditDialog({
   onClose,
   onSave,
 }: QuestionEditDialogProps) {
+  const [prevQuestionKey, setPrevQuestionKey] = useState<string | null>(null);
   const [text, setText] = useState("");
   const [dimensionId, setDimensionId] = useState("");
   const [id, setId] = useState("");
   const [required, setRequired] = useState(true);
   const [enabled, setEnabled] = useState(true);
+  const [showPreview, setShowPreview] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const currentKey = question ? question.draftKey : null;
+  if (currentKey !== prevQuestionKey) {
+    setPrevQuestionKey(currentKey);
     if (question) {
       setText(question.text);
       setDimensionId(question.dimensionId);
       setId(question.id);
       setRequired(question.required);
       setEnabled(question.enabled);
+      setValidationError(null);
     }
-  }, [question]);
+  }
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   if (!isOpen || !question) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!text.trim()) {
+      setValidationError("יש להזין נוסח שאלה");
+      return;
+    }
+    if (!id.trim()) {
+      setValidationError("יש להזין מזהה קבוע לשאלה");
+      return;
+    }
+    setValidationError(null);
     onSave(question.draftKey, (current) => ({
       ...current,
-      text,
+      text: text.trim(),
       dimensionId: dimensionId as BuilderQuestion["dimensionId"],
-      id,
+      id: id.trim(),
       required,
       enabled,
     }));
     onClose();
   };
+
+  const selectedDimension = wellbeingDimensions.find((d) => d.id === dimensionId);
 
   return (
     <div
@@ -57,11 +89,12 @@ export function QuestionEditDialog({
       role="dialog"
       aria-modal="true"
       aria-labelledby="edit-dialog-title"
+      ref={dialogRef}
     >
       <div className="modal-panel bg-stone-50 border border-stone-200 rounded-2xl p-6 max-w-lg w-full shadow-2xl space-y-4">
         <div className="flex items-center justify-between border-b border-stone-200 pb-3">
           <h2 id="edit-dialog-title" className="text-lg font-bold text-stone-800">
-            עריכת שאלה {questionIndex}
+            עריכת שאלה {questionIndex > 0 ? questionIndex : "(ללא מספר)"}
           </h2>
           <button
             type="button"
@@ -73,17 +106,26 @@ export function QuestionEditDialog({
           </button>
         </div>
 
+        {validationError ? (
+          <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl" role="alert">
+            {validationError}
+          </div>
+        ) : null}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-stone-700 mb-1">
               נוסח השאלה המדויק
             </label>
             <textarea
-              rows={4}
+              rows={3}
               required
               className="w-full p-3 border border-stone-300 rounded-xl bg-white text-stone-900 focus:ring-2 focus:ring-amber-500 outline-none"
               value={text}
-              onChange={(e) => setText(e.target.value)}
+              onChange={(e) => {
+                setText(e.target.value);
+                if (validationError) setValidationError(null);
+              }}
               dir="rtl"
             />
           </div>
@@ -116,7 +158,10 @@ export function QuestionEditDialog({
                 required
                 className="w-full p-2.5 border border-stone-300 rounded-xl bg-white text-stone-900 focus:ring-2 focus:ring-amber-500 outline-none"
                 value={id}
-                onChange={(e) => setId(e.target.value)}
+                onChange={(e) => {
+                  setId(e.target.value);
+                  if (validationError) setValidationError(null);
+                }}
               />
             </div>
           </div>
@@ -141,6 +186,30 @@ export function QuestionEditDialog({
               />
               שאלה פעילה
             </label>
+          </div>
+
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={() => setShowPreview(!showPreview)}
+              className="text-xs font-medium text-amber-700 hover:text-amber-800 flex items-center gap-1.5"
+            >
+              <Eye size={14} aria-hidden="true" />
+              {showPreview ? "הסתר תצוגה מקדימה" : "תצוגה מקדימה למשיב"}
+            </button>
+            {showPreview ? (
+              <div className="mt-2 p-3 bg-stone-100 border border-stone-200 rounded-xl text-stone-800 text-sm space-y-2" dir="rtl">
+                <div className="flex items-center justify-between text-xs text-stone-500">
+                  <span>ממד: {selectedDimension?.conceptLabel || dimensionId}</span>
+                  <span>{required ? "חובה" : "רשות"}</span>
+                </div>
+                <p className="font-medium text-stone-900">{text || "(טרם הוזן נוסח שאלה)"}</p>
+                <div className="flex justify-between items-center gap-1 text-xs text-stone-500 pt-1">
+                  <span>לא מסכים כלל (1)</span>
+                  <span>מסכים במידה רבה מאוד (6)</span>
+                </div>
+              </div>
+            ) : null}
           </div>
 
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-stone-200">

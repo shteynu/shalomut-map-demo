@@ -124,7 +124,7 @@ const navigationActionDefinitions: Record<NavigationActionId, { target: AppRoute
   editSurvey: { target: "surveyBuilder", label: "עריכת שאלון" },
   manageSurvey: { target: "surveyBuilder", label: "ניהול שאלון" },
   trackRound: { target: "round", label: "מעבר למעקב סבב אבחון" },
-  distributeSurvey: { target: "round", label: "מעבר להפצת שאלון" },
+  distributeSurvey: { target: "surveyBuilder", label: "המשך לבניית שאלון" },
   openRespondentSurvey: { target: "respondentSurvey", label: "פתיחת קישור המשיבים" },
   backToMain: { target: "home", label: navigationLabels.backToMain },
   backToMap: { target: "dashboard", label: navigationLabels.backToMap },

@@ -9,6 +9,7 @@ from src.contracts import (
     AI_ANALYTICS_CONTRACT_VERSION,
     AI_ANALYTICS_DIMENSION_NAMES_HEBREW,
     AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
+    AI_ANALYTICS_V4_CONTRACT_VERSION,
     AI_ANALYTICS_QUESTIONS,
     AI_ANALYTICS_V1_CONTRACT_VERSION,
 )
@@ -32,10 +33,10 @@ def _question_aggregates_for_dimension(
     dimension_id: str,
 ) -> list[Dict[str, Any]]:
     aggregates = round_data.get("questionAggregates", {})
-    if (
-        _effective_contract_version(round_data)
-        == AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION
-    ):
+    if _effective_contract_version(round_data) in {
+        AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
+        AI_ANALYTICS_V4_CONTRACT_VERSION,
+    }:
         return [
             aggregate
             for aggregate in aggregates.values()
@@ -131,6 +132,7 @@ async def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
             round_data,
             dim_id,
         )
+        background_context = round_data.get("backgroundContext") or state.get("org_context")
         dim_ids.append(dim_id)
         generations.append(
             asyncio.to_thread(
@@ -141,6 +143,7 @@ async def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
                 status=status,
                 retry_tier=retry_tier,
                 question_aggregates=question_aggregates,
+                background_context=background_context,
             )
         )
 
@@ -169,13 +172,16 @@ async def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
             "retryCount": max(0, attempts - 1),
             "sourceQuestionIds": source_question_ids,
         }
-        if (
-            _effective_contract_version(round_data)
-            == AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION
-        ):
+        if _effective_contract_version(round_data) in {
+            AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
+            AI_ANALYTICS_V4_CONTRACT_VERSION,
+        }:
             generation_provenance[dim_id]["surveyDefinitionHash"] = (
                 round_data.get("surveyDefinitionHash")
             )
+        if _effective_contract_version(round_data) == AI_ANALYTICS_V4_CONTRACT_VERSION:
+            background_context = round_data.get("backgroundContext") or state.get("org_context")
+            generation_provenance[dim_id]["backgroundContextIncluded"] = bool(background_context)
 
     green_dimensions = len(dim_scores) - len(yellow_red_dims)
     overall_summary = (
@@ -248,10 +254,12 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
     is_semantic_contract = contract_version in {
         AI_ANALYTICS_CONTRACT_VERSION,
         AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
+        AI_ANALYTICS_V4_CONTRACT_VERSION,
     }
-    is_dynamic_contract = (
-        contract_version == AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION
-    )
+    is_dynamic_contract = contract_version in {
+        AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
+        AI_ANALYTICS_V4_CONTRACT_VERSION,
+    }
 
     is_safe = True
     feedback = []

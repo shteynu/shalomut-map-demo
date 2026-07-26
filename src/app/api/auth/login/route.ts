@@ -28,13 +28,14 @@ export async function POST(request: NextRequest) {
     );
 
     if (!authResult.ok) {
+      const status = authResult.reason === "UNCONFIGURED" ? 503 : 401;
       return NextResponse.json(
         {
           ok: false,
           error: authResult.message,
           reason: authResult.reason,
         },
-        { status: 401 },
+        { status },
       );
     }
 

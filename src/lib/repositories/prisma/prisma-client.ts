@@ -7,6 +7,7 @@ export interface MinimalPrismaClient {
     findUnique: (args: any) => Promise<any>;
     findMany: (args: any) => Promise<any[]>;
     update: (args: any) => Promise<any>;
+    deleteMany: (args?: any) => Promise<any>;
   };
   surveyRound: {
     create: (args: any) => Promise<any>;
@@ -14,12 +15,17 @@ export interface MinimalPrismaClient {
     findFirst: (args: any) => Promise<any>;
     findMany: (args: any) => Promise<any[]>;
     update: (args: any) => Promise<any>;
+    deleteMany: (args?: any) => Promise<any>;
   };
   surveyResponse: {
     create: (args: any) => Promise<any>;
     findMany: (args: any) => Promise<any[]>;
     findFirst: (args: any) => Promise<any>;
     count: (args: any) => Promise<number>;
+    deleteMany: (args?: any) => Promise<any>;
+  };
+  questionAnswer?: {
+    deleteMany: (args?: any) => Promise<any>;
   };
 }
 

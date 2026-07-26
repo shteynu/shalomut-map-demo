@@ -1,0 +1,142 @@
+{
+  "version": "4.0",
+  "previousVersions": ["1.0", "2.0", "3.0"],
+  "breakingChange": "Pass optional aggregated school background context (RoundBackgroundContext) from Core to Python LLM prompt generation and record background context inclusion in provenance.",
+  "questionnaire": {
+    "sourceOfTruth": "SurveyRound.surveyDefinition",
+    "defaultTemplate": "src/lib/shalomut-source.ts",
+    "minimumEnabledQuestionsPerDimension": 1,
+    "stableQuestionIdsRequired": true,
+    "uniqueQuestionIdsRequired": true,
+    "explicitDimensionMappingRequired": true,
+    "snapshotIdentity": {
+      "field": "surveyDefinitionHash",
+      "algorithm": "sha256",
+      "prefix": "sha256:",
+      "projection": ["questionId", "dimensionId", "questionText"],
+      "ordering": "questionId ascending by Unicode code point",
+      "serialization": "UTF-8 compact JSON array with the projection keys in the documented order, non-ASCII characters unescaped, and no whitespace normalization"
+    }
+  },
+  "backgroundContext": {
+    "supportedFields": [
+      "notes",
+      "audience",
+      "sicknessDaysThisQuarter",
+      "newStaffMembers",
+      "studentCount",
+      "socioEconomicIndex",
+      "classesPerGrade"
+    ],
+    "privacyPolicy": "aggregated-school-level-data-only-no-individual-respondent-attributes"
+  },
+  "privacy": {
+    "defaultThreshold": 10,
+    "unlockedPolicy": "total-and-every-question-at-or-above-threshold",
+    "lockedAggregatePolicy": "empty",
+    "partialUnlockedAnalysis": false,
+    "providerInvokedWhenLocked": false
+  },
+  "statuses": [
+    {
+      "id": "green",
+      "minScore": 75,
+      "maxScore": 100
+    },
+    {
+      "id": "yellow",
+      "minScore": 50,
+      "maxScore": 74
+    },
+    {
+      "id": "red",
+      "minScore": 0,
+      "maxScore": 49
+    }
+  ],
+  "dimensions": [
+    {
+      "id": "self-expression",
+      "nameHebrew": "ביטוי עצמי"
+    },
+    {
+      "id": "professional-competence",
+      "nameHebrew": "מסוגלות מקצועית"
+    },
+    {
+      "id": "social-resource",
+      "nameHebrew": "קשרים חברתיים"
+    },
+    {
+      "id": "balance",
+      "nameHebrew": "איזון"
+    },
+    {
+      "id": "management-support",
+      "nameHebrew": "עורף מקצועי"
+    },
+    {
+      "id": "certainty",
+      "nameHebrew": "ודאות"
+    },
+    {
+      "id": "organizational-climate",
+      "nameHebrew": "אקלים ארגוני"
+    },
+    {
+      "id": "meaning",
+      "nameHebrew": "משמעות"
+    }
+  ],
+  "input": {
+    "required": [
+      "contractVersion",
+      "roundId",
+      "organizationId",
+      "surveyDefinitionHash",
+      "dimensionScores",
+      "questionAggregates",
+      "calculatedAt",
+      "totalResponses",
+      "privacyThreshold",
+      "isLocked"
+    ],
+    "optional": [
+      "backgroundContext"
+    ],
+    "dimensionScoreCountWhenUnlocked": 8,
+    "questionAggregateFields": [
+      "questionId",
+      "dimensionId",
+      "questionText",
+      "averageScore",
+      "responseCount"
+    ],
+    "forbiddenFields": [
+      "respondentId",
+      "respondentName",
+      "email",
+      "anonymousTokenHash",
+      "responseId",
+      "answers",
+      "submittedAt"
+    ]
+  },
+  "output": {
+    "stoneCountWhenSuccessful": 8,
+    "dynamicMetrics": true,
+    "metricCoverage": "exactly every input question aggregate in its persisted dimension",
+    "coreOwnedFields": ["score", "status", "dimensionId"],
+    "hebrewUserFacingText": true,
+    "singleOverallSummary": true,
+    "provenanceFields": [
+      "outcome",
+      "attempts",
+      "retryCount",
+      "sourceQuestionIds",
+      "surveyDefinitionHash",
+      "backgroundContextIncluded"
+    ],
+    "interventionLookup": "exact-dimension-and-status"
+  }
+}
