@@ -9,6 +9,9 @@ Updated: 2026-07-26
 - AI Contract: Contract `4.0` (`contracts/ai-analytics-v4.json`) implemented with school `backgroundContext` and `generationProvenance`.
 - P0 Auth: Default password (`manager123`) removed from deployed runtime, SHA-256 password hashing active, returns `503` when mandatory secrets are missing.
 - Product UX: Setup CTA redirects to `/survey/`, active questions numbered sequentially, empty draft, clear questionnaire, load template, delete confirmation, Esc / validation / preview in `QuestionEditDialog`.
+- **Deployed runtime is DOWN**: every route of `https://shalomut-map-demo.vercel.app/`, including the public respondent route, returns `500 MIDDLEWARE_INVOCATION_FAILED` because `SESSION_SECRET` is not configured in Vercel. See Next Up item 1.
+- **Single deployed environment**: `https://shalomut-map-demo.vercel.app/` is the only product URL (staging for now); the `-ui-redesign` alias and the GitHub Pages site were retired on 2026-07-26.
+- **Independent verification (2026-07-26)**: slices 0.0, 0.1, 0.3, 1.1 and 1.2 confirmed done in code; 0.2, 1.3, 2.1 and 2.2 are partial; 2.3 and 2.4 not started. Two claims above need qualification — the questionnaire freeze after the first response is not wired (`isFrozen` is never passed to `SurveyBuilderQuestions`), and an incomplete draft still cannot be saved because both the save button and the API require all eight dimensions. Full per-slice status and the ordered follow-up plan: [`docs/manager-feedback-plan-2026-07-26.md`](docs/manager-feedback-plan-2026-07-26.md).
 
 ---
 

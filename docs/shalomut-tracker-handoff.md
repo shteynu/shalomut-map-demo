@@ -634,6 +634,14 @@ Staging показывал старую demo-школу, имя менеджер
   Успешная сессия обходит Basic gate в `middleware.ts`. Эксплуатация не
   выполнялась; до задания секретов и удаления дефолтных credential-fallback
   deployment нельзя считать защищённым.
+- **Статус после реализации (независимая проверка 2026-07-26, вечер):**
+  `/login/` исправлен в коде (нормализация pathname в `middleware.ts` и
+  `basic-auth.ts`, тесты добавлены), дефолтные `manager123`/`suspended123` больше
+  не создаются на deployed runtime, пароль сравнивается по SHA-256, логин
+  отдаёт `503 UNCONFIGURED` без секретов. Осталось: секреты в Vercel не заданы,
+  из-за чего рантайм лежит; провайдер сессий создаётся на уровне модуля и роняет
+  весь middleware вместе с респондентскими маршрутами; SHA-256 с общей солью —
+  не KDF, для пользовательских паролей понадобится bcrypt/argon2.
 
 ### 4. Deployed AI provenance и privacy-locked runtime
 
@@ -649,11 +657,37 @@ Staging показывал старую demo-школу, имя менеджер
 
 ### 5. Staging/production boundary
 
-- Legacy staging alias выровнен с Git tree текущего `main` и указывает на
-  protected Preview, а production alias по-прежнему временно используется как
-  staging core endpoint для Render.
-- Перед production rollout нужно явно развести aliases/env, повторно проверить
-  target DB и не считать текущую конфигурацию production-ready.
+- С 2026-07-26 развёрнутое окружение одно: `shalomut-map-demo.vercel.app`
+  (Vercel target `production`, продуктово — staging, подключён к staging
+  Supabase и к Render). Alias `-ui-redesign` снят, GitHub Pages снят.
+- Отдельное production-окружение создаётся позднее по необходимости: со своим
+  alias, своей БД и явным решением о deployment gate. До этого текущую
+  конфигурацию нельзя считать production-ready.
+
+### 6. Замечания директора: незакрытые хвосты (проверка 2026-07-26, вечер)
+
+- `isFrozen` объявлен в `survey-builder-questions.tsx`, но не передаётся из
+  `survey-builder.tsx`: баннер заморозки и блокировка кнопок после первого
+  ответа не срабатывают, защита остаётся только серверная (`409`).
+- Неполный черновик опросника нельзя сохранить: кнопка сохранения и API требуют
+  покрытия всех восьми измерений, поэтому «пустой старт» живёт только до
+  перезагрузки страницы.
+- `QuestionEditDialog`: `dialogRef` объявлен, но фокус не переводится в диалог,
+  не удерживается и не возвращается на карточку при закрытии.
+- Стилизация `QuestionEditDialog`, баннера заморозки и `ManagerUserBar` — на
+  Tailwind-утилитах вместо дизайн-системы `design.md`.
+- Контракт `4.0`: `analytics.service.ts` объявляет `3.0`, а `nodes.py:135`
+  подставляет `backgroundContext` в промпт безусловно. Семантика `3.0`
+  изменилась молча, ветка `4.0` не активируется, флаг
+  `backgroundContextIncluded` пишется только для `4.0`. MCP отдаёт
+  `backgroundContext` и для locked-раундов (провайдер при locked не вызывается).
+- `audience` дублируется между `backgroundContext` и определением опросника.
+- `POST /api/rounds/{roundId}/reset` необратимо удаляет ответы и не пишет запись
+  в `manager-audit-service`.
+- Не подтверждено: передеплоен ли Render на код с контекстом школы; читает ли
+  рантайм staging-БД (нужен share code активного раунда либо доступ).
+- `MANAGER_ORGANIZATION_ID` указывает на организацию, удалённую при очистке
+  staging-БД.
 
 ## Рекомендуемый порядок продолжения
 
