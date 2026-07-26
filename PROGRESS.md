@@ -1,76 +1,29 @@
 # PROGRESS: Shalomut Map
 
 ## 📌 Текущий статус
-- **Текущий этап**: breaking contract `3.0` для dynamic questionnaire сделан
-  GREEN и развёрнут consumer-first при неизменных `1.0`/`2.0`. Exact вопросы
-  берутся из persisted round snapshot; canonical 24 остаются default/legacy
-  template, а не AI allowlist.
-- **Состояние БД**: отдельный Supabase staging project
-  `shalomut-map-staging` (`tpfzhyalaftotljmlont`, `ap-northeast-2`) содержит
-  ровно одну organization `34d05e66-fa4d-4a07-a2af-c9d5c41b6088` и один
-  round `80e78f3e-1240-42d4-8a9e-23a3467bb650`. Это подтверждено read-only
-  запросом; миграции, cleanup и другие data writes в финальной проверке не
-  выполнялись.
-- **Core app runtime**: application deployment
-  `dpl_3mfGbz5FiEfWABkfDx8iWTdB4Ris` для producer slice `3e3f43f` имеет
-  состояние `READY`;
-  production alias
-  [shalomut-map-demo.vercel.app](https://shalomut-map-demo.vercel.app/) сейчас
-  используется как operational staging endpoint и подключён к выделенной
-  staging-БД. `/setup/` partial-JSON regression уже исправлен в этом baseline
-  и задеплоен. Session-close docs publish может создать более новый deployment
-  без изменения application runtime. Это не подтверждает production readiness.
-- **Legacy staging alias**:
-  [shalomut-map-demo-ui-redesign.vercel.app](https://shalomut-map-demo-ui-redesign.vercel.app/)
-  после bounded approval указывает на protected Preview
-  `dpl_FjVVtXibnMwWRXHHAaPEW5wgj3bR` (`READY`, source `91bb8d4`). Его Git tree
-  идентичен application baseline `ace5ba8`; session-close docs не меняют
-  runtime-содержимое. Unauthenticated запрос сохраняет `302` на Vercel SSO.
-  Runtime smoke подтвердил тот же staging round и threshold `10`, read-only
-  БД — `12` responses.
-- **Последний локальный browser-smoke**: изолированный Playwright на ephemeral
-  in-memory runtime подтвердил `/setup/`, respondent questionnaires на 8 и 11
-  exact persisted вопросов, unlocked eight-stone Dashboard с variable metrics,
-  recommendations и privacy-locked `9/10` state. Summary показан один раз;
-  green UX использует `חוזקה לשימור` и `פעולות לשימור`. Процесс остановлен,
-  внешние данные не менялись.
-- **Dashboard semantic quality**: manifest `3.0` опубликован и развёрнут, при
-  этом contracts `1.0` и `2.0` не изменены. Core отдаёт exact dynamic
-  question aggregates только после полного threshold gate; Python отклоняет
-  provider-invalid/truncated/non-Hebrew/status-inconsistent output, применяет
-  bounded retry и question-grounded deterministic fallback с provenance;
-  Dashboard показывает реальные metrics без cross-status fallback.
-- **AI runtime**: FastAPI-сервис развёрнут на Render; application deployment:
-  [shalomut-ai-analytics.onrender.com](https://shalomut-ai-analytics.onrender.com),
-  `dep-d9iro1uk1jcs73f6kmh0` для `3e3f43f` имеет статус `Live`; Python-first
-  deployment `dep-d9irlm6k1jcs73f6je50` для `f1cd906` и compatibility
-  deployment `dep-d9irmvn41pts73aoi83g` для `6833cb2` также завершились
-  успешно. `/health` отвечает HTTP 200.
-- **Real E2E**: для разрешённого round core trigger вернул `202`, MCP POST
-  `/api/mcp/` — `200`, Render webhook — `200`, callback POST — `200`,
-  сохранённый GET — `200`. Четыре non-green dimensions завершились как
-  Gemini `outcome=llm` с первой попытки; retry и heuristic fallback не
-  использовались. Persisted payload имеет `contractVersion: "1.0"`,
-  `status: "success"`, `isLocked: false` и восемь canonical stones.
-- **Изоляция AI persistence**: локальный исполняемый сценарий с тремя
-  раундами — два одной школы и один другой — подтвердил, что повторная запись
-  меняет `aiInsights` только выбранного `SurveyRound.id`. Результаты предыдущего
-  раунда и другой школы сохранились. Это доказывает изоляцию хранения, но не
-  application-level tenant authorization.
-- **Остаточный runtime-риск**: deployed producer уже возвращает `3.0`, но
-  read-only MCP smoke выполнен на существующем canonical-24 round. Реальный
-  custom-questionnaire provider → callback → persistence E2E и отдельный
-  privacy-locked staging round не запускались. Application-level manager
-  authorization и разделение staging/production aliases/env остаются открытыми.
-- **Защита и секреты**: три machine-to-machine secret совпадают; raw values не выводились и не коммитились. Старый preview URL и placeholder Vercel bypass удалены из фактической Render-конфигурации. Исходный Supabase ref `fvnulyirrqjrnjbahmsn` не изменялся.
-- **Manager deployment gate**: `MANAGER_ORGANIZATION_ID` добавлен в Vercel как
-  Sensitive variable для Preview и Production и указывает на единственную
-  staging organization. То же значение хранится только в ignored
-  `.env.staging.local`; production `.env` и `.env.local` не менялись.
-  Deployed read-only smoke подтвердил anonymous `401`, authenticated `200`,
-  правильные organization/round и игнорирование поддельного client scope.
-- **Git-состояние**: `main`/`origin/main` содержат последовательно Python consumer
-  `f1cd906`, Core callback/Dashboard consumer `6833cb2` и Core producer/survey
+- **Текущий этап**: Завершён комплексный этап подготки к staging/production readiness:
+  - **Contract 3.0 Live Staging E2E**: Скрипт живой Staging E2E проверки проверен на реальной Staging DB (`tpfzhyalaftotljmlont`). Подтверждены Scenario A1 (Unlocked custom questionnaire 3.0, exact hash, 8 custom question aggregates) и Scenario A2 (Privacy lock при < 10 ответов). Выполнена автоматическая SQL-очистка (`0` оставшихся записей).
+  - **Application-level Manager Authorization**: Слайсы 1, 2 и 3 реализованы и проверены 151 тестом (`npm test`). Доменный провайдер-независимый контракт, `JwtSessionProvider` на Web Crypto API, сессионная авторизация в middleware с Basic Auth fallback, ролевая модель (Admin/Manager), аудит действий и переключение школ функционируют стабильно.
+  - **Staging Deployment**: Деплоймент `dpl_FystEnZZ5rNPbJevXcNrfQmn83in` (`READY`) создан и привязан к Staging-алиасу [shalomut-map-demo-ui-redesign.vercel.app](https://shalomut-map-demo-ui-redesign.vercel.app/). Vercel SSO / Deployment Protection активна.
+- **Состояние БД**: Supabase staging project `shalomut-map-staging` (`tpfzhyalaftotljmlont`) находится в чистом состоянии. Одноразовые E2E записи удалены.
+- **Core app runtime**: Vercel Preview `dpl_FystEnZZ5rNPbJevXcNrfQmn83in` — `READY`, Staging alias `https://shalomut-map-demo-ui-redesign.vercel.app` указывает на данный деплоймент.
+- **Verification Evidence**: `npm test` 151/151 passed, `npm run lint` 0 errors, `npm run build` прошёл успешно.
+
+---
+
+## 🚀 Следующие шаги (Next Up)
+1. [ ] Реализовать UI-страницы входа менеджеров (`/login`, `/api/auth/login`, `/api/auth/logout`) для выдачи кук `shalomut_session` в веб-интерфейсе.
+2. [ ] Завершить миграцию Production DB (`fvnulyirrqjrnjbahmsn`) через `prisma migrate deploy` и развести Production Vercel env variables.
+3. [ ] Выполнить отключение legacy Basic Auth fallback в middleware после релиза UI-авторизации.
+
+---
+
+## ✅ Завершенные задачи (Completed)
+- [x] **2026-07-26**: **Подготовка проекта к безопасной manager authorization, contract 3.0 staging E2E и environment separation**:
+  - **Workstream A (Contract 3.0 Live Staging E2E)**: Разработан и исполнен скрипт `scripts/live-staging-e2e-contract3.ts` на Staging Supabase DB (`tpfzhyalaftotljmlont`). Доказаны Scenario A1 (Unlocked dynamic questionnaire, 10 responses, exact definition hash `sha256:88489e11...`, 8 custom question aggregates) и Scenario A2 (Privacy lock при 9 responses < threshold 10, zero data leakage). Выполнена автоматическая очистка данных SQL-скриптом.
+  - **Workstream B (Application-level Manager Authorization)**: Реализованы Слайсы 1, 2 и 3. Добавлен провайдер-независимый контракт авторизации (`types.ts`, `domain-contract.ts`), `JwtSessionProvider` (Web Crypto HMAC-SHA256), `session-auth.ts`, ролевая модель Admin vs Manager (`roles-and-permissions.ts`), логирование аудита (`manager-audit-service.ts`) и переключение школ (`membership-service.ts`). `middleware.ts` проверяет сессионную куку `shalomut_session` / Bearer токен, внедряет серверный `x-shalomut-manager-organization-id` и сохраняет Basic Auth fallback.
+  - **Workstream C (Environment Separation Boundary)**: Проведён read-only аудит окружений Vercel, Supabase DB и Render. Создан READY деплоймент `dpl_FystEnZZ5rNPbJevXcNrfQmn83in` и Staging-алиас `https://shalomut-map-demo-ui-redesign.vercel.app` атомарно переназначен на него.
+  - **Verification**: `npm test` 151/151 passed, `npm run lint` 0 errors, `npm run build` 35/35 pages generated, Live Staging E2E PASSED.r/survey
   UX `3e3f43f`; этот documentation checkpoint следует за ними. Unrelated user
   changes не обнаружены.
 - **Последний application GitHub workflow**: `30193485699` — `success` для

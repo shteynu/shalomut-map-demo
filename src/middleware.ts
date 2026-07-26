@@ -6,15 +6,36 @@ import {
   isRespondentRoute,
 } from "@/lib/server/basic-auth";
 import { createScopedManagerHeaders } from "@/lib/server/manager-scope";
+import { resolveManagerSession } from "@/lib/server/session-auth";
 
 /**
- * The shared manager credential is bound to exactly one configured
- * organization. The internal scope header is always replaced here so clients
- * cannot select a different school.
+ * Manager surfaces require authentication (App-level session cookie or Basic Auth fallback).
+ * Scoped manager organization context is injected via server headers.
  */
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const method = request.method;
+
+  const bypassesManagerScope =
+    isRespondentRoute(pathname) ||
+    isMachineAuthenticatedRoute(pathname, method);
+
+  if (bypassesManagerScope) {
+    const headers = createScopedManagerHeaders(request.headers, undefined);
+    return NextResponse.next({ request: { headers } });
+  }
+
+  // 1. Primary Auth Gate: Application-level Manager Session (Cookie or Bearer Token)
+  const managerSession = await resolveManagerSession(request);
+  if (managerSession) {
+    const headers = createScopedManagerHeaders(
+      request.headers,
+      managerSession.activeOrganizationId,
+    );
+    return NextResponse.next({ request: { headers } });
+  }
+
+  // 2. Fallback Gate: Shared Basic Auth Credential Boundary
   const decision = decideBasicAuth({
     pathname,
     method,
@@ -22,14 +43,9 @@ export function middleware(request: NextRequest) {
   });
 
   if (decision === "allow") {
-    const bypassesManagerScope =
-      isRespondentRoute(pathname) ||
-      isMachineAuthenticatedRoute(pathname, method);
     const headers = createScopedManagerHeaders(
       request.headers,
-      bypassesManagerScope
-        ? undefined
-        : process.env.MANAGER_ORGANIZATION_ID,
+      process.env.MANAGER_ORGANIZATION_ID,
     );
 
     return NextResponse.next({ request: { headers } });
@@ -57,3 +73,4 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico|icon.svg).*)"],
 };
+

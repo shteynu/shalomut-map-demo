@@ -19,15 +19,13 @@ exact вопросы раунда принадлежат persisted `SurveyRound.
   `docs/dynamic-questionnaire-ai-contract.md`; contracts `1.0`/`2.0` не
   изменены. Deployed Core producer формирует dynamic `3.0`; `2.0` остаётся
   совместимым legacy/rollback boundary.
-- Application runtime snapshot: Vercel
-  `dpl_3mfGbz5FiEfWABkfDx8iWTdB4Ris` — `READY`, production alias —
-  `https://shalomut-map-demo.vercel.app`; Render
-  `dep-d9iro1uk1jcs73f6kmh0` — `Live`; GitHub workflow `30193485699` —
-  `success`. Alias остаётся operational staging endpoint, не production-ready.
-- Functional AI baseline `a9b6c34` ограничивает latency Gemini-запросов общим
-  retry budget. Поверх него `7a451fd` добавляет organization-scoped manager
-  boundary, а `508410a` сохраняет понятный пользователю fail-closed UI; оба
-  commit находятся в `origin/main`.
+- Application runtime snapshot: Vercel Preview
+  `dpl_FystEnZZ5rNPbJevXcNrfQmn83in` — `READY`, Staging alias —
+  `https://shalomut-map-demo-ui-redesign.vercel.app`; Render
+  `dep-d9iro1uk1jcs73f6kmh0` — `Live`.
+- **Application-level Manager Authorization**: Слайсы 1, 2 и 3 реализованы и проверены. Внедрены `JwtSessionProvider` (Web Crypto HMAC-SHA256), `session-auth.ts`, `ManagerAuthorizationService` (Admin/Manager roles, audit logs, multi-tenant switching) и обновлён `middleware.ts`. При наличии сессионной куки `shalomut_session` / Bearer токена подставляется серверный ID организации `x-shalomut-manager-organization-id`, предотвращая подмену заголовочного ID школы. Basic Auth сохранён как временный fallback.
+- **Contract 3.0 Live Staging E2E**: Живая проверка на Staging Supabase DB (`tpfzhyalaftotljmlont`) доказала Scenario A1 (Unlocked custom questionnaire 3.0, 10 responses, exact definition hash `sha256:88489e11...`, 8 custom question aggregates) и Scenario A2 (Privacy lock при < 10 ответов). Автоматическая SQL-очистка удалила все одноразовые записи.
+- **Verification Evidence**: `npm test` 151/151 passed, `npm run lint` 0 errors, `npm run build` прошёл успешно.
 - PR #5 смержен в `main` squash commit `6b369bf`.
 - PR [#6](https://github.com/shteynu/shalomut-map-demo/pull/6) смержен в
   `main` squash commit `043f54d`.
