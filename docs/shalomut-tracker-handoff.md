@@ -11,9 +11,7 @@ exact вопросы раунда принадлежат persisted `SurveyRound.
 
 ## Текущий snapshot
 
-- Активная ветка: `main`/`origin/main` содержат consumer-first implementation
-  commits `f1cd906` (Python), `6833cb2` (Core consumers) и `3e3f43f` (Core
-  producer/survey UX), после которых следует этот documentation checkpoint.
+- Активная ветка: `main`/`origin/main` содержат реализации вплоть до коммитов `069d752` (Manager UI Auth & Sunset prep) и `d68806c` (Progress documentation).
 - Contract `3.0` реализует dynamic round-scoped questions при фиксированных
   восьми Dashboard dimensions и output shape. Specification находится в
   `docs/dynamic-questionnaire-ai-contract.md`; contracts `1.0`/`2.0` не
@@ -23,9 +21,9 @@ exact вопросы раунда принадлежат persisted `SurveyRound.
   `dpl_FystEnZZ5rNPbJevXcNrfQmn83in` — `READY`, Staging alias —
   `https://shalomut-map-demo-ui-redesign.vercel.app`; Render
   `dep-d9iro1uk1jcs73f6kmh0` — `Live`.
-- **Application-level Manager Authorization**: Слайсы 1, 2 и 3 реализованы и проверены. Внедрены `JwtSessionProvider` (Web Crypto HMAC-SHA256), `session-auth.ts`, `ManagerAuthorizationService` (Admin/Manager roles, audit logs, multi-tenant switching) и обновлён `middleware.ts`. При наличии сессионной куки `shalomut_session` / Bearer токена подставляется серверный ID организации `x-shalomut-manager-organization-id`, предотвращая подмену заголовочного ID школы. Basic Auth сохранён как временный fallback.
+- **Manager UI Authorization & Basic Auth Sunset**: Реализованы `/login`, `/api/auth/login`, `/api/auth/logout`, `/api/auth/me`, `ManagerAuthenticationService` (Web Crypto HMAC-SHA256), шапка пользователя `ManagerUserBar` и флаг `DISABLE_BASIC_AUTH_FALLBACK` в `middleware.ts`.
 - **Contract 3.0 Live Staging E2E**: Живая проверка на Staging Supabase DB (`tpfzhyalaftotljmlont`) доказала Scenario A1 (Unlocked custom questionnaire 3.0, 10 responses, exact definition hash `sha256:88489e11...`, 8 custom question aggregates) и Scenario A2 (Privacy lock при < 10 ответов). Автоматическая SQL-очистка удалила все одноразовые записи.
-- **Verification Evidence**: `npm test` 151/151 passed, `npm run lint` 0 errors, `npm run build` прошёл успешно.
+- **Verification Evidence**: `npm test` 162/162 passed, `npm run lint` 0 errors, `npm run build` прошёл успешно (39 страниц).
 - PR #5 смержен в `main` squash commit `6b369bf`.
 - PR [#6](https://github.com/shteynu/shalomut-map-demo/pull/6) смержен в
   `main` squash commit `043f54d`.
