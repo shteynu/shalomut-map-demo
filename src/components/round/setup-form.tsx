@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Check, ChevronLeft, ClipboardPen, Lightbulb, ShieldCheck, Users } from "lucide-react";
+import { Check, ChevronLeft, ClipboardPen, Lightbulb, Loader2, ShieldCheck, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 import { PrivacyTooltip } from "@/components/ui/privacy-tooltip";
@@ -295,7 +295,11 @@ export function SetupForm({ organization, round }: SetupFormProps) {
 
       <div className="form-actions">
         <button className="primary-button" type="submit" disabled={saving}>
-          <Check size={18} aria-hidden="true" />
+          {saving ? (
+            <Loader2 size={18} className="animate-spin" aria-hidden="true" />
+          ) : (
+            <Check size={18} aria-hidden="true" />
+          )}
           {saving ? "שומר..." : "שמירת סבב אבחון"}
         </button>
         {saved ? (

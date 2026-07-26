@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { LogOut, ShieldCheck, User } from "lucide-react";
+import { Loader2, LogOut, ShieldCheck, User } from "lucide-react";
 
 export interface ManagerSessionData {
   managerId: string;
@@ -74,11 +74,20 @@ export function ManagerUserBar() {
       <button
         onClick={handleLogout}
         disabled={isLoggingOut}
-        className="inline-flex items-center gap-1 text-xs font-medium text-slate-600 hover:text-red-700 hover:bg-red-50/80 px-2 py-1 rounded-md transition-colors mr-auto"
+        className="inline-flex items-center gap-1 text-xs font-medium text-slate-600 hover:text-red-700 hover:bg-red-50/80 px-2 py-1 rounded-md transition-colors mr-auto disabled:opacity-60 disabled:cursor-not-allowed"
         aria-label="התנתקות מהמערכת"
       >
-        <LogOut size={14} aria-hidden="true" />
-        <span>{isLoggingOut ? "מתנתק..." : "התנתקות"}</span>
+        {isLoggingOut ? (
+          <>
+            <Loader2 size={14} className="animate-spin" aria-hidden="true" />
+            <span>מתנתק...</span>
+          </>
+        ) : (
+          <>
+            <LogOut size={14} aria-hidden="true" />
+            <span>התנתקות</span>
+          </>
+        )}
       </button>
     </div>
   );

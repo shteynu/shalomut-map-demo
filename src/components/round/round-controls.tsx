@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CheckCircle2, Clipboard, Lock, Map, RotateCcw } from "lucide-react";
+import { CheckCircle2, Clipboard, Loader2, Lock, Map, RotateCcw } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useState } from "react";
 import { useClipboard } from "@/lib/hooks/use-clipboard";
@@ -119,7 +119,11 @@ export function RoundControls({
             onClick={resetRound}
             title="מחיקת תשובות והחזרה לעריכת שאלון"
           >
-            <RotateCcw size={18} aria-hidden="true" />
+            {resetting ? (
+              <Loader2 size={18} className="animate-spin" aria-hidden="true" />
+            ) : (
+              <RotateCcw size={18} aria-hidden="true" />
+            )}
             {resetting ? "מאפס..." : "איפוס נתונים"}
           </button>
           <button
@@ -129,7 +133,11 @@ export function RoundControls({
             data-round-id={roundId}
             onClick={closeRound}
           >
-            <Lock size={18} aria-hidden="true" />
+            {closing ? (
+              <Loader2 size={18} className="animate-spin" aria-hidden="true" />
+            ) : (
+              <Lock size={18} aria-hidden="true" />
+            )}
             {closing ? "סוגר..." : "סגירת סבב אבחון ידנית"}
           </button>
           <Link className="primary-button" href={openDashboardAction.href}>

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CheckCircle2, Eye } from "lucide-react";
+import { CheckCircle2, Eye, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { PageIntro } from "@/components/ui/page-intro";
 import { PrivacyTooltip } from "@/components/ui/privacy-tooltip";
@@ -290,8 +290,12 @@ export function SurveyBuilder({
                   : "survey-builder-validation"
               }
             >
+              {saving ? (
+                <Loader2 size={18} className="animate-spin" aria-hidden="true" />
+              ) : (
+                <CheckCircle2 size={18} aria-hidden="true" />
+              )}
               {saving ? "שומר..." : "שמירה והכנה להפצה"}
-              <CheckCircle2 size={18} aria-hidden="true" />
             </button>
             <Link className="secondary-button" href={shareUrl} target="_blank" rel="noreferrer">
               {openRespondentSurveyAction.label}

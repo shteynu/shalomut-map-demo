@@ -3,8 +3,9 @@
 Updated: 2026-07-26
 
 ## Current State
-- Automated tests and build: `npm test` 166/166 passed, `npm run lint` 0 errors, `npm run build` (39 pages) successful.
+- Automated tests and build: `npm test` 168/168 passed, `npm run lint` 0 errors, `npm run build` (39 pages) successful.
 - Python AI analytics: `python3 ai-analytics-service/run_tests.py` 13/13 passed.
+- UI Loaders & Feedback: Added `Loader2` animated spinners and disabled states to all backend-driven actions (`/login`, `ManagerUserBar`, `RoundControls`, `SetupForm`, `SurveyBuilder`, `SurveyFlow`).
 - AI Contract: Contract `4.0` (`contracts/ai-analytics-v4.json`) implemented with school `backgroundContext` and `generationProvenance`.
 - P0 Auth: Default password (`manager123`) removed from deployed runtime, SHA-256 password hashing active, returns `503` when mandatory secrets are missing.
 - Product UX: Setup CTA redirects to `/survey/`, active questions numbered sequentially, empty draft, clear questionnaire, load template, delete confirmation, Esc / validation / preview in `QuestionEditDialog`.
@@ -19,6 +20,8 @@ Updated: 2026-07-26
 ---
 
 ## Completed Tasks
+
+- [x] **2026-07-26**: **UI Loading Indicators Added**: Added animated `Loader2` spinners and disabled states across all screens where backend API calls occur upon clicking buttons or forms (`/login`, `ManagerUserBar`, `RoundControls`, `SetupForm`, `SurveyBuilder`, `SurveyFlow`). Executed `npm test` (168/168 passed), `npm run lint` (0 errors), and `npm run build` (39/39 pages compiled).
 
 - [x] **2026-07-26**: **6 Sequential Quality & Security Blocks Completed (P0 Auth, Lint/Build, AI Contract 4.0, UX & OpenAPI)**:
   - **P0 Auth Hardening**: `ManagerAuthenticationService` uses SHA-256 password hashing. Default `manager123` fallback account prohibited in deployed runtime. Returns HTTP status `503` (UNCONFIGURED) if mandatory secrets `SESSION_SECRET` or `MANAGER_ADMIN_PASSWORD` are absent in deployed runtime.

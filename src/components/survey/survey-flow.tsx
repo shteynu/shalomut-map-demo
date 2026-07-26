@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Check, ChevronLeft, ChevronRight, Frown, Meh, ShieldCheck, Smile, type LucideIcon } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Frown, Loader2, Meh, ShieldCheck, Smile, type LucideIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { calculatePercentage } from "@/lib/utils/math";
 import { getNavigationAction } from "@/lib/navigation";
@@ -55,6 +55,7 @@ export function SurveyFlow({
   const [answers, setAnswers] = useState<Record<string, AnswerValue>>({});
   const [currentIndex, setCurrentIndex] = useState(0);
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isPublicLink = variant === "public";
@@ -92,7 +93,8 @@ export function SurveyFlow({
   };
 
   const handleSubmit = async () => {
-    if (!canSubmit) return;
+    if (!canSubmit || submitting) return;
+    setSubmitting(true);
     setSubmitError(null);
 
     const formattedAnswers = Object.entries(answers).map(([questionId, value]) => {
@@ -118,9 +120,11 @@ export function SurveyFlow({
           | { error?: string }
           | null;
         setSubmitError(payload?.error ?? "לא ניתן היה לשמור את התשובות. נסו שוב.");
+        setSubmitting(false);
       }
     } catch {
       setSubmitError("לא ניתן להתחבר לשרת. בדקו את החיבור ונסו שוב.");
+      setSubmitting(false);
     }
   };
 
@@ -185,9 +189,18 @@ export function SurveyFlow({
               ? "עניתם על כל השאלות. אפשר לחזור אחורה ולעדכן תשובה, או לשלוח עכשיו."
               : `נענו ${answeredCount} מתוך ${total} שאלות. חזרו אחורה כדי להשלים את החסרות.`}
           </p>
-          <button className="primary-button" type="button" disabled={!canSubmit} onClick={handleSubmit}>
-            שליחת שאלון
-            <ChevronLeft size={18} aria-hidden="true" />
+          <button className="primary-button" type="button" disabled={!canSubmit || submitting} onClick={handleSubmit}>
+            {submitting ? (
+              <>
+                <Loader2 size={18} className="animate-spin" aria-hidden="true" />
+                שולח תשובות...
+              </>
+            ) : (
+              <>
+                שליחת שאלון
+                <ChevronLeft size={18} aria-hidden="true" />
+              </>
+            )}
           </button>
         </div>
       ) : (

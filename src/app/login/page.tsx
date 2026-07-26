@@ -3,7 +3,7 @@
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { AlertCircle, Lock, LogIn, Mail, Shield } from "lucide-react";
+import { AlertCircle, Loader2, Lock, LogIn, Mail, Shield } from "lucide-react";
 import { navigationLabels } from "@/lib/navigation";
 
 function LoginForm() {
@@ -127,7 +127,10 @@ function LoginForm() {
           className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-amber-700 hover:bg-amber-800 text-white font-semibold text-sm shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-amber-600 focus:ring-offset-2 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {loading ? (
-            <span>מתחבר...</span>
+            <>
+              <Loader2 size={18} className="animate-spin" aria-hidden="true" />
+              <span>מתחבר...</span>
+            </>
           ) : (
             <>
               <LogIn size={18} />
