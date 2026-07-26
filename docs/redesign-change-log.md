@@ -3,6 +3,11 @@
 Date: 2026-07-03
 Branch: `feature/ui-redesign`
 
+> Историческая справка. Маршруты и деплой с тех пор изменились: респондентский
+> флоу живёт на `/answer/<shareCode>` (упоминания `/survey/dror-q1` относятся к
+> статическому demo), а статический GitHub Pages деплой снят с публикации
+> 2026-07-26. Актуальное состояние — `docs/shalomut-tracker-handoff.md`.
+
 ## Scope
 
 This document summarizes the redesign and product-flow changes made for the Shalomut Map demo. The work preserves the public route structure, Hebrew RTL experience, the privacy threshold of `10`, and the v1 survey model of `8` dimensions and `24` questions.
