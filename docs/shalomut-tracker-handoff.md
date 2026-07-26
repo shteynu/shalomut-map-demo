@@ -11,6 +11,9 @@ exact вопросы раунда принадлежат persisted `SurveyRound.
 
 ## Текущий snapshot
 
+- Активный план работ: [`manager-feedback-plan-2026-07-26.md`](manager-feedback-plan-2026-07-26.md) —
+  замечания директора и находки аудита деплоя, разложенные на слайсы P0–P3 с
+  критериями приёмки, проверками и approval gates.
 - Активная ветка: `main`/`origin/main` содержат реализации вплоть до коммитов `069d752` (Manager UI Auth & Sunset prep) и `d68806c` (Progress documentation).
 - Contract `3.0` реализует dynamic round-scoped questions при фиксированных
   восьми Dashboard dimensions и output shape. Specification находится в

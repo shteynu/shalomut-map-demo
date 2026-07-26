@@ -11,6 +11,11 @@
 ---
 
 ## 🚀 Следующие шаги (Next Up)
+
+> Подробный сквозной план по замечаниям директора и аудиту деплоя:
+> [`docs/manager-feedback-plan-2026-07-26.md`](docs/manager-feedback-plan-2026-07-26.md)
+> (слайсы, критерии приёмки, проверки и approval gates).
+
 1. [ ] **Blocker:** исправить публичный bypass страницы входа — при `trailingSlash: true` реальный путь `/login/` не совпадает с проверкой `pathname === "/login"` в `middleware.ts`, поэтому на живом деплое `/login/` отдаёт `401`.
 2. [ ] **Blocker (security):** задать `SESSION_SECRET`, `MANAGER_ADMIN_EMAIL`, `MANAGER_ADMIN_PASSWORD` в Vercel и убрать hardcoded credential/secret fallback из `manager-auth-service.ts` и `jwt-session-provider.ts`.
 3. [ ] Завершить миграцию Production DB (`fvnulyirrqjrnjbahmsn`) через `prisma migrate deploy` и развести Production Vercel env variables.
