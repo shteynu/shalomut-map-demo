@@ -14,11 +14,15 @@ import { resolveManagerSession } from "@/lib/server/session-auth";
  * Scoped manager organization context is injected via server headers.
  */
 export async function middleware(request: NextRequest) {
-  const pathname = request.nextUrl.pathname;
+  const rawPathname = request.nextUrl.pathname;
+  const pathname =
+    rawPathname.length > 1 && rawPathname.endsWith("/")
+      ? rawPathname.slice(0, -1)
+      : rawPathname;
   const method = request.method;
 
   const isPublicAuthRoute =
-    pathname === "/login" || pathname.startsWith("/api/auth/");
+    pathname === "/login" || pathname.startsWith("/api/auth");
 
   const bypassesManagerScope =
     isRespondentRoute(pathname) ||

@@ -53,6 +53,14 @@ export class InMemorySurveyRepository implements ISurveyRepository {
     return count;
   }
 
+  public async deleteByRoundId(roundId: string): Promise<void> {
+    for (const [id, res] of Array.from(this.responses.entries())) {
+      if (res.roundId === roundId) {
+        this.responses.delete(id);
+      }
+    }
+  }
+
   public clear(): void {
     this.responses.clear();
   }

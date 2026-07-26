@@ -5,6 +5,8 @@ info:
   description: Clean Data Layer & REST API for Shalomut Map — visualizing school staff wellbeing across 8 organic dimensions. Implements ADR-001 (Raw Data & Privacy Threshold Control).
 
 servers:
+  - url: https://shalomut-map-demo.vercel.app
+    description: Production Vercel Runtime
   - url: https://shalomut-map-demo-ui-redesign.vercel.app
     description: Staging Environment
   - url: http://localhost:3000

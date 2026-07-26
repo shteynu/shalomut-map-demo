@@ -2,6 +2,7 @@ import assert from 'node:assert';
 import test, { after, before } from 'node:test';
 import { GET as getRoundAnalytics } from '../rounds/[roundId]/analytics/route';
 import { PATCH as updateRound } from '../rounds/[roundId]/route';
+import { POST as resetRound } from '../rounds/[roundId]/reset/route';
 import {
   GET as getSurveyDefinition,
   PUT as saveSurveyDefinition,
@@ -458,5 +459,22 @@ test('Round status API persists an allowed transition', async () => {
   assert.strictEqual(response.status, 200);
   const payload = await response.json();
   assert.strictEqual(payload.round.status, 'closed');
+  useDemoRepositories();
+});
+
+test('API Route POST /api/rounds/[roundId]/reset clears responses and returns round status to draft', async () => {
+  useDemoRepositories();
+
+  const response = await resetRound(
+    new Request(`http://localhost/api/rounds/${DEMO_ROUND.id}/reset`, {
+      method: 'POST',
+    }),
+    { params: Promise.resolve({ roundId: DEMO_ROUND.id }) },
+  );
+
+  assert.strictEqual(response.status, 200);
+  const payload = await response.json();
+  assert.strictEqual(payload.success, true);
+  assert.strictEqual(payload.round.status, 'draft');
   useDemoRepositories();
 });

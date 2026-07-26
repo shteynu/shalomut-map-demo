@@ -80,7 +80,7 @@ export const routeMetadata = {
   },
 } satisfies Record<AppRouteId, RouteMetadata>;
 
-const mainNavOrder: MainNavItemId[] = ["home", "setup", "round", "surveyBuilder", "dashboard"];
+const mainNavOrder: MainNavItemId[] = ["home", "setup", "surveyBuilder", "round", "dashboard"];
 
 export const mainNavItems: MainNavItem[] = mainNavOrder.map((id) => ({
   id,
@@ -88,7 +88,7 @@ export const mainNavItems: MainNavItem[] = mainNavOrder.map((id) => ({
   label: routeMetadata[id].navLabel,
 }));
 
-export const homeActionRouteIds = ["setup", "round", "surveyBuilder", "dashboard"] as const;
+export const homeActionRouteIds = ["setup", "surveyBuilder", "round", "dashboard"] as const;
 
 export const navigationLabels = {
   productName: "מפת השלומות",

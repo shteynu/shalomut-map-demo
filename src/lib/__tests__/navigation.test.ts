@@ -10,6 +10,7 @@ import {
   getNavigationAction,
   isMainNavItemActive,
   isPathWithin,
+  mainNavItems,
   respondentSurveyRoute,
   routes,
   shouldHideGlobalHeader,
@@ -77,4 +78,9 @@ test("getDashboardDetailActions and metrics actions return correct links", () =>
 
   const recActions = getDashboardRecommendationsActions();
   assert.strictEqual(recActions[0].href, "/dashboard");
+});
+
+test("mainNavItems follows exact product workflow order: home, setup, surveyBuilder, round, dashboard", () => {
+  const ids = mainNavItems.map((item) => item.id);
+  assert.deepStrictEqual(ids, ["home", "setup", "surveyBuilder", "round", "dashboard"]);
 });

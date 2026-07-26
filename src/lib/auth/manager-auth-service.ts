@@ -98,6 +98,17 @@ function timingSafeEqualStrings(a: string, b: string): boolean {
 
 export class ManagerAuthenticationService {
   private static defaultAccounts(): StoredAccount[] {
+    const isDeployed =
+      process.env.NODE_ENV === "production" ||
+      Boolean(process.env.VERCEL_ENV?.trim());
+    const hasConfiguredPassword = Boolean(
+      process.env.MANAGER_ADMIN_PASSWORD?.trim(),
+    );
+
+    if (isDeployed && !hasConfiguredPassword) {
+      return [];
+    }
+
     return [
       {
         manager: DEFAULT_ADMIN_USER,

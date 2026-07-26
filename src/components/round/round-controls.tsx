@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CheckCircle2, Clipboard, Lock, Map } from "lucide-react";
+import { CheckCircle2, Clipboard, Lock, Map, RotateCcw } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useState } from "react";
 import { useClipboard } from "@/lib/hooks/use-clipboard";
@@ -28,6 +28,7 @@ export function RoundControls({
 }: RoundControlsProps) {
   const [closed, setClosed] = useState(status === "closed");
   const [closing, setClosing] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const [closeError, setCloseError] = useState<string | null>(null);
   const shareUrl = useShareUrl(shareCode);
   const { copied, copy } = useClipboard();
@@ -61,6 +62,27 @@ export function RoundControls({
     setClosing(false);
   }
 
+  async function resetRound() {
+    if (!confirm("האם למחוק את כל התשובות ולהחזיר את השאלון למצב עריכה?")) {
+      return;
+    }
+    setResetting(true);
+    setCloseError(null);
+
+    const response = await fetch(
+      `/api/rounds/${encodeURIComponent(roundId)}/reset`,
+      { method: "POST" },
+    ).catch(() => null);
+
+    if (!response?.ok) {
+      setCloseError("לא ניתן היה לאפס את נתוני הסבב.");
+      setResetting(false);
+      return;
+    }
+
+    window.location.reload();
+  }
+
   return (
     <section className="round-layout">
       <div
@@ -90,6 +112,16 @@ export function RoundControls({
         {copied ? <p className="success-note">הלינק הועתק. אפשר לשלוח לצוות.</p> : null}
 
         <div className="round-actions">
+          <button
+            className="secondary-button"
+            type="button"
+            disabled={resetting}
+            onClick={resetRound}
+            title="מחיקת תשובות והחזרה לעריכת שאלון"
+          >
+            <RotateCcw size={18} aria-hidden="true" />
+            {resetting ? "מאפס..." : "איפוס נתונים"}
+          </button>
           <button
             className="secondary-button"
             type="button"

@@ -117,10 +117,18 @@ test("middleware returns 401 JSON for unauthenticated API requests when DISABLE_
     const response = await middleware(request);
 
     assert.strictEqual(response.status, 401);
-    const json = await response.json();
-    assert.strictEqual(json.error, "Authentication required.");
+    assert.strictEqual(await response.json().then((d) => d.error), "Authentication required.");
   } finally {
     process.env.DISABLE_BASIC_AUTH_FALLBACK = originalFlag;
   }
 });
 
+test("middleware allows unauthenticated access to /login and /login/ trailing slash paths", async () => {
+  const req1 = new NextRequest("http://localhost:3000/login");
+  const res1 = await middleware(req1);
+  assert.strictEqual(res1.status, 200);
+
+  const req2 = new NextRequest("http://localhost:3000/login/");
+  const res2 = await middleware(req2);
+  assert.strictEqual(res2.status, 200);
+});

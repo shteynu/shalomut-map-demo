@@ -8,7 +8,20 @@ import type {
 const DEFAULT_SECRET = "shalomut-map-dev-session-secret-must-be-configured-in-production";
 
 function getSessionSecret(): string {
-  return process.env.SESSION_SECRET || DEFAULT_SECRET;
+  const secret = process.env.SESSION_SECRET?.trim();
+  const isBuilding = process.env.NEXT_PHASE === "phase-production-build";
+  const isDeployedRuntime =
+    (process.env.NODE_ENV === "production" ||
+      Boolean(process.env.VERCEL_ENV?.trim())) &&
+    !isBuilding;
+
+  if (isDeployedRuntime && !secret) {
+    throw new Error(
+      "SESSION_SECRET environment variable must be configured in production/deployed environment.",
+    );
+  }
+
+  return secret || DEFAULT_SECRET;
 }
 
 async function getCryptoKey(secret: string): Promise<CryptoKey> {

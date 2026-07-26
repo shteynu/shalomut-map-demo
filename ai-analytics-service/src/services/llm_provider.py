@@ -122,6 +122,7 @@ class LLMProviderService:
                     score=score,
                     status=status,
                     question_aggregates=questions,
+                    background_context=getattr(round_analytics, "backgroundContext", None),
                 )
                 req_payload = json.dumps({
                     "model": model_name,
@@ -371,6 +372,7 @@ class LLMProviderService:
         score: float,
         status: str,
         question_aggregates: list[Dict[str, Any]],
+        background_context: Optional[Dict[str, Any]] = None,
     ) -> str:
         uses_dynamic_questions = any(
             isinstance(aggregate.get("questionText"), str)
@@ -392,11 +394,24 @@ class LLMProviderService:
             )
             for aggregate in question_aggregates
         )
+
+        bg_lines = []
+        if isinstance(background_context, dict):
+            if background_context.get("notes"):
+                bg_lines.append(f"הערות רקע מהמנהלת: {background_context['notes']}")
+            if background_context.get("studentCount"):
+                bg_lines.append(f"מספר תלמידים: {background_context['studentCount']}")
+            if background_context.get("socioEconomicIndex"):
+                bg_lines.append(f"מדד טיפוח: {background_context['socioEconomicIndex']}")
+            if background_context.get("newStaffMembers"):
+                bg_lines.append(f"צוות חדש: {background_context['newStaffMembers']}")
+        bg_section = ("\nSchool Background Context:\n" + "\n".join(bg_lines)) if bg_lines else ""
+
         return (
             "You are an organizational psychologist analyzing only "
             "privacy-safe teacher wellbeing aggregates.\n"
             f"Dimension: {dim_hebrew} ({dim_id}). "
-            f"Score: {score:.1f}/100. Status: {status}.\n"
+            f"Score: {score:.1f}/100. Status: {status}.{bg_section}\n"
             f"{'Exact persisted' if uses_dynamic_questions else 'Canonical'} "
             f"same-dimension aggregates:\n{aggregate_lines}\n"
             "Return exactly two complete Hebrew-only sentences. Base every "

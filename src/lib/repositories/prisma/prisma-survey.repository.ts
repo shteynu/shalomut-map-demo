@@ -79,4 +79,10 @@ export class PrismaSurveyRepository implements ISurveyRepository {
       where: { roundId },
     });
   }
+
+  public async deleteByRoundId(roundId: string): Promise<void> {
+    await this.prisma.surveyResponse.deleteMany({
+      where: { roundId },
+    });
+  }
 }

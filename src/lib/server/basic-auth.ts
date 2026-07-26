@@ -31,7 +31,16 @@ const RESPONDENT_PREFIXES = ["/answer/", "/api/survey/"];
 const AI_INSIGHTS_PATH = /^\/api\/rounds\/[^/]+\/ai-insights\/?$/;
 
 export function isRespondentRoute(pathname: string) {
-  return RESPONDENT_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+  const normalized =
+    pathname.length > 1 && pathname.endsWith("/")
+      ? pathname.slice(0, -1)
+      : pathname;
+  return (
+    normalized === "/answer" ||
+    normalized.startsWith("/answer/") ||
+    normalized === "/api/survey" ||
+    normalized.startsWith("/api/survey/")
+  );
 }
 
 /**

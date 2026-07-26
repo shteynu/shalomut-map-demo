@@ -93,6 +93,8 @@ export async function POST(request: Request) {
           }, { status: 404 });
         }
 
+        const round = await repositories.roundRepo.findById(roundId);
+
         // Format into strict RoundAnalyticsResult MCP payload
         const mcpPayload = {
           contractVersion: result.contractVersion,
@@ -104,6 +106,7 @@ export async function POST(request: Request) {
           isLocked: result.isLocked,
           dimensionScores: result.dimensionScores,
           questionAggregates: result.questionAggregates,
+          backgroundContext: round?.backgroundContext ?? undefined,
           calculatedAt: result.calculatedAt,
         };
 

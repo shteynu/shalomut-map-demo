@@ -7,6 +7,10 @@
   },
   "servers": [
     {
+      "url": "https://shalomut-map-demo.vercel.app",
+      "description": "Production Vercel Runtime"
+    },
+    {
       "url": "https://shalomut-map-demo-ui-redesign.vercel.app",
       "description": "Staging Environment"
     },

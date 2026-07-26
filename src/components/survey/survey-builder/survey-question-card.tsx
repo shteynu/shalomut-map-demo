@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import { ClipboardList, Clock3, Copy, Eye, GripVertical, ShieldCheck } from "lucide-react";
+import { ClipboardList, Clock3, Copy, Edit3, Eye, GripVertical, ShieldCheck, Trash2 } from "lucide-react";
 import { wellbeingDimensions } from "@/lib/demo-data";
 import type { BuilderQuestion } from "./types";
 
@@ -16,6 +16,8 @@ type QuestionCardProps = {
   questionIndex: number;
   onUpdate: (draftKey: string, updater: (question: BuilderQuestion) => BuilderQuestion) => void;
   onDuplicate: (draftKey: string) => void;
+  onEdit?: (question: BuilderQuestion) => void;
+  onDelete?: (draftKey: string) => void;
 };
 
 export function SurveyQuestionCard({
@@ -23,6 +25,8 @@ export function SurveyQuestionCard({
   questionIndex,
   onUpdate,
   onDuplicate,
+  onEdit,
+  onDelete,
 }: QuestionCardProps) {
   return (
     <article
@@ -41,6 +45,17 @@ export function SurveyQuestionCard({
         </div>
 
         <div className="survey-builder-question-actions" aria-label={`פעולות עבור שאלה ${questionIndex}`}>
+          {onEdit ? (
+            <button
+              className="question-icon-button"
+              type="button"
+              title="עריכת שאלה בחלון צף"
+              aria-label="עריכת שאלה בחלון צף"
+              onClick={() => onEdit(question)}
+            >
+              <Edit3 size={17} aria-hidden="true" />
+            </button>
+          ) : null}
           <button
             className="question-icon-button"
             type="button"
@@ -78,6 +93,17 @@ export function SurveyQuestionCard({
           >
             <Copy size={17} aria-hidden="true" />
           </button>
+          {onDelete ? (
+            <button
+              className="question-icon-button text-red-600 hover:text-red-800"
+              type="button"
+              title="מחיקת שאלה"
+              aria-label="מחיקת שאלה"
+              onClick={() => onDelete(question.draftKey)}
+            >
+              <Trash2 size={17} aria-hidden="true" />
+            </button>
+          ) : null}
         </div>
       </div>
 

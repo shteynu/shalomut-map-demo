@@ -72,6 +72,7 @@ class RoundAnalyticsResult:
     calculatedAt: Optional[str] = None
     organizationId: Optional[str] = None
     surveyDefinitionHash: Optional[str] = None
+    backgroundContext: Optional[Dict[str, Any]] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         res = asdict(self)

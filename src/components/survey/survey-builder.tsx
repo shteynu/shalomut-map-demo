@@ -13,6 +13,7 @@ import type { SurveyDefinition } from "@/lib/types/backend";
 import { SurveyBuilderQuestions } from "./survey-builder/survey-builder-questions";
 import { SurveyBuilderSettings } from "./survey-builder/survey-builder-settings";
 import { SurveyBuilderSidebar } from "./survey-builder/survey-builder-sidebar";
+import { QuestionEditDialog } from "./survey-builder/question-edit-dialog";
 import {
   getBuilderQuestionnaireValidation,
   localizeSurveyDefinitionSaveError,
@@ -104,6 +105,7 @@ export function SurveyBuilder({
   const openRespondentSurveyAction = getNavigationAction("openRespondentSurvey");
   const [bankCursor, setBankCursor] = useState(0);
   const [selectedDimensionId, setSelectedDimensionId] = useState(wellbeingDimensions[0]?.id ?? "all");
+  const [editingQuestion, setEditingQuestion] = useState<BuilderQuestion | null>(null);
 
   const enabledQuestions = questions.filter((question) => question.enabled);
   const requiredQuestions = enabledQuestions.filter((question) => question.required);
@@ -167,6 +169,12 @@ export function SurveyBuilder({
 
       return [...current.slice(0, index + 1), duplicate, ...current.slice(index + 1)];
     });
+  }
+
+  function deleteQuestion(draftKey: string) {
+    setSaved(false);
+    setSaveError(null);
+    setQuestions((current) => current.filter((q) => q.draftKey !== draftKey));
   }
 
   function addQuestionFromBank() {
@@ -332,6 +340,8 @@ export function SurveyBuilder({
             setSelectedDimensionId={setSelectedDimensionId}
             onUpdateQuestion={updateQuestion}
             onDuplicateQuestion={duplicateQuestion}
+            onEditQuestion={(q) => setEditingQuestion(q)}
+            onDeleteQuestion={deleteQuestion}
             onAddQuestionFromBank={addQuestionFromBank}
           />
         </div>
@@ -346,6 +356,18 @@ export function SurveyBuilder({
           questionnaireReady={questionnaireValidation.isValid}
         />
       </div>
+
+      <QuestionEditDialog
+        isOpen={Boolean(editingQuestion)}
+        question={editingQuestion}
+        questionIndex={
+          editingQuestion
+            ? questions.findIndex((q) => q.draftKey === editingQuestion.draftKey) + 1
+            : 1
+        }
+        onClose={() => setEditingQuestion(null)}
+        onSave={updateQuestion}
+      />
     </div>
   );
 }

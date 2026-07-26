@@ -31,4 +31,5 @@ export interface ISurveyRepository {
   findResponsesByRoundId(roundId: string): Promise<SurveyResponseRecord[]>;
   hasTokenSubmitted(roundId: string, tokenHash: string): Promise<boolean>;
   getResponseCount(roundId: string): Promise<number>;
+  deleteByRoundId(roundId: string): Promise<void>;
 }

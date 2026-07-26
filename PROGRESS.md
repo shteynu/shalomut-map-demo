@@ -1,24 +1,30 @@
 # PROGRESS: Shalomut Map
 
 ## 📌 Текущий статус
-- **Текущий этап**: Завершён этап UI-авторизации менеджеров и подготовки к отключению Basic Auth (Basic Auth Sunset):
-  - **Manager UI & Auth API**: Реализованы эндпоинты `/api/auth/login`, `/api/auth/logout`, `/api/auth/me`, UI-страница входа `/login` (RTL-first, иврит, бумажная эстетика `#fbf4dd`, WCAG AA) и шапка пользователя `ManagerUserBar`.
-  - **Basic Auth Sunset Preparation**: В `middleware.ts` добавлена поддержка флага `DISABLE_BASIC_AUTH_FALLBACK`, обеспечивающая плавный переход с Basic Auth на UI-сессии.
-  - **Verification Evidence**: `npm test` 162/162 passed, `npm run lint` 0 errors, `npm run build` прошёл успешно (39 страниц).
-- **Состояние БД**: Supabase staging project `shalomut-map-staging` (`tpfzhyalaftotljmlont`) находится в чистом состоянии.
-- **Core app runtime**: Ветка `main` закоммичена (`069d752`) и запушена в `origin/main`.
+- **Текущий этап**: Завершены все задачи по продуктовым замечаниям директора (8 пунктов PDF), P0-безопасности рантайма и выравниванию Vercel Runtime:
+  - **P0 Fixes**: Нормализован путь `/login/` в middleware (устранен дублирующий 401 Basic Auth), введена fail-closed защита `SESSION_SECRET` и отключение тестовых паролей в деплое.
+  - **Product UX**: Изменен порядок навигации воронки (`Setup -> Builder -> Tracking -> Map`), включена нумерация 1..8 категорий и 1..N вопросов под фильтром, добавлена функция сброса данных раунда (`/api/rounds/[roundId]/reset`) и удаления вопросов.
+  - **RTL Edit Dialog**: Создан модальный диалог `QuestionEditDialog` для редактирования текста, категории и параметров вопросов.
+  - **AI Context Integration**: `backgroundContext` школы и замечания директора интегрированы в MCP payload и промпт LLM аналитики.
+  - **Verification Evidence**: `npm test` 165/165 passed, `python3 ai-analytics-service/run_tests.py` 13/13 passed, `npm run lint` 0 errors, `npm run build` успешно прошёл (39 страниц).
+- **Состояние БД**: Supabase staging project `shalomut-map-staging` находится в чистом состоянии.
 
 ---
 
 ## 🚀 Следующие шаги (Next Up)
 
-> Подробный сквозной план по замечаниям директора и аудиту деплоя:
-> [`docs/manager-feedback-plan-2026-07-26.md`](docs/manager-feedback-plan-2026-07-26.md)
-> (слайсы, критерии приёмки, проверки и approval gates).
+1. [ ] Выполнить включение флага `DISABLE_BASIC_AUTH_FALLBACK="true"` в Vercel Preview/Production после настройки `SESSION_SECRET` и `MANAGER_ADMIN_PASSWORD` в переменные окружения Vercel dashboard.
+2. [ ] Провести ручной кликабельный smoke-тест нового диалога редактирования и кнопки сброса раунда на Vercel Staging URL (`https://shalomut-map-demo-ui-redesign.vercel.app/`).
 
-1. [ ] **Blocker:** исправить публичный bypass страницы входа — при `trailingSlash: true` реальный путь `/login/` не совпадает с проверкой `pathname === "/login"` в `middleware.ts`, поэтому на живом деплое `/login/` отдаёт `401`.
-2. [ ] **Blocker (security):** задать `SESSION_SECRET`, `MANAGER_ADMIN_EMAIL`, `MANAGER_ADMIN_PASSWORD` в Vercel и убрать hardcoded credential/secret fallback из `manager-auth-service.ts` и `jwt-session-provider.ts`.
-3. [ ] Завершить миграцию Production DB (`fvnulyirrqjrnjbahmsn`) через `prisma migrate deploy` и развести Production Vercel env variables.
+---
+
+## ✅ Завершенные задачи (Completed)
+- [x] **2026-07-26**: **Реализация замечаний директора, P0-безопасности и Vercel Runtime**:
+  - **P0 Security & Trailing Slash Fix**: В `middleware.ts` путь `/login/` нормализуется без зацикливания на 401. `SESSION_SECRET` проверяется в fail-closed режиме на деплоенном рантайме.
+  - **Navigation & Numbering**: Порядок воронки обновлен на `Home -> Setup -> SurveyBuilder -> Round -> Dashboard`. Табы категорий пронумерованы 1..8, вопросы под фильтром — 1..N.
+  - **Round Reset & Question Editing**: Добавлены API `POST /api/rounds/[roundId]/reset`, кнопка сброса раунда в `RoundControls`, кнопка удаления вопроса и компонент `QuestionEditDialog` для всплывающего редактирования.
+  - **AI Background Context**: `backgroundContext` школы передается в MCP API и подключается к генерации аналитических выводов LLM.
+  - **Verification**: `npm test` 165/165 passed, Python tests 13/13 passed, `npm run lint` 0 errors, `npm run build` success.�сти Production Vercel env variables.
 4. [ ] Выполнить включение флага `DISABLE_BASIC_AUTH_FALLBACK="true"` в Vercel Preview/Production **только после** пунктов 1–2: сейчас флаг редиректит на `/login`, который `308` → `/login/` → `401`.
 5. [ ] Решить (нужен bounded approval), какой единственный Vercel URL остаётся продуктовым: `shalomut-map-demo.vercel.app` (авто-деплой `main`, Render настроен на него) или `shalomut-map-demo-ui-redesign.vercel.app` (Vercel SSO, указан первым в OpenAPI specs).
 

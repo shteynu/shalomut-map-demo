@@ -14,6 +14,8 @@ type QuestionsPanelProps = {
   setSelectedDimensionId: (id: string) => void;
   onUpdateQuestion: (id: string, updater: (question: BuilderQuestion) => BuilderQuestion) => void;
   onDuplicateQuestion: (id: string) => void;
+  onEditQuestion?: (question: BuilderQuestion) => void;
+  onDeleteQuestion?: (id: string) => void;
   onAddQuestionFromBank: () => void;
 };
 
@@ -24,6 +26,8 @@ export function SurveyBuilderQuestions({
   setSelectedDimensionId,
   onUpdateQuestion,
   onDuplicateQuestion,
+  onEditQuestion,
+  onDeleteQuestion,
   onAddQuestionFromBank,
 }: QuestionsPanelProps) {
   const selectedDimensionLabel =
@@ -43,8 +47,9 @@ export function SurveyBuilderQuestions({
       </div>
 
       <div className="survey-builder-dimension-tabs" role="group" aria-label="סינון שאלות לפי ממד שלומות">
-        {wellbeingDimensions.map((dimension) => {
+        {wellbeingDimensions.map((dimension, index) => {
           const dimensionQuestions = questions.filter((question) => question.dimensionId === dimension.id);
+          const activeCount = dimensionQuestions.filter((q) => q.enabled).length;
           return (
             <button
               key={dimension.id}
@@ -53,8 +58,8 @@ export function SurveyBuilderQuestions({
               onClick={() => setSelectedDimensionId(dimension.id)}
               aria-pressed={selectedDimensionId === dimension.id}
             >
-              <span>{dimension.conceptLabel}</span>
-              <small>{dimensionQuestions.length}</small>
+              <span>{index + 1}. {dimension.conceptLabel}</span>
+              <small>{activeCount > 0 ? `${activeCount}/${dimensionQuestions.length}` : dimensionQuestions.length}</small>
             </button>
           );
         })}
@@ -75,15 +80,17 @@ export function SurveyBuilderQuestions({
       </p>
 
       <div className="survey-builder-question-list">
-        {visibleQuestions.map((question) => {
-          const questionIndex = questions.findIndex((current) => current.draftKey === question.draftKey) + 1;
+        {visibleQuestions.map((question, visibleIndex) => {
+          const displayIndex = visibleIndex + 1;
           return (
             <SurveyQuestionCard
               key={question.draftKey}
               question={question}
-              questionIndex={questionIndex}
+              questionIndex={displayIndex}
               onUpdate={onUpdateQuestion}
               onDuplicate={onDuplicateQuestion}
+              onEdit={onEditQuestion}
+              onDelete={onDeleteQuestion}
             />
           );
         })}
