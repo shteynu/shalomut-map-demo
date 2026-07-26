@@ -90,3 +90,37 @@ test("middleware falls back to Basic Auth when no session cookie or bearer token
   // Default dev runtime without env credentials allows request or challenges in production
   assert.ok(response.status === 200 || response.status === 401 || response.status === 503);
 });
+
+test("middleware redirects UI page requests to /login when DISABLE_BASIC_AUTH_FALLBACK is set", async () => {
+  const originalFlag = process.env.DISABLE_BASIC_AUTH_FALLBACK;
+  process.env.DISABLE_BASIC_AUTH_FALLBACK = "true";
+
+  try {
+    const request = new NextRequest("http://localhost:3000/setup");
+    const response = await middleware(request);
+
+    assert.strictEqual(response.status, 307);
+    const location = response.headers.get("location");
+    assert.ok(location);
+    assert.ok(location.includes("/login?next=%2Fsetup"));
+  } finally {
+    process.env.DISABLE_BASIC_AUTH_FALLBACK = originalFlag;
+  }
+});
+
+test("middleware returns 401 JSON for unauthenticated API requests when DISABLE_BASIC_AUTH_FALLBACK is set", async () => {
+  const originalFlag = process.env.DISABLE_BASIC_AUTH_FALLBACK;
+  process.env.DISABLE_BASIC_AUTH_FALLBACK = "true";
+
+  try {
+    const request = new NextRequest("http://localhost:3000/api/rounds");
+    const response = await middleware(request);
+
+    assert.strictEqual(response.status, 401);
+    const json = await response.json();
+    assert.strictEqual(json.error, "Authentication required.");
+  } finally {
+    process.env.DISABLE_BASIC_AUTH_FALLBACK = originalFlag;
+  }
+});
+

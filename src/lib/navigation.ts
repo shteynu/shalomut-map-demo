@@ -1,5 +1,6 @@
 export const routes = {
   home: "/",
+  login: "/login",
   setup: "/setup",
   round: "/round",
   surveyBuilder: "/survey",
@@ -32,6 +33,12 @@ export const routeMetadata = {
     href: routes.home,
     navLabel: "מרכז ניהול",
     actionTitle: "מרכז ניהול",
+  },
+  login: {
+    id: "login",
+    href: routes.login,
+    navLabel: "התחברות",
+    actionTitle: "התחברות למערכת",
   },
   setup: {
     id: "setup",
@@ -134,7 +141,7 @@ export function getNavigationAction(id: NavigationActionId): NavigationAction {
   };
 }
 
-const headerlessRoutes = [routes.dashboard, routes.respondentSurvey] as const;
+const headerlessRoutes = [routes.dashboard, routes.respondentSurvey, routes.login] as const;
 
 export const appRoutePrefixes = [routes.setup, routes.round, routes.surveyBuilder, routes.dashboard] as const;
 

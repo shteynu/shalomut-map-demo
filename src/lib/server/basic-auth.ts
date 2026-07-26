@@ -2,6 +2,7 @@ interface RuntimeEnvironment {
   BASIC_AUTH_USER?: string;
   BASIC_AUTH_PASSWORD?: string;
   MANAGER_ORGANIZATION_ID?: string;
+  DISABLE_BASIC_AUTH_FALLBACK?: string;
   NODE_ENV?: string;
   VERCEL_ENV?: string;
 }
@@ -13,6 +14,13 @@ export interface BasicAuthRequest {
 }
 
 export type BasicAuthDecision = "allow" | "challenge" | "unconfigured";
+
+export function isBasicAuthFallbackDisabled(
+  environment: RuntimeEnvironment = process.env,
+): boolean {
+  const flag = environment.DISABLE_BASIC_AUTH_FALLBACK?.trim().toLowerCase();
+  return flag === "true" || flag === "1" || flag === "yes";
+}
 
 /**
  * Respondents answer anonymously through an unguessable share code and must

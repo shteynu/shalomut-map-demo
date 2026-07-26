@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import {
   decideBasicAuth,
+  isBasicAuthFallbackDisabled,
   isMachineAuthenticatedRoute,
   isRespondentRoute,
 } from "@/lib/server/basic-auth";
@@ -16,9 +17,13 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const method = request.method;
 
+  const isPublicAuthRoute =
+    pathname === "/login" || pathname.startsWith("/api/auth/");
+
   const bypassesManagerScope =
     isRespondentRoute(pathname) ||
-    isMachineAuthenticatedRoute(pathname, method);
+    isMachineAuthenticatedRoute(pathname, method) ||
+    isPublicAuthRoute;
 
   if (bypassesManagerScope) {
     const headers = createScopedManagerHeaders(request.headers, undefined);
@@ -35,7 +40,22 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next({ request: { headers } });
   }
 
-  // 2. Fallback Gate: Shared Basic Auth Credential Boundary
+  // 2. Sunset Option: Fully Disable Basic Auth Fallback if requested via env flag
+  if (isBasicAuthFallbackDisabled()) {
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json(
+        { error: "Authentication required." },
+        { status: 401 },
+      );
+    }
+    const loginUrl = new URL("/login", request.url);
+    if (pathname !== "/") {
+      loginUrl.searchParams.set("next", pathname);
+    }
+    return NextResponse.redirect(loginUrl);
+  }
+
+  // 3. Fallback Gate: Shared Basic Auth Credential Boundary
   const decision = decideBasicAuth({
     pathname,
     method,
@@ -73,4 +93,5 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico|icon.svg).*)"],
 };
+
 
