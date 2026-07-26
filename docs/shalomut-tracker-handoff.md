@@ -62,10 +62,7 @@ exact вопросы раунда принадлежат persisted `SurveyRound.
   как staging core endpoint и подключён к выделенной staging-БД. Это
   operational staging configuration, а не подтверждение production readiness;
   `DIRECT_URL` в Vercel не добавлялся.
-- Staging persistence содержит ровно одну organization
-  `34d05e66-fa4d-4a07-a2af-c9d5c41b6088` (`בית ספר בדיקת E2E`) и один round
-  `80e78f3e-1240-42d4-8a9e-23a3467bb650`; это подтверждено read-only
-  запросом.
+- Staging persistence (`tpfzhyalaftotljmlont`) очищена по запросу пользователя (2026-07-26) для проведения ручных тестов. Таблицы пустые: `0` organizations, `0` rounds, `0` responses, `0` answers.
 - `MANAGER_ORGANIZATION_ID` для этой organization добавлен в Vercel как
   Sensitive variable со scope Preview и Production. Локальная копия находится
   только в ignored `.env.staging.local`; production `.env` и `.env.local` не
