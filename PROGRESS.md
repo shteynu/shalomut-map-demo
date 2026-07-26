@@ -1,31 +1,37 @@
 # Shalomut Map — PROGRESS.md
 
-Updated: 2026-07-26
+Updated: 2026-07-26 (Session close)
 
 ## Current State
-- Automated tests and build: `npm test` 168/168 passed, `npm run lint` 0 errors, `npm run build` (39 pages) successful.
-- Python AI analytics: `python3 ai-analytics-service/run_tests.py` 13/13 passed.
-- UI Loaders & Feedback: Added `Loader2` animated spinners and disabled states to all backend-driven actions (`/login`, `ManagerUserBar`, `RoundControls`, `SetupForm`, `SurveyBuilder`, `SurveyFlow`).
-- AI Contract: Contract `4.0` (`contracts/ai-analytics-v4.json`) implemented with school `backgroundContext` and `generationProvenance`.
-- P0 Auth: Default password (`manager123`) removed from deployed runtime, SHA-256 password hashing active, returns `503` when mandatory secrets are missing.
-- Product UX: Setup CTA redirects to `/survey/`, active questions numbered sequentially, empty draft, clear questionnaire, load template, delete confirmation, Esc / validation / preview in `QuestionEditDialog`.
-- **Deployed runtime is DOWN**: every route of `https://shalomut-map-demo.vercel.app/`, including the public respondent route, returns `500 MIDDLEWARE_INVOCATION_FAILED` because `SESSION_SECRET` is not configured in Vercel. See Next Up item 1.
-- **Single deployed environment**: `https://shalomut-map-demo.vercel.app/` is the only product URL (staging for now); the `-ui-redesign` alias and the GitHub Pages site were retired on 2026-07-26.
-- **Independent verification (2026-07-26)**: slices 0.0, 0.1, 0.3, 1.1 and 1.2 confirmed done in code; 0.2, 1.3, 2.1 and 2.2 are partial; 2.3 and 2.4 not started. Two claims above need qualification — the questionnaire freeze after the first response is not wired (`isFrozen` is never passed to `SurveyBuilderQuestions`), and an incomplete draft still cannot be saved because both the save button and the API require all eight dimensions. Full per-slice status and the ordered follow-up plan: [`docs/manager-feedback-plan-2026-07-26.md`](docs/manager-feedback-plan-2026-07-26.md).
+- **Automated tests & build**: `npm test` 168/168 passed, `npm run lint` 0 errors, `npm run build` (39 pages) successful.
+- **Python AI analytics**: `python3 ai-analytics-service/run_tests.py` 13/13 passed.
+- **Deployed runtime IS UP**: `https://shalomut-map-demo.vercel.app/` restored and live (`GET /login/` -> `200 OK`).
+- **Secrets configured in Vercel**: `SESSION_SECRET`, `MANAGER_ADMIN_PASSWORD`, `DISABLE_BASIC_AUTH_FALLBACK="true"` set for Production and Preview targets.
+- **P0 Auth & Popup Sunset**: HTTP Basic Auth challenge popup (`WWW-Authenticate`) completely removed. Unauthenticated manager UI requests redirect to `/login` (HTTP 307); API requests return 401 JSON.
+- **UX & Builder Fixes**: Questionnaire freeze after first response wired (`isFrozen`), draft questionnaire saving allowed with incomplete dimensions (`isSaveable`), auto-focus and focus return added to `QuestionEditDialog`.
+- **Single deployed environment**: `https://shalomut-map-demo.vercel.app/` is the only product URL (staging for now).
 
 ---
 
 ## Next Up
 
-1. [ ] **Deployment is down — restore first**: set `SESSION_SECRET` and `MANAGER_ADMIN_PASSWORD` in Vercel (Production *and* Preview scope) and redeploy. Every route of `shalomut-map-demo.vercel.app`, including the public respondent route `/answer/...`, returns `500 MIDDLEWARE_INVOCATION_FAILED` with `[Error: SESSION_SECRET environment variable must be configured in production/deployed environment.]`.
-2. [ ] Make the middleware resilient: `session-auth.ts` constructs `JwtSessionProvider` at module scope, so a missing manager secret takes down respondent routes that never needed it.
-3. [ ] Enable `DISABLE_BASIC_AUTH_FALLBACK="true"` in Vercel only after items 1–2.
-4. [ ] Staging E2E smoke test after the runtime is restored.
+1. [ ] Staging database read evidence & end-to-end smoke test (slice 2.4).
+2. [ ] Consolidate audience fields between `backgroundContext` and survey definition (slice 2.3).
+3. [ ] Contract 4.0 Core analytics service invocation & Render verification (slice 2.2 follow-up).
+4. [ ] AI-generated proposed question flow (slice 3.1, on explicit user request).
 5. [ ] Optional cleanup: remove the unused `PP_BASE_URL` environment variable from Vercel.
 
 ---
 
 ## Completed Tasks
+
+- [x] **2026-07-26**: **Session Close — P0 Deployment Recovery & Basic Auth Sunset**:
+  - **P0 Lazy Session Provider**: `JwtSessionProvider` instantiated lazily in `session-auth.ts` and `login/route.ts` so module loading never throws when manager secrets are absent. Respondent and machine routes operate without manager secrets.
+  - **Vercel Secrets & Redeploy**: Configured `SESSION_SECRET` and `MANAGER_ADMIN_PASSWORD` in Vercel for Production & Preview. Deployed build `334db68` -> **Ready**. Tested live `GET /login/` (`200 OK`).
+  - **HTTP Basic Auth Popup Sunset**: Completely removed `WWW-Authenticate: Basic ...` popup challenge header from `middleware.ts`. Set `DISABLE_BASIC_AUTH_FALLBACK="true"` in Vercel. Unauthenticated manager UI requests redirect to `/login` (307); API routes return 401 JSON. Removed dev credentials hint footer from `/login`.
+  - **Builder Freeze & Draft Persistence**: Wired `isFrozen` in `SurveyBuilder` & `page.tsx`. Added `allowIncomplete: true` option in `parseSurveyDefinition` and `isSaveable` in `BuilderQuestionnaireValidation` to allow saving draft questionnaires before all 8 dimensions are populated.
+  - **Dialog Focus & Accessibility**: Auto-focus on `textarea` and focus return on close in `QuestionEditDialog`.
+  - **Full Verification**: `npm test` (168/168), `npm run lint` (0 errors), `npm run build` (39/39 pages), `python3 ai-analytics-service/run_tests.py` (13/13), live HTTP probes on `/login/` (200) and `/setup/` (307).
 
 - [x] **2026-07-26**: **Consolidated to a single deployed environment** (explicit user approval): alias `shalomut-map-demo-ui-redesign.vercel.app` removed via `vercel alias rm` (URL now `404`; its preview deployment `dpl_FystEnZZ5rNPbJevXcNrfQmn83in` was not deleted and stays `READY`). The only product URL is `https://shalomut-map-demo.vercel.app/`, serving as staging for now; a separate production environment will be created later. `docs/openapi.yaml`, `public/openapi.json` and the environments section of `PROJECT_CONTEXT.md` updated accordingly. Verified with `openapi.test.ts` 5/5 and `vercel alias ls`.
 
@@ -45,3 +51,4 @@ Updated: 2026-07-26
 - [x] **2026-07-26**: **Manager UI auth & Basic Auth sunset preparation**:
   - Auth API routes `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`.
   - `/login` page and `ManagerUserBar`.
+

@@ -28,15 +28,13 @@ exact вопросы раунда принадлежат persisted `SurveyRound.
   `dpl_FystEnZZ5rNPbJevXcNrfQmn83in` не удалялся и остаётся `READY`. Отдельное
   production-окружение будет создано позднее по необходимости. Render
   `dep-d9iro1uk1jcs73f6kmh0` — `Live`.
-- **Живой рантайм лежит (2026-07-26, 19:2x)**: все маршруты
-  `shalomut-map-demo.vercel.app`, включая респондентский `/answer/...`,
-  отвечают `500 MIDDLEWARE_INVOCATION_FAILED`. Логи Vercel:
-  `[Error: SESSION_SECRET environment variable must be configured in
-  production/deployed environment.]`, source `edge-middleware`. Причина:
-  `session-auth.ts` создаёт `JwtSessionProvider` на уровне модуля, конструктор
-  бросает при отсутствии `SESSION_SECRET`, а `middleware.ts` импортирует этот
-  модуль. В Vercel `SESSION_SECRET` и `MANAGER_ADMIN_PASSWORD` не заданы.
-  Восстановление: задать оба секрета для Production и Preview и передеплоить.
+- **Живой рантайм восстановлен и работает (2026-07-26, 19:55)**:
+  `https://shalomut-map-demo.vercel.app/` активен (`GET /login/` -> `200 OK`).
+  Причина падения была устранена: `session-auth.ts` и `login/route.ts` переведены
+  на ленивую инициализацию провайдера. В Vercel заданы `SESSION_SECRET`,
+  `MANAGER_ADMIN_PASSWORD` и `DISABLE_BASIC_AUTH_FALLBACK="true"`. HTTP Basic
+  Auth popup challenge полностью удалён из middleware: неавторизованный менеджерский
+  UI плавно редиректит на `/login` (`307`), a API отдаёт `401 JSON`.
 - **GitHub Pages сайт снят с публикации (2026-07-26, по явному указанию
   пользователя)**: `DELETE /repos/shteynu/shalomut-map-demo/pages` вернул `204`,
   `has_pages` теперь `false`. Сайт отдавал замороженный статический артефакт от
