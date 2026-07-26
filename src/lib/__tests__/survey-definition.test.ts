@@ -43,11 +43,15 @@ test("parseSurveyDefinition allows disabling a default question while enabled qu
 });
 
 test("parseSurveyDefinition enforces the privacy floor", () => {
-  const result = parseSurveyDefinition(
-    createCanonicalSurveyDefinition("סבב קיץ", 9),
+  const invalidResult = parseSurveyDefinition(
+    createCanonicalSurveyDefinition("סבב קיץ", 0),
   );
+  assert.strictEqual(invalidResult.ok, false);
 
-  assert.strictEqual(result.ok, false);
+  const validResult = parseSurveyDefinition(
+    createCanonicalSurveyDefinition("סבב קיץ", 1),
+  );
+  assert.strictEqual(validResult.ok, true);
 });
 
 test("parseSurveyDefinition accepts a unique dynamic questionnaire that covers all eight dimensions", () => {

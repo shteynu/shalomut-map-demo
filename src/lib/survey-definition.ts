@@ -52,9 +52,9 @@ export function parseSurveyDefinition(
   if (
     typeof minimumResponses !== "number" ||
     !Number.isInteger(minimumResponses) ||
-    minimumResponses < 10
+    minimumResponses < 1
   ) {
-    return { ok: false, error: "Privacy threshold must be at least 10." };
+    return { ok: false, error: "Privacy threshold must be at least 1." };
   }
 
   if (!Array.isArray(questions)) {

@@ -64,7 +64,7 @@ export function SurveyBuilderSettings({
           סף מינימום להצגת תוצאות
           <input
             type="number"
-            min="10"
+            min="1"
             value={minimumResponses}
             onChange={(event) => setMinimumResponses(Number(event.target.value) || 0)}
           />

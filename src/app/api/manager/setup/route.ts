@@ -68,7 +68,7 @@ function parsePayload(value: unknown): ManagerSetupInput | null {
     !totalStaffCount ||
     !title ||
     privacyThreshold === null ||
-    privacyThreshold < 10 ||
+    privacyThreshold < 1 ||
     !startDate ||
     (value.round.endDate && !endDate) ||
     !isRecord(background) ||

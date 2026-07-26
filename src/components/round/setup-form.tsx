@@ -269,7 +269,7 @@ export function SetupForm({ organization, round }: SetupFormProps) {
             <input
               name="privacyThreshold"
               type="number"
-              min="10"
+              min="1"
               value={minimumResponses}
               onChange={(event) => setMinimumResponses(Number(event.target.value))}
               required
