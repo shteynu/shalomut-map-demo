@@ -87,6 +87,36 @@ test('SurveyService processes valid submissions and validates missing fields', (
   assert.ok(incompleteSubmission.result.error?.includes('24 questions'));
 });
 
+test('SurveyService accepts an omitted optional dynamic question but still requires every required question', () => {
+  const expectedQuestions = surveyInstrument.dimensions.map(
+    (dimension, index) => ({
+      id: `dynamic-${dimension.id}-${index + 1}`,
+      dimensionId: dimension.id,
+      required: index !== surveyInstrument.dimensions.length - 1,
+    }),
+  );
+  const answers = expectedQuestions.slice(0, -1).map((question) => ({
+    questionId: question.id,
+    dimensionId: question.dimensionId,
+    value: 'green' as AnswerValue,
+  }));
+
+  const optionalOmitted = SurveyService.processSubmission(
+    { roundId: 'round_dynamic_optional', answers },
+    expectedQuestions,
+  );
+  assert.strictEqual(optionalOmitted.result.success, true);
+
+  const requiredOmitted = SurveyService.processSubmission(
+    {
+      roundId: 'round_dynamic_required',
+      answers: answers.slice(1),
+    },
+    expectedQuestions,
+  );
+  assert.strictEqual(requiredOmitted.result.success, false);
+});
+
 test('RoundService creates valid round with default privacy threshold', () => {
   const round = RoundService.createRound({
     organizationId: 'org_123',
@@ -96,5 +126,34 @@ test('RoundService creates valid round with default privacy threshold', () => {
   assert.strictEqual(round.organizationId, 'org_123');
   assert.strictEqual(round.status, 'active');
   assert.strictEqual(round.privacyThreshold, 10);
+  assert.strictEqual(round.surveyDefinition?.questions.length, 24);
   assert.ok(round.shareCode.startsWith('SHALOM-'));
+});
+
+test('RoundService rejects activating a questionnaire without all eight dimensions', () => {
+  const questions = surveyInstrument.questions.filter(
+    (question) => question.dimensionId !== 'meaning',
+  );
+
+  assert.throws(
+    () =>
+      RoundService.createRound({
+        organizationId: 'org_invalid_definition',
+        title: 'Invalid round',
+        surveyDefinition: {
+          title: 'Invalid round',
+          audience: 'צוות',
+          estimatedMinutes: 10,
+          minimumResponses: 10,
+          introText: 'פתיח',
+          anonymityText: 'אנונימי',
+          questions: questions.map((question) => ({
+            ...question,
+            enabled: true,
+            answerMode: 'סקאלת צבעים',
+          })),
+        },
+      }),
+    /all eight dimensions/i,
+  );
 });

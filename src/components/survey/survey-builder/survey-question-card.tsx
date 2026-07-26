@@ -14,15 +14,13 @@ function getDimensionColor(dimensionId: string) {
 type QuestionCardProps = {
   question: BuilderQuestion;
   questionIndex: number;
-  locked: boolean;
-  onUpdate: (id: string, updater: (question: BuilderQuestion) => BuilderQuestion) => void;
-  onDuplicate: (id: string) => void;
+  onUpdate: (draftKey: string, updater: (question: BuilderQuestion) => BuilderQuestion) => void;
+  onDuplicate: (draftKey: string) => void;
 };
 
 export function SurveyQuestionCard({
   question,
   questionIndex,
-  locked,
   onUpdate,
   onDuplicate,
 }: QuestionCardProps) {
@@ -46,23 +44,10 @@ export function SurveyQuestionCard({
           <button
             className="question-icon-button"
             type="button"
-            title={
-              locked
-                ? "שאלת מקור נשארת חובה"
-                : question.required
-                  ? "להפוך לרשות"
-                  : "להפוך לחובה"
-            }
-            aria-label={
-              locked
-                ? "שאלת מקור נשארת חובה"
-                : question.required
-                  ? "להפוך לרשות"
-                  : "להפוך לחובה"
-            }
-            disabled={locked}
+            title={question.required ? "להפוך לרשות" : "להפוך לחובה"}
+            aria-label={question.required ? "להפוך לרשות" : "להפוך לחובה"}
             onClick={() =>
-              onUpdate(question.id, (current) => ({
+              onUpdate(question.draftKey, (current) => ({
                 ...current,
                 required: !current.required,
               }))
@@ -73,23 +58,10 @@ export function SurveyQuestionCard({
           <button
             className="question-icon-button"
             type="button"
-            title={
-              locked
-                ? "שאלת מקור נשארת פעילה"
-                : question.enabled
-                  ? "להסתיר מסבב האבחון"
-                  : "להחזיר לסבב האבחון"
-            }
-            aria-label={
-              locked
-                ? "שאלת מקור נשארת פעילה"
-                : question.enabled
-                  ? "להסתיר מסבב האבחון"
-                  : "להחזיר לסבב האבחון"
-            }
-            disabled={locked}
+            title={question.enabled ? "להסתיר מסבב האבחון" : "להחזיר לסבב האבחון"}
+            aria-label={question.enabled ? "להסתיר מסבב האבחון" : "להחזיר לסבב האבחון"}
             onClick={() =>
-              onUpdate(question.id, (current) => ({
+              onUpdate(question.draftKey, (current) => ({
                 ...current,
                 enabled: !current.enabled,
               }))
@@ -102,12 +74,63 @@ export function SurveyQuestionCard({
             type="button"
             title="שכפול שאלה"
             aria-label="שכפול שאלה"
-            onClick={() => onDuplicate(question.id)}
+            onClick={() => onDuplicate(question.draftKey)}
           >
             <Copy size={17} aria-hidden="true" />
           </button>
         </div>
       </div>
+
+      <div className="builder-form-grid">
+        <label>
+          מזהה קבוע לשאלה
+          <input
+            dir="ltr"
+            value={question.id}
+            onChange={(event) =>
+              onUpdate(question.draftKey, (current) => ({
+                ...current,
+                id: event.target.value,
+              }))
+            }
+            aria-label={`מזהה קבוע לשאלה ${questionIndex}`}
+          />
+        </label>
+        <label>
+          ממד שלומות
+          <select
+            value={question.dimensionId}
+            onChange={(event) =>
+              onUpdate(question.draftKey, (current) => ({
+                ...current,
+                dimensionId: event.target.value as BuilderQuestion["dimensionId"],
+              }))
+            }
+            aria-label={`ממד שלומות לשאלה ${questionIndex}`}
+          >
+            {wellbeingDimensions.map((dimension) => (
+              <option key={dimension.id} value={dimension.id}>
+                {dimension.conceptLabel}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      <label>
+        נוסח השאלה המדויק שיוצג וינותח
+        <textarea
+          rows={3}
+          value={question.text}
+          onChange={(event) =>
+            onUpdate(question.draftKey, (current) => ({
+              ...current,
+              text: event.target.value,
+            }))
+          }
+          aria-label={`נוסח שאלה ${questionIndex}`}
+        />
+      </label>
 
       <div className="survey-builder-tags">
         <span className={`status-badge ${question.enabled ? "status-green" : "status-yellow"}`}>

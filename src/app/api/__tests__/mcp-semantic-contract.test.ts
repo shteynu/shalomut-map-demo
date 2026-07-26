@@ -8,12 +8,28 @@ import {
   setRepositories,
 } from '@/lib/repositories';
 import { surveyInstrument } from '@/lib/shalomut-source';
-import type { SurveyResponseRecord } from '@/lib/types/backend';
+import { createCanonicalSurveyDefinition } from '@/lib/survey-definition';
+import { createSurveyDefinitionHash } from '@/lib/survey-definition-hash';
+import type {
+  SurveyDefinitionQuestion,
+  SurveyResponseRecord,
+} from '@/lib/types/backend';
 
 const unlockedRoundId = 'round_mcp_semantic_unlocked';
 const lockedRoundId = 'round_mcp_semantic_locked';
 let previousDatabaseUrl: string | undefined;
 let previousMcpSecret: string | undefined;
+
+const dynamicQuestions: SurveyDefinitionQuestion[] = surveyInstrument.dimensions.map(
+  (dimension, index) => ({
+    id: `mcp-custom-${dimension.id}-${index + 1}`,
+    dimensionId: dimension.id,
+    text: `שאלת MCP מותאמת ${index + 1}`,
+    required: true,
+    enabled: true,
+    answerMode: 'סקאלת צבעים',
+  }),
+);
 
 function createResponses(count: number): SurveyResponseRecord[] {
   return Array.from({ length: count }, (_, responseIndex) => ({
@@ -21,7 +37,7 @@ function createResponses(count: number): SurveyResponseRecord[] {
     roundId: unlockedRoundId,
     submittedAt: new Date('2026-07-25T12:00:00.000Z'),
     anonymousTokenHash: `private-token-${responseIndex}`,
-    answers: surveyInstrument.questions.map((question, questionIndex) => {
+    answers: dynamicQuestions.map((question, questionIndex) => {
       const score = questionIndex % 3 === 0 ? 100 : questionIndex % 3 === 1 ? 60 : 0;
       const value = score === 100 ? 'green' : score === 60 ? 'yellow' : 'red';
 
@@ -63,6 +79,11 @@ before(() => {
   delete process.env.DATABASE_URL;
   delete process.env.MCP_SHARED_SECRET;
 
+  const definition = createCanonicalSurveyDefinition(
+    'Dynamic MCP round',
+    10,
+  );
+  definition.questions = dynamicQuestions;
   setRepositories({
     roundRepo: new InMemoryRoundRepository([
       {
@@ -73,6 +94,7 @@ before(() => {
         shareCode: 'SEMANTIC-OPEN',
         privacyThreshold: 10,
         startDate: new Date('2026-07-25T12:00:00.000Z'),
+        surveyDefinition: definition,
         createdAt: new Date('2026-07-25T12:00:00.000Z'),
       },
       {
@@ -83,6 +105,7 @@ before(() => {
         shareCode: 'SEMANTIC-LOCKED',
         privacyThreshold: 10,
         startDate: new Date('2026-07-25T12:00:00.000Z'),
+        surveyDefinition: definition,
         createdAt: new Date('2026-07-25T12:00:00.000Z'),
       },
     ]),
@@ -98,29 +121,34 @@ after(() => {
   else process.env.MCP_SHARED_SECRET = previousMcpSecret;
 });
 
-test('MCP exposes exactly 24 canonical privacy-safe question aggregates for an unlocked round', async () => {
+test('MCP exposes exact dynamic privacy-safe question aggregates for an unlocked round', async () => {
   const payload = await fetchMcpAnalytics(unlockedRoundId);
   const questionAggregates = payload.questionAggregates as
     | Record<string, Record<string, unknown>>
     | undefined;
 
-  assert.strictEqual(payload.contractVersion, '2.0');
+  assert.strictEqual(payload.contractVersion, '3.0');
+  assert.strictEqual(payload.organizationId, 'org_semantic');
+  assert.strictEqual(
+    payload.surveyDefinitionHash,
+    createSurveyDefinitionHash(dynamicQuestions),
+  );
   assert.ok(
     questionAggregates,
     'unlocked MCP payload must expose questionAggregates',
   );
   assert.deepStrictEqual(
     Object.keys(questionAggregates).sort(),
-    surveyInstrument.questions.map((question) => question.id).sort(),
+    dynamicQuestions.map((question) => question.id).sort(),
   );
 
-  for (const question of surveyInstrument.questions) {
+  for (const question of dynamicQuestions) {
     assert.strictEqual(
       questionAggregates[question.id].dimensionId,
       question.dimensionId,
     );
     assert.strictEqual(
-      questionAggregates[question.id].questionTextHebrew,
+      questionAggregates[question.id].questionText,
       question.text,
     );
     assert.strictEqual(

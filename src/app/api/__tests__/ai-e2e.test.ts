@@ -17,215 +17,381 @@ import {
 import { surveyInstrument } from '@/lib/shalomut-source';
 import type {
   AnswerValue,
+  SurveyDefinition,
+  SurveyDefinitionQuestion,
   SurveyResponseRecord,
 } from '@/lib/types/backend';
 
 const repositoryRoot = process.cwd();
 const aiServiceRoot = path.join(repositoryRoot, 'ai-analytics-service');
-const roundId = 'round_cross_service_e2e';
 
-function createResponses(count: number): SurveyResponseRecord[] {
+type DynamicRoundFixture = {
+  roundId: string;
+  organizationId: string;
+  definition: SurveyDefinition;
+};
+
+function definitionFromQuestions(
+  title: string,
+  questions: SurveyDefinitionQuestion[],
+): SurveyDefinition {
+  return {
+    title,
+    audience: 'כלל צוות ההוראה',
+    estimatedMinutes: 10,
+    minimumResponses: 10,
+    introText: 'נשמח למענה כן ומכבד.',
+    anonymityText: 'התוצאות מוצגות באופן מצרפי בלבד.',
+    questions,
+  };
+}
+
+function question(
+  id: string,
+  dimensionId: SurveyDefinitionQuestion['dimensionId'],
+  text: string,
+): SurveyDefinitionQuestion {
+  return {
+    id,
+    dimensionId,
+    text,
+    required: true,
+    enabled: true,
+    answerMode: 'סקאלת צבעים',
+  };
+}
+
+const compactQuestions = surveyInstrument.dimensions.map((dimension, index) =>
+  question(
+    `compact-${dimension.id}-${index + 1}`,
+    dimension.id,
+    `שאלת שלומות מותאמת לממד ${dimension.label} בסבב הקצר.`,
+  ),
+);
+
+const revisedCanonicalText =
+  'בסבב הזה יש לי מרחב בטוח לבטא עמדה מקצועית שונה.';
+const expandedQuestions = [
+  question('self-expression-1', 'self-expression', revisedCanonicalText),
+  ...surveyInstrument.dimensions
+    .filter((dimension) => dimension.id !== 'self-expression')
+    .map((dimension, index) =>
+      question(
+        `expanded-${dimension.id}-${index + 1}`,
+        dimension.id,
+        `שאלה מותאמת לסבב המורחב בממד ${dimension.label}.`,
+      ),
+    ),
+  question(
+    'expanded-balance-recovery',
+    'balance',
+    'יש לי זמן קבוע להתאוששות במהלך שבוע העבודה.',
+  ),
+  question(
+    'expanded-balance-boundaries',
+    'balance',
+    'גבולות יום העבודה ברורים לי ונשמרים ברוב השבוע.',
+  ),
+  question(
+    'expanded-meaning-impact',
+    'meaning',
+    'אני מזהה השפעה מוחשית של העבודה שלי על הקהילה.',
+  ),
+];
+
+const dynamicFixtures: DynamicRoundFixture[] = [
+  {
+    roundId: 'round_cross_service_compact',
+    organizationId: 'org_cross_service_compact',
+    definition: definitionFromQuestions('סבב קצר', compactQuestions),
+  },
+  {
+    roundId: 'round_cross_service_expanded',
+    organizationId: 'org_cross_service_expanded',
+    definition: definitionFromQuestions('סבב מורחב', expandedQuestions),
+  },
+];
+
+function createResponses(
+  roundId: string,
+  questions: SurveyDefinitionQuestion[],
+  count: number,
+  omitFromFirstResponse?: string,
+): SurveyResponseRecord[] {
   return Array.from({ length: count }, (_, responseIndex) => ({
-    id: `response_${responseIndex}`,
+    id: `${roundId}_response_${responseIndex}`,
     roundId,
-    submittedAt: new Date('2026-07-24T12:00:00.000Z'),
-    answers: surveyInstrument.questions.map((question) => {
-      const value: AnswerValue =
-        question.dimensionId === 'balance'
-          ? 'red'
-          : question.dimensionId === 'organizational-climate'
-            ? 'yellow'
-            : 'green';
-      const score = value === 'green' ? 100 : value === 'yellow' ? 60 : 0;
+    submittedAt: new Date('2026-07-26T12:00:00.000Z'),
+    answers: questions
+      .filter(
+        (candidate) =>
+          responseIndex !== 0 || candidate.id !== omitFromFirstResponse,
+      )
+      .map((candidate) => {
+        const value: AnswerValue =
+          candidate.dimensionId === 'balance'
+            ? 'red'
+            : candidate.dimensionId === 'organizational-climate'
+              ? 'yellow'
+              : 'green';
+        const score = value === 'green' ? 100 : value === 'yellow' ? 60 : 0;
 
-      return {
-        questionId: question.id,
-        dimensionId: question.dimensionId,
-        value,
-        score,
-      };
-    }),
+        return {
+          questionId: candidate.id,
+          dimensionId: candidate.dimensionId,
+          value,
+          score,
+        };
+      }),
   }));
 }
 
-async function fetchMcpAnalytics() {
-  const request = new Request('http://localhost:3000/api/mcp', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      id: 'e2e',
-      method: 'tools/call',
-      params: {
-        name: 'get_round_analytics',
-        arguments: { roundId },
-      },
+async function fetchMcpAnalytics(roundId: string) {
+  const response = await mcpHandler(
+    new Request('http://localhost:3000/api/mcp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: roundId,
+        method: 'tools/call',
+        params: {
+          name: 'get_round_analytics',
+          arguments: { roundId },
+        },
+      }),
     }),
-  });
-  const response = await mcpHandler(request);
+  );
   assert.strictEqual(response.status, 200);
   const json = await response.json();
   return JSON.parse(json.result.content[0].text);
 }
 
-test('Core MCP -> Python graph -> callback persists a canonical Stone Map', async () => {
-  const previousDatabaseUrl = process.env.DATABASE_URL;
-  delete process.env.DATABASE_URL;
+function runPythonPipeline(analytics: unknown) {
+  const python = spawnSync('python3', ['-m', 'src.pipeline_cli'], {
+    cwd: aiServiceRoot,
+    input: JSON.stringify(analytics),
+    encoding: 'utf8',
+  });
+  assert.strictEqual(python.status, 0, python.stderr);
+  return JSON.parse(python.stdout);
+}
 
+function configureFixture(
+  fixture: DynamicRoundFixture,
+  responses: SurveyResponseRecord[],
+) {
   setRepositories({
     orgRepo: new InMemoryOrganizationRepository([
       {
-        id: 'org_cross_service',
+        id: fixture.organizationId,
         name: 'בית ספר בדיקה',
         city: 'חיפה',
         schoolType: 'תיכון',
         totalStaffCount: 20,
-        createdAt: new Date('2026-07-24T12:00:00.000Z'),
+        createdAt: new Date('2026-07-26T12:00:00.000Z'),
       },
     ]),
     roundRepo: new InMemoryRoundRepository([
       {
-        id: roundId,
-        organizationId: 'org_cross_service',
-        title: 'Cross-service E2E',
+        id: fixture.roundId,
+        organizationId: fixture.organizationId,
+        title: fixture.definition.title,
         status: 'closed',
-        shareCode: 'SHALOM-E2E',
+        shareCode: `SHALOM-${fixture.roundId.slice(-6).toUpperCase()}`,
         privacyThreshold: 10,
-        startDate: new Date('2026-07-24T12:00:00.000Z'),
-        createdAt: new Date('2026-07-24T12:00:00.000Z'),
+        startDate: new Date('2026-07-26T12:00:00.000Z'),
+        surveyDefinition: fixture.definition,
+        createdAt: new Date('2026-07-26T12:00:00.000Z'),
       },
     ]),
-    surveyRepo: new InMemorySurveyRepository(createResponses(10)),
+    surveyRepo: new InMemorySurveyRepository(responses),
   });
+}
 
-  try {
-    const analytics = await fetchMcpAnalytics();
-    assert.strictEqual(analytics.isLocked, false);
-    assert.strictEqual(analytics.contractVersion, '2.0');
-    assert.strictEqual(Object.keys(analytics.questionAggregates).length, 24);
-
-    const python = spawnSync(
-      'python3',
-      ['-m', 'src.pipeline_cli'],
-      {
-        cwd: aiServiceRoot,
-        input: JSON.stringify(analytics),
-        encoding: 'utf8',
-      },
-    );
-    assert.strictEqual(python.status, 0, python.stderr);
-    const stoneMap = JSON.parse(python.stdout);
-
-    const callbackRequest = new Request(
-      `http://localhost:3000/api/rounds/${roundId}/ai-insights`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(stoneMap),
-      },
-    );
-    const callbackResponse = await postInsightsHandler(callbackRequest, {
-      params: Promise.resolve({ roundId }),
-    });
-    const callbackBody = await callbackResponse.clone().json();
-    assert.strictEqual(
-      callbackResponse.status,
-      200,
-      JSON.stringify(callbackBody),
-    );
-
-    const getResponse = await getInsightsHandler(
-      new Request(
-        `http://localhost:3000/api/rounds/${roundId}/ai-insights`,
-      ),
-      { params: Promise.resolve({ roundId }) },
-    );
-    assert.strictEqual(getResponse.status, 200);
-
-    const persisted = await getResponse.json();
-    assert.strictEqual(persisted.contractVersion, '2.0');
-    assert.strictEqual(Object.keys(persisted.stones).length, 8);
-    assert.strictEqual(persisted.stones.balance.status, 'red');
-    assert.strictEqual(persisted.stones.balance.metrics.length, 3);
-    assert.deepStrictEqual(
-      persisted.stones.balance.generationProvenance.sourceQuestionIds,
-      ['balance-1', 'balance-2', 'balance-3'],
-    );
-    assert.strictEqual(
-      persisted.stones['organizational-climate'].status,
-      'yellow',
-    );
-  } finally {
-    resetDefaultRepositories();
-    if (previousDatabaseUrl === undefined) {
-      delete process.env.DATABASE_URL;
-    } else {
-      process.env.DATABASE_URL = previousDatabaseUrl;
-    }
-  }
-});
-
-test('Cross-service pipeline preserves the privacy lock below threshold', async () => {
+test('two dynamic questionnaires cross Core MCP -> Python -> callback with exact round metrics', async () => {
   const previousDatabaseUrl = process.env.DATABASE_URL;
   delete process.env.DATABASE_URL;
 
-  setRepositories({
-    roundRepo: new InMemoryRoundRepository([
-      {
-        id: roundId,
-        organizationId: 'org_cross_service',
-        title: 'Locked cross-service E2E',
-        status: 'closed',
-        shareCode: 'SHALOM-E2E-LOCKED',
-        privacyThreshold: 10,
-        startDate: new Date('2026-07-24T12:00:00.000Z'),
-        createdAt: new Date('2026-07-24T12:00:00.000Z'),
-      },
-    ]),
-    surveyRepo: new InMemorySurveyRepository(createResponses(9)),
-  });
+  try {
+    for (const fixture of dynamicFixtures) {
+      const enabledQuestions = fixture.definition.questions.filter(
+        (candidate) => candidate.enabled,
+      );
+      configureFixture(
+        fixture,
+        createResponses(fixture.roundId, enabledQuestions, 10),
+      );
+
+      const analytics = await fetchMcpAnalytics(fixture.roundId);
+      assert.strictEqual(analytics.contractVersion, '3.0');
+      assert.strictEqual(analytics.organizationId, fixture.organizationId);
+      assert.strictEqual(analytics.isLocked, false);
+      assert.deepStrictEqual(
+        Object.keys(analytics.questionAggregates).sort(),
+        enabledQuestions.map((candidate) => candidate.id).sort(),
+      );
+      for (const candidate of enabledQuestions) {
+        assert.strictEqual(
+          analytics.questionAggregates[candidate.id].questionText,
+          candidate.text,
+        );
+      }
+
+      const stoneMap = runPythonPipeline(analytics);
+      assert.strictEqual(stoneMap.contractVersion, '3.0');
+      assert.strictEqual(
+        stoneMap.surveyDefinitionHash,
+        analytics.surveyDefinitionHash,
+      );
+      assert.strictEqual(Object.keys(stoneMap.stones).length, 8);
+
+      if (fixture === dynamicFixtures[0]) {
+        const firstDimension = surveyInstrument.dimensions[0].id;
+        const tamperedScore = structuredClone(stoneMap);
+        tamperedScore.stones[firstDimension].score = 60;
+        tamperedScore.stones[firstDimension].status = 'yellow';
+        const scoreRejection = await postInsightsHandler(
+          new Request(
+            `http://localhost:3000/api/rounds/${fixture.roundId}/ai-insights`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(tamperedScore),
+            },
+          ),
+          { params: Promise.resolve({ roundId: fixture.roundId }) },
+        );
+        assert.strictEqual(scoreRejection.status, 400);
+
+        const tamperedAggregate = structuredClone(stoneMap);
+        tamperedAggregate.stones[firstDimension].metrics[0].responseCount = 11;
+        const aggregateRejection = await postInsightsHandler(
+          new Request(
+            `http://localhost:3000/api/rounds/${fixture.roundId}/ai-insights`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(tamperedAggregate),
+            },
+          ),
+          { params: Promise.resolve({ roundId: fixture.roundId }) },
+        );
+        assert.strictEqual(aggregateRejection.status, 400);
+      }
+
+      const callbackResponse = await postInsightsHandler(
+        new Request(
+          `http://localhost:3000/api/rounds/${fixture.roundId}/ai-insights`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(stoneMap),
+          },
+        ),
+        { params: Promise.resolve({ roundId: fixture.roundId }) },
+      );
+      const callbackBody = await callbackResponse.clone().json();
+      assert.strictEqual(
+        callbackResponse.status,
+        200,
+        JSON.stringify(callbackBody),
+      );
+
+      const getResponse = await getInsightsHandler(
+        new Request(
+          `http://localhost:3000/api/rounds/${fixture.roundId}/ai-insights`,
+        ),
+        { params: Promise.resolve({ roundId: fixture.roundId }) },
+      );
+      assert.strictEqual(getResponse.status, 200);
+      const persisted = await getResponse.json();
+      assert.strictEqual(persisted.contractVersion, '3.0');
+      assert.strictEqual(Object.keys(persisted.stones).length, 8);
+
+      for (const dimension of surveyInstrument.dimensions) {
+        const expectedQuestions = enabledQuestions.filter(
+          (candidate) => candidate.dimensionId === dimension.id,
+        );
+        const stone = persisted.stones[dimension.id];
+        assert.strictEqual(stone.metrics.length, expectedQuestions.length);
+        assert.deepStrictEqual(
+          stone.metrics
+            .map((metric: { questionId: string }) => metric.questionId)
+            .sort(),
+          expectedQuestions.map((candidate) => candidate.id).sort(),
+        );
+        assert.deepStrictEqual(
+          stone.metrics
+            .map((metric: { label: string }) => metric.label)
+            .sort(),
+          expectedQuestions.map((candidate) => candidate.text).sort(),
+        );
+        assert.deepStrictEqual(
+          [...stone.generationProvenance.sourceQuestionIds].sort(),
+          expectedQuestions.map((candidate) => candidate.id).sort(),
+        );
+        assert.strictEqual(
+          stone.generationProvenance.surveyDefinitionHash,
+          analytics.surveyDefinitionHash,
+        );
+      }
+    }
+  } finally {
+    resetDefaultRepositories();
+    if (previousDatabaseUrl === undefined) delete process.env.DATABASE_URL;
+    else process.env.DATABASE_URL = previousDatabaseUrl;
+  }
+});
+
+test('one below-threshold dynamic question locks the whole cross-service pipeline', async () => {
+  const previousDatabaseUrl = process.env.DATABASE_URL;
+  delete process.env.DATABASE_URL;
+  const fixture = dynamicFixtures[1];
+  const enabledQuestions = fixture.definition.questions.filter(
+    (candidate) => candidate.enabled,
+  );
+  const belowThresholdQuestion = enabledQuestions.at(-1)!;
+  configureFixture(
+    fixture,
+    createResponses(
+      fixture.roundId,
+      enabledQuestions,
+      10,
+      belowThresholdQuestion.id,
+    ),
+  );
 
   try {
-    const analytics = await fetchMcpAnalytics();
+    const analytics = await fetchMcpAnalytics(fixture.roundId);
+    assert.strictEqual(analytics.contractVersion, '3.0');
+    assert.strictEqual(analytics.totalResponses, 10);
     assert.strictEqual(analytics.isLocked, true);
-    assert.strictEqual(analytics.contractVersion, '2.0');
     assert.deepStrictEqual(analytics.dimensionScores, {});
     assert.deepStrictEqual(analytics.questionAggregates, {});
 
-    const python = spawnSync(
-      'python3',
-      ['-m', 'src.pipeline_cli'],
-      {
-        cwd: aiServiceRoot,
-        input: JSON.stringify(analytics),
-        encoding: 'utf8',
-      },
-    );
-    assert.strictEqual(python.status, 0, python.stderr);
-    const stoneMap = JSON.parse(python.stdout);
+    const stoneMap = runPythonPipeline(analytics);
+    assert.strictEqual(stoneMap.contractVersion, '3.0');
     assert.strictEqual(stoneMap.status, 'locked_error');
     assert.strictEqual(stoneMap.isLocked, true);
-    assert.strictEqual(stoneMap.contractVersion, '2.0');
     assert.strictEqual(stoneMap.stones, undefined);
+    assert.strictEqual(stoneMap.overallPsychologicalSummary, undefined);
 
     const callbackResponse = await postInsightsHandler(
       new Request(
-        `http://localhost:3000/api/rounds/${roundId}/ai-insights`,
+        `http://localhost:3000/api/rounds/${fixture.roundId}/ai-insights`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(stoneMap),
         },
       ),
-      { params: Promise.resolve({ roundId }) },
+      { params: Promise.resolve({ roundId: fixture.roundId }) },
     );
     assert.strictEqual(callbackResponse.status, 200);
   } finally {
     resetDefaultRepositories();
-    if (previousDatabaseUrl === undefined) {
-      delete process.env.DATABASE_URL;
-    } else {
-      process.env.DATABASE_URL = previousDatabaseUrl;
-    }
+    if (previousDatabaseUrl === undefined) delete process.env.DATABASE_URL;
+    else process.env.DATABASE_URL = previousDatabaseUrl;
   }
 });

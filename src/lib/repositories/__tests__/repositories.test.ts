@@ -11,6 +11,7 @@ import {
 } from '..';
 import { AnalyticsService, RoundService, SurveyService } from '../../services';
 import { surveyInstrument } from '../../shalomut-source';
+import { createCanonicalSurveyDefinition } from '../../survey-definition';
 import { QuestionAnswerInput, SurveyResponseInput } from '../../types/backend';
 
 function buildDummyAnswers(value: 'green' | 'yellow' | 'red' = 'green'): QuestionAnswerInput[] {
@@ -70,6 +71,33 @@ test('InMemoryRoundRepository handles lookup by share code and status updates', 
     },
   });
   assert.strictEqual(configured?.surveyDefinition?.title, 'שאלון שמור');
+});
+
+test('InMemoryRoundRepository isolates the persisted questionnaire snapshot from caller mutations', async () => {
+  const definition = createCanonicalSurveyDefinition('Snapshot round', 10);
+  const round = {
+    ...DEMO_ROUND,
+    id: 'round_snapshot_copy',
+    shareCode: 'SHALOM-SNAPSHOT',
+    surveyDefinition: definition,
+  };
+  const repo = new InMemoryRoundRepository();
+  const created = await repo.create(round);
+
+  definition.questions[0].text = 'caller mutation before read';
+  created.surveyDefinition!.questions[0].text = 'caller mutation after create';
+  const firstRead = await repo.findById(round.id);
+  assert.strictEqual(
+    firstRead?.surveyDefinition?.questions[0].text,
+    surveyInstrument.questions[0].text,
+  );
+
+  firstRead!.surveyDefinition!.questions[0].text = 'caller mutation after read';
+  const secondRead = await repo.findById(round.id);
+  assert.strictEqual(
+    secondRead?.surveyDefinition?.questions[0].text,
+    surveyInstrument.questions[0].text,
+  );
 });
 
 test('InMemorySurveyRepository prevents duplicate token submissions', async () => {
@@ -159,7 +187,7 @@ test('End-to-End Workflow: Round creation -> 10 submissions -> Analytics Unlocki
   );
   assert.strictEqual(analytics?.totalResponses, 10);
   assert.strictEqual(analytics?.isLocked, false);
-  assert.strictEqual(analytics?.contractVersion, '2.0');
+  assert.strictEqual(analytics?.contractVersion, '3.0');
   assert.strictEqual(Object.keys(analytics?.questionAggregates ?? {}).length, 24);
   assert.strictEqual(analytics?.dimensionScores['self-expression'].isLocked, false);
   assert.strictEqual(typeof analytics?.dimensionScores['self-expression'].averageScore, 'number');

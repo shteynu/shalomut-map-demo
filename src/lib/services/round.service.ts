@@ -4,6 +4,10 @@ import {
   RoundStatus,
   SurveyRound,
 } from '../types/backend';
+import {
+  createCanonicalSurveyDefinition,
+  parseSurveyDefinition,
+} from '../survey-definition';
 
 export class RoundService {
   /**
@@ -19,17 +23,30 @@ export class RoundService {
    */
   public static createRound(input: CreateRoundInput): SurveyRound {
     const roundId = crypto.randomUUID();
+    const privacyThreshold =
+      input.privacyThreshold ?? input.surveyDefinition?.minimumResponses ?? 10;
+    const definitionCandidate = input.surveyDefinition
+      ? {
+          ...input.surveyDefinition,
+          minimumResponses: privacyThreshold,
+        }
+      : createCanonicalSurveyDefinition(input.title, privacyThreshold);
+    const parsedDefinition = parseSurveyDefinition(definitionCandidate);
+    if (!parsedDefinition.ok) {
+      throw new Error(`Survey round cannot be activated: ${parsedDefinition.error}`);
+    }
+
     return {
       id: roundId,
       organizationId: input.organizationId,
       title: input.title,
       status: 'active',
       shareCode: this.generateShareCode(),
-      privacyThreshold: input.privacyThreshold ?? 10,
+      privacyThreshold,
       startDate: input.startDate ?? new Date(),
       endDate: input.endDate,
       backgroundContext: input.backgroundContext,
-      surveyDefinition: input.surveyDefinition,
+      surveyDefinition: parsedDefinition.value,
       createdAt: new Date(),
     };
   }

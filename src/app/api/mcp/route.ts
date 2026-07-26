@@ -46,7 +46,7 @@ export async function POST(request: Request) {
           tools: [
             {
               name: 'get_round_analytics',
-              description: 'Fetch privacy-safe dimension and canonical question aggregates for a given survey round.',
+              description: 'Fetch privacy-safe dimension and exact persisted question aggregates for a given survey round.',
               inputSchema: {
                 type: 'object',
                 properties: {
@@ -97,6 +97,8 @@ export async function POST(request: Request) {
         const mcpPayload = {
           contractVersion: result.contractVersion,
           roundId: result.roundId,
+          organizationId: result.organizationId,
+          surveyDefinitionHash: result.surveyDefinitionHash,
           totalResponses: result.totalResponses,
           privacyThreshold: result.privacyThreshold,
           isLocked: result.isLocked,

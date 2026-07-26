@@ -3,10 +3,18 @@ import test from "node:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import type { StoneMapResult } from "@/lib/ai-contract";
 import { getDimensionById } from "@/lib/demo-data";
+import { surveyInstrument } from "@/lib/shalomut-source";
 import {
   DashboardOverviewSummary,
 } from "../dashboard-map-page";
 import { getDisplayedMetrics } from "../dashboard-metrics-page";
+import {
+  getBuilderQuestionnaireValidation,
+  localizeSurveyDefinitionSaveError,
+  toSurveyDefinitionQuestion,
+  type BuilderQuestion,
+} from "../../survey/survey-builder/types";
+import { SurveyQuestionCard } from "../../survey/survey-builder/survey-question-card";
 
 function createReadyResult(summary: string): StoneMapResult {
   return {
@@ -68,4 +76,112 @@ test("getDisplayedMetrics forwards variable question metrics to the metrics scre
     getDisplayedMetrics({ ...dimension, metrics: expandedRoundMetrics }),
     expandedRoundMetrics,
   );
+});
+
+function createBuilderQuestions(): BuilderQuestion[] {
+  return surveyInstrument.dimensions.map((dimension, index) => ({
+    draftKey: `draft-${index}`,
+    id: `round-question-${dimension.id}`,
+    text: `שאלה מותאמת עבור ${dimension.label}`,
+    dimensionId: dimension.id,
+    required: true,
+    enabled: true,
+    answerMode: "סקאלת צבעים",
+  }));
+}
+
+test("builder validation reports duplicate stable IDs and incomplete dimension coverage in Hebrew", () => {
+  const questions = createBuilderQuestions();
+  questions[1] = { ...questions[1], id: questions[0].id };
+  questions.find((question) => question.dimensionId === "meaning")!.enabled = false;
+
+  const validation = getBuilderQuestionnaireValidation(questions);
+
+  assert.strictEqual(validation.isValid, false);
+  assert.deepStrictEqual(validation.duplicateQuestionIds, [questions[0].id]);
+  assert.deepStrictEqual(validation.missingDimensionIds, ["meaning"]);
+  assert.match(validation.messages.join(" "), /מזהה קבוע/);
+  assert.match(validation.messages.join(" "), /משמעות/);
+  assert.doesNotMatch(validation.messages.join(" "), /duplicate|dimension/i);
+});
+
+test("builder validation accepts different valid question IDs and counts", () => {
+  const shortRound = createBuilderQuestions();
+  const expandedRound = [
+    ...createBuilderQuestions(),
+    {
+      ...createBuilderQuestions()[0],
+      draftKey: "draft-extra",
+      id: "round-extra-self-expression",
+      text: "יש לי מרחב נוסף להביע עמדה מקצועית שונה.",
+    },
+  ];
+
+  assert.strictEqual(getBuilderQuestionnaireValidation(shortRound).isValid, true);
+  assert.strictEqual(getBuilderQuestionnaireValidation(expandedRound).isValid, true);
+});
+
+test("survey builder never exposes raw API validation errors to managers", () => {
+  const localized = localizeSurveyDefinitionSaveError(
+    "Enabled survey questions must cover all eight dimensions before activation.",
+    400,
+  );
+
+  assert.match(localized, /שמונת ממדי השלומות/);
+  assert.doesNotMatch(localized, /Enabled|dimensions|activation/);
+
+  const immutableSnapshotError = localizeSurveyDefinitionSaveError(
+    "Question snapshot cannot change after responses exist.",
+    409,
+  );
+  assert.match(immutableSnapshotError, /לאחר שהתקבלה תשובה/);
+  assert.match(immutableSnapshotError, /סבב או גרסה חדשה/);
+  assert.doesNotMatch(immutableSnapshotError, /snapshot|responses/i);
+});
+
+test("survey question card exposes editable stable ID, exact text, and dimension mapping", () => {
+  const question: BuilderQuestion = {
+    draftKey: "draft-custom-balance",
+    id: "custom-balance-recovery",
+    text: "יש לי מרחב קבוע להתאוששות בין ימי עבודה עמוסים.",
+    dimensionId: "balance",
+    required: true,
+    enabled: true,
+    answerMode: "סקאלת צבעים",
+  };
+  const html = renderToStaticMarkup(
+    <SurveyQuestionCard
+      question={question}
+      questionIndex={1}
+      onUpdate={() => undefined}
+      onDuplicate={() => undefined}
+    />,
+  );
+
+  assert.match(html, /מזהה קבוע לשאלה/);
+  assert.match(html, /custom-balance-recovery/);
+  assert.match(html, /נוסח השאלה המדויק שיוצג וינותח/);
+  assert.match(html, new RegExp(question.text));
+  assert.match(html, /<option value="balance" selected="">איזון<\/option>/);
+});
+
+test("builder serialization keeps the exact persisted question text and removes draft-only identity", () => {
+  const question: BuilderQuestion = {
+    draftKey: "draft-exact-text",
+    id: "custom-exact-text",
+    text: "  נוסח שנשמר בדיוק כפי שהוזן.  ",
+    dimensionId: "meaning",
+    required: true,
+    enabled: true,
+    answerMode: "סקאלת צבעים",
+  };
+
+  assert.deepStrictEqual(toSurveyDefinitionQuestion(question), {
+    id: "custom-exact-text",
+    text: question.text,
+    dimensionId: "meaning",
+    required: true,
+    enabled: true,
+    answerMode: "סקאלת צבעים",
+  });
 });

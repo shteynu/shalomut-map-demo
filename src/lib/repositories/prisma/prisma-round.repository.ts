@@ -60,7 +60,7 @@ export class PrismaRoundRepository implements IRoundRepository {
         record.surveyDefinition &&
         typeof record.surveyDefinition === 'object' &&
         !Array.isArray(record.surveyDefinition)
-          ? { ...record.surveyDefinition }
+          ? structuredClone(record.surveyDefinition)
           : undefined,
       createdAt: new Date(record.createdAt),
     };

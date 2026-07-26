@@ -2,7 +2,10 @@ import { NextResponse } from 'next/server';
 import { getRepositories } from '@/lib/repositories';
 import { RoundService } from '@/lib/services';
 import { surveyInstrument } from '@/lib/shalomut-source';
-import { createCanonicalSurveyDefinition } from '@/lib/survey-definition';
+import {
+  createCanonicalSurveyDefinition,
+  parseSurveyDefinition,
+} from '@/lib/survey-definition';
 
 export async function GET(
   _request: Request,
@@ -27,9 +30,17 @@ export async function GET(
       );
     }
 
-    const definition =
+    const definitionCandidate =
       round.surveyDefinition ??
       createCanonicalSurveyDefinition(round.title, round.privacyThreshold);
+    const parsedDefinition = parseSurveyDefinition(definitionCandidate);
+    if (!parsedDefinition.ok) {
+      return NextResponse.json(
+        { error: `Survey definition is invalid: ${parsedDefinition.error}` },
+        { status: 409 },
+      );
+    }
+    const definition = parsedDefinition.value;
 
     return NextResponse.json({
       round,

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getRepositories } from "@/lib/repositories";
 import {
   createCanonicalSurveyDefinition,
+  hasSameQuestionSnapshot,
   parseSurveyDefinition,
 } from "@/lib/survey-definition";
 import { getDurableWriteGuardResponse } from "@/lib/server/durable-write-guard";
@@ -43,7 +44,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
     if (unavailable) return unavailable;
 
     const { roundId } = await params;
-    const { orgRepo, roundRepo } = getRepositories();
+    const { orgRepo, roundRepo, surveyRepo } = getRepositories();
     const authorization = await authorizeManagerRound(
       request,
       roundId,
@@ -56,6 +57,24 @@ export async function PUT(request: Request, { params }: RouteParams) {
 
     if (!parsed.ok) {
       return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+
+    const { round } = authorization;
+    const responseCount = await surveyRepo.getResponseCount(roundId);
+    const currentDefinition =
+      round.surveyDefinition ??
+      createCanonicalSurveyDefinition(round.title, round.privacyThreshold);
+    if (
+      responseCount > 0 &&
+      !hasSameQuestionSnapshot(currentDefinition, parsed.value)
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Survey question IDs, text, dimensions, order, and enabled state cannot change after the first accepted response. Create a new round for a revised questionnaire.",
+        },
+        { status: 409 },
+      );
     }
 
     const updated = await roundRepo.update(roundId, {

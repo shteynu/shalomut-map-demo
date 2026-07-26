@@ -26,7 +26,7 @@ export class SurveyService {
     input: SurveyResponseInput,
     expectedQuestions: Pick<
       SurveyDefinitionQuestion,
-      'id' | 'dimensionId'
+      'id' | 'dimensionId' | 'required'
     >[] = surveyInstrument.questions,
   ): {
     valid: boolean;
@@ -40,11 +40,20 @@ export class SurveyService {
       return { valid: false, error: 'Answers array is required' };
     }
 
-    const requiredQuestionCount = expectedQuestions.length;
-    if (input.answers.length !== requiredQuestionCount) {
+    const requiredQuestions = expectedQuestions.filter(
+      (question) => question.required !== false,
+    );
+    if (
+      input.answers.length < requiredQuestions.length ||
+      input.answers.length > expectedQuestions.length
+    ) {
+      const requirement =
+        requiredQuestions.length === expectedQuestions.length
+          ? `${requiredQuestions.length} questions`
+          : `${requiredQuestions.length} required questions`;
       return {
         valid: false,
-        error: `Survey requires all ${requiredQuestionCount} questions to be answered. Received ${input.answers.length}.`,
+        error: `Survey requires all ${requirement} to be answered. Received ${input.answers.length}.`,
       };
     }
 
@@ -77,6 +86,16 @@ export class SurveyService {
       seenQuestionIds.add(answer.questionId);
     }
 
+    const missingRequiredQuestion = requiredQuestions.find(
+      (question) => !seenQuestionIds.has(question.id),
+    );
+    if (missingRequiredQuestion) {
+      return {
+        valid: false,
+        error: `Required question '${missingRequiredQuestion.id}' is missing.`,
+      };
+    }
+
     return { valid: true };
   }
 
@@ -87,7 +106,7 @@ export class SurveyService {
     input: SurveyResponseInput,
     expectedQuestions: Pick<
       SurveyDefinitionQuestion,
-      'id' | 'dimensionId'
+      'id' | 'dimensionId' | 'required'
     >[] = surveyInstrument.questions,
   ): { result: SubmitSurveyResult; record?: SurveyResponseRecord } {
     const validation = this.validateInput(input, expectedQuestions);
@@ -134,7 +153,7 @@ export class SurveyService {
     surveyRepo: ISurveyRepository,
     expectedQuestions: Pick<
       SurveyDefinitionQuestion,
-      'id' | 'dimensionId'
+      'id' | 'dimensionId' | 'required'
     >[] = surveyInstrument.questions,
   ): Promise<SubmitSurveyResult> {
     if (input.anonymousTokenHash) {

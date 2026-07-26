@@ -3,6 +3,10 @@ import { getRepositories } from '@/lib/repositories';
 import { RoundService, SurveyService } from '@/lib/services';
 import { getDurableWriteGuardResponse } from '@/lib/server/durable-write-guard';
 import { QuestionAnswerInput } from '@/lib/types/backend';
+import {
+  createCanonicalSurveyDefinition,
+  parseSurveyDefinition,
+} from '@/lib/survey-definition';
 
 export async function POST(
   request: Request,
@@ -36,6 +40,17 @@ export async function POST(
       );
     }
 
+    const definitionCandidate =
+      round.surveyDefinition ??
+      createCanonicalSurveyDefinition(round.title, round.privacyThreshold);
+    const parsedDefinition = parseSurveyDefinition(definitionCandidate);
+    if (!parsedDefinition.ok) {
+      return NextResponse.json(
+        { error: `Survey definition is invalid: ${parsedDefinition.error}` },
+        { status: 409 },
+      );
+    }
+
     const result = await SurveyService.submitAndSaveResponse(
       {
         roundId: round.id,
@@ -43,7 +58,7 @@ export async function POST(
         anonymousTokenHash,
       },
       surveyRepo,
-      round.surveyDefinition?.questions.filter((question) => question.enabled)
+      parsedDefinition.value.questions.filter((question) => question.enabled)
     );
 
     if (!result.success) {

@@ -13,9 +13,14 @@ import type { SurveyDefinition } from "@/lib/types/backend";
 import { SurveyBuilderQuestions } from "./survey-builder/survey-builder-questions";
 import { SurveyBuilderSettings } from "./survey-builder/survey-builder-settings";
 import { SurveyBuilderSidebar } from "./survey-builder/survey-builder-sidebar";
-import type { BuilderQuestion } from "./survey-builder/types";
+import {
+  getBuilderQuestionnaireValidation,
+  localizeSurveyDefinitionSaveError,
+  toSurveyDefinitionQuestion,
+  type BuilderQuestion,
+} from "./survey-builder/types";
 
-const questionBank: Omit<BuilderQuestion, "id">[] = [
+const questionBank: Omit<BuilderQuestion, "id" | "draftKey">[] = [
   {
     text: "אני יודעת למי לפנות כשאני זקוקה לעזרה מקצועית או רגשית במהלך יום העבודה.",
     dimensionId: "management-support",
@@ -46,7 +51,7 @@ const builderFlowSteps = [
   },
   {
     title: "שאלות",
-    helper: "8 ממדים ו-24 שאלות מקור",
+    helper: "שאלות משתנות ב-8 ממדים קבועים",
   },
   {
     title: "הפצה",
@@ -86,7 +91,10 @@ export function SurveyBuilder({
     initialDefinition.anonymityText,
   );
   const [questions, setQuestions] = useState<BuilderQuestion[]>(
-    initialDefinition.questions,
+    initialDefinition.questions.map((question, index) => ({
+      ...question,
+      draftKey: `initial-${index}-${question.id}`,
+    })),
   );
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -105,6 +113,7 @@ export function SurveyBuilder({
     selectedDimensionId === "all"
       ? questions
       : questions.filter((question) => question.dimensionId === selectedDimensionId);
+  const questionnaireValidation = getBuilderQuestionnaireValidation(questions);
 
   const summaryStones = [
     {
@@ -133,13 +142,17 @@ export function SurveyBuilder({
     },
   ];
 
-  function updateQuestion(id: string, updater: (question: BuilderQuestion) => BuilderQuestion) {
-    setQuestions((current) => current.map((question) => (question.id === id ? updater(question) : question)));
+  function updateQuestion(draftKey: string, updater: (question: BuilderQuestion) => BuilderQuestion) {
+    setSaved(false);
+    setSaveError(null);
+    setQuestions((current) => current.map((question) => (question.draftKey === draftKey ? updater(question) : question)));
   }
 
-  function duplicateQuestion(id: string) {
+  function duplicateQuestion(draftKey: string) {
+    setSaved(false);
+    setSaveError(null);
     setQuestions((current) => {
-      const index = current.findIndex((question) => question.id === id);
+      const index = current.findIndex((question) => question.draftKey === draftKey);
       const source = current[index];
 
       if (!source) {
@@ -148,7 +161,8 @@ export function SurveyBuilder({
 
       const duplicate = {
         ...source,
-        id: createDraftId("duplicate"),
+        draftKey: createDraftId("question"),
+        id: createDraftId(`${source.id.trim() || "question"}-copy`),
       };
 
       return [...current.slice(0, index + 1), duplicate, ...current.slice(index + 1)];
@@ -159,15 +173,24 @@ export function SurveyBuilder({
     const template = questionBank[bankCursor % questionBank.length];
     const nextQuestion: BuilderQuestion = {
       ...template,
+      draftKey: createDraftId("question"),
       id: createDraftId("bank"),
     };
 
+    setSaved(false);
+    setSaveError(null);
     setQuestions((current) => [...current, nextQuestion]);
     setBankCursor((current) => current + 1);
     setSelectedDimensionId(nextQuestion.dimensionId);
   }
 
   async function saveDefinition() {
+    if (!questionnaireValidation.isValid) {
+      setSaved(false);
+      setSaveError(questionnaireValidation.messages.join(" "));
+      return;
+    }
+
     setSaving(true);
     setSaved(false);
     setSaveError(null);
@@ -184,7 +207,7 @@ export function SurveyBuilder({
           minimumResponses,
           introText,
           anonymityText,
-          questions,
+          questions: questions.map(toSurveyDefinitionQuestion),
         }),
       },
     ).catch(() => null);
@@ -194,8 +217,7 @@ export function SurveyBuilder({
         ? ((await response.json().catch(() => null)) as { error?: string } | null)
         : null;
       setSaveError(
-        payload?.error ??
-          "לא ניתן היה לשמור את טיוטת השאלון. נסו שוב.",
+        localizeSurveyDefinitionSaveError(payload?.error, response?.status),
       );
       setSaving(false);
       return;
@@ -217,10 +239,15 @@ export function SurveyBuilder({
               className="primary-button"
               type="button"
               onClick={saveDefinition}
-              disabled={saving}
+              disabled={saving || !questionnaireValidation.isValid}
               data-round-id={roundId}
+              aria-describedby={
+                questionnaireValidation.isValid
+                  ? undefined
+                  : "survey-builder-validation"
+              }
             >
-              {saving ? "שומר..." : "שמירת טיוטה"}
+              {saving ? "שומר..." : "שמירה והכנה להפצה"}
               <CheckCircle2 size={18} aria-hidden="true" />
             </button>
             <Link className="secondary-button" href={shareUrl} target="_blank" rel="noreferrer">
@@ -235,6 +262,22 @@ export function SurveyBuilder({
         <p className="survey-submit-error" role="alert">
           {saveError}
         </p>
+      ) : null}
+
+      {!questionnaireValidation.isValid ? (
+        <section
+          id="survey-builder-validation"
+          className="survey-submit-error"
+          aria-live="polite"
+          aria-label="בדיקות לפני שמירת השאלון"
+        >
+          <strong>כדי לשמור ולהפעיל את השאלון:</strong>
+          <ul>
+            {questionnaireValidation.messages.map((message) => (
+              <li key={message}>{message}</li>
+            ))}
+          </ul>
+        </section>
       ) : null}
 
       <section className="metric-grid survey-builder-metric-grid" aria-label="תקציר שאלון">
@@ -300,6 +343,7 @@ export function SurveyBuilder({
           nextSuggestedQuestion={nextSuggestedQuestion}
           onAddQuestionFromBank={addQuestionFromBank}
           saved={saved}
+          questionnaireReady={questionnaireValidation.isValid}
         />
       </div>
     </div>

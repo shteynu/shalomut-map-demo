@@ -285,15 +285,11 @@ export class AnalyticsService {
     roundId: string,
     roundRepo: IRoundRepository,
     surveyRepo: ISurveyRepository
-  ): Promise<RoundAnalyticsResult | null> {
+  ): Promise<RoundAnalyticsV3Result | null> {
     const round = await roundRepo.findById(roundId);
     if (!round) return null;
 
     const responses = await surveyRepo.findResponsesByRoundId(roundId);
-    return this.calculateRoundAnalytics(
-      roundId,
-      round.privacyThreshold,
-      responses
-    );
+    return this.calculateDynamicRoundAnalytics(round, responses);
   }
 }

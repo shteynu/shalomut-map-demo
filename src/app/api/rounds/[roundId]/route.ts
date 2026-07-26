@@ -4,6 +4,10 @@ import { RoundService } from "@/lib/services";
 import { getDurableWriteGuardResponse } from "@/lib/server/durable-write-guard";
 import { authorizeManagerRound } from "@/lib/server/manager-scope";
 import type { RoundStatus } from "@/lib/types/backend";
+import {
+  createCanonicalSurveyDefinition,
+  parseSurveyDefinition,
+} from "@/lib/survey-definition";
 
 const validStatuses: RoundStatus[] = [
   "draft",
@@ -51,6 +55,21 @@ export async function PATCH(
         },
         { status: 409 },
       );
+    }
+
+    if (targetStatus === "active") {
+      const definition =
+        round.surveyDefinition ??
+        createCanonicalSurveyDefinition(round.title, round.privacyThreshold);
+      const parsedDefinition = parseSurveyDefinition(definition);
+      if (!parsedDefinition.ok) {
+        return NextResponse.json(
+          {
+            error: `Survey round cannot be activated: ${parsedDefinition.error}`,
+          },
+          { status: 409 },
+        );
+      }
     }
 
     const updated = await roundRepo.updateStatus(roundId, targetStatus);

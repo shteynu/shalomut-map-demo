@@ -6,6 +6,8 @@ import {
   PrismaSurveyRepository,
 } from '..';
 import { MinimalPrismaClient } from '../prisma/prisma-client';
+import { createCanonicalSurveyDefinition } from '../../survey-definition';
+import { surveyInstrument } from '../../shalomut-source';
 
 function createMockPrismaClient(): MinimalPrismaClient {
   const orgs = new Map<string, any>();
@@ -206,6 +208,32 @@ test('PrismaRoundRepository normalizes partial persisted background context', as
     classesPerGrade: {},
   });
   assert.strictEqual(persisted?.backgroundContext?.classesPerGrade['א'], undefined);
+});
+
+test('PrismaRoundRepository returns an isolated questionnaire snapshot', async () => {
+  const mockPrisma = createMockPrismaClient();
+  const roundRepo = new PrismaRoundRepository(mockPrisma);
+  const definition = createCanonicalSurveyDefinition('Prisma snapshot', 10);
+
+  await roundRepo.create({
+    id: 'round_prisma_snapshot',
+    organizationId: 'org_prisma_1',
+    title: 'Prisma snapshot',
+    status: 'active',
+    shareCode: 'SHALOM-PRISMA-SNAPSHOT',
+    privacyThreshold: 10,
+    startDate: new Date(),
+    surveyDefinition: definition,
+    createdAt: new Date(),
+  });
+
+  const firstRead = await roundRepo.findById('round_prisma_snapshot');
+  firstRead!.surveyDefinition!.questions[0].text = 'mutated caller text';
+  const secondRead = await roundRepo.findById('round_prisma_snapshot');
+  assert.strictEqual(
+    secondRead?.surveyDefinition?.questions[0].text,
+    surveyInstrument.questions[0].text,
+  );
 });
 
 test('PrismaRoundRepository persists AI insights across repository instances', async () => {

@@ -17,9 +17,10 @@ type SidebarProps = {
   shareUrl: string;
   copied: boolean;
   onCopyRespondentLink: () => void;
-  nextSuggestedQuestion: Omit<BuilderQuestion, "id">;
+  nextSuggestedQuestion: Omit<BuilderQuestion, "id" | "draftKey">;
   onAddQuestionFromBank: () => void;
   saved: boolean;
+  questionnaireReady: boolean;
 };
 
 export function SurveyBuilderSidebar({
@@ -29,6 +30,7 @@ export function SurveyBuilderSidebar({
   nextSuggestedQuestion,
   onAddQuestionFromBank,
   saved,
+  questionnaireReady,
 }: SidebarProps) {
   const openRespondentSurveyAction = getNavigationAction("openRespondentSurvey");
 
@@ -108,6 +110,11 @@ export function SurveyBuilderSidebar({
         </article>
 
         {saved ? <p className="success-note">טיוטת השאלון נשמרה וניתן להמשיך להפצה.</p> : null}
+        {!questionnaireReady ? (
+          <p className="quiet-note">
+            ההפעלה תתאפשר לאחר תיקון מזהים כפולים וכיסוי כל שמונת ממדי השלומות.
+          </p>
+        ) : null}
       </section>
     </aside>
   );

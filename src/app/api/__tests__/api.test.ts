@@ -344,6 +344,106 @@ test('Survey definition API persists a validated canonical definition', async ()
   assert.strictEqual(payload.definition.title, 'שאלון שמור');
 });
 
+test('Dynamic survey API preserves exact questions and freezes the snapshot after the first accepted response', async () => {
+  useDemoRepositories();
+  const definition = createCanonicalSurveyDefinition('שאלון דינמי', 10);
+  definition.questions = surveyInstrument.dimensions.map((dimension, index) => ({
+    id: `api-custom-${dimension.id}-${index + 1}`,
+    dimensionId: dimension.id,
+    text: `שאלת API מדויקת ${index + 1}`,
+    required: true,
+    enabled: true,
+    answerMode: 'סקאלת צבעים',
+  }));
+
+  try {
+    const saveResponse = await saveSurveyDefinition(
+      new Request(
+        `http://localhost/api/rounds/${DEMO_ROUND.id}/survey-definition`,
+        { method: 'PUT', body: JSON.stringify(definition) },
+      ),
+      { params: Promise.resolve({ roundId: DEMO_ROUND.id }) },
+    );
+    assert.strictEqual(saveResponse.status, 200);
+
+    const metadataResponse = await getSurveyMeta(
+      new Request('http://localhost/api/survey/SHALOM-DEMO'),
+      { params: Promise.resolve({ shareCode: 'SHALOM-DEMO' }) },
+    );
+    assert.strictEqual(metadataResponse.status, 200);
+    const metadata = await metadataResponse.json();
+    assert.deepStrictEqual(
+      metadata.instrument.questions.map(
+        (question: { id: string; text: string }) => [question.id, question.text],
+      ),
+      definition.questions.map((question) => [question.id, question.text]),
+    );
+
+    const submission = await submitSurvey(
+      new Request('http://localhost/api/survey/SHALOM-DEMO/submit', {
+        method: 'POST',
+        body: JSON.stringify({
+          answers: definition.questions.map((question) => ({
+            questionId: question.id,
+            dimensionId: question.dimensionId,
+            value: 'green',
+          })),
+        }),
+      }),
+      { params: Promise.resolve({ shareCode: 'SHALOM-DEMO' }) },
+    );
+    assert.strictEqual(submission.status, 200);
+
+    const revised = structuredClone(definition);
+    revised.questions[0].text = 'נוסח חדש שדורש סבב חדש';
+    const revisionResponse = await saveSurveyDefinition(
+      new Request(
+        `http://localhost/api/rounds/${DEMO_ROUND.id}/survey-definition`,
+        { method: 'PUT', body: JSON.stringify(revised) },
+      ),
+      { params: Promise.resolve({ roundId: DEMO_ROUND.id }) },
+    );
+    assert.strictEqual(revisionResponse.status, 409);
+    assert.match((await revisionResponse.json()).error, /new round/i);
+  } finally {
+    useDemoRepositories();
+  }
+});
+
+test('Round status API rejects activation when persisted questions do not cover all eight dimensions', async () => {
+  const invalidDefinition = createCanonicalSurveyDefinition('Invalid', 10);
+  invalidDefinition.questions = invalidDefinition.questions.filter(
+    (question) => question.dimensionId !== 'meaning',
+  );
+  const draftRound = {
+    ...DEMO_ROUND,
+    id: 'round_incomplete_dimensions',
+    status: 'draft' as const,
+    shareCode: 'SHALOM-INCOMPLETE',
+    surveyDefinition: invalidDefinition,
+  };
+  setRepositories({
+    orgRepo: new InMemoryOrganizationRepository([DEMO_ORGANIZATION]),
+    roundRepo: new InMemoryRoundRepository([draftRound]),
+    surveyRepo: new InMemorySurveyRepository(),
+  });
+
+  try {
+    const response = await updateRound(
+      new Request(`http://localhost/api/rounds/${draftRound.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: 'active' }),
+      }),
+      { params: Promise.resolve({ roundId: draftRound.id }) },
+    );
+
+    assert.strictEqual(response.status, 409);
+    assert.match((await response.json()).error, /all eight dimensions/i);
+  } finally {
+    useDemoRepositories();
+  }
+});
+
 test('Round status API persists an allowed transition', async () => {
   useDemoRepositories();
 

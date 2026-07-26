@@ -1,16 +1,11 @@
 import { Plus } from "lucide-react";
 import { wellbeingDimensions } from "@/lib/demo-data";
-import { surveyInstrument } from "@/lib/shalomut-source";
 import { SurveyQuestionCard } from "./survey-question-card";
 import type { BuilderQuestion } from "./types";
 
 function getDimensionLabel(dimensionId: string) {
   return wellbeingDimensions.find((dimension) => dimension.id === dimensionId)?.conceptLabel ?? dimensionId;
 }
-
-const canonicalQuestionIds = new Set(
-  surveyInstrument.questions.map((question) => question.id),
-);
 
 type QuestionsPanelProps = {
   questions: BuilderQuestion[];
@@ -75,18 +70,18 @@ export function SurveyBuilderQuestions({
       </div>
 
       <p className="quiet-note survey-builder-filter-note">
-        מוצגות {visibleQuestions.length} שאלות ב{selectedDimensionLabel}. 24 שאלות המקור נשארות פעילות וחובה; ניתן להוסיף שאלות משלימות.
+        מוצגות {visibleQuestions.length} שאלות ב{selectedDimensionLabel}. שאלות המקור הן תבנית התחלתית בלבד; ניתן לשנות מזהה, נוסח וממד, להסתיר שאלות ולהוסיף שאלות חדשות.
+        המזהה, הנוסח והממד נשמרים כחלק מתמונת הסבב, ולאחר קבלת התשובה הראשונה שינוי משמעות דורש סבב או גרסה חדשה.
       </p>
 
       <div className="survey-builder-question-list">
         {visibleQuestions.map((question) => {
-          const questionIndex = questions.findIndex((current) => current.id === question.id) + 1;
+          const questionIndex = questions.findIndex((current) => current.draftKey === question.draftKey) + 1;
           return (
             <SurveyQuestionCard
-              key={question.id}
+              key={question.draftKey}
               question={question}
               questionIndex={questionIndex}
-              locked={canonicalQuestionIds.has(question.id)}
               onUpdate={onUpdateQuestion}
               onDuplicate={onDuplicateQuestion}
             />
