@@ -54,7 +54,7 @@ description: Работай с продуктом и кодом Shalomut Map в 
   input требует новой breaking contract version и consumer-first rollout.
 - Сохраняй configurable scoring thresholds: green `>=75`, yellow `50–74`, red
   `<50`.
-- Применяй настроенный privacy threshold, по умолчанию 10. Не раскрывай
+- Применяй настроенный privacy threshold (настраиваемый, по умолчанию 1). Не раскрывай
   respondent identity, индивидуальные ответы или detailed results ниже порога.
   Для dynamic questionnaire не делай partial unlocked analysis: если total или
   хотя бы один анализируемый вопрос ниже threshold, весь detailed result

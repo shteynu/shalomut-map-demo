@@ -52,7 +52,7 @@ def _question_aggregates_for_dimension(
 def privacy_gate_node(state: AnalyticsState) -> AnalyticsState:
     """
     Node 1: Privacy Gate (Python Function)
-    Checks state['round_data']['isLocked']. If True (<10 responses),
+    Checks state['round_data']['isLocked']. If True (< privacyThreshold responses),
     halts graph execution immediately and flags privacy error.
     """
     round_data = state.get("round_data", {})

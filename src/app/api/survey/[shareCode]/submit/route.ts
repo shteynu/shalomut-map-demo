@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getRepositories } from '@/lib/repositories';
 import { RoundService, SurveyService } from '@/lib/services';
 import { getDurableWriteGuardResponse } from '@/lib/server/durable-write-guard';
+import { triggerAiAnalyticsForRound } from '@/lib/server/trigger-ai-analytics';
 import { QuestionAnswerInput } from '@/lib/types/backend';
 import {
   createCanonicalSurveyDefinition,
@@ -67,6 +68,21 @@ export async function POST(
         { status: 400 }
       );
     }
+
+    // Auto-trigger AI Analytics if total responses reach privacy threshold and no insights generated yet
+    void (async () => {
+      try {
+        const responses = await surveyRepo.findResponsesByRoundId(round.id);
+        if (responses.length >= round.privacyThreshold) {
+          const existingInsights = await roundRepo.getAiInsights(round.id);
+          if (!existingInsights) {
+            await triggerAiAnalyticsForRound(round.id);
+          }
+        }
+      } catch (triggerErr) {
+        console.error('Auto-trigger AI analytics failed:', triggerErr);
+      }
+    })();
 
     return NextResponse.json({ success: true, responseId: result.responseId }, { status: 200 });
   } catch (error) {

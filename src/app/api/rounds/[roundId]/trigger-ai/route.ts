@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createSharedSecretHeaders } from '@/lib/server/shared-secret';
+import { triggerAiAnalyticsForRound } from '@/lib/server/trigger-ai-analytics';
 import { getRepositories } from '@/lib/repositories';
 import { authorizeManagerRound } from '@/lib/server/manager-scope';
 
@@ -21,72 +22,41 @@ export async function POST(request: Request, { params }: RouteParams) {
     );
     if (!authorization.ok) return authorization.response;
 
-    const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://localhost:8000/api/v1/webhook/events';
-    const timeoutMs = Number(process.env.AI_SERVICE_TIMEOUT_MS) || 30_000;
+    const result = await triggerAiAnalyticsForRound(roundId);
 
-    const webhookPayload = {
-      event: 'round_closed',
-      roundId,
-      timestamp: new Date().toISOString(),
-    };
-
-    try {
-      const response = await fetch(aiServiceUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...createSharedSecretHeaders('AI_WEBHOOK_SECRET'),
-        },
-        body: JSON.stringify(webhookPayload),
-        signal: AbortSignal.timeout(timeoutMs),
-      });
-
-      const serviceResponse = await response
-        .json()
-        .catch(() => ({ status: response.ok ? 'accepted' : 'error' }));
-
-      if (!response.ok) {
-        return NextResponse.json(
-          {
-            status: 'upstream_error',
-            roundId,
-            upstreamStatus: response.status,
-            serviceResponse,
-          },
-          { status: 502 },
-        );
-      }
+    if (!result.ok) {
+      const httpStatus =
+        result.status === 'upstream_error'
+          ? 502
+          : result.status === 'timeout'
+          ? 504
+          : 503;
 
       return NextResponse.json(
         {
-          status: 'accepted',
+          status: result.status,
           roundId,
-          webhookPayload,
-          serviceResponse,
+          upstreamStatus: result.upstreamStatus,
+          serviceResponse: result.serviceResponse,
+          error: result.error,
         },
-        { status: 202 },
-      );
-    } catch (error: any) {
-      if (error?.name === 'TimeoutError') {
-        return NextResponse.json(
-          {
-            status: 'timeout',
-            roundId,
-            error: `AI analytics service did not answer within ${timeoutMs}ms`,
-          },
-          { status: 504 },
-        );
-      }
-
-      return NextResponse.json(
-        {
-          status: 'unavailable',
-          roundId,
-          error: `AI analytics service unavailable: ${error.message}`,
-        },
-        { status: 503 },
+        { status: httpStatus },
       );
     }
+
+    return NextResponse.json(
+      {
+        status: 'accepted',
+        roundId,
+        webhookPayload: {
+          event: 'round_closed',
+          roundId,
+          timestamp: new Date().toISOString(),
+        },
+        serviceResponse: result.serviceResponse,
+      },
+      { status: 202 },
+    );
   } catch (error: any) {
     return NextResponse.json(
       { error: `Failed to trigger AI analytics: ${error.message}` },
