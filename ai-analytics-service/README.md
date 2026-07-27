@@ -200,11 +200,16 @@ docker run --rm -p 8000:8000 -e ENV=development shalomut-ai-analytics
 
 ## Verification
 
-Run the dependency-light service checks:
+Run the whole service suite — contracts, privacy gate, LLM provider, RAG store
+and the end-to-end graph:
 
 ```bash
-python3 run_tests.py
+python3 -m pytest
 ```
+
+`run_tests.py` still exists and now only forwards to the same command. Until
+2026-07-27 it carried sixteen tests of its own and never collected `tests/`,
+so a green run there proved nothing about the contract suites.
 
 The repository-level suite includes a real local boundary test:
 

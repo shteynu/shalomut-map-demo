@@ -1,12 +1,16 @@
+"""End-to-end service tests that used to live in `run_tests.py`.
+
+They ran outside `pytest` and therefore outside `testpaths = ["tests"]`, so a
+green `run_tests.py` said nothing about `tests/` — including the contract 5.0
+suite. They are collected with everything else now; `run_tests.py` only
+delegates to pytest.
+"""
+
 import asyncio
 import json
 import os
-import sys
 import unittest
 from unittest.mock import AsyncMock, patch
-
-# Add project src directory to path
-sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
 from src.schemas.mcp_types import RoundAnalyticsResult, RoundDimensionScore
 from src.schemas.webhook import WebhookEventPayload
@@ -577,6 +581,3 @@ class TestShalomutAIService(unittest.TestCase):
             "✔ Test 16 Passed: The dynamic contract accepts the product "
             "default privacy threshold of 1."
         )
-
-if __name__ == "__main__":
-    unittest.main()
