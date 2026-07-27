@@ -2,6 +2,7 @@ import legacyContractManifest from '../../contracts/ai-analytics-v1.json';
 import contractManifest from '../../contracts/ai-analytics-v2.json';
 import dynamicContractManifest from '../../contracts/ai-analytics-v3.json';
 import v4ContractManifest from '../../contracts/ai-analytics-v4.json';
+import v5ContractManifest from '../../contracts/ai-analytics-v5.json';
 import type {
   WellbeingDimensionId,
   WellbeingStatus,
@@ -12,12 +13,14 @@ export const AI_ANALYTICS_CONTRACT_VERSION = contractManifest.version;
 export const AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION =
   dynamicContractManifest.version;
 export const AI_ANALYTICS_V4_CONTRACT_VERSION = v4ContractManifest.version;
+export const AI_ANALYTICS_V5_CONTRACT_VERSION = v5ContractManifest.version;
 
 export const AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS = Object.freeze([
   AI_ANALYTICS_V1_CONTRACT_VERSION,
   AI_ANALYTICS_CONTRACT_VERSION,
   AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
   AI_ANALYTICS_V4_CONTRACT_VERSION,
+  AI_ANALYTICS_V5_CONTRACT_VERSION,
 ]);
 
 export type AiAnalyticsContractVersion =
@@ -88,6 +91,12 @@ export interface StoneIntervention {
   actionable_steps: string[];
 }
 
+export interface ScoreDistribution {
+  green: number;
+  yellow: number;
+  red: number;
+}
+
 export interface StoneGenerationProvenance {
   outcome: 'llm' | 'deterministic_fallback';
   attempts: number;
@@ -95,6 +104,8 @@ export interface StoneGenerationProvenance {
   sourceQuestionIds: string[];
   surveyDefinitionHash?: string;
   backgroundContextIncluded?: boolean;
+  distributionIncluded?: boolean;
+  crossDimensionContextIncluded?: boolean;
 }
 
 export interface StoneDetail {
@@ -210,6 +221,42 @@ function hasExactlyTwoCompleteSentences(value: string): boolean {
   return (
     sentences.length === 2 &&
     sentences.join('').replace(/\s/gu, '') === normalized.replace(/\s/gu, '')
+  );
+}
+
+function hasTwoToFiveCompleteSentences(value: string): boolean {
+  const normalized = value.trim();
+  const sentences = normalized.match(/[^.!?؟]+[.!?؟]/gu) ?? [];
+  return (
+    sentences.length >= 2 &&
+    sentences.length <= 5 &&
+    sentences.join('').replace(/\s/gu, '') === normalized.replace(/\s/gu, '')
+  );
+}
+
+function hasTwoToFourCompleteSentences(value: string): boolean {
+  const normalized = value.trim();
+  const sentences = normalized.match(/[^.!?؟]+[.!?؟]/gu) ?? [];
+  return (
+    sentences.length >= 2 &&
+    sentences.length <= 4 &&
+    sentences.join('').replace(/\s/gu, '') === normalized.replace(/\s/gu, '')
+  );
+}
+
+export function isValidScoreDistribution(
+  dist: unknown,
+  responseCount: number,
+): dist is ScoreDistribution {
+  return (
+    isRecord(dist) &&
+    Number.isInteger(dist.green) &&
+    Number(dist.green) >= 0 &&
+    Number.isInteger(dist.yellow) &&
+    Number(dist.yellow) >= 0 &&
+    Number.isInteger(dist.red) &&
+    Number(dist.red) >= 0 &&
+    Number(dist.green) + Number(dist.yellow) + Number(dist.red) === responseCount
   );
 }
 
@@ -417,6 +464,80 @@ function isValidV3Stone(
   );
 }
 
+function isValidV5GenerationProvenance(
+  value: unknown,
+  metricQuestionIds: string[],
+  surveyDefinitionHash: string,
+): value is StoneGenerationProvenance {
+  if (!isRecord(value)) return false;
+
+  const sortedMetricIds = [...metricQuestionIds].sort();
+  return (
+    ['llm', 'deterministic_fallback'].includes(String(value.outcome)) &&
+    Number.isInteger(value.attempts) &&
+    Number(value.attempts) >= 0 &&
+    Number.isInteger(value.retryCount) &&
+    Number(value.retryCount) >= 0 &&
+    Number(value.retryCount) <= Math.max(0, Number(value.attempts) - 1) &&
+    isStringArray(value.sourceQuestionIds) &&
+    value.sourceQuestionIds.length === sortedMetricIds.length &&
+    new Set(value.sourceQuestionIds).size === sortedMetricIds.length &&
+    [...value.sourceQuestionIds]
+      .sort()
+      .every((questionId, index) => questionId === sortedMetricIds[index]) &&
+    value.surveyDefinitionHash === surveyDefinitionHash &&
+    (value.backgroundContextIncluded === undefined ||
+      typeof value.backgroundContextIncluded === 'boolean') &&
+    (value.distributionIncluded === undefined ||
+      typeof value.distributionIncluded === 'boolean') &&
+    (value.crossDimensionContextIncluded === undefined ||
+      typeof value.crossDimensionContextIncluded === 'boolean') &&
+    (value.outcome !== 'llm' || Number(value.attempts) > 0)
+  );
+}
+
+function isValidV5Stone(
+  value: unknown,
+  dimensionId: WellbeingDimensionId,
+  surveyDefinitionHash: string,
+): value is StoneDetail {
+  if (!hasValidStoneShape(value, dimensionId)) {
+    return false;
+  }
+
+  const status = value.status as WellbeingStatus;
+  const interventions = value.recommendedInterventions as unknown[];
+  const metrics = value.metrics as unknown[];
+  if (
+    metrics.length < 1 ||
+    !metrics.every(isValidDynamicQuestionMetric)
+  ) {
+    return false;
+  }
+
+  const metricQuestionIds = metrics.map(
+    (metric) => (metric as StoneMetric).questionId!,
+  );
+  return (
+    new Set(metricQuestionIds).size === metricQuestionIds.length &&
+    value.dimensionNameHebrew ===
+      AI_ANALYTICS_DIMENSION_NAMES_HEBREW[dimensionId] &&
+    statusForScore(value.score as number) === status &&
+    containsOnlyHebrewUserText(value.psychologicalInterpretation as string) &&
+    hasTwoToFiveCompleteSentences(
+      value.psychologicalInterpretation as string,
+    ) &&
+    interventions.every((intervention) =>
+      isValidV2Intervention(intervention, dimensionId, status),
+    ) &&
+    isValidV5GenerationProvenance(
+      value.generationProvenance,
+      metricQuestionIds,
+      surveyDefinitionHash,
+    )
+  );
+}
+
 function validateStatusFields(
   payload: Record<string, unknown>,
 ): StoneMapValidationResult | null {
@@ -442,6 +563,7 @@ function validateStatusFields(
         AI_ANALYTICS_CONTRACT_VERSION,
         AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
         AI_ANALYTICS_V4_CONTRACT_VERSION,
+        AI_ANALYTICS_V5_CONTRACT_VERSION,
       ].includes(String(payload.contractVersion)) &&
       (payload.stones !== undefined ||
         payload.overallPsychologicalSummary !== undefined)
@@ -492,15 +614,17 @@ export function validateStoneMapResult(
   }
 
   if (
-    [AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION, AI_ANALYTICS_V4_CONTRACT_VERSION].includes(
-      String(payload.contractVersion),
-    ) &&
+    [
+      AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
+      AI_ANALYTICS_V4_CONTRACT_VERSION,
+      AI_ANALYTICS_V5_CONTRACT_VERSION,
+    ].includes(String(payload.contractVersion)) &&
     (typeof payload.surveyDefinitionHash !== 'string' ||
       !SURVEY_DEFINITION_HASH_PATTERN.test(payload.surveyDefinitionHash))
   ) {
     return {
       ok: false,
-      error: 'The 3.0/4.0 payload requires a valid surveyDefinitionHash.',
+      error: 'The 3.0/4.0/5.0 payload requires a valid surveyDefinitionHash.',
     };
   }
 
@@ -524,12 +648,23 @@ export function validateStoneMapResult(
       AI_ANALYTICS_CONTRACT_VERSION,
       AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
       AI_ANALYTICS_V4_CONTRACT_VERSION,
+      AI_ANALYTICS_V5_CONTRACT_VERSION,
     ].includes(String(payload.contractVersion)) &&
     !containsOnlyHebrewUserText(payload.overallPsychologicalSummary)
   ) {
     return {
       ok: false,
       error: 'The semantic round summary must contain Hebrew user-facing text.',
+    };
+  }
+
+  if (
+    payload.contractVersion === AI_ANALYTICS_V5_CONTRACT_VERSION &&
+    !hasTwoToFourCompleteSentences(payload.overallPsychologicalSummary)
+  ) {
+    return {
+      ok: false,
+      error: 'The 5.0 overall psychological summary must have 2 to 4 complete sentences.',
     };
   }
 
@@ -549,17 +684,24 @@ export function validateStoneMapResult(
 
   for (const dimensionId of AI_ANALYTICS_DIMENSION_IDS) {
     const isValidStone =
-      payload.contractVersion === AI_ANALYTICS_CONTRACT_VERSION
-        ? isValidV2Stone(payload.stones[dimensionId], dimensionId)
-        : [AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION, AI_ANALYTICS_V4_CONTRACT_VERSION].includes(
-            String(payload.contractVersion),
+      payload.contractVersion === AI_ANALYTICS_V5_CONTRACT_VERSION
+        ? isValidV5Stone(
+            payload.stones[dimensionId],
+            dimensionId,
+            payload.surveyDefinitionHash as string,
           )
-          ? isValidV3Stone(
-              payload.stones[dimensionId],
-              dimensionId,
-              payload.surveyDefinitionHash as string,
-            )
-          : isValidLegacyStone(payload.stones[dimensionId], dimensionId);
+        : payload.contractVersion === AI_ANALYTICS_CONTRACT_VERSION
+          ? isValidV2Stone(payload.stones[dimensionId], dimensionId)
+          : [
+                AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
+                AI_ANALYTICS_V4_CONTRACT_VERSION,
+              ].includes(String(payload.contractVersion))
+            ? isValidV3Stone(
+                payload.stones[dimensionId],
+                dimensionId,
+                payload.surveyDefinitionHash as string,
+              )
+            : isValidLegacyStone(payload.stones[dimensionId], dimensionId);
     if (!isValidStone) {
       return {
         ok: false,

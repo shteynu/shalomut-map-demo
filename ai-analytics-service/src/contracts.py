@@ -17,25 +17,27 @@ _LEGACY_CONTRACT = _load_contract("ai-analytics-v1.json")
 _CONTRACT = _load_contract("ai-analytics-v2.json")
 _DYNAMIC_CONTRACT = _load_contract("ai-analytics-v3.json")
 _V4_CONTRACT = _load_contract("ai-analytics-v4.json")
+_V5_CONTRACT = _load_contract("ai-analytics-v5.json")
 
 AI_ANALYTICS_V1_CONTRACT_VERSION: str = _LEGACY_CONTRACT["version"]
 AI_ANALYTICS_CONTRACT_VERSION: str = _CONTRACT["version"]
 AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION: str = _DYNAMIC_CONTRACT["version"]
 AI_ANALYTICS_V4_CONTRACT_VERSION: str = _V4_CONTRACT["version"]
+AI_ANALYTICS_V5_CONTRACT_VERSION: str = _V5_CONTRACT["version"]
 AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS: Tuple[str, ...] = (
     AI_ANALYTICS_V1_CONTRACT_VERSION,
     AI_ANALYTICS_CONTRACT_VERSION,
     AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
     AI_ANALYTICS_V4_CONTRACT_VERSION,
+    AI_ANALYTICS_V5_CONTRACT_VERSION,
 )
 # Versions that speak the dynamic questionnaire boundary: exact question
-# snapshot, surveyDefinitionHash, eight-stone output. 4.0 is 3.0 plus the
-# school background context, so every dynamic rule applies to both. Branch on
-# this tuple instead of naming 3.0 alone, or 4.0 silently falls back to the
-# legacy shape.
+# snapshot, surveyDefinitionHash, eight-stone output. 4.0 and 5.0 are 3.0 plus
+# school background context / score distributions, so every dynamic rule applies.
 AI_ANALYTICS_DYNAMIC_CONTRACT_VERSIONS: Tuple[str, ...] = (
     AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
     AI_ANALYTICS_V4_CONTRACT_VERSION,
+    AI_ANALYTICS_V5_CONTRACT_VERSION,
 )
 AI_ANALYTICS_DIMENSION_IDS: Tuple[str, ...] = tuple(
     dimension["id"] for dimension in _CONTRACT["dimensions"]
@@ -74,6 +76,11 @@ if tuple(
     dimension["id"] for dimension in _V4_CONTRACT["dimensions"]
 ) != AI_ANALYTICS_DIMENSION_IDS:
     raise RuntimeError("AI contract 4.0 must preserve the canonical dimensions")
+
+if tuple(
+    dimension["id"] for dimension in _V5_CONTRACT["dimensions"]
+) != AI_ANALYTICS_DIMENSION_IDS:
+    raise RuntimeError("AI contract 5.0 must preserve the canonical dimensions")
 
 if len(AI_ANALYTICS_QUESTION_IDS) != 24 or len(
     set(AI_ANALYTICS_QUESTION_IDS)
