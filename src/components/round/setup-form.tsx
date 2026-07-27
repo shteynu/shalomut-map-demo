@@ -4,12 +4,12 @@ import Link from "next/link";
 import { Check, ChevronLeft, ClipboardPen, Lightbulb, Loader2, ShieldCheck, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
+import { PrivacyThresholdNotice } from "@/components/ui/privacy-threshold-notice";
 import { PrivacyTooltip } from "@/components/ui/privacy-tooltip";
 import { AUDIENCE_OPTIONS, DEFAULT_AUDIENCE } from "@/lib/audience";
 import { getNavigationAction } from "@/lib/navigation";
 import {
   DEFAULT_PRIVACY_THRESHOLD,
-  LOW_PRIVACY_THRESHOLD_WARNING,
   MINIMUM_PRIVACY_THRESHOLD,
 } from "@/lib/survey-definition";
 
@@ -293,13 +293,10 @@ export function SetupForm({ organization, round }: SetupFormProps) {
             בלי שמות, בלי מיילים ובלי אפשרות לזהות משיב בודד.
           </p>
         </div>
-        {minimumResponses < LOW_PRIVACY_THRESHOLD_WARNING ? (
-          <p className="survey-submit-error" role="status">
-            סף נמוך מ-{LOW_PRIVACY_THRESHOLD_WARNING} משיבים אינו מגן על אנונימיות בפועל:
-            כשמספר המשיבים קטן, הממוצע המוצג במפה משקף את תשובתם של יחידים וניתן לשייך אותה
-            לאדם מסוים. מומלץ להשתמש בסף כזה רק בבדיקות פנימיות ולא בסבב אמיתי.
-          </p>
-        ) : null}
+        <PrivacyThresholdNotice
+          minimumResponses={minimumResponses}
+          emphasis="form"
+        />
       </section>
 
       <aside className="setup-tip">

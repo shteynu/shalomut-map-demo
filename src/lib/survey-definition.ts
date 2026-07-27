@@ -16,6 +16,14 @@ export const DEFAULT_PRIVACY_THRESHOLD = 1;
  */
 export const LOW_PRIVACY_THRESHOLD_WARNING = 5;
 
+/**
+ * The threshold the methodology asks for. The product default is 1 so a
+ * manager can try the whole flow alone, and every runtime accepts that, but a
+ * round configured below this number cannot promise anonymity — so the manager
+ * screens say so instead of leaving the gap between the two numbers unspoken.
+ */
+export const RECOMMENDED_PRIVACY_THRESHOLD = 10;
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }

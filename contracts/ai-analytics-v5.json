@@ -31,7 +31,9 @@
     "privacyPolicy": "aggregated-school-level-data-only-no-individual-respondent-attributes"
   },
   "privacy": {
-    "defaultThreshold": 10,
+    "defaultThreshold": 1,
+    "recommendedThreshold": 10,
+    "thresholdNote": "Core owns the threshold and its product default is 1, which every runtime accepts; below the recommended threshold anonymity is not guaranteed, and the manager screens say so.",
     "unlockedPolicy": "total-and-every-question-at-or-above-threshold",
     "lockedAggregatePolicy": "empty",
     "partialUnlockedAnalysis": false,
