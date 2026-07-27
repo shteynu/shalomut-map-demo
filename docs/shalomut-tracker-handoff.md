@@ -1,6 +1,6 @@
 # Shalomut Tracker — актуальный handoff
 
-Обновлено: 2026-07-26 (вечер)
+Обновлено: 2026-07-27
 
 Это оперативная точка входа для перехода от исходного статического demo
 Shalomut Map к `shalomut-tracker`, где сохранённые данные должны быть единственным
@@ -10,6 +10,22 @@ exact вопросы раунда принадлежат persisted `SurveyRound.
 Визуальные mock-данные изолированы в `src/lib/demo-data.ts`.
 
 ## Текущий snapshot
+
+- **`MANAGER_ORGANIZATION_ID` стал обязательным на deployed runtime (2026-07-27, запушен в `main`)**:
+  - Коммит `f9b1c50` (ветка `claude/epic-bassi-a4fe18` перебазирована на `634bae1` и запушена в `main` по явному
+    указанию пользователя). Vercel собирает каждый push в `main` автоматически, поэтому push повлёк редеплой.
+  - Хардкод-фолбэк `34d05e66-…` удалён из
+    [`manager-auth-service.ts`](../src/lib/auth/manager-auth-service.ts). Без переменной на deployed runtime
+    менеджер получал сессию, привязанную к удалённой организации, и все экраны выглядели пустыми.
+  - `resolveManagerOrganizationId()` возвращает настроенное значение, `null` на deployed runtime без переменной
+    и `"local-dev-organization"` вне deployed runtime. `isUnconfigured()` покрывает её наравне с `SESSION_SECRET`
+    и `MANAGER_ADMIN_PASSWORD`: `POST /api/auth/login` отвечает `503 UNCONFIGURED` даже при верных credentials,
+    `defaultAccounts()` fail-closed по тому же условию, фаза production build сохраняет локальный фолбэк.
+  - Локальные гейты: `npm test` 180/180, `npm run lint` 0 ошибок, `npm run build` 39/39 страниц.
+    Fail-first подтверждён: сценарий с отсутствующей переменной пропускает вход на предыдущем коде.
+  - Остаточный риск: сессии, выданные до изменения, живут до 24 часов со старой организацией; гейт закрывает
+    только новые входы. Переменная должна присутствовать в каждом deployed environment (сейчас Production и
+    Preview), иначе вход там закрыт по дизайну.
 
 - **Деплой и миграции выполнены (2026-07-27, по явному разрешению пользователя)**:
   - Коммит `9e15732` запушен в `main`, Vercel собрал production-деплой
@@ -25,8 +41,8 @@ exact вопросы раунда принадлежат persisted `SurveyRound.
     DROP COLUMN survey_definition;` и `ALTER TABLE survey_rounds ALTER COLUMN privacy_threshold SET DEFAULT 10;`.
   - Vercel env: удалены неиспользуемые `PP_BASE_URL`, `BASIC_AUTH_USER`, `BASIC_AUTH_PASSWORD`,
     `DISABLE_BASIC_AUTH_FALLBACK` (Production и Preview). `MANAGER_ORGANIZATION_ID` перевыставлен на
-    существующую организацию `be9f184a-dee8-4d72-9805-c0f4e45f6d40`. В коде остаётся хардкод-фолбэк
-    `34d05e66-…` ([`manager-auth-service.ts:23`](../src/lib/auth/manager-auth-service.ts)) — техдолг.
+    существующую организацию `be9f184a-dee8-4d72-9805-c0f4e45f6d40`. Хардкод-фолбэк `34d05e66-…`
+    удалён отдельным коммитом `f9b1c50` (см. первый пункт snapshot).
   - **Контракт `4.0` включён consumer-first.** Перед флипом в Python-парсере найдены три дефекта
     (коммит `1f76622`): `is_v3` не включал `4.0` (payload 4.0 уходил в legacy-ветку и ломал
     `questionText`), динамический парсер требовал `privacyThreshold >= 10` — это отвергало продуктовый
@@ -741,8 +757,10 @@ Staging показывал старую demo-школу, имя менеджер
   в `manager-audit-service`.
 - Не подтверждено: передеплоен ли Render на код с контекстом школы; читает ли
   рантайм staging-БД (нужен share code активного раунда либо доступ).
-- `MANAGER_ORGANIZATION_ID` указывает на организацию, удалённую при очистке
-  staging-БД.
+- ~~`MANAGER_ORGANIZATION_ID` указывает на организацию, удалённую при очистке
+  staging-БД.~~ Закрыто 2026-07-27: переменная перевыставлена в Vercel на
+  `be9f184a-…`, хардкод-фолбэк удалён, переменная обязательна на deployed
+  runtime (коммит `f9b1c50`, запушен в `main` 2026-07-27).
 
 ## Рекомендуемый порядок продолжения
 

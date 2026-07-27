@@ -27,10 +27,13 @@ Updated: 2026-07-27 (deployed, migrated, contract 4.0 enabled, manager organizat
 
 ## Next Up
 
-1. [ ] End-to-end check on the deployed app (needs a manager login, so the owner has to run it): create a round,
+1. [ ] Confirm the deployment that Vercel builds from `f9b1c50`: `/login/` still answers 200 and a manager sign-in
+       still issues a session. `MANAGER_ORGANIZATION_ID` must stay set in every deployed environment — without it
+       login now answers `503 UNCONFIGURED` by design.
+2. [ ] End-to-end check on the deployed app (needs a manager login, so the owner has to run it): create a round,
        submit a response, confirm the persisted AI result carries `contractVersion: "4.0"` and
        `generationProvenance.backgroundContextIncluded: true`.
-2. [ ] AI-generated proposed question flow (slice 3.1, on explicit user request).
+3. [ ] AI-generated proposed question flow (slice 3.1, on explicit user request).
 
 ---
 
@@ -52,7 +55,8 @@ Updated: 2026-07-27 (deployed, migrated, contract 4.0 enabled, manager organizat
     with a regression guard on the retired UUID, `UNCONFIGURED` when only the organization is missing, and the
     organization a deployed session is scoped to. Confirmed fail-first: the missing-variable case passes login on the
     previous code.
-  - Verified locally: `npm test` 180/180, `npm run lint` 0 errors, `npm run build` 39/39 pages. Not deployed.
+  - Verified locally: `npm test` 180/180, `npm run lint` 0 errors, `npm run build` 39/39 pages. Pushed to `main` as
+    `f9b1c50` on 2026-07-27 at the owner's explicit request; Vercel builds every push to `main` automatically.
   - Residual risk: sessions issued before this change stay valid up to 24h with the stale organization; the gate
     covers new logins only.
 

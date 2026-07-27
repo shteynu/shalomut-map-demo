@@ -53,16 +53,22 @@
 - **Решение**: Home, setup, round tracking, survey builder, dashboard и respondent survey используют request-time Data Layer. Setup и definition сохраняются через manager API; текущий раунд выбирается по явному приоритету статуса и времени создания.
 - **Хранилище**: `SurveyRound.backgroundContext` и `SurveyRound.surveyDefinition` хранятся как JSON. Миграция `20260724180000_add_round_configuration` должна применяться отдельно к каждому подтверждённому окружению.
 - **Deployment**: `output: "export"`, GitHub Pages workflow и demo `generateStaticParams` несовместимы с database-backed route handlers и удалены. Поддерживаемая модель — Next.js server runtime (Vercel или эквивалент).
-- **Security boundary**: shared `BASIC_AUTH_USER`/`BASIC_AUTH_PASSWORD` вместе
-  с `MANAGER_ORGANIZATION_ID` закрывают manager UI/API и привязывают один
-  deployment credential ровно к одной организации. Middleware всегда удаляет
-  клиентский scope header и добавляет server-owned organization ID; manager
-  routes повторно проверяют принадлежность раунда и скрывают чужие ресурсы как
-  `404`. Вне local development отсутствие любого из трёх значений fail-closed
-  отвечает `503`. Respondent routes и machine-to-machine MCP/callback
-  endpoints остаются вне browser challenge и используют свои boundaries. Это
-  всё ещё временный deployment gate, а не manager identity, role model или
-  полноценная multi-tenant authorization.
+- **Security boundary**: manager UI/API закрыты application-level сессией
+  (cookie или Bearer JWT); browser Basic Auth challenge не выдаётся,
+  неаутентифицированные page requests уходят на `/login`, API отвечает `401`.
+  `MANAGER_ORGANIZATION_ID` привязывает выданную сессию ровно к одной
+  организации. Middleware всегда удаляет клиентский scope header и добавляет
+  server-owned organization ID; manager routes повторно проверяют
+  принадлежность раунда и скрывают чужие ресурсы как `404`. На deployed runtime
+  (`NODE_ENV=production` или Vercel, кроме фазы production build) обязательны
+  три значения — `SESSION_SECRET`, `MANAGER_ADMIN_PASSWORD` и
+  `MANAGER_ORGANIZATION_ID`; отсутствие любого из них fail-closed отвечает
+  `503 UNCONFIGURED` на `POST /api/auth/login`, вместо выдачи сессии с
+  фолбэком. Хардкод-фолбэков организации в коде нет: вне deployed runtime
+  используется явный local-development fallback. Respondent routes и
+  machine-to-machine MCP/callback endpoints остаются вне browser challenge и
+  используют свои boundaries. Это по-прежнему single-organization deployment
+  gate, а не полноценная multi-tenant authorization.
 - **Fail-closed persistence**: deployed runtime (`NODE_ENV=production` или Vercel) без `DATABASE_URL` может показывать пустой onboarding, но отклоняет data writes с `503`. Локальный development fallback хранится в общем `globalThis` state между server bundles.
 
 ### ADR-005: AI analytics service поставляется как контейнер, а не как Vercel-функция
@@ -111,17 +117,19 @@
     это production target, в терминах продукта — staging.
   - **Данные**: staging Supabase (`tpfzhyalaftotljmlont`); production Supabase
     (`fvnulyirrqjrnjbahmsn`) к этому окружению не подключён.
-  - **Доступ**: Basic Auth приложения (`BASIC_AUTH_USER`/`BASIC_AUTH_PASSWORD`)
-    плюс менеджерская сессия; Vercel SSO на этом адресе не включён.
-  - **Обязательные секреты рантайма**: `SESSION_SECRET` и
-    `MANAGER_ADMIN_PASSWORD`. Без них деплой падает на инициализации middleware.
+  - **Доступ**: менеджерская сессия (`/login`); Basic Auth приложения снят —
+    `BASIC_AUTH_USER`/`BASIC_AUTH_PASSWORD` удалены из Vercel 2026-07-27 и не
+    читаются кодом. Vercel SSO на этом адресе не включён.
+  - **Обязательная конфигурация рантайма**: `SESSION_SECRET`,
+    `MANAGER_ADMIN_PASSWORD` и `MANAGER_ORGANIZATION_ID`. Без любого из них
+    `POST /api/auth/login` отвечает `503 UNCONFIGURED` и сессия не выдаётся.
 - **Production**: отдельное окружение будет создано позднее по необходимости —
   с собственным alias, собственной БД и явным решением о деплой-гейтах.
 
 ### Переменные AI-интеграции
 - Core app: `AI_SERVICE_URL`, `AI_SERVICE_TIMEOUT_MS`, `MCP_SHARED_SECRET`,
-  `AI_WEBHOOK_SECRET`, `AI_CALLBACK_SECRET`, а также временные manager-gate
-  настройки `BASIC_AUTH_USER`, `BASIC_AUTH_PASSWORD` и
+  `AI_WEBHOOK_SECRET`, `AI_CALLBACK_SECRET`, а также manager-gate настройки
+  `SESSION_SECRET`, `MANAGER_ADMIN_EMAIL`, `MANAGER_ADMIN_PASSWORD` и
   `MANAGER_ORGANIZATION_ID`.
 - AI service: `ENV`, `DATA_LAYER_MCP_URL`, `DATA_LAYER_CALLBACK_URL`, те же три shared secrets и `USE_MOCK_MCP`.
 - Безопасные шаблоны находятся в `.env.example` и `ai-analytics-service/.env.example`; реальные значения не коммитятся.
