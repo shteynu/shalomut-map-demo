@@ -1,6 +1,8 @@
 import logging
+import os
 from typing import Optional
 from fastapi import FastAPI, Header, HTTPException
+from src.contracts import AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS
 from src.schemas.webhook import WebhookEventPayload
 from src.services.analytics_runner import analytics_runner_service
 from src.config import settings
@@ -16,11 +18,21 @@ app = FastAPI(
 
 @app.get("/health")
 def health_check():
+    """Reports what this instance actually runs.
+
+    `commit` and `supportedContractVersions` exist so a consumer-first rollout
+    can be verified from outside: Core must not start emitting a contract
+    version before this endpoint proves the deployed code accepts it.
+    """
     return {
         "status": "online",
         "service": settings.app_name,
         "env": settings.env,
-        "privacyThreshold": settings.privacy_threshold
+        "privacyThreshold": settings.privacy_threshold,
+        "commit": os.getenv("RENDER_GIT_COMMIT", "unknown")[:7],
+        "supportedContractVersions": list(
+            AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS,
+        ),
     }
 
 @app.post("/api/v1/webhook/events")
