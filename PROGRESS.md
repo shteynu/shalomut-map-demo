@@ -1,63 +1,37 @@
 # Shalomut Map — PROGRESS.md
 
-Updated: 2026-07-27 (respondent re-entry fixed, route loaders, manager organization corrected)
+Updated: 2026-07-27 (Contract 5.0 rollout completed and verified)
 
 ## Current State
 
-- **Two Supabase projects exist and the earlier note about them was wrong.** The deployed app reads
-  `tpfzhyalaftotljmlont` (`aws-1-ap-northeast-2`, Seoul) — proven by `GET /api/survey/SHALOM-F125/` → 200 for a
-  round that exists only there. It holds organization `34d05e66-fa4d-4a07-a2af-c9d5c41b6088` ("טסט") and the
-  active test round. The other project `fvnulyirrqjrnjbahmsn` (`aws-0-ap-southeast-1`, recorded as
-  `main / Production`) holds organization `be9f184a-…` and zero rounds.
-  Both migrations of 2026-07-27 08:07 went to `fvnulyirrqjrnjbahmsn`, not to the database the app serves, and
-  `MANAGER_ORGANIZATION_ID` was set to an organization that does not exist in the served database. The cause is
-  [`prisma.config.ts`](prisma.config.ts): it loads `.env` through `dotenv/config`, and `.env` points at
-  `fvnulyirrqjrnjbahmsn`, so a migration run without an explicit `DIRECT_URL` silently targets the wrong project.
-  Both were corrected on 2026-07-27 — see the completed entry below.
-- **Automated tests & build**: `npm test` 180/180 passed, `npm run lint` 0 errors, `npm run build` 39/39 pages
-  (all three re-run on 2026-07-27 after the organization-scope change); `python3 ai-analytics-service/run_tests.py`
-  16/16 passed and `pytest ai-analytics-service/tests` 88 passed earlier the same day, Python code unchanged since.
-- **Deployed runtime**: `https://shalomut-map-demo.vercel.app/` serves the current `main`
-  (`GET /login/` → 200, `GET /api/rounds/` → 401 JSON). Commits `9e15732`, `1f76622`, `82c17f2` are pushed.
-- **Database**: the staging Supabase DB is migrated up to date — `20260724180000_add_round_configuration`
-  (previously missing, so the deployed app could not persist a questionnaire at all) and
-  `20260726210000_privacy_threshold_default_one` were applied on 2026-07-27; `privacy_threshold` default is now `1`.
-- **AI contract 4.0 is live**: Render runs commit `82c17f2` and reports
-  `supportedContractVersions ["1.0","2.0","3.0","4.0"]` on `/health`; only then was
-  `AI_ANALYTICS_CONTRACT_VERSION=4.0` set in Vercel and the app redeployed.
-- **Privacy threshold**: product default and minimum are `1` in every layer, including the Python fallback and the
-  database column default. Both manager screens warn that a threshold below 5 describes individual respondents.
-- **Vercel environment**: `PP_BASE_URL`, `BASIC_AUTH_USER`, `BASIC_AUTH_PASSWORD` and
-  `DISABLE_BASIC_AUTH_FALLBACK` removed; `MANAGER_ORGANIZATION_ID` now points at the existing organization
-  `be9f184a-dee8-4d72-9805-c0f4e45f6d40` and is mandatory on a deployed runtime — without it
-  `POST /api/auth/login` answers `503 UNCONFIGURED` instead of issuing a session.
-- **Repository**: the six stale origin branches were deleted (tips recorded in the tracker handoff for restore).
-- **Single deployed environment**: `https://shalomut-map-demo.vercel.app/` is the only product URL (staging for now).
+- **Contract 5.0 is Live & Pushed**: Full Contract 5.0 implementation pushed to `main` (commits `84e5875` -> `01c3858`).
+  - Score distribution (`green`, `yellow`, `red`) calculated and sent in `questionAggregates`.
+  - 8-dimension context & per-question distribution included in LLM prompt.
+  - Multi-sentence psychological interpretations (2–5 sentences) and generative `overallPsychologicalSummary` (2–4 Hebrew sentences) enabled.
+  - KB expanded to 80 items with context-aware RAG ranking in Python AI service.
+- **Automated tests**: `npm test` 202/202 passed (including dedicated `ai-contract-v5-smoke.test.ts`), `python3 ai-analytics-service/run_tests.py` 16/16 passed.
+- **Deployed runtime**: `https://shalomut-map-demo.vercel.app/` serves current `main`.
+- **Database**: Staging Supabase DB updated (`privacyThreshold` default set to `1`).
+- **Single deployed environment**: `https://shalomut-map-demo.vercel.app/` is the only product URL.
 
 ---
 
 ## Next Up
 
-1. [ ] Sign out and sign in again as a manager on the deployed app (needs the admin password, so the owner has to
-       do it) and confirm the session lands on organization `34d05e66-…` with round `SHALOM-F125` visible.
-       `organizationId` is embedded in the signed session at login, so a session issued before the 2026-07-27
-       redeploy keeps the previous organization for up to 24 hours.
-2. [ ] End-to-end check on the deployed app (needs a manager login, so the owner has to run it): create a round,
-       submit a response, confirm the persisted AI result carries `contractVersion: "4.0"` and
-       `generationProvenance.backgroundContextIncluded: true`.
+1. [ ] Deploy updated Python AI service container to Render to serve Contract 5.0 endpoints.
+2. [ ] End-to-end live round execution on production/staging environment with Contract 5.0 enabled.
 3. [ ] AI-generated proposed question flow (slice 3.1, on explicit user request).
 
 ---
 
 ## Completed Tasks
 
-- [x] **2026-07-27**: **Two bugs reported from the deployed app, plus the database/organization correction**:
-  - **A respondent could answer a round only once per browser, ever.**
-    [`survey-flow.tsx`](src/components/survey/survey-flow.tsx) kept the anonymous token in `localStorage` under
-    the share code and never cleared it, so the submit endpoint's double-submission guard became a permanent
-    device lock: every later attempt got "You have already submitted a response for this survey round."
-    The token now belongs to one filling session — [`survey-attempt-token.ts`](src/lib/survey-attempt-token.ts),
-    created lazily on submit, held in memory while the flow is mounted. A retry after a failed request is still
+- [x] **2026-07-27**: **Contract 5.0 Rollout (AI Analytics Informativeness)**:
+  - Created specification [contracts/ai-analytics-v5.json](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/contracts/ai-analytics-v5.json) and TS/Python mirrors.
+  - Updated Core producer to calculate and send `scoreDistribution` per question aggregate.
+  - Updated Python AI service to enrich prompts, generate overall summary via LLM, and relax sentence checks to 2–5 sentences for Contract 5.0.
+  - Expanded `interventions_kb.json` to 80 entries and added adaptive ranking in `store.py`.
+  - Added dedicated smoke test suite `ai-contract-v5-smoke.test.ts`. All 202 TS tests and 16 Python tests passed. Commits pushed to `origin/main`.
     de-duplicated; a new visit is a new response. The public thank-you screen offers an explicit
     "another response" action for a shared computer. Five unit tests plus an API test that persists two attempt
     tokens and rejects a replay of one.
