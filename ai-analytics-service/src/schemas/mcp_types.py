@@ -9,10 +9,12 @@ from src.contracts import (
     AI_ANALYTICS_CONTRACT_VERSION,
     AI_ANALYTICS_DIMENSION_IDS,
     AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
+    AI_ANALYTICS_DYNAMIC_CONTRACT_VERSIONS,
     AI_ANALYTICS_QUESTION_IDS,
     AI_ANALYTICS_QUESTIONS_BY_ID,
     AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS,
     AI_ANALYTICS_V1_CONTRACT_VERSION,
+    AI_ANALYTICS_V4_CONTRACT_VERSION,
 )
 
 DimensionStatus = Literal["green", "yellow", "red"]
@@ -105,7 +107,10 @@ class RoundAnalyticsResult:
                 f"'{contract_version}'"
             )
 
-        is_v3 = contract_version == AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION
+        # Contract 4.0 is 3.0 plus the school background context, so every
+        # dynamic rule (required ids, hash format, locked emptiness, aggregate
+        # shape) applies to it unchanged.
+        is_v3 = contract_version in AI_ANALYTICS_DYNAMIC_CONTRACT_VERSIONS
         if is_v3:
             cls._validate_no_forbidden_v3_fields(data)
             total_responses = cls._required_integer(
@@ -113,10 +118,13 @@ class RoundAnalyticsResult:
                 "totalResponses",
                 minimum=0,
             )
+            # Core owns the threshold and its product default is 1, so the
+            # consumer must accept every positive value it is given. A stricter
+            # floor here would reject exactly the rounds the manager configured.
             privacy_threshold = cls._required_integer(
                 data,
                 "privacyThreshold",
-                minimum=10,
+                minimum=1,
             )
             if not isinstance(data.get("isLocked"), bool):
                 raise ValueError(
@@ -220,7 +228,7 @@ class RoundAnalyticsResult:
                 if (
                     contract_version in {
                         AI_ANALYTICS_CONTRACT_VERSION,
-                        AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
+                        *AI_ANALYTICS_DYNAMIC_CONTRACT_VERSIONS,
                     }
                     and (
                         not isinstance(raw_response_count, int)
@@ -295,6 +303,14 @@ class RoundAnalyticsResult:
             calculatedAt=calculated_at,
             organizationId=organization_id,
             surveyDefinitionHash=survey_definition_hash,
+            # Contract 4.0 carries the school background context; it has to
+            # survive parsing, otherwise the prompt never sees it.
+            backgroundContext=(
+                data.get("backgroundContext")
+                if contract_version == AI_ANALYTICS_V4_CONTRACT_VERSION
+                and isinstance(data.get("backgroundContext"), dict)
+                else {}
+            ),
         )
 
     @staticmethod

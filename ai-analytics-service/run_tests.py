@@ -428,5 +428,155 @@ class TestShalomutAIService(unittest.TestCase):
             "contract 4.0 only."
         )
 
+    @staticmethod
+    def _definition_hash(questions):
+        """Mirrors Core's snapshot hash over the exact AI-visible questions."""
+        import hashlib
+        import json
+
+        projection = [
+            {
+                "questionId": question["questionId"],
+                "dimensionId": question["dimensionId"],
+                "questionText": question["questionText"],
+            }
+            for question in sorted(
+                questions,
+                key=lambda question: question["questionId"],
+            )
+        ]
+        serialized = json.dumps(
+            projection,
+            ensure_ascii=False,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        return f"sha256:{hashlib.sha256(serialized).hexdigest()}"
+
+    def test_15_contract_4_0_parses_like_3_0_and_keeps_background_context(self):
+        """4.0 must take the dynamic path, not the legacy fallback.
+
+        Every dynamic rule (required ids, hash, questionText aggregates) has to
+        apply, and the school context has to survive parsing, or the prompt on
+        4.0 silently receives nothing.
+        """
+        from src.contracts import AI_ANALYTICS_DIMENSION_IDS
+        from src.schemas.mcp_types import RoundAnalyticsResult
+
+        questions = [
+            {
+                "questionId": f"{dimension_id}-q1",
+                "dimensionId": dimension_id,
+                "questionText": "עד כמה ההיגד משקף את מצבך?",
+                "averageScore": 60,
+                "responseCount": 12,
+            }
+            for dimension_id in AI_ANALYTICS_DIMENSION_IDS
+        ]
+        background_context = {"notes": "מיזוג שתי שכבות", "newStaffMembers": 2}
+        payload = {
+            "contractVersion": "4.0",
+            "roundId": "round-v4",
+            "organizationId": "org-v4",
+            "surveyDefinitionHash": self._definition_hash(questions),
+            "totalResponses": 12,
+            "privacyThreshold": 1,
+            "isLocked": False,
+            "dimensionScores": {
+                dimension_id: {
+                    "dimensionId": dimension_id,
+                    "averageScore": 60,
+                    "computedStatus": "yellow",
+                    "responseCount": 12,
+                }
+                for dimension_id in AI_ANALYTICS_DIMENSION_IDS
+            },
+            "questionAggregates": {
+                question["questionId"]: question for question in questions
+            },
+            "calculatedAt": "2026-07-27T12:00:00Z",
+            "backgroundContext": background_context,
+        }
+
+        parsed = RoundAnalyticsResult.from_dict(payload).to_dict()
+
+        self.assertEqual(parsed["contractVersion"], "4.0")
+        self.assertEqual(parsed["organizationId"], "org-v4")
+        self.assertEqual(
+            parsed["surveyDefinitionHash"],
+            payload["surveyDefinitionHash"],
+        )
+        self.assertEqual(parsed["backgroundContext"], background_context)
+        first_aggregate = parsed["questionAggregates"][questions[0]["questionId"]]
+        self.assertIn("questionText", first_aggregate)
+        self.assertNotIn("questionTextHebrew", first_aggregate)
+
+        # A respondent-level field must still be refused on 4.0.
+        with self.assertRaises(ValueError):
+            RoundAnalyticsResult.from_dict(
+                {**payload, "respondentId": "resp-1"},
+            )
+
+        print(
+            "✔ Test 15 Passed: Contract 4.0 parses on the dynamic path and "
+            "keeps the school background context."
+        )
+
+    def test_16_dynamic_contract_accepts_the_product_default_threshold(self):
+        """Core sends privacyThreshold 1 by default; the consumer must accept it."""
+        from src.contracts import AI_ANALYTICS_DIMENSION_IDS
+        from src.schemas.mcp_types import RoundAnalyticsResult
+
+        payload = {
+            "contractVersion": "3.0",
+            "roundId": "round-threshold-1",
+            "organizationId": "org-threshold-1",
+            "surveyDefinitionHash": self._definition_hash(
+                [
+                    {
+                        "questionId": f"{dimension_id}-q1",
+                        "dimensionId": dimension_id,
+                        "questionText": "עד כמה ההיגד משקף את מצבך?",
+                    }
+                    for dimension_id in AI_ANALYTICS_DIMENSION_IDS
+                ],
+            ),
+            "totalResponses": 3,
+            "privacyThreshold": 1,
+            "isLocked": False,
+            "dimensionScores": {
+                dimension_id: {
+                    "dimensionId": dimension_id,
+                    "averageScore": 60,
+                    "computedStatus": "yellow",
+                    "responseCount": 3,
+                }
+                for dimension_id in AI_ANALYTICS_DIMENSION_IDS
+            },
+            "questionAggregates": {
+                f"{dimension_id}-q1": {
+                    "questionId": f"{dimension_id}-q1",
+                    "dimensionId": dimension_id,
+                    "questionText": "עד כמה ההיגד משקף את מצבך?",
+                    "averageScore": 60,
+                    "responseCount": 3,
+                }
+                for dimension_id in AI_ANALYTICS_DIMENSION_IDS
+            },
+            "calculatedAt": "2026-07-27T12:00:00Z",
+        }
+
+        parsed = RoundAnalyticsResult.from_dict(payload)
+
+        self.assertEqual(parsed.privacyThreshold, 1)
+        self.assertFalse(parsed.isLocked)
+
+        with self.assertRaises(ValueError):
+            RoundAnalyticsResult.from_dict({**payload, "privacyThreshold": 0})
+
+        print(
+            "✔ Test 16 Passed: The dynamic contract accepts the product "
+            "default privacy threshold of 1."
+        )
+
 if __name__ == "__main__":
     unittest.main()

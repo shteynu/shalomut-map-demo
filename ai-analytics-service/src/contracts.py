@@ -28,6 +28,15 @@ AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS: Tuple[str, ...] = (
     AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
     AI_ANALYTICS_V4_CONTRACT_VERSION,
 )
+# Versions that speak the dynamic questionnaire boundary: exact question
+# snapshot, surveyDefinitionHash, eight-stone output. 4.0 is 3.0 plus the
+# school background context, so every dynamic rule applies to both. Branch on
+# this tuple instead of naming 3.0 alone, or 4.0 silently falls back to the
+# legacy shape.
+AI_ANALYTICS_DYNAMIC_CONTRACT_VERSIONS: Tuple[str, ...] = (
+    AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
+    AI_ANALYTICS_V4_CONTRACT_VERSION,
+)
 AI_ANALYTICS_DIMENSION_IDS: Tuple[str, ...] = tuple(
     dimension["id"] for dimension in _CONTRACT["dimensions"]
 )

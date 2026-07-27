@@ -11,6 +11,30 @@ exact вопросы раунда принадлежат persisted `SurveyRound.
 
 ## Текущий snapshot
 
+- **Деплой и миграции выполнены (2026-07-27, по явному разрешению пользователя)**:
+  - Коммит `9e15732` запушен в `main`, Vercel собрал production-деплой
+    `dpl_EerCv593tZyLTE9kU2SVTAxY4eKX` — `● Ready`, алиас `https://shalomut-map-demo.vercel.app`
+    указывает на него, `GET /login/` → `200`, `GET /api/rounds/` → `401 JSON`.
+  - `npx prisma migrate deploy` на staging-БД (Supabase, `aws-0-ap-southeast-1.pooler.supabase.com`,
+    database `postgres`, schema `public`) применил **две** миграции: `20260724180000_add_round_configuration`
+    и `20260726210000_privacy_threshold_default_one`. До этого в `survey_rounds` физически отсутствовали
+    колонки `background_context` и `survey_definition` — деплой не мог сохранить раунд.
+    На момент миграции: 1 организация, 0 раундов, 0 ответов. Проверено после применения:
+    обе колонки на месте, `privacy_threshold` default = `1`, обе записи есть в `_prisma_migrations`.
+    Путь отката (данные не затрагивались): `ALTER TABLE survey_rounds DROP COLUMN background_context,
+    DROP COLUMN survey_definition;` и `ALTER TABLE survey_rounds ALTER COLUMN privacy_threshold SET DEFAULT 10;`.
+  - Vercel env: удалены неиспользуемые `PP_BASE_URL`, `BASIC_AUTH_USER`, `BASIC_AUTH_PASSWORD`,
+    `DISABLE_BASIC_AUTH_FALLBACK` (Production и Preview). `MANAGER_ORGANIZATION_ID` перевыставлен на
+    существующую организацию `be9f184a-dee8-4d72-9805-c0f4e45f6d40`. В коде остаётся хардкод-фолбэк
+    `34d05e66-…` ([`manager-auth-service.ts:23`](../src/lib/auth/manager-auth-service.ts)) — техдолг.
+  - Удалены шесть устаревших веток на origin. Тиры сохранены для восстановления
+    (`git push origin <sha>:refs/heads/<branch>`):
+    `agent/database-backed-manager-ui` `07c61f8` (8 коммитов вне main),
+    `agent/empty-runtime-repositories` `4a7d61c` (3),
+    `feature/stone-styling-all-pages` `71481e2` (1),
+    `feature/ai-analytics-microservice-mcp` `34ca956` (0),
+    `feature/stone-styling-fixes` `ce1694d` (0),
+    `feature/ui-redesign` `7661bf6` (0).
 - Активный план работ: [`manager-feedback-plan-2026-07-26.md`](manager-feedback-plan-2026-07-26.md) —
   замечания директора и находки аудита деплоя, разложенные на слайсы P0–P3 с
   критериями приёмки, проверками и approval gates.

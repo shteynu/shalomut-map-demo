@@ -14,6 +14,7 @@ from src.contracts import (
     AI_ANALYTICS_CONTRACT_VERSION,
     AI_ANALYTICS_DIMENSION_IDS,
     AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
+    AI_ANALYTICS_DYNAMIC_CONTRACT_VERSIONS,
 )
 
 class AnalyticsGraphEngine:
@@ -46,7 +47,7 @@ class AnalyticsGraphEngine:
                     ),
                 }
                 if _effective_contract_version(round_data)
-                == AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION
+                in AI_ANALYTICS_DYNAMIC_CONTRACT_VERSIONS
                 else {}
             )
             return {
@@ -82,7 +83,7 @@ def format_stone_map_output_node(state: AnalyticsState) -> AnalyticsState:
     contract_version = _effective_contract_version(round_data)
 
     if (
-        contract_version == AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION
+        contract_version in AI_ANALYTICS_DYNAMIC_CONTRACT_VERSIONS
         and set(dim_scores) != set(AI_ANALYTICS_DIMENSION_IDS)
     ):
         raise ValueError(
@@ -110,7 +111,7 @@ def format_stone_map_output_node(state: AnalyticsState) -> AnalyticsState:
             question_text_field = (
                 "questionText"
                 if contract_version
-                == AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION
+                in AI_ANALYTICS_DYNAMIC_CONTRACT_VERSIONS
                 else "questionTextHebrew"
             )
             metrics = [
@@ -150,7 +151,7 @@ def format_stone_map_output_node(state: AnalyticsState) -> AnalyticsState:
         }
         if contract_version in {
             AI_ANALYTICS_CONTRACT_VERSION,
-            AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
+            *AI_ANALYTICS_DYNAMIC_CONTRACT_VERSIONS,
         }:
             if dim_id not in generation_provenance:
                 raise ValueError(
@@ -168,7 +169,7 @@ def format_stone_map_output_node(state: AnalyticsState) -> AnalyticsState:
         "overallPsychologicalSummary": overall_summary,
         "stones": stones
     }
-    if contract_version == AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION:
+    if contract_version in AI_ANALYTICS_DYNAMIC_CONTRACT_VERSIONS:
         final_payload["surveyDefinitionHash"] = round_data.get(
             "surveyDefinitionHash",
         )
