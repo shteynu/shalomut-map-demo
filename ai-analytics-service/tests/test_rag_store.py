@@ -139,3 +139,31 @@ def test_unknown_or_uncovered_status_returns_empty_list():
 
     assert store.get_interventions_for_dimension("unknown", "green") == []
     assert store.get_interventions_for_dimension("balance", "unknown") == []
+
+
+def test_every_dimension_and_status_pair_has_room_to_choose():
+    """Ranking needs candidates it can reject.
+
+    With three entries and a limit of three, two schools with the same status
+    received the same recommendations whatever the ranking said — the exact
+    complaint the catalog expansion was meant to answer.
+    """
+    catalog = load_catalog()
+    store = LocalInterventionVectorStore(kb_path=str(CATALOG_PATH))
+
+    for dimension_id in AI_ANALYTICS_DIMENSION_IDS:
+        for status in DIMENSION_STATUSES:
+            pool = [
+                item
+                for item in catalog
+                if item["dimension_id"] == dimension_id
+                and status in item["target_status"]
+            ]
+            assert len(pool) >= 5, f"{dimension_id}/{status} has {len(pool)}"
+
+            selected = store.get_interventions_for_dimension(
+                dimension_id,
+                status,
+                limit=3,
+            )
+            assert len(selected) == 3, f"{dimension_id}/{status}"
