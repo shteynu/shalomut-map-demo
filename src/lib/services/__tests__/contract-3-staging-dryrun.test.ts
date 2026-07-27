@@ -12,8 +12,8 @@ import type {
   SurveyDefinitionQuestion,
   SurveyResponseRecord,
   SurveyRound,
-  WellbeingDimensionId,
 } from '../../types/backend';
+import type { WellbeingDimensionId } from '../../shalomut-source';
 import { AnalyticsService } from '../analytics.service';
 import { createSurveyDefinitionHash } from '../../survey-definition-hash';
 
@@ -349,11 +349,10 @@ test('Workstream A Dry-Run: Contract 5.0 calculates scoreDistribution per questi
     const surveyDefinition = createCustomSurveyDefinition(customQuestions);
     const round = createRoundFixture(roundId, orgId, surveyDefinition);
 
-    // Create 10 responses with known scores: 5 green (100), 3 yellow (60), 2 red (0)
     const responses: SurveyResponseRecord[] = [];
     for (let r = 0; r < 10; r++) {
-      const val = r < 5 ? 'green' : r < 8 ? 'yellow' : 'red';
-      const score = r < 5 ? 100 : r < 8 ? 60 : 0;
+      const val: 'green' | 'yellow' | 'red' = r < 5 ? 'green' : r < 8 ? 'yellow' : 'red';
+      const score: 100 | 60 | 0 = r < 5 ? 100 : r < 8 ? 60 : 0;
       responses.push({
         id: `resp-${r + 1}`,
         roundId,
