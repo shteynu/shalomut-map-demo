@@ -390,7 +390,11 @@ def test_dynamic_provider_prompt_uses_exact_persisted_question_text():
     )
 
     assert aggregate["questionText"] in prompt
-    assert aggregate["questionId"] in prompt
+    # The question id used to be printed alongside the text. It is Latin, the
+    # model never needed it — Core maps sourceQuestionIds itself — and copy
+    # that echoes a Latin id is refused, so the prompt now carries the exact
+    # persisted text alone.
+    assert aggregate["questionId"] not in prompt
 
 
 def test_dynamic_fallback_uses_actual_strongest_or_weakest_question():

@@ -28,6 +28,25 @@ _LATIN_PATTERN = re.compile(r"[A-Za-z]")
 _COMPLETE_SENTENCE_PATTERN = re.compile(r"[^.!?؟]+[.!?؟]")
 _INTEGER_PATTERN = re.compile(r"\d+")
 
+# A period between two digits belongs to the number, not to the sentence. It is
+# masked before splitting: otherwise "הממוצע הוא 45.0 מתוך 100." counts as two
+# sentences and one quoted average blows the per-version sentence budget.
+_DECIMAL_POINT_PATTERN = re.compile(r"(?<=\d)\.(?=\d)")
+_DECIMAL_POINT_MASK = "\x01"
+
+# Punctuation a sentence may close with after its terminal mark. Without this a
+# quoted last word leaves the closing quote outside every matched sentence and
+# fails the "nothing left over" check.
+_TRAILING_CLOSERS = "\"'”’»)]׳״"
+
+# Markup a chat model adds around otherwise valid Hebrew copy. It carries no
+# meaning here and is removed before validation, so a bolded sentence is judged
+# on its words rather than on its asterisks.
+_MARKDOWN_FENCE_PATTERN = re.compile(r"^\s*```.*$", re.MULTILINE)
+_MARKDOWN_HEADING_PATTERN = re.compile(r"^\s*#+\s*", re.MULTILINE)
+_MARKDOWN_BULLET_PATTERN = re.compile(r"^\s*[*•‣]\s+", re.MULTILINE)
+_MARKDOWN_EMPHASIS_PATTERN = re.compile(r"\*+|__+|`+|~~+")
+
 # Hebrew status words. On 5.0 the prompt states the score distribution in these
 # very words, so naming another bucket can be plain reporting rather than a
 # contradiction — see is_status_consistent.
@@ -38,6 +57,16 @@ _STATUS_WORDS_HEBREW = {
 }
 # "באזור אדום" / "בטווח אדום" is a verdict about the dimension, not a count.
 _VERDICT_MARKERS_HEBREW = ("באזור", "בטווח")
+
+# How a status is named to the model. Deliberately not a colour: the copy is
+# refused for naming a foreign colour, so handing the model colour words to
+# echo would be entrapment. The buckets keep their colours, because there the
+# word is attached to a count.
+_STATUS_LABELS_HEBREW = {
+    "green": "תקין",
+    "yellow": "דורש מעקב",
+    "red": "דורש התערבות",
+}
 
 
 @dataclass(frozen=True)
@@ -150,8 +179,8 @@ class LLMProviderService:
                 all_dimension_scores=all_dimension_scores,
             ),
             system_prompt=(
-                "You are a concise organizational psychologist for "
-                "educational staff."
+                "את/ה פסיכולוג/ית ארגוני/ת תמציתי/ת עבור צוותי חינוך. "
+                "ענה תמיד בעברית בלבד."
             ),
             model_name=model_name,
             is_acceptable=lambda candidate, finish_reason: (
@@ -281,7 +310,7 @@ class LLMProviderService:
                                     raise TypeError(
                                         "Provider content must be text"
                                     )
-                                result = content.strip()
+                                result = self._sanitize_model_text(content)
                                 finish_reason = choice.get(
                                     "finish_reason",
                                 )
@@ -469,16 +498,14 @@ class LLMProviderService:
                 background_context,
             ),
             system_prompt=(
-                "You are an organizational psychologist summarizing school "
-                "wellbeing."
+                "את/ה פסיכולוג/ית ארגוני/ת המסכם/ת רווחת צוות בבית ספר. "
+                "ענה תמיד בעברית בלבד."
             ),
             model_name=model_name,
             is_acceptable=lambda candidate, finish_reason: (
                 finish_reason == "stop"
                 and self.is_hebrew_only_copy(candidate)
-                and 2
-                <= len(_COMPLETE_SENTENCE_PATTERN.findall(candidate))
-                <= 4
+                and 2 <= len(self._sentences(candidate)) <= 4
             ),
         )
         return text if text is not None else fallback
@@ -530,8 +557,8 @@ class LLMProviderService:
                 background_context=background_context,
             ),
             system_prompt=(
-                "You are an organizational psychologist adapting a catalog "
-                "intervention to one school."
+                "את/ה פסיכולוג/ית ארגוני/ת המתאים/ה המלצה מקטלוג לבית ספר "
+                "אחד. ענה תמיד בעברית בלבד."
             ),
             model_name=model_name,
             is_acceptable=lambda candidate, finish_reason: (
@@ -649,7 +676,7 @@ class LLMProviderService:
         for aggregate in question_aggregates:
             line = (
                 f"- {self._question_text(aggregate)} "
-                f"ממוצע {float(aggregate.get('averageScore', 0.0)):.1f}, "
+                f"ממוצע {float(aggregate.get('averageScore', 0.0)):.0f}, "
                 f"מספר תשובות {aggregate.get('responseCount', 0)}"
             )
             distribution = aggregate.get("scoreDistribution")
@@ -663,29 +690,29 @@ class LLMProviderService:
 
         background_lines = self._background_context_lines(background_context)
         background_section = (
-            "\nSchool Background Context:\n" + "\n".join(background_lines)
+            "\nרקע בית הספר:\n" + "\n".join(background_lines)
             if background_lines
             else ""
         )
         catalog_steps = "\n".join(f"- {step}" for step in steps)
 
         return (
-            "You are adapting one catalog intervention to a single school, "
-            "using only privacy-safe aggregates.\n"
-            f"Dimension: {dim_hebrew}. Score: {score:.1f}/100. "
-            f"Status: {status}.{background_section}\n"
-            f"Same-dimension aggregates:\n" + "\n".join(aggregate_lines) + "\n"
-            f"Catalog intervention title: {intervention.get('title', '')}\n"
-            f"Catalog summary: {intervention.get('summary', '')}\n"
-            f"Catalog steps:\n{catalog_steps}\n"
-            f"Rewrite the summary and the {len(steps)} steps for this school. "
-            "Answer in Hebrew only, with no Latin letters, as exactly "
-            f"{len(steps) + 1} lines: the first line is the rewritten summary "
-            "and quotes at least one number from the aggregates above, and "
-            f"each of the next {len(steps)} lines starts with '- ' and holds "
-            "one rewritten step. Keep the intent of the catalog entry and its "
-            "order, stay consistent with the stated status, and do not invent "
-            "causes, diagnoses, identities or numbers that are not above."
+            "את/ה מתאים/ה המלצה אחת מתוך קטלוג לבית ספר יחיד, "
+            "על סמך נתונים מצרפיים בלבד שאינם חושפים משיבים.\n"
+            f"ממד: {dim_hebrew}. ציון: {score:.0f} מתוך 100. "
+            f"מצב: {self._status_label(status)}.{background_section}\n"
+            "שאלות הממד:\n" + "\n".join(aggregate_lines) + "\n"
+            f"כותרת ההמלצה בקטלוג: {intervention.get('title', '')}\n"
+            f"תקציר ההמלצה בקטלוג: {intervention.get('summary', '')}\n"
+            f"שלבי ההמלצה בקטלוג:\n{catalog_steps}\n"
+            f"נסח מחדש את התקציר ואת {len(steps)} השלבים עבור בית הספר הזה. "
+            "ענה בעברית בלבד, בלי אותיות לטיניות, בדיוק ב-"
+            f"{len(steps) + 1} שורות: השורה הראשונה היא התקציר המנוסח מחדש "
+            "והיא מצטטת לפחות מספר אחד מהנתונים שלמעלה, וכל אחת מ-"
+            f"{len(steps)} השורות הבאות פותחת ב'- ' ומכילה שלב אחד מנוסח "
+            "מחדש. שמור על כוונת ההמלצה ועל סדר השלבים, שמור על עקביות עם "
+            "המצב שצוין, אל תמציא סיבות, אבחנות, זהויות או מספרים שאינם "
+            "למעלה, ורשום מספרים בספרות ולא במילים."
         )
 
     def _build_overall_summary_prompt(
@@ -717,8 +744,8 @@ class LLMProviderService:
                 dimension_id,
             )
             line = (
-                f"- {hebrew_name}: ציון {score_value:.1f}, "
-                f"סטטוס {status_value}"
+                f"- {hebrew_name}: ציון {score_value:.0f}, "
+                f"מצב {self._status_label(status_value)}"
             )
             distribution = self._summed_distribution(
                 aggregate
@@ -735,21 +762,21 @@ class LLMProviderService:
 
         background_lines = self._background_context_lines(background_context)
         background_section = (
-            "\nSchool Background Context:\n" + "\n".join(background_lines)
+            "\nרקע בית הספר:\n" + "\n".join(background_lines)
             if background_lines
             else ""
         )
 
         return (
-            "You are an organizational psychologist summarizing the overall "
-            "teacher wellbeing picture of a school.\n"
-            f"Dimension Scores:\n" + "\n".join(dim_lines) + "\n"
+            "את/ה פסיכולוג/ית ארגוני/ת המסכם/ת את התמונה הכוללת של רווחת "
+            "הצוות בבית ספר אחד.\n"
+            "ציוני הממדים:\n" + "\n".join(dim_lines) + "\n"
             f"{background_section}\n"
-            "Return between 2 and 4 complete Hebrew-only sentences "
-            "summarizing the overall state. Highlight key strengths and main "
-            "priority areas, and use the distributions rather than the "
-            "averages alone. Keep the tone professional, supportive, and "
-            "grounded in the data; do not invent causes or diagnoses."
+            "כתוב בין 2 ל-4 משפטים שלמים המסכמים את המצב הכולל. ציין את "
+            "החוזקות המרכזיות ואת תחומי העדיפות, והישען על הפיזור ולא על "
+            "הממוצע בלבד. שמור על טון מקצועי ותומך המעוגן בנתונים, אל תמציא "
+            "סיבות או אבחנות, כתוב בעברית בלבד בלי אותיות לטיניות, ורשום "
+            "מספרים בספרות ולא במילים."
         )
 
     @staticmethod
@@ -786,18 +813,17 @@ class LLMProviderService:
         )
         lines = []
         for aggregate in question_aggregates:
-            prefix = f"[{aggregate['questionId']}] " if uses_dynamic_questions else ""
             dist_str = ""
             if contract_version == "5.0" and isinstance(aggregate.get("scoreDistribution"), dict):
                 dist = aggregate["scoreDistribution"]
                 dist_str = f" (תשובות: {dist.get('green', 0)} ירוק, {dist.get('yellow', 0)} צהוב, {dist.get('red', 0)} אדום)"
             lines.append(
-                f"- {prefix}{self._question_text(aggregate)} ממוצע {aggregate['averageScore']:.1f}, מספר תשובות {aggregate['responseCount']}{dist_str}"
+                f"- {self._question_text(aggregate)} ממוצע {aggregate['averageScore']:.0f}, מספר תשובות {aggregate['responseCount']}{dist_str}"
             )
         aggregate_lines = "\n".join(lines)
 
         bg_lines = self._background_context_lines(background_context)
-        bg_section = ("\nSchool Background Context:\n" + "\n".join(bg_lines)) if bg_lines else ""
+        bg_section = ("\nרקע בית הספר:\n" + "\n".join(bg_lines)) if bg_lines else ""
 
         cross_dim_section = ""
         if contract_version == "5.0" and isinstance(all_dimension_scores, dict) and all_dimension_scores:
@@ -806,28 +832,34 @@ class LLMProviderService:
                 s_val = d_val.get("averageScore", 0.0) if isinstance(d_val, dict) else getattr(d_val, "averageScore", 0.0)
                 st_val = d_val.get("computedStatus", "") if isinstance(d_val, dict) else getattr(d_val, "computedStatus", "")
                 d_heb = AI_ANALYTICS_DIMENSION_NAMES_HEBREW.get(d_id, d_id)
-                cd_lines.append(f"- {d_heb} ({d_id}): ציון {s_val:.1f}, סטטוס {st_val}")
-            cross_dim_section = "\nOverall 8-Dimension Context:\n" + "\n".join(cd_lines) + "\n"
+                cd_lines.append(
+                    f"- {d_heb}: ציון {s_val:.0f}, מצב {self._status_label(st_val)}"
+                )
+            cross_dim_section = "\nתמונת שמונת הממדים:\n" + "\n".join(cd_lines) + "\n"
 
         length_instruction = (
-            "Return between 2 and 5 complete Hebrew-only sentences."
+            "כתוב בין 2 ל-5 משפטים שלמים."
             if contract_version == "5.0"
-            else "Return exactly two complete Hebrew-only sentences."
+            else "כתוב בדיוק שני משפטים שלמים."
         )
 
         return (
-            "You are an organizational psychologist analyzing only "
-            "privacy-safe teacher wellbeing aggregates.\n"
-            f"Dimension: {dim_hebrew} ({dim_id}). "
-            f"Score: {score:.1f}/100. Status: {status}.{bg_section}\n"
+            "את/ה פסיכולוג/ית ארגוני/ת המנתח/ת אך ורק נתונים מצרפיים "
+            "שאינם חושפים משיבים, על רווחת צוות חינוכי.\n"
+            f"ממד: {dim_hebrew}. ציון: {score:.0f} מתוך 100. "
+            f"מצב: {self._status_label(status)}.{bg_section}\n"
             f"{cross_dim_section}"
-            f"{'Exact persisted' if uses_dynamic_questions else 'Canonical'} "
-            f"same-dimension aggregates:\n{aggregate_lines}\n"
-            f"{length_instruction} Base every "
-            "claim on the supplied aggregates, do not invent causes, "
-            "diagnoses, identities, or respondent-level facts, and keep the "
-            "interpretation consistent with the stated status."
+            f"{'שאלות הממד כפי שנשמרו' if uses_dynamic_questions else 'שאלות הממד'}"
+            f":\n{aggregate_lines}\n"
+            f"{length_instruction} בסס כל טענה על הנתונים שלמעלה, אל תמציא "
+            "סיבות, אבחנות, זהויות או עובדות על משיב יחיד, ושמור על עקביות "
+            "עם המצב שצוין. כתוב בעברית בלבד, בלי אותיות לטיניות, ורשום "
+            "מספרים בספרות ולא במילים."
         )
+
+    @staticmethod
+    def _status_label(status: str) -> str:
+        return _STATUS_LABELS_HEBREW.get(status, status)
 
     @staticmethod
     def _background_context_lines(
@@ -951,12 +983,20 @@ class LLMProviderService:
         return counts | {str(total) for total in totals.values()}
 
     def is_complete_hebrew_copy(self, text: str, contract_version: str = "4.0") -> bool:
-        normalized = text.strip()
+        """True when the copy is Hebrew, complete, and within the version's budget.
+
+        "Complete" means every word belongs to a sentence that ends in terminal
+        punctuation — the check that catches a truncated answer. Markup and a
+        closing quote are stripped first, because neither is a missing sentence:
+        rejecting `**…**` sent the school catalog copy over an asterisk.
+        """
+        normalized = self._sanitize_model_text(text)
         if not self.is_hebrew_only_copy(normalized):
             return False
-        sentences = _COMPLETE_SENTENCE_PATTERN.findall(normalized)
+        closed = normalized.rstrip(_TRAILING_CLOSERS).rstrip()
+        sentences = self._sentences(closed)
         compact_sentences = re.sub(r"\s", "", "".join(sentences))
-        compact_text = re.sub(r"\s", "", normalized)
+        compact_text = re.sub(r"\s", "", closed)
         expected_len = (2 <= len(sentences) <= 5) if contract_version == "5.0" else (len(sentences) == 2)
         return expected_len and compact_sentences == compact_text
 
@@ -1029,10 +1069,38 @@ class LLMProviderService:
                     return False
         return True
 
-    @staticmethod
-    def _sentences_or_whole(text: str) -> list[str]:
-        sentences = _COMPLETE_SENTENCE_PATTERN.findall(text)
+    @classmethod
+    def _sentences_or_whole(cls, text: str) -> list[str]:
+        sentences = cls._sentences(text)
         return sentences or [text]
+
+    @staticmethod
+    def _sentences(text: str) -> list[str]:
+        """Split on sentence ends, leaving the period inside a decimal alone."""
+        masked = _DECIMAL_POINT_PATTERN.sub(_DECIMAL_POINT_MASK, text)
+        return [
+            sentence.replace(_DECIMAL_POINT_MASK, ".")
+            for sentence in _COMPLETE_SENTENCE_PATTERN.findall(masked)
+        ]
+
+    @staticmethod
+    def _sanitize_model_text(text: str) -> str:
+        """Drop chat-model markup that the copy never asked for.
+
+        A model that answers correctly in Hebrew still tends to bold its
+        conclusion, open a code fence or bullet its steps with an asterisk.
+        None of that reaches the school — it is removed here rather than
+        rejected, so formatting habits cost a retry instead of a fallback.
+        Bullets become the "-" the adaptation parser expects.
+        """
+        if not text:
+            return ""
+        cleaned = _MARKDOWN_FENCE_PATTERN.sub("", text)
+        cleaned = _MARKDOWN_HEADING_PATTERN.sub("", cleaned)
+        cleaned = _MARKDOWN_BULLET_PATTERN.sub("- ", cleaned)
+        cleaned = _MARKDOWN_EMPHASIS_PATTERN.sub("", cleaned)
+        lines = [line.strip() for line in cleaned.splitlines()]
+        return "\n".join(line for line in lines if line).strip()
 
     def _remaining_retry_budget(self, request_started_at: float) -> float:
         elapsed = time.monotonic() - request_started_at

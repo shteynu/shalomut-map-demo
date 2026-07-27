@@ -108,7 +108,7 @@ async def test_v5_prompt_and_provenance_carry_the_school_context(monkeypatch):
         contract_version=AI_ANALYTICS_V5_CONTRACT_VERSION,
         all_dimension_scores=round_data["dimensionScores"],
     )
-    assert "School Background Context" in prompt
+    assert "רקע בית הספר" in prompt
     assert BACKGROUND_CONTEXT["notes"] in prompt
 
 
@@ -410,7 +410,7 @@ def _adaptation_response(request, timeout=None):
     rewrite has to keep each entry's own count.
     """
     prompt = _prompt_of(request)
-    catalog_steps = prompt.split("Catalog steps:\n", 1)[1].split("\nRewrite", 1)[0]
+    catalog_steps = prompt.split("שלבי ההמלצה בקטלוג:\n", 1)[1].split("\nנסח", 1)[0]
     step_count = len([line for line in catalog_steps.splitlines() if line.strip()])
     lines = [ADAPTED_SUMMARY] + [f"- {ADAPTED_STEP}"] * step_count
     return _summary_response("\n".join(lines))
