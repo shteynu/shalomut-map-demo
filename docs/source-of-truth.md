@@ -57,6 +57,7 @@ round questionnaires and from demo result data.
   AI-visible question snapshot.
 - `src/lib/demo-data.ts`: demo organization, active round, mock dashboard scores, map positions, metrics, recommendations, and compatibility exports for existing components.
 - `PRODUCT.md`: product voice, users, principles, privacy posture, accessibility expectations, and brand personality.
+- `docs/product-requirements-summary.md`: canonical summary of original product requirements documents, methodology, MVP definition, 8 wellbeing dimensions, and pilot roadmap.
 - `design.md`: design tokens and implementation notes for the current Next.js demo.
 
 ## Round Field Ownership
