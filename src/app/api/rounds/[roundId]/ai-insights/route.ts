@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import {
   AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
+  AI_ANALYTICS_V4_CONTRACT_VERSION,
+  AI_ANALYTICS_V5_CONTRACT_VERSION,
   type StoneMapResult,
   validateStoneMapResult,
 } from '@/lib/ai-contract';
@@ -30,7 +32,13 @@ function validateDynamicResultAgainstRound(
   round: SurveyRound,
   analytics: RoundAnalyticsV3Result,
 ): string | null {
-  if (result.contractVersion !== AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION) {
+  if (
+    ![
+      AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
+      AI_ANALYTICS_V4_CONTRACT_VERSION,
+      AI_ANALYTICS_V5_CONTRACT_VERSION,
+    ].includes(result.contractVersion)
+  ) {
     return null;
   }
 
@@ -176,18 +184,22 @@ export async function POST(request: Request, { params }: RouteParams) {
       );
     }
 
-    const dynamicRoundError =
-      validation.value.contractVersion ===
-      AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION
-        ? validateDynamicResultAgainstRound(
-            validation.value,
+    const isDynamicVersion = [
+      AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
+      AI_ANALYTICS_V4_CONTRACT_VERSION,
+      AI_ANALYTICS_V5_CONTRACT_VERSION,
+    ].includes(validation.value.contractVersion);
+
+    const dynamicRoundError = isDynamicVersion
+      ? validateDynamicResultAgainstRound(
+          validation.value,
+          round,
+          AnalyticsService.calculateDynamicRoundAnalytics(
             round,
-            AnalyticsService.calculateDynamicRoundAnalytics(
-              round,
-              await repositories.surveyRepo.findResponsesByRoundId(roundId),
-            ),
-          )
-        : null;
+            await repositories.surveyRepo.findResponsesByRoundId(roundId),
+          ),
+        )
+      : null;
     if (dynamicRoundError) {
       return NextResponse.json(
         { error: dynamicRoundError },
