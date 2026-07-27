@@ -31,9 +31,9 @@
     "privacyPolicy": "aggregated-school-level-data-only-no-individual-respondent-attributes"
   },
   "privacy": {
-    "defaultThreshold": 1,
-    "recommendedThreshold": 10,
-    "thresholdNote": "Core owns the threshold and its product default is 1, which every runtime accepts; below the recommended threshold anonymity is not guaranteed, and the manager screens say so.",
+    "defaultThreshold": 10,
+    "minimumThreshold": 10,
+    "thresholdNote": "Ten respondents is a product requirement on both sides. Core will not configure a round below it, and a payload that still carries a lower threshold — an older round or an older producer — has its threshold raised to ten by the consumer and is read as locked rather than refused.",
     "unlockedPolicy": "total-and-every-question-at-or-above-threshold",
     "lockedAggregatePolicy": "empty",
     "partialUnlockedAnalysis": false,

@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   createCanonicalSurveyDefinition,
   hasSameQuestionSnapshot,
+  MINIMUM_PRIVACY_THRESHOLD,
   parseSurveyDefinition,
 } from "@/lib/survey-definition";
 import { createSurveyDefinitionHash } from "@/lib/survey-definition-hash";
@@ -157,4 +158,35 @@ test("hasSameQuestionSnapshot detects semantic and ordering changes", () => {
   assert.strictEqual(hasSameQuestionSnapshot(definition, definition), true);
   assert.strictEqual(hasSameQuestionSnapshot(definition, revised), false);
   assert.strictEqual(hasSameQuestionSnapshot(definition, reordered), false);
+});
+
+test("a definition stored below the required threshold is raised to it, not refused", () => {
+  // Rounds configured before ten became mandatory are still on the database.
+  // Refusing them here would take their own answer screen down with them, so
+  // the definition loads with the threshold the product now requires.
+  const legacy = {
+    ...createCanonicalSurveyDefinition("סבב ותיק", 10),
+    minimumResponses: 1,
+  };
+
+  const result = parseSurveyDefinition(legacy);
+
+  assert.strictEqual(result.ok, true);
+  if (result.ok) {
+    assert.strictEqual(
+      result.value.minimumResponses,
+      MINIMUM_PRIVACY_THRESHOLD,
+    );
+  }
+});
+
+test("a threshold that is not a positive whole number is still refused", () => {
+  for (const minimumResponses of [0, -3, 2.5]) {
+    const result = parseSurveyDefinition({
+      ...createCanonicalSurveyDefinition("סבב ותיק", 10),
+      minimumResponses,
+    });
+
+    assert.strictEqual(result.ok, false, String(minimumResponses));
+  }
 });

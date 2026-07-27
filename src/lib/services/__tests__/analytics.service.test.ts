@@ -133,7 +133,9 @@ test('RoundService starts a round without a questionnaire as an empty draft', ()
   assert.strictEqual(round.status, 'draft');
   assert.strictEqual(round.surveyDefinition?.questions.length, 0);
   assert.strictEqual(round.privacyThreshold, DEFAULT_PRIVACY_THRESHOLD);
-  assert.strictEqual(DEFAULT_PRIVACY_THRESHOLD, 1);
+  // Ten respondents is the product requirement, so it is also where a round
+  // the manager never configured starts.
+  assert.strictEqual(DEFAULT_PRIVACY_THRESHOLD, 10);
   assert.ok(round.shareCode.startsWith('SHALOM-'));
 });
 

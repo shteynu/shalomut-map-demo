@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import {
   DEFAULT_PRIVACY_THRESHOLD,
   LOW_PRIVACY_THRESHOLD_WARNING,
-  RECOMMENDED_PRIVACY_THRESHOLD,
+  MINIMUM_PRIVACY_THRESHOLD,
 } from "@/lib/survey-definition";
 import {
   PrivacyThresholdNotice,
@@ -17,18 +17,18 @@ const LATIN = /[A-Za-z]/u;
 
 test("the reminder names the required threshold below it and stays silent at or above it", () => {
   assert.strictEqual(
-    privacyThresholdNoticeText(RECOMMENDED_PRIVACY_THRESHOLD),
+    privacyThresholdNoticeText(MINIMUM_PRIVACY_THRESHOLD),
     null,
   );
   assert.strictEqual(
-    privacyThresholdNoticeText(RECOMMENDED_PRIVACY_THRESHOLD + 5),
+    privacyThresholdNoticeText(MINIMUM_PRIVACY_THRESHOLD + 5),
     null,
   );
 
-  const text = privacyThresholdNoticeText(RECOMMENDED_PRIVACY_THRESHOLD - 1);
+  const text = privacyThresholdNoticeText(MINIMUM_PRIVACY_THRESHOLD - 1);
   assert.ok(text);
-  assert.match(text, new RegExp(String(RECOMMENDED_PRIVACY_THRESHOLD)));
-  assert.match(text, new RegExp(String(RECOMMENDED_PRIVACY_THRESHOLD - 1)));
+  assert.match(text, new RegExp(String(MINIMUM_PRIVACY_THRESHOLD)));
+  assert.match(text, new RegExp(String(MINIMUM_PRIVACY_THRESHOLD - 1)));
 });
 
 test("the reminder is graded rather than repeated", () => {
@@ -45,10 +45,14 @@ test("the reminder is graded rather than repeated", () => {
   assert.doesNotMatch(nearMiss, /לשייך אותן לאדם מסוים/u);
 });
 
-test("the product default triggers the reminder", () => {
-  // The default is 1 in the database column, in Core and in the AI service. A
-  // manager who changes nothing has to be told what that costs.
-  assert.ok(privacyThresholdNoticeText(DEFAULT_PRIVACY_THRESHOLD));
+test("the product default is itself compliant and says nothing", () => {
+  // Ten is the default and the minimum now, so a manager who changes nothing
+  // is already at the required threshold and needs no warning.
+  assert.strictEqual(DEFAULT_PRIVACY_THRESHOLD, MINIMUM_PRIVACY_THRESHOLD);
+  assert.strictEqual(
+    privacyThresholdNoticeText(DEFAULT_PRIVACY_THRESHOLD),
+    null,
+  );
 });
 
 test("the reminder is Hebrew-only text and not colour alone", () => {
@@ -58,13 +62,13 @@ test("the reminder is Hebrew-only text and not colour alone", () => {
 
   assert.doesNotMatch(html.replace(/<[^>]*>/gu, ""), LATIN);
   assert.match(html, /role="status"/u);
-  assert.ok(html.includes(String(RECOMMENDED_PRIVACY_THRESHOLD)));
+  assert.ok(html.includes(String(MINIMUM_PRIVACY_THRESHOLD)));
 });
 
 test("the reminder renders nothing at a compliant threshold", () => {
   const html = renderToStaticMarkup(
     <PrivacyThresholdNotice
-      minimumResponses={RECOMMENDED_PRIVACY_THRESHOLD}
+      minimumResponses={MINIMUM_PRIVACY_THRESHOLD}
       emphasis="form"
     />,
   );
@@ -72,21 +76,21 @@ test("the reminder renders nothing at a compliant threshold", () => {
   assert.strictEqual(html, "");
 });
 
-test("the round metric card explains its own threshold, not the product default", () => {
+test("the round metric card explains its own threshold, not the required one", () => {
   // The card and the tooltip beside it used to disagree: the card showed the
-  // round's threshold while the tooltip explained the default of 1.
+  // round's threshold while the tooltip explained the product default.
   const html = renderToStaticMarkup(
     <MetricCard
       value="4"
       label="סף פרטיות"
-      helper={`הגנה על אנונימיות — הסף הנדרש ${RECOMMENDED_PRIVACY_THRESHOLD}`}
+      helper={`הגנה על אנונימיות — הסף הנדרש ${MINIMUM_PRIVACY_THRESHOLD}`}
       minimumResponses={4}
     />,
   );
 
   assert.ok(html.includes("בסבב הנוכחי: 4"));
-  assert.ok(html.includes("הסף המתודולוגי הנדרש"));
-  assert.ok(html.includes(`הסף הנדרש ${RECOMMENDED_PRIVACY_THRESHOLD}`));
+  assert.ok(html.includes("הסף הנדרש"));
+  assert.ok(html.includes(`הסף הנדרש ${MINIMUM_PRIVACY_THRESHOLD}`));
 });
 
 test("the privacy tooltip carries the reminder for the round it describes", () => {
@@ -94,9 +98,9 @@ test("the privacy tooltip carries the reminder for the round it describes", () =
     <PrivacyTooltip minimumResponses={4} />,
   );
   const atThreshold = renderToStaticMarkup(
-    <PrivacyTooltip minimumResponses={RECOMMENDED_PRIVACY_THRESHOLD} />,
+    <PrivacyTooltip minimumResponses={MINIMUM_PRIVACY_THRESHOLD} />,
   );
 
-  assert.ok(belowThreshold.includes("הסף המתודולוגי הנדרש"));
-  assert.ok(!atThreshold.includes("הסף המתודולוגי הנדרש"));
+  assert.ok(belowThreshold.includes("הסף הנדרש"));
+  assert.ok(!atThreshold.includes("הסף הנדרש"));
 });

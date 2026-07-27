@@ -4,25 +4,25 @@ import type {
   SurveyDefinitionQuestion,
 } from "@/lib/types/backend";
 
-/** Lowest privacy threshold a round may be configured with. */
-export const MINIMUM_PRIVACY_THRESHOLD = 1;
+/**
+ * Respondents a round needs before anything below the round total is shown.
+ *
+ * Ten is a product requirement, not a suggestion: below it a published average
+ * stops hiding the individual who produced it, and a reading drawn from fewer
+ * answers describes those people rather than the school. It is the minimum a
+ * round may be configured with and the value a new round starts at.
+ */
+export const MINIMUM_PRIVACY_THRESHOLD = 10;
 
 /** Threshold a new round starts with when the manager configures nothing. */
-export const DEFAULT_PRIVACY_THRESHOLD = 1;
+export const DEFAULT_PRIVACY_THRESHOLD = MINIMUM_PRIVACY_THRESHOLD;
 
 /**
- * Below this the published average stops hiding the individual respondent, so
- * the manager surfaces warn instead of silently promising anonymity.
+ * Rounds configured before the threshold became mandatory are still readable —
+ * they are raised to the minimum rather than rejected. Below this number the
+ * manager surfaces say plainly that the round promised no anonymity at all.
  */
 export const LOW_PRIVACY_THRESHOLD_WARNING = 5;
-
-/**
- * The threshold the methodology asks for. The product default is 1 so a
- * manager can try the whole flow alone, and every runtime accepts that, but a
- * round configured below this number cannot promise anonymity — so the manager
- * screens say so instead of leaving the gap between the two numbers unspoken.
- */
-export const RECOMMENDED_PRIVACY_THRESHOLD = 10;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -72,13 +72,21 @@ export function parseSurveyDefinition(
   if (
     typeof minimumResponses !== "number" ||
     !Number.isInteger(minimumResponses) ||
-    minimumResponses < MINIMUM_PRIVACY_THRESHOLD
+    minimumResponses < 1
   ) {
     return {
       ok: false,
-      error: `Privacy threshold must be at least ${MINIMUM_PRIVACY_THRESHOLD}.`,
+      error: "Privacy threshold must be a positive whole number.",
     };
   }
+
+  // A definition persisted before the threshold became mandatory is raised to
+  // it, never refused: refusing would take the round's own answer screen down
+  // with it, and the safe direction here is upward.
+  const enforcedMinimumResponses = Math.max(
+    minimumResponses,
+    MINIMUM_PRIVACY_THRESHOLD,
+  );
 
   if (!Array.isArray(questions)) {
     return { ok: false, error: "Survey questions are required." };
@@ -145,7 +153,7 @@ export function parseSurveyDefinition(
       title: title.trim(),
       audience: audience.trim(),
       estimatedMinutes,
-      minimumResponses,
+      minimumResponses: enforcedMinimumResponses,
       introText: introText.trim(),
       anonymityText: anonymityText.trim(),
       questions: parsedQuestions,

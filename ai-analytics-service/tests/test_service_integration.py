@@ -527,8 +527,15 @@ class TestShalomutAIService(unittest.TestCase):
             "keeps the school background context."
         )
 
-    def test_16_dynamic_contract_accepts_the_product_default_threshold(self):
-        """Core sends privacyThreshold 1 by default; the consumer must accept it."""
+    def test_16_a_round_below_the_requirement_is_raised_and_locked(self):
+        """A round configured below ten is read as locked, not refused.
+
+        Until 2026-07-27 the product default was 1 and this test asserted the
+        consumer must honour it. Ten respondents is now the requirement on both
+        sides, so a payload that still carries a lower threshold — an older
+        round, an older Core — has its threshold raised here and its detail
+        left unread, rather than being dropped with an error.
+        """
         from src.contracts import AI_ANALYTICS_DIMENSION_IDS
         from src.schemas.mcp_types import RoundAnalyticsResult
 
@@ -573,11 +580,31 @@ class TestShalomutAIService(unittest.TestCase):
 
         parsed = RoundAnalyticsResult.from_dict(payload)
 
-        self.assertEqual(parsed.privacyThreshold, 1)
-        self.assertFalse(parsed.isLocked)
+        self.assertEqual(parsed.privacyThreshold, 10)
+        self.assertTrue(parsed.isLocked)
+        self.assertEqual(parsed.dimensionScores, {})
+        self.assertEqual(parsed.questionAggregates, {})
 
         with self.assertRaises(ValueError):
             RoundAnalyticsResult.from_dict({**payload, "privacyThreshold": 0})
+
+        # Ten answers to every question is the same payload above the line.
+        wide = {
+            **payload,
+            "totalResponses": 12,
+            "dimensionScores": {
+                dimension_id: {**score, "responseCount": 12}
+                for dimension_id, score in payload["dimensionScores"].items()
+            },
+            "questionAggregates": {
+                key: {**aggregate, "responseCount": 12}
+                for key, aggregate in payload["questionAggregates"].items()
+            },
+        }
+        parsed_wide = RoundAnalyticsResult.from_dict(wide)
+
+        self.assertFalse(parsed_wide.isLocked)
+        self.assertEqual(parsed_wide.privacyThreshold, 10)
 
         print(
             "✔ Test 16 Passed: The dynamic contract accepts the product "

@@ -1,33 +1,31 @@
 import {
   LOW_PRIVACY_THRESHOLD_WARNING,
-  RECOMMENDED_PRIVACY_THRESHOLD,
+  MINIMUM_PRIVACY_THRESHOLD,
 } from "@/lib/survey-definition";
 
 /**
- * The reminder a manager sees while a round is configured below the
- * methodological threshold.
+ * The reminder a manager sees on a round configured below the required
+ * threshold.
  *
- * The product runs on a threshold of 1 everywhere — the database column, the
- * Core default and the AI service all accept it — so a manager can walk the
- * whole flow alone. Nothing in the runtime says that ten is what the method
- * asks for, and a number the screens never mention is a number nobody raises.
- * The text is graded rather than repeated: below five the average stops hiding
- * the individual respondent, which is a different statement from "the
- * recommended number is ten".
+ * No new round can reach this state — ten is the minimum everywhere now. What
+ * can is a round configured before that, whose stored number the manager still
+ * sees on screen. The text is graded rather than repeated: below five the
+ * average stops hiding the individual respondent, which is a different
+ * statement from "the required number is ten".
  */
 export function privacyThresholdNoticeText(
   minimumResponses: number,
 ): string | null {
   if (
     !Number.isFinite(minimumResponses) ||
-    minimumResponses >= RECOMMENDED_PRIVACY_THRESHOLD
+    minimumResponses >= MINIMUM_PRIVACY_THRESHOLD
   ) {
     return null;
   }
 
   const opening =
-    `הסף המתודולוגי הנדרש הוא ${RECOMMENDED_PRIVACY_THRESHOLD} משיבים, ` +
-    `ובסבב הזה נבחרו ${minimumResponses}.`;
+    `הסף הנדרש הוא ${MINIMUM_PRIVACY_THRESHOLD} משיבים, ` +
+    `ובסבב הזה נשמרו ${minimumResponses}.`;
 
   if (minimumResponses < LOW_PRIVACY_THRESHOLD_WARNING) {
     return (

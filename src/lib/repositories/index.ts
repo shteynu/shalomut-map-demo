@@ -1,3 +1,4 @@
+import { MINIMUM_PRIVACY_THRESHOLD } from '../survey-definition';
 import { Organization, SurveyRound } from '../types/backend';
 import { InMemoryOrganizationRepository } from './in-memory/in-memory-organization.repository';
 import { InMemoryRoundRepository } from './in-memory/in-memory-round.repository';
@@ -38,7 +39,7 @@ export const DEMO_ROUND: SurveyRound = {
   title: 'סקר שלומות - מחצית א׳ תשפ״ו',
   status: 'active',
   shareCode: 'SHALOM-DEMO',
-  privacyThreshold: 1,
+  privacyThreshold: MINIMUM_PRIVACY_THRESHOLD,
   startDate: new Date('2026-01-15T00:00:00.000Z'),
   createdAt: new Date('2026-01-15T00:00:00.000Z'),
 };

@@ -90,7 +90,7 @@ export const activeRound: Round = {
   closesAt: "-",
   status: "open",
   responseCount: 0,
-  minimumResponses: 1,
+  minimumResponses: 10,
   expectedResponses: 0,
   shareUrl: "",
   backgroundInputs: {

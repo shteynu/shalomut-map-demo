@@ -179,11 +179,12 @@ class Settings:
         self.chroma_persist_dir: str = os.getenv("CHROMA_PERSIST_DIR", "./chroma_db")
         
         # Privacy Constraint.
-        # The product default lives in Core (1, configurable per round) and
-        # always arrives on the payload as `privacyThreshold`. This value is
-        # only the fallback for a payload that omits it and mirrors the same
-        # product default, so both services describe the same rule.
-        self.privacy_threshold: int = int(os.getenv("PRIVACY_THRESHOLD", "1"))
+        # Ten respondents is the product requirement, in Core and here alike,
+        # and the threshold always arrives on the payload as
+        # `privacyThreshold`. This value is only the fallback for a payload
+        # that omits it, and it mirrors the same requirement so that neither
+        # service can be the lenient one.
+        self.privacy_threshold: int = int(os.getenv("PRIVACY_THRESHOLD", "10"))
 
     def resolved_llm_provider(self, model_name: str = "") -> str:
         if self.llm_provider != "auto":

@@ -2,7 +2,7 @@ import { ManagerOnboarding } from "@/components/manager";
 import { MetricCard, PageIntro } from "@/components/ui";
 import { RoundControls } from "@/components/round";
 import { loadManagerContext } from "@/lib/server/manager-context";
-import { RECOMMENDED_PRIVACY_THRESHOLD } from "@/lib/survey-definition";
+import { MINIMUM_PRIVACY_THRESHOLD } from "@/lib/survey-definition";
 
 const dateFormatter = new Intl.DateTimeFormat("he-IL", {
   day: "2-digit",
@@ -41,8 +41,8 @@ export default async function RoundPage() {
           value={`${currentRound.privacyThreshold}`}
           label="סף פרטיות"
           helper={
-            currentRound.privacyThreshold < RECOMMENDED_PRIVACY_THRESHOLD
-              ? `הגנה על אנונימיות — הסף הנדרש ${RECOMMENDED_PRIVACY_THRESHOLD}`
+            currentRound.privacyThreshold < MINIMUM_PRIVACY_THRESHOLD
+              ? `הגנה על אנונימיות — הסף הנדרש ${MINIMUM_PRIVACY_THRESHOLD}`
               : "הגנה על אנונימיות"
           }
           minimumResponses={currentRound.privacyThreshold}
