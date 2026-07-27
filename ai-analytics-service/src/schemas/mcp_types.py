@@ -15,6 +15,7 @@ from src.contracts import (
     AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS,
     AI_ANALYTICS_V1_CONTRACT_VERSION,
     AI_ANALYTICS_V4_CONTRACT_VERSION,
+    AI_ANALYTICS_V5_CONTRACT_VERSION,
 )
 
 DimensionStatus = Literal["green", "yellow", "red"]
@@ -243,14 +244,22 @@ class RoundAnalyticsResult:
                     cls._validate_v3_question_aggregate_input(
                         question_id,
                         aggregate,
+                        contract_version=contract_version,
                     )
-                    question_aggregates[question_id] = {
+                    q_item = {
                         "questionId": aggregate["questionId"],
                         "dimensionId": aggregate["dimensionId"],
                         "questionText": aggregate["questionText"],
                         "averageScore": float(aggregate["averageScore"]),
                         "responseCount": raw_response_count,
                     }
+                    if contract_version == AI_ANALYTICS_V5_CONTRACT_VERSION and "scoreDistribution" in aggregate:
+                        q_item["scoreDistribution"] = {
+                            "green": int(aggregate["scoreDistribution"]["green"]),
+                            "yellow": int(aggregate["scoreDistribution"]["yellow"]),
+                            "red": int(aggregate["scoreDistribution"]["red"]),
+                        }
+                    question_aggregates[question_id] = q_item
                 else:
                     question_aggregates[question_id] = {
                         "questionId": aggregate.get(
@@ -400,6 +409,7 @@ class RoundAnalyticsResult:
     def _validate_v3_question_aggregate_input(
         map_key: str,
         aggregate: Dict[str, Any],
+        contract_version: str = AI_ANALYTICS_V4_CONTRACT_VERSION,
     ) -> None:
         for field_name in ("questionId", "dimensionId", "questionText"):
             value = aggregate.get(field_name)
@@ -427,6 +437,24 @@ class RoundAnalyticsResult:
             raise ValueError(
                 f"Question aggregate '{map_key}' averageScore must be numeric"
             )
+
+        if contract_version == AI_ANALYTICS_V5_CONTRACT_VERSION:
+            score_dist = aggregate.get("scoreDistribution")
+            if not isinstance(score_dist, dict):
+                raise ValueError(
+                    f"Question aggregate '{map_key}' in 5.0 requires scoreDistribution object"
+                )
+            for k in ("green", "yellow", "red"):
+                val = score_dist.get(k)
+                if not isinstance(val, int) or isinstance(val, bool) or val < 0:
+                    raise ValueError(
+                        f"Question aggregate '{map_key}' scoreDistribution.{k} must be non-negative integer"
+                    )
+            raw_response_count = aggregate.get("responseCount", 0)
+            if score_dist["green"] + score_dist["yellow"] + score_dist["red"] != raw_response_count:
+                raise ValueError(
+                    f"Question aggregate '{map_key}' scoreDistribution sum must equal responseCount"
+                )
 
     @staticmethod
     def _validate_v3_aggregates(
