@@ -241,11 +241,18 @@ async def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
             )
 
     background_context = _background_context_for_prompt(round_data, state)
-    overall_summary = llm_provider_service.generate_overall_summary(
+    # Blocking provider call: the eight interpretations already run in worker
+    # threads, and leaving this one on the event loop stalls the whole service
+    # for the length of the round summary request.
+    overall_summary = await asyncio.to_thread(
+        llm_provider_service.generate_overall_summary,
         dim_scores=dim_scores,
         background_context=background_context,
         retry_tier=retry_tier,
         contract_version=eff_version,
+        question_aggregates=list(
+            round_data.get("questionAggregates", {}).values(),
+        ),
     )
 
     return {

@@ -6,7 +6,7 @@ import logging
 import random
 import re
 import time
-from typing import Any, Dict, Iterable, Literal, Optional
+from typing import Any, Callable, Dict, Iterable, Literal, Optional, Tuple
 import urllib.error
 import urllib.request
 
@@ -126,255 +126,40 @@ class LLMProviderService:
                 attempts=0,
             )
 
-        model_name = (
-            settings.llm_model_heavy
-            if retry_tier == "heavy"
-            else settings.llm_model_fast
-        )
+        model_name = self._model_for_tier(retry_tier)
         provider = settings.resolved_llm_provider(model_name)
-        fallback_reason = "missing_api_key"
-        attempts = 0
-
-        if settings.llm_api_key:
-            try:
-                endpoint = self._resolve_endpoint(model_name)
-                prompt = self._build_prompt(
-                    dim_id=dim_id,
-                    dim_hebrew=dim_hebrew,
-                    score=score,
-                    status=status,
-                    question_aggregates=questions,
-                    background_context=background_context,
+        text, attempts, fallback_reason = self._complete_with_retries(
+            build_prompt=lambda: self._build_prompt(
+                dim_id=dim_id,
+                dim_hebrew=dim_hebrew,
+                score=score,
+                status=status,
+                question_aggregates=questions,
+                background_context=background_context,
+                contract_version=contract_version,
+                all_dimension_scores=all_dimension_scores,
+            ),
+            system_prompt=(
+                "You are a concise organizational psychologist for "
+                "educational staff."
+            ),
+            model_name=model_name,
+            is_acceptable=lambda candidate, finish_reason: (
+                self._is_valid_provider_output(
+                    candidate,
+                    finish_reason,
+                    status,
                     contract_version=contract_version,
-                    all_dimension_scores=all_dimension_scores,
+                    distribution_counts=self.distribution_counts(questions),
                 )
-                max_tokens = settings.max_tokens_per_dimension
-                req_payload = json.dumps({
-                    "model": model_name,
-                    "messages": [
-                        {"role": "system", "content": "You are a concise organizational psychologist for educational staff."},
-                        {"role": "user", "content": prompt}
-                    ],
-                    "max_tokens": max_tokens,
-                    "temperature": 0.2
-                }).encode("utf-8")
-
-                req = urllib.request.Request(
-                    endpoint,
-                    data=req_payload,
-                    headers={
-                        "Content-Type": "application/json",
-                        "Authorization": f"Bearer {settings.llm_api_key}"
-                    },
-                    method="POST"
-                )
-                request_started_at = time.monotonic()
-                fallback_reason = "provider_error"
-                for attempt in range(1, settings.llm_max_attempts + 1):
-                    try:
-                        remaining_budget = self._remaining_retry_budget(
-                            request_started_at,
-                        )
-                        if remaining_budget < 0.1:
-                            fallback_reason = "retry_budget_exhausted"
-                            logger.warning(
-                                "[LLM Service] "
-                                "outcome=deterministic_fallback "
-                                "provider=%s model=%s reason=%s "
-                                "attempts=%s",
-                                provider,
-                                model_name,
-                                fallback_reason,
-                                attempts,
-                            )
-                            break
-                        attempts = attempt
-                        request_timeout = min(
-                            settings.llm_request_timeout_seconds,
-                            remaining_budget,
-                        )
-                        with urllib.request.urlopen(
-                            req,
-                            timeout=request_timeout,
-                        ) as response:
-                            if response.status == 200:
-                                fallback_reason = ""
-                                try:
-                                    res = json.loads(
-                                        response.read().decode("utf-8"),
-                                    )
-                                    choice = res["choices"][0]
-                                    content = choice["message"]["content"]
-                                    if not isinstance(content, str):
-                                        raise TypeError(
-                                            "Provider content must be text"
-                                        )
-                                    result = content.strip()
-                                    finish_reason = choice.get(
-                                        "finish_reason",
-                                    )
-                                except (
-                                    IndexError,
-                                    KeyError,
-                                    TypeError,
-                                    UnicodeDecodeError,
-                                    json.JSONDecodeError,
-                                ):
-                                    result = ""
-                                    finish_reason = None
-                                    fallback_reason = (
-                                        "invalid_provider_response"
-                                    )
-                                if self._is_valid_provider_output(
-                                    result,
-                                    finish_reason,
-                                    status,
-                                    contract_version=contract_version,
-                                    distribution_counts=(
-                                        self.distribution_counts(questions)
-                                    ),
-                                ):
-                                    logger.info(
-                                        "[LLM Service] outcome=llm "
-                                        "provider=%s model=%s attempt=%s",
-                                        provider,
-                                        model_name,
-                                        attempt,
-                                    )
-                                    return InterpretationGeneration(
-                                        text=result,
-                                        outcome="llm",
-                                        attempts=attempts,
-                                    )
-
-                                if fallback_reason != "invalid_provider_response":
-                                    fallback_reason = (
-                                        "invalid_finish_reason"
-                                        if finish_reason != "stop"
-                                        else "invalid_semantic_output"
-                                    )
-                                if (
-                                    attempt < settings.llm_max_attempts
-                                    and self._can_retry_within_budget(
-                                        request_started_at,
-                                        0.0,
-                                    )
-                                ):
-                                    logger.warning(
-                                        "[LLM Service] outcome=retry "
-                                        "provider=%s model=%s reason=%s "
-                                        "attempt=%s max_attempts=%s",
-                                        provider,
-                                        model_name,
-                                        fallback_reason,
-                                        attempt,
-                                        settings.llm_max_attempts,
-                                    )
-                                    continue
-                                break
-                            fallback_reason = f"http_{response.status}"
-                            break
-                    except urllib.error.HTTPError as error:
-                        fallback_reason = f"http_{error.code}"
-                        error_code = self._extract_safe_error_code(error)
-                        request_id = self._safe_log_token(
-                            error.headers.get("x-request-id")
-                            or error.headers.get("x-goog-request-id")
-                            or "unavailable",
-                        )
-                        should_retry = self._is_retryable_http_error(
-                            error.code,
-                            error_code,
-                        )
-                        if (
-                            should_retry
-                            and attempt < settings.llm_max_attempts
-                        ):
-                            delay = self._retry_delay_seconds(
-                                error,
-                                attempt,
-                            )
-                            if self._can_retry_within_budget(
-                                request_started_at,
-                                delay,
-                            ):
-                                logger.warning(
-                                    "[LLM Service] outcome=retry "
-                                    "provider=%s model=%s status=%s "
-                                    "error_code=%s request_id=%s "
-                                    "attempt=%s max_attempts=%s "
-                                    "delay_ms=%s",
-                                    provider,
-                                    model_name,
-                                    error.code,
-                                    error_code or "unavailable",
-                                    request_id,
-                                    attempt,
-                                    settings.llm_max_attempts,
-                                    round(delay * 1000),
-                                )
-                                time.sleep(delay)
-                                continue
-
-                        logger.warning(
-                            "[LLM Service] outcome=deterministic_fallback "
-                            "provider=%s "
-                            "model=%s status=%s error_code=%s "
-                            "request_id=%s attempts=%s",
-                            provider,
-                            model_name,
-                            error.code,
-                            error_code or "unavailable",
-                            request_id,
-                            attempt,
-                        )
-                        break
-                    except TimeoutError as error:
-                        fallback_reason = type(error).__name__
-                        max_timeout_attempts = min(
-                            settings.llm_max_attempts,
-                            2,
-                        )
-                        if attempt < max_timeout_attempts:
-                            delay = self._backoff_delay_seconds(attempt)
-                            if self._can_retry_within_budget(
-                                request_started_at,
-                                delay,
-                            ):
-                                logger.warning(
-                                    "[LLM Service] outcome=retry "
-                                    "provider=%s model=%s error_type=%s "
-                                    "attempt=%s max_attempts=%s "
-                                    "delay_ms=%s",
-                                    provider,
-                                    model_name,
-                                    fallback_reason,
-                                    attempt,
-                                    max_timeout_attempts,
-                                    round(delay * 1000),
-                                )
-                                time.sleep(delay)
-                                continue
-
-                        logger.warning(
-                            "[LLM Service] outcome=deterministic_fallback "
-                            "provider=%s "
-                            "model=%s error_type=%s attempts=%s",
-                            provider,
-                            model_name,
-                            fallback_reason,
-                            attempt,
-                        )
-                        break
-            except Exception as error:
-                fallback_reason = type(error).__name__
-                logger.warning(
-                    "[LLM Service] outcome=deterministic_fallback provider=%s "
-                    "model=%s error_type=%s",
-                    provider,
-                    model_name,
-                    fallback_reason,
-                )
+            ),
+        )
+        if text is not None:
+            return InterpretationGeneration(
+                text=text,
+                outcome="llm",
+                attempts=attempts,
+            )
 
         logger.info(
             "[LLM Service] outcome=deterministic_fallback provider=%s "
@@ -395,12 +180,261 @@ class LLMProviderService:
             attempts=attempts,
         )
 
+    @staticmethod
+    def _model_for_tier(retry_tier: str) -> str:
+        return (
+            settings.llm_model_heavy
+            if retry_tier == "heavy"
+            else settings.llm_model_fast
+        )
+
+    def _complete_with_retries(
+        self,
+        *,
+        build_prompt: Callable[[], str],
+        system_prompt: str,
+        model_name: str,
+        is_acceptable: Callable[[str, object], bool],
+    ) -> Tuple[Optional[str], int, str]:
+        """Run one bounded provider conversation and report what happened.
+
+        Returns the accepted text (or None), how many attempts were made and
+        the reason a caller has to fall back. Every generation goes through
+        here, so a second one cannot quietly get a weaker transport than the
+        interpretations: same attempt cap, retry budget, backoff, Retry-After
+        handling, hard-quota rules and log lines.
+        """
+        provider = settings.resolved_llm_provider(model_name)
+        attempts = 0
+        if not settings.llm_api_key:
+            return None, attempts, "missing_api_key"
+
+        fallback_reason = "provider_error"
+        try:
+            endpoint = self._resolve_endpoint(model_name)
+            req_payload = json.dumps({
+                "model": model_name,
+                "messages": [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": build_prompt()}
+                ],
+                "max_tokens": settings.max_tokens_per_dimension,
+                "temperature": 0.2
+            }).encode("utf-8")
+
+            req = urllib.request.Request(
+                endpoint,
+                data=req_payload,
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {settings.llm_api_key}"
+                },
+                method="POST"
+            )
+            request_started_at = time.monotonic()
+            for attempt in range(1, settings.llm_max_attempts + 1):
+                try:
+                    remaining_budget = self._remaining_retry_budget(
+                        request_started_at,
+                    )
+                    if remaining_budget < 0.1:
+                        fallback_reason = "retry_budget_exhausted"
+                        logger.warning(
+                            "[LLM Service] "
+                            "outcome=deterministic_fallback "
+                            "provider=%s model=%s reason=%s "
+                            "attempts=%s",
+                            provider,
+                            model_name,
+                            fallback_reason,
+                            attempts,
+                        )
+                        break
+                    attempts = attempt
+                    request_timeout = min(
+                        settings.llm_request_timeout_seconds,
+                        remaining_budget,
+                    )
+                    with urllib.request.urlopen(
+                        req,
+                        timeout=request_timeout,
+                    ) as response:
+                        if response.status == 200:
+                            fallback_reason = ""
+                            try:
+                                res = json.loads(
+                                    response.read().decode("utf-8"),
+                                )
+                                choice = res["choices"][0]
+                                content = choice["message"]["content"]
+                                if not isinstance(content, str):
+                                    raise TypeError(
+                                        "Provider content must be text"
+                                    )
+                                result = content.strip()
+                                finish_reason = choice.get(
+                                    "finish_reason",
+                                )
+                            except (
+                                IndexError,
+                                KeyError,
+                                TypeError,
+                                UnicodeDecodeError,
+                                json.JSONDecodeError,
+                            ):
+                                result = ""
+                                finish_reason = None
+                                fallback_reason = (
+                                    "invalid_provider_response"
+                                )
+                            if is_acceptable(result, finish_reason):
+                                logger.info(
+                                    "[LLM Service] outcome=llm "
+                                    "provider=%s model=%s attempt=%s",
+                                    provider,
+                                    model_name,
+                                    attempt,
+                                )
+                                return result, attempts, ""
+
+                            if fallback_reason != "invalid_provider_response":
+                                fallback_reason = (
+                                    "invalid_finish_reason"
+                                    if finish_reason != "stop"
+                                    else "invalid_semantic_output"
+                                )
+                            if (
+                                attempt < settings.llm_max_attempts
+                                and self._can_retry_within_budget(
+                                    request_started_at,
+                                    0.0,
+                                )
+                            ):
+                                logger.warning(
+                                    "[LLM Service] outcome=retry "
+                                    "provider=%s model=%s reason=%s "
+                                    "attempt=%s max_attempts=%s",
+                                    provider,
+                                    model_name,
+                                    fallback_reason,
+                                    attempt,
+                                    settings.llm_max_attempts,
+                                )
+                                continue
+                            break
+                        fallback_reason = f"http_{response.status}"
+                        break
+                except urllib.error.HTTPError as error:
+                    fallback_reason = f"http_{error.code}"
+                    error_code = self._extract_safe_error_code(error)
+                    request_id = self._safe_log_token(
+                        error.headers.get("x-request-id")
+                        or error.headers.get("x-goog-request-id")
+                        or "unavailable",
+                    )
+                    should_retry = self._is_retryable_http_error(
+                        error.code,
+                        error_code,
+                    )
+                    if (
+                        should_retry
+                        and attempt < settings.llm_max_attempts
+                    ):
+                        delay = self._retry_delay_seconds(
+                            error,
+                            attempt,
+                        )
+                        if self._can_retry_within_budget(
+                            request_started_at,
+                            delay,
+                        ):
+                            logger.warning(
+                                "[LLM Service] outcome=retry "
+                                "provider=%s model=%s status=%s "
+                                "error_code=%s request_id=%s "
+                                "attempt=%s max_attempts=%s "
+                                "delay_ms=%s",
+                                provider,
+                                model_name,
+                                error.code,
+                                error_code or "unavailable",
+                                request_id,
+                                attempt,
+                                settings.llm_max_attempts,
+                                round(delay * 1000),
+                            )
+                            time.sleep(delay)
+                            continue
+
+                    logger.warning(
+                        "[LLM Service] outcome=deterministic_fallback "
+                        "provider=%s "
+                        "model=%s status=%s error_code=%s "
+                        "request_id=%s attempts=%s",
+                        provider,
+                        model_name,
+                        error.code,
+                        error_code or "unavailable",
+                        request_id,
+                        attempt,
+                    )
+                    break
+                except TimeoutError as error:
+                    fallback_reason = type(error).__name__
+                    max_timeout_attempts = min(
+                        settings.llm_max_attempts,
+                        2,
+                    )
+                    if attempt < max_timeout_attempts:
+                        delay = self._backoff_delay_seconds(attempt)
+                        if self._can_retry_within_budget(
+                            request_started_at,
+                            delay,
+                        ):
+                            logger.warning(
+                                "[LLM Service] outcome=retry "
+                                "provider=%s model=%s error_type=%s "
+                                "attempt=%s max_attempts=%s "
+                                "delay_ms=%s",
+                                provider,
+                                model_name,
+                                fallback_reason,
+                                attempt,
+                                max_timeout_attempts,
+                                round(delay * 1000),
+                            )
+                            time.sleep(delay)
+                            continue
+
+                    logger.warning(
+                        "[LLM Service] outcome=deterministic_fallback "
+                        "provider=%s "
+                        "model=%s error_type=%s attempts=%s",
+                        provider,
+                        model_name,
+                        fallback_reason,
+                        attempt,
+                    )
+                    break
+        except Exception as error:
+            fallback_reason = type(error).__name__
+            logger.warning(
+                "[LLM Service] outcome=deterministic_fallback provider=%s "
+                "model=%s error_type=%s",
+                provider,
+                model_name,
+                fallback_reason,
+            )
+
+        return None, attempts, fallback_reason
+
     def generate_overall_summary(
         self,
         dim_scores: Dict[str, Any],
         background_context: Optional[Dict[str, Any]] = None,
         retry_tier: str = "fast",
         contract_version: str = "4.0",
+        question_aggregates: Iterable[Dict[str, Any]] | None = None,
     ) -> str:
         yellow_red_count = sum(
             1
@@ -414,62 +448,111 @@ class LLMProviderService:
             "כל המסקנות נשענות על נתונים מצרפיים מעל סף הפרטיות."
         )
 
-        if contract_version != "5.0" or not settings.llm_api_key:
+        if contract_version != "5.0":
             return fallback
 
-        model_name = (
-            settings.llm_model_heavy
-            if retry_tier == "heavy"
-            else settings.llm_model_fast
+        model_name = self._model_for_tier(retry_tier)
+        text, _attempts, _fallback_reason = self._complete_with_retries(
+            build_prompt=lambda: self._build_overall_summary_prompt(
+                dim_scores,
+                question_aggregates,
+                background_context,
+            ),
+            system_prompt=(
+                "You are an organizational psychologist summarizing school "
+                "wellbeing."
+            ),
+            model_name=model_name,
+            is_acceptable=lambda candidate, finish_reason: (
+                finish_reason == "stop"
+                and self.is_hebrew_only_copy(candidate)
+                and 2
+                <= len(_COMPLETE_SENTENCE_PATTERN.findall(candidate))
+                <= 4
+            ),
         )
-        try:
-            endpoint = self._resolve_endpoint(model_name)
-            dim_lines = []
-            for d_id, d_val in dim_scores.items():
-                score_v = d_val.get("averageScore", 0.0) if isinstance(d_val, dict) else getattr(d_val, "averageScore", 0.0)
-                stat_v = d_val.get("computedStatus", "") if isinstance(d_val, dict) else getattr(d_val, "computedStatus", "")
-                d_heb = AI_ANALYTICS_DIMENSION_NAMES_HEBREW.get(d_id, d_id)
-                dim_lines.append(f"- {d_heb}: ציון {score_v:.1f}, סטטוס {stat_v}")
-            dim_summary_str = "\n".join(dim_lines)
+        return text if text is not None else fallback
 
-            prompt = (
-                "You are an organizational psychologist summarizing the overall teacher wellbeing picture of a school.\n"
-                f"Dimension Scores:\n{dim_summary_str}\n"
-                "Return between 2 and 4 complete Hebrew-only sentences summarizing the overall state. "
-                "Highlight key strengths and main priority areas. Keep the tone professional, supportive, and grounded in the data."
+    def _build_overall_summary_prompt(
+        self,
+        dim_scores: Dict[str, Any],
+        question_aggregates: Iterable[Dict[str, Any]] | None = None,
+        background_context: Optional[Dict[str, Any]] = None,
+    ) -> str:
+        """The round-level picture: eight dimensions with their distributions.
+
+        Score and status alone cannot separate "everyone answered yellow" from
+        "half green, half red", which are different rounds to write about.
+        """
+        aggregates = list(question_aggregates or [])
+        dim_lines = []
+        for dimension_id, dimension_score in dim_scores.items():
+            score_value = (
+                dimension_score.get("averageScore", 0.0)
+                if isinstance(dimension_score, dict)
+                else getattr(dimension_score, "averageScore", 0.0)
             )
-            req_payload = json.dumps({
-                "model": model_name,
-                "messages": [
-                    {"role": "system", "content": "You are an organizational psychologist summarizing school wellbeing."},
-                    {"role": "user", "content": prompt}
-                ],
-                "max_tokens": 300,
-                "temperature": 0.2
-            }).encode("utf-8")
-
-            req = urllib.request.Request(
-                endpoint,
-                data=req_payload,
-                headers={
-                    "Content-Type": "application/json",
-                    "Authorization": f"Bearer {settings.llm_api_key}"
-                },
-                method="POST"
+            status_value = (
+                dimension_score.get("computedStatus", "")
+                if isinstance(dimension_score, dict)
+                else getattr(dimension_score, "computedStatus", "")
             )
-            with urllib.request.urlopen(req, timeout=settings.llm_request_timeout_seconds) as response:
-                if response.status == 200:
-                    res = json.loads(response.read().decode("utf-8"))
-                    content = res["choices"][0]["message"]["content"].strip()
-                    finish_reason = res["choices"][0].get("finish_reason")
-                    if finish_reason == "stop" and self.is_hebrew_only_copy(content):
-                        sentences = _COMPLETE_SENTENCE_PATTERN.findall(content)
-                        if 2 <= len(sentences) <= 4:
-                            return content
-        except Exception as err:
-            logger.warning(f"[LLM Service] Overall summary generation fallback: {err}")
+            hebrew_name = AI_ANALYTICS_DIMENSION_NAMES_HEBREW.get(
+                dimension_id,
+                dimension_id,
+            )
+            line = (
+                f"- {hebrew_name}: ציון {score_value:.1f}, "
+                f"סטטוס {status_value}"
+            )
+            distribution = self._summed_distribution(
+                aggregate
+                for aggregate in aggregates
+                if aggregate.get("dimensionId") == dimension_id
+            )
+            if distribution:
+                line += (
+                    f" (פיזור: {distribution['green']} ירוק / "
+                    f"{distribution['yellow']} צהוב / "
+                    f"{distribution['red']} אדום)"
+                )
+            dim_lines.append(line)
 
-        return fallback
+        background_lines = self._background_context_lines(background_context)
+        background_section = (
+            "\nSchool Background Context:\n" + "\n".join(background_lines)
+            if background_lines
+            else ""
+        )
+
+        return (
+            "You are an organizational psychologist summarizing the overall "
+            "teacher wellbeing picture of a school.\n"
+            f"Dimension Scores:\n" + "\n".join(dim_lines) + "\n"
+            f"{background_section}\n"
+            "Return between 2 and 4 complete Hebrew-only sentences "
+            "summarizing the overall state. Highlight key strengths and main "
+            "priority areas, and use the distributions rather than the "
+            "averages alone. Keep the tone professional, supportive, and "
+            "grounded in the data; do not invent causes or diagnoses."
+        )
+
+    @staticmethod
+    def _summed_distribution(
+        question_aggregates: Iterable[Dict[str, Any]],
+    ) -> Optional[Dict[str, int]]:
+        totals = {"green": 0, "yellow": 0, "red": 0}
+        seen = False
+        for aggregate in question_aggregates:
+            distribution = aggregate.get("scoreDistribution")
+            if not isinstance(distribution, dict):
+                continue
+            for bucket in totals:
+                count = distribution.get(bucket)
+                if isinstance(count, int) and not isinstance(count, bool):
+                    totals[bucket] += count
+                    seen = True
+        return totals if seen else None
 
     def _build_prompt(
         self,
@@ -498,25 +581,7 @@ class LLMProviderService:
             )
         aggregate_lines = "\n".join(lines)
 
-        bg_lines = []
-        if isinstance(background_context, dict):
-            if background_context.get("notes"):
-                bg_lines.append(f"הערות רקע מהמנהלת: {background_context['notes']}")
-            if background_context.get("audience"):
-                bg_lines.append(f"קהל יעד: {background_context['audience']}")
-            if background_context.get("studentCount"):
-                bg_lines.append(f"מספר תלמידים: {background_context['studentCount']}")
-            if background_context.get("socioEconomicIndex"):
-                bg_lines.append(f"מדד טיפוח: {background_context['socioEconomicIndex']}")
-            if background_context.get("newStaffMembers"):
-                bg_lines.append(f"צוות חדש: {background_context['newStaffMembers']}")
-            if background_context.get("sicknessDaysThisQuarter"):
-                bg_lines.append(f"ימי מחלה ברבעון: {background_context['sicknessDaysThisQuarter']}")
-            classes = background_context.get("classesPerGrade")
-            if isinstance(classes, dict) and classes:
-                classes_str = ", ".join(f"שכבה {k}: {v}" for k, v in classes.items() if v)
-                if classes_str:
-                    bg_lines.append(f"כיתות: {classes_str}")
+        bg_lines = self._background_context_lines(background_context)
         bg_section = ("\nSchool Background Context:\n" + "\n".join(bg_lines)) if bg_lines else ""
 
         cross_dim_section = ""
@@ -548,6 +613,41 @@ class LLMProviderService:
             "diagnoses, identities, or respondent-level facts, and keep the "
             "interpretation consistent with the stated status."
         )
+
+    @staticmethod
+    def _background_context_lines(
+        background_context: Optional[Dict[str, Any]],
+    ) -> list[str]:
+        """School-level context lines shared by every prompt that carries it."""
+        if not isinstance(background_context, dict):
+            return []
+
+        lines = []
+        if background_context.get("notes"):
+            lines.append(f"הערות רקע מהמנהלת: {background_context['notes']}")
+        if background_context.get("audience"):
+            lines.append(f"קהל יעד: {background_context['audience']}")
+        if background_context.get("studentCount"):
+            lines.append(f"מספר תלמידים: {background_context['studentCount']}")
+        if background_context.get("socioEconomicIndex"):
+            lines.append(f"מדד טיפוח: {background_context['socioEconomicIndex']}")
+        if background_context.get("newStaffMembers"):
+            lines.append(f"צוות חדש: {background_context['newStaffMembers']}")
+        if background_context.get("sicknessDaysThisQuarter"):
+            lines.append(
+                "ימי מחלה ברבעון: "
+                f"{background_context['sicknessDaysThisQuarter']}"
+            )
+        classes = background_context.get("classesPerGrade")
+        if isinstance(classes, dict) and classes:
+            classes_str = ", ".join(
+                f"שכבה {grade}: {count}"
+                for grade, count in classes.items()
+                if count
+            )
+            if classes_str:
+                lines.append(f"כיתות: {classes_str}")
+        return lines
 
     def _normalize_question_aggregates(
         self,

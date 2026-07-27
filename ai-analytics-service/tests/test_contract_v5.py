@@ -260,3 +260,129 @@ async def test_v5_safety_validator_rejects_an_overstated_provenance(monkeypatch)
 
     assert validated["safety_status"] == "fail"
     assert "Generation provenance is invalid" in validated["safety_feedback"]
+
+
+def _summary_response(content):
+    class _Response:
+        status = 200
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def read(self):
+            return json.dumps(
+                {
+                    "choices": [
+                        {
+                            "finish_reason": "stop",
+                            "message": {"content": content},
+                        },
+                    ],
+                },
+            ).encode("utf-8")
+
+    return _Response()
+
+
+def test_overall_summary_prompt_carries_distributions_and_context():
+    round_data = build_v5_round_data(BACKGROUND_CONTEXT)
+
+    prompt = llm_provider_service._build_overall_summary_prompt(
+        round_data["dimensionScores"],
+        list(round_data["questionAggregates"].values()),
+        BACKGROUND_CONTEXT,
+    )
+
+    # Score and status alone cannot tell "all yellow" from "half green, half
+    # red", so the round summary has to see the buckets too.
+    assert "פיזור: 4 ירוק / 12 צהוב / 4 אדום" in prompt
+    assert BACKGROUND_CONTEXT["notes"] in prompt
+
+
+def test_overall_summary_uses_the_shared_transport(monkeypatch):
+    accepted = (
+        "התמונה הכללית מצביעה על צוות יציב עם עומס נקודתי. "
+        "מומלץ למקד את תשומת הלב באיזון ובוודאות. "
+        "שאר הממדים משמרים חוזקה."
+    )
+    captured = {}
+
+    def fake_urlopen(request, timeout=None):
+        captured.update(json.loads(request.data.decode("utf-8")))
+        return _summary_response(accepted)
+
+    monkeypatch.setattr(settings, "llm_api_key", "sk-test-summary")
+    monkeypatch.setattr(settings, "llm_base_url", "https://provider.local/v1")
+    monkeypatch.setattr(settings, "max_tokens_per_dimension", 420)
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+
+    round_data = build_v5_round_data(BACKGROUND_CONTEXT)
+    summary = llm_provider_service.generate_overall_summary(
+        dim_scores=round_data["dimensionScores"],
+        background_context=BACKGROUND_CONTEXT,
+        contract_version=AI_ANALYTICS_V5_CONTRACT_VERSION,
+        question_aggregates=list(round_data["questionAggregates"].values()),
+    )
+
+    assert summary == accepted
+    # The hardcoded 300-token cap of the first implementation is gone.
+    assert captured["max_tokens"] == 420
+
+
+def test_overall_summary_falls_back_when_the_provider_fails(monkeypatch):
+    def fake_urlopen(request, timeout=None):
+        raise OSError("provider offline")
+
+    monkeypatch.setattr(settings, "llm_api_key", "sk-test-summary")
+    monkeypatch.setattr(settings, "llm_base_url", "https://provider.local/v1")
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+
+    round_data = build_v5_round_data()
+    summary = llm_provider_service.generate_overall_summary(
+        dim_scores=round_data["dimensionScores"],
+        contract_version=AI_ANALYTICS_V5_CONTRACT_VERSION,
+        question_aggregates=list(round_data["questionAggregates"].values()),
+    )
+
+    assert "הניתוח המצרפי מציג 8 ממדים" in summary
+
+
+def test_overall_summary_rejects_a_five_sentence_answer(monkeypatch):
+    too_long = (
+        "משפט ראשון. משפט שני. משפט שלישי. משפט רביעי. משפט חמישי."
+    )
+    monkeypatch.setattr(settings, "llm_api_key", "sk-test-summary")
+    monkeypatch.setattr(settings, "llm_base_url", "https://provider.local/v1")
+    monkeypatch.setattr(
+        "urllib.request.urlopen",
+        lambda request, timeout=None: _summary_response(too_long),
+    )
+
+    round_data = build_v5_round_data()
+    summary = llm_provider_service.generate_overall_summary(
+        dim_scores=round_data["dimensionScores"],
+        contract_version=AI_ANALYTICS_V5_CONTRACT_VERSION,
+        question_aggregates=list(round_data["questionAggregates"].values()),
+    )
+
+    assert summary != too_long
+    assert "הניתוח המצרפי מציג" in summary
+
+
+def test_overall_summary_stays_deterministic_before_5_0(monkeypatch):
+    monkeypatch.setattr(settings, "llm_api_key", "sk-test-summary")
+    monkeypatch.setattr(
+        "urllib.request.urlopen",
+        lambda request, timeout=None: _summary_response("לא אמור להיקרא. בכלל."),
+    )
+
+    round_data = build_v5_round_data()
+    for version in ("2.0", "3.0", "4.0"):
+        summary = llm_provider_service.generate_overall_summary(
+            dim_scores=round_data["dimensionScores"],
+            contract_version=version,
+        )
+        assert "הניתוח המצרפי מציג" in summary
