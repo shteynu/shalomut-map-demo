@@ -28,9 +28,10 @@ Updated: 2026-07-27 (deployed, migrated, contract 4.0 enabled)
 1. [ ] End-to-end check on the deployed app (needs a manager login, so the owner has to run it): create a round,
        submit a response, confirm the persisted AI result carries `contractVersion: "4.0"` and
        `generationProvenance.backgroundContextIncluded: true`.
-2. [ ] Remove the hardcoded organization fallback `34d05e66-…` in
+2. [~] Remove the hardcoded organization fallback `34d05e66-…` in
        [`manager-auth-service.ts:23`](src/lib/auth/manager-auth-service.ts) and make `MANAGER_ORGANIZATION_ID`
-       mandatory on a deployed runtime.
+       mandatory on a deployed runtime. *(started in a separate session on 2026-07-27; check whether that branch
+       landed before picking it up again)*
 3. [ ] AI-generated proposed question flow (slice 3.1, on explicit user request).
 
 ---
