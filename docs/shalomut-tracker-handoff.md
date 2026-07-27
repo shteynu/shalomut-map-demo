@@ -1,6 +1,6 @@
 # Shalomut Tracker — актуальный handoff
 
-Обновлено: 2026-07-27
+Обновлено: 2026-07-27 (исправлены respondent re-entry, route loaders, привязка организации)
 
 Это оперативная точка входа для перехода от исходного статического demo
 Shalomut Map к `shalomut-tracker`, где сохранённые данные должны быть единственным
@@ -10,6 +10,38 @@ exact вопросы раунда принадлежат persisted `SurveyRound.
 Визуальные mock-данные изолированы в `src/lib/demo-data.ts`.
 
 ## Текущий snapshot
+
+- **Два Supabase-проекта; предыдущая запись путала их (исправлено 2026-07-27)**:
+  - Deployed app читает `tpfzhyalaftotljmlont` (`aws-1-ap-northeast-2`, Сеул). Доказательство:
+    `GET https://shalomut-map-demo.vercel.app/api/survey/SHALOM-F125/` → `200` для раунда, который существует
+    только там. В этой базе организация `34d05e66-fa4d-4a07-a2af-c9d5c41b6088` («טסט») и активный раунд
+    `3173c065-…` / `SHALOM-F125`.
+  - Второй проект `fvnulyirrqjrnjbahmsn` (`aws-0-ap-southeast-1`, записан как `main / Production`) содержит
+    организацию `be9f184a-…` и `0` раундов. Обе миграции 2026-07-27 08:07 ушли туда, а не в обслуживающую базу,
+    и `MANAGER_ORGANIZATION_ID` был выставлен на организацию, которой в обслуживающей базе нет.
+  - Причина: [`prisma.config.ts`](../prisma.config.ts) делает `import 'dotenv/config'`, а `.env` указывает на
+    `fvnulyirrqjrnjbahmsn`. Любой migration-запуск без явного `DIRECT_URL` в окружении молча бьёт не в ту базу.
+    Перед миграцией обязательно сверяй хост в выводе Prisma с целевым проектом.
+  - Утверждение прошлой сессии, что организация `34d05e66-…` была удалена при очистке staging, **неверно**:
+    она жива и владеет рабочим раундом. Хардкод-фолбэк удалять было правильно, значение — нет.
+
+- **Обе поправки применены (2026-07-27, по явному разрешению пользователя)**:
+  - Недостающая миграция `20260726210000_privacy_threshold_default_one` применена к
+    `tpfzhyalaftotljmlont` (`…:5432`, database `postgres`, schema `public`). До применения `prisma migrate status`
+    показывал ровно одну pending. После: `survey_rounds.privacy_threshold` default `10` → `1`, раунд
+    `SHALOM-F125` сохранил свой threshold `1`, status — up to date. Только DDL, строки не менялись. Откат:
+    `ALTER TABLE "survey_rounds" ALTER COLUMN "privacy_threshold" SET DEFAULT 10;` и удаление записи из
+    `_prisma_migrations`.
+  - `MANAGER_ORGANIZATION_ID` пересоздан в Vercel Production (Sensitive) со значением `34d05e66-…`, затем
+    `vercel redeploy` существующего production-деплоя — тот же исходник из `main`, без загрузки локального
+    рабочего дерева. `shalomut-map-demo-5lx9n5rmn` — Ready, алиас переставлен. Read-only smoke: `/login/` `200`,
+    `/api/rounds/` `401`, `/api/survey/SHALOM-F125/` `200`, `POST /api/auth/login/` с заведомо неверными
+    credentials → `USER_NOT_FOUND`, а не `503 UNCONFIGURED`.
+  - Не проверено: что значение действительно резолвится в нужную организацию — это доказывается только входом
+    менеджера. `organizationId` вшивается в подписанную сессию при логине
+    ([`jwt-session-provider.ts`](../src/lib/auth/jwt-session-provider.ts)), поэтому сессии, выданные до редеплоя,
+    до 24 часов несут прежнюю организацию: нужен повторный вход.
+  - Для Preview `MANAGER_ORGANIZATION_ID` по-прежнему не задан.
 
 - **`MANAGER_ORGANIZATION_ID` стал обязательным на deployed runtime (2026-07-27, запушен в `main`)**:
   - Коммит `f9b1c50` (ветка `claude/epic-bassi-a4fe18` перебазирована на `634bae1` и запушена в `main` по явному
@@ -38,7 +70,9 @@ exact вопросы раунда принадлежат persisted `SurveyRound.
     указывает на него, `GET /login/` → `200`, `GET /api/rounds/` → `401 JSON`.
   - `npx prisma migrate deploy` на staging-БД (Supabase, `aws-0-ap-southeast-1.pooler.supabase.com`,
     database `postgres`, schema `public`) применил **две** миграции: `20260724180000_add_round_configuration`
-    и `20260726210000_privacy_threshold_default_one`. До этого в `survey_rounds` физически отсутствовали
+    и `20260726210000_privacy_threshold_default_one`.
+    **Уточнение 2026-07-27:** этот хост принадлежит проекту `fvnulyirrqjrnjbahmsn`, который deployed app не
+    обслуживает, — миграции ушли не в ту базу (см. первый пункт snapshot). До этого в `survey_rounds` физически отсутствовали
     колонки `background_context` и `survey_definition` — деплой не мог сохранить раунд.
     На момент миграции: 1 организация, 0 раундов, 0 ответов. Проверено после применения:
     обе колонки на месте, `privacy_threshold` default = `1`, обе записи есть в `_prisma_migrations`.

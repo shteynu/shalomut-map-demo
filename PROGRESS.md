@@ -1,8 +1,19 @@
 # Shalomut Map — PROGRESS.md
 
-Updated: 2026-07-27 (deployed, migrated, contract 4.0 enabled, manager organization scope mandatory)
+Updated: 2026-07-27 (respondent re-entry fixed, route loaders, manager organization corrected)
 
 ## Current State
+
+- **Two Supabase projects exist and the earlier note about them was wrong.** The deployed app reads
+  `tpfzhyalaftotljmlont` (`aws-1-ap-northeast-2`, Seoul) — proven by `GET /api/survey/SHALOM-F125/` → 200 for a
+  round that exists only there. It holds organization `34d05e66-fa4d-4a07-a2af-c9d5c41b6088` ("טסט") and the
+  active test round. The other project `fvnulyirrqjrnjbahmsn` (`aws-0-ap-southeast-1`, recorded as
+  `main / Production`) holds organization `be9f184a-…` and zero rounds.
+  Both migrations of 2026-07-27 08:07 went to `fvnulyirrqjrnjbahmsn`, not to the database the app serves, and
+  `MANAGER_ORGANIZATION_ID` was set to an organization that does not exist in the served database. The cause is
+  [`prisma.config.ts`](prisma.config.ts): it loads `.env` through `dotenv/config`, and `.env` points at
+  `fvnulyirrqjrnjbahmsn`, so a migration run without an explicit `DIRECT_URL` silently targets the wrong project.
+  Both were corrected on 2026-07-27 — see the completed entry below.
 - **Automated tests & build**: `npm test` 180/180 passed, `npm run lint` 0 errors, `npm run build` 39/39 pages
   (all three re-run on 2026-07-27 after the organization-scope change); `python3 ai-analytics-service/run_tests.py`
   16/16 passed and `pytest ai-analytics-service/tests` 88 passed earlier the same day, Python code unchanged since.
@@ -27,9 +38,10 @@ Updated: 2026-07-27 (deployed, migrated, contract 4.0 enabled, manager organizat
 
 ## Next Up
 
-1. [ ] Sign in as a manager on the deployed app once (needs the admin password, so the owner has to do it) and
-       confirm the session lands on organization `be9f184a-…` with the round visible. The read-only smoke is
-       already green — see the completed entry below.
+1. [ ] Sign out and sign in again as a manager on the deployed app (needs the admin password, so the owner has to
+       do it) and confirm the session lands on organization `34d05e66-…` with round `SHALOM-F125` visible.
+       `organizationId` is embedded in the signed session at login, so a session issued before the 2026-07-27
+       redeploy keeps the previous organization for up to 24 hours.
 2. [ ] End-to-end check on the deployed app (needs a manager login, so the owner has to run it): create a round,
        submit a response, confirm the persisted AI result carries `contractVersion: "4.0"` and
        `generationProvenance.backgroundContextIncluded: true`.
@@ -38,6 +50,54 @@ Updated: 2026-07-27 (deployed, migrated, contract 4.0 enabled, manager organizat
 ---
 
 ## Completed Tasks
+
+- [x] **2026-07-27**: **Two bugs reported from the deployed app, plus the database/organization correction**:
+  - **A respondent could answer a round only once per browser, ever.**
+    [`survey-flow.tsx`](src/components/survey/survey-flow.tsx) kept the anonymous token in `localStorage` under
+    the share code and never cleared it, so the submit endpoint's double-submission guard became a permanent
+    device lock: every later attempt got "You have already submitted a response for this survey round."
+    The token now belongs to one filling session — [`survey-attempt-token.ts`](src/lib/survey-attempt-token.ts),
+    created lazily on submit, held in memory while the flow is mounted. A retry after a failed request is still
+    de-duplicated; a new visit is a new response. The public thank-you screen offers an explicit
+    "another response" action for a shared computer. Five unit tests plus an API test that persists two attempt
+    tokens and rejects a replay of one.
+  - **No AI analysis on any stone.** The stone pages already render the interpretation when it exists; the round
+    simply had none. Read-only check of the served database: round `3173c065-…` (`SHALOM-F125`) had
+    `ai_insights` and `ai_insights_updated_at` both `NULL`, and its single response was submitted
+    2026-07-26T17:03:56 — a day before auto-dispatch-on-submit reached production. Nothing re-triggered it since,
+    because the only trigger lived on the round screen. The "not created" and error states now offer a generate
+    action wired to `POST /api/rounds/{roundId}/trigger-ai`, handling 409 and 504 separately. The analysis for
+    that round has **not** been generated: a real webhook run still needs its own approval.
+  - **Route loaders.** No segment had a `loading.tsx` while every manager screen renders on the server and reads
+    persistence, so a navigation left the previous page frozen. Added
+    [`route-loading.tsx`](src/components/layout/route-loading.tsx) and a `loading.tsx` for `/`, `/setup`,
+    `/round`, `/survey`, `/dashboard`, the three dashboard sub-pages and `/answer/[shareCode]`.
+  - **Missing migration applied to the served database** (explicit user approval). Target confirmed before
+    applying: `tpfzhyalaftotljmlont`, `aws-1-ap-northeast-2.pooler.supabase.com:5432`, database `postgres`,
+    schema `public`; `prisma migrate status` reported exactly one pending migration. After
+    `prisma migrate deploy`, `survey_rounds.privacy_threshold` default went `10` → `1`, round `SHALOM-F125` kept
+    its configured threshold `1`, and status reports up to date. DDL only, no row was modified. Rollback:
+    `ALTER TABLE "survey_rounds" ALTER COLUMN "privacy_threshold" SET DEFAULT 10;` and delete the row from
+    `_prisma_migrations`.
+  - **`MANAGER_ORGANIZATION_ID` corrected** (explicit user approval) to `34d05e66-fa4d-4a07-a2af-c9d5c41b6088`
+    in Vercel Production as a Sensitive variable, then `vercel redeploy` of the existing production deployment —
+    the same `main` source, no local working-tree upload. Deployment
+    `shalomut-map-demo-5lx9n5rmn` is Ready and carries the alias. Read-only smoke: `/login/` → 200,
+    `/api/rounds/` → 401, `/api/survey/SHALOM-F125/` → 200, and `POST /api/auth/login/` with deliberately wrong
+    credentials → `USER_NOT_FOUND` rather than `503 UNCONFIGURED`, which proves the mandatory variables resolve.
+    That the value is the right organization can only be proven by a manager login and was not verified.
+  - **Gates that were skipping real code.** `npm run lint` reported 37 errors from
+    `.claude/worktrees/epic-bassi-a4fe18/.next/**` because the top-level `.next/**` ignore does not cover a
+    nested worktree, and `npm test` matched only `*.test.ts`, so the eight component tests in
+    `dashboard-semantic-quality.test.tsx` never ran. Both fixed; those eight tests pass.
+  - Verified locally: `npm test` 194/194, `npm run lint` 0 errors, `npm run build` 39/39 pages. Local dev server
+    on empty in-memory repositories (`DATABASE_URL` empty, no staging write): manager routes `307` to login,
+    `/login/` 200, `/answer/NOPE/` 200, zero console and server errors.
+  - Open, not addressed: the callback compares a dynamic result against the round only for `3.0`
+    ([`ai-insights/route.ts`](src/app/api/rounds/[roundId]/ai-insights/route.ts)), so the `4.0` payload now in
+    production skips the questionnaire-hash and Core-score cross-check; and the Python webhook is synchronous
+    ([`main.py`](ai-analytics-service/src/main.py)), so a Core timeout at `AI_SERVICE_TIMEOUT_MS=30000` aborts the
+    connection and uvicorn cancels the run before any callback is sent.
 
 - [x] **2026-07-27**: **`MANAGER_ORGANIZATION_ID` is mandatory on a deployed runtime**
   ([`manager-auth-service.ts`](src/lib/auth/manager-auth-service.ts)):
