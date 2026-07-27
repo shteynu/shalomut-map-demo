@@ -23,6 +23,11 @@ exact вопросы раунда принадлежат persisted `SurveyRound.
     `defaultAccounts()` fail-closed по тому же условию, фаза production build сохраняет локальный фолбэк.
   - Локальные гейты: `npm test` 180/180, `npm run lint` 0 ошибок, `npm run build` 39/39 страниц.
     Fail-first подтверждён: сценарий с отсутствующей переменной пропускает вход на предыдущем коде.
+  - Деплой проверен (read-only smoke, 2026-07-27): production-деплой `shalomut-map-demo-o3os80zm4` — `● Ready`
+    (39s), алиас `https://shalomut-map-demo.vercel.app` указывает на него. `GET /login/` → `200`,
+    `GET /api/rounds/` → `401 JSON`, `POST /api/auth/login/` с заведомо неверным паролем →
+    `401 INVALID_CREDENTIALS`, а не `503 UNCONFIGURED` — значит все три обязательные переменные заданы в
+    deployed environment. Успешный вход менеджера не выполнялся: требуется admin-пароль, это на владельце.
   - Остаточный риск: сессии, выданные до изменения, живут до 24 часов со старой организацией; гейт закрывает
     только новые входы. Переменная должна присутствовать в каждом deployed environment (сейчас Production и
     Preview), иначе вход там закрыт по дизайну.

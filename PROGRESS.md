@@ -27,9 +27,9 @@ Updated: 2026-07-27 (deployed, migrated, contract 4.0 enabled, manager organizat
 
 ## Next Up
 
-1. [ ] Confirm the deployment that Vercel builds from `f9b1c50`: `/login/` still answers 200 and a manager sign-in
-       still issues a session. `MANAGER_ORGANIZATION_ID` must stay set in every deployed environment — without it
-       login now answers `503 UNCONFIGURED` by design.
+1. [ ] Sign in as a manager on the deployed app once (needs the admin password, so the owner has to do it) and
+       confirm the session lands on organization `be9f184a-…` with the round visible. The read-only smoke is
+       already green — see the completed entry below.
 2. [ ] End-to-end check on the deployed app (needs a manager login, so the owner has to run it): create a round,
        submit a response, confirm the persisted AI result carries `contractVersion: "4.0"` and
        `generationProvenance.backgroundContextIncluded: true`.
@@ -57,6 +57,10 @@ Updated: 2026-07-27 (deployed, migrated, contract 4.0 enabled, manager organizat
     previous code.
   - Verified locally: `npm test` 180/180, `npm run lint` 0 errors, `npm run build` 39/39 pages. Pushed to `main` as
     `f9b1c50` on 2026-07-27 at the owner's explicit request; Vercel builds every push to `main` automatically.
+  - Deployed and smoke-tested: production deployment `shalomut-map-demo-o3os80zm4` is `● Ready` (39s) and carries
+    the `shalomut-map-demo.vercel.app` alias. `GET /login/` → 200, `GET /api/rounds/` → 401 JSON, and
+    `POST /api/auth/login/` with a deliberately wrong password → `401 INVALID_CREDENTIALS` — not
+    `503 UNCONFIGURED`, which proves all three mandatory variables are present in the deployed environment.
   - Residual risk: sessions issued before this change stay valid up to 24h with the stale organization; the gate
     covers new logins only.
 
