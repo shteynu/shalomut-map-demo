@@ -115,6 +115,12 @@ Multiple provider-specific keys without an explicit provider also fail closed.
 `gemini-flash-latest` and `gemini-pro-latest` as defaults; the OpenAI-compatible
 defaults remain `gpt-4o-mini` and `gpt-4o`.
 
+`MAX_TOKENS_PER_DIMENSION` caps one interpretation and defaults to `420`. A cap
+that truncates the answer is not a shorter answer: the provider returns
+`finish_reason: "length"`, the validator rejects it, and after the configured
+attempts the dimension falls back to deterministic copy. Raise it before
+suspecting the model, and keep it above what 2-5 Hebrew sentences need.
+
 LLM logs record only provider, model, outcome, HTTP status and a safe request
 identifier when available. Keys, prompts, responses and respondent data are
 never logged by the provider adapter.

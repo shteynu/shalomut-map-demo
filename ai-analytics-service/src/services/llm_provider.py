@@ -148,11 +148,7 @@ class LLMProviderService:
                     contract_version=contract_version,
                     all_dimension_scores=all_dimension_scores,
                 )
-                max_tokens = (
-                    420
-                    if contract_version == "5.0"
-                    else settings.max_tokens_per_dimension
-                )
+                max_tokens = settings.max_tokens_per_dimension
                 req_payload = json.dumps({
                     "model": model_name,
                     "messages": [

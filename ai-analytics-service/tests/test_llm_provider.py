@@ -846,3 +846,70 @@ def test_judgement_phrases_stay_blacklisted_for_green_on_5_0():
         contract_version="5.0",
         distribution_counts=counts,
     )
+
+
+def test_max_tokens_per_dimension_comes_from_the_environment(monkeypatch):
+    """The cap must be tunable without a code change, and default to 420.
+
+    A hardcoded 420 for 5.0 left MAX_TOKENS_PER_DIMENSION describing something
+    the request no longer used, and kept 2.0-4.0 on a cap that truncates.
+    """
+    for variable in LLM_KEY_ENV_VARS:
+        monkeypatch.delenv(variable, raising=False)
+
+    monkeypatch.delenv("MAX_TOKENS_PER_DIMENSION", raising=False)
+    assert Settings().max_tokens_per_dimension == 420
+
+    monkeypatch.setenv("MAX_TOKENS_PER_DIMENSION", "512")
+    assert Settings().max_tokens_per_dimension == 512
+
+
+def test_request_uses_the_configured_token_cap(monkeypatch):
+    captured = {}
+
+    class _Response:
+        status = 200
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def read(self):
+            return json.dumps(
+                {
+                    "choices": [
+                        {
+                            "finish_reason": "stop",
+                            "message": {
+                                "content": (
+                                    "מדד האיזון מציג תמונה מצרפית יציבה. "
+                                    "הנתונים תומכים בהמשך מעקב."
+                                ),
+                            },
+                        },
+                    ],
+                },
+            ).encode("utf-8")
+
+    def fake_urlopen(request, timeout=None):
+        captured.update(json.loads(request.data.decode("utf-8")))
+        return _Response()
+
+    monkeypatch.setattr(settings, "llm_api_key", "sk-test-token-cap")
+    monkeypatch.setattr(settings, "llm_base_url", "https://provider.local/v1")
+    monkeypatch.setattr(settings, "max_tokens_per_dimension", 333)
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+
+    for version in ("4.0", "5.0"):
+        captured.clear()
+        llm_provider_service.generate_psychological_interpretation_result(
+            dim_id="balance",
+            dim_hebrew="איזון",
+            score=60.0,
+            status="yellow",
+            question_aggregates=V5_BALANCE_AGGREGATES,
+            contract_version=version,
+        )
+        assert captured["max_tokens"] == 333, version

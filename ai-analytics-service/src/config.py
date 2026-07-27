@@ -125,8 +125,12 @@ class Settings:
             or default_model_heavy
         )
 
-        # Strict token caps to prevent runaway token costs
-        self.max_tokens_per_dimension: int = int(os.getenv("MAX_TOKENS_PER_DIMENSION", "180"))
+        # Strict token caps to prevent runaway token costs.
+        # 180 was enough for the two sentences contracts 2.0-4.0 ask for, but
+        # it truncates the 2-5 sentences of 5.0 — and a truncated answer comes
+        # back with finish_reason "length", which the provider validator
+        # rejects, so the dimension silently falls back to deterministic copy.
+        self.max_tokens_per_dimension: int = int(os.getenv("MAX_TOKENS_PER_DIMENSION", "420"))
         # Token Saving: Only invoke LLM for problematic ('yellow' / 'red') dimensions
         self.only_llm_for_problematic: bool = os.getenv("ONLY_LLM_FOR_PROBLEMATIC", "true").lower() == "true"
         # Transient provider failures are retried inside the worker thread.
