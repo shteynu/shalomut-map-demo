@@ -160,6 +160,36 @@ test('API Route POST /api/survey/[shareCode]/submit processes responses', async 
   assert.notStrictEqual(data.responseId, undefined);
 });
 
+test('API Route submit accepts a second attempt from the same device', async () => {
+  useDemoRepositories();
+
+  async function submit(anonymousTokenHash: string) {
+    return submitSurvey(
+      new Request('http://localhost/api/survey/SHALOM-DEMO/submit', {
+        method: 'POST',
+        body: JSON.stringify({ answers: buildAnswers(), anonymousTokenHash }),
+      }),
+      { params: Promise.resolve({ shareCode: 'SHALOM-DEMO' }) },
+    );
+  }
+
+  // One anonymous link, one browser, two separate people answering: each
+  // attempt carries its own token, so the round must record both.
+  const first = await submit('attempt-token-hash-1');
+  const second = await submit('attempt-token-hash-2');
+
+  assert.strictEqual(first.status, 200);
+  assert.strictEqual(second.status, 200);
+
+  // The same token still de-duplicates, which is what protects a retry of one
+  // attempt from counting twice.
+  const replay = await submit('attempt-token-hash-2');
+  assert.strictEqual(replay.status, 400);
+  assert.match((await replay.json()).error, /already submitted/i);
+
+  useDemoRepositories();
+});
+
 test('API Route GET /api/rounds/[roundId]/analytics returns calculated analytics', async () => {
   const params = Promise.resolve({ roundId: 'round_demo_1' });
   const req = new Request('http://localhost/api/rounds/round_demo_1/analytics');

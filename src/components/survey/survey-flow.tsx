@@ -1,11 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { Check, ChevronLeft, ChevronRight, Frown, Loader2, Meh, ShieldCheck, Smile, type LucideIcon } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Frown, Loader2, Meh, RefreshCw, ShieldCheck, Smile, type LucideIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { calculatePercentage } from "@/lib/utils/math";
 import { getNavigationAction } from "@/lib/navigation";
 import { responseScale } from "@/lib/shalomut-source";
+import {
+  createAttemptTokenSource,
+  hashAnonymousToken,
+  type SurveyAttemptTokenSource,
+} from "@/lib/survey-attempt-token";
 import type { SurveyDefinitionQuestion } from "@/lib/types/backend";
 
 type AnswerValue = (typeof responseScale)[number]["value"];
@@ -25,25 +30,6 @@ const optionIcons: Record<AnswerValue, LucideIcon> = {
   red: Frown,
 };
 
-async function getAnonymousTokenHash(shareCode: string) {
-  const storageKey = `shalomut-anonymous-token:${shareCode}`;
-  let token = window.localStorage.getItem(storageKey);
-
-  if (!token) {
-    token = crypto.randomUUID();
-    window.localStorage.setItem(storageKey, token);
-  }
-
-  const digest = await crypto.subtle.digest(
-    "SHA-256",
-    new TextEncoder().encode(token),
-  );
-
-  return Array.from(new Uint8Array(digest))
-    .map((byte) => byte.toString(16).padStart(2, "0"))
-    .join("");
-}
-
 export function SurveyFlow({
   variant = "internal",
   shareCode,
@@ -58,6 +44,9 @@ export function SurveyFlow({
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const attemptTokenRef = useRef<SurveyAttemptTokenSource | null>(null);
+  attemptTokenRef.current ??= createAttemptTokenSource();
+  const attemptToken = attemptTokenRef.current;
   const isPublicLink = variant === "public";
   const trackRoundAction = getNavigationAction("trackRound");
 
@@ -107,7 +96,9 @@ export function SurveyFlow({
     });
 
     try {
-      const anonymousTokenHash = await getAnonymousTokenHash(shareCode);
+      const anonymousTokenHash = await hashAnonymousToken(
+        attemptToken.current(),
+      );
       const res = await fetch(`/api/survey/${encodeURIComponent(shareCode)}/submit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -128,6 +119,16 @@ export function SurveyFlow({
     }
   };
 
+  /** Starts a separate anonymous attempt on the same device, with its own token. */
+  const startAnotherResponse = () => {
+    attemptToken.reset();
+    setAnswers({});
+    setCurrentIndex(0);
+    setSubmitError(null);
+    setSubmitting(false);
+    setSubmitted(false);
+  };
+
   if (submitted) {
     return (
       <section className="survey-shell stone-page survey-builder-stone-page" style={{ maxWidth: "38rem", margin: "2rem auto" }}>
@@ -142,7 +143,20 @@ export function SurveyFlow({
             <p>התשובות נשמרות בצורה מצרפית בלבד. אין במסך ניהול מקום שבו ניתן לראות מי ענה.</p>
           )}
           {isPublicLink ? (
-            <p className="quiet-note">אפשר לסגור את החלון. תודה על המענה.</p>
+            <>
+              <p className="quiet-note">אפשר לסגור את החלון. תודה על המענה.</p>
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={startAnotherResponse}
+              >
+                <RefreshCw size={18} aria-hidden="true" />
+                מילוי שאלון נוסף
+              </button>
+              <p className="quiet-note">
+                מיועד למחשב משותף: כל מילוי נשמר כתשובה אנונימית נפרדת.
+              </p>
+            </>
           ) : (
             <Link className="primary-button" href={trackRoundAction.href}>
               {trackRoundAction.label}
