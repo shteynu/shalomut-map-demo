@@ -27,6 +27,19 @@ exact вопросы раунда принадлежат persisted `SurveyRound.
     `DISABLE_BASIC_AUTH_FALLBACK` (Production и Preview). `MANAGER_ORGANIZATION_ID` перевыставлен на
     существующую организацию `be9f184a-dee8-4d72-9805-c0f4e45f6d40`. В коде остаётся хардкод-фолбэк
     `34d05e66-…` ([`manager-auth-service.ts:23`](../src/lib/auth/manager-auth-service.ts)) — техдолг.
+  - **Контракт `4.0` включён consumer-first.** Перед флипом в Python-парсере найдены три дефекта
+    (коммит `1f76622`): `is_v3` не включал `4.0` (payload 4.0 уходил в legacy-ветку и ломал
+    `questionText`), динамический парсер требовал `privacyThreshold >= 10` — это отвергало продуктовый
+    дефолт `1` **уже на контракте 3.0 в проде**, и `from_dict` терял `backgroundContext`.
+    Добавлены тесты 15 и 16 (падают на старом коде). Затем `/health` научили сообщать выполняемый
+    коммит и список принимаемых версий (`82c17f2`).
+    Evidence consumer-first: `GET https://shalomut-ai-analytics.onrender.com/health` →
+    `{"privacyThreshold":1,"commit":"82c17f2","supportedContractVersions":["1.0","2.0","3.0","4.0"]}`.
+    Только после этого в Vercel выставлен `AI_ANALYTICS_CONTRACT_VERSION=4.0` (Production и Preview)
+    и сделан редеплой (`✓ Ready in 58s`, алиас переставлен).
+    Осталось владельцу: сквозная проверка на живом раунде (создать раунд в UI, дождаться анализа,
+    убедиться, что сохранённый результат имеет `contractVersion: "4.0"` и
+    `generationProvenance.backgroundContextIncluded: true`) — требует входа менеджера.
   - Удалены шесть устаревших веток на origin. Тиры сохранены для восстановления
     (`git push origin <sha>:refs/heads/<branch>`):
     `agent/database-backed-manager-ui` `07c61f8` (8 коммитов вне main),

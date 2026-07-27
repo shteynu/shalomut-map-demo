@@ -1,41 +1,59 @@
 # Shalomut Map — PROGRESS.md
 
-Updated: 2026-07-26 (evening — completion plan executed locally, nothing deployed)
+Updated: 2026-07-27 (deployed, migrated, contract 4.0 enabled)
 
 ## Current State
-- **Automated tests & build (this session, local)**: `npm test` 175/175 passed, `npm run lint` 0 errors,
-  `npm run build` compiled successfully (39/39 pages), `python3 ai-analytics-service/run_tests.py` 14/14 passed.
-- **Uncommitted work tree**: the completion plan of `docs/completion-plan-2026-07-26-evening.md` is implemented
-  locally (46 modified files + `src/lib/audience.ts`, `src/lib/server/manager-audit.ts`, the plan document and an
-  unapplied Prisma migration). Nothing is committed, pushed or deployed yet.
-- **Deployed runtime**: `https://shalomut-map-demo.vercel.app/` still serves the previously deployed commit; none of
-  the changes below are live.
-- **Secrets configured in Vercel**: `SESSION_SECRET`, `MANAGER_ADMIN_PASSWORD` set for Production and Preview targets.
-- **P0 Auth & Popup Sunset**: HTTP Basic Auth challenge popup (`WWW-Authenticate`) completely removed. Unauthenticated
-  manager UI requests redirect to `/login` (HTTP 307); API requests return 401 JSON. The dead basic-auth code has now
-  been deleted as well (`src/lib/server/basic-auth.ts` only classifies routes).
+- **Automated tests & build**: `npm test` 175/175 passed, `npm run lint` 0 errors, `npm run build` 39/39 pages,
+  `python3 ai-analytics-service/run_tests.py` 16/16 passed, `pytest ai-analytics-service/tests` 88 passed.
+- **Deployed runtime**: `https://shalomut-map-demo.vercel.app/` serves the current `main`
+  (`GET /login/` → 200, `GET /api/rounds/` → 401 JSON). Commits `9e15732`, `1f76622`, `82c17f2` are pushed.
+- **Database**: the staging Supabase DB is migrated up to date — `20260724180000_add_round_configuration`
+  (previously missing, so the deployed app could not persist a questionnaire at all) and
+  `20260726210000_privacy_threshold_default_one` were applied on 2026-07-27; `privacy_threshold` default is now `1`.
+- **AI contract 4.0 is live**: Render runs commit `82c17f2` and reports
+  `supportedContractVersions ["1.0","2.0","3.0","4.0"]` on `/health`; only then was
+  `AI_ANALYTICS_CONTRACT_VERSION=4.0` set in Vercel and the app redeployed.
+- **Privacy threshold**: product default and minimum are `1` in every layer, including the Python fallback and the
+  database column default. Both manager screens warn that a threshold below 5 describes individual respondents.
+- **Vercel environment**: `PP_BASE_URL`, `BASIC_AUTH_USER`, `BASIC_AUTH_PASSWORD` and
+  `DISABLE_BASIC_AUTH_FALLBACK` removed; `MANAGER_ORGANIZATION_ID` now points at the existing organization
+  `be9f184a-dee8-4d72-9805-c0f4e45f6d40`.
+- **Repository**: the six stale origin branches were deleted (tips recorded in the tracker handoff for restore).
 - **Single deployed environment**: `https://shalomut-map-demo.vercel.app/` is the only product URL (staging for now).
 
 ---
 
-## Next Up (all blocked on owner approval or owner-side access)
+## Next Up
 
-1. [ ] Commit, push and deploy the current work tree (approval gate: deployment).
-2. [ ] Apply `prisma/migrations/20260726210000_privacy_threshold_default_one` (approval gate: environment, target and
-       rollback/PITR path must be confirmed first). Until then the DB column default stays `10`; the application layer
-       already writes `1`, so behaviour is correct, only the column default is stale.
-3. [ ] Flip `AI_ANALYTICS_CONTRACT_VERSION=4.0` **after** the Render deployment is verified to accept contract 4.0
-       (consumer-first rollout; Core stays on `3.0` until then).
-4. [ ] Staging database read evidence and evidence that Render runs the school-context code (owner-side access).
-5. [ ] Optional cleanup: remove the unused `PP_BASE_URL` environment variable, delete the 6 stale origin branches, fix
-       `MANAGER_ORGANIZATION_ID`.
-6. [ ] AI-generated proposed question flow (slice 3.1, on explicit user request).
+1. [ ] End-to-end check on the deployed app (needs a manager login, so the owner has to run it): create a round,
+       submit a response, confirm the persisted AI result carries `contractVersion: "4.0"` and
+       `generationProvenance.backgroundContextIncluded: true`.
+2. [ ] Remove the hardcoded organization fallback `34d05e66-…` in
+       [`manager-auth-service.ts:23`](src/lib/auth/manager-auth-service.ts) and make `MANAGER_ORGANIZATION_ID`
+       mandatory on a deployed runtime.
+3. [ ] AI-generated proposed question flow (slice 3.1, on explicit user request).
 
 ---
 
 ## Completed Tasks
 
-- [x] **2026-07-26 (evening, local only)**: **Completion plan `docs/completion-plan-2026-07-26-evening.md` executed**:
+- [x] **2026-07-27**: **Deployment, migrations and the contract 4.0 rollout** (explicit user approval):
+  - Pushed `9e15732` to `main`; Vercel built production deployment `dpl_EerCv593tZyLTE9kU2SVTAxY4eKX` (Ready, aliased).
+  - `npx prisma migrate deploy` on the staging Supabase DB applied the two pending migrations. The DB was missing
+    `survey_rounds.background_context` and `survey_rounds.survey_definition` entirely, so the deployed app could not
+    save a round. At migration time: 1 organization, 0 rounds, 0 responses. Verified afterwards: both columns present,
+    `privacy_threshold` default `1`, both rows in `_prisma_migrations`.
+  - Fixed three defects found while preparing the 4.0 flip (`1f76622`): the dynamic parser ignored `4.0`, it rejected
+    `privacyThreshold` below 10 (breaking contract 3.0 in production, since Core's default is now 1), and it dropped
+    `backgroundContext`. Added Python tests 15 and 16, which fail on the previous code.
+  - Added the running commit and accepted contract versions to the Python `/health` (`82c17f2`) so a consumer-first
+    rollout can be proven from outside. Render redeployed and answered
+    `{"commit":"82c17f2","supportedContractVersions":["1.0","2.0","3.0","4.0"]}`; only then was
+    `AI_ANALYTICS_CONTRACT_VERSION=4.0` set in Vercel and the app redeployed.
+  - Vercel env cleanup and `MANAGER_ORGANIZATION_ID` correction; six stale origin branches deleted with their tips
+    recorded in `docs/shalomut-tracker-handoff.md`.
+
+- [x] **2026-07-26 (evening)**: **Completion plan `docs/completion-plan-2026-07-26-evening.md` executed**:
   - **A1 — auto-trigger survives the response**: `POST /api/survey/[shareCode]/submit` schedules the dispatch with
     `after()` from `next/server` instead of a detached promise (with a try/catch fallback for non-request contexts).
   - **A2 — privacy threshold default 1 everywhere**: `DEFAULT_PRIVACY_THRESHOLD = 1`, `MINIMUM_PRIVACY_THRESHOLD = 1`,
