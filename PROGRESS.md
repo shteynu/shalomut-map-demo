@@ -9,7 +9,18 @@ Updated: 2026-07-27 (Contract 5.0 rollout; respondent re-entry, route loaders, s
   - 8-dimension context & per-question distribution included in LLM prompt.
   - Multi-sentence psychological interpretations (2–5 sentences) and generative `overallPsychologicalSummary` (2–4 Hebrew sentences) enabled.
   - KB expanded to 80 items with context-aware RAG ranking in Python AI service.
-- **Automated tests**: `npm test` 202/202 passed (including dedicated `ai-contract-v5-smoke.test.ts`), `python3 ai-analytics-service/run_tests.py` 16/16 passed.
+- **Automated tests**: `npm test` 202/202 passed (including dedicated `ai-contract-v5-smoke.test.ts`),
+  `python3 -m pytest` in `ai-analytics-service` 107/107 passed. The earlier "16/16" figure came from
+  `run_tests.py`, which carried its own sixteen tests and never collected `tests/` — the full suite was in fact
+  red (`test_rag_store.py`, broken by the catalog expansion) while that number was recorded. The sixteen now live
+  in `tests/test_service_integration.py`, `run_tests.py` only forwards to pytest, and a root `conftest.py` makes
+  a bare `pytest` work too.
+- **AI interpretations are not reaching the LLM**: `npx tsx scripts/inspect-ai-provenance.ts` on the only round
+  (`SHALOM-F125`, insights at contract `4.0`, processed 2026-07-27T10:11Z) reports all eight stones as
+  `outcome: deterministic_fallback` with `attempts: 3`, `retryCount: 2`. Attempts above zero mean the key is
+  configured and the provider is called — every attempt is rejected before it can be used. Cause not yet
+  identified; it needs the Render logs of that run or one live provider call. Until it is fixed, prompt-quality
+  work changes nothing a manager can see.
 - **Deployed runtime**: `https://shalomut-map-demo.vercel.app/` serves current `main`.
 - **One database**: Supabase `tpfzhyalaftotljmlont` (`aws-1-ap-northeast-2`, Seoul) is the only database of the
   project. The deployed runtime, local `.env` and `prisma migrate` all resolve to it; all four migrations are
@@ -27,7 +38,11 @@ Updated: 2026-07-27 (Contract 5.0 rollout; respondent re-entry, route loaders, s
 
 ## Next Up
 
-1. [ ] Deploy updated Python AI service container to Render to serve Contract 5.0 endpoints.
+1. [x] Deploy updated Python AI service container to Render to serve Contract 5.0 endpoints — already live:
+       `GET https://shalomut-ai-analytics.onrender.com/health` on 2026-07-27 returns `commit: 0a816e3` and
+       `supportedContractVersions: ["1.0","2.0","3.0","4.0","5.0"]`. Core Production still produces `4.0`
+       (the persisted insights of the only round carry `contractVersion: "4.0"`), so 5.0 is accepted but never
+       received.
 2. [ ] End-to-end live round execution on production/staging environment with Contract 5.0 enabled.
 3. [ ] Sign out and sign in again as a manager on the deployed app (needs the admin password, so the owner has to
        do it) and confirm the session lands on organization `34d05e66-…` with round `SHALOM-F125` visible. This is
@@ -36,9 +51,11 @@ Updated: 2026-07-27 (Contract 5.0 rollout; respondent re-entry, route loaders, s
 5. [ ] Make the Python webhook answer `202` and process in the background. It is synchronous today
        ([`main.py`](ai-analytics-service/src/main.py)), so a Core timeout at `AI_SERVICE_TIMEOUT_MS=30000` aborts
        the connection and uvicorn cancels the run before any callback is sent. Needs a Render deploy.
-6. [ ] Extend the callback's round cross-check beyond `3.0`
-       ([`ai-insights/route.ts`](src/app/api/rounds/[roundId]/ai-insights/route.ts)): the `4.0`/`5.0` payloads in
-       production skip the questionnaire-hash and Core-score comparison.
+6. [x] Extend the callback's round cross-check beyond `3.0`
+       ([`ai-insights/route.ts`](src/app/api/rounds/[roundId]/ai-insights/route.ts)) — done in `c284caa`:
+       `4.0` and `5.0` now go through `validateDynamicResultAgainstRound()` like `3.0`. Comparing the score
+       distribution itself is still open and is slice D1 of
+       [ai-insights-depth-plan-2026-07-27.md](docs/ai-insights-depth-plan-2026-07-27.md).
 7. [ ] AI-generated proposed question flow (slice 3.1, on explicit user request).
 
 ---
