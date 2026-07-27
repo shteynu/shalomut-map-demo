@@ -115,8 +115,16 @@
   - **Vercel target**: `production` — Git-интеграция автоматически собирает
     каждый push в `main` и переназначает на него этот alias. В терминах Vercel
     это production target, в терминах продукта — staging.
-  - **Данные**: staging Supabase (`tpfzhyalaftotljmlont`); production Supabase
-    (`fvnulyirrqjrnjbahmsn`) к этому окружению не подключён.
+  - **Данные**: единственная база проекта — Supabase `tpfzhyalaftotljmlont`
+    (`aws-1-ap-northeast-2`, Сеул). На неё указывают и deployed runtime, и
+    локальный `.env`, из которого `prisma.config.ts` берёт цель миграций.
+    Второй проект `fvnulyirrqjrnjbahmsn` выведен из обращения 2026-07-27: он
+    содержал одну пустую организацию и ноль раундов, ни один рантайм на него
+    больше не ссылается. Его удаление — за владельцем.
+  - **Правило одной базы**: не заводи второй `DATABASE_URL` в `.env.local` —
+    Next.js отдаёт ему приоритет над `.env`, а миграции читают `.env`, и эти два
+    пути расходятся молча. Именно так миграции 2026-07-27 ушли в базу, которую
+    приложение не обслуживает. Перед `prisma migrate` сверяй хост в выводе Prisma.
   - **Доступ**: менеджерская сессия (`/login`); Basic Auth приложения снят —
     `BASIC_AUTH_USER`/`BASIC_AUTH_PASSWORD` удалены из Vercel 2026-07-27 и не
     читаются кодом. Vercel SSO на этом адресе не включён.
