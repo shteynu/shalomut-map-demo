@@ -1,10 +1,14 @@
 import { Settings2 } from "lucide-react";
+import {
+  LOW_PRIVACY_THRESHOLD_WARNING,
+  MINIMUM_PRIVACY_THRESHOLD,
+} from "@/lib/survey-definition";
 
 type SettingsPanelProps = {
   title: string;
   setTitle: (value: string) => void;
+  /** Derived from the setup screen; shown read-only so it cannot drift. */
   audience: string;
-  setAudience: (value: string) => void;
   estimatedMinutes: number;
   setEstimatedMinutes: (value: number) => void;
   minimumResponses: number;
@@ -19,7 +23,6 @@ export function SurveyBuilderSettings({
   title,
   setTitle,
   audience,
-  setAudience,
   estimatedMinutes,
   setEstimatedMinutes,
   minimumResponses,
@@ -49,7 +52,7 @@ export function SurveyBuilderSettings({
         </label>
         <label>
           קהל יעד
-          <input value={audience} onChange={(event) => setAudience(event.target.value)} />
+          <input value={audience} readOnly aria-describedby="builder-audience-note" />
         </label>
         <label>
           זמן מילוי משוער
@@ -64,12 +67,24 @@ export function SurveyBuilderSettings({
           סף מינימום להצגת תוצאות
           <input
             type="number"
-            min="1"
+            min={MINIMUM_PRIVACY_THRESHOLD}
             value={minimumResponses}
             onChange={(event) => setMinimumResponses(Number(event.target.value) || 0)}
           />
         </label>
       </div>
+
+      <p id="builder-audience-note" className="quiet-note">
+        קהל היעד נקבע במסך הגדרת סבב האבחון ומוצג כאן לצפייה בלבד, כדי ששני
+        המסכים לא יציגו קהל יעד שונה.
+      </p>
+
+      {minimumResponses < LOW_PRIVACY_THRESHOLD_WARNING ? (
+        <p className="quiet-note" role="status">
+          בסף נמוך מ-{LOW_PRIVACY_THRESHOLD_WARNING} משיבים הממוצע המוצג במפה משקף תשובות של
+          יחידים. מתאים לבדיקות פנימיות, לא לסבב אמיתי.
+        </p>
+      ) : null}
 
       <label>
         טקסט פתיחה למשיבים

@@ -29,7 +29,7 @@ paths:
       summary: Fetch default survey round
       description: Returns details of the default active survey round.
       security:
-        - basicAuth: []
+        - managerSession: []
       responses:
         "200":
           description: Successful retrieval of round details
@@ -53,7 +53,7 @@ paths:
       summary: Create new survey round
       description: Generates a new survey round for an organization with a unique share code (SHALOM-XXXX).
       security:
-        - basicAuth: []
+        - managerSession: []
       requestBody:
         required: true
         content:
@@ -92,7 +92,7 @@ paths:
       summary: Create or update manager setup
       description: Persists the school profile, survey round, privacy threshold, dates, and background context. Existing records are updated when their IDs are supplied.
       security:
-        - basicAuth: []
+        - managerSession: []
       requestBody:
         required: true
         content:
@@ -217,7 +217,7 @@ paths:
       tags: [Rounds]
       summary: Transition a survey round status
       security:
-        - basicAuth: []
+        - managerSession: []
       parameters:
         - name: roundId
           in: path
@@ -253,9 +253,9 @@ paths:
     post:
       tags: [Rounds]
       summary: Reset survey round responses and set status back to draft
-      description: Clears all collected anonymous survey responses for the given round and resets its status to draft so questions can be edited.
+      description: Clears all collected anonymous survey responses for the given round and resets its status to draft so questions can be edited. Also drops any persisted AI result for the round and records a ROUND_RESET audit event.
       security:
-        - basicAuth: []
+        - managerSession: []
       parameters:
         - name: roundId
           in: path
@@ -301,7 +301,7 @@ paths:
       summary: Fetch the saved survey definition
       description: Returns the saved definition or the canonical 24-question definition when the round has not been customized.
       security:
-        - basicAuth: []
+        - managerSession: []
       responses:
         "200":
           description: Survey definition retrieved
@@ -319,7 +319,7 @@ paths:
       summary: Save the survey definition
       description: Persists survey copy and optional questions. The 24 canonical questions must remain enabled, required, unique, and assigned to their canonical dimensions.
       security:
-        - basicAuth: []
+        - managerSession: []
       requestBody:
         required: true
         content:
@@ -342,9 +342,9 @@ paths:
     get:
       tags: [Analytics]
       summary: Fetch aggregated round analytics
-      description: Calculates 8 organic wellbeing stone scores (0-100 scale). Enforces privacy threshold (privacyThreshold >= 10). Locks detailed scores if total responses < privacyThreshold.
+      description: Calculates 8 organic wellbeing stone scores (0-100 scale). Enforces the round privacy threshold (product default 1, configurable per round). Locks detailed scores if total responses < privacyThreshold.
       security:
-        - basicAuth: []
+        - managerSession: []
       parameters:
         - name: roundId
           in: path
@@ -410,7 +410,7 @@ paths:
       tags: [AI Integration]
       summary: Fetch persisted AI insights
       security:
-        - basicAuth: []
+        - managerSession: []
       responses:
         "200":
           description: Validated, versioned Stone Map result
@@ -453,9 +453,9 @@ paths:
     post:
       tags: [AI Integration]
       summary: Request AI processing for a survey round
-      description: Forwards a round_closed event to AI_SERVICE_URL without a dynamic callback target. The AI service derives its callback URL from its trusted DATA_LAYER_CALLBACK_URL configuration and the round ID. The endpoint fails closed when the AI service is unavailable.
+      description: Forwards a round_closed event to AI_SERVICE_URL without a dynamic callback target. The AI service derives its callback URL from its trusted DATA_LAYER_CALLBACK_URL configuration and the round ID. The endpoint fails closed when the AI service is unavailable. A dispatch claim guarantees at most one concurrent run per round; a run requested while the previous claim is still held answers 409.
       security:
-        - basicAuth: []
+        - managerSession: []
       parameters:
         - name: roundId
           in: path
@@ -468,6 +468,8 @@ paths:
           description: AI service accepted the event
         "404":
           description: Survey round not found in the manager scope
+        "409":
+          description: An analytics run for this round was dispatched moments ago and still holds the dispatch claim
         "502":
           description: AI service returned a non-success response
         "503":
@@ -477,10 +479,11 @@ paths:
 
 components:
   securitySchemes:
-    basicAuth:
-      type: http
-      scheme: basic
-      description: Manager credential bound server-side to MANAGER_ORGANIZATION_ID.
+    managerSession:
+      type: apiKey
+      in: cookie
+      name: shalomut_session
+      description: Manager session cookie issued by POST /api/auth/login and bound server-side to MANAGER_ORGANIZATION_ID. A Bearer token carrying the same JWT is also accepted.
     bearerAuth:
       type: http
       scheme: bearer

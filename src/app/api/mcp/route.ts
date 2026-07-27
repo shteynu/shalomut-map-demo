@@ -95,6 +95,13 @@ export async function POST(request: Request) {
 
         const round = await repositories.roundRepo.findById(roundId);
 
+        // The school background context belongs to contract 4.0 only, and a
+        // locked round must not leak anything beyond the lock state: the
+        // provider is never called for it, so the context has no reason to
+        // cross the boundary.
+        const includesBackgroundContext =
+          result.contractVersion === '4.0' && !result.isLocked;
+
         // Format into strict RoundAnalyticsResult MCP payload
         const mcpPayload = {
           contractVersion: result.contractVersion,
@@ -106,7 +113,9 @@ export async function POST(request: Request) {
           isLocked: result.isLocked,
           dimensionScores: result.dimensionScores,
           questionAggregates: result.questionAggregates,
-          backgroundContext: round?.backgroundContext ?? undefined,
+          backgroundContext: includesBackgroundContext
+            ? (round?.backgroundContext ?? undefined)
+            : undefined,
           calculatedAt: result.calculatedAt,
         };
 

@@ -38,7 +38,7 @@ export const DEMO_ROUND: SurveyRound = {
   title: 'סקר שלומות - מחצית א׳ תשפ״ו',
   status: 'active',
   shareCode: 'SHALOM-DEMO',
-  privacyThreshold: 10,
+  privacyThreshold: 1,
   startDate: new Date('2026-01-15T00:00:00.000Z'),
   createdAt: new Date('2026-01-15T00:00:00.000Z'),
 };

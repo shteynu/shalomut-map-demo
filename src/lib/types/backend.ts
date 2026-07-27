@@ -48,7 +48,7 @@ export interface SurveyRound {
   title: string;
   status: RoundStatus;
   shareCode: string;
-  privacyThreshold: number; // default 10
+  privacyThreshold: number; // configurable, default 1, minimum 1
   startDate: Date;
   endDate?: Date;
   backgroundContext?: RoundBackgroundContext;
@@ -119,7 +119,9 @@ export interface RoundAnalyticsV2Result {
 }
 
 export interface RoundAnalyticsV3Result {
-  contractVersion: '3.0';
+  // `4.0` keeps the same analytics shape and only adds the school background
+  // context to the MCP payload, so producers may emit either version.
+  contractVersion: '3.0' | '4.0';
   roundId: string;
   organizationId: string;
   surveyDefinitionHash: SurveyDefinitionHash;
@@ -144,7 +146,7 @@ export interface SubmitSurveyResult {
 export interface CreateRoundInput {
   organizationId: string;
   title: string;
-  privacyThreshold?: number; // defaults to 10
+  privacyThreshold?: number; // defaults to DEFAULT_PRIVACY_THRESHOLD
   startDate?: Date;
   endDate?: Date;
   backgroundContext?: RoundBackgroundContext;

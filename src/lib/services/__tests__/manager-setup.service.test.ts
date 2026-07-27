@@ -31,7 +31,7 @@ function setupInput() {
   };
 }
 
-test("ManagerSetupService creates an organization and a canonical survey round", async () => {
+test("ManagerSetupService creates an organization and an empty draft survey round", async () => {
   const orgRepo = new InMemoryOrganizationRepository();
   const roundRepo = new InMemoryRoundRepository();
 
@@ -43,7 +43,55 @@ test("ManagerSetupService creates an organization and a canonical survey round",
 
   assert.strictEqual((await orgRepo.findAll()).length, 1);
   assert.strictEqual(result.round.organizationId, result.organization.id);
-  assert.strictEqual(result.round.surveyDefinition?.questions.length, 24);
+  // Setup no longer pre-fills the canonical template: the manager builds the
+  // questionnaire in the builder, and only then can the round go live.
+  assert.strictEqual(result.round.surveyDefinition?.questions.length, 0);
+  assert.strictEqual(result.round.status, "draft");
+});
+
+test("ManagerSetupService derives the questionnaire audience from the setup screen", async () => {
+  const orgRepo = new InMemoryOrganizationRepository();
+  const roundRepo = new InMemoryRoundRepository();
+
+  const created = await ManagerSetupService.save(
+    {
+      ...setupInput(),
+      round: {
+        ...setupInput().round,
+        backgroundContext: {
+          ...setupInput().round.backgroundContext,
+          audience: "teachers",
+        },
+      },
+    },
+    orgRepo,
+    roundRepo,
+  );
+
+  // Setup owns the audience; the questionnaire copy mirrors it so the two
+  // screens can never show a different target group.
+  assert.strictEqual(created.round.surveyDefinition?.audience, "צוות הוראה בלבד");
+
+  const updated = await ManagerSetupService.save(
+    {
+      organization: {
+        ...setupInput().organization,
+        id: created.organization.id,
+      },
+      round: {
+        ...setupInput().round,
+        id: created.round.id,
+        backgroundContext: {
+          ...setupInput().round.backgroundContext,
+          audience: "administration",
+        },
+      },
+    },
+    orgRepo,
+    roundRepo,
+  );
+
+  assert.strictEqual(updated.round.surveyDefinition?.audience, "צוות מינהלה");
 });
 
 test("ManagerSetupService updates the existing records without creating duplicates", async () => {

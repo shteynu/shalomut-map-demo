@@ -134,10 +134,13 @@ test('End-to-End Workflow: Round creation -> 10 submissions -> Analytics Unlocki
       organizationId: 'org_test_100',
       title: 'סקר סוף שנה',
       privacyThreshold: 10,
+      surveyDefinition: createCanonicalSurveyDefinition('סקר סוף שנה', 10),
     },
     roundRepo
   );
 
+  // A questionnaire covering all eight dimensions activates the round; an empty
+  // draft would stay in `draft` and never reach respondents.
   assert.strictEqual(round.status, 'active');
 
   // 2. Fetch by share code

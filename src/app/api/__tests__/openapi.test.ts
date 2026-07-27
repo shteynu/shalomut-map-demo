@@ -98,9 +98,12 @@ describe('OpenAPI Specification Integrity', () => {
       spec.paths['/api/rounds/{roundId}/trigger-ai'].post,
     ];
 
-    assert.ok(spec.components.securitySchemes.basicAuth);
+    // The HTTP Basic fallback was removed with the manager session rollout:
+    // the spec must describe the session that actually guards these routes.
+    assert.strictEqual(spec.components.securitySchemes.basicAuth, undefined);
+    assert.ok(spec.components.securitySchemes.managerSession);
     for (const operation of managerOperations) {
-      assert.deepStrictEqual(operation.security, [{ basicAuth: [] }]);
+      assert.deepStrictEqual(operation.security, [{ managerSession: [] }]);
       assert.ok(
         operation.responses['403'] || operation.responses['404'],
         'Scoped manager operations must document a hidden or forbidden foreign resource',

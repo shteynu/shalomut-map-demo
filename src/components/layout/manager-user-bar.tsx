@@ -57,24 +57,22 @@ export function ManagerUserBar() {
   const roleTitle = session.role === "admin" ? "מנהל מערכת" : "מנהל";
 
   return (
-    <div
-      className="manager-user-bar flex items-center gap-3 px-3 py-1.5 rounded-full bg-[#f6edd5] border border-[#e8dac0] text-sm text-slate-800 shadow-sm"
-      dir="rtl"
-    >
-      <div className="flex items-center gap-1.5 font-medium">
-        <User size={15} className="text-amber-800" aria-hidden="true" />
+    <div className="manager-user-bar" dir="rtl">
+      <span className="manager-user-bar-identity">
+        <User size={15} aria-hidden="true" />
         <span>{session.name || session.email}</span>
-      </div>
+      </span>
 
-      <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100/80 text-amber-900 border border-amber-300/60">
+      <span className="manager-user-bar-role">
         <ShieldCheck size={13} aria-hidden="true" />
         <span>{roleTitle}</span>
-      </div>
+      </span>
 
       <button
+        type="button"
         onClick={handleLogout}
         disabled={isLoggingOut}
-        className="inline-flex items-center gap-1 text-xs font-medium text-slate-600 hover:text-red-700 hover:bg-red-50/80 px-2 py-1 rounded-md transition-colors mr-auto disabled:opacity-60 disabled:cursor-not-allowed"
+        className="manager-user-bar-logout"
         aria-label="התנתקות מהמערכת"
       >
         {isLoggingOut ? (

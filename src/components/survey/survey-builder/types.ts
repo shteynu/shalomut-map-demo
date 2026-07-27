@@ -2,6 +2,7 @@ import {
   surveyInstrument,
   type WellbeingDimensionId,
 } from "@/lib/shalomut-source";
+import { MINIMUM_PRIVACY_THRESHOLD } from "@/lib/survey-definition";
 import type { SurveyDefinitionQuestion } from "@/lib/types/backend";
 
 export type BuilderQuestion = SurveyDefinitionQuestion & {
@@ -139,7 +140,7 @@ export function localizeSurveyDefinitionSaveError(
   }
 
   if (normalized.includes("privacy threshold")) {
-    return "סף הפרטיות חייב להיות מספר שלם של 10 משיבים לפחות.";
+    return `סף הפרטיות חייב להיות מספר שלם של ${MINIMUM_PRIVACY_THRESHOLD} משיבים לפחות.`;
   }
 
   if (normalized.includes("invalid question")) {

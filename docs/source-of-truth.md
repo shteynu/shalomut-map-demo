@@ -59,10 +59,38 @@ round questionnaires and from demo result data.
 - `PRODUCT.md`: product voice, users, principles, privacy posture, accessibility expectations, and brand personality.
 - `design.md`: design tokens and implementation notes for the current Next.js demo.
 
+## Round Field Ownership
+
+Which screen owns which value, so the same fact is never edited in two places:
+
+| Field | Owner | Notes |
+| --- | --- | --- |
+| `backgroundContext.audience` | Setup screen (`/setup`) | Stored as a code (`all-staff`, `teachers`, `administration`). |
+| `surveyDefinition.audience` | Derived | Mirrors the setup selection through `resolveAudienceLabel`; read-only in the builder. |
+| `privacyThreshold` / `surveyDefinition.minimumResponses` | Setup screen, editable in the builder | Same number in both places; the builder writes it back on save. |
+| `backgroundContext.totalStaffCount` | Organization record | Drives the expected-response counter on `/round`. |
+| Remaining `backgroundContext` fields | Setup screen | Reach the AI prompt on contract `4.0` only, and never for a locked round. |
+| `surveyDefinition.questions` | Survey builder | Frozen after the first accepted response. |
+
+## AI Analysis Triggering
+
+- The automatic trigger fires at most once per round: on the submission that
+  reaches the privacy threshold, and only while no result is persisted.
+- A repository claim (`claimAiAnalysisRun`) makes concurrent submissions
+  dispatch a single webhook. The claim is a two-minute lease and is released
+  when the dispatch fails.
+- Refreshing an existing analysis is an explicit manager action
+  (`רענון ניתוח` on `/round` → `POST /api/rounds/{roundId}/trigger-ai`).
+- Resetting a round deletes its responses, drops the persisted analysis and
+  records a `ROUND_RESET` audit event.
+
 ## Implementation Rules
 
 - Preserve Hebrew RTL as the primary experience.
-- Never expose respondent identity. Results stay locked below the privacy threshold, defaulting to 10 respondents.
+- Never expose respondent identity. Results stay locked below the configured
+  privacy threshold. The threshold is configurable with a product default of 1;
+  values below 5 make the published average describe individual respondents, so
+  the manager screens warn about it explicitly.
 - Treat scoring thresholds as configurable source data: green `>=75`, yellow `50-74`, red `<50`.
 - Keep visual mock data distinct from persisted round questionnaires so pilot
   data can replace demo values without rewriting the Dashboard taxonomy.

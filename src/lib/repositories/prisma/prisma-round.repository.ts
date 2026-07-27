@@ -166,4 +166,55 @@ export class PrismaRoundRepository implements IRoundRepository {
       ? { ...insights }
       : null;
   }
+
+  public async claimAiAnalysisRun(
+    id: string,
+    options?: { leaseMs?: number; requireNoInsights?: boolean },
+  ): Promise<boolean> {
+    const leaseMs = options?.leaseMs ?? 0;
+    const requireNoInsights = options?.requireNoInsights ?? true;
+    const leaseCutoff = new Date(Date.now() - leaseMs);
+
+    // `aiInsightsUpdatedAt` doubles as the lease marker: a single conditional
+    // updateMany is atomic per row, so only one concurrent caller observes
+    // `count === 1` and dispatches the webhook.
+    const where: Record<string, unknown> = {
+      id,
+      OR: [
+        { aiInsightsUpdatedAt: null },
+        { aiInsightsUpdatedAt: { lt: leaseCutoff } },
+      ],
+    };
+    if (requireNoInsights) {
+      where.aiInsights = null;
+    }
+
+    try {
+      const result = await this.prisma.surveyRound.updateMany({
+        where,
+        data: { aiInsightsUpdatedAt: new Date() },
+      });
+      return (result?.count ?? 0) > 0;
+    } catch {
+      return false;
+    }
+  }
+
+  public async releaseAiAnalysisClaim(id: string): Promise<void> {
+    try {
+      await this.prisma.surveyRound.updateMany({
+        where: { id, aiInsights: null },
+        data: { aiInsightsUpdatedAt: null },
+      });
+    } catch {
+      // A stuck lease expires on its own; failing to clear it is not fatal.
+    }
+  }
+
+  public async clearAiInsights(id: string): Promise<void> {
+    await this.prisma.surveyRound.update({
+      where: { id },
+      data: { aiInsights: null, aiInsightsUpdatedAt: null },
+    });
+  }
 }

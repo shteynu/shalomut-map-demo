@@ -3,6 +3,10 @@ import { test } from 'node:test';
 import { surveyInstrument } from '../../shalomut-source';
 import { AnswerValue, SurveyResponseRecord } from '../../types/backend';
 import { AnalyticsService } from '../analytics.service';
+import {
+  DEFAULT_PRIVACY_THRESHOLD,
+  createCanonicalSurveyDefinition,
+} from '../../survey-definition';
 import { RoundService } from '../round.service';
 import { SurveyService } from '../survey.service';
 
@@ -117,43 +121,117 @@ test('SurveyService accepts an omitted optional dynamic question but still requi
   assert.strictEqual(requiredOmitted.result.success, false);
 });
 
-test('RoundService creates valid round with default privacy threshold', () => {
+test('RoundService starts a round without a questionnaire as an empty draft', () => {
   const round = RoundService.createRound({
     organizationId: 'org_123',
     title: 'Round 1 2026',
   });
 
   assert.strictEqual(round.organizationId, 'org_123');
-  assert.strictEqual(round.status, 'active');
-  assert.strictEqual(round.privacyThreshold, 10);
-  assert.strictEqual(round.surveyDefinition?.questions.length, 24);
+  // Nothing is pre-filled, so the round cannot be distributed until the manager
+  // builds a questionnaire that covers all eight dimensions.
+  assert.strictEqual(round.status, 'draft');
+  assert.strictEqual(round.surveyDefinition?.questions.length, 0);
+  assert.strictEqual(round.privacyThreshold, DEFAULT_PRIVACY_THRESHOLD);
+  assert.strictEqual(DEFAULT_PRIVACY_THRESHOLD, 1);
   assert.ok(round.shareCode.startsWith('SHALOM-'));
 });
 
-test('RoundService rejects activating a questionnaire without all eight dimensions', () => {
+test('RoundService activates a round whose questionnaire covers all eight dimensions', () => {
+  const round = RoundService.createRound({
+    organizationId: 'org_123',
+    title: 'Round 1 2026',
+    surveyDefinition: createCanonicalSurveyDefinition('Round 1 2026', 10),
+  });
+
+  assert.strictEqual(round.status, 'active');
+  assert.strictEqual(round.surveyDefinition?.questions.length, 24);
+  assert.strictEqual(round.privacyThreshold, 10);
+});
+
+test('RoundService keeps a questionnaire without all eight dimensions in draft', () => {
   const questions = surveyInstrument.questions.filter(
     (question) => question.dimensionId !== 'meaning',
   );
 
-  assert.throws(
-    () =>
-      RoundService.createRound({
-        organizationId: 'org_invalid_definition',
-        title: 'Invalid round',
-        surveyDefinition: {
-          title: 'Invalid round',
-          audience: 'צוות',
-          estimatedMinutes: 10,
-          minimumResponses: 10,
-          introText: 'פתיח',
-          anonymityText: 'אנונימי',
-          questions: questions.map((question) => ({
-            ...question,
-            enabled: true,
-            answerMode: 'סקאלת צבעים',
-          })),
-        },
-      }),
-    /all eight dimensions/i,
+  const round = RoundService.createRound({
+    organizationId: 'org_invalid_definition',
+    title: 'Invalid round',
+    surveyDefinition: {
+      title: 'Invalid round',
+      audience: 'צוות',
+      estimatedMinutes: 10,
+      minimumResponses: 10,
+      introText: 'פתיח',
+      anonymityText: 'אנונימי',
+      questions: questions.map((question) => ({
+        ...question,
+        enabled: true,
+        answerMode: 'סקאלת צבעים',
+      })),
+    },
+  });
+
+  assert.strictEqual(round.status, 'draft');
+});
+
+test('AnalyticsService returns a locked result for a draft round whose questionnaire is unfinished', () => {
+  // A manager who is still building the questionnaire keeps opening the manager
+  // screens, and every one of them computes analytics. An unfinished draft has
+  // no results yet, so it must come back locked instead of throwing.
+  const round = RoundService.createRound({
+    organizationId: 'org_draft_analytics',
+    title: 'טיוטה בבנייה',
+  });
+
+  const result = AnalyticsService.calculateDynamicRoundAnalytics(round, []);
+
+  assert.strictEqual(result.isLocked, true);
+  assert.strictEqual(result.totalResponses, 0);
+  assert.deepStrictEqual(result.dimensionScores, {});
+  assert.deepStrictEqual(result.questionAggregates, {});
+});
+
+test('AnalyticsService keeps a partially built questionnaire locked even with responses', () => {
+  const questions = surveyInstrument.questions.filter(
+    (question) => question.dimensionId !== 'meaning',
   );
+  const round = RoundService.createRound({
+    organizationId: 'org_partial_analytics',
+    title: 'שאלון חלקי',
+    privacyThreshold: 1,
+    surveyDefinition: {
+      title: 'שאלון חלקי',
+      audience: 'צוות',
+      estimatedMinutes: 10,
+      minimumResponses: 1,
+      introText: 'פתיח',
+      anonymityText: 'אנונימי',
+      questions: questions.map((question) => ({
+        ...question,
+        enabled: true,
+        answerMode: 'סקאלת צבעים' as const,
+      })),
+    },
+  });
+  const responses: SurveyResponseRecord[] = [
+    {
+      id: 'response_partial_1',
+      roundId: round.id,
+      submittedAt: new Date(),
+      answers: questions.map((question) => ({
+        questionId: question.id,
+        dimensionId: question.dimensionId,
+        value: 'green' as AnswerValue,
+        score: 100,
+      })),
+    },
+  ];
+
+  const result = AnalyticsService.calculateDynamicRoundAnalytics(round, responses);
+
+  // Seven of eight dimensions cannot produce the fixed eight-stone Dashboard
+  // output, so the round stays locked until the questionnaire is complete.
+  assert.strictEqual(result.isLocked, true);
+  assert.strictEqual(result.totalResponses, 1);
 });

@@ -6,6 +6,7 @@ import {
 } from '../shalomut-source';
 import {
   createCanonicalSurveyDefinition,
+  isActivatableSurveyDefinition,
   parseSurveyDefinition,
 } from '../survey-definition';
 import { createSurveyDefinitionHash } from '../survey-definition-hash';
@@ -18,6 +19,21 @@ import {
   SurveyResponseRecord,
   SurveyRound,
 } from '../types/backend';
+
+/**
+ * Which analytics contract this deployment produces.
+ *
+ * `4.0` differs from `3.0` only by carrying the school background context into
+ * the AI prompt, and the Python consumer must already accept it before Core
+ * starts emitting it. Keeping the switch in configuration makes that
+ * consumer-first rollout a config change on a verified Python deployment
+ * instead of a code deploy racing the other service.
+ */
+export function getProducedAnalyticsContractVersion(): '3.0' | '4.0' {
+  return process.env.AI_ANALYTICS_CONTRACT_VERSION?.trim() === '4.0'
+    ? '4.0'
+    : '3.0';
+}
 
 export class AnalyticsService {
   /**
@@ -155,13 +171,21 @@ export class AnalyticsService {
     const definition =
       round.surveyDefinition ??
       createCanonicalSurveyDefinition(round.title, round.privacyThreshold);
-    const parsedDefinition = parseSurveyDefinition(definition);
+    // A draft round is allowed to hold an unfinished questionnaire: the manager
+    // is still building it. Such a round simply has no results yet, so it must
+    // parse and come back locked instead of throwing at every manager screen.
+    const parsedDefinition = parseSurveyDefinition(definition, {
+      allowIncomplete: true,
+    });
     if (!parsedDefinition.ok) {
       throw new Error(`Invalid round survey definition: ${parsedDefinition.error}`);
     }
 
     const enabledQuestions = parsedDefinition.value.questions.filter(
       (question) => question.enabled,
+    );
+    const isUnfinishedQuestionnaire = !isActivatableSurveyDefinition(
+      parsedDefinition.value,
     );
     const surveyDefinitionHash = createSurveyDefinitionHash(enabledQuestions);
     const scopedResponses = responses.filter(
@@ -198,6 +222,7 @@ export class AnalyticsService {
     }
 
     const isLocked =
+      isUnfinishedQuestionnaire ||
       totalResponses < round.privacyThreshold ||
       enabledQuestions.some(
         (question) =>
@@ -207,7 +232,7 @@ export class AnalyticsService {
 
     if (isLocked) {
       return {
-        contractVersion: '3.0',
+        contractVersion: getProducedAnalyticsContractVersion(),
         roundId: round.id,
         organizationId: round.organizationId,
         surveyDefinitionHash,
@@ -265,7 +290,7 @@ export class AnalyticsService {
     }
 
     return {
-      contractVersion: '3.0',
+      contractVersion: getProducedAnalyticsContractVersion(),
       roundId: round.id,
       organizationId: round.organizationId,
       surveyDefinitionHash,

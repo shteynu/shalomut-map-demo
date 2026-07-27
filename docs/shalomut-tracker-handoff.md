@@ -1,6 +1,6 @@
 # Shalomut Tracker — актуальный handoff
 
-Обновлено: 2026-07-26
+Обновлено: 2026-07-26 (вечер)
 
 Это оперативная точка входа для перехода от исходного статического demo
 Shalomut Map к `shalomut-tracker`, где сохранённые данные должны быть единственным
@@ -14,6 +14,26 @@ exact вопросы раунда принадлежат persisted `SurveyRound.
 - Активный план работ: [`manager-feedback-plan-2026-07-26.md`](manager-feedback-plan-2026-07-26.md) —
   замечания директора и находки аудита деплоя, разложенные на слайсы P0–P3 с
   критериями приёмки, проверками и approval gates.
+- **План добивки выполнен локально (2026-07-26, вечер)**:
+  [`completion-plan-2026-07-26-evening.md`](completion-plan-2026-07-26-evening.md) — слайсы A1–A3, B1–B4, C1–C4
+  реализованы в рабочем дереве. **Ничего не закоммичено, не запушено, не задеплоено и миграция не применена.**
+  Локальные гейты: `npm test` 175/175, `npm run lint` 0 ошибок, `npm run build` 39/39 страниц,
+  `python3 ai-analytics-service/run_tests.py` 14/14, `openapi.test.ts` 5/5.
+  Браузерный смоук на dev-сервере с in-memory репозиториями (`DATABASE_URL` пуст, staging БД не затронута):
+  пустой конструктор → загрузка шаблона → сохранение автоматически перевело раунд в `active` → отправка ответа
+  респондентом привела ровно к одному webhook `round_closed` на локальный слушатель (доказательство `after()`),
+  ещё две отправки и ручной клик «רענון ניתוח» новых webhook не дали и вернули `409 already_running` →
+  заморозка карточек, фокус-ловушка диалога (Tab/Shift+Tab замыкаются, Escape возвращает фокус на триггер) →
+  сброс раунда записал `{"audit":"ROUND_RESET",...,"deletedResponseCount":3}` и отключил кнопку обновления
+  ниже порога.
+  Во время смоука найдена и исправлена регрессия: с пустыми черновиками все менеджерские экраны падали в 500
+  (`AnalyticsService.calculateDynamicRoundAnalytics` парсил определение строго); теперь незавершённый опросник
+  возвращает locked-результат, покрыто двумя тестами.
+  По решению пользователя (2026-07-26, вечер) порог `1` доведён до **всех** слоёв, включая fallback Python-сервиса
+  (`src/config.py` — теперь `PRIVACY_THRESHOLD`, дефолт `1`; `src/schemas/mcp_types.py`), `privacyThresholdDefault`
+  в `src/lib/shalomut-source.ts`, демо-данные, `PrivacyTooltip` и описания в OpenAPI/PROJECT_CONTEXT/ROADMAP.
+  Следствие, принятое осознанно: payload без `privacyThreshold` больше не запирается «по умолчанию» на 10 —
+  fail-closed путь ослаблен до того же продуктового дефолта.
 - Активная ветка: `main`/`origin/main` содержат реализации вплоть до коммитов `069d752` (Manager UI Auth & Sunset prep) и `d68806c` (Progress documentation).
 - Contract `3.0` реализует dynamic round-scoped questions при фиксированных
   восьми Dashboard dimensions и output shape. Specification находится в

@@ -1,13 +1,37 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, after } from 'next/server';
 import { getRepositories } from '@/lib/repositories';
 import { RoundService, SurveyService } from '@/lib/services';
 import { getDurableWriteGuardResponse } from '@/lib/server/durable-write-guard';
-import { triggerAiAnalyticsForRound } from '@/lib/server/trigger-ai-analytics';
+import { dispatchAiAnalyticsAfterResponse } from '@/lib/server/trigger-ai-analytics';
 import { QuestionAnswerInput } from '@/lib/types/backend';
 import {
   createCanonicalSurveyDefinition,
   parseSurveyDefinition,
 } from '@/lib/survey-definition';
+
+/**
+ * Runs background work after the response is sent. `after` keeps the serverless
+ * invocation alive until the work settles; outside a Next request scope (unit
+ * tests, non-Next runtimes) it throws, so the work runs detached instead.
+ */
+function scheduleAiAnalyticsDispatch(work: () => Promise<unknown>) {
+  const guarded = async () => {
+    try {
+      await work();
+    } catch (error) {
+      console.error(
+        'Auto-trigger AI analytics failed:',
+        error instanceof Error ? error.message : 'unknown error',
+      );
+    }
+  };
+
+  try {
+    after(guarded);
+  } catch {
+    void guarded();
+  }
+}
 
 export async function POST(
   request: Request,
@@ -69,20 +93,18 @@ export async function POST(
       );
     }
 
-    // Auto-trigger AI Analytics if total responses reach privacy threshold and no insights generated yet
-    void (async () => {
-      try {
-        const responses = await surveyRepo.findResponsesByRoundId(round.id);
-        if (responses.length >= round.privacyThreshold) {
-          const existingInsights = await roundRepo.getAiInsights(round.id);
-          if (!existingInsights) {
-            await triggerAiAnalyticsForRound(round.id);
-          }
-        }
-      } catch (triggerErr) {
-        console.error('Auto-trigger AI analytics failed:', triggerErr);
-      }
-    })();
+    // Auto-trigger AI analytics once the round reaches its privacy threshold.
+    // The respondent never waits for it, but the work must outlive the response
+    // on a serverless runtime, so it is scheduled with `after` rather than a
+    // detached promise the platform is free to kill.
+    scheduleAiAnalyticsDispatch(() =>
+      dispatchAiAnalyticsAfterResponse(
+        round.id,
+        round.privacyThreshold,
+        roundRepo,
+        surveyRepo,
+      ),
+    );
 
     return NextResponse.json({ success: true, responseId: result.responseId }, { status: 200 });
   } catch (error) {

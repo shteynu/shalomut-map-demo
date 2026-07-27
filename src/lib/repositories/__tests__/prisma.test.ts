@@ -63,6 +63,30 @@ function createMockPrismaClient(): MinimalPrismaClient {
         rounds.set(where.id, updated);
         return updated;
       },
+      updateMany: async ({ where, data }: any) => {
+        const existing = rounds.get(where.id);
+        if (!existing) return { count: 0 };
+
+        if (where.aiInsights === null && existing.aiInsights != null) {
+          return { count: 0 };
+        }
+
+        if (Array.isArray(where.OR)) {
+          const claimedAt = existing.aiInsightsUpdatedAt
+            ? new Date(existing.aiInsightsUpdatedAt)
+            : null;
+          const leaseCutoff = where.OR.find(
+            (clause: any) => clause.aiInsightsUpdatedAt?.lt,
+          )?.aiInsightsUpdatedAt.lt as Date | undefined;
+          const leaseExpired =
+            claimedAt === null ||
+            (leaseCutoff !== undefined && claimedAt < leaseCutoff);
+          if (!leaseExpired) return { count: 0 };
+        }
+
+        rounds.set(where.id, { ...existing, ...data });
+        return { count: 1 };
+      },
     },
     surveyResponse: {
       create: async ({ data, include }: any) => {

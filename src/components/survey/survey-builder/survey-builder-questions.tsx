@@ -1,4 +1,4 @@
-import { Plus, RotateCcw, Trash2 } from "lucide-react";
+import { Lock, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { wellbeingDimensions } from "@/lib/demo-data";
 import { SurveyQuestionCard } from "./survey-question-card";
 import type { BuilderQuestion } from "./types";
@@ -51,12 +51,12 @@ export function SurveyBuilderQuestions({
 
   return (
     <section className="survey-builder-panel survey-builder-questions-panel">
-      <div className="survey-builder-heading flex flex-wrap items-center justify-between gap-3">
+      <div className="survey-builder-heading">
         <div>
           <p className="eyebrow">מבנה השאלון</p>
           <h2>שאלות לעריכה</h2>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="survey-builder-heading-actions">
           {onLoadTemplate ? (
             <button
               className="secondary-button"
@@ -71,7 +71,7 @@ export function SurveyBuilderQuestions({
           ) : null}
           {onClearQuestionnaire ? (
             <button
-              className="secondary-button text-red-700 hover:bg-red-50 border-red-200"
+              className="secondary-button secondary-button-danger"
               type="button"
               onClick={onClearQuestionnaire}
               disabled={isFrozen || questions.length === 0}
@@ -94,9 +94,17 @@ export function SurveyBuilderQuestions({
       </div>
 
       {isFrozen ? (
-        <div className="p-4 bg-amber-50 border border-amber-300 text-amber-900 rounded-xl text-sm font-medium mb-4" role="status">
-          🔒 השאלון הוקפא לעריכה משום שכבר התקבלו תשובות בסבב זה. שאלות, מזהים וניסוחים אינם ניתנים לשינוי כדי לשמור על תקינות המדידה המצרפית.
-        </div>
+        <p
+          id="survey-builder-frozen-note"
+          className="survey-builder-frozen-note"
+          role="status"
+        >
+          <Lock size={18} aria-hidden="true" />
+          <span>
+            השאלון הוקפא לעריכה משום שכבר התקבלו תשובות בסבב זה. שאלות, מזהים
+            וניסוחים אינם ניתנים לשינוי כדי לשמור על תקינות המדידה המצרפית.
+          </span>
+        </p>
       ) : null}
 
       <div className="survey-builder-dimension-tabs" role="group" aria-label="סינון שאלות לפי ממד שלומות">
@@ -132,14 +140,16 @@ export function SurveyBuilderQuestions({
       </p>
 
       {visibleQuestions.length === 0 ? (
-        <div className="p-8 text-center border-2 border-dashed border-stone-200 rounded-2xl space-y-3 my-4">
-          <p className="text-stone-600 font-medium">אין שאלות בקטגוריה זו (טיוטה ריקה)</p>
-          <p className="text-xs text-stone-500">ניתן להוסיף שאלה חדשה, להשתמש בשאלה ממאגר הדוגמאות, או לטעון את התבנית המלאה.</p>
+        <div className="survey-builder-empty-note">
+          <strong>אין שאלות בקטגוריה זו (טיוטה ריקה)</strong>
+          <p className="quiet-note">
+            ניתן להוסיף שאלה חדשה, להשתמש בשאלה ממאגר הדוגמאות, או לטעון את התבנית המלאה.
+          </p>
           {onLoadTemplate ? (
             <button
               type="button"
               onClick={onLoadTemplate}
-              className="primary-button inline-flex items-center gap-2 mt-2"
+              className="primary-button"
               disabled={isFrozen}
             >
               <RotateCcw size={16} aria-hidden="true" />
@@ -160,6 +170,7 @@ export function SurveyBuilderQuestions({
                 onDuplicate={onDuplicateQuestion}
                 onEdit={onEditQuestion}
                 onDelete={onDeleteQuestion}
+                isFrozen={isFrozen}
               />
             );
           })}

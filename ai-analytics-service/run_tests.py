@@ -388,5 +388,45 @@ class TestShalomutAIService(unittest.TestCase):
 
         print("✔ Test 13 Passed: Callback POST uses the canonical trailing-slash route.")
 
+    def test_14_background_context_reaches_the_prompt_on_4_0_only(self):
+        """Contracts 1.0-3.0 keep their meaning; only 4.0 carries school context."""
+        from src.agents.nodes import _background_context_for_prompt
+
+        background_context = {"notes": "שני מורים חדשים", "newStaffMembers": 2}
+        state: AnalyticsState = {
+            "round_data": {},
+            "org_context": {},
+            "interpretations": {},
+            "recommendations": {},
+            "safety_status": "pending",
+            "safety_feedback": None,
+            "retry_count": 0,
+            "final_payload": {},
+        }
+
+        for version in ("1.0", "2.0", "3.0"):
+            round_data = {
+                "contractVersion": version,
+                "backgroundContext": background_context,
+            }
+            self.assertIsNone(
+                _background_context_for_prompt(round_data, state),
+                f"contract {version} must not receive the school context",
+            )
+
+        round_data_v4 = {
+            "contractVersion": "4.0",
+            "backgroundContext": background_context,
+        }
+        self.assertEqual(
+            _background_context_for_prompt(round_data_v4, state),
+            background_context,
+        )
+
+        print(
+            "✔ Test 14 Passed: School background context reaches the prompt on "
+            "contract 4.0 only."
+        )
+
 if __name__ == "__main__":
     unittest.main()

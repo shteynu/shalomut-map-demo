@@ -4,6 +4,7 @@ import { POST as mcpHandler, dynamic as mcpDynamic } from '../mcp/route';
 import { GET as getInsightsHandler, POST as postInsightsHandler } from '../rounds/[roundId]/ai-insights/route';
 import { POST as triggerAiHandler } from '../rounds/[roundId]/trigger-ai/route';
 import { AI_ANALYTICS_DIMENSION_IDS } from '@/lib/ai-contract';
+import { surveyInstrument } from '@/lib/shalomut-source';
 import {
   DEMO_ORGANIZATION,
   DEMO_ROUND,
@@ -15,16 +16,26 @@ import {
 } from '@/lib/repositories';
 
 const testRoundId = 'round_demo_1';
+// A second round keeps the dispatch-failure test independent of the claim the
+// success test leaves behind on `testRoundId`.
+const triggerFailureRoundId = 'round_demo_trigger_failure';
 let previousDatabaseUrl: string | undefined;
+
+function installDefaultRepositories() {
+  setRepositories({
+    orgRepo: new InMemoryOrganizationRepository([DEMO_ORGANIZATION]),
+    roundRepo: new InMemoryRoundRepository([
+      DEMO_ROUND,
+      { ...DEMO_ROUND, id: triggerFailureRoundId, shareCode: 'SHALOM-TRIGGER' },
+    ]),
+    surveyRepo: new InMemorySurveyRepository(),
+  });
+}
 
 before(() => {
   previousDatabaseUrl = process.env.DATABASE_URL;
   delete process.env.DATABASE_URL;
-  setRepositories({
-    orgRepo: new InMemoryOrganizationRepository([DEMO_ORGANIZATION]),
-    roundRepo: new InMemoryRoundRepository([DEMO_ROUND]),
-    surveyRepo: new InMemorySurveyRepository(),
-  });
+  installDefaultRepositories();
 });
 
 after(() => {
@@ -140,6 +151,110 @@ test('MCP Server fails closed on Vercel when its shared secret is missing', asyn
   }
 });
 
+test('MCP payload carries the school background context on 4.0 only, never when locked', async () => {
+  const contextRoundId = 'round_with_background_context';
+  const previousContractVersion = process.env.AI_ANALYTICS_CONTRACT_VERSION;
+
+  const backgroundContext = {
+    notes: 'שני מורים חדשים החלו החודש.',
+    audience: 'all-staff',
+    sicknessDaysThisQuarter: 12,
+    newStaffMembers: 2,
+    studentCount: 420,
+    socioEconomicIndex: 5,
+    classesPerGrade: { א: 2 },
+  };
+
+  async function readMcpPayload() {
+    const res = await mcpHandler(
+      new Request('http://localhost:3000/api/mcp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 'context',
+          method: 'tools/call',
+          params: {
+            name: 'get_round_analytics',
+            arguments: { roundId: contextRoundId },
+          },
+        }),
+      }),
+    );
+    assert.strictEqual(res.status, 200);
+    const body = await res.json();
+    return JSON.parse(body.result.content[0].text);
+  }
+
+  try {
+    // Locked round: no responses at all, so nothing may cross the boundary.
+    setRepositories({
+      orgRepo: new InMemoryOrganizationRepository([DEMO_ORGANIZATION]),
+      roundRepo: new InMemoryRoundRepository([
+        {
+          ...DEMO_ROUND,
+          id: contextRoundId,
+          shareCode: 'SHALOM-CONTEXT',
+          privacyThreshold: 10,
+          backgroundContext,
+        },
+      ]),
+      surveyRepo: new InMemorySurveyRepository(),
+    });
+
+    process.env.AI_ANALYTICS_CONTRACT_VERSION = '4.0';
+    const locked = await readMcpPayload();
+    assert.strictEqual(locked.isLocked, true);
+    assert.strictEqual(locked.backgroundContext, undefined);
+
+    // Unlocked round on 3.0 keeps the immutable 3.0 semantics: no context.
+    setRepositories({
+      orgRepo: new InMemoryOrganizationRepository([DEMO_ORGANIZATION]),
+      roundRepo: new InMemoryRoundRepository([
+        {
+          ...DEMO_ROUND,
+          id: contextRoundId,
+          shareCode: 'SHALOM-CONTEXT',
+          privacyThreshold: 1,
+          backgroundContext,
+        },
+      ]),
+      surveyRepo: new InMemorySurveyRepository([
+        {
+          id: 'response-context-1',
+          roundId: contextRoundId,
+          submittedAt: new Date(),
+          answers: surveyInstrument.questions.map((question) => ({
+            questionId: question.id,
+            dimensionId: question.dimensionId,
+            value: 'green' as const,
+            score: 100 as const,
+          })),
+        },
+      ]),
+    });
+
+    process.env.AI_ANALYTICS_CONTRACT_VERSION = '3.0';
+    const legacy = await readMcpPayload();
+    assert.strictEqual(legacy.contractVersion, '3.0');
+    assert.strictEqual(legacy.isLocked, false);
+    assert.strictEqual(legacy.backgroundContext, undefined);
+
+    process.env.AI_ANALYTICS_CONTRACT_VERSION = '4.0';
+    const enriched = await readMcpPayload();
+    assert.strictEqual(enriched.contractVersion, '4.0');
+    assert.strictEqual(enriched.isLocked, false);
+    assert.strictEqual(enriched.backgroundContext.newStaffMembers, 2);
+  } finally {
+    if (previousContractVersion === undefined) {
+      delete process.env.AI_ANALYTICS_CONTRACT_VERSION;
+    } else {
+      process.env.AI_ANALYTICS_CONTRACT_VERSION = previousContractVersion;
+    }
+    installDefaultRepositories();
+  }
+});
+
 test('MCP Server returns error for invalid tool call', async () => {
   const req = new Request('http://localhost:3000/api/mcp', {
     method: 'POST',
@@ -215,11 +330,7 @@ test('AI Insights API keeps legacy 1.0 persistence independent from 3.0 question
 
     assert.strictEqual(response.status, 200);
   } finally {
-    setRepositories({
-      orgRepo: new InMemoryOrganizationRepository([DEMO_ORGANIZATION]),
-      roundRepo: new InMemoryRoundRepository([DEMO_ROUND]),
-      surveyRepo: new InMemorySurveyRepository(),
-    });
+    installDefaultRepositories();
   }
 });
 
@@ -330,6 +441,14 @@ test('Trigger AI Webhook omits a dynamic callback target and returns accepted', 
       Object.hasOwn(forwardedPayload ?? {}, 'callbackUrl'),
       false,
     );
+
+    // The dispatch claim is still held, so an immediate second run is refused
+    // instead of starting a duplicate provider run for the same round.
+    const duplicate = await triggerAiHandler(req, {
+      params: Promise.resolve({ roundId: testRoundId }),
+    });
+    assert.strictEqual(duplicate.status, 409);
+    assert.strictEqual((await duplicate.json()).status, 'already_running');
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -338,7 +457,7 @@ test('Trigger AI Webhook omits a dynamic callback target and returns accepted', 
 test('Trigger AI Webhook exposes upstream and network failures', async () => {
   const originalFetch = globalThis.fetch;
   const req = new Request(
-    `https://shalomut.example/api/rounds/${testRoundId}/trigger-ai`,
+    `https://shalomut.example/api/rounds/${triggerFailureRoundId}/trigger-ai`,
     { method: 'POST' },
   );
 
@@ -350,7 +469,7 @@ test('Trigger AI Webhook exposes upstream and network failures', async () => {
       })) as typeof fetch;
 
     const upstreamFailure = await triggerAiHandler(req, {
-      params: Promise.resolve({ roundId: testRoundId }),
+      params: Promise.resolve({ roundId: triggerFailureRoundId }),
     });
     assert.strictEqual(upstreamFailure.status, 502);
 
@@ -358,8 +477,10 @@ test('Trigger AI Webhook exposes upstream and network failures', async () => {
       throw new Error('offline');
     }) as typeof fetch;
 
+    // A failed dispatch releases its claim, so this retry reaches the transport
+    // again instead of being refused as a duplicate run.
     const networkFailure = await triggerAiHandler(req, {
-      params: Promise.resolve({ roundId: testRoundId }),
+      params: Promise.resolve({ roundId: triggerFailureRoundId }),
     });
     assert.strictEqual(networkFailure.status, 503);
   } finally {

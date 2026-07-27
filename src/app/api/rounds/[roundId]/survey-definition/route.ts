@@ -3,6 +3,7 @@ import { getRepositories } from "@/lib/repositories";
 import {
   createCanonicalSurveyDefinition,
   hasSameQuestionSnapshot,
+  isActivatableSurveyDefinition,
   parseSurveyDefinition,
 } from "@/lib/survey-definition";
 import { getDurableWriteGuardResponse } from "@/lib/server/durable-write-guard";
@@ -84,6 +85,16 @@ export async function PUT(request: Request, { params }: RouteParams) {
       privacyThreshold: parsed.value.minimumResponses,
       surveyDefinition: parsed.value,
     });
+
+    // A draft round goes live as soon as its questionnaire covers all eight
+    // dimensions. Closed and archived rounds are never reopened here.
+    if (
+      updated &&
+      updated.status === 'draft' &&
+      isActivatableSurveyDefinition(parsed.value)
+    ) {
+      await roundRepo.updateStatus(roundId, 'active');
+    }
 
     if (!updated) {
       return NextResponse.json(

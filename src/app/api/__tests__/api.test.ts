@@ -20,6 +20,8 @@ import {
   resetDefaultRepositories,
   setRepositories,
 } from '@/lib/repositories';
+import { InMemoryAuditLogRepository } from '@/lib/auth/domain-contract';
+import { setAuditLogRepositoryForTests } from '@/lib/server/manager-audit';
 import { surveyInstrument } from '@/lib/shalomut-source';
 import { createCanonicalSurveyDefinition } from '@/lib/survey-definition';
 import { QuestionAnswerInput } from '@/lib/types/backend';
@@ -247,7 +249,9 @@ test('API Route PUT /api/manager/setup persists the first organization and round
     assert.strictEqual(response.status, 200);
     const payload = await response.json();
     assert.strictEqual(payload.success, true);
-    assert.strictEqual(payload.round.surveyDefinition.questions.length, 24);
+    // Setup persists an empty draft; the questionnaire is authored afterwards.
+    assert.strictEqual(payload.round.surveyDefinition.questions.length, 0);
+    assert.strictEqual(payload.round.status, 'draft');
   } finally {
     useDemoRepositories();
   }
@@ -477,4 +481,110 @@ test('API Route POST /api/rounds/[roundId]/reset clears responses and returns ro
   assert.strictEqual(payload.success, true);
   assert.strictEqual(payload.round.status, 'draft');
   useDemoRepositories();
+});
+
+test('Saving a complete questionnaire activates a draft round, an incomplete one does not', async () => {
+  const draftRoundId = 'round_draft_activation';
+  const roundRepo = new InMemoryRoundRepository([
+    {
+      ...DEMO_ROUND,
+      id: draftRoundId,
+      shareCode: 'SHALOM-DRAFT',
+      status: 'draft',
+      surveyDefinition: {
+        ...createCanonicalSurveyDefinition('טיוטה', 10),
+        questions: [],
+      },
+    },
+  ]);
+  setRepositories({
+    orgRepo: new InMemoryOrganizationRepository([DEMO_ORGANIZATION]),
+    roundRepo,
+    surveyRepo: new InMemorySurveyRepository(),
+  });
+
+  function save(definition: unknown) {
+    return saveSurveyDefinition(
+      new Request(`http://localhost/api/rounds/${draftRoundId}/survey-definition`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(definition),
+      }),
+      { params: Promise.resolve({ roundId: draftRoundId }) },
+    );
+  }
+
+  try {
+    const canonical = createCanonicalSurveyDefinition('טיוטה', 10);
+
+    // One dimension missing: the draft is persisted but must not go live.
+    const partial = await save({
+      ...canonical,
+      questions: canonical.questions.filter(
+        (question) => question.dimensionId !== 'meaning',
+      ),
+    });
+    assert.strictEqual(partial.status, 200);
+    assert.strictEqual((await roundRepo.findById(draftRoundId))?.status, 'draft');
+
+    const complete = await save(canonical);
+    assert.strictEqual(complete.status, 200);
+    assert.strictEqual((await roundRepo.findById(draftRoundId))?.status, 'active');
+  } finally {
+    useDemoRepositories();
+  }
+});
+
+test('API Route POST /api/rounds/[roundId]/reset drops stale insights and writes an audit event', async () => {
+  const roundRepo = new InMemoryRoundRepository([DEMO_ROUND]);
+  const surveyRepo = new InMemorySurveyRepository();
+  setRepositories({
+    orgRepo: new InMemoryOrganizationRepository([DEMO_ORGANIZATION]),
+    roundRepo,
+    surveyRepo,
+  });
+
+  const auditRepo = new InMemoryAuditLogRepository();
+  setAuditLogRepositoryForTests(auditRepo);
+
+  try {
+    await submitSurvey(
+      new Request(`http://localhost/api/survey/${DEMO_ROUND.shareCode}/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          answers: surveyInstrument.questions.map((question) => ({
+            questionId: question.id,
+            dimensionId: question.dimensionId,
+            value: 'green',
+          })),
+        }),
+      }),
+      { params: Promise.resolve({ shareCode: DEMO_ROUND.shareCode }) },
+    );
+    await roundRepo.saveAiInsights(DEMO_ROUND.id, { status: 'success' });
+
+    const response = await resetRound(
+      new Request(`http://localhost/api/rounds/${DEMO_ROUND.id}/reset`, {
+        method: 'POST',
+      }),
+      { params: Promise.resolve({ roundId: DEMO_ROUND.id }) },
+    );
+
+    assert.strictEqual(response.status, 200);
+    // The analysis described responses that no longer exist.
+    assert.strictEqual(await roundRepo.getAiInsights(DEMO_ROUND.id), null);
+    assert.strictEqual(await surveyRepo.getResponseCount(DEMO_ROUND.id), 0);
+
+    const events = await auditRepo.findByOrganizationId(
+      DEMO_ROUND.organizationId,
+    );
+    const resetEvent = events.find((event) => event.action === 'ROUND_RESET');
+    assert.ok(resetEvent, 'expected the reset to be audited');
+    assert.strictEqual(resetEvent?.roundId, DEMO_ROUND.id);
+    assert.strictEqual(resetEvent?.details?.deletedResponseCount, 1);
+  } finally {
+    setAuditLogRepositoryForTests(null);
+    useDemoRepositories();
+  }
 });

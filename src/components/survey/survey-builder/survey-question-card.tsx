@@ -18,7 +18,11 @@ type QuestionCardProps = {
   onDuplicate: (draftKey: string) => void;
   onEdit?: (question: BuilderQuestion) => void;
   onDelete?: (draftKey: string) => void;
+  isFrozen?: boolean;
 };
+
+const FROZEN_HINT =
+  "השאלון הוקפא לאחר קבלת התשובה הראשונה ולא ניתן לערוך אותו";
 
 export function SurveyQuestionCard({
   question,
@@ -27,11 +31,13 @@ export function SurveyQuestionCard({
   onDuplicate,
   onEdit,
   onDelete,
+  isFrozen = false,
 }: QuestionCardProps) {
   return (
     <article
       className={`survey-builder-question-card${question.enabled ? "" : " is-disabled"}`}
       style={{ "--question-color": getDimensionColor(question.dimensionId) } as CSSProperties}
+      aria-describedby={isFrozen ? "survey-builder-frozen-note" : undefined}
     >
       <div className="survey-builder-question-row">
         <span className="survey-builder-order">
@@ -49,8 +55,9 @@ export function SurveyQuestionCard({
             <button
               className="question-icon-button"
               type="button"
-              title="עריכת שאלה בחלון צף"
+              title={isFrozen ? FROZEN_HINT : "עריכת שאלה בחלון צף"}
               aria-label="עריכת שאלה בחלון צף"
+              disabled={isFrozen}
               onClick={() => onEdit(question)}
             >
               <Edit3 size={17} aria-hidden="true" />
@@ -59,8 +66,15 @@ export function SurveyQuestionCard({
           <button
             className="question-icon-button"
             type="button"
-            title={question.required ? "להפוך לרשות" : "להפוך לחובה"}
+            title={
+              isFrozen
+                ? FROZEN_HINT
+                : question.required
+                  ? "להפוך לרשות"
+                  : "להפוך לחובה"
+            }
             aria-label={question.required ? "להפוך לרשות" : "להפוך לחובה"}
+            disabled={isFrozen}
             onClick={() =>
               onUpdate(question.draftKey, (current) => ({
                 ...current,
@@ -73,8 +87,15 @@ export function SurveyQuestionCard({
           <button
             className="question-icon-button"
             type="button"
-            title={question.enabled ? "להסתיר מסבב האבחון" : "להחזיר לסבב האבחון"}
+            title={
+              isFrozen
+                ? FROZEN_HINT
+                : question.enabled
+                  ? "להסתיר מסבב האבחון"
+                  : "להחזיר לסבב האבחון"
+            }
             aria-label={question.enabled ? "להסתיר מסבב האבחון" : "להחזיר לסבב האבחון"}
+            disabled={isFrozen}
             onClick={() =>
               onUpdate(question.draftKey, (current) => ({
                 ...current,
@@ -87,18 +108,20 @@ export function SurveyQuestionCard({
           <button
             className="question-icon-button"
             type="button"
-            title="שכפול שאלה"
+            title={isFrozen ? FROZEN_HINT : "שכפול שאלה"}
             aria-label="שכפול שאלה"
+            disabled={isFrozen}
             onClick={() => onDuplicate(question.draftKey)}
           >
             <Copy size={17} aria-hidden="true" />
           </button>
           {onDelete ? (
             <button
-              className="question-icon-button text-red-600 hover:text-red-800"
+              className="question-icon-button question-icon-button-danger"
               type="button"
-              title="מחיקת שאלה"
+              title={isFrozen ? FROZEN_HINT : "מחיקת שאלה"}
               aria-label="מחיקת שאלה"
+              disabled={isFrozen}
               onClick={() => onDelete(question.draftKey)}
             >
               <Trash2 size={17} aria-hidden="true" />
@@ -113,6 +136,8 @@ export function SurveyQuestionCard({
           <input
             dir="ltr"
             value={question.id}
+            readOnly={isFrozen}
+            title={isFrozen ? FROZEN_HINT : undefined}
             onChange={(event) =>
               onUpdate(question.draftKey, (current) => ({
                 ...current,
@@ -126,6 +151,8 @@ export function SurveyQuestionCard({
           ממד שלומות
           <select
             value={question.dimensionId}
+            disabled={isFrozen}
+            title={isFrozen ? FROZEN_HINT : undefined}
             onChange={(event) =>
               onUpdate(question.draftKey, (current) => ({
                 ...current,
@@ -148,6 +175,8 @@ export function SurveyQuestionCard({
         <textarea
           rows={3}
           value={question.text}
+          readOnly={isFrozen}
+          title={isFrozen ? FROZEN_HINT : undefined}
           onChange={(event) =>
             onUpdate(question.draftKey, (current) => ({
               ...current,

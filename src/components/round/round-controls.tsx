@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CheckCircle2, Clipboard, Loader2, Lock, Map, RotateCcw } from "lucide-react";
+import { CheckCircle2, Clipboard, Loader2, Lock, Map, RotateCcw, Sparkles } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useState } from "react";
 import { useClipboard } from "@/lib/hooks/use-clipboard";
@@ -29,6 +29,8 @@ export function RoundControls({
   const [closed, setClosed] = useState(status === "closed");
   const [closing, setClosing] = useState(false);
   const [resetting, setResetting] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analysisNote, setAnalysisNote] = useState<string | null>(null);
   const [closeError, setCloseError] = useState<string | null>(null);
   const shareUrl = useShareUrl(shareCode);
   const { copied, copy } = useClipboard();
@@ -60,6 +62,42 @@ export function RoundControls({
 
     setClosed(true);
     setClosing(false);
+  }
+
+  async function refreshAnalysis() {
+    setAnalyzing(true);
+    setAnalysisNote(null);
+    setCloseError(null);
+
+    const response = await fetch(
+      `/api/rounds/${encodeURIComponent(roundId)}/trigger-ai`,
+      { method: "POST" },
+    ).catch(() => null);
+
+    if (!response) {
+      setCloseError("לא ניתן היה לפנות לשירות הניתוח. בדקו את החיבור ונסו שוב.");
+      setAnalyzing(false);
+      return;
+    }
+
+    if (response.status === 409) {
+      setAnalysisNote("ניתוח כבר רץ עבור הסבב הזה. המתינו לסיומו לפני הפעלה נוספת.");
+      setAnalyzing(false);
+      return;
+    }
+
+    if (!response.ok) {
+      setCloseError(
+        responseCount < minimumResponses
+          ? `הניתוח יופעל רק לאחר ${minimumResponses} תשובות לפחות.`
+          : "שירות הניתוח אינו זמין כרגע. נסו שוב מאוחר יותר.",
+      );
+      setAnalyzing(false);
+      return;
+    }
+
+    setAnalysisNote("הניתוח הופעל. התוצאות יתעדכנו במפה בתוך דקות ספורות.");
+    setAnalyzing(false);
   }
 
   async function resetRound() {
@@ -115,6 +153,24 @@ export function RoundControls({
           <button
             className="secondary-button"
             type="button"
+            disabled={analyzing || responseCount < minimumResponses}
+            onClick={refreshAnalysis}
+            title={
+              responseCount < minimumResponses
+                ? `הניתוח יופעל לאחר ${minimumResponses} תשובות לפחות`
+                : "הפעלת ניתוח מחדש על כל התשובות שהתקבלו עד כה"
+            }
+          >
+            {analyzing ? (
+              <Loader2 size={18} className="animate-spin" aria-hidden="true" />
+            ) : (
+              <Sparkles size={18} aria-hidden="true" />
+            )}
+            {analyzing ? "מפעיל ניתוח..." : "רענון ניתוח"}
+          </button>
+          <button
+            className="secondary-button"
+            type="button"
             disabled={resetting}
             onClick={resetRound}
             title="מחיקת תשובות והחזרה לעריכת שאלון"
@@ -151,6 +207,11 @@ export function RoundControls({
             <CheckCircle2 size={18} aria-hidden="true" />
             סבב האבחון מסומן כסגור. הדשבורד זמין לצפייה.
           </div>
+        ) : null}
+        {analysisNote ? (
+          <p className="success-note" role="status">
+            {analysisNote}
+          </p>
         ) : null}
         {closeError ? (
           <p className="survey-submit-error" role="alert">

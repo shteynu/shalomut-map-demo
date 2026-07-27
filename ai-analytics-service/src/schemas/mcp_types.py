@@ -65,7 +65,7 @@ class RoundAnalyticsResult:
     totalResponses: int
     isLocked: bool
     dimensionScores: Dict[str, RoundDimensionScore]
-    privacyThreshold: int = 10
+    privacyThreshold: int = 1
     organizationContext: Optional[Dict[str, Any]] = field(default_factory=dict)
     contractVersion: str = AI_ANALYTICS_V1_CONTRACT_VERSION
     questionAggregates: Dict[str, Dict[str, Any]] = field(default_factory=dict)
@@ -124,7 +124,10 @@ class RoundAnalyticsResult:
                 )
         else:
             total_responses = int(data.get("totalResponses", 0))
-            privacy_threshold = int(data.get("privacyThreshold", 10))
+            # Legacy payloads may omit the threshold. Core owns the real value
+            # (default 1, configurable per round); the fallback mirrors that
+            # same product default.
+            privacy_threshold = int(data.get("privacyThreshold", 1))
 
         if privacy_threshold < 1:
             raise ValueError("privacyThreshold must be a positive integer")

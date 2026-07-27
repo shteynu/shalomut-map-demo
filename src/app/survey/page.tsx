@@ -1,7 +1,7 @@
 import { ManagerOnboarding } from "@/components/manager";
 import { SurveyBuilder } from "@/components/survey";
 import { loadManagerContext } from "@/lib/server/manager-context";
-import { createCanonicalSurveyDefinition } from "@/lib/survey-definition";
+import { createEmptyDraftSurveyDefinition } from "@/lib/survey-definition";
 
 export default async function SurveyPage() {
   const context = await loadManagerContext();
@@ -23,7 +23,7 @@ export default async function SurveyPage() {
       shareCode={context.currentRound.shareCode}
       initialDefinition={
         context.currentRound.surveyDefinition ??
-        createCanonicalSurveyDefinition(
+        createEmptyDraftSurveyDefinition(
           context.currentRound.title,
           context.currentRound.privacyThreshold,
         )

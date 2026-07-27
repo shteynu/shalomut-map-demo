@@ -174,8 +174,12 @@ class Settings:
         # Reserved persistence setting for a future vector-backed catalog.
         self.chroma_persist_dir: str = os.getenv("CHROMA_PERSIST_DIR", "./chroma_db")
         
-        # Privacy Constraint
-        self.privacy_threshold: int = 10
+        # Privacy Constraint.
+        # The product default lives in Core (1, configurable per round) and
+        # always arrives on the payload as `privacyThreshold`. This value is
+        # only the fallback for a payload that omits it and mirrors the same
+        # product default, so both services describe the same rule.
+        self.privacy_threshold: int = int(os.getenv("PRIVACY_THRESHOLD", "1"))
 
     def resolved_llm_provider(self, model_name: str = "") -> str:
         if self.llm_provider != "auto":

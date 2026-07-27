@@ -296,7 +296,7 @@ export const surveyInstrument: SurveyInstrument = {
     min: 15,
     max: 20,
   },
-  privacyThresholdDefault: 10,
+  privacyThresholdDefault: 1,
   dimensions: surveyDimensions,
   questions: surveyDimensions.flatMap((dimension) => dimension.questions),
 };

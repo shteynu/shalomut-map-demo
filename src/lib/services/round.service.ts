@@ -5,7 +5,9 @@ import {
   SurveyRound,
 } from '../types/backend';
 import {
-  createCanonicalSurveyDefinition,
+  DEFAULT_PRIVACY_THRESHOLD,
+  createEmptyDraftSurveyDefinition,
+  isActivatableSurveyDefinition,
   parseSurveyDefinition,
 } from '../survey-definition';
 
@@ -24,14 +26,21 @@ export class RoundService {
   public static createRound(input: CreateRoundInput): SurveyRound {
     const roundId = crypto.randomUUID();
     const privacyThreshold =
-      input.privacyThreshold ?? input.surveyDefinition?.minimumResponses ?? 10;
+      input.privacyThreshold ??
+      input.surveyDefinition?.minimumResponses ??
+      DEFAULT_PRIVACY_THRESHOLD;
     const definitionCandidate = input.surveyDefinition
       ? {
           ...input.surveyDefinition,
           minimumResponses: privacyThreshold,
         }
-      : createCanonicalSurveyDefinition(input.title, privacyThreshold);
-    const parsedDefinition = parseSurveyDefinition(definitionCandidate);
+      : createEmptyDraftSurveyDefinition(input.title, privacyThreshold);
+    // A round may start from an empty questionnaire, so the structural parse is
+    // permissive here. Activation stays gated on the full eight-dimension
+    // coverage below.
+    const parsedDefinition = parseSurveyDefinition(definitionCandidate, {
+      allowIncomplete: true,
+    });
     if (!parsedDefinition.ok) {
       throw new Error(`Survey round cannot be activated: ${parsedDefinition.error}`);
     }
@@ -40,7 +49,9 @@ export class RoundService {
       id: roundId,
       organizationId: input.organizationId,
       title: input.title,
-      status: 'active',
+      status: isActivatableSurveyDefinition(parsedDefinition.value)
+        ? 'active'
+        : 'draft',
       shareCode: this.generateShareCode(),
       privacyThreshold,
       startDate: input.startDate ?? new Date(),

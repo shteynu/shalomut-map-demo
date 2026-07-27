@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from src.agents.state import AnalyticsState
 from src.rag.store import LocalInterventionVectorStore
 from src.services.llm_provider import llm_provider_service
@@ -26,6 +26,22 @@ def _effective_contract_version(round_data: Dict[str, Any]) -> str:
         "contractVersion",
         AI_ANALYTICS_V1_CONTRACT_VERSION,
     )
+
+
+def _background_context_for_prompt(
+    round_data: Dict[str, Any],
+    state: "AnalyticsState",
+) -> Optional[Dict[str, Any]]:
+    """School background context reaches the prompt on contract 4.0 only.
+
+    Versions 1.0-3.0 are immutable boundaries: silently enriching their prompt
+    would change what those versions mean without a version bump, and the
+    provenance flag that records the enrichment is written for 4.0 alone.
+    """
+    if _effective_contract_version(round_data) != AI_ANALYTICS_V4_CONTRACT_VERSION:
+        return None
+
+    return round_data.get("backgroundContext") or state.get("org_context")
 
 
 def _question_aggregates_for_dimension(
@@ -132,7 +148,7 @@ async def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
             round_data,
             dim_id,
         )
-        background_context = round_data.get("backgroundContext") or state.get("org_context")
+        background_context = _background_context_for_prompt(round_data, state)
         dim_ids.append(dim_id)
         generations.append(
             asyncio.to_thread(
@@ -180,8 +196,9 @@ async def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
                 round_data.get("surveyDefinitionHash")
             )
         if _effective_contract_version(round_data) == AI_ANALYTICS_V4_CONTRACT_VERSION:
-            background_context = round_data.get("backgroundContext") or state.get("org_context")
-            generation_provenance[dim_id]["backgroundContextIncluded"] = bool(background_context)
+            generation_provenance[dim_id]["backgroundContextIncluded"] = bool(
+                _background_context_for_prompt(round_data, state),
+            )
 
     green_dimensions = len(dim_scores) - len(yellow_red_dims)
     overall_summary = (

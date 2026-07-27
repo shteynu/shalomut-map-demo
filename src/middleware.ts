@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import {
-  decideBasicAuth,
-  isBasicAuthFallbackDisabled,
   isMachineAuthenticatedRoute,
   isRespondentRoute,
 } from "@/lib/server/basic-auth";

@@ -2,13 +2,18 @@
 
 import { HelpCircle } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
+import { DEFAULT_PRIVACY_THRESHOLD } from "@/lib/survey-definition";
 
 /**
  * Explains the privacy threshold ("סף פרטיות"). The trigger is a real button so
  * the tooltip works with keyboard (:focus-within) and touch (tap toggles
  * is-open); hover keeps working via CSS.
  */
-export function PrivacyTooltip({ minimumResponses = 10 }: { minimumResponses?: number }) {
+export function PrivacyTooltip({
+  minimumResponses = DEFAULT_PRIVACY_THRESHOLD,
+}: {
+  minimumResponses?: number;
+}) {
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLSpanElement | null>(null);
   const tooltipId = useId();

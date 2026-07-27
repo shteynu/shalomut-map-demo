@@ -83,7 +83,7 @@ export function SurveyBuilder({
   isFrozen = false,
 }: SurveyBuilderProps) {
   const [title, setTitle] = useState(initialDefinition.title);
-  const [audience, setAudience] = useState(initialDefinition.audience);
+  const audience = initialDefinition.audience;
   const [estimatedMinutes, setEstimatedMinutes] = useState(
     initialDefinition.estimatedMinutes,
   );
@@ -367,7 +367,6 @@ export function SurveyBuilder({
             title={title}
             setTitle={setTitle}
             audience={audience}
-            setAudience={setAudience}
             estimatedMinutes={estimatedMinutes}
             setEstimatedMinutes={setEstimatedMinutes}
             minimumResponses={minimumResponses}

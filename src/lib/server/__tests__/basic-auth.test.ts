@@ -1,142 +1,65 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { decideBasicAuth } from "../basic-auth";
+import {
+  isMachineAuthenticatedRoute,
+  isRespondentRoute,
+} from "../basic-auth";
 
-const CONFIGURED = {
-  BASIC_AUTH_USER: "manager",
-  BASIC_AUTH_PASSWORD: "correct-horse",
-  MANAGER_ORGANIZATION_ID: "org-school-a",
-  NODE_ENV: "production",
-  VERCEL_ENV: "production",
-};
-
-function basicHeader(user: string, password: string) {
-  return `Basic ${btoa(`${user}:${password}`)}`;
-}
-
-test("respondents reach the survey without manager credentials", () => {
+test("respondents reach the survey without a manager session", () => {
   for (const pathname of [
+    "/answer",
+    "/answer/",
     "/answer/SHALOM-ABC123",
+    "/answer/SHALOM-ABC123/",
     "/api/survey/SHALOM-ABC123",
     "/api/survey/SHALOM-ABC123/submit",
+    "/api/survey/SHALOM-ABC123/submit/",
   ]) {
     assert.strictEqual(
-      decideBasicAuth(
-        { pathname, method: "POST", authorization: null },
-        CONFIGURED,
-      ),
-      "allow",
+      isRespondentRoute(pathname),
+      true,
+      `expected ${pathname} to be a respondent route`,
+    );
+  }
+});
+
+test("manager surfaces are not respondent routes", () => {
+  for (const pathname of [
+    "/",
+    "/setup",
+    "/dashboard",
+    "/api/manager/setup",
+    "/api/rounds",
+    "/answering",
+  ]) {
+    assert.strictEqual(
+      isRespondentRoute(pathname),
+      false,
+      `expected ${pathname} to stay behind the manager gate`,
     );
   }
 });
 
 test("the AI service reaches MCP and the callback without a browser session", () => {
+  assert.strictEqual(isMachineAuthenticatedRoute("/api/mcp", "POST"), true);
+  assert.strictEqual(isMachineAuthenticatedRoute("/api/mcp/", "POST"), true);
   assert.strictEqual(
-    decideBasicAuth(
-      { pathname: "/api/mcp", method: "POST", authorization: null },
-      CONFIGURED,
-    ),
-    "allow",
+    isMachineAuthenticatedRoute("/api/rounds/round-1/ai-insights", "POST"),
+    true,
   );
-
   assert.strictEqual(
-    decideBasicAuth(
-      {
-        pathname: "/api/rounds/round-1/ai-insights",
-        method: "POST",
-        authorization: null,
-      },
-      CONFIGURED,
-    ),
-    "allow",
+    isMachineAuthenticatedRoute("/api/rounds/round-1/ai-insights/", "POST"),
+    true,
   );
 });
 
-test("reading AI insights stays behind the gate", () => {
+test("reading AI insights stays behind the manager gate", () => {
   assert.strictEqual(
-    decideBasicAuth(
-      {
-        pathname: "/api/rounds/round-1/ai-insights",
-        method: "GET",
-        authorization: null,
-      },
-      CONFIGURED,
-    ),
-    "challenge",
+    isMachineAuthenticatedRoute("/api/rounds/round-1/ai-insights", "GET"),
+    false,
   );
-});
-
-test("a deployment without credentials fails closed", () => {
   assert.strictEqual(
-    decideBasicAuth(
-      { pathname: "/setup", method: "GET", authorization: null },
-      { NODE_ENV: "production", VERCEL_ENV: "production" },
-    ),
-    "unconfigured",
-  );
-});
-
-test("configured manager credentials without an organization scope fail closed", () => {
-  assert.strictEqual(
-    decideBasicAuth(
-      {
-        pathname: "/dashboard",
-        method: "GET",
-        authorization: basicHeader("manager", "correct-horse"),
-      },
-      {
-        BASIC_AUTH_USER: "manager",
-        BASIC_AUTH_PASSWORD: "correct-horse",
-        NODE_ENV: "production",
-        VERCEL_ENV: "production",
-      },
-    ),
-    "unconfigured",
-  );
-});
-
-test("local development stays open without credentials", () => {
-  assert.strictEqual(
-    decideBasicAuth(
-      { pathname: "/setup", method: "GET", authorization: null },
-      { NODE_ENV: "development" },
-    ),
-    "allow",
-  );
-});
-
-test("manager surfaces challenge anonymous and wrong credentials", () => {
-  const cases = [
-    null,
-    "Bearer correct-horse",
-    "Basic",
-    "Basic !!!not-base64!!!",
-    basicHeader("manager", "wrong"),
-    basicHeader("intruder", "correct-horse"),
-  ];
-
-  for (const authorization of cases) {
-    assert.strictEqual(
-      decideBasicAuth(
-        { pathname: "/api/manager/setup", method: "PUT", authorization },
-        CONFIGURED,
-      ),
-      "challenge",
-      `expected a challenge for ${String(authorization)}`,
-    );
-  }
-});
-
-test("correct credentials pass the gate", () => {
-  assert.strictEqual(
-    decideBasicAuth(
-      {
-        pathname: "/api/manager/setup",
-        method: "PUT",
-        authorization: basicHeader("manager", "correct-horse"),
-      },
-      CONFIGURED,
-    ),
-    "allow",
+    isMachineAuthenticatedRoute("/api/rounds/round-1/trigger-ai", "POST"),
+    false,
   );
 });

@@ -1411,10 +1411,253 @@ textarea {
     transform 150ms ease;
 }
 
-.question-icon-button:hover {
+.question-icon-button:hover:not(:disabled) {
   border-color: rgba(228, 153, 2, 0.45);
   background: rgba(228, 153, 2, 0.12);
   transform: translateY(-1px);
+}
+
+.question-icon-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.question-icon-button-danger {
+  color: var(--danger-ink);
+}
+
+.question-icon-button-danger:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--red) 45%, transparent);
+  background: color-mix(in srgb, var(--red) 12%, transparent);
+}
+
+/* Frozen questionnaire: the round already has answers, so the snapshot is
+   immutable. Communicated with an icon, a full sentence and a warm surface —
+   never colour alone. */
+.survey-builder-frozen-note {
+  display: flex;
+  align-items: start;
+  gap: 0.55rem;
+  margin: 0 0 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 38%, var(--line));
+  border-radius: var(--radius-panel);
+  background: color-mix(in srgb, var(--pastel-peach) 45%, var(--surface));
+  padding: 0.8rem 0.95rem;
+  color: var(--warning-ink);
+  font-weight: 800;
+  line-height: 1.6;
+}
+
+.survey-builder-empty-note {
+  display: grid;
+  justify-items: center;
+  gap: 0.55rem;
+  margin: 1rem 0;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-panel-organic);
+  background: var(--surface-panel);
+  padding: 2rem 1.25rem;
+  text-align: center;
+}
+
+.survey-builder-empty-note strong {
+  color: var(--navy);
+}
+
+.survey-builder-heading-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.secondary-button-danger {
+  border-color: color-mix(in srgb, var(--red) 32%, var(--line));
+  color: var(--danger-ink);
+}
+
+.secondary-button-danger:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--red) 55%, transparent);
+  background: color-mix(in srgb, var(--red) 10%, transparent);
+}
+
+.link-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 0;
+  background: none;
+  color: var(--accent-dark);
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.link-button:hover {
+  color: var(--navy);
+}
+
+/* Question editor dialog. Same paper surfaces and organic radii as the rest of
+   the builder, so the overlay reads as part of the product. */
+.question-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--ink) 42%, transparent);
+  padding: 1rem;
+}
+
+.question-dialog-panel {
+  width: min(34rem, 100%);
+  max-height: min(90vh, 46rem);
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel-organic);
+  background: var(--surface);
+  box-shadow: var(--shadow-stone);
+  padding: 1.35rem;
+}
+
+.question-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.9rem;
+}
+
+.question-dialog-header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.question-dialog-form {
+  display: grid;
+  gap: 0.9rem;
+  margin-top: 0.9rem;
+}
+
+.question-dialog-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+}
+
+.question-dialog-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.question-dialog-toggle input {
+  width: 1.05rem;
+  height: 1.05rem;
+  accent-color: var(--accent);
+}
+
+.question-dialog-preview {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: var(--surface-strong);
+  padding: 0.85rem;
+}
+
+.question-dialog-preview p {
+  margin: 0;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.question-dialog-preview-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.question-dialog-footer {
+  display: flex;
+  justify-content: flex-start;
+  gap: 0.6rem;
+  border-top: 1px solid var(--line);
+  padding-top: 0.9rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .question-dialog-panel {
+    transition: none;
+  }
+}
+
+/* Manager identity chip in the app header. */
+.manager-user-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-strong);
+  padding: 0.3rem 0.75rem;
+  color: var(--ink);
+  font-size: 0.9rem;
+}
+
+.manager-user-bar-identity,
+.manager-user-bar-role,
+.manager-user-bar-logout {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 800;
+}
+
+.manager-user-bar-identity svg {
+  color: var(--accent-dark);
+}
+
+.manager-user-bar-role {
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--pastel-yellow) 70%, var(--surface));
+  padding: 0.1rem 0.5rem;
+  color: var(--warning-ink);
+  font-size: 0.78rem;
+}
+
+.manager-user-bar-logout {
+  border: 0;
+  border-radius: var(--radius-control);
+  background: none;
+  padding: 0.25rem 0.45rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+  transition: color 150ms ease, background-color 150ms ease;
+}
+
+.manager-user-bar-logout:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--red) 10%, transparent);
+  color: var(--danger-ink);
+}
+
+.manager-user-bar-logout:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .manager-user-bar-logout {
+    transition: none;
+  }
 }
 
 .survey-builder-share-panel .copy-row {

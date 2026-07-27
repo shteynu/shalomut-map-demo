@@ -27,7 +27,7 @@ model SurveyRound {
   title               String
   status              String           // 'draft' | 'active' | 'closed' | 'archived'
   shareCode           String           @unique @map("share_code")
-  privacyThreshold    Int              @default(10) @map("privacy_threshold")
+  privacyThreshold    Int              @default(1) @map("privacy_threshold")
   startDate           DateTime         @default(now()) @map("start_date")
   endDate             DateTime?        @map("end_date")
   backgroundContext   Json?            @map("background_context")

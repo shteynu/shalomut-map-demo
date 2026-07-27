@@ -2,7 +2,11 @@ import type {
   IOrganizationRepository,
   IRoundRepository,
 } from "@/lib/repositories";
-import { createCanonicalSurveyDefinition } from "@/lib/survey-definition";
+import { resolveAudienceLabel } from "@/lib/audience";
+import {
+  createCanonicalSurveyDefinition,
+  createEmptyDraftSurveyDefinition,
+} from "@/lib/survey-definition";
 import type {
   Organization,
   RoundBackgroundContext,
@@ -76,10 +80,18 @@ export class ManagerSetupService {
         startDate: input.round.startDate,
         endDate: input.round.endDate,
         backgroundContext: input.round.backgroundContext,
+        // A legacy round without a stored definition is served the canonical
+        // template by the respondent route, so persisting anything else here
+        // would change the questionnaire under a running round.
         surveyDefinition: existingRound.surveyDefinition
           ? {
               ...existingRound.surveyDefinition,
               minimumResponses: input.round.privacyThreshold,
+              // Audience is owned by this screen; the questionnaire copy just
+              // mirrors it so both screens can never disagree.
+              audience: resolveAudienceLabel(
+                input.round.backgroundContext.audience,
+              ),
             }
           : createCanonicalSurveyDefinition(
               input.round.title,
@@ -95,10 +107,17 @@ export class ManagerSetupService {
           startDate: input.round.startDate,
           endDate: input.round.endDate,
           backgroundContext: input.round.backgroundContext,
-          surveyDefinition: createCanonicalSurveyDefinition(
-            input.round.title,
-            input.round.privacyThreshold,
-          ),
+          // A new round starts as an empty draft: the manager builds the
+          // questionnaire (or loads the template) before it can go live.
+          surveyDefinition: {
+            ...createEmptyDraftSurveyDefinition(
+              input.round.title,
+              input.round.privacyThreshold,
+            ),
+            audience: resolveAudienceLabel(
+              input.round.backgroundContext.audience,
+            ),
+          },
         },
         roundRepo,
       );

@@ -5,6 +5,7 @@ export type AuditActionType =
   | "SETUP_SAVED"
   | "ROUND_CREATED"
   | "ROUND_STATUS_UPDATED"
+  | "ROUND_RESET"
   | "SURVEY_DEFINITION_UPDATED"
   | "AI_TRIGGERED"
   | "MEMBER_INVITED"

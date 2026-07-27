@@ -67,7 +67,7 @@ erDiagram
         string title
         string status "draft | active | closed | archived"
         string share_code
-        int privacy_threshold "default 10"
+        int privacy_threshold "default 1"
         datetime start_date
         datetime end_date
         json background_context

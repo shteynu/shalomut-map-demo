@@ -85,6 +85,7 @@ export class InMemoryRoundRepository implements IRoundRepository {
   }
 
   private aiInsightsStore: Map<string, Record<string, any>> = new Map();
+  private aiRunClaims: Map<string, number> = new Map();
 
   public async saveAiInsights(id: string, insights: Record<string, any>): Promise<boolean> {
     if (!this.rounds.has(id)) {
@@ -92,6 +93,7 @@ export class InMemoryRoundRepository implements IRoundRepository {
     }
 
     this.aiInsightsStore.set(id, { ...insights });
+    this.aiRunClaims.set(id, Date.now());
     return true;
   }
 
@@ -100,8 +102,41 @@ export class InMemoryRoundRepository implements IRoundRepository {
     return found ? { ...found } : null;
   }
 
+  public async claimAiAnalysisRun(
+    id: string,
+    options?: { leaseMs?: number; requireNoInsights?: boolean },
+  ): Promise<boolean> {
+    if (!this.rounds.has(id)) return false;
+
+    const leaseMs = options?.leaseMs ?? 0;
+    const requireNoInsights = options?.requireNoInsights ?? true;
+
+    if (requireNoInsights && this.aiInsightsStore.has(id)) {
+      return false;
+    }
+
+    const claimedAt = this.aiRunClaims.get(id);
+    if (claimedAt !== undefined && Date.now() - claimedAt < leaseMs) {
+      return false;
+    }
+
+    this.aiRunClaims.set(id, Date.now());
+    return true;
+  }
+
+  public async releaseAiAnalysisClaim(id: string): Promise<void> {
+    if (this.aiInsightsStore.has(id)) return;
+    this.aiRunClaims.delete(id);
+  }
+
+  public async clearAiInsights(id: string): Promise<void> {
+    this.aiInsightsStore.delete(id);
+    this.aiRunClaims.delete(id);
+  }
+
   public clear(): void {
     this.rounds.clear();
     this.aiInsightsStore.clear();
+    this.aiRunClaims.clear();
   }
 }

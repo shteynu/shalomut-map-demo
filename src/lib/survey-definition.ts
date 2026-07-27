@@ -4,6 +4,18 @@ import type {
   SurveyDefinitionQuestion,
 } from "@/lib/types/backend";
 
+/** Lowest privacy threshold a round may be configured with. */
+export const MINIMUM_PRIVACY_THRESHOLD = 1;
+
+/** Threshold a new round starts with when the manager configures nothing. */
+export const DEFAULT_PRIVACY_THRESHOLD = 1;
+
+/**
+ * Below this the published average stops hiding the individual respondent, so
+ * the manager surfaces warn instead of silently promising anonymity.
+ */
+export const LOW_PRIVACY_THRESHOLD_WARNING = 5;
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
@@ -52,9 +64,12 @@ export function parseSurveyDefinition(
   if (
     typeof minimumResponses !== "number" ||
     !Number.isInteger(minimumResponses) ||
-    minimumResponses < 1
+    minimumResponses < MINIMUM_PRIVACY_THRESHOLD
   ) {
-    return { ok: false, error: "Privacy threshold must be at least 1." };
+    return {
+      ok: false,
+      error: `Privacy threshold must be at least ${MINIMUM_PRIVACY_THRESHOLD}.`,
+    };
   }
 
   if (!Array.isArray(questions)) {
@@ -148,6 +163,40 @@ export function hasSameQuestionSnapshot(
       question.answerMode === candidate.answerMode
     );
   });
+}
+
+/**
+ * A questionnaire may only go live once every dashboard dimension has at least
+ * one enabled question, so this is the single activation gate shared by round
+ * creation, saving and the respondent route.
+ */
+export function isActivatableSurveyDefinition(
+  definition: SurveyDefinition,
+): boolean {
+  const enabledDimensionIds = new Set(
+    definition.questions
+      .filter((question) => question.enabled)
+      .map((question) => question.dimensionId),
+  );
+
+  return surveyInstrument.dimensions.every((dimension) =>
+    enabledDimensionIds.has(dimension.id),
+  );
+}
+
+/**
+ * The starting point for a new round: the manager writes their own questions or
+ * loads the canonical template explicitly. Nothing is pre-filled, so nobody
+ * distributes a questionnaire they never read.
+ */
+export function createEmptyDraftSurveyDefinition(
+  title: string,
+  minimumResponses: number,
+): SurveyDefinition {
+  return {
+    ...createCanonicalSurveyDefinition(title, minimumResponses),
+    questions: [],
+  };
 }
 
 export function createCanonicalSurveyDefinition(

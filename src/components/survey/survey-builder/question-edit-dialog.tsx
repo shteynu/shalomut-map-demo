@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, Eye, ShieldCheck, X } from "lucide-react";
+import { Check, Eye, X } from "lucide-react";
 import { wellbeingDimensions } from "@/lib/demo-data";
 import type { BuilderQuestion } from "./types";
 
@@ -44,6 +44,7 @@ export function QuestionEditDialog({
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const previousActiveElement = useRef<HTMLElement | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -54,9 +55,44 @@ export function QuestionEditDialog({
       textareaRef.current?.focus();
     }, 50);
 
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
+    const focusableSelector = [
+      "a[href]",
+      "button:not([disabled])",
+      "input:not([disabled])",
+      "select:not([disabled])",
+      "textarea:not([disabled])",
+      '[tabindex]:not([tabindex="-1"])',
+    ].join(",");
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
         onClose();
+        return;
+      }
+
+      if (event.key !== "Tab") return;
+
+      // Keyboard focus stays inside the dialog while it is open, so Tab cannot
+      // walk into the page behind the overlay.
+      const focusable = Array.from(
+        dialogRef.current?.querySelectorAll<HTMLElement>(focusableSelector) ?? [],
+      ).filter((element) => element.offsetParent !== null);
+
+      if (focusable.length === 0) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+
+      if (event.shiftKey && (active === first || !dialogRef.current?.contains(active))) {
+        event.preventDefault();
+        last.focus();
+        return;
+      }
+
+      if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
       }
     };
 
@@ -67,8 +103,6 @@ export function QuestionEditDialog({
       previousActiveElement.current?.focus();
     };
   }, [isOpen, onClose]);
-
-  const dialogRef = useRef<HTMLDivElement>(null);
 
   if (!isOpen || !question) return null;
 
@@ -98,20 +132,23 @@ export function QuestionEditDialog({
 
   return (
     <div
-      className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+      className="question-dialog-backdrop"
       role="dialog"
       aria-modal="true"
       aria-labelledby="edit-dialog-title"
       ref={dialogRef}
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
     >
-      <div className="modal-panel bg-stone-50 border border-stone-200 rounded-2xl p-6 max-w-lg w-full shadow-2xl space-y-4">
-        <div className="flex items-center justify-between border-b border-stone-200 pb-3">
-          <h2 id="edit-dialog-title" className="text-lg font-bold text-stone-800">
+      <div className="question-dialog-panel" dir="rtl">
+        <div className="question-dialog-header">
+          <h2 id="edit-dialog-title">
             עריכת שאלה {questionIndex > 0 ? questionIndex : "(ללא מספר)"}
           </h2>
           <button
             type="button"
-            className="p-1 text-stone-500 hover:text-stone-800 rounded-lg"
+            className="icon-button"
             onClick={onClose}
             aria-label="סגירה"
           >
@@ -120,21 +157,18 @@ export function QuestionEditDialog({
         </div>
 
         {validationError ? (
-          <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl" role="alert">
+          <p className="survey-submit-error" role="alert">
             {validationError}
-          </div>
+          </p>
         ) : null}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-stone-700 mb-1">
-              נוסח השאלה המדויק
-            </label>
+        <form onSubmit={handleSubmit} className="question-dialog-form">
+          <label>
+            נוסח השאלה המדויק
             <textarea
               ref={textareaRef}
               rows={3}
               required
-              className="w-full p-3 border border-stone-300 rounded-xl bg-white text-stone-900 focus:ring-2 focus:ring-amber-500 outline-none"
               value={text}
               onChange={(e) => {
                 setText(e.target.value);
@@ -142,15 +176,12 @@ export function QuestionEditDialog({
               }}
               dir="rtl"
             />
-          </div>
+          </label>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-stone-700 mb-1">
-                ממד שלומות
-              </label>
+          <div className="builder-form-grid">
+            <label>
+              ממד שלומות
               <select
-                className="w-full p-2.5 border border-stone-300 rounded-xl bg-white text-stone-900 focus:ring-2 focus:ring-amber-500 outline-none"
                 value={dimensionId}
                 onChange={(e) => setDimensionId(e.target.value)}
               >
@@ -160,65 +191,61 @@ export function QuestionEditDialog({
                   </option>
                 ))}
               </select>
-            </div>
+            </label>
 
-            <div>
-              <label className="block text-sm font-medium text-stone-700 mb-1">
-                מזהה קבוע
-              </label>
+            <label>
+              מזהה קבוע
               <input
                 type="text"
                 dir="ltr"
                 required
-                className="w-full p-2.5 border border-stone-300 rounded-xl bg-white text-stone-900 focus:ring-2 focus:ring-amber-500 outline-none"
                 value={id}
                 onChange={(e) => {
                   setId(e.target.value);
                   if (validationError) setValidationError(null);
                 }}
               />
-            </div>
+            </label>
           </div>
 
-          <div className="flex items-center gap-6 pt-2">
-            <label className="flex items-center gap-2 cursor-pointer text-sm text-stone-800">
+          <div className="question-dialog-toggles">
+            <label className="question-dialog-toggle">
               <input
                 type="checkbox"
                 checked={required}
                 onChange={(e) => setRequired(e.target.checked)}
-                className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500"
               />
               שאלת חובה
             </label>
 
-            <label className="flex items-center gap-2 cursor-pointer text-sm text-stone-800">
+            <label className="question-dialog-toggle">
               <input
                 type="checkbox"
                 checked={enabled}
                 onChange={(e) => setEnabled(e.target.checked)}
-                className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500"
               />
               שאלה פעילה
             </label>
           </div>
 
-          <div className="pt-2">
+          <div>
             <button
               type="button"
               onClick={() => setShowPreview(!showPreview)}
-              className="text-xs font-medium text-amber-700 hover:text-amber-800 flex items-center gap-1.5"
+              className="link-button"
+              aria-expanded={showPreview}
             >
               <Eye size={14} aria-hidden="true" />
               {showPreview ? "הסתר תצוגה מקדימה" : "תצוגה מקדימה למשיב"}
             </button>
             {showPreview ? (
-              <div className="mt-2 p-3 bg-stone-100 border border-stone-200 rounded-xl text-stone-800 text-sm space-y-2" dir="rtl">
-                <div className="flex items-center justify-between text-xs text-stone-500">
+              <div className="question-dialog-preview">
+                <div className="question-dialog-preview-meta">
                   <span>ממד: {selectedDimension?.conceptLabel || dimensionId}</span>
                   <span>{required ? "חובה" : "רשות"}</span>
                 </div>
-                <p className="font-medium text-stone-900">{text || "(טרם הוזן נוסח שאלה)"}</p>
-                <div className="flex justify-between items-center gap-1 text-xs text-stone-500 pt-1">
+                <p>{text || "(טרם הוזן נוסח שאלה)"}</p>
+                <div className="question-dialog-preview-meta">
                   <span>לא מסכים כלל (1)</span>
                   <span>מסכים במידה רבה מאוד (6)</span>
                 </div>
@@ -226,18 +253,11 @@ export function QuestionEditDialog({
             ) : null}
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-stone-200">
-            <button
-              type="button"
-              className="px-4 py-2 text-sm font-medium text-stone-600 hover:text-stone-800 rounded-xl"
-              onClick={onClose}
-            >
+          <div className="question-dialog-footer">
+            <button type="button" className="secondary-button" onClick={onClose}>
               ביטול
             </button>
-            <button
-              type="submit"
-              className="px-5 py-2 text-sm font-medium bg-amber-600 text-white hover:bg-amber-700 rounded-xl flex items-center gap-2 shadow-sm"
-            >
+            <button type="submit" className="primary-button">
               <Check size={16} aria-hidden="true" />
               שמירה
             </button>

@@ -17,7 +17,7 @@ This document details the overall product roadmap and architectural evolution of
 
 - [x] **Data Models & Blueprint**: ERD and service specification defined in `docs/data-layer-and-backend-plan.md`.
 - [x] **Backend Domain Types**: Created TypeScript models (`src/lib/types/backend.ts`) for organizations, survey rounds, responses, and scores.
-- [x] **AnalyticsService**: Implemented 8-dimension math aggregation, 100/60/0 scoring scale, and strict `privacyThreshold >= 10` anonymity locking.
+- [x] **AnalyticsService**: Implemented 8-dimension math aggregation, 100/60/0 scoring scale, and `privacyThreshold` anonymity locking (product default 1, configurable per round).
 - [x] **SurveyService**: Implemented submission validation for 24 canonical questions and anonymous response processing.
 - [x] **RoundService**: Implemented survey round creation, share code generation (`SHALOM-XXXX`), and status transitions.
 - [x] **Unit Testing**: 100% test coverage on backend services in `src/lib/services/__tests__/analytics.service.test.ts`.
