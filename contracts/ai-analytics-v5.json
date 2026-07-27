@@ -158,6 +158,15 @@
       "distributionIncluded",
       "crossDimensionContextIncluded"
     ],
-    "interventionLookup": "exact-dimension-and-status"
+    "interventionLookup": "exact-dimension-and-status",
+    "interventionAdaptation": {
+      "adaptedByLlm": true,
+      "adaptedFields": ["summary", "actionable_steps"],
+      "preservedFields": ["id", "dimensionId", "status", "source", "title"],
+      "stepCountPreserved": true,
+      "outcomeField": "adaptationOutcome",
+      "outcomes": ["llm", "deterministic_fallback"],
+      "language": "Hebrew"
+    }
   }
 }

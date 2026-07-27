@@ -55,6 +55,7 @@ function createValidStone(dimensionId: string) {
         title: 'שימור תקשורת פתוחה',
         summary: 'חיזוק מעגלי שיח בצוות',
         actionable_steps: ['מפגש שבועי לקבוצות קטנות'],
+        adaptationOutcome: 'llm',
       },
     ],
     metrics: [
@@ -134,6 +135,48 @@ describe('Contract 5.0 Validation Tests', () => {
   test('v4 payload continues to validate correctly without regression', () => {
     const payload = createValidV5Payload();
     payload.contractVersion = '4.0';
+    const result = validateStoneMapResult(payload, 'round-v5-test');
+    assert.strictEqual(result.ok, true);
+  });
+
+  test('validateStoneMapResult accepts catalog copy declared as such in 5.0', () => {
+    const payload = createValidV5Payload();
+    payload.stones['balance'].recommendedInterventions[0].adaptationOutcome =
+      'deterministic_fallback';
+    const result = validateStoneMapResult(payload, 'round-v5-test');
+    assert.strictEqual(result.ok, true);
+  });
+
+  test('validateStoneMapResult rejects an intervention with no adaptation outcome in 5.0', () => {
+    const payload = createValidV5Payload();
+    delete (
+      payload.stones['balance'].recommendedInterventions[0] as {
+        adaptationOutcome?: string;
+      }
+    ).adaptationOutcome;
+    const result = validateStoneMapResult(payload, 'round-v5-test');
+    assert.strictEqual(result.ok, false);
+  });
+
+  test('validateStoneMapResult rejects an invented adaptation outcome in 5.0', () => {
+    const payload = createValidV5Payload();
+    (
+      payload.stones['balance'].recommendedInterventions[0] as {
+        adaptationOutcome?: string;
+      }
+    ).adaptationOutcome = 'adapted';
+    const result = validateStoneMapResult(payload, 'round-v5-test');
+    assert.strictEqual(result.ok, false);
+  });
+
+  test('the adaptation outcome is a 5.0 rule and does not reach 4.0', () => {
+    const payload = createValidV5Payload();
+    payload.contractVersion = '4.0';
+    delete (
+      payload.stones['balance'].recommendedInterventions[0] as {
+        adaptationOutcome?: string;
+      }
+    ).adaptationOutcome;
     const result = validateStoneMapResult(payload, 'round-v5-test');
     assert.strictEqual(result.ok, true);
   });

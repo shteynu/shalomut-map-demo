@@ -5,6 +5,7 @@ from src.agents.nodes import (
     privacy_gate_node,
     agent_psychologist_node,
     agent_rag_intervention_node,
+    agent_adaptation_node,
     agent_safety_validator_node,
     DIMENSION_NAMES_HEBREW,
     _effective_contract_version,
@@ -20,7 +21,7 @@ from src.contracts import (
 class AnalyticsGraphEngine:
     """
     Async graph-style engine implementing the directed cyclic workflow:
-    Privacy_Gate -> Psychologist -> Intervention Catalog -> Safety Validator (Loop / Pass) -> Output Formatter
+    Privacy_Gate -> Psychologist -> Intervention Catalog -> Adaptation -> Safety Validator (Loop / Pass) -> Output Formatter
     """
     async def ainvoke(self, state: AnalyticsState) -> AnalyticsState:
         # Step 1: Privacy Gate
@@ -32,6 +33,7 @@ class AnalyticsGraphEngine:
         while True:
             current_state = await agent_psychologist_node(current_state)
             current_state = agent_rag_intervention_node(current_state)
+            current_state = await agent_adaptation_node(current_state)
             current_state = agent_safety_validator_node(current_state)
 
             if current_state.get("safety_status") == "fail" and current_state.get("retry_count", 0) < 3:

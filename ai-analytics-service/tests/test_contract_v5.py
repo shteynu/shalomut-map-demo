@@ -4,7 +4,13 @@ import json
 
 import pytest
 
-from src.agents.nodes import agent_psychologist_node, agent_safety_validator_node
+from src.agents.graph import analytics_graph
+from src.agents.nodes import (
+    agent_adaptation_node,
+    agent_psychologist_node,
+    agent_rag_intervention_node,
+    agent_safety_validator_node,
+)
 from src.agents.state import AnalyticsState
 from src.config import settings
 from src.contracts import (
@@ -386,3 +392,207 @@ def test_overall_summary_stays_deterministic_before_5_0(monkeypatch):
             contract_version=version,
         )
         assert "הניתוח המצרפי מציג" in summary
+
+
+ADAPTED_SUMMARY = "לפי 12 התשובות באמצע הסולם העומס מתרכז בסוף השבוע."
+ADAPTED_STEP = "לקיים מפגש צוות קצר לתעדוף המשימות."
+
+
+def _prompt_of(request) -> str:
+    payload = json.loads(request.data.decode("utf-8"))
+    return payload["messages"][-1]["content"]
+
+
+def _adaptation_response(request, timeout=None):
+    """Answer whatever the prompt asked for: one summary and that many steps.
+
+    The catalog entries do not all carry the same number of steps, and the
+    rewrite has to keep each entry's own count.
+    """
+    prompt = _prompt_of(request)
+    catalog_steps = prompt.split("Catalog steps:\n", 1)[1].split("\nRewrite", 1)[0]
+    step_count = len([line for line in catalog_steps.splitlines() if line.strip()])
+    lines = [ADAPTED_SUMMARY] + [f"- {ADAPTED_STEP}"] * step_count
+    return _summary_response("\n".join(lines))
+
+
+async def _adapted_state(round_data, monkeypatch, urlopen):
+    monkeypatch.setattr(settings, "llm_api_key", "sk-test-adaptation")
+    monkeypatch.setattr(settings, "llm_base_url", "https://provider.local/v1")
+    monkeypatch.setattr(settings, "llm_max_attempts", 1)
+    monkeypatch.setattr("urllib.request.urlopen", urlopen)
+
+    state = agent_rag_intervention_node(build_state(round_data))
+    catalog = {
+        dimension_id: [dict(item) for item in interventions]
+        for dimension_id, interventions in state["recommendations"].items()
+    }
+    return catalog, await agent_adaptation_node(state)
+
+
+@pytest.mark.asyncio
+async def test_adaptation_rewrites_the_catalog_copy_for_this_school(monkeypatch):
+    """The gain the original plan called the main one.
+
+    A school reads the catalog paragraph written for every school unless
+    something rewrites it against the numbers this round actually produced.
+    """
+    catalog, state = await _adapted_state(
+        build_v5_round_data(BACKGROUND_CONTEXT),
+        monkeypatch,
+        _adaptation_response,
+    )
+
+    for dimension_id, interventions in state["recommendations"].items():
+        for index, intervention in enumerate(interventions):
+            original = catalog[dimension_id][index]
+            assert intervention["adaptationOutcome"] == "llm"
+            assert intervention["summary"] == ADAPTED_SUMMARY
+            assert intervention["summary"] != original["summary"]
+            assert any(character.isdigit() for character in intervention["summary"])
+            assert len(intervention["actionable_steps"]) == len(
+                original["actionable_steps"],
+            )
+            # Core owns these, and a rewrite may not touch them.
+            for field in ("id", "dimensionId", "status", "source", "title"):
+                assert intervention[field] == original[field]
+
+
+@pytest.mark.asyncio
+async def test_adaptation_falls_back_to_the_catalog_text_verbatim(monkeypatch):
+    def offline(request, timeout=None):
+        raise OSError("provider offline")
+
+    catalog, state = await _adapted_state(
+        build_v5_round_data(),
+        monkeypatch,
+        offline,
+    )
+
+    for dimension_id, interventions in state["recommendations"].items():
+        for index, intervention in enumerate(interventions):
+            original = catalog[dimension_id][index]
+            assert intervention["adaptationOutcome"] == "deterministic_fallback"
+            assert intervention["summary"] == original["summary"]
+            assert intervention["actionable_steps"] == original["actionable_steps"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "summary_line,steps",
+    [
+        # Latin letters in user-facing copy.
+        ("The workload peaks on Friday, 12 answers.", 2),
+        # No number from the round: the catalog text in other words.
+        ("העומס מתרכז בסוף השבוע.", 2),
+        # A verdict in another colour on a yellow dimension.
+        ("לפי 12 התשובות הממד נמצא באזור אדום.", 2),
+        # More steps than the catalog entry holds.
+        (ADAPTED_SUMMARY, 3),
+        # Not shaped like a summary followed by steps.
+        (ADAPTED_SUMMARY, 0),
+    ],
+)
+async def test_adaptation_refuses_an_answer_it_cannot_stand_behind(
+    monkeypatch,
+    summary_line,
+    steps,
+):
+    """Every catalog entry carries exactly two steps.
+
+    So each case here differs from an acceptable answer in one way only, and
+    the rejection cannot be credited to a broken shape it did not intend.
+    """
+    answer = "\n".join([summary_line] + [f"- {ADAPTED_STEP}"] * steps)
+
+    def bad_answer(request, timeout=None):
+        return _summary_response(answer)
+
+    catalog, state = await _adapted_state(
+        build_v5_round_data(),
+        monkeypatch,
+        bad_answer,
+    )
+
+    for dimension_id, interventions in state["recommendations"].items():
+        for index, intervention in enumerate(interventions):
+            assert intervention["adaptationOutcome"] == "deterministic_fallback"
+            assert (
+                intervention["summary"] == catalog[dimension_id][index]["summary"]
+            )
+
+
+@pytest.mark.asyncio
+async def test_adaptation_leaves_contracts_before_5_0_untouched(monkeypatch):
+    """1.0-4.0 are deployed boundaries; their stored results keep their meaning."""
+    round_data = build_v5_round_data()
+    round_data["contractVersion"] = "4.0"
+
+    catalog, state = await _adapted_state(
+        round_data,
+        monkeypatch,
+        _adaptation_response,
+    )
+
+    for dimension_id, interventions in state["recommendations"].items():
+        for index, intervention in enumerate(interventions):
+            assert "adaptationOutcome" not in intervention
+            assert intervention["summary"] == catalog[dimension_id][index]["summary"]
+
+
+@pytest.mark.asyncio
+async def test_v5_safety_validator_rejects_a_rewrite_that_contradicts_the_status(
+    monkeypatch,
+):
+    monkeypatch.setattr(settings, "llm_api_key", "", raising=False)
+    round_data = build_v5_round_data()
+    state = await agent_psychologist_node(build_state(round_data))
+    state = agent_rag_intervention_node(state)
+    state = await agent_adaptation_node(state)
+
+    assert agent_safety_validator_node(state)["safety_status"] == "pass"
+
+    intervention = state["recommendations"]["balance"][0]
+    intervention["adaptationOutcome"] = "llm"
+    intervention["summary"] = "הממד נמצא באזור אדום ודורש טיפול מיידי."
+
+    validated = agent_safety_validator_node(state)
+    assert validated["safety_status"] == "fail"
+    assert "Intervention is invalid" in validated["safety_feedback"]
+
+
+@pytest.mark.asyncio
+async def test_the_whole_5_0_round_declares_how_every_recommendation_was_written(
+    monkeypatch,
+):
+    """What Core will validate: the field is on the payload, not just in state."""
+    monkeypatch.setattr(settings, "llm_api_key", "sk-test-adaptation")
+    monkeypatch.setattr(settings, "llm_base_url", "https://provider.local/v1")
+    monkeypatch.setattr(settings, "llm_max_attempts", 1)
+    monkeypatch.setattr("urllib.request.urlopen", _adaptation_response)
+
+    final_state = await analytics_graph.ainvoke(
+        build_state(build_v5_round_data(BACKGROUND_CONTEXT)),
+    )
+    payload = final_state["final_payload"]
+
+    assert payload["status"] == "success", payload.get("errorMessage")
+    for dimension_id, stone in payload["stones"].items():
+        assert stone["recommendedInterventions"], dimension_id
+        for intervention in stone["recommendedInterventions"]:
+            assert intervention["adaptationOutcome"] == "llm", dimension_id
+            assert intervention["summary"] == ADAPTED_SUMMARY
+
+
+@pytest.mark.asyncio
+async def test_v5_safety_validator_rejects_an_undeclared_adaptation(monkeypatch):
+    monkeypatch.setattr(settings, "llm_api_key", "", raising=False)
+    state = await agent_psychologist_node(build_state(build_v5_round_data()))
+    state = agent_rag_intervention_node(state)
+    state = await agent_adaptation_node(state)
+    state["recommendations"]["balance"][0].pop("adaptationOutcome")
+
+    validated = agent_safety_validator_node(state)
+
+    assert validated["safety_status"] == "fail"
+    assert "Intervention is invalid" in validated["safety_feedback"]

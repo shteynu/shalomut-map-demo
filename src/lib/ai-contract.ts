@@ -89,6 +89,8 @@ export interface StoneIntervention {
   title: string;
   summary: string;
   actionable_steps: string[];
+  /** 5.0 only: whether this copy was rewritten for the school or is catalog text. */
+  adaptationOutcome?: 'llm' | 'deterministic_fallback';
 }
 
 export interface ScoreDistribution {
@@ -312,6 +314,25 @@ function isValidV2Intervention(
   );
 }
 
+/**
+ * 5.0 rewrites the catalog copy for the school, so every intervention has to
+ * say which it is. The structural validators above accept unknown fields, so
+ * an adaptation outcome that was missing, misspelled or invented would pass
+ * unnoticed and a reader could not tell a rewrite from catalog text.
+ */
+function isValidV5Intervention(
+  value: unknown,
+  dimensionId: WellbeingDimensionId,
+  status: WellbeingStatus,
+): value is StoneIntervention {
+  return (
+    isValidV2Intervention(value, dimensionId, status) &&
+    ['llm', 'deterministic_fallback'].includes(
+      String((value as Record<string, unknown>).adaptationOutcome),
+    )
+  );
+}
+
 function isValidGenerationProvenance(
   value: unknown,
   dimensionId: WellbeingDimensionId,
@@ -528,7 +549,7 @@ function isValidV5Stone(
       value.psychologicalInterpretation as string,
     ) &&
     interventions.every((intervention) =>
-      isValidV2Intervention(intervention, dimensionId, status),
+      isValidV5Intervention(intervention, dimensionId, status),
     ) &&
     isValidV5GenerationProvenance(
       value.generationProvenance,

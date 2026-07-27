@@ -51,6 +51,16 @@ class InterpretationGeneration:
         return max(0, self.attempts - 1)
 
 
+@dataclass(frozen=True)
+class AdaptedIntervention:
+    """One catalog entry rewritten for one school, or the catalog text itself."""
+
+    summary: str
+    actionable_steps: list[str]
+    outcome: Literal["llm", "deterministic_fallback"]
+    attempts: int
+
+
 class LLMProviderService:
     """
     Decoupled LLM Provider & Model Router Service.
@@ -472,6 +482,211 @@ class LLMProviderService:
             ),
         )
         return text if text is not None else fallback
+
+    def adapt_intervention_result(
+        self,
+        *,
+        intervention: Dict[str, Any],
+        dim_hebrew: str,
+        score: float,
+        status: str,
+        question_aggregates: Iterable[Dict[str, Any]] | None = None,
+        background_context: Optional[Dict[str, Any]] = None,
+        retry_tier: str = "fast",
+    ) -> AdaptedIntervention:
+        """Rewrite one catalog entry against this school's numbers.
+
+        The catalog is written for every school at once, which is why two
+        schools in the same status could read the same three paragraphs. The
+        rewrite keeps the entry's intent and its number of steps and only
+        grounds them in the aggregates the school actually produced. Anything
+        the provider returns that is not Hebrew-only, not shaped like a summary
+        plus that many steps, carries no number from the round or contradicts
+        the status is refused, and the school reads the catalog text instead.
+        """
+        catalog_summary = str(intervention.get("summary", ""))
+        catalog_steps = [
+            str(step) for step in intervention.get("actionable_steps", [])
+        ]
+        aggregates = list(question_aggregates or [])
+
+        if not catalog_summary or not catalog_steps:
+            return AdaptedIntervention(
+                summary=catalog_summary,
+                actionable_steps=catalog_steps,
+                outcome="deterministic_fallback",
+                attempts=0,
+            )
+
+        model_name = self._model_for_tier(retry_tier)
+        distribution_counts = self.distribution_counts(aggregates)
+        text, attempts, fallback_reason = self._complete_with_retries(
+            build_prompt=lambda: self._build_adaptation_prompt(
+                intervention=intervention,
+                dim_hebrew=dim_hebrew,
+                score=score,
+                status=status,
+                question_aggregates=aggregates,
+                background_context=background_context,
+            ),
+            system_prompt=(
+                "You are an organizational psychologist adapting a catalog "
+                "intervention to one school."
+            ),
+            model_name=model_name,
+            is_acceptable=lambda candidate, finish_reason: (
+                finish_reason == "stop"
+                and self._is_valid_adaptation(
+                    candidate,
+                    expected_steps=len(catalog_steps),
+                    status=status,
+                    distribution_counts=distribution_counts,
+                )
+            ),
+        )
+
+        parsed = (
+            self._parse_adaptation(text, len(catalog_steps))
+            if text is not None
+            else None
+        )
+        if parsed is None:
+            logger.info(
+                "[LLM Service] adaptation=deterministic_fallback model=%s "
+                "reason=%s attempts=%s",
+                model_name,
+                fallback_reason,
+                attempts,
+            )
+            return AdaptedIntervention(
+                summary=catalog_summary,
+                actionable_steps=catalog_steps,
+                outcome="deterministic_fallback",
+                attempts=attempts,
+            )
+
+        adapted_summary, adapted_steps = parsed
+        return AdaptedIntervention(
+            summary=adapted_summary,
+            actionable_steps=adapted_steps,
+            outcome="llm",
+            attempts=attempts,
+        )
+
+    def _is_valid_adaptation(
+        self,
+        candidate: str,
+        *,
+        expected_steps: int,
+        status: str,
+        distribution_counts: Optional[set[str]] = None,
+    ) -> bool:
+        parsed = self._parse_adaptation(candidate, expected_steps)
+        if parsed is None:
+            return False
+
+        summary, steps = parsed
+        if not all(self.is_hebrew_only_copy(part) for part in [summary, *steps]):
+            return False
+        # An adaptation that quotes no number of the round is the catalog text
+        # in different words: the whole point is that it speaks to these
+        # aggregates.
+        if not _INTEGER_PATTERN.search(summary):
+            return False
+
+        return self.is_status_consistent(
+            " ".join([summary, *steps]),
+            status,
+            contract_version="5.0",
+            distribution_counts=distribution_counts,
+        )
+
+    @staticmethod
+    def _parse_adaptation(
+        text: Optional[str],
+        expected_steps: int,
+    ) -> Optional[Tuple[str, list[str]]]:
+        """Summary on the first line, then one step per line, each led by "-".
+
+        A line format survives what JSON does not: a model that answers in
+        Hebrew tends to wrap JSON in fences, reorder keys or drop the quoting
+        entirely, and a parse failure here costs the school its adaptation.
+        """
+        if not text:
+            return None
+
+        lines = [line.strip() for line in text.strip().splitlines()]
+        lines = [line for line in lines if line]
+        if len(lines) != expected_steps + 1:
+            return None
+
+        summary = lines[0].lstrip("-–—•").strip()
+        steps = []
+        for line in lines[1:]:
+            if not line.startswith(("-", "–", "—", "•")):
+                return None
+            step = line.lstrip("-–—•").strip()
+            if not step:
+                return None
+            steps.append(step)
+
+        if not summary:
+            return None
+        return summary, steps
+
+    def _build_adaptation_prompt(
+        self,
+        *,
+        intervention: Dict[str, Any],
+        dim_hebrew: str,
+        score: float,
+        status: str,
+        question_aggregates: list[Dict[str, Any]],
+        background_context: Optional[Dict[str, Any]] = None,
+    ) -> str:
+        steps = [str(step) for step in intervention.get("actionable_steps", [])]
+        aggregate_lines = []
+        for aggregate in question_aggregates:
+            line = (
+                f"- {self._question_text(aggregate)} "
+                f"ממוצע {float(aggregate.get('averageScore', 0.0)):.1f}, "
+                f"מספר תשובות {aggregate.get('responseCount', 0)}"
+            )
+            distribution = aggregate.get("scoreDistribution")
+            if isinstance(distribution, dict):
+                line += (
+                    f" (תשובות: {distribution.get('green', 0)} ירוק, "
+                    f"{distribution.get('yellow', 0)} צהוב, "
+                    f"{distribution.get('red', 0)} אדום)"
+                )
+            aggregate_lines.append(line)
+
+        background_lines = self._background_context_lines(background_context)
+        background_section = (
+            "\nSchool Background Context:\n" + "\n".join(background_lines)
+            if background_lines
+            else ""
+        )
+        catalog_steps = "\n".join(f"- {step}" for step in steps)
+
+        return (
+            "You are adapting one catalog intervention to a single school, "
+            "using only privacy-safe aggregates.\n"
+            f"Dimension: {dim_hebrew}. Score: {score:.1f}/100. "
+            f"Status: {status}.{background_section}\n"
+            f"Same-dimension aggregates:\n" + "\n".join(aggregate_lines) + "\n"
+            f"Catalog intervention title: {intervention.get('title', '')}\n"
+            f"Catalog summary: {intervention.get('summary', '')}\n"
+            f"Catalog steps:\n{catalog_steps}\n"
+            f"Rewrite the summary and the {len(steps)} steps for this school. "
+            "Answer in Hebrew only, with no Latin letters, as exactly "
+            f"{len(steps) + 1} lines: the first line is the rewritten summary "
+            "and quotes at least one number from the aggregates above, and "
+            f"each of the next {len(steps)} lines starts with '- ' and holds "
+            "one rewritten step. Keep the intent of the catalog entry and its "
+            "order, stay consistent with the stated status, and do not invent "
+            "causes, diagnoses, identities or numbers that are not above."
+        )
 
     def _build_overall_summary_prompt(
         self,

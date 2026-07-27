@@ -305,6 +305,80 @@ def agent_rag_intervention_node(state: AnalyticsState) -> AnalyticsState:
         "recommendations": recommendations
     }
 
+async def agent_adaptation_node(state: AnalyticsState) -> AnalyticsState:
+    """
+    Node 3b: Intervention Adaptation
+    Rewrites the selected catalog entries against this school's numbers.
+
+    The catalog is one text for every school; without this node two schools in
+    the same status read the same three paragraphs however different their
+    rounds were. Only 5.0 adapts: 1.0-4.0 are deployed boundaries, and their
+    stored results must keep meaning what they meant when they were written.
+    Each entry records how its copy came to be, so a reader can tell a rewrite
+    from the catalog text.
+    """
+    round_data = state.get("round_data", {})
+    if _effective_contract_version(round_data) != AI_ANALYTICS_V5_CONTRACT_VERSION:
+        return state
+
+    dim_scores = round_data.get("dimensionScores", {})
+    background_context = _background_context_for_prompt(round_data, state)
+    retry_tier = "heavy" if state.get("retry_count", 0) > 0 else "fast"
+    recommendations = state.get("recommendations", {})
+
+    targets = []
+    adaptations = []
+    for dim_id, interventions in recommendations.items():
+        score_obj = dim_scores.get(dim_id, {})
+        if isinstance(score_obj, dict):
+            status = score_obj.get("computedStatus", "green")
+            score = float(score_obj.get("averageScore", 0.0))
+        else:
+            status = getattr(score_obj, "computedStatus", "green")
+            score = float(getattr(score_obj, "averageScore", 0.0))
+
+        question_aggregates = _question_aggregates_for_dimension(
+            round_data,
+            dim_id,
+        )
+        for index, intervention in enumerate(interventions):
+            targets.append((dim_id, index))
+            # The provider call blocks, and a round holds eight dimensions of
+            # three entries each: run them the way the interpretations run.
+            adaptations.append(
+                asyncio.to_thread(
+                    llm_provider_service.adapt_intervention_result,
+                    intervention=intervention,
+                    dim_hebrew=DIMENSION_NAMES_HEBREW.get(dim_id, dim_id),
+                    score=score,
+                    status=status,
+                    question_aggregates=question_aggregates,
+                    background_context=background_context,
+                    retry_tier=retry_tier,
+                )
+            )
+
+    results = await asyncio.gather(*adaptations)
+
+    adapted = {
+        dim_id: [dict(intervention) for intervention in interventions]
+        for dim_id, interventions in recommendations.items()
+    }
+    for (dim_id, index), adaptation in zip(targets, results):
+        adapted[dim_id][index].update(
+            {
+                "summary": adaptation.summary,
+                "actionable_steps": list(adaptation.actionable_steps),
+                "adaptationOutcome": adaptation.outcome,
+            },
+        )
+
+    return {
+        **state,
+        "recommendations": adapted,
+    }
+
+
 def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
     """
     Node 4: Agent Safety Validator (Critique Node)
@@ -376,6 +450,7 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
                 intervention.get("summary", ""),
                 *intervention.get("actionable_steps", []),
             ]
+            adaptation_outcome = intervention.get("adaptationOutcome")
             if (
                 intervention.get("dimensionId") != dim_id
                 or intervention.get("status") != status
@@ -383,6 +458,23 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
                 or not all(
                     llm_provider_service.is_hebrew_only_copy(text)
                     for text in user_facing_copy
+                )
+                or (
+                    contract_version == AI_ANALYTICS_V5_CONTRACT_VERSION
+                    and adaptation_outcome
+                    not in {"llm", "deterministic_fallback"}
+                )
+                # Catalog copy is human-written and already trusted; a rewrite
+                # is model output and answers to the rule the interpretation
+                # answers to.
+                or (
+                    adaptation_outcome == "llm"
+                    and not llm_provider_service.is_status_consistent(
+                        " ".join(user_facing_copy),
+                        status,
+                        contract_version=contract_version,
+                        distribution_counts=distribution_counts,
+                    )
                 )
             ):
                 is_safe = False
