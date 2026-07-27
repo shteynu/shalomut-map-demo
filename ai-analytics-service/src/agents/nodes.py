@@ -35,13 +35,19 @@ def _background_context_for_prompt(
     round_data: Dict[str, Any],
     state: "AnalyticsState",
 ) -> Optional[Dict[str, Any]]:
-    """School background context reaches the prompt on contract 4.0 only.
+    """School background context reaches the prompt on contracts 4.0 and 5.0.
 
     Versions 1.0-3.0 are immutable boundaries: silently enriching their prompt
-    would change what those versions mean without a version bump, and the
-    provenance flag that records the enrichment is written for 4.0 alone.
+    would change what those versions mean without a version bump. 5.0 is 4.0
+    plus score distributions, and Core sends the context on both
+    (`src/app/api/mcp/route.ts`), so gating on 4.0 alone made an upgrade to
+    5.0 trade the school context away for the distributions instead of adding
+    them.
     """
-    if _effective_contract_version(round_data) != AI_ANALYTICS_V4_CONTRACT_VERSION:
+    if _effective_contract_version(round_data) not in {
+        AI_ANALYTICS_V4_CONTRACT_VERSION,
+        AI_ANALYTICS_V5_CONTRACT_VERSION,
+    }:
         return None
 
     return round_data.get("backgroundContext") or state.get("org_context")
@@ -196,7 +202,10 @@ async def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
             generation_provenance[dim_id]["surveyDefinitionHash"] = (
                 round_data.get("surveyDefinitionHash")
             )
-        if eff_version == AI_ANALYTICS_V4_CONTRACT_VERSION:
+        if eff_version in {
+            AI_ANALYTICS_V4_CONTRACT_VERSION,
+            AI_ANALYTICS_V5_CONTRACT_VERSION,
+        }:
             generation_provenance[dim_id]["backgroundContextIncluded"] = bool(
                 _background_context_for_prompt(round_data, state),
             )
