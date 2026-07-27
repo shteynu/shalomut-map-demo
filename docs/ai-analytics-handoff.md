@@ -68,6 +68,37 @@
   boundary: actual questions come from the persisted round snapshot, while the
   eight dimensions and Dashboard result shape stay stable.
 
+### Contracts `4.0` and `5.0`
+
+> Added 2026-07-27. Both are implemented and green in both mirrors; neither has
+> been deployed, and no production round has run on either. The rollout order
+> and its evidence are an open owner gate, tracked in
+> `docs/ai-insights-depth-plan-2026-07-27.md`.
+
+- `contracts/ai-analytics-v4.json` is `3.0` plus the school background context.
+  It reaches the prompt on `4.0` and `5.0` alike and is recorded in provenance
+  as `backgroundContextIncluded`.
+- `contracts/ai-analytics-v5.json` is `4.0` plus `scoreDistribution`
+  (`{green, yellow, red}`) on every question aggregate: three non-negative
+  integers summing to the question's `responseCount`, required while unlocked,
+  forbidden while locked, and outside `surveyDefinitionHash`. It was amended in
+  place on 2026-07-27 by owner decision, having never been deployed; `1.0`
+  through `4.0` were not touched.
+- What the distribution buys is the difference the average hides: ten lukewarm
+  answers and a staff halved into green and red both average 60. On `5.0` the
+  interpretation may run to five sentences, the round summary is model-written
+  with the fixed sentence as fallback, recommendations are ranked by the shape
+  of the answers, the chosen recommendation is rewritten for the school and
+  declares `adaptationOutcome`, and provenance carries `distributionIncluded`
+  and `crossDimensionContextIncluded` as measurements rather than claims.
+- Core owns the distribution end to end: the service returns each metric's
+  buckets exactly as they arrived, and the callback compares them against the
+  analytics recomputed from the round's answers before persisting.
+- The manifest's `privacy.defaultThreshold` now reads `1`, matching the
+  database column, the Core default and the service. `recommendedThreshold: 10`
+  states what the methodology asks for, and the manager screens say so whenever
+  a round is configured below it.
+
 ### Python service
 
 - The consumer accepts `1.0`, strict canonical `2.0`, and strict dynamic `3.0`.
@@ -252,6 +283,15 @@
 3. Implement application-level manager identity/roles and tenant authorization.
 4. Decide separately whether the runtime should adopt real LangGraph/ChromaDB;
    this is not required for the current contract or local E2E path.
+5. Deploy `5.0` in the consumer-first order and record what the first live
+   round actually produced. The last production round available for inspection
+   (`SHALOM-F125`, contract `4.0`, 2026-07-27) returned
+   `deterministic_fallback` on all eight stones with `attempts: 3`: the key was
+   present and every provider answer was refused. Two mechanisms that would
+   produce exactly that have since been fixed in code — the status validator
+   refusing distribution wording, and a 180-token cap truncating Hebrew — but
+   neither is confirmed as the cause. Render logs for that round, or one
+   approved live provider call, would settle it.
 
 ## Approval gates
 
