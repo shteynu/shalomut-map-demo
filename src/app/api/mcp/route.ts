@@ -100,7 +100,7 @@ export async function POST(request: Request) {
         // provider is never called for it, so the context has no reason to
         // cross the boundary.
         const includesBackgroundContext =
-          result.contractVersion === '4.0' && !result.isLocked;
+          ['4.0', '5.0'].includes(result.contractVersion) && !result.isLocked;
 
         // Format into strict RoundAnalyticsResult MCP payload
         const mcpPayload = {

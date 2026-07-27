@@ -105,6 +105,11 @@ export interface DynamicQuestionAggregate {
   questionText: string;
   averageScore: number;
   responseCount: number;
+  scoreDistribution?: {
+    green: number;
+    yellow: number;
+    red: number;
+  };
 }
 
 export interface RoundAnalyticsV2Result {
@@ -119,9 +124,8 @@ export interface RoundAnalyticsV2Result {
 }
 
 export interface RoundAnalyticsV3Result {
-  // `4.0` keeps the same analytics shape and only adds the school background
-  // context to the MCP payload, so producers may emit either version.
-  contractVersion: '3.0' | '4.0';
+  // `4.0` and `5.0` keep the dynamic analytics shape, adding context / distributions.
+  contractVersion: '3.0' | '4.0' | '5.0';
   roundId: string;
   organizationId: string;
   surveyDefinitionHash: SurveyDefinitionHash;

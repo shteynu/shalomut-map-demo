@@ -329,3 +329,62 @@ test('Workstream A Dry-Run: Scenario A2.2 (Privacy locked round with 1 question 
   assert.deepStrictEqual(analytics.dimensionScores, {});
   assert.deepStrictEqual(analytics.questionAggregates, {});
 });
+
+test('Workstream A Dry-Run: Contract 5.0 calculates scoreDistribution per question', async () => {
+  const previousEnv = process.env.AI_ANALYTICS_CONTRACT_VERSION;
+  process.env.AI_ANALYTICS_CONTRACT_VERSION = '5.0';
+  try {
+    const roundId = 'round-v5-test';
+    const orgId = 'org-v5-test';
+    const customQuestions: SurveyDefinitionQuestion[] = ALL_DIMENSION_IDS.map(
+      (dimensionId, index) => ({
+        id: `q-${index + 1}`,
+        dimensionId,
+        text: `שאלה מותאמת למימד ${dimensionId}`,
+        required: true,
+        enabled: true,
+        answerMode: 'סקאלת צבעים',
+      }),
+    );
+    const surveyDefinition = createCustomSurveyDefinition(customQuestions);
+    const round = createRoundFixture(roundId, orgId, surveyDefinition);
+
+    // Create 10 responses with known scores: 5 green (100), 3 yellow (60), 2 red (0)
+    const responses: SurveyResponseRecord[] = [];
+    for (let r = 0; r < 10; r++) {
+      const val = r < 5 ? 'green' : r < 8 ? 'yellow' : 'red';
+      const score = r < 5 ? 100 : r < 8 ? 60 : 0;
+      responses.push({
+        id: `resp-${r + 1}`,
+        roundId,
+        submittedAt: new Date(),
+        answers: customQuestions.map((q) => ({
+          questionId: q.id,
+          dimensionId: q.dimensionId,
+          value: val,
+          score,
+        })),
+      });
+    }
+
+    const roundRepo = new InMemoryRoundRepository([round]);
+    const surveyRepo = new InMemorySurveyRepository(responses);
+
+    const analytics = await AnalyticsService.getAnalyticsForRound(
+      roundId,
+      roundRepo,
+      surveyRepo,
+    );
+
+    assert.ok(analytics);
+    assert.strictEqual(analytics.contractVersion, '5.0');
+    assert.strictEqual(analytics.isLocked, false);
+    assert.ok(analytics.questionAggregates['q-1'].scoreDistribution);
+    assert.deepStrictEqual(
+      analytics.questionAggregates['q-1'].scoreDistribution,
+      { green: 5, yellow: 3, red: 2 },
+    );
+  } finally {
+    process.env.AI_ANALYTICS_CONTRACT_VERSION = previousEnv;
+  }
+});

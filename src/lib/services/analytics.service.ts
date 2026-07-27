@@ -29,10 +29,11 @@ import {
  * consumer-first rollout a config change on a verified Python deployment
  * instead of a code deploy racing the other service.
  */
-export function getProducedAnalyticsContractVersion(): '3.0' | '4.0' {
-  return process.env.AI_ANALYTICS_CONTRACT_VERSION?.trim() === '4.0'
-    ? '4.0'
-    : '3.0';
+export function getProducedAnalyticsContractVersion(): '3.0' | '4.0' | '5.0' {
+  const version = process.env.AI_ANALYTICS_CONTRACT_VERSION?.trim();
+  if (version === '5.0') return '5.0';
+  if (version === '4.0') return '4.0';
+  return '3.0';
 }
 
 export class AnalyticsService {
@@ -199,6 +200,15 @@ export class AnalyticsService {
     const scoresByQuestion = new Map<string, number[]>(
       enabledQuestions.map((question) => [question.id, []]),
     );
+    const distributionsByQuestion = new Map<
+      string,
+      { green: number; yellow: number; red: number }
+    >(
+      enabledQuestions.map((question) => [
+        question.id,
+        { green: 0, yellow: 0, red: 0 },
+      ]),
+    );
 
     for (const response of scopedResponses) {
       const answeredQuestionIds = new Set<string>();
@@ -217,6 +227,14 @@ export class AnalyticsService {
         }
 
         scoresByQuestion.get(answer.questionId)!.push(answer.score);
+        const dist = distributionsByQuestion.get(answer.questionId)!;
+        if (answer.value === 'green' || answer.score >= 75) {
+          dist.green++;
+        } else if (answer.value === 'yellow' || answer.score >= 50) {
+          dist.yellow++;
+        } else {
+          dist.red++;
+        }
         answeredQuestionIds.add(answer.questionId);
       }
     }
@@ -252,20 +270,27 @@ export class AnalyticsService {
       Math.round(
         scores.reduce((sum, score) => sum + score, 0) / scores.length,
       );
+    const producedVersion = getProducedAnalyticsContractVersion();
     const questionAggregates: Record<string, DynamicQuestionAggregate> =
       Object.fromEntries(
         enabledQuestions.map((question) => {
           const scores = scoresByQuestion.get(question.id) ?? [];
-          return [
-            question.id,
-            {
-              questionId: question.id,
-              dimensionId: question.dimensionId,
-              questionText: question.text,
-              averageScore: average(scores),
-              responseCount: scores.length,
-            },
-          ];
+          const dist = distributionsByQuestion.get(question.id) ?? {
+            green: 0,
+            yellow: 0,
+            red: 0,
+          };
+          const aggregate: DynamicQuestionAggregate = {
+            questionId: question.id,
+            dimensionId: question.dimensionId,
+            questionText: question.text,
+            averageScore: average(scores),
+            responseCount: scores.length,
+          };
+          if (producedVersion === '5.0') {
+            aggregate.scoreDistribution = { ...dist };
+          }
+          return [question.id, aggregate];
         }),
       );
     const dimensionScores = {} as Record<
