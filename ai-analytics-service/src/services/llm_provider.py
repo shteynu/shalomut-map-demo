@@ -384,6 +384,82 @@ class LLMProviderService:
             attempts=attempts,
         )
 
+    def generate_overall_summary(
+        self,
+        dim_scores: Dict[str, Any],
+        background_context: Optional[Dict[str, Any]] = None,
+        retry_tier: str = "fast",
+        contract_version: str = "4.0",
+    ) -> str:
+        yellow_red_count = sum(
+            1
+            for s in dim_scores.values()
+            if (s.get("computedStatus") if isinstance(s, dict) else getattr(s, "computedStatus", "")) in ("yellow", "red")
+        )
+        green_count = len(dim_scores) - yellow_red_count
+        fallback = (
+            f"הניתוח המצרפי מציג {yellow_red_count} ממדים הדורשים "
+            f"תשומת לב ולצדם {green_count} חוזקות לשימור. "
+            "כל המסקנות נשענות על נתונים מצרפיים מעל סף הפרטיות."
+        )
+
+        if contract_version != "5.0" or not settings.llm_api_key:
+            return fallback
+
+        model_name = (
+            settings.llm_model_heavy
+            if retry_tier == "heavy"
+            else settings.llm_model_fast
+        )
+        try:
+            endpoint = self._resolve_endpoint(model_name)
+            dim_lines = []
+            for d_id, d_val in dim_scores.items():
+                score_v = d_val.get("averageScore", 0.0) if isinstance(d_val, dict) else getattr(d_val, "averageScore", 0.0)
+                stat_v = d_val.get("computedStatus", "") if isinstance(d_val, dict) else getattr(d_val, "computedStatus", "")
+                d_heb = AI_ANALYTICS_DIMENSION_NAMES_HEBREW.get(d_id, d_id)
+                dim_lines.append(f"- {d_heb}: ציון {score_v:.1f}, סטטוס {stat_v}")
+            dim_summary_str = "\n".join(dim_lines)
+
+            prompt = (
+                "You are an organizational psychologist summarizing the overall teacher wellbeing picture of a school.\n"
+                f"Dimension Scores:\n{dim_summary_str}\n"
+                "Return between 2 and 4 complete Hebrew-only sentences summarizing the overall state. "
+                "Highlight key strengths and main priority areas. Keep the tone professional, supportive, and grounded in the data."
+            )
+            req_payload = json.dumps({
+                "model": model_name,
+                "messages": [
+                    {"role": "system", "content": "You are an organizational psychologist summarizing school wellbeing."},
+                    {"role": "user", "content": prompt}
+                ],
+                "max_tokens": 300,
+                "temperature": 0.2
+            }).encode("utf-8")
+
+            req = urllib.request.Request(
+                endpoint,
+                data=req_payload,
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {settings.llm_api_key}"
+                },
+                method="POST"
+            )
+            with urllib.request.urlopen(req, timeout=settings.llm_request_timeout_seconds) as response:
+                if response.status == 200:
+                    res = json.loads(response.read().decode("utf-8"))
+                    content = res["choices"][0]["message"]["content"].strip()
+                    finish_reason = res["choices"][0].get("finish_reason")
+                    if finish_reason == "stop" and self.is_hebrew_only_copy(content):
+                        sentences = _COMPLETE_SENTENCE_PATTERN.findall(content)
+                        if 2 <= len(sentences) <= 4:
+                            return content
+        except Exception as err:
+            logger.warning(f"[LLM Service] Overall summary generation fallback: {err}")
+
+        return fallback
+
     def _build_prompt(
         self,
         dim_id: str,

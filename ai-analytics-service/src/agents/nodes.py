@@ -204,11 +204,12 @@ async def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
             generation_provenance[dim_id]["distributionIncluded"] = True
             generation_provenance[dim_id]["crossDimensionContextIncluded"] = True
 
-    green_dimensions = len(dim_scores) - len(yellow_red_dims)
-    overall_summary = (
-        f"הניתוח המצרפי מציג {len(yellow_red_dims)} ממדים הדורשים "
-        f"תשומת לב ולצדם {green_dimensions} חוזקות לשימור. "
-        "כל המסקנות נשענות על נתונים מצרפיים מעל סף הפרטיות."
+    background_context = _background_context_for_prompt(round_data, state)
+    overall_summary = llm_provider_service.generate_overall_summary(
+        dim_scores=dim_scores,
+        background_context=background_context,
+        retry_tier=retry_tier,
+        contract_version=eff_version,
     )
 
     return {
