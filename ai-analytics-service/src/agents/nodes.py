@@ -311,12 +311,22 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
                 f"Status is inconsistent with score for {dim_id}"
             )
 
+        # The 5.0 prompt states the distribution in Hebrew colour words, so the
+        # validator has to know which counts an interpretation may quote.
+        distribution_counts = llm_provider_service.distribution_counts(
+            _question_aggregates_for_dimension(round_data, dim_id),
+        )
         if (
             not llm_provider_service.is_complete_hebrew_copy(
                 interp,
                 contract_version=contract_version,
             )
-            or not llm_provider_service.is_status_consistent(interp, status)
+            or not llm_provider_service.is_status_consistent(
+                interp,
+                status,
+                contract_version=contract_version,
+                distribution_counts=distribution_counts,
+            )
         ):
             is_safe = False
             feedback.append(

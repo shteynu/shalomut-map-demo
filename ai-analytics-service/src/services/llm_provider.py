@@ -26,6 +26,18 @@ NON_RETRYABLE_QUOTA_CODES = frozenset(
 _HEBREW_PATTERN = re.compile(r"[\u0590-\u05ff]")
 _LATIN_PATTERN = re.compile(r"[A-Za-z]")
 _COMPLETE_SENTENCE_PATTERN = re.compile(r"[^.!?؟]+[.!?؟]")
+_INTEGER_PATTERN = re.compile(r"\d+")
+
+# Hebrew status words. On 5.0 the prompt states the score distribution in these
+# very words, so naming another bucket can be plain reporting rather than a
+# contradiction — see is_status_consistent.
+_STATUS_WORDS_HEBREW = {
+    "green": "ירוק",
+    "yellow": "צהוב",
+    "red": "אדום",
+}
+# "באזור אדום" / "בטווח אדום" is a verdict about the dimension, not a count.
+_VERDICT_MARKERS_HEBREW = ("באזור", "בטווח")
 
 
 @dataclass(frozen=True)
@@ -222,6 +234,9 @@ class LLMProviderService:
                                     finish_reason,
                                     status,
                                     contract_version=contract_version,
+                                    distribution_counts=(
+                                        self.distribution_counts(questions)
+                                    ),
                                 ):
                                     logger.info(
                                         "[LLM Service] outcome=llm "
@@ -565,10 +580,42 @@ class LLMProviderService:
         finish_reason: object,
         status: str,
         contract_version: str = "4.0",
+        distribution_counts: Optional[set[str]] = None,
     ) -> bool:
         if finish_reason != "stop" or not self.is_complete_hebrew_copy(text, contract_version=contract_version):
             return False
-        return self.is_status_consistent(text, status)
+        return self.is_status_consistent(
+            text,
+            status,
+            contract_version=contract_version,
+            distribution_counts=distribution_counts,
+        )
+
+    @staticmethod
+    def distribution_counts(
+        question_aggregates: Iterable[Dict[str, Any]] | None,
+    ) -> Optional[set[str]]:
+        """Counts a faithful 5.0 interpretation may quote for one dimension.
+
+        The prompt lists every question's buckets, so those are the numbers the
+        model can legitimately name; the per-bucket totals are added because
+        summarising the dimension is just as faithful. None means no aggregate
+        carried a distribution, and the flat 2.0-4.0 rule applies.
+        """
+        totals = {"green": 0, "yellow": 0, "red": 0}
+        counts: set[str] = set()
+        for aggregate in question_aggregates or []:
+            distribution = aggregate.get("scoreDistribution")
+            if not isinstance(distribution, dict):
+                continue
+            for bucket in totals:
+                count = distribution.get(bucket)
+                if isinstance(count, int) and not isinstance(count, bool):
+                    totals[bucket] += count
+                    counts.add(str(count))
+        if not counts:
+            return None
+        return counts | {str(total) for total in totals.values()}
 
     def is_complete_hebrew_copy(self, text: str, contract_version: str = "4.0") -> bool:
         normalized = text.strip()
@@ -588,30 +635,71 @@ class LLMProviderService:
             and not _LATIN_PATTERN.search(normalized)
         )
 
-    def is_status_consistent(self, text: str, status: str) -> bool:
-        contradictory_phrases = {
+    def is_status_consistent(
+        self,
+        text: str,
+        status: str,
+        contract_version: str = "4.0",
+        distribution_counts: Optional[set[str]] = None,
+    ) -> bool:
+        """Reject copy that contradicts the numerical status Core owns.
+
+        Up to 4.0 the rule is a flat blacklist: naming any other status colour
+        is a contradiction, because nothing in the prompt ever mentioned one.
+
+        5.0 shows the LLM the score distribution in those very words and asks
+        it to reason from them, so "12 answered yellow, 4 answered red" is a
+        faithful report of a yellow dimension, not a contradiction. On 5.0 a
+        foreign colour is therefore allowed only where it reads as a count —
+        the sentence has to carry a number matching one of the buckets — and
+        never as a verdict ("נמצא באזור אדום"). The judgement-style phrases
+        stay blacklisted for every version.
+        """
+        judgement_phrases = {
             "green": (
-                "אדום",
-                "צהוב",
                 "מצוקה מבנית",
                 "טיפול מיידי",
                 "שחיקה",
                 "לשפר",
                 "שיפור",
             ),
-            "yellow": (
-                "אדום",
-                "ירוק",
-            ),
-            "red": (
-                "ירוק",
-                "צהוב",
-            ),
         }
-        return not any(
+        if any(
             phrase in text
-            for phrase in contradictory_phrases.get(status, ())
-        )
+            for phrase in judgement_phrases.get(status, ())
+        ):
+            return False
+
+        foreign_colours = [
+            colour_word
+            for colour_status, colour_word in _STATUS_WORDS_HEBREW.items()
+            if colour_status != status
+        ]
+        if not foreign_colours:
+            return True
+
+        if contract_version != "5.0" or not distribution_counts:
+            return not any(colour in text for colour in foreign_colours)
+
+        for sentence in self._sentences_or_whole(text):
+            for colour in foreign_colours:
+                if colour not in sentence:
+                    continue
+                if any(
+                    f"{marker} {colour}" in sentence
+                    for marker in _VERDICT_MARKERS_HEBREW
+                ):
+                    return False
+                if not (
+                    set(_INTEGER_PATTERN.findall(sentence)) & distribution_counts
+                ):
+                    return False
+        return True
+
+    @staticmethod
+    def _sentences_or_whole(text: str) -> list[str]:
+        sentences = _COMPLETE_SENTENCE_PATTERN.findall(text)
+        return sentences or [text]
 
     def _remaining_retry_budget(self, request_started_at: float) -> float:
         elapsed = time.monotonic() - request_started_at
