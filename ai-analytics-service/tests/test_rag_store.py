@@ -112,16 +112,26 @@ def test_catalog_user_facing_copy_is_hebrew():
 
 
 def test_green_catalog_entries_are_strength_preservation_actions():
-    green_entries = [
-        item for item in load_catalog() if "green" in item["target_status"]
-    ]
+    """Green recommendations preserve a strength; the others improve a gap.
+
+    The intent is declared by the entry itself. Asserting it through the
+    heading the dashboard already renders for a green stone ("חוזקה לשימור",
+    see ai-insights-view-model.ts) would only check that the copy repeats the
+    heading, not that the recommendation means preservation.
+    """
+    catalog = load_catalog()
+    green_entries = [item for item in catalog if "green" in item["target_status"]]
 
     assert {item["dimension_id"] for item in green_entries} == set(
         AI_ANALYTICS_DIMENSION_IDS,
     )
     for item in green_entries:
         assert item["target_status"] == ["green"]
-        assert "חוזקה לשימור" in item["title"]
+        assert item["intent"] == "preserve", item["id"]
+
+    for item in catalog:
+        expected = "preserve" if item["target_status"] == ["green"] else "improve"
+        assert item["intent"] == expected, item["id"]
 
 
 def test_unknown_or_uncovered_status_returns_empty_list():
