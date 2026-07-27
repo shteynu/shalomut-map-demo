@@ -66,12 +66,20 @@ export function DashboardMapPage({
 export function DashboardOverviewSummary({
   state,
   onRetry,
+  roundId,
 }: {
   state: AiInsightsUiState;
   onRetry: () => void;
+  roundId?: string;
 }) {
   if (state.status !== "ready") {
-    return <DashboardAiInsightsState state={state} onRetry={onRetry} />;
+    return (
+      <DashboardAiInsightsState
+        state={state}
+        onRetry={onRetry}
+        roundId={roundId}
+      />
+    );
   }
 
   const summary = state.value.overallPsychologicalSummary?.trim();
@@ -81,6 +89,7 @@ export function DashboardOverviewSummary({
       <DashboardAiInsightsState
         state={{ status: "error", error: "Missing organization summary." }}
         onRetry={onRetry}
+        roundId={roundId}
       />
     );
   }
@@ -129,7 +138,11 @@ function DashboardMapReady({
             והנקודה הצבעונית לצידה מסמנת את הסטטוס שלו.
           </p>
 
-          <DashboardOverviewSummary state={state} onRetry={reload} />
+          <DashboardOverviewSummary
+            state={state}
+            onRetry={reload}
+            roundId={roundId}
+          />
 
           <button type="button" className="primary-button" onClick={() => window.print()}>
             <Download size={18} aria-hidden="true" />

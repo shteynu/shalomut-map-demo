@@ -1,17 +1,107 @@
+"use client";
+
 import {
   AlertTriangle,
   LoaderCircle,
   LockKeyhole,
   Sparkles,
 } from "lucide-react";
+import { useState } from "react";
 import type { AiInsightsUiState } from "@/lib/hooks/use-ai-insights";
+
+/**
+ * Lets the manager start the analysis from the screen where its absence is
+ * visible. Without it a round whose automatic dispatch never landed — the
+ * service was down, the response predates the auto-trigger — stays permanently
+ * empty unless the manager knows to go back to the round screen.
+ */
+function GenerateAnalysisButton({
+  roundId,
+  onGenerated,
+  label,
+}: {
+  roundId: string;
+  onGenerated: () => void;
+  label: string;
+}) {
+  const [running, setRunning] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function generate() {
+    setRunning(true);
+    setNote(null);
+    setError(null);
+
+    const response = await fetch(
+      `/api/rounds/${encodeURIComponent(roundId)}/trigger-ai`,
+      { method: "POST" },
+    ).catch(() => null);
+
+    if (!response) {
+      setError("לא ניתן היה לפנות לשירות הניתוח. בדקו את החיבור ונסו שוב.");
+      setRunning(false);
+      return;
+    }
+
+    if (response.status === 409) {
+      setNote("ניתוח כבר רץ עבור הסבב הזה. המתינו לסיומו ואז רעננו.");
+      setRunning(false);
+      return;
+    }
+
+    if (!response.ok) {
+      setError(
+        response.status === 504
+          ? "שירות הניתוח לא הספיק לענות. אפשר לנסות שוב בעוד רגע."
+          : "שירות הניתוח אינו זמין כרגע. נסו שוב מאוחר יותר.",
+      );
+      setRunning(false);
+      return;
+    }
+
+    setRunning(false);
+    onGenerated();
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        className="primary-button"
+        disabled={running}
+        onClick={generate}
+      >
+        {running ? (
+          <>
+            <LoaderCircle
+              className="dashboard-ai-state-spinner"
+              size={18}
+              aria-hidden="true"
+            />
+            מייצר ניתוח...
+          </>
+        ) : (
+          <>
+            <Sparkles size={18} aria-hidden="true" />
+            {label}
+          </>
+        )}
+      </button>
+      {note ? <p role="status">{note}</p> : null}
+      {error ? <p role="alert">{error}</p> : null}
+    </>
+  );
+}
 
 export function DashboardAiInsightsState({
   state,
   onRetry,
+  roundId,
 }: {
   state: Exclude<AiInsightsUiState, { status: "ready" }>;
   onRetry: () => void;
+  roundId?: string;
 }) {
   if (state.status === "loading") {
     return (
@@ -40,7 +130,17 @@ export function DashboardAiInsightsState({
       <section className="dashboard-ai-state" aria-live="polite">
         <Sparkles size={30} aria-hidden="true" />
         <h2>הניתוח עדיין לא נוצר</h2>
-        <p>לא נמצאה מפת תובנות עבור הסבב הזה. אפשר לבדוק שוב לאחר סיום העיבוד.</p>
+        <p>
+          לא נמצאה מפת תובנות עבור הסבב הזה. אפשר להפעיל את הניתוח על התשובות
+          שהתקבלו עד כה.
+        </p>
+        {roundId ? (
+          <GenerateAnalysisButton
+            roundId={roundId}
+            onGenerated={onRetry}
+            label="יצירת ניתוח עכשיו"
+          />
+        ) : null}
         <button type="button" className="secondary-button" onClick={onRetry}>
           בדיקה חוזרת
         </button>
@@ -53,6 +153,13 @@ export function DashboardAiInsightsState({
       <AlertTriangle size={30} aria-hidden="true" />
       <h2>לא הצלחנו לטעון את הניתוח</h2>
       <p>הנתונים לא יוצגו עד שהתגובה משירות הניתוח תהיה תקינה ומאומתת.</p>
+      {roundId ? (
+        <GenerateAnalysisButton
+          roundId={roundId}
+          onGenerated={onRetry}
+          label="הפעלת ניתוח מחדש"
+        />
+      ) : null}
       <button type="button" className="secondary-button" onClick={onRetry}>
         ניסיון נוסף
       </button>

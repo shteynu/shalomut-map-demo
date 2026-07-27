@@ -93,7 +93,7 @@ export function DashboardRecommendationsPage({
           organizationName={organizationName}
           roundTitle={roundTitle}
         />
-        <DashboardAiInsightsState state={state} onRetry={reload} />
+        <DashboardAiInsightsState state={state} onRetry={reload} roundId={roundId} />
         <DashboardCtaRow
           center
           actions={getDashboardRecommendationsActions()}
@@ -113,6 +113,7 @@ export function DashboardRecommendationsPage({
         <DashboardAiInsightsState
           state={{ status: "error", error: "Missing dimension insight." }}
           onRetry={reload}
+          roundId={roundId}
         />
       </div>
     );

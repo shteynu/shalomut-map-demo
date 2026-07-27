@@ -50,7 +50,11 @@ export function DashboardDimensionPage({
           organizationName={organizationName}
           roundTitle={roundTitle}
         />
-        <DashboardAiInsightsState state={state} onRetry={reload} />
+        <DashboardAiInsightsState
+          state={state}
+          onRetry={reload}
+          roundId={roundId}
+        />
         <DashboardCtaRow
           actions={getDashboardDetailActions(dimension.id)}
         />
@@ -69,6 +73,7 @@ export function DashboardDimensionPage({
         <DashboardAiInsightsState
           state={{ status: "error", error: "Missing dimension insight." }}
           onRetry={reload}
+          roundId={roundId}
         />
       </div>
     );
