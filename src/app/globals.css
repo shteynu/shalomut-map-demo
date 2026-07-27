@@ -4448,6 +4448,51 @@ label .custom-tooltip-wrapper:hover .custom-tooltip-icon {
   color: var(--accent-dark);
 }
 
+/* Segment-level navigation feedback rendered from every `loading.tsx`. */
+.route-loading {
+  display: grid;
+  width: min(38rem, 100%);
+  justify-items: center;
+  gap: 0.7rem;
+  margin: clamp(3rem, 12vh, 6rem) auto;
+  padding: clamp(2rem, 5vw, 3rem);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-panel-organic);
+  background: var(--surface-panel-strong);
+  color: var(--ink);
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+
+.route-loading h2 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.route-loading p {
+  margin: 0;
+  max-width: 28rem;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.route-loading-spinner {
+  color: var(--accent-dark);
+  animation: route-loading-spin 900ms linear infinite;
+}
+
+@keyframes route-loading-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .route-loading-spinner {
+    animation: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
