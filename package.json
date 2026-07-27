@@ -7,7 +7,7 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "npx tsx --test \"src/**/__tests__/*.test.ts\"",
+    "test": "npx tsx --test \"src/**/__tests__/*.test.ts\" \"src/**/__tests__/*.test.tsx\"",
     "db:clear": "npx tsx scripts/clear-db.ts",
     "db:migrate:dev": "npx prisma migrate dev",
     "db:migrate:deploy": "npx prisma migrate deploy",
