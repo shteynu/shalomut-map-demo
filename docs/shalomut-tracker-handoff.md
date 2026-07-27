@@ -1,6 +1,6 @@
 # Shalomut Tracker — актуальный handoff
 
-Обновлено: 2026-07-27 (исправлены respondent re-entry, route loaders, привязка организации)
+Обновлено: 2026-07-27 (одна база данных, respondent re-entry, route loaders, привязка организации)
 
 Это оперативная точка входа для перехода от исходного статического demo
 Shalomut Map к `shalomut-tracker`, где сохранённые данные должны быть единственным
@@ -10,6 +10,23 @@ exact вопросы раунда принадлежат persisted `SurveyRound.
 Визуальные mock-данные изолированы в `src/lib/demo-data.ts`.
 
 ## Текущий snapshot
+
+- **База данных у проекта одна (сведено 2026-07-27)**:
+  - Единственная база — Supabase `tpfzhyalaftotljmlont` (`aws-1-ap-northeast-2`, Сеул). На неё указывают
+    deployed runtime, локальный `.env` и, как следствие, `prisma migrate`. Все четыре миграции применены,
+    `privacy_threshold` default = `1`. Состояние на момент сведения: 1 организация
+    (`34d05e66-fa4d-4a07-a2af-c9d5c41b6088`, «טסט»), 1 раунд `SHALOM-F125`, 3 ответа, `ai_insights` непустой.
+  - Проект `fvnulyirrqjrnjbahmsn` выведен из обращения: содержал одну пустую организацию и ноль раундов, ни один
+    рантайм и ни один env-файл на него больше не ссылается. Удаление самого проекта — за владельцем.
+  - **Правило одной базы.** `.env` — единственное место, где задана база. `.env.local` намеренно не задаёт её
+    вовсе: Next.js отдаёт `.env.local` приоритет над `.env`, а `prisma.config.ts` читает только `.env`, и эти два
+    пути расходятся молча. Именно так миграции 2026-07-27 ушли в базу, которую приложение не обслуживает.
+    Перед любой миграцией сверяй хост в выводе Prisma. Прежние значения лежат в gitignored
+    `.env.retired-fvnulyirrqjrnjbahmsn.bak` и `.env.local.retired-fvnulyirrqjrnjbahmsn.bak`.
+  - `MANAGER_ORGANIZATION_ID` = `34d05e66-…` в Vercel Production **и** Preview: `DATABASE_URL` у этих скоупов
+    общий, поэтому расхождение оставляло Preview с организацией, которой в единственной базе нет.
+  - Проверка: `npx prisma migrate status` без единого переопределения → хост
+    `aws-1-ap-northeast-2.pooler.supabase.com:5432`, «Database schema is up to date!».
 
 - **Два Supabase-проекта; предыдущая запись путала их (исправлено 2026-07-27)**:
   - Deployed app читает `tpfzhyalaftotljmlont` (`aws-1-ap-northeast-2`, Сеул). Доказательство:
@@ -41,7 +58,8 @@ exact вопросы раунда принадлежат persisted `SurveyRound.
     менеджера. `organizationId` вшивается в подписанную сессию при логине
     ([`jwt-session-provider.ts`](../src/lib/auth/jwt-session-provider.ts)), поэтому сессии, выданные до редеплоя,
     до 24 часов несут прежнюю организацию: нужен повторный вход.
-  - Для Preview `MANAGER_ORGANIZATION_ID` по-прежнему не задан.
+  - ~~Для Preview `MANAGER_ORGANIZATION_ID` по-прежнему не задан.~~ Закрыто позже в тот же день: Preview нёс
+    устаревший `be9f184a-…`, теперь выставлен `34d05e66-…` — см. первый пункт snapshot.
 
 - **`MANAGER_ORGANIZATION_ID` стал обязательным на deployed runtime (2026-07-27, запушен в `main`)**:
   - Коммит `f9b1c50` (ветка `claude/epic-bassi-a4fe18` перебазирована на `634bae1` и запушена в `main` по явному

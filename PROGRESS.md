@@ -1,6 +1,6 @@
 # Shalomut Map — PROGRESS.md
 
-Updated: 2026-07-27 (Contract 5.0 rollout completed and verified)
+Updated: 2026-07-27 (Contract 5.0 rollout; respondent re-entry, route loaders, single database)
 
 ## Current State
 
@@ -11,8 +11,15 @@ Updated: 2026-07-27 (Contract 5.0 rollout completed and verified)
   - KB expanded to 80 items with context-aware RAG ranking in Python AI service.
 - **Automated tests**: `npm test` 202/202 passed (including dedicated `ai-contract-v5-smoke.test.ts`), `python3 ai-analytics-service/run_tests.py` 16/16 passed.
 - **Deployed runtime**: `https://shalomut-map-demo.vercel.app/` serves current `main`.
-- **Database**: Staging Supabase DB updated (`privacyThreshold` default set to `1`).
+- **One database**: Supabase `tpfzhyalaftotljmlont` (`aws-1-ap-northeast-2`, Seoul) is the only database of the
+  project. The deployed runtime, local `.env` and `prisma migrate` all resolve to it; all four migrations are
+  applied and `privacy_threshold` defaults to `1`. The second project `fvnulyirrqjrnjbahmsn` is retired — nothing
+  references it any more, and deleting it is left to the owner. Never define a second `DATABASE_URL` in
+  `.env.local`: Next.js prefers it over `.env` while migrations read `.env`, and the two drift apart silently.
 - **Single deployed environment**: `https://shalomut-map-demo.vercel.app/` is the only product URL.
+- **Manager organization scope**: `MANAGER_ORGANIZATION_ID` is `34d05e66-fa4d-4a07-a2af-c9d5c41b6088` in both
+  Vercel Production and Preview, matching the only organization in the one database. `organizationId` is embedded
+  in the signed session at login, so a session issued earlier keeps its old organization for up to 24 hours.
 
 ---
 
@@ -20,7 +27,17 @@ Updated: 2026-07-27 (Contract 5.0 rollout completed and verified)
 
 1. [ ] Deploy updated Python AI service container to Render to serve Contract 5.0 endpoints.
 2. [ ] End-to-end live round execution on production/staging environment with Contract 5.0 enabled.
-3. [ ] AI-generated proposed question flow (slice 3.1, on explicit user request).
+3. [ ] Sign out and sign in again as a manager on the deployed app (needs the admin password, so the owner has to
+       do it) and confirm the session lands on organization `34d05e66-…` with round `SHALOM-F125` visible. This is
+       the only outstanding proof that the corrected `MANAGER_ORGANIZATION_ID` resolves.
+4. [ ] Delete or pause the retired Supabase project `fvnulyirrqjrnjbahmsn` (owner action; no runtime references it).
+5. [ ] Make the Python webhook answer `202` and process in the background. It is synchronous today
+       ([`main.py`](ai-analytics-service/src/main.py)), so a Core timeout at `AI_SERVICE_TIMEOUT_MS=30000` aborts
+       the connection and uvicorn cancels the run before any callback is sent. Needs a Render deploy.
+6. [ ] Extend the callback's round cross-check beyond `3.0`
+       ([`ai-insights/route.ts`](src/app/api/rounds/[roundId]/ai-insights/route.ts)): the `4.0`/`5.0` payloads in
+       production skip the questionnaire-hash and Core-score comparison.
+7. [ ] AI-generated proposed question flow (slice 3.1, on explicit user request).
 
 ---
 
@@ -32,6 +49,15 @@ Updated: 2026-07-27 (Contract 5.0 rollout completed and verified)
   - Updated Python AI service to enrich prompts, generate overall summary via LLM, and relax sentence checks to 2–5 sentences for Contract 5.0.
   - Expanded `interventions_kb.json` to 80 entries and added adaptive ranking in `store.py`.
   - Added dedicated smoke test suite `ai-contract-v5-smoke.test.ts`. All 202 TS tests and 16 Python tests passed. Commits pushed to `origin/main`.
+
+- [x] **2026-07-27**: **Two bugs reported from the deployed app, and the database consolidation**
+  (commits `744e7b4`, `af41b38`, `42778ab`, `c6bddae`, `610d951`, `210c213`):
+  - **A respondent could answer a round only once per browser, ever.**
+    [`survey-flow.tsx`](src/components/survey/survey-flow.tsx) kept the anonymous token in `localStorage` under
+    the share code and never cleared it, so the submit endpoint's double-submission guard became a permanent
+    device lock: every later attempt got "You have already submitted a response for this survey round."
+    The token now belongs to one filling session — [`survey-attempt-token.ts`](src/lib/survey-attempt-token.ts),
+    created lazily on submit, held in memory while the flow is mounted. A retry after a failed request is still
     de-duplicated; a new visit is a new response. The public thank-you screen offers an explicit
     "another response" action for a shared computer. Five unit tests plus an API test that persists two attempt
     tokens and rejects a replay of one.
@@ -40,8 +66,9 @@ Updated: 2026-07-27 (Contract 5.0 rollout completed and verified)
     `ai_insights` and `ai_insights_updated_at` both `NULL`, and its single response was submitted
     2026-07-26T17:03:56 — a day before auto-dispatch-on-submit reached production. Nothing re-triggered it since,
     because the only trigger lived on the round screen. The "not created" and error states now offer a generate
-    action wired to `POST /api/rounds/{roundId}/trigger-ai`, handling 409 and 504 separately. The analysis for
-    that round has **not** been generated: a real webhook run still needs its own approval.
+    action wired to `POST /api/rounds/{roundId}/trigger-ai`, handling 409 and 504 separately.
+    Confirmed later the same day by a read-only check: `SHALOM-F125` now carries 3 responses and a non-null
+    `ai_insights`, so both the re-entry fix and the analysis path work end to end on the deployed runtime.
   - **Route loaders.** No segment had a `loading.tsx` while every manager screen renders on the server and reads
     persistence, so a navigation left the previous page frozen. Added
     [`route-loading.tsx`](src/components/layout/route-loading.tsx) and a `loading.tsx` for `/`, `/setup`,
@@ -67,6 +94,20 @@ Updated: 2026-07-27 (Contract 5.0 rollout completed and verified)
   - Verified locally: `npm test` 194/194, `npm run lint` 0 errors, `npm run build` 39/39 pages. Local dev server
     on empty in-memory repositories (`DATABASE_URL` empty, no staging write): manager routes `307` to login,
     `/login/` 200, `/answer/NOPE/` 200, zero console and server errors.
+  - **One database, and it is the connected one.** Two Supabase projects were reachable from local
+    configuration. `tpfzhyalaftotljmlont` (`aws-1-ap-northeast-2`, Seoul) is what the deployed app reads and
+    holds every real row; `fvnulyirrqjrnjbahmsn` held one empty organization and zero rounds. Local `.env` and
+    `.env.local` pointed at the second one, and [`prisma.config.ts`](prisma.config.ts) reads `.env` through
+    `dotenv/config` — that is the mechanism by which a migration with no explicit override reached the database
+    the app never serves. `.env` now names the single project and is the only place that defines a database;
+    `.env.local` deliberately defines none, because Next.js would let it override `.env` for the app while
+    migrations kept reading `.env`. Proven by `npx prisma migrate status` with no override at all: host
+    `aws-1-ap-northeast-2.pooler.supabase.com:5432`, "Database schema is up to date!". Previous values were
+    kept in gitignored `.env.retired-fvnulyirrqjrnjbahmsn.bak` files. Deleting the retired Supabase project is
+    left to the owner.
+  - **Vercel Preview organization scope aligned.** Preview still carried `MANAGER_ORGANIZATION_ID=be9f184a-…`
+    while `DATABASE_URL` is shared between Preview and Production, so Preview pointed at the one database with
+    an organization that does not exist there. Set to `34d05e66-…`; both scopes now match.
   - Open, not addressed: the callback compares a dynamic result against the round only for `3.0`
     ([`ai-insights/route.ts`](src/app/api/rounds/[roundId]/ai-insights/route.ts)), so the `4.0` payload now in
     production skips the questionnaire-hash and Core-score cross-check; and the Python webhook is synchronous
