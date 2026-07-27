@@ -11,6 +11,7 @@ import urllib.error
 import urllib.request
 
 from src.config import settings
+from src.contracts import AI_ANALYTICS_DIMENSION_NAMES_HEBREW
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +55,8 @@ class LLMProviderService:
         retry_tier: str = "fast",
         question_aggregates: Iterable[Dict[str, Any]] | None = None,
         background_context: Optional[Dict[str, Any]] = None,
+        contract_version: str = "4.0",
+        all_dimension_scores: Optional[Dict[str, Any]] = None,
     ) -> str:
         return self.generate_psychological_interpretation_result(
             dim_id=dim_id,
@@ -63,6 +66,8 @@ class LLMProviderService:
             retry_tier=retry_tier,
             question_aggregates=question_aggregates,
             background_context=background_context,
+            contract_version=contract_version,
+            all_dimension_scores=all_dimension_scores,
         ).text
 
     def generate_psychological_interpretation_result(
@@ -74,6 +79,8 @@ class LLMProviderService:
         retry_tier: str = "fast",
         question_aggregates: Iterable[Dict[str, Any]] | None = None,
         background_context: Optional[Dict[str, Any]] = None,
+        contract_version: str = "4.0",
+        all_dimension_scores: Optional[Dict[str, Any]] = None,
     ) -> InterpretationGeneration:
         """
         Generate a semantically validated interpretation and auditable outcome.
@@ -126,6 +133,13 @@ class LLMProviderService:
                     status=status,
                     question_aggregates=questions,
                     background_context=background_context,
+                    contract_version=contract_version,
+                    all_dimension_scores=all_dimension_scores,
+                )
+                max_tokens = (
+                    420
+                    if contract_version == "5.0"
+                    else settings.max_tokens_per_dimension
                 )
                 req_payload = json.dumps({
                     "model": model_name,
@@ -133,7 +147,7 @@ class LLMProviderService:
                         {"role": "system", "content": "You are a concise organizational psychologist for educational staff."},
                         {"role": "user", "content": prompt}
                     ],
-                    "max_tokens": settings.max_tokens_per_dimension,
+                    "max_tokens": max_tokens,
                     "temperature": 0.2
                 }).encode("utf-8")
 
@@ -207,6 +221,7 @@ class LLMProviderService:
                                     result,
                                     finish_reason,
                                     status,
+                                    contract_version=contract_version,
                                 ):
                                     logger.info(
                                         "[LLM Service] outcome=llm "
@@ -377,27 +392,24 @@ class LLMProviderService:
         status: str,
         question_aggregates: list[Dict[str, Any]],
         background_context: Optional[Dict[str, Any]] = None,
+        contract_version: str = "4.0",
+        all_dimension_scores: Optional[Dict[str, Any]] = None,
     ) -> str:
         uses_dynamic_questions = any(
             isinstance(aggregate.get("questionText"), str)
             for aggregate in question_aggregates
         )
-        aggregate_lines = "\n".join(
-            "".join(
-                (
-                    "- ",
-                    (
-                        f"[{aggregate['questionId']}] "
-                        if uses_dynamic_questions
-                        else ""
-                    ),
-                    f"{self._question_text(aggregate)} ",
-                    f"ממוצע {aggregate['averageScore']:.1f}, ",
-                    f"מספר תשובות {aggregate['responseCount']}",
-                )
+        lines = []
+        for aggregate in question_aggregates:
+            prefix = f"[{aggregate['questionId']}] " if uses_dynamic_questions else ""
+            dist_str = ""
+            if contract_version == "5.0" and isinstance(aggregate.get("scoreDistribution"), dict):
+                dist = aggregate["scoreDistribution"]
+                dist_str = f" (תשובות: {dist.get('green', 0)} ירוק, {dist.get('yellow', 0)} צהוב, {dist.get('red', 0)} אדום)"
+            lines.append(
+                f"- {prefix}{self._question_text(aggregate)} ממוצע {aggregate['averageScore']:.1f}, מספר תשובות {aggregate['responseCount']}{dist_str}"
             )
-            for aggregate in question_aggregates
-        )
+        aggregate_lines = "\n".join(lines)
 
         bg_lines = []
         if isinstance(background_context, dict):
@@ -420,14 +432,31 @@ class LLMProviderService:
                     bg_lines.append(f"כיתות: {classes_str}")
         bg_section = ("\nSchool Background Context:\n" + "\n".join(bg_lines)) if bg_lines else ""
 
+        cross_dim_section = ""
+        if contract_version == "5.0" and isinstance(all_dimension_scores, dict) and all_dimension_scores:
+            cd_lines = []
+            for d_id, d_val in all_dimension_scores.items():
+                s_val = d_val.get("averageScore", 0.0) if isinstance(d_val, dict) else getattr(d_val, "averageScore", 0.0)
+                st_val = d_val.get("computedStatus", "") if isinstance(d_val, dict) else getattr(d_val, "computedStatus", "")
+                d_heb = AI_ANALYTICS_DIMENSION_NAMES_HEBREW.get(d_id, d_id)
+                cd_lines.append(f"- {d_heb} ({d_id}): ציון {s_val:.1f}, סטטוס {st_val}")
+            cross_dim_section = "\nOverall 8-Dimension Context:\n" + "\n".join(cd_lines) + "\n"
+
+        length_instruction = (
+            "Return between 2 and 5 complete Hebrew-only sentences."
+            if contract_version == "5.0"
+            else "Return exactly two complete Hebrew-only sentences."
+        )
+
         return (
             "You are an organizational psychologist analyzing only "
             "privacy-safe teacher wellbeing aggregates.\n"
             f"Dimension: {dim_hebrew} ({dim_id}). "
             f"Score: {score:.1f}/100. Status: {status}.{bg_section}\n"
+            f"{cross_dim_section}"
             f"{'Exact persisted' if uses_dynamic_questions else 'Canonical'} "
             f"same-dimension aggregates:\n{aggregate_lines}\n"
-            "Return exactly two complete Hebrew-only sentences. Base every "
+            f"{length_instruction} Base every "
             "claim on the supplied aggregates, do not invent causes, "
             "diagnoses, identities, or respondent-level facts, and keep the "
             "interpretation consistent with the stated status."
@@ -459,19 +488,21 @@ class LLMProviderService:
         text: str,
         finish_reason: object,
         status: str,
+        contract_version: str = "4.0",
     ) -> bool:
-        if finish_reason != "stop" or not self.is_complete_hebrew_copy(text):
+        if finish_reason != "stop" or not self.is_complete_hebrew_copy(text, contract_version=contract_version):
             return False
         return self.is_status_consistent(text, status)
 
-    def is_complete_hebrew_copy(self, text: str) -> bool:
+    def is_complete_hebrew_copy(self, text: str, contract_version: str = "4.0") -> bool:
         normalized = text.strip()
         if not self.is_hebrew_only_copy(normalized):
             return False
         sentences = _COMPLETE_SENTENCE_PATTERN.findall(normalized)
         compact_sentences = re.sub(r"\s", "", "".join(sentences))
         compact_text = re.sub(r"\s", "", normalized)
-        return len(sentences) == 2 and compact_sentences == compact_text
+        expected_len = (2 <= len(sentences) <= 5) if contract_version == "5.0" else (len(sentences) == 2)
+        return expected_len and compact_sentences == compact_text
 
     def is_hebrew_only_copy(self, text: str) -> bool:
         normalized = text.strip()

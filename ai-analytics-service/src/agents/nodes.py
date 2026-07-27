@@ -9,7 +9,10 @@ from src.contracts import (
     AI_ANALYTICS_CONTRACT_VERSION,
     AI_ANALYTICS_DIMENSION_NAMES_HEBREW,
     AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
+    AI_ANALYTICS_DYNAMIC_CONTRACT_VERSIONS,
+    AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS,
     AI_ANALYTICS_V4_CONTRACT_VERSION,
+    AI_ANALYTICS_V5_CONTRACT_VERSION,
     AI_ANALYTICS_QUESTIONS,
     AI_ANALYTICS_V1_CONTRACT_VERSION,
 )
@@ -49,10 +52,7 @@ def _question_aggregates_for_dimension(
     dimension_id: str,
 ) -> list[Dict[str, Any]]:
     aggregates = round_data.get("questionAggregates", {})
-    if _effective_contract_version(round_data) in {
-        AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
-        AI_ANALYTICS_V4_CONTRACT_VERSION,
-    }:
+    if _effective_contract_version(round_data) in AI_ANALYTICS_DYNAMIC_CONTRACT_VERSIONS:
         return [
             aggregate
             for aggregate in aggregates.values()
@@ -149,6 +149,7 @@ async def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
             dim_id,
         )
         background_context = _background_context_for_prompt(round_data, state)
+        eff_version = _effective_contract_version(round_data)
         dim_ids.append(dim_id)
         generations.append(
             asyncio.to_thread(
@@ -160,6 +161,8 @@ async def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
                 retry_tier=retry_tier,
                 question_aggregates=question_aggregates,
                 background_context=background_context,
+                contract_version=eff_version,
+                all_dimension_scores=dim_scores,
             )
         )
 
@@ -170,6 +173,7 @@ async def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
     }
     previous_provenance = state.get("generation_provenance", {})
     generation_provenance = {}
+    eff_version = _effective_contract_version(round_data)
     for dim_id, generation in zip(dim_ids, generation_results):
         prior_attempts = int(
             previous_provenance.get(dim_id, {}).get("attempts", 0),
@@ -188,17 +192,17 @@ async def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
             "retryCount": max(0, attempts - 1),
             "sourceQuestionIds": source_question_ids,
         }
-        if _effective_contract_version(round_data) in {
-            AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
-            AI_ANALYTICS_V4_CONTRACT_VERSION,
-        }:
+        if eff_version in AI_ANALYTICS_DYNAMIC_CONTRACT_VERSIONS:
             generation_provenance[dim_id]["surveyDefinitionHash"] = (
                 round_data.get("surveyDefinitionHash")
             )
-        if _effective_contract_version(round_data) == AI_ANALYTICS_V4_CONTRACT_VERSION:
+        if eff_version == AI_ANALYTICS_V4_CONTRACT_VERSION:
             generation_provenance[dim_id]["backgroundContextIncluded"] = bool(
                 _background_context_for_prompt(round_data, state),
             )
+        if eff_version == AI_ANALYTICS_V5_CONTRACT_VERSION:
+            generation_provenance[dim_id]["distributionIncluded"] = True
+            generation_provenance[dim_id]["crossDimensionContextIncluded"] = True
 
     green_dimensions = len(dim_scores) - len(yellow_red_dims)
     overall_summary = (
@@ -268,15 +272,11 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
     )
     retry_count = state.get("retry_count", 0)
     contract_version = _effective_contract_version(round_data)
-    is_semantic_contract = contract_version in {
-        AI_ANALYTICS_CONTRACT_VERSION,
-        AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
-        AI_ANALYTICS_V4_CONTRACT_VERSION,
-    }
-    is_dynamic_contract = contract_version in {
-        AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
-        AI_ANALYTICS_V4_CONTRACT_VERSION,
-    }
+    is_semantic_contract = (
+        contract_version in AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS
+        and contract_version != AI_ANALYTICS_V1_CONTRACT_VERSION
+    )
+    is_dynamic_contract = contract_version in AI_ANALYTICS_DYNAMIC_CONTRACT_VERSIONS
 
     is_safe = True
     feedback = []
@@ -298,7 +298,10 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
             )
 
         if (
-            not llm_provider_service.is_complete_hebrew_copy(interp)
+            not llm_provider_service.is_complete_hebrew_copy(
+                interp,
+                contract_version=contract_version,
+            )
             or not llm_provider_service.is_status_consistent(interp, status)
         ):
             is_safe = False
@@ -360,6 +363,13 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
                     != round_data.get("surveyDefinitionHash")
                 )
                 or (outcome == "llm" and attempts < 1)
+                or (
+                    contract_version == AI_ANALYTICS_V5_CONTRACT_VERSION
+                    and (
+                        provenance.get("distributionIncluded") is not True
+                        or provenance.get("crossDimensionContextIncluded") is not True
+                    )
+                )
             ):
                 is_safe = False
                 feedback.append(
