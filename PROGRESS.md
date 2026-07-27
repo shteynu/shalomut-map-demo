@@ -1,10 +1,11 @@
 # Shalomut Map — PROGRESS.md
 
-Updated: 2026-07-27 (deployed, migrated, contract 4.0 enabled)
+Updated: 2026-07-27 (deployed, migrated, contract 4.0 enabled, manager organization scope mandatory)
 
 ## Current State
-- **Automated tests & build**: `npm test` 175/175 passed, `npm run lint` 0 errors, `npm run build` 39/39 pages,
-  `python3 ai-analytics-service/run_tests.py` 16/16 passed, `pytest ai-analytics-service/tests` 88 passed.
+- **Automated tests & build**: `npm test` 180/180 passed, `npm run lint` 0 errors, `npm run build` 39/39 pages
+  (all three re-run on 2026-07-27 after the organization-scope change); `python3 ai-analytics-service/run_tests.py`
+  16/16 passed and `pytest ai-analytics-service/tests` 88 passed earlier the same day, Python code unchanged since.
 - **Deployed runtime**: `https://shalomut-map-demo.vercel.app/` serves the current `main`
   (`GET /login/` → 200, `GET /api/rounds/` → 401 JSON). Commits `9e15732`, `1f76622`, `82c17f2` are pushed.
 - **Database**: the staging Supabase DB is migrated up to date — `20260724180000_add_round_configuration`
@@ -17,7 +18,8 @@ Updated: 2026-07-27 (deployed, migrated, contract 4.0 enabled)
   database column default. Both manager screens warn that a threshold below 5 describes individual respondents.
 - **Vercel environment**: `PP_BASE_URL`, `BASIC_AUTH_USER`, `BASIC_AUTH_PASSWORD` and
   `DISABLE_BASIC_AUTH_FALLBACK` removed; `MANAGER_ORGANIZATION_ID` now points at the existing organization
-  `be9f184a-dee8-4d72-9805-c0f4e45f6d40`.
+  `be9f184a-dee8-4d72-9805-c0f4e45f6d40` and is mandatory on a deployed runtime — without it
+  `POST /api/auth/login` answers `503 UNCONFIGURED` instead of issuing a session.
 - **Repository**: the six stale origin branches were deleted (tips recorded in the tracker handoff for restore).
 - **Single deployed environment**: `https://shalomut-map-demo.vercel.app/` is the only product URL (staging for now).
 
@@ -28,15 +30,31 @@ Updated: 2026-07-27 (deployed, migrated, contract 4.0 enabled)
 1. [ ] End-to-end check on the deployed app (needs a manager login, so the owner has to run it): create a round,
        submit a response, confirm the persisted AI result carries `contractVersion: "4.0"` and
        `generationProvenance.backgroundContextIncluded: true`.
-2. [~] Remove the hardcoded organization fallback `34d05e66-…` in
-       [`manager-auth-service.ts:23`](src/lib/auth/manager-auth-service.ts) and make `MANAGER_ORGANIZATION_ID`
-       mandatory on a deployed runtime. *(started in a separate session on 2026-07-27; check whether that branch
-       landed before picking it up again)*
-3. [ ] AI-generated proposed question flow (slice 3.1, on explicit user request).
+2. [ ] AI-generated proposed question flow (slice 3.1, on explicit user request).
 
 ---
 
 ## Completed Tasks
+
+- [x] **2026-07-27**: **`MANAGER_ORGANIZATION_ID` is mandatory on a deployed runtime**
+  ([`manager-auth-service.ts`](src/lib/auth/manager-auth-service.ts)):
+  - Deleted the hardcoded fallback `34d05e66-…`, which pointed at an organization removed during an earlier staging
+    cleanup. With the variable missing, a manager used to receive a session scoped to a non-existent organization and
+    every screen looked empty instead of failing.
+  - `resolveManagerOrganizationId()` returns the configured value, `null` on a deployed runtime without it, and
+    `"local-dev-organization"` outside a deployed runtime. `isUnconfigured()` now covers it alongside `SESSION_SECRET`
+    and `MANAGER_ADMIN_PASSWORD`, so `POST /api/auth/login` answers `503 UNCONFIGURED` even for correct credentials;
+    `defaultAccounts()` is fail-closed on the same condition. The production build phase keeps the local fallback.
+  - The three demo memberships were module-level constants frozen at import time and are now built per call from the
+    resolved organization, which is what makes the variable readable at runtime.
+  - Four new tests in [`manager-auth-service.test.ts`](src/lib/auth/__tests__/manager-auth-service.test.ts) cover the
+    missing/blank variable (including `VERCEL_ENV=preview`), the trimmed configured value, the local-only fallback
+    with a regression guard on the retired UUID, `UNCONFIGURED` when only the organization is missing, and the
+    organization a deployed session is scoped to. Confirmed fail-first: the missing-variable case passes login on the
+    previous code.
+  - Verified locally: `npm test` 180/180, `npm run lint` 0 errors, `npm run build` 39/39 pages. Not deployed.
+  - Residual risk: sessions issued before this change stay valid up to 24h with the stale organization; the gate
+    covers new logins only.
 
 - [x] **2026-07-27**: **Deployment, migrations and the contract 4.0 rollout** (explicit user approval):
   - Pushed `9e15732` to `main`; Vercel built production deployment `dpl_EerCv593tZyLTE9kU2SVTAxY4eKX` (Ready, aliased).

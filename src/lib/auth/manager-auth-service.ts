@@ -19,22 +19,46 @@ export type AuthenticateResult =
       message: string;
     };
 
-const DEFAULT_ORG_ID =
-  process.env.MANAGER_ORGANIZATION_ID || "34d05e66-fa4d-4a07-a2af-c9d5c41b6088";
+interface RuntimeEnvironment {
+  NODE_ENV?: string;
+  VERCEL_ENV?: string;
+  NEXT_PHASE?: string;
+  SESSION_SECRET?: string;
+  MANAGER_ADMIN_PASSWORD?: string;
+  MANAGER_ORGANIZATION_ID?: string;
+}
+
+/**
+ * Organization scope used only outside a deployed runtime. On a deployed
+ * runtime MANAGER_ORGANIZATION_ID is mandatory: a session bound to a stale or
+ * non-existent organization leaves every manager screen silently empty, so the
+ * login fails loudly with UNCONFIGURED instead.
+ */
+const LOCAL_DEV_ORGANIZATION_ID = "local-dev-organization";
+
+function isDeployedRuntime(environment: RuntimeEnvironment = process.env) {
+  const isBuilding = environment.NEXT_PHASE === "phase-production-build";
+
+  return (
+    (environment.NODE_ENV === "production" ||
+      Boolean(environment.VERCEL_ENV?.trim())) &&
+    !isBuilding
+  );
+}
+
+export function resolveManagerOrganizationId(
+  environment: RuntimeEnvironment = process.env,
+): string | null {
+  const configured = environment.MANAGER_ORGANIZATION_ID?.trim();
+  if (configured) return configured;
+
+  return isDeployedRuntime(environment) ? null : LOCAL_DEV_ORGANIZATION_ID;
+}
 
 const DEFAULT_ADMIN_USER: Manager = {
   id: "mgr-admin-001",
   email: process.env.MANAGER_ADMIN_EMAIL || "admin@shalomut.edu.il",
   name: "מנהל מערכת ראשי",
-  createdAt: new Date("2026-07-01T00:00:00.000Z"),
-};
-
-const DEFAULT_ADMIN_MEMBERSHIP: OrganizationMembership = {
-  id: "mem-admin-001",
-  managerId: DEFAULT_ADMIN_USER.id,
-  organizationId: DEFAULT_ORG_ID,
-  role: "admin",
-  status: "active",
   createdAt: new Date("2026-07-01T00:00:00.000Z"),
 };
 
@@ -45,15 +69,6 @@ const DEFAULT_MANAGER_USER: Manager = {
   createdAt: new Date("2026-07-01T00:00:00.000Z"),
 };
 
-const DEFAULT_MANAGER_MEMBERSHIP: OrganizationMembership = {
-  id: "mem-user-001",
-  managerId: DEFAULT_MANAGER_USER.id,
-  organizationId: DEFAULT_ORG_ID,
-  role: "manager",
-  status: "active",
-  createdAt: new Date("2026-07-01T00:00:00.000Z"),
-};
-
 const DEFAULT_SUSPENDED_USER: Manager = {
   id: "mgr-suspended-001",
   email: "suspended@shalomut.edu.il",
@@ -61,14 +76,22 @@ const DEFAULT_SUSPENDED_USER: Manager = {
   createdAt: new Date("2026-07-01T00:00:00.000Z"),
 };
 
-const DEFAULT_SUSPENDED_MEMBERSHIP: OrganizationMembership = {
-  id: "mem-suspended-001",
-  managerId: DEFAULT_SUSPENDED_USER.id,
-  organizationId: DEFAULT_ORG_ID,
-  role: "manager",
-  status: "suspended",
-  createdAt: new Date("2026-07-01T00:00:00.000Z"),
-};
+function buildMembership(
+  id: string,
+  manager: Manager,
+  organizationId: string,
+  role: OrganizationMembership["role"],
+  status: OrganizationMembership["status"],
+): OrganizationMembership {
+  return {
+    id,
+    managerId: manager.id,
+    organizationId,
+    role,
+    status,
+    createdAt: new Date("2026-07-01T00:00:00.000Z"),
+  };
+}
 
 interface StoredAccount {
   manager: Manager;
@@ -100,32 +123,26 @@ function timingSafeEqualStrings(a: string, b: string): boolean {
 
 export class ManagerAuthenticationService {
   public static isUnconfigured(): boolean {
-    const isBuilding = process.env.NEXT_PHASE === "phase-production-build";
-    const isDeployed =
-      (process.env.NODE_ENV === "production" ||
-        Boolean(process.env.VERCEL_ENV?.trim())) &&
-      !isBuilding;
-
-    if (!isDeployed) return false;
+    if (!isDeployedRuntime()) return false;
 
     const hasSecret = Boolean(process.env.SESSION_SECRET?.trim());
     const hasAdminPassword = Boolean(
       process.env.MANAGER_ADMIN_PASSWORD?.trim(),
     );
+    const hasOrganizationId = Boolean(resolveManagerOrganizationId());
 
-    return !hasSecret || !hasAdminPassword;
+    return !hasSecret || !hasAdminPassword || !hasOrganizationId;
   }
 
   private static async defaultAccounts(): Promise<StoredAccount[]> {
-    const isBuilding = process.env.NEXT_PHASE === "phase-production-build";
-    const isDeployed =
-      (process.env.NODE_ENV === "production" ||
-        Boolean(process.env.VERCEL_ENV?.trim())) &&
-      !isBuilding;
+    const organizationId = resolveManagerOrganizationId();
+    if (!organizationId) {
+      return [];
+    }
 
     const configuredAdminPassword = process.env.MANAGER_ADMIN_PASSWORD?.trim();
 
-    if (isDeployed) {
+    if (isDeployedRuntime()) {
       if (!configuredAdminPassword) {
         return [];
       }
@@ -133,7 +150,15 @@ export class ManagerAuthenticationService {
         {
           manager: DEFAULT_ADMIN_USER,
           passwordHash: await hashPassword(configuredAdminPassword),
-          memberships: [DEFAULT_ADMIN_MEMBERSHIP],
+          memberships: [
+            buildMembership(
+              "mem-admin-001",
+              DEFAULT_ADMIN_USER,
+              organizationId,
+              "admin",
+              "active",
+            ),
+          ],
         },
       ];
     }
@@ -143,17 +168,41 @@ export class ManagerAuthenticationService {
       {
         manager: DEFAULT_ADMIN_USER,
         passwordHash: await hashPassword(adminPass),
-        memberships: [DEFAULT_ADMIN_MEMBERSHIP],
+        memberships: [
+          buildMembership(
+            "mem-admin-001",
+            DEFAULT_ADMIN_USER,
+            organizationId,
+            "admin",
+            "active",
+          ),
+        ],
       },
       {
         manager: DEFAULT_MANAGER_USER,
         passwordHash: await hashPassword("manager123"),
-        memberships: [DEFAULT_MANAGER_MEMBERSHIP],
+        memberships: [
+          buildMembership(
+            "mem-user-001",
+            DEFAULT_MANAGER_USER,
+            organizationId,
+            "manager",
+            "active",
+          ),
+        ],
       },
       {
         manager: DEFAULT_SUSPENDED_USER,
         passwordHash: await hashPassword("suspended123"),
-        memberships: [DEFAULT_SUSPENDED_MEMBERSHIP],
+        memberships: [
+          buildMembership(
+            "mem-suspended-001",
+            DEFAULT_SUSPENDED_USER,
+            organizationId,
+            "manager",
+            "suspended",
+          ),
+        ],
       },
     ];
   }
@@ -167,7 +216,8 @@ export class ManagerAuthenticationService {
       return {
         ok: false,
         reason: "UNCONFIGURED",
-        message: "שרת התחברות המנהלים אינו מוגדר בסביבה זו (חסרים סודות מערכת)",
+        message:
+          "שרת התחברות המנהלים אינו מוגדר בסביבה זו (חסרות הגדרות סביבה נדרשות)",
       };
     }
 
