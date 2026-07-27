@@ -16,6 +16,7 @@ from src.contracts import (
     AI_ANALYTICS_DIMENSION_IDS,
     AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
     AI_ANALYTICS_DYNAMIC_CONTRACT_VERSIONS,
+    AI_ANALYTICS_V5_CONTRACT_VERSION,
 )
 
 class AnalyticsGraphEngine:
@@ -116,8 +117,9 @@ def format_stone_map_output_node(state: AnalyticsState) -> AnalyticsState:
                 in AI_ANALYTICS_DYNAMIC_CONTRACT_VERSIONS
                 else "questionTextHebrew"
             )
-            metrics = [
-                {
+            metrics = []
+            for aggregate in question_aggregates:
+                metric = {
                     "questionId": aggregate["questionId"],
                     "label": aggregate[question_text_field],
                     "value": (
@@ -126,8 +128,17 @@ def format_stone_map_output_node(state: AnalyticsState) -> AnalyticsState:
                     "averageScore": aggregate["averageScore"],
                     "responseCount": aggregate["responseCount"],
                 }
-                for aggregate in question_aggregates
-            ]
+                # 5.0 carries the distribution back out exactly as it came in,
+                # never recomputed: Core owns these numbers and now has
+                # something to check them against.
+                if (
+                    contract_version == AI_ANALYTICS_V5_CONTRACT_VERSION
+                    and isinstance(aggregate.get("scoreDistribution"), dict)
+                ):
+                    metric["scoreDistribution"] = dict(
+                        aggregate["scoreDistribution"],
+                    )
+                metrics.append(metric)
         else:
             metrics = [
                 {"label": "ציון ממוצע", "value": f"{score:.1f}"},

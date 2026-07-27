@@ -3,6 +3,7 @@ import {
   AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
   AI_ANALYTICS_V4_CONTRACT_VERSION,
   AI_ANALYTICS_V5_CONTRACT_VERSION,
+  isValidScoreDistribution,
   type StoneMapResult,
   validateStoneMapResult,
 } from '@/lib/ai-contract';
@@ -111,6 +112,25 @@ function validateDynamicResultAgainstRound(
         seenQuestionIds.has(expected.id)
       ) {
         return 'The AI result metrics do not match the persisted round questionnaire.';
+      }
+
+      // On 5.0 the distribution is a number Core owns as much as the average,
+      // and it travelled to the AI service and back. Checking it against the
+      // recomputed analytics is what keeps that ownership real.
+      if (result.contractVersion === AI_ANALYTICS_V5_CONTRACT_VERSION) {
+        const expectedDistribution = expectedAggregate.scoreDistribution;
+        if (!expectedDistribution) {
+          return 'The Core analytics carry no distribution to verify the AI result against.';
+        }
+        const distribution = metric.scoreDistribution;
+        if (
+          !isValidScoreDistribution(distribution, metric.responseCount) ||
+          distribution.green !== expectedDistribution.green ||
+          distribution.yellow !== expectedDistribution.yellow ||
+          distribution.red !== expectedDistribution.red
+        ) {
+          return 'The AI result distributions do not match the Core analytics.';
+        }
       }
       seenQuestionIds.add(expected.id);
     }

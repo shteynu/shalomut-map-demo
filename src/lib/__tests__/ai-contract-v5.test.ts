@@ -65,6 +65,7 @@ function createValidStone(dimensionId: string) {
         value: 'תוצאה טובה בעברית',
         averageScore: 80,
         responseCount: 20,
+        scoreDistribution: { green: 14, yellow: 4, red: 2 },
       },
     ],
     generationProvenance: {
@@ -167,6 +168,51 @@ describe('Contract 5.0 Validation Tests', () => {
     ).adaptationOutcome = 'adapted';
     const result = validateStoneMapResult(payload, 'round-v5-test');
     assert.strictEqual(result.ok, false);
+  });
+
+  test('validateStoneMapResult rejects a 5.0 metric with no distribution', () => {
+    const payload = createValidV5Payload();
+    delete (
+      payload.stones['balance'].metrics[0] as {
+        scoreDistribution?: unknown;
+      }
+    ).scoreDistribution;
+    const result = validateStoneMapResult(payload, 'round-v5-test');
+    assert.strictEqual(result.ok, false);
+  });
+
+  test('validateStoneMapResult rejects a 5.0 distribution that misses the response count', () => {
+    const payload = createValidV5Payload();
+    payload.stones['balance'].metrics[0].scoreDistribution = {
+      green: 14,
+      yellow: 4,
+      red: 1,
+    };
+    const result = validateStoneMapResult(payload, 'round-v5-test');
+    assert.strictEqual(result.ok, false);
+  });
+
+  test('validateStoneMapResult rejects a fractional 5.0 distribution bucket', () => {
+    const payload = createValidV5Payload();
+    payload.stones['balance'].metrics[0].scoreDistribution = {
+      green: 13.5,
+      yellow: 4.5,
+      red: 2,
+    };
+    const result = validateStoneMapResult(payload, 'round-v5-test');
+    assert.strictEqual(result.ok, false);
+  });
+
+  test('the metric distribution is a 5.0 rule and does not reach 4.0', () => {
+    const payload = createValidV5Payload();
+    payload.contractVersion = '4.0';
+    delete (
+      payload.stones['balance'].metrics[0] as {
+        scoreDistribution?: unknown;
+      }
+    ).scoreDistribution;
+    const result = validateStoneMapResult(payload, 'round-v5-test');
+    assert.strictEqual(result.ok, true);
   });
 
   test('the adaptation outcome is a 5.0 rule and does not reach 4.0', () => {

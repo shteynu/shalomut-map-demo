@@ -135,7 +135,13 @@
     "stoneCountWhenSuccessful": 8,
     "dynamicMetrics": true,
     "metricCoverage": "exactly every input question aggregate in its persisted dimension",
-    "coreOwnedFields": ["score", "status", "dimensionId"],
+    "coreOwnedFields": ["score", "status", "dimensionId", "scoreDistribution"],
+    "metricScoreDistribution": {
+      "requiredOnEveryMetric": true,
+      "mirrorsInputAggregate": true,
+      "recomputedByAi": false,
+      "verifiedAgainstRecomputedAnalytics": true
+    },
     "hebrewUserFacingText": true,
     "psychologicalInterpretationSentences": {
       "min": 2,

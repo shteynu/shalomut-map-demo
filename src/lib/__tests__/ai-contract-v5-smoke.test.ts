@@ -122,6 +122,7 @@ test('Smoke Test 1: Full Contract 5.0 analytical calculation and validation', as
                 questionId: `q-smoke-${DIMENSION_IDS.indexOf(dim) + 1}`,
                 averageScore: 80,
                 responseCount: 2,
+                scoreDistribution: { green: 1, yellow: 1, red: 0 },
               },
             ],
             generationProvenance: {

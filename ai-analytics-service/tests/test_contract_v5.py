@@ -585,6 +585,44 @@ async def test_the_whole_5_0_round_declares_how_every_recommendation_was_written
 
 
 @pytest.mark.asyncio
+async def test_5_0_metrics_echo_the_input_distribution_untouched(monkeypatch):
+    """Core owns the number; the service returns it, it does not recompute it."""
+    monkeypatch.setattr(settings, "llm_api_key", "", raising=False)
+    round_data = build_v5_round_data()
+
+    payload = (await analytics_graph.ainvoke(build_state(round_data)))[
+        "final_payload"
+    ]
+
+    for stone in payload["stones"].values():
+        for metric in stone["metrics"]:
+            assert metric["scoreDistribution"] == (
+                round_data["questionAggregates"][metric["questionId"]][
+                    "scoreDistribution"
+                ]
+            )
+            assert (
+                sum(metric["scoreDistribution"].values())
+                == metric["responseCount"]
+            )
+
+
+@pytest.mark.asyncio
+async def test_metrics_before_5_0_carry_no_distribution(monkeypatch):
+    monkeypatch.setattr(settings, "llm_api_key", "", raising=False)
+    round_data = build_v5_round_data()
+    round_data["contractVersion"] = "4.0"
+
+    payload = (await analytics_graph.ainvoke(build_state(round_data)))[
+        "final_payload"
+    ]
+
+    for stone in payload["stones"].values():
+        for metric in stone["metrics"]:
+            assert "scoreDistribution" not in metric
+
+
+@pytest.mark.asyncio
 async def test_v5_safety_validator_rejects_an_undeclared_adaptation(monkeypatch):
     monkeypatch.setattr(settings, "llm_api_key", "", raising=False)
     state = await agent_psychologist_node(build_state(build_v5_round_data()))
