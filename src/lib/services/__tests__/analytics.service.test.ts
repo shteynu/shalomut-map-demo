@@ -235,3 +235,104 @@ test('AnalyticsService keeps a partially built questionnaire locked even with re
   assert.strictEqual(result.isLocked, true);
   assert.strictEqual(result.totalResponses, 1);
 });
+
+test('a locked 5.0 round carries no distributions across the service boundary', () => {
+  // The mirror of the Python refusal (tests/test_contract_v5.py): the consumer
+  // rejects a locked payload that carries aggregates, and the producer must
+  // never build one. A distribution below the privacy threshold is exactly the
+  // shape of data that could identify a single respondent.
+  const previousVersion = process.env.AI_ANALYTICS_CONTRACT_VERSION;
+  process.env.AI_ANALYTICS_CONTRACT_VERSION = '5.0';
+
+  try {
+    const round = RoundService.createRound({
+      organizationId: 'org_locked_v5',
+      title: 'סבב נעול',
+      privacyThreshold: 10,
+      surveyDefinition: createCanonicalSurveyDefinition('סבב נעול', 10),
+    });
+    const responses: SurveyResponseRecord[] = Array.from(
+      { length: 3 },
+      (_, index) => ({
+        id: `response_locked_v5_${index}`,
+        roundId: round.id,
+        submittedAt: new Date(),
+        answers: surveyInstrument.questions.map((question) => ({
+          questionId: question.id,
+          dimensionId: question.dimensionId,
+          value: 'green' as AnswerValue,
+          score: 100,
+        })),
+      }),
+    );
+
+    const result = AnalyticsService.calculateDynamicRoundAnalytics(
+      round,
+      responses,
+    );
+
+    assert.strictEqual(result.contractVersion, '5.0');
+    assert.strictEqual(result.isLocked, true);
+    assert.deepStrictEqual(result.questionAggregates, {});
+    assert.deepStrictEqual(result.dimensionScores, {});
+  } finally {
+    if (previousVersion === undefined) {
+      delete process.env.AI_ANALYTICS_CONTRACT_VERSION;
+    } else {
+      process.env.AI_ANALYTICS_CONTRACT_VERSION = previousVersion;
+    }
+  }
+});
+
+test('an unlocked 5.0 round carries a distribution for every question', () => {
+  const previousVersion = process.env.AI_ANALYTICS_CONTRACT_VERSION;
+  process.env.AI_ANALYTICS_CONTRACT_VERSION = '5.0';
+
+  try {
+    const round = RoundService.createRound({
+      organizationId: 'org_unlocked_v5',
+      title: 'סבב פתוח',
+      privacyThreshold: 1,
+      surveyDefinition: createCanonicalSurveyDefinition('סבב פתוח', 1),
+    });
+    const responses: SurveyResponseRecord[] = Array.from(
+      { length: 3 },
+      (_, index) => ({
+        id: `response_unlocked_v5_${index}`,
+        roundId: round.id,
+        submittedAt: new Date(),
+        answers: surveyInstrument.questions.map((question) => {
+          const value: AnswerValue =
+            index === 0 ? 'red' : index === 1 ? 'yellow' : 'green';
+          return {
+            questionId: question.id,
+            dimensionId: question.dimensionId,
+            value,
+            score: value === 'green' ? 100 : value === 'yellow' ? 60 : 0,
+          };
+        }),
+      }),
+    );
+
+    const result = AnalyticsService.calculateDynamicRoundAnalytics(
+      round,
+      responses,
+    );
+
+    assert.strictEqual(result.isLocked, false);
+    for (const aggregate of Object.values(result.questionAggregates)) {
+      assert.deepStrictEqual(aggregate.scoreDistribution, {
+        green: 1,
+        yellow: 1,
+        red: 1,
+      });
+      assert.strictEqual(aggregate.responseCount, 3);
+    }
+  } finally {
+    if (previousVersion === undefined) {
+      delete process.env.AI_ANALYTICS_CONTRACT_VERSION;
+    } else {
+      process.env.AI_ANALYTICS_CONTRACT_VERSION = previousVersion;
+    }
+  }
+});

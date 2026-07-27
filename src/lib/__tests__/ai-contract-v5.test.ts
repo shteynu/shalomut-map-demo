@@ -170,6 +170,33 @@ describe('Contract 5.0 Validation Tests', () => {
     assert.strictEqual(result.ok, false);
   });
 
+  test('validateStoneMapResult rejects a locked 5.0 result that still carries stones', () => {
+    // The output mirror of the input rule the Python parser enforces: below the
+    // privacy threshold a distribution could point at one respondent, so a
+    // locked payload may not carry the details at all.
+    const payload = createValidV5Payload();
+    payload.isLocked = true;
+    payload.status = 'locked_error';
+    const result = validateStoneMapResult(payload, 'round-v5-test');
+    assert.strictEqual(result.ok, false);
+  });
+
+  test('validateStoneMapResult accepts a locked 5.0 result without details', () => {
+    const result = validateStoneMapResult(
+      {
+        contractVersion: '5.0',
+        roundId: 'round-v5-test',
+        surveyDefinitionHash:
+          'sha256:0000000000000000000000000000000000000000000000000000000000000000',
+        isLocked: true,
+        status: 'locked_error',
+        errorMessage: 'התוצאות נעולות עד למספר המשיבים הנדרש.',
+      },
+      'round-v5-test',
+    );
+    assert.strictEqual(result.ok, true);
+  });
+
   test('validateStoneMapResult rejects a 5.0 metric with no distribution', () => {
     const payload = createValidV5Payload();
     delete (

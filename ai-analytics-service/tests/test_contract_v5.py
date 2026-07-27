@@ -584,6 +584,101 @@ async def test_the_whole_5_0_round_declares_how_every_recommendation_was_written
             assert intervention["summary"] == ADAPTED_SUMMARY
 
 
+def build_v5_input_payload(**overrides):
+    """The Core -> Python payload, not the round data the graph works on."""
+    round_data = build_v5_round_data()
+    payload = {
+        key: value
+        for key, value in round_data.items()
+        if key != "backgroundContext"
+    }
+    payload.update(overrides)
+    payload["surveyDefinitionHash"] = _definition_hash(
+        payload["questionAggregates"],
+    )
+    return payload
+
+
+def _definition_hash(question_aggregates):
+    projection = [
+        {
+            "questionId": aggregate["questionId"],
+            "dimensionId": aggregate["dimensionId"],
+            "questionText": aggregate["questionText"],
+        }
+        for aggregate in sorted(
+            question_aggregates.values(),
+            key=lambda aggregate: aggregate["questionId"],
+        )
+    ]
+    serialized = json.dumps(
+        projection,
+        ensure_ascii=False,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return f"sha256:{hashlib.sha256(serialized).hexdigest()}"
+
+
+def test_a_locked_5_0_payload_may_not_carry_distributions():
+    """`forbiddenWhenLocked` has to be a refusal, not a silent drop.
+
+    A locked round is one where a single answer could identify a respondent.
+    Quietly discarding the aggregates would let a producer bug ship
+    below-threshold distributions across the service boundary unnoticed; the
+    payload is refused instead, and the mistake surfaces where it was made.
+    """
+    payload = build_v5_input_payload(
+        isLocked=True,
+        dimensionScores={},
+    )
+
+    with pytest.raises(ValueError, match="requires empty"):
+        RoundAnalyticsResult.from_dict(payload)
+
+
+def test_a_below_threshold_5_0_payload_may_not_carry_distributions():
+    """The lock is derived, so claiming `isLocked: false` does not lift it.
+
+    Everything else in the payload is made consistent with three answers, so
+    the refusal can only come from the emptiness rule.
+    """
+    payload = build_v5_input_payload(
+        totalResponses=3,
+        privacyThreshold=10,
+        isLocked=False,
+    )
+    for score in payload["dimensionScores"].values():
+        score["responseCount"] = 3
+    for aggregate in payload["questionAggregates"].values():
+        aggregate["responseCount"] = 3
+        aggregate["scoreDistribution"] = {"green": 1, "yellow": 1, "red": 1}
+
+    with pytest.raises(ValueError, match="requires empty"):
+        RoundAnalyticsResult.from_dict(payload)
+
+
+def test_a_locked_5_0_payload_without_details_is_accepted():
+    payload = build_v5_input_payload(
+        isLocked=True,
+        dimensionScores={},
+        questionAggregates={},
+    )
+
+    parsed = RoundAnalyticsResult.from_dict(payload)
+
+    assert parsed.isLocked is True
+    assert parsed.questionAggregates == {}
+    assert parsed.dimensionScores == {}
+
+
+def test_an_unlocked_5_0_payload_requires_every_distribution():
+    payload = build_v5_input_payload()
+    payload["questionAggregates"]["q-1"].pop("scoreDistribution")
+
+    with pytest.raises(ValueError, match="requires scoreDistribution"):
+        RoundAnalyticsResult.from_dict(payload)
+
+
 @pytest.mark.asyncio
 async def test_5_0_metrics_echo_the_input_distribution_untouched(monkeypatch):
     """Core owns the number; the service returns it, it does not recompute it."""
