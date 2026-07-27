@@ -14,15 +14,17 @@ exact вопросы раунда принадлежат persisted `SurveyRound.
 - **База данных у проекта одна (сведено 2026-07-27)**:
   - Единственная база — Supabase `tpfzhyalaftotljmlont` (`aws-1-ap-northeast-2`, Сеул). На неё указывают
     deployed runtime, локальный `.env` и, как следствие, `prisma migrate`. Все четыре миграции применены,
-    `privacy_threshold` default = `1`. Состояние на момент сведения: 1 организация
+    `privacy_threshold` default = `1`. Проект `fvnulyirrqjrnjbahmsn` выведен из обращения и окончательно удален владельцем (2026-07-27): ни один рантайм и ни один env-файл на него больше не ссылается. Состояние на момент сведения: 1 организация
     (`34d05e66-fa4d-4a07-a2af-c9d5c41b6088`, «טסט»), 1 раунд `SHALOM-F125`, 3 ответа, `ai_insights` непустой.
-  - Проект `fvnulyirrqjrnjbahmsn` выведен из обращения: содержал одну пустую организацию и ноль раундов, ни один
-    рантайм и ни один env-файл на него больше не ссылается. Удаление самого проекта — за владельцем.
   - **Правило одной базы.** `.env` — единственное место, где задана база. `.env.local` намеренно не задаёт её
     вовсе: Next.js отдаёт `.env.local` приоритет над `.env`, а `prisma.config.ts` читает только `.env`, и эти два
     пути расходятся молча. Именно так миграции 2026-07-27 ушли в базу, которую приложение не обслуживает.
-    Перед любой миграцией сверяй хост в выводе Prisma. Прежние значения лежат в gitignored
-    `.env.retired-fvnulyirrqjrnjbahmsn.bak` и `.env.local.retired-fvnulyirrqjrnjbahmsn.bak`.
+    Перед любой миграцией сверяй хост в выводе Prisma. Файлы `.env.retired-fvnulyirrqjrnjbahmsn.bak` и
+    `.env.local.retired-fvnulyirrqjrnjbahmsn.bak` (gitignored) содержат credentials уже удалённой базы и
+    подлежат удалению.
+  - Состояние на закрытие сессии (read-only): 1 организация, 1 раунд `SHALOM-F125` (active, threshold `1`),
+    3 ответа, 72 ответа на вопросы, сохранённый `ai_insights` контракта `4.0`. Deployed smoke: `/login/` `200`,
+    `/api/rounds/` `401`, `/api/survey/SHALOM-F125/` `200`; алиас на `shalomut-map-demo-r9u4poypn`.
   - `MANAGER_ORGANIZATION_ID` = `34d05e66-…` в Vercel Production **и** Preview: `DATABASE_URL` у этих скоупов
     общий, поэтому расхождение оставляло Preview с организацией, которой в единственной базе нет.
   - Проверка: `npx prisma migrate status` без единого переопределения → хост
@@ -33,9 +35,10 @@ exact вопросы раунда принадлежат persisted `SurveyRound.
     `GET https://shalomut-map-demo.vercel.app/api/survey/SHALOM-F125/` → `200` для раунда, который существует
     только там. В этой базе организация `34d05e66-fa4d-4a07-a2af-c9d5c41b6088` («טסט») и активный раунд
     `3173c065-…` / `SHALOM-F125`.
-  - Второй проект `fvnulyirrqjrnjbahmsn` (`aws-0-ap-southeast-1`, записан как `main / Production`) содержит
-    организацию `be9f184a-…` и `0` раундов. Обе миграции 2026-07-27 08:07 ушли туда, а не в обслуживающую базу,
-    и `MANAGER_ORGANIZATION_ID` был выставлен на организацию, которой в обслуживающей базе нет.
+  - Второй проект `fvnulyirrqjrnjbahmsn` (`aws-0-ap-southeast-1`, был записан как `main / Production`) содержал
+    организацию `be9f184a-…` и `0` раундов; удалён владельцем 2026-07-27. Обе миграции 2026-07-27 08:07 ушли
+    туда, а не в обслуживающую базу, и `MANAGER_ORGANIZATION_ID` был выставлен на организацию, которой в
+    обслуживающей базе нет.
   - Причина: [`prisma.config.ts`](../prisma.config.ts) делает `import 'dotenv/config'`, а `.env` указывает на
     `fvnulyirrqjrnjbahmsn`. Любой migration-запуск без явного `DIRECT_URL` в окружении молча бьёт не в ту базу.
     Перед миграцией обязательно сверяй хост в выводе Prisma с целевым проектом.

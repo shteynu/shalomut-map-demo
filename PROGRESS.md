@@ -13,9 +13,11 @@ Updated: 2026-07-27 (Contract 5.0 rollout; respondent re-entry, route loaders, s
 - **Deployed runtime**: `https://shalomut-map-demo.vercel.app/` serves current `main`.
 - **One database**: Supabase `tpfzhyalaftotljmlont` (`aws-1-ap-northeast-2`, Seoul) is the only database of the
   project. The deployed runtime, local `.env` and `prisma migrate` all resolve to it; all four migrations are
-  applied and `privacy_threshold` defaults to `1`. The second project `fvnulyirrqjrnjbahmsn` is retired — nothing
-  references it any more, and deleting it is left to the owner. Never define a second `DATABASE_URL` in
-  `.env.local`: Next.js prefers it over `.env` while migrations read `.env`, and the two drift apart silently.
+  applied and `privacy_threshold` defaults to `1`. The second project `fvnulyirrqjrnjbahmsn` was deleted by the
+  owner on 2026-07-27; nothing referenced it. Never define a second `DATABASE_URL` in `.env.local`: Next.js
+  prefers it over `.env` while migrations read `.env`, and the two drift apart silently.
+  State at session close: 1 organization, 1 round (`SHALOM-F125`, active, threshold `1`), 3 responses,
+  72 question answers, persisted `ai_insights` at contract `4.0`.
 - **Single deployed environment**: `https://shalomut-map-demo.vercel.app/` is the only product URL.
 - **Manager organization scope**: `MANAGER_ORGANIZATION_ID` is `34d05e66-fa4d-4a07-a2af-c9d5c41b6088` in both
   Vercel Production and Preview, matching the only organization in the one database. `organizationId` is embedded
@@ -30,7 +32,7 @@ Updated: 2026-07-27 (Contract 5.0 rollout; respondent re-entry, route loaders, s
 3. [ ] Sign out and sign in again as a manager on the deployed app (needs the admin password, so the owner has to
        do it) and confirm the session lands on organization `34d05e66-…` with round `SHALOM-F125` visible. This is
        the only outstanding proof that the corrected `MANAGER_ORGANIZATION_ID` resolves.
-4. [ ] Delete or pause the retired Supabase project `fvnulyirrqjrnjbahmsn` (owner action; no runtime references it).
+4. [x] Delete or pause the retired Supabase project `fvnulyirrqjrnjbahmsn` (completed by owner 2026-07-27; no runtime referenced it).
 5. [ ] Make the Python webhook answer `202` and process in the background. It is synchronous today
        ([`main.py`](ai-analytics-service/src/main.py)), so a Core timeout at `AI_SERVICE_TIMEOUT_MS=30000` aborts
        the connection and uvicorn cancels the run before any callback is sent. Needs a Render deploy.
