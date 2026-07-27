@@ -228,6 +228,7 @@ def agent_rag_intervention_node(state: AnalyticsState) -> AnalyticsState:
     """
     round_data = state.get("round_data", {})
     dim_scores = round_data.get("dimensionScores", {})
+    bg_context = _background_context_for_prompt(round_data, state)
     recommendations = {}
 
     for dim_id, score_obj in dim_scores.items():
@@ -236,10 +237,13 @@ def agent_rag_intervention_node(state: AnalyticsState) -> AnalyticsState:
         else:
             status = getattr(score_obj, "computedStatus", "green")
 
+        q_aggregates = _question_aggregates_for_dimension(round_data, dim_id)
         interventions = vector_store.get_interventions_for_dimension(
             dimension_id=dim_id,
             status=status,
-            limit=3
+            limit=3,
+            question_aggregates=q_aggregates,
+            background_context=bg_context,
         )
         serialized_interventions = []
         for intervention in interventions:
