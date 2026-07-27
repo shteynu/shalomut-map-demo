@@ -588,6 +588,28 @@ class LLMProviderService:
         )
 
     @staticmethod
+    def has_full_distribution(
+        question_aggregates: Iterable[Dict[str, Any]] | None,
+    ) -> bool:
+        """True when every aggregate of the dimension carries its buckets.
+
+        `_build_prompt` renders the distribution per aggregate, so a dimension
+        where one question lacks it reaches the model only partly enriched.
+        """
+        aggregates = list(question_aggregates or [])
+        if not aggregates:
+            return False
+        for aggregate in aggregates:
+            distribution = aggregate.get("scoreDistribution")
+            if not isinstance(distribution, dict):
+                return False
+            for bucket in ("green", "yellow", "red"):
+                count = distribution.get(bucket)
+                if not isinstance(count, int) or isinstance(count, bool):
+                    return False
+        return True
+
+    @staticmethod
     def distribution_counts(
         question_aggregates: Iterable[Dict[str, Any]] | None,
     ) -> Optional[set[str]]:

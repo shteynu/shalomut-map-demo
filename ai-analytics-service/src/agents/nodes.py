@@ -71,6 +71,32 @@ def _question_aggregates_for_dimension(
         and question["id"] in aggregates
     ]
 
+V5_PROMPT_INCLUSION_FIELDS = (
+    "distributionIncluded",
+    "crossDimensionContextIncluded",
+)
+
+
+def _v5_prompt_inclusions(
+    round_data: Dict[str, Any],
+    dimension_id: str,
+    dim_scores: Dict[str, Any],
+) -> Dict[str, bool]:
+    """What the 5.0 prompt actually carried for one dimension.
+
+    These are measurements, not claims. Writing both flags as a constant True
+    and then asserting they are True audits nothing: the pair exists so a
+    reader of a stored result can tell an enriched interpretation from one the
+    model produced without the distribution or the cross-dimension picture.
+    """
+    return {
+        "distributionIncluded": llm_provider_service.has_full_distribution(
+            _question_aggregates_for_dimension(round_data, dimension_id),
+        ),
+        "crossDimensionContextIncluded": bool(dim_scores),
+    }
+
+
 def privacy_gate_node(state: AnalyticsState) -> AnalyticsState:
     """
     Node 1: Privacy Gate (Python Function)
@@ -210,8 +236,9 @@ async def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
                 _background_context_for_prompt(round_data, state),
             )
         if eff_version == AI_ANALYTICS_V5_CONTRACT_VERSION:
-            generation_provenance[dim_id]["distributionIncluded"] = True
-            generation_provenance[dim_id]["crossDimensionContextIncluded"] = True
+            generation_provenance[dim_id].update(
+                _v5_prompt_inclusions(round_data, dim_id, dim_scores),
+            )
 
     background_context = _background_context_for_prompt(round_data, state)
     overall_summary = llm_provider_service.generate_overall_summary(
@@ -389,10 +416,11 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
                 or (outcome == "llm" and attempts < 1)
                 or (
                     contract_version == AI_ANALYTICS_V5_CONTRACT_VERSION
-                    and (
-                        provenance.get("distributionIncluded") is not True
-                        or provenance.get("crossDimensionContextIncluded") is not True
-                    )
+                    and {
+                        field: provenance.get(field)
+                        for field in V5_PROMPT_INCLUSION_FIELDS
+                    }
+                    != _v5_prompt_inclusions(round_data, dim_id, dim_scores)
                 )
             ):
                 is_safe = False

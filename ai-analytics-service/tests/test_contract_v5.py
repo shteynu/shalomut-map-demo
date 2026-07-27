@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from src.agents.nodes import agent_psychologist_node
+from src.agents.nodes import agent_psychologist_node, agent_safety_validator_node
 from src.agents.state import AnalyticsState
 from src.config import settings
 from src.contracts import (
@@ -223,3 +223,40 @@ class TestContractV5(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+@pytest.mark.asyncio
+async def test_v5_provenance_reports_a_missing_distribution(monkeypatch):
+    """The pair of flags has to be able to say "no", or it audits nothing."""
+    monkeypatch.setattr(settings, "llm_api_key", "", raising=False)
+    round_data = build_v5_round_data(BACKGROUND_CONTEXT)
+    for aggregate in round_data["questionAggregates"].values():
+        aggregate.pop("scoreDistribution")
+
+    state = await agent_psychologist_node(build_state(round_data))
+
+    for dimension_id in AI_ANALYTICS_DIMENSION_IDS:
+        provenance = state["generation_provenance"][dimension_id]
+        assert provenance["distributionIncluded"] is False, dimension_id
+        assert provenance["crossDimensionContextIncluded"] is True, dimension_id
+
+    # A truthful "no" is a valid result, not a safety failure.
+    validated = agent_safety_validator_node(state)
+    assert validated["safety_status"] == "pass", validated.get("safety_feedback")
+
+
+@pytest.mark.asyncio
+async def test_v5_safety_validator_rejects_an_overstated_provenance(monkeypatch):
+    monkeypatch.setattr(settings, "llm_api_key", "", raising=False)
+    round_data = build_v5_round_data(BACKGROUND_CONTEXT)
+    for aggregate in round_data["questionAggregates"].values():
+        aggregate.pop("scoreDistribution")
+
+    state = await agent_psychologist_node(build_state(round_data))
+    for provenance in state["generation_provenance"].values():
+        provenance["distributionIncluded"] = True
+
+    validated = agent_safety_validator_node(state)
+
+    assert validated["safety_status"] == "fail"
+    assert "Generation provenance is invalid" in validated["safety_feedback"]
