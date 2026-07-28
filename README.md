@@ -10,11 +10,12 @@ wired the way the deployment is wired — see
 [docs/local-environment.md](docs/local-environment.md) for the one-time setup.
 
 ```bash
-docker compose up -d   # local database
-npm run local          # core on :3000, AI service on :8000
+npm run local
 ```
 
-`npm run dev` starts the core app alone, without the AI service.
+That one command brings up the Postgres container, applies the migrations and
+starts both halves: the core app on `:3000` and the AI service on `:8000`.
+`npm run dev` starts the core app alone, without the AI service or a database.
 
 ## Production build
 

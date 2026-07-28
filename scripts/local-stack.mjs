@@ -10,17 +10,20 @@
  * hot reload, and its database is the Postgres container from compose.yaml
  * rather than Supabase.
  *
- * Starts the Next.js core on :3000 and the Python AI service on :8000 and stops
- * both together on Ctrl-C. Everything the AI service needs is set here, because
- * the two halves configure themselves from different files and the mismatch is
- * silent when it is wrong.
+ * One command means all of it: the Postgres container comes up first (with the
+ * Docker daemon behind it, and the migrations on top), then the Next.js core on
+ * :3000 and the Python AI service on :8000, which stop together on Ctrl-C. The
+ * database is left running — it holds the local data between runs, and
+ * `docker compose down` is the explicit way to end it. Everything the AI service
+ * needs is set here, because the two halves configure themselves from different
+ * files and the mismatch is silent when it is wrong.
  *
  *   npm run local                against the local database from compose.yaml
  *   npm run local -- --in-memory empty in-process repositories, no database
  *   npm run local -- --deployed-db  against whatever DATABASE_URL says, even
  *                                   the deployed one; opt in, never implicit
  */
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import net from "node:net";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
@@ -47,6 +50,7 @@ const colours = {
   core: "\u001b[36m",
   ai: "\u001b[35m",
   reset: "\u001b[0m",
+  db: "\u001b[33m",
 };
 
 function log(label, line) {
@@ -131,6 +135,95 @@ function hostIsLocal(host) {
   return host === "localhost" || host === "127.0.0.1" || host === "::1";
 }
 
+/**
+ * Runs a command to completion, streaming its output under the `db` label.
+ * Returns the exit status rather than throwing: every caller here has a better
+ * message to give than a stack trace.
+ */
+function run(command, args, options = {}) {
+  const result = spawnSync(command, args, {
+    cwd: repositoryRoot,
+    encoding: "utf8",
+    ...options,
+  });
+
+  const output = `${result.stdout ?? ""}${result.stderr ?? ""}`;
+  for (const line of output.split("\n")) {
+    if (line.trim()) log("db", line);
+  }
+
+  return result.status ?? 1;
+}
+
+function commandExists(command) {
+  return spawnSync("command", ["-v", command], { shell: true }).status === 0;
+}
+
+function waitForDatabasePort(timeoutMs) {
+  const deadline = Date.now() + timeoutMs;
+
+  const attempt = async () => {
+    while (Date.now() < deadline) {
+      if (!(await portIsFree(LOCAL_DATABASE_PORT))) return true;
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+    return false;
+  };
+
+  return attempt();
+}
+
+/**
+ * Brings the database up as part of the one command, because a stack that
+ * starts without its database is not a stack. Everything here is idempotent: a
+ * container already running is left alone, and `migrate deploy` on an
+ * up-to-date schema is a no-op. Returns a problem string, or null.
+ *
+ * The container is deliberately left running on Ctrl-C. It holds the local data
+ * between runs, and stopping it would make every restart a cold start —
+ * `docker compose down` is the explicit way to end it.
+ */
+async function ensureLocalDatabase() {
+  if (!(await portIsFree(LOCAL_DATABASE_PORT))) return null;
+
+  if (!commandExists("docker")) {
+    return (
+      "no docker on PATH, and nothing answers on " +
+      `${LOCAL_DATABASE_PORT}. Install Docker, or point DATABASE_URL at a ` +
+      "Postgres you run yourself, or use --in-memory."
+    );
+  }
+
+  if (run("docker", ["info"], { stdio: "ignore" }) !== 0) {
+    if (!commandExists("colima")) {
+      return "the Docker daemon is not running — start it, then run this again.";
+    }
+
+    log("db", "Docker daemon is down; starting colima (this takes a moment)…");
+    if (run("colima", ["start"]) !== 0) {
+      return "colima failed to start — see the output above.";
+    }
+  }
+
+  log("db", "starting the Postgres container…");
+  if (run("docker", ["compose", "up", "-d", "--wait"]) !== 0) {
+    return "docker compose could not start the database — see the output above.";
+  }
+
+  if (!(await waitForDatabasePort(60_000))) {
+    return `the container started but nothing answers on ${LOCAL_DATABASE_PORT}.`;
+  }
+
+  // A fresh volume has no tables at all, and the failure that causes surfaces
+  // deep inside a request rather than here.
+  log("db", "applying migrations…");
+  if (run("npx", ["prisma", "migrate", "deploy"]) !== 0) {
+    return "prisma migrate deploy failed against the local database.";
+  }
+
+  return null;
+}
+
 async function preflight() {
   const problems = [];
 
@@ -175,9 +268,12 @@ async function preflight() {
       hostIsLocal(host) &&
       (await portIsFree(LOCAL_DATABASE_PORT))
     ) {
+      // ensureLocalDatabase() runs before this and either brings the container
+      // up or explains why it could not, so reaching here means the port stayed
+      // silent for reasons the script cannot name.
       problems.push(
-        `nothing answers on ${LOCAL_DATABASE_PORT} — start the local database first: ` +
-          "docker compose up -d",
+        `nothing answers on ${LOCAL_DATABASE_PORT} — inspect the container: ` +
+          "docker compose ps && docker compose logs db",
       );
     }
   }
@@ -298,6 +394,16 @@ function describeDatabase() {
 }
 
 async function main() {
+  // The database comes first: the rest of the preflight, and the core app
+  // itself, are meaningless without it.
+  if (!inMemory && hostIsLocal(databaseHost() ?? "")) {
+    const databaseProblem = await ensureLocalDatabase();
+    if (databaseProblem) {
+      process.stderr.write(`✗ ${databaseProblem}\n`);
+      process.exit(1);
+    }
+  }
+
   const problems = await preflight();
   if (problems.length > 0) {
     for (const problem of problems) {

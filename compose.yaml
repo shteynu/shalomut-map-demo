@@ -4,8 +4,9 @@
 # deployed half keeps its Supabase database; local work runs against this
 # container so a reseed or a `db:clear` here cannot reach the deployed data.
 #
-#   docker compose up -d          start it
-#   npm run db:migrate:deploy     apply the migrations (reads .env)
+#   npm run local                 starts this container, migrates it, then the app
+#   docker compose up -d          start it by itself
+#   docker compose down           stop it, keep the data
 #   docker compose down -v        throw the data away
 #
 # Port 5433 rather than 5432: a Postgres already installed on the host keeps

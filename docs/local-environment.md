@@ -14,9 +14,8 @@ fails closed on the same misconfiguration the deployment fails on.
 
 ```bash
 npm install
-docker compose up -d                      # local Postgres on 127.0.0.1:5433
-npm run db:migrate:deploy                 # apply all migrations to it
 cd ai-analytics-service && python3 -m venv .venv && .venv/bin/python -m pip install -e . && cd ..
+npm run local                             # brings the database up on its own
 npm run db:seed:local                     # one round with twelve responses
 ```
 
@@ -34,9 +33,14 @@ openssl rand -hex 32
 npm run local
 ```
 
-Starts the core on `:3000` and the AI service on `:8000`, wires them to each
-other, and stops both on Ctrl-C. The banner reports which database, which
-contract version and whether a provider key was found. Flags:
+Brings the whole environment up, in this order: the Docker daemon if it is down
+and `colima` is installed, the Postgres container from `compose.yaml`, the
+migrations, then the core on `:3000` and the AI service on `:8000`, wired to
+each other. Ctrl-C stops the two services and leaves the database running — it
+holds the local data between runs, and `docker compose down` is how it ends.
+Every step is idempotent, so a second run skips straight to the services. The
+banner reports which database, which contract version and whether a provider key
+was found. Flags:
 
 - `--in-memory` — empty in-process repositories, no database at all.
 - `--deployed-db` — run against whatever `DATABASE_URL` says even when it is
