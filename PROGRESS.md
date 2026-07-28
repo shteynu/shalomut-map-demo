@@ -1,6 +1,6 @@
 # Shalomut Map — PROGRESS.md
 
-Updated: 2026-07-28 (why the LLM never answered; privacy threshold 10 everywhere, now on the database too; distribution in the UI)
+Updated: 2026-07-28 (the depth branch is merged and deployed; privacy threshold 10 everywhere including the database; the database is empty again)
 
 ## Current State
 
@@ -27,12 +27,19 @@ Updated: 2026-07-28 (why the LLM never answered; privacy threshold 10 everywhere
   visible, correct Hebrew. `MAX_TOKENS_PER_DIMENSION` now defaults to `2048`, and the live run returns
   `outcome=llm` on the first attempt for the interpretation (`4.0` and `5.0`), the round summary and the
   intervention adaptation. The model configured for the deployment (`gemini-3.5-flash`) was checked separately:
-  ~1076 thinking tokens, so `2048` covers it too. **Not deployed** — it is on the branch below.
-- **Unpushed branch `feature/ai-insights-depth-v5`**: 36 commits over `origin/main` (`0a816e3`), counting this
-  document's, carrying the whole depth plan plus the 2026-07-28 work. `main` locally sits exactly on `origin/main`.
-  Nothing is pushed or deployed — `git push` was attempted twice on 2026-07-28, including after an explicit
-  request, and both times the session's permission layer declined it. The branch has to be pushed by the owner.
-- **Privacy threshold is 10 everywhere**, and since 2026-07-28 that includes the database. Code (branch only):
+  ~1076 thinking tokens, so `2048` covers it too. Deployed since the merge below.
+- **`feature/ai-insights-depth-v5` is merged and live (2026-07-28)**: PR
+  [#11](https://github.com/shteynu/shalomut-map-demo/pull/11) squash-merged into `main` as `2be0708` at 12:51 UTC,
+  carrying all 36 commits of the depth plan and the 2026-07-28 work. The merge deployed both halves at once:
+  Vercel production `shalomut-map-demo-2lfgwm6he` is `● Ready` (35s) and holds the alias, and Render rebuilt the
+  AI service by itself — `GET /health` reports `commit: 2be0708`, `env: production`, `privacyThreshold: 10`,
+  `supportedContractVersions: ["1.0","2.0","3.0","4.0","5.0"]`. Read-only smoke: `/login/` `200`,
+  `/api/rounds/` `401 JSON`.
+  That is E2 steps 1 and 2 satisfied, though not in the ordered way the plan asked for — both halves went out
+  from one merge. It is safe here only because Python accepts a superset of versions and Core emits `5.0` only
+  when `AI_ANALYTICS_CONTRACT_VERSION` says so. The variable exists in both Production and Preview scopes; its
+  value is encrypted and was not read this session, and the handoff records it as `4.0` since 2026-07-27.
+- **Privacy threshold is 10 everywhere**, and since 2026-07-28 that includes the database. Code:
   minimum and default in Core, fallback and clamp in the Python service, declared threshold of contract `5.0`.
   Rounds configured below ten are raised rather than refused — a stored definition loads at ten, a payload below
   ten is read as locked, and the `round.privacyThreshold` column is only ever read through
@@ -40,54 +47,67 @@ Updated: 2026-07-28 (why the LLM never answered; privacy threshold 10 everywhere
   `20260728120000_privacy_threshold_minimum_ten` puts the column default back to `10`, raises rounds below it and
   raises the `minimumResponses` their questionnaire snapshot quotes. Applied to the one database the same day —
   see the database bullet for the before/after values.
-  Note what this did and did not change for `SHALOM-F125`: it has 3 responses, so it was already going to read as
-  locked once the branch deploys. What the migration changed is that the stored number stopped contradicting the
-  screens, and that the **deployed** app — still `main`, which reads the column raw — locks it now rather than at
-  deploy. That closes a live gap: until the migration, production served a full dashboard for a round answered by
-  three people.
+  While `SHALOM-F125` still existed the migration locked it immediately, because the then-deployed `main` read the
+  column raw: until that point production served a full dashboard for a round answered by three people. The round
+  has since been deleted with the rest of the data — see the database bullet.
 - **Deployed runtime**: `https://shalomut-map-demo.vercel.app/` serves current `main`.
 - **One database**: Supabase `tpfzhyalaftotljmlont` (`aws-1-ap-northeast-2`, Seoul) is the only database of the
   project. The deployed runtime, local `.env` and `prisma migrate` all resolve to it; all five migrations are
   applied and `privacy_threshold` defaults to `10`. The second project `fvnulyirrqjrnjbahmsn` was deleted by the
   owner on 2026-07-27; nothing referenced it. Never define a second `DATABASE_URL` in `.env.local`: Next.js
   prefers it over `.env` while migrations read `.env`, and the two drift apart silently.
-  State read on 2026-07-28, before the threshold migration: column default `1`; 1 organization; 1 round
-  `SHALOM-F125` (`3173c065-aa01-470e-a54b-eb0e7669756b`, active, threshold `1`, snapshot `minimumResponses` `1`);
-  3 responses; 3 answers on each question; persisted `ai_insights` at contract `4.0`. After it: column default
-  `10`, round threshold `10`, snapshot `minimumResponses` `10`; response and answer counts unchanged. Rollback,
-  should it ever be wanted, is those exact prior values —
-  `ALTER TABLE "survey_rounds" ALTER COLUMN "privacy_threshold" SET DEFAULT 1;`, then
-  `UPDATE "survey_rounds" SET "privacy_threshold" = 1, "survey_definition" = jsonb_set("survey_definition", '{minimumResponses}', to_jsonb(1)) WHERE "share_code" = 'SHALOM-F125';`,
-  then delete the migration's row from `_prisma_migrations`. The project is on the Supabase Free plan, so there is
+  **The database is empty as of 2026-07-28**, cleared by the owner for manual testing: `0` organizations,
+  `0` rounds, `0` responses, `0` question answers, no persisted insights. `prisma migrate status` still reports
+  the schema up to date and the column default is `10`, so the next round a manager creates starts at ten in both
+  the code and the row. `GET /api/survey/SHALOM-F125/` on the deployed app now answers `404` — the round is gone
+  and empty persistence stays empty rather than inventing a demo round.
+  The contents before the clear are dumped to `~/shalomut-db-backup-2026-07-28.json` (outside the repository,
+  mode `600`): 1 organization, 1 round `SHALOM-F125` (`3173c065-aa01-470e-a54b-eb0e7669756b`), 3 responses,
+  72 question answers and its `ai_insights` at contract `4.0` in full. With no PITR on the Free plan that file is
+  the only way back.
+  State read the same day, before the threshold migration: column default `1`; that round at threshold `1` with
+  snapshot `minimumResponses` `1`; 3 answers on each question. After it: column default `10`, round threshold
+  `10`, snapshot `minimumResponses` `10`; response and answer counts unchanged. Rollback of the migration itself,
+  should it ever be wanted, is `ALTER TABLE "survey_rounds" ALTER COLUMN "privacy_threshold" SET DEFAULT 1;` and
+  deleting the migration's row from `_prisma_migrations`; the row-level part no longer applies, since the rows are
+  gone. The project is on the Supabase Free plan, so there is
   no PITR behind this: the recorded values are the whole safety net.
 - **Single deployed environment**: `https://shalomut-map-demo.vercel.app/` is the only product URL.
 - **Manager organization scope**: `MANAGER_ORGANIZATION_ID` is `34d05e66-fa4d-4a07-a2af-c9d5c41b6088` in both
-  Vercel Production and Preview, matching the only organization in the one database. `organizationId` is embedded
-  in the signed session at login, so a session issued earlier keeps its old organization for up to 24 hours.
+  Vercel Production and Preview. The organization it names was deleted with the rest of the data, and that is
+  survivable rather than broken: `PUT /api/manager/setup` writes the server-owned scoped id
+  ([`setup/route.ts:182`](src/app/api/manager/setup/route.ts:182)) and the service creates the organization under
+  exactly that id when none exists ([`manager-setup.service.ts:56`](src/lib/services/manager-setup.service.ts:56)),
+  so the first setup after the clear recreates `34d05e66-…` and the variable keeps pointing at the right row.
+  `organizationId` is embedded in the signed session at login, so a session issued earlier keeps its old
+  organization for up to 24 hours.
 
 ---
 
 ## Next Up
 
-1. [x] Deploy updated Python AI service container to Render to serve Contract 5.0 endpoints — already live:
-       `GET https://shalomut-ai-analytics.onrender.com/health` on 2026-07-27 returns `commit: 0a816e3` and
-       `supportedContractVersions: ["1.0","2.0","3.0","4.0","5.0"]`. Core Production still produces `4.0`
-       (the persisted insights of the only round carry `contractVersion: "4.0"`), so 5.0 is accepted but never
-       received.
-2. [ ] Push `feature/ai-insights-depth-v5` (attempted twice on 2026-07-28, declined both times by the session's
-       permission layer) and run the E2 deploy order for `5.0`
+1. [x] Deploy updated Python AI service container to Render to serve Contract 5.0 endpoints — live and current:
+       `GET https://shalomut-ai-analytics.onrender.com/health` on 2026-07-28 returns `commit: 2be0708` and
+       `supportedContractVersions: ["1.0","2.0","3.0","4.0","5.0"]`. Render rebuilt itself off the merge.
+2. [ ] Finish the E2 deploy order for `5.0`
        ([ai-insights-depth-plan-2026-07-27.md](docs/ai-insights-depth-plan-2026-07-27.md), section
-       "Продолжение"). Before step 1: confirm the Render dashboard does not set `MAX_TOKENS_PER_DIMENSION`
-       explicitly (neither `render.yaml` nor `.env.render.local` does, so the new `2048` default applies), and
-       settle the Gemini quota — `429` arrives after a few calls on the free tier, and one live round is roughly
-       33 calls.
+       "Продолжение"). Steps 1 and 2 landed with the merge of PR #11 — Python is deployed and `/health` was read.
+       **Step 3 is open**: set `AI_ANALYTICS_CONTRACT_VERSION=5.0` in Vercel Production and Preview; until then
+       Core keeps producing whatever that variable holds today (recorded as `4.0`), which Python accepts, so
+       nothing is broken — `5.0` is simply never sent. **Step 4 is open**: a live round, then
+       `inspect-ai-provenance` on it to show `outcome: "llm"` on at least some stones. Before either: confirm the
+       Render dashboard does not set `MAX_TOKENS_PER_DIMENSION` explicitly (neither `render.yaml` nor
+       `.env.render.local` does, so the deployed `2048` default applies), and settle the Gemini quota — `429`
+       arrives after a few calls on the free tier, and one live round is roughly 33 calls.
 3. [x] Decide what the ten-respondent threshold means for rounds created before it — the owner chose the migration
        (2026-07-28). `20260728120000_privacy_threshold_minimum_ten` is applied to the one database: default `10`,
-       `SHALOM-F125` raised from `1` to `10` in both the column and its questionnaire snapshot. Verified read-only
-       afterwards, including the deployed respondent endpoint, which now quotes `minimumResponses: 10`.
-4. [ ] Sign out and sign in again as a manager on the deployed app (needs the admin password, so the owner has to
-       do it) and confirm the session lands on organization `34d05e66-…` with round `SHALOM-F125` visible. This is
-       the only outstanding proof that the corrected `MANAGER_ORGANIZATION_ID` resolves.
+       `SHALOM-F125` raised from `1` to `10` in both the column and its questionnaire snapshot, verified read-only
+       afterwards on the deployed respondent endpoint. That round has since been deleted with the rest of the
+       data; the column default survives it and governs every round created from now on.
+4. [ ] Sign in as a manager on the deployed app (needs the admin password, so the owner has to do it) and run the
+       first setup against the now-empty database. That both proves `MANAGER_ORGANIZATION_ID` resolves — the
+       organization is recreated under exactly that id — and gives a round to test with. A round needs ten
+       responses, and ten on every analysed question, before the dashboard unlocks.
 5. [x] Delete or pause the retired Supabase project `fvnulyirrqjrnjbahmsn` (completed by owner 2026-07-27; no runtime referenced it).
 6. [ ] Make the Python webhook answer `202` and process in the background. It is synchronous today
        ([`main.py`](ai-analytics-service/src/main.py)), so a Core timeout at `AI_SERVICE_TIMEOUT_MS=30000` aborts
@@ -98,16 +118,26 @@ Updated: 2026-07-28 (why the LLM never answered; privacy threshold 10 everywhere
        distribution itself is still open and is slice D1 of
        [ai-insights-depth-plan-2026-07-27.md](docs/ai-insights-depth-plan-2026-07-27.md).
 8. [ ] AI-generated proposed question flow (slice 3.1, on explicit user request).
-9. [ ] Empty the database for manual testing — requested by the owner on 2026-07-28 and **not done**:
-       `npm run db:clear` was declined by the session's permission layer. A full dump was taken first and is at
-       `~/shalomut-db-backup-2026-07-28.json` (1 organization, 1 round, 3 responses, 72 answers, the `4.0`
-       insights), so running the clear is reversible from that file. Note the deployed app reads the same
-       database and will show its empty states afterwards.
+9. [x] Empty the database for manual testing — done by the owner on 2026-07-28 and verified read-only afterwards:
+       `0` organizations, `0` rounds, `0` responses, `0` answers, schema still up to date. The dump taken
+       beforehand is at `~/shalomut-db-backup-2026-07-28.json` and is the only way back.
 
 ---
 
 ## Completed Tasks
 
+- [x] **2026-07-28**: **The depth branch is merged, deployed, and the database is empty again**
+  (PR [#11](https://github.com/shteynu/shalomut-map-demo/pull/11) → `2be0708`):
+  - Squash-merged into `main` at 12:51 UTC with all 36 commits. One merge deployed both halves: Vercel production
+    `shalomut-map-demo-2lfgwm6he` `● Ready` in 35s and holding the alias; Render rebuilt the AI service on its
+    own, `/health` → `commit: 2be0708`, `env: production`, `privacyThreshold: 10`, versions `1.0`–`5.0`.
+  - Read-only smoke after the merge: `/login/` `200`, `/api/rounds/` `401 JSON`,
+    `/api/survey/SHALOM-F125/` `404`. The `404` is the point — the owner cleared the database, and empty
+    persistence stays empty instead of falling back to a demo round.
+  - Database verified empty from a separate read: `0` organizations, `0` rounds, `0` responses, `0` answers,
+    `privacy_threshold` default `10`, `prisma migrate status` up to date.
+  - Not done, and now the whole of what is left of E2: flip `AI_ANALYTICS_CONTRACT_VERSION` to `5.0` and prove
+    `outcome: "llm"` on a live round.
 - [x] **2026-07-28**: **One command for the local stack** (commits `9678f4a`, `9d04781`):
   - `npm run local` ([`scripts/local-stack.mjs`](scripts/local-stack.mjs)) starts Next on `:3000` and the Python
     service on `:8000` wired to each other, prefixes their output, passes a provider key through if the
