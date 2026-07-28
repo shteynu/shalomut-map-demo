@@ -28,10 +28,10 @@ Updated: 2026-07-28 (why the LLM never answered; privacy threshold 10 everywhere
   `outcome=llm` on the first attempt for the interpretation (`4.0` and `5.0`), the round summary and the
   intervention adaptation. The model configured for the deployment (`gemini-3.5-flash`) was checked separately:
   ~1076 thinking tokens, so `2048` covers it too. **Not deployed** — it is on the branch below.
-- **Unpushed branch `feature/ai-insights-depth-v5`**: 33 commits over `origin/main` (`0a816e3`), counting this
+- **Unpushed branch `feature/ai-insights-depth-v5`**: 36 commits over `origin/main` (`0a816e3`), counting this
   document's, carrying the whole depth plan plus the 2026-07-28 work. `main` locally sits exactly on `origin/main`.
-  Nothing is pushed or deployed — the push was attempted on 2026-07-28 and declined at the permission prompt, so
-  it stays with the owner.
+  Nothing is pushed or deployed — `git push` was attempted twice on 2026-07-28, including after an explicit
+  request, and both times the session's permission layer declined it. The branch has to be pushed by the owner.
 - **Privacy threshold is 10 everywhere**, and since 2026-07-28 that includes the database. Code (branch only):
   minimum and default in Core, fallback and clamp in the Python service, declared threshold of contract `5.0`.
   Rounds configured below ten are raised rather than refused — a stored definition loads at ten, a payload below
@@ -74,8 +74,8 @@ Updated: 2026-07-28 (why the LLM never answered; privacy threshold 10 everywhere
        `supportedContractVersions: ["1.0","2.0","3.0","4.0","5.0"]`. Core Production still produces `4.0`
        (the persisted insights of the only round carry `contractVersion: "4.0"`), so 5.0 is accepted but never
        received.
-2. [ ] Push `feature/ai-insights-depth-v5` (attempted 2026-07-28, declined at the permission prompt) and run the
-       E2 deploy order for `5.0`
+2. [ ] Push `feature/ai-insights-depth-v5` (attempted twice on 2026-07-28, declined both times by the session's
+       permission layer) and run the E2 deploy order for `5.0`
        ([ai-insights-depth-plan-2026-07-27.md](docs/ai-insights-depth-plan-2026-07-27.md), section
        "Продолжение"). Before step 1: confirm the Render dashboard does not set `MAX_TOKENS_PER_DIMENSION`
        explicitly (neither `render.yaml` nor `.env.render.local` does, so the new `2048` default applies), and
@@ -98,11 +98,29 @@ Updated: 2026-07-28 (why the LLM never answered; privacy threshold 10 everywhere
        distribution itself is still open and is slice D1 of
        [ai-insights-depth-plan-2026-07-27.md](docs/ai-insights-depth-plan-2026-07-27.md).
 8. [ ] AI-generated proposed question flow (slice 3.1, on explicit user request).
+9. [ ] Empty the database for manual testing — requested by the owner on 2026-07-28 and **not done**:
+       `npm run db:clear` was declined by the session's permission layer. A full dump was taken first and is at
+       `~/shalomut-db-backup-2026-07-28.json` (1 organization, 1 round, 3 responses, 72 answers, the `4.0`
+       insights), so running the clear is reversible from that file. Note the deployed app reads the same
+       database and will show its empty states afterwards.
 
 ---
 
 ## Completed Tasks
 
+- [x] **2026-07-28**: **One command for the local stack** (commits `9678f4a`, `9d04781`):
+  - `npm run local` ([`scripts/local-stack.mjs`](scripts/local-stack.mjs)) starts Next on `:3000` and the Python
+    service on `:8000` wired to each other, prefixes their output, passes a provider key through if the
+    environment has one, and stops both on Ctrl-C. `--in-memory` runs the core on empty in-process repositories
+    and touches no database. Preflight names a busy port or a missing virtualenv instead of failing obscurely.
+  - Verified: `/login/` `200` and `/health` `200` from one start; a second start refuses with both busy-port
+    messages; `SIGINT` stops Next, uvicorn and the runner.
+  - Two local traps found on the way and recorded in the handoff: the producer falls back to contract `3.0`
+    when `AI_ANALYTICS_CONTRACT_VERSION` is unset (now set to `5.0` in the gitignored `.env.local`), and
+    `SHALOM-F125` is locked at 3 responses so no local run reaches the provider — hence
+    [`scripts/local-unlocked-pipeline.ts`](scripts/local-unlocked-pipeline.ts), which builds a 12-response round
+    in memory and drives the real Core MCP and the real Python pipeline over it: contract `5.0`, 24 aggregates,
+    `status: success`, eight stones, Hebrew summary.
 - [x] **2026-07-28**: **The database says ten as well** (commit `2ab601e`, migration
   `20260728120000_privacy_threshold_minimum_ten`):
   - The owner decided the open question in favour of migrating. `prisma/schema.prisma` puts the column default
