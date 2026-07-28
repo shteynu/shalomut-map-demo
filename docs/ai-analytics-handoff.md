@@ -110,6 +110,11 @@
 
 - FastAPI webhook is the production entrypoint. The direct analyze endpoint
   exists only for `ENV=development` and returns `404` elsewhere.
+- The webhook answers `202 Accepted` once the caller is authenticated and the
+  runtime configuration checks out, then runs the round in an in-process
+  background task. Authentication, configuration and event-type rejections stay
+  synchronous. The `202` promises acceptance, not success: a later failure is
+  logged by the service and reaches Core only as a missing callback.
 - MCP client calls the core JSON-RPC endpoint and fails closed on transport
   errors unless `USE_MOCK_MCP=true` is explicitly enabled.
 - The current runtime is an async graph-style workflow with a structured local

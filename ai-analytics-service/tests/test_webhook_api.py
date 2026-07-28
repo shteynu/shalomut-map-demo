@@ -46,10 +46,35 @@ def test_webhook_event_accepted():
     finally:
         settings.env = previous_env
 
-    assert response.status_code == 200
+    assert response.status_code == 202
     data = response.json()
-    assert data["status"] == "completed"
+    assert data["status"] == "accepted"
     assert data["roundId"] == "test-round-123"
+    process_round.assert_awaited_once_with(round_id="test-round-123")
+
+def test_webhook_accepts_before_the_round_is_processed():
+    """A round is far longer than any caller timeout, so the acknowledgement
+    must not depend on the run: a failing round still answers 202, and the
+    failure is reported through the callback path and the logs instead."""
+    previous_env = settings.env
+    settings.env = "development"
+    process_round = AsyncMock(side_effect=RuntimeError("provider exhausted"))
+
+    try:
+        with patch.object(
+            analytics_runner_service,
+            "process_round",
+            new=process_round,
+        ):
+            response = client.post(
+                "/api/v1/webhook/events",
+                json={"event": "round_closed", "roundId": "test-round-123"},
+            )
+    finally:
+        settings.env = previous_env
+
+    assert response.status_code == 202
+    assert response.json()["status"] == "accepted"
     process_round.assert_awaited_once_with(round_id="test-round-123")
 
 def test_analyze_round_direct_is_disabled_outside_development():
@@ -204,5 +229,5 @@ def test_webhook_accepts_complete_production_security_configuration(monkeypatch)
             },
         )
 
-    assert response.status_code == 200
+    assert response.status_code == 202
     process_round.assert_awaited_once_with(round_id="test-round-123")

@@ -137,7 +137,9 @@ class Settings:
         # Token Saving: Only invoke LLM for problematic ('yellow' / 'red') dimensions
         self.only_llm_for_problematic: bool = os.getenv("ONLY_LLM_FOR_PROBLEMATIC", "true").lower() == "true"
         # Transient provider failures are retried inside the worker thread.
-        # Keep the defaults below the core app's 30-second webhook timeout.
+        # The defaults bound how long one dimension may hold a provider slot;
+        # since the webhook answers 202 before the run starts, they no longer
+        # have to fit the core app's 30-second timeout.
         self.llm_max_attempts: int = max(
             1,
             min(5, int(os.getenv("LLM_MAX_ATTEMPTS", "3"))),
@@ -154,8 +156,8 @@ class Settings:
             0.0,
             float(os.getenv("LLM_RETRY_JITTER_SECONDS", "0.25")),
         )
-        # Leave room for MCP fetch and callback inside the core app's
-        # 30-second webhook timeout. Values above 25 seconds are capped.
+        # Bounds one dimension's whole retry loop. Values above 25 seconds are
+        # capped.
         self.llm_retry_budget_seconds: float = max(
             1.0,
             min(

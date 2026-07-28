@@ -17,11 +17,9 @@ import type { AiInsightsUiState } from "@/lib/hooks/use-ai-insights";
  */
 function GenerateAnalysisButton({
   roundId,
-  onGenerated,
   label,
 }: {
   roundId: string;
-  onGenerated: () => void;
   label: string;
 }) {
   const [running, setRunning] = useState(false);
@@ -60,8 +58,11 @@ function GenerateAnalysisButton({
       return;
     }
 
+    // The service acknowledges the dispatch and analyses the round afterwards,
+    // so an immediate reload would only show the same empty state again. The
+    // manager gets the expected wait and re-checks with the button below.
+    setNote("הניתוח הופעל. התוצאות יתעדכנו במפה בתוך דקות ספורות.");
     setRunning(false);
-    onGenerated();
   }
 
   return (
@@ -135,11 +136,7 @@ export function DashboardAiInsightsState({
           שהתקבלו עד כה.
         </p>
         {roundId ? (
-          <GenerateAnalysisButton
-            roundId={roundId}
-            onGenerated={onRetry}
-            label="יצירת ניתוח עכשיו"
-          />
+          <GenerateAnalysisButton roundId={roundId} label="יצירת ניתוח עכשיו" />
         ) : null}
         <button type="button" className="secondary-button" onClick={onRetry}>
           בדיקה חוזרת
@@ -154,11 +151,7 @@ export function DashboardAiInsightsState({
       <h2>לא הצלחנו לטעון את הניתוח</h2>
       <p>הנתונים לא יוצגו עד שהתגובה משירות הניתוח תהיה תקינה ומאומתת.</p>
       {roundId ? (
-        <GenerateAnalysisButton
-          roundId={roundId}
-          onGenerated={onRetry}
-          label="הפעלת ניתוח מחדש"
-        />
+        <GenerateAnalysisButton roundId={roundId} label="הפעלת ניתוח מחדש" />
       ) : null}
       <button type="button" className="secondary-button" onClick={onRetry}>
         ניסיון נוסף

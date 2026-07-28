@@ -192,7 +192,8 @@ Each provider request may run for up to `LLM_REQUEST_TIMEOUT_SECONDS` (`20s`
 by default). The full retry loop for one dimension is capped by
 `LLM_RETRY_BUDGET_SECONDS` (`25s`, with a hard maximum of `25s`), and a new
 attempt starts only when at least `LLM_MIN_RETRY_WINDOW_SECONDS` (`8s`) remain.
-This leaves time for MCP and callback work inside the core app's 30-second
+The budget bounds how long one dimension may hold a provider slot; since the
+webhook answers before the run starts, it no longer has to fit the core app's
 webhook timeout.
 
 When the core app is a protected Vercel deployment, both outbound calls — MCP
@@ -244,11 +245,21 @@ Vercel needs more than this package provides: a Python entrypoint under
 `api/`, which does not exist here. The previous `[tool.vercel]` block in
 `pyproject.toml` was not a Vercel convention and was removed.
 
-The webhook executes the pipeline and the callback within the request rather
-than using an in-process background task. LLM calls for all dimensions run
-concurrently, so a round costs roughly one model round trip rather than one per
-dimension. The core app's trigger gives up after `AI_SERVICE_TIMEOUT_MS`
-(30s by default) and answers `504`; the round can then be re-triggered.
+The webhook authenticates the caller, checks the runtime configuration, answers
+`202 Accepted` and runs the pipeline and the callback in an in-process
+background task. The run therefore outlives the request instead of dying with
+it: the core app's trigger gives up after `AI_SERVICE_TIMEOUT_MS` (30s by
+default), and a synchronous webhook would have been cancelled mid-round before
+any callback was sent. LLM calls for all dimensions run concurrently, so a
+round costs roughly one model round trip rather than one per dimension.
+
+What the `202` does and does not promise: it says the round was accepted, not
+that it succeeded. A failure after that point is logged by the service and
+never reaches the trigger, so the core app learns the outcome only from the
+callback — or from its absence, once the dispatch claim lease expires and the
+round can be triggered again. The platform must not kill the instance while a
+background run is in flight; Render's free plan sleeps on inactivity, and an
+in-flight run counts as activity.
 
 ## Local container check
 

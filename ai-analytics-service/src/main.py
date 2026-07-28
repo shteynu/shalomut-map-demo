@@ -1,7 +1,7 @@
 import logging
 import os
 from typing import Optional
-from fastapi import FastAPI, Header, HTTPException
+from fastapi import BackgroundTasks, FastAPI, Header, HTTPException
 from src.contracts import AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS
 from src.schemas.webhook import WebhookEventPayload
 from src.services.analytics_runner import analytics_runner_service
@@ -35,14 +35,41 @@ def health_check():
         ),
     }
 
-@app.post("/api/v1/webhook/events")
+async def run_analytics_in_background(round_id: str) -> None:
+    """Runs the analytics workflow after the webhook response has been sent.
+
+    One round is roughly thirty provider calls, which outlasts any caller
+    timeout worth setting. Core only needs the acknowledgement; the compiled
+    Stone Map reaches it on the callback. Failures end here, so they are logged
+    rather than raised: the caller is already gone, and its dispatch claim
+    expires on its own lease.
+    """
+    try:
+        await analytics_runner_service.process_round(round_id=round_id)
+        logger.info(
+            "[Webhook Receiver] Background analytics finished for roundId: %s",
+            round_id,
+        )
+    except Exception:
+        logger.exception(
+            "[Webhook Receiver] Background analytics failed for roundId: %s",
+            round_id,
+        )
+
+@app.post("/api/v1/webhook/events", status_code=202)
 async def handle_webhook_event(
     payload: WebhookEventPayload,
+    background_tasks: BackgroundTasks,
     authorization: Optional[str] = Header(default=None),
 ):
     """
     Webhook handler for Data Layer triggers.
     Listens for {"event": "round_closed", "roundId": "uuid"}
+
+    Answers `202 Accepted` as soon as the request is authenticated and the
+    runtime configuration checks out, then processes the round in the
+    background. Every rejection above stays synchronous, so a misconfigured or
+    unauthorized caller still learns why.
     """
     if settings.env != "development" and not settings.ai_webhook_secret:
         raise HTTPException(
@@ -68,13 +95,12 @@ async def handle_webhook_event(
     if payload.event not in ["round_closed", "analytics_requested"]:
         raise HTTPException(status_code=400, detail=f"Unsupported event type: {payload.event}")
 
-    result = await analytics_runner_service.process_round(round_id=payload.roundId)
+    background_tasks.add_task(run_analytics_in_background, payload.roundId)
 
     return {
-        "status": "completed",
-        "message": f"Analytics processing completed for round {payload.roundId}",
+        "status": "accepted",
+        "message": f"Analytics processing accepted for round {payload.roundId}",
         "roundId": payload.roundId,
-        "resultStatus": result.get("status"),
     }
 
 @app.post("/api/v1/rounds/{round_id}/analyze")

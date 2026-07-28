@@ -98,7 +98,9 @@ Updated: 2026-07-28 (the depth branch is merged and deployed; privacy threshold 
        `inspect-ai-provenance` on it to show `outcome: "llm"` on at least some stones. Before either: confirm the
        Render dashboard does not set `MAX_TOKENS_PER_DIMENSION` explicitly (neither `render.yaml` nor
        `.env.render.local` does, so the deployed `2048` default applies), and settle the Gemini quota — `429`
-       arrives after a few calls on the free tier, and one live round is roughly 33 calls.
+       arrives after a few calls on the free tier, and one live round is roughly 33 calls. Deploy the background
+       webhook (item 6) before the live round: with the synchronous webhook still deployed, a real `5.0` round at
+       `2048` tokens per dimension is likely to outlast the 30-second trigger timeout and be cancelled mid-run.
 3. [x] Decide what the ten-respondent threshold means for rounds created before it — the owner chose the migration
        (2026-07-28). `20260728120000_privacy_threshold_minimum_ten` is applied to the one database: default `10`,
        `SHALOM-F125` raised from `1` to `10` in both the column and its questionnaire snapshot, verified read-only
@@ -109,9 +111,16 @@ Updated: 2026-07-28 (the depth branch is merged and deployed; privacy threshold 
        organization is recreated under exactly that id — and gives a round to test with. A round needs ten
        responses, and ten on every analysed question, before the dashboard unlocks.
 5. [x] Delete or pause the retired Supabase project `fvnulyirrqjrnjbahmsn` (completed by owner 2026-07-27; no runtime referenced it).
-6. [ ] Make the Python webhook answer `202` and process in the background. It is synchronous today
-       ([`main.py`](ai-analytics-service/src/main.py)), so a Core timeout at `AI_SERVICE_TIMEOUT_MS=30000` aborts
-       the connection and uvicorn cancels the run before any callback is sent. Needs a Render deploy.
+6. [x] Make the Python webhook answer `202` and process in the background — done 2026-07-28 in
+       [`main.py`](ai-analytics-service/src/main.py). Authentication, configuration and event-type rejections stay
+       synchronous; everything after them runs in a FastAPI background task, and a failure there is logged instead
+       of raised, since the caller has already been answered. Measured locally against mock MCP and a local
+       callback sink: `202` in `0.003s`, callback delivered `15.6s` later, `Background analytics finished` in the
+       service log. Core needed no change — its trigger already reads any 2xx as `accepted` and answers `202`
+       itself. The dashboard's "generate analysis" button no longer reloads immediately, since the result cannot
+       be there yet; it now says the map will update within a few minutes, matching the round screen.
+       **Still to deploy**: Render rebuilds off `main`, so this reaches the deployed service only with the next
+       push.
 7. [x] Extend the callback's round cross-check beyond `3.0`
        ([`ai-insights/route.ts`](src/app/api/rounds/[roundId]/ai-insights/route.ts)) — done in `c284caa`:
        `4.0` and `5.0` now go through `validateDynamicResultAgainstRound()` like `3.0`. Comparing the score
