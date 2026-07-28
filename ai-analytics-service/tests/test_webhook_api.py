@@ -135,6 +135,40 @@ def test_production_configuration_rejects_local_data_layer_and_mock(monkeypatch)
     assert any("DATA_LAYER_CALLBACK_URL" in error for error in errors)
     assert any("USE_MOCK_MCP" in error for error in errors)
 
+def test_local_environment_allows_a_loopback_data_layer(monkeypatch):
+    """The local environment differs from the deployment in one point only."""
+    monkeypatch.setenv("ENV", "local")
+    monkeypatch.setenv("USE_MOCK_MCP", "false")
+    monkeypatch.setenv("MCP_SHARED_SECRET", "mcp-secret")
+    monkeypatch.setenv("AI_WEBHOOK_SECRET", "webhook-secret")
+    monkeypatch.setenv("AI_CALLBACK_SECRET", "callback-secret")
+    monkeypatch.setenv("DATA_LAYER_MCP_URL", "http://localhost:3000/api/mcp")
+    monkeypatch.setenv(
+        "DATA_LAYER_CALLBACK_URL",
+        "http://localhost:3000/api/rounds",
+    )
+
+    assert Settings().runtime_configuration_errors() == []
+
+def test_local_environment_keeps_every_other_deployed_requirement(monkeypatch):
+    """A local run must fail on the misconfiguration a deployment fails on."""
+    monkeypatch.setenv("ENV", "local")
+    monkeypatch.setenv("USE_MOCK_MCP", "true")
+    monkeypatch.delenv("MCP_SHARED_SECRET", raising=False)
+    monkeypatch.setenv("AI_WEBHOOK_SECRET", "webhook-secret")
+    monkeypatch.setenv("AI_CALLBACK_SECRET", "callback-secret")
+    monkeypatch.setenv("DATA_LAYER_MCP_URL", "ftp://localhost/api/mcp")
+    monkeypatch.setenv(
+        "DATA_LAYER_CALLBACK_URL",
+        "http://localhost:3000/api/rounds",
+    )
+
+    errors = Settings().runtime_configuration_errors()
+
+    assert any("MCP_SHARED_SECRET" in error for error in errors)
+    assert any("USE_MOCK_MCP" in error for error in errors)
+    assert any("DATA_LAYER_MCP_URL" in error for error in errors)
+
 def test_webhook_requires_a_secret_outside_development():
     previous_env = settings.env
     previous_secret = settings.ai_webhook_secret

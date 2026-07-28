@@ -1,29 +1,47 @@
 /**
- * Bring the whole local stack up with one command: `npm run local`.
+ * Bring the whole local environment up with one command: `npm run local`.
  *
- * Starts the Next.js core on :3000 and the Python AI service on :8000, wired to
- * each other, and stops both together on Ctrl-C. Everything the AI service
- * needs to talk to the core is set here, because the two halves configure
- * themselves from different files and the mismatch is silent when it is wrong.
+ * The project has two environments and no others: this one and the deployed
+ * one. They are wired the same way on purpose — the same shared secrets between
+ * the core app and the AI service, the same provider key, the same contract
+ * version, and an AI service that fails closed on the same misconfiguration the
+ * deployment fails on (`ENV=local`, see ai-analytics-service/src/config.py).
+ * What stays different is deliberate and small: the core runs `next dev` for
+ * hot reload, and its database is the Postgres container from compose.yaml
+ * rather than Supabase.
  *
- * The core reads `.env` for the database, so this runs against whatever
- * `DATABASE_URL` points at. Pass `--in-memory` to run with empty in-process
- * repositories instead and leave every database alone.
+ * Starts the Next.js core on :3000 and the Python AI service on :8000 and stops
+ * both together on Ctrl-C. Everything the AI service needs is set here, because
+ * the two halves configure themselves from different files and the mismatch is
+ * silent when it is wrong.
+ *
+ *   npm run local                against the local database from compose.yaml
+ *   npm run local -- --in-memory empty in-process repositories, no database
+ *   npm run local -- --deployed-db  against whatever DATABASE_URL says, even
+ *                                   the deployed one; opt in, never implicit
  */
 import { spawn } from "node:child_process";
 import net from "node:net";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import process from "node:process";
 
 const repositoryRoot = path.resolve(import.meta.dirname, "..");
 const aiServiceRoot = path.join(repositoryRoot, "ai-analytics-service");
 const venvPython = path.join(aiServiceRoot, ".venv", "bin", "python");
+// The same two files Next.js reads, in the same order of precedence, so the
+// banner and the AI service see what the core app sees.
+const environmentFiles = [
+  path.join(repositoryRoot, ".env"),
+  path.join(repositoryRoot, ".env.local"),
+];
 
 const CORE_PORT = 3000;
 const AI_PORT = 8000;
+const LOCAL_DATABASE_PORT = 5433;
 
 const inMemory = process.argv.includes("--in-memory");
+const allowDeployedDatabase = process.argv.includes("--deployed-db");
 
 const colours = {
   core: "\u001b[36m",
@@ -33,6 +51,46 @@ const colours = {
 
 function log(label, line) {
   process.stdout.write(`${colours[label]}[${label}]${colours.reset} ${line}\n`);
+}
+
+/**
+ * Reads `.env` without touching `process.env`: Next.js loads the env files
+ * itself, and a value pre-set here would quietly outrank `.env.local` for the
+ * core app. The AI service, which loads no env file at all, is handed its
+ * configuration explicitly further down.
+ */
+function readEnvironmentFile() {
+  const values = {};
+
+  for (const file of environmentFiles) {
+    if (!existsSync(file)) continue;
+
+    for (const rawLine of readFileSync(file, "utf8").split("\n")) {
+      const line = rawLine.trim();
+      if (!line || line.startsWith("#")) continue;
+
+      const separator = line.indexOf("=");
+      if (separator < 1) continue;
+
+      const key = line.slice(0, separator).trim();
+      let value = line.slice(separator + 1).trim();
+      if (
+        (value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'"))
+      ) {
+        value = value.slice(1, -1);
+      }
+      values[key] = value;
+    }
+  }
+
+  return values;
+}
+
+const fileEnvironment = readEnvironmentFile();
+
+function configured(name) {
+  return process.env[name] || fileEnvironment[name] || "";
 }
 
 /**
@@ -57,6 +115,20 @@ function portIsFree(port) {
   return Promise.all([answers("127.0.0.1"), answers("::1")]).then(
     ([overIpv4, overIpv6]) => !(overIpv4 || overIpv6),
   );
+}
+
+function databaseHost() {
+  const url = configured("DATABASE_URL");
+  if (!url) return null;
+  try {
+    return new URL(url).hostname.toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+function hostIsLocal(host) {
+  return host === "localhost" || host === "127.0.0.1" || host === "::1";
 }
 
 async function preflight() {
@@ -84,14 +156,56 @@ async function preflight() {
     );
   }
 
+  if (!inMemory) {
+    const host = databaseHost();
+
+    if (!host) {
+      problems.push(
+        "no usable DATABASE_URL in .env — point it at the local container " +
+          "(see .env.example) or run with --in-memory",
+      );
+    } else if (!hostIsLocal(host) && !allowDeployedDatabase) {
+      problems.push(
+        `DATABASE_URL points at ${host}, which is not the local database. ` +
+          "The local environment has its own Postgres so that a reseed here " +
+          "cannot reach the deployed data. Fix .env, or pass --deployed-db if " +
+          "you really mean to drive the deployed database from here.",
+      );
+    } else if (
+      hostIsLocal(host) &&
+      (await portIsFree(LOCAL_DATABASE_PORT))
+    ) {
+      problems.push(
+        `nothing answers on ${LOCAL_DATABASE_PORT} — start the local database first: ` +
+          "docker compose up -d",
+      );
+    }
+  }
+
+  // The AI service runs with ENV=local, which demands the same three secrets
+  // the deployment demands. Failing here beats a 503 from the webhook halfway
+  // through a manual test.
+  const missingSecrets = [
+    "MCP_SHARED_SECRET",
+    "AI_WEBHOOK_SECRET",
+    "AI_CALLBACK_SECRET",
+  ].filter((name) => !configured(name));
+
+  if (missingSecrets.length > 0) {
+    problems.push(
+      `missing in .env: ${missingSecrets.join(", ")} — the local AI service ` +
+        "requires them exactly like the deployed one does. Any high-entropy " +
+        "value works locally, as long as both halves read the same .env.",
+    );
+  }
+
   return problems;
 }
 
 /**
- * The AI service reads its own environment, not the core's `.env`, so a
- * provider key has to be handed over explicitly. Without one every dimension
- * comes back as deterministic fallback with zero attempts — the pipeline works,
- * the model is simply never called.
+ * The AI service reads no env file of its own, so everything it needs is handed
+ * over here, from the same `.env` the core app reads. That is what keeps the
+ * two halves in agreement: one file, one set of secrets.
  */
 function aiEnvironment() {
   const passthrough = [
@@ -103,18 +217,31 @@ function aiEnvironment() {
     "LLM_MODEL_FAST",
     "LLM_MODEL_HEAVY",
     "MAX_TOKENS_PER_DIMENSION",
+    "ONLY_LLM_FOR_PROBLEMATIC",
+    "PRIVACY_THRESHOLD",
+    "MCP_SHARED_SECRET",
+    "AI_WEBHOOK_SECRET",
+    "AI_CALLBACK_SECRET",
   ];
 
   const environment = {
     ...process.env,
-    ENV: "development",
+    ENV: "local",
     USE_MOCK_MCP: "false",
     DATA_LAYER_MCP_URL: `http://localhost:${CORE_PORT}/api/mcp`,
     DATA_LAYER_CALLBACK_URL: `http://localhost:${CORE_PORT}/api/rounds`,
   };
 
-  const providedKeys = passthrough.filter((name) => process.env[name]);
-  return { environment, providedKeys };
+  const providedKeys = [];
+  for (const name of passthrough) {
+    const value = configured(name);
+    if (!value) continue;
+    environment[name] = value;
+    providedKeys.push(name);
+  }
+
+  const llmKeys = providedKeys.filter((name) => name.endsWith("_API_KEY"));
+  return { environment, llmKeys };
 }
 
 function start(label, command, args, options) {
@@ -160,6 +287,16 @@ function shutdown(code) {
   setTimeout(() => process.exit(code), 300);
 }
 
+function describeDatabase() {
+  if (inMemory) return "in-memory repositories, no database";
+
+  const host = databaseHost();
+  if (host && hostIsLocal(host)) {
+    return `local Postgres on ${host}:${LOCAL_DATABASE_PORT}`;
+  }
+  return `DEPLOYED database (${host}) — every write here is the deployed data`;
+}
+
 async function main() {
   const problems = await preflight();
   if (problems.length > 0) {
@@ -169,18 +306,21 @@ async function main() {
     process.exit(1);
   }
 
-  const { environment, providedKeys } = aiEnvironment();
+  const { environment, llmKeys } = aiEnvironment();
+  const contractVersion = configured("AI_ANALYTICS_CONTRACT_VERSION") || "3.0 (default)";
 
   process.stdout.write(
     [
       "",
-      `  core  http://localhost:${CORE_PORT}      ${inMemory ? "in-memory repositories, no database" : "database from .env"}`,
-      `  ai    http://localhost:${AI_PORT}/health`,
-      providedKeys.length > 0
-        ? `  llm   provider credentials passed through: ${providedKeys.join(", ")}`
-        : "  llm   no provider key in the environment — stones fall back to deterministic text",
+      `  core  http://localhost:${CORE_PORT}      ${describeDatabase()}`,
+      `  ai    http://localhost:${AI_PORT}/health   ENV=local, shared secrets on, direct /analyze disabled`,
+      `  chain contract ${contractVersion}, model ${environment.LLM_MODEL_FAST ?? "provider default"}`,
+      llmKeys.length > 0
+        ? `  llm   provider credentials passed through: ${llmKeys.join(", ")}`
+        : "  llm   no provider key in .env — stones fall back to deterministic text",
       "",
-      "  npx tsx scripts/local-unlocked-pipeline.ts   run the pipeline on a round that is above the privacy threshold",
+      "  npx tsx scripts/seed-local.ts                run a seeded round into the local database",
+      "  npx tsx scripts/local-unlocked-pipeline.ts   drive the pipeline on an in-memory round",
       "  Ctrl-C                                       stop both",
       "",
     ].join("\n"),

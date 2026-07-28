@@ -11,6 +11,25 @@ exact вопросы раунда принадлежат persisted `SurveyRound.
 
 ## Текущий snapshot
 
+- **У проекта два окружения — локальное и задеплоенное, и других нет (2026-07-28)**. Подробности в
+  [local-environment.md](local-environment.md).
+  - Локальная БД — контейнер Postgres из [`compose.yaml`](../compose.yaml) на `127.0.0.1:5433`; все пять миграций
+    применены, `privacy_threshold` default `10`. `npm run local` поднимает Core на `:3000` и AI-сервис на `:8000`
+    и передаёт сервису конфигурацию из корневого `.env` — сам сервис не читает ни одного env-файла.
+  - Проводка совпадает с деплоем, а не ослаблена: три shared secret обязательны с обеих сторон, ключ провайдера и
+    версия контракта берутся из того же файла, mock MCP запрещён, прямой `/analyze` выключен. Для этого в
+    [`config.py`](../ai-analytics-service/src/config.py) добавлен режим `ENV=local` — это `production` минус
+    одно правило: Data Layer разрешено быть на loopback.
+  - Осознанные отличия: Core идёт через `next dev` ради hot reload, и при пустом `MANAGER_ADMIN_PASSWORD` вход
+    принимает `admin123`.
+  - **`.env` теперь указывает на локальный контейнер.** Копия прежнего файла с credentials задеплоенной БД —
+    `.env.deployed.local` (gitignored). Миграция в задеплоенную базу требует явной переменной в команде:
+    `DIRECT_URL="postgresql://…supabase…" npx prisma migrate deploy`. Настоящая переменная окружения
+    перекрывает файл, поэтому редактировать `.env` для этого не нужно.
+  - Проверено сквозняком 2026-07-28: вход менеджером, засеянный раунд из 12 ответов
+    (`npm run db:seed:local`), `trigger-ai` → `202` → вебхук `202` → MCP-запрос обратно в локальный Core `200` →
+    `outcome=llm` на `gemini-flash-latest`. Дальше free-tier отдал `429`: квота, а не код.
+
 - **Ветка `feature/ai-insights-depth-v5` слита и задеплоена (2026-07-28)**: PR
   [#11](https://github.com/shteynu/shalomut-map-demo/pull/11) — squash `2be0708` в `main` в 12:51 UTC, все 36
   коммитов. Мерж выкатил обе половины разом: Vercel production `shalomut-map-demo-2lfgwm6he` — `● Ready` за 35 s,

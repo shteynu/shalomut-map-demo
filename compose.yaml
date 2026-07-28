@@ -1,0 +1,34 @@
+# The local environment's database.
+#
+# The project has exactly two environments: this one and the deployed one. The
+# deployed half keeps its Supabase database; local work runs against this
+# container so a reseed or a `db:clear` here cannot reach the deployed data.
+#
+#   docker compose up -d          start it
+#   npm run db:migrate:deploy     apply the migrations (reads .env)
+#   docker compose down -v        throw the data away
+#
+# Port 5433 rather than 5432: a Postgres already installed on the host keeps
+# its own port, and a connection string pointing at the wrong one then fails
+# loudly instead of silently using the wrong database.
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: shalomut-local-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: shalomut
+      POSTGRES_PASSWORD: shalomut
+      POSTGRES_DB: shalomut
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - shalomut-local-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shalomut -d shalomut"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  shalomut-local-db:

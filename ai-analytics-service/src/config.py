@@ -10,22 +10,35 @@ LLM_PROVIDER_KEY_ENV = {
 SUPPORTED_LLM_PROVIDERS = frozenset(LLM_PROVIDER_KEY_ENV)
 
 
-def _is_local_or_invalid_url(url: str) -> bool:
+def _is_invalid_url(url: str) -> bool:
     try:
         parsed = urlsplit(url)
-        if parsed.scheme not in {"http", "https"} or not parsed.hostname:
-            return True
-
-        hostname = parsed.hostname.lower().rstrip(".")
-        if hostname == "localhost":
-            return True
-
-        try:
-            return ipaddress.ip_address(hostname).is_loopback
-        except ValueError:
-            return False
+        return parsed.scheme not in {"http", "https"} or not parsed.hostname
     except ValueError:
         return True
+
+
+def _is_loopback_url(url: str) -> bool:
+    try:
+        hostname = urlsplit(url).hostname
+    except ValueError:
+        return False
+
+    if not hostname:
+        return False
+
+    hostname = hostname.lower().rstrip(".")
+    if hostname == "localhost":
+        return True
+
+    try:
+        return ipaddress.ip_address(hostname).is_loopback
+    except ValueError:
+        return False
+
+
+def _is_local_or_invalid_url(url: str) -> bool:
+    return _is_invalid_url(url) or _is_loopback_url(url)
 
 
 def _select_llm_api_key(
@@ -79,6 +92,8 @@ class Settings:
         # Fail closed: development mode disables the mandatory webhook secret,
         # so it must be opted into explicitly instead of being the fallback for
         # any runtime that does not set ENV (containers, VMs, CI).
+        # `local` is the local environment: strict like the deployment, except
+        # that its Data Layer is on loopback. See runtime_configuration_errors.
         self.env: str = os.getenv("ENV") or os.getenv("VERCEL_ENV") or "production"
         
         # Data Layer & MCP Settings
@@ -237,6 +252,16 @@ class Settings:
         self.llm_model_heavy = value
 
     def runtime_configuration_errors(self) -> list[str]:
+        """Everything that must hold before this instance may run a round.
+
+        Three modes, and only three: `development` for tests and throwaway
+        runs, `local` for the local environment, anything else for the deployed
+        one. `local` differs from the deployed mode in exactly one point — the
+        core app it talks to lives on loopback — so every other rule, including
+        the three shared secrets and the ban on mock MCP, applies unchanged.
+        That is the point: a local run has to fail on the same misconfiguration
+        the deployment would fail on.
+        """
         if self.env == "development":
             return []
 
@@ -255,7 +280,12 @@ class Settings:
             "DATA_LAYER_CALLBACK_URL": self.data_layer_callback_url,
         }
         for name, value in required_urls.items():
-            if _is_local_or_invalid_url(value):
+            if self.env == "local":
+                if _is_invalid_url(value):
+                    errors.append(
+                        f"{name} must use a valid http(s) Data Layer URL"
+                    )
+            elif _is_local_or_invalid_url(value):
                 errors.append(
                     f"{name} must use a valid non-local Data Layer URL "
                     "outside development"

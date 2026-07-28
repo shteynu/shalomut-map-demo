@@ -72,6 +72,18 @@ Updated: 2026-07-28 (the depth branch is merged and deployed; privacy threshold 
   deleting the migration's row from `_prisma_migrations`; the row-level part no longer applies, since the rows are
   gone. The project is on the Supabase Free plan, so there is
   no PITR behind this: the recorded values are the whole safety net.
+- **Two environments, local and deployed, since 2026-07-28** — see
+  [local-environment.md](docs/local-environment.md). The local one is a Postgres container
+  (`compose.yaml`, `127.0.0.1:5433`, all five migrations applied) plus `npm run local`, which starts the core on
+  `:3000` and the AI service on `:8000` and hands the service its configuration from the repository-root `.env`.
+  The wiring matches the deployment rather than relaxing it: the three shared secrets are required on both sides,
+  the provider key and contract version come from the same file, and the service runs with the new `ENV=local`,
+  which is `production` minus one rule — its Data Layer may be on loopback. Deliberate differences: `next dev`
+  instead of a production build, and `admin123` when `MANAGER_ADMIN_PASSWORD` is empty.
+  `.env` now points at the local container; the deployed database credentials moved to `.env.deployed.local`, and
+  a deployed migration needs its URL passed on the command line. Proven end to end on 2026-07-28: manager login,
+  seeded round of twelve responses, `trigger-ai` → `202` → MCP callback into the local core → `outcome=llm` on
+  `gemini-flash-latest` before the free-tier quota answered `429`.
 - **Single deployed environment**: `https://shalomut-map-demo.vercel.app/` is the only product URL.
 - **Manager organization scope**: `MANAGER_ORGANIZATION_ID` is `34d05e66-fa4d-4a07-a2af-c9d5c41b6088` in both
   Vercel Production and Preview. The organization it names was deleted with the rest of the data, and that is

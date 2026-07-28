@@ -1,4 +1,5 @@
 import { Organization, QuestionAnswerRecord, RoundStatus, SurveyResponseRecord, SurveyRound } from '../../types/backend';
+import { resolvePoolSsl } from './pool-options';
 
 // Type definitions for minimal Prisma Client interface contract to ensure decouple execution
 export interface MinimalPrismaClient {
@@ -39,7 +40,7 @@ function createAdapterBackedClient(connectionString: string): MinimalPrismaClien
 
   const pool = new Pool({
     connectionString,
-    ssl: { rejectUnauthorized: false },
+    ssl: resolvePoolSsl(connectionString),
   });
 
   return new PrismaClient({ adapter: new PrismaPg(pool) });

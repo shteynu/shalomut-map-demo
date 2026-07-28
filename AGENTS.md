@@ -23,8 +23,9 @@ agent guidance. Do not prefer user-local or ignored copies of the same skills.
 
 ## Repository-wide safety gates
 
-- The project is at the design stage: one environment, no real respondents and
-  no production data. The Vercel alias named `Production` is an operational
+- The project is at the design stage: two environments and no others — local
+  (`docs/local-environment.md`) and deployed — with no real respondents and no
+  production data. The Vercel alias named `Production` is an operational
   staging endpoint. Treat database contents as disposable — clearing, reseeding,
   resetting the schema and applying migrations are ordinary work and need no
   approval ritual, backup or PITR checkpoint. Confirm the target environment

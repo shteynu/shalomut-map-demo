@@ -1,12 +1,18 @@
 import 'dotenv/config';
+import { resolvePoolSsl } from '@/lib/repositories/prisma/pool-options';
 
 async function clearDatabase() {
-  console.log('🔄 Connecting to PostgreSQL database (Supabase)...');
-  
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) {
     throw new Error('DATABASE_URL environment variable is missing.');
   }
+
+  // Which database is about to lose its rows is the only thing worth printing
+  // here: the local container and the deployed Supabase are both plausible
+  // targets, and the command reads the same either way.
+  console.log(
+    `🔄 Connecting to ${new URL(connectionString).hostname}...`,
+  );
 
   const { PrismaClient } = require('@prisma/client');
   const { PrismaPg } = require('@prisma/adapter-pg');
@@ -14,7 +20,7 @@ async function clearDatabase() {
 
   const pool = new pg.Pool({
     connectionString,
-    ssl: { rejectUnauthorized: false },
+    ssl: resolvePoolSsl(connectionString),
   });
 
   const adapter = new PrismaPg(pool);
