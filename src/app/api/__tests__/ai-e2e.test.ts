@@ -344,6 +344,166 @@ test('two dynamic questionnaires cross Core MCP -> Python -> callback with exact
   }
 });
 
+test('a 5.0 round carries its distributions to Python and back under Core verification', async () => {
+  const previousDatabaseUrl = process.env.DATABASE_URL;
+  const previousContractVersion = process.env.AI_ANALYTICS_CONTRACT_VERSION;
+  delete process.env.DATABASE_URL;
+  process.env.AI_ANALYTICS_CONTRACT_VERSION = '5.0';
+
+  const fixture: DynamicRoundFixture = {
+    roundId: 'round_cross_service_v5',
+    organizationId: 'org_cross_service_v5',
+    definition: definitionFromQuestions('סבב חמש אפס', compactQuestions),
+  };
+  const enabledQuestions = fixture.definition.questions.filter(
+    (candidate) => candidate.enabled,
+  );
+
+  try {
+    // A split staff rather than a uniform one: the buckets have to differ from
+    // each other for a mismatch to be detectable at all.
+    const responses: SurveyResponseRecord[] = Array.from(
+      { length: 10 },
+      (_, responseIndex) => ({
+        id: `${fixture.roundId}_response_${responseIndex}`,
+        roundId: fixture.roundId,
+        submittedAt: new Date('2026-07-26T12:00:00.000Z'),
+        answers: enabledQuestions.map((candidate) => {
+          const value: AnswerValue =
+            responseIndex % 3 === 0
+              ? 'red'
+              : responseIndex % 3 === 1
+                ? 'yellow'
+                : 'green';
+          const score = value === 'green' ? 100 : value === 'yellow' ? 60 : 0;
+          return {
+            questionId: candidate.id,
+            dimensionId: candidate.dimensionId,
+            value,
+            score,
+          };
+        }),
+      }),
+    );
+    configureFixture(fixture, responses);
+
+    const analytics = await fetchMcpAnalytics(fixture.roundId);
+    assert.strictEqual(analytics.contractVersion, '5.0');
+    const firstQuestionId = enabledQuestions[0].id;
+    assert.deepStrictEqual(
+      analytics.questionAggregates[firstQuestionId].scoreDistribution,
+      { green: 3, yellow: 3, red: 4 },
+    );
+
+    const stoneMap = runPythonPipeline(analytics);
+    assert.strictEqual(stoneMap.contractVersion, '5.0');
+
+    for (const dimension of surveyInstrument.dimensions) {
+      const stone = stoneMap.stones[dimension.id];
+      for (const metric of stone.metrics) {
+        assert.deepStrictEqual(
+          metric.scoreDistribution,
+          analytics.questionAggregates[metric.questionId].scoreDistribution,
+        );
+      }
+      for (const intervention of stone.recommendedInterventions) {
+        assert.ok(
+          ['llm', 'deterministic_fallback'].includes(
+            intervention.adaptationOutcome,
+          ),
+        );
+      }
+    }
+
+    const tamperedDistribution = structuredClone(stoneMap);
+    const tamperedStone =
+      tamperedDistribution.stones[surveyInstrument.dimensions[0].id];
+    // Same response count, different split: only the cross-check can catch it.
+    tamperedStone.metrics[0].scoreDistribution = {
+      green: 4,
+      yellow: 3,
+      red: 3,
+    };
+    const distributionRejection = await postInsightsHandler(
+      new Request(
+        `http://localhost:3000/api/rounds/${fixture.roundId}/ai-insights`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(tamperedDistribution),
+        },
+      ),
+      { params: Promise.resolve({ roundId: fixture.roundId }) },
+    );
+    assert.strictEqual(distributionRejection.status, 400);
+    // The tampered payload is internally consistent — three non-negative
+    // integers summing to the response count — so only the comparison against
+    // the recomputed analytics can reject it.
+    assert.match(
+      (await distributionRejection.json()).error,
+      /distributions do not match the Core analytics/,
+    );
+
+    const missingDistribution = structuredClone(stoneMap);
+    delete missingDistribution.stones[surveyInstrument.dimensions[0].id]
+      .metrics[0].scoreDistribution;
+    const missingRejection = await postInsightsHandler(
+      new Request(
+        `http://localhost:3000/api/rounds/${fixture.roundId}/ai-insights`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(missingDistribution),
+        },
+      ),
+      { params: Promise.resolve({ roundId: fixture.roundId }) },
+    );
+    assert.strictEqual(missingRejection.status, 400);
+
+    const callbackResponse = await postInsightsHandler(
+      new Request(
+        `http://localhost:3000/api/rounds/${fixture.roundId}/ai-insights`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(stoneMap),
+        },
+      ),
+      { params: Promise.resolve({ roundId: fixture.roundId }) },
+    );
+    const callbackBody = await callbackResponse.clone().json();
+    assert.strictEqual(
+      callbackResponse.status,
+      200,
+      JSON.stringify(callbackBody),
+    );
+
+    const getResponse = await getInsightsHandler(
+      new Request(
+        `http://localhost:3000/api/rounds/${fixture.roundId}/ai-insights`,
+      ),
+      { params: Promise.resolve({ roundId: fixture.roundId }) },
+    );
+    assert.strictEqual(getResponse.status, 200);
+    const persisted = await getResponse.json();
+    assert.strictEqual(persisted.contractVersion, '5.0');
+    assert.deepStrictEqual(
+      persisted.stones[surveyInstrument.dimensions[0].id].metrics[0]
+        .scoreDistribution,
+      { green: 3, yellow: 3, red: 4 },
+    );
+  } finally {
+    resetDefaultRepositories();
+    if (previousDatabaseUrl === undefined) delete process.env.DATABASE_URL;
+    else process.env.DATABASE_URL = previousDatabaseUrl;
+    if (previousContractVersion === undefined) {
+      delete process.env.AI_ANALYTICS_CONTRACT_VERSION;
+    } else {
+      process.env.AI_ANALYTICS_CONTRACT_VERSION = previousContractVersion;
+    }
+  }
+});
+
 test('one below-threshold dynamic question locks the whole cross-service pipeline', async () => {
   const previousDatabaseUrl = process.env.DATABASE_URL;
   delete process.env.DATABASE_URL;

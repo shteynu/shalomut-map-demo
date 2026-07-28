@@ -48,7 +48,7 @@ export interface SurveyRound {
   title: string;
   status: RoundStatus;
   shareCode: string;
-  privacyThreshold: number; // configurable, default 1, minimum 1
+  privacyThreshold: number; // MINIMUM_PRIVACY_THRESHOLD (10) or more
   startDate: Date;
   endDate?: Date;
   backgroundContext?: RoundBackgroundContext;
@@ -150,7 +150,7 @@ export interface SubmitSurveyResult {
 export interface CreateRoundInput {
   organizationId: string;
   title: string;
-  privacyThreshold?: number; // defaults to DEFAULT_PRIVACY_THRESHOLD
+  privacyThreshold?: number; // defaults to DEFAULT_PRIVACY_THRESHOLD (10)
   startDate?: Date;
   endDate?: Date;
   backgroundContext?: RoundBackgroundContext;

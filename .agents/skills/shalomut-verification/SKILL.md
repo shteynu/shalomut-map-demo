@@ -34,7 +34,7 @@ privacy, auth, persistence, contracts или deployment.
 | Survey source, scoring или privacy | Survey-definition/math/API tests, `npm test`, respondent и locked/ready browser states |
 | OpenAPI JSON/YAML или API contract | OpenAPI integrity tests, parse обеих specs, проверить синхронность route/schema changes |
 | `contracts/ai-analytics-v1.json` или AI TypeScript | Contract/client/view-model tests, `npm test`, Python tests и local boundary E2E |
-| `ai-analytics-service` | `python3 ai-analytics-service/run_tests.py`; full pytest при доступных dependencies |
+| `ai-analytics-service` | `python3 -m pytest` из `ai-analytics-service` — полный набор, включая contract suites |
 | Auth, secrets или authorization | Unauthorized/missing-secret/organization-isolation tests и security-focused diff review |
 | Deploy, env или runtime config | Полный local suite, preview build/status/logs и безопасный browser smoke |
 
@@ -65,10 +65,10 @@ privacy, auth, persistence, contracts или deployment.
 
 ### Python и AI boundary
 
-- Запускай dependency-light suite из корня:
-  `python3 ai-analytics-service/run_tests.py`.
-- При установленном dev environment запускай из `ai-analytics-service`:
-  `python3 -m pytest`.
+- Запускай полный suite из `ai-analytics-service`: `python3 -m pytest`. Это
+  единственная команда, покрывающая и contract suites в `tests/`.
+- `run_tests.py` — только совместимость: он делегирует в ту же команду. Не
+  ссылайся на него как на отдельное evidence.
 - После contract, MCP, webhook или callback changes запускай соответствующие
   TypeScript tests и local Next.js → Python → callback boundary test через
   `npm test`.

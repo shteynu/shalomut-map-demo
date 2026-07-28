@@ -2476,6 +2476,39 @@ textarea {
   line-height: 1.5;
 }
 
+/*
+ * The answer split, drawn to scale. It repeats the counts the line above
+ * already states, so it is hidden from assistive technology and carries no
+ * meaning that is lost without colour.
+ */
+.dashboard-metric-distribution {
+  display: flex;
+  width: min(14rem, 82%);
+  height: 0.5rem;
+  margin: 0.7rem auto 0;
+  overflow: hidden;
+  border: 1px solid rgba(56, 56, 56, 0.22);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.dashboard-metric-distribution-segment {
+  flex-basis: 0;
+  min-width: 0;
+}
+
+.dashboard-metric-distribution-segment.is-high {
+  background: var(--green);
+}
+
+.dashboard-metric-distribution-segment.is-middle {
+  background: var(--yellow);
+}
+
+.dashboard-metric-distribution-segment.is-low {
+  background: var(--red-strong);
+}
+
 .dashboard-recommendations-stage {
   width: min(76rem, 100%);
   margin: 2.6rem auto 0;

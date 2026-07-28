@@ -1,8 +1,6 @@
 import { Settings2 } from "lucide-react";
-import {
-  LOW_PRIVACY_THRESHOLD_WARNING,
-  MINIMUM_PRIVACY_THRESHOLD,
-} from "@/lib/survey-definition";
+import { PrivacyThresholdNotice } from "@/components/ui/privacy-threshold-notice";
+import { MINIMUM_PRIVACY_THRESHOLD } from "@/lib/survey-definition";
 
 type SettingsPanelProps = {
   title: string;
@@ -79,12 +77,7 @@ export function SurveyBuilderSettings({
         המסכים לא יציגו קהל יעד שונה.
       </p>
 
-      {minimumResponses < LOW_PRIVACY_THRESHOLD_WARNING ? (
-        <p className="quiet-note" role="status">
-          בסף נמוך מ-{LOW_PRIVACY_THRESHOLD_WARNING} משיבים הממוצע המוצג במפה משקף תשובות של
-          יחידים. מתאים לבדיקות פנימיות, לא לסבב אמיתי.
-        </p>
-      ) : null}
+      <PrivacyThresholdNotice minimumResponses={minimumResponses} />
 
       <label>
         טקסט פתיחה למשיבים

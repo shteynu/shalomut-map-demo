@@ -215,13 +215,14 @@ test('MCP payload carries the school background context on 4.0 only, never when 
           ...DEMO_ROUND,
           id: contextRoundId,
           shareCode: 'SHALOM-CONTEXT',
-          privacyThreshold: 1,
+          privacyThreshold: 10,
           backgroundContext,
         },
       ]),
-      surveyRepo: new InMemorySurveyRepository([
-        {
-          id: 'response-context-1',
+      // Ten answers, because that is what unlocks a round.
+      surveyRepo: new InMemorySurveyRepository(
+        Array.from({ length: 10 }, (_, index) => ({
+          id: `response-context-${index + 1}`,
           roundId: contextRoundId,
           submittedAt: new Date(),
           answers: surveyInstrument.questions.map((question) => ({
@@ -230,8 +231,8 @@ test('MCP payload carries the school background context on 4.0 only, never when 
             value: 'green' as const,
             score: 100 as const,
           })),
-        },
-      ]),
+        })),
+      ),
     });
 
     process.env.AI_ANALYTICS_CONTRACT_VERSION = '3.0';

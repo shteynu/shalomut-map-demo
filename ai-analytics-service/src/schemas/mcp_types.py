@@ -20,6 +20,11 @@ from src.contracts import (
 
 DimensionStatus = Literal["green", "yellow", "red"]
 
+# Respondents a round needs before anything below the round total may be read.
+# Core owns the number; this mirror exists so a payload from an older Core, or
+# from a round configured before the requirement, cannot buy a lower one.
+MINIMUM_PRIVACY_THRESHOLD = 10
+
 _SURVEY_DEFINITION_HASH_PATTERN = re.compile(r"^sha256:[a-f0-9]{64}$")
 _HEBREW_PATTERN = re.compile(r"[\u0590-\u05ff]")
 _LATIN_PATTERN = re.compile(r"[A-Za-z]")
@@ -68,7 +73,7 @@ class RoundAnalyticsResult:
     totalResponses: int
     isLocked: bool
     dimensionScores: Dict[str, RoundDimensionScore]
-    privacyThreshold: int = 1
+    privacyThreshold: int = MINIMUM_PRIVACY_THRESHOLD
     organizationContext: Optional[Dict[str, Any]] = field(default_factory=dict)
     contractVersion: str = AI_ANALYTICS_V1_CONTRACT_VERSION
     questionAggregates: Dict[str, Dict[str, Any]] = field(default_factory=dict)
@@ -119,9 +124,6 @@ class RoundAnalyticsResult:
                 "totalResponses",
                 minimum=0,
             )
-            # Core owns the threshold and its product default is 1, so the
-            # consumer must accept every positive value it is given. A stricter
-            # floor here would reject exactly the rounds the manager configured.
             privacy_threshold = cls._required_integer(
                 data,
                 "privacyThreshold",
@@ -133,23 +135,54 @@ class RoundAnalyticsResult:
                 )
         else:
             total_responses = int(data.get("totalResponses", 0))
-            # Legacy payloads may omit the threshold. Core owns the real value
-            # (default 1, configurable per round); the fallback mirrors that
-            # same product default.
-            privacy_threshold = int(data.get("privacyThreshold", 1))
+            # Legacy payloads may omit the threshold. Core owns the real
+            # value; the fallback mirrors the same product requirement.
+            privacy_threshold = int(
+                data.get("privacyThreshold", MINIMUM_PRIVACY_THRESHOLD),
+            )
 
         if privacy_threshold < 1:
             raise ValueError("privacyThreshold must be a positive integer")
 
-        is_locked = bool(data.get("isLocked", False)) or (
-            total_responses < privacy_threshold
-        )
+        # What the round was configured with, kept for judging the payload
+        # against its own claim, and what the product now requires. A round
+        # configured below the requirement is raised to it rather than refused:
+        # refusing would drop the round, raising it makes the round read as
+        # locked, which is what too few answers mean.
+        declared_threshold = privacy_threshold
+        privacy_threshold = max(declared_threshold, MINIMUM_PRIVACY_THRESHOLD)
+
         scores_raw = data.get("dimensionScores", {})
         question_aggregates_raw = data.get("questionAggregates", {})
         if not isinstance(scores_raw, dict):
             raise ValueError("dimensionScores must be an object")
         if not isinstance(question_aggregates_raw, dict):
             raise ValueError("questionAggregates must be an object")
+
+        declared_lock = bool(data.get("isLocked", False)) or (
+            total_responses < declared_threshold
+        )
+        question_counts = [
+            aggregate["responseCount"]
+            for aggregate in question_aggregates_raw.values()
+            if isinstance(aggregate, dict)
+            and isinstance(aggregate.get("responseCount"), int)
+            and not isinstance(aggregate.get("responseCount"), bool)
+        ]
+        # An aggregate below the round's own threshold is a producer fault and
+        # still raises further down. This is the other case: a round that kept
+        # its own promise and is short only of the product requirement. A
+        # single question answered by fewer than ten locks it as surely as a
+        # small total, because the reading would describe those respondents
+        # rather than the school.
+        keeps_its_own_promise = all(
+            count >= declared_threshold for count in question_counts
+        )
+        below_requirement = keeps_its_own_promise and (
+            total_responses < privacy_threshold
+            or any(count < privacy_threshold for count in question_counts)
+        )
+        is_locked = declared_lock or below_requirement
 
         if is_v3:
             round_id = cls._required_non_empty_string(data, "roundId")
@@ -171,7 +204,11 @@ class RoundAnalyticsResult:
                 data,
                 "calculatedAt",
             )
-            if is_locked and (scores_raw or question_aggregates_raw):
+            # Judged against the round's own claim: a producer that says
+            # "locked" and still sends detail is the leak this catches. A round
+            # locked only by this service's floor sent its detail in good faith
+            # and simply does not get read.
+            if declared_lock and (scores_raw or question_aggregates_raw):
                 raise ValueError(
                     "Locked AI analytics contract 3.0 requires empty "
                     "dimensionScores and questionAggregates"
@@ -191,7 +228,7 @@ class RoundAnalyticsResult:
                             k,
                             v,
                             total_responses,
-                            privacy_threshold,
+                            declared_threshold,
                         )
                     scores[k] = RoundDimensionScore.from_dict(v)
                 elif isinstance(v, RoundDimensionScore):
@@ -281,14 +318,14 @@ class RoundAnalyticsResult:
             cls._validate_v2_aggregates(
                 scores,
                 question_aggregates,
-                privacy_threshold,
+                declared_threshold,
                 total_responses,
             )
         if is_v3 and not is_locked:
             cls._validate_v3_aggregates(
                 scores,
                 question_aggregates,
-                privacy_threshold,
+                declared_threshold,
                 total_responses,
                 survey_definition_hash,
             )

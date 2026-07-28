@@ -55,6 +55,7 @@ function createValidStone(dimensionId: string) {
         title: 'שימור תקשורת פתוחה',
         summary: 'חיזוק מעגלי שיח בצוות',
         actionable_steps: ['מפגש שבועי לקבוצות קטנות'],
+        adaptationOutcome: 'llm',
       },
     ],
     metrics: [
@@ -64,6 +65,7 @@ function createValidStone(dimensionId: string) {
         value: 'תוצאה טובה בעברית',
         averageScore: 80,
         responseCount: 20,
+        scoreDistribution: { green: 14, yellow: 4, red: 2 },
       },
     ],
     generationProvenance: {
@@ -134,6 +136,120 @@ describe('Contract 5.0 Validation Tests', () => {
   test('v4 payload continues to validate correctly without regression', () => {
     const payload = createValidV5Payload();
     payload.contractVersion = '4.0';
+    const result = validateStoneMapResult(payload, 'round-v5-test');
+    assert.strictEqual(result.ok, true);
+  });
+
+  test('validateStoneMapResult accepts catalog copy declared as such in 5.0', () => {
+    const payload = createValidV5Payload();
+    payload.stones['balance'].recommendedInterventions[0].adaptationOutcome =
+      'deterministic_fallback';
+    const result = validateStoneMapResult(payload, 'round-v5-test');
+    assert.strictEqual(result.ok, true);
+  });
+
+  test('validateStoneMapResult rejects an intervention with no adaptation outcome in 5.0', () => {
+    const payload = createValidV5Payload();
+    delete (
+      payload.stones['balance'].recommendedInterventions[0] as {
+        adaptationOutcome?: string;
+      }
+    ).adaptationOutcome;
+    const result = validateStoneMapResult(payload, 'round-v5-test');
+    assert.strictEqual(result.ok, false);
+  });
+
+  test('validateStoneMapResult rejects an invented adaptation outcome in 5.0', () => {
+    const payload = createValidV5Payload();
+    (
+      payload.stones['balance'].recommendedInterventions[0] as {
+        adaptationOutcome?: string;
+      }
+    ).adaptationOutcome = 'adapted';
+    const result = validateStoneMapResult(payload, 'round-v5-test');
+    assert.strictEqual(result.ok, false);
+  });
+
+  test('validateStoneMapResult rejects a locked 5.0 result that still carries stones', () => {
+    // The output mirror of the input rule the Python parser enforces: below the
+    // privacy threshold a distribution could point at one respondent, so a
+    // locked payload may not carry the details at all.
+    const payload = createValidV5Payload();
+    payload.isLocked = true;
+    payload.status = 'locked_error';
+    const result = validateStoneMapResult(payload, 'round-v5-test');
+    assert.strictEqual(result.ok, false);
+  });
+
+  test('validateStoneMapResult accepts a locked 5.0 result without details', () => {
+    const result = validateStoneMapResult(
+      {
+        contractVersion: '5.0',
+        roundId: 'round-v5-test',
+        surveyDefinitionHash:
+          'sha256:0000000000000000000000000000000000000000000000000000000000000000',
+        isLocked: true,
+        status: 'locked_error',
+        errorMessage: 'התוצאות נעולות עד למספר המשיבים הנדרש.',
+      },
+      'round-v5-test',
+    );
+    assert.strictEqual(result.ok, true);
+  });
+
+  test('validateStoneMapResult rejects a 5.0 metric with no distribution', () => {
+    const payload = createValidV5Payload();
+    delete (
+      payload.stones['balance'].metrics[0] as {
+        scoreDistribution?: unknown;
+      }
+    ).scoreDistribution;
+    const result = validateStoneMapResult(payload, 'round-v5-test');
+    assert.strictEqual(result.ok, false);
+  });
+
+  test('validateStoneMapResult rejects a 5.0 distribution that misses the response count', () => {
+    const payload = createValidV5Payload();
+    payload.stones['balance'].metrics[0].scoreDistribution = {
+      green: 14,
+      yellow: 4,
+      red: 1,
+    };
+    const result = validateStoneMapResult(payload, 'round-v5-test');
+    assert.strictEqual(result.ok, false);
+  });
+
+  test('validateStoneMapResult rejects a fractional 5.0 distribution bucket', () => {
+    const payload = createValidV5Payload();
+    payload.stones['balance'].metrics[0].scoreDistribution = {
+      green: 13.5,
+      yellow: 4.5,
+      red: 2,
+    };
+    const result = validateStoneMapResult(payload, 'round-v5-test');
+    assert.strictEqual(result.ok, false);
+  });
+
+  test('the metric distribution is a 5.0 rule and does not reach 4.0', () => {
+    const payload = createValidV5Payload();
+    payload.contractVersion = '4.0';
+    delete (
+      payload.stones['balance'].metrics[0] as {
+        scoreDistribution?: unknown;
+      }
+    ).scoreDistribution;
+    const result = validateStoneMapResult(payload, 'round-v5-test');
+    assert.strictEqual(result.ok, true);
+  });
+
+  test('the adaptation outcome is a 5.0 rule and does not reach 4.0', () => {
+    const payload = createValidV5Payload();
+    payload.contractVersion = '4.0';
+    delete (
+      payload.stones['balance'].recommendedInterventions[0] as {
+        adaptationOutcome?: string;
+      }
+    ).adaptationOutcome;
     const result = validateStoneMapResult(payload, 'round-v5-test');
     assert.strictEqual(result.ok, true);
   });

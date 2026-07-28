@@ -68,6 +68,37 @@
   boundary: actual questions come from the persisted round snapshot, while the
   eight dimensions and Dashboard result shape stay stable.
 
+### Contracts `4.0` and `5.0`
+
+> Added 2026-07-27. Both are implemented and green in both mirrors; neither has
+> been deployed, and no production round has run on either. The rollout order
+> and its evidence are an open owner gate, tracked in
+> `docs/ai-insights-depth-plan-2026-07-27.md`.
+
+- `contracts/ai-analytics-v4.json` is `3.0` plus the school background context.
+  It reaches the prompt on `4.0` and `5.0` alike and is recorded in provenance
+  as `backgroundContextIncluded`.
+- `contracts/ai-analytics-v5.json` is `4.0` plus `scoreDistribution`
+  (`{green, yellow, red}`) on every question aggregate: three non-negative
+  integers summing to the question's `responseCount`, required while unlocked,
+  forbidden while locked, and outside `surveyDefinitionHash`. It was amended in
+  place on 2026-07-27 by owner decision, having never been deployed; `1.0`
+  through `4.0` were not touched.
+- What the distribution buys is the difference the average hides: ten lukewarm
+  answers and a staff halved into green and red both average 60. On `5.0` the
+  interpretation may run to five sentences, the round summary is model-written
+  with the fixed sentence as fallback, recommendations are ranked by the shape
+  of the answers, the chosen recommendation is rewritten for the school and
+  declares `adaptationOutcome`, and provenance carries `distributionIncluded`
+  and `crossDimensionContextIncluded` as measurements rather than claims.
+- Core owns the distribution end to end: the service returns each metric's
+  buckets exactly as they arrived, and the callback compares them against the
+  analytics recomputed from the round's answers before persisting.
+- The manifest's `privacy.defaultThreshold` now reads `1`, matching the
+  database column, the Core default and the service. `recommendedThreshold: 10`
+  states what the methodology asks for, and the manager screens say so whenever
+  a round is configured below it.
+
 ### Python service
 
 - The consumer accepts `1.0`, strict canonical `2.0`, and strict dynamic `3.0`.
@@ -252,6 +283,18 @@
 3. Implement application-level manager identity/roles and tenant authorization.
 4. Decide separately whether the runtime should adopt real LangGraph/ChromaDB;
    this is not required for the current contract or local E2E path.
+5. Deploy `5.0` in the consumer-first order and record what the first live
+   round actually produced. The `deterministic_fallback` on all eight stones of
+   `SHALOM-F125` is no longer an open question: an owner-approved live call on
+   2026-07-28 reproduced it and named the cause. `gemini-flash-latest` is a
+   reasoning model, its thinking is charged against `max_tokens`, and one
+   interpretation spends about 1440 thinking tokens. Under the caps in force
+   (`180`, later `420`) the budget was gone before the first Hebrew word: the
+   provider returned `finish_reason: "length"` carrying a fragment of its own
+   reasoning, the validator refused it, and all three attempts failed
+   identically. The cap now defaults to `2048`, and the same call returns
+   `outcome=llm` on the first attempt for the interpretation, the round summary
+   and the intervention adaptation alike.
 
 ## Approval gates
 

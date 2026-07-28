@@ -1,8 +1,11 @@
 import assert from "node:assert";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import test from "node:test";
 import {
   createCanonicalSurveyDefinition,
   hasSameQuestionSnapshot,
+  MINIMUM_PRIVACY_THRESHOLD,
   parseSurveyDefinition,
 } from "@/lib/survey-definition";
 import { createSurveyDefinitionHash } from "@/lib/survey-definition-hash";
@@ -157,4 +160,55 @@ test("hasSameQuestionSnapshot detects semantic and ordering changes", () => {
   assert.strictEqual(hasSameQuestionSnapshot(definition, definition), true);
   assert.strictEqual(hasSameQuestionSnapshot(definition, revised), false);
   assert.strictEqual(hasSameQuestionSnapshot(definition, reordered), false);
+});
+
+test("a definition stored below the required threshold is raised to it, not refused", () => {
+  // Rounds configured before ten became mandatory are still on the database.
+  // Refusing them here would take their own answer screen down with them, so
+  // the definition loads with the threshold the product now requires.
+  const legacy = {
+    ...createCanonicalSurveyDefinition("סבב ותיק", 10),
+    minimumResponses: 1,
+  };
+
+  const result = parseSurveyDefinition(legacy);
+
+  assert.strictEqual(result.ok, true);
+  if (result.ok) {
+    assert.strictEqual(
+      result.value.minimumResponses,
+      MINIMUM_PRIVACY_THRESHOLD,
+    );
+  }
+});
+
+test("the database default for a new round is the same number the code requires", () => {
+  // This drifted once already: a migration lowered the column default to 1
+  // while the code kept asking for ten, and the only round on the database was
+  // written with the lower number. Reads clamp, so nothing broke loudly — the
+  // round page simply showed a threshold the product no longer allows.
+  const schema = readFileSync(
+    path.join(process.cwd(), "prisma", "schema.prisma"),
+    "utf8",
+  );
+  const declaredDefault = schema.match(
+    /privacyThreshold\s+Int\s+@default\((\d+)\)/,
+  );
+
+  assert.ok(declaredDefault, "schema.prisma must declare a privacy threshold default");
+  assert.strictEqual(
+    Number(declaredDefault[1]),
+    MINIMUM_PRIVACY_THRESHOLD,
+  );
+});
+
+test("a threshold that is not a positive whole number is still refused", () => {
+  for (const minimumResponses of [0, -3, 2.5]) {
+    const result = parseSurveyDefinition({
+      ...createCanonicalSurveyDefinition("סבב ותיק", 10),
+      minimumResponses,
+    });
+
+    assert.strictEqual(result.ok, false, String(minimumResponses));
+  }
 });

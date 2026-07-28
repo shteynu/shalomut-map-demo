@@ -89,9 +89,10 @@ Which screen owns which value, so the same fact is never edited in two places:
 
 - Preserve Hebrew RTL as the primary experience.
 - Never expose respondent identity. Results stay locked below the configured
-  privacy threshold. The threshold is configurable with a product default of 1;
-  values below 5 make the published average describe individual respondents, so
-  the manager screens warn about it explicitly.
+  privacy threshold. Ten respondents is both the default and the minimum a
+  round may be configured with; a round persisted below it is read at ten rather
+  than refused, and the manager screens name the gap explicitly — below five
+  they say plainly that the published average describes individual respondents.
 - Treat scoring thresholds as configurable source data: green `>=75`, yellow `50-74`, red `<50`.
 - Keep visual mock data distinct from persisted round questionnaires so pilot
   data can replace demo values without rewriting the Dashboard taxonomy.

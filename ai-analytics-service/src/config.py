@@ -125,8 +125,15 @@ class Settings:
             or default_model_heavy
         )
 
-        # Strict token caps to prevent runaway token costs
-        self.max_tokens_per_dimension: int = int(os.getenv("MAX_TOKENS_PER_DIMENSION", "180"))
+        # Token cap for one interpretation. It is not the length of the answer:
+        # a reasoning model spends this budget on thinking first and writes the
+        # answer from what is left. Measured on gemini-flash-latest, 2026-07-28:
+        # one interpretation cost 1440 thinking tokens and 108 visible ones, so
+        # the old caps of 180 and 420 were spent entirely on thinking and every
+        # dimension came back finish_reason "length" with no answer at all —
+        # which the validator rejects, and the round silently reads as if the
+        # model had never been called. Lower this only against a measurement.
+        self.max_tokens_per_dimension: int = int(os.getenv("MAX_TOKENS_PER_DIMENSION", "2048"))
         # Token Saving: Only invoke LLM for problematic ('yellow' / 'red') dimensions
         self.only_llm_for_problematic: bool = os.getenv("ONLY_LLM_FOR_PROBLEMATIC", "true").lower() == "true"
         # Transient provider failures are retried inside the worker thread.
@@ -175,11 +182,12 @@ class Settings:
         self.chroma_persist_dir: str = os.getenv("CHROMA_PERSIST_DIR", "./chroma_db")
         
         # Privacy Constraint.
-        # The product default lives in Core (1, configurable per round) and
-        # always arrives on the payload as `privacyThreshold`. This value is
-        # only the fallback for a payload that omits it and mirrors the same
-        # product default, so both services describe the same rule.
-        self.privacy_threshold: int = int(os.getenv("PRIVACY_THRESHOLD", "1"))
+        # Ten respondents is the product requirement, in Core and here alike,
+        # and the threshold always arrives on the payload as
+        # `privacyThreshold`. This value is only the fallback for a payload
+        # that omits it, and it mirrors the same requirement so that neither
+        # service can be the lenient one.
+        self.privacy_threshold: int = int(os.getenv("PRIVACY_THRESHOLD", "10"))
 
     def resolved_llm_provider(self, model_name: str = "") -> str:
         if self.llm_provider != "auto":

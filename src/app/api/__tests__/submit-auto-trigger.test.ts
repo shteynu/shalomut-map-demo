@@ -9,7 +9,10 @@ import {
   setRepositories,
 } from '@/lib/repositories';
 import { surveyInstrument } from '@/lib/shalomut-source';
-import { createCanonicalSurveyDefinition } from '@/lib/survey-definition';
+import {
+  createCanonicalSurveyDefinition,
+  MINIMUM_PRIVACY_THRESHOLD,
+} from '@/lib/survey-definition';
 import type { SurveyRound } from '@/lib/types/backend';
 
 let previousDatabaseUrl: string | undefined;
@@ -64,6 +67,14 @@ function submit(tokenHash?: string) {
   );
 }
 
+/** Ten submissions: what it takes to reach the required threshold. */
+async function submitUpToThreshold() {
+  for (let index = 0; index < MINIMUM_PRIVACY_THRESHOLD; index += 1) {
+    const response = await submit(`token-${index}`);
+    assert.strictEqual(response.status, 200);
+  }
+}
+
 /** Background dispatch is scheduled, not awaited by the handler. */
 function settleBackgroundWork() {
   return new Promise((resolve) => setTimeout(resolve, 50));
@@ -94,8 +105,9 @@ test('auto-triggers AI analytics when submission reaches the privacy threshold',
     orgRepo: new InMemoryOrganizationRepository(),
   });
 
-  const response = await submit('token-a');
-  assert.strictEqual(response.status, 200);
+  // The round is stored at 1, from before ten became mandatory. It is read at
+  // ten regardless, so nothing dispatches until the tenth answer arrives.
+  await submitUpToThreshold();
 
   await settleBackgroundWork();
 
@@ -105,7 +117,7 @@ test('auto-triggers AI analytics when submission reaches the privacy threshold',
 
 test('does not trigger AI analytics below the privacy threshold', async () => {
   setRepositories({
-    roundRepo: new InMemoryRoundRepository([createRound(3)]),
+    roundRepo: new InMemoryRoundRepository([createRound(10)]),
     surveyRepo: new InMemorySurveyRepository(),
     orgRepo: new InMemoryOrganizationRepository(),
   });
@@ -127,7 +139,8 @@ test('dispatches one webhook only, however many responses arrive', async () => {
   });
 
   // Concurrent submissions race for the same dispatch claim.
-  await Promise.all([submit('token-a'), submit('token-b'), submit('token-c')]);
+  await submitUpToThreshold();
+  await Promise.all([submit('token-x'), submit('token-y'), submit('token-z')]);
   await settleBackgroundWork();
 
   assert.strictEqual(webhookCalls.length, 1);

@@ -3,6 +3,7 @@
 import { HelpCircle } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import { DEFAULT_PRIVACY_THRESHOLD } from "@/lib/survey-definition";
+import { PrivacyThresholdNotice } from "@/components/ui/privacy-threshold-notice";
 
 /**
  * Explains the privacy threshold ("סף פרטיות"). The trigger is a real button so
@@ -69,6 +70,9 @@ export function PrivacyTooltip({
         </ul>
         <span style={{ display: "block", marginTop: "0.8rem", fontSize: "0.8rem", opacity: 0.85, borderTop: "1px dashed rgba(87, 79, 58, 0.2)", paddingTop: "0.5rem", lineHeight: 1.4 }}>
           כל עוד לא התקבלו מספיק תשובות, המפה תישאר נעולה ויוצג רק מספר המשיבים הכללי.
+        </span>
+        <span style={{ display: "block", marginTop: "0.5rem", fontSize: "0.8rem", lineHeight: 1.4 }}>
+          <PrivacyThresholdNotice minimumResponses={minimumResponses} />
         </span>
       </span>
     </span>

@@ -3,6 +3,7 @@ import type {
   IRoundRepository,
   ISurveyRepository,
 } from '@/lib/repositories/interfaces';
+import { effectivePrivacyThreshold } from '@/lib/survey-definition';
 
 export interface AiWebhookPayload {
   event: 'round_closed';
@@ -103,12 +104,12 @@ export type AutoDispatchOutcome =
  */
 export async function dispatchAiAnalyticsAfterResponse(
   roundId: string,
-  privacyThreshold: number,
+  storedPrivacyThreshold: number,
   roundRepo: IRoundRepository,
   surveyRepo: ISurveyRepository,
 ): Promise<AutoDispatchOutcome> {
   const responseCount = await surveyRepo.getResponseCount(roundId);
-  if (responseCount < privacyThreshold) {
+  if (responseCount < effectivePrivacyThreshold(storedPrivacyThreshold)) {
     return 'below_threshold';
   }
 

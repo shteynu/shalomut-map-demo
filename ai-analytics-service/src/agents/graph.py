@@ -5,6 +5,7 @@ from src.agents.nodes import (
     privacy_gate_node,
     agent_psychologist_node,
     agent_rag_intervention_node,
+    agent_adaptation_node,
     agent_safety_validator_node,
     DIMENSION_NAMES_HEBREW,
     _effective_contract_version,
@@ -15,12 +16,13 @@ from src.contracts import (
     AI_ANALYTICS_DIMENSION_IDS,
     AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
     AI_ANALYTICS_DYNAMIC_CONTRACT_VERSIONS,
+    AI_ANALYTICS_V5_CONTRACT_VERSION,
 )
 
 class AnalyticsGraphEngine:
     """
     Async graph-style engine implementing the directed cyclic workflow:
-    Privacy_Gate -> Psychologist -> Intervention Catalog -> Safety Validator (Loop / Pass) -> Output Formatter
+    Privacy_Gate -> Psychologist -> Intervention Catalog -> Adaptation -> Safety Validator (Loop / Pass) -> Output Formatter
     """
     async def ainvoke(self, state: AnalyticsState) -> AnalyticsState:
         # Step 1: Privacy Gate
@@ -32,6 +34,7 @@ class AnalyticsGraphEngine:
         while True:
             current_state = await agent_psychologist_node(current_state)
             current_state = agent_rag_intervention_node(current_state)
+            current_state = await agent_adaptation_node(current_state)
             current_state = agent_safety_validator_node(current_state)
 
             if current_state.get("safety_status") == "fail" and current_state.get("retry_count", 0) < 3:
@@ -114,8 +117,9 @@ def format_stone_map_output_node(state: AnalyticsState) -> AnalyticsState:
                 in AI_ANALYTICS_DYNAMIC_CONTRACT_VERSIONS
                 else "questionTextHebrew"
             )
-            metrics = [
-                {
+            metrics = []
+            for aggregate in question_aggregates:
+                metric = {
                     "questionId": aggregate["questionId"],
                     "label": aggregate[question_text_field],
                     "value": (
@@ -124,8 +128,17 @@ def format_stone_map_output_node(state: AnalyticsState) -> AnalyticsState:
                     "averageScore": aggregate["averageScore"],
                     "responseCount": aggregate["responseCount"],
                 }
-                for aggregate in question_aggregates
-            ]
+                # 5.0 carries the distribution back out exactly as it came in,
+                # never recomputed: Core owns these numbers and now has
+                # something to check them against.
+                if (
+                    contract_version == AI_ANALYTICS_V5_CONTRACT_VERSION
+                    and isinstance(aggregate.get("scoreDistribution"), dict)
+                ):
+                    metric["scoreDistribution"] = dict(
+                        aggregate["scoreDistribution"],
+                    )
+                metrics.append(metric)
         else:
             metrics = [
                 {"label": "ציון ממוצע", "value": f"{score:.1f}"},

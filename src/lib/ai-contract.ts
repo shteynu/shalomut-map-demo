@@ -79,6 +79,8 @@ export interface StoneMetric {
   questionId?: string;
   averageScore?: number;
   responseCount?: number;
+  /** 5.0 only: the input distribution echoed back for Core to verify. */
+  scoreDistribution?: ScoreDistribution;
 }
 
 export interface StoneIntervention {
@@ -89,6 +91,8 @@ export interface StoneIntervention {
   title: string;
   summary: string;
   actionable_steps: string[];
+  /** 5.0 only: whether this copy was rewritten for the school or is catalog text. */
+  adaptationOutcome?: 'llm' | 'deterministic_fallback';
 }
 
 export interface ScoreDistribution {
@@ -312,6 +316,25 @@ function isValidV2Intervention(
   );
 }
 
+/**
+ * 5.0 rewrites the catalog copy for the school, so every intervention has to
+ * say which it is. The structural validators above accept unknown fields, so
+ * an adaptation outcome that was missing, misspelled or invented would pass
+ * unnoticed and a reader could not tell a rewrite from catalog text.
+ */
+function isValidV5Intervention(
+  value: unknown,
+  dimensionId: WellbeingDimensionId,
+  status: WellbeingStatus,
+): value is StoneIntervention {
+  if (!isValidV2Intervention(value, dimensionId, status)) {
+    return false;
+  }
+  return ['llm', 'deterministic_fallback'].includes(
+    String(value.adaptationOutcome),
+  );
+}
+
 function isValidGenerationProvenance(
   value: unknown,
   dimensionId: WellbeingDimensionId,
@@ -360,6 +383,22 @@ function isValidDynamicQuestionMetric(value: unknown): value is StoneMetric {
     (value.trend === undefined ||
       (typeof value.trend === 'string' &&
         containsOnlyHebrewUserText(value.trend)))
+  );
+}
+
+/**
+ * 5.0 metrics carry the distribution the AI service was given, so Core can
+ * check it against the answers instead of trusting it. The structural
+ * validators accept unknown fields, so without this the service could return
+ * any three numbers — or none — and nothing would notice.
+ */
+function isValidV5QuestionMetric(value: unknown): value is StoneMetric {
+  if (!isValidDynamicQuestionMetric(value)) {
+    return false;
+  }
+  return isValidScoreDistribution(
+    value.scoreDistribution,
+    Number(value.responseCount),
   );
 }
 
@@ -508,10 +547,7 @@ function isValidV5Stone(
   const status = value.status as WellbeingStatus;
   const interventions = value.recommendedInterventions as unknown[];
   const metrics = value.metrics as unknown[];
-  if (
-    metrics.length < 1 ||
-    !metrics.every(isValidDynamicQuestionMetric)
-  ) {
+  if (metrics.length < 1 || !metrics.every(isValidV5QuestionMetric)) {
     return false;
   }
 
@@ -528,7 +564,7 @@ function isValidV5Stone(
       value.psychologicalInterpretation as string,
     ) &&
     interventions.every((intervention) =>
-      isValidV2Intervention(intervention, dimensionId, status),
+      isValidV5Intervention(intervention, dimensionId, status),
     ) &&
     isValidV5GenerationProvenance(
       value.generationProvenance,

@@ -32,6 +32,8 @@
   },
   "privacy": {
     "defaultThreshold": 10,
+    "minimumThreshold": 10,
+    "thresholdNote": "Ten respondents is a product requirement on both sides. Core will not configure a round below it, and a payload that still carries a lower threshold — an older round or an older producer — has its threshold raised to ten by the consumer and is read as locked rather than refused.",
     "unlockedPolicy": "total-and-every-question-at-or-above-threshold",
     "lockedAggregatePolicy": "empty",
     "partialUnlockedAnalysis": false,
@@ -135,7 +137,13 @@
     "stoneCountWhenSuccessful": 8,
     "dynamicMetrics": true,
     "metricCoverage": "exactly every input question aggregate in its persisted dimension",
-    "coreOwnedFields": ["score", "status", "dimensionId"],
+    "coreOwnedFields": ["score", "status", "dimensionId", "scoreDistribution"],
+    "metricScoreDistribution": {
+      "requiredOnEveryMetric": true,
+      "mirrorsInputAggregate": true,
+      "recomputedByAi": false,
+      "verifiedAgainstRecomputedAnalytics": true
+    },
     "hebrewUserFacingText": true,
     "psychologicalInterpretationSentences": {
       "min": 2,
@@ -158,6 +166,15 @@
       "distributionIncluded",
       "crossDimensionContextIncluded"
     ],
-    "interventionLookup": "exact-dimension-and-status"
+    "interventionLookup": "exact-dimension-and-status",
+    "interventionAdaptation": {
+      "adaptedByLlm": true,
+      "adaptedFields": ["summary", "actionable_steps"],
+      "preservedFields": ["id", "dimensionId", "status", "source", "title"],
+      "stepCountPreserved": true,
+      "outcomeField": "adaptationOutcome",
+      "outcomes": ["llm", "deterministic_fallback"],
+      "language": "Hebrew"
+    }
   }
 }

@@ -12,6 +12,7 @@
     "target_status": [
       "red"
     ],
+    "intent": "improve",
     "tags": [
       "self-expression",
       "red"
@@ -30,6 +31,7 @@
     "target_status": [
       "red"
     ],
+    "intent": "improve",
     "tags": [
       "self-expression",
       "red"
@@ -48,6 +50,7 @@
     "target_status": [
       "red"
     ],
+    "intent": "improve",
     "tags": [
       "self-expression",
       "red"
@@ -66,6 +69,7 @@
     "target_status": [
       "red"
     ],
+    "intent": "improve",
     "tags": [
       "self-expression",
       "red"
@@ -84,6 +88,7 @@
     "target_status": [
       "yellow"
     ],
+    "intent": "improve",
     "tags": [
       "self-expression",
       "yellow"
@@ -102,6 +107,7 @@
     "target_status": [
       "yellow"
     ],
+    "intent": "improve",
     "tags": [
       "self-expression",
       "yellow"
@@ -120,6 +126,7 @@
     "target_status": [
       "yellow"
     ],
+    "intent": "improve",
     "tags": [
       "self-expression",
       "yellow"
@@ -129,7 +136,7 @@
     "id": "kb-self-g-08",
     "dimension_id": "self-expression",
     "source": "OECD TALIS — הנחיות להשתתפות מורים ולהשפעה מקצועית",
-    "title": "חוזקה לשימור: קול מורים פעיל ובטוח",
+    "title": "קול מורים פעיל ובטוח",
     "summary": "פעולות לשימור הערוצים הקיימים לביטוי מקצועי יחזקו את תחושת ההשפעה לאורך זמן.",
     "actionable_steps": [
       "שימור זמן קבוע",
@@ -138,6 +145,7 @@
     "target_status": [
       "green"
     ],
+    "intent": "preserve",
     "tags": [
       "self-expression",
       "green"
@@ -156,6 +164,7 @@
     "target_status": [
       "green"
     ],
+    "intent": "preserve",
     "tags": [
       "self-expression",
       "green"
@@ -174,6 +183,7 @@
     "target_status": [
       "green"
     ],
+    "intent": "preserve",
     "tags": [
       "self-expression",
       "green"
@@ -192,6 +202,7 @@
     "target_status": [
       "red"
     ],
+    "intent": "improve",
     "tags": [
       "professional-competence",
       "red"
@@ -210,6 +221,7 @@
     "target_status": [
       "red"
     ],
+    "intent": "improve",
     "tags": [
       "professional-competence",
       "red",
@@ -229,6 +241,7 @@
     "target_status": [
       "red"
     ],
+    "intent": "improve",
     "tags": [
       "professional-competence",
       "red",
@@ -248,6 +261,7 @@
     "target_status": [
       "red"
     ],
+    "intent": "improve",
     "tags": [
       "professional-competence",
       "red"
@@ -266,6 +280,7 @@
     "target_status": [
       "yellow"
     ],
+    "intent": "improve",
     "tags": [
       "professional-competence",
       "yellow"
@@ -284,6 +299,7 @@
     "target_status": [
       "yellow"
     ],
+    "intent": "improve",
     "tags": [
       "professional-competence",
       "yellow"
@@ -302,6 +318,7 @@
     "target_status": [
       "yellow"
     ],
+    "intent": "improve",
     "tags": [
       "professional-competence",
       "yellow"
@@ -311,7 +328,7 @@
     "id": "kb-prof-g-18",
     "dimension_id": "professional-competence",
     "source": "OECD — מסגרת ללמידה מקצועית של מורים",
-    "title": "חוזקה לשימור: למידה מקצועית בהובלת הצוות",
+    "title": "למידה מקצועית בהובלת הצוות",
     "summary": "פעולות לשימור הלמידה ההדדית יעגנו את תחושת המסוגלות המקצועית.",
     "actionable_steps": [
       "שימור מפגש עמיתים",
@@ -320,6 +337,7 @@
     "target_status": [
       "green"
     ],
+    "intent": "preserve",
     "tags": [
       "professional-competence",
       "green"
@@ -338,6 +356,7 @@
     "target_status": [
       "green"
     ],
+    "intent": "preserve",
     "tags": [
       "professional-competence",
       "green"
@@ -356,6 +375,7 @@
     "target_status": [
       "green"
     ],
+    "intent": "preserve",
     "tags": [
       "professional-competence",
       "green"
@@ -374,6 +394,7 @@
     "target_status": [
       "red"
     ],
+    "intent": "improve",
     "tags": [
       "social-resource",
       "red"
@@ -392,6 +413,7 @@
     "target_status": [
       "red"
     ],
+    "intent": "improve",
     "tags": [
       "social-resource",
       "red"
@@ -410,6 +432,7 @@
     "target_status": [
       "red"
     ],
+    "intent": "improve",
     "tags": [
       "social-resource",
       "red",
@@ -429,6 +452,7 @@
     "target_status": [
       "red"
     ],
+    "intent": "improve",
     "tags": [
       "social-resource",
       "red"
@@ -447,6 +471,7 @@
     "target_status": [
       "yellow"
     ],
+    "intent": "improve",
     "tags": [
       "social-resource",
       "yellow"
@@ -465,6 +490,7 @@
     "target_status": [
       "yellow"
     ],
+    "intent": "improve",
     "tags": [
       "social-resource",
       "yellow"
@@ -483,6 +509,7 @@
     "target_status": [
       "yellow"
     ],
+    "intent": "improve",
     "tags": [
       "social-resource",
       "yellow"
@@ -492,7 +519,7 @@
     "id": "kb-soci-g-28",
     "dimension_id": "social-resource",
     "source": "ISO 45003:2021, סעיף 6.1.2.4 — יחסים בין־אישיים",
-    "title": "חוזקה לשימור: רשת תמיכה הדדית בצוות",
+    "title": "רשת תמיכה הדדית בצוות",
     "summary": "פעולות לשימור הקשרים הטובים בצוות יסייעו להמשיך להישען על אמון.",
     "actionable_steps": [
       "שימור זמן עמיתים",
@@ -501,6 +528,7 @@
     "target_status": [
       "green"
     ],
+    "intent": "preserve",
     "tags": [
       "social-resource",
       "green"
@@ -519,6 +547,7 @@
     "target_status": [
       "green"
     ],
+    "intent": "preserve",
     "tags": [
       "social-resource",
       "green"
@@ -537,6 +566,7 @@
     "target_status": [
       "green"
     ],
+    "intent": "preserve",
     "tags": [
       "social-resource",
       "green",
@@ -556,6 +586,7 @@
     "target_status": [
       "red"
     ],
+    "intent": "improve",
     "tags": [
       "balance",
       "red",
@@ -575,6 +606,7 @@
     "target_status": [
       "red"
     ],
+    "intent": "improve",
     "tags": [
       "balance",
       "red"
@@ -593,6 +625,7 @@
     "target_status": [
       "red"
     ],
+    "intent": "improve",
     "tags": [
       "balance",
       "red"
@@ -611,6 +644,7 @@
     "target_status": [
       "red"
     ],
+    "intent": "improve",
     "tags": [
       "balance",
       "red",
@@ -630,6 +664,7 @@
     "target_status": [
       "yellow"
     ],
+    "intent": "improve",
     "tags": [
       "balance",
       "yellow"
@@ -648,6 +683,7 @@
     "target_status": [
       "yellow"
     ],
+    "intent": "improve",
     "tags": [
       "balance",
       "yellow"
@@ -666,6 +702,7 @@
     "target_status": [
       "yellow"
     ],
+    "intent": "improve",
     "tags": [
       "balance",
       "yellow",
@@ -676,7 +713,7 @@
     "id": "kb-bala-g-38",
     "dimension_id": "balance",
     "source": "ISO 45003:2021, סעיף 6.1.2.1 — עומס וקצב עבודה",
-    "title": "חוזקה לשימור: גבולות עבודה מאוזנים",
+    "title": "גבולות עבודה מאוזנים",
     "summary": "פעולות לשימור הגבולות הבריאים בין עבודה לזמן אישי.",
     "actionable_steps": [
       "שימור זמנים מוגנים",
@@ -685,6 +722,7 @@
     "target_status": [
       "green"
     ],
+    "intent": "preserve",
     "tags": [
       "balance",
       "green"
@@ -703,6 +741,7 @@
     "target_status": [
       "green"
     ],
+    "intent": "preserve",
     "tags": [
       "balance",
       "green"
@@ -721,6 +760,7 @@
     "target_status": [
       "green"
     ],
+    "intent": "preserve",
     "tags": [
       "balance",
       "green"
@@ -739,6 +779,7 @@
     "target_status": [
       "red"
     ],
+    "intent": "improve",
     "tags": [
       "management-support",
       "red"
@@ -757,6 +798,7 @@
     "target_status": [
       "red"
     ],
+    "intent": "improve",
     "tags": [
       "management-support",
       "red"
@@ -775,6 +817,7 @@
     "target_status": [
       "red"
     ],
+    "intent": "improve",
     "tags": [
       "management-support",
       "red"
@@ -793,6 +836,7 @@
     "target_status": [
       "red"
     ],
+    "intent": "improve",
     "tags": [
       "management-support",
       "red",
@@ -812,6 +856,7 @@
     "target_status": [
       "yellow"
     ],
+    "intent": "improve",
     "tags": [
       "management-support",
       "yellow"
@@ -830,6 +875,7 @@
     "target_status": [
       "yellow"
     ],
+    "intent": "improve",
     "tags": [
       "management-support",
       "yellow"
@@ -848,6 +894,7 @@
     "target_status": [
       "yellow"
     ],
+    "intent": "improve",
     "tags": [
       "management-support",
       "yellow"
@@ -857,7 +904,7 @@
     "id": "kb-mana-g-48",
     "dimension_id": "management-support",
     "source": "ISO 45003:2021, סעיף 6.1.2.3 — מנהיגות ותמיכה",
-    "title": "חוזקה לשימור: תמיכה ניהולית נגישה",
+    "title": "תמיכה ניהולית נגישה",
     "summary": "פעולות לשימור הנגישות והעקביות של ההנהלה יחזקו את תחושת העורף.",
     "actionable_steps": [
       "שימור מועדים קבועים",
@@ -866,6 +913,7 @@
     "target_status": [
       "green"
     ],
+    "intent": "preserve",
     "tags": [
       "management-support",
       "green"
@@ -884,6 +932,7 @@
     "target_status": [
       "green"
     ],
+    "intent": "preserve",
     "tags": [
       "management-support",
       "green"
@@ -902,6 +951,7 @@
     "target_status": [
       "green"
     ],
+    "intent": "preserve",
     "tags": [
       "management-support",
       "green"
@@ -920,6 +970,7 @@
     "target_status": [
       "red"
     ],
+    "intent": "improve",
     "tags": [
       "certainty",
       "red"
@@ -938,6 +989,7 @@
     "target_status": [
       "red"
     ],
+    "intent": "improve",
     "tags": [
       "certainty",
       "red"
@@ -956,6 +1008,7 @@
     "target_status": [
       "red"
     ],
+    "intent": "improve",
     "tags": [
       "certainty",
       "red"
@@ -974,6 +1027,7 @@
     "target_status": [
       "red"
     ],
+    "intent": "improve",
     "tags": [
       "certainty",
       "red"
@@ -992,6 +1046,7 @@
     "target_status": [
       "yellow"
     ],
+    "intent": "improve",
     "tags": [
       "certainty",
       "yellow"
@@ -1010,6 +1065,7 @@
     "target_status": [
       "yellow"
     ],
+    "intent": "improve",
     "tags": [
       "certainty",
       "yellow"
@@ -1028,6 +1084,7 @@
     "target_status": [
       "yellow"
     ],
+    "intent": "improve",
     "tags": [
       "certainty",
       "yellow",
@@ -1038,7 +1095,7 @@
     "id": "kb-cert-g-58",
     "dimension_id": "certainty",
     "source": "ISO 45003:2021 — הנחיות לבהירות תפקידים ולניהול שינוי ארגוני",
-    "title": "חוזקה לשימור: בהירות ויציבות ארגונית",
+    "title": "בהירות ויציבות ארגונית",
     "summary": "פעולות לשימור הבהירות הקיימת יעזרו לצוות לפעול בביטחון.",
     "actionable_steps": [
       "רענון מקור המידע",
@@ -1047,6 +1104,7 @@
     "target_status": [
       "green"
     ],
+    "intent": "preserve",
     "tags": [
       "certainty",
       "green"
@@ -1065,6 +1123,7 @@
     "target_status": [
       "green"
     ],
+    "intent": "preserve",
     "tags": [
       "certainty",
       "green"
@@ -1083,6 +1142,7 @@
     "target_status": [
       "green"
     ],
+    "intent": "preserve",
     "tags": [
       "certainty",
       "green"
@@ -1101,6 +1161,7 @@
     "target_status": [
       "red"
     ],
+    "intent": "improve",
     "tags": [
       "organizational-climate",
       "red"
@@ -1119,6 +1180,7 @@
     "target_status": [
       "red"
     ],
+    "intent": "improve",
     "tags": [
       "organizational-climate",
       "red"
@@ -1137,6 +1199,7 @@
     "target_status": [
       "red"
     ],
+    "intent": "improve",
     "tags": [
       "organizational-climate",
       "red"
@@ -1155,6 +1218,7 @@
     "target_status": [
       "red"
     ],
+    "intent": "improve",
     "tags": [
       "organizational-climate",
       "red"
@@ -1173,6 +1237,7 @@
     "target_status": [
       "yellow"
     ],
+    "intent": "improve",
     "tags": [
       "organizational-climate",
       "yellow"
@@ -1191,6 +1256,7 @@
     "target_status": [
       "yellow"
     ],
+    "intent": "improve",
     "tags": [
       "organizational-climate",
       "yellow"
@@ -1209,6 +1275,7 @@
     "target_status": [
       "yellow"
     ],
+    "intent": "improve",
     "tags": [
       "organizational-climate",
       "yellow"
@@ -1218,7 +1285,7 @@
     "id": "kb-orga-g-68",
     "dimension_id": "organizational-climate",
     "source": "ISO 45003:2021, סעיף 6.1.2.2 — תרבות ארגונית וביטחון פסיכולוגי",
-    "title": "חוזקה לשימור: אקלים בטוח ומכבד",
+    "title": "אקלים בטוח ומכבד",
     "summary": "פעולות לשימור הביטחון והכבוד ההדדי יבססו אקלים חיובי.",
     "actionable_steps": [
       "שימור שיח ללא האשמה",
@@ -1227,6 +1294,7 @@
     "target_status": [
       "green"
     ],
+    "intent": "preserve",
     "tags": [
       "organizational-climate",
       "green"
@@ -1245,6 +1313,7 @@
     "target_status": [
       "green"
     ],
+    "intent": "preserve",
     "tags": [
       "organizational-climate",
       "green"
@@ -1263,6 +1332,7 @@
     "target_status": [
       "green"
     ],
+    "intent": "preserve",
     "tags": [
       "organizational-climate",
       "green"
@@ -1281,6 +1351,7 @@
     "target_status": [
       "red"
     ],
+    "intent": "improve",
     "tags": [
       "meaning",
       "red"
@@ -1299,6 +1370,7 @@
     "target_status": [
       "red"
     ],
+    "intent": "improve",
     "tags": [
       "meaning",
       "red"
@@ -1317,6 +1389,7 @@
     "target_status": [
       "red"
     ],
+    "intent": "improve",
     "tags": [
       "meaning",
       "red"
@@ -1335,6 +1408,7 @@
     "target_status": [
       "red"
     ],
+    "intent": "improve",
     "tags": [
       "meaning",
       "red"
@@ -1353,6 +1427,7 @@
     "target_status": [
       "yellow"
     ],
+    "intent": "improve",
     "tags": [
       "meaning",
       "yellow"
@@ -1371,6 +1446,7 @@
     "target_status": [
       "yellow"
     ],
+    "intent": "improve",
     "tags": [
       "meaning",
       "yellow"
@@ -1389,6 +1465,7 @@
     "target_status": [
       "yellow"
     ],
+    "intent": "improve",
     "tags": [
       "meaning",
       "yellow"
@@ -1398,7 +1475,7 @@
     "id": "kb-mean-g-78",
     "dimension_id": "meaning",
     "source": "OECD — הנחיות לשלומות מורים, תחושת תכלית והשפעה מקצועית",
-    "title": "חוזקה לשימור: חיבור ברור למשמעות",
+    "title": "חיבור ברור למשמעות",
     "summary": "פעולות לשימור החיבור בין העבודה להשפעתה יעזרו לחוות תכלית.",
     "actionable_steps": [
       "שיתוף סיפורי השפעה",
@@ -1407,6 +1484,7 @@
     "target_status": [
       "green"
     ],
+    "intent": "preserve",
     "tags": [
       "meaning",
       "green"
@@ -1425,6 +1503,7 @@
     "target_status": [
       "green"
     ],
+    "intent": "preserve",
     "tags": [
       "meaning",
       "green",
@@ -1444,6 +1523,776 @@
     "target_status": [
       "green"
     ],
+    "intent": "preserve",
+    "tags": [
+      "meaning",
+      "green"
+    ]
+  },
+  {
+    "id": "kb-self-r-81",
+    "dimension_id": "self-expression",
+    "source": "OECD TALIS — הנחיות להשתתפות מורים ולהשפעה מקצועית",
+    "title": "שיח פתוח על החלטות מערכתיות",
+    "summary": "מפגש קבוע שבו ההנהלה מציגה החלטות ומזמינה תגובות לפני היישום.",
+    "actionable_steps": [
+      "הצגת החלטה מראש",
+      "איסוף תגובות בכתב"
+    ],
+    "target_status": [
+      "red"
+    ],
+    "intent": "improve",
+    "tags": [
+      "self-expression",
+      "red"
+    ]
+  },
+  {
+    "id": "kb-self-y-82",
+    "dimension_id": "self-expression",
+    "source": "OECD TALIS — הנחיות להשתתפות מורים ולהשפעה מקצועית",
+    "title": "נציגות מורים בוועדות בית ספריות",
+    "summary": "שיבוץ נציגי צוות בוועדות מרחיב את ההשפעה על ההחלטות.",
+    "actionable_steps": [
+      "בחירת נציגים",
+      "דיווח לצוות"
+    ],
+    "target_status": [
+      "yellow"
+    ],
+    "intent": "improve",
+    "tags": [
+      "self-expression",
+      "yellow"
+    ]
+  },
+  {
+    "id": "kb-self-y-83",
+    "dimension_id": "self-expression",
+    "source": "OECD TALIS — הנחיות להשתתפות מורים ולהשפעה מקצועית",
+    "title": "סבב שאלות פתוח בישיבות",
+    "summary": "חלק קבוע לשאלות הצוות מגדיל את מרחב הביטוי המקצועי.",
+    "actionable_steps": [
+      "רבע שעה קבועה",
+      "מענה מתועד"
+    ],
+    "target_status": [
+      "yellow"
+    ],
+    "intent": "improve",
+    "tags": [
+      "self-expression",
+      "yellow"
+    ]
+  },
+  {
+    "id": "kb-self-g-84",
+    "dimension_id": "self-expression",
+    "source": "OECD TALIS — הנחיות להשתתפות מורים ולהשפעה מקצועית",
+    "title": "שימור מרחבי ההשפעה הקיימים",
+    "summary": "המשך הקצאת זמן ותקציב לערוצי הביטוי הפועלים ישמר את התחושה.",
+    "actionable_steps": [
+      "בדיקה שנתית",
+      "שימור התקציב"
+    ],
+    "target_status": [
+      "green"
+    ],
+    "intent": "preserve",
+    "tags": [
+      "self-expression",
+      "green"
+    ]
+  },
+  {
+    "id": "kb-self-g-85",
+    "dimension_id": "self-expression",
+    "source": "OECD TALIS — הנחיות להשתתפות מורים ולהשפעה מקצועית",
+    "title": "תיעוד יוזמות מורים מוצלחות",
+    "summary": "איסוף היוזמות שיצאו מהצוות מחזק את הזהות המקצועית לאורך זמן.",
+    "actionable_steps": [
+      "ריכוז היוזמות",
+      "שיתוף בחדר מורים"
+    ],
+    "target_status": [
+      "green"
+    ],
+    "intent": "preserve",
+    "tags": [
+      "self-expression",
+      "green"
+    ]
+  },
+  {
+    "id": "kb-prof-r-86",
+    "dimension_id": "professional-competence",
+    "source": "OECD — מסגרת ללמידה מקצועית של מורים",
+    "title": "ליווי צמוד בכיתות מאתגרות",
+    "summary": "ליווי מקצועי בכיתה עצמה נותן מענה מיידי למורים שמדווחים על קושי.",
+    "actionable_steps": [
+      "תצפית שבועית",
+      "משוב אישי"
+    ],
+    "target_status": [
+      "red"
+    ],
+    "intent": "improve",
+    "tags": [
+      "professional-competence",
+      "red",
+      "high_workload"
+    ]
+  },
+  {
+    "id": "kb-prof-y-87",
+    "dimension_id": "professional-competence",
+    "source": "OECD — מסגרת ללמידה מקצועית של מורים",
+    "title": "בנק מערכי הוראה משותף",
+    "summary": "מאגר משותף מקצר את זמן ההכנה ומפיץ פרקטיקות מוצלחות.",
+    "actionable_steps": [
+      "איסוף מערכים",
+      "אחריות רכז"
+    ],
+    "target_status": [
+      "yellow"
+    ],
+    "intent": "improve",
+    "tags": [
+      "professional-competence",
+      "yellow"
+    ]
+  },
+  {
+    "id": "kb-prof-y-88",
+    "dimension_id": "professional-competence",
+    "source": "OECD — מסגרת ללמידה מקצועית של מורים",
+    "title": "סדנאות בחירה לפי צורך מקצועי",
+    "summary": "בחירת נושא הפיתוח המקצועי בידי המורה מעלה את הרלוונטיות שלו.",
+    "actionable_steps": [
+      "סקר צרכים",
+      "מסלולי בחירה"
+    ],
+    "target_status": [
+      "yellow"
+    ],
+    "intent": "improve",
+    "tags": [
+      "professional-competence",
+      "yellow"
+    ]
+  },
+  {
+    "id": "kb-prof-g-89",
+    "dimension_id": "professional-competence",
+    "source": "OECD — מסגרת ללמידה מקצועית של מורים",
+    "title": "שימור מסלולי ההתמחות בצוות",
+    "summary": "המשך תמיכה במורים המובילים תחומי התמחות ישמר את רמת המקצועיות.",
+    "actionable_steps": [
+      "מיפוי מומחיות",
+      "זמן מוגן ללמידה"
+    ],
+    "target_status": [
+      "green"
+    ],
+    "intent": "preserve",
+    "tags": [
+      "professional-competence",
+      "green"
+    ]
+  },
+  {
+    "id": "kb-prof-g-90",
+    "dimension_id": "professional-competence",
+    "source": "OECD — מסגרת ללמידה מקצועית של מורים",
+    "title": "חונכות עמיתים בהובלת ותיקים",
+    "summary": "מורים ותיקים המלווים עמיתים משמרים ידע מוסדי שנצבר.",
+    "actionable_steps": [
+      "זיווג חונכים",
+      "מפגש חודשי"
+    ],
+    "target_status": [
+      "green"
+    ],
+    "intent": "preserve",
+    "tags": [
+      "professional-competence",
+      "green",
+      "new_staff"
+    ]
+  },
+  {
+    "id": "kb-soci-r-91",
+    "dimension_id": "social-resource",
+    "source": "ISO 45003:2021, סעיף 6.1.2.4 — יחסים בין־אישיים",
+    "title": "איתור מורים מנותקים חברתית",
+    "summary": "איתור שקט של מורים מבודדים מאפשר התערבות לפני הידרדרות.",
+    "actionable_steps": [
+      "שיחה אישית",
+      "שיבוץ לצוות תומך"
+    ],
+    "target_status": [
+      "red"
+    ],
+    "intent": "improve",
+    "tags": [
+      "social-resource",
+      "red"
+    ]
+  },
+  {
+    "id": "kb-soci-y-92",
+    "dimension_id": "social-resource",
+    "source": "ISO 45003:2021, סעיף 6.1.2.4 — יחסים בין־אישיים",
+    "title": "ארוחות צוות משותפות",
+    "summary": "זמן לא פורמלי קבוע מחזק את הקשרים בין אנשי הצוות.",
+    "actionable_steps": [
+      "מועד קבוע",
+      "מימון בית ספרי"
+    ],
+    "target_status": [
+      "yellow"
+    ],
+    "intent": "improve",
+    "tags": [
+      "social-resource",
+      "yellow"
+    ]
+  },
+  {
+    "id": "kb-soci-y-93",
+    "dimension_id": "social-resource",
+    "source": "ISO 45003:2021, סעיף 6.1.2.4 — יחסים בין־אישיים",
+    "title": "שיבוץ משותף בזוגות הוראה",
+    "summary": "עבודה בזוגות יוצרת קשר מקצועי וחברתי יומיומי.",
+    "actionable_steps": [
+      "זיווג לפי שכבה",
+      "זמן תיאום"
+    ],
+    "target_status": [
+      "yellow"
+    ],
+    "intent": "improve",
+    "tags": [
+      "social-resource",
+      "yellow"
+    ]
+  },
+  {
+    "id": "kb-soci-g-94",
+    "dimension_id": "social-resource",
+    "source": "ISO 45003:2021, סעיף 6.1.2.4 — יחסים בין־אישיים",
+    "title": "שימור טקסי הצוות הקיימים",
+    "summary": "המשך המפגשים החברתיים הקיימים ישמר את הלכידות בצוות.",
+    "actionable_steps": [
+      "לוח שנה חברתי",
+      "אחריות מתחלפת"
+    ],
+    "target_status": [
+      "green"
+    ],
+    "intent": "preserve",
+    "tags": [
+      "social-resource",
+      "green"
+    ]
+  },
+  {
+    "id": "kb-soci-g-95",
+    "dimension_id": "social-resource",
+    "source": "ISO 45003:2021, סעיף 6.1.2.4 — יחסים בין־אישיים",
+    "title": "רשת עזרה הדדית בשעת צורך",
+    "summary": "מנגנון ההחלפות ההדדי הפועל היטב ראוי לשימור ולתיעוד.",
+    "actionable_steps": [
+      "רישום מתנדבים",
+      "הכרה פומבית"
+    ],
+    "target_status": [
+      "green"
+    ],
+    "intent": "preserve",
+    "tags": [
+      "social-resource",
+      "green",
+      "sickness"
+    ]
+  },
+  {
+    "id": "kb-bala-r-96",
+    "dimension_id": "balance",
+    "source": "ISO 45003:2021, סעיף 6.1.2.1 — עומס וקצב עבודה",
+    "title": "חלוקה מחדש של תפקידים עמוסים",
+    "summary": "פיזור התפקידים הכבדים בין יותר אנשי צוות מוריד עומס נקודתי.",
+    "actionable_steps": [
+      "מיפוי תפקידים",
+      "חלוקה מחדש"
+    ],
+    "target_status": [
+      "red"
+    ],
+    "intent": "improve",
+    "tags": [
+      "balance",
+      "red",
+      "high_workload"
+    ]
+  },
+  {
+    "id": "kb-bala-y-97",
+    "dimension_id": "balance",
+    "source": "ISO 45003:2021, סעיף 6.1.2.1 — עומס וקצב עבודה",
+    "title": "ימי היערכות ללא הוראה",
+    "summary": "יום מרוכז להכנה ולתיאום מפחית את העבודה בשעות הערב.",
+    "actionable_steps": [
+      "יום בחודש",
+      "ללא ישיבות"
+    ],
+    "target_status": [
+      "yellow"
+    ],
+    "intent": "improve",
+    "tags": [
+      "balance",
+      "yellow"
+    ]
+  },
+  {
+    "id": "kb-bala-y-98",
+    "dimension_id": "balance",
+    "source": "ISO 45003:2021, סעיף 6.1.2.1 — עומס וקצב עבודה",
+    "title": "תיאום מועדי הגשה בין המקצועות",
+    "summary": "פיזור מועדי ההגשה מונע הצטברות של עומס בשבוע אחד.",
+    "actionable_steps": [
+      "לוח מועדים משותף",
+      "בקרה רבעונית"
+    ],
+    "target_status": [
+      "yellow"
+    ],
+    "intent": "improve",
+    "tags": [
+      "balance",
+      "yellow",
+      "high_workload"
+    ]
+  },
+  {
+    "id": "kb-bala-g-99",
+    "dimension_id": "balance",
+    "source": "ISO 45003:2021, סעיף 6.1.2.1 — עומס וקצב עבודה",
+    "title": "שימור הזמנים המוגנים בלוח",
+    "summary": "המשך שמירת החלונות המוגנים בלוח ישמר את האיזון שהושג.",
+    "actionable_steps": [
+      "בדיקה במערכת",
+      "הגנה על החלונות"
+    ],
+    "target_status": [
+      "green"
+    ],
+    "intent": "preserve",
+    "tags": [
+      "balance",
+      "green"
+    ]
+  },
+  {
+    "id": "kb-bala-g-100",
+    "dimension_id": "balance",
+    "source": "ISO 45003:2021, סעיף 6.1.2.1 — עומס וקצב עבודה",
+    "title": "תרבות ניתוק מהעבודה בחופשות",
+    "summary": "הימנעות מפניות בחופשות משמרת את ההתאוששות של הצוות.",
+    "actionable_steps": [
+      "כללי פנייה",
+      "דוגמה אישית"
+    ],
+    "target_status": [
+      "green"
+    ],
+    "intent": "preserve",
+    "tags": [
+      "balance",
+      "green",
+      "sickness"
+    ]
+  },
+  {
+    "id": "kb-mana-r-101",
+    "dimension_id": "management-support",
+    "source": "ISO 45003:2021, סעיף 6.1.2.3 — מנהיגות ותמיכה",
+    "title": "נוהל מענה מהיר לפניות צוות",
+    "summary": "התחייבות לזמן מענה קצוב מונעת תחושת נטישה ניהולית.",
+    "actionable_steps": [
+      "זמן מענה מוגדר",
+      "מעקב פניות"
+    ],
+    "target_status": [
+      "red"
+    ],
+    "intent": "improve",
+    "tags": [
+      "management-support",
+      "red"
+    ]
+  },
+  {
+    "id": "kb-mana-y-102",
+    "dimension_id": "management-support",
+    "source": "ISO 45003:2021, סעיף 6.1.2.3 — מנהיגות ותמיכה",
+    "title": "ליווי ניהולי לרכזים חדשים",
+    "summary": "ליווי צמוד לבעלי תפקיד חדשים מבסס את תחושת הגיבוי.",
+    "actionable_steps": [
+      "פגישה דו שבועית",
+      "יעדים ברורים"
+    ],
+    "target_status": [
+      "yellow"
+    ],
+    "intent": "improve",
+    "tags": [
+      "management-support",
+      "yellow",
+      "new_staff"
+    ]
+  },
+  {
+    "id": "kb-mana-y-103",
+    "dimension_id": "management-support",
+    "source": "ISO 45003:2021, סעיף 6.1.2.3 — מנהיגות ותמיכה",
+    "title": "שיחות משוב יזומות פעמיים בשנה",
+    "summary": "שיחה יזומה עם כל איש צוות מחזקת את הקשר עם ההנהלה.",
+    "actionable_steps": [
+      "לוח שיחות",
+      "סיכום בכתב"
+    ],
+    "target_status": [
+      "yellow"
+    ],
+    "intent": "improve",
+    "tags": [
+      "management-support",
+      "yellow"
+    ]
+  },
+  {
+    "id": "kb-mana-g-104",
+    "dimension_id": "management-support",
+    "source": "ISO 45003:2021, סעיף 6.1.2.3 — מנהיגות ותמיכה",
+    "title": "שימור נגישות ההנהלה",
+    "summary": "המשך זמינות ההנהלה בשעות קבועות ישמר את האמון שנבנה.",
+    "actionable_steps": [
+      "שעות קבלה",
+      "עדכון בלוח"
+    ],
+    "target_status": [
+      "green"
+    ],
+    "intent": "preserve",
+    "tags": [
+      "management-support",
+      "green"
+    ]
+  },
+  {
+    "id": "kb-mana-g-105",
+    "dimension_id": "management-support",
+    "source": "ISO 45003:2021, סעיף 6.1.2.3 — מנהיגות ותמיכה",
+    "title": "העברת סמכות לצוותים מקצועיים",
+    "summary": "המשך האצלת ההחלטות לצוותים משמר את תחושת האחריות.",
+    "actionable_steps": [
+      "הגדרת מנדט",
+      "גיבוי החלטות"
+    ],
+    "target_status": [
+      "green"
+    ],
+    "intent": "preserve",
+    "tags": [
+      "management-support",
+      "green"
+    ]
+  },
+  {
+    "id": "kb-cert-r-106",
+    "dimension_id": "certainty",
+    "source": "ISO 45003:2021 — הנחיות לבהירות תפקידים ולניהול שינוי ארגוני",
+    "title": "הודעה מוקדמת על שינויים בשיבוץ",
+    "summary": "פרסום שינויי שיבוץ מראש מצמצם אי ודאות מיותרת.",
+    "actionable_steps": [
+      "מועד פרסום קבוע",
+      "הסבר לשינוי"
+    ],
+    "target_status": [
+      "red"
+    ],
+    "intent": "improve",
+    "tags": [
+      "certainty",
+      "red"
+    ]
+  },
+  {
+    "id": "kb-cert-y-107",
+    "dimension_id": "certainty",
+    "source": "ISO 45003:2021 — הנחיות לבהירות תפקידים ולניהול שינוי ארגוני",
+    "title": "כרטיס תפקיד לכל בעל תפקיד",
+    "summary": "הגדרה כתובה של גבולות התפקיד מפחיתה חיכוך ובלבול.",
+    "actionable_steps": [
+      "כתיבת הגדרות",
+      "אישור מול העובד"
+    ],
+    "target_status": [
+      "yellow"
+    ],
+    "intent": "improve",
+    "tags": [
+      "certainty",
+      "yellow"
+    ]
+  },
+  {
+    "id": "kb-cert-y-108",
+    "dimension_id": "certainty",
+    "source": "ISO 45003:2021 — הנחיות לבהירות תפקידים ולניהול שינוי ארגוני",
+    "title": "פורום שאלות ותשובות על נהלים",
+    "summary": "מקום קבוע לשאלות על נהלים מונע פרשנויות סותרות.",
+    "actionable_steps": [
+      "ריכוז שאלות",
+      "פרסום תשובות"
+    ],
+    "target_status": [
+      "yellow"
+    ],
+    "intent": "improve",
+    "tags": [
+      "certainty",
+      "yellow"
+    ]
+  },
+  {
+    "id": "kb-cert-g-109",
+    "dimension_id": "certainty",
+    "source": "ISO 45003:2021 — הנחיות לבהירות תפקידים ולניהול שינוי ארגוני",
+    "title": "שימור לוח השנה הבית ספרי",
+    "summary": "המשך פרסום לוח שנתי יציב ישמר את הוודאות בתכנון.",
+    "actionable_steps": [
+      "פרסום מוקדם",
+      "עדכון מסודר"
+    ],
+    "target_status": [
+      "green"
+    ],
+    "intent": "preserve",
+    "tags": [
+      "certainty",
+      "green"
+    ]
+  },
+  {
+    "id": "kb-cert-g-110",
+    "dimension_id": "certainty",
+    "source": "ISO 45003:2021 — הנחיות לבהירות תפקידים ולניהול שינוי ארגוני",
+    "title": "תיעוד החלטות ישיבות",
+    "summary": "סיכום כתוב לכל ישיבה משמר בהירות לאורך זמן.",
+    "actionable_steps": [
+      "סיכום קבוע",
+      "הפצה לצוות"
+    ],
+    "target_status": [
+      "green"
+    ],
+    "intent": "preserve",
+    "tags": [
+      "certainty",
+      "green"
+    ]
+  },
+  {
+    "id": "kb-orga-r-111",
+    "dimension_id": "organizational-climate",
+    "source": "ISO 45003:2021, סעיף 6.1.2.2 — תרבות ארגונית וביטחון פסיכולוגי",
+    "title": "בירור מוקדם של קונפליקטים בצוות",
+    "summary": "טיפול מוקדם במתחים מונע התפשטות ופגיעה באקלים.",
+    "actionable_steps": [
+      "שיחת בירור",
+      "סיכום מוסכם"
+    ],
+    "target_status": [
+      "red"
+    ],
+    "intent": "improve",
+    "tags": [
+      "organizational-climate",
+      "red"
+    ]
+  },
+  {
+    "id": "kb-orga-y-112",
+    "dimension_id": "organizational-climate",
+    "source": "ISO 45003:2021, סעיף 6.1.2.2 — תרבות ארגונית וביטחון פסיכולוגי",
+    "title": "כללי שיח מוסכמים לישיבות",
+    "summary": "הסכמה על אופן הדיבור בישיבות מחזקת ביטחון פסיכולוגי.",
+    "actionable_steps": [
+      "ניסוח כללים",
+      "תזכורת בפתיחה"
+    ],
+    "target_status": [
+      "yellow"
+    ],
+    "intent": "improve",
+    "tags": [
+      "organizational-climate",
+      "yellow"
+    ]
+  },
+  {
+    "id": "kb-orga-y-113",
+    "dimension_id": "organizational-climate",
+    "source": "ISO 45003:2021, סעיף 6.1.2.2 — תרבות ארגונית וביטחון פסיכולוגי",
+    "title": "שיתוף הצלחות של עמיתים",
+    "summary": "הצפה קבועה של הצלחות מחזקת הכרה הדדית בצוות.",
+    "actionable_steps": [
+      "פינה קבועה",
+      "מחזוריות שוויונית"
+    ],
+    "target_status": [
+      "yellow"
+    ],
+    "intent": "improve",
+    "tags": [
+      "organizational-climate",
+      "yellow"
+    ]
+  },
+  {
+    "id": "kb-orga-g-114",
+    "dimension_id": "organizational-climate",
+    "source": "ISO 45003:2021, סעיף 6.1.2.2 — תרבות ארגונית וביטחון פסיכולוגי",
+    "title": "שימור אמנת השיח בחדר המורים",
+    "summary": "המשך ההקפדה על כללי השיח המוסכמים ישמר את האקלים הבטוח.",
+    "actionable_steps": [
+      "רענון שנתי",
+      "קליטת חדשים"
+    ],
+    "target_status": [
+      "green"
+    ],
+    "intent": "preserve",
+    "tags": [
+      "organizational-climate",
+      "green",
+      "new_staff"
+    ]
+  },
+  {
+    "id": "kb-orga-g-115",
+    "dimension_id": "organizational-climate",
+    "source": "ISO 45003:2021, סעיף 6.1.2.2 — תרבות ארגונית וביטחון פסיכולוגי",
+    "title": "הוקרה שגרתית לצוות",
+    "summary": "המשך ההוקרה השוטפת משמר תחושת שייכות וביטחון.",
+    "actionable_steps": [
+      "הוקרה בישיבה",
+      "פנייה אישית"
+    ],
+    "target_status": [
+      "green"
+    ],
+    "intent": "preserve",
+    "tags": [
+      "organizational-climate",
+      "green"
+    ]
+  },
+  {
+    "id": "kb-mean-r-116",
+    "dimension_id": "meaning",
+    "source": "OECD — הנחיות לשלומות מורים, תחושת תכלית והשפעה מקצועית",
+    "title": "חיבור מחדש למטרות החינוכיות",
+    "summary": "דיון ממוקד במטרות מחזיר את הקשר בין העשייה היומית לתכלית.",
+    "actionable_steps": [
+      "מפגש מטרות",
+      "בחירת יעד משותף"
+    ],
+    "target_status": [
+      "red"
+    ],
+    "intent": "improve",
+    "tags": [
+      "meaning",
+      "red"
+    ]
+  },
+  {
+    "id": "kb-mean-y-117",
+    "dimension_id": "meaning",
+    "source": "OECD — הנחיות לשלומות מורים, תחושת תכלית והשפעה מקצועית",
+    "title": "מעקב אחר התקדמות תלמידים",
+    "summary": "הצגת נתוני התקדמות מראה למורים את ההשפעה של עבודתם.",
+    "actionable_steps": [
+      "דוח התקדמות",
+      "דיון בצוות"
+    ],
+    "target_status": [
+      "yellow"
+    ],
+    "intent": "improve",
+    "tags": [
+      "meaning",
+      "yellow"
+    ]
+  },
+  {
+    "id": "kb-mean-y-118",
+    "dimension_id": "meaning",
+    "source": "OECD — הנחיות לשלומות מורים, תחושת תכלית והשפעה מקצועית",
+    "title": "שיתוף מכתבי תודה מהורים ומתלמידים",
+    "summary": "חשיפת משובים חיוביים מחזקת את תחושת המשמעות.",
+    "actionable_steps": [
+      "איסוף מכתבים",
+      "שיתוף בישיבה"
+    ],
+    "target_status": [
+      "yellow"
+    ],
+    "intent": "improve",
+    "tags": [
+      "meaning",
+      "yellow",
+      "parents"
+    ]
+  },
+  {
+    "id": "kb-mean-g-119",
+    "dimension_id": "meaning",
+    "source": "OECD — הנחיות לשלומות מורים, תחושת תכלית והשפעה מקצועית",
+    "title": "שימור טקסי הסיום והציון",
+    "summary": "המשך הטקסים המציינים הישגים משמר את תחושת התכלית.",
+    "actionable_steps": [
+      "לוח טקסים",
+      "שיתוף הצוות"
+    ],
+    "target_status": [
+      "green"
+    ],
+    "intent": "preserve",
+    "tags": [
+      "meaning",
+      "green"
+    ]
+  },
+  {
+    "id": "kb-mean-g-120",
+    "dimension_id": "meaning",
+    "source": "OECD — הנחיות לשלומות מורים, תחושת תכלית והשפעה מקצועית",
+    "title": "מיזמים חינוכיים בהובלת מורים",
+    "summary": "המשך תמיכה במיזמים שהצוות יוזם משמר את המשמעות המקצועית.",
+    "actionable_steps": [
+      "מסלול הצעות",
+      "תקציב ייעודי"
+    ],
+    "target_status": [
+      "green"
+    ],
+    "intent": "preserve",
     "tags": [
       "meaning",
       "green"

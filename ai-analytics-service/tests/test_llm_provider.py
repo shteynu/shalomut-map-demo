@@ -718,3 +718,200 @@ def test_backward_compatibility_properties(monkeypatch):
 
     monkeypatch.setattr(settings, "llm_api_key", "AIzaSy_test_compat")
     assert settings.openai_api_key == "AIzaSy_test_compat"
+
+
+V5_BALANCE_AGGREGATES = [
+    {
+        "questionId": "q-1",
+        "dimensionId": "balance",
+        "questionText": "אני מצליחה לסיים את המשימות בזמן שנקבע.",
+        "averageScore": 60.0,
+        "responseCount": 20,
+        "scoreDistribution": {"green": 4, "yellow": 12, "red": 4},
+    },
+    {
+        "questionId": "q-2",
+        "dimensionId": "balance",
+        "questionText": "אני מצליחה להתנתק מהעבודה בסוף היום.",
+        "averageScore": 55.0,
+        "responseCount": 20,
+        "scoreDistribution": {"green": 3, "yellow": 10, "red": 7},
+    },
+]
+
+# 12 + 4 answered yellow, 4 + 7 answered red — a faithful report of a yellow
+# dimension whose prompt states exactly those buckets.
+DISTRIBUTION_REPORT_YELLOW = (
+    "רוב הצוות דיווח בטווח צהוב, אך 7 משיבים סימנו אדום בשאלת הניתוק מהעבודה. "
+    "התמונה המצרפית מצביעה על עומס שראוי לעקוב אחריו."
+)
+VERDICT_CONTRADICTION_YELLOW = (
+    "המדד נמצא באזור אדום ודורש התייחסות. הנתונים מצביעים על עומס מתמשך."
+)
+
+
+def test_distribution_counts_covers_questions_and_dimension_totals():
+    counts = llm_provider_service.distribution_counts(V5_BALANCE_AGGREGATES)
+
+    assert counts is not None
+    # Per-question buckets.
+    assert {"4", "12", "3", "10", "7"} <= counts
+    # Per-bucket totals across the dimension: 7 green, 22 yellow, 11 red.
+    assert {"7", "22", "11"} <= counts
+    assert llm_provider_service.distribution_counts([]) is None
+    assert (
+        llm_provider_service.distribution_counts(
+            [{"questionId": "q-1", "averageScore": 60.0}],
+        )
+        is None
+    )
+
+
+def test_v5_accepts_an_interpretation_that_quotes_the_distribution():
+    counts = llm_provider_service.distribution_counts(V5_BALANCE_AGGREGATES)
+
+    assert llm_provider_service.is_status_consistent(
+        DISTRIBUTION_REPORT_YELLOW,
+        "yellow",
+        contract_version="5.0",
+        distribution_counts=counts,
+    )
+
+
+def test_v5_rejects_a_colour_that_matches_no_bucket():
+    counts = llm_provider_service.distribution_counts(V5_BALANCE_AGGREGATES)
+    invented = (
+        "רוב הצוות דיווח בטווח צהוב, אך 99 משיבים סימנו אדום. "
+        "התמונה המצרפית מצביעה על עומס שראוי לעקוב אחריו."
+    )
+
+    assert not llm_provider_service.is_status_consistent(
+        invented,
+        "yellow",
+        contract_version="5.0",
+        distribution_counts=counts,
+    )
+
+
+def test_v5_rejects_a_verdict_in_another_status_colour():
+    counts = llm_provider_service.distribution_counts(V5_BALANCE_AGGREGATES)
+
+    assert not llm_provider_service.is_status_consistent(
+        VERDICT_CONTRADICTION_YELLOW,
+        "yellow",
+        contract_version="5.0",
+        distribution_counts=counts,
+    )
+    # A verdict stays a contradiction even when the sentence carries a count.
+    assert not llm_provider_service.is_status_consistent(
+        "המדד נמצא באזור אדום לפי 4 משיבים. יש לפעול בהתאם.",
+        "yellow",
+        contract_version="5.0",
+        distribution_counts=counts,
+    )
+
+
+def test_earlier_contracts_keep_the_flat_colour_blacklist():
+    counts = llm_provider_service.distribution_counts(V5_BALANCE_AGGREGATES)
+
+    for version in ("2.0", "3.0", "4.0"):
+        assert not llm_provider_service.is_status_consistent(
+            DISTRIBUTION_REPORT_YELLOW,
+            "yellow",
+            contract_version=version,
+            distribution_counts=counts,
+        )
+    # Default call sites (nodes on 2.0-4.0) behave the same.
+    assert not llm_provider_service.is_status_consistent(
+        DISTRIBUTION_REPORT_YELLOW,
+        "yellow",
+    )
+
+
+def test_v5_without_a_distribution_falls_back_to_the_flat_rule():
+    assert not llm_provider_service.is_status_consistent(
+        DISTRIBUTION_REPORT_YELLOW,
+        "yellow",
+        contract_version="5.0",
+        distribution_counts=None,
+    )
+
+
+def test_judgement_phrases_stay_blacklisted_for_green_on_5_0():
+    counts = llm_provider_service.distribution_counts(V5_BALANCE_AGGREGATES)
+
+    assert not llm_provider_service.is_status_consistent(
+        "הממד יציב אך יש לשפר את העומס. הצוות מדווח על תמונה חיובית.",
+        "green",
+        contract_version="5.0",
+        distribution_counts=counts,
+    )
+
+
+def test_max_tokens_per_dimension_comes_from_the_environment(monkeypatch):
+    """The cap must be tunable without a code change, and default high.
+
+    The default covers what a reasoning model spends before it writes: on
+    gemini-flash-latest one interpretation cost 1440 thinking tokens against
+    108 visible ones, and the earlier defaults of 180 and 420 were consumed
+    entirely by thinking, so every dimension came back truncated and empty.
+    """
+    for variable in LLM_KEY_ENV_VARS:
+        monkeypatch.delenv(variable, raising=False)
+
+    monkeypatch.delenv("MAX_TOKENS_PER_DIMENSION", raising=False)
+    assert Settings().max_tokens_per_dimension == 2048
+
+    monkeypatch.setenv("MAX_TOKENS_PER_DIMENSION", "512")
+    assert Settings().max_tokens_per_dimension == 512
+
+
+def test_request_uses_the_configured_token_cap(monkeypatch):
+    captured = {}
+
+    class _Response:
+        status = 200
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def read(self):
+            return json.dumps(
+                {
+                    "choices": [
+                        {
+                            "finish_reason": "stop",
+                            "message": {
+                                "content": (
+                                    "מדד האיזון מציג תמונה מצרפית יציבה. "
+                                    "הנתונים תומכים בהמשך מעקב."
+                                ),
+                            },
+                        },
+                    ],
+                },
+            ).encode("utf-8")
+
+    def fake_urlopen(request, timeout=None):
+        captured.update(json.loads(request.data.decode("utf-8")))
+        return _Response()
+
+    monkeypatch.setattr(settings, "llm_api_key", "sk-test-token-cap")
+    monkeypatch.setattr(settings, "llm_base_url", "https://provider.local/v1")
+    monkeypatch.setattr(settings, "max_tokens_per_dimension", 333)
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+
+    for version in ("4.0", "5.0"):
+        captured.clear()
+        llm_provider_service.generate_psychological_interpretation_result(
+            dim_id="balance",
+            dim_hebrew="איזון",
+            score=60.0,
+            status="yellow",
+            question_aggregates=V5_BALANCE_AGGREGATES,
+            contract_version=version,
+        )
+        assert captured["max_tokens"] == 333, version

@@ -6,6 +6,7 @@ import {
   type ManagerSetupInput,
 } from "@/lib/services";
 import { getDurableWriteGuardResponse } from "@/lib/server/durable-write-guard";
+import { MINIMUM_PRIVACY_THRESHOLD } from "@/lib/survey-definition";
 import {
   authorizeManagerRound,
   getManagerOrganizationId,
@@ -68,7 +69,7 @@ function parsePayload(value: unknown): ManagerSetupInput | null {
     !totalStaffCount ||
     !title ||
     privacyThreshold === null ||
-    privacyThreshold < 1 ||
+    privacyThreshold < MINIMUM_PRIVACY_THRESHOLD ||
     !startDate ||
     (value.round.endDate && !endDate) ||
     !isRecord(background) ||

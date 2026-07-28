@@ -35,13 +35,19 @@ def _background_context_for_prompt(
     round_data: Dict[str, Any],
     state: "AnalyticsState",
 ) -> Optional[Dict[str, Any]]:
-    """School background context reaches the prompt on contract 4.0 only.
+    """School background context reaches the prompt on contracts 4.0 and 5.0.
 
     Versions 1.0-3.0 are immutable boundaries: silently enriching their prompt
-    would change what those versions mean without a version bump, and the
-    provenance flag that records the enrichment is written for 4.0 alone.
+    would change what those versions mean without a version bump. 5.0 is 4.0
+    plus score distributions, and Core sends the context on both
+    (`src/app/api/mcp/route.ts`), so gating on 4.0 alone made an upgrade to
+    5.0 trade the school context away for the distributions instead of adding
+    them.
     """
-    if _effective_contract_version(round_data) != AI_ANALYTICS_V4_CONTRACT_VERSION:
+    if _effective_contract_version(round_data) not in {
+        AI_ANALYTICS_V4_CONTRACT_VERSION,
+        AI_ANALYTICS_V5_CONTRACT_VERSION,
+    }:
         return None
 
     return round_data.get("backgroundContext") or state.get("org_context")
@@ -64,6 +70,32 @@ def _question_aggregates_for_dimension(
         if question["dimensionId"] == dimension_id
         and question["id"] in aggregates
     ]
+
+V5_PROMPT_INCLUSION_FIELDS = (
+    "distributionIncluded",
+    "crossDimensionContextIncluded",
+)
+
+
+def _v5_prompt_inclusions(
+    round_data: Dict[str, Any],
+    dimension_id: str,
+    dim_scores: Dict[str, Any],
+) -> Dict[str, bool]:
+    """What the 5.0 prompt actually carried for one dimension.
+
+    These are measurements, not claims. Writing both flags as a constant True
+    and then asserting they are True audits nothing: the pair exists so a
+    reader of a stored result can tell an enriched interpretation from one the
+    model produced without the distribution or the cross-dimension picture.
+    """
+    return {
+        "distributionIncluded": llm_provider_service.has_full_distribution(
+            _question_aggregates_for_dimension(round_data, dimension_id),
+        ),
+        "crossDimensionContextIncluded": bool(dim_scores),
+    }
+
 
 def privacy_gate_node(state: AnalyticsState) -> AnalyticsState:
     """
@@ -196,20 +228,31 @@ async def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
             generation_provenance[dim_id]["surveyDefinitionHash"] = (
                 round_data.get("surveyDefinitionHash")
             )
-        if eff_version == AI_ANALYTICS_V4_CONTRACT_VERSION:
+        if eff_version in {
+            AI_ANALYTICS_V4_CONTRACT_VERSION,
+            AI_ANALYTICS_V5_CONTRACT_VERSION,
+        }:
             generation_provenance[dim_id]["backgroundContextIncluded"] = bool(
                 _background_context_for_prompt(round_data, state),
             )
         if eff_version == AI_ANALYTICS_V5_CONTRACT_VERSION:
-            generation_provenance[dim_id]["distributionIncluded"] = True
-            generation_provenance[dim_id]["crossDimensionContextIncluded"] = True
+            generation_provenance[dim_id].update(
+                _v5_prompt_inclusions(round_data, dim_id, dim_scores),
+            )
 
     background_context = _background_context_for_prompt(round_data, state)
-    overall_summary = llm_provider_service.generate_overall_summary(
+    # Blocking provider call: the eight interpretations already run in worker
+    # threads, and leaving this one on the event loop stalls the whole service
+    # for the length of the round summary request.
+    overall_summary = await asyncio.to_thread(
+        llm_provider_service.generate_overall_summary,
         dim_scores=dim_scores,
         background_context=background_context,
         retry_tier=retry_tier,
         contract_version=eff_version,
+        question_aggregates=list(
+            round_data.get("questionAggregates", {}).values(),
+        ),
     )
 
     return {
@@ -262,6 +305,80 @@ def agent_rag_intervention_node(state: AnalyticsState) -> AnalyticsState:
         "recommendations": recommendations
     }
 
+async def agent_adaptation_node(state: AnalyticsState) -> AnalyticsState:
+    """
+    Node 3b: Intervention Adaptation
+    Rewrites the selected catalog entries against this school's numbers.
+
+    The catalog is one text for every school; without this node two schools in
+    the same status read the same three paragraphs however different their
+    rounds were. Only 5.0 adapts: 1.0-4.0 are deployed boundaries, and their
+    stored results must keep meaning what they meant when they were written.
+    Each entry records how its copy came to be, so a reader can tell a rewrite
+    from the catalog text.
+    """
+    round_data = state.get("round_data", {})
+    if _effective_contract_version(round_data) != AI_ANALYTICS_V5_CONTRACT_VERSION:
+        return state
+
+    dim_scores = round_data.get("dimensionScores", {})
+    background_context = _background_context_for_prompt(round_data, state)
+    retry_tier = "heavy" if state.get("retry_count", 0) > 0 else "fast"
+    recommendations = state.get("recommendations", {})
+
+    targets = []
+    adaptations = []
+    for dim_id, interventions in recommendations.items():
+        score_obj = dim_scores.get(dim_id, {})
+        if isinstance(score_obj, dict):
+            status = score_obj.get("computedStatus", "green")
+            score = float(score_obj.get("averageScore", 0.0))
+        else:
+            status = getattr(score_obj, "computedStatus", "green")
+            score = float(getattr(score_obj, "averageScore", 0.0))
+
+        question_aggregates = _question_aggregates_for_dimension(
+            round_data,
+            dim_id,
+        )
+        for index, intervention in enumerate(interventions):
+            targets.append((dim_id, index))
+            # The provider call blocks, and a round holds eight dimensions of
+            # three entries each: run them the way the interpretations run.
+            adaptations.append(
+                asyncio.to_thread(
+                    llm_provider_service.adapt_intervention_result,
+                    intervention=intervention,
+                    dim_hebrew=DIMENSION_NAMES_HEBREW.get(dim_id, dim_id),
+                    score=score,
+                    status=status,
+                    question_aggregates=question_aggregates,
+                    background_context=background_context,
+                    retry_tier=retry_tier,
+                )
+            )
+
+    results = await asyncio.gather(*adaptations)
+
+    adapted = {
+        dim_id: [dict(intervention) for intervention in interventions]
+        for dim_id, interventions in recommendations.items()
+    }
+    for (dim_id, index), adaptation in zip(targets, results):
+        adapted[dim_id][index].update(
+            {
+                "summary": adaptation.summary,
+                "actionable_steps": list(adaptation.actionable_steps),
+                "adaptationOutcome": adaptation.outcome,
+            },
+        )
+
+    return {
+        **state,
+        "recommendations": adapted,
+    }
+
+
 def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
     """
     Node 4: Agent Safety Validator (Critique Node)
@@ -302,12 +419,22 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
                 f"Status is inconsistent with score for {dim_id}"
             )
 
+        # The 5.0 prompt states the distribution in Hebrew colour words, so the
+        # validator has to know which counts an interpretation may quote.
+        distribution_counts = llm_provider_service.distribution_counts(
+            _question_aggregates_for_dimension(round_data, dim_id),
+        )
         if (
             not llm_provider_service.is_complete_hebrew_copy(
                 interp,
                 contract_version=contract_version,
             )
-            or not llm_provider_service.is_status_consistent(interp, status)
+            or not llm_provider_service.is_status_consistent(
+                interp,
+                status,
+                contract_version=contract_version,
+                distribution_counts=distribution_counts,
+            )
         ):
             is_safe = False
             feedback.append(
@@ -323,6 +450,7 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
                 intervention.get("summary", ""),
                 *intervention.get("actionable_steps", []),
             ]
+            adaptation_outcome = intervention.get("adaptationOutcome")
             if (
                 intervention.get("dimensionId") != dim_id
                 or intervention.get("status") != status
@@ -330,6 +458,23 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
                 or not all(
                     llm_provider_service.is_hebrew_only_copy(text)
                     for text in user_facing_copy
+                )
+                or (
+                    contract_version == AI_ANALYTICS_V5_CONTRACT_VERSION
+                    and adaptation_outcome
+                    not in {"llm", "deterministic_fallback"}
+                )
+                # Catalog copy is human-written and already trusted; a rewrite
+                # is model output and answers to the rule the interpretation
+                # answers to.
+                or (
+                    adaptation_outcome == "llm"
+                    and not llm_provider_service.is_status_consistent(
+                        " ".join(user_facing_copy),
+                        status,
+                        contract_version=contract_version,
+                        distribution_counts=distribution_counts,
+                    )
                 )
             ):
                 is_safe = False
@@ -370,10 +515,11 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
                 or (outcome == "llm" and attempts < 1)
                 or (
                     contract_version == AI_ANALYTICS_V5_CONTRACT_VERSION
-                    and (
-                        provenance.get("distributionIncluded") is not True
-                        or provenance.get("crossDimensionContextIncluded") is not True
-                    )
+                    and {
+                        field: provenance.get(field)
+                        for field in V5_PROMPT_INCLUSION_FIELDS
+                    }
+                    != _v5_prompt_inclusions(round_data, dim_id, dim_scores)
                 )
             ):
                 is_safe = False
