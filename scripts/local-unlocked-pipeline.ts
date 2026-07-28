@@ -1,0 +1,190 @@
+/**
+ * Run the AI pipeline locally on a round that is actually unlocked.
+ *
+ * The only round on the database has three responses, so every local run of the
+ * real chain stops at the privacy lock and never reaches the provider. This
+ * builds a synthetic round with enough answers in memory, drives the real Core
+ * MCP handler over it, and pipes the result through the real Python pipeline —
+ * no database, no server, no manager login.
+ *
+ *   npx tsx scripts/local-unlocked-pipeline.ts
+ *
+ * Export the provider key first (`GEMINI_API_KEY=...`) to exercise the model.
+ * Without one the pipeline still completes and reports `heuristic` provenance,
+ * which proves everything except the provider call itself.
+ */
+import { spawnSync } from "node:child_process";
+import path from "node:path";
+import { POST as mcpHandler } from "@/app/api/mcp/route";
+import {
+  InMemoryOrganizationRepository,
+  InMemoryRoundRepository,
+  InMemorySurveyRepository,
+  setRepositories,
+} from "@/lib/repositories";
+import { surveyInstrument } from "@/lib/shalomut-source";
+import { createCanonicalSurveyDefinition } from "@/lib/survey-definition";
+import type {
+  AnswerValue,
+  SurveyResponseRecord,
+} from "@/lib/types/backend";
+
+const RESPONSE_COUNT = 12;
+const ROUND_ID = "round_local_unlocked";
+const ORGANIZATION_ID = "org_local_unlocked";
+
+/**
+ * A flat round teaches nothing: the interesting output needs dimensions the
+ * model has a reason to talk about, and questions whose answers are split
+ * rather than uniform.
+ */
+function answerFor(
+  dimensionId: string,
+  responseIndex: number,
+): AnswerValue {
+  if (dimensionId === "balance") {
+    return responseIndex % 3 === 0 ? "yellow" : "red";
+  }
+  if (dimensionId === "organizational-climate") {
+    return responseIndex % 2 === 0 ? "green" : "red";
+  }
+  if (dimensionId === "workload") {
+    return responseIndex % 4 === 0 ? "red" : "yellow";
+  }
+  return responseIndex % 5 === 0 ? "yellow" : "green";
+}
+
+function scoreFor(value: AnswerValue): number {
+  return value === "green" ? 100 : value === "yellow" ? 60 : 0;
+}
+
+async function main() {
+  // The in-memory repositories are the point: a stray DATABASE_URL would send
+  // this at the real database instead.
+  delete process.env.DATABASE_URL;
+  process.env.AI_ANALYTICS_CONTRACT_VERSION =
+    process.env.AI_ANALYTICS_CONTRACT_VERSION || "5.0";
+
+  const definition = createCanonicalSurveyDefinition("סבב בדיקה מקומי", 10);
+  const questions = definition.questions.filter((question) => question.enabled);
+
+  const responses: SurveyResponseRecord[] = Array.from(
+    { length: RESPONSE_COUNT },
+    (_, responseIndex) => ({
+      id: `${ROUND_ID}_response_${responseIndex}`,
+      roundId: ROUND_ID,
+      submittedAt: new Date("2026-07-28T12:00:00.000Z"),
+      answers: questions.map((question) => {
+        const value = answerFor(question.dimensionId, responseIndex);
+        return {
+          questionId: question.id,
+          dimensionId: question.dimensionId,
+          value,
+          score: scoreFor(value),
+        };
+      }),
+    }),
+  );
+
+  setRepositories({
+    orgRepo: new InMemoryOrganizationRepository([
+      {
+        id: ORGANIZATION_ID,
+        name: "בית ספר בדיקה מקומי",
+        city: "חיפה",
+        schoolType: "תיכון",
+        totalStaffCount: 20,
+        createdAt: new Date("2026-07-28T12:00:00.000Z"),
+      },
+    ]),
+    roundRepo: new InMemoryRoundRepository([
+      {
+        id: ROUND_ID,
+        organizationId: ORGANIZATION_ID,
+        title: definition.title,
+        status: "closed",
+        shareCode: "SHALOM-LOCAL",
+        privacyThreshold: 10,
+        startDate: new Date("2026-07-28T12:00:00.000Z"),
+        surveyDefinition: definition,
+        createdAt: new Date("2026-07-28T12:00:00.000Z"),
+      },
+    ]),
+    surveyRepo: new InMemorySurveyRepository(responses),
+  });
+
+  const mcpResponse = await mcpHandler(
+    new Request("http://localhost:3000/api/mcp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: ROUND_ID,
+        method: "tools/call",
+        params: {
+          name: "get_round_analytics",
+          arguments: { roundId: ROUND_ID },
+        },
+      }),
+    }),
+  );
+
+  if (mcpResponse.status !== 200) {
+    throw new Error(`MCP returned ${mcpResponse.status}`);
+  }
+
+  const envelope = await mcpResponse.json();
+  const analytics = JSON.parse(envelope.result.content[0].text);
+
+  console.log(
+    `MCP: contract ${analytics.contractVersion}, ${analytics.totalResponses} responses, ` +
+      `threshold ${analytics.privacyThreshold}, locked ${analytics.isLocked}, ` +
+      `${Object.keys(analytics.questionAggregates ?? {}).length} question aggregates`,
+  );
+
+  if (analytics.isLocked) {
+    throw new Error("The fixture came back locked; nothing to send to the model.");
+  }
+
+  const python = spawnSync("python3", ["-m", "src.pipeline_cli"], {
+    cwd: path.join(process.cwd(), "ai-analytics-service"),
+    input: JSON.stringify(analytics),
+    encoding: "utf8",
+  });
+
+  if (python.status !== 0) {
+    throw new Error(`Python pipeline exited ${python.status}: ${python.stderr}`);
+  }
+
+  const result = JSON.parse(python.stdout);
+  // The payload keys stones by dimension id; the shape has moved between
+  // contract versions, so read it defensively rather than assuming an array.
+  const stoneMap: Record<string, Record<string, unknown>> =
+    result.stones ?? result.result?.stones ?? {};
+  const stones = Object.entries(stoneMap);
+
+  console.log(
+    `Python: status ${result.status}, contract ${result.contractVersion}, ${stones.length} stones`,
+  );
+
+  for (const [dimensionId, stone] of stones) {
+    const provenance =
+      (stone.generationProvenance as Record<string, unknown>) ?? {};
+    console.log(
+      `  ${dimensionId}: ${stone.status} ${stone.score} — ` +
+        `${provenance.outcome ?? "n/a"} (attempts ${provenance.attempts ?? "n/a"})`,
+    );
+  }
+
+  const summary =
+    result.overallPsychologicalSummary ??
+    result.result?.overallPsychologicalSummary;
+  if (summary) {
+    console.log(`Summary: ${summary}`);
+  }
+}
+
+main().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});
