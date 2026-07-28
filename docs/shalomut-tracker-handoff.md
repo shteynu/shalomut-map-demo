@@ -66,6 +66,12 @@ exact вопросы раунда принадлежат persisted `SurveyRound.
     `ALTER TABLE "survey_rounds" ALTER COLUMN "privacy_threshold" SET DEFAULT 1;`, затем
     `UPDATE "survey_rounds" SET "privacy_threshold" = 1, "survey_definition" = jsonb_set("survey_definition", '{minimumResponses}', to_jsonb(1)) WHERE "share_code" = 'SHALOM-F125';`,
     затем удалить строку миграции из `_prisma_migrations`.
+  - **Снимок содержимого базы на 2026-07-28** лежит вне репозитория:
+    `~/shalomut-db-backup-2026-07-28.json` (права `600`) — 1 организация, 1 раунд `SHALOM-F125`, 3 ответа,
+    72 ответа на вопросы и сохранённый `ai_insights` контракта `4.0` целиком. Сделан перед запрошенной очисткой
+    базы; сама очистка (`npm run db:clear`) на момент записи не выполнена — она заблокирована политикой
+    разрешений сессии и остаётся за владельцем. PITR у Free plan нет, так что этот файл — единственный путь
+    восстановления.
   - `MANAGER_ORGANIZATION_ID` = `34d05e66-…` в Vercel Production **и** Preview: `DATABASE_URL` у этих скоупов
     общий, поэтому расхождение оставляло Preview с организацией, которой в единственной базе нет.
   - Проверка: `npx prisma migrate status` без единого переопределения → хост
@@ -374,10 +380,19 @@ exact вопросы раунда принадлежат persisted `SurveyRound.
 
 ## Локальный запуск (проверено 2026-07-28)
 
-Стек поднимается локально целиком. Проверено: `npm run dev` с холодного старта — `/login/` `200`, страница
-рендерится, ошибок в консоли нет; `/api/rounds/` `401 JSON`; `/api/survey/SHALOM-F125/` `200` с настоящим
-раундом из Supabase. AI-сервис: `.venv/bin/python -m uvicorn src.main:app --port 8000`, `/health` `200`,
-`env: development`, `privacyThreshold: 10`, принимаемые версии `1.0`–`5.0`. Полный `pytest` — 169/169.
+Одна команда поднимает обе половины: `npm run local`
+([`scripts/local-stack.mjs`](../scripts/local-stack.mjs)). Она стартует Next на `:3000` и Python-сервис на
+`:8000`, связывает их между собой (`DATA_LAYER_MCP_URL`, `DATA_LAYER_CALLBACK_URL`, `ENV=development`,
+`USE_MOCK_MCP=false`), помечает вывод префиксами `[core]`/`[ai]` и по Ctrl-C гасит оба процесса. Ключ провайдера
+пробрасывается из окружения, если он там есть, и в баннере прямо сказано, есть он или нет. Перед стартом
+проверяются занятость портов и наличие venv — с внятным текстом, что делать. Флаг `--in-memory` поднимает ядро
+с пустыми репозиториями в памяти и не трогает никакую базу.
+
+Проверено фактически: `npm run local` → `/login/` `200`, `/health` `200` (`env: development`,
+`privacyThreshold: 10`, версии `1.0`–`5.0`); повторный запуск при занятых портах отказывается с обоими
+сообщениями; `SIGINT` гасит и Next, и uvicorn, сам раннер выходит. Отдельно: холодный `npm run dev` —
+`/login/` `200` без ошибок в консоли, `/api/rounds/` `401 JSON`, `/api/survey/SHALOM-F125/` `200` с настоящим
+раундом из Supabase. Полный `pytest` — 169/169.
 
 Три вещи, о которых стоит знать заранее; все три закрыты, но не сами собой:
 

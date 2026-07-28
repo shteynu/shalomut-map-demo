@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
+    "local": "node scripts/local-stack.mjs",
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
