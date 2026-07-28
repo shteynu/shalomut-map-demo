@@ -1,6 +1,6 @@
 # Shalomut Map — PROGRESS.md
 
-Updated: 2026-07-28 (why the LLM never answered; privacy threshold 10 everywhere; distribution in the UI)
+Updated: 2026-07-28 (why the LLM never answered; privacy threshold 10 everywhere, now on the database too; distribution in the UI)
 
 ## Current State
 
@@ -9,9 +9,9 @@ Updated: 2026-07-28 (why the LLM never answered; privacy threshold 10 everywhere
   - 8-dimension context & per-question distribution included in LLM prompt.
   - Multi-sentence psychological interpretations (2–5 sentences) and generative `overallPsychologicalSummary` (2–4 Hebrew sentences) enabled.
   - KB expanded to 80 items with context-aware RAG ranking in Python AI service.
-- **Automated tests** (branch `feature/ai-insights-depth-v5`, 2026-07-28): `npm test` 231/231 passed,
-  `.venv/bin/python -m pytest` in `ai-analytics-service` 169/169 passed, `npm run lint` 0 errors,
-  `npm run build` compiled and generated 39/39 pages. Use the venv interpreter: the system `python3` has no
+- **Automated tests** (branch `feature/ai-insights-depth-v5`, 2026-07-28): `npm test` 232/232 passed
+  (231 before the threshold-default guard was added), `.venv/bin/python -m pytest` in `ai-analytics-service`
+  169/169 passed, `npm run lint` 0 errors, `npm run build` compiled and generated 39/39 pages. Use the venv interpreter: the system `python3` has no
   pytest. On `main` the same suites stood at 202 and 107. The earlier "16/16" figure came from
   `run_tests.py`, which carried its own sixteen tests and never collected `tests/` — the full suite was in fact
   red (`test_rag_store.py`, broken by the catalog expansion) while that number was recorded. The sixteen now live
@@ -28,23 +28,38 @@ Updated: 2026-07-28 (why the LLM never answered; privacy threshold 10 everywhere
   `outcome=llm` on the first attempt for the interpretation (`4.0` and `5.0`), the round summary and the
   intervention adaptation. The model configured for the deployment (`gemini-3.5-flash`) was checked separately:
   ~1076 thinking tokens, so `2048` covers it too. **Not deployed** — it is on the branch below.
-- **Unpushed branch `feature/ai-insights-depth-v5`**: 31 commits over `origin/main` (`0a816e3`), counting this
-  document's, carrying the whole depth plan plus the 2026-07-28 work. `main` locally sits exactly on `origin/main`. Nothing is pushed or deployed.
-- **Privacy threshold is 10 everywhere** (branch only): minimum and default in Core, fallback and clamp in the
-  Python service, declared threshold of contract `5.0`. Rounds configured below ten are raised rather than
-  refused — a stored definition loads at ten, a payload below ten is read as locked, and the
-  `round.privacyThreshold` column is only ever read through `effectivePrivacyThreshold`. **Consequence not yet
-  decided by the owner**: `SHALOM-F125` was created at threshold `1` with 3 responses, so under this rule its
-  dashboard and insights read as locked.
+- **Unpushed branch `feature/ai-insights-depth-v5`**: 33 commits over `origin/main` (`0a816e3`), counting this
+  document's, carrying the whole depth plan plus the 2026-07-28 work. `main` locally sits exactly on `origin/main`.
+  Nothing is pushed or deployed — the push was attempted on 2026-07-28 and declined at the permission prompt, so
+  it stays with the owner.
+- **Privacy threshold is 10 everywhere**, and since 2026-07-28 that includes the database. Code (branch only):
+  minimum and default in Core, fallback and clamp in the Python service, declared threshold of contract `5.0`.
+  Rounds configured below ten are raised rather than refused — a stored definition loads at ten, a payload below
+  ten is read as locked, and the `round.privacyThreshold` column is only ever read through
+  `effectivePrivacyThreshold`. **Owner decision taken 2026-07-28: migrate.** Migration
+  `20260728120000_privacy_threshold_minimum_ten` puts the column default back to `10`, raises rounds below it and
+  raises the `minimumResponses` their questionnaire snapshot quotes. Applied to the one database the same day —
+  see the database bullet for the before/after values.
+  Note what this did and did not change for `SHALOM-F125`: it has 3 responses, so it was already going to read as
+  locked once the branch deploys. What the migration changed is that the stored number stopped contradicting the
+  screens, and that the **deployed** app — still `main`, which reads the column raw — locks it now rather than at
+  deploy. That closes a live gap: until the migration, production served a full dashboard for a round answered by
+  three people.
 - **Deployed runtime**: `https://shalomut-map-demo.vercel.app/` serves current `main`.
 - **One database**: Supabase `tpfzhyalaftotljmlont` (`aws-1-ap-northeast-2`, Seoul) is the only database of the
-  project. The deployed runtime, local `.env` and `prisma migrate` all resolve to it; all four migrations are
-  applied and `privacy_threshold` defaults to `1`. The second project `fvnulyirrqjrnjbahmsn` was deleted by the
+  project. The deployed runtime, local `.env` and `prisma migrate` all resolve to it; all five migrations are
+  applied and `privacy_threshold` defaults to `10`. The second project `fvnulyirrqjrnjbahmsn` was deleted by the
   owner on 2026-07-27; nothing referenced it. Never define a second `DATABASE_URL` in `.env.local`: Next.js
   prefers it over `.env` while migrations read `.env`, and the two drift apart silently.
-  State as of 2026-07-27 (not re-read since): 1 organization, 1 round (`SHALOM-F125`, active, threshold `1`),
-  3 responses, 72 question answers, persisted `ai_insights` at contract `4.0`. The `privacy_threshold` column
-  default of `1` predates the threshold decision above and was not migrated.
+  State read on 2026-07-28, before the threshold migration: column default `1`; 1 organization; 1 round
+  `SHALOM-F125` (`3173c065-aa01-470e-a54b-eb0e7669756b`, active, threshold `1`, snapshot `minimumResponses` `1`);
+  3 responses; 3 answers on each question; persisted `ai_insights` at contract `4.0`. After it: column default
+  `10`, round threshold `10`, snapshot `minimumResponses` `10`; response and answer counts unchanged. Rollback,
+  should it ever be wanted, is those exact prior values —
+  `ALTER TABLE "survey_rounds" ALTER COLUMN "privacy_threshold" SET DEFAULT 1;`, then
+  `UPDATE "survey_rounds" SET "privacy_threshold" = 1, "survey_definition" = jsonb_set("survey_definition", '{minimumResponses}', to_jsonb(1)) WHERE "share_code" = 'SHALOM-F125';`,
+  then delete the migration's row from `_prisma_migrations`. The project is on the Supabase Free plan, so there is
+  no PITR behind this: the recorded values are the whole safety net.
 - **Single deployed environment**: `https://shalomut-map-demo.vercel.app/` is the only product URL.
 - **Manager organization scope**: `MANAGER_ORGANIZATION_ID` is `34d05e66-fa4d-4a07-a2af-c9d5c41b6088` in both
   Vercel Production and Preview, matching the only organization in the one database. `organizationId` is embedded
@@ -59,14 +74,17 @@ Updated: 2026-07-28 (why the LLM never answered; privacy threshold 10 everywhere
        `supportedContractVersions: ["1.0","2.0","3.0","4.0","5.0"]`. Core Production still produces `4.0`
        (the persisted insights of the only round carry `contractVersion: "4.0"`), so 5.0 is accepted but never
        received.
-2. [ ] Push `feature/ai-insights-depth-v5` and run the E2 deploy order for `5.0`
+2. [ ] Push `feature/ai-insights-depth-v5` (attempted 2026-07-28, declined at the permission prompt) and run the
+       E2 deploy order for `5.0`
        ([ai-insights-depth-plan-2026-07-27.md](docs/ai-insights-depth-plan-2026-07-27.md), section
        "Продолжение"). Before step 1: confirm the Render dashboard does not set `MAX_TOKENS_PER_DIMENSION`
        explicitly (neither `render.yaml` nor `.env.render.local` does, so the new `2048` default applies), and
        settle the Gemini quota — `429` arrives after a few calls on the free tier, and one live round is roughly
        33 calls.
-3. [ ] Decide what the ten-respondent threshold means for rounds created before it: `SHALOM-F125` reads as locked
-       under the new rule. Either that is the intent, or those rounds need a migration.
+3. [x] Decide what the ten-respondent threshold means for rounds created before it — the owner chose the migration
+       (2026-07-28). `20260728120000_privacy_threshold_minimum_ten` is applied to the one database: default `10`,
+       `SHALOM-F125` raised from `1` to `10` in both the column and its questionnaire snapshot. Verified read-only
+       afterwards, including the deployed respondent endpoint, which now quotes `minimumResponses: 10`.
 4. [ ] Sign out and sign in again as a manager on the deployed app (needs the admin password, so the owner has to
        do it) and confirm the session lands on organization `34d05e66-…` with round `SHALOM-F125` visible. This is
        the only outstanding proof that the corrected `MANAGER_ORGANIZATION_ID` resolves.
@@ -85,6 +103,28 @@ Updated: 2026-07-28 (why the LLM never answered; privacy threshold 10 everywhere
 
 ## Completed Tasks
 
+- [x] **2026-07-28**: **The database says ten as well** (commit `2ab601e`, migration
+  `20260728120000_privacy_threshold_minimum_ten`):
+  - The owner decided the open question in favour of migrating. `prisma/schema.prisma` puts the column default
+    back to `10`; the migration raises rounds below ten and the `minimumResponses` their questionnaire snapshot
+    quotes. Rounds are only ever raised, so a stricter threshold a manager chose survives.
+  - Stale prose that still said "product default 1" corrected in `ROADMAP.md`, `PROJECT_CONTEXT.md`,
+    `docs/source-of-truth.md`, `docs/openapi.yaml` and `public/openapi.json`. The OpenAPI schema fields already
+    said `10`; only the descriptions disagreed.
+  - New guard test: the default declared in `schema.prisma` must equal `MINIMUM_PRIVACY_THRESHOLD`. This drift
+    happened once already, quietly, and reads clamp so nothing fails loudly. Fail-first confirmed — the test goes
+    red against `@default(1)`.
+  - Local gates: `npm test` 232/232, `npm run lint` 0 errors, `npm run build` 39/39 pages, `openapi.test.ts` 5/5,
+    `npx prisma validate` and `npx prisma generate` passed, `git diff --check` clean. Python untouched, so pytest
+    was not re-run.
+  - Applied to the one database after confirming the target in Prisma's own output
+    (`aws-1-ap-northeast-2.pooler.supabase.com:5432`, database `postgres`, schema `public`) and recording the
+    prior values. `prisma migrate status` then reports up to date. Read-only verification after: default `10`,
+    `SHALOM-F125` at `10` in column and snapshot, 3 responses and 3 answers per question unchanged.
+    `GET https://shalomut-map-demo.vercel.app/api/survey/SHALOM-F125/` → `200` quoting `minimumResponses: 10`,
+    which is the deployed app reading the migrated row.
+  - Not done: the branch push (declined at the permission prompt) and the E2 deploy order, which needs the Render
+    dashboard and a manager login.
 - [x] **2026-07-28**: **Session on branch `feature/ai-insights-depth-v5` — the LLM answers for the first time,
   and the privacy threshold becomes one number** (commits `5f6ad5e`, `e971d33`, `fb85f11`, `3a7d7e7`, `9924c64`,
   `1f2be09`, plus the depth-plan slices `7c50129`…`70276f9`):
