@@ -15,6 +15,7 @@ import {
 } from '@/lib/survey-definition';
 import { createSurveyDefinitionHash } from '@/lib/survey-definition-hash';
 import { getDurableWriteGuardResponse } from '@/lib/server/durable-write-guard';
+import { AI_RUN_EXPECTED_COMPLETION_MS } from '@/lib/server/trigger-ai-analytics';
 import { hasConfiguredSharedSecret } from '@/lib/server/shared-secret';
 import { authorizeManagerRound } from '@/lib/server/manager-scope';
 import type {
@@ -157,8 +158,30 @@ export async function GET(request: Request, { params }: RouteParams) {
 
     const insights = await repositories.roundRepo.getAiInsights(roundId);
     if (!insights) {
+      // Nothing is stored — but why matters to the manager. A run that was
+      // dispatched and never delivered a result is the analysis service
+      // failing, not a round nobody analysed, and only the dispatch timestamp
+      // can tell those two apart.
+      const dispatchedAt =
+        await repositories.roundRepo.getAiAnalysisDispatchedAt(roundId);
+      const isStillRunning =
+        dispatchedAt !== null &&
+        Date.now() - dispatchedAt.getTime() < AI_RUN_EXPECTED_COMPLETION_MS;
+
       return NextResponse.json(
-        { error: 'AI insights not found for this round', roundId },
+        {
+          error: 'AI insights not found for this round',
+          roundId,
+          run: {
+            dispatchedAt: dispatchedAt?.toISOString() ?? null,
+            state:
+              dispatchedAt === null
+                ? 'idle'
+                : isStillRunning
+                  ? 'running'
+                  : 'stalled',
+          },
+        },
         { status: 404 }
       );
     }

@@ -3,7 +3,10 @@ import logging
 from typing import Dict, Any, Optional
 from src.agents.state import AnalyticsState
 from src.rag.store import LocalInterventionVectorStore
-from src.services.llm_provider import llm_provider_service
+from src.services.llm_provider import (
+    ProviderUnavailableError,
+    llm_provider_service,
+)
 from src.config import settings
 from src.contracts import (
     AI_ANALYTICS_CONTRACT_VERSION,
@@ -113,6 +116,10 @@ def privacy_gate_node(state: AnalyticsState) -> AnalyticsState:
     logger.info(f"[Node 1: Privacy Gate] Checking privacy lock. Responses: {total_responses}, isLocked: {is_locked}")
     
     if is_locked or total_responses < privacy_threshold:
+        # 4.0 and 5.0 are dynamic contracts too, and Core refuses any payload of
+        # theirs without the hash. Gating on 3.0 alone meant a locked round on
+        # the deployed version had its locked result rejected at the callback
+        # and never reached the manager's screen.
         dynamic_metadata = (
             {
                 "surveyDefinitionHash": round_data.get(
@@ -120,7 +127,7 @@ def privacy_gate_node(state: AnalyticsState) -> AnalyticsState:
                 ),
             }
             if _effective_contract_version(round_data)
-            == AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION
+            in AI_ANALYTICS_DYNAMIC_CONTRACT_VERSIONS
             else {}
         )
         return {
@@ -198,7 +205,44 @@ async def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
             )
         )
 
-    generation_results = await asyncio.gather(*generations)
+    # Gathered with the exceptions kept: one dead dimension must not cancel the
+    # reporting of the others, and the round fails as a whole rather than
+    # returning a map with a hole in it.
+    settled = await asyncio.gather(*generations, return_exceptions=True)
+    provider_failure = next(
+        (
+            result
+            for result in settled
+            if isinstance(result, ProviderUnavailableError)
+        ),
+        None,
+    )
+    for result in settled:
+        if isinstance(result, BaseException) and not isinstance(
+            result,
+            ProviderUnavailableError,
+        ):
+            raise result
+
+    if provider_failure is not None:
+        logger.warning(
+            "[Node 2: Psychologist] Provider unavailable for %s dimension(s); "
+            "first reason=%s dimension=%s",
+            sum(
+                1
+                for result in settled
+                if isinstance(result, ProviderUnavailableError)
+            ),
+            provider_failure.reason,
+            provider_failure.dimension_id,
+        )
+        return {
+            **state,
+            "safety_status": "provider_unavailable",
+            "provider_failure_reason": provider_failure.reason,
+        }
+
+    generation_results = list(settled)
     interpretations = {
         dim_id: generation.text
         for dim_id, generation in zip(dim_ids, generation_results)
@@ -244,16 +288,28 @@ async def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
     # Blocking provider call: the eight interpretations already run in worker
     # threads, and leaving this one on the event loop stalls the whole service
     # for the length of the round summary request.
-    overall_summary = await asyncio.to_thread(
-        llm_provider_service.generate_overall_summary,
-        dim_scores=dim_scores,
-        background_context=background_context,
-        retry_tier=retry_tier,
-        contract_version=eff_version,
-        question_aggregates=list(
-            round_data.get("questionAggregates", {}).values(),
-        ),
-    )
+    try:
+        overall_summary = await asyncio.to_thread(
+            llm_provider_service.generate_overall_summary,
+            dim_scores=dim_scores,
+            background_context=background_context,
+            retry_tier=retry_tier,
+            contract_version=eff_version,
+            question_aggregates=list(
+                round_data.get("questionAggregates", {}).values(),
+            ),
+        )
+    except ProviderUnavailableError as error:
+        logger.warning(
+            "[Node 2: Psychologist] Provider unavailable for the round "
+            "summary; reason=%s",
+            error.reason,
+        )
+        return {
+            **state,
+            "safety_status": "provider_unavailable",
+            "provider_failure_reason": error.reason,
+        }
 
     return {
         **state,

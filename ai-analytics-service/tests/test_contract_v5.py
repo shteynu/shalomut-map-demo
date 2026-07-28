@@ -20,7 +20,10 @@ from src.contracts import (
     AI_ANALYTICS_DYNAMIC_CONTRACT_VERSIONS,
 )
 from src.schemas.mcp_types import RoundAnalyticsResult
-from src.services.llm_provider import llm_provider_service
+from src.services.llm_provider import (
+    ProviderUnavailableError,
+    llm_provider_service,
+)
 
 BACKGROUND_CONTEXT = {"notes": "שני מורים חדשים השנה", "newStaffMembers": 2}
 
@@ -77,13 +80,12 @@ def build_state(round_data) -> AnalyticsState:
 
 
 @pytest.mark.asyncio
-async def test_v5_prompt_and_provenance_carry_the_school_context(monkeypatch):
+async def test_v5_prompt_and_provenance_carry_the_school_context(answering_llm):
     """5.0 adds distributions to 4.0; it must not drop the school context.
 
     Core sends `backgroundContext` on 4.0 and 5.0 alike, so gating the prompt
     on 4.0 made the upgrade a trade instead of an addition.
     """
-    monkeypatch.setattr(settings, "llm_api_key", "", raising=False)
     round_data = build_v5_round_data(BACKGROUND_CONTEXT)
 
     state = await agent_psychologist_node(build_state(round_data))
@@ -113,9 +115,7 @@ async def test_v5_prompt_and_provenance_carry_the_school_context(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_v5_provenance_reports_a_missing_school_context(monkeypatch):
-    monkeypatch.setattr(settings, "llm_api_key", "", raising=False)
-
+async def test_v5_provenance_reports_a_missing_school_context(answering_llm):
     state = await agent_psychologist_node(build_state(build_v5_round_data()))
 
     for dimension_id in AI_ANALYTICS_DIMENSION_IDS:
@@ -232,9 +232,8 @@ if __name__ == "__main__":
 
 
 @pytest.mark.asyncio
-async def test_v5_provenance_reports_a_missing_distribution(monkeypatch):
+async def test_v5_provenance_reports_a_missing_distribution(answering_llm):
     """The pair of flags has to be able to say "no", or it audits nothing."""
-    monkeypatch.setattr(settings, "llm_api_key", "", raising=False)
     round_data = build_v5_round_data(BACKGROUND_CONTEXT)
     for aggregate in round_data["questionAggregates"].values():
         aggregate.pop("scoreDistribution")
@@ -252,8 +251,7 @@ async def test_v5_provenance_reports_a_missing_distribution(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_v5_safety_validator_rejects_an_overstated_provenance(monkeypatch):
-    monkeypatch.setattr(settings, "llm_api_key", "", raising=False)
+async def test_v5_safety_validator_rejects_an_overstated_provenance(answering_llm):
     round_data = build_v5_round_data(BACKGROUND_CONTEXT)
     for aggregate in round_data["questionAggregates"].values():
         aggregate.pop("scoreDistribution")
@@ -338,7 +336,13 @@ def test_overall_summary_uses_the_shared_transport(monkeypatch):
     assert captured["max_tokens"] == 420
 
 
-def test_overall_summary_falls_back_when_the_provider_fails(monkeypatch):
+def test_overall_summary_fails_the_round_when_the_provider_fails(monkeypatch):
+    """On 5.0 the round summary is the model's sentence or it is nothing.
+
+    The counted sentence below 5.0 is written here by design; reusing it as a
+    stand-in for an offline provider would present a failed round as a finished
+    one.
+    """
     def fake_urlopen(request, timeout=None):
         raise OSError("provider offline")
 
@@ -347,13 +351,16 @@ def test_overall_summary_falls_back_when_the_provider_fails(monkeypatch):
     monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
 
     round_data = build_v5_round_data()
-    summary = llm_provider_service.generate_overall_summary(
-        dim_scores=round_data["dimensionScores"],
-        contract_version=AI_ANALYTICS_V5_CONTRACT_VERSION,
-        question_aggregates=list(round_data["questionAggregates"].values()),
-    )
+    with pytest.raises(ProviderUnavailableError) as failure:
+        llm_provider_service.generate_overall_summary(
+            dim_scores=round_data["dimensionScores"],
+            contract_version=AI_ANALYTICS_V5_CONTRACT_VERSION,
+            question_aggregates=list(
+                round_data["questionAggregates"].values(),
+            ),
+        )
 
-    assert "הניתוח המצרפי מציג 8 ממדים" in summary
+    assert failure.value.reason == "OSError"
 
 
 def test_overall_summary_rejects_a_five_sentence_answer(monkeypatch):
@@ -368,14 +375,14 @@ def test_overall_summary_rejects_a_five_sentence_answer(monkeypatch):
     )
 
     round_data = build_v5_round_data()
-    summary = llm_provider_service.generate_overall_summary(
-        dim_scores=round_data["dimensionScores"],
-        contract_version=AI_ANALYTICS_V5_CONTRACT_VERSION,
-        question_aggregates=list(round_data["questionAggregates"].values()),
-    )
-
-    assert summary != too_long
-    assert "הניתוח המצרפי מציג" in summary
+    with pytest.raises(ProviderUnavailableError):
+        llm_provider_service.generate_overall_summary(
+            dim_scores=round_data["dimensionScores"],
+            contract_version=AI_ANALYTICS_V5_CONTRACT_VERSION,
+            question_aggregates=list(
+                round_data["questionAggregates"].values(),
+            ),
+        )
 
 
 def test_overall_summary_stays_deterministic_before_5_0(monkeypatch):
@@ -542,9 +549,8 @@ async def test_adaptation_leaves_contracts_before_5_0_untouched(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_v5_safety_validator_rejects_a_rewrite_that_contradicts_the_status(
-    monkeypatch,
+    answering_llm,
 ):
-    monkeypatch.setattr(settings, "llm_api_key", "", raising=False)
     round_data = build_v5_round_data()
     state = await agent_psychologist_node(build_state(round_data))
     state = agent_rag_intervention_node(state)
@@ -564,6 +570,7 @@ async def test_v5_safety_validator_rejects_a_rewrite_that_contradicts_the_status
 @pytest.mark.asyncio
 async def test_the_whole_5_0_round_declares_how_every_recommendation_was_written(
     monkeypatch,
+    answering_llm,
 ):
     """What Core will validate: the field is on the payload, not just in state."""
     monkeypatch.setattr(settings, "llm_api_key", "sk-test-adaptation")
@@ -680,9 +687,8 @@ def test_an_unlocked_5_0_payload_requires_every_distribution():
 
 
 @pytest.mark.asyncio
-async def test_5_0_metrics_echo_the_input_distribution_untouched(monkeypatch):
+async def test_5_0_metrics_echo_the_input_distribution_untouched(answering_llm):
     """Core owns the number; the service returns it, it does not recompute it."""
-    monkeypatch.setattr(settings, "llm_api_key", "", raising=False)
     round_data = build_v5_round_data()
 
     payload = (await analytics_graph.ainvoke(build_state(round_data)))[
@@ -703,8 +709,7 @@ async def test_5_0_metrics_echo_the_input_distribution_untouched(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_metrics_before_5_0_carry_no_distribution(monkeypatch):
-    monkeypatch.setattr(settings, "llm_api_key", "", raising=False)
+async def test_metrics_before_5_0_carry_no_distribution(answering_llm):
     round_data = build_v5_round_data()
     round_data["contractVersion"] = "4.0"
 
@@ -718,8 +723,7 @@ async def test_metrics_before_5_0_carry_no_distribution(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_v5_safety_validator_rejects_an_undeclared_adaptation(monkeypatch):
-    monkeypatch.setattr(settings, "llm_api_key", "", raising=False)
+async def test_v5_safety_validator_rejects_an_undeclared_adaptation(answering_llm):
     state = await agent_psychologist_node(build_state(build_v5_round_data()))
     state = agent_rag_intervention_node(state)
     state = await agent_adaptation_node(state)

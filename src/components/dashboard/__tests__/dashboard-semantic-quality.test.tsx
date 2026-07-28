@@ -51,7 +51,22 @@ test("DashboardOverviewSummary localizes invalid or unavailable insight states",
   );
 
   assert.doesNotMatch(html, new RegExp(rawError));
-  assert.match(html, /לא הצלחנו לטעון את הניתוח/);
+  // Whatever failed upstream, the manager is told the same thing: the analysis
+  // service is down right now and their answers are intact.
+  assert.match(html, /שירות הניתוח אינו זמין כרגע/);
+  assert.match(html, /התשובות שנאספו נשמרו במלואן/);
+});
+
+test("DashboardOverviewSummary tells a run in flight apart from a failed one", () => {
+  const html = renderToStaticMarkup(
+    <DashboardOverviewSummary
+      state={{ status: "running" }}
+      onRetry={() => undefined}
+    />,
+  );
+
+  assert.match(html, /הניתוח בעבודה/);
+  assert.doesNotMatch(html, /שירות הניתוח אינו זמין כרגע/);
 });
 
 test("getDisplayedMetrics forwards variable question metrics to the metrics screen", () => {

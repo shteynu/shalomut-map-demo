@@ -3,7 +3,10 @@ import urllib.error
 
 import pytest
 from src.config import Settings, settings
-from src.services.llm_provider import llm_provider_service
+from src.services.llm_provider import (
+    ProviderUnavailableError,
+    llm_provider_service,
+)
 
 LLM_KEY_ENV_VARS = (
     "LLM_API_KEY",
@@ -207,7 +210,7 @@ def test_transient_503_retries_then_returns_llm_result(
     assert "outcome=heuristic" not in caplog.text
 
 
-def test_non_retryable_400_falls_back_without_retry(monkeypatch):
+def test_non_retryable_400_fails_the_dimension_without_retry(monkeypatch):
     configure_gemini_retry_test(monkeypatch)
     attempts = []
 
@@ -217,18 +220,20 @@ def test_non_retryable_400_falls_back_without_retry(monkeypatch):
 
     monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
 
-    result = llm_provider_service.generate_psychological_interpretation(
-        "certainty",
-        "ודאות",
-        42.0,
-        "red",
-    )
+    with pytest.raises(ProviderUnavailableError) as failure:
+        llm_provider_service.generate_psychological_interpretation(
+            "certainty",
+            "ודאות",
+            42.0,
+            "red",
+        )
 
-    assert "אזור אדום" in result
+    assert failure.value.reason == "http_400"
+    assert failure.value.dimension_id == "certainty"
     assert len(attempts) == 1
 
 
-def test_transient_failures_fall_back_after_bounded_attempts(monkeypatch):
+def test_transient_failures_give_up_after_bounded_attempts(monkeypatch):
     configure_gemini_retry_test(monkeypatch, max_attempts=3)
     attempts = []
 
@@ -238,14 +243,15 @@ def test_transient_failures_fall_back_after_bounded_attempts(monkeypatch):
 
     monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
 
-    result = llm_provider_service.generate_psychological_interpretation(
-        "certainty",
-        "ודאות",
-        42.0,
-        "red",
-    )
+    with pytest.raises(ProviderUnavailableError) as failure:
+        llm_provider_service.generate_psychological_interpretation(
+            "certainty",
+            "ודאות",
+            42.0,
+            "red",
+        )
 
-    assert "אזור אדום" in result
+    assert failure.value.reason == "http_503"
     assert len(attempts) == 3
 
 
@@ -289,9 +295,14 @@ def test_semantically_invalid_output_retries_then_records_llm_provenance(
     assert len(attempts) == 2
 
 
-def test_invalid_provider_output_records_grounded_fallback_provenance(
+def test_output_that_never_becomes_valid_fails_the_dimension(
     monkeypatch,
 ):
+    """Output the validators keep refusing is not a reason to write copy here.
+
+    The attempt budget is spent in full first, so this is the provider failing
+    to deliver, reported as such rather than papered over.
+    """
     configure_gemini_retry_test(monkeypatch, max_attempts=2)
     attempts = []
 
@@ -304,7 +315,7 @@ def test_invalid_provider_output_records_grounded_fallback_provenance(
 
     monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
 
-    generation = (
+    with pytest.raises(ProviderUnavailableError) as failure:
         llm_provider_service.generate_psychological_interpretation_result(
             "balance",
             "איזון",
@@ -312,17 +323,10 @@ def test_invalid_provider_output_records_grounded_fallback_provenance(
             "red",
             question_aggregates=BALANCE_QUESTION_AGGREGATES,
         )
-    )
 
-    assert generation.outcome == "deterministic_fallback"
-    assert generation.attempts == 2
-    assert generation.retry_count == 1
+    assert failure.value.reason == "invalid_finish_reason"
+    assert failure.value.dimension_id == "balance"
     assert len(attempts) == 2
-    assert (
-        BALANCE_QUESTION_AGGREGATES[1]["questionTextHebrew"]
-        in generation.text
-    )
-    assert "20" in generation.text
 
 
 def test_malformed_provider_response_uses_the_same_bounded_retry(
@@ -380,14 +384,15 @@ def test_quota_429_is_not_retried(monkeypatch):
 
     monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
 
-    result = llm_provider_service.generate_psychological_interpretation(
-        "certainty",
-        "ודאות",
-        42.0,
-        "red",
-    )
+    with pytest.raises(ProviderUnavailableError) as failure:
+        llm_provider_service.generate_psychological_interpretation(
+            "certainty",
+            "ודאות",
+            42.0,
+            "red",
+        )
 
-    assert "אזור אדום" in result
+    assert failure.value.reason == "http_429"
     assert len(attempts) == 1
 
 
@@ -505,14 +510,15 @@ def test_transport_timeout_stops_after_two_total_attempts(monkeypatch):
 
     monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
 
-    result = llm_provider_service.generate_psychological_interpretation(
-        "certainty",
-        "ודאות",
-        42.0,
-        "red",
-    )
+    with pytest.raises(ProviderUnavailableError) as failure:
+        llm_provider_service.generate_psychological_interpretation(
+            "certainty",
+            "ודאות",
+            42.0,
+            "red",
+        )
 
-    assert "אזור אדום" in result
+    assert failure.value.reason == "TimeoutError"
     assert len(attempts) == 2
 
 
@@ -555,14 +561,14 @@ def test_timeout_does_not_retry_without_minimum_budget(monkeypatch):
 
     monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
 
-    result = llm_provider_service.generate_psychological_interpretation(
-        "certainty",
-        "ודאות",
-        42.0,
-        "red",
-    )
+    with pytest.raises(ProviderUnavailableError):
+        llm_provider_service.generate_psychological_interpretation(
+            "certainty",
+            "ודאות",
+            42.0,
+            "red",
+        )
 
-    assert "אזור אדום" in result
     assert len(attempts) == 1
 
 

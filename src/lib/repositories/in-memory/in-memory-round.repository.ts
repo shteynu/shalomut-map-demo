@@ -124,6 +124,11 @@ export class InMemoryRoundRepository implements IRoundRepository {
     return true;
   }
 
+  public async getAiAnalysisDispatchedAt(id: string): Promise<Date | null> {
+    const claimedAt = this.aiRunClaims.get(id);
+    return claimedAt === undefined ? null : new Date(claimedAt);
+  }
+
   public async releaseAiAnalysisClaim(id: string): Promise<void> {
     if (this.aiInsightsStore.has(id)) return;
     this.aiRunClaims.delete(id);

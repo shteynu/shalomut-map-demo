@@ -200,6 +200,18 @@ export class PrismaRoundRepository implements IRoundRepository {
     }
   }
 
+  public async getAiAnalysisDispatchedAt(id: string): Promise<Date | null> {
+    try {
+      const found = await this.prisma.surveyRound.findUnique({
+        where: { id },
+      });
+      const dispatchedAt = found?.aiInsightsUpdatedAt;
+      return dispatchedAt ? new Date(dispatchedAt) : null;
+    } catch {
+      return null;
+    }
+  }
+
   public async releaseAiAnalysisClaim(id: string): Promise<void> {
     try {
       await this.prisma.surveyRound.updateMany({

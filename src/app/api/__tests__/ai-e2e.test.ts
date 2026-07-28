@@ -168,7 +168,12 @@ async function fetchMcpAnalytics(roundId: string) {
 }
 
 function runPythonPipeline(analytics: unknown) {
-  const python = spawnSync('python3', ['-m', 'src.pipeline_cli'], {
+  // The stub entry point runs the shipping pipeline with the provider calls
+  // answered locally (`ai-analytics-service/tests/stub_pipeline_cli.py`). What
+  // this test proves is the boundary — Core's aggregates in, a Stone Map Core
+  // accepts back — and without a provider the round would now correctly fail
+  // before ever reaching that assertion.
+  const python = spawnSync('python3', ['-m', 'tests.stub_pipeline_cli'], {
     cwd: aiServiceRoot,
     input: JSON.stringify(analytics),
     encoding: 'utf8',

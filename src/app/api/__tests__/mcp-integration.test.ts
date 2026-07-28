@@ -299,6 +299,61 @@ test('AI Insights API saves and retrieves Stone Map JSON payload', async () => {
   assert.strictEqual(savedData.overallPsychologicalSummary, 'Test summary from AI Microservice');
 });
 
+test('An empty AI result says whether a run was ever dispatched, is running, or died', async () => {
+  const runStateRoundId = 'round_run_state';
+
+  // A dispatch that happened long ago and left nothing behind: the run is over
+  // one way or another, and no result is coming.
+  class DeadRunRoundRepository extends InMemoryRoundRepository {
+    public async getAiAnalysisDispatchedAt(): Promise<Date | null> {
+      return new Date(Date.now() - 60 * 60_000);
+    }
+  }
+
+  async function readRunState(roundRepo: InMemoryRoundRepository) {
+    setRepositories({
+      orgRepo: new InMemoryOrganizationRepository([DEMO_ORGANIZATION]),
+      roundRepo,
+      surveyRepo: new InMemorySurveyRepository(),
+    });
+
+    const response = await getInsightsHandler(
+      new Request(
+        `http://localhost:3000/api/rounds/${runStateRoundId}/ai-insights`,
+        { method: 'GET' },
+      ),
+      { params: Promise.resolve({ roundId: runStateRoundId }) },
+    );
+
+    assert.strictEqual(response.status, 404);
+    return (await response.json()).run;
+  }
+
+  const round = { ...DEMO_ROUND, id: runStateRoundId, shareCode: 'SHALOM-RUNSTATE' };
+
+  try {
+    const neverDispatched = await readRunState(
+      new InMemoryRoundRepository([round]),
+    );
+    assert.strictEqual(neverDispatched.state, 'idle');
+    assert.strictEqual(neverDispatched.dispatchedAt, null);
+
+    const inFlightRepo = new InMemoryRoundRepository([round]);
+    assert.strictEqual(
+      await inFlightRepo.claimAiAnalysisRun(runStateRoundId, { leaseMs: 0 }),
+      true,
+    );
+    const inFlight = await readRunState(inFlightRepo);
+    assert.strictEqual(inFlight.state, 'running');
+    assert.ok(inFlight.dispatchedAt);
+
+    const dead = await readRunState(new DeadRunRoundRepository([round]));
+    assert.strictEqual(dead.state, 'stalled');
+  } finally {
+    installDefaultRepositories();
+  }
+});
+
 test('AI Insights API keeps legacy 1.0 persistence independent from 3.0 questionnaire validation', async () => {
   const legacyRoundId = 'round_legacy_snapshot';
   setRepositories({

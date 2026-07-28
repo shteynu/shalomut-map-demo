@@ -686,7 +686,49 @@
             }
           },
           "404": {
-            "description": "AI insights have not been persisted for this round"
+            "description": "No AI result is persisted for this round. `run.state` says why - `idle` when no run was ever dispatched, `running` while a dispatched run is still within its expected completion window, and `stalled` when a dispatched run never delivered a result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "roundId",
+                    "run"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "roundId": {
+                      "type": "string"
+                    },
+                    "run": {
+                      "type": "object",
+                      "required": [
+                        "dispatchedAt",
+                        "state"
+                      ],
+                      "properties": {
+                        "dispatchedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "state": {
+                          "type": "string",
+                          "enum": [
+                            "idle",
+                            "running",
+                            "stalled"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           },
           "500": {
             "description": "Failed to fetch AI insights"

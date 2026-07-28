@@ -51,6 +51,20 @@ test('loadAiInsights distinguishes not-found and locked states', async () => {
   );
   assert.strictEqual(notFound.status, 'not-found');
 
+  const neverDispatched = await loadAiInsights(
+    'round-ui',
+    async () =>
+      new Response(
+        JSON.stringify({
+          error: 'AI insights not found for this round',
+          roundId: 'round-ui',
+          run: { dispatchedAt: null, state: 'idle' },
+        }),
+        { status: 404, headers: { 'Content-Type': 'application/json' } },
+      ),
+  );
+  assert.strictEqual(neverDispatched.status, 'not-found');
+
   const locked = await loadAiInsights(
     'round-ui',
     async () =>
@@ -69,6 +83,64 @@ test('loadAiInsights distinguishes not-found and locked states', async () => {
       ),
   );
   assert.strictEqual(locked.status, 'locked');
+});
+
+test('a dispatched run in flight is not reported as a missing analysis', async () => {
+  const result = await loadAiInsights(
+    'round-ui',
+    async () =>
+      new Response(
+        JSON.stringify({
+          error: 'AI insights not found for this round',
+          roundId: 'round-ui',
+          run: { dispatchedAt: new Date().toISOString(), state: 'running' },
+        }),
+        { status: 404, headers: { 'Content-Type': 'application/json' } },
+      ),
+  );
+
+  assert.strictEqual(result.status, 'running');
+});
+
+test('a dispatched run that never delivered is an error, not an empty round', async () => {
+  const result = await loadAiInsights(
+    'round-ui',
+    async () =>
+      new Response(
+        JSON.stringify({
+          error: 'AI insights not found for this round',
+          roundId: 'round-ui',
+          run: {
+            dispatchedAt: '2026-07-28T09:00:00.000Z',
+            state: 'stalled',
+          },
+        }),
+        { status: 404, headers: { 'Content-Type': 'application/json' } },
+      ),
+  );
+
+  assert.strictEqual(result.status, 'error');
+});
+
+test('a failed analysis payload is surfaced as an error, never as a result', async () => {
+  const result = await loadAiInsights(
+    'round-ui',
+    async () =>
+      new Response(
+        JSON.stringify({
+          contractVersion: '5.0',
+          roundId: 'round-ui',
+          surveyDefinitionHash: `sha256:${'0'.repeat(64)}`,
+          isLocked: false,
+          status: 'validation_failed',
+          failureReason: 'provider_unavailable',
+          errorMessage: 'שירות הניתוח אינו זמין כרגע.',
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      ),
+  );
+
+  assert.strictEqual(result.status, 'error');
 });
 
 test('loadAiInsights rejects an invalid callback payload', async () => {

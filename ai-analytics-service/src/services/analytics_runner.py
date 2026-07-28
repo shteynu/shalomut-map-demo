@@ -5,7 +5,11 @@ import urllib.request
 from urllib.parse import quote, urlsplit
 from typing import Dict, Any
 from src.mcp_client.client import mcp_client_manager
-from src.agents.graph import analytics_graph
+from src.agents.graph import (
+    PROVIDER_UNAVAILABLE_MESSAGE_HEBREW,
+    analytics_graph,
+    build_failure_payload,
+)
 from src.agents.state import AnalyticsState
 from src.config import settings
 
@@ -60,14 +64,36 @@ class AnalyticsRunnerService:
             "final_payload": {}
         }
 
-        # Step 3: Execute the workflow
-        final_state = await analytics_graph.ainvoke(initial_state)
-        final_payload = final_state.get("final_payload", {})
-
-        # Step 4: Callback / Output delivery
         callback_base = settings.data_layer_callback_url.rstrip("/")
         encoded_round_id = quote(round_id, safe="")
         target_callback = f"{callback_base}/{encoded_round_id}/ai-insights/"
+
+        # Step 3: Execute the workflow
+        try:
+            final_state = await analytics_graph.ainvoke(initial_state)
+            final_payload = final_state.get("final_payload", {})
+        except Exception:
+            # The webhook has already answered 202, so a crash here would
+            # otherwise be silent: Core would keep waiting for a callback that
+            # never comes and the manager would keep reading "not generated
+            # yet". The round data is in hand, so the failure can be reported
+            # in the shape Core accepts.
+            logger.exception(
+                "[AnalyticsRunner] Analytics workflow failed for round %s; "
+                "reporting the failure to the Data Layer",
+                round_id,
+            )
+            await self._send_callback(
+                target_callback,
+                build_failure_payload(
+                    initial_state["round_data"],
+                    failure_reason="service_error",
+                    error_message=PROVIDER_UNAVAILABLE_MESSAGE_HEBREW,
+                ),
+            )
+            raise
+
+        # Step 4: Callback / Output delivery
         await self._send_callback(target_callback, final_payload)
 
         return final_payload

@@ -27,6 +27,7 @@ from src.contracts import (
 from src.config import Settings, settings
 from src.mcp_client.client import MCPClientManager, mcp_client_manager
 from src.services.analytics_runner import analytics_runner_service
+from tests.llm_stub import answering_llm_provider
 
 class TestShalomutAIService(unittest.TestCase):
     
@@ -105,7 +106,8 @@ class TestShalomutAIService(unittest.TestCase):
                 "retry_count": 0,
                 "final_payload": {}
             }
-            final_state = await analytics_graph.ainvoke(initial_state)
+            with answering_llm_provider():
+                final_state = await analytics_graph.ainvoke(initial_state)
             final_payload = final_state.get("final_payload", {})
             self.assertEqual(final_payload["status"], "success")
             self.assertEqual(
