@@ -125,12 +125,15 @@ class Settings:
             or default_model_heavy
         )
 
-        # Strict token caps to prevent runaway token costs.
-        # 180 was enough for the two sentences contracts 2.0-4.0 ask for, but
-        # it truncates the 2-5 sentences of 5.0 — and a truncated answer comes
-        # back with finish_reason "length", which the provider validator
-        # rejects, so the dimension silently falls back to deterministic copy.
-        self.max_tokens_per_dimension: int = int(os.getenv("MAX_TOKENS_PER_DIMENSION", "420"))
+        # Token cap for one interpretation. It is not the length of the answer:
+        # a reasoning model spends this budget on thinking first and writes the
+        # answer from what is left. Measured on gemini-flash-latest, 2026-07-28:
+        # one interpretation cost 1440 thinking tokens and 108 visible ones, so
+        # the old caps of 180 and 420 were spent entirely on thinking and every
+        # dimension came back finish_reason "length" with no answer at all —
+        # which the validator rejects, and the round silently reads as if the
+        # model had never been called. Lower this only against a measurement.
+        self.max_tokens_per_dimension: int = int(os.getenv("MAX_TOKENS_PER_DIMENSION", "2048"))
         # Token Saving: Only invoke LLM for problematic ('yellow' / 'red') dimensions
         self.only_llm_for_problematic: bool = os.getenv("ONLY_LLM_FOR_PROBLEMATIC", "true").lower() == "true"
         # Transient provider failures are retried inside the worker thread.

@@ -158,11 +158,21 @@ Multiple provider-specific keys without an explicit provider also fail closed.
 `gemini-flash-latest` and `gemini-pro-latest` as defaults; the OpenAI-compatible
 defaults remain `gpt-4o-mini` and `gpt-4o`.
 
-`MAX_TOKENS_PER_DIMENSION` caps one interpretation and defaults to `420`. A cap
-that truncates the answer is not a shorter answer: the provider returns
-`finish_reason: "length"`, the validator rejects it, and after the configured
-attempts the dimension falls back to deterministic copy. Raise it before
-suspecting the model, and keep it above what 2-5 Hebrew sentences need.
+`MAX_TOKENS_PER_DIMENSION` caps one interpretation and defaults to `2048`.
+
+That number is not the length of the answer. A reasoning model spends the
+budget on thinking first and writes the answer out of what remains, and the
+thinking is invisible in the response — it shows up only as the gap between
+`completion_tokens` and `total_tokens`. Measured against `gemini-flash-latest`
+on 2026-07-28, one interpretation cost 1440 thinking tokens and 108 visible
+ones. Under the earlier caps of `180` and `420` the budget was gone before the
+first Hebrew word: the provider answered `finish_reason: "length"` with a
+fragment of its own reasoning, the validator rejected it, all three attempts
+failed the same way, and the round read as if the model had never been called.
+
+So a cap that truncates is not a shorter answer, it is no answer. Raise this
+before suspecting the model, and lower it only against a measurement of what
+the configured model actually spends.
 
 LLM logs record only provider, model, outcome, HTTP status and a safe request
 identifier when available. Keys, prompts, responses and respondent data are

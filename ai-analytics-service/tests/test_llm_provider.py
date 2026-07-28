@@ -849,16 +849,18 @@ def test_judgement_phrases_stay_blacklisted_for_green_on_5_0():
 
 
 def test_max_tokens_per_dimension_comes_from_the_environment(monkeypatch):
-    """The cap must be tunable without a code change, and default to 420.
+    """The cap must be tunable without a code change, and default high.
 
-    A hardcoded 420 for 5.0 left MAX_TOKENS_PER_DIMENSION describing something
-    the request no longer used, and kept 2.0-4.0 on a cap that truncates.
+    The default covers what a reasoning model spends before it writes: on
+    gemini-flash-latest one interpretation cost 1440 thinking tokens against
+    108 visible ones, and the earlier defaults of 180 and 420 were consumed
+    entirely by thinking, so every dimension came back truncated and empty.
     """
     for variable in LLM_KEY_ENV_VARS:
         monkeypatch.delenv(variable, raising=False)
 
     monkeypatch.delenv("MAX_TOKENS_PER_DIMENSION", raising=False)
-    assert Settings().max_tokens_per_dimension == 420
+    assert Settings().max_tokens_per_dimension == 2048
 
     monkeypatch.setenv("MAX_TOKENS_PER_DIMENSION", "512")
     assert Settings().max_tokens_per_dimension == 512

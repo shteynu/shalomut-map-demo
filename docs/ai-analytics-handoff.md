@@ -284,14 +284,17 @@
 4. Decide separately whether the runtime should adopt real LangGraph/ChromaDB;
    this is not required for the current contract or local E2E path.
 5. Deploy `5.0` in the consumer-first order and record what the first live
-   round actually produced. The last production round available for inspection
-   (`SHALOM-F125`, contract `4.0`, 2026-07-27) returned
-   `deterministic_fallback` on all eight stones with `attempts: 3`: the key was
-   present and every provider answer was refused. Two mechanisms that would
-   produce exactly that have since been fixed in code — the status validator
-   refusing distribution wording, and a 180-token cap truncating Hebrew — but
-   neither is confirmed as the cause. Render logs for that round, or one
-   approved live provider call, would settle it.
+   round actually produced. The `deterministic_fallback` on all eight stones of
+   `SHALOM-F125` is no longer an open question: an owner-approved live call on
+   2026-07-28 reproduced it and named the cause. `gemini-flash-latest` is a
+   reasoning model, its thinking is charged against `max_tokens`, and one
+   interpretation spends about 1440 thinking tokens. Under the caps in force
+   (`180`, later `420`) the budget was gone before the first Hebrew word: the
+   provider returned `finish_reason: "length"` carrying a fragment of its own
+   reasoning, the validator refused it, and all three attempts failed
+   identically. The cap now defaults to `2048`, and the same call returns
+   `outcome=llm` on the first attempt for the interpretation, the round summary
+   and the intervention adaptation alike.
 
 ## Approval gates
 
