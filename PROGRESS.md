@@ -1,6 +1,7 @@
 # Shalomut Map — PROGRESS.md
 
-Updated: 2026-07-28 (the depth branch is merged and deployed; privacy threshold 10 everywhere including the database; the database is empty again)
+Updated: 2026-07-28 (two environments now — local and deployed; the webhook answers `202` and analyses in the
+background, deployed and verified; the deployed database is still empty, the local one is seeded)
 
 ## Current State
 
@@ -113,9 +114,10 @@ Updated: 2026-07-28 (the depth branch is merged and deployed; privacy threshold 
        `inspect-ai-provenance` on it to show `outcome: "llm"` on at least some stones. Before either: confirm the
        Render dashboard does not set `MAX_TOKENS_PER_DIMENSION` explicitly (neither `render.yaml` nor
        `.env.render.local` does, so the deployed `2048` default applies), and settle the Gemini quota — `429`
-       arrives after a few calls on the free tier, and one live round is roughly 33 calls. Deploy the background
-       webhook (item 6) before the live round: with the synchronous webhook still deployed, a real `5.0` round at
-       `2048` tokens per dimension is likely to outlast the 30-second trigger timeout and be cancelled mid-run.
+       arrives after a few calls on the free tier, and one live round is roughly 33 calls. The timeout objection is
+       gone: the background webhook of item 6 is deployed, so a long round can no longer be cancelled mid-run.
+       Both steps are the owner's — the session permission layer declines `vercel env` writes, and the live round
+       needs a manager sign-in.
 3. [x] Decide what the ten-respondent threshold means for rounds created before it — the owner chose the migration
        (2026-07-28). `20260728120000_privacy_threshold_minimum_ten` is applied to the one database: default `10`,
        `SHALOM-F125` raised from `1` to `10` in both the column and its questionnaire snapshot, verified read-only
