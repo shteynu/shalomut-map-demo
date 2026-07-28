@@ -1,4 +1,6 @@
 import assert from "node:assert";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import test from "node:test";
 import {
   createCanonicalSurveyDefinition,
@@ -178,6 +180,26 @@ test("a definition stored below the required threshold is raised to it, not refu
       MINIMUM_PRIVACY_THRESHOLD,
     );
   }
+});
+
+test("the database default for a new round is the same number the code requires", () => {
+  // This drifted once already: a migration lowered the column default to 1
+  // while the code kept asking for ten, and the only round on the database was
+  // written with the lower number. Reads clamp, so nothing broke loudly — the
+  // round page simply showed a threshold the product no longer allows.
+  const schema = readFileSync(
+    path.join(process.cwd(), "prisma", "schema.prisma"),
+    "utf8",
+  );
+  const declaredDefault = schema.match(
+    /privacyThreshold\s+Int\s+@default\((\d+)\)/,
+  );
+
+  assert.ok(declaredDefault, "schema.prisma must declare a privacy threshold default");
+  assert.strictEqual(
+    Number(declaredDefault[1]),
+    MINIMUM_PRIVACY_THRESHOLD,
+  );
 });
 
 test("a threshold that is not a positive whole number is still refused", () => {

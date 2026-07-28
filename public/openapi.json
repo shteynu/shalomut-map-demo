@@ -560,7 +560,7 @@
           "Analytics"
         ],
         "summary": "Fetch aggregated round analytics",
-        "description": "Calculates 8 organic wellbeing stone scores (0-100 scale). Enforces the round privacy threshold (product default 1, configurable per round). Locks detailed scores if total responses < privacyThreshold.",
+        "description": "Calculates 8 organic wellbeing stone scores (0-100 scale). Enforces the round privacy threshold (ten respondents — both the default and the minimum a round may be configured with). Locks detailed scores if total responses < privacyThreshold.",
         "security": [
           {
             "managerSession": []
