@@ -303,20 +303,26 @@
 
 ## Approval gates
 
+Rewritten 2026-07-28 for a design-stage project with two environments and no
+production data. What is expensive here is a provider bill, a rotated secret and
+a wasted round trip — not the rows.
+
 - Do not rotate or copy secrets without the environment owner.
-- Do not run a second migration against another database until its target is
-  confirmed and a backup/PITR checkpoint is available.
 - Do not change any provider key, billing, limits or provider configuration
-  without explicit bounded approval.
-- Do not invoke another real webhook without an explicitly selected
-  environment and round; the completed approval covered only
-  `80e78f3e-1240-42d4-8a9e-23a3467bb650`.
-- Do not promote production until aliases/env are separated and the real LLM
-  plus privacy-locked staging scenarios are verified.
+  without explicit bounded approval. The Gemini free tier answers `429` after a
+  handful of calls, and one round is roughly 33.
+- Confirm which database a migration or a write is aimed at — the local
+  container or the deployed Supabase. The data itself is disposable, so no
+  backup or PITR checkpoint is required; hitting the wrong one is a waste of
+  time, not a loss.
+- Prefer the local environment for anything exploratory. A real deployed
+  webhook costs provider quota and leaves a persisted result behind.
 
 ## First next action
 
-Obtain bounded approval for an exact staging environment and dedicated custom
-questionnaire round, then verify unlocked and privacy-locked `3.0` persistence.
-Do not invoke an external callback without an explicitly selected environment
-and round.
+Set `AI_ANALYTICS_CONTRACT_VERSION=5.0` in Vercel (Production and Preview), then
+run one round on the deployed environment and read its provenance with
+`scripts/inspect-ai-provenance.ts`. Both halves already accept `5.0`, and the
+deployed webhook answers `202` and analyses in the background since `813c718`,
+so the round can no longer be cancelled by the trigger timeout. The local
+environment covers everything up to that point without spending deployed quota.

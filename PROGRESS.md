@@ -74,8 +74,11 @@ Updated: 2026-07-28 (the depth branch is merged and deployed; privacy threshold 
   no PITR behind this: the recorded values are the whole safety net.
 - **Two environments, local and deployed, since 2026-07-28** — see
   [local-environment.md](docs/local-environment.md). The local one is a Postgres container
-  (`compose.yaml`, `127.0.0.1:5433`, all five migrations applied) plus `npm run local`, which starts the core on
-  `:3000` and the AI service on `:8000` and hands the service its configuration from the repository-root `.env`.
+  (`compose.yaml`, `127.0.0.1:5433`) plus `npm run local`, which is the whole environment in one command: it
+  starts the Docker daemon when it is down and `colima` is installed, brings the container up, applies the
+  migrations, and only then starts the core on `:3000` and the AI service on `:8000`, handing the service its
+  configuration from the repository-root `.env`. Ctrl-C stops the two services and leaves the database running;
+  `docker compose down` ends it. Verified from a removed volume: all five migrations applied, then both halves up.
   The wiring matches the deployment rather than relaxing it: the three shared secrets are required on both sides,
   the provider key and contract version come from the same file, and the service runs with the new `ENV=local`,
   which is `production` minus one rule — its Data Layer may be on loopback. Deliberate differences: `next dev`
@@ -131,8 +134,9 @@ Updated: 2026-07-28 (the depth branch is merged and deployed; privacy threshold 
        service log. Core needed no change — its trigger already reads any 2xx as `accepted` and answers `202`
        itself. The dashboard's "generate analysis" button no longer reloads immediately, since the result cannot
        be there yet; it now says the map will update within a few minutes, matching the round screen.
-       **Still to deploy**: Render rebuilds off `main`, so this reaches the deployed service only with the next
-       push.
+       **Deployed and verified 2026-07-28**: the owner pushed, Render rebuilt itself, and a read-only smoke
+       returns `commit: 813c718`, `env: production`, versions `1.0`–`5.0`; an unauthenticated
+       `POST /api/v1/webhook/events` still answers `401`, so the rejections that stayed synchronous still are.
 7. [x] Extend the callback's round cross-check beyond `3.0`
        ([`ai-insights/route.ts`](src/app/api/rounds/[roundId]/ai-insights/route.ts)) — done in `c284caa`:
        `4.0` and `5.0` now go through `validateDynamicResultAgainstRound()` like `3.0`. Comparing the score

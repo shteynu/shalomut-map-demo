@@ -94,10 +94,16 @@ alongside the AI service — but nothing in the daily loop needs that.
 
   The deployed credentials are kept in `.env.deployed.local` (gitignored),
   which is a copy of `.env` from before the local database existed.
-- **`ai-analytics-service/.env` is read by nobody.** The service loads no env
-  file; `npm run local` hands it its configuration from the repository-root
-  `.env`. A value edited in `ai-analytics-service/.env` changes nothing, which
-  is exactly the kind of silent mismatch worth deleting.
+- **`ai-analytics-service/.env` does not configure the service.** The service
+  loads no env file at all; `npm run local` hands it its configuration from the
+  repository-root `.env`. Editing `ai-analytics-service/.env` changes nothing
+  about a running service — only the two standalone prompt experiments
+  (`test_prompt.py`, `test_raw_answers.py`) read it, through `load_dotenv`.
+- **`.env.staging.local` points at the deployed database.** It survives from
+  the staging era and holds the deployed Supabase URL plus a provider key.
+  Nothing loads it any more — `scripts/inspect-ai-provenance.ts` used to read
+  it first, which silently aimed the inspector at the deployed data whatever
+  `.env` said. Delete it once you have the provider key stored somewhere else.
 - **`db:clear` and `db:seed:local` follow `DATABASE_URL`.** The seed script
   refuses anything but a loopback host. `db:clear` does not — it prints the
   host it is about to empty, so read that line.

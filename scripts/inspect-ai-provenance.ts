@@ -2,11 +2,25 @@ import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
 
-// Try loading env files in order of preference
-for (const envFile of ['.env.staging.local', '.env.local', '.env']) {
+// The same two files Next.js reads, in the same order of precedence, so the
+// inspector looks at the database the application looks at — the local one.
+// To inspect the deployed database, pass its URL on the command line:
+// a real environment variable outranks both files.
+//
+// `.env.staging.local` used to be read first and won over everything, which
+// silently pointed this script at the deployed Supabase whatever `.env` said.
+// There is no staging environment any more; that file is not consulted.
+for (const envFile of ['.env.local', '.env']) {
   const envPath = path.resolve(process.cwd(), envFile);
-  if (fs.existsSync(envPath)) {
-    dotenv.config({ path: envPath, override: false });
+  if (!fs.existsSync(envPath)) continue;
+
+  const parsed = dotenv.parse(fs.readFileSync(envPath));
+  for (const [key, value] of Object.entries(parsed)) {
+    // An empty value must not shadow a real one in the next file: dotenv treats
+    // "" as a value, and the inspector then quietly runs with no database.
+    if (value && !process.env[key]) {
+      process.env[key] = value;
+    }
   }
 }
 
