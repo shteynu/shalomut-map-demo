@@ -58,10 +58,10 @@ privacy, auth, persistence, contracts или deployment.
 - Проверяй schema через `npx prisma validate`.
 - Проверяй client generation через `npx prisma generate`.
 - Запускай repository и API tests после schema/repository changes.
-- Выполняй `npm run db:status` только после подтверждения точного database
-  environment и target.
-- Не запускай `db:migrate:*`, `db:clear` или другие writes без явного
-  ограниченного подтверждения, backup/rollback boundary и проверки target.
+- Перед `npm run db:status`, `db:migrate:*`, `db:clear` и другими writes
+  проверяй, на какой database environment они уйдут. Данные расходные, поэтому
+  backup/rollback boundary и отдельное подтверждение не требуются — важна
+  только правильность target.
 
 ### Python и AI boundary
 

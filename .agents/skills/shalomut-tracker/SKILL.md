@@ -70,9 +70,10 @@ description: Управляй контекстом, продолжением р�
 - Соблюдай RTL-first, WCAG AA и тёплую дизайн-систему.
 - Сохраняй границу между Core Data Layer и внешним AI analytics service.
 - Обеспечивай fail-closed поведение AI transport и persistence.
-- Не изменяй production data, secrets, aliases, deployments и shared databases
-  без явного ограниченного подтверждения.
-- Не применяй migration без подтверждённого environment и rollback/PITR path.
+- Проект на стадии проектирования: production data нет, содержимое базы
+  расходное. Не заводи approval gate на очистку, reseed и миграции; явное
+  ограниченное подтверждение нужно только для secrets, credentials,
+  authentication configuration и переключения deployment aliases.
 
 ## Работа и проверка
 

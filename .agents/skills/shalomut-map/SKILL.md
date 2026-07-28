@@ -75,10 +75,14 @@ description: Работай с продуктом и кодом Shalomut Map в 
 
 ## Безопасность изменений
 
-- Не изменяй production data, secrets, aliases, deployments или shared
-  databases без явного ограниченного подтверждения.
-- Не применяй migration без подтверждённых environment, target и
-  rollback/PITR path.
+- Проект на стадии проектирования: одно окружение, реальных respondents и
+  production data нет, алиас `Production` в Vercel — операционный staging.
+  Считай содержимое базы расходным: `db:clear`, reseed, сброс схемы и
+  применение миграций — обычная работа без approval-ритуала, backup и
+  PITR-чекпоинта. Подтверждай target environment, чтобы не потерять время на
+  запись не туда, а не ради сохранности данных.
+- Явное ограниченное подтверждение нужно для secrets, credentials,
+  authentication configuration и переключения deployment aliases.
 - Не подключай публичные manager writes к реальным данным без authentication,
   authorization или подтверждённой deployment protection.
 

@@ -23,13 +23,17 @@ agent guidance. Do not prefer user-local or ignored copies of the same skills.
 
 ## Repository-wide safety gates
 
-- Obtain explicit bounded approval before mutating production data, shared
-  databases, credentials, secrets, authentication configuration, deployment
-  aliases or production deployments.
-- Do not apply a database migration until the exact environment, target and
-  rollback/PITR path are confirmed.
+- The project is at the design stage: one environment, no real respondents and
+  no production data. The Vercel alias named `Production` is an operational
+  staging endpoint. Treat database contents as disposable — clearing, reseeding,
+  resetting the schema and applying migrations are ordinary work and need no
+  approval ritual, backup or PITR checkpoint. Confirm the target environment
+  because a write to the wrong place wastes time, not because the data is
+  precious.
+- Obtain explicit bounded approval before changing credentials, secrets or
+  authentication configuration, and before repointing deployment aliases.
 - Never expose respondent identity or detailed results below the configured
-  privacy threshold.
+  privacy threshold. This is a product invariant, not an environment gate.
 - Preserve unrelated user changes in a dirty worktree and verify changes in
   proportion to risk.
 
