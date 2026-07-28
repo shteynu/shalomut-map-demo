@@ -1,6 +1,6 @@
 # Shalomut Map — PROGRESS.md
 
-Updated: 2026-07-27 (Contract 5.0 rollout; respondent re-entry, route loaders, single database)
+Updated: 2026-07-28 (why the LLM never answered; privacy threshold 10 everywhere; distribution in the UI)
 
 ## Current State
 
@@ -9,26 +9,42 @@ Updated: 2026-07-27 (Contract 5.0 rollout; respondent re-entry, route loaders, s
   - 8-dimension context & per-question distribution included in LLM prompt.
   - Multi-sentence psychological interpretations (2–5 sentences) and generative `overallPsychologicalSummary` (2–4 Hebrew sentences) enabled.
   - KB expanded to 80 items with context-aware RAG ranking in Python AI service.
-- **Automated tests**: `npm test` 202/202 passed (including dedicated `ai-contract-v5-smoke.test.ts`),
-  `python3 -m pytest` in `ai-analytics-service` 107/107 passed. The earlier "16/16" figure came from
+- **Automated tests** (branch `feature/ai-insights-depth-v5`, 2026-07-28): `npm test` 231/231 passed,
+  `.venv/bin/python -m pytest` in `ai-analytics-service` 169/169 passed, `npm run lint` 0 errors,
+  `npm run build` compiled and generated 39/39 pages. Use the venv interpreter: the system `python3` has no
+  pytest. On `main` the same suites stood at 202 and 107. The earlier "16/16" figure came from
   `run_tests.py`, which carried its own sixteen tests and never collected `tests/` — the full suite was in fact
   red (`test_rag_store.py`, broken by the catalog expansion) while that number was recorded. The sixteen now live
   in `tests/test_service_integration.py`, `run_tests.py` only forwards to pytest, and a root `conftest.py` makes
   a bare `pytest` work too.
-- **AI interpretations are not reaching the LLM**: `npx tsx scripts/inspect-ai-provenance.ts` on the only round
-  (`SHALOM-F125`, insights at contract `4.0`, processed 2026-07-27T10:11Z) reports all eight stones as
-  `outcome: deterministic_fallback` with `attempts: 3`, `retryCount: 2`. Attempts above zero mean the key is
-  configured and the provider is called — every attempt is rejected before it can be used. Cause not yet
-  identified; it needs the Render logs of that run or one live provider call. Until it is fixed, prompt-quality
-  work changes nothing a manager can see.
+- **Why the LLM never answered — settled, and fixed on a branch.** An owner-approved live provider call on
+  2026-07-28 reproduced the `deterministic_fallback` on all eight stones of `SHALOM-F125` and named the cause:
+  `gemini-*` are reasoning models, their thinking is charged against `max_tokens`, and the thinking is invisible
+  in the response — it shows only as the gap between `completion_tokens` and `total_tokens`. Measured on
+  `gemini-flash-latest`: at `max_tokens=420` the answer came back `finish_reason: "length"` with
+  `completion_tokens: 16` against `prompt_tokens: 266` and `total_tokens: 682`, so 400 tokens went to thinking
+  and the 16 returned were a fragment of it. At `2048`: `finish_reason: "stop"`, 1440 thinking tokens, 108
+  visible, correct Hebrew. `MAX_TOKENS_PER_DIMENSION` now defaults to `2048`, and the live run returns
+  `outcome=llm` on the first attempt for the interpretation (`4.0` and `5.0`), the round summary and the
+  intervention adaptation. The model configured for the deployment (`gemini-3.5-flash`) was checked separately:
+  ~1076 thinking tokens, so `2048` covers it too. **Not deployed** — it is on the branch below.
+- **Unpushed branch `feature/ai-insights-depth-v5`**: 31 commits over `origin/main` (`0a816e3`), counting this
+  document's, carrying the whole depth plan plus the 2026-07-28 work. `main` locally sits exactly on `origin/main`. Nothing is pushed or deployed.
+- **Privacy threshold is 10 everywhere** (branch only): minimum and default in Core, fallback and clamp in the
+  Python service, declared threshold of contract `5.0`. Rounds configured below ten are raised rather than
+  refused — a stored definition loads at ten, a payload below ten is read as locked, and the
+  `round.privacyThreshold` column is only ever read through `effectivePrivacyThreshold`. **Consequence not yet
+  decided by the owner**: `SHALOM-F125` was created at threshold `1` with 3 responses, so under this rule its
+  dashboard and insights read as locked.
 - **Deployed runtime**: `https://shalomut-map-demo.vercel.app/` serves current `main`.
 - **One database**: Supabase `tpfzhyalaftotljmlont` (`aws-1-ap-northeast-2`, Seoul) is the only database of the
   project. The deployed runtime, local `.env` and `prisma migrate` all resolve to it; all four migrations are
   applied and `privacy_threshold` defaults to `1`. The second project `fvnulyirrqjrnjbahmsn` was deleted by the
   owner on 2026-07-27; nothing referenced it. Never define a second `DATABASE_URL` in `.env.local`: Next.js
   prefers it over `.env` while migrations read `.env`, and the two drift apart silently.
-  State at session close: 1 organization, 1 round (`SHALOM-F125`, active, threshold `1`), 3 responses,
-  72 question answers, persisted `ai_insights` at contract `4.0`.
+  State as of 2026-07-27 (not re-read since): 1 organization, 1 round (`SHALOM-F125`, active, threshold `1`),
+  3 responses, 72 question answers, persisted `ai_insights` at contract `4.0`. The `privacy_threshold` column
+  default of `1` predates the threshold decision above and was not migrated.
 - **Single deployed environment**: `https://shalomut-map-demo.vercel.app/` is the only product URL.
 - **Manager organization scope**: `MANAGER_ORGANIZATION_ID` is `34d05e66-fa4d-4a07-a2af-c9d5c41b6088` in both
   Vercel Production and Preview, matching the only organization in the one database. `organizationId` is embedded
@@ -43,24 +59,49 @@ Updated: 2026-07-27 (Contract 5.0 rollout; respondent re-entry, route loaders, s
        `supportedContractVersions: ["1.0","2.0","3.0","4.0","5.0"]`. Core Production still produces `4.0`
        (the persisted insights of the only round carry `contractVersion: "4.0"`), so 5.0 is accepted but never
        received.
-2. [ ] End-to-end live round execution on production/staging environment with Contract 5.0 enabled.
-3. [ ] Sign out and sign in again as a manager on the deployed app (needs the admin password, so the owner has to
+2. [ ] Push `feature/ai-insights-depth-v5` and run the E2 deploy order for `5.0`
+       ([ai-insights-depth-plan-2026-07-27.md](docs/ai-insights-depth-plan-2026-07-27.md), section
+       "Продолжение"). Before step 1: confirm the Render dashboard does not set `MAX_TOKENS_PER_DIMENSION`
+       explicitly (neither `render.yaml` nor `.env.render.local` does, so the new `2048` default applies), and
+       settle the Gemini quota — `429` arrives after a few calls on the free tier, and one live round is roughly
+       33 calls.
+3. [ ] Decide what the ten-respondent threshold means for rounds created before it: `SHALOM-F125` reads as locked
+       under the new rule. Either that is the intent, or those rounds need a migration.
+4. [ ] Sign out and sign in again as a manager on the deployed app (needs the admin password, so the owner has to
        do it) and confirm the session lands on organization `34d05e66-…` with round `SHALOM-F125` visible. This is
        the only outstanding proof that the corrected `MANAGER_ORGANIZATION_ID` resolves.
-4. [x] Delete or pause the retired Supabase project `fvnulyirrqjrnjbahmsn` (completed by owner 2026-07-27; no runtime referenced it).
-5. [ ] Make the Python webhook answer `202` and process in the background. It is synchronous today
+5. [x] Delete or pause the retired Supabase project `fvnulyirrqjrnjbahmsn` (completed by owner 2026-07-27; no runtime referenced it).
+6. [ ] Make the Python webhook answer `202` and process in the background. It is synchronous today
        ([`main.py`](ai-analytics-service/src/main.py)), so a Core timeout at `AI_SERVICE_TIMEOUT_MS=30000` aborts
        the connection and uvicorn cancels the run before any callback is sent. Needs a Render deploy.
-6. [x] Extend the callback's round cross-check beyond `3.0`
+7. [x] Extend the callback's round cross-check beyond `3.0`
        ([`ai-insights/route.ts`](src/app/api/rounds/[roundId]/ai-insights/route.ts)) — done in `c284caa`:
        `4.0` and `5.0` now go through `validateDynamicResultAgainstRound()` like `3.0`. Comparing the score
        distribution itself is still open and is slice D1 of
        [ai-insights-depth-plan-2026-07-27.md](docs/ai-insights-depth-plan-2026-07-27.md).
-7. [ ] AI-generated proposed question flow (slice 3.1, on explicit user request).
+8. [ ] AI-generated proposed question flow (slice 3.1, on explicit user request).
 
 ---
 
 ## Completed Tasks
+
+- [x] **2026-07-28**: **Session on branch `feature/ai-insights-depth-v5` — the LLM answers for the first time,
+  and the privacy threshold becomes one number** (commits `5f6ad5e`, `e971d33`, `fb85f11`, `3a7d7e7`, `9924c64`,
+  `1f2be09`, plus the depth-plan slices `7c50129`…`70276f9`):
+  - **Root cause of the eight fallbacks found by live call** — see Current State. `MAX_TOKENS_PER_DIMENSION`
+    default raised to `2048`; live run returns `outcome=llm` on the interpretation, the summary and the adaptation.
+  - **Validators no longer refuse well-formed Hebrew for its shape**: a period inside a decimal no longer splits a
+    sentence, markdown and closing quotes are stripped before validation and the stripped text is what is stored.
+    The Latin ban stays — it is what catches an English preamble — but every prompt is Hebrew now, scores print as
+    integers and the status reaches the model as a colour-free label. Regression suite
+    `ai-analytics-service/tests/test_llm_output_validation.py`.
+  - **Privacy threshold 10 everywhere**, including the database column read path, with old rounds raised rather
+    than refused.
+  - **Distribution shown in the metric blob** (option B of the E3 proposal, owner-approved): counts in the helper
+    line, an `aria-hidden` proportional bar repeating them, shown only at ten respondents or more.
+  - **Verification**: `npm test` 231/231, `python3 -m pytest` 169/169, `npm run lint` 0 errors,
+    `npm run build` 39/39 pages. Live provider call: local, one round's worth of synthetic aggregates, no
+    database and no respondent data. Nothing pushed, nothing deployed.
 
 - [x] **2026-07-27**: **Contract 5.0 Rollout (AI Analytics Informativeness)**:
   - Created specification [contracts/ai-analytics-v5.json](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/contracts/ai-analytics-v5.json) and TS/Python mirrors.
