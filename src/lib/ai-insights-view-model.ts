@@ -1,9 +1,11 @@
 import {
   AI_ANALYTICS_DIMENSION_IDS,
+  type ScoreDistribution,
   type StoneDetail,
   type StoneMapResult,
 } from './ai-contract';
 import type { WellbeingDimension } from './demo-data';
+import { MINIMUM_PRIVACY_THRESHOLD } from './survey-definition';
 import type {
   WellbeingDimensionId,
   WellbeingStatus,
@@ -35,6 +37,49 @@ export function getDimensionActionPresentation(
 
 function formatQuestionAverage(averageScore: number): string {
   return `${Math.round(averageScore * 100) / 100} מתוך 100`;
+}
+
+/**
+ * The split in words, skipping the buckets nobody chose.
+ *
+ * "0 גבוה · 0 נמוך" is noise standing where information should be, and an
+ * evenly lukewarm question is exactly the case the distribution exists to
+ * show — so it reads "20 משיבים · 20 באמצע" and says the same thing.
+ */
+function formatDistribution(
+  distribution: ScoreDistribution,
+  responseCount: number,
+): string {
+  const parts = [
+    { count: distribution.yellow, label: 'באמצע' },
+    { count: distribution.green, label: 'גבוה' },
+    { count: distribution.red, label: 'נמוך' },
+  ]
+    .filter((part) => part.count > 0)
+    .map((part) => `${part.count} ${part.label}`);
+
+  return [`${responseCount} משיבים`, ...parts].join(' · ');
+}
+
+/**
+ * The split of one question's answers, or nothing.
+ *
+ * An average of ten answers is one number; the same ten answers as three
+ * counts are close to a list of who said what, and below the threshold that
+ * list is short enough to attach to people. So the reading the distribution
+ * enables — telling a split staff from an evenly lukewarm one — is shown only
+ * where it describes the school rather than its individuals.
+ */
+function displayableDistribution(
+  distribution: ScoreDistribution | undefined,
+  responseCount: number,
+): ScoreDistribution | undefined {
+  if (!distribution || responseCount < MINIMUM_PRIVACY_THRESHOLD) {
+    return undefined;
+  }
+
+  const total = distribution.green + distribution.yellow + distribution.red;
+  return total === responseCount ? distribution : undefined;
 }
 
 export function getStoneInsight(
@@ -84,6 +129,20 @@ export function applyStoneInsightToDimension(
       }
 
       const trend = metric.trend?.trim();
+      const distribution = displayableDistribution(
+        metric.scoreDistribution,
+        metric.responseCount!,
+      );
+      if (distribution) {
+        return {
+          label: metric.label,
+          value: formatQuestionAverage(metric.averageScore!),
+          // The counts live in the sentence, never in the bar alone.
+          helper: formatDistribution(distribution, metric.responseCount!),
+          distribution,
+        };
+      }
+
       return {
         label: metric.label,
         value: formatQuestionAverage(metric.averageScore!),

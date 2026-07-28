@@ -40,6 +40,16 @@ export type ResponseMetric = {
   value: string;
   helper: string;
   highlightText?: string;
+  /**
+   * How the answers to this question split. Present only when the question
+   * cleared the privacy threshold; the counts are always spelled out in
+   * `helper`, so the bar drawn from them adds no information of its own.
+   */
+  distribution?: {
+    green: number;
+    yellow: number;
+    red: number;
+  };
 };
 
 export type WellbeingDimension = {

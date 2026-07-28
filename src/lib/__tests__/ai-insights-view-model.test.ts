@@ -39,3 +39,85 @@ test('applyStoneInsightToDimension replaces demo analysis with AI content', () =
   assert.strictEqual(result.metrics[0].value, '40.0');
   assert.match(result.recommendations[0].body, /שני חלונות/);
 });
+
+function stoneWithMetric(metric: StoneDetail['metrics'][number]): StoneDetail {
+  return {
+    dimensionId: 'balance',
+    dimensionNameHebrew: 'איזון',
+    status: 'yellow',
+    score: 60,
+    psychologicalInterpretation: 'הצוות מדווח על עומס בינוני.',
+    metrics: [metric],
+    recommendedInterventions: [],
+  };
+}
+
+test('a question that cleared the threshold shows its split, in words and in a bar', () => {
+  const dimension = getDimensionById('balance');
+  assert.ok(dimension);
+
+  const result = applyStoneInsightToDimension(
+    dimension,
+    stoneWithMetric({
+      label: 'עומס משימות',
+      value: '60.0',
+      questionId: 'balance-q1',
+      averageScore: 60,
+      responseCount: 20,
+      scoreDistribution: { green: 4, yellow: 12, red: 4 },
+    }),
+  );
+
+  // Ten lukewarm answers and a staff split in half both average 60. The
+  // counts are what tells them apart, so they belong in the sentence.
+  assert.deepStrictEqual(result.metrics[0].distribution, {
+    green: 4,
+    yellow: 12,
+    red: 4,
+  });
+  assert.match(result.metrics[0].helper, /20 משיבים/u);
+  assert.match(result.metrics[0].helper, /12 באמצע/u);
+  assert.match(result.metrics[0].helper, /4 גבוה/u);
+  assert.match(result.metrics[0].helper, /4 נמוך/u);
+});
+
+test('a question below the threshold keeps the count and loses the split', () => {
+  const dimension = getDimensionById('balance');
+  assert.ok(dimension);
+
+  // Three answers as three counts is close to a list of who said what.
+  const result = applyStoneInsightToDimension(
+    dimension,
+    stoneWithMetric({
+      label: 'עומס משימות',
+      value: '60.0',
+      questionId: 'balance-q1',
+      averageScore: 60,
+      responseCount: 3,
+      scoreDistribution: { green: 1, yellow: 1, red: 1 },
+    }),
+  );
+
+  assert.strictEqual(result.metrics[0].distribution, undefined);
+  assert.match(result.metrics[0].helper, /3 משיבים/u);
+  assert.doesNotMatch(result.metrics[0].helper, /באמצע/u);
+});
+
+test('a split that does not add up to the count is not drawn', () => {
+  const dimension = getDimensionById('balance');
+  assert.ok(dimension);
+
+  const result = applyStoneInsightToDimension(
+    dimension,
+    stoneWithMetric({
+      label: 'עומס משימות',
+      value: '60.0',
+      questionId: 'balance-q1',
+      averageScore: 60,
+      responseCount: 20,
+      scoreDistribution: { green: 4, yellow: 4, red: 4 },
+    }),
+  );
+
+  assert.strictEqual(result.metrics[0].distribution, undefined);
+});
