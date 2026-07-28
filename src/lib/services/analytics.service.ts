@@ -6,6 +6,7 @@ import {
 } from '../shalomut-source';
 import {
   createCanonicalSurveyDefinition,
+  effectivePrivacyThreshold,
   isActivatableSurveyDefinition,
   parseSurveyDefinition,
 } from '../survey-definition';
@@ -51,14 +52,18 @@ export class AnalyticsService {
 
   /**
    * Calculate aggregated analytics for a round from all submitted responses.
-   * Enforces privacy threshold (default 10). If total responses < privacyThreshold,
+   * Enforces the privacy threshold, never below the required minimum. If total
+   * responses < privacyThreshold,
    * results are marked as isLocked = true to preserve respondent anonymity.
    */
   public static calculateRoundAnalytics(
     roundId: string,
-    privacyThreshold: number,
+    storedPrivacyThreshold: number,
     responses: SurveyResponseRecord[]
   ): RoundAnalyticsResult {
+    const privacyThreshold = effectivePrivacyThreshold(
+      storedPrivacyThreshold,
+    );
     const scopedResponses = responses.filter(
       (response) => response.roundId === roundId,
     );
@@ -239,13 +244,15 @@ export class AnalyticsService {
       }
     }
 
+    const privacyThreshold = effectivePrivacyThreshold(
+      round.privacyThreshold,
+    );
     const isLocked =
       isUnfinishedQuestionnaire ||
-      totalResponses < round.privacyThreshold ||
+      totalResponses < privacyThreshold ||
       enabledQuestions.some(
         (question) =>
-          (scoresByQuestion.get(question.id)?.length ?? 0) <
-          round.privacyThreshold,
+          (scoresByQuestion.get(question.id)?.length ?? 0) < privacyThreshold,
       );
 
     if (isLocked) {
@@ -255,7 +262,7 @@ export class AnalyticsService {
         organizationId: round.organizationId,
         surveyDefinitionHash,
         totalResponses,
-        privacyThreshold: round.privacyThreshold,
+        privacyThreshold,
         isLocked: true,
         dimensionScores: {} as Record<
           WellbeingDimensionId,
@@ -320,7 +327,7 @@ export class AnalyticsService {
       organizationId: round.organizationId,
       surveyDefinitionHash,
       totalResponses,
-      privacyThreshold: round.privacyThreshold,
+      privacyThreshold,
       isLocked: false,
       dimensionScores,
       questionAggregates,

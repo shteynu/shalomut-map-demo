@@ -5,6 +5,7 @@ import { AnswerValue, SurveyResponseRecord } from '../../types/backend';
 import { AnalyticsService } from '../analytics.service';
 import {
   DEFAULT_PRIVACY_THRESHOLD,
+  MINIMUM_PRIVACY_THRESHOLD,
   createCanonicalSurveyDefinition,
 } from '../../survey-definition';
 import { RoundService } from '../round.service';
@@ -294,18 +295,22 @@ test('an unlocked 5.0 round carries a distribution for every question', () => {
     const round = RoundService.createRound({
       organizationId: 'org_unlocked_v5',
       title: 'סבב פתוח',
-      privacyThreshold: 1,
-      surveyDefinition: createCanonicalSurveyDefinition('סבב פתוח', 1),
+      privacyThreshold: MINIMUM_PRIVACY_THRESHOLD,
+      surveyDefinition: createCanonicalSurveyDefinition(
+        'סבב פתוח',
+        MINIMUM_PRIVACY_THRESHOLD,
+      ),
     });
+    // Ten answers: two red, three yellow, five green.
     const responses: SurveyResponseRecord[] = Array.from(
-      { length: 3 },
+      { length: MINIMUM_PRIVACY_THRESHOLD },
       (_, index) => ({
         id: `response_unlocked_v5_${index}`,
         roundId: round.id,
         submittedAt: new Date(),
         answers: surveyInstrument.questions.map((question) => {
           const value: AnswerValue =
-            index === 0 ? 'red' : index === 1 ? 'yellow' : 'green';
+            index < 2 ? 'red' : index < 5 ? 'yellow' : 'green';
           return {
             questionId: question.id,
             dimensionId: question.dimensionId,
@@ -324,11 +329,11 @@ test('an unlocked 5.0 round carries a distribution for every question', () => {
     assert.strictEqual(result.isLocked, false);
     for (const aggregate of Object.values(result.questionAggregates)) {
       assert.deepStrictEqual(aggregate.scoreDistribution, {
-        green: 1,
-        yellow: 1,
-        red: 1,
+        green: 5,
+        yellow: 3,
+        red: 2,
       });
-      assert.strictEqual(aggregate.responseCount, 3);
+      assert.strictEqual(aggregate.responseCount, MINIMUM_PRIVACY_THRESHOLD);
     }
   } finally {
     if (previousVersion === undefined) {

@@ -24,6 +24,24 @@ export const DEFAULT_PRIVACY_THRESHOLD = MINIMUM_PRIVACY_THRESHOLD;
  */
 export const LOW_PRIVACY_THRESHOLD_WARNING = 5;
 
+/**
+ * The threshold a round is actually read at.
+ *
+ * Rounds persisted before ten became mandatory still carry their old number in
+ * the database, and that column is what every lock decision reads. Passing it
+ * through here is what makes the requirement true of existing rounds too,
+ * rather than only of the ones created from now on.
+ */
+export function effectivePrivacyThreshold(
+  storedThreshold: number | undefined | null,
+): number {
+  if (typeof storedThreshold !== "number" || !Number.isFinite(storedThreshold)) {
+    return MINIMUM_PRIVACY_THRESHOLD;
+  }
+
+  return Math.max(storedThreshold, MINIMUM_PRIVACY_THRESHOLD);
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }

@@ -43,13 +43,13 @@ test('Smoke Test 1: Full Contract 5.0 analytical calculation and validation', as
     title: 'סקר סמוק 5.0',
     status: 'active',
     shareCode: 'SMOKE50',
-    privacyThreshold: 1,
+    privacyThreshold: 10,
     startDate: new Date(),
     surveyDefinition: {
       title: 'סקר סמוק 5.0',
       audience: 'צוות',
       estimatedMinutes: 5,
-      minimumResponses: 1,
+      minimumResponses: 10,
       introText: 'סקר',
       anonymityText: 'אנונימי',
       questions,
@@ -57,30 +57,22 @@ test('Smoke Test 1: Full Contract 5.0 analytical calculation and validation', as
     createdAt: new Date(),
   };
 
-  const responses: SurveyResponseRecord[] = [
-    {
-      id: 'resp-1',
+  // Ten answers, half green and half yellow: the smallest round that clears
+  // the required privacy threshold.
+  const responses: SurveyResponseRecord[] = Array.from(
+    { length: 10 },
+    (_, index) => ({
+      id: `resp-${index + 1}`,
       roundId,
       submittedAt: new Date(),
       answers: questions.map((q) => ({
         questionId: q.id,
         dimensionId: q.dimensionId,
-        value: 'green',
-        score: 100,
+        value: index < 5 ? ('green' as const) : ('yellow' as const),
+        score: index < 5 ? (100 as const) : (60 as const),
       })),
-    },
-    {
-      id: 'resp-2',
-      roundId,
-      submittedAt: new Date(),
-      answers: questions.map((q) => ({
-        questionId: q.id,
-        dimensionId: q.dimensionId,
-        value: 'yellow',
-        score: 60,
-      })),
-    },
-  ];
+    }),
+  );
 
   const previousEnv = process.env.AI_ANALYTICS_CONTRACT_VERSION;
   process.env.AI_ANALYTICS_CONTRACT_VERSION = '5.0';
@@ -89,11 +81,11 @@ test('Smoke Test 1: Full Contract 5.0 analytical calculation and validation', as
     const analytics = AnalyticsService.calculateDynamicRoundAnalytics(round, responses);
     assert.strictEqual(analytics.contractVersion, '5.0');
     assert.strictEqual(analytics.isLocked, false);
-    assert.strictEqual(analytics.totalResponses, 2);
+    assert.strictEqual(analytics.totalResponses, 10);
 
     const firstQuestionDist = analytics.questionAggregates['q-smoke-1'].scoreDistribution;
     assert.ok(firstQuestionDist);
-    assert.deepStrictEqual(firstQuestionDist, { green: 1, yellow: 1, red: 0 });
+    assert.deepStrictEqual(firstQuestionDist, { green: 5, yellow: 5, red: 0 });
 
     // Validate a valid 5.0 Stone Map payload
     const hash = createSurveyDefinitionHash(questions);
@@ -121,8 +113,8 @@ test('Smoke Test 1: Full Contract 5.0 analytical calculation and validation', as
                 value: '80 מתוך 100',
                 questionId: `q-smoke-${DIMENSION_IDS.indexOf(dim) + 1}`,
                 averageScore: 80,
-                responseCount: 2,
-                scoreDistribution: { green: 1, yellow: 1, red: 0 },
+                responseCount: 10,
+                scoreDistribution: { green: 5, yellow: 5, red: 0 },
               },
             ],
             generationProvenance: {
