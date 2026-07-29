@@ -1,12 +1,12 @@
 # Shalomut Map — PROGRESS.md
 
 Updated: 2026-07-29 (provider calls of one round are now bounded to two at a time, `llm_provider.py` is split
-into transport / prompts / validation, and the plan document's code anchors were re-verified; local only,
-nothing committed or deployed)
+into transport / prompts / validation, and the plan document's code anchors were re-verified; merged to `main`
+as PR #13 and live on Render)
 
 ## Current State
 
-- **A round no longer meets the provider all at once (2026-07-29, local, uncommitted).** Both LLM nodes hand
+- **A round no longer meets the provider all at once (2026-07-29, deployed).** Both LLM nodes hand
   their whole batch to `asyncio.gather` — eight interpretations, then up to two dozen recommendation
   adaptations — so roughly 33 calls used to leave together. Free provider tiers cap concurrent requests (the
   strictest at two), and the burst spent that budget in the first breath of the round.
@@ -16,7 +16,7 @@ nothing committed or deployed)
     waits on it. Declared in `render.yaml` and forwarded locally.
   - Two tests: one asserts the invariant (peak ≤ 2 across eight dimensions), one raises the limit to five and
     requires a peak above two — without it a serial-by-accident run would satisfy the first test just as well.
-- **`llm_provider.py` (1323 lines, one class) is split along what each part is responsible for.** Half its
+- **`llm_provider.py` (1323 lines, one class) is split along what each part is responsible for (deployed).** Half its
   public surface was a Hebrew validator that `nodes.py` called on text no provider had returned.
   - `llm_transport.py` — one bounded conversation with a provider (endpoint, attempts, backoff, `Retry-After`,
     hard-quota rules); it never reads the copy it carries, acceptance arrives as a predicate.
@@ -48,6 +48,11 @@ nothing committed or deployed)
   **Not verified: a live provider call.** No key was available and this session's sandbox proxy presents a CA
   that Python's TLS refuses, so the model was never actually reached — the concurrency bound is measured
   against a stub, not against a provider.
+  - **Merged and live.** The owner pushed the branch and squash-merged it as PR #13; `main` is `10c94ff` and
+    its tree is identical to the three-commit branch. Render rebuilt itself off the merge:
+    `GET https://shalomut-ai-analytics.onrender.com/health` returns `commit: 10c94ff`, `env: production`,
+    `privacyThreshold: 10`, versions `1.0`–`5.0`. `LLM_MAX_CONCURRENT_REQUESTS` is declared in `render.yaml`
+    with no dashboard value, so the deployed service runs on the default of two.
 
 - **The deterministic fallback no longer stands in for a failed provider call (2026-07-28, owner decision,
   local, not deployed).** Until now any provider failure — no key, `429`, timeout, malformed JSON, or output the
@@ -252,9 +257,10 @@ nothing committed or deployed)
        times. `ONLY_LLM_FOR_PROBLEMATIC` is also not declared in `render.yaml`, so a dashboard value could be
        lost on a blueprint sync. Note that the model already writes about green dimensions through the `5.0`
        recommendation adaptation — only the interpretation is withheld.
-11. [ ] Commit the 2026-07-29 work. Nothing from that session is committed: the concurrency bound, the
-       `llm_provider.py` split, the prefix forwarding and the documentation anchors are all uncommitted in the
-       working tree.
+11. [x] Commit the 2026-07-29 work — done as three commits (refactor, concurrency bound, documentation) on
+       `refactor/llm-provider-split`, squash-merged by the owner as PR #13. The refactor commit was verified
+       green on its own in a temporary worktree (175 tests, the two concurrency tests arriving with the next
+       commit).
 
 ---
 
