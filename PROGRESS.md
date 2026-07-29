@@ -445,6 +445,14 @@ first one ever; contract `5.0` is switched on and proven, and the provider quota
        text is model copy about aggregates, not respondent copy, so the privacy invariant does not
        obviously forbid it; the question is whether a truncated sample at `WARNING` earns its place or just
        fills Render's log with Hebrew paragraphs nobody reads until the next investigation.
+
+18. [ ] **A non-Hebrew letter can reach the school as long as it is not Latin.** Seen twice while
+       reproducing item 16: `certainty` wrote `אי وדאות` with an Arabic waw (U+0648) in place of the Hebrew
+       one, and `is_hebrew_only_copy` accepted it, because it only looks for Latin characters. It renders as
+       a broken word in a paragraph a manager reads. The fix is not simply widening the check — every
+       character a rejection adds is another way for a dimension to fall back to catalog copy, which is what
+       items 15 and 16 were about — so it needs deciding whether to reject the answer, repair the character
+       during sanitization, or both.
 ---
 
 ## Completed Tasks
