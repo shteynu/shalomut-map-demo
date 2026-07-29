@@ -1,10 +1,31 @@
 # Shalomut Map — PROGRESS.md
 
-Updated: 2026-07-29 (provider calls of one round are now bounded to two at a time, `llm_provider.py` is split
-into transport / prompts / validation, and the plan document's code anchors were re-verified; merged to `main`
-as PR #13 and live on Render)
+Updated: 2026-07-29 (contract `5.0` is switched on and proven in production, the first live rounds ran end to
+end on the deployed stack, and the blocker is now the Gemini quota rather than anything in the code)
 
 ## Current State
+
+- **Contract `5.0` is live and proven (2026-07-29).** `AI_ANALYTICS_CONTRACT_VERSION` was set in Vercel
+  Production and Preview and the production deployment redeployed; step 3 of the E2 plan is closed, with the
+  runbook and the evidence in [e2-step3-contract-version-rollout.md](docs/e2-step3-contract-version-rollout.md).
+  Two records were corrected on the way: the variable had never existed in Preview at all, so Preview was
+  producing `3.0`, and the variable is of type Sensitive, so its value can never be read back — the proof is
+  behavioural, from an authenticated `/api/mcp/` call and from `5.0` persisted in a round's own result.
+- **The pipeline works end to end on the deployed stack; the provider quota is what stops it.** Two live rounds
+  ran on `f9c18f1c`. The second left a complete Render trace: webhook `202`, privacy gate at ten responses
+  unlocked, provider calls, callback `200`, all in 42 seconds. Five `outcome=llm` lines on `gemini-3.5-flash`
+  prove the model answers. Three dimensions — `certainty`, `organizational-climate`, `meaning` — exhausted
+  three attempts each against `status=429` and ended as `provider_unavailable reason=http_429`, which fails the
+  whole round by design, so none of the successful dimensions reached the database.
+  - This is the fail-loud behaviour of PR #12 working as intended, observed on the deployment for the first
+    time: `status: validation_failed`, `failureReason: provider_unavailable`, Hebrew unavailability copy, no
+    invented analysis.
+  - One anomaly is unexplained: two rejections with `reason=invalid_finish_reason` before any `429`. The
+    truncation theory was checked and disproved — `MAX_TOKENS_PER_DIMENSION` is not set on Render, so the
+    `2048` default applies. The log records the label but never the provider's actual `finish_reason`.
+- **Four live secrets were exposed in a chat transcript on 2026-07-29** — the Gemini API key and the three
+  shared secrets between Core and the AI service. Rotation is the owner's call and has not been done; see item
+  12 in Next Up. No secret value was written to the repository.
 
 - **A round no longer meets the provider all at once (2026-07-29, deployed).** Both LLM nodes hand
   their whole batch to `asyncio.gather` — eight interpretations, then up to two dozen recommendation
@@ -241,10 +262,11 @@ as PR #13 and live on Render)
        `SHALOM-F125` raised from `1` to `10` in both the column and its questionnaire snapshot, verified read-only
        afterwards on the deployed respondent endpoint. That round has since been deleted with the rest of the
        data; the column default survives it and governs every round created from now on.
-4. [ ] Sign in as a manager on the deployed app (needs the admin password, so the owner has to do it) and run the
-       first setup against the now-empty database. That both proves `MANAGER_ORGANIZATION_ID` resolves — the
-       organization is recreated under exactly that id — and gives a round to test with. A round needs ten
-       responses, and ten on every analysed question, before the dashboard unlocks.
+4. [x] Sign in as a manager on the deployed app and run the first setup against the empty database — done by
+       the owner on 2026-07-29. Round `f9c18f1c` exists with ten responses and is unlocked at a privacy
+       threshold of ten, which is what an `/api/mcp/` read returns for it, so manager sign-in, round setup and
+       the respondent flow all work on the deployment. Not separately checked: that the recreated
+       organization's id equals `MANAGER_ORGANIZATION_ID` — the variable is encrypted and was never read.
 5. [x] Delete or pause the retired Supabase project `fvnulyirrqjrnjbahmsn` (completed by owner 2026-07-27; no runtime referenced it).
 6. [x] Make the Python webhook answer `202` and process in the background — done 2026-07-28 in
        [`main.py`](ai-analytics-service/src/main.py). Authentication, configuration and event-type rejections stay
@@ -282,10 +304,55 @@ as PR #13 and live on Render)
        `refactor/llm-provider-split`, squash-merged by the owner as PR #13. The refactor commit was verified
        green on its own in a temporary worktree (175 tests, the two concurrency tests arriving with the next
        commit).
+12. [ ] **Rotate the four secrets exposed in a chat transcript on 2026-07-29** — the Gemini API key and
+       `MCP_SHARED_SECRET`, `AI_WEBHOOK_SECRET`, `AI_CALLBACK_SECRET`. Owner's decision and owner's hands:
+       AGENTS.md gates credential changes, and the session permission layer declines the writes anyway. What
+       makes this more than a chore is the ordering — the three shared secrets exist in pairs, one copy in
+       Render and one in Vercel, and between the two writes the callback and the MCP read will both fail
+       closed. Do them one secret at a time, Render and Vercel back to back, and expect any round in flight to
+       die. The Gemini key is independent and rotates in Google AI Studio. Until this is done, anyone with the
+       transcript can trigger analysis, read a round's aggregates and forge a result callback.
+13. [ ] Decide how to get past the Gemini `429`, which is now the only confirmed blocker to a green round.
+       First establish which limit is being hit: a round is roughly 33 calls in 42 seconds, so a per-minute cap
+       is hit by pacing and a per-day cap is not. `LLM_MAX_CONCURRENT_REQUESTS` bounds concurrency but nothing
+       paces frequency, so if the cap is per-minute a throttle would fix this without paying. If it is per-day,
+       only a paid tier or fewer calls per round will.
+14. [ ] Log the provider's actual `finish_reason` alongside `reason=invalid_finish_reason` in
+       [`llm_transport.py`](ai-analytics-service/src/services/llm_transport.py). Small and local. The same
+       blindness already cost a session in the `MAX_TOKENS_PER_DIMENSION=420` episode, and the anomaly seen on
+       2026-07-29 is unresolvable without it. Worth doing only if rounds will keep being run against this key —
+       reading the result costs another round's worth of quota.
+15. [ ] Decide whether a partial map is acceptable: some stones written by the model, the rest marked
+       explicitly as unavailable. Today one refused dimension fails the whole round, so on the free tier no
+       round can ever succeed even though the provider demonstrably answers. This is wider than item 10, which
+       only concerned the green dimensions. Note that honestly marking a stone as having no analysis does not
+       breach the "no fallback posing as analysis" invariant — a fallback pretending to be model output would.
 
 ---
 
 ## Completed Tasks
+
+- [x] **2026-07-29**: **Contract `5.0` switched on, proven, and the first live rounds run on the deployment**
+  (commits `193cf34`, `5b8f89d`, `1113be7`, `b4afc9c`):
+  - Step 3 of E2 closed by the owner: `AI_ANALYTICS_CONTRACT_VERSION` written to Vercel Production and Preview,
+    production redeployed as `shalomut-map-demo-1t7fim7ss` holding the alias. Runbook, commands and the two
+    corrections it produced are in
+    [e2-step3-contract-version-rollout.md](docs/e2-step3-contract-version-rollout.md).
+  - Proven twice, since a Sensitive variable can never be read back: `POST /api/mcp/` → `200` with
+    `contractVersion: "5.0"`, ten responses, threshold ten, unlocked, eight dimensions, 27 question aggregates
+    and `backgroundContext` present — which only crosses the boundary at `4.0`/`5.0` on an unlocked round — and
+    `5.0` persisted in the round's own result, so the whole Core → Python → callback → persistence chain
+    carried it.
+  - Round `f9c18f1c` failed twice with `provider_unavailable`. The Render trace of the second run
+    (11:17:14–11:17:56) establishes the cause as `reason=http_429` on three dimensions, with five
+    `outcome=llm` lines proving the model itself answers. PR #12's fail-loud behaviour was observed on the
+    deployment for the first time.
+  - Disproved on the way: the truncation theory for `invalid_finish_reason`. `MAX_TOKENS_PER_DIMENSION` is not
+    set in the Render environment, so the `2048` default governs; that check had been open since PR #11.
+  - Corrected records: Preview never held the contract variable; the fallback work was already deployed as
+    PR #12 rather than local-only.
+  - Verification was Markdown-scoped throughout — `git diff --check` and relative-link resolution — since no
+    source file changed in this session. Everything else above is deployment evidence, not test evidence.
 
 - [x] **2026-07-28**: **The depth branch is merged, deployed, and the database is empty again**
   (PR [#11](https://github.com/shteynu/shalomut-map-demo/pull/11) → `2be0708`):
