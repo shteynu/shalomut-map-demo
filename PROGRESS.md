@@ -20,8 +20,9 @@ first one ever; contract `5.0` is switched on and proven, and the provider quota
   - **18 of 24 recommendations were rewritten by the model; 6 stayed catalog copy** — all three entries of
     `certainty` and all three of `professional-competence`, both red dimensions. Their adaptation batches
     failed twice with `invalid_semantic_output` and fell back by design, which is a legal outcome, so the
-    round succeeded with two dimensions carrying the generic paragraph every school gets. That is the next
-    thing worth fixing, and it is item 16.
+    round succeeded with two dimensions carrying the generic paragraph every school gets. **Diagnosed and
+    fixed the same day** (commit `6569c4d`) — the two failed for unrelated reasons that shared one label; see
+    item 16. Not yet reproven by a live round, only by re-running the two refused prompts.
   - **A retry now stops at two attempts, not three**, although `LLM_MAX_ATTEMPTS` is `3`: at 14 a minute the
     queue's next turn no longer fits inside `llm_retry_budget_seconds` once the minimum window is reserved,
     so the budget declines it. That is the designed behaviour meeting the new pace, not a fault — but the
@@ -425,18 +426,55 @@ first one ever; contract `5.0` is switched on and proven, and the provider quota
        only concerned the green dimensions. Note that honestly marking a stone as having no analysis does not
        breach the "no fallback posing as analysis" invariant — a fallback pretending to be model output would.
 
-16. [ ] **Find out why an adaptation batch is rejected as `invalid_semantic_output`.** On the successful
-       round of 2026-07-29 two dimensions out of eight — `certainty` and `professional-competence`, both red
-       — failed twice and fell back, so six of twenty-four recommendations reached the manager as the
-       catalog paragraph every school gets. The fallback is legal and the round is right to succeed; what is
-       unknown is the cause. Candidates: the block format (`===` separators and the exact line count per
-       entry) is harder for a lite model than a single answer, or one of the constraints added the same day
-       (the summary line must be the recommendation itself) tightened it. Two things would say which — the
-       rejected text itself, which no log carries today, and the dimension, which the
-       `adaptation=deterministic_fallback` line does not name either. Both are one log line away.
+16. [x] **Found out why an adaptation batch is rejected as `invalid_semantic_output`** (2026-07-29, commit
+       `6569c4d`). Neither candidate was right, and the two dimensions failed for unrelated reasons — which
+       is exactly what one label for every rejection hides. `professional-competence` wrote nine correct
+       lines, three summaries with two steps under each, and no `===` anywhere. `certainty` wrote "only one
+       respondent in ten" in words, so its summary carried no digit. A third cause appeared once those two
+       were fixed: "and the absence of green answers in that item" names a colour with no count beside it,
+       and `is_status_consistent` clears a foreign colour only where the sentence carries one of the
+       distribution counts in digits. The separator is now a hint — where it fails to cut the answer into
+       the expected number of entries, the shape does it, since a step always carries a bullet and a summary
+       never does — and the prompt asks for digits and for the count beside any colour it names. Verified
+       against the provider on the real refused inputs: all three dimensions accepted on two consecutive
+       runs, `pytest` 203/203 with nine new tests. See item 17 for what remains open.
+
+17. [ ] **Decide whether refused adaptation copy should reach a log at all.** The fallback line now names
+       the gate and the dimension, which is what picked the fix above, but reproducing this one still took
+       rebuilding the exact prompt from the database and re-running it against the provider. The refused
+       text is model copy about aggregates, not respondent copy, so the privacy invariant does not
+       obviously forbid it; the question is whether a truncated sample at `WARNING` earns its place or just
+       fills Render's log with Hebrew paragraphs nobody reads until the next investigation.
 ---
 
 ## Completed Tasks
+
+- [x] **2026-07-29**: **Six recommendations were lost to a punctuation line and two spelled-out numbers**
+  (commit `6569c4d`, item 16):
+  - The round of 2026-07-29 rejected the adaptation batches of `certainty` and `professional-competence` and
+    logged `invalid_semantic_output` for both. Reproduced by rebuilding the exact prompts those two
+    dimensions sent — same aggregates, same catalog entries, same status, pulled from the deployed database —
+    and walking the answer through the gates one at a time. The causes were unrelated:
+    `professional-competence` returned nine correct lines with no `===` between them, and `certainty` wrote
+    "only one respondent in ten" in words, leaving its summary with no digit to check against the map.
+  - `parse_adaptation_batch` now falls back to shape when the separators produce the wrong number of entries:
+    a step always carries a bullet and a summary never does. An answer opening with a bullet is still
+    refused rather than guessed at, since its steps have no summary to belong to.
+  - The prompt asks for digits on the line that asks for a number, with examples, and for the count beside
+    any colour group it names. The second rule came from a third cause that only surfaced once the first two
+    were fixed: "the absence of green answers in that item" is true, useful, and unverifiable —
+    `is_status_consistent` clears a foreign colour only where the sentence carries one of the distribution
+    counts in digits.
+  - `adaptation_batch_refusal` returns one word per cause — `entry_shape`, `not_hebrew`, `no_number`,
+    `status_inconsistent` — and the `adaptation=deterministic_fallback` line now carries it along with the
+    dimension. One label for four causes is what made this take a day. The refused copy itself still does
+    not reach the log; whether it should is item 17.
+  - **Verification Evidence**: `pytest` 203/203 passed (was 192, nine new tests, all fail-first on the
+    previous code). Against `gemini-3.5-flash-lite` on the real refused inputs, through the production
+    prompts and the production acceptance predicate: before the fix `professional-competence` refused with
+    `entry_shape` and `certainty` with `status_inconsistent`; after it, `meaning`, `certainty` and
+    `professional-competence` were all accepted with three entries each, on two consecutive runs. No
+    respondent text left the database — the inputs are aggregates and catalog copy.
 
 - [x] **2026-07-29**: **Contract `5.0` switched on, proven, and the first live rounds run on the deployment**
   (commits `193cf34`, `5b8f89d`, `1113be7`, `b4afc9c`):
