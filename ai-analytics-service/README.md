@@ -174,6 +174,15 @@ Multiple provider-specific keys without an explicit provider also fail closed.
 `gemini-flash-latest` and `gemini-pro-latest` as defaults; the OpenAI-compatible
 defaults remain `gpt-4o-mini` and `gpt-4o`.
 
+`LLM_MAX_CONCURRENT_REQUESTS` caps how many provider requests one round has in
+flight and defaults to `2`. Both LLM nodes hand their whole batch to
+`asyncio.gather`, so a round otherwise puts eight interpretations, and then up
+to two dozen recommendation adaptations, on the wire at once — which is what a
+free tier answers `429` to. The slot is taken before the worker thread is
+dispatched, so waiting for one costs no part of the per-dimension retry budget;
+it only makes the round longer, and the webhook has already answered `202` by
+then. Raise it for a paid key.
+
 `MAX_TOKENS_PER_DIMENSION` caps one interpretation and defaults to `2048`.
 
 That number is not the length of the answer. A reasoning model spends the

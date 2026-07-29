@@ -28,6 +28,29 @@ vector_store = LocalInterventionVectorStore()
 DIMENSION_NAMES_HEBREW = AI_ANALYTICS_DIMENSION_NAMES_HEBREW
 
 
+def _provider_slots() -> asyncio.Semaphore:
+    """One batch's worth of provider slots.
+
+    Both LLM nodes hand their whole batch to `asyncio.gather`, which without a
+    bound puts every dimension — and then every catalog entry — on the wire at
+    once. The slot is taken before the worker thread is dispatched, so a
+    throttled round also stops flooding the default thread pool, and the
+    per-dimension retry budget still starts when the request does.
+
+    The two nodes run one after the other in the graph, so a semaphore per node
+    call bounds the round. Two rounds running side by side in one process would
+    get a batch of slots each; the deployed service handles one round at a time
+    per instance, and the per-request retries absorb the rest.
+    """
+    return asyncio.Semaphore(settings.llm_max_concurrent_requests)
+
+
+async def _in_provider_slot(slots: asyncio.Semaphore, function, /, **kwargs):
+    """Run one blocking provider call once a slot is free."""
+    async with slots:
+        return await asyncio.to_thread(function, **kwargs)
+
+
 def _effective_contract_version(round_data: Dict[str, Any]) -> str:
     return round_data.get(
         "contractVersion",
@@ -160,7 +183,9 @@ async def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
 
     The provider call is blocking, so dimensions run concurrently in worker
     threads. That keeps the event loop free and turns a per-dimension serial
-    wait into a single round trip for the whole round.
+    wait into a single round trip for the whole round — bounded by
+    `LLM_MAX_CONCURRENT_REQUESTS`, so the batch does not arrive at the provider
+    all at once.
     """
     round_data = state.get("round_data", {})
     dim_scores = round_data.get("dimensionScores", {})
@@ -171,6 +196,7 @@ async def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
 
     dim_ids = []
     generations = []
+    slots = _provider_slots()
 
     for dim_id, score_obj in dim_scores.items():
         if isinstance(score_obj, dict):
@@ -192,7 +218,8 @@ async def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
         eff_version = _effective_contract_version(round_data)
         dim_ids.append(dim_id)
         generations.append(
-            asyncio.to_thread(
+            _in_provider_slot(
+                slots,
                 llm_provider_service.generate_psychological_interpretation_result,
                 dim_id=dim_id,
                 dim_hebrew=dim_hebrew,
@@ -385,6 +412,7 @@ async def agent_adaptation_node(state: AnalyticsState) -> AnalyticsState:
 
     targets = []
     adaptations = []
+    slots = _provider_slots()
     for dim_id, interventions in recommendations.items():
         score_obj = dim_scores.get(dim_id, {})
         if isinstance(score_obj, dict):
@@ -401,9 +429,11 @@ async def agent_adaptation_node(state: AnalyticsState) -> AnalyticsState:
         for index, intervention in enumerate(interventions):
             targets.append((dim_id, index))
             # The provider call blocks, and a round holds eight dimensions of
-            # three entries each: run them the way the interpretations run.
+            # three entries each: run them the way the interpretations run,
+            # through the same bounded set of provider slots.
             adaptations.append(
-                asyncio.to_thread(
+                _in_provider_slot(
+                    slots,
                     llm_provider_service.adapt_intervention_result,
                     intervention=intervention,
                     dim_hebrew=DIMENSION_NAMES_HEBREW.get(dim_id, dim_id),

@@ -30,6 +30,8 @@ services:
         sync: false
       - key: GEMINI_API_KEY
         sync: false
+      - key: LLM_MAX_CONCURRENT_REQUESTS
+        sync: false
       - key: LLM_MODEL_FAST
         sync: false
       - key: LLM_MODEL_HEAVY
