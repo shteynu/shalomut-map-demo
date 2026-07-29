@@ -12,7 +12,7 @@ import pytest
 
 from src.config import settings
 from src.rag.store import LocalInterventionVectorStore
-from src.services import hebrew_prompts
+from src.services import hebrew_prompts, hebrew_validation
 from src.services.llm_provider import (
     _LATIN_PATTERN,
     llm_provider_service,
@@ -325,6 +325,162 @@ def test_the_adaptation_prompt_asks_for_the_recommendation_not_a_report():
     assert "אל תזכיר את הקטלוג" in prompt
 
 
+def test_the_adaptation_prompt_asks_for_digits_where_it_asks_for_a_number():
+    """The rule lives on the line it governs, with an example.
+
+    Stated once at the end of a long instruction, it was not followed: on
+    2026-07-29 `certainty` answered "only one respondent in ten" in words, the
+    summary carried no digit, and all three of its recommendations fell back to
+    catalog copy over it.
+    """
+    store = LocalInterventionVectorStore()
+    interventions = [
+        entry.to_dict()
+        for entry in store.get_interventions_for_dimension("balance", "red")
+    ]
+
+    prompt = hebrew_prompts.adaptation_batch_prompt(
+        interventions=interventions,
+        dim_hebrew="איזון",
+        score=38.5,
+        status="red",
+        question_aggregates=AGGREGATES,
+        background_context=None,
+    )
+
+    assert "מספר אחד מהנתונים שלמעלה בספרות" in prompt
+    assert "ולא במילים" in prompt
+
+
+def test_the_adaptation_prompt_asks_for_the_count_beside_the_colour():
+    """A colour named without its count reads as a verdict to the validator.
+
+    `certainty` wrote "and the absence of green answers in that item" — true,
+    useful, and unverifiable: `is_status_consistent` clears a foreign colour
+    only where the same sentence carries one of the distribution counts in
+    digits, and "absence" is not one. The count is better copy anyway.
+    """
+    store = LocalInterventionVectorStore()
+    interventions = [
+        entry.to_dict()
+        for entry in store.get_interventions_for_dimension("balance", "red")
+    ]
+
+    prompt = hebrew_prompts.adaptation_batch_prompt(
+        interventions=interventions,
+        dim_hebrew="איזון",
+        score=38.5,
+        status="red",
+        question_aggregates=AGGREGATES,
+        background_context=None,
+    )
+
+    assert "כשאתה מזכיר קבוצת צבע" in prompt
+    assert "0 תשובות ירוקות" in prompt
+
+
+# --- the adaptation batch, and what it survives ------------------------------
+
+_SUMMARY = "לפי 12 התשובות העומס מתרכז בסוף השבוע."
+_STEP = "לקיים מפגש צוות קצר לתעדוף המשימות."
+
+
+def _batch(separator: str, entries: int = 3, steps: int = 2) -> str:
+    block = "\n".join([_SUMMARY] + [f"- {_STEP}"] * steps)
+    return separator.join([block] * entries)
+
+
+def test_a_batch_that_forgot_its_separators_is_read_by_shape():
+    """Three good recommendations are not thrown away over a punctuation line.
+
+    `professional-competence` answered on 2026-07-29 with nine correct lines —
+    three summaries, two steps under each — and no `===` anywhere, and the
+    school got the catalog paragraph instead. A step always carries a bullet
+    and a summary never does, so the entries are where they always were.
+    """
+    parsed = hebrew_validation.parse_adaptation_batch(
+        _batch("\n"),
+        [2, 2, 2],
+    )
+
+    assert parsed is not None
+    assert len(parsed) == 3
+    assert all(summary == _SUMMARY for summary, _ in parsed)
+    assert all(steps == [_STEP, _STEP] for _, steps in parsed)
+
+
+def test_the_separator_still_wins_where_it_is_present():
+    """Shape is the fallback, not the rule: a well-formed answer is unaffected."""
+    parsed = hebrew_validation.parse_adaptation_batch(
+        _batch("\n===\n"),
+        [2, 2, 2],
+    )
+
+    assert parsed is not None
+    assert len(parsed) == 3
+
+
+def test_an_answer_that_opens_with_a_bullet_is_not_guessed_at():
+    """Steps with no summary above them belong to no entry.
+
+    Recovering shape must not turn an answer that lost its first line into
+    three recommendations attached to whatever came next.
+    """
+    assert (
+        hebrew_validation.parse_adaptation_batch(
+            f"- {_STEP}\n{_SUMMARY}\n- {_STEP}",
+            [2, 2, 2],
+        )
+        is None
+    )
+
+
+@pytest.mark.parametrize(
+    "answer,expected_refusal",
+    [
+        (_batch("\n===\n"), ""),
+        # Two blocks where three entries were asked for: nothing to attach the
+        # third recommendation to, by separator or by shape.
+        (_batch("\n===\n", entries=2), "entry_shape"),
+        # Numbers spelled out: grounded to read, uncheckable against the map.
+        (
+            _batch("\n===\n").replace("12 התשובות", "שתים עשרה התשובות"),
+            "no_number",
+        ),
+        (_batch("\n===\n").replace("מפגש", "meeting"), "not_hebrew"),
+        (
+            _batch("\n===\n").replace(
+                "העומס מתרכז בסוף השבוע",
+                "הממד נמצא באזור אדום",
+            ),
+            "status_inconsistent",
+        ),
+    ],
+)
+def test_the_refusal_says_which_gate_closed(answer, expected_refusal):
+    """One word per cause, because one label for all of them cost a day.
+
+    The round of 2026-07-29 dropped six recommendations to catalog copy behind
+    a single `invalid_semantic_output`, and two unrelated causes hid there. The
+    dimension and the gate now reach the log; the refused text still does not,
+    and does not need to once the gate is named.
+    """
+    refusal = hebrew_validation.adaptation_batch_refusal(
+        answer,
+        expected_steps_per_entry=[2, 2, 2],
+        status="yellow",
+        distribution_counts={"12", "4"},
+    )
+
+    assert refusal == expected_refusal
+    assert hebrew_validation.is_valid_adaptation_batch(
+        answer,
+        expected_steps_per_entry=[2, 2, 2],
+        status="yellow",
+        distribution_counts={"12", "4"},
+    ) is (expected_refusal == "")
+
+
 # --- end to end through the transport ---------------------------------------
 
 def _response(content: str):
@@ -378,3 +534,63 @@ def test_a_bolded_answer_is_accepted_and_stored_clean(monkeypatch):
     assert result.attempts == 1
     assert "*" not in result.text
     assert "45.5" in result.text
+
+
+def test_a_refused_batch_names_its_gate_and_its_dimension(monkeypatch, caplog):
+    """The fallback line has to be enough to act on the next morning.
+
+    On 2026-07-29 it said `invalid_semantic_output` and nothing else, so which
+    dimension fell back and what was wrong with its text had to be recovered
+    from the database and a re-run against the provider. The refused copy still
+    does not reach the log — it is respondent-shaped — but the gate and the
+    dimension do, and those are what pick the fix.
+    """
+    store = LocalInterventionVectorStore()
+    interventions = []
+    for entry in store.get_interventions_for_dimension("balance", "red"):
+        serialized = entry.to_dict()
+        serialized["status"] = "red"
+        interventions.append(serialized)
+
+    answer = "\n===\n".join(
+        "\n".join(
+            # Every number spelled out: shaped like an adaptation, grounded in
+            # nothing a reader can check.
+            ["לפי שתים עשרה התשובות העומס מתרכז בסוף השבוע."]
+            + ["- לקיים מפגש צוות קצר לתעדוף המשימות."]
+            * len(entry["actionable_steps"])
+        )
+        for entry in interventions
+    )
+
+    monkeypatch.setattr(settings, "llm_api_key", "sk-test-validation")
+    monkeypatch.setattr(settings, "llm_base_url", "https://provider.local/v1")
+    monkeypatch.setattr(settings, "llm_max_attempts", 1)
+    monkeypatch.setattr(
+        "urllib.request.urlopen",
+        lambda request, timeout=None: _response(answer),
+    )
+
+    with caplog.at_level("INFO"):
+        adapted = llm_provider_service.adapt_interventions_result(
+            interventions=interventions,
+            dim_hebrew="איזון",
+            score=38.5,
+            status="red",
+            question_aggregates=AGGREGATES,
+        )
+
+    assert [entry.outcome for entry in adapted] == (
+        ["deterministic_fallback"] * len(interventions)
+    )
+    assert [entry.summary for entry in adapted] == [
+        entry["summary"] for entry in interventions
+    ]
+
+    line = next(
+        record.getMessage()
+        for record in caplog.records
+        if "adaptation=deterministic_fallback" in record.getMessage()
+    )
+    assert "refusal=no_number" in line
+    assert "dimension=balance" in line

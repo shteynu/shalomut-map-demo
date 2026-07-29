@@ -60,6 +60,35 @@ class AdaptedIntervention:
     attempts: int
 
 
+def _record_refusal(
+    candidate: str,
+    finish_reason: object,
+    sink: list[str],
+    *,
+    expected_steps_per_entry: list[int],
+    status: str,
+    distribution_counts: Optional[set[str]] = None,
+) -> str:
+    """Judge one adaptation batch and remember why it was turned away.
+
+    The transport takes a yes or no and logs `invalid_semantic_output` for
+    every no, which is the same word for a missing separator and for a number
+    written out as a word. The reason is kept here so the fallback line can
+    name it.
+    """
+    if finish_reason != "stop":
+        sink[0] = f"finish_{finish_reason}"
+        return sink[0]
+
+    sink[0] = hebrew_validation.adaptation_batch_refusal(
+        candidate,
+        expected_steps_per_entry=expected_steps_per_entry,
+        status=status,
+        distribution_counts=distribution_counts,
+    )
+    return sink[0]
+
+
 class LLMProviderService:
     """
     Decoupled LLM Provider & Model Router Service.
@@ -304,6 +333,10 @@ class LLMProviderService:
         expected_steps_per_entry = [len(steps) for _, steps in catalog]
         model_name = self._model_for_tier(retry_tier)
         distribution_counts = self.distribution_counts(aggregates)
+        # Carries the last attempt's refusal out of the predicate, so the
+        # fallback line can say which gate closed instead of leaving the
+        # dimension to be reconstructed from the database later.
+        refusal: list[str] = [""]
         text, attempts, fallback_reason = self._complete_with_retries(
             build_prompt=lambda: hebrew_prompts.adaptation_batch_prompt(
                 interventions=entries,
@@ -319,9 +352,10 @@ class LLMProviderService:
             ),
             model_name=model_name,
             is_acceptable=lambda candidate, finish_reason: (
-                finish_reason == "stop"
-                and hebrew_validation.is_valid_adaptation_batch(
+                not _record_refusal(
                     candidate,
+                    finish_reason,
+                    refusal,
                     expected_steps_per_entry=expected_steps_per_entry,
                     status=status,
                     distribution_counts=distribution_counts,
@@ -340,9 +374,11 @@ class LLMProviderService:
         if parsed is None:
             logger.info(
                 "[LLM Service] adaptation=deterministic_fallback model=%s "
-                "reason=%s attempts=%s entries=%s",
+                "reason=%s refusal=%s dimension=%s attempts=%s entries=%s",
                 model_name,
                 fallback_reason,
+                refusal[0] or "unavailable",
+                entries[0].get("dimensionId") or "unavailable",
                 attempts,
                 len(entries),
             )

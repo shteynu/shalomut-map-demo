@@ -271,6 +271,28 @@ def parse_adaptation(
 
 
 ADAPTATION_BATCH_SEPARATOR = "==="
+_BULLET_MARKERS = ("-", "–", "—", "•")
+
+
+def _blocks_by_shape(text: str) -> list[list[str]]:
+    """Split an answer into entries by what each line is, not by separators.
+
+    Only reached when the separators did not divide the answer into the number
+    of entries that were asked for. A line without a bullet opens an entry; the
+    bulleted lines under it are its steps. An answer that opens with a bullet
+    has no summary to attach them to, and returns nothing rather than guessing.
+    """
+    blocks: list[list[str]] = []
+    for line in text.strip().splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.strip("=") == "":
+            continue
+        if not stripped.startswith(_BULLET_MARKERS):
+            blocks.append([])
+        elif not blocks:
+            return []
+        blocks[-1].append(line)
+    return blocks
 
 
 def parse_adaptation_batch(
@@ -298,6 +320,15 @@ def parse_adaptation_batch(
         blocks[-1].append(line)
 
     if len(blocks) != len(expected_steps_per_entry):
+        # A model that gets everything else right still forgets the separator.
+        # On 2026-07-29 `professional-competence` came back as nine correct
+        # lines — three summaries, two steps under each — and no `===` at all,
+        # and a school lost three usable recommendations over a punctuation
+        # line. The shape says where an entry begins on its own: a step always
+        # carries a bullet and a summary never does.
+        blocks = _blocks_by_shape(text)
+
+    if len(blocks) != len(expected_steps_per_entry):
         return None
 
     entries = []
@@ -322,39 +353,48 @@ def is_valid_adaptation_batch(
     where some recommendations speak to the round and others silently do not,
     which is the ambiguity the catalog fallback exists to avoid.
     """
-    parsed = parse_adaptation_batch(candidate, expected_steps_per_entry)
-    if parsed is None:
-        return False
-
-    return all(
-        _is_valid_adaptation_entry(
-            summary,
-            steps,
-            status=status,
-            distribution_counts=distribution_counts,
-        )
-        for summary, steps in parsed
-    )
-
-
-def _is_valid_adaptation_entry(
-    summary: str,
-    steps: list[str],
-    *,
-    status: str,
-    distribution_counts: Optional[set[str]] = None,
-) -> bool:
-    if not all(is_hebrew_only_copy(part) for part in [summary, *steps]):
-        return False
-    # An adaptation that quotes no number of the round is the catalog text
-    # in different words: the whole point is that it speaks to these
-    # aggregates.
-    if not _INTEGER_PATTERN.search(summary):
-        return False
-
-    return is_status_consistent(
-        " ".join([summary, *steps]),
-        status,
-        contract_version="5.0",
+    return not adaptation_batch_refusal(
+        candidate,
+        expected_steps_per_entry=expected_steps_per_entry,
+        status=status,
         distribution_counts=distribution_counts,
     )
+
+
+def adaptation_batch_refusal(
+    candidate: str,
+    *,
+    expected_steps_per_entry: list[int],
+    status: str,
+    distribution_counts: Optional[set[str]] = None,
+) -> str:
+    """Which gate turns this batch away, as one word for a log line.
+
+    `invalid_semantic_output` alone cost a whole investigation: the round of
+    2026-07-29 dropped six recommendations to catalog copy and the log said
+    only that something was wrong with the text. Two different causes hid
+    behind that one label — a missing separator and numbers spelled out in
+    words — and telling them apart needed the refused answer, which nothing
+    kept. The empty string means the batch is acceptable.
+    """
+    parsed = parse_adaptation_batch(candidate, expected_steps_per_entry)
+    if parsed is None:
+        return "entry_shape"
+
+    for summary, steps in parsed:
+        if not all(is_hebrew_only_copy(part) for part in [summary, *steps]):
+            return "not_hebrew"
+        # An adaptation that quotes no number of the round is the catalog text
+        # in different words: the whole point is that it speaks to these
+        # aggregates. Digits only — "one in ten" reads as grounded and is not
+        # something a reader can check against the map.
+        if not _INTEGER_PATTERN.search(summary):
+            return "no_number"
+        if not is_status_consistent(
+            " ".join([summary, *steps]),
+            status,
+            contract_version="5.0",
+            distribution_counts=distribution_counts,
+        ):
+            return "status_inconsistent"
+    return ""
