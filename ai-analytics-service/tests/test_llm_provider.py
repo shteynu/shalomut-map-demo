@@ -485,7 +485,15 @@ def test_transient_429_retries_when_not_a_hard_quota_error(monkeypatch):
     assert len(attempts) == 2
 
 
-def test_retry_after_is_honored_within_delay_cap(monkeypatch):
+def test_retry_after_outranks_the_local_backoff_cap(monkeypatch):
+    """A wait the provider asked for is not shortened to one we prefer.
+
+    `LLM_RETRY_MAX_DELAY_SECONDS` bounds the backoff this service invents. Held
+    against `Retry-After` as well, it aimed every retry at the window that had
+    just refused it — the free tier says come back in seven seconds, and two
+    seconds later we asked again. What bounds this wait instead is the retry
+    budget, which declines one it cannot hold.
+    """
     configure_gemini_retry_test(monkeypatch)
     monkeypatch.setattr(
         settings,
@@ -498,7 +506,20 @@ def test_retry_after_is_honored_within_delay_cap(monkeypatch):
         headers={"Retry-After": "7"},
     )
 
-    assert llm_provider_service._retry_delay_seconds(error, 1) == 2.0
+    assert llm_provider_service._retry_delay_seconds(error, 1) == 7.0
+    # The cap still bounds what this service comes up with on its own.
+    monkeypatch.setattr(
+        settings,
+        "llm_retry_base_delay_seconds",
+        5.0,
+    )
+    assert (
+        llm_provider_service._retry_delay_seconds(
+            create_http_error(503),
+            1,
+        )
+        == 2.0
+    )
 
 
 def test_transport_timeout_retries_then_returns_llm_result(

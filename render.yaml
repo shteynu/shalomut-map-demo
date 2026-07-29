@@ -32,6 +32,12 @@ services:
         sync: false
       - key: LLM_MAX_CONCURRENT_REQUESTS
         sync: false
+      # Carries a value rather than `sync: false`: the free tier refuses on the
+      # rate, so this one has to be visible and set in the dashboard instead of
+      # living on a default nobody can see. Five per minute is Google's free
+      # tier for gemini-3.5-flash, read 2026-07-29. Raise it for a paid tier.
+      - key: LLM_MAX_REQUESTS_PER_MINUTE
+        value: "5"
       - key: LLM_MODEL_FAST
         sync: false
       - key: LLM_MODEL_HEAVY

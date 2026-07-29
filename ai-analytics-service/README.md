@@ -183,6 +183,24 @@ dispatched, so waiting for one costs no part of the per-dimension retry budget;
 it only makes the round longer, and the webhook has already answered `202` by
 then. Raise it for a paid key.
 
+`LLM_MAX_REQUESTS_PER_MINUTE` caps how fast the whole process reaches the
+provider and defaults to `5`. Concurrency and rate are two different limits: two
+slots still deliver a round's seventeen requests inside a single minute, and
+five per minute is what Google's free tier allows for `gemini-3.5-flash` (read
+2026-07-29). That is what every live round had been failing on — `429` on the
+count of requests, never on their content.
+
+One queue serves the whole process, because the quota is counted per key rather
+than per round, and Render runs the service with `WEB_CONCURRENCY=1`. Every
+request passes through it, retries included: three attempts 0.5 and 1.1 seconds
+apart used to spend themselves inside the minute that had just refused them. A
+`Retry-After` the provider sends outranks the interval when it asks for longer,
+and the retry budget declines a wait it cannot hold instead of shortening it.
+
+At five per minute a round takes about three and a half minutes. Nobody waits on
+that — the webhook answered `202` long before, and Core reads a run as stalled
+only after fifteen minutes. Zero turns pacing off; raise it for a paid tier.
+
 `MAX_TOKENS_PER_DIMENSION` caps one interpretation and defaults to `2048`.
 
 That number is not the length of the answer. A reasoning model spends the

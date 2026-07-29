@@ -2,9 +2,10 @@
 
 Every generation in the service goes through `complete_with_retries`, so no
 second one can quietly get a weaker transport than the interpretations: same
-attempt cap, retry budget, backoff, Retry-After handling, hard-quota rules and
-log lines. What counts as an acceptable answer is the caller's business and
-arrives as a predicate — this module never reads the Hebrew it carries.
+attempt cap, retry budget, backoff, Retry-After handling, hard-quota rules, log
+lines and place in the queue toward the provider. What counts as an acceptable
+answer is the caller's business and arrives as a predicate — this module never
+reads the Hebrew it carries.
 """
 
 from datetime import datetime, timezone
@@ -19,6 +20,7 @@ import urllib.request
 
 from src.config import settings
 from src.services.hebrew_validation import sanitize_model_text
+from src.services.provider_rate_limit import provider_rate_limiter
 
 logger = logging.getLogger(__name__)
 
@@ -118,6 +120,12 @@ def complete_with_retries(
             },
             method="POST"
         )
+        # Every request this process sends passes through here, so this
+        # is where the account's pace is charged — and it is charged before
+        # the retry clock starts. Waiting for a turn is the rate limit's
+        # business, not this call's budget; folding it in would leave a request
+        # that waited its twelve seconds with no time left to be retried.
+        provider_rate_limiter.wait()
         request_started_at = time.monotonic()
         for attempt in range(1, settings.llm_max_attempts + 1):
             try:
@@ -198,25 +206,27 @@ def complete_with_retries(
                         logged_finish_reason = _safe_log_token(
                             finish_reason or "unavailable",
                         )
-                        if (
-                            attempt < settings.llm_max_attempts
-                            and _can_retry_within_budget(
-                                request_started_at,
-                                0.0,
-                            )
-                        ):
+                        retry_wait = (
+                            _book_retry_send(request_started_at)
+                            if attempt < settings.llm_max_attempts
+                            else None
+                        )
+                        if retry_wait is not None:
                             logger.warning(
                                 "[LLM Service] outcome=retry "
                                 "provider=%s model=%s reason=%s "
                                 "finish_reason=%s "
-                                "attempt=%s max_attempts=%s",
+                                "attempt=%s max_attempts=%s "
+                                "delay_ms=%s",
                                 provider,
                                 model_name,
                                 fallback_reason,
                                 logged_finish_reason,
                                 attempt,
                                 settings.llm_max_attempts,
+                                round(retry_wait * 1000),
                             )
+                            time.sleep(retry_wait)
                             continue
                         # Every other exhausted path logs `no_answer`; this one
                         # broke silently, so the last attempt's finish_reason
@@ -250,14 +260,16 @@ def complete_with_retries(
                     should_retry
                     and attempt < settings.llm_max_attempts
                 ):
-                    delay = retry_delay_seconds(
-                        error,
-                        attempt,
-                    )
-                    if _can_retry_within_budget(
+                    # The retry a `429` deserves is one in the next
+                    # window, not one in the window it was just refused in.
+                    # Three attempts 0.5 and 1.1 seconds apart spent
+                    # themselves inside the same exhausted minute and asked
+                    # the same question three times.
+                    retry_wait = _book_retry_send(
                         request_started_at,
-                        delay,
-                    ):
+                        retry_delay_seconds(error, attempt),
+                    )
+                    if retry_wait is not None:
                         logger.warning(
                             "[LLM Service] outcome=retry "
                             "provider=%s model=%s status=%s "
@@ -271,9 +283,9 @@ def complete_with_retries(
                             request_id,
                             attempt,
                             settings.llm_max_attempts,
-                            round(delay * 1000),
+                            round(retry_wait * 1000),
                         )
-                        time.sleep(delay)
+                        time.sleep(retry_wait)
                         continue
 
                 logger.warning(
@@ -296,11 +308,11 @@ def complete_with_retries(
                     2,
                 )
                 if attempt < max_timeout_attempts:
-                    delay = _backoff_delay_seconds(attempt)
-                    if _can_retry_within_budget(
+                    retry_wait = _book_retry_send(
                         request_started_at,
-                        delay,
-                    ):
+                        _backoff_delay_seconds(attempt),
+                    )
+                    if retry_wait is not None:
                         logger.warning(
                             "[LLM Service] outcome=retry "
                             "provider=%s model=%s error_type=%s "
@@ -311,9 +323,9 @@ def complete_with_retries(
                             fallback_reason,
                             attempt,
                             max_timeout_attempts,
-                            round(delay * 1000),
+                            round(retry_wait * 1000),
                         )
-                        time.sleep(delay)
+                        time.sleep(retry_wait)
                         continue
 
                 logger.warning(
@@ -344,16 +356,26 @@ def _remaining_retry_budget(request_started_at: float) -> float:
     return max(0.0, settings.llm_retry_budget_seconds - elapsed)
 
 
-def _can_retry_within_budget(
+def _book_retry_send(
     request_started_at: float,
-    delay: float,
-) -> bool:
-    remaining_after_delay = (
-        _remaining_retry_budget(request_started_at) - delay
-    )
-    return (
-        remaining_after_delay
-        >= settings.llm_min_retry_window_seconds
+    min_delay: float = 0.0,
+) -> float | None:
+    """Book the next attempt's turn, or refuse a wait the budget cannot hold.
+
+    The pace and the retry budget are one decision rather than two. A retry
+    that waits for its turn and only then finds the budget spent has burned
+    the turn for nothing, so what the queue is allowed to quote is what remains
+    of the budget once the next attempt keeps the minimum window it needs to be
+    worth starting at all.
+
+    Returns the seconds to wait before re-sending, or `None` to stop retrying.
+    """
+    return provider_rate_limiter.book(
+        min_delay=min_delay,
+        max_wait=(
+            _remaining_retry_budget(request_started_at)
+            - settings.llm_min_retry_window_seconds
+        ),
     )
 
 
@@ -395,20 +417,25 @@ def _backoff_delay_seconds(
     attempt: int,
     retry_after: float | None = None,
 ) -> float:
+    jitter = random.uniform(
+        0.0,
+        settings.llm_retry_jitter_seconds,
+    )
+    if retry_after is not None:
+        # A number the provider sent is not ours to shorten. Capping a
+        # thirty-second `Retry-After` at two seconds aims the next attempt at
+        # the window that just refused it; `LLM_RETRY_MAX_DELAY_SECONDS` bounds
+        # the backoff we invent, not the wait we were told to take. What bounds
+        # this one is the retry budget, which declines a wait it cannot hold.
+        return retry_after + jitter
     exponential_delay = (
         settings.llm_retry_base_delay_seconds
         * (2 ** (attempt - 1))
     )
-    delay = (
-        retry_after
-        if retry_after is not None
-        else exponential_delay
+    return min(
+        exponential_delay + jitter,
+        settings.llm_retry_max_delay_seconds,
     )
-    delay += random.uniform(
-        0.0,
-        settings.llm_retry_jitter_seconds,
-    )
-    return min(delay, settings.llm_retry_max_delay_seconds)
 
 
 def _parse_retry_after(value: str | None) -> float | None:

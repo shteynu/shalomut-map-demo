@@ -16,7 +16,26 @@ if str(SERVICE_ROOT) not in sys.path:
 
 import pytest  # noqa: E402
 
+from src.config import settings  # noqa: E402
+from src.services.provider_rate_limit import (  # noqa: E402
+    provider_rate_limiter,
+)
 from tests.llm_stub import answering_llm_provider  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def unpaced_provider(monkeypatch):
+    """No suite waits on the deployed pace unless the pace is what it proves.
+
+    The queue toward the provider is one per process — that is the whole point
+    of it — so the default of five requests per minute would put twelve seconds
+    between the provider calls of every test that reaches the transport. Tests
+    that own the invariant set their own rate and reset the queue.
+    """
+    provider_rate_limiter.reset()
+    monkeypatch.setattr(settings, "llm_max_requests_per_minute", 0.0)
+    yield
+    provider_rate_limiter.reset()
 
 
 @pytest.fixture

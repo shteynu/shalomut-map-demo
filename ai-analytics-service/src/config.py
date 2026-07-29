@@ -205,7 +205,21 @@ class Settings:
             1,
             int(os.getenv("LLM_MAX_CONCURRENT_REQUESTS", "2")),
         )
-        
+        # How fast the whole process may reach the provider. The bound above
+        # answers only how many requests are in flight; a free tier also counts
+        # how many arrive per minute, and seventeen of them passed two at a time
+        # through an unpaced round still land inside one — which is what every
+        # live round has been dying of. Five per minute is Google's free tier
+        # for `gemini-3.5-flash` (read 2026-07-29), so one request goes out
+        # every twelve seconds and a round takes about three and a half minutes.
+        # Nobody waits on that: the webhook answered `202` long before, and Core
+        # only reads a run as stalled after fifteen minutes. Zero turns the pace
+        # off; raise it for a paid tier.
+        self.llm_max_requests_per_minute: float = max(
+            0.0,
+            float(os.getenv("LLM_MAX_REQUESTS_PER_MINUTE", "5")),
+        )
+
         # Reserved persistence setting for a future vector-backed catalog.
         self.chroma_persist_dir: str = os.getenv("CHROMA_PERSIST_DIR", "./chroma_db")
         
