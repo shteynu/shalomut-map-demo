@@ -3,6 +3,7 @@ import logging
 from typing import Dict, Any, Optional
 from src.agents.state import AnalyticsState
 from src.rag.store import LocalInterventionVectorStore
+from src.services import hebrew_validation
 from src.services.llm_provider import (
     ProviderUnavailableError,
     llm_provider_service,
@@ -93,7 +94,7 @@ def _v5_prompt_inclusions(
     model produced without the distribution or the cross-dimension picture.
     """
     return {
-        "distributionIncluded": llm_provider_service.has_full_distribution(
+        "distributionIncluded": hebrew_validation.has_full_distribution(
             _question_aggregates_for_dimension(round_data, dimension_id),
         ),
         "crossDimensionContextIncluded": bool(dim_scores),
@@ -477,15 +478,15 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
 
         # The 5.0 prompt states the distribution in Hebrew colour words, so the
         # validator has to know which counts an interpretation may quote.
-        distribution_counts = llm_provider_service.distribution_counts(
+        distribution_counts = hebrew_validation.distribution_counts(
             _question_aggregates_for_dimension(round_data, dim_id),
         )
         if (
-            not llm_provider_service.is_complete_hebrew_copy(
+            not hebrew_validation.is_complete_hebrew_copy(
                 interp,
                 contract_version=contract_version,
             )
-            or not llm_provider_service.is_status_consistent(
+            or not hebrew_validation.is_status_consistent(
                 interp,
                 status,
                 contract_version=contract_version,
@@ -512,7 +513,7 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
                 or intervention.get("status") != status
                 or not user_facing_copy
                 or not all(
-                    llm_provider_service.is_hebrew_only_copy(text)
+                    hebrew_validation.is_hebrew_only_copy(text)
                     for text in user_facing_copy
                 )
                 or (
@@ -525,7 +526,7 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
                 # answers to.
                 or (
                     adaptation_outcome == "llm"
-                    and not llm_provider_service.is_status_consistent(
+                    and not hebrew_validation.is_status_consistent(
                         " ".join(user_facing_copy),
                         status,
                         contract_version=contract_version,
@@ -583,7 +584,7 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
                     f"Generation provenance is invalid for {dim_id}"
                 )
 
-    if is_semantic_contract and not llm_provider_service.is_hebrew_only_copy(
+    if is_semantic_contract and not hebrew_validation.is_hebrew_only_copy(
         overall_summary,
     ):
         is_safe = False

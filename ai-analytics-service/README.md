@@ -17,6 +17,21 @@ The current implementation is deliberately small:
 The service does not currently use LangGraph or ChromaDB at runtime, so those
 heavy packages are intentionally absent from the deployment manifest.
 
+The model-facing half lives in four files under `src/services/`, split by what
+each one is responsible for:
+
+- `llm_transport.py` — one bounded conversation with a provider: endpoint,
+  attempts, backoff, `Retry-After`, hard-quota rules. It never reads the copy
+  it carries; what counts as an acceptable answer arrives as a predicate.
+- `hebrew_prompts.py` — the Hebrew this service composes itself: the three
+  prompts, and the one interpretation written without a model at all.
+- `hebrew_validation.py` — what counts as acceptable copy about a round. The
+  graph calls it directly on text no provider returned, which is why it does
+  not sit behind the provider.
+- `llm_provider.py` — the facade the rest of the service imports: model tier,
+  which prompt goes out, which predicate judges the answer, and what a refused
+  answer means for the round.
+
 ## Contract
 
 The immutable deployed source of truth for structural contract `1.0` is

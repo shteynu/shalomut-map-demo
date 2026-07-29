@@ -525,7 +525,7 @@ def test_transport_timeout_stops_after_two_total_attempts(monkeypatch):
 def test_provider_uses_configured_request_timeout(monkeypatch):
     configure_gemini_retry_test(monkeypatch)
     monkeypatch.setattr(
-        "src.services.llm_provider.time.monotonic",
+        "src.services.llm_transport.time.monotonic",
         lambda: 100.0,
     )
     observed_timeouts = []
@@ -550,7 +550,7 @@ def test_timeout_does_not_retry_without_minimum_budget(monkeypatch):
     configure_gemini_retry_test(monkeypatch, max_attempts=3)
     clock = iter([100.0, 100.0, 120.1])
     monkeypatch.setattr(
-        "src.services.llm_provider.time.monotonic",
+        "src.services.llm_transport.time.monotonic",
         lambda: next(clock),
     )
     attempts = []
