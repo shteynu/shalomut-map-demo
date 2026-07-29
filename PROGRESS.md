@@ -210,17 +210,21 @@ as PR #13 and live on Render)
        `AI_ANALYTICS_CONTRACT_VERSION` now exists in both Vercel Production and Preview, and the production
        redeploy `shalomut-map-demo-1t7fim7ss` holds the alias. Two corrections came out of it — Preview never
        had the variable at all, so it was producing `3.0` rather than the recorded `4.0`; and the variable is
-       of type Sensitive, so its value cannot be read back by `vercel env pull` or the dashboard. That leaves
-       the written value unproven until a round exists to query — an authenticated `/api/mcp`
-       `get_round_analytics` call echoes `contractVersion` even for a locked round, so it needs no provider
-       call, but the database has held zero rounds since 2026-07-28. **Step 4 is open**: a live round, then
-       `inspect-ai-provenance` on it to show `outcome: "llm"` on at least some stones. Before either: confirm the
-       Render dashboard does not set `MAX_TOKENS_PER_DIMENSION` explicitly (neither `render.yaml` nor
-       `.env.render.local` does, so the deployed `2048` default applies), and settle the Gemini quota — `429`
-       arrives after a few calls on the free tier, and one live round is roughly 33 calls. The timeout objection is
-       gone: the background webhook of item 6 is deployed, so a long round can no longer be cancelled mid-run.
-       Step 4 is the owner's — the live round needs a manager sign-in, and item 4 below has to come first
-       since the database is empty.
+       of type Sensitive, so its value cannot be read back by `vercel env pull` or the dashboard. **The written
+       value was then proven twice** on round `f9c18f1c`: an authenticated `POST /api/mcp/` returned `200` with
+       `contractVersion: "5.0"`, `totalResponses: 10`, `privacyThreshold: 10`, `isLocked: false`, eight
+       dimensions and 27 question aggregates — plus `backgroundContext`, which only crosses the boundary at
+       `4.0`/`5.0` on an unlocked round — and `5.0` is also persisted in the round's own result, so the whole
+       Core → Python → callback → persistence chain carried it. **Step 4 is open and was attempted**: the live
+       round ran end to end on 2026-07-29 and failed, `dispatchedAt 10:57:25.393Z` → `processedAt
+       11:01:19.081Z`, `status: validation_failed`, `failureReason: provider_unavailable`. The acceptance
+       criterion — `outcome: "llm"` on at least some stones — is not met, and `inspect-ai-provenance` has
+       nothing to read on this round. The cause is not established: `provider_unavailable` covers quota, timeout
+       and output the validators rejected on every attempt alike, and that last case is exactly how an explicit
+       `MAX_TOKENS_PER_DIMENSION=420` in the Render dashboard would look. Only the service log on Render
+       distinguishes them, via `outcome=provider_unavailable reason=…` — that read is the next step and needs
+       the owner's Render access. The timeout objection is gone: the background webhook of item 6 is deployed,
+       so a long round can no longer be cancelled mid-run.
 3. [x] Decide what the ten-respondent threshold means for rounds created before it — the owner chose the migration
        (2026-07-28). `20260728120000_privacy_threshold_minimum_ten` is applied to the one database: default `10`,
        `SHALOM-F125` raised from `1` to `10` in both the column and its questionnaire snapshot, verified read-only
