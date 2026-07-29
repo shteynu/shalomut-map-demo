@@ -1,6 +1,7 @@
 import unittest
 import hashlib
 import json
+import re
 
 import pytest
 
@@ -410,17 +411,24 @@ def _prompt_of(request) -> str:
     return payload["messages"][-1]["content"]
 
 
-def _adaptation_response(request, timeout=None):
-    """Answer whatever the prompt asked for: one summary and that many steps.
+_BATCH_STEP_COUNTS = re.compile(r"שלבי ההמלצה בקטלוג \((\d+) שלבים\)")
 
-    The catalog entries do not all carry the same number of steps, and the
-    rewrite has to keep each entry's own count.
+
+def _adaptation_response(request, timeout=None):
+    """Answer whatever the prompt asked for: one block per catalog entry.
+
+    A dimension is adapted in one request now, so the answer carries a block
+    per entry separated by "===". The entries do not all carry the same number
+    of steps, and the rewrite has to keep each entry's own count — which is why
+    the stub reads the counts back out of the prompt instead of assuming them.
     """
     prompt = _prompt_of(request)
-    catalog_steps = prompt.split("שלבי ההמלצה בקטלוג:\n", 1)[1].split("\nנסח", 1)[0]
-    step_count = len([line for line in catalog_steps.splitlines() if line.strip()])
-    lines = [ADAPTED_SUMMARY] + [f"- {ADAPTED_STEP}"] * step_count
-    return _summary_response("\n".join(lines))
+    step_counts = [int(count) for count in _BATCH_STEP_COUNTS.findall(prompt)]
+    blocks = [
+        "\n".join([ADAPTED_SUMMARY] + [f"- {ADAPTED_STEP}"] * count)
+        for count in step_counts
+    ]
+    return _summary_response("\n===\n".join(blocks))
 
 
 async def _adapted_state(round_data, monkeypatch, urlopen):
@@ -463,6 +471,73 @@ async def test_adaptation_rewrites_the_catalog_copy_for_this_school(monkeypatch)
             # Core owns these, and a rewrite may not touch them.
             for field in ("id", "dimensionId", "status", "source", "title"):
                 assert intervention[field] == original[field]
+
+
+@pytest.mark.asyncio
+async def test_a_dimension_costs_one_adaptation_request(monkeypatch):
+    """The reason the batch exists, stated as an invariant.
+
+    The free provider tier allows twenty requests a day. A round used to spend
+    one per catalog entry — eight dimensions of three — so the adaptation node
+    alone outran a day's quota before the interpretations were counted. It now
+    spends one request per dimension, and this fails the moment that regresses.
+    """
+    prompts = []
+
+    def counting(request, timeout=None):
+        prompts.append(_prompt_of(request))
+        return _adaptation_response(request, timeout)
+
+    catalog, state = await _adapted_state(
+        build_v5_round_data(),
+        monkeypatch,
+        counting,
+    )
+
+    entries = sum(len(interventions) for interventions in catalog.values())
+    assert entries > len(catalog), (
+        "the fixture must hold dimensions of several entries, or this proves "
+        "nothing"
+    )
+    assert len(prompts) == len(catalog)
+    # The saving must not have cost the rewrite itself.
+    for interventions in state["recommendations"].values():
+        for intervention in interventions:
+            assert intervention["adaptationOutcome"] == "llm"
+
+
+@pytest.mark.asyncio
+async def test_one_bad_block_falls_the_whole_dimension_back(monkeypatch):
+    """All or nothing per dimension, deliberately.
+
+    Keeping the good blocks of a partly refused answer would leave a dimension
+    where some recommendations speak to this round and others quietly do not,
+    with nothing on the page telling them apart. The catalog text is human
+    written, so falling back together stays honest.
+    """
+    def one_block_short(request, timeout=None):
+        prompt = _prompt_of(request)
+        counts = [int(count) for count in _BATCH_STEP_COUNTS.findall(prompt)]
+        blocks = [
+            "\n".join([ADAPTED_SUMMARY] + [f"- {ADAPTED_STEP}"] * count)
+            for count in counts[:-1]
+        ]
+        return _summary_response("\n===\n".join(blocks))
+
+    catalog, state = await _adapted_state(
+        build_v5_round_data(),
+        monkeypatch,
+        one_block_short,
+    )
+
+    for dimension_id, interventions in state["recommendations"].items():
+        for index, intervention in enumerate(interventions):
+            original = catalog[dimension_id][index]
+            assert intervention["adaptationOutcome"] == "deterministic_fallback"
+            assert intervention["summary"] == original["summary"]
+            assert intervention["actionable_steps"] == original[
+                "actionable_steps"
+            ]
 
 
 @pytest.mark.asyncio

@@ -12,6 +12,7 @@ import pytest
 
 from src.config import settings
 from src.rag.store import LocalInterventionVectorStore
+from src.services import hebrew_prompts
 from src.services.llm_provider import (
     _LATIN_PATTERN,
     llm_provider_service,
@@ -214,12 +215,14 @@ def test_the_summary_and_adaptation_prompts_carry_no_latin_either():
         {"notes": "שנה ראשונה של מנהלת חדשה"},
     )
     store = LocalInterventionVectorStore()
-    intervention = store.get_interventions_for_dimension(
-        "balance",
-        "yellow",
-    )[0].to_dict()
-    adaptation_prompt = llm_provider_service._build_adaptation_prompt(
-        intervention=intervention,
+    interventions = [
+        entry.to_dict()
+        for entry in store.get_interventions_for_dimension("balance", "yellow")
+    ]
+    # The batched prompt is the one a round actually sends, so it is the one
+    # that has to be free of Latin letters.
+    adaptation_prompt = hebrew_prompts.adaptation_batch_prompt(
+        interventions=interventions,
         dim_hebrew="איזון",
         score=45.5,
         status="yellow",

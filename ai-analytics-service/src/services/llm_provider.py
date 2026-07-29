@@ -242,46 +242,71 @@ class LLMProviderService:
             raise ProviderUnavailableError(fallback_reason)
         return text
 
-    def adapt_intervention_result(
+    def adapt_interventions_result(
         self,
         *,
-        intervention: Dict[str, Any],
+        interventions: list[Dict[str, Any]],
         dim_hebrew: str,
         score: float,
         status: str,
         question_aggregates: Iterable[Dict[str, Any]] | None = None,
         background_context: Optional[Dict[str, Any]] = None,
         retry_tier: str = "fast",
-    ) -> AdaptedIntervention:
-        """Rewrite one catalog entry against this school's numbers.
+    ) -> list[AdaptedIntervention]:
+        """Rewrite every catalog entry of one dimension in a single request.
 
-        The catalog is written for every school at once, which is why two
-        schools in the same status could read the same three paragraphs. The
-        rewrite keeps the entry's intent and its number of steps and only
-        grounds them in the aggregates the school actually produced. Anything
-        the provider returns that is not Hebrew-only, not shaped like a summary
-        plus that many steps, carries no number from the round or contradicts
-        the status is refused, and the school reads the catalog text instead.
+        The rewrite and its refusal rules are unchanged; what changes is that
+        a dimension costs one request instead of one per entry. The free
+        provider tier allows twenty requests a day against a round that used
+        to want thirty-three, and the entries of a dimension all speak to the
+        identical aggregates, status and school, so the repetition bought
+        nothing. The per-entry path it replaces is gone rather than kept
+        beside it: two adaptation prompts where only one is ever sent is how
+        the one nobody exercises drifts.
+
+        The coarser failure is deliberate and visible: a batch the validators
+        refuse leaves every entry of that dimension on its catalog text, where
+        one entry alone would have failed before. The fallback is copy a human
+        wrote, so a school reads something true either way — but it is a wider
+        blast radius, and `adaptationOutcome` still records which it got.
         """
-        catalog_summary = str(intervention.get("summary", ""))
-        catalog_steps = [
-            str(step) for step in intervention.get("actionable_steps", [])
-        ]
+        entries = list(interventions)
         aggregates = list(question_aggregates or [])
-
-        if not catalog_summary or not catalog_steps:
-            return AdaptedIntervention(
-                summary=catalog_summary,
-                actionable_steps=catalog_steps,
-                outcome="deterministic_fallback",
-                attempts=0,
+        catalog = [
+            (
+                str(intervention.get("summary", "")),
+                [
+                    str(step)
+                    for step in intervention.get("actionable_steps", [])
+                ],
             )
+            for intervention in entries
+        ]
 
+        def catalog_result(attempts: int) -> list[AdaptedIntervention]:
+            return [
+                AdaptedIntervention(
+                    summary=summary,
+                    actionable_steps=steps,
+                    outcome="deterministic_fallback",
+                    attempts=attempts,
+                )
+                for summary, steps in catalog
+            ]
+
+        # An entry without copy to rewrite has nothing to send, and mixing it
+        # into the batch would make the block count disagree with the answer.
+        if not entries or any(
+            not summary or not steps for summary, steps in catalog
+        ):
+            return catalog_result(0)
+
+        expected_steps_per_entry = [len(steps) for _, steps in catalog]
         model_name = self._model_for_tier(retry_tier)
         distribution_counts = self.distribution_counts(aggregates)
         text, attempts, fallback_reason = self._complete_with_retries(
-            build_prompt=lambda: self._build_adaptation_prompt(
-                intervention=intervention,
+            build_prompt=lambda: hebrew_prompts.adaptation_batch_prompt(
+                interventions=entries,
                 dim_hebrew=dim_hebrew,
                 score=score,
                 status=status,
@@ -289,15 +314,15 @@ class LLMProviderService:
                 background_context=background_context,
             ),
             system_prompt=(
-                "את/ה פסיכולוג/ית ארגוני/ת המתאים/ה המלצה מקטלוג לבית ספר "
+                "את/ה פסיכולוג/ית ארגוני/ת המתאים/ה המלצות מקטלוג לבית ספר "
                 "אחד. ענה תמיד בעברית בלבד."
             ),
             model_name=model_name,
             is_acceptable=lambda candidate, finish_reason: (
                 finish_reason == "stop"
-                and hebrew_validation.is_valid_adaptation(
+                and hebrew_validation.is_valid_adaptation_batch(
                     candidate,
-                    expected_steps=len(catalog_steps),
+                    expected_steps_per_entry=expected_steps_per_entry,
                     status=status,
                     distribution_counts=distribution_counts,
                 )
@@ -305,32 +330,33 @@ class LLMProviderService:
         )
 
         parsed = (
-            hebrew_validation.parse_adaptation(text, len(catalog_steps))
+            hebrew_validation.parse_adaptation_batch(
+                text,
+                expected_steps_per_entry,
+            )
             if text is not None
             else None
         )
         if parsed is None:
             logger.info(
                 "[LLM Service] adaptation=deterministic_fallback model=%s "
-                "reason=%s attempts=%s",
+                "reason=%s attempts=%s entries=%s",
                 model_name,
                 fallback_reason,
                 attempts,
+                len(entries),
             )
-            return AdaptedIntervention(
-                summary=catalog_summary,
-                actionable_steps=catalog_steps,
-                outcome="deterministic_fallback",
+            return catalog_result(attempts)
+
+        return [
+            AdaptedIntervention(
+                summary=adapted_summary,
+                actionable_steps=adapted_steps,
+                outcome="llm",
                 attempts=attempts,
             )
-
-        adapted_summary, adapted_steps = parsed
-        return AdaptedIntervention(
-            summary=adapted_summary,
-            actionable_steps=adapted_steps,
-            outcome="llm",
-            attempts=attempts,
-        )
+            for adapted_summary, adapted_steps in parsed
+        ]
 
     @staticmethod
     def _model_for_tier(retry_tier: str) -> str:
@@ -414,25 +440,6 @@ class LLMProviderService:
             dim_scores,
             question_aggregates,
             background_context,
-        )
-
-    def _build_adaptation_prompt(
-        self,
-        *,
-        intervention: Dict[str, Any],
-        dim_hebrew: str,
-        score: float,
-        status: str,
-        question_aggregates: list[Dict[str, Any]],
-        background_context: Optional[Dict[str, Any]] = None,
-    ) -> str:
-        return hebrew_prompts.adaptation_prompt(
-            intervention=intervention,
-            dim_hebrew=dim_hebrew,
-            score=score,
-            status=status,
-            question_aggregates=question_aggregates,
-            background_context=background_context,
         )
 
     def _heuristic_fallback(

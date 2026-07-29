@@ -316,14 +316,16 @@ end on the deployed stack, and the blocker is now the Gemini quota rather than a
        2026-07-29 for `Gemini 3.5 Flash` on the free tier: **RPM 5** (peak 7), **TPM 250K** (peak 7.51K),
        **RPD 20** (peak 22). A round is roughly 33 calls, so **one round does not fit in a day**, and the
        throttling idea recorded here earlier is wrong: pacing fixes RPM and cannot touch RPD. Tokens are not a
-       constraint at all. Two real options remain. **Set up billing** and move to Tier 1, which is the only way
-       to keep the pipeline as it is. **Or cut the calls per round below 20** — today it is eight
-       interpretations plus up to two dozen recommendation adaptations, so batching adaptations (one call per
-       dimension, or one covering several) is what would fit; pacing at 5 RPM would then make a round about
-       three minutes, which the background webhook already absorbs. Note that limits are per model, but
-       `LLM_MODEL_HEAVY` cannot be used to split the load: [`nodes.py`](ai-analytics-service/src/agents/nodes.py)
-       only reaches for the heavy tier when the whole node is replayed, so the normal path is entirely `fast`.
-       Splitting the two node types across two models would be a code change, not a config one.
+       constraint at all. **The daily cap is now met**: adaptations are batched one request per dimension
+       instead of one per catalog entry, so a round costs 8 interpretations + 1 summary + 8 adaptations = **17
+       requests against 33 before** (measured on the 5.0 fixture: 8 dimensions, 24 entries). **RPM is still
+       unmet** — 17 requests with a concurrency bound of 2 and no pacing still leave far more than five in the
+       first minute, so a green round is not yet guaranteed. What remains is a rate limiter, not just the
+       concurrency semaphore: paced at 5 RPM a round takes about three and a half minutes, which the background
+       webhook already absorbs. **Setting up billing** and moving to Tier 1 remains the alternative that needs
+       no further code. Note that limits are per model, but `LLM_MODEL_HEAVY` cannot be used to split the load:
+       [`nodes.py`](ai-analytics-service/src/agents/nodes.py) only reaches for the heavy tier when the whole
+       node is replayed, so the normal path is entirely `fast`.
 14. [x] Log the provider's actual `finish_reason` alongside `reason=invalid_finish_reason` — done 2026-07-29 in
        [`llm_transport.py`](ai-analytics-service/src/services/llm_transport.py). The label collapses truncation,
        a safety block and recitation into one word, and the three want different fixes. The value is sanitized

@@ -426,24 +426,26 @@ async def agent_adaptation_node(state: AnalyticsState) -> AnalyticsState:
             round_data,
             dim_id,
         )
-        for index, intervention in enumerate(interventions):
-            targets.append((dim_id, index))
-            # The provider call blocks, and a round holds eight dimensions of
-            # three entries each: run them the way the interpretations run,
-            # through the same bounded set of provider slots.
-            adaptations.append(
-                _in_provider_slot(
-                    slots,
-                    llm_provider_service.adapt_intervention_result,
-                    intervention=intervention,
-                    dim_hebrew=DIMENSION_NAMES_HEBREW.get(dim_id, dim_id),
-                    score=score,
-                    status=status,
-                    question_aggregates=question_aggregates,
-                    background_context=background_context,
-                    retry_tier=retry_tier,
-                )
+        # One request per dimension rather than one per entry. Every entry of a
+        # dimension is rewritten against the same aggregates, status and school
+        # background, so sending that context once per entry cost a round about
+        # two dozen requests to say one thing repeatedly — against a free tier
+        # that allows twenty a day. The call still blocks, so dimensions run
+        # concurrently through the same bounded set of provider slots.
+        targets.append((dim_id, len(interventions)))
+        adaptations.append(
+            _in_provider_slot(
+                slots,
+                llm_provider_service.adapt_interventions_result,
+                interventions=list(interventions),
+                dim_hebrew=DIMENSION_NAMES_HEBREW.get(dim_id, dim_id),
+                score=score,
+                status=status,
+                question_aggregates=question_aggregates,
+                background_context=background_context,
+                retry_tier=retry_tier,
             )
+        )
 
     results = await asyncio.gather(*adaptations)
 
@@ -451,14 +453,26 @@ async def agent_adaptation_node(state: AnalyticsState) -> AnalyticsState:
         dim_id: [dict(intervention) for intervention in interventions]
         for dim_id, interventions in recommendations.items()
     }
-    for (dim_id, index), adaptation in zip(targets, results):
-        adapted[dim_id][index].update(
-            {
-                "summary": adaptation.summary,
-                "actionable_steps": list(adaptation.actionable_steps),
-                "adaptationOutcome": adaptation.outcome,
-            },
-        )
+    for (dim_id, expected_count), dimension_adaptations in zip(
+        targets,
+        results,
+    ):
+        # The provider returns one adaptation per entry or falls the whole
+        # dimension back to the catalog; either way the count matches. Anything
+        # else would silently shift adaptations onto the wrong recommendations.
+        if len(dimension_adaptations) != expected_count:
+            raise ValueError(
+                "Adaptation count does not match the recommendations of "
+                f"dimension {dim_id}"
+            )
+        for index, adaptation in enumerate(dimension_adaptations):
+            adapted[dim_id][index].update(
+                {
+                    "summary": adaptation.summary,
+                    "actionable_steps": list(adaptation.actionable_steps),
+                    "adaptationOutcome": adaptation.outcome,
+                },
+            )
 
     return {
         **state,

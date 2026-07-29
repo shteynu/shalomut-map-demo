@@ -270,18 +270,80 @@ def parse_adaptation(
     return summary, steps
 
 
-def is_valid_adaptation(
+ADAPTATION_BATCH_SEPARATOR = "==="
+
+
+def parse_adaptation_batch(
+    text: Optional[str],
+    expected_steps_per_entry: list[int],
+) -> Optional[list[Tuple[str, list[str]]]]:
+    """One block per catalog entry, blocks divided by a line of "===".
+
+    Every entry of a dimension is adapted in one call, because they all speak
+    to the same aggregates, the same status and the same school — sending that
+    context once per entry spent three requests of a daily quota of twenty on
+    saying the same thing. Inside a block the single-entry format is unchanged,
+    so a batch is parsed by exactly the rules one adaptation is, and there is
+    no second notion of what valid means.
+    """
+    if not text or not expected_steps_per_entry:
+        return None
+
+    blocks: list[list[str]] = [[]]
+    for line in text.strip().splitlines():
+        stripped = line.strip()
+        if stripped and stripped.strip("=") == "":
+            blocks.append([])
+            continue
+        blocks[-1].append(line)
+
+    if len(blocks) != len(expected_steps_per_entry):
+        return None
+
+    entries = []
+    for block, expected_steps in zip(blocks, expected_steps_per_entry):
+        parsed = parse_adaptation("\n".join(block), expected_steps)
+        if parsed is None:
+            return None
+        entries.append(parsed)
+    return entries
+
+
+def is_valid_adaptation_batch(
     candidate: str,
     *,
-    expected_steps: int,
+    expected_steps_per_entry: list[int],
     status: str,
     distribution_counts: Optional[set[str]] = None,
 ) -> bool:
-    parsed = parse_adaptation(candidate, expected_steps)
+    """A batch is acceptable only if every entry in it would be.
+
+    One refused entry refuses the whole answer: the alternative is a dimension
+    where some recommendations speak to the round and others silently do not,
+    which is the ambiguity the catalog fallback exists to avoid.
+    """
+    parsed = parse_adaptation_batch(candidate, expected_steps_per_entry)
     if parsed is None:
         return False
 
-    summary, steps = parsed
+    return all(
+        _is_valid_adaptation_entry(
+            summary,
+            steps,
+            status=status,
+            distribution_counts=distribution_counts,
+        )
+        for summary, steps in parsed
+    )
+
+
+def _is_valid_adaptation_entry(
+    summary: str,
+    steps: list[str],
+    *,
+    status: str,
+    distribution_counts: Optional[set[str]] = None,
+) -> bool:
     if not all(is_hebrew_only_copy(part) for part in [summary, *steps]):
         return False
     # An adaptation that quotes no number of the round is the catalog text

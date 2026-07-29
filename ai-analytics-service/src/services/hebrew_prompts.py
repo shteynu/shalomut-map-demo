@@ -211,16 +211,14 @@ def overall_summary_prompt(
     )
 
 
-def adaptation_prompt(
-    *,
-    intervention: Dict[str, Any],
-    dim_hebrew: str,
-    score: float,
-    status: str,
+def adaptation_aggregate_lines(
     question_aggregates: list[Dict[str, Any]],
-    background_context: Optional[Dict[str, Any]] = None,
-) -> str:
-    steps = [str(step) for step in intervention.get("actionable_steps", [])]
+) -> list[str]:
+    """The dimension's numbers as the adaptation prompts state them.
+
+    Shared by the single and the batched prompt so the model is shown one
+    description of a dimension, not two that could drift apart.
+    """
     aggregate_lines = []
     for aggregate in question_aggregates:
         line = (
@@ -236,32 +234,69 @@ def adaptation_prompt(
                 f"{distribution.get('red', 0)} אדום)"
             )
         aggregate_lines.append(line)
+    return aggregate_lines
 
+
+def adaptation_batch_prompt(
+    *,
+    interventions: list[Dict[str, Any]],
+    dim_hebrew: str,
+    score: float,
+    status: str,
+    question_aggregates: list[Dict[str, Any]],
+    background_context: Optional[Dict[str, Any]] = None,
+) -> str:
+    """Every catalog entry of one dimension, adapted in a single request.
+
+    The dimension's aggregates, status and school background are identical for
+    all of its entries, so stating them once per entry spent a request of a
+    twenty-a-day quota on repetition. The answer keeps the single-entry line
+    format inside each block and separates blocks by a line of "===".
+    """
+    aggregate_lines = adaptation_aggregate_lines(question_aggregates)
     lines = background_context_lines(background_context)
     background_section = (
         "\nרקע בית הספר:\n" + "\n".join(lines)
         if lines
         else ""
     )
-    catalog_steps = "\n".join(f"- {step}" for step in steps)
+
+    entry_sections = []
+    for index, intervention in enumerate(interventions, start=1):
+        entry_steps = [
+            str(step) for step in intervention.get("actionable_steps", [])
+        ]
+        catalog_steps = "\n".join(f"- {step}" for step in entry_steps)
+        entry_sections.append(
+            f"המלצה {index}:\n"
+            f"כותרת ההמלצה בקטלוג: {intervention.get('title', '')}\n"
+            f"תקציר ההמלצה בקטלוג: {intervention.get('summary', '')}\n"
+            f"שלבי ההמלצה בקטלוג ({len(entry_steps)} שלבים):\n"
+            f"{catalog_steps}"
+        )
+
+    block_shapes = ", ".join(
+        f"בלוק {index} — {len(intervention.get('actionable_steps', [])) + 1} שורות"
+        for index, intervention in enumerate(interventions, start=1)
+    )
 
     return (
-        "את/ה מתאים/ה המלצה אחת מתוך קטלוג לבית ספר יחיד, "
-        "על סמך נתונים מצרפיים בלבד שאינם חושפים משיבים.\n"
+        f"את/ה מתאים/ה {len(interventions)} המלצות מתוך קטלוג לבית ספר "
+        "יחיד, על סמך נתונים מצרפיים בלבד שאינם חושפים משיבים.\n"
         f"ממד: {dim_hebrew}. ציון: {score:.0f} מתוך 100. "
         f"מצב: {status_label(status)}.{background_section}\n"
-        "שאלות הממד:\n" + "\n".join(aggregate_lines) + "\n"
-        f"כותרת ההמלצה בקטלוג: {intervention.get('title', '')}\n"
-        f"תקציר ההמלצה בקטלוג: {intervention.get('summary', '')}\n"
-        f"שלבי ההמלצה בקטלוג:\n{catalog_steps}\n"
-        f"נסח מחדש את התקציר ואת {len(steps)} השלבים עבור בית הספר הזה. "
-        "ענה בעברית בלבד, בלי אותיות לטיניות, בדיוק ב-"
-        f"{len(steps) + 1} שורות: השורה הראשונה היא התקציר המנוסח מחדש "
-        "והיא מצטטת לפחות מספר אחד מהנתונים שלמעלה, וכל אחת מ-"
-        f"{len(steps)} השורות הבאות פותחת ב'- ' ומכילה שלב אחד מנוסח "
-        "מחדש. שמור על כוונת ההמלצה ועל סדר השלבים, שמור על עקביות עם "
-        "המצב שצוין, אל תמציא סיבות, אבחנות, זהויות או מספרים שאינם "
-        "למעלה, ורשום מספרים בספרות ולא במילים."
+        "שאלות הממד:\n" + "\n".join(aggregate_lines) + "\n\n"
+        + "\n\n".join(entry_sections) + "\n\n"
+        f"נסח מחדש כל אחת מ-{len(interventions)} ההמלצות עבור בית הספר הזה, "
+        f"לפי הסדר. ענה בעברית בלבד, בלי אותיות לטיניות, ב-"
+        f"{len(interventions)} בלוקים המופרדים בשורה שכולה '===' "
+        "ובלי שורת הפרדה לפני הבלוק הראשון או אחרי האחרון. "
+        "בכל בלוק השורה הראשונה היא התקציר המנוסח מחדש והיא מצטטת לפחות "
+        "מספר אחד מהנתונים שלמעלה, וכל שורה אחריה פותחת ב'- ' ומכילה שלב "
+        f"אחד מנוסח מחדש: {block_shapes}. "
+        "שמור על כוונת כל המלצה ועל סדר השלבים, שמור על עקביות עם המצב "
+        "שצוין, אל תמציא סיבות, אבחנות, זהויות או מספרים שאינם למעלה, "
+        "ורשום מספרים בספרות ולא במילים."
     )
 
 
