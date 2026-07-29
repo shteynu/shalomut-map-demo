@@ -205,16 +205,22 @@ as PR #13 and live on Render)
 2. [ ] Finish the E2 deploy order for `5.0`
        ([ai-insights-depth-plan-2026-07-27.md](docs/ai-insights-depth-plan-2026-07-27.md), section
        "Продолжение"). Steps 1 and 2 landed with the merge of PR #11 — Python is deployed and `/health` was read.
-       **Step 3 is open**: set `AI_ANALYTICS_CONTRACT_VERSION=5.0` in Vercel Production and Preview; until then
-       Core keeps producing whatever that variable holds today (recorded as `4.0`), which Python accepts, so
-       nothing is broken — `5.0` is simply never sent. **Step 4 is open**: a live round, then
+       **Step 3 is done** (2026-07-29, by the owner; runbook and evidence in
+       [e2-step3-contract-version-rollout.md](docs/e2-step3-contract-version-rollout.md)):
+       `AI_ANALYTICS_CONTRACT_VERSION` now exists in both Vercel Production and Preview, and the production
+       redeploy `shalomut-map-demo-1t7fim7ss` holds the alias. Two corrections came out of it — Preview never
+       had the variable at all, so it was producing `3.0` rather than the recorded `4.0`; and the variable is
+       of type Sensitive, so its value cannot be read back by `vercel env pull` or the dashboard. That leaves
+       the written value unproven until a round exists to query — an authenticated `/api/mcp`
+       `get_round_analytics` call echoes `contractVersion` even for a locked round, so it needs no provider
+       call, but the database has held zero rounds since 2026-07-28. **Step 4 is open**: a live round, then
        `inspect-ai-provenance` on it to show `outcome: "llm"` on at least some stones. Before either: confirm the
        Render dashboard does not set `MAX_TOKENS_PER_DIMENSION` explicitly (neither `render.yaml` nor
        `.env.render.local` does, so the deployed `2048` default applies), and settle the Gemini quota — `429`
        arrives after a few calls on the free tier, and one live round is roughly 33 calls. The timeout objection is
        gone: the background webhook of item 6 is deployed, so a long round can no longer be cancelled mid-run.
-       Both steps are the owner's — the session permission layer declines `vercel env` writes, and the live round
-       needs a manager sign-in.
+       Step 4 is the owner's — the live round needs a manager sign-in, and item 4 below has to come first
+       since the database is empty.
 3. [x] Decide what the ten-respondent threshold means for rounds created before it — the owner chose the migration
        (2026-07-28). `20260728120000_privacy_threshold_minimum_ten` is applied to the one database: default `10`,
        `SHALOM-F125` raised from `1` to `10` in both the column and its questionnaire snapshot, verified read-only
