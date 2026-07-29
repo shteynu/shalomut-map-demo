@@ -1,7 +1,8 @@
 # Shalomut Map — PROGRESS.md
 
 Updated: 2026-07-29 (contract `5.0` is switched on and proven in production, the first live rounds ran end to
-end on the deployed stack, and the blocker is now the Gemini quota rather than anything in the code)
+end on the deployed stack, and the round is now paced to the free tier's five requests per minute — committed,
+waiting on the owner's push and a live round to prove it)
 
 ## Current State
 
@@ -37,6 +38,29 @@ end on the deployed stack, and the blocker is now the Gemini quota rather than a
     waits on it. Declared in `render.yaml` and forwarded locally.
   - Two tests: one asserts the invariant (peak ≤ 2 across eight dimensions), one raises the limit to five and
     requires a peak above two — without it a serial-by-accident run would satisfy the first test just as well.
+- **A round is now paced to what the tier allows (2026-07-29; committed `794c9b1`, not yet deployed).**
+  Concurrency was the wrong axis: two slots still deliver a round's seventeen requests inside one minute, and
+  the free tier for `gemini-3.5-flash` allows five. `LLM_MAX_REQUESTS_PER_MINUTE` (default `5`) adds the axis
+  that was missing and is declared in `render.yaml` **with a value**, so unlike `LLM_MAX_CONCURRENT_REQUESTS`
+  it does not live on a default invisible in the dashboard. At five per minute a round takes about three and a
+  half minutes, against the fifteen `AI_RUN_EXPECTED_COMPLETION_MS` allows before a run reads as stalled.
+  - The queue lives in [`provider_rate_limit.py`](ai-analytics-service/src/services/provider_rate_limit.py)
+    and is taken in `llm_transport.py` rather than beside the semaphore in `_in_provider_slot`, which is where
+    [the plan](docs/provider-quota-plan-2026-07-29.md) put it. The transport is the one place every request
+    already passes through, so the queue charges real sends and only those: a green dimension that never calls
+    a provider spends no turn, and the round summary — which does not go through `_in_provider_slot` at all —
+    cannot slip past it. The plan's invariant is kept: the turn is taken before `request_started_at`, so
+    waiting for one costs no part of a call's `llm_retry_budget_seconds`.
+  - **Retries take a turn of their own**, which is the specific reason retrying never helped: three attempts
+    0.5 and 1.1 seconds apart spent themselves inside the minute that had just refused them. A `Retry-After`
+    the provider sends now outranks `LLM_RETRY_MAX_DELAY_SECONDS`, which had been shortening a seven-second
+    wait to two; what bounds it instead is the retry budget, which declines a wait it cannot hold rather than
+    shortening it.
+  - Seven tests in [`test_provider_rate_limit.py`](ai-analytics-service/tests/test_provider_rate_limit.py):
+    the interval is kept, a raised limit really does raise the pace (without which a serial-by-accident run
+    would satisfy the first on its own), a retry after `429` waits for the next turn, a queued call keeps its
+    whole retry budget, a `Retry-After` beyond the budget stops the retry, a declined turn costs nobody their
+    place, and the setting is read from the environment. `pytest` 187/187, `npm test` 241/241.
 - **`llm_provider.py` (1323 lines, one class) is split along what each part is responsible for (deployed).** Half its
   public surface was a Hebrew validator that `nodes.py` called on text no provider had returned.
   - `llm_transport.py` — one bounded conversation with a provider (endpoint, attempts, backoff, `Retry-After`,
@@ -328,6 +352,11 @@ end on the deployed stack, and the blocker is now the Gemini quota rather than a
        no further code. Note that limits are per model, but `LLM_MODEL_HEAVY` cannot be used to split the load:
        [`nodes.py`](ai-analytics-service/src/agents/nodes.py) only reaches for the heavy tier when the whole
        node is replayed, so the normal path is entirely `fast`.
+       **Step 0 decided by the owner (2026-07-29): stay on the free tier at five requests per minute.** Tier 1
+       is not being bought for now, so the residual risk stands as written in the plan — 17 requests against a
+       daily 20 is one round per day, and a second attempt on the same day will meet `RPD` instead of `RPM`.
+       **Step 1 is done and committed (`794c9b1`), not yet deployed** — see the Current State entry above.
+       Steps 2 and 3 are open and start with the owner's push.
 14. [x] Log the provider's actual `finish_reason` alongside `reason=invalid_finish_reason` — done 2026-07-29 in
        [`llm_transport.py`](ai-analytics-service/src/services/llm_transport.py). The label collapses truncation,
        a safety block and recitation into one word, and the three want different fixes. The value is sanitized
