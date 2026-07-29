@@ -1,10 +1,31 @@
 # Shalomut Map — PROGRESS.md
 
-Updated: 2026-07-29 (contract `5.0` is switched on and proven in production, the first live rounds ran end to
-end on the deployed stack, and the round is now paced to the free tier's five requests per minute — committed,
-waiting on the owner's push and a live round to prove it)
+Updated: 2026-07-29 (**a live round finished `success` with all eight stones written by the model** — the
+first one ever; contract `5.0` is switched on and proven, and the provider quota is no longer the blocker)
 
 ## Current State
+
+- **The first successful live round, 2026-07-29 19:02:15–19:03:52 UTC on round `f9c18f1c`.** Ninety-seven
+  seconds from webhook to callback `200`, and **not one `429` in the log** — the acceptance criterion the
+  quota plan was written for. Persistence says `status: success`, contract `5.0`, and
+  `inspect-ai-provenance` reads **8 stones out of 8 with `outcome: llm`** (seven on the first attempt, one on
+  the second). That closes step 4 of the E2 plan and item 2 in Next Up, and it exceeds their criterion, which
+  asked only for some of the stones to be model-written.
+  - **The pace held.** Consecutive provider answers are 4.2–4.4 seconds apart, and 22 requests went out in
+    about 91 seconds — 14.2 a minute against a tier that allows 15. Every call names
+    `model=gemini-3.5-flash-lite`, so Render's blueprint value did win over the dashboard entry: that open
+    question is answered, no dashboard edit was needed.
+  - **The prompt fix held in production too.** The stored summary says "11 תשובות אדומות מתוך 40" and "9 ל-19
+    תשובות לכל ממד" — answers, with their denominator, where the same prompt had reported people.
+  - **18 of 24 recommendations were rewritten by the model; 6 stayed catalog copy** — all three entries of
+    `certainty` and all three of `professional-competence`, both red dimensions. Their adaptation batches
+    failed twice with `invalid_semantic_output` and fell back by design, which is a legal outcome, so the
+    round succeeded with two dimensions carrying the generic paragraph every school gets. That is the next
+    thing worth fixing, and it is item 16.
+  - **A retry now stops at two attempts, not three**, although `LLM_MAX_ATTEMPTS` is `3`: at 14 a minute the
+    queue's next turn no longer fits inside `llm_retry_budget_seconds` once the minimum window is reserved,
+    so the budget declines it. That is the designed behaviour meeting the new pace, not a fault — but the
+    third attempt is effectively unreachable for a semantically rejected answer at this rate.
 
 - **Contract `5.0` is live and proven (2026-07-29).** `AI_ANALYTICS_CONTRACT_VERSION` was set in Vercel
   Production and Preview and the production deployment redeployed; step 3 of the E2 plan is closed, with the
@@ -38,8 +59,8 @@ waiting on the owner's push and a live round to prove it)
     waits on it. Declared in `render.yaml` and forwarded locally.
   - Two tests: one asserts the invariant (peak ≤ 2 across eight dimensions), one raises the limit to five and
     requires a peak above two — without it a serial-by-accident run would satisfy the first test just as well.
-- **The fast path moves to `gemini-3.5-flash-lite`, checked on this project's own prompts (2026-07-29; not
-  yet deployed).** Limits are per model, so this is a different budget rather than a bigger share of the same
+- **The fast path moved to `gemini-3.5-flash-lite`, checked on this project's own prompts and then on a
+  live round (2026-07-29; deployed).** Limits are per model, so this is a different budget rather than a bigger share of the same
   one: 15 RPM / 1000 RPD against 5 / 20. `render.yaml` now carries `LLM_MODEL_FAST` and
   `LLM_MAX_REQUESTS_PER_MINUTE` as values, together, because a rate means nothing without the model it counts
   for. `LLM_MODEL_HEAVY` stays on `gemini-3.5-flash` in the dashboard.
@@ -62,7 +83,7 @@ waiting on the owner's push and a live round to prove it)
   - **Known edge, not yet resolved**: the pace is one number for the process while the limits are per model,
     so a safety-validator replay — the only path that reaches `LLM_MODEL_HEAVY` — would run at lite's 14 per
     minute against flash's 5. Replays are rare and fail closed, but a per-model queue is the real fix.
-- **A round is now paced to what the tier allows (2026-07-29; committed `794c9b1`, not yet deployed).**
+- **A round is now paced to what the tier allows (2026-07-29; `794c9b1`, deployed and proven live).**
   Concurrency was the wrong axis: two slots still deliver a round's seventeen requests inside one minute, and
   the free tier for `gemini-3.5-flash` allows five. `LLM_MAX_REQUESTS_PER_MINUTE` (default `5`) adds the axis
   that was missing and is declared in `render.yaml` **with a value**, so unlike `LLM_MAX_CONCURRENT_REQUESTS`
@@ -271,7 +292,10 @@ waiting on the owner's push and a live round to prove it)
 1. [x] Deploy updated Python AI service container to Render to serve Contract 5.0 endpoints — live and current:
        `GET https://shalomut-ai-analytics.onrender.com/health` on 2026-07-28 returns `commit: 2be0708` and
        `supportedContractVersions: ["1.0","2.0","3.0","4.0","5.0"]`. Render rebuilt itself off the merge.
-2. [ ] Finish the E2 deploy order for `5.0`
+2. [x] Finish the E2 deploy order for `5.0` — **step 4 closed 2026-07-29**: the live round on `f9c18f1c`
+       finished `status: success` with 8/8 stones `outcome: llm` and no `429` in the Render log. Details in
+       the first Current State entry. The history below is kept because it records what the failure was and
+       how it was found.
        ([ai-insights-depth-plan-2026-07-27.md](docs/ai-insights-depth-plan-2026-07-27.md), section
        "Продолжение"). Steps 1 and 2 landed with the merge of PR #11 — Python is deployed and `/health` was read.
        **Step 3 is done** (2026-07-29, by the owner; runbook and evidence in
@@ -360,7 +384,10 @@ waiting on the owner's push and a live round to prove it)
        closed. Do them one secret at a time, Render and Vercel back to back, and expect any round in flight to
        die. The Gemini key is independent and rotates in Google AI Studio. Until this is done, anyone with the
        transcript can trigger analysis, read a round's aggregates and forge a result callback.
-13. [ ] Decide how to get past the Gemini `429`. **Plan and work order in
+13. [x] **Done 2026-07-29: the round no longer meets `429`.** Pacing plus the move to
+       `gemini-3.5-flash-lite` closed both axes — proven by the live round in the first Current State entry,
+       97 seconds, no `429`, `success`. What follows is the record of how it was diagnosed and decided.
+       Decide how to get past the Gemini `429`. **Plan and work order in
        [provider-quota-plan-2026-07-29.md](docs/provider-quota-plan-2026-07-29.md)**, including the options
        considered and deferred. **The limits are now known** — read from AI Studio on
        2026-07-29 for `Gemini 3.5 Flash` on the free tier: **RPM 5** (peak 7), **TPM 250K** (peak 7.51K),
@@ -382,8 +409,8 @@ waiting on the owner's push and a live round to prove it)
        lite's free tier is 15 RPM / 1000 RPD against 5 / 20 for `gemini-3.5-flash` (read in AI Studio
        2026-07-29). 17 requests a round against 1000 a day is roughly sixty rounds, and the pace is set to
        `14`, not `15`, because evenly spaced sends four seconds apart put sixteen of them inside some
-       sixty-second window. **Step 1 is done and committed (`794c9b1`), not yet deployed.**
-       Steps 2 and 3 are open and start with the owner's push.
+       sixty-second window. **Steps 1, 2 and 3 are all done**: the pace shipped as
+       `794c9b1`, the live round ran clean, and `inspect-ai-provenance` read 8/8 stones as model-written.
 14. [x] Log the provider's actual `finish_reason` alongside `reason=invalid_finish_reason` — done 2026-07-29 in
        [`llm_transport.py`](ai-analytics-service/src/services/llm_transport.py). The label collapses truncation,
        a safety block and recitation into one word, and the three want different fixes. The value is sanitized
@@ -398,6 +425,15 @@ waiting on the owner's push and a live round to prove it)
        only concerned the green dimensions. Note that honestly marking a stone as having no analysis does not
        breach the "no fallback posing as analysis" invariant — a fallback pretending to be model output would.
 
+16. [ ] **Find out why an adaptation batch is rejected as `invalid_semantic_output`.** On the successful
+       round of 2026-07-29 two dimensions out of eight — `certainty` and `professional-competence`, both red
+       — failed twice and fell back, so six of twenty-four recommendations reached the manager as the
+       catalog paragraph every school gets. The fallback is legal and the round is right to succeed; what is
+       unknown is the cause. Candidates: the block format (`===` separators and the exact line count per
+       entry) is harder for a lite model than a single answer, or one of the constraints added the same day
+       (the summary line must be the recommendation itself) tightened it. Two things would say which — the
+       rejected text itself, which no log carries today, and the dimension, which the
+       `adaptation=deterministic_fallback` line does not name either. Both are one log line away.
 ---
 
 ## Completed Tasks
