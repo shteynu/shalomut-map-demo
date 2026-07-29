@@ -239,7 +239,7 @@ browser smoke с клавиатуры в RTL; проверка на мобиль
 (`setup-form.tsx:77`, `manager/setup/route.ts:123`) и дальше не используется:
 MCP-пейлоад его не отдаёт (`src/app/api/mcp/route.ts:97`), промпт получает только
 измерение, балл, статус и агрегаты вопросов
-(`ai-analytics-service/src/services/llm_provider.py:367`). При этом текст на
+(`ai-analytics-service/src/services/hebrew_prompts.py:89`). При этом текст на
 странице настройки уже обещает обратное (`src/app/setup/page.tsx:20`).
 
 **Объём.**
@@ -413,7 +413,7 @@ source `edge-middleware`. Нужно задать `SESSION_SECRET` и
 
 ### 4. Довести контракт `4.0` до заявленного состояния (P2)
 
-Сейчас `analytics.service.ts` объявляет `3.0`, а `nodes.py:135` подставляет
+Сейчас `analytics.service.ts` объявляет `3.0`, а `nodes.py:61` подставляет
 `backgroundContext` в промпт безусловно. Из-за этого семантика `3.0` изменилась
 молча, ветка `4.0` в Python и валидация `4.0` в TypeScript не выполняются, а
 флаг `backgroundContextIncluded` пишется только для `4.0` — по сохранённому

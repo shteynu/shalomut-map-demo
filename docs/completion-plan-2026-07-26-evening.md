@@ -221,7 +221,7 @@ fail-closed поведение (респондентский `GET` уже отд
 ### Слайс C1 — привести контракт `4.0` в соответствие заявленному
 
 **Проблема.** [`analytics.service.ts:210,268`](../src/lib/services/analytics.service.ts)
-объявляет `3.0`, а [`nodes.py:135`](../ai-analytics-service/src/agents/nodes.py)
+объявляет `3.0`, а [`nodes.py:61`](../ai-analytics-service/src/agents/nodes.py)
 подставляет `backgroundContext` в промпт безусловно. Семантика `3.0`
 изменилась молча; ветка `4.0` и флаг `backgroundContextIncluded` не
 выполняются никогда; [`mcp/route.ts:107`](../src/app/api/mcp/route.ts) отдаёт

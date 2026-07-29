@@ -17,6 +17,21 @@ The current implementation is deliberately small:
 The service does not currently use LangGraph or ChromaDB at runtime, so those
 heavy packages are intentionally absent from the deployment manifest.
 
+The model-facing half lives in four files under `src/services/`, split by what
+each one is responsible for:
+
+- `llm_transport.py` — one bounded conversation with a provider: endpoint,
+  attempts, backoff, `Retry-After`, hard-quota rules. It never reads the copy
+  it carries; what counts as an acceptable answer arrives as a predicate.
+- `hebrew_prompts.py` — the Hebrew this service composes itself: the three
+  prompts, and the one interpretation written without a model at all.
+- `hebrew_validation.py` — what counts as acceptable copy about a round. The
+  graph calls it directly on text no provider returned, which is why it does
+  not sit behind the provider.
+- `llm_provider.py` — the facade the rest of the service imports: model tier,
+  which prompt goes out, which predicate judges the answer, and what a refused
+  answer means for the round.
+
 ## Contract
 
 The immutable deployed source of truth for structural contract `1.0` is
@@ -158,6 +173,15 @@ Multiple provider-specific keys without an explicit provider also fail closed.
 `LLM_MODEL_FAST` and `LLM_MODEL_HEAVY` override model selection. Gemini uses
 `gemini-flash-latest` and `gemini-pro-latest` as defaults; the OpenAI-compatible
 defaults remain `gpt-4o-mini` and `gpt-4o`.
+
+`LLM_MAX_CONCURRENT_REQUESTS` caps how many provider requests one round has in
+flight and defaults to `2`. Both LLM nodes hand their whole batch to
+`asyncio.gather`, so a round otherwise puts eight interpretations, and then up
+to two dozen recommendation adaptations, on the wire at once — which is what a
+free tier answers `429` to. The slot is taken before the worker thread is
+dispatched, so waiting for one costs no part of the per-dimension retry budget;
+it only makes the round longer, and the webhook has already answered `202` by
+then. Raise it for a paid key.
 
 `MAX_TOKENS_PER_DIMENSION` caps one interpretation and defaults to `2048`.
 

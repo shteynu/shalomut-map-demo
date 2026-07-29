@@ -1,0 +1,331 @@
+"""The Hebrew this service composes itself.
+
+Two kinds of it: the prompts sent to a provider, and the one interpretation
+written here on purpose — the green dimension no model is ever asked about. Both
+are text construction over a round's aggregates and neither needs a network, so
+they sit apart from the transport that carries them.
+"""
+
+import re
+from typing import Any, Dict, Iterable, Optional
+
+from src.contracts import AI_ANALYTICS_DIMENSION_NAMES_HEBREW
+
+# How a status is named to the model. Deliberately not a colour: the copy is
+# refused for naming a foreign colour, so handing the model colour words to
+# echo would be entrapment. The buckets keep their colours, because there the
+# word is attached to a count.
+_STATUS_LABELS_HEBREW = {
+    "green": "תקין",
+    "yellow": "דורש מעקב",
+    "red": "דורש התערבות",
+}
+
+
+def status_label(status: str) -> str:
+    return _STATUS_LABELS_HEBREW.get(status, status)
+
+
+def question_text(aggregate: Dict[str, Any]) -> str:
+    dynamic_text = aggregate.get("questionText")
+    if isinstance(dynamic_text, str):
+        return dynamic_text
+    legacy_text = aggregate.get("questionTextHebrew")
+    return legacy_text if isinstance(legacy_text, str) else ""
+
+
+def background_context_lines(
+    background_context: Optional[Dict[str, Any]],
+) -> list[str]:
+    """School-level context lines shared by every prompt that carries it."""
+    if not isinstance(background_context, dict):
+        return []
+
+    lines = []
+    if background_context.get("notes"):
+        lines.append(f"הערות רקע מהמנהלת: {background_context['notes']}")
+    if background_context.get("audience"):
+        lines.append(f"קהל יעד: {background_context['audience']}")
+    if background_context.get("studentCount"):
+        lines.append(f"מספר תלמידים: {background_context['studentCount']}")
+    if background_context.get("socioEconomicIndex"):
+        lines.append(f"מדד טיפוח: {background_context['socioEconomicIndex']}")
+    if background_context.get("newStaffMembers"):
+        lines.append(f"צוות חדש: {background_context['newStaffMembers']}")
+    if background_context.get("sicknessDaysThisQuarter"):
+        lines.append(
+            "ימי מחלה ברבעון: "
+            f"{background_context['sicknessDaysThisQuarter']}"
+        )
+    classes = background_context.get("classesPerGrade")
+    if isinstance(classes, dict) and classes:
+        classes_str = ", ".join(
+            f"שכבה {grade}: {count}"
+            for grade, count in classes.items()
+            if count
+        )
+        if classes_str:
+            lines.append(f"כיתות: {classes_str}")
+    return lines
+
+
+def summed_distribution(
+    question_aggregates: Iterable[Dict[str, Any]],
+) -> Optional[Dict[str, int]]:
+    totals = {"green": 0, "yellow": 0, "red": 0}
+    seen = False
+    for aggregate in question_aggregates:
+        distribution = aggregate.get("scoreDistribution")
+        if not isinstance(distribution, dict):
+            continue
+        for bucket in totals:
+            count = distribution.get(bucket)
+            if isinstance(count, int) and not isinstance(count, bool):
+                totals[bucket] += count
+                seen = True
+    return totals if seen else None
+
+
+def interpretation_prompt(
+    dim_id: str,
+    dim_hebrew: str,
+    score: float,
+    status: str,
+    question_aggregates: list[Dict[str, Any]],
+    background_context: Optional[Dict[str, Any]] = None,
+    contract_version: str = "4.0",
+    all_dimension_scores: Optional[Dict[str, Any]] = None,
+) -> str:
+    uses_dynamic_questions = any(
+        isinstance(aggregate.get("questionText"), str)
+        for aggregate in question_aggregates
+    )
+    lines = []
+    for aggregate in question_aggregates:
+        dist_str = ""
+        if contract_version == "5.0" and isinstance(aggregate.get("scoreDistribution"), dict):
+            dist = aggregate["scoreDistribution"]
+            dist_str = f" (תשובות: {dist.get('green', 0)} ירוק, {dist.get('yellow', 0)} צהוב, {dist.get('red', 0)} אדום)"
+        lines.append(
+            f"- {question_text(aggregate)} ממוצע {aggregate['averageScore']:.0f}, מספר תשובות {aggregate['responseCount']}{dist_str}"
+        )
+    aggregate_lines = "\n".join(lines)
+
+    bg_lines = background_context_lines(background_context)
+    bg_section = ("\nרקע בית הספר:\n" + "\n".join(bg_lines)) if bg_lines else ""
+
+    cross_dim_section = ""
+    if contract_version == "5.0" and isinstance(all_dimension_scores, dict) and all_dimension_scores:
+        cd_lines = []
+        for d_id, d_val in all_dimension_scores.items():
+            s_val = d_val.get("averageScore", 0.0) if isinstance(d_val, dict) else getattr(d_val, "averageScore", 0.0)
+            st_val = d_val.get("computedStatus", "") if isinstance(d_val, dict) else getattr(d_val, "computedStatus", "")
+            d_heb = AI_ANALYTICS_DIMENSION_NAMES_HEBREW.get(d_id, d_id)
+            cd_lines.append(
+                f"- {d_heb}: ציון {s_val:.0f}, מצב {status_label(st_val)}"
+            )
+        cross_dim_section = "\nתמונת שמונת הממדים:\n" + "\n".join(cd_lines) + "\n"
+
+    length_instruction = (
+        "כתוב בין 2 ל-5 משפטים שלמים."
+        if contract_version == "5.0"
+        else "כתוב בדיוק שני משפטים שלמים."
+    )
+
+    return (
+        "את/ה פסיכולוג/ית ארגוני/ת המנתח/ת אך ורק נתונים מצרפיים "
+        "שאינם חושפים משיבים, על רווחת צוות חינוכי.\n"
+        f"ממד: {dim_hebrew}. ציון: {score:.0f} מתוך 100. "
+        f"מצב: {status_label(status)}.{bg_section}\n"
+        f"{cross_dim_section}"
+        f"{'שאלות הממד כפי שנשמרו' if uses_dynamic_questions else 'שאלות הממד'}"
+        f":\n{aggregate_lines}\n"
+        f"{length_instruction} בסס כל טענה על הנתונים שלמעלה, אל תמציא "
+        "סיבות, אבחנות, זהויות או עובדות על משיב יחיד, ושמור על עקביות "
+        "עם המצב שצוין. כתוב בעברית בלבד, בלי אותיות לטיניות, ורשום "
+        "מספרים בספרות ולא במילים."
+    )
+
+
+def overall_summary_prompt(
+    dim_scores: Dict[str, Any],
+    question_aggregates: Iterable[Dict[str, Any]] | None = None,
+    background_context: Optional[Dict[str, Any]] = None,
+) -> str:
+    """The round-level picture: eight dimensions with their distributions.
+
+    Score and status alone cannot separate "everyone answered yellow" from
+    "half green, half red", which are different rounds to write about.
+    """
+    aggregates = list(question_aggregates or [])
+    dim_lines = []
+    for dimension_id, dimension_score in dim_scores.items():
+        score_value = (
+            dimension_score.get("averageScore", 0.0)
+            if isinstance(dimension_score, dict)
+            else getattr(dimension_score, "averageScore", 0.0)
+        )
+        status_value = (
+            dimension_score.get("computedStatus", "")
+            if isinstance(dimension_score, dict)
+            else getattr(dimension_score, "computedStatus", "")
+        )
+        hebrew_name = AI_ANALYTICS_DIMENSION_NAMES_HEBREW.get(
+            dimension_id,
+            dimension_id,
+        )
+        line = (
+            f"- {hebrew_name}: ציון {score_value:.0f}, "
+            f"מצב {status_label(status_value)}"
+        )
+        distribution = summed_distribution(
+            aggregate
+            for aggregate in aggregates
+            if aggregate.get("dimensionId") == dimension_id
+        )
+        if distribution:
+            line += (
+                f" (פיזור: {distribution['green']} ירוק / "
+                f"{distribution['yellow']} צהוב / "
+                f"{distribution['red']} אדום)"
+            )
+        dim_lines.append(line)
+
+    lines = background_context_lines(background_context)
+    background_section = (
+        "\nרקע בית הספר:\n" + "\n".join(lines)
+        if lines
+        else ""
+    )
+
+    return (
+        "את/ה פסיכולוג/ית ארגוני/ת המסכם/ת את התמונה הכוללת של רווחת "
+        "הצוות בבית ספר אחד.\n"
+        "ציוני הממדים:\n" + "\n".join(dim_lines) + "\n"
+        f"{background_section}\n"
+        "כתוב בין 2 ל-4 משפטים שלמים המסכמים את המצב הכולל. ציין את "
+        "החוזקות המרכזיות ואת תחומי העדיפות, והישען על הפיזור ולא על "
+        "הממוצע בלבד. שמור על טון מקצועי ותומך המעוגן בנתונים, אל תמציא "
+        "סיבות או אבחנות, כתוב בעברית בלבד בלי אותיות לטיניות, ורשום "
+        "מספרים בספרות ולא במילים."
+    )
+
+
+def adaptation_prompt(
+    *,
+    intervention: Dict[str, Any],
+    dim_hebrew: str,
+    score: float,
+    status: str,
+    question_aggregates: list[Dict[str, Any]],
+    background_context: Optional[Dict[str, Any]] = None,
+) -> str:
+    steps = [str(step) for step in intervention.get("actionable_steps", [])]
+    aggregate_lines = []
+    for aggregate in question_aggregates:
+        line = (
+            f"- {question_text(aggregate)} "
+            f"ממוצע {float(aggregate.get('averageScore', 0.0)):.0f}, "
+            f"מספר תשובות {aggregate.get('responseCount', 0)}"
+        )
+        distribution = aggregate.get("scoreDistribution")
+        if isinstance(distribution, dict):
+            line += (
+                f" (תשובות: {distribution.get('green', 0)} ירוק, "
+                f"{distribution.get('yellow', 0)} צהוב, "
+                f"{distribution.get('red', 0)} אדום)"
+            )
+        aggregate_lines.append(line)
+
+    lines = background_context_lines(background_context)
+    background_section = (
+        "\nרקע בית הספר:\n" + "\n".join(lines)
+        if lines
+        else ""
+    )
+    catalog_steps = "\n".join(f"- {step}" for step in steps)
+
+    return (
+        "את/ה מתאים/ה המלצה אחת מתוך קטלוג לבית ספר יחיד, "
+        "על סמך נתונים מצרפיים בלבד שאינם חושפים משיבים.\n"
+        f"ממד: {dim_hebrew}. ציון: {score:.0f} מתוך 100. "
+        f"מצב: {status_label(status)}.{background_section}\n"
+        "שאלות הממד:\n" + "\n".join(aggregate_lines) + "\n"
+        f"כותרת ההמלצה בקטלוג: {intervention.get('title', '')}\n"
+        f"תקציר ההמלצה בקטלוג: {intervention.get('summary', '')}\n"
+        f"שלבי ההמלצה בקטלוג:\n{catalog_steps}\n"
+        f"נסח מחדש את התקציר ואת {len(steps)} השלבים עבור בית הספר הזה. "
+        "ענה בעברית בלבד, בלי אותיות לטיניות, בדיוק ב-"
+        f"{len(steps) + 1} שורות: השורה הראשונה היא התקציר המנוסח מחדש "
+        "והיא מצטטת לפחות מספר אחד מהנתונים שלמעלה, וכל אחת מ-"
+        f"{len(steps)} השורות הבאות פותחת ב'- ' ומכילה שלב אחד מנוסח "
+        "מחדש. שמור על כוונת ההמלצה ועל סדר השלבים, שמור על עקביות עם "
+        "המצב שצוין, אל תמציא סיבות, אבחנות, זהויות או מספרים שאינם "
+        "למעלה, ורשום מספרים בספרות ולא במילים."
+    )
+
+
+def heuristic_interpretation(
+    dim_hebrew: str,
+    score: float,
+    status: str,
+    question_aggregates: list[Dict[str, Any]] | None = None,
+) -> str:
+    """The interpretation the service writes without asking a model.
+
+    Reached for the green dimension that `ONLY_LLM_FOR_PROBLEMATIC` keeps away
+    from the provider, so there is no failure being papered over here.
+    """
+    aggregates = question_aggregates or []
+    if aggregates:
+        selected = (
+            max(aggregates, key=lambda aggregate: aggregate["averageScore"])
+            if status == "green"
+            else min(
+                aggregates,
+                key=lambda aggregate: aggregate["averageScore"],
+            )
+        )
+        selected_text = question_text(selected)
+        question_sentence = (
+            selected_text
+            if re.search(r"[.!?؟]\s*$", selected_text)
+            else f"{selected_text}."
+        )
+        aggregate_score = float(selected["averageScore"])
+        score_text = (
+            str(int(aggregate_score))
+            if aggregate_score.is_integer()
+            else f"{aggregate_score:.1f}"
+        ).replace(".", ",")
+        implication = {
+            "green": "משקף חוזקה שכדאי לשמר לאורך זמן",
+            "yellow": "מסמן תחום שכדאי לחזק באופן ממוקד",
+            "red": "מסמן צורך בתשומת לב מיידית בתחום זה",
+        }.get(status, "מציג את המצב המצרפי בתחום זה")
+        return (
+            f"השאלה המצרפית הבולטת במדד {dim_hebrew} היא: "
+            f"{question_sentence} "
+            f"ממוצע המענה עליה הוא {score_text} מתוך 100, והוא "
+            f"{implication}."
+        )
+
+    score_text = (
+        str(int(score))
+        if float(score).is_integer()
+        else f"{score:.1f}"
+    ).replace(".", ",")
+    if status == "red":
+        return (
+            f"מדד {dim_hebrew} נמצא באזור אדום עם ציון {score_text}. "
+            "הנתון המצרפי מסמן צורך בתשומת לב מיידית בתחום זה."
+        )
+    if status == "yellow":
+        return (
+            f"מדד {dim_hebrew} נמצא באזור צהוב עם ציון {score_text}. "
+            "הנתון המצרפי מסמן תחום שכדאי לחזק באופן ממוקד."
+        )
+    return (
+        f"מדד {dim_hebrew} נמצא באזור ירוק עם ציון {score_text}. "
+        "הנתון המצרפי משקף חוזקה שכדאי לשמר לאורך זמן."
+    )

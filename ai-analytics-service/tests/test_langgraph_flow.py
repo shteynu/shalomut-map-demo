@@ -1,7 +1,15 @@
+import threading
+import time
+
 import pytest
 from src.agents.graph import analytics_graph
+from src.agents.nodes import agent_psychologist_node
 from src.agents.state import AnalyticsState
 from src.config import settings
+from src.services.llm_provider import (
+    InterpretationGeneration,
+    llm_provider_service,
+)
 from src.contracts import (
     AI_ANALYTICS_CONTRACT_VERSION,
     AI_ANALYTICS_DIMENSION_IDS,
@@ -179,3 +187,76 @@ async def test_langgraph_flow_locked():
     assert final_payload["status"] == "locked_error"
     assert final_payload["isLocked"] is True
     assert "errorMessage" in final_payload
+
+
+def _counting_provider(peak_holder, active_holder, calls_holder, lock):
+    """An interpretation that records how many calls overlap while it runs."""
+
+    def interpretation(*, dim_id, dim_hebrew, score, status, **_kwargs):
+        with lock:
+            active_holder[0] += 1
+            calls_holder[0] += 1
+            peak_holder[0] = max(peak_holder[0], active_holder[0])
+        try:
+            time.sleep(0.05)
+        finally:
+            with lock:
+                active_holder[0] -= 1
+        return InterpretationGeneration(
+            text="הממד נמצא במצב יציב. הנתונים המצרפיים תומכים במסקנה זו.",
+            outcome="llm",
+            attempts=1,
+        )
+
+    return interpretation
+
+
+async def _peak_concurrency(monkeypatch, limit):
+    peak = [0]
+    active = [0]
+    calls = [0]
+    monkeypatch.setattr(settings, "llm_max_concurrent_requests", limit)
+    monkeypatch.setattr(
+        llm_provider_service,
+        "generate_psychological_interpretation_result",
+        _counting_provider(peak, active, calls, threading.Lock()),
+    )
+
+    round_data = create_v2_round_data()
+    state: AnalyticsState = {
+        "round_data": round_data.model_dump(),
+        "org_context": {},
+        "interpretations": {},
+        "recommendations": {},
+        "safety_status": "pass_privacy",
+        "safety_feedback": None,
+        "retry_count": 0,
+        "final_payload": {},
+    }
+
+    await agent_psychologist_node(state)
+    # Every dimension still reaches the provider; the bound is on how many of
+    # them travel at the same time, not on how many are written.
+    assert calls[0] == len(round_data.model_dump()["dimensionScores"])
+    return peak[0]
+
+
+@pytest.mark.asyncio
+async def test_a_round_never_puts_the_whole_batch_on_the_wire(monkeypatch):
+    """Eight dimensions are gathered at once but reach the provider two at a time.
+
+    Free provider tiers cap concurrent requests — the strictest of them at two —
+    and an unbounded gather spent that budget on the first breath of the round.
+    """
+    assert await _peak_concurrency(monkeypatch, 2) <= 2
+
+
+@pytest.mark.asyncio
+async def test_the_concurrency_bound_is_the_configured_one(monkeypatch):
+    """A raised limit really does widen the batch, so the bound above is the cause.
+
+    Without this, a serial-by-accident run would satisfy the previous test just
+    as well as a working semaphore.
+    """
+    peak = await _peak_concurrency(monkeypatch, 5)
+    assert 2 < peak <= 5

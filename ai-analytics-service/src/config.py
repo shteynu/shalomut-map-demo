@@ -194,6 +194,17 @@ class Settings:
                 float(os.getenv("LLM_MIN_RETRY_WINDOW_SECONDS", "8.0")),
             ),
         )
+        # How many provider requests one round may have in flight. A round is
+        # roughly 33 calls and both LLM nodes gather their whole batch at once,
+        # so without a bound a free tier sees eight interpretations, then two
+        # dozen adaptations, arrive together and answers 429 to most of them.
+        # Two is what the strictest free tier allows concurrently; raise it for
+        # a paid key. Waiting for a slot happens before the request starts, so
+        # it never eats into the per-dimension retry budget.
+        self.llm_max_concurrent_requests: int = max(
+            1,
+            int(os.getenv("LLM_MAX_CONCURRENT_REQUESTS", "2")),
+        )
         
         # Reserved persistence setting for a future vector-backed catalog.
         self.chroma_persist_dir: str = os.getenv("CHROMA_PERSIST_DIR", "./chroma_db")

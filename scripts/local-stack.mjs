@@ -304,14 +304,19 @@ async function preflight() {
  * two halves in agreement: one file, one set of secrets.
  */
 function aiEnvironment() {
+  // Everything the service reads under the LLM_ prefix travels by prefix, not
+  // by name. Enumerating them meant that adding one to `src/config.py` left it
+  // silently undelivered here — the local run then proved something about a
+  // configuration the deployment does not have.
   const passthrough = [
+    ...new Set(
+      [...Object.keys(fileEnvironment), ...Object.keys(process.env)].filter(
+        (name) => name.startsWith("LLM_"),
+      ),
+    ),
     "GEMINI_API_KEY",
     "OPENAI_API_KEY",
     "OPENROUTER_API_KEY",
-    "LLM_API_KEY",
-    "LLM_PROVIDER",
-    "LLM_MODEL_FAST",
-    "LLM_MODEL_HEAVY",
     "MAX_TOKENS_PER_DIMENSION",
     "ONLY_LLM_FOR_PROBLEMATIC",
     "PRIVACY_THRESHOLD",
