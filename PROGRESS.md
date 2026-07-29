@@ -218,13 +218,21 @@ as PR #13 and live on Render)
        Core → Python → callback → persistence chain carried it. **Step 4 is open and was attempted**: the live
        round ran end to end on 2026-07-29 and failed, `dispatchedAt 10:57:25.393Z` → `processedAt
        11:01:19.081Z`, `status: validation_failed`, `failureReason: provider_unavailable`. The acceptance
-       criterion — `outcome: "llm"` on at least some stones — is not met, and `inspect-ai-provenance` has
-       nothing to read on this round. The cause is not established: `provider_unavailable` covers quota, timeout
-       and output the validators rejected on every attempt alike, and that last case is exactly how an explicit
-       `MAX_TOKENS_PER_DIMENSION=420` in the Render dashboard would look. Only the service log on Render
-       distinguishes them, via `outcome=provider_unavailable reason=…` — that read is the next step and needs
-       the owner's Render access. The timeout objection is gone: the background webhook of item 6 is deployed,
-       so a long round can no longer be cancelled mid-run.
+       criterion is not met in persistence, and `inspect-ai-provenance` has nothing to read on this round.
+       **The cause is established** from the Render log of a re-run on the same round (11:17:14–11:17:56, 42
+       seconds, full trace from webhook `202` through privacy gate to `Callback response status: 200`), and it
+       is two independent problems. **Quota:** `outcome=retry status=429` with `547→1106 ms` backoff, then
+       `no_answer attempts=3` and `provider_unavailable reason=http_429` on `certainty`,
+       `organizational-climate` and `meaning`. **Truncation:** two earlier rejections with
+       `reason=invalid_finish_reason`, which `llm_transport.py` emits when `finish_reason != "stop"` — the
+       `MAX_TOKENS_PER_DIMENSION=420` signature. `config.py` defaults to `2048`, but an explicit value in the
+       Render dashboard overrides it, and **that check is still outstanding and is the next step.** Note that
+       the model did answer: five `outcome=llm` lines on `gemini-3.5-flash`. None of it reached the database,
+       because failing one dimension fails the whole round. That is a product contradiction worth settling
+       before step 4 — on the free tier `429` reliably kills three of eight dimensions, so no round can ever
+       succeed even though the provider works. It is wider than item 10, which only covered green dimensions.
+       The timeout objection is gone: the background webhook of item 6 is deployed, so a long round can no
+       longer be cancelled mid-run.
 3. [x] Decide what the ten-respondent threshold means for rounds created before it — the owner chose the migration
        (2026-07-28). `20260728120000_privacy_threshold_minimum_ten` is applied to the one database: default `10`,
        `SHALOM-F125` raised from `1` to `10` in both the column and its questionnaire snapshot, verified read-only
