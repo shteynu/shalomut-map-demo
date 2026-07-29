@@ -223,10 +223,13 @@ as PR #13 and live on Render)
        seconds, full trace from webhook `202` through privacy gate to `Callback response status: 200`), and it
        is two independent problems. **Quota:** `outcome=retry status=429` with `547→1106 ms` backoff, then
        `no_answer attempts=3` and `provider_unavailable reason=http_429` on `certainty`,
-       `organizational-climate` and `meaning`. **Truncation:** two earlier rejections with
-       `reason=invalid_finish_reason`, which `llm_transport.py` emits when `finish_reason != "stop"` — the
-       `MAX_TOKENS_PER_DIMENSION=420` signature. `config.py` defaults to `2048`, but an explicit value in the
-       Render dashboard overrides it, and **that check is still outstanding and is the next step.** Note that
+       `organizational-climate` and `meaning`. **An unexplained second failure:** two earlier rejections with
+       `reason=invalid_finish_reason`, which `llm_transport.py` emits when `finish_reason != "stop"`. The
+       truncation theory — an explicit `MAX_TOKENS_PER_DIMENSION=420` in the Render dashboard — was checked and
+       disproved: the variable is not set there, so the `2048` default applies and that is enough for
+       `gemini-3.5-flash` (~1076 thinking tokens measured). A safety filter, `recitation` or another non-`stop`
+       finish reason remains possible; the log records only the label, never the provider's actual
+       `finish_reason`, so adding that to the log line is the next diagnostic step. Note that
        the model did answer: five `outcome=llm` lines on `gemini-3.5-flash`. None of it reached the database,
        because failing one dimension fails the whole round. That is a product contradiction worth settling
        before step 4 — on the free tier `429` reliably kills three of eight dimensions, so no round can ever
