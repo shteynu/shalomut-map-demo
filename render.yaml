@@ -32,13 +32,28 @@ services:
         sync: false
       - key: LLM_MAX_CONCURRENT_REQUESTS
         sync: false
-      # Carries a value rather than `sync: false`: the free tier refuses on the
-      # rate, so this one has to be visible and set in the dashboard instead of
-      # living on a default nobody can see. Five per minute is Google's free
-      # tier for gemini-3.5-flash, read 2026-07-29. Raise it for a paid tier.
+      # These two carry values rather than `sync: false`: the quota is what
+      # every live round has died on, so the model and the pace it is paced at
+      # belong together and in sight, not on a default nobody can read.
+      #
+      # Fourteen, not the fifteen the tier allows. Evenly spaced sends land
+      # every 60/R seconds, and at exactly fifteen that is four seconds — a
+      # sixty-second window then catches both endpoints, sixteen sends, one
+      # over. Any rate below fifteen leaves the window at fifteen. The four
+      # seconds this costs a round are not worth a `429`.
       - key: LLM_MAX_REQUESTS_PER_MINUTE
-        value: "5"
+        value: "14"
+      # Free tier for this model, read in AI Studio 2026-07-29: 15 RPM and
+      # 1000 RPD, against 5 and 20 for gemini-3.5-flash. Limits are counted per
+      # model, so this is a different budget rather than a bigger share of the
+      # same one — and 1000 a day against 17 a round is what turns one debug
+      # round per day into roughly sixty. Its Hebrew was checked on this
+      # project's own 5.0 prompts the same day.
       - key: LLM_MODEL_FAST
-        sync: false
+        value: "gemini-3.5-flash-lite"
+      # Left on the dashboard, and left on gemini-3.5-flash. It is only reached
+      # when the whole node is replayed, so it borrows a bucket the fast path
+      # no longer touches — see the note in PROGRESS.md about the pace a replay
+      # would run at.
       - key: LLM_MODEL_HEAVY
         sync: false

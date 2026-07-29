@@ -185,10 +185,20 @@ then. Raise it for a paid key.
 
 `LLM_MAX_REQUESTS_PER_MINUTE` caps how fast the whole process reaches the
 provider and defaults to `5`. Concurrency and rate are two different limits: two
-slots still deliver a round's seventeen requests inside a single minute, and
-five per minute is what Google's free tier allows for `gemini-3.5-flash` (read
-2026-07-29). That is what every live round had been failing on — `429` on the
-count of requests, never on their content.
+slots still deliver a round's seventeen requests inside a single minute, and a
+free tier counts the minute. That is what every live round had been failing on —
+`429` on the count of requests, never on their content.
+
+The rate belongs to a model, not to the service: Google counts per model, so
+`LLM_MAX_REQUESTS_PER_MINUTE` and `LLM_MODEL_FAST` have to move together.
+`render.yaml` carries both — `gemini-3.5-flash-lite` at `14`, against a tier
+that allows `15` per minute and `1000` a day. The missing fifteenth is not
+caution for its own sake: evenly spaced sends arrive every `60/R` seconds, so at
+exactly `15` they arrive every four seconds and some sixty-second window holds
+both endpoints — sixteen sends, one over. Any rate below `15` keeps the worst
+window at `15`. The default of `5` matches `gemini-3.5-flash` (`5` per minute,
+`20` a day), which is the stricter bucket and the right assumption for an
+environment that has not said which model it runs.
 
 One queue serves the whole process, because the quota is counted per key rather
 than per round, and Render runs the service with `WEB_CONCURRENCY=1`. Every
@@ -197,9 +207,10 @@ apart used to spend themselves inside the minute that had just refused them. A
 `Retry-After` the provider sends outranks the interval when it asks for longer,
 and the retry budget declines a wait it cannot hold instead of shortening it.
 
-At five per minute a round takes about three and a half minutes. Nobody waits on
-that — the webhook answered `202` long before, and Core reads a run as stalled
-only after fifteen minutes. Zero turns pacing off; raise it for a paid tier.
+At fourteen per minute a round takes a little over a minute; at five it takes
+about three and a half. Nobody waits on either — the webhook answered `202` long
+before, and Core reads a run as stalled only after fifteen minutes. Zero turns
+pacing off; raise it for a paid tier.
 
 `MAX_TOKENS_PER_DIMENSION` caps one interpretation and defaults to `2048`.
 

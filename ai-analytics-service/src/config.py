@@ -209,12 +209,16 @@ class Settings:
         # answers only how many requests are in flight; a free tier also counts
         # how many arrive per minute, and seventeen of them passed two at a time
         # through an unpaced round still land inside one — which is what every
-        # live round has been dying of. Five per minute is Google's free tier
-        # for `gemini-3.5-flash` (read 2026-07-29), so one request goes out
-        # every twelve seconds and a round takes about three and a half minutes.
-        # Nobody waits on that: the webhook answered `202` long before, and Core
-        # only reads a run as stalled after fifteen minutes. Zero turns the pace
-        # off; raise it for a paid tier.
+        # live round has been dying of.
+        #
+        # The default is the strictest free tier there is (five a minute, one
+        # request every twelve seconds), because an environment that says
+        # nothing about its quota should not be assumed to have a generous one.
+        # What the deployment actually runs is in `render.yaml`, next to the
+        # model it belongs to: rates are counted per model, so the number is
+        # only meaningful beside the name. Nobody waits on either — the webhook
+        # answered `202` long before, and Core reads a run as stalled only
+        # after fifteen minutes. Zero turns the pace off.
         self.llm_max_requests_per_minute: float = max(
             0.0,
             float(os.getenv("LLM_MAX_REQUESTS_PER_MINUTE", "5")),

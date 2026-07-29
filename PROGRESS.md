@@ -38,6 +38,30 @@ waiting on the owner's push and a live round to prove it)
     waits on it. Declared in `render.yaml` and forwarded locally.
   - Two tests: one asserts the invariant (peak ≤ 2 across eight dimensions), one raises the limit to five and
     requires a peak above two — without it a serial-by-accident run would satisfy the first test just as well.
+- **The fast path moves to `gemini-3.5-flash-lite`, checked on this project's own prompts (2026-07-29; not
+  yet deployed).** Limits are per model, so this is a different budget rather than a bigger share of the same
+  one: 15 RPM / 1000 RPD against 5 / 20. `render.yaml` now carries `LLM_MODEL_FAST` and
+  `LLM_MAX_REQUESTS_PER_MINUTE` as values, together, because a rate means nothing without the model it counts
+  for. `LLM_MODEL_HEAVY` stays on `gemini-3.5-flash` in the dashboard.
+  - **`gemini-2.5-flash-lite` was the first candidate and is not available** — the endpoint answers `404`
+    "This model is no longer available to new users", although `v1beta/models` still lists it. Recorded so it
+    is not tried again.
+  - **Checked against the production entry points, not a bespoke script**: the real 5.0 interpretation,
+    summary and adaptation prompts, judged by the real acceptance predicate. 6/6 accepted, every one on the
+    first attempt. One interpretation cost 373 prompt + 197 visible tokens and **0 thinking tokens** against
+    the 2048 cap — where `gemini-3.5-flash` spent ~1076 on thinking, which is the whole history behind
+    `MAX_TOKENS_PER_DIMENSION`. The fixture was invented; no respondent data was involved.
+  - **Three defects in the copy were found and fixed in the prompts, then the run was repeated.** The round
+    summary had reported "21 staff members in the red zone" on a round of 20 respondents — the buckets are
+    summed over a dimension's questions, so they count answers, and nothing validates a number in the summary
+    beyond it being Hebrew. An interpretation had merged 9 yellow and 3 red into "12 of 20 reported a lack of
+    support". An adaptation had opened with "adapting recommendations to reduce the load" — the task
+    description where the advice belongs. All three land on the 5.0 path only, so the prompts of the closed
+    contracts are untouched, and a test asserts that. After the fix the same fixture produced "21 answers out
+    of 40", each colour quoted separately with yellow named as monitoring, and the recommendation itself.
+  - **Known edge, not yet resolved**: the pace is one number for the process while the limits are per model,
+    so a safety-validator replay — the only path that reaches `LLM_MODEL_HEAVY` — would run at lite's 14 per
+    minute against flash's 5. Replays are rare and fail closed, but a per-model queue is the real fix.
 - **A round is now paced to what the tier allows (2026-07-29; committed `794c9b1`, not yet deployed).**
   Concurrency was the wrong axis: two slots still deliver a round's seventeen requests inside one minute, and
   the free tier for `gemini-3.5-flash` allows five. `LLM_MAX_REQUESTS_PER_MINUTE` (default `5`) adds the axis
@@ -352,10 +376,13 @@ waiting on the owner's push and a live round to prove it)
        no further code. Note that limits are per model, but `LLM_MODEL_HEAVY` cannot be used to split the load:
        [`nodes.py`](ai-analytics-service/src/agents/nodes.py) only reaches for the heavy tier when the whole
        node is replayed, so the normal path is entirely `fast`.
-       **Step 0 decided by the owner (2026-07-29): stay on the free tier at five requests per minute.** Tier 1
-       is not being bought for now, so the residual risk stands as written in the plan — 17 requests against a
-       daily 20 is one round per day, and a second attempt on the same day will meet `RPD` instead of `RPM`.
-       **Step 1 is done and committed (`794c9b1`), not yet deployed** — see the Current State entry above.
+       **Step 0 decided by the owner (2026-07-29): stay on the free tier, and move the fast path to
+       `gemini-3.5-flash-lite`.** Tier 1 is not being bought. The residual risk the plan recorded — one round
+       per day — **is gone with the model rather than with money**: limits are counted per model, and
+       lite's free tier is 15 RPM / 1000 RPD against 5 / 20 for `gemini-3.5-flash` (read in AI Studio
+       2026-07-29). 17 requests a round against 1000 a day is roughly sixty rounds, and the pace is set to
+       `14`, not `15`, because evenly spaced sends four seconds apart put sixteen of them inside some
+       sixty-second window. **Step 1 is done and committed (`794c9b1`), not yet deployed.**
        Steps 2 and 3 are open and start with the owner's push.
 14. [x] Log the provider's actual `finish_reason` alongside `reason=invalid_finish_reason` — done 2026-07-29 in
        [`llm_transport.py`](ai-analytics-service/src/services/llm_transport.py). The label collapses truncation,
