@@ -1,9 +1,53 @@
 # Shalomut Map — PROGRESS.md
 
-Updated: 2026-07-28 (a round the model could not write now fails as an unavailable service instead of
-returning copy the service wrote itself; local only, nothing deployed)
+Updated: 2026-07-29 (provider calls of one round are now bounded to two at a time, `llm_provider.py` is split
+into transport / prompts / validation, and the plan document's code anchors were re-verified; local only,
+nothing committed or deployed)
 
 ## Current State
+
+- **A round no longer meets the provider all at once (2026-07-29, local, uncommitted).** Both LLM nodes hand
+  their whole batch to `asyncio.gather` — eight interpretations, then up to two dozen recommendation
+  adaptations — so roughly 33 calls used to leave together. Free provider tiers cap concurrent requests (the
+  strictest at two), and the burst spent that budget in the first breath of the round.
+  - `LLM_MAX_CONCURRENT_REQUESTS` (default `2`) bounds them; the slot is taken before the worker thread is
+    dispatched, so waiting costs no part of the per-dimension retry budget and the default thread pool is no
+    longer flooded either. Rounds get longer; the webhook has already answered `202`, so nothing user-facing
+    waits on it. Declared in `render.yaml` and forwarded locally.
+  - Two tests: one asserts the invariant (peak ≤ 2 across eight dimensions), one raises the limit to five and
+    requires a peak above two — without it a serial-by-accident run would satisfy the first test just as well.
+- **`llm_provider.py` (1323 lines, one class) is split along what each part is responsible for.** Half its
+  public surface was a Hebrew validator that `nodes.py` called on text no provider had returned.
+  - `llm_transport.py` — one bounded conversation with a provider (endpoint, attempts, backoff, `Retry-After`,
+    hard-quota rules); it never reads the copy it carries, acceptance arrives as a predicate.
+    `hebrew_prompts.py` — the three prompts plus the interpretation the service writes without a model.
+    `hebrew_validation.py` — what counts as acceptable copy; `nodes.py` now calls it directly.
+    `llm_provider.py` stays the facade: model tier, which prompt goes out, which predicate judges the answer,
+    and what a refused answer means for the round.
+  - Behaviour is unchanged and the facade keeps the whole surface tests use, private helpers included. The only
+    test edit was two monkeypatch paths for the clock, which now lives in `llm_transport`. Total line count grew
+    (~1540 against 1323): the win is that the validator no longer pretends to be part of the provider.
+  - `scripts/local-stack.mjs` now forwards every `LLM_*` variable by prefix instead of by name — the enumerated
+    list is how a variable added to `src/config.py` silently failed to reach the local service.
+- **GitHub Models / Llama 3.3 70B was evaluated as a second provider and dropped at the owner's request
+  (2026-07-29).** Recorded so it is not re-investigated: the catalog id is `meta/llama-3.3-70b-instruct`, the
+  endpoint `https://models.github.ai/inference` is OpenAI-compatible and needs no code (`LLM_API_KEY` +
+  `LLM_BASE_URL`), but the free tier for that model is 10 requests/minute, 50/day and 2 concurrent against a
+  round of ~33 calls. No key was ever placed in `.env`, and every trace of the provider was removed from the
+  repository afterwards. Gemini remains the provider.
+- **Code anchors in the planning documents were re-verified (2026-07-29).** All 35 `file:line` links in
+  `docs/ai-insights-depth-plan-2026-07-27.md` now land on the code the surrounding sentence describes; six had
+  moved with the split, the rest had drifted earlier and independently. Four more references were repointed in
+  `docs/shalomut-tracker-handoff.md`, `docs/manager-feedback-plan-2026-07-26.md` and
+  `docs/completion-plan-2026-07-26-evening.md`. The prose of the dated plans was not rewritten — only the
+  anchors, plus a note in the plan's header saying so.
+- **Verification of the above (local, 2026-07-29)**: `.venv/bin/python -m pytest` 177/177, `npm test` 241/241,
+  `npm run lint` clean, `node --check scripts/local-stack.mjs`, and `npx tsx scripts/local-unlocked-pipeline.ts`
+  reaching Python unchanged. The prefix forwarding was exercised against the real source of `aiEnvironment()`
+  with a fabricated `LLM_` name. Every anchor was resolved programmatically and its target line printed.
+  **Not verified: a live provider call.** No key was available and this session's sandbox proxy presents a CA
+  that Python's TLS refuses, so the model was never actually reached — the concurrency bound is measured
+  against a stub, not against a provider.
 
 - **The deterministic fallback no longer stands in for a failed provider call (2026-07-28, owner decision,
   local, not deployed).** Until now any provider failure — no key, `429`, timeout, malformed JSON, or output the
@@ -196,6 +240,21 @@ returning copy the service wrote itself; local only, nothing deployed)
 9. [x] Empty the database for manual testing — done by the owner on 2026-07-28 and verified read-only afterwards:
        `0` organizations, `0` rounds, `0` responses, `0` answers, schema still up to date. The dump taken
        beforehand is at `~/shalomut-db-backup-2026-07-28.json` and is the only way back.
+10. [ ] Decide whether the model should also write the green dimensions (`ONLY_LLM_FOR_PROBLEMATIC=false`) — the
+       owner raised it on 2026-07-29 and deferred the work. No code is needed to switch it, but three things
+       have to be settled first, in this order. (a) The green blacklist in
+       [`hebrew_validation.py:129`](ai-analytics-service/src/services/hebrew_validation.py) refuses `שיפור`,
+       `לשפר` and `שחיקה`, which is ordinary phrasing about a strength ("keep and develop"); it was written when
+       green never reached a provider. A refusal now costs the **whole round**, since a provider that answers
+       nothing ends it. (b) Whether green should be allowed the deterministic sentence as a fallback instead of
+       failing the round — the one place where the fallback was never hiding a failure. (c) Quota: +3–5 calls per
+       round, and a safety-validator failure replays the whole psychologist node, all dimensions, up to three
+       times. `ONLY_LLM_FOR_PROBLEMATIC` is also not declared in `render.yaml`, so a dashboard value could be
+       lost on a blueprint sync. Note that the model already writes about green dimensions through the `5.0`
+       recommendation adaptation — only the interpretation is withheld.
+11. [ ] Commit the 2026-07-29 work. Nothing from that session is committed: the concurrency bound, the
+       `llm_provider.py` split, the prefix forwarding and the documentation anchors are all uncommitted in the
+       working tree.
 
 ---
 

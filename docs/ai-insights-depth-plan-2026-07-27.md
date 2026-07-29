@@ -12,6 +12,15 @@
 промптом и кодом. Исходный документ остаётся источником постановки задачи;
 здесь — только дельта.
 
+**Ссылки обновлены 2026-07-29.** Текст описывает состояние кода на 2026-07-27
+и не переписывался; переставлены только якоря на файлы и строки, чтобы вести
+в актуальный код. Часть из них сменила файл: `llm_provider.py` разделён на
+`llm_transport.py` (транспорт), `hebrew_prompts.py` (промпты) и
+`hebrew_validation.py` (валидация иврита), а сам `llm_provider.py` остался
+фасадом. Остальные якоря дрейфовали раньше и по другим причинам; сверены и
+поправлены все 35 ссылок документа — каждая ведёт в код, о котором говорит
+соседний текст.
+
 **Решения владельца от 2026-07-27** (развилки закрыты, слайсы ниже приведены к
 ним): A1 — ослабить тест, а не переименовывать записи; A3 — дорабатывать 5.0
 на месте; D1 — распределение уходит в выходные метрики и сверяется в callback;
@@ -66,9 +75,9 @@ privacyThreshold`. Кода менять не пришлось; недостаю
   [`ai-analytics-service/src/contracts.py`](../ai-analytics-service/src/contracts.py).
   Ветки валидации `1.0`–`4.0` не тронуты, `surveyDefinitionHash` не изменился.
 - Python принимает 5.0 и проверяет три инварианта распределения
-  ([`mcp_types.py:441`](../ai-analytics-service/src/schemas/mcp_types.py)).
+  ([`mcp_types.py:479`](../ai-analytics-service/src/schemas/mcp_types.py)).
 - Core считает `scoreDistribution` и отправляет его только на 5.0
-  ([`analytics.service.ts:203`](../src/lib/services/analytics.service.ts)),
+  ([`analytics.service.ts:297`](../src/lib/services/analytics.service.ts)),
   producer 3.0/4.0 сохранён как точка отката.
 - Callback снова кросс-проверяет раунд для `4.0`/`5.0`, а не только для `3.0`
   (`c284caa`) — пункт 6 в «Next Up» [`PROGRESS.md`](../PROGRESS.md) устарел и
@@ -76,7 +85,7 @@ privacyThreshold`. Кода менять не пришлось; недостаю
 - Промпт на 5.0 содержит распределение по каждому вопросу и секцию по всем
   восьми измерениям; ослабление до 2–5 предложений действует только для 5.0.
 - Общее резюме больше не f-строка: есть LLM-вызов с детерминированным
-  фолбэком ([`llm_provider.py:387`](../ai-analytics-service/src/services/llm_provider.py)).
+  фолбэком ([`llm_provider.py:190`](../ai-analytics-service/src/services/llm_provider.py)).
 
 ## Обязательные ограничения
 
@@ -152,15 +161,15 @@ privacyThreshold`. Кода менять не пришлось; недостаю
 **Вывод: LLM не отрабатывает ни на одном камне.** При этом `attempts: 3`, а не
 `0` — значит ключ настроен и провайдер реально вызывается: ветка
 `missing_api_key` вернула бы `attempts: 0`
-([`llm_provider.py:124`](../ai-analytics-service/src/services/llm_provider.py)).
+([`llm_transport.py:97`](../ai-analytics-service/src/services/llm_transport.py)).
 Провайдер вызывается трижды на измерение (`LLM_MAX_ATTEMPTS` по умолчанию 3) и
 все три раза результат отбрасывается. Общее резюме в БД — та самая
 детерминированная f-строка, что подтверждает: до слайса B5 генеративного
 резюме в проде не было вообще.
 
 Отбросить ответ могут только два места: транспорт (HTTP-ошибка, квота,
-таймаут) либо `_is_valid_provider_output`
-([`llm_provider.py:562`](../ai-analytics-service/src/services/llm_provider.py)),
+таймаут) либо `is_valid_provider_output`
+([`hebrew_validation.py:171`](../ai-analytics-service/src/services/hebrew_validation.py)),
 то есть `finish_reason != "stop"`, латиница в ответе, не ровно два
 предложения (для 4.0) или срабатывание `is_status_consistent`. Различить их по
 persisted-данным нельзя: причина пишется только в лог сервиса
@@ -229,7 +238,7 @@ green-записи каталога встречалась фраза `חוזק�
 
 ### A2 — один канон прогона Python-тестов
 
-**Проблема.** [`PROGRESS.md:12`](../PROGRESS.md) фиксирует «`run_tests.py`
+**Проблема.** [`PROGRESS.md:64`](../PROGRESS.md) фиксирует «`run_tests.py`
 16/16 passed». Этот runner лежит в корне сервиса и не подхватывает каталог
 `tests/`, где живут и новый `test_contract_v5.py`, и упавший
 `test_rag_store.py`. То есть записанные evidence по этапам 1–7 не включали ни
@@ -308,7 +317,7 @@ B–D в 5.1 и заплатить тремя ветками валидации 
 
 ### B1 — `backgroundContext` теряется на 5.0
 
-**Проблема.** [`nodes.py:44`](../ai-analytics-service/src/agents/nodes.py)
+**Проблема.** [`nodes.py:61`](../ai-analytics-service/src/agents/nodes.py)
 отдаёт школьный контекст строго при `== 4.0`, поэтому на 5.0 он не доходит ни
 до промпта, ни до ранжирования рекомендаций. При этом Core на 5.0 его честно
 отправляет ([`mcp/route.ts:102`](../src/app/api/mcp/route.ts)). Проверено в
@@ -328,7 +337,7 @@ B–D в 5.1 и заплатить тремя ветками валидации 
 ### B2 — валидатор статуса отвергает пересказ распределения
 
 **Проблема.** `is_status_consistent`
-([`llm_provider.py:591`](../ai-analytics-service/src/services/llm_provider.py))
+([`hebrew_validation.py:110`](../ai-analytics-service/src/services/hebrew_validation.py))
 отклоняет любой текст, где для `yellow` встречается `אדום` или `ירוק` (и
 симметрично для `red`/`green`). Промпт на 5.0 теперь подаёт распределение
 именно этими словами и просит на него опираться. Проверено: фраза
@@ -358,9 +367,9 @@ B–D в 5.1 и заплатить тремя ветками валидации 
 ### B3 — `MAX_TOKENS_PER_DIMENSION` захардкожен
 
 **Проблема.** Исходный план требовал поднять лимит до 420 «env-переменной, с
-дефолтом в `config.py`». В коде это литерал
-[`llm_provider.py:139`](../ai-analytics-service/src/services/llm_provider.py),
-а [`config.py:129`](../ai-analytics-service/src/config.py) по-прежнему отдаёт
+дефолтом в `config.py`». В коде это был литерал (сегодня запрос берёт значение из настройки —
+[`llm_transport.py:108`](../ai-analytics-service/src/services/llm_transport.py)),
+а [`config.py:151`](../ai-analytics-service/src/config.py) отдавал тогда
 `180`. Поднять лимит из окружения нельзя, и настройка расходится с фактом.
 
 **Объём.** Дефолт `420` в `config.py`, чтение из `MAX_TOKENS_PER_DIMENSION`,
@@ -373,10 +382,10 @@ B–D в 5.1 и заплатить тремя ветками валидации 
 
 ### B4 — provenance-флаги 5.0 должны измеряться, а не объявляться
 
-**Проблема.** [`nodes.py:203`](../ai-analytics-service/src/agents/nodes.py)
+**Проблема.** [`nodes.py:107`](../ai-analytics-service/src/agents/nodes.py)
 пишет `distributionIncluded = True` и `crossDimensionContextIncluded = True`
 константами, а safety-валидатор
-[`nodes.py:372`](../ai-analytics-service/src/agents/nodes.py) требует ровно
+[`nodes.py:469`](../ai-analytics-service/src/agents/nodes.py) требует ровно
 `True`. Флаги не могут принять значение `False`, аудировать по ним нечего.
 
 **Объём.** Считать флаги по факту: распределение включено, если у **всех**
@@ -394,14 +403,14 @@ B–D в 5.1 и заплатить тремя ветками валидации 
 ### B5 — общее резюме: распределения, ретраи, поток
 
 **Проблема.** Три отступления в
-[`llm_provider.py:387`](../ai-analytics-service/src/services/llm_provider.py):
+[`llm_provider.py:190`](../ai-analytics-service/src/services/llm_provider.py):
 
 - в промпт резюме уходят только `ציון` и `סטטוס`, хотя план требовал «все
   восемь измерений со статусами **и распределениями**»;
 - вызов сделан мимо общего пути: одна попытка, без бюджета ретраев, без
   разбора HTTP-ошибок, `max_tokens` литералом `300`;
 - вызов синхронный внутри async-узла
-  ([`nodes.py:208`](../ai-analytics-service/src/agents/nodes.py)) и блокирует
+  ([`nodes.py:321`](../ai-analytics-service/src/agents/nodes.py)) и блокирует
   event loop, тогда как восемь интерпретаций уходят в `asyncio.to_thread`.
 
 **Объём.** Передать в промпт агрегированное распределение по измерению
@@ -440,7 +449,7 @@ green и yellow отбор возвращает весь пул целиком. 
 
 ### C2 — отбор по распределению, а не по среднему
 
-**Проблема.** [`store.py:66`](../ai-analytics-service/src/rag/store.py)
+**Проблема.** [`store.py:75`](../ai-analytics-service/src/rag/store.py)
 выбирает «просевший» вопрос через `min(..., key=averageScore)`; строка
 `scoreDistribution` в `store.py` не встречается вообще. План требовал ровно
 обратного, и именно на этом строился весь аргумент: среднее 60 на
@@ -456,7 +465,7 @@ green и yellow отбор возвращает весь пул целиком. 
 2. Ранжировать записи каталога по совпадению тегов записи с тегами
    выбранного вопроса и по `backgroundContext` (после B1 он снова доходит).
    Текущее совпадение по вхождению подстроки
-   ([`store.py:86`](../ai-analytics-service/src/rag/store.py)) на иврите без
+   ([`store.py:180`](../ai-analytics-service/src/rag/store.py)) на иврите без
    учёта приставок и морфологии работает почти случайно — заменить на теги.
 3. Эмбеддинги не вводить без отдельного согласия: это тяжёлая зависимость в
    контейнере.
@@ -470,7 +479,7 @@ green и yellow отбор возвращает весь пул целиком. 
 **Проблема.** Пункт 6.3 исходного плана, названный в нём «основной прирост
 информативности», не реализован: LLM нигде не переписывает `summary` и
 `actionable_steps` под цифры школы. Граф не менялся — privacy → psychologist →
-rag → validator ([`graph.py:25`](../ai-analytics-service/src/agents/graph.py)),
+rag → validator ([`graph.py:70`](../ai-analytics-service/src/agents/graph.py)),
 в сервисе нет ни одного упоминания adapt/rewrite.
 
 **Объём.** Добавить узел после `agent_rag_intervention_node`: LLM переписывает
@@ -484,7 +493,7 @@ safety-валидатор; при провале — исходный текст
 Влияние на контракт (исполняется в рамках решения A3): у рекомендации
 появляется поле исхода адаптации. Валидаторы TS проверяют структуру и не
 запрещают лишние поля
-([`ai-contract.ts:299`](../src/lib/ai-contract.ts)), поэтому ветки 2.0–4.0 не
+([`ai-contract.ts:281`](../src/lib/ai-contract.ts)), поэтому ветки 2.0–4.0 не
 сломаются, но для 5.0 поле должно валидироваться явно, а не проскакивать.
 
 **Критерии приёмки.** Тест: при доступном провайдере текст рекомендации
@@ -500,11 +509,11 @@ safety-валидатор; при провале — исходный текст
 
 **Проблема.** Этап 3 исходного плана требовал сверять распределения с
 пересчитанной аналитикой в `validateDynamicResultAgainstRound()`. Сверки нет:
-в [`ai-insights/route.ts:96`](../src/app/api/rounds/[roundId]/ai-insights/route.ts)
+в [`ai-insights/route.ts:32`](../src/app/api/rounds/[roundId]/ai-insights/route.ts)
 сравниваются только `averageScore` и `responseCount`. И сверять нечего —
 выходная часть контракта 5.0 распределения не несёт. Симметрично, экспортируемая
 `isValidScoreDistribution`
-([`ai-contract.ts:247`](../src/lib/ai-contract.ts)) не используется ни в одном
+([`ai-contract.ts:251`](../src/lib/ai-contract.ts)) не используется ни в одном
 runtime-пути, только в тестах: входной инвариант в TS не проверяется нигде.
 
 **Решение.** Распределение уходит в выходные метрики и сверяется в Core. Это
@@ -514,15 +523,15 @@ runtime-пути, только в тестах: входной инвариан�
 **Объём.**
 
 - Python кладёт `scoreDistribution` в метрику камня на 5.0
-  ([`graph.py:117`](../ai-analytics-service/src/agents/graph.py)) — ровно то,
+  ([`graph.py:176`](../ai-analytics-service/src/agents/graph.py)) — ровно то,
   что пришло во входном агрегате, без пересчёта.
 - В TS появляется v5-валидатор метрики: распределение обязательно, три целых
   неотрицательных ключа, сумма равна `responseCount` метрики. Существующие
   валидаторы не запрещают лишние поля
-  ([`ai-contract.ts:345`](../src/lib/ai-contract.ts)), поэтому без явной
+  ([`ai-contract.ts:281`](../src/lib/ai-contract.ts)), поэтому без явной
   проверки поле проскочило бы молча.
 - `validateDynamicResultAgainstRound()`
-  ([`ai-insights/route.ts:96`](../src/app/api/rounds/[roundId]/ai-insights/route.ts))
+  ([`ai-insights/route.ts:32`](../src/app/api/rounds/[roundId]/ai-insights/route.ts))
   сверяет распределение метрики с пересчитанным по ответам раунда — рядом с
   существующей сверкой `averageScore` и `responseCount`.
 - `isValidScoreDistribution` перестаёт быть тестовой утилитой и вызывается из
@@ -539,7 +548,7 @@ runtime-пути, только в тестах: входной инвариан�
 **Проблема.** Из тестовой матрицы этапа 1 не покрыт кейс «распределение при
 `isLocked: true` → отказ» — ни в TS, ни в Python. Плюс Python при `isLocked`
 просто пропускает разбор агрегатов
-([`mcp_types.py:209`](../ai-analytics-service/src/schemas/mcp_types.py)), то
+([`mcp_types.py:246`](../ai-analytics-service/src/schemas/mcp_types.py)), то
 есть locked-payload с распределением молча игнорируется, а не отвергается,
 хотя манифест объявляет `forbiddenWhenLocked: true`.
 
@@ -555,9 +564,9 @@ locked-payload с распределением; в TS есть симметри�
 [`ai-analytics-v5.json:34`](../contracts/ai-analytics-v5.json) снова объявляет
 `defaultThreshold: 10`, тогда как Python принимает `>= 1`
 ([`mcp_types.py:141`](../ai-analytics-service/src/schemas/mcp_types.py)),
-дефолт сервиса — `1` ([`config.py:182`](../ai-analytics-service/src/config.py)),
+дефолт сервиса — `1` ([`config.py:218`](../ai-analytics-service/src/config.py)),
 `DEFAULT_PRIVACY_THRESHOLD` — `1`
-([`survey-definition.ts:11`](../src/lib/survey-definition.ts)) и дефолт
+([`survey-definition.ts:18`](../src/lib/survey-definition.ts)) и дефолт
 колонки в БД — тоже `1` ([`schema.prisma:30`](../prisma/schema.prisma)).
 С порогом 1 гарантия анонимности не работает: один ответ — один респондент.
 
@@ -584,7 +593,7 @@ approval-гейт на изменение данных не наступает.
 - [`setup-form.tsx:280`](../src/components/round/setup-form.tsx) — тот же
   текст как helper под полем, где менеджер выбирает число: предупреждение
   нужно в момент выбора, а не только при просмотре.
-- [`round/page.tsx:38`](../src/app/round/page.tsx) — карточка «סף פרטיות»:
+- [`round/page.tsx:39`](../src/app/round/page.tsx) — карточка «סף פרטיות»:
   дополнить `helper`, не меняя цифру.
 
 Требования оформления: иврит без латиницы, RTL, WCAG AA, статус не только
@@ -598,7 +607,7 @@ approval-гейт на изменение данных не наступает.
 
 ### E1 — документация 5.0
 
-**Проблема.** [`.env.example:38`](../.env.example) описывает только «3.0
+**Проблема.** [`.env.example:80`](../.env.example) описывает только «3.0
 (default) или 4.0» — переключателя на 5.0 в документации нет.
 `docs/ai-analytics-handoff.md` и `ai-analytics-service/README.md` про 5.0 не
 знают вообще (ни одного вхождения).
@@ -630,7 +639,7 @@ consumer-first, добавить раздел про распределения,
 многопредложенческой интерпретации, и предложить — но не внедрять — показ
 распределения. Проверка нигде не зафиксирована; модель кладёт интерпретацию
 одним абзацем в `summary: string[]`
-([`ai-insights-view-model.ts:61`](../src/lib/ai-insights-view-model.ts)), то
+([`ai-insights-view-model.ts:106`](../src/lib/ai-insights-view-model.ts)), то
 есть пять предложений отрисуются одним длинным блоком.
 
 **Объём.** Прогнать страницу камня с интерпретацией из пяти предложений на
