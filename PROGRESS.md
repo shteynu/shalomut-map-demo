@@ -312,16 +312,26 @@ end on the deployed stack, and the blocker is now the Gemini quota rather than a
        closed. Do them one secret at a time, Render and Vercel back to back, and expect any round in flight to
        die. The Gemini key is independent and rotates in Google AI Studio. Until this is done, anyone with the
        transcript can trigger analysis, read a round's aggregates and forge a result callback.
-13. [ ] Decide how to get past the Gemini `429`, which is now the only confirmed blocker to a green round.
-       First establish which limit is being hit: a round is roughly 33 calls in 42 seconds, so a per-minute cap
-       is hit by pacing and a per-day cap is not. `LLM_MAX_CONCURRENT_REQUESTS` bounds concurrency but nothing
-       paces frequency, so if the cap is per-minute a throttle would fix this without paying. If it is per-day,
-       only a paid tier or fewer calls per round will.
-14. [ ] Log the provider's actual `finish_reason` alongside `reason=invalid_finish_reason` in
-       [`llm_transport.py`](ai-analytics-service/src/services/llm_transport.py). Small and local. The same
-       blindness already cost a session in the `MAX_TOKENS_PER_DIMENSION=420` episode, and the anomaly seen on
-       2026-07-29 is unresolvable without it. Worth doing only if rounds will keep being run against this key —
-       reading the result costs another round's worth of quota.
+13. [ ] Decide how to get past the Gemini `429`. **The limits are now known** — read from AI Studio on
+       2026-07-29 for `Gemini 3.5 Flash` on the free tier: **RPM 5** (peak 7), **TPM 250K** (peak 7.51K),
+       **RPD 20** (peak 22). A round is roughly 33 calls, so **one round does not fit in a day**, and the
+       throttling idea recorded here earlier is wrong: pacing fixes RPM and cannot touch RPD. Tokens are not a
+       constraint at all. Two real options remain. **Set up billing** and move to Tier 1, which is the only way
+       to keep the pipeline as it is. **Or cut the calls per round below 20** — today it is eight
+       interpretations plus up to two dozen recommendation adaptations, so batching adaptations (one call per
+       dimension, or one covering several) is what would fit; pacing at 5 RPM would then make a round about
+       three minutes, which the background webhook already absorbs. Note that limits are per model, but
+       `LLM_MODEL_HEAVY` cannot be used to split the load: [`nodes.py`](ai-analytics-service/src/agents/nodes.py)
+       only reaches for the heavy tier when the whole node is replayed, so the normal path is entirely `fast`.
+       Splitting the two node types across two models would be a code change, not a config one.
+14. [x] Log the provider's actual `finish_reason` alongside `reason=invalid_finish_reason` — done 2026-07-29 in
+       [`llm_transport.py`](ai-analytics-service/src/services/llm_transport.py). The label collapses truncation,
+       a safety block and recitation into one word, and the three want different fixes. The value is sanitized
+       through `_safe_log_token` like every other outside value that reaches a log line. A second gap closed on
+       the way: an exhausted attempt budget in the `200 OK` branch used to `break` silently, so the finish
+       reason of the last attempt — the one that actually decides the dimension — was recorded nowhere; it now
+       logs `outcome=no_answer` like every other exhausted path. Fail-first confirmed against the previous code,
+       `pytest` 178/178.
 15. [ ] Decide whether a partial map is acceptable: some stones written by the model, the rest marked
        explicitly as unavailable. Today one refused dimension fails the whole round, so on the free tier no
        round can ever succeed even though the provider demonstrably answers. This is wider than item 10, which

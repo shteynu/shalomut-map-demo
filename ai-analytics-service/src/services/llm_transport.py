@@ -190,6 +190,14 @@ def complete_with_retries(
                                 if finish_reason != "stop"
                                 else "invalid_semantic_output"
                             )
+                        # `invalid_finish_reason` collapses truncation, a
+                        # safety block and recitation into one label, and the
+                        # three want different fixes. Carry what the provider
+                        # actually said, sanitized like any other value that
+                        # reaches a log line from outside.
+                        logged_finish_reason = _safe_log_token(
+                            finish_reason or "unavailable",
+                        )
                         if (
                             attempt < settings.llm_max_attempts
                             and _can_retry_within_budget(
@@ -200,14 +208,29 @@ def complete_with_retries(
                             logger.warning(
                                 "[LLM Service] outcome=retry "
                                 "provider=%s model=%s reason=%s "
+                                "finish_reason=%s "
                                 "attempt=%s max_attempts=%s",
                                 provider,
                                 model_name,
                                 fallback_reason,
+                                logged_finish_reason,
                                 attempt,
                                 settings.llm_max_attempts,
                             )
                             continue
+                        # Every other exhausted path logs `no_answer`; this one
+                        # broke silently, so the last attempt's finish_reason
+                        # was the one never recorded anywhere.
+                        logger.warning(
+                            "[LLM Service] outcome=no_answer "
+                            "provider=%s model=%s reason=%s "
+                            "finish_reason=%s attempts=%s",
+                            provider,
+                            model_name,
+                            fallback_reason,
+                            logged_finish_reason,
+                            attempts,
+                        )
                         break
                     fallback_reason = f"http_{response.status}"
                     break

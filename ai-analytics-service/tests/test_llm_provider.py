@@ -1,4 +1,5 @@
 import json
+import logging
 import urllib.error
 
 import pytest
@@ -327,6 +328,49 @@ def test_output_that_never_becomes_valid_fails_the_dimension(
     assert failure.value.reason == "invalid_finish_reason"
     assert failure.value.dimension_id == "balance"
     assert len(attempts) == 2
+
+
+def test_the_log_names_the_finish_reason_the_provider_actually_sent(
+    monkeypatch,
+    caplog,
+):
+    """`invalid_finish_reason` alone cannot tell three failures apart.
+
+    Truncation, a safety block and recitation all land on that one label and
+    all want different fixes, so the value behind it has to reach the log. A
+    live round on 2026-07-29 hit this and the log could not say which it was.
+    """
+    configure_gemini_retry_test(monkeypatch, max_attempts=2)
+
+    def fake_urlopen(*_args, **_kwargs):
+        return FakeLLMResponse(
+            "Provider output the validators refuse",
+            finish_reason="content_filter",
+        )
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+
+    with caplog.at_level(logging.WARNING, logger="src.services.llm_transport"):
+        with pytest.raises(ProviderUnavailableError):
+            llm_provider_service.generate_psychological_interpretation_result(
+                "balance",
+                "איזון",
+                46.7,
+                "red",
+                question_aggregates=BALANCE_QUESTION_AGGREGATES,
+            )
+
+    messages = [record.getMessage() for record in caplog.records]
+    retries = [m for m in messages if "outcome=retry" in m]
+    exhausted = [m for m in messages if "outcome=no_answer" in m]
+
+    assert retries, "the retry itself must still be logged"
+    assert all("finish_reason=content_filter" in m for m in retries)
+    # The exhausted attempt used to break out silently, so the finish_reason of
+    # the last try — the only one that decides the dimension — was lost.
+    assert exhausted, "an exhausted attempt budget must say so"
+    assert "reason=invalid_finish_reason" in exhausted[0]
+    assert "finish_reason=content_filter" in exhausted[0]
 
 
 def test_malformed_provider_response_uses_the_same_bounded_retry(
