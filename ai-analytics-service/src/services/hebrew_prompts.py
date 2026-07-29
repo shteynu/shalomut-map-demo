@@ -132,6 +132,21 @@ def interpretation_prompt(
         else "כתוב בדיוק שני משפטים שלמים."
     )
 
+    # Only 5.0 shows the model the buckets, so only 5.0 needs the rule for
+    # quoting them — and gating it here keeps the prompt of the closed
+    # versions exactly what it was when their results were written.
+    # Measured on `gemini-3.5-flash-lite`, 2026-07-29: shown 8 green, 9 yellow
+    # and 3 red on one question, the model wrote "12 of 20 reported a lack of
+    # support". The arithmetic is real and the sentence is false — yellow is
+    # attention, not absence — and no validator catches a number that was
+    # merely added up wrong.
+    bucket_instruction = (
+        " צטט כל קבוצת תשובות בנפרד: אל תחבר קבוצות צבע או שאלות שונות "
+        "למספר אחד, וזכור שצהוב מסמן מעקב ולא חוסר."
+        if contract_version == "5.0"
+        else ""
+    )
+
     return (
         "את/ה פסיכולוג/ית ארגוני/ת המנתח/ת אך ורק נתונים מצרפיים "
         "שאינם חושפים משיבים, על רווחת צוות חינוכי.\n"
@@ -142,8 +157,8 @@ def interpretation_prompt(
         f":\n{aggregate_lines}\n"
         f"{length_instruction} בסס כל טענה על הנתונים שלמעלה, אל תמציא "
         "סיבות, אבחנות, זהויות או עובדות על משיב יחיד, ושמור על עקביות "
-        "עם המצב שצוין. כתוב בעברית בלבד, בלי אותיות לטיניות, ורשום "
-        "מספרים בספרות ולא במילים."
+        f"עם המצב שצוין.{bucket_instruction} כתוב בעברית בלבד, בלי "
+        "אותיות לטיניות, ורשום מספרים בספרות ולא במילים."
     )
 
 
@@ -184,10 +199,21 @@ def overall_summary_prompt(
             if aggregate.get("dimensionId") == dimension_id
         )
         if distribution:
+            # The buckets are summed over the dimension's questions, so they
+            # count answers and outrun the respondents as soon as a dimension
+            # has more than one question. Stating the total next to them is
+            # what stops the model reading them as a headcount — see the
+            # instruction below.
+            answers_total = (
+                distribution["green"]
+                + distribution["yellow"]
+                + distribution["red"]
+            )
             line += (
                 f" (פיזור: {distribution['green']} ירוק / "
                 f"{distribution['yellow']} צהוב / "
-                f"{distribution['red']} אדום)"
+                f"{distribution['red']} אדום, "
+                f"מתוך {answers_total} תשובות)"
             )
         dim_lines.append(line)
 
@@ -205,9 +231,11 @@ def overall_summary_prompt(
         f"{background_section}\n"
         "כתוב בין 2 ל-4 משפטים שלמים המסכמים את המצב הכולל. ציין את "
         "החוזקות המרכזיות ואת תחומי העדיפות, והישען על הפיזור ולא על "
-        "הממוצע בלבד. שמור על טון מקצועי ותומך המעוגן בנתונים, אל תמציא "
-        "סיבות או אבחנות, כתוב בעברית בלבד בלי אותיות לטיניות, ורשום "
-        "מספרים בספרות ולא במילים."
+        "הממוצע בלבד. מספרי הפיזור הם תשובות ולא משיבים, שכן כל משיב עונה "
+        "על כל שאלות הממד: אל תציג אותם כמספר אנשי צוות ואל תחבר מספרים "
+        "בין ממדים או בין קבוצות צבע. שמור על טון מקצועי ותומך המעוגן "
+        "בנתונים, אל תמציא סיבות או אבחנות, כתוב בעברית בלבד בלי אותיות "
+        "לטיניות, ורשום מספרים בספרות ולא במילים."
     )
 
 
@@ -252,6 +280,12 @@ def adaptation_batch_prompt(
     all of its entries, so stating them once per entry spent a request of a
     twenty-a-day quota on repetition. The answer keeps the single-entry line
     format inside each block and separates blocks by a line of "===".
+
+    The summary line is the recommendation, not a report about rewriting one.
+    Asked only to "rephrase", a model answers with the task: measured on
+    `gemini-3.5-flash-lite` on 2026-07-29, one block opened with "adapting
+    recommendations to reduce the load", which is what a manager would then
+    read on the dashboard.
     """
     aggregate_lines = adaptation_aggregate_lines(question_aggregates)
     lines = background_context_lines(background_context)
@@ -294,8 +328,12 @@ def adaptation_batch_prompt(
         "בכל בלוק השורה הראשונה היא התקציר המנוסח מחדש והיא מצטטת לפחות "
         "מספר אחד מהנתונים שלמעלה, וכל שורה אחריה פותחת ב'- ' ומכילה שלב "
         f"אחד מנוסח מחדש: {block_shapes}. "
+        "התקציר הוא ההמלצה עצמה כפי שהיא תוצג לצוות בית הספר: אל תתאר את "
+        "פעולת ההתאמה, אל תזכיר את הקטלוג ואל תפתח במילים כמו 'התאמת "
+        "המלצות'. "
         "שמור על כוונת כל המלצה ועל סדר השלבים, שמור על עקביות עם המצב "
         "שצוין, אל תמציא סיבות, אבחנות, זהויות או מספרים שאינם למעלה, "
+        "אל תחבר קבוצות צבע או שאלות שונות למספר אחד, "
         "ורשום מספרים בספרות ולא במילים."
     )
 

@@ -242,6 +242,89 @@ def test_scores_reach_the_model_as_integers():
     assert "ציון: 46 מתוך 100" in prompt or "ציון: 45 מתוך 100" in prompt
 
 
+def test_the_5_0_prompt_forbids_adding_two_buckets_into_one_claim():
+    """Arithmetic the model can do is not a claim it may make.
+
+    Shown 8 green, 9 yellow and 3 red on one question, `gemini-3.5-flash-lite`
+    wrote "12 of 20 reported a lack of support" (2026-07-29). The sum is real
+    and the sentence is false — yellow is attention, not absence — and nothing
+    downstream catches a number that was merely added up wrong.
+    """
+    prompt = _interpretation_prompt("5.0")
+
+    assert "אל תחבר קבוצות צבע או שאלות שונות" in prompt
+    assert "צהוב מסמן מעקב ולא חוסר" in prompt
+
+
+@pytest.mark.parametrize("contract_version", ["3.0", "4.0"])
+def test_a_closed_contract_keeps_the_prompt_it_was_written_with(
+    contract_version,
+):
+    """The rule belongs to the version that shows the buckets, and only to it.
+
+    1.0-4.0 never carry a distribution into the prompt, so the instruction
+    would be about numbers that are not there — and their stored results have
+    to keep meaning what they meant when they were written.
+    """
+    prompt = _interpretation_prompt(contract_version)
+
+    assert "אל תחבר קבוצות צבע" not in prompt
+    assert "ירוק" not in prompt
+
+
+def test_the_summary_prompt_states_that_buckets_are_answers_not_people():
+    """A dimension of two questions has more answers than the school has staff.
+
+    The buckets are summed over the dimension's questions, so on a twenty-
+    respondent round `gemini-3.5-flash-lite` reported "21 staff members in the
+    red zone" (2026-07-29) — one more person than answered the survey. The
+    round summary is checked for Hebrew and nothing else, so the prompt is
+    where this is stopped.
+    """
+    prompt = llm_provider_service._build_overall_summary_prompt(
+        DIMENSION_SCORES,
+        AGGREGATES,
+        None,
+    )
+
+    assert "מספרי הפיזור הם תשובות ולא משיבים" in prompt
+    assert "אל תציג אותם כמספר אנשי צוות" in prompt
+    # The total is stated next to the buckets, so the denominator is the
+    # prompt's own number rather than one the model has to infer.
+    total = sum(
+        aggregate["scoreDistribution"][bucket]
+        for aggregate in AGGREGATES
+        for bucket in ("green", "yellow", "red")
+    )
+    assert f"מתוך {total} תשובות" in prompt
+
+
+def test_the_adaptation_prompt_asks_for_the_recommendation_not_a_report():
+    """The summary line is what a manager reads, not a note about the rewrite.
+
+    Asked only to "rephrase", `gemini-3.5-flash-lite` opened a block with
+    "adapting recommendations to reduce the load" (2026-07-29) — the task
+    description, on the dashboard, in place of the advice.
+    """
+    store = LocalInterventionVectorStore()
+    interventions = [
+        entry.to_dict()
+        for entry in store.get_interventions_for_dimension("balance", "red")
+    ]
+
+    prompt = hebrew_prompts.adaptation_batch_prompt(
+        interventions=interventions,
+        dim_hebrew="איזון",
+        score=38.5,
+        status="red",
+        question_aggregates=AGGREGATES,
+        background_context=None,
+    )
+
+    assert "התקציר הוא ההמלצה עצמה" in prompt
+    assert "אל תזכיר את הקטלוג" in prompt
+
+
 # --- end to end through the transport ---------------------------------------
 
 def _response(content: str):
