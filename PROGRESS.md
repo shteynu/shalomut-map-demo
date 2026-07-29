@@ -312,7 +312,9 @@ end on the deployed stack, and the blocker is now the Gemini quota rather than a
        closed. Do them one secret at a time, Render and Vercel back to back, and expect any round in flight to
        die. The Gemini key is independent and rotates in Google AI Studio. Until this is done, anyone with the
        transcript can trigger analysis, read a round's aggregates and forge a result callback.
-13. [ ] Decide how to get past the Gemini `429`. **The limits are now known** — read from AI Studio on
+13. [ ] Decide how to get past the Gemini `429`. **Plan and work order in
+       [provider-quota-plan-2026-07-29.md](docs/provider-quota-plan-2026-07-29.md)**, including the options
+       considered and deferred. **The limits are now known** — read from AI Studio on
        2026-07-29 for `Gemini 3.5 Flash` on the free tier: **RPM 5** (peak 7), **TPM 250K** (peak 7.51K),
        **RPD 20** (peak 22). A round is roughly 33 calls, so **one round does not fit in a day**, and the
        throttling idea recorded here earlier is wrong: pacing fixes RPM and cannot touch RPD. Tokens are not a
