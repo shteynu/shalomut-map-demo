@@ -49,7 +49,7 @@ def create_v2_round_data():
     )
 
 @pytest.mark.asyncio
-async def test_langgraph_flow_unlocked():
+async def test_langgraph_flow_unlocked(answering_llm):
     round_data = mock_mcp_server.get_round_analytics("round-unlocked-sample")
     
     initial_state: AnalyticsState = {
@@ -80,9 +80,8 @@ async def test_langgraph_flow_unlocked():
 
 @pytest.mark.asyncio
 async def test_langgraph_flow_v2_emits_question_metrics_and_provenance(
-    monkeypatch,
+    answering_llm,
 ):
-    monkeypatch.setattr(settings, "llm_api_key", "")
     round_data = create_v2_round_data()
     initial_state: AnalyticsState = {
         "round_data": round_data.model_dump(),
@@ -114,12 +113,50 @@ async def test_langgraph_flow_v2_emits_question_metrics_and_provenance(
             intervention["status"] == stone["status"]
             for intervention in stone["recommendedInterventions"]
         )
+        # A green dimension is the only one this service still writes itself,
+        # and it costs no provider call. Every other stone is model-written or
+        # the round does not exist.
+        is_green_skip = stone["status"] == "green"
         assert stone["generationProvenance"] == {
-            "outcome": "deterministic_fallback",
-            "attempts": 0,
+            "outcome": (
+                "deterministic_fallback" if is_green_skip else "llm"
+            ),
+            "attempts": 0 if is_green_skip else 1,
             "retryCount": 0,
             "sourceQuestionIds": expected_question_ids,
         }
+
+@pytest.mark.asyncio
+async def test_a_round_the_provider_never_answered_is_not_a_round(monkeypatch):
+    """No key, no answer, no analysis — and the manager is told so.
+
+    This used to come back `success` with eight stones of copy this service
+    wrote itself, which read exactly like a finished analysis.
+    """
+    monkeypatch.setattr(settings, "llm_api_key", "")
+    round_data = create_v2_round_data()
+    initial_state: AnalyticsState = {
+        "round_data": round_data.model_dump(),
+        "org_context": {},
+        "interpretations": {},
+        "recommendations": {},
+        "safety_status": "pending",
+        "safety_feedback": None,
+        "retry_count": 0,
+        "final_payload": {},
+    }
+
+    final_state = await analytics_graph.ainvoke(initial_state)
+    payload = final_state["final_payload"]
+
+    assert payload["status"] == "validation_failed"
+    assert payload["failureReason"] == "provider_unavailable"
+    assert payload["isLocked"] is False
+    assert payload["contractVersion"] == AI_ANALYTICS_CONTRACT_VERSION
+    assert "stones" not in payload
+    assert "overallPsychologicalSummary" not in payload
+    assert "שירות הניתוח אינו זמין כרגע" in payload["errorMessage"]
+
 
 @pytest.mark.asyncio
 async def test_langgraph_flow_locked():

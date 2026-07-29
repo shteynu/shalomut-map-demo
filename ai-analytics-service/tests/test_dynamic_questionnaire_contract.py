@@ -314,11 +314,10 @@ def test_dynamic_contract_requires_isolation_and_snapshot_metadata(field):
     [("alpha", 0), ("beta", 3)],
 )
 async def test_dynamic_pipeline_uses_exact_text_metrics_and_provenance(
-    monkeypatch,
+    answering_llm,
     round_key,
     extra_balance_questions,
 ):
-    monkeypatch.setattr(settings, "llm_api_key", "")
     payload = make_payload(round_key, extra_balance_questions)
     normalized = RoundAnalyticsResult.from_dict(payload)
     state = {
@@ -505,6 +504,47 @@ async def test_runner_rejects_cross_round_mcp_result_before_graph_or_callback(
 
     graph_call.assert_not_awaited()
     callback_call.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_a_crashed_round_still_reports_a_failure_to_the_data_layer(
+    monkeypatch,
+):
+    """The webhook already answered 202, so silence would strand the round.
+
+    Core would keep waiting for a callback that never arrives and the manager
+    would keep reading "not generated yet" for a run that is long dead.
+    """
+    returned = RoundAnalyticsResult.from_dict(make_payload("crash"))
+    callback_call = AsyncMock()
+    monkeypatch.setattr(
+        mcp_client_manager,
+        "fetch_round_analytics",
+        AsyncMock(return_value=returned),
+    )
+    monkeypatch.setattr(
+        analytics_graph,
+        "ainvoke",
+        AsyncMock(side_effect=RuntimeError("graph exploded")),
+    )
+    monkeypatch.setattr(
+        analytics_runner_service,
+        "_send_callback",
+        callback_call,
+    )
+
+    with pytest.raises(RuntimeError, match="graph exploded"):
+        await analytics_runner_service.process_round(returned.roundId)
+
+    callback_call.assert_awaited_once()
+    _url, payload = callback_call.await_args.args
+    assert payload["status"] == "validation_failed"
+    assert payload["failureReason"] == "service_error"
+    assert payload["roundId"] == returned.roundId
+    assert payload["surveyDefinitionHash"] == returned.surveyDefinitionHash
+    assert payload["isLocked"] is False
+    assert "stones" not in payload
+    assert "שירות הניתוח אינו זמין כרגע" in payload["errorMessage"]
 
 
 @pytest.mark.asyncio

@@ -1,9 +1,57 @@
 # Shalomut Map — PROGRESS.md
 
-Updated: 2026-07-28 (two environments now — local and deployed; the webhook answers `202` and analyses in the
-background, deployed and verified; the deployed database is still empty, the local one is seeded)
+Updated: 2026-07-28 (a round the model could not write now fails as an unavailable service instead of
+returning copy the service wrote itself; local only, nothing deployed)
 
 ## Current State
+
+- **The deterministic fallback no longer stands in for a failed provider call (2026-07-28, owner decision,
+  local, not deployed).** Until now any provider failure — no key, `429`, timeout, malformed JSON, or output the
+  validators kept refusing — was replaced by a sentence the service composed from the aggregates, and the round
+  was persisted as `status: "success"`. A quota outage and a finished analysis looked identical on the
+  dashboard, which is the reason for the change: a school cannot act on advice it has no way of knowing was
+  invented.
+  - `LLMProviderService` now raises `ProviderUnavailableError` (carrying the same transport reason the logs
+    use: `http_429`, `missing_api_key`, `invalid_finish_reason`…) instead of substituting copy, for the
+    dimension interpretations and for the `5.0` round summary. The psychologist node collects the failures and
+    stops the round rather than spending tokens on the rest of it.
+  - The whole round comes back as `status: "validation_failed"` with `failureReason: "provider_unavailable"`
+    and a Hebrew message. The status stays inside the versioned set Core validates and `failureReason` is
+    additive, which the deployed callback validator already accepts on a non-success payload — so no contract
+    version bump and no consumer-first ordering constraint.
+  - `AnalyticsRunnerService` sends that failure payload on the callback even when the pipeline raises after the
+    MCP fetch. The webhook has already answered `202` by then, so a crash used to be silent.
+  - Two things deliberately kept, decided by the owner this session: the green dimension that
+    `ONLY_LLM_FOR_PROBLEMATIC` never sends to a provider keeps its aggregate-grounded sentence (no call is made,
+    so no failure is hidden; recorded as `deterministic_fallback` with `attempts=0`), and a failed `5.0`
+    recommendation rewrite still falls back to the human-written catalog entry.
+- **Core says which of three things happened when no result is stored.** `GET /api/rounds/{id}/ai-insights`
+  answers `404` with `run.state` — `idle` (never dispatched), `running` (dispatched inside
+  `AI_RUN_EXPECTED_COMPLETION_MS`, 15 min) or `stalled` (dispatched, nothing ever delivered). A run that died
+  without reporting used to read as "the analysis was never requested". The dashboard error state now says
+  `שירות הניתוח אינו זמין כרגע` with the reassurance that the answers are intact, and a separate
+  `הניתוח בעבודה` state keeps a run in flight from looking like a failure. OpenAPI JSON and YAML carry the new
+  `404` body.
+- **Fixed on the way through: a privacy-locked round on contract `4.0`/`5.0` never reached the manager.**
+  `privacy_gate_node` attached `surveyDefinitionHash` only on `3.0`, and Core refuses any `3.0`/`4.0`/`5.0`
+  payload without it — the locked result was rejected at the callback with `400` and nothing was persisted. The
+  gate now uses the same dynamic-version set as the rest of the graph.
+- **Verification of the above (local, 2026-07-28)**: `.venv/bin/python -m pytest` 175/175,
+  `npm test` 241/241, `npm run lint` 0 errors, `npm run build` 39/39 pages, `git diff --check` clean.
+  `npx tsc --noEmit` reports the same 19 lines it reports on the stashed baseline, all in test files this work
+  did not touch. Pipeline tests that used to reach the end of a round by leaving the key unset now say so
+  explicitly through the `answering_llm` fixture (`ai-analytics-service/tests/llm_stub.py`); the Core↔Python
+  boundary test drives `tests.stub_pipeline_cli`, which is the shipping pipeline with only the two model-written
+  calls answered locally — deliberately a test entry point, so no flag exists in the service that could put
+  invented copy in front of a manager.
+  - **Proven live rather than only in tests.** With the local stack running (Core `:3000`, AI `:8000`, local
+    Postgres, the seeded 12-response round), a manual trigger returned `202`, Gemini answered `429` three times
+    for `organizational-climate`, the service logged `outcome=provider_unavailable reason=http_429`, the
+    callback delivered the failure and Core answered `200`, and the dashboard showed the Hebrew unavailable
+    copy. The same round on the old code would have been a green "success" with an invented paragraph.
+    `run.state` was observed going `idle` → `running` after the trigger. The `הניתוח בעבודה` screen itself was
+    not seen in the browser: the round failed in about three seconds on the quota, too fast to catch, and it
+    rests on the API check plus a component render test.
 
 - **Contract 5.0 is Live & Pushed**: Full Contract 5.0 implementation pushed to `main` (commits `84e5875` -> `01c3858`).
   - Score distribution (`green`, `yellow`, `red`) calculated and sent in `questionAggregates`.

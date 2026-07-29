@@ -126,6 +126,25 @@ export function DashboardAiInsightsState({
     );
   }
 
+  if (state.status === "running") {
+    return (
+      <section className="dashboard-ai-state" aria-live="polite">
+        <LoaderCircle
+          className="dashboard-ai-state-spinner"
+          size={30}
+          aria-hidden="true"
+        />
+        <h2>הניתוח בעבודה</h2>
+        <p>
+          שירות הניתוח עובד על הסבב הזה. התוצאות יופיעו במפה בתוך דקות ספורות.
+        </p>
+        <button type="button" className="secondary-button" onClick={onRetry}>
+          בדיקה חוזרת
+        </button>
+      </section>
+    );
+  }
+
   if (state.status === "not-found") {
     return (
       <section className="dashboard-ai-state" aria-live="polite">
@@ -145,11 +164,18 @@ export function DashboardAiInsightsState({
     );
   }
 
+  // Every remaining way this can end — the provider never answered, the run
+  // died, the stored payload failed validation, the request itself failed — is
+  // the same fact for the manager: no analysis, and nothing they did wrong. The
+  // round keeps its answers, so retrying later is the whole instruction.
   return (
     <section className="dashboard-ai-state" role="alert">
       <AlertTriangle size={30} aria-hidden="true" />
-      <h2>לא הצלחנו לטעון את הניתוח</h2>
-      <p>הנתונים לא יוצגו עד שהתגובה משירות הניתוח תהיה תקינה ומאומתת.</p>
+      <h2>שירות הניתוח אינו זמין כרגע</h2>
+      <p>
+        לא הופק ניתוח לסבב הזה. התשובות שנאספו נשמרו במלואן, ואפשר להפעיל את
+        הניתוח מחדש בעוד מספר דקות.
+      </p>
       {roundId ? (
         <GenerateAnalysisButton roundId={roundId} label="הפעלת ניתוח מחדש" />
       ) : null}

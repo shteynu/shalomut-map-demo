@@ -69,6 +69,24 @@ _STATUS_LABELS_HEBREW = {
 }
 
 
+class ProviderUnavailableError(RuntimeError):
+    """The provider produced nothing usable for a call that must be model-written.
+
+    Raised instead of substituting deterministic copy. A round the model could
+    not write is reported to the manager as an unavailable analysis service —
+    never as an analysis. The reason is the same bounded-transport reason the
+    logs carry (``http_429``, ``missing_api_key``, ``invalid_semantic_output``
+    …), so a stored failure says what actually happened.
+    """
+
+    def __init__(self, reason: str, *, dimension_id: Optional[str] = None):
+        super().__init__(
+            f"AI provider unavailable: {reason or 'provider_error'}"
+        )
+        self.reason = reason or "provider_error"
+        self.dimension_id = dimension_id
+
+
 @dataclass(frozen=True)
 class InterpretationGeneration:
     text: str
@@ -140,8 +158,14 @@ class LLMProviderService:
         response (``finish_reason=stop``), the copy is Hebrew-only, contains
         exactly two complete sentences, and does not contradict the numerical
         status. Invalid output uses the same bounded attempt and time budgets
-        as transport retries before falling back to deterministic aggregate
-        copy.
+        as transport retries; when the budget is spent without an acceptable
+        answer the call raises ``ProviderUnavailableError`` rather than
+        inventing copy.
+
+        The one interpretation this service writes itself is the green
+        dimension it deliberately never sends to the model
+        (``ONLY_LLM_FOR_PROBLEMATIC``): no provider call is made there, so
+        there is no failure to hide.
         """
         questions = self._normalize_question_aggregates(
             dim_id,
@@ -200,24 +224,16 @@ class LLMProviderService:
                 attempts=attempts,
             )
 
-        logger.info(
-            "[LLM Service] outcome=deterministic_fallback provider=%s "
-            "model=%s reason=%s attempts=%s",
+        logger.warning(
+            "[LLM Service] outcome=provider_unavailable provider=%s "
+            "model=%s reason=%s attempts=%s dimension=%s",
             provider,
             model_name,
             fallback_reason,
             attempts,
+            dim_id,
         )
-        return InterpretationGeneration(
-            text=self._heuristic_fallback(
-                dim_hebrew,
-                score,
-                status,
-                questions,
-            ),
-            outcome="deterministic_fallback",
-            attempts=attempts,
-        )
+        raise ProviderUnavailableError(fallback_reason, dimension_id=dim_id)
 
     @staticmethod
     def _model_for_tier(retry_tier: str) -> str:
@@ -280,7 +296,7 @@ class LLMProviderService:
                         fallback_reason = "retry_budget_exhausted"
                         logger.warning(
                             "[LLM Service] "
-                            "outcome=deterministic_fallback "
+                            "outcome=no_answer "
                             "provider=%s model=%s reason=%s "
                             "attempts=%s",
                             provider,
@@ -406,7 +422,7 @@ class LLMProviderService:
                             continue
 
                     logger.warning(
-                        "[LLM Service] outcome=deterministic_fallback "
+                        "[LLM Service] outcome=no_answer "
                         "provider=%s "
                         "model=%s status=%s error_code=%s "
                         "request_id=%s attempts=%s",
@@ -446,7 +462,7 @@ class LLMProviderService:
                             continue
 
                     logger.warning(
-                        "[LLM Service] outcome=deterministic_fallback "
+                        "[LLM Service] outcome=no_answer "
                         "provider=%s "
                         "model=%s error_type=%s attempts=%s",
                         provider,
@@ -458,7 +474,7 @@ class LLMProviderService:
         except Exception as error:
             fallback_reason = type(error).__name__
             logger.warning(
-                "[LLM Service] outcome=deterministic_fallback provider=%s "
+                "[LLM Service] outcome=no_answer provider=%s "
                 "model=%s error_type=%s",
                 provider,
                 model_name,
@@ -481,17 +497,20 @@ class LLMProviderService:
             if (s.get("computedStatus") if isinstance(s, dict) else getattr(s, "computedStatus", "")) in ("yellow", "red")
         )
         green_count = len(dim_scores) - yellow_red_count
-        fallback = (
+        # Contracts 1.0-4.0 never ask the model for this text: it is a counted
+        # statement about the round, written here by design. 5.0 does ask, and
+        # there this sentence is not a safety net — see below.
+        deterministic_summary = (
             f"הניתוח המצרפי מציג {yellow_red_count} ממדים הדורשים "
             f"תשומת לב ולצדם {green_count} חוזקות לשימור. "
             "כל המסקנות נשענות על נתונים מצרפיים מעל סף הפרטיות."
         )
 
         if contract_version != "5.0":
-            return fallback
+            return deterministic_summary
 
         model_name = self._model_for_tier(retry_tier)
-        text, _attempts, _fallback_reason = self._complete_with_retries(
+        text, attempts, fallback_reason = self._complete_with_retries(
             build_prompt=lambda: self._build_overall_summary_prompt(
                 dim_scores,
                 question_aggregates,
@@ -508,7 +527,16 @@ class LLMProviderService:
                 and 2 <= len(self._sentences(candidate)) <= 4
             ),
         )
-        return text if text is not None else fallback
+        if text is None:
+            logger.warning(
+                "[LLM Service] outcome=provider_unavailable model=%s "
+                "reason=%s attempts=%s scope=overall_summary",
+                model_name,
+                fallback_reason,
+                attempts,
+            )
+            raise ProviderUnavailableError(fallback_reason)
+        return text
 
     def adapt_intervention_result(
         self,

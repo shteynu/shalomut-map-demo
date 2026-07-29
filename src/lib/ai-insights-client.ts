@@ -7,7 +7,14 @@ export type AiInsightsLoadResult =
   | { status: 'ready'; value: StoneMapResult }
   | { status: 'locked'; value: StoneMapResult }
   | { status: 'not-found' }
+  | { status: 'running' }
   | { status: 'error'; error: string };
+
+interface AiInsightsRunState {
+  run?: {
+    state?: unknown;
+  };
+}
 
 export async function loadAiInsights(
   roundId: string,
@@ -23,6 +30,25 @@ export async function loadAiInsights(
     );
 
     if (response.status === 404) {
+      // Nothing stored is three different situations, and the manager needs a
+      // different sentence for each: a run in flight, a run that died without
+      // reporting anything, and a round that was never analysed.
+      const body = (await response
+        .json()
+        .catch(() => null)) as AiInsightsRunState | null;
+
+      if (body?.run?.state === 'running') {
+        return { status: 'running' };
+      }
+
+      if (body?.run?.state === 'stalled') {
+        return {
+          status: 'error',
+          error:
+            'The dispatched AI analytics run never delivered a result.',
+        };
+      }
+
       return { status: 'not-found' };
     }
 

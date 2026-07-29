@@ -16,7 +16,10 @@ from src.contracts import (
     AI_ANALYTICS_V1_CONTRACT_VERSION,
 )
 from src.schemas.mcp_types import RoundAnalyticsResult
-from src.services.llm_provider import llm_provider_service
+from src.services.llm_provider import (
+    ProviderUnavailableError,
+    llm_provider_service,
+)
 
 
 BALANCE_QUESTIONS = {
@@ -183,14 +186,15 @@ def test_provider_rejects_a_non_stop_finish_reason(monkeypatch, finish_reason):
         FakeLLMResponse(provider_text, finish_reason),
     )
 
-    result = llm_provider_service.generate_psychological_interpretation(
-        "balance",
-        "איזון",
-        46.7,
-        "red",
-    )
+    with pytest.raises(ProviderUnavailableError) as failure:
+        llm_provider_service.generate_psychological_interpretation(
+            "balance",
+            "איזון",
+            46.7,
+            "red",
+        )
 
-    assert result != provider_text, "non-stop output must use a validated fallback"
+    assert failure.value.reason == "invalid_finish_reason"
 
 
 @pytest.mark.parametrize(
@@ -205,17 +209,15 @@ def test_provider_rejects_a_non_stop_finish_reason(monkeypatch, finish_reason):
 def test_provider_rejects_non_hebrew_or_incomplete_copy(monkeypatch, invalid_text):
     configure_provider(monkeypatch, FakeLLMResponse(invalid_text, "stop"))
 
-    result = llm_provider_service.generate_psychological_interpretation(
-        "balance",
-        "איזון",
-        46.7,
-        "red",
-    )
+    with pytest.raises(ProviderUnavailableError) as failure:
+        llm_provider_service.generate_psychological_interpretation(
+            "balance",
+            "איזון",
+            46.7,
+            "red",
+        )
 
-    assert result != invalid_text
-    assert re.search(r"[\u0590-\u05FF]", result)
-    assert not re.search(r"[A-Za-z]", result)
-    assert len(re.findall(r"[.!?]", result)) >= 2
+    assert failure.value.reason == "invalid_semantic_output"
 
 
 def test_provider_accepts_complete_hebrew_copy_with_stop(monkeypatch):
@@ -242,31 +244,26 @@ def test_provider_rejects_copy_that_contradicts_the_input_status(monkeypatch):
     )
     configure_provider(monkeypatch, FakeLLMResponse(provider_text, "stop"))
 
-    result = llm_provider_service.generate_psychological_interpretation(
-        "balance",
-        "איזון",
-        46.7,
-        "red",
-    )
+    with pytest.raises(ProviderUnavailableError) as failure:
+        llm_provider_service.generate_psychological_interpretation(
+            "balance",
+            "איזון",
+            46.7,
+            "red",
+        )
 
-    assert result != provider_text
-    assert "אזור אדום" in result
+    assert failure.value.reason == "invalid_semantic_output"
 
 
-@pytest.mark.asyncio
-async def test_heuristic_interpretation_uses_weakest_same_dimension_question(
-    monkeypatch,
-):
-    monkeypatch.setattr(settings, "llm_api_key", "")
-    monkeypatch.setattr(settings, "only_llm_for_problematic", True)
-    state = {
+def build_balance_state(average_score: float, status: str):
+    return {
         "round_data": {
-            "roundId": "round-grounded-fallback",
+            "roundId": "round-grounded-copy",
             "dimensionScores": {
                 "balance": {
                     "dimensionId": "balance",
-                    "averageScore": 46.7,
-                    "computedStatus": "red",
+                    "averageScore": average_score,
+                    "computedStatus": status,
                 },
             },
             "questionAggregates": BALANCE_QUESTIONS,
@@ -280,14 +277,43 @@ async def test_heuristic_interpretation_uses_weakest_same_dimension_question(
         "final_payload": {},
     }
 
-    result = await agent_psychologist_node(state)
+
+@pytest.mark.asyncio
+async def test_the_green_dimension_written_here_quotes_its_strongest_question(
+    monkeypatch,
+):
+    """The one interpretation this service still writes itself.
+
+    A green dimension is deliberately never sent to the provider, so there is
+    no failed call being covered up — and the sentence still has to come from
+    the round's own aggregates.
+    """
+    monkeypatch.setattr(settings, "llm_api_key", "")
+    monkeypatch.setattr(settings, "only_llm_for_problematic", True)
+
+    result = await agent_psychologist_node(build_balance_state(80.0, "green"))
     interpretation = result["interpretations"][
         "dimension_interpretations"
     ]["balance"]
-    weakest_question = BALANCE_QUESTIONS["balance-2"]
+    strongest_question = BALANCE_QUESTIONS["balance-1"]
 
-    assert weakest_question["questionTextHebrew"] in interpretation
-    assert str(int(weakest_question["averageScore"])) in interpretation
+    assert result["safety_status"] != "provider_unavailable"
+    assert strongest_question["questionTextHebrew"] in interpretation
+    assert str(int(strongest_question["averageScore"])) in interpretation
+
+
+@pytest.mark.asyncio
+async def test_a_dimension_the_provider_never_answered_stops_the_round(
+    monkeypatch,
+):
+    monkeypatch.setattr(settings, "llm_api_key", "")
+    monkeypatch.setattr(settings, "only_llm_for_problematic", True)
+
+    result = await agent_psychologist_node(build_balance_state(46.7, "red"))
+
+    assert result["safety_status"] == "provider_unavailable"
+    assert result["provider_failure_reason"] == "missing_api_key"
+    assert result.get("interpretations") == {}
 
 
 def test_safety_validator_never_passes_a_status_contradiction_at_retry_limit():

@@ -27,6 +27,18 @@ export interface TriggerAiResult {
  */
 export const AI_RUN_CLAIM_LEASE_MS = 120_000;
 
+/**
+ * How long a dispatched run may stay silent before the screens call it lost.
+ *
+ * Deliberately much longer than the dispatch lease, which only guards against a
+ * second webhook: one round is roughly thirty provider calls with their own
+ * retries, so a run that is merely slow must not be reported as a failure. Past
+ * this window nothing is coming — the service died before it could report even
+ * a failure — and saying so beats an empty screen that claims the analysis was
+ * never requested.
+ */
+export const AI_RUN_EXPECTED_COMPLETION_MS = 15 * 60_000;
+
 export async function triggerAiAnalyticsForRound(
   roundId: string,
 ): Promise<TriggerAiResult> {

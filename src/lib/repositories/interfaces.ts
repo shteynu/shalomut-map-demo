@@ -39,6 +39,13 @@ export interface IRoundRepository {
     options?: { leaseMs?: number; requireNoInsights?: boolean },
   ): Promise<boolean>;
   /**
+   * When an analytics run was last dispatched for a round, or `null` if none
+   * ever was. Without it a round whose run died before delivering anything is
+   * indistinguishable from one nobody ever analysed, and the manager is shown
+   * "not generated yet" for a run that is long dead.
+   */
+  getAiAnalysisDispatchedAt(id: string): Promise<Date | null>;
+  /**
    * Releases a claim whose dispatch failed, so the round can be retried right
    * away instead of waiting out the lease. A round that already has a persisted
    * result is left untouched: there the timestamp belongs to the result.
