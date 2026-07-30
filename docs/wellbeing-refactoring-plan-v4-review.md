@@ -137,9 +137,11 @@ persistent identity на password hash», и в плане он должен б�
 Завышено как «единственный auth-риск»: у проекта уже есть открытый пункт крупнее
 — `docs/shalomut-tracker-handoff.md`, «Рекомендуемый порядок продолжения» №2:
 заменить organization-scoped shared Basic gate на application-level manager
-identity/roles и настоящую tenant authorization. План v4 его не упоминает
-вообще. Нужно явно записать, что план рефакторинга его не отменяет и не
-заменяет, а пункт этапа E — это та же работа.
+identity/roles и настоящую tenant authorization. План v4 его не упоминал.
+**Решено (2026-07-30):** план рефакторинга его не отменяет и не заменяет; пункт
+этапа E официально поглощает эту задачу (tenant authorization) и становится
+единственным треком для её выполнения. Устаревшие ветки, пытавшиеся решать
+эту задачу ранее, закрыты.
 
 ### C6. У обязательного PostgreSQL-suite нет CI, где его запускать
 
@@ -261,8 +263,9 @@ Python — унаследованная запись. Перед PR 1 нужно
    следующий шаг. Отдельная ветка,
    не параллельно с продуктовыми пунктами 5–6 backlog (A1). Метрики из A3 входят
    в DoD. Размер L, 2–3 коммита.
-6. **Auth.** Закрыть dormant repository branch до этапа E; сам этап E объединить
-   с открытым пунктом handoff про manager identity/tenant authorization (C5).
+6. **Auth.** Выполнено (2026-07-30). Устаревшие ветки `agent/database-backed-manager-ui` и
+   `agent/empty-runtime-repositories` удалены локально. В план этапа E явно включена работа
+   над application-level manager identity/roles и tenant authorization, как указано в C5.
 7. Дальше — этапы C и D по v4, с оговоркой A5 и с `structuredContent` как
    consumer-first изменением (C4).
 
