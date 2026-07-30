@@ -441,12 +441,19 @@ first one ever; contract `5.0` is switched on and proven, and the provider quota
        07:31:21–07:32:40 UTC produced **24 of 24 recommendations with `adaptationOutcome: llm`**, zero `429`
        and zero fallback lines. `pytest` 203/203 with nine new tests. See item 17 for what remains open.
 
-17. [ ] **Decide whether refused adaptation copy should reach a log at all.** The fallback line now names
-       the gate and the dimension, which is what picked the fix above, but reproducing this one still took
-       rebuilding the exact prompt from the database and re-running it against the provider. The refused
-       text is model copy about aggregates, not respondent copy, so the privacy invariant does not
-       obviously forbid it; the question is whether a truncated sample at `WARNING` earns its place or just
-       fills Render's log with Hebrew paragraphs nobody reads until the next investigation.
+17. [x] **Decided: refused adaptation copy stays out of the log; its shape goes in** (2026-07-30, commit
+       `36d5a1a`). Three reasons, in order of weight. A truncated sample would not have helped — a refused
+       batch is nine lines of Hebrew and the defect can be in any of them, so a diagnostic sample means the
+       whole answer, and then every bad round writes hundreds of lines into Render. The copy is about one
+       school's weakest dimensions, and while that is not respondent identity, the product keeps a boundary
+       around it that a log does not; normalising the spill for debugging convenience is not worth it. And
+       the reproduction path already exists and works: `why_adaptation_fails.py` rebuilds the exact prompt
+       from the database. What cost a day was not the missing text but the missing dimension and gate, and
+       those are in the log now. The detail carries `key=value` shape only — which block, blocks and lines
+       found against asked for, the code point of a foreign letter, whether the digits landed in the steps
+       instead of the summary, and whether a colour read as a count or a verdict. That last pair matters
+       because `entry_shape` and `status_inconsistent` each covered two unrelated failures wanting different
+       fixes. A test enforces the decision, so reaching for a sample later has to be deliberate.
 
 18. [x] **A non-Hebrew letter could reach the school as long as it was not Latin** (2026-07-30, commit
        `4ace369`). `is_hebrew_only_copy` named the one script it refused and so let every other one through:
@@ -462,6 +469,32 @@ first one ever; contract `5.0` is switched on and proven, and the provider quota
 ---
 
 ## Completed Tasks
+
+- [x] **2026-07-30**: **A refusal now logs its shape, and the refused copy still never leaves the process**
+  (commit `36d5a1a`, item 17):
+  - The decision and its reasons are in item 17. In short: a sample small enough for a log line diagnoses
+    nothing, a sample large enough is the school's own copy in Render, and what actually cost a day was the
+    missing dimension and gate rather than the missing text.
+  - Each label now carries the fact that picks the next step. `entry_shape` says
+    `blocks=2/3 shape_blocks=2 separators=1 lines=6` when the answer split wrong, or `block=1 lines=2/3` when
+    the blocks were right and one of them was short — two unrelated failures that shared the label.
+    `status_inconsistent` says `colour=red verdict=yes` for a model overruling the score Core owns, or
+    `colour=green verdict=no numbers=30` for the uncheckable-but-probably-true case of 2026-07-29, which is a
+    prompt problem instead. `no_number` says `digits_in_steps=no`, separating a model that ignored the data
+    from one that put it a line lower than the rule wants. `not_hebrew` names the code point.
+  - `adaptation_batch_refusal` returns a falsy-when-clean `AdaptationRefusal(label, detail)`, so
+    `is_valid_adaptation_batch` still reads as one line.
+  - **Verification Evidence**: `pytest` 216/216 passed (was 211). The detail values are asserted exactly, not
+    merely for presence, and one test refuses any detail that contains a Hebrew character or a value outside
+    counts, indices and code points. Fail-first confirmed against the previous code. Caught a real defect in
+    my own change on the way: the first draft used the code-point helper as the `not_hebrew` gate itself,
+    which would have admitted a summary of digits with no Hebrew in it at all — the gate is
+    `is_hebrew_only_copy` and stays it, with the code points describing only what it saw.
+  - The first live reproduction after the change earned the line immediately: `professional-competence` came
+    back with a stray `U+091F` (Devanagari) inside otherwise correct Hebrew — a glitch glyph with no Hebrew
+    letter it stands for, so refusing rather than repairing is right — named in one token where the old log
+    would have said `invalid_semantic_output`. The next run of the same dimension was clean, so this is a
+    once-seen glitch that costs a retry, not a systematic confusable for the repair table.
 
 - [x] **2026-07-30**: **The Hebrew-only check refused one script and admitted the rest** (commit `4ace369`,
   item 18):
