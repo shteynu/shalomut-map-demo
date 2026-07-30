@@ -10,6 +10,9 @@ build
 .DS_Store
 *.pem
 
+# scratch
+tmp/
+
 # logs
 npm-debug.log*
 yarn-debug.log*
