@@ -19,6 +19,61 @@ Shalomut Map к `shalomut-tracker`, где сохранённые данные �
 exact вопросы раунда принадлежат persisted `SurveyRound.surveyDefinition`.
 Визуальные mock-данные изолированы в `src/lib/demo-data.ts`.
 
+## Архитектурный рефакторинг: четыре ветки на руках (2026-07-30)
+
+Начат план архитектурного рефакторинга. Порядок работ, правки к плану и
+обоснование каждого решения — в `docs/wellbeing-refactoring-plan-v4-review.md`,
+раздел «Предлагаемый порядок работ». Он и есть источник того, что делать дальше.
+
+Все четыре ветки отходят от `cb8bed3` (`origin/main`), **ни одна не запушена**,
+upstream есть только у документационной. Поэтому эта работа видна лишь в этом
+worktree и на этой машине; другой checkout не увидит ничего, пока владелец не
+выполнит push.
+
+| Ветка | HEAD | Что в ней | verify |
+| --- | --- | --- | --- |
+| `docs/update-wellbeing-refactoring-plan` | `75f47ea` | Ревью планов v3/v4, восемь правок, шесть дополнений, порядок работ | не запускался (только документы) |
+| `fix/v5-background-context` | `1b76bac` | PR 1: контракт `5.0` перестал терять `backgroundContext` в parser | exit 0 — 274 TS, 274 Python |
+| `fix/response-idempotency` | `92cf626` | PR 2: unique-констрейнты, маппинг `P2002`, `verify:db`, Postgres в CI | exit 0 — 280 TS, 6 PostgreSQL, 269 Python |
+| `feat/fail-closed-contract-version` | `0c90c1b` | PR 2.5: fail-closed на версии продюсера, `GET /api/health` | exit 0 — 288 TS, 269 Python |
+
+Каждая ветка несёт свой task-файл в `docs/agent-tasks/active/` с именем от
+ветки; в нём точное состояние, решения, evidence и остаток.
+
+Следующая работа — **PR 3, durable AI jobs** (`AiAnalysisRun`, polling worker с
+lease/heartbeat, идемпотентный callback). Ветки под него ещё нет; task-файл
+создаётся из `docs/agent-tasks/TEMPLATE.md` как
+`docs/agent-tasks/active/feat--durable-ai-jobs.md`.
+
+### Что изменилось в общих правилах проверки
+
+- `npm run verify` теперь включает `verify:db` — но только на ветке
+  `fix/response-idempotency` и после её слияния. Ему нужна отдельная расходная
+  база; как её завести, описано в `docs/local-environment.md`.
+- В `.github/workflows/deploy-vercel.yml` на той же ветке добавлен
+  postgres service и `TEST_DATABASE_URL`.
+- **Читать exit code команды через пайп нельзя.** `npm run verify 2>&1 | tail -N`
+  возвращает код `tail`, а не `npm`, поэтому упавший verify выглядит успешным.
+  В этой сессии так и произошло: ошибка типов дожила до ручной проверки сборки.
+  Прогонять с записью вывода в файл и читать настоящий код возврата.
+
+### Незакрытые вопросы владельцу
+
+1. Оставляем ли `3.0` как значение по умолчанию при незаданном
+   `AI_ANALYTICS_CONTRACT_VERSION`. Сейчас оставлено: незаданная переменная —
+   документированный default, падает только заданное нераспознанное значение.
+2. Пункт 6 продуктового backlog («сообщение о том, что происходит после
+   достижения порога») стоит делать **после** PR 3: тот меняет словарь состояний
+   раунда с `idle/running/stalled` на `queued/running/succeeded/failed`.
+   Остальные пункты backlog с PR 3 не пересекаются.
+
+### Миграция, ожидающая применения
+
+`prisma/migrations/20260730120000_add_response_idempotency_constraints` создана
+и применена только к изолированной тестовой базе `shalomut_test`. К рабочей
+локальной и к deployed БД не применялась. Миграция сначала удаляет строки,
+которые констрейнт не пропустил бы, оставляя самую раннюю.
+
 ## Что делать в начале следующей сессии
 
 1. **Задеплоить Python раньше Core (пункт 8)**. У AI-сервиса появился новый эндпоинт
