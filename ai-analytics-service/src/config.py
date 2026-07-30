@@ -226,10 +226,11 @@ class Settings:
         # The pace for the heavy tier, and it is a separate number because the
         # quota is separate. The setting above belongs to `LLM_MODEL_FAST` and
         # is tuned to that model's tier; the heavy model has a tier of its own,
-        # and a replay switches a whole node to it at once, so borrowing the
-        # fast number sends a node's worth of requests at several times what
-        # the heavy tier allows — every live round's original `429`, moved into
-        # the path that only opens when the round is already in trouble.
+        # and a replay switches to it, so borrowing the fast number sends the
+        # replay at several times what the heavy tier allows — every live
+        # round's original `429`, moved into the path that only opens when the
+        # round is already in trouble. A replay is narrow now, but the number
+        # still has to belong to the model it is counted against.
         #
         # Unset means the strictest free tier, deliberately rather than
         # inheriting the fast number: inheritance would rebuild the defect the

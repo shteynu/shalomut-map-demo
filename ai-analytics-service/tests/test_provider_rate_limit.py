@@ -15,7 +15,7 @@ a call's retry budget, and a turn refused without charging the next caller.
 
 A pace is only meaningful beside a model, because that is the unit the provider
 counts in, and the heavy tier is the one that pays for forgetting it: a replay
-switches an entire node to a model whose tier is three times stricter. So the
+switches to a model whose tier is three times stricter. So the
 queue is keyed by model name, and the tests below hold both halves of that —
 each model kept to its own limit, and no model slowed down by another's.
 """
@@ -275,12 +275,13 @@ def test_a_refused_turn_leaves_the_queue_untouched(monkeypatch):
 def test_the_heavy_tier_is_paced_at_its_own_limit(monkeypatch):
     """A replayed node reaches the heavy model at the heavy model's pace.
 
-    This is the whole item. `retry_tier` switches the model for an entire node
-    at once, so a replay sends every problematic dimension to the heavy model
-    back to back — and until now they went out at the fast model's pace, which
-    the deployment tunes to a tier the heavy model does not have. Quotas are
+    This is the whole item. `retry_tier` switches the model, and back then it
+    switched a whole node at once, so a replay sent every problematic dimension
+    to the heavy model back to back — at the fast model's pace, which the
+    deployment tunes to a tier the heavy model does not have. Quotas are
     counted per model, so that is not a bigger share of one budget; it is
-    roughly three times the other budget.
+    roughly three times the other budget. A replay is narrow now
+    (`test_replay_targets.py`), and the pace still has to be the heavy model's.
     """
     _configure_two_paces(monkeypatch, fast_rate=600.0, heavy_rate=60.0)
     sent_at = []

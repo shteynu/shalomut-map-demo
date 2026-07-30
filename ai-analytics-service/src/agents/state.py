@@ -10,4 +10,11 @@ class AnalyticsState(TypedDict):
     safety_feedback: Optional[str]      # Reason for fail if safety validator rejects
     provider_failure_reason: NotRequired[str]  # Transport reason behind 'provider_unavailable'
     retry_count: int                    # Circuit breaker counter for safety loop
+    # What a replay has to redo, named by the safety validator that rejected it.
+    # A replay reaches for the heavy model, whose free tier allows twenty
+    # requests a day, so replaying the seven dimensions that passed alongside
+    # the one that did not costs the tier a whole round to fix one stone.
+    retry_interpretation_dimensions: NotRequired[list[str]]
+    retry_recommendation_dimensions: NotRequired[list[str]]
+    retry_overall_summary: NotRequired[bool]
     final_payload: Dict[str, Any]       # Formatted Stone Map JSON payload

@@ -12,8 +12,8 @@ counted per key rather than per round — Render runs the service with
 `WEB_CONCURRENCY=1` and one round at a time, so this process is the whole
 account's traffic. Per model, because that is the unit the provider counts in:
 one number for the whole process was safe only while the process used one
-model, and `retry_tier` switches an entire node to the heavy model at once. Two
-names, two buckets; the same name twice, one bucket.
+model, and `retry_tier` moves a replay to the heavy model. Two names, two
+buckets; the same name twice, one bucket.
 
 Booking a turn and waiting for it are separate steps on purpose: a retry has a
 budget to answer to and must be able to refuse a turn it cannot afford, instead

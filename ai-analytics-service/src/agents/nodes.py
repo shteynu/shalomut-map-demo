@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any, NamedTuple, Optional
 from src.agents.state import AnalyticsState
 from src.rag.store import LocalInterventionVectorStore
 from src.services import hebrew_validation
@@ -49,6 +49,52 @@ async def _in_provider_slot(slots: asyncio.Semaphore, function, /, **kwargs):
     """Run one blocking provider call once a slot is free."""
     async with slots:
         return await asyncio.to_thread(function, **kwargs)
+
+
+class ReplayPlan(NamedTuple):
+    """The parts of a round a replay has to write again.
+
+    Everything outside it stands: an interpretation the validator accepted is
+    accepted still, and its provenance keeps the attempt count it earned.
+    """
+
+    interpretations: frozenset[str]
+    recommendations: frozenset[str]
+    overall_summary: bool
+
+
+def _replay_plan(state: AnalyticsState) -> Optional[ReplayPlan]:
+    """What this pass must redo, or `None` when it must do the whole round.
+
+    A first pass has nothing to keep. A replay does, and it matters more than
+    it looks: the safety loop switches the *whole node* to the heavy model, and
+    the heavy tier allows twenty requests a day, so a replay of all eight
+    dimensions plus the summary and eight adaptations spends the day's budget
+    to repair the one stone the validator turned away.
+
+    An untargeted replay redoes everything, which is the old behaviour and the
+    safe reading: a check that fails without naming what it rejected must not
+    quietly become a no-op.
+    """
+    if state.get("retry_count", 0) <= 0:
+        return None
+
+    plan = ReplayPlan(
+        interpretations=frozenset(
+            state.get("retry_interpretation_dimensions") or (),
+        ),
+        recommendations=frozenset(
+            state.get("retry_recommendation_dimensions") or (),
+        ),
+        overall_summary=bool(state.get("retry_overall_summary")),
+    )
+    if not (
+        plan.interpretations
+        or plan.recommendations
+        or plan.overall_summary
+    ):
+        return None
+    return plan
 
 
 def _effective_contract_version(round_data: Dict[str, Any]) -> str:
@@ -186,13 +232,37 @@ async def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
     wait into a single round trip for the whole round — bounded by
     `LLM_MAX_CONCURRENT_REQUESTS`, so the batch does not arrive at the provider
     all at once.
+
+    A replay writes only what the safety validator rejected — see `ReplayPlan`.
     """
     round_data = state.get("round_data", {})
     dim_scores = round_data.get("dimensionScores", {})
     retry_count = state.get("retry_count", 0)
+    plan = _replay_plan(state)
+    previous_interpretations = state.get("interpretations", {}).get(
+        "dimension_interpretations",
+        {},
+    )
+    previous_provenance = state.get("generation_provenance", {})
 
     yellow_red_dims = []
     retry_tier = "heavy" if retry_count > 0 else "fast"
+    if retry_count > 0:
+        # Which of the round is being written again, on the tier where that
+        # question has a daily answer. `all` is the old whole-node replay.
+        logger.info(
+            "[Node 2: Psychologist] Replay %s on tier=%s writes %s",
+            retry_count,
+            retry_tier,
+            "all"
+            if plan is None
+            else (
+                "interpretations="
+                + (",".join(sorted(plan.interpretations)) or "-")
+                + " summary="
+                + ("yes" if plan.overall_summary else "no")
+            ),
+        )
 
     dim_ids = []
     generations = []
@@ -208,6 +278,16 @@ async def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
 
         if status in ["yellow", "red"]:
             yellow_red_dims.append(dim_id)
+
+        # An interpretation the validator accepted is not rewritten. Its
+        # provenance has to exist to be carried, or there is nothing to keep and
+        # the dimension goes to the provider again.
+        if (
+            plan is not None
+            and dim_id not in plan.interpretations
+            and dim_id in previous_provenance
+        ):
+            continue
 
         dim_hebrew = DIMENSION_NAMES_HEBREW.get(dim_id, dim_id)
         question_aggregates = _question_aggregates_for_dimension(
@@ -248,16 +328,34 @@ async def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
         ):
             raise result
 
+    regenerated = dict(zip(dim_ids, settled))
+    interpretations = {}
+    for dim_id in dim_scores:
+        # A dimension this pass did not touch keeps the text it already had.
+        if dim_id not in regenerated:
+            interpretations[dim_id] = previous_interpretations.get(dim_id, "")
+            continue
+        # A dimension the provider never answered for holds no interpretation
+        # at all. Empty rather than heuristic text, because the alternative is
+        # the fallback wearing the label of analysis.
+        generation = regenerated[dim_id]
+        interpretations[dim_id] = (
+            "" if isinstance(generation, ProviderUnavailableError)
+            else generation.text
+        )
+
     # Up to 4.0 a dead dimension fails the round: those contracts describe a
     # map of eight interpretations and nothing else, and a consumer written
     # against them has no shape to render a gap in. 5.0 says so out loud
     # instead — see the partial-map decision. A round where nothing at all was
     # written is still a failure on every version: there is no partial map in
-    # zero stones, only a service that is down.
+    # zero stones, only a service that is down. The question is asked of the
+    # whole map rather than of this pass, so a replay of one dimension that
+    # fails again leaves the seven standing interpretations standing.
     eff_version = _effective_contract_version(round_data)
     partial_allowed = (
         eff_version == AI_ANALYTICS_V5_CONTRACT_VERSION
-        and len(failures) < len(dim_ids)
+        and any(interpretations.values())
     )
 
     if failures and not partial_allowed:
@@ -290,20 +388,15 @@ async def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
             ",".join(sorted({failure.reason for failure in failures})),
         )
 
-    generation_results = list(settled)
-    # A dimension the provider never answered for holds no interpretation at
-    # all. Empty rather than heuristic text, because the alternative is the
-    # fallback wearing the label of analysis.
-    interpretations = {
-        dim_id: (
-            "" if isinstance(generation, ProviderUnavailableError)
-            else generation.text
-        )
-        for dim_id, generation in zip(dim_ids, generation_results)
-    }
-    previous_provenance = state.get("generation_provenance", {})
     generation_provenance = {}
-    for dim_id, generation in zip(dim_ids, generation_results):
+    for dim_id in dim_scores:
+        # Kept text keeps the attempt count it earned; rewriting it as a fresh
+        # first attempt would report a round that never happened.
+        if dim_id not in regenerated:
+            generation_provenance[dim_id] = previous_provenance[dim_id]
+            continue
+
+        generation = regenerated[dim_id]
         prior_attempts = int(
             previous_provenance.get(dim_id, {}).get("attempts", 0),
         )
@@ -343,19 +436,32 @@ async def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
             )
 
     background_context = _background_context_for_prompt(round_data, state)
+    previous_summary = state.get("interpretations", {}).get(
+        "overall_summary",
+        "",
+    )
+    keeps_summary = (
+        plan is not None
+        and not plan.overall_summary
+        and bool(previous_summary)
+    )
     # Blocking provider call: the eight interpretations already run in worker
     # threads, and leaving this one on the event loop stalls the whole service
-    # for the length of the round summary request.
+    # for the length of the round summary request. The summary is written from
+    # the dimension scores, which a replay does not change, so asking for it
+    # again when the validator accepted it buys nothing and costs a request.
     try:
-        overall_summary = await asyncio.to_thread(
-            llm_provider_service.generate_overall_summary,
-            dim_scores=dim_scores,
-            background_context=background_context,
-            retry_tier=retry_tier,
-            contract_version=eff_version,
-            question_aggregates=list(
-                round_data.get("questionAggregates", {}).values(),
-            ),
+        overall_summary = previous_summary if keeps_summary else (
+            await asyncio.to_thread(
+                llm_provider_service.generate_overall_summary,
+                dim_scores=dim_scores,
+                background_context=background_context,
+                retry_tier=retry_tier,
+                contract_version=eff_version,
+                question_aggregates=list(
+                    round_data.get("questionAggregates", {}).values(),
+                ),
+            )
         )
     except ProviderUnavailableError as error:
         logger.warning(
@@ -383,10 +489,16 @@ def agent_rag_intervention_node(state: AnalyticsState) -> AnalyticsState:
     Node 3: Intervention Catalog (Tool Node)
     Queries the local structured catalog to extract top-3 relevant organizational
     interventions for each dimension and adds them to the state.
+
+    A replay leaves the dimensions the validator accepted alone. The catalog
+    query itself costs no provider call, but re-selecting an entry drops the
+    rewrite already attached to it, and rewriting it again is what costs.
     """
     round_data = state.get("round_data", {})
     dim_scores = round_data.get("dimensionScores", {})
     bg_context = _background_context_for_prompt(round_data, state)
+    plan = _replay_plan(state)
+    previous_recommendations = state.get("recommendations", {})
     recommendations = {}
 
     for dim_id, score_obj in dim_scores.items():
@@ -394,6 +506,14 @@ def agent_rag_intervention_node(state: AnalyticsState) -> AnalyticsState:
             status = score_obj.get("computedStatus", "green")
         else:
             status = getattr(score_obj, "computedStatus", "green")
+
+        if (
+            plan is not None
+            and dim_id not in plan.recommendations
+            and dim_id in previous_recommendations
+        ):
+            recommendations[dim_id] = previous_recommendations[dim_id]
+            continue
 
         q_aggregates = _question_aggregates_for_dimension(round_data, dim_id)
         interventions = vector_store.get_interventions_for_dimension(
@@ -438,12 +558,27 @@ async def agent_adaptation_node(state: AnalyticsState) -> AnalyticsState:
     dim_scores = round_data.get("dimensionScores", {})
     background_context = _background_context_for_prompt(round_data, state)
     retry_tier = "heavy" if state.get("retry_count", 0) > 0 else "fast"
+    plan = _replay_plan(state)
     recommendations = state.get("recommendations", {})
 
     targets = []
     adaptations = []
     slots = _provider_slots()
     for dim_id, interventions in recommendations.items():
+        # A rewrite the validator accepted is already on these entries, carried
+        # through the catalog node. Asking the model for it again is the cost
+        # this node has to avoid on a replay: the heavy tier's day is twenty
+        # requests, and eight of them are these.
+        if (
+            plan is not None
+            and dim_id not in plan.recommendations
+            and all(
+                intervention.get("adaptationOutcome")
+                for intervention in interventions
+            )
+        ):
+            continue
+
         score_obj = dim_scores.get(dim_id, {})
         if isinstance(score_obj, dict):
             status = score_obj.get("computedStatus", "green")
@@ -533,6 +668,13 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
 
     is_safe = True
     feedback = []
+    # What a replay would have to write again. Named per dimension and per part,
+    # because a replay reaches for the heavy model and its free tier allows
+    # twenty requests a day: rewriting the whole round to repair one stone is
+    # how four replays exhaust the day.
+    rejected_interpretations = set()
+    rejected_recommendations = set()
+    rejected_summary = False
 
     for dim_id, score_obj in dim_scores.items():
         if isinstance(score_obj, dict):
@@ -546,6 +688,10 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
 
         if status != status_for_score(score):
             is_safe = False
+            # Core's own number disagrees with Core's own status, so no rewrite
+            # can repair it. It is still named, because a replay that skips
+            # every rejection would loop doing nothing at all.
+            rejected_interpretations.add(dim_id)
             feedback.append(
                 f"Status is inconsistent with score for {dim_id}"
             )
@@ -567,6 +713,7 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
         if unavailable:
             if interp != "":
                 is_safe = False
+                rejected_interpretations.add(dim_id)
                 feedback.append(
                     f"An unavailable interpretation must be empty: {dim_id}"
                 )
@@ -583,6 +730,7 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
             )
         ):
             is_safe = False
+            rejected_interpretations.add(dim_id)
             feedback.append(
                 f"Interpretation is invalid for status {status}: {dim_id}"
             )
@@ -624,6 +772,7 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
                 )
             ):
                 is_safe = False
+                rejected_recommendations.add(dim_id)
                 feedback.append(
                     f"Intervention is invalid for status {status}: {dim_id}"
                 )
@@ -672,6 +821,7 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
                 )
             ):
                 is_safe = False
+                rejected_interpretations.add(dim_id)
                 feedback.append(
                     f"Generation provenance is invalid for {dim_id}"
                 )
@@ -680,19 +830,31 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
         overall_summary,
     ):
         is_safe = False
+        rejected_summary = True
         feedback.append("Overall summary is not Hebrew-only")
 
     if not is_safe:
         next_retry_count = min(3, retry_count + 1)
         logger.warning(
-            "[Safety Validator] Safety check failed. Retry count: %s",
+            "[Safety Validator] Safety check failed. Retry count: %s. "
+            "Replaying interpretations=%s recommendations=%s summary=%s",
             next_retry_count,
+            ",".join(sorted(rejected_interpretations)) or "-",
+            ",".join(sorted(rejected_recommendations)) or "-",
+            "yes" if rejected_summary else "no",
         )
         return {
             **state,
             "safety_status": "fail",
             "safety_feedback": "; ".join(feedback),
             "retry_count": next_retry_count,
+            "retry_interpretation_dimensions": sorted(
+                rejected_interpretations,
+            ),
+            "retry_recommendation_dimensions": sorted(
+                rejected_recommendations,
+            ),
+            "retry_overall_summary": rejected_summary,
         }
 
     return {

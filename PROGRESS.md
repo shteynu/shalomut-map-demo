@@ -1,10 +1,23 @@
 # Shalomut Map — PROGRESS.md
 
 Updated: 2026-07-30 (**a live round finished `success` with all eight stones written by the model**; contract
-`5.0` is switched on and proven, and the provider quota is no longer the blocker. Session of 2026-07-30 closed
-items 15–20; the owner is leaving items 8 and 10 open on purpose, and item 12 is the one open risk)
+`5.0` is switched on and proven, and the provider quota is no longer the blocker. Items 15–21 are closed; the
+owner is leaving items 8 and 10 open on purpose, and item 12 is the one open risk)
 
 ## Current State
+
+- **Item 21 closed: a replay writes what the validator rejected, not the round.** The residual risk item 20
+  named and could not reach with a pace. Repairing one refused stone cost **17 heavy requests of the 20 the
+  heavy tier allows in a day; it now costs 1**, measured on a graph run before and after. The validator records
+  which dimensions it refused and which part of them, and the three nodes skip everything else — keeping an
+  accepted interpretation's text and its attempt count, not just its text. `pytest` 234/234 with six new tests,
+  five of which fail against the previous code. Not exercised live, and not exercisable on demand: the heavy
+  tier opens only when the validator rejects something. Details in item 21 of Next Up.
+  - Both halves of the deployment were on `69dfbbd` when this session started — Render's `/health` says so, and
+    the Vercel production deployment holding the alias was built one minute after that commit. So the
+    consumer-first ordering item 15 needed was satisfied on its own, and `LLM_MAX_REQUESTS_PER_MINUTE_HEAVY=4`
+    reached Render with that deploy through `render.yaml` (inferred from the blueprint winning before, not read
+    back: `/health` does not report it).
 
 - **Session of 2026-07-30, closed with everything pushed** — `origin/main` at `01fd852`, working tree clean.
   Six items closed in order: 16 and 18 on the Hebrew validation chain, 17 on what a refusal may log, 15 on the
@@ -536,7 +549,37 @@ items 15–20; the owner is leaving items 8 and 10 open on purpose, and item 12 
        would take 240 s instead of 68.6 s, to pay for a replay most rounds never make. **Residual risk, and no
        pace fixes it**: the heavy tier allows 20 requests a day, so four replays exhaust it; the service falls
        back, which is the wanted behaviour, but the real fix is for a replay to stop sending a whole node to
-       the heavy model at once.
+       the heavy model at once. **That fix is item 21, done 2026-07-30.**
+
+21. [x] **A replay writes what was rejected, not the round** (2026-07-30). This is the residual risk item 20
+       named and could not fix with a pace: `retry_tier` switched the *whole node*, so repairing one refused
+       stone rewrote eight interpretations, eight adaptations and the summary — **17 heavy requests against the
+       20 a day the heavy tier allows, measured on a graph run and now 1**. Two replays of one bad round
+       exhausted the day; the service fell back, which is the wanted behaviour, but it fell back for reasons
+       that had nothing to do with the round.
+       - The safety validator already knew which dimension it was refusing — the feedback string carried the id
+         and nothing read it. It now records the rejection as data: which dimensions' interpretations, which
+         dimensions' recommendations, and whether the round summary was among them. The three nodes read that
+         plan and skip what is not in it, so an accepted interpretation keeps its text **and its provenance**,
+         `attempts` included; a rewritten one starts from the attempt count it had. Interpretation and
+         adaptation are targeted separately, because neither reads the other: both are written from the
+         aggregates, so a refused rewrite is no reason to write eight interpretations again.
+       - **A rejection that names nothing still replays everything.** A narrow replay driven by what the
+         validator recorded would otherwise turn a future check that forgets to name its dimension into a loop
+         that does nothing three times. The one rejection that cannot be repaired by rewriting — Core's status
+         disagreeing with Core's own score — is named too, for the same reason.
+       - One regression had to be prevented rather than fixed: the partial map asked whether *this pass* wrote
+         anything, which is true of a full round and false of a replay carrying a single dimension. A replayed
+         dimension that fails again would have read as a provider that answered nothing and taken the seven
+         standing stones down with it. The question is now asked of the whole map.
+       - Verification: `pytest` 234/234, six new in
+         [`test_replay_targets.py`](ai-analytics-service/tests/test_replay_targets.py); fail-first confirmed —
+         five of the six fail against the previous code, and the sixth is the guard that asserts the old
+         whole-round replay is still what an untargeted rejection gets. `npm test` 251/251 (the payload shape is
+         unchanged, so this is a regression guard, not evidence about the change). `render.yaml` parses,
+         `git diff --check` clean. **Not exercised live**, and it cannot be on demand: the heavy tier opens only
+         when the safety validator rejects something, which is the same reason item 20 has never run live.
+       - Python-only and no contract change, so this deploys in either order — no consumer-first sequencing.
 ---
 
 ## Completed Tasks
