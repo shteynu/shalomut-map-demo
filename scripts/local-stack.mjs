@@ -331,6 +331,7 @@ function aiEnvironment() {
     USE_MOCK_MCP: "false",
     DATA_LAYER_MCP_URL: `http://localhost:${CORE_PORT}/api/mcp`,
     DATA_LAYER_CALLBACK_URL: `http://localhost:${CORE_PORT}/api/rounds`,
+    AI_JOB_POLLING_ENABLED: "true",
   };
 
   const providedKeys = [];

@@ -26,6 +26,8 @@ export function isRespondentRoute(pathname: string) {
 }
 
 const AI_INSIGHTS_PATH = /^\/api\/rounds\/[^/]+\/ai-insights\/?$/;
+const AI_ANALYSIS_RUN_WORKER_PATH =
+  /^\/api\/ai-analysis-runs\/(?:claim|[^/]+\/(?:heartbeat|fail))\/?$/;
 
 /**
  * Routes that the external AI service calls with their own shared secret. They
@@ -35,5 +37,9 @@ const AI_INSIGHTS_PATH = /^\/api\/rounds\/[^/]+\/ai-insights\/?$/;
  */
 export function isMachineAuthenticatedRoute(pathname: string, method: string) {
   if (pathname === "/api/mcp" || pathname === "/api/mcp/") return true;
-  return method === "POST" && AI_INSIGHTS_PATH.test(pathname);
+  return (
+    method === "POST" &&
+    (AI_INSIGHTS_PATH.test(pathname) ||
+      AI_ANALYSIS_RUN_WORKER_PATH.test(pathname))
+  );
 }

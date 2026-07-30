@@ -9,6 +9,7 @@ import {
   SurveyResponseRecord,
   SurveyDefinitionQuestion,
 } from '../types/backend';
+import { recordDuplicateSubmissionConflict } from '../server/ai-operational-metrics';
 
 /**
  * One answer for both ways a duplicate is found — the pre-check and the unique
@@ -170,6 +171,7 @@ export class SurveyService {
         input.anonymousTokenHash
       );
       if (alreadySubmitted) {
+        recordDuplicateSubmissionConflict(input.roundId);
         return { success: false, error: ALREADY_SUBMITTED_ERROR };
       }
     }
@@ -190,6 +192,7 @@ export class SurveyService {
       await surveyRepo.saveResponse(record);
     } catch (error) {
       if (error instanceof DuplicateResponseError) {
+        recordDuplicateSubmissionConflict(input.roundId);
         return { success: false, error: ALREADY_SUBMITTED_ERROR };
       }
       throw error;

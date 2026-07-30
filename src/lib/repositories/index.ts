@@ -1,24 +1,29 @@
 import { MINIMUM_PRIVACY_THRESHOLD } from '../survey-definition';
 import { Organization, SurveyRound } from '../types/backend';
 import { InMemoryOrganizationRepository } from './in-memory/in-memory-organization.repository';
+import { InMemoryAiAnalysisRunRepository } from './in-memory/in-memory-ai-analysis-run.repository';
 import { InMemoryRoundRepository } from './in-memory/in-memory-round.repository';
 import { InMemorySurveyRepository } from './in-memory/in-memory-survey.repository';
 import {
   IOrganizationRepository,
+  IAiAnalysisRunRepository,
   IRoundRepository,
   ISurveyRepository,
 } from './interfaces';
 import { getPrismaClient } from './prisma/prisma-client';
 import { PrismaOrganizationRepository } from './prisma/prisma-organization.repository';
+import { PrismaAiAnalysisRunRepository } from './prisma/prisma-ai-analysis-run.repository';
 import { PrismaRoundRepository } from './prisma/prisma-round.repository';
 import { PrismaSurveyRepository } from './prisma/prisma-survey.repository';
 
 export * from './interfaces';
 export * from './in-memory/in-memory-organization.repository';
+export * from './in-memory/in-memory-ai-analysis-run.repository';
 export * from './in-memory/in-memory-round.repository';
 export * from './in-memory/in-memory-survey.repository';
 export * from './prisma/prisma-client';
 export * from './prisma/prisma-organization.repository';
+export * from './prisma/prisma-ai-analysis-run.repository';
 export * from './prisma/prisma-round.repository';
 export * from './prisma/prisma-survey.repository';
 
@@ -45,6 +50,7 @@ export const DEMO_ROUND: SurveyRound = {
 };
 
 interface RepositoryState {
+  aiAnalysisRunRepo: IAiAnalysisRunRepository;
   orgRepo: IOrganizationRepository;
   roundRepo: IRoundRepository;
   surveyRepo: ISurveyRepository;
@@ -56,6 +62,7 @@ const globalForRepositories = globalThis as typeof globalThis & {
 
 function createEmptyRepositoryState(): RepositoryState {
   return {
+    aiAnalysisRunRepo: new InMemoryAiAnalysisRunRepository(),
     orgRepo: new InMemoryOrganizationRepository(),
     roundRepo: new InMemoryRoundRepository(),
     surveyRepo: new InMemorySurveyRepository([]),
@@ -71,6 +78,7 @@ const repositoryState =
 globalForRepositories.shalomutRepositoryState = repositoryState;
 
 export function getRepositories(): {
+  aiAnalysisRunRepo: IAiAnalysisRunRepository;
   orgRepo: IOrganizationRepository;
   roundRepo: IRoundRepository;
   surveyRepo: ISurveyRepository;
@@ -78,6 +86,7 @@ export function getRepositories(): {
   const prisma = getPrismaClient();
   if (prisma) {
     return {
+      aiAnalysisRunRepo: new PrismaAiAnalysisRunRepository(prisma),
       orgRepo: new PrismaOrganizationRepository(prisma),
       roundRepo: new PrismaRoundRepository(prisma),
       surveyRepo: new PrismaSurveyRepository(prisma),
@@ -85,6 +94,7 @@ export function getRepositories(): {
   }
 
   return {
+    aiAnalysisRunRepo: repositoryState.aiAnalysisRunRepo,
     orgRepo: repositoryState.orgRepo,
     roundRepo: repositoryState.roundRepo,
     surveyRepo: repositoryState.surveyRepo,
@@ -92,10 +102,12 @@ export function getRepositories(): {
 }
 
 export function setRepositories(repos: {
+  aiAnalysisRunRepo?: IAiAnalysisRunRepository;
   orgRepo?: IOrganizationRepository;
   roundRepo?: IRoundRepository;
   surveyRepo?: ISurveyRepository;
 }): void {
+  if (repos.aiAnalysisRunRepo) repositoryState.aiAnalysisRunRepo = repos.aiAnalysisRunRepo;
   if (repos.orgRepo) repositoryState.orgRepo = repos.orgRepo;
   if (repos.roundRepo) repositoryState.roundRepo = repos.roundRepo;
   if (repos.surveyRepo) repositoryState.surveyRepo = repos.surveyRepo;

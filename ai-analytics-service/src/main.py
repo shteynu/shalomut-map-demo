@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+from contextlib import asynccontextmanager
 from typing import Optional
 from fastapi import BackgroundTasks, FastAPI, Header, HTTPException
 from src.contracts import (
@@ -14,6 +15,7 @@ from src.schemas.question_suggestion import (
 )
 from src.schemas.webhook import WebhookEventPayload
 from src.services.analytics_runner import analytics_runner_service
+from src.services.ai_job_worker import create_ai_analysis_job_worker
 from src.services.llm_provider import (
     ProviderUnavailableError,
     llm_provider_service,
@@ -23,11 +25,45 @@ from src.config import settings
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("shalomut-ai-service")
 
+@asynccontextmanager
+async def lifespan(application: FastAPI):
+    stop_event = None
+    task = None
+    if settings.ai_job_polling_enabled:
+        configuration_errors = settings.runtime_configuration_errors()
+        if configuration_errors:
+            raise RuntimeError(
+                "AI job polling is enabled with invalid runtime configuration: "
+                + "; ".join(configuration_errors)
+            )
+        stop_event = asyncio.Event()
+        worker = create_ai_analysis_job_worker()
+        task = asyncio.create_task(
+            worker.run_forever(
+                stop_event,
+                settings.ai_job_poll_interval_seconds,
+            )
+        )
+        application.state.ai_job_worker_stop = stop_event
+        application.state.ai_job_worker_task = task
+
+    try:
+        yield
+    finally:
+        if stop_event is not None:
+            stop_event.set()
+        if task is not None:
+            task.cancel()
+            await asyncio.gather(task, return_exceptions=True)
+
+
 app = FastAPI(
     title="Shalomut AI Analytics Microservice",
     description="Standalone Python AI Analytics Service for Teachers' Wellbeing Map (מפת שלומות)",
-    version="0.1.0"
+    version="0.1.0",
+    lifespan=lifespan,
 )
+
 
 @app.get("/health")
 def health_check():
@@ -46,6 +82,7 @@ def health_check():
         "supportedContractVersions": list(
             AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS,
         ),
+        "jobPollingEnabled": settings.ai_job_polling_enabled,
     }
 
 async def run_analytics_in_background(round_id: str) -> None:

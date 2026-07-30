@@ -14,6 +14,7 @@ import { POST as submitSurvey } from '../survey/[shareCode]/submit/route';
 import {
   DEMO_ORGANIZATION,
   DEMO_ROUND,
+  InMemoryAiAnalysisRunRepository,
   InMemoryOrganizationRepository,
   InMemoryRoundRepository,
   InMemorySurveyRepository,
@@ -30,6 +31,7 @@ let previousDatabaseUrl: string | undefined;
 
 function useDemoRepositories() {
   setRepositories({
+    aiAnalysisRunRepo: new InMemoryAiAnalysisRunRepository(),
     orgRepo: new InMemoryOrganizationRepository([DEMO_ORGANIZATION]),
     roundRepo: new InMemoryRoundRepository([DEMO_ROUND]),
     surveyRepo: new InMemorySurveyRepository(),
@@ -566,9 +568,11 @@ test('Saving a complete questionnaire activates a draft round, an incomplete one
 });
 
 test('API Route POST /api/rounds/[roundId]/reset drops stale insights and writes an audit event', async () => {
+  const aiAnalysisRunRepo = new InMemoryAiAnalysisRunRepository();
   const roundRepo = new InMemoryRoundRepository([DEMO_ROUND]);
   const surveyRepo = new InMemorySurveyRepository();
   setRepositories({
+    aiAnalysisRunRepo,
     orgRepo: new InMemoryOrganizationRepository([DEMO_ORGANIZATION]),
     roundRepo,
     surveyRepo,
@@ -593,6 +597,10 @@ test('API Route POST /api/rounds/[roundId]/reset drops stale insights and writes
       { params: Promise.resolve({ shareCode: DEMO_ROUND.shareCode }) },
     );
     await roundRepo.saveAiInsights(DEMO_ROUND.id, { status: 'success' });
+    await aiAnalysisRunRepo.enqueue(DEMO_ROUND.id, {
+      requestKey: 'automatic',
+      trigger: 'automatic',
+    });
 
     const response = await resetRound(
       new Request(`http://localhost/api/rounds/${DEMO_ROUND.id}/reset`, {
@@ -604,6 +612,10 @@ test('API Route POST /api/rounds/[roundId]/reset drops stale insights and writes
     assert.strictEqual(response.status, 200);
     // The analysis described responses that no longer exist.
     assert.strictEqual(await roundRepo.getAiInsights(DEMO_ROUND.id), null);
+    assert.strictEqual(
+      await aiAnalysisRunRepo.findLatestByRoundId(DEMO_ROUND.id),
+      null,
+    );
     assert.strictEqual(await surveyRepo.getResponseCount(DEMO_ROUND.id), 0);
 
     const events = await auditRepo.findByOrganizationId(

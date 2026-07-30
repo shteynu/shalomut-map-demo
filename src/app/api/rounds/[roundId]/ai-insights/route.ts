@@ -14,8 +14,13 @@ import {
   parseSurveyDefinition,
 } from '@/lib/survey-definition';
 import { createSurveyDefinitionHash } from '@/lib/survey-definition-hash';
+import { isValidLeaseToken } from '@/lib/server/ai-analysis-worker';
+import {
+  recordAiJobCompleted,
+  recordContractValidation,
+  recordValidMapSample,
+} from '@/lib/server/ai-operational-metrics';
 import { getDurableWriteGuardResponse } from '@/lib/server/durable-write-guard';
-import { AI_RUN_EXPECTED_COMPLETION_MS } from '@/lib/server/trigger-ai-analytics';
 import { hasConfiguredSharedSecret } from '@/lib/server/shared-secret';
 import { authorizeManagerRound } from '@/lib/server/manager-scope';
 import type {
@@ -27,6 +32,14 @@ interface RouteParams {
   params: Promise<{
     roundId: string;
   }>;
+}
+
+function callbackContractVersion(payload: unknown): string | undefined {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    return undefined;
+  }
+  const value = (payload as { contractVersion?: unknown }).contractVersion;
+  return typeof value === 'string' ? value : undefined;
 }
 
 function validateDynamicResultAgainstRound(
@@ -156,33 +169,40 @@ export async function GET(request: Request, { params }: RouteParams) {
     );
     if (!authorization.ok) return authorization.response;
 
-    const insights = await repositories.roundRepo.getAiInsights(roundId);
-    if (!insights) {
-      // Nothing is stored — but why matters to the manager. A run that was
-      // dispatched and never delivered a result is the analysis service
-      // failing, not a round nobody analysed, and only the dispatch timestamp
-      // can tell those two apart.
-      const dispatchedAt =
-        await repositories.roundRepo.getAiAnalysisDispatchedAt(roundId);
-      const isStillRunning =
-        dispatchedAt !== null &&
-        Date.now() - dispatchedAt.getTime() < AI_RUN_EXPECTED_COMPLETION_MS;
-
+    const run = await repositories.aiAnalysisRunRepo.findLatestByRoundId(roundId);
+    if (run?.result) {
+      return NextResponse.json(run.result);
+    }
+    if (run) {
       return NextResponse.json(
         {
           error: 'AI insights not found for this round',
           roundId,
           run: {
-            dispatchedAt: dispatchedAt?.toISOString() ?? null,
-            state:
-              dispatchedAt === null
-                ? 'idle'
-                : isStillRunning
-                  ? 'running'
-                  : 'stalled',
+            id: run.id,
+            state: run.state,
+            attemptCount: run.attemptCount,
+            queuedAt: run.queuedAt.toISOString(),
+            startedAt: run.startedAt?.toISOString() ?? null,
+            completedAt: run.completedAt?.toISOString() ?? null,
+            failureCode: run.failureCode ?? null,
           },
         },
         { status: 404 }
+      );
+    }
+
+    // Dual-read during rollout: a result written before AiAnalysisRun existed
+    // remains available from the legacy round column.
+    const insights = await repositories.roundRepo.getAiInsights(roundId);
+    if (!insights) {
+      return NextResponse.json(
+        {
+          error: 'AI insights not found for this round',
+          roundId,
+          run: null,
+        },
+        { status: 404 },
       );
     }
 
@@ -208,22 +228,95 @@ export async function POST(request: Request, { params }: RouteParams) {
     if (unavailable) return unavailable;
 
     const { roundId } = await params;
-    const payload: unknown = await request.json();
-    const validation = validateStoneMapResult(payload, roundId);
-
-    if (!validation.ok) {
+    const callbackUrl = new URL(request.url);
+    const headerRunId = request.headers.get('x-ai-analysis-run-id');
+    const headerLeaseToken = request.headers.get('x-ai-analysis-lease-token');
+    const queryRunId = callbackUrl.searchParams.get('runId');
+    const queryLeaseToken = callbackUrl.searchParams.get('leaseToken');
+    if (
+      (headerRunId && queryRunId && headerRunId !== queryRunId) ||
+      (headerLeaseToken &&
+        queryLeaseToken &&
+        headerLeaseToken !== queryLeaseToken)
+    ) {
       return NextResponse.json(
-        { error: validation.error },
-        { status: 400 }
+        { error: 'Conflicting durable callback identity' },
+        { status: 400 },
+      );
+    }
+    // Headers are the current transport. Query parameters remain accepted
+    // only for rollback compatibility with a worker deployed during rollout.
+    const runId = headerRunId ?? queryRunId;
+    const leaseToken = headerLeaseToken ?? queryLeaseToken;
+    const hasRunIdentity = runId !== null || leaseToken !== null;
+    if (
+      hasRunIdentity &&
+      (!runId || !leaseToken || !isValidLeaseToken(leaseToken))
+    ) {
+      return NextResponse.json(
+        { error: 'A durable callback requires a valid runId and leaseToken' },
+        { status: 400 },
       );
     }
 
+    const payload: unknown = await request.json();
     const repositories = getRepositories();
+
+    // Resolve the route and durable-run identity before validation can mark a
+    // run failed. Otherwise a callback sent to the wrong round could mutate a
+    // valid leased run merely by carrying an invalid payload.
     const round = await repositories.roundRepo.findById(roundId);
     if (!round) {
       return NextResponse.json(
         { error: 'Survey round not found', roundId },
         { status: 404 },
+      );
+    }
+
+    if (runId && leaseToken) {
+      const run = await repositories.aiAnalysisRunRepo.findById(runId);
+      if (!run) {
+        return NextResponse.json(
+          { error: 'Analysis run not found', runId },
+          { status: 404 },
+        );
+      }
+      if (run.roundId !== roundId) {
+        return NextResponse.json(
+          { error: 'Analysis run does not belong to this round', runId, roundId },
+          { status: 409 },
+        );
+      }
+    }
+
+    const validation = validateStoneMapResult(payload, roundId);
+    const contractVersion = callbackContractVersion(payload);
+
+    async function failDurableRun(failureCode: string) {
+      if (!runId || !leaseToken) return;
+      const outcome = await repositories.aiAnalysisRunRepo.finish(runId, {
+        state: 'failed',
+        failureCode,
+        leaseToken,
+        callbackReceivedAt: new Date(),
+      });
+      if (outcome === 'transitioned') {
+        const completed = await repositories.aiAnalysisRunRepo.findById(runId);
+        if (completed) recordAiJobCompleted(completed);
+      }
+    }
+
+    if (!validation.ok) {
+      await failDurableRun('contract_validation_failed');
+      recordContractValidation({
+        contractVersion,
+        error: validation.error,
+        roundId,
+        runId: runId ?? undefined,
+      });
+      return NextResponse.json(
+        { error: validation.error },
+        { status: 400 }
       );
     }
 
@@ -244,12 +337,78 @@ export async function POST(request: Request, { params }: RouteParams) {
         )
       : null;
     if (dynamicRoundError) {
+      await failDurableRun('round_validation_failed');
+      recordContractValidation({
+        contractVersion: validation.value.contractVersion,
+        error: dynamicRoundError,
+        roundId,
+        runId: runId ?? undefined,
+      });
       return NextResponse.json(
         { error: dynamicRoundError },
         { status: 400 },
       );
     }
 
+    let completionOutcome: 'transitioned' | 'duplicate' | undefined;
+    if (runId && leaseToken) {
+      const succeeded =
+        validation.value.status === 'success' ||
+        validation.value.status === 'locked_error';
+      const failureCode =
+        'failureReason' in validation.value &&
+        typeof validation.value.failureReason === 'string'
+          ? validation.value.failureReason
+          : 'analysis_validation_failed';
+      const result = structuredClone(validation.value) as unknown as Record<
+        string,
+        unknown
+      >;
+      const outcome = await repositories.aiAnalysisRunRepo.finish(
+        runId,
+        succeeded
+          ? {
+              state: 'succeeded',
+              leaseToken,
+              result,
+              callbackReceivedAt: new Date(),
+            }
+          : {
+              state: 'failed',
+              leaseToken,
+              result,
+              failureCode,
+              callbackReceivedAt: new Date(),
+            },
+      );
+      if (outcome === 'not_found') {
+        return NextResponse.json(
+          { error: 'Analysis run not found', runId },
+          { status: 404 },
+        );
+      }
+      if (outcome === 'stale') {
+        return NextResponse.json(
+          { error: 'The analysis callback lease is stale or superseded', runId },
+          { status: 409 },
+        );
+      }
+      completionOutcome = outcome;
+      if (outcome === 'transitioned') {
+        const completed = await repositories.aiAnalysisRunRepo.findById(runId);
+        if (completed) recordAiJobCompleted(completed);
+      }
+    }
+
+    if (!runId || completionOutcome === 'transitioned') {
+      recordValidMapSample({
+        contractVersion: validation.value.contractVersion,
+        roundId,
+        runId: runId ?? undefined,
+      });
+    }
+
+    // Dual-write during rollout keeps the legacy reader/rollback path viable.
     const saved = await repositories.roundRepo.saveAiInsights(
       roundId,
       validation.value,
@@ -266,6 +425,7 @@ export async function POST(request: Request, { params }: RouteParams) {
       message: `AI insights successfully persisted for round ${roundId}`,
       roundId,
       saved,
+      duplicate: completionOutcome === 'duplicate',
     });
   } catch (error: any) {
     return NextResponse.json(

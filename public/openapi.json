@@ -883,7 +883,7 @@
             }
           },
           "404": {
-            "description": "No AI result is persisted for this round. `run.state` says why - `idle` when no run was ever dispatched, `running` while a dispatched run is still within its expected completion window, and `stalled` when a dispatched run never delivered a result.",
+            "description": "No readable AI result is persisted. `run` is null when the round was never queued; otherwise its durable state is `queued`, `running`, `succeeded`, or `failed`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -902,23 +902,47 @@
                     },
                     "run": {
                       "type": "object",
+                      "nullable": true,
                       "required": [
-                        "dispatchedAt",
-                        "state"
+                        "id",
+                        "state",
+                        "attemptCount",
+                        "queuedAt"
                       ],
                       "properties": {
-                        "dispatchedAt": {
-                          "type": "string",
-                          "format": "date-time",
-                          "nullable": true
+                        "id": {
+                          "type": "string"
                         },
                         "state": {
                           "type": "string",
                           "enum": [
-                            "idle",
+                            "queued",
                             "running",
-                            "stalled"
+                            "succeeded",
+                            "failed"
                           ]
+                        },
+                        "attemptCount": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "queuedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "startedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "completedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "failureCode": {
+                          "type": "string",
+                          "nullable": true
                         }
                       }
                     }
@@ -937,12 +961,30 @@
           "AI Integration"
         ],
         "summary": "Persist the AI service callback",
-        "description": "Validates contract version 1.0, route/payload round identity, privacy semantics, and all eight canonical dimensions before persistence. Bearer authentication is required when AI_CALLBACK_SECRET is configured.",
+        "description": "Validates the versioned payload and persists it. Durable workers send both identity headers; Core atomically completes only the currently leased run and treats an identical retry as idempotent. Omitting both remains the legacy rollback path.",
         "security": [
           {
             "bearerAuth": []
           },
           {}
+        ],
+        "parameters": [
+          {
+            "name": "X-AI-Analysis-Run-Id",
+            "in": "header",
+            "description": "Durable run identity; must be sent together with X-AI-Analysis-Lease-Token.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-AI-Analysis-Lease-Token",
+            "in": "header",
+            "description": "Opaque current lease capability; never place it in logs or URLs.",
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "requestBody": {
           "required": true,
@@ -982,7 +1024,7 @@
           "AI Integration"
         ],
         "summary": "Request AI processing for a survey round",
-        "description": "Forwards a round_closed event to AI_SERVICE_URL without a dynamic callback target. The AI service derives its callback URL from its trusted DATA_LAYER_CALLBACK_URL configuration and the round ID. The endpoint fails closed when the AI service is unavailable. A dispatch claim guarantees at most one concurrent run per round; a run requested while the previous claim is still held answers 409.",
+        "description": "Durably enqueues a manual AI analysis run. A database constraint permits only one queued or running job per round, so a concurrent request answers 409. The Python worker claims work separately; this request never waits for the provider.",
         "security": [
           {
             "managerSession": []
@@ -1001,22 +1043,179 @@
         ],
         "responses": {
           "202": {
-            "description": "AI service accepted the event"
+            "description": "Analysis run persisted in `queued` state"
           },
           "404": {
             "description": "Survey round not found in the manager scope"
           },
           "409": {
-            "description": "An analytics run for this round was dispatched moments ago and still holds the dispatch claim"
+            "description": "An analytics run for this round is already queued or running"
           },
           "500": {
-            "description": "Failed to construct or dispatch the request"
-          },
-          "502": {
-            "description": "AI service returned a non-success response"
+            "description": "Failed to enqueue the analysis run"
           },
           "503": {
-            "description": "AI service could not be reached"
+            "description": "Persistent storage is not configured for this deployment"
+          }
+        }
+      }
+    },
+    "/api/ai-analysis-runs/claim": {
+      "post": {
+        "tags": [
+          "AI Integration"
+        ],
+        "summary": "Lease the next durable AI analysis run",
+        "description": "Atomically claims the oldest queued job or an abandoned running job whose lease expired. The 90-second lease is renewed through the heartbeat route; work is failed after three abandoned attempts.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "workerId"
+                ],
+                "properties": {
+                  "workerId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "A job lease with run metadata and an opaque lease token"
+          },
+          "204": {
+            "description": "No job is currently due"
+          },
+          "400": {
+            "description": "Invalid worker identifier"
+          },
+          "401": {
+            "description": "Missing or invalid callback/worker secret"
+          },
+          "503": {
+            "description": "Persistent storage is not configured"
+          }
+        }
+      }
+    },
+    "/api/ai-analysis-runs/{runId}/heartbeat": {
+      "post": {
+        "tags": [
+          "AI Integration"
+        ],
+        "summary": "Renew an active AI analysis lease",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "leaseToken"
+                ],
+                "properties": {
+                  "leaseToken": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Lease renewed"
+          },
+          "401": {
+            "description": "Missing or invalid callback/worker secret"
+          },
+          "409": {
+            "description": "Lease expired or belongs to another worker"
+          }
+        }
+      }
+    },
+    "/api/ai-analysis-runs/{runId}/fail": {
+      "post": {
+        "tags": [
+          "AI Integration"
+        ],
+        "summary": "Persist an unhandled worker failure",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "leaseToken",
+                  "failureCode"
+                ],
+                "properties": {
+                  "leaseToken": {
+                    "type": "string"
+                  },
+                  "failureCode": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Failure persisted, or an identical retry acknowledged"
+          },
+          "401": {
+            "description": "Missing or invalid callback/worker secret"
+          },
+          "404": {
+            "description": "Analysis run not found"
+          },
+          "409": {
+            "description": "Lease expired or belongs to another worker"
           }
         }
       }

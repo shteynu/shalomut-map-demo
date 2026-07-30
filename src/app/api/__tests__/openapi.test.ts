@@ -37,11 +37,52 @@ describe('OpenAPI Specification Integrity', () => {
     assert.ok(paths.includes('/api/mcp'), 'Must include /api/mcp path');
     assert.ok(paths.includes('/api/rounds/{roundId}/ai-insights'), 'Must include AI insights callback/read path');
     assert.ok(paths.includes('/api/rounds/{roundId}/trigger-ai'), 'Must include AI analytics trigger path');
+    assert.ok(paths.includes('/api/ai-analysis-runs/claim'), 'Must include durable AI job claim path');
+    assert.ok(paths.includes('/api/ai-analysis-runs/{runId}/heartbeat'), 'Must include durable AI job heartbeat path');
+    assert.ok(paths.includes('/api/ai-analysis-runs/{runId}/fail'), 'Must include durable AI job failure path');
     assert.ok(paths.includes('/api/rounds/{roundId}/reset'), 'Must include reset round path');
     assert.ok(
       paths.includes('/api/manager/question-suggestion'),
       'Must include the question suggestion path',
     );
+  });
+
+  it('documents the durable AI job lifecycle and worker authentication', () => {
+    const spec = JSON.parse(fs.readFileSync(openapiPath, 'utf8'));
+    const missingRun =
+      spec.paths['/api/rounds/{roundId}/ai-insights'].get.responses['404']
+        .content['application/json'].schema.properties.run;
+    assert.deepStrictEqual(missingRun.properties.state.enum, [
+      'queued',
+      'running',
+      'succeeded',
+      'failed',
+    ]);
+
+    const callbackParameters =
+      spec.paths['/api/rounds/{roundId}/ai-insights'].post.parameters;
+    assert.ok(
+      callbackParameters.some(
+        (parameter: { in: string; name: string }) =>
+          parameter.in === 'header' &&
+          parameter.name === 'X-AI-Analysis-Run-Id',
+      ),
+    );
+    assert.ok(
+      callbackParameters.some(
+        (parameter: { in: string; name: string }) =>
+          parameter.in === 'header' &&
+          parameter.name === 'X-AI-Analysis-Lease-Token',
+      ),
+    );
+
+    for (const operation of [
+      spec.paths['/api/ai-analysis-runs/claim'].post,
+      spec.paths['/api/ai-analysis-runs/{runId}/heartbeat'].post,
+      spec.paths['/api/ai-analysis-runs/{runId}/fail'].post,
+    ]) {
+      assert.deepStrictEqual(operation.security, [{ bearerAuth: [] }]);
+    }
   });
 
   it('documents that a suggestion may only be labelled as the model\'s', () => {

@@ -1,37 +1,13 @@
-import { NextResponse, after } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getRepositories } from '@/lib/repositories';
 import { RoundService, SurveyService } from '@/lib/services';
 import { getDurableWriteGuardResponse } from '@/lib/server/durable-write-guard';
-import { dispatchAiAnalyticsAfterResponse } from '@/lib/server/trigger-ai-analytics';
+import { enqueueAiAnalyticsAfterResponse } from '@/lib/server/trigger-ai-analytics';
 import { QuestionAnswerInput } from '@/lib/types/backend';
 import {
   createCanonicalSurveyDefinition,
   parseSurveyDefinition,
 } from '@/lib/survey-definition';
-
-/**
- * Runs background work after the response is sent. `after` keeps the serverless
- * invocation alive until the work settles; outside a Next request scope (unit
- * tests, non-Next runtimes) it throws, so the work runs detached instead.
- */
-function scheduleAiAnalyticsDispatch(work: () => Promise<unknown>) {
-  const guarded = async () => {
-    try {
-      await work();
-    } catch (error) {
-      console.error(
-        'Auto-trigger AI analytics failed:',
-        error instanceof Error ? error.message : 'unknown error',
-      );
-    }
-  };
-
-  try {
-    after(guarded);
-  } catch {
-    void guarded();
-  }
-}
 
 export async function POST(
   request: Request,
@@ -48,7 +24,7 @@ export async function POST(
       anonymousTokenHash?: string;
     };
 
-    const { roundRepo, surveyRepo } = getRepositories();
+    const { aiAnalysisRunRepo, roundRepo, surveyRepo } = getRepositories();
     const round = await RoundService.getRoundByShareCode(shareCode, roundRepo);
 
     if (!round) {
@@ -93,18 +69,25 @@ export async function POST(
       );
     }
 
-    // Auto-trigger AI analytics once the round reaches its privacy threshold.
-    // The respondent never waits for it, but the work must outlive the response
-    // on a serverless runtime, so it is scheduled with `after` rather than a
-    // detached promise the platform is free to kill.
-    scheduleAiAnalyticsDispatch(() =>
-      dispatchAiAnalyticsAfterResponse(
+    // Enqueue before returning so a process restart cannot lose the threshold
+    // event. Analysis itself remains asynchronous and never runs in the
+    // respondent request.
+    try {
+      await enqueueAiAnalyticsAfterResponse(
         round.id,
         round.privacyThreshold,
+        aiAnalysisRunRepo,
         roundRepo,
         surveyRepo,
-      ),
-    );
+      );
+    } catch (error) {
+      // The response has already been persisted. Do not make the respondent
+      // resubmit; the manager trigger remains a safe recovery path.
+      console.error(
+        'Auto-enqueue AI analytics failed:',
+        error instanceof Error ? error.message : 'unknown error',
+      );
+    }
 
     return NextResponse.json({ success: true, responseId: result.responseId }, { status: 200 });
   } catch (error) {

@@ -3,7 +3,7 @@ import json
 import logging
 import urllib.request
 from urllib.parse import quote, urlsplit
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from src.mcp_client.client import mcp_client_manager
 from src.agents.graph import (
     PROVIDER_UNAVAILABLE_MESSAGE_HEBREW,
@@ -29,13 +29,24 @@ def _url_origin(url: str):
         return None
 
 class AnalyticsRunnerService:
-    async def process_round(self, round_id: str) -> Dict[str, Any]:
+    async def process_round(
+        self,
+        round_id: str,
+        *,
+        run_id: Optional[str] = None,
+        lease_token: Optional[str] = None,
+    ) -> Dict[str, Any]:
         """
         Executes the end-to-end AI analytics workflow:
         1. Fetch round data via MCP Client
         2. Run the async graph-style analytics workflow
         3. Deliver compiled Stone Map JSON payload back to Data Layer
         """
+        if bool(run_id) != bool(lease_token):
+            raise ValueError(
+                "Durable analysis requires both run_id and lease_token"
+            )
+
         logger.info(f"[AnalyticsRunner] Starting processing for round: {round_id}")
 
         # Step 1: Fetch data via MCP Client
@@ -67,17 +78,20 @@ class AnalyticsRunnerService:
         callback_base = settings.data_layer_callback_url.rstrip("/")
         encoded_round_id = quote(round_id, safe="")
         target_callback = f"{callback_base}/{encoded_round_id}/ai-insights/"
+        callback_identity = (
+            {"run_id": run_id, "lease_token": lease_token}
+            if run_id and lease_token
+            else {}
+        )
 
         # Step 3: Execute the workflow
         try:
             final_state = await analytics_graph.ainvoke(initial_state)
             final_payload = final_state.get("final_payload", {})
         except Exception:
-            # The webhook has already answered 202, so a crash here would
-            # otherwise be silent: Core would keep waiting for a callback that
-            # never comes and the manager would keep reading "not generated
-            # yet". The round data is in hand, so the failure can be reported
-            # in the shape Core accepts.
+            # The durable job is already running (or the legacy webhook has
+            # answered 202), so a crash here must still be reported in the
+            # callback shape Core accepts.
             logger.exception(
                 "[AnalyticsRunner] Analytics workflow failed for round %s; "
                 "reporting the failure to the Data Layer",
@@ -90,15 +104,27 @@ class AnalyticsRunnerService:
                     failure_reason="service_error",
                     error_message=PROVIDER_UNAVAILABLE_MESSAGE_HEBREW,
                 ),
+                **callback_identity,
             )
             raise
 
         # Step 4: Callback / Output delivery
-        await self._send_callback(target_callback, final_payload)
+        await self._send_callback(
+            target_callback,
+            final_payload,
+            **callback_identity,
+        )
 
         return final_payload
 
-    async def _send_callback(self, callback_url: str, payload: Dict[str, Any]):
+    async def _send_callback(
+        self,
+        callback_url: str,
+        payload: Dict[str, Any],
+        *,
+        run_id: Optional[str] = None,
+        lease_token: Optional[str] = None,
+    ):
         """
         Sends the compiled payload back to the Data Layer HTTP callback endpoint.
         """
@@ -115,6 +141,11 @@ class AnalyticsRunnerService:
 
         req_bytes = json.dumps(payload).encode("utf-8")
         headers = {"Content-Type": "application/json"}
+        if run_id and lease_token:
+            # Lease tokens are capabilities. Headers keep them out of proxy
+            # and platform access-log URLs.
+            headers["X-AI-Analysis-Run-Id"] = run_id
+            headers["X-AI-Analysis-Lease-Token"] = lease_token
         if settings.ai_callback_secret:
             headers["Authorization"] = f"Bearer {settings.ai_callback_secret}"
         if settings.vercel_protection_bypass:

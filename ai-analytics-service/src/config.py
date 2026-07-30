@@ -107,6 +107,25 @@ class Settings:
         # request, so a protected staging core app is unreachable for both
         # outbound calls unless the automation bypass travels with them.
         self.vercel_protection_bypass: str = os.getenv("VERCEL_PROTECTION_BYPASS", "")
+        # Durable Core-owned jobs are consumed by the polling worker. It is an
+        # explicit rollout switch so the worker can be deployed before Core
+        # starts exposing the queue without changing the legacy webhook path.
+        self.ai_job_polling_enabled: bool = (
+            os.getenv("AI_JOB_POLLING_ENABLED", "false").lower() == "true"
+        )
+        self.ai_job_poll_interval_seconds: float = max(
+            0.2,
+            min(60.0, float(os.getenv("AI_JOB_POLL_INTERVAL_SECONDS", "2.0"))),
+        )
+        # Core leases for 90 seconds. Capping heartbeats at 60 seconds leaves a
+        # full retry window even when one renewal is delayed.
+        self.ai_job_heartbeat_interval_seconds: float = max(
+            1.0,
+            min(
+                60.0,
+                float(os.getenv("AI_JOB_HEARTBEAT_INTERVAL_SECONDS", "30.0")),
+            ),
+        )
 
         # LLM Settings & Token Optimization
         self.llm_base_url: str = os.getenv("LLM_BASE_URL", "")
