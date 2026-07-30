@@ -75,10 +75,14 @@ test('a question that cleared the threshold shows its split, in words and in a b
     yellow: 12,
     red: 4,
   });
-  assert.match(result.metrics[0].helper, /20 משיבים/u);
-  assert.match(result.metrics[0].helper, /12 באמצע/u);
-  assert.match(result.metrics[0].helper, /4 גבוה/u);
-  assert.match(result.metrics[0].helper, /4 נמוך/u);
+  // The whole string, not three separate matches: the order is the thing that
+  // has to hold. High, middle, low is how the bar beside it is drawn, and in
+  // RTL that is how it is read from the right. Asserting the parts one by one
+  // is what let the sentence lead with the middle for as long as it did.
+  assert.strictEqual(
+    result.metrics[0].helper,
+    '20 משיבים · 4 גבוה · 12 באמצע · 4 נמוך',
+  );
 });
 
 test('a question below the threshold keeps the count and loses the split', () => {

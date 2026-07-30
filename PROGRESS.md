@@ -1,15 +1,29 @@
 # Shalomut Map — PROGRESS.md
 
 Updated: 2026-07-30 (**`main` now enforces whole-project TypeScript, ESLint, build and Python verification
-before deploy**, and GitHub Actions proved the final gate on commit `2e38a14`; the live AI state is unchanged: contract
-`5.0` is proven, items 8, 10 and 15–21 are closed, and item 12 — rotating the four exposed secrets — remains
-the one open risk and the one open item)
+before deploy**, and GitHub Actions proved the final gate on commit `2e38a14`; the live AI state is unchanged:
+contract `5.0` is proven and items 8, 10, 12 and 15–21 are closed. The exposed-credential decision is accepted
+for the design stage, with rotation required before the first real respondents)
 
 ## Current State
 
+- **Session close, 2026-07-30: the unfinished cleanup session is complete locally.** Item 12 is recorded as a
+  bounded design-stage decision rather than an open risk; `ROADMAP.md` now reflects the built persistence/API/UI
+  phases, the AI service and comparative multi-round analytics as the largest unbuilt product feature. The RTL
+  metric sentence now follows the bar's high → middle → low order; dynamic-contract validation errors no longer
+  mislabel `4.0`/`5.0` payloads as contract `3.0`; and the Python environment documentation matches the narrow
+  replay and green-dimension behaviour from items 21 and 10. Local evidence: `npm run typecheck`, all 274
+  TypeScript tests, ESLint, production build and all 269 Python tests passed. A read-only Playwright smoke signed
+  into the local app and reached the real dashboard and balance metrics route; that seeded round has no stored AI
+  result, so the distribution itself remained behind the honest unavailable state and was not visually exercised.
+  Nothing was deployed. The transient `next-env.d.ts` diff was correctly discarded as generated; the parallel
+  typecheck session supplied the durable fix in `2e38a14` (`next typegen && tsc --noEmit` plus the 14 test-only
+  type fixes), and those two remote commits were preserved before this cleanup was committed.
+
 - **Session close, 2026-07-30: the deploy workflow can no longer go green while the TypeScript tests, their
-  types, ESLint or Python service are red.** Commit `620c5f6` changed `Build & Validate` from three checks to the complete
-  sequence: `npm ci`, `npm run typecheck`, `npm test`, ESLint, build, a fresh Python 3.11 venv, dependency install from
+  types, ESLint or Python service are red.** Commit `620c5f6` changed `Build & Validate` from three checks to the
+  complete sequence: `npm ci`, `npm run typecheck`, `npm test`, ESLint, build, a fresh Python 3.11 venv,
+  dependency install from
   `ai-analytics-service/requirements.txt` plus its dev extra, and `.venv/bin/python -m pytest`. The first CI
   attempt exposed that quoted recursive globs are not expanded by the Ubuntu runner; commit `4430796` replaced
   the fragile command with `scripts/run-tests.mjs`, which enumerates every `src/**/__tests__/*.test.ts(x)` file
@@ -71,11 +85,15 @@ the one open risk and the one open item)
     deferred on 2026-07-26 and again on 2026-07-30; and item 10, whether the model should also write the green
     dimensions (`ONLY_LLM_FOR_PROBLEMATIC=false`). **Both were taken up later the same day and closed** — see
     the two entries above.
-  - **The one open risk is item 12**, the four secrets exposed on 2026-07-29 and not yet rotated. Nothing in
-    this session touched them, and nothing can: it is the owner's hands by `AGENTS.md`.
+  - **Item 12 is a closed decision, not an open risk.** The four credentials exposed on 2026-07-29 will not be
+    rotated during the design stage. The transcript, not a public repository, is the exposure boundary; there
+    are no real respondents and the disposable database contains nothing worth stealing. The practical radius
+    is limited to someone with the transcript triggering analysis, reading round aggregates or forging a
+    callback. That tradeoff is accepted until the explicit boundary: rotate all four credentials **before the
+    first real respondents**.
   - **Two things wait on a deployed round rather than on code**: the partial map (item 15) has never been
     exercised live, and per-model pacing (item 20) cannot be exercised on demand, because the heavy tier opens
-    only when a safety validator rejects a whole node. `LLM_MAX_REQUESTS_PER_MINUTE_HEAVY=4` reaches Render
+    only when a safety validator rejects something. `LLM_MAX_REQUESTS_PER_MINUTE_HEAVY=4` reaches Render
     with the next deploy through `render.yaml`.
 
 - **The first successful live round, 2026-07-29 19:02:15–19:03:52 UTC on round `f9c18f1c`.** Ninety-seven
@@ -120,9 +138,11 @@ the one open risk and the one open item)
   - One anomaly is unexplained: two rejections with `reason=invalid_finish_reason` before any `429`. The
     truncation theory was checked and disproved — `MAX_TOKENS_PER_DIMENSION` is not set on Render, so the
     `2048` default applies. The log records the label but never the provider's actual `finish_reason`.
-- **Four live secrets were exposed in a chat transcript on 2026-07-29** — the Gemini API key and the three
-  shared secrets between Core and the AI service. Rotation is the owner's call and has not been done; see item
-  12 in Next Up. No secret value was written to the repository.
+- **Four live credentials were exposed in a chat transcript on 2026-07-29** — the Gemini API key and the three
+  shared secrets between Core and the AI service. The owner accepted the bounded design-stage exposure and
+  chose not to rotate now: there are no real respondents or durable data, and the transcript is not a public
+  repository. Rotation becomes mandatory **before the first real respondents**. See closed item 12 in Next Up.
+  No secret value was written to the repository.
 
 - **A round no longer meets the provider all at once (2026-07-29, deployed).** Both LLM nodes hand
   their whole batch to `asyncio.gather` — eight interpretations, then up to two dozen recommendation
@@ -552,14 +572,15 @@ the one open risk and the one open item)
        `refactor/llm-provider-split`, squash-merged by the owner as PR #13. The refactor commit was verified
        green on its own in a temporary worktree (175 tests, the two concurrency tests arriving with the next
        commit).
-12. [ ] **Rotate the four secrets exposed in a chat transcript on 2026-07-29** — the Gemini API key and
-       `MCP_SHARED_SECRET`, `AI_WEBHOOK_SECRET`, `AI_CALLBACK_SECRET`. Owner's decision and owner's hands:
-       AGENTS.md gates credential changes, and the session permission layer declines the writes anyway. What
-       makes this more than a chore is the ordering — the three shared secrets exist in pairs, one copy in
-       Render and one in Vercel, and between the two writes the callback and the MCP read will both fail
-       closed. Do them one secret at a time, Render and Vercel back to back, and expect any round in flight to
-       die. The Gemini key is independent and rotates in Google AI Studio. Until this is done, anyone with the
-       transcript can trigger analysis, read a round's aggregates and forge a result callback.
+12. [x] **Accept the exposed credentials through the design stage; rotate before the first real respondents**
+       (owner decision, 2026-07-30). The Gemini API key and `MCP_SHARED_SECRET`, `AI_WEBHOOK_SECRET`,
+       `AI_CALLBACK_SECRET` appeared in a chat transcript, not in a public repository. With no real respondents
+       and a disposable database, the accepted practical radius is that someone holding the transcript could
+       trigger analysis, read a round's aggregates or forge a result callback. Rotation costs more than that
+       radius at this stage, so it is deliberately deferred and is not an open risk or backlog item. The hard
+       boundary is **before the first real respondents**, when the same three shared secrets begin protecting
+       other people's answers; rotate the Gemini key then as well. At that boundary, change each shared secret
+       in Render and Vercel back to back and expect an in-flight round to fail closed between the paired writes.
 13. [x] **Done 2026-07-29: the round no longer meets `429`.** Pacing plus the move to
        `gemini-3.5-flash-lite` closed both axes — proven by the live round in the first Current State entry,
        97 seconds, no `429`, `success`. What follows is the record of how it was diagnosed and decided.

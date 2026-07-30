@@ -45,14 +45,19 @@ function formatQuestionAverage(averageScore: number): string {
  * "0 גבוה · 0 נמוך" is noise standing where information should be, and an
  * evenly lukewarm question is exactly the case the distribution exists to
  * show — so it reads "20 משיבים · 20 באמצע" and says the same thing.
+ *
+ * High, middle, low: the order the bar beside this sentence is drawn in, which
+ * in RTL is read from the right in exactly that sequence. The two disagreed —
+ * the sentence led with the middle — and a reader comparing a segment to a
+ * count had to work out which was which.
  */
 function formatDistribution(
   distribution: ScoreDistribution,
   responseCount: number,
 ): string {
   const parts = [
-    { count: distribution.yellow, label: 'באמצע' },
     { count: distribution.green, label: 'גבוה' },
+    { count: distribution.yellow, label: 'באמצע' },
     { count: distribution.red, label: 'נמוך' },
   ]
     .filter((part) => part.count > 0)

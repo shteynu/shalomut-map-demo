@@ -13,7 +13,7 @@ This document details the overall product roadmap and architectural evolution of
 
 ---
 
-## 🔵 Phase 2: Data Layer & Service Layer (Current - In Progress)
+## 🟢 Phase 2: Data Layer & Service Layer (Completed)
 
 - [x] **Data Models & Blueprint**: ERD and service specification defined in `docs/data-layer-and-backend-plan.md`.
 - [x] **Backend Domain Types**: Created TypeScript models (`src/lib/types/backend.ts`) for organizations, survey rounds, responses, and scores.
@@ -24,16 +24,30 @@ This document details the overall product roadmap and architectural evolution of
 
 ---
 
-## 🟡 Phase 3: Persistence & API Route Integration (Next Up)
+## 🟢 Phase 3: Persistence & API Route Integration (Completed)
 
-- [ ] **Database & ORM Setup**: Select and configure Prisma ORM / PostgreSQL / Supabase for persistent data storage.
-- [ ] **API Routes & Server Actions**: Expose `/api/survey/submit`, `/api/rounds/[roundId]/analytics`, and `/api/rounds`.
-- [ ] **UI Integration**: Connect React components (`dashboard-map-interactive.tsx`, `survey-flow.tsx`) to live backend services.
+- [x] **Database & ORM Setup**: Prisma against PostgreSQL on Supabase, with migrations under `prisma/migrations/`.
+- [x] **API Routes & Server Actions**: `/api/rounds`, `/api/survey/{shareCode}` and its `/submit`, `/api/rounds/{roundId}/analytics`, `/api/manager/setup` and the survey-definition routes. All of them are described in `docs/openapi.yaml` and `public/openapi.json`.
+- [x] **UI Integration**: The dashboard, the survey flow and the questionnaire builder read and write persisted rounds. `demo-data.ts` still supplies the presentation side of the eight dimensions — labels, surfaces, status words and the shared types — but none of the numbers.
 
 ---
 
-## 🟣 Phase 4: Extended Features & Monorepo Scaling (Future)
+## 🟡 Phase 4a: AI Analysis (Built; latest slices await deployment)
 
-- [ ] **Recommendations Engine**: Automated action recommendations for principals based on red/yellow dimensions.
-- [ ] **Comparative Multi-Round Analytics**: Track wellbeing progress over time across school semesters.
+A second service rather than a feature of the first: a Python FastAPI analytics
+service on Render, reached by webhook, reading the round back over MCP and
+answering on a result callback. Details in `docs/ai-analytics-handoff.md`; the
+current state of the work is in `PROGRESS.md`, which is the document to read
+before starting anything.
+
+- [x] **Recommendations Engine**: A local intervention catalog selected by score distribution, then rewritten per school by the model (contract `5.0`).
+- [x] **Versioned analytics contracts `1.0`–`5.0`**, immutable below `5.0`, with a partial map when a dimension cannot be written.
+- [x] **Fail-closed generation**: a dimension the model never wrote is declared, never substituted. The one exception is a green dimension's aggregate-grounded sentence, which is labelled as its own.
+- [x] **AI-suggested questionnaire items**: a suggestion names its source and cannot join the questionnaire unedited. Built and locally verified; deploy Python before Core.
+
+---
+
+## 🟡 Phase 4b: What the instrument is for (Next Up)
+
+- [ ] **Comparative Multi-Round Analytics**: Track wellbeing progress over time across school semesters. This is the largest unbuilt thing and the point of a repeated instrument: today every round is an island, and "ודאות is worse than last time" — the reading a principal runs a second round to get — cannot be produced at all.
 - [ ] **Nx Monorepo Migration**: If splitting into distinct apps (`apps/survey`, `apps/admin`, `apps/mobile`), migrate to an Nx Workspace.

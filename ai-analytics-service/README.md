@@ -203,14 +203,17 @@ environment that has not said which model it runs.
 Which is why `LLM_MAX_REQUESTS_PER_MINUTE_HEAVY` exists and paces
 `LLM_MODEL_HEAVY` separately, at `4` in `render.yaml`. The heavy model is not an
 occasional single request that could round down into the fast model's budget:
-`retry_tier` switches an entire node to it, so a replayed round sends every
+a replay used to switch an entire node to it, so a replayed round sent every
 problematic dimension there back to back. On the fast model's `14` that is
 nearly three times what `gemini-3.5-flash` allows — the original `429`, moved
 into the path that only opens once the round is already in trouble. Unset it
 defaults to `5` rather than to the fast pace, because inheriting would rebuild
-the defect the next time the fast number was raised. Its daily count is the
-residual risk and no pace addresses it: at `20` a day, four replays exhaust the
-tier, and the service then falls back.
+the defect the next time the fast number was raised.
+
+A replay now sends only what the safety validator actually rejected — the
+dimensions it named, and the parts of them it named — so repairing one refused
+stone costs one heavy request rather than seventeen of the twenty the tier
+allows in a day. That was the residual risk no pace could address.
 
 There is one queue per model and one set of them per process. Per process,
 because the quota is counted per key rather than per round, and Render runs the
@@ -267,11 +270,20 @@ now. The answers are untouched, so re-running the round is the whole remedy.
 Reporting a provider outage as a finished analysis was the alternative, and a
 school cannot act on advice it has no way of knowing was invented.
 
-The single exception is the green dimension that `ONLY_LLM_FOR_PROBLEMATIC`
-deliberately never sends to a provider. No call is made there, so no failure is
-being hidden, and the sentence is still grounded in that dimension's strongest
-question aggregate. It is recorded as `outcome=deterministic_fallback` with
-`attempts=0` — visibly different from a model-written stone.
+The single exception is a green dimension, and it reaches the deterministic
+sentence by two roads. Setting `ONLY_LLM_FOR_PROBLEMATIC=true` skips the provider
+entirely: no call, so no failure is hidden, and the record is
+`outcome=deterministic_fallback` with `attempts=0`. With the default `false`
+since 2026-07-30, green is asked like every other dimension and falls back to
+the same sentence only if the answer never comes, recorded the same way but
+with the attempts that were actually spent. Either way the sentence is grounded
+in that dimension's strongest question aggregate and never wears the `llm`
+label.
+
+Green is the only status allowed this. Its sentence is the copy green received
+for as long as it was never asked, so withholding it would take away text the
+manager already has. For yellow and red the same substitution would be a guess
+about a problem, which is what the rule above exists to prevent — they raise.
 
 Each provider request may run for up to `LLM_REQUEST_TIMEOUT_SECONDS` (`20s`
 by default). The full retry loop for one dimension is capped by

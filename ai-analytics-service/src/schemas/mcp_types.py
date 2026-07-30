@@ -28,7 +28,7 @@ MINIMUM_PRIVACY_THRESHOLD = 10
 _SURVEY_DEFINITION_HASH_PATTERN = re.compile(r"^sha256:[a-f0-9]{64}$")
 _HEBREW_PATTERN = re.compile(r"[\u0590-\u05ff]")
 _LATIN_PATTERN = re.compile(r"[A-Za-z]")
-_V3_FORBIDDEN_FIELDS = frozenset(
+_DYNAMIC_FORBIDDEN_FIELDS = frozenset(
     {
         "respondentId",
         "respondentName",
@@ -113,12 +113,15 @@ class RoundAnalyticsResult:
                 f"'{contract_version}'"
             )
 
-        # Contract 4.0 is 3.0 plus the school background context, so every
-        # dynamic rule (required ids, hash format, locked emptiness, aggregate
-        # shape) applies to it unchanged.
-        is_v3 = contract_version in AI_ANALYTICS_DYNAMIC_CONTRACT_VERSIONS
-        if is_v3:
-            cls._validate_no_forbidden_v3_fields(data)
+        # 4.0 is 3.0 plus the school background context and 5.0 is 4.0 plus
+        # the score distribution, so every dynamic rule (required ids, hash
+        # format, locked emptiness, aggregate shape) applies to all three
+        # unchanged. The messages below say "dynamic contract" for that
+        # reason: they named 3.0 while validating payloads two versions past
+        # it, which is a wrong answer handed to whoever has to fix the input.
+        is_dynamic = contract_version in AI_ANALYTICS_DYNAMIC_CONTRACT_VERSIONS
+        if is_dynamic:
+            cls._validate_no_forbidden_dynamic_fields(data)
             total_responses = cls._required_integer(
                 data,
                 "totalResponses",
@@ -131,7 +134,7 @@ class RoundAnalyticsResult:
             )
             if not isinstance(data.get("isLocked"), bool):
                 raise ValueError(
-                    "AI analytics contract 3.0 requires boolean isLocked"
+                    "Dynamic AI analytics contract requires boolean isLocked"
                 )
         else:
             total_responses = int(data.get("totalResponses", 0))
@@ -184,7 +187,7 @@ class RoundAnalyticsResult:
         )
         is_locked = declared_lock or below_requirement
 
-        if is_v3:
+        if is_dynamic:
             round_id = cls._required_non_empty_string(data, "roundId")
             organization_id = cls._required_non_empty_string(
                 data,
@@ -210,8 +213,8 @@ class RoundAnalyticsResult:
             # and simply does not get read.
             if declared_lock and (scores_raw or question_aggregates_raw):
                 raise ValueError(
-                    "Locked AI analytics contract 3.0 requires empty "
-                    "dimensionScores and questionAggregates"
+                    "Dynamic AI analytics contract requires empty "
+                    "dimensionScores and questionAggregates on a locked round"
                 )
         else:
             round_id = data.get("roundId", "")
@@ -223,8 +226,8 @@ class RoundAnalyticsResult:
         if not is_locked:
             for k, v in scores_raw.items():
                 if isinstance(v, dict):
-                    if is_v3:
-                        cls._validate_v3_dimension_score_input(
+                    if is_dynamic:
+                        cls._validate_dynamic_dimension_score_input(
                             k,
                             v,
                             total_responses,
@@ -232,19 +235,19 @@ class RoundAnalyticsResult:
                         )
                     scores[k] = RoundDimensionScore.from_dict(v)
                 elif isinstance(v, RoundDimensionScore):
-                    if is_v3:
+                    if is_dynamic:
                         raise ValueError(
                             f"Dimension score '{k}' must be an object"
                         )
                     scores[k] = v
-                elif is_v3:
+                elif is_dynamic:
                     raise ValueError(
                         f"Dimension score '{k}' must be an object"
                     )
 
         question_aggregates = {}
         if not is_locked:
-            if is_v3:
+            if is_dynamic:
                 raw_question_ids = [
                     aggregate.get("questionId")
                     for aggregate in question_aggregates_raw.values()
@@ -253,7 +256,7 @@ class RoundAnalyticsResult:
                 ]
                 if len(raw_question_ids) != len(set(raw_question_ids)):
                     raise ValueError(
-                        "AI analytics contract 3.0 requires unique "
+                        "Dynamic AI analytics contract requires unique "
                         "question IDs"
                     )
 
@@ -277,8 +280,8 @@ class RoundAnalyticsResult:
                         f"Question aggregate '{question_id}' responseCount "
                         "must be an integer"
                     )
-                if is_v3:
-                    cls._validate_v3_question_aggregate_input(
+                if is_dynamic:
+                    cls._validate_dynamic_question_aggregate_input(
                         question_id,
                         aggregate,
                         contract_version=contract_version,
@@ -321,8 +324,8 @@ class RoundAnalyticsResult:
                 declared_threshold,
                 total_responses,
             )
-        if is_v3 and not is_locked:
-            cls._validate_v3_aggregates(
+        if is_dynamic and not is_locked:
+            cls._validate_dynamic_aggregates(
                 scores,
                 question_aggregates,
                 declared_threshold,
@@ -367,7 +370,7 @@ class RoundAnalyticsResult:
         value = data.get(field_name)
         if not isinstance(value, str) or not value.strip():
             raise ValueError(
-                f"AI analytics contract 3.0 requires {field_name}"
+                f"Dynamic AI analytics contract requires {field_name}"
             )
         return value
 
@@ -384,28 +387,28 @@ class RoundAnalyticsResult:
             or value < minimum
         ):
             raise ValueError(
-                f"AI analytics contract 3.0 requires {field_name} "
+                f"Dynamic AI analytics contract requires {field_name} "
                 f"to be an integer of at least {minimum}"
             )
         return value
 
     @classmethod
-    def _validate_no_forbidden_v3_fields(cls, data: Any) -> None:
+    def _validate_no_forbidden_dynamic_fields(cls, data: Any) -> None:
         if isinstance(data, dict):
-            forbidden = _V3_FORBIDDEN_FIELDS.intersection(data)
+            forbidden = _DYNAMIC_FORBIDDEN_FIELDS.intersection(data)
             if forbidden:
                 raise ValueError(
-                    "AI analytics contract 3.0 forbids respondent-level "
+                    "Dynamic AI analytics contract forbids respondent-level "
                     f"field '{sorted(forbidden)[0]}'"
                 )
             for value in data.values():
-                cls._validate_no_forbidden_v3_fields(value)
+                cls._validate_no_forbidden_dynamic_fields(value)
         elif isinstance(data, list):
             for value in data:
-                cls._validate_no_forbidden_v3_fields(value)
+                cls._validate_no_forbidden_dynamic_fields(value)
 
     @staticmethod
-    def _validate_v3_dimension_score_input(
+    def _validate_dynamic_dimension_score_input(
         map_key: str,
         score: Dict[str, Any],
         total_responses: int,
@@ -443,7 +446,7 @@ class RoundAnalyticsResult:
             )
 
     @staticmethod
-    def _validate_v3_question_aggregate_input(
+    def _validate_dynamic_question_aggregate_input(
         map_key: str,
         aggregate: Dict[str, Any],
         contract_version: str = AI_ANALYTICS_V4_CONTRACT_VERSION,
@@ -494,7 +497,7 @@ class RoundAnalyticsResult:
                 )
 
     @staticmethod
-    def _validate_v3_aggregates(
+    def _validate_dynamic_aggregates(
         scores: Dict[str, RoundDimensionScore],
         question_aggregates: Dict[str, Dict[str, Any]],
         privacy_threshold: int,
@@ -504,7 +507,7 @@ class RoundAnalyticsResult:
         expected_dimensions = set(AI_ANALYTICS_DIMENSION_IDS)
         if set(scores) != expected_dimensions:
             raise ValueError(
-                "AI analytics contract 3.0 requires exactly eight "
+                "Dynamic AI analytics contract requires exactly eight "
                 "canonical dimension scores"
             )
 
@@ -529,7 +532,7 @@ class RoundAnalyticsResult:
         ]
         if len(question_ids) != len(set(question_ids)):
             raise ValueError(
-                "AI analytics contract 3.0 requires unique question IDs"
+                "Dynamic AI analytics contract requires unique question IDs"
             )
 
         covered_dimensions = set()
@@ -562,7 +565,7 @@ class RoundAnalyticsResult:
 
         if covered_dimensions != expected_dimensions:
             raise ValueError(
-                "AI analytics contract 3.0 questions must cover all eight "
+                "Dynamic AI analytics contract questions must cover all eight "
                 "canonical dimensions"
             )
 
