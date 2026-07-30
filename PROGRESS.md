@@ -20,9 +20,10 @@ first one ever; contract `5.0` is switched on and proven, and the provider quota
   - **18 of 24 recommendations were rewritten by the model; 6 stayed catalog copy** — all three entries of
     `certainty` and all three of `professional-competence`, both red dimensions. Their adaptation batches
     failed twice with `invalid_semantic_output` and fell back by design, which is a legal outcome, so the
-    round succeeded with two dimensions carrying the generic paragraph every school gets. **Diagnosed and
-    fixed the same day** (commit `6569c4d`) — the two failed for unrelated reasons that shared one label; see
-    item 16. Not yet reproven by a live round, only by re-running the two refused prompts.
+    round succeeded with two dimensions carrying the generic paragraph every school gets. **Diagnosed, fixed
+    and reproven on the deployment** (commit `6569c4d`) — the two failed for unrelated reasons that shared one
+    label. The rerun of 2026-07-30 07:31:21–07:32:40 UTC came back with **24 of 24 recommendations written by
+    the model**; see item 16.
   - **A retry now stops at two attempts, not three**, although `LLM_MAX_ATTEMPTS` is `3`: at 14 a minute the
     queue's next turn no longer fits inside `llm_retry_budget_seconds` once the minimum window is reserved,
     so the budget declines it. That is the designed behaviour meeting the new pace, not a fault — but the
@@ -436,8 +437,9 @@ first one ever; contract `5.0` is switched on and proven, and the provider quota
        distribution counts in digits. The separator is now a hint — where it fails to cut the answer into
        the expected number of entries, the shape does it, since a step always carries a bullet and a summary
        never does — and the prompt asks for digits and for the count beside any colour it names. Verified
-       against the provider on the real refused inputs: all three dimensions accepted on two consecutive
-       runs, `pytest` 203/203 with nine new tests. See item 17 for what remains open.
+       against the provider on the real refused inputs, then on the deployment: the rerun of 2026-07-30
+       07:31:21–07:32:40 UTC produced **24 of 24 recommendations with `adaptationOutcome: llm`**, zero `429`
+       and zero fallback lines. `pytest` 203/203 with nine new tests. See item 17 for what remains open.
 
 17. [ ] **Decide whether refused adaptation copy should reach a log at all.** The fallback line now names
        the gate and the dimension, which is what picked the fix above, but reproducing this one still took
@@ -483,6 +485,17 @@ first one ever; contract `5.0` is switched on and proven, and the provider quota
     `entry_shape` and `certainty` with `status_inconsistent`; after it, `meaning`, `certainty` and
     `professional-competence` were all accepted with three entries each, on two consecutive runs. No
     respondent text left the database — the inputs are aggregates and catalog copy.
+  - **Proven by a live round, 2026-07-30 07:31:21–07:32:40 UTC on round `f9c18f1c`** (Render running commit
+    `fae2895`, confirmed by `/health`). Seventy-nine seconds from webhook `202` to callback `200`. **24 of 24
+    recommendations carry `adaptationOutcome: llm` — not one catalog paragraph left**, against 18 of 24 the
+    day before, and all 8 stones are `outcome: llm`. The two dimensions that used to fall back now quote the
+    round: `certainty` writes "5 תשובות אדום" and the score 30, and `professional-competence` writes "רק 2
+    תשובות ירוקות" and "9 תשובות צהובות" — a foreign colour beside its count in digits, which is exactly what
+    the new prompt rule asks for and what `is_status_consistent` can check. The Render log holds 17 accepted
+    answers (eight interpretations, one summary, eight adaptations), **one** `outcome=retry`
+    (`invalid_semantic_output` on `balance`, which then succeeded on attempt 2), **zero** `429`, and **zero**
+    `adaptation=deterministic_fallback` lines. Eighteen requests across 74 seconds is 14.6 a minute against a
+    tier that allows 15.
 
 - [x] **2026-07-29**: **Contract `5.0` switched on, proven, and the first live rounds run on the deployment**
   (commits `193cf34`, `5b8f89d`, `1113be7`, `b4afc9c`):
