@@ -1,10 +1,30 @@
 # Shalomut Map — PROGRESS.md
 
-Updated: 2026-07-30 (**a live round finished `success` with all eight stones written by the model**; contract
-`5.0` is switched on and proven, and the provider quota is no longer the blocker. Items 8, 10 and 15–21 are
-closed, and item 12 — rotating the four exposed secrets — is the one open risk and the one open item)
+Updated: 2026-07-30 (**`main` now enforces the complete TypeScript, ESLint, build and Python verification suite
+before deploy**, and GitHub Actions proved it on commit `4430796`; the live AI state is unchanged: contract
+`5.0` is proven, items 8, 10 and 15–21 are closed, and item 12 — rotating the four exposed secrets — remains
+the one open risk and the one open item)
 
 ## Current State
+
+- **Session close, 2026-07-30: the deploy workflow can no longer go green while the TypeScript tests, ESLint
+  or Python service are red.** Commit `620c5f6` changed `Build & Validate` from three checks to the complete
+  sequence: `npm ci`, typecheck, `npm test`, ESLint, build, a fresh Python 3.11 venv, dependency install from
+  `ai-analytics-service/requirements.txt` plus its dev extra, and `.venv/bin/python -m pytest`. The first CI
+  attempt exposed that quoted recursive globs are not expanded by the Ubuntu runner; commit `4430796` replaced
+  the fragile command with `scripts/run-tests.mjs`, which enumerates every `src/**/__tests__/*.test.ts(x)` file
+  and invokes the pinned `tsx@4.23.1` without a network fallback. Before wiring them into CI, `npm test` (274
+  tests), `npm run lint`, `.venv/bin/python -m pytest` (269 tests) and the `js-yaml` workflow parse all passed
+  locally. GitHub Actions run
+  [30560598544](https://github.com/shteynu/shalomut-map-demo/actions/runs/30560598544) then passed every validate
+  step on `main` at `4430796`; its `Success` state and successful `Build & Validate` node were also confirmed
+  visually in Chrome. The manual production deploy was skipped as designed. One non-blocking annotation remains:
+  `actions/checkout@v4`, `actions/setup-node@v4` and `actions/setup-python@v5` target deprecated Node.js 20 and
+  are currently forced by GitHub onto Node.js 24.
+  - `HEAD`, `origin/main` and `origin/HEAD` all point to `4430796` at handoff time.
+  - The working tree is intentionally not clean: seven pre-existing user-owned files remain modified
+    (`ROADMAP.md`, three files under `ai-analytics-service`, `next-env.d.ts` and two AI insights view-model
+    files). They were preserved and excluded from the CI commits.
 
 - **Item 10 closed: the model writes all eight dimensions, and green stopped being refused for ordinary
   Hebrew.** Both parts as the owner decided them: `ONLY_LLM_FOR_PROBLEMATIC` goes to `false`, and a green
@@ -1115,4 +1135,3 @@ closed, and item 12 — rotating the four exposed secrets — is the one open ri
 - [x] **2026-07-26**: **Manager UI auth & Basic Auth sunset preparation**:
   - Auth API routes `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`.
   - `/login` page and `ManagerUserBar`.
-

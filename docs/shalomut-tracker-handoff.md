@@ -1,8 +1,9 @@
 # Shalomut Tracker — актуальный handoff
 
-Обновлено: 2026-07-30 (**первый живой раунд завершился `success`, все восемь камней написаны моделью**; квота
-больше не блокер; закрыты пункты 8, 10 и 15–21. Единственный открытый пункт и единственный открытый риск —
-ротация четырёх секретов, засвеченных 2026-07-29)
+Обновлено: 2026-07-30 (**`main` теперь пропускает deploy только после полного TypeScript, ESLint, build и Python
+suite**, и GitHub Actions подтвердил это на `4430796`; первый живой AI-раунд по-прежнему завершён `success`,
+закрыты пункты 8, 10 и 15–21. Единственный открытый пункт и единственный открытый риск — ротация четырёх
+секретов, засвеченных 2026-07-29)
 
 Это оперативная точка входа для перехода от исходного статического demo
 Shalomut Map к `shalomut-tracker`, где сохранённые данные должны быть единственным
@@ -32,6 +33,23 @@ exact вопросы раунда принадлежат persisted `SurveyRound.
    не сохраняет активацию между вызовами. Скилл проверки исправлен на этот счёт в эту сессию.
 
 ## Текущий snapshot
+
+- **CI проверяет то же, что считается доказательством локально (2026-07-30, `620c5f6` + `4430796`).** Job
+  `Build & Validate` теперь делает чистый `npm ci`, typecheck, все 274 TypeScript-теста, ESLint, production
+  build, создаёт собственный Python 3.11 venv, ставит зависимости из `requirements.txt` и dev extra, затем
+  запускает все 269 Python-тестов через `.venv/bin/python -m pytest`. Первый запуск нашёл отдельный дефект:
+  quoted recursive glob не раскрывался на Ubuntu, а отсутствующий локальный `tsx` заставлял `npx` предлагать
+  сетевую установку. `scripts/run-tests.mjs` теперь детерминированно перечисляет test-файлы, а `tsx@4.23.1`
+  закреплён в lockfile. Локально прошли добавленные команды и `js-yaml` parse workflow; GitHub Actions run
+  [30560598544](https://github.com/shteynu/shalomut-map-demo/actions/runs/30560598544) прошёл все validate steps
+  на `main`, commit `4430796`, что дополнительно подтверждено визуально в Chrome. Manual production deploy
+  ожидаемо пропущен. Осталась только maintenance-аннотация: action-версии `checkout@v4`, `setup-node@v4` и
+  `setup-python@v5` ещё target Node.js 20 и временно принудительно исполняются GitHub на Node.js 24.
+  - На момент handoff `HEAD == origin/main == 4430796`.
+  - Семь несвязанных пользовательских файлов остаются modified и не входили в CI-коммиты: `ROADMAP.md`,
+    `ai-analytics-service/.env.example`, `ai-analytics-service/README.md`,
+    `ai-analytics-service/src/schemas/mcp_types.py`, `next-env.d.ts`,
+    `src/lib/__tests__/ai-insights-view-model.test.ts`, `src/lib/ai-insights-view-model.ts`.
 
 - **Модель пишет все восемь измерений, а зелёное перестали отклонять за обычный иврит (2026-07-30, пункт 10)**.
   Решение владельца, оба варианта как рекомендовано: `ONLY_LLM_FOR_PROBLEMATIC` в `false`, и зелёное измерение,
