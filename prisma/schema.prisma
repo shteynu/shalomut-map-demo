@@ -38,8 +38,36 @@ model SurveyRound {
 
   organization     Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   responses        SurveyResponse[]
+  aiAnalysisRuns   AiAnalysisRun[]
 
   @@map("survey_rounds")
+}
+
+model AiAnalysisRun {
+  id                 String      @id @default(uuid())
+  sequence           Int         @unique @default(autoincrement())
+  roundId            String      @map("round_id")
+  requestKey         String      @map("request_key")
+  trigger            String
+  state              String
+  attemptCount       Int         @default(0) @map("attempt_count")
+  queuedAt           DateTime    @default(now()) @map("queued_at")
+  startedAt          DateTime?   @map("started_at")
+  heartbeatAt        DateTime?   @map("heartbeat_at")
+  leaseExpiresAt     DateTime?   @map("lease_expires_at")
+  leaseToken         String?     @map("lease_token")
+  workerId           String?     @map("worker_id")
+  completedAt        DateTime?   @map("completed_at")
+  callbackReceivedAt DateTime?   @map("callback_received_at")
+  failureCode        String?     @map("failure_code")
+  result             Json?
+
+  round SurveyRound @relation(fields: [roundId], references: [id], onDelete: Cascade)
+
+  @@unique([roundId, requestKey])
+  @@index([state, leaseExpiresAt, queuedAt])
+  @@index([roundId, queuedAt])
+  @@map("ai_analysis_runs")
 }
 
 model SurveyResponse {

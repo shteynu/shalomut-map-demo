@@ -7,6 +7,12 @@ import {
   UpdateOrganizationInput,
   UpdateRoundInput,
 } from '../types/backend';
+import type {
+  AiAnalysisRun,
+  AiAnalysisRunLease,
+  EnqueueAiAnalysisRunResult,
+  FinishAiAnalysisRunResult,
+} from '../types/ai-analysis-run';
 
 export interface IOrganizationRepository {
   create(org: Organization): Promise<Organization>;
@@ -25,37 +31,50 @@ export interface IRoundRepository {
   saveAiInsights(id: string, insights: Record<string, any>): Promise<boolean>;
   getAiInsights(id: string): Promise<Record<string, any> | null>;
   /**
-   * Atomically claims the right to dispatch one AI analytics run for a round.
-   *
-   * Returns `true` only for the caller that won the claim, so concurrent
-   * respondent submissions cannot fan out into several provider webhooks.
-   * The claim is a lease: it expires after `leaseMs` so a failed dispatch does
-   * not block the round forever. With `requireNoInsights` the claim is refused
-   * once a result has been persisted, which is what the automatic path wants;
-   * the manual manager rerun passes `false`.
-   */
-  claimAiAnalysisRun(
-    id: string,
-    options?: { leaseMs?: number; requireNoInsights?: boolean },
-  ): Promise<boolean>;
-  /**
-   * When an analytics run was last dispatched for a round, or `null` if none
-   * ever was. Without it a round whose run died before delivering anything is
-   * indistinguishable from one nobody ever analysed, and the manager is shown
-   * "not generated yet" for a run that is long dead.
-   */
-  getAiAnalysisDispatchedAt(id: string): Promise<Date | null>;
-  /**
-   * Releases a claim whose dispatch failed, so the round can be retried right
-   * away instead of waiting out the lease. A round that already has a persisted
-   * result is left untouched: there the timestamp belongs to the result.
-   */
-  releaseAiAnalysisClaim(id: string): Promise<void>;
-  /**
-   * Drops a persisted AI result and any dispatch claim. Used when a round is
-   * reset: an analysis of deleted responses must not stay on the dashboard.
+   * Drops a persisted legacy AI result. The run repository separately deletes
+   * durable jobs when a round is reset.
    */
   clearAiInsights(id: string): Promise<void>;
+}
+
+export interface IAiAnalysisRunRepository {
+  enqueue(
+    roundId: string,
+    input: {
+      requestKey: string;
+      trigger: AiAnalysisRun['trigger'];
+    },
+  ): Promise<EnqueueAiAnalysisRunResult>;
+  claimNext(input: {
+    leaseMs: number;
+    maxAttempts?: number;
+    workerId: string;
+  }): Promise<AiAnalysisRunLease | null>;
+  heartbeat(
+    runId: string,
+    leaseToken: string,
+    input: { leaseMs: number },
+  ): Promise<boolean>;
+  finish(
+    runId: string,
+    input:
+      | {
+          state: 'succeeded';
+          leaseToken: string;
+          result: Record<string, unknown>;
+          callbackReceivedAt?: Date;
+        }
+      | {
+          state: 'failed';
+          leaseToken: string;
+          failureCode: string;
+          result?: Record<string, unknown>;
+          callbackReceivedAt?: Date;
+        },
+  ): Promise<FinishAiAnalysisRunResult>;
+  findById(runId: string): Promise<AiAnalysisRun | null>;
+  findLatestByRoundId(roundId: string): Promise<AiAnalysisRun | null>;
+  deleteByRoundId(roundId: string): Promise<void>;
 }
 
 export interface ISurveyRepository {

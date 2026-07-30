@@ -19,6 +19,15 @@ export interface MinimalPrismaClient {
     updateMany: (args: any) => Promise<{ count: number }>;
     deleteMany: (args?: any) => Promise<any>;
   };
+  aiAnalysisRun?: {
+    create: (args: any) => Promise<any>;
+    findUnique: (args: any) => Promise<any>;
+    findFirst: (args: any) => Promise<any>;
+    findMany: (args: any) => Promise<any[]>;
+    update: (args: any) => Promise<any>;
+    updateMany: (args: any) => Promise<{ count: number }>;
+    deleteMany: (args?: any) => Promise<any>;
+  };
   surveyResponse: {
     create: (args: any) => Promise<any>;
     findMany: (args: any) => Promise<any[]>;
