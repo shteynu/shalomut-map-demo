@@ -1,3 +1,4 @@
+import { DuplicateResponseError } from '../repositories/errors';
 import { ISurveyRepository } from '../repositories/interfaces';
 import { responseScale, surveyInstrument } from '../shalomut-source';
 import {
@@ -8,6 +9,13 @@ import {
   SurveyResponseRecord,
   SurveyDefinitionQuestion,
 } from '../types/backend';
+
+/**
+ * One answer for both ways a duplicate is found — the pre-check and the unique
+ * index — so a respondent cannot tell a race from an ordinary second attempt.
+ */
+export const ALREADY_SUBMITTED_ERROR =
+  'You have already submitted a response for this survey round.';
 
 export class SurveyService {
   /**
@@ -162,10 +170,7 @@ export class SurveyService {
         input.anonymousTokenHash
       );
       if (alreadySubmitted) {
-        return {
-          success: false,
-          error: 'You have already submitted a response for this survey round.',
-        };
+        return { success: false, error: ALREADY_SUBMITTED_ERROR };
       }
     }
 
@@ -177,7 +182,19 @@ export class SurveyService {
       return result;
     }
 
-    await surveyRepo.saveResponse(record);
+    // The check above loses to a request that ran alongside it: both read
+    // "not submitted" before either wrote. The unique index is what actually
+    // refuses the second write, and the loser gets the same answer as if it
+    // had simply arrived later — not a 500, and no database detail.
+    try {
+      await surveyRepo.saveResponse(record);
+    } catch (error) {
+      if (error instanceof DuplicateResponseError) {
+        return { success: false, error: ALREADY_SUBMITTED_ERROR };
+      }
+      throw error;
+    }
+
     return result;
   }
 }

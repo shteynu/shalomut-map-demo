@@ -20,6 +20,32 @@ jobs:
   validate:
     name: Build & Validate
     runs-on: ubuntu-latest
+
+    # `npm run verify` includes `verify:db`, whose unique-constraint and
+    # parallel-submission cases are database behaviour: an in-memory repository
+    # is single-threaded and cannot race, so it can prove the contract but never
+    # the concurrency. Without this service those tests would ship green and
+    # never run.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: shalomut
+          POSTGRES_PASSWORD: shalomut
+          POSTGRES_DB: shalomut_test
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U shalomut -d shalomut_test"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+
+    env:
+      # Only the disposable suite reads this. It is deliberately not
+      # DATABASE_URL: nothing in the build may reach a real database.
+      TEST_DATABASE_URL: postgresql://shalomut:shalomut@127.0.0.1:5433/shalomut_test
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

@@ -51,6 +51,12 @@ model SurveyResponse {
   round              SurveyRound      @relation(fields: [roundId], references: [id], onDelete: Cascade)
   answers            QuestionAnswer[]
 
+  // One filling session, one response. The service checked this before
+  // inserting, which two parallel requests both pass; only the database can
+  // refuse atomically. PostgreSQL treats NULLs as distinct, so a submission
+  // that carries no token is unaffected — it has no session to deduplicate.
+  @@unique([roundId, anonymousTokenHash])
+  @@index([roundId, submittedAt])
   @@map("survey_responses")
 }
 
@@ -64,5 +70,9 @@ model QuestionAnswer {
 
   response    SurveyResponse @relation(fields: [responseId], references: [id], onDelete: Cascade)
 
+  // A response answers each question once. Aggregates average over these rows,
+  // so a duplicate would silently reweight a dimension rather than fail.
+  @@unique([responseId, questionId])
+  @@index([responseId])
   @@map("question_answers")
 }
