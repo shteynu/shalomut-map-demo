@@ -432,13 +432,20 @@ first one ever; contract `5.0` is switched on and proven, and the provider quota
        keeps its score, metrics and recommendations, all of which are real; only the paragraph is missing,
        and `generationProvenance.outcome: "unavailable"` says so. Contracts up to 4.0 still fail whole.
 
-19. [ ] **OpenAPI describes contracts 1.0 to 3.0 and stops.** Found while checking whether the partial map
-       needed a spec change: it does not, because `docs/openapi.yaml` and `public/openapi.json` never
-       described 4.0 or 5.0 at all — there is no `StoneDetailV4`, no `StoneMapResultV5`, and no `"4.0"` or
-       `"5.0"` anywhere in either file. Two contract versions of drift, one of them the only mutable and
-       currently deployed one. `contracts/ai-analytics-v5.json` is the manifest that is current, and Core
-       reads only `.version` from it, so nothing is broken today; what is missing is the published shape a
-       consumer would integrate against.
+19. [x] **The published spec stopped two contract versions short, and now cannot again** (2026-07-30). Found
+       while checking whether the partial map needed a spec change: it did, but not for the reason expected —
+       `docs/openapi.yaml` and `public/openapi.json` never described 4.0 or 5.0 at all, so there was nothing
+       for item 15 to extend. A consumer integrating against the published shape was reading a contract three
+       versions old while Core accepted five and Render emitted 5.0. Twelve schemas were added and both unions
+       extended: `RoundAnalyticsResult` now spans 2.0–5.0 and `StoneMapResult` 1.0–5.0, with the 5.0 stone
+       documenting what items 14 and 15 put in it — `outcome: unavailable` beside `llm` and
+       `deterministic_fallback`, and `dimensionsWithoutInterpretation` capped at seven entries, because a
+       round with no interpretation anywhere is a failure and not a partial map. The fix that outlasts this
+       item is the test: it reads the documented versions out of the `StoneMapResult` discriminator and
+       compares them against `AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS` in
+       [`ai-contract.ts`](src/lib/ai-contract.ts), then pins each mapped schema's `contractVersion` to the
+       version that maps to it. Nothing compared those two lists before, which is how the drift reached two
+       versions unnoticed; 6.0 cannot ship undocumented now.
 
 16. [x] **Found out why an adaptation batch is rejected as `invalid_semantic_output`** (2026-07-29, commit
        `6569c4d`). Neither candidate was right, and the two dimensions failed for unrelated reasons — which
@@ -482,6 +489,26 @@ first one ever; contract `5.0` is switched on and proven, and the provider quota
 ---
 
 ## Completed Tasks
+
+- [x] **2026-07-30**: **Contracts 4.0 and 5.0 are published shapes now, not just code paths** (item 19):
+  - Twelve schemas added to both mirrors: `ScoreDistribution`, `QuestionAggregateV5`, `RoundAnalyticsResultV4`
+    and `V5`, `StoneGenerationProvenanceV4` and `V5`, `StoneDetailV4` and `V5`, `StoneMapResultV4` and `V5`,
+    `StoneMetricV5`, `StoneInterventionV5`. Both unions and both discriminator mappings were extended, so a
+    `oneOf` reader gets 1.0–5.0 for the stone map and 2.0–5.0 for round analytics.
+  - The anti-drift test is the point of the item: the documented versions come from the discriminator mapping
+    and must deep-equal `AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS`, and each mapped schema must pin
+    `contractVersion` to the version that reaches it. The synchronized-schema list gained the twelve new names
+    so the YAML and JSON mirrors cannot diverge on them either.
+  - **Verification Evidence**: `npm test` 251/251 passed. Fail-first confirmed by stashing only the two spec
+    files: 249 pass / 2 fail, the new test among them, so it fails for the absence it was written about.
+    `npm run lint` clean, `npm run build` compiled 39/39 pages. Structural checks the suite does not do: every
+    `$ref` in `public/openapi.json` resolves, with zero dangling refs and zero orphan schemas out of 46, and
+    every `required` entry across all 46 schemas exists in that schema's `properties`. `paths` verified
+    deep-equal as data before and after the JSON rewrite — the diff showed a `409` moving because JS orders
+    integer-like keys ascending on parse, not because a response was dropped.
+  - Not visually confirmed in Swagger UI: `/api-docs` sits behind the manager session gate, which needs a
+    password I do not enter. The page injects `swagger-ui-dist` from a CDN and fetches `/openapi.json`
+    unmodified, so the structural checks above cover what rendering would have caught.
 
 - [x] **2026-07-30**: **One dead dimension no longer discards the seven that answered** (commit `fe2a6fb`,
   item 15):

@@ -60,17 +60,27 @@ describe('OpenAPI Specification Integrity', () => {
     assert.ok(schemas.StoneMapResultV1, 'Must preserve StoneMapResultV1 schema');
     assert.ok(schemas.StoneMapResultV2, 'Must include StoneMapResultV2 schema');
     assert.ok(schemas.StoneMapResultV3, 'Must include StoneMapResultV3 schema');
+    assert.ok(schemas.StoneMapResultV4, 'Must include StoneMapResultV4 schema');
+    assert.ok(schemas.StoneMapResultV5, 'Must include StoneMapResultV5 schema');
     assert.ok(schemas.StoneDetail, 'Must include StoneDetail schema');
+    assert.ok(schemas.StoneDetailV4, 'Must include StoneDetailV4 schema');
+    assert.ok(schemas.StoneDetailV5, 'Must include StoneDetailV5 schema');
     assert.strictEqual(schemas.StoneMapResultV1.properties.contractVersion.example, '1.0');
     assert.strictEqual(schemas.StoneMapResultV2.properties.contractVersion.example, '2.0');
     assert.strictEqual(schemas.StoneMapResultV3.properties.contractVersion.example, '3.0');
+    assert.strictEqual(schemas.StoneMapResultV4.properties.contractVersion.example, '4.0');
+    assert.strictEqual(schemas.StoneMapResultV5.properties.contractVersion.example, '5.0');
     assert.strictEqual(schemas.RoundAnalyticsResultV2.properties.contractVersion.example, '2.0');
     assert.strictEqual(schemas.RoundAnalyticsResultV3.properties.contractVersion.example, '3.0');
+    assert.strictEqual(schemas.RoundAnalyticsResultV4.properties.contractVersion.example, '4.0');
+    assert.strictEqual(schemas.RoundAnalyticsResultV5.properties.contractVersion.example, '5.0');
     assert.deepStrictEqual(
       schemas.RoundAnalyticsResult.oneOf.map((entry: { $ref: string }) => entry.$ref),
       [
         '#/components/schemas/RoundAnalyticsResultV2',
         '#/components/schemas/RoundAnalyticsResultV3',
+        '#/components/schemas/RoundAnalyticsResultV4',
+        '#/components/schemas/RoundAnalyticsResultV5',
       ],
     );
     assert.deepStrictEqual(
@@ -79,8 +89,48 @@ describe('OpenAPI Specification Integrity', () => {
         '#/components/schemas/StoneMapResultV1',
         '#/components/schemas/StoneMapResultV2',
         '#/components/schemas/StoneMapResultV3',
+        '#/components/schemas/StoneMapResultV4',
+        '#/components/schemas/StoneMapResultV5',
       ],
     );
+  });
+
+  /**
+   * The spec is the shape a consumer integrates against, so a version the code
+   * accepts and the spec never mentions is a lie by omission. This drifted by
+   * two whole contract versions — 4.0 and 5.0, the second of which is the only
+   * mutable one and the one actually deployed — because nothing here compared
+   * the two lists.
+   */
+  it('documents every contract version the code supports', async () => {
+    const spec = JSON.parse(fs.readFileSync(openapiPath, 'utf8'));
+    const { AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS } = await import(
+      '../../../lib/ai-contract.ts'
+    );
+
+    const documented = Object.keys(
+      spec.components.schemas.StoneMapResult.discriminator.mapping,
+    ).sort();
+    assert.deepStrictEqual(
+      documented,
+      [...AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS].sort(),
+      'StoneMapResult must document exactly the contract versions Core accepts',
+    );
+
+    for (const [version, ref] of Object.entries(
+      spec.components.schemas.StoneMapResult.discriminator.mapping as Record<
+        string,
+        string
+      >,
+    )) {
+      const schemaName = ref.split('/').pop()!;
+      assert.strictEqual(
+        spec.components.schemas[schemaName]?.properties?.contractVersion
+          ?.enum?.[0],
+        version,
+        `${schemaName} must pin contractVersion to ${version}`,
+      );
+    }
   });
 
   it('should document organization-scoped manager authentication', () => {
@@ -129,12 +179,24 @@ describe('OpenAPI Specification Integrity', () => {
       'StoneMapResultV1',
       'StoneMapResultV2',
       'StoneMapResultV3',
+      'StoneMapResultV4',
+      'StoneMapResultV5',
       'StoneDetail',
       'StoneDetailV3',
+      'StoneDetailV4',
+      'StoneDetailV5',
       'StoneMetric',
+      'StoneMetricV5',
       'StoneIntervention',
+      'StoneInterventionV5',
       'StoneGenerationProvenance',
       'StoneGenerationProvenanceV3',
+      'StoneGenerationProvenanceV4',
+      'StoneGenerationProvenanceV5',
+      'RoundAnalyticsResultV4',
+      'RoundAnalyticsResultV5',
+      'ScoreDistribution',
+      'QuestionAggregateV5',
     ];
 
     for (const schemaName of aiSchemas) {
