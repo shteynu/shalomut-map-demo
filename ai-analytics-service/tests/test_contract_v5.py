@@ -18,6 +18,8 @@ from src.agents.state import AnalyticsState
 from src.config import settings
 from src.contracts import (
     AI_ANALYTICS_DIMENSION_IDS,
+    AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
+    AI_ANALYTICS_V4_CONTRACT_VERSION,
     AI_ANALYTICS_V5_CONTRACT_VERSION,
     AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS,
     AI_ANALYTICS_DYNAMIC_CONTRACT_VERSIONS,
@@ -761,6 +763,119 @@ def test_an_unlocked_5_0_payload_requires_every_distribution():
 
     with pytest.raises(ValueError, match="requires scoreDistribution"):
         RoundAnalyticsResult.from_dict(payload)
+
+
+def test_a_5_0_payload_keeps_the_school_context_through_the_parser():
+    """The boundary the node-level tests step over.
+
+    Every other 5.0 context test builds `round_data` by hand and starts at the
+    node, so the parser was free to drop the field and stay green. Core sends
+    the context on 4.0 and 5.0 alike (`src/app/api/mcp/route.ts`), and 5.0 is
+    4.0 plus distributions, so an upgrade that trades the context away is a
+    loss of a promised field, not a redesign.
+    """
+    payload = build_v5_input_payload(backgroundContext=BACKGROUND_CONTEXT)
+
+    parsed = RoundAnalyticsResult.from_dict(payload)
+
+    assert parsed.backgroundContext == BACKGROUND_CONTEXT
+
+
+def test_a_4_0_payload_keeps_the_school_context_through_the_parser():
+    """The version that already worked, so the fix cannot be a swap."""
+    payload = build_v5_input_payload(backgroundContext=BACKGROUND_CONTEXT)
+    payload["contractVersion"] = AI_ANALYTICS_V4_CONTRACT_VERSION
+    for aggregate in payload["questionAggregates"].values():
+        aggregate.pop("scoreDistribution", None)
+
+    parsed = RoundAnalyticsResult.from_dict(payload)
+
+    assert parsed.backgroundContext == BACKGROUND_CONTEXT
+
+
+def test_a_3_0_payload_carries_no_school_context_past_the_parser():
+    """3.0 is immutable: it has no `backgroundContext`, and gains none here."""
+    payload = build_v5_input_payload(backgroundContext=BACKGROUND_CONTEXT)
+    payload["contractVersion"] = AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION
+    for aggregate in payload["questionAggregates"].values():
+        aggregate.pop("scoreDistribution", None)
+
+    parsed = RoundAnalyticsResult.from_dict(payload)
+
+    assert parsed.backgroundContext == {}
+
+
+@pytest.mark.asyncio
+async def test_parsed_5_0_round_data_still_reaches_the_prompt(answering_llm):
+    """Parser and node joined up, which is the pair that actually shipped.
+
+    `from_dict(...).to_dict()` is the exact shape `analytics_runner` hands the
+    graph, so running the node on it is what proves the context survives the
+    whole way rather than at either end alone.
+    """
+    payload = build_v5_input_payload(backgroundContext=BACKGROUND_CONTEXT)
+    round_data = RoundAnalyticsResult.from_dict(payload).to_dict()
+
+    state = await agent_psychologist_node(build_state(round_data))
+
+    for dimension_id in AI_ANALYTICS_DIMENSION_IDS:
+        provenance = state["generation_provenance"][dimension_id]
+        assert provenance["backgroundContextIncluded"] is True, dimension_id
+
+    prompt = llm_provider_service._build_prompt(
+        dim_id="balance",
+        dim_hebrew="איזון",
+        score=60.0,
+        status="yellow",
+        question_aggregates=[
+            aggregate
+            for aggregate in round_data["questionAggregates"].values()
+            if aggregate["dimensionId"] == "balance"
+        ],
+        background_context=round_data["backgroundContext"],
+        contract_version=AI_ANALYTICS_V5_CONTRACT_VERSION,
+        all_dimension_scores=round_data["dimensionScores"],
+    )
+    assert "רקע בית הספר" in prompt
+    assert BACKGROUND_CONTEXT["notes"] in prompt
+
+
+@pytest.mark.asyncio
+async def test_a_locked_5_0_round_keeps_the_context_away_from_the_provider(
+    monkeypatch,
+):
+    """Preserving the context must not widen what a locked round may do.
+
+    Core does not send the context for a locked round at all, so this covers
+    the producer bug rather than the normal path: even carrying it, a locked
+    round stops at the privacy gate and no prompt is ever built.
+    """
+    payload = build_v5_input_payload(
+        isLocked=True,
+        dimensionScores={},
+        questionAggregates={},
+        backgroundContext=BACKGROUND_CONTEXT,
+    )
+    parsed = RoundAnalyticsResult.from_dict(payload)
+
+    def fail_if_called(*_args, **_kwargs):
+        raise AssertionError("provider must not run for a locked round")
+
+    monkeypatch.setattr(
+        llm_provider_service,
+        "generate_psychological_interpretation_result",
+        fail_if_called,
+    )
+
+    final_payload = (
+        await analytics_graph.ainvoke(build_state(parsed.to_dict()))
+    )["final_payload"]
+
+    assert final_payload["status"] == "locked_error"
+    assert BACKGROUND_CONTEXT["notes"] not in json.dumps(
+        final_payload,
+        ensure_ascii=False,
+    )
 
 
 @pytest.mark.asyncio

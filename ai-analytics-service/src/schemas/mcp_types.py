@@ -26,6 +26,16 @@ DimensionStatus = Literal["green", "yellow", "red"]
 MINIMUM_PRIVACY_THRESHOLD = 10
 
 _SURVEY_DEFINITION_HASH_PATTERN = re.compile(r"^sha256:[a-f0-9]{64}$")
+# Which contracts may carry the school background context. Named here so the
+# rule reads as a capability rather than a version comparison, and so adding a
+# version touches one place. `src/agents/nodes.py` keeps the matching set for
+# the prompt side; a shared contract registry is planned to merge the two.
+_BACKGROUND_CONTEXT_CONTRACT_VERSIONS = frozenset(
+    {
+        AI_ANALYTICS_V4_CONTRACT_VERSION,
+        AI_ANALYTICS_V5_CONTRACT_VERSION,
+    }
+)
 _HEBREW_PATTERN = re.compile(r"[\u0590-\u05ff]")
 _LATIN_PATTERN = re.compile(r"[A-Za-z]")
 _DYNAMIC_FORBIDDEN_FIELDS = frozenset(
@@ -352,11 +362,15 @@ class RoundAnalyticsResult:
             calculatedAt=calculated_at,
             organizationId=organization_id,
             surveyDefinitionHash=survey_definition_hash,
-            # Contract 4.0 carries the school background context; it has to
-            # survive parsing, otherwise the prompt never sees it.
+            # Contracts 4.0 and 5.0 carry the school background context; it has
+            # to survive parsing, otherwise the prompt never sees it. 5.0 is
+            # 4.0 plus score distributions and Core sends the context on both
+            # (`src/app/api/mcp/route.ts`), so matching 4.0 exactly made the
+            # upgrade trade the context away instead of adding to it. Versions
+            # 1.0-3.0 are immutable and gain no context here.
             backgroundContext=(
                 data.get("backgroundContext")
-                if contract_version == AI_ANALYTICS_V4_CONTRACT_VERSION
+                if contract_version in _BACKGROUND_CONTEXT_CONTRACT_VERSIONS
                 and isinstance(data.get("backgroundContext"), dict)
                 else {}
             ),
