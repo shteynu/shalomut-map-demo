@@ -421,7 +421,7 @@ first one ever; contract `5.0` is switched on and proven, and the provider quota
        reason of the last attempt — the one that actually decides the dimension — was recorded nowhere; it now
        logs `outcome=no_answer` like every other exhausted path. Fail-first confirmed against the previous code,
        `pytest` 178/178.
-15. [x] **A partial map is acceptable, and now exists** (2026-07-30, commit `fe2a6fb`). The premise the item
+15. [x] **A partial map is acceptable, and now exists** (2026-07-30, commit `69e2b42`). The premise the item
        was written on had expired: rounds do succeed now, so this was never about unblocking the free tier in
        the end — it is about resilience. Two days earlier `certainty` and `professional-competence` both
        refused twice; had those been interpretation refusals rather than adaptation ones, the round would
@@ -510,7 +510,7 @@ first one ever; contract `5.0` is switched on and proven, and the provider quota
     password I do not enter. The page injects `swagger-ui-dist` from a CDN and fetches `/openapi.json`
     unmodified, so the structural checks above cover what rendering would have caught.
 
-- [x] **2026-07-30**: **One dead dimension no longer discards the seven that answered** (commit `fe2a6fb`,
+- [x] **2026-07-30**: **One dead dimension no longer discards the seven that answered** (commit `69e2b42`,
   item 15):
   - Most of this was already implemented and left uncommitted in the worktree, written tests first, with the
     Core validator as the missing half. What this commit adds is that half: `unavailable` accepted in the 5.0
