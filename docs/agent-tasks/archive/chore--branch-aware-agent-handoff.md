@@ -5,8 +5,8 @@
 - Branch: `chore/branch-aware-agent-handoff`
 - Base branch: `origin/main`
 - Base commit: `f3dbce4e22afb8cfdfc66df3989d7351afeb1a9f`
-- Current HEAD: `f3dbce4e22afb8cfdfc66df3989d7351afeb1a9f`
-- Status: Verified; publication to `origin/main` authorized
+- Current implementation HEAD: `c0bf93d4a8e88dd65cf21d08280bf091bca62472`
+- Status: Complete; archived for direct `origin/main` publication
 - Last updated: 2026-07-30
 - Last agent/tool: Codex
 
@@ -113,25 +113,20 @@ branch instead of creating a competing global current-task document.
 
 ## In progress
 
-- Publishing the verified snapshot requested by the owner.
+- None.
 
 ## Remaining
 
-- Commit the verified snapshot, archive this completed task handoff and push
-  both commits directly to `origin/main`.
+- No implementation work remains. The terminal archive commit containing this
+  snapshot is published together with the implementation commit.
 
 ## Changed files
 
-- Committed: base `f3dbce4`; no task commits.
-- Staged: none.
-- Unstaged modified: `.agents/skills/shalomut-tracker/SKILL.md`,
-  `.github/workflows/deploy-vercel.yml`, `AGENTS.md`, `GEMINI.md`,
-  `PROGRESS.md`, `PROJECT_CONTEXT.md`, `README.md`,
-  `docs/shalomut-tracker-handoff.md`, `docs/source-of-truth.md`, `package.json`.
-- Untracked: `docs/adr/008-branch-aware-agent-handoff.md`,
-  `docs/agent-tasks/README.md`, `docs/agent-tasks/TEMPLATE.md`, this task file,
-  `docs/agent-tasks/archive/README.md`, `scripts/agent-context.mjs`,
-  `scripts/verify-ai.mjs`.
+- Implementation: committed as `c0bf93d4a8e88dd65cf21d08280bf091bca62472`.
+- Terminal handoff: this task file moved from `active/` to `archive/`; ADR-008
+  links the implementation commit.
+- Staged, unstaged and untracked: none expected after the terminal archive
+  commit; Git state remains authoritative and must be checked on resume.
 
 ## Verification evidence
 
@@ -208,4 +203,4 @@ branch instead of creating a competing global current-task document.
 
 ## Next concrete step
 
-Commit the verified implementation snapshot.
+Inspect the `origin/main` GitHub Actions result for the publication commits.

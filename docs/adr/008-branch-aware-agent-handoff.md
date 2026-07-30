@@ -55,6 +55,6 @@ to `archive/` and retain its final evidence and merge reference.
 
 ## Related tasks and commits
 
-- Task: `docs/agent-tasks/active/chore--branch-aware-agent-handoff.md`
+- Archived task: `docs/agent-tasks/archive/chore--branch-aware-agent-handoff.md`
 - Base commit: `f3dbce4e22afb8cfdfc66df3989d7351afeb1a9f`
-- Final commit or pull request: pending
+- Implementation commit: `c0bf93d4a8e88dd65cf21d08280bf091bca62472`
