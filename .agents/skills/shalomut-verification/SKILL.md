@@ -65,8 +65,12 @@ privacy, auth, persistence, contracts или deployment.
 
 ### Python и AI boundary
 
-- Запускай полный suite из `ai-analytics-service`: `python3 -m pytest`. Это
-  единственная команда, покрывающая и contract suites в `tests/`.
+- Запускай полный suite из `ai-analytics-service`: `.venv/bin/python -m pytest`.
+  Это единственная команда, покрывающая и contract suites в `tests/`. Именно
+  интерпретатор из `.venv`, а не `python3`: зависимости стоят только в venv, а
+  оболочка агента не сохраняет `source .venv/bin/activate` между вызовами, так
+  что `python3 -m pytest` отвечает `No module named pytest`. Если `.venv` нет,
+  создай его по `docs/local-environment.md`.
 - `run_tests.py` — только совместимость: он делегирует в ту же команду. Не
   ссылайся на него как на отдельное evidence.
 - После contract, MCP, webhook или callback changes запускай соответствующие

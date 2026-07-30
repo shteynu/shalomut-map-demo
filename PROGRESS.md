@@ -1,9 +1,25 @@
 # Shalomut Map — PROGRESS.md
 
-Updated: 2026-07-29 (**a live round finished `success` with all eight stones written by the model** — the
-first one ever; contract `5.0` is switched on and proven, and the provider quota is no longer the blocker)
+Updated: 2026-07-30 (**a live round finished `success` with all eight stones written by the model**; contract
+`5.0` is switched on and proven, and the provider quota is no longer the blocker. Session of 2026-07-30 closed
+items 15–20; the owner is leaving items 8 and 10 open on purpose, and item 12 is the one open risk)
 
 ## Current State
+
+- **Session of 2026-07-30, closed with everything pushed** — `origin/main` at `01fd852`, working tree clean.
+  Six items closed in order: 16 and 18 on the Hebrew validation chain, 17 on what a refusal may log, 15 on the
+  partial map, 19 on the published contract shapes, 20 on per-model pacing. Two of them were verified against
+  the deployment; the other four are local-only, and each says so in its own entry.
+  - **Left open by the owner's decision, not by a blocker**: item 8, the AI-generated question suggestion,
+    which the owner deferred on 2026-07-26 and has kept deferred — the builder's library is still three
+    hardcoded questions covering three dimensions of eight; and item 10, whether the model should also write
+    the green dimensions (`ONLY_LLM_FOR_PROBLEMATIC=false`).
+  - **The one open risk is item 12**, the four secrets exposed on 2026-07-29 and not yet rotated. Nothing in
+    this session touched them, and nothing can: it is the owner's hands by `AGENTS.md`.
+  - **Two things wait on a deployed round rather than on code**: the partial map (item 15) has never been
+    exercised live, and per-model pacing (item 20) cannot be exercised on demand, because the heavy tier opens
+    only when a safety validator rejects a whole node. `LLM_MAX_REQUESTS_PER_MINUTE_HEAVY=4` reaches Render
+    with the next deploy through `render.yaml`.
 
 - **The first successful live round, 2026-07-29 19:02:15–19:03:52 UTC on round `f9c18f1c`.** Ninety-seven
   seconds from webhook to callback `200`, and **not one `429` in the log** — the acceptance criterion the
@@ -359,7 +375,14 @@ first one ever; contract `5.0` is switched on and proven, and the provider quota
        `4.0` and `5.0` now go through `validateDynamicResultAgainstRound()` like `3.0`. Comparing the score
        distribution itself is still open and is slice D1 of
        [ai-insights-depth-plan-2026-07-27.md](docs/ai-insights-depth-plan-2026-07-27.md).
-8. [ ] AI-generated proposed question flow (slice 3.1, on explicit user request).
+8. [ ] AI-generated proposed question flow (slice 3.1, on explicit user request). Deferred by the owner on
+       2026-07-26 and still deferred on 2026-07-30 — an open item by choice, not by a blocker. Its premise is
+       unchanged and verified: the builder's library is three hardcoded questions cycling on
+       `bankCursor % questionBank.length` ([`survey-builder.tsx:25`](src/components/survey/survey-builder.tsx)),
+       covering `management-support`, `certainty` and `self-expression` — three dimensions of eight. The desired
+       flow is in [slice 3.1](docs/manager-feedback-plan-2026-07-26.md): a request naming the dimension, the
+       suggestion's source marked as template or AI, and mandatory manual editing before it joins the
+       questionnaire. Its prerequisite (slice 2.2, contract and transport) has been done since 2026-07-28.
 9. [x] Empty the database for manual testing — done by the owner on 2026-07-28 and verified read-only afterwards:
        `0` organizations, `0` rounds, `0` responses, `0` answers, schema still up to date. The dump taken
        beforehand is at `~/shalomut-db-backup-2026-07-28.json` and is the only way back.
@@ -375,6 +398,16 @@ first one ever; contract `5.0` is switched on and proven, and the provider quota
        times. `ONLY_LLM_FOR_PROBLEMATIC` is also not declared in `render.yaml`, so a dashboard value could be
        lost on a blueprint sync. Note that the model already writes about green dimensions through the `5.0`
        recommendation adaptation — only the interpretation is withheld.
+       **Left open by the owner on 2026-07-30, and cheaper than when it was written.** Items 15 and 20 moved two
+       of the three obstacles. On `5.0` a refused dimension no longer ends the round: a validation refusal
+       exhausts its attempts and raises `ProviderUnavailableError` with its dimension id
+       ([`llm_provider.py:219`](ai-analytics-service/src/services/llm_provider.py)), which is exactly what the
+       partial map now absorbs — the stone comes back `unavailable` and the other seven stand. So (a) costs one
+       stone rather than the round, and (b) is close to answered by the same mechanism: a gap is declared
+       instead of filled, which was the point. (c) is smaller too, since a replay is now paced at the heavy
+       model's own limit rather than at three times it. What still wants deciding is the blacklist itself —
+       `שיפור`, `לשפר` and `שחיקה` are ordinary phrasing about a strength — and whether losing a green stone to
+       it is acceptable when the same words are unremarkable in context.
 11. [x] Commit the 2026-07-29 work — done as three commits (refactor, concurrency bound, documentation) on
        `refactor/llm-provider-split`, squash-merged by the owner as PR #13. The refactor commit was verified
        green on its own in a temporary worktree (175 tests, the two concurrency tests arriving with the next
