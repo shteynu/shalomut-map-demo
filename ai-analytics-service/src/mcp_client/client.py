@@ -1,3 +1,4 @@
+from src.contracts import AI_ANALYTICS_V4_CONTRACT_VERSION, AI_ANALYTICS_V5_CONTRACT_VERSION, AI_ANALYTICS_CONTRACT_VERSION
 import asyncio
 import json
 import logging

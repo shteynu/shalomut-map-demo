@@ -17,6 +17,7 @@ from src.contracts import (
     AI_ANALYTICS_V4_CONTRACT_VERSION,
     AI_ANALYTICS_V5_CONTRACT_VERSION,
 )
+from src.schemas.contract_registry import get_capabilities
 
 DimensionStatus = Literal["green", "yellow", "red"]
 
@@ -26,16 +27,7 @@ DimensionStatus = Literal["green", "yellow", "red"]
 MINIMUM_PRIVACY_THRESHOLD = 10
 
 _SURVEY_DEFINITION_HASH_PATTERN = re.compile(r"^sha256:[a-f0-9]{64}$")
-# Which contracts may carry the school background context. Named here so the
-# rule reads as a capability rather than a version comparison, and so adding a
-# version touches one place. `src/agents/nodes.py` keeps the matching set for
-# the prompt side; a shared contract registry is planned to merge the two.
-_BACKGROUND_CONTEXT_CONTRACT_VERSIONS = frozenset(
-    {
-        AI_ANALYTICS_V4_CONTRACT_VERSION,
-        AI_ANALYTICS_V5_CONTRACT_VERSION,
-    }
-)
+# The _BACKGROUND_CONTEXT_CONTRACT_VERSIONS set has been moved to capabilities.json
 _HEBREW_PATTERN = re.compile(r"[\u0590-\u05ff]")
 _LATIN_PATTERN = re.compile(r"[A-Za-z]")
 _DYNAMIC_FORBIDDEN_FIELDS = frozenset(
@@ -123,13 +115,7 @@ class RoundAnalyticsResult:
                 f"'{contract_version}'"
             )
 
-        # 4.0 is 3.0 plus the school background context and 5.0 is 4.0 plus
-        # the score distribution, so every dynamic rule (required ids, hash
-        # format, locked emptiness, aggregate shape) applies to all three
-        # unchanged. The messages below say "dynamic contract" for that
-        # reason: they named 3.0 while validating payloads two versions past
-        # it, which is a wrong answer handed to whoever has to fix the input.
-        is_dynamic = contract_version in AI_ANALYTICS_DYNAMIC_CONTRACT_VERSIONS
+        is_dynamic = get_capabilities(contract_version).supportsDynamicQuestions
         if is_dynamic:
             cls._validate_no_forbidden_dynamic_fields(data)
             total_responses = cls._required_integer(
@@ -277,10 +263,7 @@ class RoundAnalyticsResult:
                     )
                 raw_response_count = aggregate.get("responseCount", 0)
                 if (
-                    contract_version in {
-                        AI_ANALYTICS_CONTRACT_VERSION,
-                        *AI_ANALYTICS_DYNAMIC_CONTRACT_VERSIONS,
-                    }
+                    get_capabilities(contract_version).isSemanticContract
                     and (
                         not isinstance(raw_response_count, int)
                         or isinstance(raw_response_count, bool)
@@ -303,7 +286,7 @@ class RoundAnalyticsResult:
                         "averageScore": float(aggregate["averageScore"]),
                         "responseCount": raw_response_count,
                     }
-                    if contract_version == AI_ANALYTICS_V5_CONTRACT_VERSION and "scoreDistribution" in aggregate:
+                    if get_capabilities(contract_version).supportsScoreDistribution and "scoreDistribution" in aggregate:
                         q_item["scoreDistribution"] = {
                             "green": int(aggregate["scoreDistribution"]["green"]),
                             "yellow": int(aggregate["scoreDistribution"]["yellow"]),
@@ -327,7 +310,7 @@ class RoundAnalyticsResult:
                         "responseCount": int(raw_response_count),
                     }
 
-        if contract_version == AI_ANALYTICS_CONTRACT_VERSION and not is_locked:
+        if not is_dynamic and get_capabilities(contract_version).isSemanticContract and not is_locked:
             cls._validate_v2_aggregates(
                 scores,
                 question_aggregates,
@@ -342,7 +325,7 @@ class RoundAnalyticsResult:
                 total_responses,
                 survey_definition_hash,
             )
-        if contract_version == AI_ANALYTICS_CONTRACT_VERSION and not (
+        if not is_dynamic and get_capabilities(contract_version).isSemanticContract and not (
             isinstance(calculated_at, str)
             and calculated_at.strip()
         ):
@@ -370,7 +353,7 @@ class RoundAnalyticsResult:
             # 1.0-3.0 are immutable and gain no context here.
             backgroundContext=(
                 data.get("backgroundContext")
-                if contract_version in _BACKGROUND_CONTEXT_CONTRACT_VERSIONS
+                if get_capabilities(contract_version).supportsBackgroundContext
                 and isinstance(data.get("backgroundContext"), dict)
                 else {}
             ),
@@ -492,7 +475,7 @@ class RoundAnalyticsResult:
                 f"Question aggregate '{map_key}' averageScore must be numeric"
             )
 
-        if contract_version == AI_ANALYTICS_V5_CONTRACT_VERSION:
+        if get_capabilities(contract_version).supportsScoreDistribution:
             score_dist = aggregate.get("scoreDistribution")
             if not isinstance(score_dist, dict):
                 raise ValueError(

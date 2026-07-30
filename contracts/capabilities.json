@@ -1,0 +1,64 @@
+{
+  "versions": {
+    "1.0": {
+      "isSemanticContract": false,
+      "supportsDynamicQuestions": false,
+      "supportsBackgroundContext": false,
+      "supportsScoreDistribution": false,
+      "supportsPartialMaps": false,
+      "supportsAdaptationOutcome": false,
+      "hasOverallSummarySentenceLimit": false,
+      "stoneInterpretationSentenceLimit": "2"
+    },
+    "2.0": {
+      "isSemanticContract": true,
+      "supportsDynamicQuestions": false,
+      "supportsBackgroundContext": false,
+      "supportsScoreDistribution": false,
+      "supportsPartialMaps": false,
+      "supportsAdaptationOutcome": false,
+      "hasOverallSummarySentenceLimit": false,
+      "stoneInterpretationSentenceLimit": "2"
+    },
+    "3.0": {
+      "isSemanticContract": true,
+      "supportsDynamicQuestions": true,
+      "supportsBackgroundContext": false,
+      "supportsScoreDistribution": false,
+      "supportsPartialMaps": false,
+      "supportsAdaptationOutcome": false,
+      "hasOverallSummarySentenceLimit": false,
+      "stoneInterpretationSentenceLimit": "2"
+    },
+    "4.0": {
+      "isSemanticContract": true,
+      "supportsDynamicQuestions": true,
+      "supportsBackgroundContext": true,
+      "supportsScoreDistribution": false,
+      "supportsPartialMaps": false,
+      "supportsAdaptationOutcome": false,
+      "hasOverallSummarySentenceLimit": false,
+      "stoneInterpretationSentenceLimit": "2"
+    },
+    "5.0": {
+      "isSemanticContract": true,
+      "supportsDynamicQuestions": true,
+      "supportsBackgroundContext": true,
+      "supportsScoreDistribution": true,
+      "supportsPartialMaps": true,
+      "supportsAdaptationOutcome": true,
+      "hasOverallSummarySentenceLimit": true,
+      "stoneInterpretationSentenceLimit": "2-5"
+    },
+    "6.0": {
+      "isSemanticContract": true,
+      "supportsDynamicQuestions": true,
+      "supportsBackgroundContext": true,
+      "supportsScoreDistribution": true,
+      "supportsPartialMaps": true,
+      "supportsAdaptationOutcome": true,
+      "hasOverallSummarySentenceLimit": true,
+      "stoneInterpretationSentenceLimit": "2-5"
+    }
+  }
+}

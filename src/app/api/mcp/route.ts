@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { AnalyticsService } from '@/lib/services/analytics.service';
 import { getRepositories } from '@/lib/repositories';
+import { getCapabilities } from '@/lib/contract-registry';
 import { hasConfiguredSharedSecret } from '@/lib/server/shared-secret';
 
 // The handler authenticates every call by reading the Authorization header, so
@@ -99,8 +100,9 @@ export async function POST(request: Request) {
         // locked round must not leak anything beyond the lock state: the
         // provider is never called for it, so the context has no reason to
         // cross the boundary.
+        const caps = getCapabilities(result.contractVersion);
         const includesBackgroundContext =
-          ['4.0', '5.0'].includes(result.contractVersion) && !result.isLocked;
+          caps.supportsBackgroundContext && !result.isLocked;
 
         // Format into strict RoundAnalyticsResult MCP payload
         const mcpPayload = {

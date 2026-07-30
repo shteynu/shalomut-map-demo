@@ -4,6 +4,7 @@ import {
   getProducedAnalyticsContractVersion,
   resolveProducedAnalyticsContractVersion,
 } from '../ai-contract-version';
+import { getCapabilities } from '../contract-registry';
 import { IRoundRepository, ISurveyRepository } from '../repositories/interfaces';
 import {
   WellbeingDimensionId,
@@ -315,7 +316,7 @@ export class AnalyticsService {
             averageScore: average(scores),
             responseCount: scores.length,
           };
-          if (producedVersion === '5.0') {
+          if (getCapabilities(producedVersion).supportsScoreDistribution) {
             aggregate.scoreDistribution = { ...dist };
           }
           return [question.id, aggregate];

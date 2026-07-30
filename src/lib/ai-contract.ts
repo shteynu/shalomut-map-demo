@@ -3,6 +3,7 @@ import contractManifest from '../../contracts/ai-analytics-v2.json';
 import dynamicContractManifest from '../../contracts/ai-analytics-v3.json';
 import v4ContractManifest from '../../contracts/ai-analytics-v4.json';
 import v5ContractManifest from '../../contracts/ai-analytics-v5.json';
+import { getCapabilities, type ContractCapabilities } from './contract-registry';
 import type {
   WellbeingDimensionId,
   WellbeingStatus,
@@ -625,13 +626,9 @@ function validateStatusFields(
       };
     }
 
+    const caps = getCapabilities(String(payload.contractVersion));
     if (
-      [
-        AI_ANALYTICS_CONTRACT_VERSION,
-        AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
-        AI_ANALYTICS_V4_CONTRACT_VERSION,
-        AI_ANALYTICS_V5_CONTRACT_VERSION,
-      ].includes(String(payload.contractVersion)) &&
+      caps.isSemanticContract &&
       (payload.stones !== undefined ||
         payload.overallPsychologicalSummary !== undefined)
     ) {
@@ -686,11 +683,12 @@ function validateInterpretationGaps(
         };
   }
 
-  if (payload.contractVersion !== AI_ANALYTICS_V5_CONTRACT_VERSION) {
+  const caps = getCapabilities(String(payload.contractVersion));
+  if (!caps.supportsPartialMaps) {
     return {
       ok: false,
       error:
-        'dimensionsWithoutInterpretation is only part of contract 5.0.',
+        'dimensionsWithoutInterpretation is only supported by contracts with partial maps.',
     };
   }
 
@@ -743,12 +741,9 @@ export function validateStoneMapResult(
     };
   }
 
+  const caps = getCapabilities(String(payload.contractVersion));
   if (
-    [
-      AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
-      AI_ANALYTICS_V4_CONTRACT_VERSION,
-      AI_ANALYTICS_V5_CONTRACT_VERSION,
-    ].includes(String(payload.contractVersion)) &&
+    caps.supportsDynamicQuestions &&
     (typeof payload.surveyDefinitionHash !== 'string' ||
       !SURVEY_DEFINITION_HASH_PATTERN.test(payload.surveyDefinitionHash))
   ) {
@@ -774,13 +769,8 @@ export function validateStoneMapResult(
   }
 
   if (
-    [
-      AI_ANALYTICS_CONTRACT_VERSION,
-      AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
-      AI_ANALYTICS_V4_CONTRACT_VERSION,
-      AI_ANALYTICS_V5_CONTRACT_VERSION,
-    ].includes(String(payload.contractVersion)) &&
-    !containsOnlyHebrewUserText(payload.overallPsychologicalSummary)
+    caps.isSemanticContract &&
+    !containsOnlyHebrewUserText(payload.overallPsychologicalSummary as string)
   ) {
     return {
       ok: false,
@@ -789,8 +779,8 @@ export function validateStoneMapResult(
   }
 
   if (
-    payload.contractVersion === AI_ANALYTICS_V5_CONTRACT_VERSION &&
-    !hasTwoToFourCompleteSentences(payload.overallPsychologicalSummary)
+    caps.hasOverallSummarySentenceLimit &&
+    !hasTwoToFourCompleteSentences(payload.overallPsychologicalSummary as string)
   ) {
     return {
       ok: false,
@@ -813,25 +803,21 @@ export function validateStoneMapResult(
   }
 
   for (const dimensionId of AI_ANALYTICS_DIMENSION_IDS) {
-    const isValidStone =
-      payload.contractVersion === AI_ANALYTICS_V5_CONTRACT_VERSION
+    const isValidStone = !caps.isSemanticContract
+      ? isValidLegacyStone(payload.stones[dimensionId], dimensionId)
+      : caps.supportsScoreDistribution
         ? isValidV5Stone(
             payload.stones[dimensionId],
             dimensionId,
             payload.surveyDefinitionHash as string,
           )
-        : payload.contractVersion === AI_ANALYTICS_CONTRACT_VERSION
-          ? isValidV2Stone(payload.stones[dimensionId], dimensionId)
-          : [
-                AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
-                AI_ANALYTICS_V4_CONTRACT_VERSION,
-              ].includes(String(payload.contractVersion))
-            ? isValidV3Stone(
-                payload.stones[dimensionId],
-                dimensionId,
-                payload.surveyDefinitionHash as string,
-              )
-            : isValidLegacyStone(payload.stones[dimensionId], dimensionId);
+        : caps.supportsDynamicQuestions
+          ? isValidV3Stone(
+              payload.stones[dimensionId],
+              dimensionId,
+              payload.surveyDefinitionHash as string,
+            )
+          : isValidV2Stone(payload.stones[dimensionId], dimensionId);
     if (!isValidStone) {
       return {
         ok: false,

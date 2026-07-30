@@ -1,0 +1,891 @@
+{
+  "1.0": {
+    "positive": [
+      {
+        "contractVersion": "1.0",
+        "roundId": "round-v1.0",
+        "totalResponses": 20,
+        "privacyThreshold": 1,
+        "isLocked": false,
+        "dimensionScores": {
+          "self-expression": {
+            "dimensionId": "self-expression",
+            "averageScore": 60.0,
+            "computedStatus": "yellow"
+          },
+          "professional-competence": {
+            "dimensionId": "professional-competence",
+            "averageScore": 60.0,
+            "computedStatus": "yellow"
+          },
+          "social-resource": {
+            "dimensionId": "social-resource",
+            "averageScore": 60.0,
+            "computedStatus": "yellow"
+          },
+          "balance": {
+            "dimensionId": "balance",
+            "averageScore": 60.0,
+            "computedStatus": "yellow"
+          },
+          "management-support": {
+            "dimensionId": "management-support",
+            "averageScore": 60.0,
+            "computedStatus": "yellow"
+          },
+          "certainty": {
+            "dimensionId": "certainty",
+            "averageScore": 60.0,
+            "computedStatus": "yellow"
+          },
+          "organizational-climate": {
+            "dimensionId": "organizational-climate",
+            "averageScore": 60.0,
+            "computedStatus": "yellow"
+          },
+          "meaning": {
+            "dimensionId": "meaning",
+            "averageScore": 60.0,
+            "computedStatus": "yellow"
+          }
+        },
+        "questionAggregates": {},
+        "calculatedAt": "2026-07-27T12:00:00Z"
+      }
+    ],
+    "negative": [
+      {
+        "contractVersion": "1.0",
+        "roundId": "round-v1.0",
+        "totalResponses": 20,
+        "privacyThreshold": 1,
+        "isLocked": "not_a_boolean",
+        "dimensionScores": {
+          "self-expression": {
+            "dimensionId": "self-expression",
+            "averageScore": 60.0,
+            "computedStatus": "yellow"
+          },
+          "professional-competence": {
+            "dimensionId": "professional-competence",
+            "averageScore": 60.0,
+            "computedStatus": "yellow"
+          },
+          "social-resource": {
+            "dimensionId": "social-resource",
+            "averageScore": 60.0,
+            "computedStatus": "yellow"
+          },
+          "balance": {
+            "dimensionId": "balance",
+            "averageScore": 60.0,
+            "computedStatus": "yellow"
+          },
+          "management-support": {
+            "dimensionId": "management-support",
+            "averageScore": 60.0,
+            "computedStatus": "yellow"
+          },
+          "certainty": {
+            "dimensionId": "certainty",
+            "averageScore": 60.0,
+            "computedStatus": "yellow"
+          },
+          "organizational-climate": {
+            "dimensionId": "organizational-climate",
+            "averageScore": 60.0,
+            "computedStatus": "yellow"
+          },
+          "meaning": {
+            "dimensionId": "meaning",
+            "averageScore": 60.0,
+            "computedStatus": "yellow"
+          }
+        },
+        "questionAggregates": {},
+        "calculatedAt": "2026-07-27T12:00:00Z"
+      }
+    ]
+  },
+  "3.0": {
+    "positive": [
+      {
+        "contractVersion": "3.0",
+        "roundId": "round-v3.0",
+        "totalResponses": 20,
+        "privacyThreshold": 1,
+        "isLocked": false,
+        "dimensionScores": {
+          "self-expression": {
+            "dimensionId": "self-expression",
+            "averageScore": 60.0,
+            "computedStatus": "yellow"
+          },
+          "professional-competence": {
+            "dimensionId": "professional-competence",
+            "averageScore": 60.0,
+            "computedStatus": "yellow"
+          },
+          "social-resource": {
+            "dimensionId": "social-resource",
+            "averageScore": 60.0,
+            "computedStatus": "yellow"
+          },
+          "balance": {
+            "dimensionId": "balance",
+            "averageScore": 60.0,
+            "computedStatus": "yellow"
+          },
+          "management-support": {
+            "dimensionId": "management-support",
+            "averageScore": 60.0,
+            "computedStatus": "yellow"
+          },
+          "certainty": {
+            "dimensionId": "certainty",
+            "averageScore": 60.0,
+            "computedStatus": "yellow"
+          },
+          "organizational-climate": {
+            "dimensionId": "organizational-climate",
+            "averageScore": 60.0,
+            "computedStatus": "yellow"
+          },
+          "meaning": {
+            "dimensionId": "meaning",
+            "averageScore": 60.0,
+            "computedStatus": "yellow"
+          }
+        },
+        "questionAggregates": {
+          "q-0": {
+            "questionId": "q-0",
+            "dimensionId": "self-expression",
+            "questionText": "\u05d8\u05e7\u05e1\u05d8 \u05e9\u05d0\u05dc\u05d4",
+            "averageScore": 60.0,
+            "responseCount": 20
+          },
+          "q-1": {
+            "questionId": "q-1",
+            "dimensionId": "professional-competence",
+            "questionText": "\u05d8\u05e7\u05e1\u05d8 \u05e9\u05d0\u05dc\u05d4",
+            "averageScore": 60.0,
+            "responseCount": 20
+          },
+          "q-2": {
+            "questionId": "q-2",
+            "dimensionId": "social-resource",
+            "questionText": "\u05d8\u05e7\u05e1\u05d8 \u05e9\u05d0\u05dc\u05d4",
+            "averageScore": 60.0,
+            "responseCount": 20
+          },
+          "q-3": {
+            "questionId": "q-3",
+            "dimensionId": "balance",
+            "questionText": "\u05d8\u05e7\u05e1\u05d8 \u05e9\u05d0\u05dc\u05d4",
+            "averageScore": 60.0,
+            "responseCount": 20
+          },
+          "q-4": {
+            "questionId": "q-4",
+            "dimensionId": "management-support",
+            "questionText": "\u05d8\u05e7\u05e1\u05d8 \u05e9\u05d0\u05dc\u05d4",
+            "averageScore": 60.0,
+            "responseCount": 20
+          },
+          "q-5": {
+            "questionId": "q-5",
+            "dimensionId": "certainty",
+            "questionText": "\u05d8\u05e7\u05e1\u05d8 \u05e9\u05d0\u05dc\u05d4",
+            "averageScore": 60.0,
+            "responseCount": 20
+          },
+          "q-6": {
+            "questionId": "q-6",
+            "dimensionId": "organizational-climate",
+            "questionText": "\u05d8\u05e7\u05e1\u05d8 \u05e9\u05d0\u05dc\u05d4",
+            "averageScore": 60.0,
+            "responseCount": 20
+          },
+          "q-7": {
+            "questionId": "q-7",
+            "dimensionId": "meaning",
+            "questionText": "\u05d8\u05e7\u05e1\u05d8 \u05e9\u05d0\u05dc\u05d4",
+            "averageScore": 60.0,
+            "responseCount": 20
+          }
+        },
+        "calculatedAt": "2026-07-27T12:00:00Z",
+        "organizationId": "org-test",
+        "surveyDefinitionHash": "sha256:eabddb4fdfbcdcae444b183d1892876658ff95e1ca8fa1f6e37d89310ecae637"
+      }
+    ],
+    "negative": [
+      {
+        "contractVersion": "3.0",
+        "roundId": "round-v3.0",
+        "totalResponses": 20,
+        "privacyThreshold": 1,
+        "isLocked": false,
+        "dimensionScores": {
+          "self-expression": {
+            "dimensionId": "self-expression",
+            "averageScore": 60.0,
+            "computedStatus": "yellow"
+          },
+          "professional-competence": {
+            "dimensionId": "professional-competence",
+            "averageScore": 60.0,
+            "computedStatus": "yellow"
+          },
+          "social-resource": {
+            "dimensionId": "social-resource",
+            "averageScore": 60.0,
+            "computedStatus": "yellow"
+          },
+          "balance": {
+            "dimensionId": "balance",
+            "averageScore": 60.0,
+            "computedStatus": "yellow"
+          },
+          "management-support": {
+            "dimensionId": "management-support",
+            "averageScore": 60.0,
+            "computedStatus": "yellow"
+          },
+          "certainty": {
+            "dimensionId": "certainty",
+            "averageScore": 60.0,
+            "computedStatus": "yellow"
+          },
+          "organizational-climate": {
+            "dimensionId": "organizational-climate",
+            "averageScore": 60.0,
+            "computedStatus": "yellow"
+          },
+          "meaning": {
+            "dimensionId": "meaning",
+            "averageScore": 60.0,
+            "computedStatus": "yellow"
+          }
+        },
+        "questionAggregates": {
+          "q-0": {
+            "questionId": "q-0",
+            "dimensionId": "self-expression",
+            "questionText": "\u05d8\u05e7\u05e1\u05d8 \u05e9\u05d0\u05dc\u05d4",
+            "averageScore": 60.0,
+            "responseCount": 20
+          },
+          "q-1": {
+            "questionId": "q-1",
+            "dimensionId": "professional-competence",
+            "questionText": "\u05d8\u05e7\u05e1\u05d8 \u05e9\u05d0\u05dc\u05d4",
+            "averageScore": 60.0,
+            "responseCount": 20
+          },
+          "q-2": {
+            "questionId": "q-2",
+            "dimensionId": "social-resource",
+            "questionText": "\u05d8\u05e7\u05e1\u05d8 \u05e9\u05d0\u05dc\u05d4",
+            "averageScore": 60.0,
+            "responseCount": 20
+          },
+          "q-3": {
+            "questionId": "q-3",
+            "dimensionId": "balance",
+            "questionText": "\u05d8\u05e7\u05e1\u05d8 \u05e9\u05d0\u05dc\u05d4",
+            "averageScore": 60.0,
+            "responseCount": 20
+          },
+          "q-4": {
+            "questionId": "q-4",
+            "dimensionId": "management-support",
+            "questionText": "\u05d8\u05e7\u05e1\u05d8 \u05e9\u05d0\u05dc\u05d4",
+            "averageScore": 60.0,
+            "responseCount": 20
+          },
+          "q-5": {
+            "questionId": "q-5",
+            "dimensionId": "certainty",
+            "questionText": "\u05d8\u05e7\u05e1\u05d8 \u05e9\u05d0\u05dc\u05d4",
+            "averageScore": 60.0,
+            "responseCount": 20
+          },
+          "q-6": {
+            "questionId": "q-6",
+            "dimensionId": "organizational-climate",
+            "questionText": "\u05d8\u05e7\u05e1\u05d8 \u05e9\u05d0\u05dc\u05d4",
+            "averageScore": 60.0,
+            "responseCount": 20
+          },
+          "q-7": {
+            "questionId": "q-7",
+            "dimensionId": "meaning",
+            "questionText": "\u05d8\u05e7\u05e1\u05d8 \u05e9\u05d0\u05dc\u05d4",
+            "averageScore": 60.0,
+            "responseCount": 20
+          }
+        },
+        "calculatedAt": "2026-07-27T12:00:00Z",
+        "organizationId": "org-test"
+      }
+    ]
+  },
+  "4.0": {
+    "positive": [
+      {
+        "contractVersion": "4.0",
+        "roundId": "round-v4.0",
+        "totalResponses": 20,
+        "privacyThreshold": 1,
+        "isLocked": false,
+        "dimensionScores": {
+          "self-expression": {
+            "dimensionId": "self-expression",
+            "averageScore": 60.0,
+            "computedStatus": "yellow"
+          },
+          "professional-competence": {
+            "dimensionId": "professional-competence",
+            "averageScore": 60.0,
+            "computedStatus": "yellow"
+          },
+          "social-resource": {
+            "dimensionId": "social-resource",
+            "averageScore": 60.0,
+            "computedStatus": "yellow"
+          },
+          "balance": {
+            "dimensionId": "balance",
+            "averageScore": 60.0,
+            "computedStatus": "yellow"
+          },
+          "management-support": {
+            "dimensionId": "management-support",
+            "averageScore": 60.0,
+            "computedStatus": "yellow"
+          },
+          "certainty": {
+            "dimensionId": "certainty",
+            "averageScore": 60.0,
+            "computedStatus": "yellow"
+          },
+          "organizational-climate": {
+            "dimensionId": "organizational-climate",
+            "averageScore": 60.0,
+            "computedStatus": "yellow"
+          },
+          "meaning": {
+            "dimensionId": "meaning",
+            "averageScore": 60.0,
+            "computedStatus": "yellow"
+          }
+        },
+        "questionAggregates": {
+          "q-0": {
+            "questionId": "q-0",
+            "dimensionId": "self-expression",
+            "questionText": "\u05d8\u05e7\u05e1\u05d8 \u05e9\u05d0\u05dc\u05d4",
+            "averageScore": 60.0,
+            "responseCount": 20
+          },
+          "q-1": {
+            "questionId": "q-1",
+            "dimensionId": "professional-competence",
+            "questionText": "\u05d8\u05e7\u05e1\u05d8 \u05e9\u05d0\u05dc\u05d4",
+            "averageScore": 60.0,
+            "responseCount": 20
+          },
+          "q-2": {
+            "questionId": "q-2",
+            "dimensionId": "social-resource",
+            "questionText": "\u05d8\u05e7\u05e1\u05d8 \u05e9\u05d0\u05dc\u05d4",
+            "averageScore": 60.0,
+            "responseCount": 20
+          },
+          "q-3": {
+            "questionId": "q-3",
+            "dimensionId": "balance",
+            "questionText": "\u05d8\u05e7\u05e1\u05d8 \u05e9\u05d0\u05dc\u05d4",
+            "averageScore": 60.0,
+            "responseCount": 20
+          },
+          "q-4": {
+            "questionId": "q-4",
+            "dimensionId": "management-support",
+            "questionText": "\u05d8\u05e7\u05e1\u05d8 \u05e9\u05d0\u05dc\u05d4",
+            "averageScore": 60.0,
+            "responseCount": 20
+          },
+          "q-5": {
+            "questionId": "q-5",
+            "dimensionId": "certainty",
+            "questionText": "\u05d8\u05e7\u05e1\u05d8 \u05e9\u05d0\u05dc\u05d4",
+            "averageScore": 60.0,
+            "responseCount": 20
+          },
+          "q-6": {
+            "questionId": "q-6",
+            "dimensionId": "organizational-climate",
+            "questionText": "\u05d8\u05e7\u05e1\u05d8 \u05e9\u05d0\u05dc\u05d4",
+            "averageScore": 60.0,
+            "responseCount": 20
+          },
+          "q-7": {
+            "questionId": "q-7",
+            "dimensionId": "meaning",
+            "questionText": "\u05d8\u05e7\u05e1\u05d8 \u05e9\u05d0\u05dc\u05d4",
+            "averageScore": 60.0,
+            "responseCount": 20
+          }
+        },
+        "calculatedAt": "2026-07-27T12:00:00Z",
+        "organizationId": "org-test",
+        "surveyDefinitionHash": "sha256:eabddb4fdfbcdcae444b183d1892876658ff95e1ca8fa1f6e37d89310ecae637",
+        "backgroundContext": {
+          "notes": "Some notes"
+        }
+      }
+    ],
+    "negative": [
+      {
+        "contractVersion": "4.0",
+        "roundId": "round-v4.0",
+        "totalResponses": 20,
+        "privacyThreshold": 1,
+        "isLocked": false,
+        "dimensionScores": {
+          "self-expression": {
+            "dimensionId": "self-expression",
+            "averageScore": 60.0,
+            "computedStatus": "yellow"
+          },
+          "professional-competence": {
+            "dimensionId": "professional-competence",
+            "averageScore": 60.0,
+            "computedStatus": "yellow"
+          },
+          "social-resource": {
+            "dimensionId": "social-resource",
+            "averageScore": 60.0,
+            "computedStatus": "yellow"
+          },
+          "balance": {
+            "dimensionId": "balance",
+            "averageScore": 60.0,
+            "computedStatus": "yellow"
+          },
+          "management-support": {
+            "dimensionId": "management-support",
+            "averageScore": 60.0,
+            "computedStatus": "yellow"
+          },
+          "certainty": {
+            "dimensionId": "certainty",
+            "averageScore": 60.0,
+            "computedStatus": "yellow"
+          },
+          "organizational-climate": {
+            "dimensionId": "organizational-climate",
+            "averageScore": 60.0,
+            "computedStatus": "yellow"
+          },
+          "meaning": {
+            "dimensionId": "meaning",
+            "averageScore": 60.0,
+            "computedStatus": "yellow"
+          }
+        },
+        "questionAggregates": {
+          "q-0": {
+            "questionId": "q-0",
+            "dimensionId": "self-expression",
+            "questionText": "\u05d8\u05e7\u05e1\u05d8 \u05e9\u05d0\u05dc\u05d4",
+            "averageScore": "sixty",
+            "responseCount": 20
+          },
+          "q-1": {
+            "questionId": "q-1",
+            "dimensionId": "professional-competence",
+            "questionText": "\u05d8\u05e7\u05e1\u05d8 \u05e9\u05d0\u05dc\u05d4",
+            "averageScore": 60.0,
+            "responseCount": 20
+          },
+          "q-2": {
+            "questionId": "q-2",
+            "dimensionId": "social-resource",
+            "questionText": "\u05d8\u05e7\u05e1\u05d8 \u05e9\u05d0\u05dc\u05d4",
+            "averageScore": 60.0,
+            "responseCount": 20
+          },
+          "q-3": {
+            "questionId": "q-3",
+            "dimensionId": "balance",
+            "questionText": "\u05d8\u05e7\u05e1\u05d8 \u05e9\u05d0\u05dc\u05d4",
+            "averageScore": 60.0,
+            "responseCount": 20
+          },
+          "q-4": {
+            "questionId": "q-4",
+            "dimensionId": "management-support",
+            "questionText": "\u05d8\u05e7\u05e1\u05d8 \u05e9\u05d0\u05dc\u05d4",
+            "averageScore": 60.0,
+            "responseCount": 20
+          },
+          "q-5": {
+            "questionId": "q-5",
+            "dimensionId": "certainty",
+            "questionText": "\u05d8\u05e7\u05e1\u05d8 \u05e9\u05d0\u05dc\u05d4",
+            "averageScore": 60.0,
+            "responseCount": 20
+          },
+          "q-6": {
+            "questionId": "q-6",
+            "dimensionId": "organizational-climate",
+            "questionText": "\u05d8\u05e7\u05e1\u05d8 \u05e9\u05d0\u05dc\u05d4",
+            "averageScore": 60.0,
+            "responseCount": 20
+          },
+          "q-7": {
+            "questionId": "q-7",
+            "dimensionId": "meaning",
+            "questionText": "\u05d8\u05e7\u05e1\u05d8 \u05e9\u05d0\u05dc\u05d4",
+            "averageScore": 60.0,
+            "responseCount": 20
+          }
+        },
+        "calculatedAt": "2026-07-27T12:00:00Z",
+        "organizationId": "org-test",
+        "surveyDefinitionHash": "sha256:eabddb4fdfbcdcae444b183d1892876658ff95e1ca8fa1f6e37d89310ecae637",
+        "backgroundContext": {
+          "notes": "Some notes"
+        }
+      }
+    ]
+  },
+  "5.0": {
+    "positive": [
+      {
+        "contractVersion": "5.0",
+        "roundId": "round-v5.0",
+        "totalResponses": 20,
+        "privacyThreshold": 1,
+        "isLocked": false,
+        "dimensionScores": {
+          "self-expression": {
+            "dimensionId": "self-expression",
+            "averageScore": 60.0,
+            "computedStatus": "yellow",
+            "responseCount": 20
+          },
+          "professional-competence": {
+            "dimensionId": "professional-competence",
+            "averageScore": 60.0,
+            "computedStatus": "yellow",
+            "responseCount": 20
+          },
+          "social-resource": {
+            "dimensionId": "social-resource",
+            "averageScore": 60.0,
+            "computedStatus": "yellow",
+            "responseCount": 20
+          },
+          "balance": {
+            "dimensionId": "balance",
+            "averageScore": 60.0,
+            "computedStatus": "yellow",
+            "responseCount": 20
+          },
+          "management-support": {
+            "dimensionId": "management-support",
+            "averageScore": 60.0,
+            "computedStatus": "yellow",
+            "responseCount": 20
+          },
+          "certainty": {
+            "dimensionId": "certainty",
+            "averageScore": 60.0,
+            "computedStatus": "yellow",
+            "responseCount": 20
+          },
+          "organizational-climate": {
+            "dimensionId": "organizational-climate",
+            "averageScore": 60.0,
+            "computedStatus": "yellow",
+            "responseCount": 20
+          },
+          "meaning": {
+            "dimensionId": "meaning",
+            "averageScore": 60.0,
+            "computedStatus": "yellow",
+            "responseCount": 20
+          }
+        },
+        "questionAggregates": {
+          "q-0": {
+            "questionId": "q-0",
+            "dimensionId": "self-expression",
+            "questionText": "\u05d8\u05e7\u05e1\u05d8 \u05e9\u05d0\u05dc\u05d4",
+            "averageScore": 60.0,
+            "responseCount": 20,
+            "scoreDistribution": {
+              "green": 4,
+              "yellow": 12,
+              "red": 4
+            }
+          },
+          "q-1": {
+            "questionId": "q-1",
+            "dimensionId": "professional-competence",
+            "questionText": "\u05d8\u05e7\u05e1\u05d8 \u05e9\u05d0\u05dc\u05d4",
+            "averageScore": 60.0,
+            "responseCount": 20,
+            "scoreDistribution": {
+              "green": 4,
+              "yellow": 12,
+              "red": 4
+            }
+          },
+          "q-2": {
+            "questionId": "q-2",
+            "dimensionId": "social-resource",
+            "questionText": "\u05d8\u05e7\u05e1\u05d8 \u05e9\u05d0\u05dc\u05d4",
+            "averageScore": 60.0,
+            "responseCount": 20,
+            "scoreDistribution": {
+              "green": 4,
+              "yellow": 12,
+              "red": 4
+            }
+          },
+          "q-3": {
+            "questionId": "q-3",
+            "dimensionId": "balance",
+            "questionText": "\u05d8\u05e7\u05e1\u05d8 \u05e9\u05d0\u05dc\u05d4",
+            "averageScore": 60.0,
+            "responseCount": 20,
+            "scoreDistribution": {
+              "green": 4,
+              "yellow": 12,
+              "red": 4
+            }
+          },
+          "q-4": {
+            "questionId": "q-4",
+            "dimensionId": "management-support",
+            "questionText": "\u05d8\u05e7\u05e1\u05d8 \u05e9\u05d0\u05dc\u05d4",
+            "averageScore": 60.0,
+            "responseCount": 20,
+            "scoreDistribution": {
+              "green": 4,
+              "yellow": 12,
+              "red": 4
+            }
+          },
+          "q-5": {
+            "questionId": "q-5",
+            "dimensionId": "certainty",
+            "questionText": "\u05d8\u05e7\u05e1\u05d8 \u05e9\u05d0\u05dc\u05d4",
+            "averageScore": 60.0,
+            "responseCount": 20,
+            "scoreDistribution": {
+              "green": 4,
+              "yellow": 12,
+              "red": 4
+            }
+          },
+          "q-6": {
+            "questionId": "q-6",
+            "dimensionId": "organizational-climate",
+            "questionText": "\u05d8\u05e7\u05e1\u05d8 \u05e9\u05d0\u05dc\u05d4",
+            "averageScore": 60.0,
+            "responseCount": 20,
+            "scoreDistribution": {
+              "green": 4,
+              "yellow": 12,
+              "red": 4
+            }
+          },
+          "q-7": {
+            "questionId": "q-7",
+            "dimensionId": "meaning",
+            "questionText": "\u05d8\u05e7\u05e1\u05d8 \u05e9\u05d0\u05dc\u05d4",
+            "averageScore": 60.0,
+            "responseCount": 20,
+            "scoreDistribution": {
+              "green": 4,
+              "yellow": 12,
+              "red": 4
+            }
+          }
+        },
+        "calculatedAt": "2026-07-27T12:00:00Z",
+        "organizationId": "org-test",
+        "surveyDefinitionHash": "sha256:eabddb4fdfbcdcae444b183d1892876658ff95e1ca8fa1f6e37d89310ecae637",
+        "backgroundContext": {
+          "notes": "Some notes"
+        }
+      }
+    ],
+    "negative": [
+      {
+        "contractVersion": "5.0",
+        "roundId": "round-v5.0",
+        "totalResponses": 20,
+        "privacyThreshold": 1,
+        "isLocked": false,
+        "dimensionScores": {
+          "self-expression": {
+            "dimensionId": "self-expression",
+            "averageScore": 60.0,
+            "computedStatus": "yellow",
+            "responseCount": 20
+          },
+          "professional-competence": {
+            "dimensionId": "professional-competence",
+            "averageScore": 60.0,
+            "computedStatus": "yellow",
+            "responseCount": 20
+          },
+          "social-resource": {
+            "dimensionId": "social-resource",
+            "averageScore": 60.0,
+            "computedStatus": "yellow",
+            "responseCount": 20
+          },
+          "balance": {
+            "dimensionId": "balance",
+            "averageScore": 60.0,
+            "computedStatus": "yellow",
+            "responseCount": 20
+          },
+          "management-support": {
+            "dimensionId": "management-support",
+            "averageScore": 60.0,
+            "computedStatus": "yellow",
+            "responseCount": 20
+          },
+          "certainty": {
+            "dimensionId": "certainty",
+            "averageScore": 60.0,
+            "computedStatus": "yellow",
+            "responseCount": 20
+          },
+          "organizational-climate": {
+            "dimensionId": "organizational-climate",
+            "averageScore": 60.0,
+            "computedStatus": "yellow",
+            "responseCount": 20
+          },
+          "meaning": {
+            "dimensionId": "meaning",
+            "averageScore": 60.0,
+            "computedStatus": "yellow",
+            "responseCount": 20
+          }
+        },
+        "questionAggregates": {
+          "q-0": {
+            "questionId": "q-0",
+            "dimensionId": "self-expression",
+            "questionText": "\u05d8\u05e7\u05e1\u05d8 \u05e9\u05d0\u05dc\u05d4",
+            "averageScore": 60.0,
+            "responseCount": 20,
+            "scoreDistribution": "not_a_dict"
+          },
+          "q-1": {
+            "questionId": "q-1",
+            "dimensionId": "professional-competence",
+            "questionText": "\u05d8\u05e7\u05e1\u05d8 \u05e9\u05d0\u05dc\u05d4",
+            "averageScore": 60.0,
+            "responseCount": 20,
+            "scoreDistribution": {
+              "green": 4,
+              "yellow": 12,
+              "red": 4
+            }
+          },
+          "q-2": {
+            "questionId": "q-2",
+            "dimensionId": "social-resource",
+            "questionText": "\u05d8\u05e7\u05e1\u05d8 \u05e9\u05d0\u05dc\u05d4",
+            "averageScore": 60.0,
+            "responseCount": 20,
+            "scoreDistribution": {
+              "green": 4,
+              "yellow": 12,
+              "red": 4
+            }
+          },
+          "q-3": {
+            "questionId": "q-3",
+            "dimensionId": "balance",
+            "questionText": "\u05d8\u05e7\u05e1\u05d8 \u05e9\u05d0\u05dc\u05d4",
+            "averageScore": 60.0,
+            "responseCount": 20,
+            "scoreDistribution": {
+              "green": 4,
+              "yellow": 12,
+              "red": 4
+            }
+          },
+          "q-4": {
+            "questionId": "q-4",
+            "dimensionId": "management-support",
+            "questionText": "\u05d8\u05e7\u05e1\u05d8 \u05e9\u05d0\u05dc\u05d4",
+            "averageScore": 60.0,
+            "responseCount": 20,
+            "scoreDistribution": {
+              "green": 4,
+              "yellow": 12,
+              "red": 4
+            }
+          },
+          "q-5": {
+            "questionId": "q-5",
+            "dimensionId": "certainty",
+            "questionText": "\u05d8\u05e7\u05e1\u05d8 \u05e9\u05d0\u05dc\u05d4",
+            "averageScore": 60.0,
+            "responseCount": 20,
+            "scoreDistribution": {
+              "green": 4,
+              "yellow": 12,
+              "red": 4
+            }
+          },
+          "q-6": {
+            "questionId": "q-6",
+            "dimensionId": "organizational-climate",
+            "questionText": "\u05d8\u05e7\u05e1\u05d8 \u05e9\u05d0\u05dc\u05d4",
+            "averageScore": 60.0,
+            "responseCount": 20,
+            "scoreDistribution": {
+              "green": 4,
+              "yellow": 12,
+              "red": 4
+            }
+          },
+          "q-7": {
+            "questionId": "q-7",
+            "dimensionId": "meaning",
+            "questionText": "\u05d8\u05e7\u05e1\u05d8 \u05e9\u05d0\u05dc\u05d4",
+            "averageScore": 60.0,
+            "responseCount": 20,
+            "scoreDistribution": {
+              "green": 4,
+              "yellow": 12,
+              "red": 4
+            }
+          }
+        },
+        "calculatedAt": "2026-07-27T12:00:00Z",
+        "organizationId": "org-test",
+        "surveyDefinitionHash": "sha256:eabddb4fdfbcdcae444b183d1892876658ff95e1ca8fa1f6e37d89310ecae637",
+        "backgroundContext": {
+          "notes": "Some notes"
+        }
+      }
+    ]
+  }
+}

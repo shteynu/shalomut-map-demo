@@ -1,3 +1,5 @@
+from src.contracts import AI_ANALYTICS_V4_CONTRACT_VERSION, AI_ANALYTICS_V5_CONTRACT_VERSION, AI_ANALYTICS_CONTRACT_VERSION
+from src.schemas.contract_registry import get_capabilities
 """The Hebrew this service composes itself.
 
 Two kinds of it: the prompts sent to a provider, and the one interpretation
@@ -97,7 +99,7 @@ def interpretation_prompt(
     status: str,
     question_aggregates: list[Dict[str, Any]],
     background_context: Optional[Dict[str, Any]] = None,
-    contract_version: str = "4.0",
+    contract_version: str = AI_ANALYTICS_V4_CONTRACT_VERSION,
     all_dimension_scores: Optional[Dict[str, Any]] = None,
 ) -> str:
     uses_dynamic_questions = any(
@@ -107,7 +109,7 @@ def interpretation_prompt(
     lines = []
     for aggregate in question_aggregates:
         dist_str = ""
-        if contract_version == "5.0" and isinstance(aggregate.get("scoreDistribution"), dict):
+        if get_capabilities(contract_version).supportsScoreDistribution and isinstance(aggregate.get("scoreDistribution"), dict):
             dist = aggregate["scoreDistribution"]
             dist_str = f" (תשובות: {dist.get('green', 0)} ירוק, {dist.get('yellow', 0)} צהוב, {dist.get('red', 0)} אדום)"
         lines.append(
@@ -119,7 +121,7 @@ def interpretation_prompt(
     bg_section = ("\nרקע בית הספר:\n" + "\n".join(bg_lines)) if bg_lines else ""
 
     cross_dim_section = ""
-    if contract_version == "5.0" and isinstance(all_dimension_scores, dict) and all_dimension_scores:
+    if get_capabilities(contract_version).supportsScoreDistribution and isinstance(all_dimension_scores, dict) and all_dimension_scores:
         cd_lines = []
         for d_id, d_val in all_dimension_scores.items():
             s_val = d_val.get("averageScore", 0.0) if isinstance(d_val, dict) else getattr(d_val, "averageScore", 0.0)
@@ -132,7 +134,7 @@ def interpretation_prompt(
 
     length_instruction = (
         "כתוב בין 2 ל-5 משפטים שלמים."
-        if contract_version == "5.0"
+        if get_capabilities(contract_version).supportsScoreDistribution
         else "כתוב בדיוק שני משפטים שלמים."
     )
 
@@ -147,7 +149,7 @@ def interpretation_prompt(
     bucket_instruction = (
         " צטט כל קבוצת תשובות בנפרד: אל תחבר קבוצות צבע או שאלות שונות "
         "למספר אחד, וזכור שצהוב מסמן מעקב ולא חוסר."
-        if contract_version == "5.0"
+        if get_capabilities(contract_version).supportsScoreDistribution
         else ""
     )
 

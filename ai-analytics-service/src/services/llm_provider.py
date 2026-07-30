@@ -1,3 +1,5 @@
+from src.contracts import AI_ANALYTICS_V4_CONTRACT_VERSION, AI_ANALYTICS_V5_CONTRACT_VERSION, AI_ANALYTICS_CONTRACT_VERSION
+from src.schemas.contract_registry import get_capabilities
 """What the service asks a model for, and what it does with the answer.
 
 The three seams this file used to hold in one class now live next door:
@@ -123,7 +125,7 @@ class LLMProviderService:
         retry_tier: str = "fast",
         question_aggregates: Iterable[Dict[str, Any]] | None = None,
         background_context: Optional[Dict[str, Any]] = None,
-        contract_version: str = "4.0",
+        contract_version: str = AI_ANALYTICS_V4_CONTRACT_VERSION,
         all_dimension_scores: Optional[Dict[str, Any]] = None,
     ) -> str:
         return self.generate_psychological_interpretation_result(
@@ -147,7 +149,7 @@ class LLMProviderService:
         retry_tier: str = "fast",
         question_aggregates: Iterable[Dict[str, Any]] | None = None,
         background_context: Optional[Dict[str, Any]] = None,
-        contract_version: str = "4.0",
+        contract_version: str = AI_ANALYTICS_V4_CONTRACT_VERSION,
         all_dimension_scores: Optional[Dict[str, Any]] = None,
     ) -> InterpretationGeneration:
         """
@@ -270,7 +272,7 @@ class LLMProviderService:
         dim_scores: Dict[str, Any],
         background_context: Optional[Dict[str, Any]] = None,
         retry_tier: str = "fast",
-        contract_version: str = "4.0",
+        contract_version: str = AI_ANALYTICS_V4_CONTRACT_VERSION,
         question_aggregates: Iterable[Dict[str, Any]] | None = None,
     ) -> str:
         yellow_red_count = sum(
@@ -288,7 +290,7 @@ class LLMProviderService:
             "כל המסקנות נשענות על נתונים מצרפיים מעל סף הפרטיות."
         )
 
-        if contract_version != "5.0":
+        if not get_capabilities(contract_version).supportsPartialMaps:
             return deterministic_summary
 
         model_name = self._model_for_tier(retry_tier)
@@ -570,7 +572,7 @@ class LLMProviderService:
         status: str,
         question_aggregates: list[Dict[str, Any]],
         background_context: Optional[Dict[str, Any]] = None,
-        contract_version: str = "4.0",
+        contract_version: str = AI_ANALYTICS_V4_CONTRACT_VERSION,
         all_dimension_scores: Optional[Dict[str, Any]] = None,
     ) -> str:
         return hebrew_prompts.interpretation_prompt(
@@ -625,7 +627,7 @@ class LLMProviderService:
     def is_complete_hebrew_copy(
         self,
         text: str,
-        contract_version: str = "4.0",
+        contract_version: str = AI_ANALYTICS_V4_CONTRACT_VERSION,
     ) -> bool:
         return hebrew_validation.is_complete_hebrew_copy(
             text,
@@ -639,7 +641,7 @@ class LLMProviderService:
         self,
         text: str,
         status: str,
-        contract_version: str = "4.0",
+        contract_version: str = AI_ANALYTICS_V4_CONTRACT_VERSION,
         distribution_counts: Optional[set[str]] = None,
     ) -> bool:
         return hebrew_validation.is_status_consistent(
