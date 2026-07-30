@@ -27,6 +27,18 @@ exactly like the deployed one. Generate them once:
 openssl rand -hex 32
 ```
 
+`npm run verify` includes `verify:db`, which needs a database of its own — it
+empties it between cases, so it must never share one with development data.
+Create it once, in the same container:
+
+```bash
+docker exec shalomut-local-db psql -U shalomut -d postgres -c "CREATE DATABASE shalomut_test OWNER shalomut;"
+```
+
+It is chosen by `TEST_DATABASE_URL` and defaults to that container; `.env` is
+never read for it, so the suite can reach neither the deployed database nor the
+local development one. CI points the same variable at its own service.
+
 ## Every day
 
 ```bash

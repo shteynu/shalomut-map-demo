@@ -1,4 +1,5 @@
 import { SurveyResponseRecord } from '../../types/backend';
+import { DuplicateResponseError } from '../errors';
 import { ISurveyRepository } from '../interfaces';
 
 export class InMemorySurveyRepository implements ISurveyRepository {
@@ -13,6 +14,20 @@ export class InMemorySurveyRepository implements ISurveyRepository {
   public async saveResponse(
     response: SurveyResponseRecord
   ): Promise<SurveyResponseRecord> {
+    // Mirrors the database's unique index so both implementations answer a
+    // duplicate the same way. This store is single-threaded and cannot race,
+    // so it proves the contract, never the concurrency semantics — that needs
+    // the PostgreSQL suite.
+    if (response.anonymousTokenHash) {
+      const duplicate = await this.hasTokenSubmitted(
+        response.roundId,
+        response.anonymousTokenHash,
+      );
+      if (duplicate) {
+        throw new DuplicateResponseError(response.roundId);
+      }
+    }
+
     const copy = { ...response };
     this.responses.set(copy.id, copy);
     return copy;
