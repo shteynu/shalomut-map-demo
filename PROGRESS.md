@@ -82,9 +82,10 @@ first one ever; contract `5.0` is switched on and proven, and the provider quota
     description where the advice belongs. All three land on the 5.0 path only, so the prompts of the closed
     contracts are untouched, and a test asserts that. After the fix the same fixture produced "21 answers out
     of 40", each colour quoted separately with yellow named as monitoring, and the recommendation itself.
-  - **Known edge, not yet resolved**: the pace is one number for the process while the limits are per model,
-    so a safety-validator replay — the only path that reaches `LLM_MODEL_HEAVY` — would run at lite's 14 per
-    minute against flash's 5. Replays are rare and fail closed, but a per-model queue is the real fix.
+  - **Known edge, resolved 2026-07-30 as item 20**: the pace was one number for the process while the limits
+    are per model, so a safety-validator replay — the only path that reaches `LLM_MODEL_HEAVY` — ran at lite's
+    14 per minute against flash's 5. The queue is now one per model, which is what that entry called the real
+    fix.
 - **A round is now paced to what the tier allows (2026-07-29; `794c9b1`, deployed and proven live).**
   Concurrency was the wrong axis: two slots still deliver a round's seventeen requests inside one minute, and
   the free tier for `gemini-3.5-flash` allows five. `LLM_MAX_REQUESTS_PER_MINUTE` (default `5`) adds the axis
@@ -486,9 +487,48 @@ first one ever; contract `5.0` is switched on and proven, and the provider quota
        where the word already carries Hebrew — so the answer becomes correct instead of refused, and a word
        with no Hebrew in it stays untouched for the check to refuse. That keeps the tightening from becoming
        a new way to lose a dimension to catalog copy, which is what items 15 and 16 were about.
+
+20. [x] **The pace was one number and the quotas are per model** (2026-07-30). Not a new discovery — item 13
+       recorded it as a known edge and named a per-model queue as the real fix, and `render.yaml` deferred to
+       that note beside `LLM_MODEL_HEAVY`. What made it worth closing now is where it lands: `retry_tier`
+       switches an *entire node* to the heavy model, so a replayed round sent every problematic dimension to
+       `gemini-3.5-flash` back to back at the pace tuned for lite. Measured on the queue at the deployed
+       numbers: eight sends 4.29 s apart, all inside 30 s, eight in the worst sixty-second window against a
+       limit of five. That is the original `429` relocated into the one path that opens only when the round is
+       already in trouble. The queue is now keyed by model name and each tier carries its own rate
+       (`LLM_MAX_REQUESTS_PER_MINUTE_HEAVY`, `4` in `render.yaml`), which puts the same eight sends 15 s apart
+       and five in the worst window. Keying by name rather than by tier is what makes the alternative free:
+       pointing `LLM_MODEL_HEAVY` at the fast model gives one bucket at the stricter pace with no code change.
+       The single strict queue was rejected for what it costs the ordinary round — the same seventeen requests
+       would take 240 s instead of 68.6 s, to pay for a replay most rounds never make. **Residual risk, and no
+       pace fixes it**: the heavy tier allows 20 requests a day, so four replays exhaust it; the service falls
+       back, which is the wanted behaviour, but the real fix is for a replay to stop sending a whole node to
+       the heavy model at once.
 ---
 
 ## Completed Tasks
+
+- [x] **2026-07-30**: **One queue per model, because that is the unit the provider counts in** (item 20):
+  - `ProviderRateLimiter` keys its bookings by model name instead of holding one `_next_send_at` for the
+    process, and `model` is a required keyword on `book`/`wait` — a pace with no name attached is what the
+    defect was. `Settings.requests_per_minute_for(model)` answers per name: the fast rate for `LLM_MODEL_FAST`,
+    the new `LLM_MAX_REQUESTS_PER_MINUTE_HEAVY` for `LLM_MODEL_HEAVY`, the stricter of the two when one name is
+    both, and the strictest positive rate on the key for a name on neither — an unknown quota is not an absent
+    one. Zero still means unpaced, and is excluded from the strictest-rate comparison rather than winning it.
+  - The heavy default is `5` and deliberately does not inherit the fast setting: inheritance is exactly how the
+    defect arose, when the fast pace moved to `14` with lite and the heavy model kept borrowing it.
+  - **Verification Evidence**: `pytest` 228/228 (222 before, six new). Fail-first confirmed against the
+    previous code — eight of the file's tests failed, the six new ones plus the two whose bare `book()` no
+    longer names a model. `npm test` 251/251 and `npm run lint` clean, which is what Core has to say about a
+    change that does not touch it. `render.yaml` parses and carries the new key with value `4`.
+  - Measured on the queue itself at the deployed numbers, reading the waits `book` returns rather than sleeping
+    through them: eight heavy sends went 4.29 s apart, spanning 30 s, eight inside the worst sixty-second
+    window against a limit of five; they now go 15 s apart, spanning 105 s, five in the worst window. An
+    ordinary round's seventeen fast sends are unchanged at 68.6 s, against the 240 s a single strict
+    process-wide queue would have cost them.
+  - Not exercised by a deployed round, and it cannot be on demand: the heavy tier is only reached when a safety
+    validator rejects a whole node, which no recent live round has done. `LLM_MAX_REQUESTS_PER_MINUTE_HEAVY`
+    reaches Render through `render.yaml` on the next deploy.
 
 - [x] **2026-07-30**: **Contracts 4.0 and 5.0 are published shapes now, not just code paths** (item 19):
   - Twelve schemas added to both mirrors: `ScoreDistribution`, `QuestionAggregateV5`, `RoundAnalyticsResultV4`

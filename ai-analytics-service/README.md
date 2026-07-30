@@ -200,12 +200,31 @@ window at `15`. The default of `5` matches `gemini-3.5-flash` (`5` per minute,
 `20` a day), which is the stricter bucket and the right assumption for an
 environment that has not said which model it runs.
 
-One queue serves the whole process, because the quota is counted per key rather
-than per round, and Render runs the service with `WEB_CONCURRENCY=1`. Every
-request passes through it, retries included: three attempts 0.5 and 1.1 seconds
-apart used to spend themselves inside the minute that had just refused them. A
-`Retry-After` the provider sends outranks the interval when it asks for longer,
-and the retry budget declines a wait it cannot hold instead of shortening it.
+Which is why `LLM_MAX_REQUESTS_PER_MINUTE_HEAVY` exists and paces
+`LLM_MODEL_HEAVY` separately, at `4` in `render.yaml`. The heavy model is not an
+occasional single request that could round down into the fast model's budget:
+`retry_tier` switches an entire node to it, so a replayed round sends every
+problematic dimension there back to back. On the fast model's `14` that is
+nearly three times what `gemini-3.5-flash` allows — the original `429`, moved
+into the path that only opens once the round is already in trouble. Unset it
+defaults to `5` rather than to the fast pace, because inheriting would rebuild
+the defect the next time the fast number was raised. Its daily count is the
+residual risk and no pace addresses it: at `20` a day, four replays exhaust the
+tier, and the service then falls back.
+
+There is one queue per model and one set of them per process. Per process,
+because the quota is counted per key rather than per round, and Render runs the
+service with `WEB_CONCURRENCY=1`. Per model, because that is the unit the
+provider counts in — and because a single queue would have to run at the
+strictest tier on the key, which would slow every ordinary round for the sake of
+a replay that never happens in most of them. Two model names mean two buckets;
+the same name on both tiers means one bucket at the stricter of the two paces,
+so pointing `LLM_MODEL_HEAVY` at the fast model needs no code change. Every
+request passes through the queue, retries included: three attempts 0.5 and 1.1
+seconds apart used to spend themselves inside the minute that had just refused
+them. A `Retry-After` the provider sends outranks the interval when it asks for
+longer, and the retry budget declines a wait it cannot hold instead of
+shortening it.
 
 At fourteen per minute a round takes a little over a minute; at five it takes
 about three and a half. Nobody waits on either — the webhook answered `202` long

@@ -223,6 +223,21 @@ class Settings:
             0.0,
             float(os.getenv("LLM_MAX_REQUESTS_PER_MINUTE", "5")),
         )
+        # The pace for the heavy tier, and it is a separate number because the
+        # quota is separate. The setting above belongs to `LLM_MODEL_FAST` and
+        # is tuned to that model's tier; the heavy model has a tier of its own,
+        # and a replay switches a whole node to it at once, so borrowing the
+        # fast number sends a node's worth of requests at several times what
+        # the heavy tier allows — every live round's original `429`, moved into
+        # the path that only opens when the round is already in trouble.
+        #
+        # Unset means the strictest free tier, deliberately rather than
+        # inheriting the fast number: inheritance would rebuild the defect the
+        # next time the fast pace was raised, which is precisely how it arose.
+        self.llm_max_requests_per_minute_heavy: float = max(
+            0.0,
+            float(os.getenv("LLM_MAX_REQUESTS_PER_MINUTE_HEAVY", "5")),
+        )
 
         # Reserved persistence setting for a future vector-backed catalog.
         self.chroma_persist_dir: str = os.getenv("CHROMA_PERSIST_DIR", "./chroma_db")
@@ -255,6 +270,34 @@ class Settings:
             return "gemini"
 
         return "openai"
+
+    def requests_per_minute_for(self, model_name: str) -> float:
+        """How fast this process may reach one named model. Zero means unpaced.
+
+        Every rate here is per model because that is the unit the provider
+        counts in, so the model name is the whole question. A name configured
+        on both tiers gets the stricter of the two — pointing `LLM_MODEL_HEAVY`
+        at the fast model is a reasonable way to run this service, and it must
+        buy one budget rather than two. A name on neither tier gets the
+        strictest pace on the key, for the same reason the defaults are strict:
+        an unknown quota is not an absent one.
+        """
+        rates = []
+        if model_name and model_name == self.llm_model_fast:
+            rates.append(self.llm_max_requests_per_minute)
+        if model_name and model_name == self.llm_model_heavy:
+            rates.append(self.llm_max_requests_per_minute_heavy)
+        if not rates:
+            rates = [
+                self.llm_max_requests_per_minute,
+                self.llm_max_requests_per_minute_heavy,
+            ]
+
+        # Zero is "no limit", so it cannot join a comparison that is looking
+        # for the strictest number: an unpaced fast tier must not read as the
+        # tightest bound on the key.
+        paced = [rate for rate in rates if rate > 0.0]
+        return min(paced) if paced else 0.0
 
     @property
     def openai_api_key(self) -> str:

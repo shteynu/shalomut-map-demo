@@ -51,9 +51,24 @@ services:
       # project's own 5.0 prompts the same day.
       - key: LLM_MODEL_FAST
         value: "gemini-3.5-flash-lite"
-      # Left on the dashboard, and left on gemini-3.5-flash. It is only reached
-      # when the whole node is replayed, so it borrows a bucket the fast path
-      # no longer touches — see the note in PROGRESS.md about the pace a replay
-      # would run at.
+      # Left on the dashboard, and left on gemini-3.5-flash. It is reached only
+      # when a whole node is replayed, and then the whole node goes at once —
+      # so it needs its own pace rather than the fast model's, which is the
+      # variable below. Both are unset here for the same reason the pace above
+      # is set: the model is on the dashboard, and a pace is only meaningful
+      # beside the name it is counted against.
       - key: LLM_MODEL_HEAVY
         sync: false
+      # Four, against the 5 RPM and 20 RPD gemini-3.5-flash allows on the free
+      # tier. Four rather than five for the reason fourteen is not fifteen: at
+      # exactly five the interval is twelve seconds, and a sixty-second window
+      # holds both endpoints — six sends, one over. Unset defaults to five in
+      # `config.py`, deliberately not to the fast pace, which would rebuild the
+      # defect the next time that number moved.
+      #
+      # The daily count is the residual risk, and no pace fixes it: at twenty a
+      # day, four replays exhaust the heavy tier. The service then falls back,
+      # which is the behaviour we want; the real fix is for a replay to stop
+      # sending an entire node to the heavy model at once.
+      - key: LLM_MAX_REQUESTS_PER_MINUTE_HEAVY
+        value: "4"

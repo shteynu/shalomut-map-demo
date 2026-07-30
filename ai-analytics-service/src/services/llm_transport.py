@@ -135,7 +135,10 @@ def complete_with_retries(
         # the retry clock starts. Waiting for a turn is the rate limit's
         # business, not this call's budget; folding it in would leave a request
         # that waited its twelve seconds with no time left to be retried.
-        provider_rate_limiter.wait()
+        #
+        # Charged against this model's queue and no other's: the tier this
+        # request spends from is the one the model name names.
+        provider_rate_limiter.wait(model=model_name)
         request_started_at = time.monotonic()
         for attempt in range(1, settings.llm_max_attempts + 1):
             try:
@@ -217,7 +220,10 @@ def complete_with_retries(
                             finish_reason or "unavailable",
                         )
                         retry_wait = (
-                            _book_retry_send(request_started_at)
+                            _book_retry_send(
+                                request_started_at,
+                                model_name=model_name,
+                            )
                             if attempt < settings.llm_max_attempts
                             else None
                         )
@@ -278,6 +284,7 @@ def complete_with_retries(
                     retry_wait = _book_retry_send(
                         request_started_at,
                         retry_delay_seconds(error, attempt),
+                        model_name=model_name,
                     )
                     if retry_wait is not None:
                         logger.warning(
@@ -321,6 +328,7 @@ def complete_with_retries(
                     retry_wait = _book_retry_send(
                         request_started_at,
                         _backoff_delay_seconds(attempt),
+                        model_name=model_name,
                     )
                     if retry_wait is not None:
                         logger.warning(
@@ -369,6 +377,8 @@ def _remaining_retry_budget(request_started_at: float) -> float:
 def _book_retry_send(
     request_started_at: float,
     min_delay: float = 0.0,
+    *,
+    model_name: str,
 ) -> float | None:
     """Book the next attempt's turn, or refuse a wait the budget cannot hold.
 
@@ -381,6 +391,7 @@ def _book_retry_send(
     Returns the seconds to wait before re-sending, or `None` to stop retrying.
     """
     return provider_rate_limiter.book(
+        model=model_name,
         min_delay=min_delay,
         max_wait=(
             _remaining_retry_budget(request_started_at)

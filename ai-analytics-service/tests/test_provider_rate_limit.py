@@ -12,6 +12,12 @@ kept, and the second raises the limit and requires the pace to rise with it —
 without which a run that happened to be serial would satisfy the first on its
 own. The rest guard what the pace must not cost: a retry's place in the queue,
 a call's retry budget, and a turn refused without charging the next caller.
+
+A pace is only meaningful beside a model, because that is the unit the provider
+counts in, and the heavy tier is the one that pays for forgetting it: a replay
+switches an entire node to a model whose tier is three times stricter. So the
+queue is keyed by model name, and the tests below hold both halves of that —
+each model kept to its own limit, and no model slowed down by another's.
 """
 
 from time import monotonic
@@ -48,6 +54,25 @@ def _configure_pace(monkeypatch, requests_per_minute):
     )
     provider_rate_limiter.reset()
     return 60.0 / requests_per_minute
+
+
+def _configure_two_paces(monkeypatch, *, fast_rate, heavy_rate):
+    """Two models on one key, each with the pace its own tier allows.
+
+    This is the deployment's shape: the fast model is paced at what its tier
+    permits, and the heavy one has a stricter tier of its own. The interval is
+    not derived here, unlike in `_configure_pace`, because zero is a rate a
+    caller is allowed to ask for and it means "unpaced" rather than "instant".
+    """
+    configure_gemini_retry_test(monkeypatch)
+    monkeypatch.setattr(settings, "llm_max_requests_per_minute", fast_rate)
+    monkeypatch.setattr(settings, "llm_model_heavy", "gemini-test-heavy")
+    monkeypatch.setattr(
+        settings,
+        "llm_max_requests_per_minute_heavy",
+        heavy_rate,
+    )
+    provider_rate_limiter.reset()
 
 
 def _send_times(monkeypatch, requests_per_minute, sends=3):
@@ -172,8 +197,9 @@ def test_waiting_for_a_turn_does_not_spend_the_retry_budget(monkeypatch):
     monkeypatch.setattr(settings, "llm_retry_budget_seconds", 2.0)
     monkeypatch.setattr(settings, "llm_request_timeout_seconds", 2.0)
     # Somebody else just sent, so this call waits half a second for its turn —
-    # a quarter of the budget it must not lose.
-    provider_rate_limiter.book()
+    # a quarter of the budget it must not lose. The same model, because a
+    # booking against another one would not be in this call's way at all.
+    provider_rate_limiter.book(model=settings.llm_model_fast)
     observed_timeouts = []
 
     def fake_urlopen(*_args, timeout=None, **_kwargs):
@@ -236,10 +262,147 @@ def test_a_refused_turn_leaves_the_queue_untouched(monkeypatch):
     """
     monkeypatch.setattr(settings, "llm_max_requests_per_minute", 60.0)
     provider_rate_limiter.reset()
+    model = settings.llm_model_fast
 
-    assert provider_rate_limiter.book() == 0.0
-    assert provider_rate_limiter.book(max_wait=0.5) is None
-    assert provider_rate_limiter.book() == pytest.approx(1.0, abs=0.05)
+    assert provider_rate_limiter.book(model=model) == 0.0
+    assert provider_rate_limiter.book(model=model, max_wait=0.5) is None
+    assert provider_rate_limiter.book(model=model) == pytest.approx(
+        1.0,
+        abs=0.05,
+    )
+
+
+def test_the_heavy_tier_is_paced_at_its_own_limit(monkeypatch):
+    """A replayed node reaches the heavy model at the heavy model's pace.
+
+    This is the whole item. `retry_tier` switches the model for an entire node
+    at once, so a replay sends every problematic dimension to the heavy model
+    back to back — and until now they went out at the fast model's pace, which
+    the deployment tunes to a tier the heavy model does not have. Quotas are
+    counted per model, so that is not a bigger share of one budget; it is
+    roughly three times the other budget.
+    """
+    _configure_two_paces(monkeypatch, fast_rate=600.0, heavy_rate=60.0)
+    sent_at = []
+
+    def fake_urlopen(*_args, **_kwargs):
+        sent_at.append(monotonic())
+        return FakeLLMResponse(ACCEPTED_HEBREW)
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+
+    for _ in range(2):
+        llm_provider_service.generate_psychological_interpretation(
+            "certainty",
+            "ודאות",
+            42.0,
+            "red",
+            retry_tier="heavy",
+        )
+
+    assert len(sent_at) == 2
+    # One second apart, not the tenth of a second the fast tier would allow.
+    assert sent_at[1] - sent_at[0] >= 1.0 - 0.02
+
+
+def test_a_slow_model_does_not_hold_up_a_fast_one(monkeypatch):
+    """One queue per model, because that is how the provider counts.
+
+    A single process-wide queue would be safe and wrong in the other
+    direction: every ordinary round, which never touches the heavy model at
+    all, would be paced at the strictest tier on the key.
+    """
+    _configure_two_paces(monkeypatch, fast_rate=60.0, heavy_rate=6.0)
+
+    # The heavy model takes a ten-second turn, and the fast model's next turn
+    # is unaffected by it.
+    assert provider_rate_limiter.book(model="gemini-test-heavy") == 0.0
+    assert provider_rate_limiter.book(model="gemini-test-model") == 0.0
+    assert provider_rate_limiter.book(
+        model="gemini-test-heavy",
+    ) == pytest.approx(10.0, abs=0.05)
+    assert provider_rate_limiter.book(
+        model="gemini-test-model",
+    ) == pytest.approx(1.0, abs=0.05)
+
+
+def test_two_tiers_on_one_model_share_one_queue(monkeypatch):
+    """Naming the same model twice must not buy twice the quota.
+
+    Pointing `LLM_MODEL_HEAVY` at the fast model is a reasonable way to run
+    this service, and the key is the model name precisely so that choice needs
+    no code: one name, one bucket, and the stricter of the two paces.
+    """
+    _configure_pace(monkeypatch, 60.0)
+    monkeypatch.setattr(settings, "llm_model_heavy", "gemini-test-model")
+    monkeypatch.setattr(settings, "llm_max_requests_per_minute_heavy", 6.0)
+    provider_rate_limiter.reset()
+
+    assert provider_rate_limiter.book(model="gemini-test-model") == 0.0
+    # The second booking waits the stricter tier's ten seconds, and it waits
+    # them whichever tier asked: there is one queue because there is one model.
+    assert provider_rate_limiter.book(
+        model="gemini-test-model",
+    ) == pytest.approx(10.0, abs=0.05)
+
+
+def test_an_unrecognised_model_gets_the_strictest_pace(monkeypatch):
+    """A model nobody configured has a budget nobody knows.
+
+    Same reasoning as the conservative default: an unknown quota is not an
+    absent one, so the strictest pace on the key is the only safe guess.
+    """
+    _configure_two_paces(monkeypatch, fast_rate=60.0, heavy_rate=6.0)
+
+    assert provider_rate_limiter.book(model="gemini-unconfigured") == 0.0
+    assert provider_rate_limiter.book(
+        model="gemini-unconfigured",
+    ) == pytest.approx(10.0, abs=0.05)
+
+
+def test_the_heavy_pace_is_its_own_setting(monkeypatch):
+    """The heavy pace defaults to the strict tier, not to the fast setting.
+
+    Inheriting the fast number when unset would rebuild the defect the moment
+    the deployment raised the fast one — which is exactly how it arose: the
+    pace moved to fourteen with the fast model and the heavy model kept
+    borrowing it.
+    """
+    for variable in ("LLM_API_KEY", "GEMINI_API_KEY", "OPENAI_API_KEY"):
+        monkeypatch.delenv(variable, raising=False)
+
+    monkeypatch.delenv("LLM_MAX_REQUESTS_PER_MINUTE_HEAVY", raising=False)
+    monkeypatch.setenv("LLM_MAX_REQUESTS_PER_MINUTE", "14")
+    assert Settings().llm_max_requests_per_minute_heavy == 5.0
+
+    monkeypatch.setenv("LLM_MAX_REQUESTS_PER_MINUTE_HEAVY", "2")
+    assert Settings().llm_max_requests_per_minute_heavy == 2.0
+
+    monkeypatch.setenv("LLM_MAX_REQUESTS_PER_MINUTE_HEAVY", "-1")
+    assert Settings().llm_max_requests_per_minute_heavy == 0.0
+
+
+def test_zero_turns_one_model_off_without_freeing_the_other(monkeypatch):
+    """Zero means unpaced, and it means it for one model only.
+
+    A paid fast tier is a realistic reason to turn pacing off for it, and the
+    strictest-pace rule must read that as "no limit" rather than as the
+    smallest number it has seen.
+    """
+    _configure_two_paces(monkeypatch, fast_rate=0.0, heavy_rate=6.0)
+
+    assert provider_rate_limiter.book(model="gemini-test-model") == 0.0
+    assert provider_rate_limiter.book(model="gemini-test-model") == 0.0
+    assert provider_rate_limiter.book(model="gemini-test-heavy") == 0.0
+    assert provider_rate_limiter.book(
+        model="gemini-test-heavy",
+    ) == pytest.approx(10.0, abs=0.05)
+    # And an unknown model still gets the strictest *positive* pace, not the
+    # zero that would read as "no limit anywhere".
+    assert provider_rate_limiter.book(model="gemini-unconfigured") == 0.0
+    assert provider_rate_limiter.book(
+        model="gemini-unconfigured",
+    ) == pytest.approx(10.0, abs=0.05)
 
 
 def test_requests_per_minute_comes_from_the_environment(monkeypatch):
