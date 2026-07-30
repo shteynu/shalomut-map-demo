@@ -17,6 +17,10 @@
   ],
   "tags": [
     {
+      "name": "Health",
+      "description": "Deployment liveness and analytics contract capability"
+    },
+    {
       "name": "Rounds",
       "description": "Management of survey rounds and org access codes"
     },
@@ -38,6 +42,129 @@
     }
   ],
   "paths": {
+    "/api/health": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Deployment health and analytics contract capability",
+        "description": "Reports which analytics contract this deployment produces and which versions it still accepts on a callback. Unauthenticated by design and deliberately narrow: no variable value, database, provider or credential state is reported. Answers 503 when the producer version is configured to something Core cannot produce, so the misconfiguration is readable rather than silent.",
+        "responses": {
+          "200": {
+            "description": "The deployment is configured and reports its capability",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "analytics"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    },
+                    "analytics": {
+                      "type": "object",
+                      "required": [
+                        "producedContractVersion",
+                        "producedContractVersionSource",
+                        "producibleContractVersions",
+                        "supportedContractVersions"
+                      ],
+                      "properties": {
+                        "producedContractVersion": {
+                          "type": "string",
+                          "description": "The version Core emits right now.",
+                          "enum": [
+                            "3.0",
+                            "4.0",
+                            "5.0"
+                          ]
+                        },
+                        "producedContractVersionSource": {
+                          "type": "string",
+                          "description": "Whether that version was chosen by configuration or inherited from the documented default.",
+                          "enum": [
+                            "configured",
+                            "default"
+                          ]
+                        },
+                        "producibleContractVersions": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "example": [
+                            "3.0",
+                            "4.0",
+                            "5.0"
+                          ]
+                        },
+                        "supportedContractVersions": {
+                          "type": "array",
+                          "description": "Wider than the producible list: historical contracts stay readable after they stop being produced.",
+                          "items": {
+                            "type": "string"
+                          },
+                          "example": [
+                            "1.0",
+                            "2.0",
+                            "3.0",
+                            "4.0",
+                            "5.0"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The producer contract version is set to an unsupported value",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "error"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "misconfigured"
+                      ]
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "Names the variable and the supported values. Never repeats the configured value."
+                    },
+                    "analytics": {
+                      "type": "object",
+                      "properties": {
+                        "producibleContractVersions": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/rounds": {
       "get": {
         "tags": [
