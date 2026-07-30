@@ -9,6 +9,24 @@ import { MinimalPrismaClient } from '../prisma/prisma-client';
 import { createCanonicalSurveyDefinition } from '../../survey-definition';
 import { surveyInstrument } from '../../shalomut-source';
 
+/**
+ * Deletes every stored record whose fields all match `where`; an absent or
+ * empty `where` clears the store, the way `clear-db.ts` calls it.
+ */
+function deleteMatching(store: Map<string, any>, where?: any) {
+  let count = 0;
+  for (const [key, record] of store) {
+    const matches =
+      !where ||
+      Object.entries(where).every(([field, value]) => record[field] === value);
+    if (matches) {
+      store.delete(key);
+      count++;
+    }
+  }
+  return { count };
+}
+
 function createMockPrismaClient(): MinimalPrismaClient {
   const orgs = new Map<string, any>();
   const rounds = new Map<string, any>();
@@ -29,11 +47,7 @@ function createMockPrismaClient(): MinimalPrismaClient {
         orgs.set(where.id, updated);
         return updated;
       },
-      deleteMany: async () => {
-        const count = orgs.size;
-        orgs.clear();
-        return { count };
-      },
+      deleteMany: async (args?: any) => deleteMatching(orgs, args?.where),
     },
     surveyRound: {
       create: async ({ data }: any) => {
@@ -92,11 +106,7 @@ function createMockPrismaClient(): MinimalPrismaClient {
         rounds.set(where.id, { ...existing, ...data });
         return { count: 1 };
       },
-      deleteMany: async () => {
-        const count = rounds.size;
-        rounds.clear();
-        return { count };
-      },
+      deleteMany: async (args?: any) => deleteMatching(rounds, args?.where),
     },
     surveyResponse: {
       create: async ({ data, include }: any) => {
@@ -137,11 +147,7 @@ function createMockPrismaClient(): MinimalPrismaClient {
         }
         return count;
       },
-      deleteMany: async () => {
-        const count = responses.size;
-        responses.clear();
-        return { count };
-      },
+      deleteMany: async (args?: any) => deleteMatching(responses, args?.where),
     },
   };
 }

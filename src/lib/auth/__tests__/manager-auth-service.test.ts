@@ -15,6 +15,12 @@ const ENV_KEYS = [
 ] as const;
 
 /**
+ * `next` declares `NODE_ENV` as a readonly literal union, so writing it back
+ * needs a mutable view of the very same object.
+ */
+const mutableEnv = process.env as Record<string, string | undefined>;
+
+/**
  * Runs `body` with the given process env overrides (`undefined` deletes the
  * variable) and restores the previous values afterwards.
  */
@@ -22,7 +28,6 @@ async function withEnv(
   overrides: Partial<Record<(typeof ENV_KEYS)[number], string | undefined>>,
   body: () => Promise<void> | void,
 ) {
-  const mutableEnv = process.env as Record<string, string | undefined>;
   const original = Object.fromEntries(
     ENV_KEYS.map((key) => [key, process.env[key]]),
   );

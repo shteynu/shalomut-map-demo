@@ -1,6 +1,6 @@
 import { WellbeingDimensionId, WellbeingStatus } from '../shalomut-source';
 
-export type { WellbeingStatus };
+export type { WellbeingDimensionId, WellbeingStatus };
 export type RoundStatus = 'draft' | 'active' | 'closed' | 'archived';
 export type AnswerValue = 'green' | 'yellow' | 'red';
 

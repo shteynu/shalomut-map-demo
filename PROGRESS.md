@@ -710,6 +710,27 @@ the one open risk and the one open item)
 
 ## Completed Tasks
 
+- [x] **2026-07-30**: **The repository typechecks itself now — 14 errors had been sitting on a green `main`**:
+  - Nothing in the repo ran `tsc`. `npm test` uses `tsx`, which strips types without checking them; `eslint`
+    has no type-aware rules; and `next build` typechecks only what the app graph reaches, so `__tests__`
+    drifted freely. `npx tsc --noEmit` reported 14 errors on a clean `main`, all in test files.
+  - Fixed at the fixtures, not by widening the production types. `contract-3-staging-dryrun.test.ts` handed
+    `QuestionAnswerRecord` raw scores like `85` and `88`, outside the `100 | 60 | 0` scale a real answer
+    carries; it now rotates over `AnswerValue` and derives the score through `SurveyService.valueToScore`,
+    which returns that union. Two `assert.ok` targets got the explicit annotations the narrowing needs
+    (TS7022). `openapi.test.ts` dropped a `.ts` extension from a dynamic import. The Prisma mock grew the
+    `deleteMany` its own `MinimalPrismaClient` contract requires, backed by the same maps. Two env-swapping
+    tests write `NODE_ENV` through a locally cast mutable view, since `next` declares it readonly.
+    `types/backend.ts` re-exports `WellbeingDimensionId` beside the `WellbeingStatus` it already re-exported,
+    which is what a test importing it from there assumed.
+  - **The gate that stops the drift**: `npm run typecheck` (`next typegen && tsc --noEmit`, ~2 s) and a
+    matching CI step ahead of the build in `deploy-vercel.yml`. `next typegen` is not optional — the generated
+    route types under `.next/types/` are in the tsconfig project, so a bare `tsc` fails on a fresh clone.
+    Recorded as the required minimum for any `.ts`/`.tsx` change in `shalomut-verification`.
+  - **Verification Evidence**: `npm run typecheck` exit `0` (14 → 0), `npm test` 274/274, `npm run lint`
+    clean, `npm run build` 39 routes. Errors reproduced before the fix and each error's file rechecked after.
+    CI's new step is **not** exercised — it runs on the next push.
+
 - [x] **2026-07-30**: **One queue per model, because that is the unit the provider counts in** (item 20):
   - `ProviderRateLimiter` keys its bookings by model name instead of holding one `_next_send_at` for the
     process, and `model` is a required keyword on `book`/`wait` — a pace with no name attached is what the

@@ -6,6 +6,12 @@ import { JwtSessionProvider } from "@/lib/auth/jwt-session-provider";
 import { MANAGER_ORGANIZATION_HEADER } from "../manager-scope";
 import type { Manager, OrganizationMembership } from "@/lib/auth/types";
 
+/**
+ * `next` declares `NODE_ENV` as a readonly literal union, so a test that swaps
+ * it needs a mutable view of the very same object.
+ */
+const mutableEnv = process.env as Record<string, string | undefined>;
+
 const mockManager: Manager = {
   id: "mgr-test-999",
   email: "principal@shalom-school.ac.il",
@@ -113,7 +119,6 @@ test("middleware allows unauthenticated access to /login and /login/ trailing sl
 });
 
 test("middleware and respondent routes stay functional when SESSION_SECRET is missing in deployed runtime", async () => {
-  const mutableEnv = process.env as Record<string, string | undefined>;
   const origNodeEnv = process.env.NODE_ENV;
   const origVercelEnv = process.env.VERCEL_ENV;
   const origSecret = process.env.SESSION_SECRET;

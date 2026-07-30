@@ -8,8 +8,8 @@ import {
   validateStoneMapResult,
 } from '../../ai-contract';
 import type {
+  AnswerValue,
   DynamicQuestionAggregate,
-  QuestionAnswerRecord,
   RoundDimensionScore,
   SurveyDefinition,
   SurveyDefinitionQuestion,
@@ -18,6 +18,7 @@ import type {
 } from '../../types/backend';
 import type { WellbeingDimensionId } from '../../shalomut-source';
 import { AnalyticsService } from '../analytics.service';
+import { SurveyService } from '../survey.service';
 import { createSurveyDefinitionHash } from '../../survey-definition-hash';
 
 const ALL_DIMENSION_IDS: WellbeingDimensionId[] = [
@@ -63,6 +64,23 @@ function createRoundFixture(
   };
 }
 
+/**
+ * Respondents only ever pick one of the three scale values, so the fixture
+ * rotates over those and derives the score the same way production does. A raw
+ * score array drifted outside the `100 | 60 | 0` scale the records actually
+ * carry.
+ */
+const ANSWER_ROTATION: AnswerValue[] = [
+  'green',
+  'green',
+  'green',
+  'yellow',
+  'green',
+  'green',
+  'yellow',
+  'green',
+];
+
 function createMockResponses(
   roundId: string,
   questions: SurveyDefinitionQuestion[],
@@ -72,11 +90,10 @@ function createMockResponses(
   return Array.from({ length: count }, (_, responseIndex) => {
     const answers = questions
       .filter((q) => !omitAnswersForQuestionId || q.id !== omitAnswersForQuestionId || responseIndex < count - 1)
-      .map((question, questionIndex): QuestionAnswerRecord => {
-        const scores = [85, 90, 75, 60, 95, 80, 70, 88];
-        const sourceScore = scores[(questionIndex + responseIndex) % scores.length];
-        const score: QuestionAnswerRecord['score'] = sourceScore >= 75 ? 100 : sourceScore >= 50 ? 60 : 0;
-        const value: QuestionAnswerRecord['value'] = score === 100 ? 'green' : score === 60 ? 'yellow' : 'red';
+      .map((question, questionIndex) => {
+        const value =
+          ANSWER_ROTATION[(questionIndex + responseIndex) % ANSWER_ROTATION.length];
+        const score = SurveyService.valueToScore(value);
         return {
           questionId: question.id,
           dimensionId: question.dimensionId,
@@ -139,7 +156,9 @@ test('Workstream A Dry-Run: Scenario A1 (Unlocked disposable round with custom q
   const dimensionKeys = Object.keys(analytics.dimensionScores);
   assert.strictEqual(dimensionKeys.length, 8);
   for (const dimId of ALL_DIMENSION_IDS) {
-    const dimScore: RoundDimensionScore = analytics.dimensionScores[dimId];
+    // Annotated because `assert.ok` narrowing needs a declared type here.
+    const dimScore: RoundDimensionScore | undefined =
+      analytics.dimensionScores[dimId];
     assert.ok(dimScore);
     assert.strictEqual(dimScore.dimensionId, dimId);
     assert.strictEqual(dimScore.isLocked, false);
@@ -152,7 +171,8 @@ test('Workstream A Dry-Run: Scenario A1 (Unlocked disposable round with custom q
   const aggregateKeys = Object.keys(analytics.questionAggregates);
   assert.strictEqual(aggregateKeys.length, 8);
   for (const question of customQuestions) {
-    const aggregate: DynamicQuestionAggregate = analytics.questionAggregates[question.id];
+    const aggregate: DynamicQuestionAggregate | undefined =
+      analytics.questionAggregates[question.id];
     assert.ok(aggregate, `Aggregate for ${question.id} must exist`);
     assert.strictEqual(aggregate.questionId, question.id);
     assert.strictEqual(aggregate.dimensionId, question.dimensionId);

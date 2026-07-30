@@ -46,7 +46,12 @@ privacy, auth, persistence, contracts или deployment.
 ### TypeScript и Next.js
 
 - Запускай ближайший test напрямую через `npx tsx --test <test-file>`.
-- Запускай полный TypeScript suite через `npm test`.
+- Запускай полный TypeScript suite через `npm test`. `tsx` стирает типы и не
+  проверяет их, поэтому зелёный `npm test` ничего не говорит о типах.
+- Проверяй типы всего проекта, включая tests, через `npm run typecheck`
+  (`next typegen && tsc --noEmit`). Это обязательный минимум для любого
+  изменения `.ts`/`.tsx`: `npm run build` типизирует только граф приложения и
+  не видит ошибки в `__tests__`, а `npm run lint` типы не проверяет вообще.
 - Проверяй lint через `npm run lint`.
 - Проверяй production compilation и App Router boundaries через
   `npm run build`.
