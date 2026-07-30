@@ -1,7 +1,7 @@
 # Shalomut Tracker — актуальный handoff
 
-Обновлено: 2026-07-30 (**`main` теперь пропускает deploy только после полного TypeScript, ESLint, build и Python
-suite**, и GitHub Actions подтвердил это на `4430796`; первый живой AI-раунд по-прежнему завершён `success`,
+Обновлено: 2026-07-30 (**`main` теперь пропускает deploy только после whole-project TypeScript, ESLint, build и Python
+suite**, и GitHub Actions подтвердил финальный gate на `2e38a14`; первый живой AI-раунд по-прежнему завершён `success`,
 закрыты пункты 8, 10 и 15–21. Единственный открытый пункт и единственный открытый риск — ротация четырёх
 секретов, засвеченных 2026-07-29)
 
@@ -34,20 +34,23 @@ exact вопросы раунда принадлежат persisted `SurveyRound.
 
 ## Текущий snapshot
 
-- **CI проверяет то же, что считается доказательством локально (2026-07-30, `620c5f6` + `4430796`).** Job
+- **CI проверяет то же, что считается доказательством локально (2026-07-30, `620c5f6` + `4430796` +
+  `2e38a14`).** Job
   `Build & Validate` теперь делает чистый `npm ci`, typecheck, все 274 TypeScript-теста, ESLint, production
   build, создаёт собственный Python 3.11 venv, ставит зависимости из `requirements.txt` и dev extra, затем
   запускает все 269 Python-тестов через `.venv/bin/python -m pytest`. Первый запуск нашёл отдельный дефект:
   quoted recursive glob не раскрывался на Ubuntu, а отсутствующий локальный `tsx` заставлял `npx` предлагать
   сетевую установку. `scripts/run-tests.mjs` теперь детерминированно перечисляет test-файлы, а `tsx@4.23.1`
-  закреплён в lockfile. Локально прошли добавленные команды и `js-yaml` parse workflow; GitHub Actions run
-  [30560598544](https://github.com/shteynu/shalomut-map-demo/actions/runs/30560598544) прошёл все validate steps
-  на `main`, commit `4430796`, что дополнительно подтверждено визуально в Chrome. Manual production deploy
-  ожидаемо пропущен. Осталась только maintenance-аннотация: action-версии `checkout@v4`, `setup-node@v4` и
+  закреплён в lockfile. `2e38a14` довёл gate до `next typegen && tsc --noEmit`, исправил 14 test-only ошибок
+  и закрепил typecheck как минимум для каждого `.ts`/`.tsx` изменения. Локально прошли typecheck, 274/274
+  TypeScript-теста, lint, targeted 37/37, production build и `js-yaml` parse workflow. GitHub Actions run
+  [30561571129](https://github.com/shteynu/shalomut-map-demo/actions/runs/30561571129) прошёл все validate steps
+  на `main`, commit `2e38a14`, включая 269 Python-тестов; CodeQL run
+  [30561571152](https://github.com/shteynu/shalomut-map-demo/actions/runs/30561571152) тоже прошёл. Manual
+  production deploy ожидаемо пропущен. Осталась только maintenance-аннотация: action-версии `checkout@v4`, `setup-node@v4` и
   `setup-python@v5` ещё target Node.js 20 и временно принудительно исполняются GitHub на Node.js 24.
-  - На момент handoff самой CI-реализации, до документационного session-close commit,
-    `HEAD == origin/main == 4430796`.
-  - Семь несвязанных пользовательских файлов остаются modified и не входили в CI-коммиты: `ROADMAP.md`,
+  - Последний содержательный code commit, проверенный CI, — `2e38a14`; оставшееся session-close изменение только документационное.
+  - В основном checkout семь несвязанных пользовательских файлов остаются modified и не входили в CI-коммиты: `ROADMAP.md`,
     `ai-analytics-service/.env.example`, `ai-analytics-service/README.md`,
     `ai-analytics-service/src/schemas/mcp_types.py`, `next-env.d.ts`,
     `src/lib/__tests__/ai-insights-view-model.test.ts`, `src/lib/ai-insights-view-model.ts`.

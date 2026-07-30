@@ -1,29 +1,30 @@
 # Shalomut Map — PROGRESS.md
 
-Updated: 2026-07-30 (**`main` now enforces the complete TypeScript, ESLint, build and Python verification suite
-before deploy**, and GitHub Actions proved it on commit `4430796`; the live AI state is unchanged: contract
+Updated: 2026-07-30 (**`main` now enforces whole-project TypeScript, ESLint, build and Python verification
+before deploy**, and GitHub Actions proved the final gate on commit `2e38a14`; the live AI state is unchanged: contract
 `5.0` is proven, items 8, 10 and 15–21 are closed, and item 12 — rotating the four exposed secrets — remains
 the one open risk and the one open item)
 
 ## Current State
 
-- **Session close, 2026-07-30: the deploy workflow can no longer go green while the TypeScript tests, ESLint
-  or Python service are red.** Commit `620c5f6` changed `Build & Validate` from three checks to the complete
-  sequence: `npm ci`, typecheck, `npm test`, ESLint, build, a fresh Python 3.11 venv, dependency install from
+- **Session close, 2026-07-30: the deploy workflow can no longer go green while the TypeScript tests, their
+  types, ESLint or Python service are red.** Commit `620c5f6` changed `Build & Validate` from three checks to the complete
+  sequence: `npm ci`, `npm run typecheck`, `npm test`, ESLint, build, a fresh Python 3.11 venv, dependency install from
   `ai-analytics-service/requirements.txt` plus its dev extra, and `.venv/bin/python -m pytest`. The first CI
   attempt exposed that quoted recursive globs are not expanded by the Ubuntu runner; commit `4430796` replaced
   the fragile command with `scripts/run-tests.mjs`, which enumerates every `src/**/__tests__/*.test.ts(x)` file
   and invokes the pinned `tsx@4.23.1` without a network fallback. Before wiring them into CI, `npm test` (274
   tests), `npm run lint`, `.venv/bin/python -m pytest` (269 tests) and the `js-yaml` workflow parse all passed
-  locally. GitHub Actions run
-  [30560598544](https://github.com/shteynu/shalomut-map-demo/actions/runs/30560598544) then passed every validate
-  step on `main` at `4430796`; its `Success` state and successful `Build & Validate` node were also confirmed
-  visually in Chrome. The manual production deploy was skipped as designed. One non-blocking annotation remains:
+  locally. Commit `2e38a14` made that typecheck self-contained on a fresh checkout with
+  `next typegen && tsc --noEmit` and fixed all 14 test-only errors it exposed. GitHub Actions run
+  [30561571129](https://github.com/shteynu/shalomut-map-demo/actions/runs/30561571129) passed every validate
+  step on `main` at `2e38a14`, including 274 TypeScript and 269 Python tests; CodeQL run
+  [30561571152](https://github.com/shteynu/shalomut-map-demo/actions/runs/30561571152) also passed. The manual
+  production deploy was skipped as designed. One non-blocking annotation remains:
   `actions/checkout@v4`, `actions/setup-node@v4` and `actions/setup-python@v5` target deprecated Node.js 20 and
   are currently forced by GitHub onto Node.js 24.
-  - At the CI implementation handoff, before the documentation-only session-close commit, `HEAD`,
-    `origin/main` and `origin/HEAD` all pointed to `4430796`.
-  - The working tree is intentionally not clean: seven pre-existing user-owned files remain modified
+  - The last substantive code commit validated by CI is `2e38a14`; the remaining session-close change is documentation only.
+  - The primary checkout intentionally remains dirty: seven pre-existing user-owned files are modified
     (`ROADMAP.md`, three files under `ai-analytics-service`, `next-env.d.ts` and two AI insights view-model
     files). They were preserved and excluded from the CI commits.
 
@@ -728,8 +729,11 @@ the one open risk and the one open item)
     route types under `.next/types/` are in the tsconfig project, so a bare `tsc` fails on a fresh clone.
     Recorded as the required minimum for any `.ts`/`.tsx` change in `shalomut-verification`.
   - **Verification Evidence**: `npm run typecheck` exit `0` (14 → 0), `npm test` 274/274, `npm run lint`
-    clean, `npm run build` 39 routes. Errors reproduced before the fix and each error's file rechecked after.
-    CI's new step is **not** exercised — it runs on the next push.
+    clean, targeted files 37/37 and `npm run build` successful. Errors were reproduced before the fix and each
+    error's file rechecked after. GitHub Actions run
+    [30561571129](https://github.com/shteynu/shalomut-map-demo/actions/runs/30561571129) then passed the complete
+    gate on `2e38a14`, including 269 Python tests; CodeQL run
+    [30561571152](https://github.com/shteynu/shalomut-map-demo/actions/runs/30561571152) passed too.
 
 - [x] **2026-07-30**: **One queue per model, because that is the unit the provider counts in** (item 20):
   - `ProviderRateLimiter` keys its bookings by model name instead of holding one `_next_send_at` for the
