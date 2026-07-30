@@ -8,6 +8,7 @@ import { surveyInstrument } from '@/lib/shalomut-source';
 import {
   DEMO_ORGANIZATION,
   DEMO_ROUND,
+  InMemoryAiAnalysisRunRepository,
   InMemoryOrganizationRepository,
   InMemoryRoundRepository,
   InMemorySurveyRepository,
@@ -20,9 +21,12 @@ const testRoundId = 'round_demo_1';
 // success test leaves behind on `testRoundId`.
 const triggerFailureRoundId = 'round_demo_trigger_failure';
 let previousDatabaseUrl: string | undefined;
+let aiAnalysisRunRepo = new InMemoryAiAnalysisRunRepository();
 
 function installDefaultRepositories() {
+  aiAnalysisRunRepo = new InMemoryAiAnalysisRunRepository();
   setRepositories({
+    aiAnalysisRunRepo,
     orgRepo: new InMemoryOrganizationRepository([DEMO_ORGANIZATION]),
     roundRepo: new InMemoryRoundRepository([
       DEMO_ROUND,
@@ -299,21 +303,128 @@ test('AI Insights API saves and retrieves Stone Map JSON payload', async () => {
   assert.strictEqual(savedData.overallPsychologicalSummary, 'Test summary from AI Microservice');
 });
 
-test('An empty AI result says whether a run was ever dispatched, is running, or died', async () => {
-  const runStateRoundId = 'round_run_state';
+test('AI Insights callback completes the leased run idempotently and rejects stale ownership', async () => {
+  installDefaultRepositories();
+  const enqueued = await aiAnalysisRunRepo.enqueue(testRoundId, {
+    requestKey: 'automatic',
+    trigger: 'automatic',
+  });
+  const lease = await aiAnalysisRunRepo.claimNext({
+    workerId: 'callback-worker',
+    leaseMs: 60_000,
+  });
+  assert.ok(lease);
+  assert.strictEqual(lease.run.id, enqueued.run.id);
 
-  // A dispatch that happened long ago and left nothing behind: the run is over
-  // one way or another, and no result is coming.
-  class DeadRunRoundRepository extends InMemoryRoundRepository {
-    public async getAiAnalysisDispatchedAt(): Promise<Date | null> {
-      return new Date(Date.now() - 60 * 60_000);
-    }
+  const callbackUrl = new URL(
+    `http://localhost:3000/api/rounds/${testRoundId}/ai-insights`,
+  );
+  const payload = createValidInsightsPayload();
+  const callbackHeaders = {
+    'Content-Type': 'application/json',
+    'x-ai-analysis-run-id': lease.run.id,
+    'x-ai-analysis-lease-token': lease.leaseToken,
+  };
+
+  const first = await postInsightsHandler(
+    new Request(callbackUrl, {
+      method: 'POST',
+      headers: callbackHeaders,
+      body: JSON.stringify(payload),
+    }),
+    { params: Promise.resolve({ roundId: testRoundId }) },
+  );
+  assert.strictEqual(first.status, 200);
+  assert.strictEqual((await first.json()).duplicate, false);
+  assert.strictEqual((await aiAnalysisRunRepo.findById(lease.run.id))?.state, 'succeeded');
+
+  const duplicate = await postInsightsHandler(
+    new Request(callbackUrl, {
+      method: 'POST',
+      headers: callbackHeaders,
+      body: JSON.stringify(payload),
+    }),
+    { params: Promise.resolve({ roundId: testRoundId }) },
+  );
+  assert.strictEqual(duplicate.status, 200);
+  assert.strictEqual((await duplicate.json()).duplicate, true);
+
+  const stale = await postInsightsHandler(
+    new Request(callbackUrl, {
+      method: 'POST',
+      headers: {
+        ...callbackHeaders,
+        'x-ai-analysis-lease-token':
+          '00000000-0000-4000-8000-000000000000',
+      },
+      body: JSON.stringify(payload),
+    }),
+    { params: Promise.resolve({ roundId: testRoundId }) },
+  );
+  assert.strictEqual(stale.status, 409);
+});
+
+test('AI Insights callback verifies run ownership before it can fail a durable run', async () => {
+  const otherRound = {
+    ...DEMO_ROUND,
+    id: 'round_callback_other',
+    shareCode: 'SHALOM-CALLBACK-OTHER',
+  };
+  const protectedRunRepo = new InMemoryAiAnalysisRunRepository();
+  setRepositories({
+    aiAnalysisRunRepo: protectedRunRepo,
+    orgRepo: new InMemoryOrganizationRepository([DEMO_ORGANIZATION]),
+    roundRepo: new InMemoryRoundRepository([DEMO_ROUND, otherRound]),
+    surveyRepo: new InMemorySurveyRepository(),
+  });
+
+  try {
+    const enqueued = await protectedRunRepo.enqueue(otherRound.id, {
+      requestKey: 'automatic',
+      trigger: 'automatic',
+    });
+    const lease = await protectedRunRepo.claimNext({
+      workerId: 'callback-worker',
+      leaseMs: 60_000,
+    });
+    assert.ok(lease);
+
+    const callbackUrl = new URL(
+      `http://localhost:3000/api/rounds/${testRoundId}/ai-insights`,
+    );
+    const response = await postInsightsHandler(
+      new Request(callbackUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-ai-analysis-run-id': enqueued.run.id,
+          'x-ai-analysis-lease-token': lease.leaseToken,
+        },
+        body: JSON.stringify({}),
+      }),
+      { params: Promise.resolve({ roundId: testRoundId }) },
+    );
+
+    assert.strictEqual(response.status, 409);
+    assert.strictEqual(
+      (await protectedRunRepo.findById(enqueued.run.id))?.state,
+      'running',
+      'a callback routed to another round cannot mutate this run',
+    );
+  } finally {
+    installDefaultRepositories();
   }
+});
 
-  async function readRunState(roundRepo: InMemoryRoundRepository) {
+test('An empty AI result reports the durable queued, running, and failed lifecycle', async () => {
+  const runStateRoundId = 'round_run_state';
+  const round = { ...DEMO_ROUND, id: runStateRoundId, shareCode: 'SHALOM-RUNSTATE' };
+
+  async function readRunState(runRepo: InMemoryAiAnalysisRunRepository) {
     setRepositories({
+      aiAnalysisRunRepo: runRepo,
       orgRepo: new InMemoryOrganizationRepository([DEMO_ORGANIZATION]),
-      roundRepo,
+      roundRepo: new InMemoryRoundRepository([round]),
       surveyRepo: new InMemorySurveyRepository(),
     });
 
@@ -329,26 +440,35 @@ test('An empty AI result says whether a run was ever dispatched, is running, or 
     return (await response.json()).run;
   }
 
-  const round = { ...DEMO_ROUND, id: runStateRoundId, shareCode: 'SHALOM-RUNSTATE' };
-
   try {
-    const neverDispatched = await readRunState(
-      new InMemoryRoundRepository([round]),
-    );
-    assert.strictEqual(neverDispatched.state, 'idle');
-    assert.strictEqual(neverDispatched.dispatchedAt, null);
+    const neverQueued = await readRunState(new InMemoryAiAnalysisRunRepository());
+    assert.strictEqual(neverQueued, null);
 
-    const inFlightRepo = new InMemoryRoundRepository([round]);
-    assert.strictEqual(
-      await inFlightRepo.claimAiAnalysisRun(runStateRoundId, { leaseMs: 0 }),
-      true,
-    );
-    const inFlight = await readRunState(inFlightRepo);
+    const queuedRepo = new InMemoryAiAnalysisRunRepository();
+    await queuedRepo.enqueue(runStateRoundId, {
+      requestKey: 'automatic',
+      trigger: 'automatic',
+    });
+    const queued = await readRunState(queuedRepo);
+    assert.strictEqual(queued.state, 'queued');
+
+    const lease = await queuedRepo.claimNext({
+      workerId: 'state-worker',
+      leaseMs: 60_000,
+    });
+    assert.ok(lease);
+    const inFlight = await readRunState(queuedRepo);
     assert.strictEqual(inFlight.state, 'running');
-    assert.ok(inFlight.dispatchedAt);
+    assert.strictEqual(inFlight.attemptCount, 1);
 
-    const dead = await readRunState(new DeadRunRoundRepository([round]));
-    assert.strictEqual(dead.state, 'stalled');
+    await queuedRepo.finish(lease.run.id, {
+      state: 'failed',
+      failureCode: 'worker_error',
+      leaseToken: lease.leaseToken,
+    });
+    const failed = await readRunState(queuedRepo);
+    assert.strictEqual(failed.state, 'failed');
+    assert.strictEqual(failed.failureCode, 'worker_error');
   } finally {
     installDefaultRepositories();
   }
@@ -467,16 +587,14 @@ test('AI Insights callback requires its shared secret when configured', async ()
   }
 });
 
-test('Trigger AI Webhook omits a dynamic callback target and returns accepted', async () => {
+test('Trigger AI durably queues one manager run without contacting the provider', async () => {
+  installDefaultRepositories();
   const originalFetch = globalThis.fetch;
-  let forwardedPayload: Record<string, unknown> | undefined;
+  let fetchCalls = 0;
 
-  globalThis.fetch = (async (_input, init) => {
-    forwardedPayload = JSON.parse(String(init?.body));
-    return new Response(JSON.stringify({ status: 'accepted' }), {
-      status: 202,
-      headers: { 'Content-Type': 'application/json' },
-    });
+  globalThis.fetch = (async () => {
+    fetchCalls += 1;
+    throw new Error('the request path must only enqueue durable work');
   }) as typeof fetch;
 
   try {
@@ -490,16 +608,16 @@ test('Trigger AI Webhook omits a dynamic callback target and returns accepted', 
     });
     assert.strictEqual(res.status, 202);
     const data = await res.json();
-    assert.strictEqual(data.status, 'accepted');
-    assert.strictEqual(data.webhookPayload.event, 'round_closed');
-    assert.strictEqual(data.webhookPayload.roundId, testRoundId);
+    assert.strictEqual(data.status, 'queued');
+    assert.strictEqual(data.run.state, 'queued');
+    assert.strictEqual(data.run.roundId, testRoundId);
+    assert.strictEqual(fetchCalls, 0);
     assert.strictEqual(
-      Object.hasOwn(forwardedPayload ?? {}, 'callbackUrl'),
-      false,
+      (await aiAnalysisRunRepo.findLatestByRoundId(testRoundId))?.id,
+      data.run.id,
     );
 
-    // The dispatch claim is still held, so an immediate second run is refused
-    // instead of starting a duplicate provider run for the same round.
+    // The durable active-run constraint rejects a manager double click.
     const duplicate = await triggerAiHandler(req, {
       params: Promise.resolve({ roundId: testRoundId }),
     });
@@ -510,38 +628,38 @@ test('Trigger AI Webhook omits a dynamic callback target and returns accepted', 
   }
 });
 
-test('Trigger AI Webhook exposes upstream and network failures', async () => {
-  const originalFetch = globalThis.fetch;
+test('Trigger AI creates a new manager run after the prior run reaches a terminal state', async () => {
+  installDefaultRepositories();
   const req = new Request(
     `https://shalomut.example/api/rounds/${triggerFailureRoundId}/trigger-ai`,
     { method: 'POST' },
   );
 
-  try {
-    globalThis.fetch = (async () =>
-      new Response(JSON.stringify({ error: 'AI failed' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      })) as typeof fetch;
+  const firstResponse = await triggerAiHandler(req, {
+    params: Promise.resolve({ roundId: triggerFailureRoundId }),
+  });
+  assert.strictEqual(firstResponse.status, 202);
+  const firstRun = (await firstResponse.json()).run;
+  const lease = await aiAnalysisRunRepo.claimNext({
+    workerId: 'test-worker',
+    leaseMs: 60_000,
+  });
+  assert.strictEqual(lease?.run.id, firstRun.id);
+  assert.ok(lease);
+  assert.strictEqual(
+    await aiAnalysisRunRepo.finish(firstRun.id, {
+      state: 'failed',
+      failureCode: 'provider_error',
+      leaseToken: lease.leaseToken,
+    }),
+    'transitioned',
+  );
 
-    const upstreamFailure = await triggerAiHandler(req, {
-      params: Promise.resolve({ roundId: triggerFailureRoundId }),
-    });
-    assert.strictEqual(upstreamFailure.status, 502);
-
-    globalThis.fetch = (async () => {
-      throw new Error('offline');
-    }) as typeof fetch;
-
-    // A failed dispatch releases its claim, so this retry reaches the transport
-    // again instead of being refused as a duplicate run.
-    const networkFailure = await triggerAiHandler(req, {
-      params: Promise.resolve({ roundId: triggerFailureRoundId }),
-    });
-    assert.strictEqual(networkFailure.status, 503);
-  } finally {
-    globalThis.fetch = originalFetch;
-  }
+  const retry = await triggerAiHandler(req, {
+    params: Promise.resolve({ roundId: triggerFailureRoundId }),
+  });
+  assert.strictEqual(retry.status, 202);
+  assert.notStrictEqual((await retry.json()).run.id, firstRun.id);
 });
 
 test('the MCP route stays dynamic so it can read the Authorization header', () => {

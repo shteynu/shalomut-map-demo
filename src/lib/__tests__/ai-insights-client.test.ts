@@ -58,7 +58,7 @@ test('loadAiInsights distinguishes not-found and locked states', async () => {
         JSON.stringify({
           error: 'AI insights not found for this round',
           roundId: 'round-ui',
-          run: { dispatchedAt: null, state: 'idle' },
+          run: null,
         }),
         { status: 404, headers: { 'Content-Type': 'application/json' } },
       ),
@@ -85,7 +85,19 @@ test('loadAiInsights distinguishes not-found and locked states', async () => {
   assert.strictEqual(locked.status, 'locked');
 });
 
-test('a dispatched run in flight is not reported as a missing analysis', async () => {
+test('a queued or running durable job is not reported as a missing analysis', async () => {
+  const queued = await loadAiInsights(
+    'round-ui',
+    async () =>
+      new Response(
+        JSON.stringify({
+          error: 'AI insights not found for this round',
+          roundId: 'round-ui',
+          run: { id: 'run-1', state: 'queued' },
+        }),
+        { status: 404, headers: { 'Content-Type': 'application/json' } },
+      ),
+  );
   const result = await loadAiInsights(
     'round-ui',
     async () =>
@@ -93,16 +105,17 @@ test('a dispatched run in flight is not reported as a missing analysis', async (
         JSON.stringify({
           error: 'AI insights not found for this round',
           roundId: 'round-ui',
-          run: { dispatchedAt: new Date().toISOString(), state: 'running' },
+          run: { id: 'run-1', state: 'running' },
         }),
         { status: 404, headers: { 'Content-Type': 'application/json' } },
       ),
   );
 
+  assert.strictEqual(queued.status, 'running');
   assert.strictEqual(result.status, 'running');
 });
 
-test('a dispatched run that never delivered is an error, not an empty round', async () => {
+test('a failed durable job is an error, not an empty round', async () => {
   const result = await loadAiInsights(
     'round-ui',
     async () =>
@@ -111,8 +124,9 @@ test('a dispatched run that never delivered is an error, not an empty round', as
           error: 'AI insights not found for this round',
           roundId: 'round-ui',
           run: {
-            dispatchedAt: '2026-07-28T09:00:00.000Z',
-            state: 'stalled',
+            id: 'run-1',
+            state: 'failed',
+            failureCode: 'worker_error',
           },
         }),
         { status: 404, headers: { 'Content-Type': 'application/json' } },

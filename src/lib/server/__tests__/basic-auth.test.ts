@@ -40,7 +40,7 @@ test("manager surfaces are not respondent routes", () => {
   }
 });
 
-test("the AI service reaches MCP and the callback without a browser session", () => {
+test("the AI service reaches MCP, durable jobs, and the callback without a browser session", () => {
   assert.strictEqual(isMachineAuthenticatedRoute("/api/mcp", "POST"), true);
   assert.strictEqual(isMachineAuthenticatedRoute("/api/mcp/", "POST"), true);
   assert.strictEqual(
@@ -51,6 +51,13 @@ test("the AI service reaches MCP and the callback without a browser session", ()
     isMachineAuthenticatedRoute("/api/rounds/round-1/ai-insights/", "POST"),
     true,
   );
+  for (const pathname of [
+    "/api/ai-analysis-runs/claim",
+    "/api/ai-analysis-runs/run-1/heartbeat/",
+    "/api/ai-analysis-runs/run-1/fail",
+  ]) {
+    assert.strictEqual(isMachineAuthenticatedRoute(pathname, "POST"), true);
+  }
 });
 
 test("reading AI insights stays behind the manager gate", () => {

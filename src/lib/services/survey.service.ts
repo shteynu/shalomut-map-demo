@@ -8,6 +8,7 @@ import {
   SurveyResponseRecord,
   SurveyDefinitionQuestion,
 } from '../types/backend';
+import { recordDuplicateSubmissionConflict } from '../server/ai-operational-metrics';
 
 export class SurveyService {
   /**
@@ -162,6 +163,7 @@ export class SurveyService {
         input.anonymousTokenHash
       );
       if (alreadySubmitted) {
+        recordDuplicateSubmissionConflict(input.roundId);
         return {
           success: false,
           error: 'You have already submitted a response for this survey round.',

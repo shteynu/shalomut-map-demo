@@ -30,22 +30,27 @@ export async function loadAiInsights(
     );
 
     if (response.status === 404) {
-      // Nothing stored is three different situations, and the manager needs a
-      // different sentence for each: a run in flight, a run that died without
-      // reporting anything, and a round that was never analysed.
+      // The persisted lifecycle distinguishes queued/running work from a
+      // terminal failure and from a round that was never queued.
       const body = (await response
         .json()
         .catch(() => null)) as AiInsightsRunState | null;
 
-      if (body?.run?.state === 'running') {
+      if (
+        body?.run?.state === 'queued' ||
+        body?.run?.state === 'running'
+      ) {
         return { status: 'running' };
       }
 
-      if (body?.run?.state === 'stalled') {
+      if (
+        body?.run?.state === 'failed' ||
+        body?.run?.state === 'succeeded'
+      ) {
         return {
           status: 'error',
           error:
-            'The dispatched AI analytics run never delivered a result.',
+            'The AI analytics run finished without a readable result.',
         };
       }
 
