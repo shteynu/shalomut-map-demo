@@ -21,7 +21,8 @@ the one open risk and the one open item)
   visually in Chrome. The manual production deploy was skipped as designed. One non-blocking annotation remains:
   `actions/checkout@v4`, `actions/setup-node@v4` and `actions/setup-python@v5` target deprecated Node.js 20 and
   are currently forced by GitHub onto Node.js 24.
-  - `HEAD`, `origin/main` and `origin/HEAD` all point to `4430796` at handoff time.
+  - At the CI implementation handoff, before the documentation-only session-close commit, `HEAD`,
+    `origin/main` and `origin/HEAD` all pointed to `4430796`.
   - The working tree is intentionally not clean: seven pre-existing user-owned files remain modified
     (`ROADMAP.md`, three files under `ai-analytics-service`, `next-env.d.ts` and two AI insights view-model
     files). They were preserved and excluded from the CI commits.

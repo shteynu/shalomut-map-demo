@@ -45,7 +45,8 @@ exact вопросы раунда принадлежат persisted `SurveyRound.
   на `main`, commit `4430796`, что дополнительно подтверждено визуально в Chrome. Manual production deploy
   ожидаемо пропущен. Осталась только maintenance-аннотация: action-версии `checkout@v4`, `setup-node@v4` и
   `setup-python@v5` ещё target Node.js 20 и временно принудительно исполняются GitHub на Node.js 24.
-  - На момент handoff `HEAD == origin/main == 4430796`.
+  - На момент handoff самой CI-реализации, до документационного session-close commit,
+    `HEAD == origin/main == 4430796`.
   - Семь несвязанных пользовательских файлов остаются modified и не входили в CI-коммиты: `ROADMAP.md`,
     `ai-analytics-service/.env.example`, `ai-analytics-service/README.md`,
     `ai-analytics-service/src/schemas/mcp_types.py`, `next-env.d.ts`,
