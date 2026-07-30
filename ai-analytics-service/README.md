@@ -12,7 +12,8 @@ The current implementation is deliberately small:
 - it reads interventions from the structured local
   `data/interventions_kb.json` catalog, scoped strictly by dimension and
   status, and on `5.0` ranks the candidates by the round's distributions;
-- it posts the validated result back to the core app.
+- it polls durable analysis jobs from Core, keeps each lease alive while the
+  pipeline runs, and posts the validated result back with the run identity.
 
 The service does not currently use LangGraph or ChromaDB at runtime, so those
 heavy packages are intentionally absent from the deployment manifest.
@@ -146,12 +147,18 @@ MCP failures stop processing; the service does not invent analytics.
 Matching shared secrets must be present on both sides outside development:
 
 - `MCP_SHARED_SECRET`: AI service → core MCP endpoint;
-- `AI_WEBHOOK_SECRET`: core trigger → AI webhook;
-- `AI_CALLBACK_SECRET`: AI callback → core persistence endpoint.
+- `AI_WEBHOOK_SECRET`: legacy core trigger → AI webhook, and manager question suggestions;
+- `AI_CALLBACK_SECRET`: AI worker claim/heartbeat/failure and callback → Core.
 
 Outside development, missing shared secrets, local Data Layer URLs, and
 `USE_MOCK_MCP=true` fail closed before the analytics pipeline starts. Local
 development may run without shared secrets.
+
+`AI_JOB_POLLING_ENABLED=true` starts the durable worker in the FastAPI
+lifespan. `AI_JOB_POLL_INTERVAL_SECONDS` controls empty-queue polling and
+`AI_JOB_HEARTBEAT_INTERVAL_SECONDS` must remain comfortably below Core's
+90-second lease. The switch is explicit so Core can deploy the durable routes
+and migration before the worker begins claiming them.
 
 ### LLM provider configuration
 
@@ -180,8 +187,8 @@ flight and defaults to `2`. Both LLM nodes hand their whole batch to
 to two dozen recommendation adaptations, on the wire at once — which is what a
 free tier answers `429` to. The slot is taken before the worker thread is
 dispatched, so waiting for one costs no part of the per-dimension retry budget;
-it only makes the round longer, and the webhook has already answered `202` by
-then. Raise it for a paid key.
+it only makes the round longer while the durable worker keeps its lease alive.
+Raise it for a paid key.
 
 `LLM_MAX_REQUESTS_PER_MINUTE` caps how fast the whole process reaches the
 provider and defaults to `5`. Concurrency and rate are two different limits: two
@@ -230,9 +237,9 @@ longer, and the retry budget declines a wait it cannot hold instead of
 shortening it.
 
 At fourteen per minute a round takes a little over a minute; at five it takes
-about three and a half. Nobody waits on either — the webhook answered `202` long
-before, and Core reads a run as stalled only after fifteen minutes. Zero turns
-pacing off; raise it for a paid tier.
+about three and a half. The respondent/manager request does not wait: it only
+commits the queued job, while heartbeats keep the processing run explicitly
+`running`. Zero turns pacing off; raise it for a paid tier.
 
 `MAX_TOKENS_PER_DIMENSION` caps one interpretation and defaults to `2048`.
 
@@ -289,9 +296,10 @@ Each provider request may run for up to `LLM_REQUEST_TIMEOUT_SECONDS` (`20s`
 by default). The full retry loop for one dimension is capped by
 `LLM_RETRY_BUDGET_SECONDS` (`25s`, with a hard maximum of `25s`), and a new
 attempt starts only when at least `LLM_MIN_RETRY_WINDOW_SECONDS` (`8s`) remain.
-The budget bounds how long one dimension may hold a provider slot; since the
-webhook answers before the run starts, it no longer has to fit the core app's
-webhook timeout.
+The budget bounds how long one dimension may hold a provider slot. The durable
+job request is already committed before processing, and the legacy webhook
+also answers before its background run, so neither path has to fit the Core
+request timeout.
 
 When the core app is a protected Vercel deployment, both outbound calls — MCP
 and callback — are answered with a `302` to the SSO page unless
@@ -321,9 +329,10 @@ Its build context is the repository root, because `src/contracts.py` loads the
 shared contract from `contracts/ai-analytics-v1.json`; the image preserves that
 relative layout.
 
-Google Cloud Run fits the workload best — its free tier covers this traffic,
-instances scale to zero, and a request may run far longer than the pipeline
-needs:
+The durable polling path requires a process that remains scheduled while no
+HTTP request is active. Cloud Run can host the image, but a scale-to-zero
+service needs a separate wake/scheduler or a non-zero minimum instance before
+polling can be considered reliable:
 
 ```bash
 gcloud run deploy shalomut-ai-analytics --source . --region europe-west1 --min-instances 0 --allow-unauthenticated
@@ -334,29 +343,28 @@ to the internet, where `AI_WEBHOOK_SECRET` is the access control, so that
 secret must be set. Configure the remaining variables from
 [`./.env.example`](./.env.example) and keep `USE_MOCK_MCP=false`.
 
-[`../render.yaml`](../render.yaml) describes the same image for Render's free
-plan, which needs no payment method but sleeps after 15 minutes of inactivity
-and then pays a cold start of about a minute on the next webhook.
+[`../render.yaml`](../render.yaml) describes the same image for Render and
+enables polling. Render's free web service still sleeps after inactivity;
+outbound polls are not an inbound wake-up guarantee. Use an always-on worker or
+an explicit scheduler/wake mechanism for the deployed durable path.
 
 Vercel needs more than this package provides: a Python entrypoint under
 `api/`, which does not exist here. The previous `[tool.vercel]` block in
 `pyproject.toml` was not a Vercel convention and was removed.
 
-The webhook authenticates the caller, checks the runtime configuration, answers
-`202 Accepted` and runs the pipeline and the callback in an in-process
-background task. The run therefore outlives the request instead of dying with
-it: the core app's trigger gives up after `AI_SERVICE_TIMEOUT_MS` (30s by
-default), and a synchronous webhook would have been cancelled mid-round before
-any callback was sent. LLM calls for all dimensions run concurrently, so a
-round costs roughly one model round trip rather than one per dimension.
+The primary path is Core-owned: submission or manager refresh commits an
+`AiAnalysisRun`, and the Python worker atomically claims it. The worker sends a
+heartbeat while the pipeline runs; losing the lease cancels stale work. A
+successful or contract-level failed callback completes only that run, and an
+unhandled worker exception is reported through Core's failure endpoint. Core
+can therefore recover abandoned work without treating a `202` acknowledgement
+as completion.
 
-What the `202` does and does not promise: it says the round was accepted, not
-that it succeeded. A failure after that point is logged by the service and
-never reaches the trigger, so the core app learns the outcome only from the
-callback — or from its absence, once the dispatch claim lease expires and the
-round can be triggered again. The platform must not kill the instance while a
-background run is in flight; Render's free plan sleeps on inactivity, and an
-in-flight run counts as activity.
+`POST /api/v1/webhook/events` remains available for rollback compatibility. It
+still authenticates, answers `202 Accepted`, and runs the pipeline in an
+in-process background task, but new Core enqueue flows do not use it as their
+execution record. LLM calls for all dimensions remain concurrent in either
+path.
 
 ## Local container check
 

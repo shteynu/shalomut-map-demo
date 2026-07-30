@@ -394,6 +394,99 @@ class TestShalomutAIService(unittest.TestCase):
 
         print("✔ Test 13 Passed: Callback POST uses the canonical trailing-slash route.")
 
+    def test_13b_durable_callback_carries_run_and_lease_identity(self):
+        async def process_round():
+            round_data = mock_mcp_server.get_round_analytics(
+                "round-unlocked-sample"
+            )
+            final_payload = {
+                "contractVersion": AI_ANALYTICS_CONTRACT_VERSION,
+                "roundId": round_data.roundId,
+                "status": "success",
+                "stones": {},
+            }
+            send_callback = AsyncMock()
+
+            with (
+                patch.object(
+                    mcp_client_manager,
+                    "fetch_round_analytics",
+                    new=AsyncMock(return_value=round_data),
+                ),
+                patch.object(
+                    analytics_graph,
+                    "ainvoke",
+                    new=AsyncMock(return_value={"final_payload": final_payload}),
+                ),
+                patch.object(
+                    analytics_runner_service,
+                    "_send_callback",
+                    new=send_callback,
+                ),
+            ):
+                await analytics_runner_service.process_round(
+                    round_data.roundId,
+                    run_id="run/with space",
+                    lease_token="lease token/1",
+                )
+
+            send_callback.assert_awaited_once_with(
+                "https://data-layer.example/api/rounds/"
+                "round-unlocked-sample/ai-insights/",
+                final_payload,
+                run_id="run/with space",
+                lease_token="lease token/1",
+            )
+
+        previous_callback_url = settings.data_layer_callback_url
+        try:
+            settings.data_layer_callback_url = (
+                "https://data-layer.example/api/rounds"
+            )
+            asyncio.run(process_round())
+        finally:
+            settings.data_layer_callback_url = previous_callback_url
+
+    def test_13c_durable_callback_keeps_lease_identity_out_of_the_url(self):
+        captured = []
+
+        def capture_callback(request):
+            captured.append(request)
+            return 200
+
+        async def send_callback():
+            with patch.object(
+                analytics_runner_service,
+                "_post_callback",
+                side_effect=capture_callback,
+            ):
+                await analytics_runner_service._send_callback(
+                    "https://data-layer.example/api/rounds/round-1/ai-insights/",
+                    {},
+                    run_id="run-1",
+                    lease_token="lease-secret",
+                )
+
+        previous_callback_url = settings.data_layer_callback_url
+        try:
+            settings.data_layer_callback_url = (
+                "https://data-layer.example/api/rounds"
+            )
+            asyncio.run(send_callback())
+        finally:
+            settings.data_layer_callback_url = previous_callback_url
+
+        self.assertEqual(len(captured), 1)
+        self.assertNotIn("?", captured[0].full_url)
+        headers = {
+            name.lower(): value for name, value in captured[0].headers.items()
+        }
+        self.assertEqual(headers["x-ai-analysis-run-id"], "run-1")
+        self.assertEqual(
+            headers["x-ai-analysis-lease-token"],
+            "lease-secret",
+        )
+
     def test_14_background_context_reaches_the_prompt_on_4_0_and_5_0(self):
         """1.0-3.0 keep their meaning; 4.0 and 5.0 carry the school context."""
         from src.agents.nodes import _background_context_for_prompt

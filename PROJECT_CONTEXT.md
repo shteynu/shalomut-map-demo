@@ -41,9 +41,9 @@
 ### ADR-002: Versioned AI Analytics Contract и fail-closed transport
 - **Решение**: `contracts/ai-analytics-v1.json` и `contracts/ai-analytics-v2.json` остаются immutable deployed contracts. Breaking dynamic requirements опубликованы отдельно в `contracts/ai-analytics-v3.json`; они заменяют exact-24 allowlist на exact persisted round questions, сохраняя восемь dimensions, strict Hebrew/status validation, metrics и provenance. Callback имеет отдельные validator-ветки для `1.0`, `2.0` и `3.0`, поэтому legacy semantics не ужесточаются молча.
 - **Rollout**: consumer-first rollout `3.0` завершён 2026-07-26: Python сначала принял все три версии, затем Core callback и Dashboard readers, после чего Core MCP producer начал отправлять `3.0`. Producer `2.0` остаётся rollback boundary.
-- **Персистентность**: В production-режиме результат хранится в `SurveyRound.aiInsights`; migration `20260724170000_add_ai_insights` применена к текущей настроенной Supabase-цели. Для других окружений миграция запускается отдельно после подтверждения target.
-- **Транспорт**: MCP, webhook и callback поддерживают независимые Bearer secrets. При недоступности удалённого MCP/AI-сервиса обработка завершается ошибкой; mock data разрешены только при явном `USE_MOCK_MCP=true`.
-- **UI**: Dashboard читает AI-insights по `roundId`, валидирует контракт на клиентской границе и отдельно отображает loading, privacy-locked, not-found и error состояния.
+- **Персистентность**: Core владеет durable lifecycle в `AiAnalysisRun`: `queued` → `running` → `succeeded`/`failed`, с попытками, heartbeat, lease и результатом. PostgreSQL partial unique index допускает только один активный run на раунд. `SurveyRound.aiInsights` временно остаётся dual-read/dual-write rollback boundary; legacy `aiInsightsUpdatedAt` больше не является claim-marker. Миграция durable jobs применяется отдельно к каждому подтверждённому окружению.
+- **Транспорт**: MCP, legacy webhook и callback/worker API поддерживают независимые Bearer secrets. Основной путь сначала фиксирует job в Core; Python polling worker получает атомарную 90-секундную lease, продлевает её heartbeat и завершает callback с run/lease identity. После трёх брошенных попыток job становится `failed`. Legacy webhook остаётся rollback boundary. При недоступности удалённого MCP/AI-сервиса обработка завершается ошибкой; mock data разрешены только при явном `USE_MOCK_MCP=true`.
+- **UI**: Dashboard читает AI-insights по `roundId`, валидирует контракт на клиентской границе и отдельно отображает loading для `queued`/`running`, privacy-locked, failed/not-found и error состояния.
 
 ### ADR-003: Empty persistence must remain empty
 - **Решение**: отсутствие `DATABASE_URL`, недоступный Prisma client или пустая БД не должны автоматически создавать школу, раунд или ответы. Default in-memory repositories стартуют пустыми.
@@ -73,12 +73,12 @@
 - **Fail-closed persistence**: deployed runtime (`NODE_ENV=production` или Vercel) без `DATABASE_URL` может показывать пустой onboarding, но отклоняет data writes с `503`. Локальный development fallback хранится в общем `globalThis` state между server bundles.
 
 ### ADR-005: AI analytics service поставляется как контейнер, а не как Vercel-функция
-- **Решение**: изолированный FastAPI-сервис собирается корневым `Dockerfile` в отдельный образ. Build context — корень репозитория, потому что `src/contracts.py` читает общий `contracts/ai-analytics-v1.json`; образ сохраняет ту же относительную раскладку. Целевая площадка — Google Cloud Run (scale-to-zero, free tier); `render.yaml` описывает тот же образ для Render.
+- **Решение**: изолированный FastAPI-сервис собирается корневым `Dockerfile` в отдельный образ. Build context — корень репозитория, потому что `src/contracts.py` читает общий `contracts/ai-analytics-v1.json`; образ сохраняет ту же относительную раскладку. `render.yaml` описывает тот же образ для Render.
 - **Почему не Vercel**: пакет не содержит Python entrypoint в `api/`, а секция `[tool.vercel]` в `pyproject.toml` не была конвенцией Vercel и удалена как вводящая в заблуждение.
 - **Fail-closed environment**: если не заданы ни `ENV`, ни `VERCEL_ENV`, сервис считает окружение production и требует `AI_WEBHOOK_SECRET`. Локальный запуск без секретов требует явного `ENV=development`.
 - **Production readiness**: вне development сервис требует все три shared secrets, non-local `DATA_LAYER_MCP_URL`/`DATA_LAYER_CALLBACK_URL` и `USE_MOCK_MCP=false`. Невалидная конфигурация блокирует startup; webhook credentials проверяются до раскрытия transport-readiness details.
-- **Callback boundary**: callback destination строится только из доверенного `DATA_LAYER_CALLBACK_URL` и URL-encoded `roundId`. Поле `callbackUrl` входного webhook принимается для обратной совместимости, но не управляет transport. Direct `POST /api/v1/analyze` доступен только в `ENV=development`.
-- **Транспорт**: интерпретации всех измерений выполняются параллельно в worker threads, MCP-запрос и доставка callback не блокируют event loop. Core app ограничивает ожидание вебхука `AI_SERVICE_TIMEOUT_MS` (30s по умолчанию) и отвечает `504` вместо бесконечного ожидания.
+- **Callback boundary**: callback destination строится только из доверенного `DATA_LAYER_CALLBACK_URL` и URL-encoded `roundId`; durable callback дополнительно несёт выданные Core `runId` и `leaseToken`. Поле `callbackUrl` входного webhook принимается для обратной совместимости, но не управляет transport. Direct `POST /api/v1/analyze` доступен только в `ENV=development`.
+- **Транспорт**: интерпретации всех измерений выполняются параллельно в worker threads, MCP-запрос, heartbeat и доставка callback не блокируют event loop. Polling включается явным `AI_JOB_POLLING_ENABLED`; scale-to-zero hosting без внешнего wake/scheduler не гарантирует своевременный poll, поэтому deployed rollout требует постоянно доступный worker либо отдельный wake-механизм. Legacy webhook сохраняется для rollback, но не является durable source of execution state.
 
 ### ADR-006: Dynamic questionnaire input, fixed Dashboard output
 - **Решение**: вопросы являются persisted содержимым конкретного
@@ -127,10 +127,11 @@
   optional поле, которое существующий callback-валидатор принимает на
   не-успешном payload. Контракты `1.0`–`5.0` не меняются, consumer-first порядок
   выката не требуется.
-- **Наблюдаемость состояния запуска**: пустой результат в Core различает
-  `idle`, `running` и `stalled` по времени последней диспетчеризации
-  (`AI_RUN_EXPECTED_COMPLETION_MS`), поэтому запуск, умерший до колбэка, не
-  выглядит как «анализ не запускали».
+- **Наблюдаемость состояния запуска**: Core читает явный persisted lifecycle
+  `queued`/`running`/`succeeded`/`failed`, а не вычисляет его из timestamp.
+  Lease recovery, retry count, queue/processing/callback latency, contract
+  violations, partial-map samples и duplicate submissions выходят как
+  структурированные operational metrics без respondent data.
 
 ---
 
@@ -171,6 +172,9 @@
   `SESSION_SECRET`, `MANAGER_ADMIN_EMAIL`, `MANAGER_ADMIN_PASSWORD` и
   `MANAGER_ORGANIZATION_ID`.
 - AI service: `ENV`, `DATA_LAYER_MCP_URL`, `DATA_LAYER_CALLBACK_URL`, те же три shared secrets и `USE_MOCK_MCP`.
+- Durable worker: `AI_JOB_POLLING_ENABLED`, `AI_JOB_POLL_INTERVAL_SECONDS` и
+  `AI_JOB_HEARTBEAT_INTERVAL_SECONDS`; heartbeat должен оставаться заметно
+  короче 90-секундной Core lease.
 - Безопасные шаблоны находятся в `.env.example` и `ai-analytics-service/.env.example`; реальные значения не коммитятся.
 
 ## ⚠️ Правила разработки

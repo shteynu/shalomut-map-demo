@@ -76,14 +76,25 @@ Which screen owns which value, so the same fact is never edited in two places:
 ## AI Analysis Triggering
 
 - The automatic trigger fires at most once per round: on the submission that
-  reaches the privacy threshold, and only while no result is persisted.
-- A repository claim (`claimAiAnalysisRun`) makes concurrent submissions
-  dispatch a single webhook. The claim is a two-minute lease and is released
-  when the dispatch fails.
+  reaches the privacy threshold, and only while no result is persisted. Core
+  commits an `AiAnalysisRun` with the stable `automatic` request key before the
+  respondent request returns.
+- PostgreSQL permits one `queued` or `running` run per round. The Python worker
+  polls Core, atomically claims the oldest due run under an opaque 90-second
+  lease, renews it by heartbeat, and may recover abandoned work up to three
+  attempts. An expired owner cannot complete the run.
+- The callback carries the run and lease identity. Completion is idempotent for
+  the same result and rejects a superseded token or different retry payload.
+  `AiAnalysisRun.result` is the durable read source; Core temporarily dual-reads
+  and dual-writes `SurveyRound.aiInsights` for rollback compatibility.
 - Refreshing an existing analysis is an explicit manager action
-  (`רענון ניתוח` on `/round` → `POST /api/rounds/{roundId}/trigger-ai`).
-- Resetting a round deletes its responses, drops the persisted analysis and
-  records a `ROUND_RESET` audit event.
+  (`רענון ניתוח` on `/round` → `POST /api/rounds/{roundId}/trigger-ai`), which
+  enqueues a new run only after the previous one is terminal.
+- API/UI run states are `queued`, `running`, `succeeded`, and `failed`; retry
+  recovery also emits the `stalled` operational counter. Metrics are structured
+  safe logs keyed only by round/run correlation, never respondent data.
+- Resetting a round deletes its responses, every analysis run and the legacy
+  persisted analysis, then records a `ROUND_RESET` audit event.
 
 ## Implementation Rules
 
