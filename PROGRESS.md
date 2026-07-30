@@ -345,7 +345,8 @@ for the design stage, with rotation required before the first real respondents)
   the schema up to date and the column default is `10`, so the next round a manager creates starts at ten in both
   the code and the row. `GET /api/survey/SHALOM-F125/` on the deployed app now answers `404` — the round is gone
   and empty persistence stays empty rather than inventing a demo round.
-  The contents before the clear are dumped to `~/shalomut-db-backup-2026-07-28.json` (outside the repository,
+  The contents before the clear are in an owner-managed local backup outside the repository
+  (`shalomut-db-backup-2026-07-28.json`,
   mode `600`): 1 organization, 1 round `SHALOM-F125` (`3173c065-aa01-470e-a54b-eb0e7669756b`), 3 responses,
   72 question answers and its `ai_insights` at contract `4.0` in full. With no PITR on the Free plan that file is
   the only way back.
@@ -494,7 +495,8 @@ for the design stage, with rotation required before the first real respondents)
          same path as a provider outage.
 9. [x] Empty the database for manual testing — done by the owner on 2026-07-28 and verified read-only afterwards:
        `0` organizations, `0` rounds, `0` responses, `0` answers, schema still up to date. The dump taken
-       beforehand is at `~/shalomut-db-backup-2026-07-28.json` and is the only way back.
+       beforehand is an owner-managed local file outside the repository
+       (`shalomut-db-backup-2026-07-28.json`) and is the only way back.
 10. [x] **The model writes all eight dimensions, and the blacklist stopped refusing ordinary Hebrew**
        (2026-07-30). Decided by the owner after two deferrals, both parts as recommended: the switch goes to
        `false`, and a green dimension the provider refuses keeps its deterministic sentence instead of becoming
@@ -995,7 +997,7 @@ for the design stage, with rotation required before the first real respondents)
     database and no respondent data. Nothing pushed, nothing deployed.
 
 - [x] **2026-07-27**: **Contract 5.0 Rollout (AI Analytics Informativeness)**:
-  - Created specification [contracts/ai-analytics-v5.json](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/contracts/ai-analytics-v5.json) and TS/Python mirrors.
+  - Created specification [contracts/ai-analytics-v5.json](contracts/ai-analytics-v5.json) and TS/Python mirrors.
   - Updated Core producer to calculate and send `scoreDistribution` per question aggregate.
   - Updated Python AI service to enrich prompts, generate overall summary via LLM, and relax sentence checks to 2–5 sentences for Contract 5.0.
   - Expanded `interventions_kb.json` to 80 entries and added adaptive ranking in `store.py`.

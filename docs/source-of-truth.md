@@ -39,11 +39,11 @@ round questionnaires and from demo result data.
 | --- | --- |
 | [Google Form: מפת שלומות](https://docs.google.com/forms/d/e/1FAIpQLSdoDKUwm_tcRD_mOp4_1t1Zn-3LFE-hOkiEx9Ejey91GuPelQ/viewform) | Default/legacy survey template: dimensions, 24 initial questions, required state, and response scale. |
 | [Adobe XD: מפת השלומות](https://xd.adobe.com/view/29896c9d-096a-4259-88bb-1dfb621f1131-7cda/grid/) | Visual reference for map composition, stone shapes, detail screens, metric screens, and recommendations screens. |
-| `/Users/maxim.berenshtein/Downloads/הסבר מפורט_ פלטורפמת מפת שלומות.pdf` | MVP/product requirements: roles, organizations, rounds, anonymous survey, scoring, dashboard, permissions, privacy threshold, and future recommendations. |
-| `/Users/maxim.berenshtein/Downloads/Sasha Klyachkina_ Teachers' Wellbeing Map.pdf` | Research and strategy context: rationale, wellbeing definitions, pilot plan, theory of change, and success measures. |
-| `/Users/maxim.berenshtein/Downloads/מיזם ״מפת שלומות״ (3).pdf` | One-page initiative narrative: positioning, AI framing, partners, and founder context. |
-| `/Users/maxim.berenshtein/Downloads/שלומות לאירה.pdf` | Workshop/storytelling deck: journey metaphor and the 8-dimension map narrative. |
-| `/Users/maxim.berenshtein/Downloads/המרחב האנושי דרכא (2).pdf` | Hebrew workshop deck: burnout framing, wellbeing framing, 8 dimensions, scale language, and reflection prompts. |
+| `הסבר מפורט: פלטורפמת מפת שלומות` (owner-held PDF) | MVP/product requirements: roles, organizations, rounds, anonymous survey, scoring, dashboard, permissions, privacy threshold, and future recommendations. |
+| `Teachers' Wellbeing Map` by Sasha Klyachkina (owner-held PDF) | Research and strategy context: rationale, wellbeing definitions, pilot plan, theory of change, and success measures. |
+| `מיזם ״מפת שלומות״` (owner-held PDF) | One-page initiative narrative: positioning, AI framing, partners, and founder context. |
+| `שלומות לאירה` (owner-held PDF) | Workshop/storytelling deck: journey metaphor and the 8-dimension map narrative. |
+| `המרחב האנושי דרכא` (owner-held PDF) | Hebrew workshop deck: burnout framing, wellbeing framing, 8 dimensions, scale language, and reflection prompts. |
 
 ## Current Code Map
 

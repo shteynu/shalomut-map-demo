@@ -42,18 +42,6 @@ jobs:
       - name: Install Node.js dependencies
         run: npm ci
 
-      - name: Run TypeScript typecheck
-        run: npm run typecheck
-
-      - name: Run TypeScript tests
-        run: npm test
-
-      - name: Run ESLint
-        run: npm run lint
-
-      - name: Build application
-        run: npm run build
-
       - name: Create Python virtual environment
         run: python -m venv ai-analytics-service/.venv
 
@@ -61,9 +49,8 @@ jobs:
         working-directory: ai-analytics-service
         run: .venv/bin/python -m pip install -r requirements.txt -e '.[dev]'
 
-      - name: Run Python tests
-        working-directory: ai-analytics-service
-        run: .venv/bin/python -m pytest
+      - name: Run canonical verification
+        run: npm run verify
 
   deploy-prod-manual:
     name: Deploy to Production (Manual)

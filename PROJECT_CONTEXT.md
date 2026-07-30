@@ -14,18 +14,19 @@
   - Стандарты доступности: WCAG AA compliance (минимальный контраст 4.5:1, доступные интерактивные камни).
 
 ## 📁 Ключевые файлы документации
-- [docs/data-layer-and-backend-plan.md](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/docs/data-layer-and-backend-plan.md) — **Бэкенд и Data Layer**: ERD, спецификация сервисов и API.
-- [PRODUCT.md](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/PRODUCT.md) — Потребности пользователей, бренд, принципы дизайна и анонимность.
-- [design.md](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/design.md) — Полный гайд по дизайн-системе, цветам и компонентам.
-- [ROADMAP.md](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/ROADMAP.md) — Завершенные типографические оптимизации и WCAG AA адаптация.
-- [PROGRESS.md](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/PROGRESS.md) — **Память сессий**: текущий статус и следующие шаги.
-- [docs/shalomut-tracker-handoff.md](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/docs/shalomut-tracker-handoff.md) — актуальный operational handoff: database-backed manager UI, staging blockers, доказательства и approval gates.
-- [docs/ai-analytics-handoff.md](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/docs/ai-analytics-handoff.md) — handoff: сделано, подтверждено, осталось и approval gates.
-- [contracts/ai-analytics-v1.json](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/contracts/ai-analytics-v1.json) — immutable deployed structural contract `1.0`.
-- [contracts/ai-analytics-v2.json](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/contracts/ai-analytics-v2.json) — breaking semantic contract `2.0`: те же восемь измерений, 24 canonical questions, status-scoped output и provenance.
-- [contracts/ai-analytics-v3.json](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/contracts/ai-analytics-v3.json) — deployed breaking contract `3.0`: dynamic exact round questions при фиксированном eight-stone output.
-- [docs/dynamic-questionnaire-ai-contract.md](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/docs/dynamic-questionnaire-ai-contract.md) — реализованный contract и завершённый consumer-first rollout для динамических round-scoped вопросов.
-- [ai-analytics-service/README.md](file:///Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo/ai-analytics-service/README.md) — локальный запуск, границы runtime и переменные AI-сервиса.
+- [Data Layer and backend plan](docs/data-layer-and-backend-plan.md) — **Бэкенд и Data Layer**: ERD, спецификация сервисов и API.
+- [PRODUCT.md](PRODUCT.md) — Потребности пользователей, бренд, принципы дизайна и анонимность.
+- [design.md](design.md) — Полный гайд по дизайн-системе, цветам и компонентам.
+- [ROADMAP.md](ROADMAP.md) — Завершенные типографические оптимизации и WCAG AA адаптация.
+- [PROGRESS.md](PROGRESS.md) — **Память проекта**: product-level milestones и крупные завершённые возможности.
+- [Operational handoff](docs/shalomut-tracker-handoff.md) — текущий cross-task operational/deployment state, внешние blockers и approval gates.
+- [AI analytics handoff](docs/ai-analytics-handoff.md) — границы и история AI analytics.
+- [AI analytics contract 1.0](contracts/ai-analytics-v1.json) — immutable deployed structural contract `1.0`.
+- [AI analytics contract 2.0](contracts/ai-analytics-v2.json) — breaking semantic contract `2.0`: те же восемь измерений, 24 canonical questions, status-scoped output и provenance.
+- [AI analytics contract 3.0](contracts/ai-analytics-v3.json) — deployed breaking contract `3.0`: dynamic exact round questions при фиксированном eight-stone output.
+- [Dynamic questionnaire AI contract](docs/dynamic-questionnaire-ai-contract.md) — реализованный contract и завершённый consumer-first rollout для динамических round-scoped вопросов.
+- [AI analytics service README](ai-analytics-service/README.md) — локальный запуск, границы runtime и переменные AI-сервиса.
+- [ADR-008: branch-aware agent handoff](docs/adr/008-branch-aware-agent-handoff.md) — разделение branch-local task state и глобальной памяти проекта.
 
 
 ## 📐 Архитектурные Решения (Architectural Decision Records - ADR)

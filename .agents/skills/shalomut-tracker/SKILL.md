@@ -12,29 +12,38 @@ description: Управляй контекстом, продолжением р�
 1. Текущий запрос пользователя.
 2. Актуальный код, `git status`, история Git и результаты реально выполненных
    проверок.
-3. `docs/shalomut-tracker-handoff.md` — operational snapshot, blockers и
+3. Активный task document текущей ветки в `docs/agent-tasks/active/`.
+4. `docs/shalomut-tracker-handoff.md` — operational snapshot, blockers и
    approval gates.
-4. `PROJECT_CONTEXT.md` — устойчивые архитектурные решения.
-5. `PROGRESS.md` — журнал и память прошлых сессий.
-6. `PRODUCT.md`, `design.md` и специализированные документы.
+5. `PROJECT_CONTEXT.md` — устойчивые архитектурные решения.
+6. `PROGRESS.md` — журнал и память прошлых сессий.
+7. `PRODUCT.md`, `design.md` и специализированные документы.
 
 Не считай устаревший пункт в документации более надёжным, чем текущий код или
 проверяемое состояние.
 
 ## Старт работы
 
-1. Определи корень репозитория через `git rev-parse --show-toplevel`.
-2. Прочитай:
-   - текущий snapshot, незавершённые задачи и approval gates из
-     `docs/shalomut-tracker-handoff.md`;
-   - архитектурные ограничения из `PROJECT_CONTEXT.md`;
-   - текущий статус и следующие шаги из `PROGRESS.md`.
-3. Проверь `git status --short` и последние релевантные commits.
-4. Если пользователь уже дал конкретную задачу, кратко обозначь важный контекст
-   и приступай без дополнительного вопроса.
-5. Если пользователь сказал только «продолжаем», предложи ближайший безопасный
-   незаблокированный шаг.
-6. Задавай вопрос только при необходимом продуктовом решении, внешней
+1. Определи корень репозитория через `git rev-parse --show-toplevel` и текущую
+   ветку через Git.
+2. Построй путь task-файла, заменив каждый `/` в имени ветки на `--`:
+   `docs/agent-tasks/active/<branch-name>.md`.
+3. Прочитай task-файл, если он существует. Если пользователь начал новую
+   существенную задачу и файла нет, создай его из
+   `docs/agent-tasks/TEMPLATE.md`. Не создавай task-файл для маленького вопроса,
+   read-only объяснения или случайного поиска по документации.
+4. Загрузи только проектные документы и разделы, релевантные задаче, по
+   маршрутизации ниже. Сначала найди нужный раздел по заголовкам или поиском;
+   не читай длинный глобальный документ целиком, если задача не требует всего
+   его содержимого. Глобальный operational handoff нужен только при
+   затрагивании его состояния или содержащихся в нём gates.
+5. Проверь `git status --short`, полный текущий diff, недавние commits, а также
+   доступное локально состояние upstream/remote refs.
+6. Продолжай с раздела `Next concrete step`. Не переоткрывай принятые решения
+   без конкретного противоречащего evidence и сохраняй unrelated changes.
+7. Если task-файла нет и пользователь сказал только «продолжаем», предложи
+   ближайший безопасный незаблокированный шаг из глобального контекста.
+8. Задавай вопрос только при необходимом продуктовом решении, внешней
    зависимости или approval gate.
 
 ## Маршрутизация контекста
@@ -44,8 +53,10 @@ description: Управляй контекстом, продолжением р�
 - UI/UX: `PRODUCT.md`, `design.md` и релевантные компоненты.
 - Методология и опрос: `docs/source-of-truth.md` и
   `src/lib/shalomut-source.ts`.
-- Runtime, API и persistence: `docs/shalomut-tracker-handoff.md`,
-  `PROJECT_CONTEXT.md` и релевантный код.
+- Runtime, API и persistence: task-файл и релевантный код в первую очередь;
+  конкретные разделы `PROJECT_CONTEXT.md` — только когда нужен устойчивый
+  архитектурный контекст; конкретные разделы operational handoff — только для
+  deployed state, внешних blockers или approval gates.
 - AI analytics: `docs/ai-analytics-handoff.md`,
   `contracts/ai-analytics-v1.json` и `ai-analytics-service/README.md`.
 - Deployment и migrations: operational handoff, environment configuration и
@@ -83,19 +94,62 @@ description: Управляй контекстом, продолжением р�
   `../shalomut-verification/SKILL.md`.
 - Сохраняй только фактически полученное verification evidence.
 
+## Параллельная работа
+
+- Одна независимо поставляемая задача использует одну ветку и один task-файл.
+- Два агента не работают одновременно в одном worktree. Для параллельной
+  работы используй отдельные Git worktrees или отдельные checkouts, разные
+  ветки и разные task-файлы.
+- Перед продолжением проверяй локальное и доступное remote/upstream состояние.
+- Не выполняй reset, clean, checkout поверх, discard, rebase, force-push или
+  amend чужого commit без явного запроса пользователя.
+- Перед передачей незакоммиченной работы точно запиши в task-файле, что
+  committed, staged, unstaged и untracked.
+
+## Границы памяти
+
+- Active task document — текущее implementation state одной ветки или задачи.
+- `docs/shalomut-tracker-handoff.md` — только cross-task operational state,
+  deployed state, внешние blockers и approval gates.
+- `PROJECT_CONTEXT.md` — стабильная архитектура, продуктовые инварианты и
+  долгоживущие решения.
+- `PROGRESS.md` — краткие product-level milestones и крупные завершённые
+  возможности.
+
+Task-файл — текущий snapshot, а не append-only журнал сессий. При обновлении
+заменяй устаревшее состояние, удаляй уже неактуальные подробности и ссылайся на
+commits или файлы вместо копирования больших diff. Если task-файл вырос больше
+примерно 12 KB, сожми завершённую историю до коротких итогов до handoff.
+
+Не размножай обычные детали сессии по всем глобальным документам. Обновляй
+глобальный документ только когда изменилось состояние, которым он владеет.
+
 ## Сохранение прогресса
 
 Не изменяй project-memory файлы автоматически после каждой задачи. Обновляй их,
 когда пользователь явно просит сохранить прогресс или когда handoff входит в
 задачу:
 
-1. Проверь `git status`, diff, commits и evidence из
-   `../shalomut-verification/SKILL.md`.
-2. Обнови `PROGRESS.md` только подтверждёнными фактами: текущий статус,
-   выполненное, проверки, blockers и 2–4 следующих безопасных шага.
-3. Обнови `docs/shalomut-tracker-handoff.md`, если изменился operational state,
-   deployment state или approval boundary.
-4. Изменяй `PROJECT_CONTEXT.md` только при изменении устойчивой архитектуры.
-5. Не дублируй существующую историю и не записывай секреты.
-6. Если материального изменения состояния нет, не редактируй документацию.
-7. Предложи commit message только при наличии реального diff.
+1. Проверь полный текущий diff, `git status`, commits и выбери проверки через
+   `../shalomut-verification/SKILL.md`; затем выполни их.
+2. Сначала обнови активный task-файл. Запиши только реально выполненные
+   проверки, completed и remaining work, решения, assumptions, failed
+   approaches, risks и approval gates.
+3. Оставь ровно один ясный `Next concrete step`. Запиши текущий HEAD и точное
+   состояние committed, staged, unstaged и untracked; не называй worktree
+   чистым без проверки.
+4. Обнови `PROGRESS.md` только если изменился product-level milestone или
+   крупная завершённая возможность.
+5. Обнови `docs/shalomut-tracker-handoff.md` только если изменился cross-task
+   operational/deployment state, внешний blocker или approval boundary.
+6. Изменяй `PROJECT_CONTEXT.md` только при изменении устойчивой архитектуры или
+   долгоживущего решения.
+7. Не дублируй существующую историю и не записывай секреты, chat transcripts
+   или private AI session URLs.
+8. Если owned state глобального документа не изменился, не редактируй его.
+9. Явно назови границу видимости handoff: незакоммиченное состояние доступно
+   только в том же worktree; другой worktree увидит commit в ветке; другой
+   checkout или машина — только опубликованную ветку после push. Не выполняй
+   commit или push без запроса пользователя, но и не называй незакоммиченный
+   handoff меж-worktree или межмашинным.
+10. Предложи commit message только при наличии реального diff.

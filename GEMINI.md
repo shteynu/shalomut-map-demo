@@ -1,7 +1,8 @@
-# Gemini CLI workspace instructions
+# Gemini-compatible workspace instructions
 
 @./AGENTS.md
 
-Use the canonical workspace skills in `.agents/skills/`. Gemini CLI supports
-this directory as the portable alias for `.gemini/skills/`; do not create a
-second copy under `.gemini/skills/`.
+This thin adapter is intended for Gemini CLI and Antigravity-style workspace
+flows. Use the canonical skills in `.agents/skills/`; if the active client does
+not discover them automatically, open the `SKILL.md` files referenced by
+`AGENTS.md` directly. Do not create duplicate `.gemini/skills/` copies.

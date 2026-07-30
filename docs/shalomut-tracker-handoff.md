@@ -578,7 +578,8 @@ exact вопросы раунда принадлежат persisted `SurveyRound.
     дефолт колонки `privacy_threshold` — `10`, `prisma migrate status` — «Database schema is up to date!».
     Отсюда `GET /api/survey/SHALOM-F125/` на проде отвечает `404`: раунда больше нет, а пустая persistence
     остаётся пустой и не подменяется демо-раундом.
-  - **Снимок содержимого базы до очистки** лежит вне репозитория: `~/shalomut-db-backup-2026-07-28.json`
+  - **Снимок содержимого базы до очистки** — owner-managed local file вне репозитория:
+    `shalomut-db-backup-2026-07-28.json`
     (права `600`) — 1 организация, 1 раунд `SHALOM-F125`, 3 ответа, 72 ответа на вопросы и сохранённый
     `ai_insights` контракта `4.0` целиком. PITR у Free plan нет, так что этот файл — единственный путь
     восстановления.
