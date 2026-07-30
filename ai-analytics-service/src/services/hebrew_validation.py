@@ -9,8 +9,24 @@ transport so that judging a sentence never depends on how the sentence arrived.
 import re
 from typing import Any, Dict, Iterable, Optional, Tuple
 
-_HEBREW_PATTERN = re.compile(r"[\u0590-\u05ff]")
+# The Hebrew block, plus the presentation forms a model may reach for instead
+# of the base letter with its point (\u05e9\u05c1 as one character rather than two). Both
+# are Hebrew to a reader, so both count as Hebrew here.
+_HEBREW_PATTERN = re.compile(r"[\u0590-\u05ff\ufb1d-\ufb4f]")
 _LATIN_PATTERN = re.compile(r"[A-Za-z]")
+
+# Letters a model substitutes for their Hebrew twin. `certainty` sent
+# `\u05d0\u05d9 \u0648\u05d3\u05d0\u05d5\u05ea` twice on 2026-07-30 \u2014 an Arabic waw inside a Hebrew word, which
+# renders as a broken word in a paragraph a manager reads. The word is repaired
+# rather than refused: the alternative costs the dimension all three of its
+# recommendations, and the letter the model meant is not in doubt where the
+# rest of the word is Hebrew. Anything this table does not cover is caught by
+# `is_hebrew_only_copy` instead.
+_HEBREW_CONFUSABLES = {
+    "\u0648": "\u05d5",  # ARABIC LETTER WAW -> HEBREW LETTER VAV
+}
+
+_WHITESPACE_SPLIT_PATTERN = re.compile(r"(\s+)")
 _COMPLETE_SENTENCE_PATTERN = re.compile(r"[^.!?؟]+[.!?؟]")
 _INTEGER_PATTERN = re.compile(r"\d+")
 
@@ -45,6 +61,26 @@ _STATUS_WORDS_HEBREW = {
 _VERDICT_MARKERS_HEBREW = ("באזור", "בטווח")
 
 
+def _repair_hebrew_confusables(text: str) -> str:
+    """Put a Hebrew letter back where its twin from another script slipped in.
+
+    Word by word, and only where the word is already Hebrew: a word with no
+    Hebrew in it is a word in another language, which is a refusal rather than
+    a typo and must reach `is_hebrew_only_copy` untouched.
+    """
+    if not any(letter in text for letter in _HEBREW_CONFUSABLES):
+        return text
+
+    parts = _WHITESPACE_SPLIT_PATTERN.split(text)
+    for index, part in enumerate(parts):
+        if not _HEBREW_PATTERN.search(part):
+            continue
+        for wrong, right in _HEBREW_CONFUSABLES.items():
+            part = part.replace(wrong, right)
+        parts[index] = part
+    return "".join(parts)
+
+
 def sanitize_model_text(text: str) -> str:
     """Drop chat-model markup that the copy never asked for.
 
@@ -56,7 +92,8 @@ def sanitize_model_text(text: str) -> str:
     """
     if not text:
         return ""
-    cleaned = _MARKDOWN_FENCE_PATTERN.sub("", text)
+    cleaned = _repair_hebrew_confusables(text)
+    cleaned = _MARKDOWN_FENCE_PATTERN.sub("", cleaned)
     cleaned = _MARKDOWN_HEADING_PATTERN.sub("", cleaned)
     cleaned = _MARKDOWN_BULLET_PATTERN.sub("- ", cleaned)
     cleaned = _MARKDOWN_EMPHASIS_PATTERN.sub("", cleaned)
@@ -78,11 +115,22 @@ def sentences_or_whole(text: str) -> list[str]:
 
 
 def is_hebrew_only_copy(text: str) -> bool:
+    """True when every letter in the copy is Hebrew and at least one is.
+
+    The check used to name the one script it refused — Latin — and so let every
+    other one through. An Arabic waw inside a Hebrew word passed twice on
+    2026-07-30 and would have reached a manager as a broken word, and a whole
+    sentence in Cyrillic would have passed just as easily as long as one Hebrew
+    letter stood somewhere in it. Digits, punctuation and Hebrew points are not
+    letters and are unaffected; the confusables `sanitize_model_text` repairs
+    never arrive here wrong.
+    """
     normalized = text.strip()
-    return bool(
-        normalized
-        and _HEBREW_PATTERN.search(normalized)
-        and not _LATIN_PATTERN.search(normalized)
+    if not normalized or not _HEBREW_PATTERN.search(normalized):
+        return False
+    return not any(
+        character.isalpha() and not _HEBREW_PATTERN.match(character)
+        for character in normalized
     )
 
 

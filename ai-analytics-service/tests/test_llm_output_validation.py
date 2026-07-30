@@ -7,6 +7,7 @@ verdicts, foreign languages — from the ones that used to punish a model for
 bolding a sentence or quoting an average with one decimal.
 """
 import json
+from pathlib import Path
 
 import pytest
 
@@ -377,6 +378,91 @@ def test_the_adaptation_prompt_asks_for_the_count_beside_the_colour():
 
     assert "כשאתה מזכיר קבוצת צבע" in prompt
     assert "0 תשובות ירוקות" in prompt
+
+
+# --- Hebrew that is only nearly Hebrew ---------------------------------------
+
+def test_a_hebrew_word_wearing_one_arabic_letter_is_repaired():
+    """The word the model meant is not in doubt, so it is not thrown away.
+
+    `certainty` wrote `אי وדאות` twice on 2026-07-30 with an Arabic waw where
+    the vav belongs. Refusing it costs that dimension all three of its
+    recommendations; the reader would have got a broken word either way.
+    """
+    repaired = hebrew_validation.sanitize_model_text("אי وדאות בקרב הצוות.")
+
+    assert repaired == "אי ודאות בקרב הצוות."
+    assert hebrew_validation.is_hebrew_only_copy(repaired)
+
+
+@pytest.mark.parametrize(
+    "label,text",
+    [
+        # A word with no Hebrew in it is another language, not a typo: the
+        # repair must leave it for the validator to refuse.
+        ("a whole Arabic word", "הצוות وقت בבית הספר."),
+        ("a Cyrillic word", "הצוות команда בבית הספר."),
+        ("Latin, which was always refused", "הצוות meeting בבית הספר."),
+    ],
+)
+def test_a_word_in_another_script_is_still_refused(label, text):
+    """One named script was refused and every other one was not.
+
+    The old check looked for Latin and nothing else, so a sentence in Cyrillic
+    passed as long as a single Hebrew letter stood somewhere in it.
+    """
+    assert not hebrew_validation.is_hebrew_only_copy(
+        hebrew_validation.sanitize_model_text(text),
+    )
+
+
+@pytest.mark.parametrize(
+    "label,text",
+    [
+        ("a presentation form of a pointed letter", "הצוות שׁלום בבית הספר."),
+        ("digits, a decimal and punctuation", "הציון 45.5 מתוך 100 בממד."),
+        ("Hebrew points and a geresh", "שָׁלוֹם ל־30 אנשי צוות׳"),
+    ],
+)
+def test_what_a_letter_is_not(label, text):
+    """The tightening judges letters, and most of what a model adds is not one.
+
+    Refusing any of these would trade the hole that was closed for a new way
+    to lose a dimension to catalog copy.
+    """
+    assert hebrew_validation.is_hebrew_only_copy(text)
+
+
+def test_the_catalog_survives_the_hebrew_check():
+    """The deterministic fallback is judged by this check too.
+
+    `nodes.py` re-runs `is_hebrew_only_copy` over stored copy, catalog entries
+    included, and a failure there fails the whole round rather than one
+    dimension. One stray letter in a human-written entry would turn the
+    tightening into an outage, so the catalog is held to it here.
+    """
+    catalog = json.loads(
+        (Path(__file__).resolve().parents[1] / "data" / "interventions_kb.json")
+        .read_text(encoding="utf-8"),
+    )
+
+    offenders = [
+        (entry["id"], field, text)
+        for entry in catalog
+        # `source` cites institutions in Latin by design and is not copy the
+        # safety validator judges.
+        for field in ("title", "summary")
+        for text in [entry[field]]
+        if not hebrew_validation.is_hebrew_only_copy(text)
+    ] + [
+        (entry["id"], "actionable_steps", step)
+        for entry in catalog
+        for step in entry.get("actionable_steps", [])
+        if not hebrew_validation.is_hebrew_only_copy(step)
+    ]
+
+    assert offenders == []
+    assert len(catalog) == 120
 
 
 # --- the adaptation batch, and what it survives ------------------------------
