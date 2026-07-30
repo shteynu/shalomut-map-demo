@@ -234,22 +234,31 @@ Python — унаследованная запись. Перед PR 1 нужно
 
 Порядок v4 сохраняется, добавлены недостающие поставки.
 
+**Состояние на 2026-07-30:** пункты 1–4 выполнены, каждый своей веткой от
+`cb8bed3`; ни одна не запушена. Ветки и их HEAD перечислены в
+`docs/shalomut-tracker-handoff.md`, раздел «Архитектурный рефакторинг: четыре
+ветки на руках». Следующий невыполненный пункт — 5 (PR 3).
+
 1. **Baseline — выполнено 2026-07-30.** `npm run verify` на `cb8bed3` прошёл
    целиком: typecheck, 274/274 TypeScript-теста, ESLint, production build и
    269/269 Python-тестов. Числа совпали с унаследованной записью, но теперь это
    собственное evidence, а не цитата.
-2. **PR 1 — `fix(ai-contract): preserve v5 background context`.** Red-тест через
+2. **PR 1 — `fix(ai-contract): preserve v5 background context`.** Выполнено,
+   `fix/v5-background-context` @ `1b76bac`. Red-тест через
    настоящий `RoundAnalyticsResult.from_dict`, узкая правка `mcp_types.py`
    на множество `{4.0, 5.0}`, locked-регрессия, плюс обе строки
    `docs/source-of-truth.md` (C7). Размер S.
 3. **PR 2 — `fix(persistence): enforce response idempotency in postgres`.**
+   Выполнено, `fix/response-idempotency` @ `92cf626`.
    Обычный `@@unique([roundId, anonymousTokenHash])` и
    `@@unique([responseId, questionId])` (C1), маппинг `P2002` (C2), миграция с
    учётом C8, **и Postgres в CI (C6)**. Размер M.
-4. **PR 2.5 — `fix(config): fail closed on unknown producer contract version`.**
+4. **PR 2.5 — `feat(config): fail closed on unknown producer contract version`.**
+   Выполнено, `feat/fail-closed-contract-version` @ `0c90c1b`.
    Выделен из этапа A: module-init валидация плюс проверка в `verify` (C3), и
    здесь же новый health/capability endpoint. Размер S.
-5. **PR 3 — `feat(ai-jobs): persist analysis run lifecycle`.** Отдельная ветка,
+5. **PR 3 — `feat(ai-jobs): persist analysis run lifecycle`.** Не начат — это
+   следующий шаг. Отдельная ветка,
    не параллельно с продуктовыми пунктами 5–6 backlog (A1). Метрики из A3 входят
    в DoD. Размер L, 2–3 коммита.
 6. **Auth.** Закрыть dormant repository branch до этапа E; сам этап E объединить

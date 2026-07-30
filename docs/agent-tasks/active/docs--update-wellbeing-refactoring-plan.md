@@ -6,7 +6,7 @@
 - Base branch: `main`
 - Base commit: `cb8bed3`
 - Current HEAD: `cb8bed3`
-- Status: ревью готово, код не менялся
+- Status: закрыто; работа продолжается на ветках PR 1, PR 2 и PR 2.5
 - Last updated: 2026-07-30
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -162,9 +162,13 @@ Vercel и провайдерам не обращался.
 
 ## Next concrete step
 
-Завести ветку `fix/v5-background-context` от `cb8bed3` и сделать PR 1: сначала
-red-тест, прогоняющий настоящий 5.0 payload через
-`RoundAnalyticsResult.from_dict` и проверяющий равенство `backgroundContext`,
-затем правка `mcp_types.py:357-360` на множество `{4.0, 5.0}`, затем
-locked-регрессия (контекст не пересекает privacy boundary) и обе устаревшие
-строки `docs/source-of-truth.md:6` и `:73`.
+Ревью закрыто, PR 1, 2 и 2.5 выполнены на своих ветках. Следующий шаг —
+**PR 3, durable AI jobs**, и он не принадлежит этой ветке.
+
+Замещающему агенту: начать с `docs/shalomut-tracker-handoff.md`, раздел
+«Архитектурный рефакторинг: четыре ветки на руках» — там перечислены все ветки,
+их HEAD, состояние проверок и открытые вопросы. Оттуда идти в
+`docs/wellbeing-refactoring-plan-v4-review.md` §4 за порядком работ, затем
+завести ветку под PR 3 от `cb8bed3` и создать
+`docs/agent-tasks/active/feat--durable-ai-jobs.md` из
+`docs/agent-tasks/TEMPLATE.md`.
