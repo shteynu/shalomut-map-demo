@@ -149,8 +149,14 @@ class Settings:
         # which the validator rejects, and the round silently reads as if the
         # model had never been called. Lower this only against a measurement.
         self.max_tokens_per_dimension: int = int(os.getenv("MAX_TOKENS_PER_DIMENSION", "2048"))
-        # Token Saving: Only invoke LLM for problematic ('yellow' / 'red') dimensions
-        self.only_llm_for_problematic: bool = os.getenv("ONLY_LLM_FOR_PROBLEMATIC", "true").lower() == "true"
+        # Keep the provider away from green dimensions. Default false since
+        # 2026-07-30: it was a token saving from when one round did not fit in a
+        # provider's day, and lite's 1000 requests a day ended that. Green now
+        # gets the same paragraph the other seven get, and the deterministic
+        # sentence only where the answer never came — see
+        # `generate_interpretation_result`. Set it true to buy back up to five
+        # requests a round at the cost of a formula in place of a strength.
+        self.only_llm_for_problematic: bool = os.getenv("ONLY_LLM_FOR_PROBLEMATIC", "false").lower() == "true"
         # Transient provider failures are retried inside the worker thread.
         # The defaults bound how long one dimension may hold a provider slot;
         # since the webhook answers 202 before the run starts, they no longer

@@ -909,9 +909,22 @@ def test_v5_without_a_distribution_falls_back_to_the_flat_rule():
 
 
 def test_judgement_phrases_stay_blacklisted_for_green_on_5_0():
+    """A verdict of distress still contradicts a green score.
+
+    What this test asserted until 2026-07-30 was `יש לשפר` — improving the
+    dimension — which is not a verdict of distress but what a school does with a
+    strength. The phrase left the rule; the verdicts stayed. The whole green
+    rule, and the deniable claim beside it, is in `test_green_dimensions.py`.
+    """
     counts = llm_provider_service.distribution_counts(V5_BALANCE_AGGREGATES)
 
     assert not llm_provider_service.is_status_consistent(
+        "הממד מצביע על מצוקה מבנית בצוות. הנתונים מחייבים בחינה מחדש.",
+        "green",
+        contract_version="5.0",
+        distribution_counts=counts,
+    )
+    assert llm_provider_service.is_status_consistent(
         "הממד יציב אך יש לשפר את העומס. הצוות מדווח על תמונה חיובית.",
         "green",
         contract_version="5.0",

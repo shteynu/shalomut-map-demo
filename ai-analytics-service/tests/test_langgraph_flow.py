@@ -121,15 +121,14 @@ async def test_langgraph_flow_v2_emits_question_metrics_and_provenance(
             intervention["status"] == stone["status"]
             for intervention in stone["recommendedInterventions"]
         )
-        # A green dimension is the only one this service still writes itself,
-        # and it costs no provider call. Every other stone is model-written or
-        # the round does not exist.
-        is_green_skip = stone["status"] == "green"
+        # Every stone in a default round is model-written, green included:
+        # `ONLY_LLM_FOR_PROBLEMATIC` defaults to false since 2026-07-30, so a
+        # strength is described rather than summarised by a formula. The other
+        # road — the switch on, no provider call, `attempts` 0 — is held at unit
+        # level in `test_green_dimensions.py`.
         assert stone["generationProvenance"] == {
-            "outcome": (
-                "deterministic_fallback" if is_green_skip else "llm"
-            ),
-            "attempts": 0 if is_green_skip else 1,
+            "outcome": "llm",
+            "attempts": 1,
             "retryCount": 0,
             "sourceQuestionIds": expected_question_ids,
         }

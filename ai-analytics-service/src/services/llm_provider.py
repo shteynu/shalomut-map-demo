@@ -161,10 +161,16 @@ class LLMProviderService:
         answer the call raises ``ProviderUnavailableError`` rather than
         inventing copy.
 
-        The one interpretation this service writes itself is the green
-        dimension it deliberately never sends to the model
-        (``ONLY_LLM_FOR_PROBLEMATIC``): no provider call is made there, so
-        there is no failure to hide.
+        Green is the one status allowed a deterministic interpretation, and it
+        arrives by two roads. ``ONLY_LLM_FOR_PROBLEMATIC`` skips the provider
+        entirely — no call, so no failure to hide. With the switch off, green is
+        asked like every other dimension and falls back to the same sentence if
+        the answer never comes: it is derived from the aggregates, it is the copy
+        green had for as long as it was never asked, and taking it away would
+        leave a strength blank. ``attempts`` separates the two roads — ``0`` was
+        never asked, anything higher was asked and refused — and neither wears
+        the ``llm`` label. Yellow and red have no such sentence: there the
+        fallback would be a guess about a problem, so they raise instead.
         """
         questions = self._normalize_question_aggregates(
             dim_id,
@@ -220,6 +226,27 @@ class LLMProviderService:
             return InterpretationGeneration(
                 text=text,
                 outcome="llm",
+                attempts=attempts,
+            )
+
+        if status == "green":
+            logger.warning(
+                "[LLM Service] outcome=deterministic_fallback provider=%s "
+                "model=%s reason=%s attempts=%s dimension=%s",
+                provider,
+                model_name,
+                fallback_reason,
+                attempts,
+                dim_id,
+            )
+            return InterpretationGeneration(
+                text=self._heuristic_fallback(
+                    dim_hebrew,
+                    score,
+                    status,
+                    questions,
+                ),
+                outcome="deterministic_fallback",
                 attempts=attempts,
             )
 

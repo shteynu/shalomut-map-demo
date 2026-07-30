@@ -60,6 +60,43 @@ _STATUS_WORDS_HEBREW = {
 # "באזור אדום" / "בטווח אדום" is a verdict about the dimension, not a count.
 _VERDICT_MARKERS_HEBREW = ("באזור", "בטווח")
 
+# What a green dimension may not be told about itself, whatever else the
+# sentence says. Both are verdicts of distress and contradict the score Core
+# owns, so no phrasing rescues them.
+_GREEN_DISTRESS_VERDICTS = ("מצוקה מבנית", "טיפול מיידי")
+
+# Words that are a claim of distress when asserted and a statement in green's
+# favour when denied. `שחיקה` used to be refused outright, and "אין סימני שחיקה"
+# with it. Alongside it stood `שיפור` and `לשפר`, which are gone from the rule
+# altogether: improving a strength is what a school does with one, and refusing
+# the words cost a green dimension its copy over ordinary Hebrew. The
+# distinction drawn here is the one 5.0 already draws for a foreign colour —
+# allowed where it reads as a report, refused where it reads as a verdict.
+_GREEN_DENIABLE_CLAIMS = ("שחיקה",)
+
+# Hebrew negation, with the one-letter prefixes a clause takes ("שאין", "ואין").
+# The trailing boundary is what keeps `לא` from matching inside `לאורך` or
+# `מלא`; the leading one keeps the prefix set from swallowing a longer word.
+_HEBREW_NEGATIONS = (
+    "איננה",
+    "איננו",
+    "אינם",
+    "אינן",
+    "אין",
+    "ללא",
+    "בלי",
+    "לא",
+)
+_HEBREW_NEGATION_PATTERN = re.compile(
+    r"(?:^|[^\u0590-\u05ff\ufb1d-\ufb4f])"
+    # ו / ש / כ — the one-letter prefixes a clause takes.
+    r"[\u05d5\u05e9\u05db]?"
+    r"(?:" + "|".join(
+        sorted(_HEBREW_NEGATIONS, key=len, reverse=True),
+    ) + r")"
+    r"(?![\u0590-\u05ff\ufb1d-\ufb4f])"
+)
+
 
 def _repair_hebrew_confusables(text: str) -> str:
     """Put a Hebrew letter back where its twin from another script slipped in.
@@ -204,6 +241,26 @@ def is_valid_question_suggestion(
     )
 
 
+def _is_asserted(text: str, word: str) -> bool:
+    """True where `word` is claimed rather than denied.
+
+    A denial has to stand before the word and inside the same sentence: "אין
+    סימני שחיקה" denies it, "יש שחיקה, ולא ניתן להתעלם" does not, and a negation
+    two sentences away is about something else. Every occurrence has to be
+    denied — one asserted mention is enough to make the sentence a claim.
+    """
+    for sentence in sentences_or_whole(text):
+        denials = [
+            match.end() for match in _HEBREW_NEGATION_PATTERN.finditer(sentence)
+        ]
+        position = sentence.find(word)
+        while position >= 0:
+            if not any(end <= position for end in denials):
+                return True
+            position = sentence.find(word, position + len(word))
+    return False
+
+
 def is_status_consistent(
     text: str,
     status: str,
@@ -222,19 +279,18 @@ def is_status_consistent(
     the sentence has to carry a number matching one of the buckets — and
     never as a verdict ("נמצא באזור אדום"). The judgement-style phrases
     stay blacklisted for every version.
+
+    Green carries two rules of its own, because green is the one status whose
+    copy is about a strength: a verdict of distress is refused outright, and a
+    deniable claim is refused only where it is asserted. See
+    `_GREEN_DENIABLE_CLAIMS` for why the improvement words left the rule.
     """
-    judgement_phrases = {
-        "green": (
-            "מצוקה מבנית",
-            "טיפול מיידי",
-            "שחיקה",
-            "לשפר",
-            "שיפור",
-        ),
-    }
-    if any(
-        phrase in text
-        for phrase in judgement_phrases.get(status, ())
+    if status == "green" and (
+        any(phrase in text for phrase in _GREEN_DISTRESS_VERDICTS)
+        or any(
+            _is_asserted(text, claim)
+            for claim in _GREEN_DENIABLE_CLAIMS
+        )
     ):
         return False
 

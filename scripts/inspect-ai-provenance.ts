@@ -132,8 +132,20 @@ async function main() {
     const retryCount = prov.retryCount ?? 'N/A';
     const dimId = stone.dimensionId || stone.id || 'unknown';
 
+    // A deterministic fallback now arrives by two roads and they mean opposite
+    // things about the provider: a green dimension the switch kept away from it
+    // spent no attempt, while one that was asked and refused spent all of them.
+    // Reading the attempt count for that is exactly the kind of inference a
+    // diagnostic should do for its reader.
+    const note =
+      outcome === 'deterministic_fallback'
+        ? attempts === 0
+          ? '  ← not asked (ONLY_LLM_FOR_PROBLEMATIC)'
+          : '  ← asked and refused'
+        : '';
+
     console.log(
-      `Dimension: ${dimId.padEnd(25)} | Outcome: ${outcome.padEnd(22)} | Attempts: ${attempts} | Retries: ${retryCount}`
+      `Dimension: ${dimId.padEnd(25)} | Outcome: ${outcome.padEnd(22)} | Attempts: ${attempts} | Retries: ${retryCount}${note}`
     );
 
     if (outcome === 'llm') {

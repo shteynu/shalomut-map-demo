@@ -1,9 +1,10 @@
 """The Hebrew this service composes itself.
 
 Two kinds of it: the prompts sent to a provider, and the one interpretation
-written here on purpose — the green dimension no model is ever asked about. Both
-are text construction over a round's aggregates and neither needs a network, so
-they sit apart from the transport that carries them.
+written here on purpose — the green dimension's, reached either because the
+provider was not asked or because it did not answer. Both are text construction
+over a round's aggregates and neither needs a network, so they sit apart from the
+transport that carries them.
 """
 
 import re
@@ -415,8 +416,11 @@ def heuristic_interpretation(
 ) -> str:
     """The interpretation the service writes without asking a model.
 
-    Reached for the green dimension that `ONLY_LLM_FOR_PROBLEMATIC` keeps away
-    from the provider, so there is no failure being papered over here.
+    Reached only for a green dimension: either `ONLY_LLM_FOR_PROBLEMATIC` kept it
+    away from the provider, or the provider was asked and never answered. Nothing
+    is papered over either way — the sentence is built from the aggregates and
+    the provenance says `deterministic_fallback` with the attempts that were
+    spent, so a reader can tell the two apart.
     """
     aggregates = question_aggregates or []
     if aggregates:

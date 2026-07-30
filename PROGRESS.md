@@ -1,10 +1,21 @@
 # Shalomut Map — PROGRESS.md
 
 Updated: 2026-07-30 (**a live round finished `success` with all eight stones written by the model**; contract
-`5.0` is switched on and proven, and the provider quota is no longer the blocker. Items 8 and 15–21 are closed;
-item 10 is open by the owner's choice, and item 12 is the one open risk)
+`5.0` is switched on and proven, and the provider quota is no longer the blocker. Items 8, 10 and 15–21 are
+closed, and item 12 — rotating the four exposed secrets — is the one open risk and the one open item)
 
 ## Current State
+
+- **Item 10 closed: the model writes all eight dimensions, and green stopped being refused for ordinary
+  Hebrew.** Both parts as the owner decided them: `ONLY_LLM_FOR_PROBLEMATIC` goes to `false`, and a green
+  dimension the provider refuses keeps its deterministic sentence rather than becoming a gap — the one status
+  whose fallback is not a guess about a problem, with `attempts` saying which road it came by and the outcome
+  never claiming `llm`. The blacklist lost `שיפור` and `לשפר` outright and now refuses `שחיקה` only where it is
+  asserted, so "אין סימני שחיקה" passes. That cost was already being paid: green recommendations have gone to
+  the model all along, so a rewrite reaching for the ordinary word lost its adaptation to catalog copy every
+  round. The quota objection was empty — the live round of 2026-07-29 was already an all-eight-model round at 22
+  requests with no `429`. `pytest` 269/269 with 19 new, fail-first confirmed on 8 of them. **Not exercised
+  live**; residual risk named in the item. Details in item 10 of Next Up.
 
 - **Item 8 closed: the builder can ask the model for a question, and cannot pass its answer off as its own.**
   The question library was three hardcoded items covering three dimensions of eight; it is now the canonical
@@ -35,9 +46,9 @@ item 10 is open by the owner's choice, and item 12 is the one open risk)
   partial map, 19 on the published contract shapes, 20 on per-model pacing. Two of them were verified against
   the deployment; the other four are local-only, and each says so in its own entry.
   - **Left open by the owner's decision, not by a blocker**: item 8, the AI-generated question suggestion,
-    deferred on 2026-07-26 and again on 2026-07-30 — **taken up later the same day and closed**, see the entry
-    above; and item 10, whether the model should also write the green dimensions
-    (`ONLY_LLM_FOR_PROBLEMATIC=false`), which is still open.
+    deferred on 2026-07-26 and again on 2026-07-30; and item 10, whether the model should also write the green
+    dimensions (`ONLY_LLM_FOR_PROBLEMATIC=false`). **Both were taken up later the same day and closed** — see
+    the two entries above.
   - **The one open risk is item 12**, the four secrets exposed on 2026-07-29 and not yet rotated. Nothing in
     this session touched them, and nothing can: it is the owner's hands by `AGENTS.md`.
   - **Two things wait on a deployed round rather than on code**: the partial map (item 15) has never been
@@ -442,7 +453,58 @@ item 10 is open by the owner's choice, and item 12 is the one open risk)
 9. [x] Empty the database for manual testing — done by the owner on 2026-07-28 and verified read-only afterwards:
        `0` organizations, `0` rounds, `0` responses, `0` answers, schema still up to date. The dump taken
        beforehand is at `~/shalomut-db-backup-2026-07-28.json` and is the only way back.
-10. [ ] Decide whether the model should also write the green dimensions (`ONLY_LLM_FOR_PROBLEMATIC=false`) — the
+10. [x] **The model writes all eight dimensions, and the blacklist stopped refusing ordinary Hebrew**
+       (2026-07-30). Decided by the owner after two deferrals, both parts as recommended: the switch goes to
+       `false`, and a green dimension the provider refuses keeps its deterministic sentence instead of becoming
+       a gap. What made the decision cheap is that all three obstacles the item was written on had been moved
+       by other work; what made it worth taking is that the blacklist was costing something already.
+       - **The quota objection was empty.** The live round of 2026-07-29 was already an all-eight-model round —
+         `8/8 outcome: llm` means none of its dimensions came out green — at 22 requests in 97 seconds with no
+         `429`. So the measurement for the configuration this item was debating existed before the item was
+         decided. What the switch costs is up to five more requests in a round that does have green dimensions,
+         against 1000 a day.
+       - **The blacklist refused `שיפור`, `לשפר` and `שחיקה` for green, and two of those are what a school does
+         with a strength.** They are gone from the rule. `שחיקה` stays, but as a claim only: a denial standing
+         before it in the same sentence clears it, so "אין סימני שחיקה" — a statement in green's favour — is no
+         longer refused for naming the thing it denies. That is the distinction `5.0` already draws for a
+         foreign colour, allowed as a count and refused as a verdict. `מצוקה מבנית` and `טיפול מיידי` are
+         refused whatever the phrasing: those contradict the score Core owns.
+       - **This was not a hypothetical cost.** The adaptation node has no colour filter, so green
+         recommendations have been going to the model all along, and the safety validator applies the same
+         `is_status_consistent` to a rewritten entry. A green rewrite that reached for `שיפור` lost its
+         adaptation to catalog copy silently, in every round, with the switch on. The catalog itself never
+         carried the words — checked across all 40 green-targeted entries — so only the model was being
+         punished, for the ordinary word.
+       - **A refused green dimension keeps the sentence rather than the gap.** Green is the one status whose
+         deterministic sentence is not a guess about a problem: it is built from the aggregates and it is the
+         copy green had for as long as it was never asked. Taking it away would have made letting the model
+         near green a net loss for the reader. `attempts` separates the two roads — `0` never asked, higher
+         asked and refused — the outcome stays `deterministic_fallback` and never `llm`, and yellow and red
+         still raise, because there a formula in place of an analysis is exactly what fail-closed exists to
+         prevent. `inspect-ai-provenance` now reads the attempt count out loud for that reason.
+       - **`ONLY_LLM_FOR_PROBLEMATIC` is declared in `render.yaml` at last**, which is the part of this item
+         that had nothing to do with the decision: it was unset in both blueprint and dashboard and defaulted
+         to `true` in `config.py`, so the choice lived nowhere a reader could find it. The code default moved to
+         `false` with it, and the blueprint wins over a dashboard entry — established on `LLM_MODEL_FAST` — so
+         one deploy is enough either way.
+       - Verification: `pytest` 269/269 with 19 new in
+         [`test_green_dimensions.py`](ai-analytics-service/tests/test_green_dimensions.py); fail-first
+         confirmed — 8 of the 19 fail against the previous code and the other 11 are the guards that must pass
+         on both sides (the verdicts still refused, a negation hidden inside `לאורך` or `מלא` still not a
+         denial, yellow and red untouched, the switch still skipping, and the deterministic sentence still
+         clearing the validators it will be judged by). Two existing tests encoded the old rule and were
+         rewritten rather than deleted: one asserted `יש לשפר` was refused for green, the other that a green
+         stone in a default round is `deterministic_fallback`. `npm test` 274/274 and `eslint` clean; the Core
+         side changed only the diagnostic. **Not exercised live.**
+       - Ordering: Python-only plus a blueprint value, no contract change, so this deploys in either order.
+         **Residual risk, named rather than fixed:** a safety-validator refusal that survives three replays
+         still fails the whole round on every version, including `5.0` — the partial map absorbs
+         `provider_unavailable` and not `validation_failed`. Green adds up to five more dimensions that can
+         reach that path. It is not new and not green-specific, and the blacklist fix removes the trigger that
+         made green likelier than the rest.
+
+       What follows is the item as it stood, kept because it records the reasoning the decision rests on.
+       Decide whether the model should also write the green dimensions (`ONLY_LLM_FOR_PROBLEMATIC=false`) — the
        owner raised it on 2026-07-29 and deferred the work. No code is needed to switch it, but three things
        have to be settled first, in this order. (a) The green blacklist in
        [`hebrew_validation.py:129`](ai-analytics-service/src/services/hebrew_validation.py) refuses `שיפור`,

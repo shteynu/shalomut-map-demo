@@ -74,3 +74,18 @@ services:
       # reached only by a round rejected in many dimensions over and over.
       - key: LLM_MAX_REQUESTS_PER_MINUTE_HEAVY
         value: "4"
+      # False: the model writes all eight dimensions, green included. It was
+      # true to save tokens when a round did not fit in a day, and that reason
+      # is gone — the live round of 2026-07-29 was already an all-eight-model
+      # round at 22 requests with no 429, because none of its dimensions came
+      # out green. What it costs is up to five more requests against 1000 a day;
+      # what it buys is eight paragraphs of one quality instead of seven and a
+      # formula. A green dimension the model refuses still gets the
+      # deterministic sentence rather than a gap, labelled
+      # `deterministic_fallback` like it always was.
+      #
+      # Declared here rather than left to the dashboard because it was neither:
+      # unset in both, it defaulted to true in `config.py`, so the decision
+      # lived nowhere a reader could find it.
+      - key: ONLY_LLM_FOR_PROBLEMATIC
+        value: "false"
