@@ -3,9 +3,11 @@
 This project keeps the stable Dashboard taxonomy separate from configurable
 round questionnaires and from demo result data.
 
-> Deployed contract `3.0` implements dynamic round questionnaires while
-> immutable contract `2.0` continues to describe the exact default 24-question
-> legacy exchange. The consumer-first boundary is described in
+> Deployed contract `5.0` is what Core produces; `3.0` introduced dynamic round
+> questionnaires, `4.0` added the school background context and `5.0` added
+> per-question score distributions on top of it. Immutable contract `2.0`
+> continues to describe the exact default 24-question legacy exchange. The
+> consumer-first boundary is described in
 > `docs/dynamic-questionnaire-ai-contract.md`.
 
 ## Canonical Decisions
@@ -70,7 +72,7 @@ Which screen owns which value, so the same fact is never edited in two places:
 | `surveyDefinition.audience` | Derived | Mirrors the setup selection through `resolveAudienceLabel`; read-only in the builder. |
 | `privacyThreshold` / `surveyDefinition.minimumResponses` | Setup screen, editable in the builder | Same number in both places; the builder writes it back on save. |
 | `backgroundContext.totalStaffCount` | Organization record | Drives the expected-response counter on `/round`. |
-| Remaining `backgroundContext` fields | Setup screen | Reach the AI prompt on contract `4.0` only, and never for a locked round. |
+| Remaining `backgroundContext` fields | Setup screen | Reach the AI prompt on contracts `4.0` and `5.0`, and never for a locked round. |
 | `surveyDefinition.questions` | Survey builder | Frozen after the first accepted response. |
 
 ## AI Analysis Triggering
