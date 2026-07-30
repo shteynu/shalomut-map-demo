@@ -1,3 +1,9 @@
+import {
+  PRODUCER_CONTRACT_VERSION_ENV,
+  UnsupportedProducerContractVersionError,
+  getProducedAnalyticsContractVersion,
+  resolveProducedAnalyticsContractVersion,
+} from '../ai-contract-version';
 import { IRoundRepository, ISurveyRepository } from '../repositories/interfaces';
 import {
   WellbeingDimensionId,
@@ -29,12 +35,27 @@ import {
  * starts emitting it. Keeping the switch in configuration makes that
  * consumer-first rollout a config change on a verified Python deployment
  * instead of a code deploy racing the other service.
+ *
+ * Resolution and validation live in `../ai-contract-version`, which reports an
+ * unsupported value instead of throwing, so `/api/health` can name the problem.
  */
-export function getProducedAnalyticsContractVersion(): '3.0' | '4.0' | '5.0' {
-  const version = process.env.AI_ANALYTICS_CONTRACT_VERSION?.trim();
-  if (version === '5.0') return '5.0';
-  if (version === '4.0') return '4.0';
-  return '3.0';
+export { getProducedAnalyticsContractVersion };
+
+// Checked once, when this module is first imported, rather than on the first
+// round that needs it. `next build` pulls in the routes that import this file,
+// so a deployment configured with a version Core cannot produce fails while it
+// is being built — which is the point of fail-closed. An unset variable is a
+// documented default and passes here.
+{
+  const configured = resolveProducedAnalyticsContractVersion(
+    process.env[PRODUCER_CONTRACT_VERSION_ENV],
+  );
+  if (!configured.ok) {
+    throw new UnsupportedProducerContractVersionError(
+      `${configured.error} Configured value: ` +
+        `'${process.env[PRODUCER_CONTRACT_VERSION_ENV]}'.`,
+    );
+  }
 }
 
 export class AnalyticsService {

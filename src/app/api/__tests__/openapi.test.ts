@@ -26,6 +26,7 @@ describe('OpenAPI Specification Integrity', () => {
     const spec = JSON.parse(fileContent);
     const paths = Object.keys(spec.paths);
 
+    assert.ok(paths.includes('/api/health'), 'Must include the health/capability path');
     assert.ok(paths.includes('/api/rounds'), 'Must include /api/rounds path');
     assert.ok(paths.includes('/api/manager/setup'), 'Must include manager setup persistence path');
     assert.ok(paths.includes('/api/rounds/{roundId}'), 'Must include survey round update path');
