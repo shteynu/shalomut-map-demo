@@ -8,6 +8,9 @@ import {
   validateStoneMapResult,
 } from '../../ai-contract';
 import type {
+  DynamicQuestionAggregate,
+  QuestionAnswerRecord,
+  RoundDimensionScore,
   SurveyDefinition,
   SurveyDefinitionQuestion,
   SurveyResponseRecord,
@@ -69,10 +72,11 @@ function createMockResponses(
   return Array.from({ length: count }, (_, responseIndex) => {
     const answers = questions
       .filter((q) => !omitAnswersForQuestionId || q.id !== omitAnswersForQuestionId || responseIndex < count - 1)
-      .map((question, questionIndex) => {
+      .map((question, questionIndex): QuestionAnswerRecord => {
         const scores = [85, 90, 75, 60, 95, 80, 70, 88];
-        const score = scores[(questionIndex + responseIndex) % scores.length];
-        const value = score >= 75 ? 'green' : score >= 50 ? 'yellow' : 'red';
+        const sourceScore = scores[(questionIndex + responseIndex) % scores.length];
+        const score: QuestionAnswerRecord['score'] = sourceScore >= 75 ? 100 : sourceScore >= 50 ? 60 : 0;
+        const value: QuestionAnswerRecord['value'] = score === 100 ? 'green' : score === 60 ? 'yellow' : 'red';
         return {
           questionId: question.id,
           dimensionId: question.dimensionId,
@@ -135,7 +139,7 @@ test('Workstream A Dry-Run: Scenario A1 (Unlocked disposable round with custom q
   const dimensionKeys = Object.keys(analytics.dimensionScores);
   assert.strictEqual(dimensionKeys.length, 8);
   for (const dimId of ALL_DIMENSION_IDS) {
-    const dimScore = analytics.dimensionScores[dimId];
+    const dimScore: RoundDimensionScore = analytics.dimensionScores[dimId];
     assert.ok(dimScore);
     assert.strictEqual(dimScore.dimensionId, dimId);
     assert.strictEqual(dimScore.isLocked, false);
@@ -148,7 +152,7 @@ test('Workstream A Dry-Run: Scenario A1 (Unlocked disposable round with custom q
   const aggregateKeys = Object.keys(analytics.questionAggregates);
   assert.strictEqual(aggregateKeys.length, 8);
   for (const question of customQuestions) {
-    const aggregate = analytics.questionAggregates[question.id];
+    const aggregate: DynamicQuestionAggregate = analytics.questionAggregates[question.id];
     assert.ok(aggregate, `Aggregate for ${question.id} must exist`);
     assert.strictEqual(aggregate.questionId, question.id);
     assert.strictEqual(aggregate.dimensionId, question.dimensionId);

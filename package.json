@@ -6,6 +6,7 @@
     "dev": "next dev --turbopack",
     "local": "node scripts/local-stack.mjs",
     "build": "prisma generate && next build",
+    "typecheck": "tsc --noEmit",
     "start": "next start",
     "lint": "eslint",
     "test": "npx tsx --test \"src/**/__tests__/*.test.ts\" \"src/**/__tests__/*.test.tsx\"",

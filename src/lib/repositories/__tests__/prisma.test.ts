@@ -29,6 +29,11 @@ function createMockPrismaClient(): MinimalPrismaClient {
         orgs.set(where.id, updated);
         return updated;
       },
+      deleteMany: async () => {
+        const count = orgs.size;
+        orgs.clear();
+        return { count };
+      },
     },
     surveyRound: {
       create: async ({ data }: any) => {
@@ -87,6 +92,11 @@ function createMockPrismaClient(): MinimalPrismaClient {
         rounds.set(where.id, { ...existing, ...data });
         return { count: 1 };
       },
+      deleteMany: async () => {
+        const count = rounds.size;
+        rounds.clear();
+        return { count };
+      },
     },
     surveyResponse: {
       create: async ({ data, include }: any) => {
@@ -126,6 +136,11 @@ function createMockPrismaClient(): MinimalPrismaClient {
           }
         }
         return count;
+      },
+      deleteMany: async () => {
+        const count = responses.size;
+        responses.clear();
+        return { count };
       },
     },
   };

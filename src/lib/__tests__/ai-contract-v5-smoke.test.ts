@@ -11,8 +11,8 @@ import type {
   SurveyDefinitionQuestion,
   SurveyResponseRecord,
   SurveyRound,
-  WellbeingDimensionId,
 } from '../types/backend';
+import type { WellbeingDimensionId } from '../shalomut-source';
 
 const DIMENSION_IDS: WellbeingDimensionId[] = [
   'self-expression',

@@ -134,7 +134,7 @@ describe('OpenAPI Specification Integrity', () => {
   it('documents every contract version the code supports', async () => {
     const spec = JSON.parse(fs.readFileSync(openapiPath, 'utf8'));
     const { AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS } = await import(
-      '../../../lib/ai-contract.ts'
+      '../../../lib/ai-contract'
     );
 
     const documented = Object.keys(

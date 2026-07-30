@@ -113,11 +113,12 @@ test("middleware allows unauthenticated access to /login and /login/ trailing sl
 });
 
 test("middleware and respondent routes stay functional when SESSION_SECRET is missing in deployed runtime", async () => {
+  const mutableEnv = process.env as Record<string, string | undefined>;
   const origNodeEnv = process.env.NODE_ENV;
   const origVercelEnv = process.env.VERCEL_ENV;
   const origSecret = process.env.SESSION_SECRET;
 
-  process.env.NODE_ENV = "production";
+  mutableEnv.NODE_ENV = "production";
   process.env.VERCEL_ENV = "production";
   delete process.env.SESSION_SECRET;
 
@@ -134,11 +135,10 @@ test("middleware and respondent routes stay functional when SESSION_SECRET is mi
     const mcpRes = await middleware(mcpReq);
     assert.strictEqual(mcpRes.status, 200);
   } finally {
-    process.env.NODE_ENV = origNodeEnv;
+    mutableEnv.NODE_ENV = origNodeEnv;
     process.env.VERCEL_ENV = origVercelEnv;
     if (origSecret !== undefined) {
       process.env.SESSION_SECRET = origSecret;
     }
   }
 });
-

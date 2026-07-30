@@ -22,21 +22,22 @@ async function withEnv(
   overrides: Partial<Record<(typeof ENV_KEYS)[number], string | undefined>>,
   body: () => Promise<void> | void,
 ) {
+  const mutableEnv = process.env as Record<string, string | undefined>;
   const original = Object.fromEntries(
     ENV_KEYS.map((key) => [key, process.env[key]]),
   );
 
   try {
     for (const [key, value] of Object.entries(overrides)) {
-      if (value === undefined) delete process.env[key];
-      else process.env[key] = value;
+      if (value === undefined) delete mutableEnv[key];
+      else mutableEnv[key] = value;
     }
     await body();
   } finally {
     for (const key of ENV_KEYS) {
       const value = original[key];
-      if (value === undefined) delete process.env[key];
-      else process.env[key] = value;
+      if (value === undefined) delete mutableEnv[key];
+      else mutableEnv[key] = value;
     }
   }
 }
