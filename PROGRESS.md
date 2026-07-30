@@ -448,16 +448,42 @@ first one ever; contract `5.0` is switched on and proven, and the provider quota
        obviously forbid it; the question is whether a truncated sample at `WARNING` earns its place or just
        fills Render's log with Hebrew paragraphs nobody reads until the next investigation.
 
-18. [ ] **A non-Hebrew letter can reach the school as long as it is not Latin.** Seen twice while
-       reproducing item 16: `certainty` wrote `אי وדאות` with an Arabic waw (U+0648) in place of the Hebrew
-       one, and `is_hebrew_only_copy` accepted it, because it only looks for Latin characters. It renders as
-       a broken word in a paragraph a manager reads. The fix is not simply widening the check — every
-       character a rejection adds is another way for a dimension to fall back to catalog copy, which is what
-       items 15 and 16 were about — so it needs deciding whether to reject the answer, repair the character
-       during sanitization, or both.
+18. [x] **A non-Hebrew letter could reach the school as long as it was not Latin** (2026-07-30, commit
+       `4ace369`). `is_hebrew_only_copy` named the one script it refused and so let every other one through:
+       `certainty` wrote `אי وדאות` with an Arabic waw (U+0648) where the vav belongs and it passed twice,
+       and a whole sentence in Cyrillic would have passed just as easily, needing only one Hebrew letter
+       somewhere in it. The check now refuses any letter outside Hebrew and counts the presentation forms
+       (U+FB1D–FB4F) as Hebrew, since a pointed letter written as one character is Hebrew to a reader;
+       digits, points and punctuation are not letters and are unaffected. Both halves of the choice were
+       taken, and the order matters: `sanitize_model_text` repairs the slip first — word by word, and only
+       where the word already carries Hebrew — so the answer becomes correct instead of refused, and a word
+       with no Hebrew in it stays untouched for the check to refuse. That keeps the tightening from becoming
+       a new way to lose a dimension to catalog copy, which is what items 15 and 16 were about.
 ---
 
 ## Completed Tasks
+
+- [x] **2026-07-30**: **The Hebrew-only check refused one script and admitted the rest** (commit `4ace369`,
+  item 18):
+  - Found while reproducing item 16, not by a test: `certainty` wrote `אי وדאות` with an Arabic waw in place
+    of the vav on two separate runs, and `is_hebrew_only_copy` accepted it, because the check was "has Hebrew
+    and no `[A-Za-z]`". The reader would have got a broken word inside an otherwise correct paragraph. The
+    same hole admitted an entire Cyrillic or Greek sentence carrying one Hebrew letter.
+  - The check now asks whether every letter is Hebrew rather than whether any letter is Latin, and treats the
+    Hebrew presentation forms as Hebrew — a model may write `שׁ` as one character, and that is the same
+    letter to a reader. Nothing that is not a letter is judged.
+  - Repair comes before refusal, because a stricter validator is how a dimension loses all three of its
+    recommendations to catalog copy. `sanitize_model_text` puts the Hebrew letter back word by word, and only
+    where the word already carries Hebrew: a word with no Hebrew in it is another language, not a typo, and
+    reaches the check untouched. The confusables table starts at the one letter that was actually observed.
+  - **Verification Evidence**: `pytest` 211/211 passed (was 203, eight new tests). Three of them fail on the
+    previous validator — the repair, the Arabic word and the Cyrillic word — while the Latin case passes on
+    both, which is the regression guard. The catalog is held to the stricter rule by its own test over all
+    120 entries' titles, summaries and steps, since `nodes.py` re-runs this check on stored copy including
+    the deterministic fallback and a failure there fails a whole round; `source` is excluded because it cites
+    institutions in Latin by design and no validator judges it. Re-ran the live reproduction through the
+    production prompts and predicate: `meaning`, `certainty` and `professional-competence` still accepted,
+    three entries each. Not yet exercised by a deployed round.
 
 - [x] **2026-07-29**: **Six recommendations were lost to a punctuation line and two spelled-out numbers**
   (commit `6569c4d`, item 16):
