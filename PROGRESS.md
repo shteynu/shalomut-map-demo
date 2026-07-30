@@ -421,11 +421,24 @@ first one ever; contract `5.0` is switched on and proven, and the provider quota
        reason of the last attempt — the one that actually decides the dimension — was recorded nowhere; it now
        logs `outcome=no_answer` like every other exhausted path. Fail-first confirmed against the previous code,
        `pytest` 178/178.
-15. [ ] Decide whether a partial map is acceptable: some stones written by the model, the rest marked
-       explicitly as unavailable. Today one refused dimension fails the whole round, so on the free tier no
-       round can ever succeed even though the provider demonstrably answers. This is wider than item 10, which
-       only concerned the green dimensions. Note that honestly marking a stone as having no analysis does not
-       breach the "no fallback posing as analysis" invariant — a fallback pretending to be model output would.
+15. [x] **A partial map is acceptable, and now exists** (2026-07-30, commit `fe2a6fb`). The premise the item
+       was written on had expired: rounds do succeed now, so this was never about unblocking the free tier in
+       the end — it is about resilience. Two days earlier `certainty` and `professional-competence` both
+       refused twice; had those been interpretation refusals rather than adaptation ones, the round would
+       have failed whole, repeatedly, and the manager would never have seen the other six dimensions.
+       Decided with the owner: no threshold — a gap is allowed in any dimension, green or red, and only a
+       round where nothing at all was written is a failure — and the round status stays `success`, with the
+       gap visible per stone and declared once at the top of the payload. A stone with no interpretation
+       keeps its score, metrics and recommendations, all of which are real; only the paragraph is missing,
+       and `generationProvenance.outcome: "unavailable"` says so. Contracts up to 4.0 still fail whole.
+
+19. [ ] **OpenAPI describes contracts 1.0 to 3.0 and stops.** Found while checking whether the partial map
+       needed a spec change: it does not, because `docs/openapi.yaml` and `public/openapi.json` never
+       described 4.0 or 5.0 at all — there is no `StoneDetailV4`, no `StoneMapResultV5`, and no `"4.0"` or
+       `"5.0"` anywhere in either file. Two contract versions of drift, one of them the only mutable and
+       currently deployed one. `contracts/ai-analytics-v5.json` is the manifest that is current, and Core
+       reads only `.version` from it, so nothing is broken today; what is missing is the published shape a
+       consumer would integrate against.
 
 16. [x] **Found out why an adaptation batch is rejected as `invalid_semantic_output`** (2026-07-29, commit
        `6569c4d`). Neither candidate was right, and the two dimensions failed for unrelated reasons — which
@@ -469,6 +482,29 @@ first one ever; contract `5.0` is switched on and proven, and the provider quota
 ---
 
 ## Completed Tasks
+
+- [x] **2026-07-30**: **One dead dimension no longer discards the seven that answered** (commit `fe2a6fb`,
+  item 15):
+  - Most of this was already implemented and left uncommitted in the worktree, written tests first, with the
+    Core validator as the missing half. What this commit adds is that half: `unavailable` accepted in the 5.0
+    provenance and nowhere below it, the rule that an `unavailable` stone's interpretation must be exactly
+    empty while every other outcome's must be Hebrew with 2–5 sentences, and the check that
+    `dimensionsWithoutInterpretation` lists precisely the `unavailable` stones. Three Core tests were failing
+    without it.
+  - The service side: `agent_psychologist_node` keeps the successful dimensions instead of returning on the
+    first `ProviderUnavailableError`, the exception carries its attempt count so a gap's provenance reports
+    the same numbers a successful stone would, the safety validator judges an unavailable stone on being
+    empty rather than on being good Hebrew, and the formatter declares the gaps once — omitting the field
+    entirely when the map is whole, so a full round's payload is unchanged by any of this.
+  - **Verification Evidence**: `pytest` 222/222 passed, `npm test` 250/250 passed (247/250 with the Core
+    validator reverted — the three partial-map tests are what it satisfies), `npm run lint` clean,
+    `npm run build` compiled. Cross-boundary check, which neither suite covers: dumped the real
+    `final_payload` the Python graph produces for a round failing on `certainty` and `meaning`, then ran it
+    through Core's own `validateStoneMapResult` and `applyStoneInsightToDimension` — validation `ok`, and the
+    two gapped dimensions arrive with `interpretationUnavailable=true` and zero paragraphs while `balance`
+    arrives with its paragraph, all three keeping their metrics.
+  - Not yet seen by a deployed round. The rollout is consumer-first and the order matters: Vercel must accept
+    a declared gap before Render can emit one, or a partial round's callback fails validation.
 
 - [x] **2026-07-30**: **A refusal now logs its shape, and the refused copy still never leaves the process**
   (commit `36d5a1a`, item 17):
