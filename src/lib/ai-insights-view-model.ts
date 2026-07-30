@@ -112,6 +112,11 @@ export function applyStoneInsightToDimension(
     score: Math.round(stone.score),
     status: stone.status,
     summary,
+    // The score, the metrics and the recommendations of this dimension are all
+    // real; only the paragraph about them is missing. Saying which is the point
+    // of the partial map.
+    interpretationUnavailable:
+      stone.generationProvenance?.outcome === 'unavailable',
     metrics: stone.metrics.map((metric) => {
       const hasQuestionAggregate =
         typeof metric.questionId === 'string' &&

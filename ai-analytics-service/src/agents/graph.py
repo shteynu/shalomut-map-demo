@@ -226,6 +226,19 @@ def format_stone_map_output_node(state: AnalyticsState) -> AnalyticsState:
         final_payload["surveyDefinitionHash"] = round_data.get(
             "surveyDefinitionHash",
         )
+    if contract_version == AI_ANALYTICS_V5_CONTRACT_VERSION:
+        # Stated whenever the map is partial, and omitted when it is whole, so
+        # a full round's payload is byte-identical to what it was before the
+        # partial map existed. Core requires this list to agree exactly with
+        # the stones: a banner that disagrees with the map is how a manager
+        # stops trusting the screen.
+        gaps = sorted(
+            dim_id
+            for dim_id, provenance in generation_provenance.items()
+            if provenance.get("outcome") == "unavailable"
+        )
+        if gaps:
+            final_payload["dimensionsWithoutInterpretation"] = gaps
 
     return {
         **state,

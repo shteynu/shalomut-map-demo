@@ -147,7 +147,17 @@
     "hebrewUserFacingText": true,
     "psychologicalInterpretationSentences": {
       "min": 2,
-      "max": 5
+      "max": 5,
+      "emptyWhenGenerationOutcomeIsUnavailable": true
+    },
+    "partialMap": {
+      "generationOutcomes": ["llm", "deterministic_fallback", "unavailable"],
+      "unavailableInterpretationIsEmpty": true,
+      "declaredIn": "dimensionsWithoutInterpretation",
+      "declaredOnlyWhenPartial": true,
+      "mustMatchUnavailableStonesExactly": true,
+      "allEightUnavailableIsAFailedRound": true,
+      "scoreMetricsAndInterventionsStillPresent": true
     },
     "overallPsychologicalSummary": {
       "generatedByLlm": true,

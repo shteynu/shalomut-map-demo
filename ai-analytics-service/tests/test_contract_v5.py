@@ -2,6 +2,8 @@ import unittest
 import hashlib
 import json
 import re
+from contextlib import contextmanager
+from unittest.mock import patch
 
 import pytest
 
@@ -808,3 +810,156 @@ async def test_v5_safety_validator_rejects_an_undeclared_adaptation(answering_ll
 
     assert validated["safety_status"] == "fail"
     assert "Intervention is invalid" in validated["safety_feedback"]
+
+
+# --- the partial map ---------------------------------------------------------
+#
+# One dead dimension out of eight used to discard the seven that answered and
+# leave the manager with nothing. On 5.0 the gap is stated instead: the stone
+# carries no interpretation and its provenance says why. It is never filled
+# with heuristic copy, which would be the fallback posing as analysis.
+
+
+@contextmanager
+def failing_for(dimension_ids):
+    """A provider that answers every dimension except the named ones.
+
+    A context manager rather than a `monkeypatch.setattr`, because this patches
+    over the `answering_llm` stub: monkeypatch tears down after a fixture set up
+    before it, and would then restore the stub permanently for the rest of the
+    session. Entering here keeps the two in the order they were applied.
+    """
+    real = llm_provider_service.generate_psychological_interpretation_result
+
+    def answer(*, dim_id, **kwargs):
+        if dim_id in dimension_ids:
+            raise ProviderUnavailableError(
+                "invalid_semantic_output",
+                dimension_id=dim_id,
+                attempts=2,
+            )
+        return real(dim_id=dim_id, **kwargs)
+
+    with patch.object(
+        llm_provider_service,
+        "generate_psychological_interpretation_result",
+        answer,
+    ):
+        yield
+
+
+@pytest.mark.asyncio
+async def test_one_dead_dimension_leaves_the_other_seven_standing(answering_llm):
+    with failing_for({"certainty"}):
+        state = await agent_psychologist_node(
+            build_state(build_v5_round_data()),
+        )
+
+    assert state.get("safety_status") != "provider_unavailable"
+    interpretations = state["interpretations"]["dimension_interpretations"]
+    assert interpretations["certainty"] == ""
+    assert state["generation_provenance"]["certainty"] == {
+        **state["generation_provenance"]["certainty"],
+        "outcome": "unavailable",
+        "attempts": 2,
+        "retryCount": 1,
+    }
+    for dimension_id in AI_ANALYTICS_DIMENSION_IDS:
+        if dimension_id == "certainty":
+            continue
+        assert interpretations[dimension_id], dimension_id
+        assert (
+            state["generation_provenance"][dimension_id]["outcome"] == "llm"
+        ), dimension_id
+
+
+@pytest.mark.asyncio
+async def test_a_round_with_nothing_written_is_still_a_failure(answering_llm):
+    """There is no partial map in zero stones, only a service that is down."""
+    with failing_for(set(AI_ANALYTICS_DIMENSION_IDS)):
+        state = await agent_psychologist_node(
+            build_state(build_v5_round_data()),
+        )
+
+    assert state["safety_status"] == "provider_unavailable"
+
+
+@pytest.mark.asyncio
+async def test_contracts_before_5_0_still_fail_whole(answering_llm):
+    """A closed contract describes eight interpretations and no gap.
+
+    A consumer written against 4.0 has no shape to render a missing stone in,
+    so the round fails there exactly as it did before.
+    """
+    round_data = build_v5_round_data()
+    round_data["contractVersion"] = "4.0"
+
+    with failing_for({"certainty"}):
+        state = await agent_psychologist_node(build_state(round_data))
+
+    assert state["safety_status"] == "provider_unavailable"
+
+
+@pytest.mark.asyncio
+async def test_the_payload_declares_the_gap_once(monkeypatch, answering_llm):
+    """What Core validates: the list, and its agreement with the stones."""
+    monkeypatch.setattr(settings, "llm_api_key", "sk-test-partial")
+    monkeypatch.setattr(settings, "llm_base_url", "https://provider.local/v1")
+    monkeypatch.setattr(settings, "llm_max_attempts", 1)
+    monkeypatch.setattr("urllib.request.urlopen", _adaptation_response)
+
+    with failing_for({"certainty", "meaning"}):
+        payload = (
+            await analytics_graph.ainvoke(build_state(build_v5_round_data()))
+        )["final_payload"]
+
+    assert payload["status"] == "success", payload.get("errorMessage")
+    assert payload["dimensionsWithoutInterpretation"] == ["certainty", "meaning"]
+    for dimension_id in ("certainty", "meaning"):
+        stone = payload["stones"][dimension_id]
+        assert stone["psychologicalInterpretation"] == ""
+        assert stone["generationProvenance"]["outcome"] == "unavailable"
+        # The score, the metrics and the recommendations of a stone with no
+        # interpretation are all real: only the paragraph is missing.
+        assert stone["metrics"]
+        assert stone["recommendedInterventions"]
+    assert payload["stones"]["balance"]["psychologicalInterpretation"]
+
+
+@pytest.mark.asyncio
+async def test_a_whole_round_declares_no_gap_at_all(monkeypatch, answering_llm):
+    """A full payload is byte-identical to what it was before partial maps."""
+    monkeypatch.setattr(settings, "llm_api_key", "sk-test-partial")
+    monkeypatch.setattr(settings, "llm_base_url", "https://provider.local/v1")
+    monkeypatch.setattr(settings, "llm_max_attempts", 1)
+    monkeypatch.setattr("urllib.request.urlopen", _adaptation_response)
+
+    payload = (
+        await analytics_graph.ainvoke(build_state(build_v5_round_data()))
+    )["final_payload"]
+
+    assert payload["status"] == "success", payload.get("errorMessage")
+    assert "dimensionsWithoutInterpretation" not in payload
+
+
+@pytest.mark.asyncio
+async def test_an_unavailable_stone_may_not_gain_copy_later(answering_llm):
+    """The empty interpretation is a rule, not an accident of the code path.
+
+    Anything that writes copy into a stone whose provenance says nothing was
+    generated has produced exactly the thing the fallback is not allowed to be.
+    """
+    with failing_for({"certainty"}):
+        state = await agent_psychologist_node(
+            build_state(build_v5_round_data()),
+        )
+    state = agent_rag_intervention_node(state)
+    state = await agent_adaptation_node(state)
+    state["interpretations"]["dimension_interpretations"]["certainty"] = (
+        "תחושת הודאות נמוכה. מומלץ לפרסם שינויים מראש."
+    )
+
+    validated = agent_safety_validator_node(state)
+
+    assert validated["safety_status"] == "fail"
+    assert "must be empty" in validated["safety_feedback"]

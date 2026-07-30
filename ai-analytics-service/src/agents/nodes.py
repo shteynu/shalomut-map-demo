@@ -234,17 +234,13 @@ async def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
         )
 
     # Gathered with the exceptions kept: one dead dimension must not cancel the
-    # reporting of the others, and the round fails as a whole rather than
-    # returning a map with a hole in it.
+    # reporting of the others.
     settled = await asyncio.gather(*generations, return_exceptions=True)
-    provider_failure = next(
-        (
-            result
-            for result in settled
-            if isinstance(result, ProviderUnavailableError)
-        ),
-        None,
-    )
+    failures = [
+        result
+        for result in settled
+        if isinstance(result, ProviderUnavailableError)
+    ]
     for result in settled:
         if isinstance(result, BaseException) and not isinstance(
             result,
@@ -252,37 +248,71 @@ async def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
         ):
             raise result
 
-    if provider_failure is not None:
+    # Up to 4.0 a dead dimension fails the round: those contracts describe a
+    # map of eight interpretations and nothing else, and a consumer written
+    # against them has no shape to render a gap in. 5.0 says so out loud
+    # instead — see the partial-map decision. A round where nothing at all was
+    # written is still a failure on every version: there is no partial map in
+    # zero stones, only a service that is down.
+    eff_version = _effective_contract_version(round_data)
+    partial_allowed = (
+        eff_version == AI_ANALYTICS_V5_CONTRACT_VERSION
+        and len(failures) < len(dim_ids)
+    )
+
+    if failures and not partial_allowed:
         logger.warning(
-            "[Node 2: Psychologist] Provider unavailable for %s dimension(s); "
-            "first reason=%s dimension=%s",
-            sum(
-                1
-                for result in settled
-                if isinstance(result, ProviderUnavailableError)
-            ),
-            provider_failure.reason,
-            provider_failure.dimension_id,
+            "[Node 2: Psychologist] Provider unavailable for %s of %s "
+            "dimension(s); first reason=%s dimension=%s",
+            len(failures),
+            len(dim_ids),
+            failures[0].reason,
+            failures[0].dimension_id,
         )
         return {
             **state,
             "safety_status": "provider_unavailable",
-            "provider_failure_reason": provider_failure.reason,
+            "provider_failure_reason": failures[0].reason,
         }
 
+    if failures:
+        logger.warning(
+            "[Node 2: Psychologist] Partial map: %s of %s dimension(s) have "
+            "no interpretation; dimensions=%s reasons=%s",
+            len(failures),
+            len(dim_ids),
+            ",".join(
+                sorted(
+                    failure.dimension_id or "unavailable"
+                    for failure in failures
+                ),
+            ),
+            ",".join(sorted({failure.reason for failure in failures})),
+        )
+
     generation_results = list(settled)
+    # A dimension the provider never answered for holds no interpretation at
+    # all. Empty rather than heuristic text, because the alternative is the
+    # fallback wearing the label of analysis.
     interpretations = {
-        dim_id: generation.text
+        dim_id: (
+            "" if isinstance(generation, ProviderUnavailableError)
+            else generation.text
+        )
         for dim_id, generation in zip(dim_ids, generation_results)
     }
     previous_provenance = state.get("generation_provenance", {})
     generation_provenance = {}
-    eff_version = _effective_contract_version(round_data)
     for dim_id, generation in zip(dim_ids, generation_results):
         prior_attempts = int(
             previous_provenance.get(dim_id, {}).get("attempts", 0),
         )
         attempts = prior_attempts + generation.attempts
+        outcome = (
+            "unavailable"
+            if isinstance(generation, ProviderUnavailableError)
+            else generation.outcome
+        )
         source_question_ids = [
             aggregate["questionId"]
             for aggregate in _question_aggregates_for_dimension(
@@ -291,7 +321,7 @@ async def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
             )
         ]
         generation_provenance[dim_id] = {
-            "outcome": generation.outcome,
+            "outcome": outcome,
             "attempts": attempts,
             "retryCount": max(0, attempts - 1),
             "sourceQuestionIds": source_question_ids,
@@ -525,7 +555,22 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
         distribution_counts = hebrew_validation.distribution_counts(
             _question_aggregates_for_dimension(round_data, dim_id),
         )
-        if (
+        # A stone the provider never wrote is judged on being empty, not on
+        # being good Hebrew: there is no copy to read, and the provenance says
+        # so. Holding it to the copy rules would fail the round the partial map
+        # exists to save.
+        unavailable = (
+            state.get("generation_provenance", {})
+            .get(dim_id, {})
+            .get("outcome") == "unavailable"
+        )
+        if unavailable:
+            if interp != "":
+                is_safe = False
+                feedback.append(
+                    f"An unavailable interpretation must be empty: {dim_id}"
+                )
+        elif (
             not hebrew_validation.is_complete_hebrew_copy(
                 interp,
                 contract_version=contract_version,
@@ -598,8 +643,11 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
             attempts = provenance.get("attempts")
             retry_count_value = provenance.get("retryCount")
             outcome = provenance.get("outcome")
+            allowed_outcomes = {"llm", "deterministic_fallback"}
+            if contract_version == AI_ANALYTICS_V5_CONTRACT_VERSION:
+                allowed_outcomes.add("unavailable")
             if (
-                outcome not in {"llm", "deterministic_fallback"}
+                outcome not in allowed_outcomes
                 or not isinstance(attempts, int)
                 or isinstance(attempts, bool)
                 or attempts < 0

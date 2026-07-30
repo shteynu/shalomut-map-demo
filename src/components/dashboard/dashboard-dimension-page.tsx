@@ -94,9 +94,16 @@ export function DashboardDimensionPage({
         style={{ backgroundColor: dimensionSurface, display: "grid" }}
       >
         <div ref={contentRef as any} className="dashboard-single-blob-copy">
-          {displayDimension.summary.map((paragraph) => (
-            <p key={paragraph}>{paragraph}</p>
-          ))}
+          {displayDimension.interpretationUnavailable ? (
+            <p role="status">
+              הניתוח המילולי לממד הזה לא נוצר בסבב האחרון. הציון, פירוט השאלות
+              וההמלצות מלאים, ואפשר להפעיל ניתוח מחדש כדי לנסות שוב.
+            </p>
+          ) : (
+            displayDimension.summary.map((paragraph) => (
+              <p key={paragraph}>{paragraph}</p>
+            ))
+          )}
         </div>
       </article>
 

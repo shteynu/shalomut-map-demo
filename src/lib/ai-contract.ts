@@ -102,7 +102,14 @@ export interface ScoreDistribution {
 }
 
 export interface StoneGenerationProvenance {
-  outcome: 'llm' | 'deterministic_fallback';
+  /**
+   * `unavailable` is 5.0 only: the provider answered nothing for this one
+   * dimension and the stone carries no interpretation. It is not a third kind
+   * of copy — it is the absence of copy, said out loud. A stone that claimed
+   * `deterministic_fallback` with heuristic text would be the fallback posing
+   * as analysis, which the product does not do.
+   */
+  outcome: 'llm' | 'deterministic_fallback' | 'unavailable';
   attempts: number;
   retryCount: number;
   sourceQuestionIds: string[];
@@ -117,6 +124,7 @@ export interface StoneDetail {
   dimensionNameHebrew: string;
   status: WellbeingStatus;
   score: number;
+  /** Empty exactly when `generationProvenance.outcome` is `unavailable`. */
   psychologicalInterpretation: string;
   recommendedInterventions: StoneIntervention[];
   metrics: StoneMetric[];
@@ -133,6 +141,13 @@ export interface StoneMapResult {
   errorMessage?: string;
   overallPsychologicalSummary?: string;
   stones?: Record<WellbeingDimensionId, StoneDetail>;
+  /**
+   * 5.0 only: the dimensions whose interpretation the provider never produced.
+   * Derivable by walking the stones, and stated here anyway so a reader — a
+   * log, a support question, the screens' banner — can see that the map is
+   * partial without inspecting eight provenance blocks.
+   */
+  dimensionsWithoutInterpretation?: WellbeingDimensionId[];
 }
 
 export type StoneMapValidationResult =
@@ -512,7 +527,12 @@ function isValidV5GenerationProvenance(
 
   const sortedMetricIds = [...metricQuestionIds].sort();
   return (
-    ['llm', 'deterministic_fallback'].includes(String(value.outcome)) &&
+    // `unavailable` is accepted here and nowhere below 5.0: the older
+    // contracts are closed boundaries, and a stone with no interpretation is
+    // not a shape they ever described.
+    ['llm', 'deterministic_fallback', 'unavailable'].includes(
+      String(value.outcome),
+    ) &&
     Number.isInteger(value.attempts) &&
     Number(value.attempts) >= 0 &&
     Number.isInteger(value.retryCount) &&
@@ -554,20 +574,31 @@ function isValidV5Stone(
   const metricQuestionIds = metrics.map(
     (metric) => (metric as StoneMetric).questionId!,
   );
+  const provenance = value.generationProvenance;
+  const unavailable =
+    isRecord(provenance) && provenance.outcome === 'unavailable';
+  const interpretation = value.psychologicalInterpretation as string;
+  // A stone whose interpretation the provider never produced carries no
+  // interpretation at all. Empty is the only text an `unavailable` stone may
+  // hold, and any text is the only thing the other outcomes may hold: the two
+  // rules together are what stop a heuristic paragraph from arriving under a
+  // label that says nothing was generated.
+  const interpretationValid = unavailable
+    ? interpretation === ''
+    : containsOnlyHebrewUserText(interpretation) &&
+      hasTwoToFiveCompleteSentences(interpretation);
+
   return (
     new Set(metricQuestionIds).size === metricQuestionIds.length &&
     value.dimensionNameHebrew ===
       AI_ANALYTICS_DIMENSION_NAMES_HEBREW[dimensionId] &&
     statusForScore(value.score as number) === status &&
-    containsOnlyHebrewUserText(value.psychologicalInterpretation as string) &&
-    hasTwoToFiveCompleteSentences(
-      value.psychologicalInterpretation as string,
-    ) &&
+    interpretationValid &&
     interventions.every((intervention) =>
       isValidV5Intervention(intervention, dimensionId, status),
     ) &&
     isValidV5GenerationProvenance(
-      value.generationProvenance,
+      provenance,
       metricQuestionIds,
       surveyDefinitionHash,
     )
@@ -617,6 +648,69 @@ function validateStatusFields(
     return {
       ok: false,
       error: 'Successful Stone Map payloads cannot be privacy locked.',
+    };
+  }
+
+  return null;
+}
+
+/**
+ * The partial map has to be partial in one place only.
+ *
+ * `dimensionsWithoutInterpretation` is a convenience for a reader, and a
+ * convenience that can disagree with the stones is worse than no convenience:
+ * a banner saying two dimensions are missing over a map missing three is how
+ * a manager stops trusting the screen. The list is therefore required to be
+ * exactly the set of `unavailable` stones. A round where every dimension
+ * failed is not a partial map — it is a failed round, and the service reports
+ * it as `provider_unavailable` instead of arriving here empty.
+ */
+function validateInterpretationGaps(
+  payload: Record<string, unknown>,
+): StoneMapValidationResult | null {
+  const stones = payload.stones as Record<string, StoneDetail>;
+  const declared = payload.dimensionsWithoutInterpretation;
+
+  const actual = AI_ANALYTICS_DIMENSION_IDS.filter(
+    (dimensionId) =>
+      stones[dimensionId]?.generationProvenance?.outcome === 'unavailable',
+  );
+
+  if (declared === undefined) {
+    return actual.length === 0
+      ? null
+      : {
+          ok: false,
+          error:
+            'Stones without an interpretation must be listed in dimensionsWithoutInterpretation.',
+        };
+  }
+
+  if (payload.contractVersion !== AI_ANALYTICS_V5_CONTRACT_VERSION) {
+    return {
+      ok: false,
+      error:
+        'dimensionsWithoutInterpretation is only part of contract 5.0.',
+    };
+  }
+
+  if (
+    !isStringArray(declared) ||
+    declared.length !== actual.length ||
+    [...declared].sort().some((id, index) => id !== [...actual].sort()[index])
+  ) {
+    return {
+      ok: false,
+      error:
+        'dimensionsWithoutInterpretation must list exactly the stones whose outcome is unavailable.',
+    };
+  }
+
+  if (actual.length === AI_ANALYTICS_DIMENSION_IDS.length) {
+    return {
+      ok: false,
+      error:
+        'A round with no interpretation for any dimension is a failure, not a partial map.',
     };
   }
 
@@ -745,6 +839,9 @@ export function validateStoneMapResult(
       };
     }
   }
+
+  const gapsError = validateInterpretationGaps(payload);
+  if (gapsError) return gapsError;
 
   return { ok: true, value: payload as unknown as StoneMapResult };
 }

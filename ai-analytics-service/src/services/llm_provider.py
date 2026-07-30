@@ -216,7 +216,11 @@ class LLMProviderService:
             attempts,
             dim_id,
         )
-        raise ProviderUnavailableError(fallback_reason, dimension_id=dim_id)
+        raise ProviderUnavailableError(
+            fallback_reason,
+            dimension_id=dim_id,
+            attempts=attempts,
+        )
 
     def generate_overall_summary(
         self,

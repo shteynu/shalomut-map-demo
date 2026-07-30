@@ -38,7 +38,14 @@ export function StoneMap() {
           <strong>{selected.score}</strong>
           <span>ציון ממד</span>
         </div>
-        <p>{selected.summary[0]}</p>
+        {selected.interpretationUnavailable ? (
+          <p className="quiet-note" role="status">
+            הניתוח המילולי לממד הזה לא נוצר בסבב האחרון. הציון והנתונים למטה
+            מלאים, ואפשר להפעיל ניתוח מחדש כדי לנסות שוב.
+          </p>
+        ) : (
+          <p>{selected.summary[0]}</p>
+        )}
         {selected.id === "social-resource" ? (
           <Link className="primary-button" href={dashboardDimensionRoute(selected.id)}>
             פתיחת פירוט מלא

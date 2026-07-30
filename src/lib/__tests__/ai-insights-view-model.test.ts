@@ -121,3 +121,62 @@ test('a split that does not add up to the count is not drawn', () => {
 
   assert.strictEqual(result.metrics[0].distribution, undefined);
 });
+
+test('a stone the provider never wrote is marked, not merely left empty', () => {
+  // An empty `summary` is also what a dimension looks like before any analysis
+  // exists. The screens need to tell "not analysed yet" from "the round
+  // finished and this paragraph could not be written", and they say different
+  // things to the manager.
+  const dimension = getDimensionById('certainty');
+  assert.ok(dimension);
+
+  const stone: StoneDetail = {
+    dimensionId: 'certainty',
+    dimensionNameHebrew: 'ודאות',
+    status: 'red',
+    score: 41,
+    psychologicalInterpretation: '',
+    metrics: [{ label: 'ציון ממוצע', value: '41.0' }],
+    recommendedInterventions: [],
+    generationProvenance: {
+      outcome: 'unavailable',
+      attempts: 2,
+      retryCount: 1,
+      sourceQuestionIds: ['q-certainty-1'],
+    },
+  };
+
+  const result = applyStoneInsightToDimension(dimension, stone);
+
+  assert.deepStrictEqual(result.summary, []);
+  assert.strictEqual(result.interpretationUnavailable, true);
+  // The numbers are real even where the paragraph is missing.
+  assert.strictEqual(result.score, 41);
+  assert.strictEqual(result.status, 'red');
+});
+
+test('a stone the model wrote is not marked unavailable', () => {
+  const dimension = getDimensionById('balance');
+  assert.ok(dimension);
+
+  const stone: StoneDetail = {
+    dimensionId: 'balance',
+    dimensionNameHebrew: 'איזון',
+    status: 'red',
+    score: 40,
+    psychologicalInterpretation: 'נדרש שינוי בעומס העבודה.',
+    metrics: [{ label: 'ציון ממוצע', value: '40.0' }],
+    recommendedInterventions: [],
+    generationProvenance: {
+      outcome: 'llm',
+      attempts: 1,
+      retryCount: 0,
+      sourceQuestionIds: ['q-balance-1'],
+    },
+  };
+
+  const result = applyStoneInsightToDimension(dimension, stone);
+
+  assert.strictEqual(result.interpretationUnavailable, false);
+  assert.deepStrictEqual(result.summary, ['נדרש שינוי בעומס העבודה.']);
+});

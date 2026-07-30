@@ -77,6 +77,13 @@ export type WellbeingDimension = {
   conceptStatusText: string;
   conceptStatusDirection: "up" | "down";
   summary: string[];
+  /**
+   * True when the round finished but the provider never wrote this dimension's
+   * interpretation. An empty `summary` alone cannot say that: it is also what
+   * a dimension looks like before any analysis exists, and the two need
+   * different words on the screen.
+   */
+  interpretationUnavailable?: boolean;
   metrics: ResponseMetric[];
   recommendations: {
     title: string;

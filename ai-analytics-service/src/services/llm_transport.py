@@ -43,12 +43,22 @@ class ProviderUnavailableError(RuntimeError):
     …), so a stored failure says what actually happened.
     """
 
-    def __init__(self, reason: str, *, dimension_id: Optional[str] = None):
+    def __init__(
+        self,
+        reason: str,
+        *,
+        dimension_id: Optional[str] = None,
+        attempts: int = 0,
+    ):
         super().__init__(
             f"AI provider unavailable: {reason or 'provider_error'}"
         )
         self.reason = reason or "provider_error"
         self.dimension_id = dimension_id
+        # How many attempts were spent before giving up. On 5.0 a single dead
+        # dimension becomes a stone that says so, and its provenance has to
+        # report the same attempt count a successful stone would.
+        self.attempts = attempts
 
 
 def resolve_endpoint(model_name: str) -> str:
