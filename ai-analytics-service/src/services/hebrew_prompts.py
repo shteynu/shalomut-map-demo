@@ -9,7 +9,10 @@ they sit apart from the transport that carries them.
 import re
 from typing import Any, Dict, Iterable, Optional
 
-from src.contracts import AI_ANALYTICS_DIMENSION_NAMES_HEBREW
+from src.contracts import (
+    AI_ANALYTICS_DIMENSION_NAMES_HEBREW,
+    AI_ANALYTICS_QUESTIONS,
+)
 
 # How a status is named to the model. Deliberately not a colour: the copy is
 # refused for naming a foreign colour, so handing the model colour words to
@@ -236,6 +239,69 @@ def overall_summary_prompt(
         "בין ממדים או בין קבוצות צבע. שמור על טון מקצועי ותומך המעוגן "
         "בנתונים, אל תמציא סיבות או אבחנות, כתוב בעברית בלבד בלי אותיות "
         "לטיניות, ורשום מספרים בספרות ולא במילים."
+    )
+
+
+def canonical_statements_for_dimension(dimension_id: str) -> list[str]:
+    """The instrument's own items for one dimension.
+
+    They are the style the suggestion has to match: the respondent rates
+    agreement on a six-point scale, so an item is a first-person statement about
+    the writer's own week, never a question and never two ideas in one line.
+    """
+    return [
+        question["textHebrew"]
+        for question in AI_ANALYTICS_QUESTIONS
+        if question["dimensionId"] == dimension_id
+    ]
+
+
+def question_suggestion_prompt(
+    *,
+    dimension_id: str,
+    dimension_hebrew: str,
+    existing_texts: Iterable[str] = (),
+) -> str:
+    """Ask for one more item for one dimension of the questionnaire.
+
+    This prompt is not about a round: it carries no scores, no aggregates and no
+    school, because a questionnaire is built before anyone has answered it. What
+    it carries is the instrument — the canonical items of this dimension as the
+    style to match — and whatever the manager has already written, so the model
+    does not hand back a line the questionnaire already has.
+
+    The suggestion is a draft for a person to rewrite, which is why the prompt
+    asks for the mechanical properties a draft must have (one Hebrew sentence,
+    no numbers) and leaves the judgement about wording to the manager.
+    """
+    examples = canonical_statements_for_dimension(dimension_id)
+    example_section = (
+        "היגדים קיימים בממד זה בשאלון המקורי:\n"
+        + "\n".join(f"- {example}" for example in examples)
+        + "\n"
+        if examples
+        else ""
+    )
+    already = [text.strip() for text in existing_texts if text and text.strip()]
+    already_section = (
+        "היגדים שכבר נמצאים בטיוטת השאלון ואסור לחזור עליהם או על משמעותם:\n"
+        + "\n".join(f"- {text}" for text in already)
+        + "\n"
+        if already
+        else ""
+    )
+
+    return (
+        "את/ה מומחה/ית לבניית שאלוני רווחה לצוותי חינוך.\n"
+        f"הממד המבוקש: {dimension_hebrew}.\n"
+        f"{example_section}"
+        f"{already_section}"
+        "כתוב היגד אחד חדש לממד הזה, שהמשיב מדרג את הסכמתו איתו בסולם של "
+        "שש דרגות. ההיגד בגוף ראשון על החוויה של המשיב עצמו בעבודה, "
+        "בלשון נקבה כמו בדוגמאות, רעיון אחד בלבד, משפט אחד שמסתיים בנקודה. "
+        "כתוב בעברית בלבד בלי אותיות לטיניות, בלי מספרים, בלי סימן שאלה "
+        "ובלי מירכאות. אל תתייחס לאדם מסוים, לתפקיד מזהה או לנתונים של בית "
+        "הספר. החזר את ההיגד עצמו בלבד, בלי כותרת, בלי מספור ובלי הסבר."
     )
 
 

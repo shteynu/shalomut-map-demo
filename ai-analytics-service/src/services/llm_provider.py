@@ -35,6 +35,7 @@ __all__ = [
     "InterpretationGeneration",
     "LLMProviderService",
     "ProviderUnavailableError",
+    "QuestionSuggestion",
     "llm_provider_service",
 ]
 
@@ -48,6 +49,21 @@ class InterpretationGeneration:
     @property
     def retry_count(self) -> int:
         return max(0, self.attempts - 1)
+
+
+@dataclass(frozen=True)
+class QuestionSuggestion:
+    """One draft questionnaire item, and how many attempts it took.
+
+    There is no `outcome` field on purpose. An interpretation may legitimately be
+    written by this service (the green dimension), so its provenance has to say
+    which happened; a suggestion is either the model's or it does not exist. The
+    template library Core already holds is the other source, and Core labels it
+    as the template it is rather than passing it off as a suggestion.
+    """
+
+    text: str
+    attempts: int
 
 
 @dataclass(frozen=True)
@@ -276,6 +292,73 @@ class LLMProviderService:
             )
             raise ProviderUnavailableError(fallback_reason)
         return text
+
+    def suggest_question_result(
+        self,
+        *,
+        dimension_id: str,
+        dimension_hebrew: str,
+        existing_texts: Iterable[str] = (),
+        retry_tier: str = "fast",
+    ) -> QuestionSuggestion:
+        """Draft one more questionnaire item for one dimension.
+
+        The only call in this service that is not about a round: it carries no
+        respondent data and no aggregates, because a questionnaire is built
+        before anybody has answered it. It answers a manager who is waiting, so
+        it is synchronous — one request through the same paced transport as
+        everything else, which is what keeps a manager clicking twice from
+        spending the round's quota.
+
+        A refusal raises rather than returning a sentence this service wrote.
+        Core has a template library for that case and says which one the manager
+        is looking at; copy invented here and labelled as a suggestion would be
+        the fallback wearing the label of the model again.
+        """
+        model_name = self._model_for_tier(retry_tier)
+        existing = [text for text in existing_texts if text and text.strip()]
+        text, attempts, fallback_reason = self._complete_with_retries(
+            build_prompt=lambda: hebrew_prompts.question_suggestion_prompt(
+                dimension_id=dimension_id,
+                dimension_hebrew=dimension_hebrew,
+                existing_texts=existing,
+            ),
+            system_prompt=(
+                "את/ה מומחה/ית לבניית שאלוני רווחה לצוותי חינוך. "
+                "ענה תמיד בעברית בלבד."
+            ),
+            model_name=model_name,
+            is_acceptable=lambda candidate, finish_reason: (
+                finish_reason == "stop"
+                and hebrew_validation.is_valid_question_suggestion(
+                    candidate,
+                    existing,
+                )
+            ),
+        )
+        if text is None:
+            logger.warning(
+                "[LLM Service] outcome=provider_unavailable model=%s "
+                "reason=%s attempts=%s scope=question_suggestion dimension=%s",
+                model_name,
+                fallback_reason,
+                attempts,
+                dimension_id,
+            )
+            raise ProviderUnavailableError(
+                fallback_reason,
+                dimension_id=dimension_id,
+                attempts=attempts,
+            )
+
+        logger.info(
+            "[LLM Service] outcome=llm model=%s attempts=%s "
+            "scope=question_suggestion dimension=%s",
+            model_name,
+            attempts,
+            dimension_id,
+        )
+        return QuestionSuggestion(text=text, attempts=attempts)
 
     def adapt_interventions_result(
         self,

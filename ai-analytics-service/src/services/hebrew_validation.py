@@ -155,6 +155,55 @@ def is_complete_hebrew_copy(text: str, contract_version: str = "4.0") -> bool:
     return expected_len and compact_sentences == compact_text
 
 
+# What a questionnaire item may be, in characters. The instrument's own
+# twenty-four run from 30 to 83, so the range is wide enough to hold every one of
+# them and narrow enough to refuse a word and a paragraph.
+QUESTION_SUGGESTION_MIN_LENGTH = 20
+QUESTION_SUGGESTION_MAX_LENGTH = 200
+
+
+def normalized_question_text(text: str) -> str:
+    """One spelling of an item, for comparing two of them."""
+    return re.sub(r"\s+", " ", sanitize_model_text(text)).strip().rstrip(".").strip()
+
+
+def is_valid_question_suggestion(
+    text: str,
+    existing_texts: Iterable[str] = (),
+) -> bool:
+    """True when the suggestion is shaped like an item of this instrument.
+
+    The manager rewrites every suggestion before it joins a questionnaire, so
+    this is not a judgement about whether the item is a good one — that is the
+    manager's, and no validator can take it. What it refuses is copy that cannot
+    be an item at all: a paragraph, a question (the respondent rates agreement,
+    so a question has no answer on the scale), a number (an item asks about
+    experience, not about data), or a line the questionnaire already holds.
+    """
+    normalized = sanitize_model_text(text).strip()
+    if not is_hebrew_only_copy(normalized):
+        return False
+    if not (
+        QUESTION_SUGGESTION_MIN_LENGTH
+        <= len(normalized)
+        <= QUESTION_SUGGESTION_MAX_LENGTH
+    ):
+        return False
+    if "?" in normalized or "؟" in normalized:
+        return False
+    if _INTEGER_PATTERN.search(normalized):
+        return False
+    if len(sentences(normalized)) != 1:
+        return False
+
+    candidate = normalized_question_text(normalized)
+    return all(
+        candidate != normalized_question_text(existing)
+        for existing in existing_texts
+        if existing and existing.strip()
+    )
+
+
 def is_status_consistent(
     text: str,
     status: str,

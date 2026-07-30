@@ -16,35 +16,39 @@ import { SurveyBuilderSettings } from "./survey-builder/survey-builder-settings"
 import { SurveyBuilderSidebar } from "./survey-builder/survey-builder-sidebar";
 import { QuestionEditDialog } from "./survey-builder/question-edit-dialog";
 import {
+  requestAiQuestionSuggestion,
+  suggestionDimensionId,
+  templateSuggestionForDimension,
+  type QuestionSuggestion,
+  type QuestionSuggestionSource,
+} from "./survey-builder/question-suggestions";
+import {
   getBuilderQuestionnaireValidation,
   localizeSurveyDefinitionSaveError,
   toSurveyDefinitionQuestion,
   type BuilderQuestion,
 } from "./survey-builder/types";
 
-const questionBank: Omit<BuilderQuestion, "id" | "draftKey">[] = [
-  {
-    text: "אני יודעת למי לפנות כשאני זקוקה לעזרה מקצועית או רגשית במהלך יום העבודה.",
-    dimensionId: "management-support",
+/**
+ * The library used to be three hardcoded questions cycling on a cursor, and they
+ * covered three dimensions of eight — so a manager building a round about the
+ * other five had nothing to start from. The template half of the suggestion flow
+ * now draws on the canonical questionnaire, which covers all eight by
+ * construction, and the AI half asks for an item for the dimension in hand.
+ */
+function buildSuggestedQuestion(
+  suggestion: QuestionSuggestion,
+): BuilderQuestion {
+  return {
+    text: suggestion.text,
+    dimensionId: suggestion.dimensionId,
     required: true,
     enabled: true,
     answerMode: "סקאלת צבעים",
-  },
-  {
-    text: "יש לי זמן מספק להתכונן למשימות חדשות שמגיעות במהלך השבוע.",
-    dimensionId: "certainty",
-    required: false,
-    enabled: true,
-    answerMode: "סקאלת צבעים",
-  },
-  {
-    text: "בישיבות צוות יש מקום אמיתי לשתף רעיונות גם אם הם שונים מהקיים.",
-    dimensionId: "self-expression",
-    required: true,
-    enabled: true,
-    answerMode: "סקאלת צבעים",
-  },
-];
+    draftKey: createDraftId("suggestion"),
+    id: createDraftId(suggestion.source === "ai" ? "ai" : "template"),
+  };
+}
 
 const builderFlowSteps = [
   {
@@ -106,19 +110,32 @@ export function SurveyBuilder({
   const { copied, copy } = useClipboard();
   const shareUrl = useShareUrl(shareCode);
   const openRespondentSurveyAction = getNavigationAction("openRespondentSurvey");
-  const [bankCursor, setBankCursor] = useState(0);
   const [selectedDimensionId, setSelectedDimensionId] = useState(wellbeingDimensions[0]?.id ?? "all");
   const [editingQuestion, setEditingQuestion] = useState<BuilderQuestion | null>(null);
+  const [pendingSuggestion, setPendingSuggestion] = useState<{
+    draft: BuilderQuestion;
+    source: QuestionSuggestionSource;
+    suggestedText: string;
+  } | null>(null);
+  const [isSuggesting, setIsSuggesting] = useState(false);
+  const [suggestionNote, setSuggestionNote] = useState<string | null>(null);
 
   const enabledQuestions = questions.filter((question) => question.enabled);
   const requiredQuestions = enabledQuestions.filter((question) => question.required);
   const activeDimensions = new Set(enabledQuestions.map((question) => question.dimensionId)).size;
-  const nextSuggestedQuestion = questionBank[bankCursor % questionBank.length];
   const visibleQuestions =
     selectedDimensionId === "all"
       ? questions
       : questions.filter((question) => question.dimensionId === selectedDimensionId);
   const questionnaireValidation = getBuilderQuestionnaireValidation(questions);
+  const targetDimensionId = suggestionDimensionId(
+    selectedDimensionId,
+    questionnaireValidation.missingDimensionIds,
+  );
+  const templateSuggestion = templateSuggestionForDimension(
+    targetDimensionId,
+    questions.map((question) => question.text),
+  );
 
   const summaryStones = [
     {
@@ -214,19 +231,78 @@ export function SurveyBuilder({
     setQuestions(defaultQuestions);
   }
 
-  function addQuestionFromBank() {
-    const template = questionBank[bankCursor % questionBank.length];
-    const nextQuestion: BuilderQuestion = {
-      ...template,
-      draftKey: createDraftId("question"),
-      id: createDraftId("bank"),
-    };
-
+  /**
+   * A suggestion is opened for editing, never appended. The plan for this flow
+   * asked for the source to be marked and the wording to be edited by hand
+   * before it joins the questionnaire, and the dialog enforces the second half:
+   * the questionnaire is the manager's, and a school reads it as theirs.
+   */
+  function openSuggestion(suggestion: QuestionSuggestion) {
     setSaved(false);
     setSaveError(null);
-    setQuestions((current) => [...current, nextQuestion]);
-    setBankCursor((current) => current + 1);
-    setSelectedDimensionId(nextQuestion.dimensionId);
+    setEditingQuestion(null);
+    setPendingSuggestion({
+      draft: buildSuggestedQuestion(suggestion),
+      source: suggestion.source,
+      suggestedText: suggestion.text,
+    });
+    setSelectedDimensionId(suggestion.dimensionId);
+  }
+
+  function suggestFromTemplate() {
+    setSuggestionNote(null);
+    if (!templateSuggestion) {
+      setSuggestionNote(
+        "כל היגדי התבנית בממד הזה נמצאים כבר בשאלון. אפשר לבקש הצעה מהבינה המלאכותית או לנסח שאלה חדשה.",
+      );
+      return;
+    }
+    openSuggestion(templateSuggestion);
+  }
+
+  async function suggestWithAi() {
+    setSuggestionNote(null);
+    setIsSuggesting(true);
+    try {
+      const outcome = await requestAiQuestionSuggestion(
+        targetDimensionId,
+        questions.map((question) => question.text),
+      );
+
+      if (outcome.ok) {
+        openSuggestion(outcome.suggestion);
+        return;
+      }
+
+      // The AI service is down or refused. The manager still gets a starting
+      // point, and it is labelled as the template it is — never as a
+      // suggestion the model did not make.
+      if (templateSuggestion) {
+        openSuggestion(templateSuggestion);
+        setSuggestionNote(`${outcome.error} הוצע נוסח מהתבנית המקורית במקום.`);
+        return;
+      }
+
+      setSuggestionNote(outcome.error);
+    } finally {
+      setIsSuggesting(false);
+    }
+  }
+
+  function commitFromDialog(
+    draftKey: string,
+    updater: (question: BuilderQuestion) => BuilderQuestion,
+  ) {
+    if (pendingSuggestion && pendingSuggestion.draft.draftKey === draftKey) {
+      const edited = updater(pendingSuggestion.draft);
+      setSaved(false);
+      setSaveError(null);
+      setQuestions((current) => [...current, edited]);
+      setPendingSuggestion(null);
+      return;
+    }
+
+    updateQuestion(draftKey, updater);
   }
 
   async function saveDefinition() {
@@ -386,7 +462,15 @@ export function SurveyBuilder({
             onDuplicateQuestion={duplicateQuestion}
             onEditQuestion={(q) => setEditingQuestion(q)}
             onDeleteQuestion={deleteQuestion}
-            onAddQuestionFromBank={addQuestionFromBank}
+            onSuggestFromTemplate={suggestFromTemplate}
+            onSuggestWithAi={suggestWithAi}
+            isSuggesting={isSuggesting}
+            suggestionNote={suggestionNote}
+            suggestionDimensionLabel={
+              wellbeingDimensions.find(
+                (dimension) => dimension.id === targetDimensionId,
+              )?.conceptLabel ?? targetDimensionId
+            }
             onClearQuestionnaire={clearQuestionnaire}
             onLoadTemplate={loadDefaultTemplate}
             isFrozen={isFrozen}
@@ -397,23 +481,35 @@ export function SurveyBuilder({
           shareUrl={shareUrl}
           copied={copied}
           onCopyRespondentLink={() => copy(shareUrl)}
-          nextSuggestedQuestion={nextSuggestedQuestion}
-          onAddQuestionFromBank={addQuestionFromBank}
+          templateSuggestion={templateSuggestion}
+          onSuggestFromTemplate={suggestFromTemplate}
+          isFrozen={isFrozen}
           saved={saved}
           questionnaireReady={questionnaireValidation.isValid}
         />
       </div>
 
       <QuestionEditDialog
-        isOpen={Boolean(editingQuestion)}
-        question={editingQuestion}
+        isOpen={Boolean(editingQuestion ?? pendingSuggestion)}
+        question={editingQuestion ?? pendingSuggestion?.draft ?? null}
         questionIndex={
           editingQuestion
             ? questions.findIndex((q) => q.draftKey === editingQuestion.draftKey) + 1
-            : 1
+            : 0
         }
-        onClose={() => setEditingQuestion(null)}
-        onSave={updateQuestion}
+        suggestion={
+          pendingSuggestion && !editingQuestion
+            ? {
+                source: pendingSuggestion.source,
+                suggestedText: pendingSuggestion.suggestedText,
+              }
+            : undefined
+        }
+        onClose={() => {
+          setEditingQuestion(null);
+          setPendingSuggestion(null);
+        }}
+        onSave={commitFromDialog}
       />
     </div>
   );

@@ -37,6 +37,35 @@ describe('OpenAPI Specification Integrity', () => {
     assert.ok(paths.includes('/api/rounds/{roundId}/ai-insights'), 'Must include AI insights callback/read path');
     assert.ok(paths.includes('/api/rounds/{roundId}/trigger-ai'), 'Must include AI analytics trigger path');
     assert.ok(paths.includes('/api/rounds/{roundId}/reset'), 'Must include reset round path');
+    assert.ok(
+      paths.includes('/api/manager/question-suggestion'),
+      'Must include the question suggestion path',
+    );
+  });
+
+  it('documents that a suggestion may only be labelled as the model\'s', () => {
+    // The label is the product rule of this route, so the published shape has to
+    // carry it: a consumer must not be told that `template` can arrive here. The
+    // builder's other source is the canonical questionnaire, labelled locally.
+    const spec = JSON.parse(fs.readFileSync(openapiPath, 'utf8'));
+    const suggestion =
+      spec.paths['/api/manager/question-suggestion'].post.responses['200']
+        .content['application/json'].schema;
+
+    assert.strictEqual(suggestion.$ref, '#/components/schemas/QuestionSuggestion');
+    assert.deepStrictEqual(
+      spec.components.schemas.QuestionSuggestion.properties.source.enum,
+      ['ai'],
+    );
+    assert.deepStrictEqual(
+      spec.components.schemas.QuestionSuggestionRequest.required,
+      ['dimensionId'],
+    );
+    assert.strictEqual(
+      spec.components.schemas.QuestionSuggestionRequest.properties.dimensionId
+        .$ref,
+      '#/components/schemas/WellbeingDimensionId',
+    );
   });
 
   it('should define essential data schemas matching backend types', () => {

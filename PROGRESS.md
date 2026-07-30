@@ -1,10 +1,21 @@
 # Shalomut Map — PROGRESS.md
 
 Updated: 2026-07-30 (**a live round finished `success` with all eight stones written by the model**; contract
-`5.0` is switched on and proven, and the provider quota is no longer the blocker. Items 15–21 are closed; the
-owner is leaving items 8 and 10 open on purpose, and item 12 is the one open risk)
+`5.0` is switched on and proven, and the provider quota is no longer the blocker. Items 8 and 15–21 are closed;
+item 10 is open by the owner's choice, and item 12 is the one open risk)
 
 ## Current State
+
+- **Item 8 closed: the builder can ask the model for a question, and cannot pass its answer off as its own.**
+  The question library was three hardcoded items covering three dimensions of eight; it is now the canonical
+  instrument for all eight, plus a request to the AI service for a fresh one. The three rules that make a
+  suggestion safe to offer are each a test: the request names the dimension, the source is marked and the mark
+  is true end to end (a non-model string is refused rather than relabelled), and the wording cannot join the
+  questionnaire until the manager has rewritten it — template wording included. An AI failure falls back to the
+  template with a note, so the button never dead-ends. `pytest` 250/250, `npm test` 274/274, `eslint` clean; the
+  six UI states were also looked at rather than only asserted on, which is what caught the AI button competing
+  with the page's save primary. **Not exercised against the deployment**, and **Python deploys first** — Core is
+  the only caller of the new endpoint. Details in item 8 of Next Up.
 
 - **Item 21 closed: a replay writes what the validator rejected, not the round.** The residual risk item 20
   named and could not reach with a pace. Repairing one refused stone cost **17 heavy requests of the 20 the
@@ -24,9 +35,9 @@ owner is leaving items 8 and 10 open on purpose, and item 12 is the one open ris
   partial map, 19 on the published contract shapes, 20 on per-model pacing. Two of them were verified against
   the deployment; the other four are local-only, and each says so in its own entry.
   - **Left open by the owner's decision, not by a blocker**: item 8, the AI-generated question suggestion,
-    which the owner deferred on 2026-07-26 and has kept deferred — the builder's library is still three
-    hardcoded questions covering three dimensions of eight; and item 10, whether the model should also write
-    the green dimensions (`ONLY_LLM_FOR_PROBLEMATIC=false`).
+    deferred on 2026-07-26 and again on 2026-07-30 — **taken up later the same day and closed**, see the entry
+    above; and item 10, whether the model should also write the green dimensions
+    (`ONLY_LLM_FOR_PROBLEMATIC=false`), which is still open.
   - **The one open risk is item 12**, the four secrets exposed on 2026-07-29 and not yet rotated. Nothing in
     this session touched them, and nothing can: it is the owner's hands by `AGENTS.md`.
   - **Two things wait on a deployed round rather than on code**: the partial map (item 15) has never been
@@ -388,14 +399,46 @@ owner is leaving items 8 and 10 open on purpose, and item 12 is the one open ris
        `4.0` and `5.0` now go through `validateDynamicResultAgainstRound()` like `3.0`. Comparing the score
        distribution itself is still open and is slice D1 of
        [ai-insights-depth-plan-2026-07-27.md](docs/ai-insights-depth-plan-2026-07-27.md).
-8. [ ] AI-generated proposed question flow (slice 3.1, on explicit user request). Deferred by the owner on
-       2026-07-26 and still deferred on 2026-07-30 — an open item by choice, not by a blocker. Its premise is
-       unchanged and verified: the builder's library is three hardcoded questions cycling on
-       `bankCursor % questionBank.length` ([`survey-builder.tsx:25`](src/components/survey/survey-builder.tsx)),
-       covering `management-support`, `certainty` and `self-expression` — three dimensions of eight. The desired
-       flow is in [slice 3.1](docs/manager-feedback-plan-2026-07-26.md): a request naming the dimension, the
-       suggestion's source marked as template or AI, and mandatory manual editing before it joins the
-       questionnaire. Its prerequisite (slice 2.2, contract and transport) has been done since 2026-07-28.
+8. [x] **AI-generated proposed question flow, slice 3.1** (2026-07-30). Deferred twice by the owner and taken
+       up on request. The premise the item was written on held right up to the change: the builder's library was
+       three hardcoded questions cycling on `bankCursor % questionBank.length`, covering `management-support`,
+       `certainty` and `self-expression` — three dimensions of eight, so a manager building a round about the
+       other five had nothing to start from. All three rules of
+       [slice 3.1](docs/manager-feedback-plan-2026-07-26.md) are now in place, and each one is a test.
+       - **A request that names the dimension.** `POST /api/manager/question-suggestion` (manager session, same
+         middleware as the rest of the manager API) asks Python for one item about one of the eight dimensions.
+         `POST /api/v1/questions/suggest` is a plain endpoint, deliberately **outside the versioned analytics
+         contracts** — it carries no round, no scores and no school context, so versioning it alongside the map
+         would tie an unrelated shape to the 5.0 chain. It reuses `AI_WEBHOOK_SECRET` rather than adding a
+         fourth shared secret, and Core derives its URL from `AI_SERVICE_URL` with `new URL(path, base)`, so no
+         new environment variable exists to go missing.
+       - **The source is marked, and the mark is true end to end.** Python only ever answers `source: "llm"` on
+         an item the model wrote; Core only ever emits `source: "ai"` on such an item, and rejects a `200` whose
+         source says anything else as `invalid_response` — a deterministic string must not wear the model's
+         label here for the same reason it must not in a stone. The other button is labelled as what it is:
+         the canonical questionnaire. The OpenAPI test pins `QuestionSuggestion.source.enum` to `['ai']` so a
+         later consumer cannot be told `template` may arrive from that route.
+       - **Manual editing is mandatory.** The dialog opens with the suggested wording and refuses to add it
+         while the text still equals what was suggested, with the reason in Hebrew text and wired through
+         `aria-describedby` — not a disabled button and a colour. This applies to the template item too: a
+         school reads the questionnaire as the manager's own words.
+       - Two smaller things came with it. The library was replaced by the instrument itself, so **all eight
+         dimensions have a template suggestion** and one already in the draft is not offered again (normalized
+         comparison, so spacing and a missing full stop are the same item). And an AI failure is not a dead
+         end: it falls back to the template with a note saying so, in the panel where the request was made.
+       - Validation reuses the Hebrew chain rather than inventing one: Hebrew-only letters, 20–200 characters,
+         one sentence, no digits, no question mark — an item in this instrument is a first-person statement,
+         not a question — and not a duplicate of an item the draft holds.
+       - Verification: `pytest` 250/250 (16 new), `npm test` 274/274 (23 new), `eslint` clean. The changed
+         surfaces were looked at, not only asserted on: the builder sits behind manager auth, so the panel and
+         the dialog were rendered to a static page and six states inspected in RTL — idle, in flight, AI
+         unavailable with the template offered, an unedited suggestion, an edited one, and an ordinary edit
+         with no label. That check found a design fault the tests could not: the AI button was a third dark
+         primary next to the page's real primary, saving the questionnaire, and is now a tinted secondary.
+         **Not exercised against the deployment** — no round has asked the deployed service for a suggestion.
+       - Ordering: Python gains a new endpoint and Core is its only caller, so **deploy Python first**; a Core
+         deploy that lands ahead of it answers `503` with a Hebrew note and offers the template, which is the
+         same path as a provider outage.
 9. [x] Empty the database for manual testing — done by the owner on 2026-07-28 and verified read-only afterwards:
        `0` organizations, `0` rounds, `0` responses, `0` answers, schema still up to date. The dump taken
        beforehand is at `~/shalomut-db-backup-2026-07-28.json` and is the only way back.

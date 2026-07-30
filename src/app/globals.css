@@ -1448,6 +1448,30 @@ textarea {
   line-height: 1.6;
 }
 
+/* Which dimension the next suggestion is for. A manager pressing the AI button
+   has to know that before the request goes out, not after the dialog opens. */
+.survey-builder-suggestion-target {
+  margin: 0 0 0.4rem;
+}
+
+/* Distinct from the template button beside it without taking the emphasis of
+   the page's own primary action, which is saving the questionnaire. */
+.survey-builder-ai-button {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+  background: color-mix(in srgb, var(--pastel-peach) 35%, var(--surface));
+}
+
+.survey-builder-suggestion-note {
+  margin: 0 0 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 38%, var(--line));
+  border-radius: var(--radius-panel);
+  background: color-mix(in srgb, var(--pastel-peach) 45%, var(--surface));
+  padding: 0.8rem 0.95rem;
+  color: var(--warning-ink);
+  font-weight: 800;
+  line-height: 1.6;
+}
+
 .survey-builder-empty-note {
   display: grid;
   justify-items: center;
@@ -1587,10 +1611,37 @@ textarea {
 
 .question-dialog-footer {
   display: flex;
+  align-items: center;
   justify-content: flex-start;
   gap: 0.6rem;
   border-top: 1px solid var(--line);
   padding-top: 0.9rem;
+}
+
+/* Where a suggested item came from, said before the manager reads the wording:
+   the label is the point of the flow, not decoration on it. */
+.question-dialog-suggestion-note {
+  display: flex;
+  align-items: start;
+  gap: 0.55rem;
+  margin: 0;
+  border: 1px solid color-mix(in srgb, var(--accent) 38%, var(--line));
+  border-radius: var(--radius-panel);
+  background: color-mix(in srgb, var(--pastel-peach) 40%, var(--surface));
+  padding: 0.8rem 0.95rem;
+  color: var(--ink);
+  line-height: 1.6;
+}
+
+.question-dialog-suggestion-note svg {
+  flex: none;
+  margin-top: 0.15rem;
+}
+
+/* Reads as the reason the add button is unavailable, so the state is never
+   colour or a disabled attribute alone. */
+.question-dialog-edit-required {
+  margin-inline-end: auto;
 }
 
 @media (prefers-reduced-motion: reduce) {

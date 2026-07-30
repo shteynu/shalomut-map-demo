@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, Eye, X } from "lucide-react";
+import { Check, Eye, Sparkles, X } from "lucide-react";
 import { wellbeingDimensions } from "@/lib/demo-data";
+import type { QuestionSuggestionSource } from "./question-suggestions";
 import type { BuilderQuestion } from "./types";
 
 type QuestionEditDialogProps = {
@@ -11,6 +12,22 @@ type QuestionEditDialogProps = {
   questionIndex: number;
   onClose: () => void;
   onSave: (draftKey: string, updater: (q: BuilderQuestion) => BuilderQuestion) => void;
+  /**
+   * Set when the dialog holds a suggested item that has not joined the
+   * questionnaire yet. The text it arrived with is kept so the dialog can
+   * require the manager to change it: a suggestion is a draft for a person to
+   * rewrite, and adding one unread would put a model's sentence in front of a
+   * school as if a person had chosen it.
+   */
+  suggestion?: {
+    source: QuestionSuggestionSource;
+    suggestedText: string;
+  };
+};
+
+const SUGGESTION_LABELS: Record<QuestionSuggestionSource, string> = {
+  ai: "נוסח שהוצע על ידי הבינה המלאכותית",
+  template: "נוסח מתוך תבנית השאלון המקורית",
 };
 
 export function QuestionEditDialog({
@@ -19,6 +36,7 @@ export function QuestionEditDialog({
   questionIndex,
   onClose,
   onSave,
+  suggestion,
 }: QuestionEditDialogProps) {
   const [prevQuestionKey, setPrevQuestionKey] = useState<string | null>(null);
   const [text, setText] = useState("");
@@ -106,6 +124,13 @@ export function QuestionEditDialog({
 
   if (!isOpen || !question) return null;
 
+  // A suggestion joins the questionnaire only after the manager has changed its
+  // wording. Compared on the trimmed text rather than on a "touched" flag, so
+  // typing a character and deleting it again does not count as having read it.
+  const isUneditedSuggestion = Boolean(
+    suggestion && text.trim() === suggestion.suggestedText.trim(),
+  );
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!text.trim()) {
@@ -114,6 +139,12 @@ export function QuestionEditDialog({
     }
     if (!id.trim()) {
       setValidationError("יש להזין מזהה קבוע לשאלה");
+      return;
+    }
+    if (isUneditedSuggestion) {
+      setValidationError(
+        "יש לערוך את נוסח ההצעה לפני הוספתה לשאלון. ההצעה היא טיוטה, והנוסח הסופי באחריות המנהל.",
+      );
       return;
     }
     setValidationError(null);
@@ -144,7 +175,9 @@ export function QuestionEditDialog({
       <div className="question-dialog-panel" dir="rtl">
         <div className="question-dialog-header">
           <h2 id="edit-dialog-title">
-            עריכת שאלה {questionIndex > 0 ? questionIndex : "(ללא מספר)"}
+            {suggestion
+              ? "עריכת הצעה לשאלה"
+              : `עריכת שאלה ${questionIndex > 0 ? questionIndex : "(ללא מספר)"}`}
           </h2>
           <button
             type="button"
@@ -155,6 +188,17 @@ export function QuestionEditDialog({
             <X size={20} aria-hidden="true" />
           </button>
         </div>
+
+        {suggestion ? (
+          <p className="question-dialog-suggestion-note" role="status">
+            <Sparkles size={16} aria-hidden="true" />
+            <span>
+              <strong>{SUGGESTION_LABELS[suggestion.source]}.</strong>{" "}
+              ההצעה היא טיוטה בלבד: יש להתאים את הנוסח לבית הספר לפני ההוספה
+              לשאלון.
+            </span>
+          </p>
+        ) : null}
 
         {validationError ? (
           <p className="survey-submit-error" role="alert">
@@ -254,12 +298,29 @@ export function QuestionEditDialog({
           </div>
 
           <div className="question-dialog-footer">
+            {isUneditedSuggestion ? (
+              <p
+                className="quiet-note question-dialog-edit-required"
+                id="question-dialog-edit-required"
+              >
+                ההוספה תתאפשר לאחר עריכת הנוסח.
+              </p>
+            ) : null}
             <button type="button" className="secondary-button" onClick={onClose}>
               ביטול
             </button>
-            <button type="submit" className="primary-button">
+            <button
+              type="submit"
+              className="primary-button"
+              disabled={isUneditedSuggestion}
+              aria-describedby={
+                isUneditedSuggestion
+                  ? "question-dialog-edit-required"
+                  : undefined
+              }
+            >
               <Check size={16} aria-hidden="true" />
-              שמירה
+              {suggestion ? "הוספה לשאלון" : "שמירה"}
             </button>
           </div>
         </form>

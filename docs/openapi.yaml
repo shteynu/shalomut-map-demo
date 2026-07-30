@@ -122,6 +122,59 @@ paths:
         "503":
           description: Persistent storage is not configured for this deployment
 
+  /api/manager/question-suggestion:
+    post:
+      tags: [Manager Setup]
+      summary: Draft one more questionnaire item for one dimension
+      description: >-
+        Asks the AI analytics service for a single questionnaire item while a
+        manager is building a round. Deliberately outside the versioned
+        round-analytics contracts: no round, no aggregates and no respondent data
+        take part, and nothing is persisted. The response states the source, and
+        `ai` is only ever returned when the model actually wrote the item — when
+        the service cannot answer, this route answers `503` and the builder falls
+        back to the canonical questionnaire under the template's own label.
+      security:
+        - managerSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuestionSuggestionRequest'
+      responses:
+        "200":
+          description: A model-written questionnaire item, for the manager to edit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuestionSuggestion'
+        "400":
+          description: Missing payload, or a dimension outside the canonical eight
+        "401":
+          description: Manager authentication required
+        "503":
+          description: >-
+            The suggestion service is unavailable, refused the answer, or replied
+            with copy no model wrote. `reason` distinguishes the cases.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Hebrew copy for the manager
+                  reason:
+                    type: string
+                    enum:
+                      - upstream_error
+                      - timeout
+                      - unavailable
+                      - invalid_response
+                  upstreamStatus:
+                    type: integer
+
   /api/survey/{shareCode}:
     get:
       tags: [Survey]
@@ -527,6 +580,38 @@ components:
         - certainty
         - organizational-climate
         - meaning
+    QuestionSuggestionRequest:
+      type: object
+      required: [dimensionId]
+      properties:
+        dimensionId:
+          $ref: '#/components/schemas/WellbeingDimensionId'
+        existingTexts:
+          type: array
+          maxItems: 40
+          description: >-
+            The items already in the manager's draft, so a suggestion is not one
+            of them. Bounded because it becomes prompt text.
+          items:
+            type: string
+    QuestionSuggestion:
+      type: object
+      required: [dimensionId, questionText, source]
+      properties:
+        dimensionId:
+          $ref: '#/components/schemas/WellbeingDimensionId'
+        questionText:
+          type: string
+          description: One Hebrew statement, for the manager to rewrite before use
+        source:
+          type: string
+          enum: [ai]
+          description: >-
+            Only `ai` ever leaves this route. The builder's other source is the
+            canonical questionnaire, which it labels as the template itself.
+        attempts:
+          type: integer
+          description: How many provider attempts the item took
     CreateRoundInput:
       type: object
       required: [organizationId, title]

@@ -1,4 +1,4 @@
-import { Lock, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { Loader2, Lock, Plus, RotateCcw, Sparkles, Trash2 } from "lucide-react";
 import { wellbeingDimensions } from "@/lib/demo-data";
 import { SurveyQuestionCard } from "./survey-question-card";
 import type { BuilderQuestion } from "./types";
@@ -16,7 +16,11 @@ type QuestionsPanelProps = {
   onDuplicateQuestion: (id: string) => void;
   onEditQuestion?: (question: BuilderQuestion) => void;
   onDeleteQuestion?: (id: string) => void;
-  onAddQuestionFromBank: () => void;
+  onSuggestFromTemplate: () => void;
+  onSuggestWithAi: () => void;
+  isSuggesting?: boolean;
+  suggestionNote?: string | null;
+  suggestionDimensionLabel: string;
   onClearQuestionnaire?: () => void;
   onLoadTemplate?: () => void;
   isFrozen?: boolean;
@@ -31,7 +35,11 @@ export function SurveyBuilderQuestions({
   onDuplicateQuestion,
   onEditQuestion,
   onDeleteQuestion,
-  onAddQuestionFromBank,
+  onSuggestFromTemplate,
+  onSuggestWithAi,
+  isSuggesting = false,
+  suggestionNote,
+  suggestionDimensionLabel,
   onClearQuestionnaire,
   onLoadTemplate,
   isFrozen = false,
@@ -84,14 +92,44 @@ export function SurveyBuilderQuestions({
           <button
             className="secondary-button"
             type="button"
-            onClick={onAddQuestionFromBank}
+            onClick={onSuggestFromTemplate}
             disabled={isFrozen}
+            title={`היגד מתבנית השאלון המקורית ב${suggestionDimensionLabel}`}
           >
             <Plus size={18} aria-hidden="true" />
-            הוספת שאלה לדוגמה
+            הצעה מהתבנית
+          </button>
+          {/* Secondary on purpose: the page's primary action is saving the
+              questionnaire, and asking for a draft commits nothing. The icon and
+              the line below carry the distinction instead of emphasis. */}
+          <button
+            className="secondary-button survey-builder-ai-button"
+            type="button"
+            onClick={onSuggestWithAi}
+            disabled={isFrozen || isSuggesting}
+            aria-busy={isSuggesting}
+            title={`בקשת הצעת שאלה מהבינה המלאכותית ב${suggestionDimensionLabel}`}
+          >
+            {isSuggesting ? (
+              <Loader2 size={18} aria-hidden="true" className="animate-spin" />
+            ) : (
+              <Sparkles size={18} aria-hidden="true" />
+            )}
+            {isSuggesting ? "מנסח הצעה…" : "הצעת שאלה בעזרת AI"}
           </button>
         </div>
       </div>
+
+      <p className="quiet-note survey-builder-suggestion-target" role="status">
+        ההצעה תתייחס לממד <strong>{suggestionDimensionLabel}</strong>, ותיפתח
+        לעריכה לפני ההוספה לשאלון.
+      </p>
+
+      {suggestionNote ? (
+        <p className="survey-builder-suggestion-note" role="alert">
+          {suggestionNote}
+        </p>
+      ) : null}
 
       {isFrozen ? (
         <p

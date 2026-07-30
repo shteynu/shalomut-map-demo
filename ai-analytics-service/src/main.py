@@ -1,10 +1,23 @@
+import asyncio
 import logging
 import os
 from typing import Optional
 from fastapi import BackgroundTasks, FastAPI, Header, HTTPException
-from src.contracts import AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS
+from src.contracts import (
+    AI_ANALYTICS_DIMENSION_IDS,
+    AI_ANALYTICS_DIMENSION_NAMES_HEBREW,
+    AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS,
+)
+from src.schemas.question_suggestion import (
+    QuestionSuggestionRequest,
+    QuestionSuggestionResponse,
+)
 from src.schemas.webhook import WebhookEventPayload
 from src.services.analytics_runner import analytics_runner_service
+from src.services.llm_provider import (
+    ProviderUnavailableError,
+    llm_provider_service,
+)
 from src.config import settings
 
 logging.basicConfig(level=logging.INFO)
@@ -102,6 +115,74 @@ async def handle_webhook_event(
         "message": f"Analytics processing accepted for round {payload.roundId}",
         "roundId": payload.roundId,
     }
+
+@app.post("/api/v1/questions/suggest")
+async def suggest_question(
+    payload: QuestionSuggestionRequest,
+    authorization: Optional[str] = Header(default=None),
+):
+    """Draft one more questionnaire item for one dimension.
+
+    Synchronous, unlike the webhook: a manager is waiting on the answer, and it
+    is a single provider request rather than a round's worth. The round pipeline
+    is untouched — no MCP read, no callback, no persistence — so the
+    `runtime_configuration_errors` gate that guards a round does not apply here;
+    what this endpoint needs is the provider key, and the transport fails closed
+    without it.
+
+    Authentication is the same inbound secret the webhook uses. It is the same
+    caller in the same direction, and a second secret would be a fourth thing to
+    rotate for no boundary that is not already drawn.
+    """
+    if settings.env != "development" and not settings.ai_webhook_secret:
+        raise HTTPException(
+            status_code=503,
+            detail="AI_WEBHOOK_SECRET is required outside development",
+        )
+
+    if (
+        settings.ai_webhook_secret
+        and authorization != f"Bearer {settings.ai_webhook_secret}"
+    ):
+        raise HTTPException(status_code=401, detail="Unauthorized suggestion request")
+
+    if payload.dimensionId not in AI_ANALYTICS_DIMENSION_IDS:
+        # The id is not echoed back: it came from the caller, and the caller
+        # already knows what it sent.
+        raise HTTPException(
+            status_code=400,
+            detail="Unsupported dimension id for a question suggestion",
+        )
+
+    logger.info(
+        "[Question Suggestion] Requested for dimension: %s",
+        payload.dimensionId,
+    )
+
+    try:
+        suggestion = await asyncio.to_thread(
+            llm_provider_service.suggest_question_result,
+            dimension_id=payload.dimensionId,
+            dimension_hebrew=AI_ANALYTICS_DIMENSION_NAMES_HEBREW[
+                payload.dimensionId
+            ],
+            existing_texts=payload.bounded_existing_texts(),
+        )
+    except ProviderUnavailableError as error:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Question suggestion unavailable: {error.reason}",
+        )
+
+    return QuestionSuggestionResponse(
+        dimensionId=payload.dimensionId,
+        dimensionNameHebrew=AI_ANALYTICS_DIMENSION_NAMES_HEBREW[
+            payload.dimensionId
+        ],
+        questionText=suggestion.text,
+        attempts=suggestion.attempts,
+    ).to_dict()
+
 
 @app.post("/api/v1/rounds/{round_id}/analyze")
 async def analyze_round_direct(round_id: str):

@@ -3,7 +3,7 @@ import { Clipboard, Copy, Eye, Plus, ShieldCheck } from "lucide-react";
 import type { CSSProperties } from "react";
 import { wellbeingDimensions, responseOptions } from "@/lib/demo-data";
 import { getNavigationAction } from "@/lib/navigation";
-import type { BuilderQuestion } from "./types";
+import type { QuestionSuggestion } from "./question-suggestions";
 
 function getDimensionLabel(dimensionId: string) {
   return wellbeingDimensions.find((dimension) => dimension.id === dimensionId)?.conceptLabel ?? dimensionId;
@@ -17,8 +17,9 @@ type SidebarProps = {
   shareUrl: string;
   copied: boolean;
   onCopyRespondentLink: () => void;
-  nextSuggestedQuestion: Omit<BuilderQuestion, "id" | "draftKey">;
-  onAddQuestionFromBank: () => void;
+  templateSuggestion: QuestionSuggestion | null;
+  onSuggestFromTemplate: () => void;
+  isFrozen?: boolean;
   saved: boolean;
   questionnaireReady: boolean;
 };
@@ -27,8 +28,9 @@ export function SurveyBuilderSidebar({
   shareUrl,
   copied,
   onCopyRespondentLink,
-  nextSuggestedQuestion,
-  onAddQuestionFromBank,
+  templateSuggestion,
+  onSuggestFromTemplate,
+  isFrozen = false,
   saved,
   questionnaireReady,
 }: SidebarProps) {
@@ -90,24 +92,36 @@ export function SurveyBuilderSidebar({
       <section className="survey-builder-panel survey-builder-library-panel">
         <div className="survey-builder-heading">
           <div>
-            <p className="eyebrow">שאלה מומלצת הבאה</p>
+            <p className="eyebrow">היגד מהתבנית המקורית</p>
             <h2>ספריית שאלות</h2>
           </div>
         </div>
 
-        <article
-          className="survey-builder-suggestion"
-          style={{ "--suggestion-color": getDimensionColor(nextSuggestedQuestion.dimensionId) } as CSSProperties}
-        >
-          <strong className="survey-builder-dimension-stone">
-            {getDimensionLabel(nextSuggestedQuestion.dimensionId)}
-          </strong>
-          <p>{nextSuggestedQuestion.text}</p>
-          <button className="secondary-button" type="button" onClick={onAddQuestionFromBank}>
-            הוספת השאלה
-            <Plus size={18} aria-hidden="true" />
-          </button>
-        </article>
+        {templateSuggestion ? (
+          <article
+            className="survey-builder-suggestion"
+            style={{ "--suggestion-color": getDimensionColor(templateSuggestion.dimensionId) } as CSSProperties}
+          >
+            <strong className="survey-builder-dimension-stone">
+              {getDimensionLabel(templateSuggestion.dimensionId)}
+            </strong>
+            <p>{templateSuggestion.text}</p>
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={onSuggestFromTemplate}
+              disabled={isFrozen}
+            >
+              עריכה והוספה
+              <Plus size={18} aria-hidden="true" />
+            </button>
+          </article>
+        ) : (
+          <p className="quiet-note">
+            כל היגדי התבנית בממד הנבחר נמצאים כבר בשאלון. אפשר לבקש הצעה
+            מהבינה המלאכותית או לנסח שאלה חדשה.
+          </p>
+        )}
 
         {saved ? <p className="success-note">טיוטת השאלון נשמרה וניתן להמשיך להפצה.</p> : null}
         {!questionnaireReady ? (
