@@ -7,6 +7,7 @@ verdicts, foreign languages — from the ones that used to punish a model for
 bolding a sentence or quoting an average with one decimal.
 """
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -14,6 +15,7 @@ import pytest
 from src.config import settings
 from src.rag.store import LocalInterventionVectorStore
 from src.services import hebrew_prompts, hebrew_validation
+from src.services.hebrew_validation import _HEBREW_PATTERN
 from src.services.llm_provider import (
     _LATIN_PATTERN,
     llm_provider_service,
@@ -522,34 +524,89 @@ def test_an_answer_that_opens_with_a_bullet_is_not_guessed_at():
 
 
 @pytest.mark.parametrize(
-    "answer,expected_refusal",
+    "answer,expected_label,expected_detail",
     [
-        (_batch("\n===\n"), ""),
+        (_batch("\n===\n"), "", ""),
         # Two blocks where three entries were asked for: nothing to attach the
         # third recommendation to, by separator or by shape.
-        (_batch("\n===\n", entries=2), "entry_shape"),
+        (
+            _batch("\n===\n", entries=2),
+            "entry_shape",
+            "blocks=2/3 shape_blocks=2 separators=1 lines=6",
+        ),
+        # The failure of `professional-competence`: nine right lines, no
+        # separator. Recovered by shape now, so it reaches no refusal — the
+        # detail below is for the case where neither split works.
+        (
+            _batch("\n"),
+            "",
+            "",
+        ),
+        # The separators are right and a block is one line short: a different
+        # failure behind the same label, and the detail is what tells them
+        # apart without the answer.
+        (
+            _batch("\n===\n").replace(f"- {_STEP}\n- {_STEP}", f"- {_STEP}", 1),
+            "entry_shape",
+            "block=1 lines=2/3",
+        ),
         # Numbers spelled out: grounded to read, uncheckable against the map.
+        # No digits in the steps either, so the model ignored the data rather
+        # than putting it one line lower than the rule wants it.
         (
             _batch("\n===\n").replace("12 התשובות", "שתים עשרה התשובות"),
             "no_number",
+            "block=1 digits_in_steps=no",
         ),
-        (_batch("\n===\n").replace("מפגש", "meeting"), "not_hebrew"),
+        (
+            _batch("\n===\n").replace("מפגש", "meeting"),
+            "not_hebrew",
+            "block=1 chars=U+006D,U+0065,U+0074,U+0069+2",
+        ),
+        # Copy with no Hebrew in it is refused by the same gate, and there is
+        # no foreign letter to name: the detail describes what the gate saw
+        # rather than standing in for the gate.
+        (
+            _batch("\n===\n").replace(_SUMMARY, "12 34 56 78."),
+            "not_hebrew",
+            "block=1 chars=none",
+        ),
+        # A verdict: the model overruling the score Core owns, which is what
+        # this gate is for.
         (
             _batch("\n===\n").replace(
                 "העומס מתרכז בסוף השבוע",
                 "הממד נמצא באזור אדום",
             ),
             "status_inconsistent",
+            "block=1 colour=red verdict=yes",
+        ),
+        # A colour whose number is not one of the buckets: no verdict, so this
+        # is the uncheckable-but-probably-true case of 2026-07-29, which is a
+        # prompt problem rather than a guard one. Same label as a verdict, and
+        # the detail is what separates them.
+        (
+            _batch("\n===\n").replace(
+                "לפי 12 התשובות העומס מתרכז בסוף השבוע",
+                "לפי 30 התשובות אין תשובות ירוקות בשאלה",
+            ),
+            "status_inconsistent",
+            "block=1 colour=green verdict=no numbers=30",
         ),
     ],
 )
-def test_the_refusal_says_which_gate_closed(answer, expected_refusal):
-    """One word per cause, because one label for all of them cost a day.
+def test_the_refusal_says_which_gate_closed(
+    answer,
+    expected_label,
+    expected_detail,
+):
+    """One word per cause, and the shape behind it — never the copy.
 
     The round of 2026-07-29 dropped six recommendations to catalog copy behind
     a single `invalid_semantic_output`, and two unrelated causes hid there. The
-    dimension and the gate now reach the log; the refused text still does not,
-    and does not need to once the gate is named.
+    gate, the dimension and now the shape reach the log. The refused text does
+    not, by decision: nine lines of Hebrew truncated into a log line diagnose
+    nothing, and the copy is about one school's weakest dimensions.
     """
     refusal = hebrew_validation.adaptation_batch_refusal(
         answer,
@@ -558,13 +615,52 @@ def test_the_refusal_says_which_gate_closed(answer, expected_refusal):
         distribution_counts={"12", "4"},
     )
 
-    assert refusal == expected_refusal
+    assert refusal.label == expected_label
+    assert refusal.detail == expected_detail
+    assert bool(refusal) is bool(expected_label)
     assert hebrew_validation.is_valid_adaptation_batch(
         answer,
         expected_steps_per_entry=[2, 2, 2],
         status="yellow",
         distribution_counts={"12", "4"},
-    ) is (expected_refusal == "")
+    ) is (expected_label == "")
+
+
+def test_the_detail_never_carries_the_copy():
+    """The decision of item 17, held by a test rather than by a comment.
+
+    Every value in a detail is a count, an index or a code point. If someone
+    later reaches for "just a truncated sample", this fails and asks them to
+    mean it.
+    """
+    refusals = [
+        hebrew_validation.adaptation_batch_refusal(
+            answer,
+            expected_steps_per_entry=[2, 2, 2],
+            status="yellow",
+            distribution_counts={"12", "4"},
+        )
+        for answer in [
+            _batch("\n===\n", entries=2),
+            _batch("\n===\n").replace("12 התשובות", "שתים עשרה התשובות"),
+            _batch("\n===\n").replace("מפגש", "meeting"),
+            _batch("\n===\n").replace(
+                "העומס מתרכז בסוף השבוע",
+                "הממד נמצא באזור אדום",
+            ),
+        ]
+    ]
+
+    assert all(refusal.label for refusal in refusals)
+    for refusal in refusals:
+        assert not _HEBREW_PATTERN.search(refusal.detail), refusal
+        # A word of the answer would arrive as a run of letters; the details
+        # are `key=value` pairs whose values are digits, indices and code
+        # points.
+        assert all(
+            re.fullmatch(r"[a-z_]+=[A-Za-z0-9+,/]*", pair)
+            for pair in refusal.detail.split(" ")
+        ), refusal
 
 
 # --- end to end through the transport ---------------------------------------
@@ -679,4 +775,7 @@ def test_a_refused_batch_names_its_gate_and_its_dimension(monkeypatch, caplog):
         if "adaptation=deterministic_fallback" in record.getMessage()
     )
     assert "refusal=no_number" in line
+    assert "detail=[block=1 digits_in_steps=no]" in line
     assert "dimension=balance" in line
+    # The answer was in the process and did not follow the refusal into the log.
+    assert "העומס" not in line

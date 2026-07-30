@@ -63,21 +63,23 @@ class AdaptedIntervention:
 def _record_refusal(
     candidate: str,
     finish_reason: object,
-    sink: list[str],
+    sink: list[hebrew_validation.AdaptationRefusal],
     *,
     expected_steps_per_entry: list[int],
     status: str,
     distribution_counts: Optional[set[str]] = None,
-) -> str:
+) -> hebrew_validation.AdaptationRefusal:
     """Judge one adaptation batch and remember why it was turned away.
 
     The transport takes a yes or no and logs `invalid_semantic_output` for
     every no, which is the same word for a missing separator and for a number
     written out as a word. The reason is kept here so the fallback line can
-    name it.
+    name it, with the shape it saw.
     """
     if finish_reason != "stop":
-        sink[0] = f"finish_{finish_reason}"
+        sink[0] = hebrew_validation.AdaptationRefusal(
+            f"finish_{finish_reason}",
+        )
         return sink[0]
 
     sink[0] = hebrew_validation.adaptation_batch_refusal(
@@ -336,7 +338,7 @@ class LLMProviderService:
         # Carries the last attempt's refusal out of the predicate, so the
         # fallback line can say which gate closed instead of leaving the
         # dimension to be reconstructed from the database later.
-        refusal: list[str] = [""]
+        refusal = [hebrew_validation.AdaptationRefusal()]
         text, attempts, fallback_reason = self._complete_with_retries(
             build_prompt=lambda: hebrew_prompts.adaptation_batch_prompt(
                 interventions=entries,
@@ -374,10 +376,12 @@ class LLMProviderService:
         if parsed is None:
             logger.info(
                 "[LLM Service] adaptation=deterministic_fallback model=%s "
-                "reason=%s refusal=%s dimension=%s attempts=%s entries=%s",
+                "reason=%s refusal=%s detail=[%s] dimension=%s "
+                "attempts=%s entries=%s",
                 model_name,
                 fallback_reason,
-                refusal[0] or "unavailable",
+                refusal[0].label or "unavailable",
+                refusal[0].detail,
                 entries[0].get("dimensionId") or "unavailable",
                 attempts,
                 len(entries),

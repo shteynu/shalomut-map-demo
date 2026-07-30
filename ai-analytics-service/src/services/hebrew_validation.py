@@ -7,7 +7,7 @@ transport so that judging a sentence never depends on how the sentence arrived.
 """
 
 import re
-from typing import Any, Dict, Iterable, Optional, Tuple
+from typing import Any, Dict, Iterable, NamedTuple, Optional, Tuple
 
 # The Hebrew block, plus the presentation forms a model may reach for instead
 # of the base letter with its point (\u05e9\u05c1 as one character rather than two). Both
@@ -322,6 +322,32 @@ ADAPTATION_BATCH_SEPARATOR = "==="
 _BULLET_MARKERS = ("-", "–", "—", "•")
 
 
+class AdaptationRefusal(NamedTuple):
+    """Why a batch was turned away, in a form a log line can carry.
+
+    Falsy when there is nothing to refuse, so a caller that only wants a yes
+    or no reads as one. `detail` is `key=value` shape — never the copy.
+    """
+
+    label: str = ""
+    detail: str = ""
+
+    def __bool__(self) -> bool:
+        return bool(self.label)
+
+
+def _blocks_by_separator(text: str) -> list[list[str]]:
+    """Split an answer on the lines that are nothing but "=" characters."""
+    blocks: list[list[str]] = [[]]
+    for line in text.strip().splitlines():
+        stripped = line.strip()
+        if stripped and stripped.strip("=") == "":
+            blocks.append([])
+            continue
+        blocks[-1].append(line)
+    return blocks
+
+
 def _blocks_by_shape(text: str) -> list[list[str]]:
     """Split an answer into entries by what each line is, not by separators.
 
@@ -359,13 +385,7 @@ def parse_adaptation_batch(
     if not text or not expected_steps_per_entry:
         return None
 
-    blocks: list[list[str]] = [[]]
-    for line in text.strip().splitlines():
-        stripped = line.strip()
-        if stripped and stripped.strip("=") == "":
-            blocks.append([])
-            continue
-        blocks[-1].append(line)
+    blocks = _blocks_by_separator(text)
 
     if len(blocks) != len(expected_steps_per_entry):
         # A model that gets everything else right still forgets the separator.
@@ -415,34 +435,171 @@ def adaptation_batch_refusal(
     expected_steps_per_entry: list[int],
     status: str,
     distribution_counts: Optional[set[str]] = None,
-) -> str:
-    """Which gate turns this batch away, as one word for a log line.
+) -> AdaptationRefusal:
+    """Which gate turns this batch away, and the shape of what it saw.
 
     `invalid_semantic_output` alone cost a whole investigation: the round of
     2026-07-29 dropped six recommendations to catalog copy and the log said
     only that something was wrong with the text. Two different causes hid
     behind that one label — a missing separator and numbers spelled out in
     words — and telling them apart needed the refused answer, which nothing
-    kept. The empty string means the batch is acceptable.
+    kept.
+
+    The answer still does not reach the log, and deliberately: nine lines of
+    Hebrew truncated to fit a log line diagnose nothing, and the copy is about
+    one school's weakest dimensions, which is not something to spill outside
+    the product's boundary for the convenience of debugging. The detail carries
+    the shape instead — counts, indices, code points — which is what picks the
+    next step. A falsy refusal means the batch is acceptable.
     """
     parsed = parse_adaptation_batch(candidate, expected_steps_per_entry)
     if parsed is None:
-        return "entry_shape"
+        return AdaptationRefusal(
+            "entry_shape",
+            _entry_shape_detail(candidate, expected_steps_per_entry),
+        )
 
-    for summary, steps in parsed:
-        if not all(is_hebrew_only_copy(part) for part in [summary, *steps]):
-            return "not_hebrew"
+    for index, (summary, steps) in enumerate(parsed, start=1):
+        parts = [summary, *steps]
+        if not all(is_hebrew_only_copy(part) for part in parts):
+            # The gate is `is_hebrew_only_copy` and stays it: the code points
+            # only describe what it saw. They can be empty where the copy is
+            # refused for holding no Hebrew at all rather than for holding
+            # something else — a line of digits, or an empty one.
+            foreign = _foreign_code_points(parts)
+            return AdaptationRefusal(
+                "not_hebrew",
+                f"block={index} chars={foreign or 'none'}",
+            )
         # An adaptation that quotes no number of the round is the catalog text
         # in different words: the whole point is that it speaks to these
         # aggregates. Digits only — "one in ten" reads as grounded and is not
         # something a reader can check against the map.
         if not _INTEGER_PATTERN.search(summary):
-            return "no_number"
+            # Whether the digits landed in the steps instead of the summary is
+            # the whole question here: none anywhere is a model ignoring the
+            # data, whereas digits one line below mean the rule is pointed at
+            # the wrong line.
+            in_steps = any(_INTEGER_PATTERN.search(step) for step in steps)
+            return AdaptationRefusal(
+                "no_number",
+                f"block={index} digits_in_steps={'yes' if in_steps else 'no'}",
+            )
         if not is_status_consistent(
             " ".join([summary, *steps]),
             status,
             contract_version="5.0",
             distribution_counts=distribution_counts,
         ):
-            return "status_inconsistent"
-    return ""
+            return AdaptationRefusal(
+                "status_inconsistent",
+                f"block={index} "
+                + _status_inconsistency_detail(
+                    " ".join([summary, *steps]),
+                    status,
+                    distribution_counts,
+                ),
+            )
+    return AdaptationRefusal()
+
+
+def _entry_shape_detail(
+    candidate: str,
+    expected_steps_per_entry: list[int],
+) -> str:
+    """Say whether the blocks or the lines inside one of them were wrong.
+
+    `entry_shape` covers two unrelated failures — the answer split into the
+    wrong number of entries, or an entry with the wrong number of lines — and
+    they want different fixes. This walks the same splits `parse_adaptation_batch`
+    walks; it reports rather than decides, so if the two ever drift the cost is
+    a misleading log line and not a wrong verdict.
+    """
+    if not candidate:
+        return "empty"
+
+    present = [line for line in candidate.strip().splitlines() if line.strip()]
+    separators = [line for line in present if line.strip().strip("=") == ""]
+    # Content lines, so `lines` and `separators` add up rather than overlap.
+    lines = len(present) - len(separators)
+    expected = len(expected_steps_per_entry)
+    by_separator = len(separators) + 1
+    by_shape = len(_blocks_by_shape(candidate))
+
+    if expected not in (by_separator, by_shape):
+        return (
+            f"blocks={by_separator}/{expected} shape_blocks={by_shape} "
+            f"separators={len(separators)} lines={lines}"
+        )
+
+    # The blocks were found; one of them holds the wrong number of lines.
+    blocks = (
+        _blocks_by_shape(candidate)
+        if by_separator != expected
+        else _blocks_by_separator(candidate)
+    )
+    for index, (block, steps) in enumerate(
+        zip(blocks, expected_steps_per_entry),
+        start=1,
+    ):
+        if parse_adaptation("\n".join(block), steps) is None:
+            found = len([line for line in block if line.strip()])
+            return f"block={index} lines={found}/{steps + 1}"
+    return f"blocks={by_separator}/{expected} lines={lines}"
+
+
+def _foreign_code_points(parts: Iterable[str], limit: int = 4) -> str:
+    """The distinct non-Hebrew letters in the copy, as code points.
+
+    A single code point is what turned item 18 from a day of squinting at a
+    reproduction into a fact: `chars=U+0648` names the Arabic waw a model wrote
+    where the vav belongs. Letters only, never the words around them.
+    """
+    found: list[str] = []
+    for part in parts:
+        for character in part:
+            if not character.isalpha() or _HEBREW_PATTERN.match(character):
+                continue
+            point = f"U+{ord(character):04X}"
+            if point not in found:
+                found.append(point)
+    if not found:
+        return ""
+    shown = ",".join(found[:limit])
+    return f"{shown}+{len(found) - limit}" if len(found) > limit else shown
+
+
+def _status_inconsistency_detail(
+    text: str,
+    status: str,
+    distribution_counts: Optional[set[str]] = None,
+) -> str:
+    """Which colour was named, and whether it read as a count or a verdict.
+
+    The two failures behind this label are far apart. A verdict — "the
+    dimension is in the red zone" — is the model overruling the score Core
+    owns, and is meant to be refused. A colour with no count beside it is
+    usually true and merely uncheckable, as "and the absence of green answers"
+    was on 2026-07-29; that one is fixed in the prompt, not in the guard.
+    """
+    for sentence in sentences_or_whole(text):
+        for colour_status, colour_word in _STATUS_WORDS_HEBREW.items():
+            if colour_status == status or colour_word not in sentence:
+                continue
+            verdict = next(
+                (
+                    marker
+                    for marker in _VERDICT_MARKERS_HEBREW
+                    if f"{marker} {colour_word}" in sentence
+                ),
+                None,
+            )
+            if verdict is not None:
+                return f"colour={colour_status} verdict=yes"
+            numbers = _INTEGER_PATTERN.findall(sentence)
+            return (
+                f"colour={colour_status} verdict=no "
+                f"numbers={','.join(numbers[:4]) or 'none'}"
+            )
+    # The judgement-phrase blacklist, which names no colour at all.
+    return "judgement_phrase"
