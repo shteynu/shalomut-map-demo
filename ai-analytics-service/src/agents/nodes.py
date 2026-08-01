@@ -9,6 +9,7 @@ from src.services.llm_provider import (
     llm_provider_service,
 )
 from src.config import settings
+from src.schemas.contract_registry import get_capabilities
 from src.contracts import (
     AI_ANALYTICS_CONTRACT_VERSION,
     AI_ANALYTICS_DIMENSION_NAMES_HEBREW,
@@ -117,10 +118,8 @@ def _background_context_for_prompt(
     5.0 trade the school context away for the distributions instead of adding
     them.
     """
-    if _effective_contract_version(round_data) not in {
-        AI_ANALYTICS_V4_CONTRACT_VERSION,
-        AI_ANALYTICS_V5_CONTRACT_VERSION,
-    }:
+    contract_version = _effective_contract_version(round_data)
+    if not get_capabilities(contract_version).supportsBackgroundContext:
         return None
 
     return round_data.get("backgroundContext") or state.get("org_context")
@@ -131,7 +130,7 @@ def _question_aggregates_for_dimension(
     dimension_id: str,
 ) -> list[Dict[str, Any]]:
     aggregates = round_data.get("questionAggregates", {})
-    if _effective_contract_version(round_data) in AI_ANALYTICS_DYNAMIC_CONTRACT_VERSIONS:
+    if get_capabilities(_effective_contract_version(round_data)).supportsDynamicQuestions:
         return [
             aggregate
             for aggregate in aggregates.values()
@@ -196,8 +195,7 @@ def privacy_gate_node(state: AnalyticsState) -> AnalyticsState:
                     "surveyDefinitionHash",
                 ),
             }
-            if _effective_contract_version(round_data)
-            in AI_ANALYTICS_DYNAMIC_CONTRACT_VERSIONS
+            if get_capabilities(_effective_contract_version(round_data)).supportsDynamicQuestions
             else {}
         )
         return {
@@ -419,7 +417,7 @@ async def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
             "retryCount": max(0, attempts - 1),
             "sourceQuestionIds": source_question_ids,
         }
-        if eff_version in AI_ANALYTICS_DYNAMIC_CONTRACT_VERSIONS:
+        if get_capabilities(eff_version).supportsDynamicQuestions:
             generation_provenance[dim_id]["surveyDefinitionHash"] = (
                 round_data.get("surveyDefinitionHash")
             )
@@ -552,7 +550,7 @@ async def agent_adaptation_node(state: AnalyticsState) -> AnalyticsState:
     from the catalog text.
     """
     round_data = state.get("round_data", {})
-    if _effective_contract_version(round_data) != AI_ANALYTICS_V5_CONTRACT_VERSION:
+    if not get_capabilities(_effective_contract_version(round_data)).supportsPartialMaps:
         return state
 
     dim_scores = round_data.get("dimensionScores", {})

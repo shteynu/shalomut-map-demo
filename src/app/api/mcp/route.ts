@@ -129,6 +129,7 @@ export async function POST(request: Request) {
               {
                 type: 'text',
                 text: JSON.stringify(mcpPayload),
+                structuredContent: mcpPayload,
               },
             ],
           },

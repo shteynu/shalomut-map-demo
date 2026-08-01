@@ -1,4 +1,4 @@
-from src.contracts import AI_ANALYTICS_V4_CONTRACT_VERSION, AI_ANALYTICS_V5_CONTRACT_VERSION, AI_ANALYTICS_CONTRACT_VERSION
+
 import asyncio
 import json
 import logging
@@ -57,12 +57,18 @@ class MCPClientManager:
             body = await asyncio.to_thread(self._read_response, req)
 
             data = json.loads(body)
-            result_content = data.get("result", {}).get("content", [{}])[0].get("text")
-            if not result_content:
-                error = data.get("error", {}).get("message", "missing tool result")
-                raise RuntimeError(f"MCP server returned an invalid response: {error}")
+            content_item = data.get("result", {}).get("content", [{}])[0]
+            
+            structured_content = content_item.get("structuredContent")
+            if structured_content is not None:
+                parsed_json = structured_content
+            else:
+                result_content = content_item.get("text")
+                if not result_content:
+                    error = data.get("error", {}).get("message", "missing tool result")
+                    raise RuntimeError(f"MCP server returned an invalid response: {error}")
+                parsed_json = json.loads(result_content)
 
-            parsed_json = json.loads(result_content)
             return RoundAnalyticsResult.from_dict(parsed_json)
         except Exception as e:
             raise RuntimeError(

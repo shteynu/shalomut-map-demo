@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from typing import Dict, Any, Literal
 from src.agents.state import AnalyticsState
+from src.schemas.contract_registry import get_capabilities
 from src.agents.nodes import (
     privacy_gate_node,
     agent_psychologist_node,
@@ -46,8 +47,7 @@ def build_failure_payload(
     """
     dynamic_metadata = (
         {"surveyDefinitionHash": round_data.get("surveyDefinitionHash")}
-        if _effective_contract_version(round_data)
-        in AI_ANALYTICS_DYNAMIC_CONTRACT_VERSIONS
+        if get_capabilities(_effective_contract_version(round_data)).supportsDynamicQuestions
         else {}
     )
     return {
@@ -126,7 +126,7 @@ def format_stone_map_output_node(state: AnalyticsState) -> AnalyticsState:
     contract_version = _effective_contract_version(round_data)
 
     if (
-        contract_version in AI_ANALYTICS_DYNAMIC_CONTRACT_VERSIONS
+        get_capabilities(contract_version).supportsDynamicQuestions
         and set(dim_scores) != set(AI_ANALYTICS_DIMENSION_IDS)
     ):
         raise ValueError(
@@ -172,7 +172,7 @@ def format_stone_map_output_node(state: AnalyticsState) -> AnalyticsState:
                 # never recomputed: Core owns these numbers and now has
                 # something to check them against.
                 if (
-                    contract_version == AI_ANALYTICS_V5_CONTRACT_VERSION
+                    get_capabilities(contract_version).supportsPartialMaps
                     and isinstance(aggregate.get("scoreDistribution"), dict)
                 ):
                     metric["scoreDistribution"] = dict(
@@ -222,11 +222,11 @@ def format_stone_map_output_node(state: AnalyticsState) -> AnalyticsState:
         "overallPsychologicalSummary": overall_summary,
         "stones": stones
     }
-    if contract_version in AI_ANALYTICS_DYNAMIC_CONTRACT_VERSIONS:
+    if get_capabilities(contract_version).supportsDynamicQuestions:
         final_payload["surveyDefinitionHash"] = round_data.get(
             "surveyDefinitionHash",
         )
-    if contract_version == AI_ANALYTICS_V5_CONTRACT_VERSION:
+    if get_capabilities(contract_version).supportsPartialMaps:
         # Stated whenever the map is partial, and omitted when it is whole, so
         # a full round's payload is byte-identical to what it was before the
         # partial map existed. Core requires this list to agree exactly with

@@ -173,7 +173,7 @@ def is_hebrew_only_copy(text: str) -> bool:
     )
 
 
-def is_complete_hebrew_copy(text: str, contract_version: str = AI_ANALYTICS_V4_CONTRACT_VERSION) -> bool:
+def is_complete_hebrew_copy(text: str, contract_version: str = AI_ANALYTICS_CONTRACT_VERSION) -> bool:
     """True when the copy is Hebrew, complete, and within the version's budget.
 
     "Complete" means every word belongs to a sentence that ends in terminal
@@ -266,7 +266,7 @@ def _is_asserted(text: str, word: str) -> bool:
 def is_status_consistent(
     text: str,
     status: str,
-    contract_version: str = AI_ANALYTICS_V4_CONTRACT_VERSION,
+    contract_version: str = AI_ANALYTICS_CONTRACT_VERSION,
     distribution_counts: Optional[set[str]] = None,
 ) -> bool:
     """Reject copy that contradicts the numerical status Core owns.
@@ -327,7 +327,7 @@ def is_valid_provider_output(
     text: str,
     finish_reason: object,
     status: str,
-    contract_version: str = AI_ANALYTICS_V4_CONTRACT_VERSION,
+    contract_version: str = AI_ANALYTICS_CONTRACT_VERSION,
     distribution_counts: Optional[set[str]] = None,
 ) -> bool:
     if finish_reason != "stop" or not is_complete_hebrew_copy(
@@ -595,7 +595,7 @@ def adaptation_batch_refusal(
         if not is_status_consistent(
             " ".join([summary, *steps]),
             status,
-            contract_version=AI_ANALYTICS_V5_CONTRACT_VERSION,
+            contract_version=AI_ANALYTICS_CONTRACT_VERSION,
             distribution_counts=distribution_counts,
         ):
             return AdaptationRefusal(

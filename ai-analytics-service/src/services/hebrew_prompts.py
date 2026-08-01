@@ -99,7 +99,7 @@ def interpretation_prompt(
     status: str,
     question_aggregates: list[Dict[str, Any]],
     background_context: Optional[Dict[str, Any]] = None,
-    contract_version: str = AI_ANALYTICS_V4_CONTRACT_VERSION,
+    contract_version: str = AI_ANALYTICS_CONTRACT_VERSION,
     all_dimension_scores: Optional[Dict[str, Any]] = None,
 ) -> str:
     uses_dynamic_questions = any(
