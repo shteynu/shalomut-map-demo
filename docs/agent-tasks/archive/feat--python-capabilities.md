@@ -3,9 +3,8 @@
 ## Status
 
 - **Branch**: `feat/python-capabilities`
-- **Current HEAD**: `7843a461a6b337f837e33bb399c73423f94d823c`
-- **Upstream**: `origin/feat/python-capabilities`, aligned (`0 ahead / 0 behind`)
-- **State**: Review findings fixed and fully verified; changes are not committed.
+- **Implementation commit**: `b1549fd` (`fix(refactoring): close contract and CI review findings`)
+- **State**: Completed and archived before merging the branch into `main`.
 
 ## Completed
 
@@ -36,17 +35,15 @@
 
 ## Git state
 
-- **Committed**: HEAD `7843a46`; no commits beyond upstream.
-- **Staged**: none.
-- **Unstaged task changes**: MCP route/client/schema/tests; contract registries and capability-driven pipeline/callback changes; golden-corpus and fitness tests; Prisma/typecheck/DB verification ordering; this task file; relocation of `prisma-ai-analysis-runs.integration.test.ts` from `__tests__` to `__dbtests__`.
-- **Untracked task files**: `ai-analytics-service/tests/test_contract_registry.py`, `ai-analytics-service/tests/test_mcp_client.py`, `ai-analytics-service/tests/test_version_fitness.py`, `scripts/check-version-literals.test.mjs`, `src/lib/__tests__/round-analytics-golden-corpus.test.ts`, `src/lib/repositories/__dbtests__/prisma-ai-analysis-runs.integration.test.ts`, `src/lib/round-analytics-payload.ts`.
+- **Committed**: all task changes are contained in `b1549fd` and its branch ancestors.
+- **Staged/unstaged/untracked task changes**: none after the archive commit.
 - **Unrelated unstaged user change**: `next-env.d.ts`.
 
 ## Risks and approval gates
 
 - No production, credential, authentication, deployment-alias, or customer-data mutation was performed.
-- The task diff is portable only inside this worktree until committed; it has not been pushed.
+- No task-specific residual approval gate remains.
 
 ## Next concrete step
 
-Review and commit the task diff on `feat/python-capabilities`, explicitly excluding `next-env.d.ts`.
+Fast-forward `main` to the completed `feat/python-capabilities` branch and push both refs.
