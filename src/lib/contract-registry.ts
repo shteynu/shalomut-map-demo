@@ -11,7 +11,7 @@ export interface ContractCapabilities {
   stoneInterpretationSentenceLimit: '2' | '2-5';
 }
 
-export const CONTRACT_REGISTRY: Record<string, ContractCapabilities> = capabilitiesManifest.versions;
+export const CONTRACT_REGISTRY: Record<string, ContractCapabilities> = capabilitiesManifest.versions as Record<string, ContractCapabilities>;
 
 export function getCapabilities(version: string): ContractCapabilities {
   const capabilities = CONTRACT_REGISTRY[version];
