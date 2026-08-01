@@ -1,18 +1,24 @@
 import json
+from pathlib import Path
+
 import pytest
 from src.schemas.mcp_types import RoundAnalyticsResult
 
 def test_golden_corpus():
-    with open("../contracts/fixtures/golden_corpus.json", "r") as f:
+    corpus_path = (
+        Path(__file__).resolve().parents[2]
+        / "contracts"
+        / "fixtures"
+        / "golden_corpus.json"
+    )
+    with corpus_path.open("r", encoding="utf-8") as f:
         corpus = json.load(f)
 
     for version, cases in corpus.items():
-        if version not in ["4.0", "5.0"]:
-            continue # We only test parsing of versions that are actively handled as dynamic payloads in Python
-
         for pos_payload in cases["positive"]:
             try:
-                RoundAnalyticsResult.from_dict(pos_payload)
+                parsed = RoundAnalyticsResult.from_dict(pos_payload)
+                assert parsed.contractVersion == version
             except Exception as e:
                 pytest.fail(f"Failed to parse positive payload for {version}: {e}")
 

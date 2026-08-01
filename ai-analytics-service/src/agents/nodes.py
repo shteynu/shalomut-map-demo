@@ -11,13 +11,7 @@ from src.services.llm_provider import (
 from src.config import settings
 from src.schemas.contract_registry import get_capabilities
 from src.contracts import (
-    AI_ANALYTICS_CONTRACT_VERSION,
     AI_ANALYTICS_DIMENSION_NAMES_HEBREW,
-    AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
-    AI_ANALYTICS_DYNAMIC_CONTRACT_VERSIONS,
-    AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS,
-    AI_ANALYTICS_V4_CONTRACT_VERSION,
-    AI_ANALYTICS_V5_CONTRACT_VERSION,
     AI_ANALYTICS_QUESTIONS,
     AI_ANALYTICS_V1_CONTRACT_VERSION,
 )
@@ -352,7 +346,7 @@ async def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
     # fails again leaves the seven standing interpretations standing.
     eff_version = _effective_contract_version(round_data)
     partial_allowed = (
-        eff_version == AI_ANALYTICS_V5_CONTRACT_VERSION
+        get_capabilities(eff_version).supportsPartialMaps
         and any(interpretations.values())
     )
 
@@ -421,14 +415,11 @@ async def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
             generation_provenance[dim_id]["surveyDefinitionHash"] = (
                 round_data.get("surveyDefinitionHash")
             )
-        if eff_version in {
-            AI_ANALYTICS_V4_CONTRACT_VERSION,
-            AI_ANALYTICS_V5_CONTRACT_VERSION,
-        }:
+        if get_capabilities(eff_version).supportsBackgroundContext:
             generation_provenance[dim_id]["backgroundContextIncluded"] = bool(
                 _background_context_for_prompt(round_data, state),
             )
-        if eff_version == AI_ANALYTICS_V5_CONTRACT_VERSION:
+        if get_capabilities(eff_version).supportsScoreDistribution:
             generation_provenance[dim_id].update(
                 _v5_prompt_inclusions(round_data, dim_id, dim_scores),
             )
@@ -658,11 +649,9 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
     )
     retry_count = state.get("retry_count", 0)
     contract_version = _effective_contract_version(round_data)
-    is_semantic_contract = (
-        contract_version in AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS
-        and contract_version != AI_ANALYTICS_V1_CONTRACT_VERSION
-    )
-    is_dynamic_contract = contract_version in AI_ANALYTICS_DYNAMIC_CONTRACT_VERSIONS
+    capabilities = get_capabilities(contract_version)
+    is_semantic_contract = capabilities.isSemanticContract
+    is_dynamic_contract = capabilities.supportsDynamicQuestions
 
     is_safe = True
     feedback = []
@@ -752,7 +741,7 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
                     for text in user_facing_copy
                 )
                 or (
-                    contract_version == AI_ANALYTICS_V5_CONTRACT_VERSION
+                    capabilities.supportsAdaptationOutcome
                     and adaptation_outcome
                     not in {"llm", "deterministic_fallback"}
                 )
@@ -791,7 +780,7 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
             retry_count_value = provenance.get("retryCount")
             outcome = provenance.get("outcome")
             allowed_outcomes = {"llm", "deterministic_fallback"}
-            if contract_version == AI_ANALYTICS_V5_CONTRACT_VERSION:
+            if capabilities.supportsPartialMaps:
                 allowed_outcomes.add("unavailable")
             if (
                 outcome not in allowed_outcomes
@@ -810,7 +799,7 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
                 )
                 or (outcome == "llm" and attempts < 1)
                 or (
-                    contract_version == AI_ANALYTICS_V5_CONTRACT_VERSION
+                    capabilities.supportsScoreDistribution
                     and {
                         field: provenance.get(field)
                         for field in V5_PROMPT_INCLUSION_FIELDS

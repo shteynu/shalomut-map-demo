@@ -1,12 +1,10 @@
 import { NextResponse } from 'next/server';
 import {
-  AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
-  AI_ANALYTICS_V4_CONTRACT_VERSION,
-  AI_ANALYTICS_V5_CONTRACT_VERSION,
   isValidScoreDistribution,
   type StoneMapResult,
   validateStoneMapResult,
 } from '@/lib/ai-contract';
+import { getCapabilities } from '@/lib/contract-registry';
 import { getRepositories } from '@/lib/repositories';
 import { AnalyticsService } from '@/lib/services/analytics.service';
 import {
@@ -47,13 +45,8 @@ function validateDynamicResultAgainstRound(
   round: SurveyRound,
   analytics: RoundAnalyticsV3Result,
 ): string | null {
-  if (
-    ![
-      AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
-      AI_ANALYTICS_V4_CONTRACT_VERSION,
-      AI_ANALYTICS_V5_CONTRACT_VERSION,
-    ].includes(result.contractVersion)
-  ) {
+  const capabilities = getCapabilities(result.contractVersion);
+  if (!capabilities.supportsDynamicQuestions) {
     return null;
   }
 
@@ -131,7 +124,7 @@ function validateDynamicResultAgainstRound(
       // On 5.0 the distribution is a number Core owns as much as the average,
       // and it travelled to the AI service and back. Checking it against the
       // recomputed analytics is what keeps that ownership real.
-      if (result.contractVersion === AI_ANALYTICS_V5_CONTRACT_VERSION) {
+      if (capabilities.supportsScoreDistribution) {
         const expectedDistribution = expectedAggregate.scoreDistribution;
         if (!expectedDistribution) {
           return 'The Core analytics carry no distribution to verify the AI result against.';
@@ -320,11 +313,9 @@ export async function POST(request: Request, { params }: RouteParams) {
       );
     }
 
-    const isDynamicVersion = [
-      AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
-      AI_ANALYTICS_V4_CONTRACT_VERSION,
-      AI_ANALYTICS_V5_CONTRACT_VERSION,
-    ].includes(validation.value.contractVersion);
+    const isDynamicVersion = getCapabilities(
+      validation.value.contractVersion,
+    ).supportsDynamicQuestions;
 
     const dynamicRoundError = isDynamicVersion
       ? validateDynamicResultAgainstRound(

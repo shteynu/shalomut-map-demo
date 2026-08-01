@@ -13,11 +13,7 @@ from src.agents.nodes import (
     _question_aggregates_for_dimension,
 )
 from src.contracts import (
-    AI_ANALYTICS_CONTRACT_VERSION,
     AI_ANALYTICS_DIMENSION_IDS,
-    AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
-    AI_ANALYTICS_DYNAMIC_CONTRACT_VERSIONS,
-    AI_ANALYTICS_V5_CONTRACT_VERSION,
 )
 
 # Copy the manager reads when no analysis could be produced. One sentence for
@@ -154,7 +150,7 @@ def format_stone_map_output_node(state: AnalyticsState) -> AnalyticsState:
             question_text_field = (
                 "questionText"
                 if contract_version
-                in AI_ANALYTICS_DYNAMIC_CONTRACT_VERSIONS
+                and get_capabilities(contract_version).supportsDynamicQuestions
                 else "questionTextHebrew"
             )
             metrics = []
@@ -202,10 +198,7 @@ def format_stone_map_output_node(state: AnalyticsState) -> AnalyticsState:
             "recommendedInterventions": recs,
             "metrics": metrics
         }
-        if contract_version in {
-            AI_ANALYTICS_CONTRACT_VERSION,
-            *AI_ANALYTICS_DYNAMIC_CONTRACT_VERSIONS,
-        }:
+        if get_capabilities(contract_version).isSemanticContract:
             if dim_id not in generation_provenance:
                 raise ValueError(
                     f"Missing generation provenance for '{dim_id}'"

@@ -1,4 +1,4 @@
-from src.contracts import AI_ANALYTICS_V4_CONTRACT_VERSION, AI_ANALYTICS_V5_CONTRACT_VERSION, AI_ANALYTICS_CONTRACT_VERSION
+from src.contracts import AI_ANALYTICS_CONTRACT_VERSION
 from src.schemas.contract_registry import get_capabilities
 """What the service accepts as Hebrew copy about a round.
 

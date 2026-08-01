@@ -57,9 +57,13 @@ class MCPClientManager:
             body = await asyncio.to_thread(self._read_response, req)
 
             data = json.loads(body)
-            content_item = data.get("result", {}).get("content", [{}])[0]
-            
-            structured_content = content_item.get("structuredContent")
+            result = data.get("result", {})
+            content_item = result.get("content", [{}])[0]
+
+            # MCP places structuredContent on CallToolResult, alongside
+            # content. The text block remains the backwards-compatible path
+            # while Core and the worker roll out independently.
+            structured_content = result.get("structuredContent")
             if structured_content is not None:
                 parsed_json = structured_content
             else:

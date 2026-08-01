@@ -115,6 +115,11 @@ class RoundAnalyticsResult:
                 f"'{contract_version}'"
             )
 
+        if not isinstance(data.get("isLocked"), bool):
+            raise ValueError(
+                "AI analytics contract requires boolean isLocked"
+            )
+
         is_dynamic = get_capabilities(contract_version).supportsDynamicQuestions
         if is_dynamic:
             cls._validate_no_forbidden_dynamic_fields(data)
@@ -128,10 +133,6 @@ class RoundAnalyticsResult:
                 "privacyThreshold",
                 minimum=1,
             )
-            if not isinstance(data.get("isLocked"), bool):
-                raise ValueError(
-                    "Dynamic AI analytics contract requires boolean isLocked"
-                )
         else:
             total_responses = int(data.get("totalResponses", 0))
             # Legacy payloads may omit the threshold. Core owns the real

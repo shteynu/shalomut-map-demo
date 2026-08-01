@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { AnalyticsService } from '@/lib/services/analytics.service';
 import { getRepositories } from '@/lib/repositories';
 import { getCapabilities } from '@/lib/contract-registry';
+import { validateRoundAnalyticsPayload } from '@/lib/round-analytics-payload';
 import { hasConfiguredSharedSecret } from '@/lib/server/shared-secret';
 
 // The handler authenticates every call by reading the Authorization header, so
@@ -9,6 +10,34 @@ import { hasConfiguredSharedSecret } from '@/lib/server/shared-secret';
 // era — the deployed runtime hands the handler empty request headers, and the
 // shared-secret check rejects even a correct secret.
 export const dynamic = 'force-dynamic';
+
+const roundAnalyticsOutputSchema = {
+  type: 'object',
+  properties: {
+    contractVersion: { type: 'string' },
+    roundId: { type: 'string' },
+    organizationId: { type: 'string' },
+    surveyDefinitionHash: { type: 'string' },
+    totalResponses: { type: 'integer', minimum: 0 },
+    privacyThreshold: { type: 'integer', minimum: 1 },
+    isLocked: { type: 'boolean' },
+    dimensionScores: { type: 'object' },
+    questionAggregates: { type: 'object' },
+    backgroundContext: { type: 'object' },
+    calculatedAt: { type: 'string' },
+  },
+  required: [
+    'contractVersion',
+    'roundId',
+    'totalResponses',
+    'privacyThreshold',
+    'isLocked',
+    'dimensionScores',
+    'questionAggregates',
+    'calculatedAt',
+  ],
+  additionalProperties: false,
+} as const;
 
 /**
  * MCP Server HTTP JSON-RPC Endpoint (/api/mcp)
@@ -58,6 +87,7 @@ export async function POST(request: Request) {
                 },
                 required: ['roundId'],
               },
+              outputSchema: roundAnalyticsOutputSchema,
             },
           ],
         },
@@ -118,8 +148,12 @@ export async function POST(request: Request) {
           backgroundContext: includesBackgroundContext
             ? (round?.backgroundContext ?? undefined)
             : undefined,
-          calculatedAt: result.calculatedAt,
+          calculatedAt: result.calculatedAt.toISOString(),
         };
+        const validation = validateRoundAnalyticsPayload(mcpPayload);
+        if (!validation.ok) {
+          throw new Error(`Core produced an invalid MCP payload: ${validation.error}`);
+        }
 
         return NextResponse.json({
           jsonrpc: '2.0',
@@ -128,10 +162,10 @@ export async function POST(request: Request) {
             content: [
               {
                 type: 'text',
-                text: JSON.stringify(mcpPayload),
-                structuredContent: mcpPayload,
+                text: JSON.stringify(validation.value),
               },
             ],
+            structuredContent: validation.value,
           },
         });
       }

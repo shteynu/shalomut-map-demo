@@ -93,6 +93,23 @@ test('MCP Server returns list of tools for tools/list method', async () => {
   assert.strictEqual(data.jsonrpc, '2.0');
   assert.strictEqual(data.result.tools.length, 1);
   assert.strictEqual(data.result.tools[0].name, 'get_round_analytics');
+  assert.deepStrictEqual(
+    data.result.tools[0].outputSchema.required,
+    [
+      'contractVersion',
+      'roundId',
+      'totalResponses',
+      'privacyThreshold',
+      'isLocked',
+      'dimensionScores',
+      'questionAggregates',
+      'calculatedAt',
+    ],
+  );
+  assert.strictEqual(
+    data.result.tools[0].outputSchema.properties.isLocked.type,
+    'boolean',
+  );
 });
 
 test('MCP Server requires its shared secret when configured', async () => {
@@ -187,7 +204,14 @@ test('MCP payload carries the school background context on 4.0 only, never when 
     );
     assert.strictEqual(res.status, 200);
     const body = await res.json();
-    return JSON.parse(body.result.content[0].text);
+    const textPayload = JSON.parse(body.result.content[0].text);
+    assert.deepStrictEqual(body.result.structuredContent, textPayload);
+    assert.strictEqual(
+      body.result.content[0].structuredContent,
+      undefined,
+      'structuredContent belongs to CallToolResult, not TextContent',
+    );
+    return body.result.structuredContent;
   }
 
   try {

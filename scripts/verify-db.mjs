@@ -68,6 +68,8 @@ function run(command, args, description) {
 
 console.log(`verify:db -> ${databaseUrl.replace(/\/\/[^@]*@/, '//')}`);
 
+run('npx', ['prisma', 'generate'], 'Prisma client generation');
+
 run('npx', ['prisma', 'migrate', 'deploy'], 'Migrations');
 
 run(
@@ -76,9 +78,14 @@ run(
     '--import',
     'tsx',
     '--test',
+    '--test-concurrency=1',
     path.join(
       repositoryRoot,
       'src/lib/repositories/__dbtests__/postgres-concurrency.test.ts',
+    ),
+    path.join(
+      repositoryRoot,
+      'src/lib/repositories/__dbtests__/prisma-ai-analysis-runs.integration.test.ts',
     ),
   ],
   'PostgreSQL suite',

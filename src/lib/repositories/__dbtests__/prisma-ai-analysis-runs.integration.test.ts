@@ -5,6 +5,8 @@ import { PrismaClient } from '@prisma/client';
 import { Pool } from 'pg';
 import { PrismaAiAnalysisRunRepository } from '../prisma/prisma-ai-analysis-run.repository';
 
+// This suite is intentionally outside __tests__: verify:db applies migrations
+// before loading it, while the general unit suite stays database-free.
 const connectionString = process.env.TEST_DATABASE_URL;
 let pool: Pool | undefined;
 let prisma: PrismaClient | undefined;
