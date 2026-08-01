@@ -1,16 +1,21 @@
 # Shalomut Tracker — актуальный handoff
 
-Обновлено: 2026-07-30 (**`main` теперь пропускает deploy только после whole-project TypeScript, ESLint, build и Python
-suite**, и GitHub Actions подтвердил финальный gate на `2e38a14`; первый живой AI-раунд по-прежнему завершён `success`,
-закрыты пункты 8, 10, 12 и 15–21. Ротация четырёх засвеченных credentials осознанно отложена на стадии
-дизайна и становится обязательной до первых настоящих респондентов)
+Обновлено: 2026-08-01. `main` и `origin/main` находятся на `47333be`; план
+архитектурного рефакторинга завершён и слит. GitHub Build & Validate
+[30717540728](https://github.com/shteynu/shalomut-map-demo/actions/runs/30717540728)
+прошёл на чистом runner, включая Prisma generation, migrations, 307
+TypeScript-тестов, 7 PostgreSQL-тестов и 286 Python-тестов. CodeQL
+[30717540724](https://github.com/shteynu/shalomut-map-demo/actions/runs/30717540724)
+прошёл для TypeScript и Python. В этой сессии deployment и environment не
+менялись.
 
-Последняя локальная сверка незавершённой сессии: `npm run typecheck`, 274/274 TypeScript-теста, ESLint,
-production build и 269/269 Python-тестов прошли. Playwright дошёл через реальный local login до dashboard и
-balance metrics, но seeded round хранит состояние AI unavailable, поэтому саму полосу распределения браузерно
-не проверял. Временный diff `next-env.d.ts` после `next dev` вернулся к сгенерированному виду; устойчивое
-исправление пришло из параллельной сессии в `2e38a14`: `next typegen && tsc --noEmit` и исправление всех 14
-test-only ошибок. Оба remote-коммита сохранены перед фиксацией этого cleanup. Ничего не задеплоено.
+Единственный не-документационный diff рабочего дерева — сохранённый
+пользовательский generated `next-env.d.ts`; он не относится к рефакторингу и
+не вошёл ни в один commit. Session-close изменения progress/handoff и перенос
+пяти завершённых task-файлов сохранены отдельным documentation commit после
+`47333be`. Открытых PR и реально незамерженных веток нет. Девять старых
+локальных refs формально видны в `git branch --no-merged` из-за squash merge,
+но их tips совпадают с tips уже слитых PR #5, #6 и #11–#17.
 
 Это оперативная точка входа для перехода от исходного статического demo
 Shalomut Map к `shalomut-tracker`, где сохранённые данные должны быть единственным
@@ -19,39 +24,33 @@ Shalomut Map к `shalomut-tracker`, где сохранённые данные �
 exact вопросы раунда принадлежат persisted `SurveyRound.surveyDefinition`.
 Визуальные mock-данные изолированы в `src/lib/demo-data.ts`.
 
-## Архитектурный рефакторинг: четыре ветки на руках (2026-07-30)
+## Архитектурный рефакторинг завершён (2026-08-01)
 
-Начат план архитектурного рефакторинга. Порядок работ, правки к плану и
-обоснование каждого решения — в `docs/wellbeing-refactoring-plan-v4-review.md`,
-раздел «Предлагаемый порядок работ». Он и есть источник того, что делать дальше.
+Порядок и решения остаются в
+`docs/wellbeing-refactoring-plan-v4-review.md`. В `main` последовательно вошли:
 
-Все четыре ветки отходят от `cb8bed3` (`origin/main`), **ни одна не запушена**,
-upstream есть только у документационной. Поэтому эта работа видна лишь в этом
-worktree и на этой машине; другой checkout не увидит ничего, пока владелец не
-выполнит push.
+- PR #14–#17: актуализированный план, v5 background context, PostgreSQL
+  idempotency/CI и fail-closed producer version;
+- durable AI jobs с lease/heartbeat, идемпотентным callback и operational
+  metrics;
+- Contract Registry и capability-driven Python pipeline;
+- стандартный MCP `structuredContent` с `outputSchema`, полный shared golden
+  corpus, test-only dummy 6.0 и усиленный version-branch fitness gate;
+- исправленный чистый CI-порядок Prisma generate → migrate deploy → оба
+  PostgreSQL suite.
 
-| Ветка | HEAD | Что в ней | verify |
-| --- | --- | --- | --- |
-| `docs/update-wellbeing-refactoring-plan` | `75f47ea` | Ревью планов v3/v4, восемь правок, шесть дополнений, порядок работ | не запускался (только документы) |
-| `fix/v5-background-context` | `1b76bac` | PR 1: контракт `5.0` перестал терять `backgroundContext` в parser | exit 0 — 274 TS, 274 Python |
-| `fix/response-idempotency` | `92cf626` | PR 2: unique-констрейнты, маппинг `P2002`, `verify:db`, Postgres в CI | exit 0 — 280 TS, 6 PostgreSQL, 269 Python |
-| `feat/fail-closed-contract-version` | `0c90c1b` | PR 2.5: fail-closed на версии продюсера, `GET /api/health` | exit 0 — 288 TS, 269 Python |
-
-Каждая ветка несёт свой task-файл в `docs/agent-tasks/active/` с именем от
-ветки; в нём точное состояние, решения, evidence и остаток.
-
-Следующая работа — **PR 3, durable AI jobs** (`AiAnalysisRun`, polling worker с
-lease/heartbeat, идемпотентный callback). Ветки под него ещё нет; task-файл
-создаётся из `docs/agent-tasks/TEMPLATE.md` как
-`docs/agent-tasks/active/feat--durable-ai-jobs.md`.
+Финальные code fixes находятся в `b1549fd`, task archive — в `47333be`.
+Завершённые task-файлы плана перенесены из `docs/agent-tasks/active/` в
+`docs/agent-tasks/archive/`.
 
 ### Что изменилось в общих правилах проверки
 
-- `npm run verify` теперь включает `verify:db` — но только на ветке
-  `fix/response-idempotency` и после её слияния. Ему нужна отдельная расходная
+- `npm run verify` включает `verify:db`. Ему нужна отдельная расходная
   база; как её завести, описано в `docs/local-environment.md`.
-- В `.github/workflows/deploy-vercel.yml` на той же ветке добавлен
+- В `.github/workflows/deploy-vercel.yml` добавлен
   postgres service и `TEST_DATABASE_URL`.
+- `typecheck` и `verify:db` сами генерируют Prisma Client; `verify:db`
+  применяет migrations до обоих PostgreSQL suite и запускает их последовательно.
 - **Читать exit code команды через пайп нельзя.** `npm run verify 2>&1 | tail -N`
   возвращает код `tail`, а не `npm`, поэтому упавший verify выглядит успешным.
   В этой сессии так и произошло: ошибка типов дожила до ручной проверки сборки.
@@ -75,6 +74,15 @@ lease/heartbeat, идемпотентный callback). Ветки под нег�
 которые констрейнт не пропустил бы, оставляя самую раннюю.
 
 ## Что делать в начале следующей сессии
+
+1. Выбрать один следующий independently deliverable пункт из
+   `PROGRESS.md` / product backlog и создать для него отдельную ветку и
+   `docs/agent-tasks/active/<branch>.md`.
+2. Перед первым реальным респондентом остаётся обязательной ротация четырёх
+   ранее засвеченных credentials. Это прежняя approval boundary, не новый
+   blocker текущей design-stage работы.
+
+### Исторический deployment checklist 2026-07-30
 
 1. **Задеплоить Python раньше Core (пункт 8)**. У AI-сервиса появился новый эндпоинт
    `POST /api/v1/questions/suggest`, и Core — его единственный вызывающий. Если Core уедет первым, кнопка

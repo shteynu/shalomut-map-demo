@@ -1,11 +1,27 @@
 # Shalomut Map — PROGRESS.md
 
-Updated: 2026-07-30 (**`main` now enforces whole-project TypeScript, ESLint, build and Python verification
-before deploy**, and GitHub Actions proved the final gate on commit `2e38a14`; the live AI state is unchanged:
-contract `5.0` is proven and items 8, 10, 12 and 15–21 are closed. The exposed-credential decision is accepted
-for the design stage, with rotation required before the first real respondents)
+Updated: 2026-08-01 (**the architecture refactoring plan is merged through
+`47333be` and clean-runner CI now proves TypeScript, build, PostgreSQL and
+Python together**; deployed runtime state was not changed in this session. The
+exposed-credential decision remains accepted for the design stage, with
+rotation required before the first real respondents.)
 
 ## Current State
+
+- **Architecture refactoring plan completed and merged, 2026-08-01.** `main`
+  and `origin/main` are at `47333be`. The completed sequence includes v5
+  background-context preservation, database-enforced response idempotency,
+  fail-closed producer config, durable AI jobs, Contract Registry,
+  capability-driven Python policy, standard MCP `structuredContent` plus
+  `outputSchema`, cross-language golden corpus and a version-branch fitness
+  gate. GitHub Build & Validate run
+  [30717540728](https://github.com/shteynu/shalomut-map-demo/actions/runs/30717540728)
+  passed on a clean runner with 307 TypeScript, 7 PostgreSQL and 286 Python
+  tests; CodeQL run
+  [30717540724](https://github.com/shteynu/shalomut-map-demo/actions/runs/30717540724)
+  passed for TypeScript and Python. No open PR or genuinely unmerged branch
+  remains; stale refs are squash-merged history. The only non-documentation
+  worktree diff is the preserved unrelated generated `next-env.d.ts` change.
 
 - **Session close, 2026-07-30: the unfinished cleanup session is complete locally.** Item 12 is recorded as a
   bounded design-stage decision rather than an open risk; `ROADMAP.md` now reflects the built persistence/API/UI

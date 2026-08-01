@@ -5,9 +5,9 @@
 - Branch: `docs/update-wellbeing-refactoring-plan`
 - Base branch: `main`
 - Base commit: `cb8bed3`
-- Current HEAD: `cb8bed3`
-- Status: закрыто; работа продолжается на ветках PR 1, PR 2 и PR 2.5
-- Last updated: 2026-07-30
+- Merged as: PR #14, squash commit `8b68685`
+- Status: закрыто и заархивировано; весь последующий план вошёл в `main` к `47333be`
+- Last updated: 2026-08-01
 - Last agent/tool: Claude Code (Opus 5)
 
 ## Objective
@@ -153,8 +153,7 @@ Vercel и провайдерам не обращался.
 
 ## Approval gates
 
-Действующие gates из `docs/shalomut-tracker-handoff.md` не менялись. Ничего не
-коммичено и не запушено.
+Документ и весь последующий план слиты в `main`; новых gates задача не создала.
 
 ## Questions requiring an owner decision
 
@@ -162,13 +161,5 @@ Vercel и провайдерам не обращался.
 
 ## Next concrete step
 
-Ревью закрыто, PR 1, 2 и 2.5 выполнены на своих ветках. Следующий шаг —
-**PR 3, durable AI jobs**, и он не принадлежит этой ветке.
-
-Замещающему агенту: начать с `docs/shalomut-tracker-handoff.md`, раздел
-«Архитектурный рефакторинг: четыре ветки на руках» — там перечислены все ветки,
-их HEAD, состояние проверок и открытые вопросы. Оттуда идти в
-`docs/wellbeing-refactoring-plan-v4-review.md` §4 за порядком работ, затем
-завести ветку под PR 3 от `cb8bed3` и создать
-`docs/agent-tasks/active/feat--durable-ai-jobs.md` из
-`docs/agent-tasks/TEMPLATE.md`.
+Нет: задача завершена и заархивирована. Актуальная точка входа находится в
+`docs/shalomut-tracker-handoff.md`.

@@ -4,7 +4,8 @@
 
 - **Branch**: `feat/python-capabilities`
 - **Implementation commit**: `b1549fd` (`fix(refactoring): close contract and CI review findings`)
-- **State**: Completed and archived before merging the branch into `main`.
+- **Merged state**: `main` and `origin/main` at `47333be` on 2026-08-01.
+- **State**: Completed, archived, merged and pushed.
 
 ## Completed
 
@@ -30,13 +31,17 @@
 - **Passed**: `npm run typecheck`, including `prisma generate` on the typecheck path.
 - **Passed**: `npm run verify:db` after the final ordering fix — 7/7 against PostgreSQL after 7 migrations.
 - **Passed**: full `npm run verify` — architecture fitness, typecheck, 307 TypeScript tests, ESLint, production build, 7 PostgreSQL tests, and 286 Python tests. One existing Starlette/httpx deprecation warning remains.
+- **Passed**: GitHub Build & Validate run `30717540728` on clean runner at `47333be`.
+- **Passed**: GitHub CodeQL run `30717540724` for TypeScript and Python at `47333be`.
 - **Passed**: `git diff --check`.
 - **Not run**: browser smoke; no UI behavior changed.
 
 ## Git state
 
-- **Committed**: all task changes are contained in `b1549fd` and its branch ancestors.
-- **Staged/unstaged/untracked task changes**: none after the archive commit.
+- **Committed and pushed**: all task changes are in `main` through `47333be`.
+- **Session-close documentation**: recorded in the documentation commit after
+  `47333be`, including the progress/handoff refresh and five task-file moves
+  from `active/` to `archive/`.
 - **Unrelated unstaged user change**: `next-env.d.ts`.
 
 ## Risks and approval gates
@@ -46,4 +51,5 @@
 
 ## Next concrete step
 
-Fast-forward `main` to the completed `feat/python-capabilities` branch and push both refs.
+Choose the next independently deliverable product-backlog item and create its
+own branch and active task file.

@@ -5,9 +5,9 @@
 - Branch: `fix/v5-background-context`
 - Base branch: `main`
 - Base commit: `cb8bed3`
-- Current HEAD: `cb8bed3` (изменения ещё не закоммичены)
-- Status: правка сделана, verify выполняется
-- Last updated: 2026-07-30
+- Merged as: PR #15, squash commit `f3750d3`
+- Status: закрыто и заархивировано
+- Last updated: 2026-08-01
 - Last agent/tool: Claude Code (Opus 5)
 
 ## Objective
@@ -151,7 +151,7 @@ Vercel и провайдерам не обращался.
 
 ## Approval gates
 
-Ничего не запушено и не задеплоено. Push и деплой — действия владельца.
+Изменения слиты в `main` как PR #15; отдельный deployment эта задача не делала.
 
 ## Questions requiring an owner decision
 
@@ -159,6 +159,5 @@ Vercel и провайдерам не обращался.
 
 ## Next concrete step
 
-Записать результат `npm run verify`, закоммитить три файла одним commit
-`fix(ai-contract): preserve v5 background context` и передать владельцу для
-push. Затем PR 2 по §4 ревью.
+Нет: задача завершена и заархивирована. Актуальная точка входа находится в
+`docs/shalomut-tracker-handoff.md`.

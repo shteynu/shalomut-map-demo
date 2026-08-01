@@ -5,9 +5,9 @@
 - Branch: `feat/fail-closed-contract-version`
 - Base branch: `main`
 - Base commit: `cb8bed3`
-- Current HEAD: `cb8bed3` (изменения ещё не закоммичены)
-- Status: реализовано, verify выполняется
-- Last updated: 2026-07-30
+- Merged as: PR #17, squash commit `5ba62ce`
+- Status: закрыто и заархивировано
+- Last updated: 2026-08-01
 - Last agent/tool: Claude Code (Opus 5)
 
 ## Objective
@@ -170,14 +170,14 @@ endpoint, на который ссылаются оба плана, в коде 
 
 ## Approval gates
 
-Ничего не запушено и не задеплоено. Deployed переменные не менялись.
+Изменения слиты в `main` как PR #17; deployed переменные эта задача не меняла.
 
 ## Questions requiring an owner decision
 
-1. Оставляем ли default `3.0` при незаданной переменной, или незаданная
-   переменная тоже должна останавливать деплой. Сейчас оставлен default.
+Нет в рамках этой задачи. Документированный default `3.0` сохранён; его смена
+будет отдельным контрактным решением.
 
 ## Next concrete step
 
-Записать результат verify и проверки сборки, закоммитить, передать владельцу
-для push. Затем PR 3 (durable AI jobs) отдельной веткой.
+Нет: задача завершена и заархивирована. Актуальная точка входа находится в
+`docs/shalomut-tracker-handoff.md`.

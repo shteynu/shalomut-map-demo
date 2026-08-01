@@ -5,9 +5,9 @@
 - Branch: `fix/response-idempotency`
 - Base branch: `main`
 - Base commit: `cb8bed3`
-- Current HEAD: `cb8bed3` (изменения ещё не закоммичены)
-- Status: реализовано и проверено, готово к коммиту
-- Last updated: 2026-07-30
+- Merged as: PR #16, squash commit `8c43385`
+- Status: закрыто и заархивировано
+- Last updated: 2026-08-01
 - Last agent/tool: Claude Code (Opus 5)
 
 ## Objective
@@ -176,9 +176,9 @@
 
 ## Approval gates
 
-Владелец дал bounded approval на локальную БД; он использован только для
-изолированной `shalomut_test`. Push и применение миграции к другим базам —
-отдельные действия владельца.
+Локальная проверка использовала только изолированную `shalomut_test`.
+Изменения слиты в `main` как PR #16; применение миграции к конкретному
+deployed environment остаётся отдельным deployment-действием.
 
 ## Questions requiring an owner decision
 
@@ -186,6 +186,5 @@
 
 ## Next concrete step
 
-Закоммитить и передать владельцу для push. Затем PR 2.5
-(`fix(config): fail closed on unknown producer contract version` плюс
-health/capability endpoint) по §4 ревью.
+Нет: задача завершена и заархивирована. Актуальная точка входа находится в
+`docs/shalomut-tracker-handoff.md`.
