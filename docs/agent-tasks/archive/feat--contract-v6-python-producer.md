@@ -6,8 +6,8 @@
 - Base branch: `feat/contract-v6-core-consumer`
 - Base commit: `1639cb5`
 - Implementation commit: `9036410`
-- Current HEAD before archival commit: `9036410`
-- Status: complete and archived; ready for main integration
+- Archival commit: `b2505c4`
+- Status: complete, archived and integrated into `main`
 - Last updated: 2026-08-02
 - Last agent/tool: Codex
 
@@ -236,8 +236,8 @@ remains detail-free and old contract versions behave as before.
 
 ## Next concrete step
 
-Integrate commits through `9036410` plus this archival commit into `main`, then
-create a separate rollout/readiness branch before any deploy or producer switch.
+Create a separate rollout/readiness branch from `main` before any deploy or
+producer switch.
 
 ## Exact Git state at archival
 
@@ -249,3 +249,5 @@ create a separate rollout/readiness branch before any deploy or producer switch.
 - Ignored local environment: `ai-analytics-service/.venv/`.
 - Visibility at archival: commits are available to local worktrees; `main` and
   `origin/main` are updated only by the following authorized integration step.
+- Integration: local `main` was fast-forwarded through archival commit `b2505c4`;
+  the final status-document commit and authorized `origin/main` push follow.

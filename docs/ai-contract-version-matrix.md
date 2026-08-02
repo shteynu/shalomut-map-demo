@@ -11,8 +11,8 @@ Updated: 2026-08-02.
 | Core producer | `PRODUCIBLE_ANALYTICS_CONTRACT_VERSIONS` | `3.0`–`5.0`; unset defaults to `5.0` |
 | Core health | producer resolver + callback list | reports produced/producible/supported separately |
 | Core MCP/OpenAPI | registry plus OpenAPI discriminator integrity tests | callback output `1.0`–`6.0`; produced round analytics through `5.0` |
-| Python parser and pipeline | Python supported-version tuple plus shared capabilities | `1.0`–`6.0`; V6 structured summary, narrative metrics and top-five recommendations are implemented locally |
-| Python health | `AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS` | local branch reports `1.0`–`6.0`; deployed health is still `1.0`–`5.0` until rollout |
+| Python parser and pipeline | Python supported-version tuple plus shared capabilities | `1.0`–`6.0`; V6 structured summary, narrative metrics and top-five recommendations are implemented in `main` |
+| Python health | `AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS` | `main` reports `1.0`–`6.0`; deployed health is still `1.0`–`5.0` until rollout |
 | Shared golden corpus | `contracts/fixtures/golden_corpus.json` | positive/negative cases for `1.0`, `3.0`, `4.0`, `5.0`, `6.0` |
 
 ## Contract `6.0`
@@ -25,10 +25,9 @@ remains in the payload for callback verification but is not rendered as the
 primary V6 metric content.
 
 This remains a consumer-first state. Core still produces only `3.0`–`5.0` and
-defaults to `5.0`; configuring its producer to `6.0` fails closed. The local
-Python branch now parses and emits V6 and reports it from local health, but it
-is committed locally but has not been deployed, so deployed Core must not emit
-V6 yet.
+defaults to `5.0`; configuring its producer to `6.0` fails closed. Python in
+`main` now parses and emits V6 and reports it from health, but it has not been
+deployed, so deployed Core must not emit V6 yet.
 
 ## Adding a real next version
 
