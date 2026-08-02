@@ -5,8 +5,8 @@
 - Branch: `refactor/canonical-analytics-input`
 - Base branch: `refactor/thin-ai-callback-route`
 - Base commit: `436eda4`
-- Current HEAD: `489b260` плюс следующий за ним docs-коммит этой ветки
-- Status: реализация завершена и проверена; ветка не запушена
+- Current HEAD: `470ee78`; включён в локальный `main` через `f313613`
+- Status: завершено, проверено и влито в локальный `main`; `main` ещё не запушен
 - Last updated: 2026-08-02
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -103,8 +103,7 @@
 
 ## Remaining
 
-- Python-половина этапа 3 — отдельный слайс.
-- Push и merge — действие владельца.
+Нет в границах этой задачи; Python-половина этапа 3 влита следующим слайсом.
 
 ## Changed files
 
@@ -173,6 +172,4 @@ Local, без `DATABASE_URL` в тестовом процессе.
 
 ## Next concrete step
 
-Запушить три ветки в порядке `refactor/ai-insights-repository` →
-`refactor/thin-ai-callback-route` → `refactor/canonical-analytics-input` и
-влить в `main` в том же порядке (действие владельца).
+Done: ветка включена в локальный `main` третьей в refactoring-стеке.

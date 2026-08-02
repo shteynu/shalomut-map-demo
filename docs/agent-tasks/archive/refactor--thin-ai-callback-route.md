@@ -5,8 +5,8 @@
 - Branch: `refactor/thin-ai-callback-route`
 - Base branch: `refactor/ai-insights-repository`
 - Base commit: `3e21adc`
-- Current HEAD: `e29dc55` плюс следующий за ним docs-коммит этой ветки
-- Status: реализация завершена и проверена; ветка не запушена
+- Current HEAD: `436eda4`; включён в локальный `main` через `f313613`
+- Status: завершено, проверено и влито в локальный `main`; `main` ещё не запушен
 - Last updated: 2026-08-02
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -98,7 +98,7 @@
 
 ## Remaining
 
-- Push ветки и merge в `main` — действие владельца.
+Нет в границах этой задачи.
 
 ## Changed files
 
@@ -162,6 +162,4 @@ Local, без `DATABASE_URL` в тестовом процессе.
 
 ## Next concrete step
 
-Запушить `refactor/ai-insights-repository`, затем
-`refactor/thin-ai-callback-route`, влить в `main` в этом порядке (действие
-владельца).
+Done: ветка включена в локальный `main` после `refactor/ai-insights-repository`.

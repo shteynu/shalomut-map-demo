@@ -9,6 +9,15 @@ rotation required before the first real respondents.)
 
 ## Current State
 
+- **Stages 3–4 refactoring stack integrated into local `main`, 2026-08-02.**
+  Six branches were applied in dependency order: `AiInsightsRepository`, thin
+  AI callback route, canonical Core analytics input, canonical Python analysis
+  output, analysis-runner ports and `TextGenerator`. The combined local tree
+  passed `npm run verify:core` (352 TypeScript tests, typecheck, ESLint and
+  production build) plus the full Python suite (368 tests). The work is not yet
+  pushed to `origin/main` or deployed; the next independent architecture slice
+  after publication is a Core composition root instead of `getRepositories()`.
+
 - **Contract V6 rollout completed, 2026-08-02.** Commit `97f0641` added 6.0 to
   the explicit Core producer choices while keeping the unset default at 5.0.
   Deployed Vercel and Render source includes that commit, Render health reports

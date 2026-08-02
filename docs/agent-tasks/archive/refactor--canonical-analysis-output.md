@@ -5,8 +5,8 @@
 - Branch: `refactor/canonical-analysis-output`
 - Base branch: `refactor/canonical-analytics-input`
 - Base commit: `470ee78`
-- Current HEAD: `624d7f7` плюс следующий за ним docs-коммит этой ветки
-- Status: реализация завершена и проверена; ветка не запушена
+- Current HEAD: `03db6df`; включён в локальный `main` через `f313613`
+- Status: завершено, проверено и влито в локальный `main`; `main` ещё не запушен
 - Last updated: 2026-08-02
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -103,8 +103,7 @@
 
 ## Remaining
 
-- Порты этапа 4 — следующий слайс.
-- Push и merge — действие владельца.
+Нет в границах этой задачи; порты этапа 4 влиты следующими слайсами.
 
 ## Changed files
 
@@ -172,7 +171,4 @@ Local, `.venv` Python 3.14 внутри `ai-analytics-service`.
 
 ## Next concrete step
 
-Запушить четыре ветки в порядке `refactor/ai-insights-repository` →
-`refactor/thin-ai-callback-route` → `refactor/canonical-analytics-input` →
-`refactor/canonical-analysis-output` и влить в `main` в том же порядке
-(действие владельца).
+Done: ветка включена в локальный `main` четвёртой в refactoring-стеке.

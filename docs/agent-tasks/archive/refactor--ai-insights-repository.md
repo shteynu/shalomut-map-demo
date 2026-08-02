@@ -5,8 +5,8 @@
 - Branch: `refactor/ai-insights-repository`
 - Base branch: `main`
 - Base commit: `65e04fe`
-- Current HEAD: `13c9e03` плюс следующий за ним docs-коммит этой ветки
-- Status: реализация завершена и проверена; ветка не запушена
+- Current HEAD: `3e21adc`; включён в локальный `main` через `f313613`
+- Status: завершено, проверено и влито в локальный `main`; `main` ещё не запушен
 - Last updated: 2026-08-02
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -99,7 +99,7 @@
 
 ## Remaining
 
-- Push ветки и merge в `main` — действие владельца.
+Нет в границах этой задачи.
 
 ## Changed files
 
@@ -164,7 +164,4 @@ Prisma-путь проверен только mock-клиентом из `prisma
 
 ## Next concrete step
 
-Запушить `refactor/ai-insights-repository` и влить в `main` (действие
-владельца), затем заменить пункт 1 в «Что делать в начале следующей сессии»
-в `docs/shalomut-tracker-handoff.md` на следующий слайс — тонкий callback
-route.
+Done: ветка включена в локальный `main` перед остальными пятью слайсами.

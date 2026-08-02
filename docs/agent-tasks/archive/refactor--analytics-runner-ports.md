@@ -5,8 +5,8 @@
 - Branch: `refactor/analytics-runner-ports`
 - Base branch: `refactor/canonical-analysis-output`
 - Base commit: `03db6df`
-- Current HEAD: `6fefc9c` плюс следующий за ним docs-коммит этой ветки
-- Status: реализация завершена и проверена; ветка не запушена
+- Current HEAD: `1d65397`; включён в локальный `main` через `f313613`
+- Status: завершено, проверено и влито в локальный `main`; `main` ещё не запушен
 - Last updated: 2026-08-02
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -99,8 +99,7 @@
 
 ## Remaining
 
-- `TextGenerator` — следующий слайс.
-- Push и merge — действие владельца.
+Нет в границах этой задачи; `TextGenerator` влит следующим слайсом.
 
 ## Changed files
 
@@ -163,7 +162,4 @@ type-checker'а в CI Python-сервиса нет, так что `Protocol` з�
 
 ## Next concrete step
 
-Запушить пять веток в порядке `refactor/ai-insights-repository` →
-`refactor/thin-ai-callback-route` → `refactor/canonical-analytics-input` →
-`refactor/canonical-analysis-output` → `refactor/analytics-runner-ports` и
-влить в `main` в том же порядке (действие владельца).
+Done: ветка включена в локальный `main` пятой в refactoring-стеке.

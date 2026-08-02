@@ -119,13 +119,14 @@ round завершены. Точный порядок и rollback записан
 
 ## Что делать в начале следующей сессии
 
-1. Выбрать один следующий independently deliverable пункт из
-   `PROGRESS.md` / product backlog и создать для него отдельную ветку и
-   `docs/agent-tasks/active/<branch>.md`. На 2026-08-02 `active/` пуст: вся
-   работа сессии влита в `main`, ничего не осталось в полёте.
-   Из закрытия v3 ближайший независимый слайс — `AiInsightsRepository`,
-   повторяющий уже сделанное выделение `IAiAnalysisRunRepository`; обоснование
-   и остальные открытые пункты — в §6 плана-ревью.
+1. Опубликовать локальный `main` после отдельного запроса владельца и проверить
+   чистый GitHub CI. В локальный `main` уже включены шесть refactoring-слайсов
+   в порядке `AiInsightsRepository` → thin callback route → canonical Core
+   input → canonical Python output → analysis-runner ports → `TextGenerator`;
+   `origin/main` их пока не содержит.
+   После публикации ближайший independently deliverable слайс — composition
+   root вместо `getRepositories()` в Core; создать для него отдельную ветку и
+   `docs/agent-tasks/active/<branch>.md`.
 2. Перед первым реальным респондентом остаётся обязательной ротация четырёх
    ранее засвеченных credentials. Это прежняя approval boundary, не новый
    blocker текущей design-stage работы.

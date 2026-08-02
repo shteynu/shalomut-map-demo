@@ -182,4 +182,3 @@ def encode_failure(
         "failureReason": failure_reason,
         "errorMessage": error_message,
     }
-

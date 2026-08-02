@@ -5,8 +5,8 @@
 - Branch: `refactor/text-generator-port`
 - Base branch: `refactor/analytics-runner-ports`
 - Base commit: `1d65397`
-- Current HEAD: `612b4fb` плюс следующий за ним docs-коммит этой ветки
-- Status: реализация завершена и проверена; ветка не запушена
+- Current HEAD: `a215339`; включён в локальный `main` через `f313613`
+- Status: завершено, проверено и влито в локальный `main`; `main` ещё не запушен
 - Last updated: 2026-08-02
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -98,8 +98,8 @@
 
 ## Remaining
 
-- Push и merge — действие владельца.
-- Composition root вместо `getRepositories()` в Core — следующий слайс.
+Нет в границах этой задачи. Composition root вместо `getRepositories()` в
+Core остаётся следующим independently deliverable слайсом.
 
 ## Changed files
 
@@ -163,8 +163,4 @@ Local, `.venv` Python 3.14 внутри `ai-analytics-service`.
 
 ## Next concrete step
 
-Запушить шесть веток в порядке `refactor/ai-insights-repository` →
-`refactor/thin-ai-callback-route` → `refactor/canonical-analytics-input` →
-`refactor/canonical-analysis-output` → `refactor/analytics-runner-ports` →
-`refactor/text-generator-port` и влить в `main` в том же порядке (действие
-владельца).
+Done: ветка включена в локальный `main` шестой и последней в refactoring-стеке.
