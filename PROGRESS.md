@@ -1,9 +1,7 @@
 # Shalomut Map — PROGRESS.md
 
-Updated: 2026-08-02 (**the architecture refactoring plan, privacy-threshold UI
-follow-up and Python pipeline/contract follow-up are merged into `main`; the
-producer default remains `5.0`, while the Contract V6 Core consumer and Python
-producer implementation are merged into `main` but not deployed**;
+Updated: 2026-08-02 (**Contract V6 is deployed end to end and Production now
+explicitly produces `6.0`; the rollback-safe unset default remains `5.0`**;
 the two remaining deployed Supabase migrations were applied and verified up to
 date on 2026-08-02. The
 exposed-credential decision remains accepted for the design stage, with
@@ -11,21 +9,33 @@ rotation required before the first real respondents.)
 
 ## Current State
 
+- **Contract V6 rollout completed, 2026-08-02.** Commit `97f0641` added 6.0 to
+  the explicit Core producer choices while keeping the unset default at 5.0.
+  Deployed Vercel and Render source includes that commit, Render health reports
+  support through 6.0, and production MCP changed from 5.0 before the switch to 6.0
+  after it. Durable run `615489f9-24f5-421c-af31-5921bc9c5f45` completed on the
+  deployed 10-response round in 213.5 seconds with callback/persistence status
+  `succeeded`: eight stones, three summary paragraphs and five recommendations
+  per stone. Dashboard overview, balance summary, three qualitative metrics and
+  five recommendations were verified in the authenticated deployed UI. Five
+  stones were model-authored and three used deterministic fallback, for a
+  measured live fallback rate of 37.5%. Local `npm run verify` and clean CI both
+  passed 324 Core, 7 PostgreSQL and 301 Python tests; CodeQL also passed.
+
 - **Contract V6 Python producer merged into `main`, 2026-08-02.** Commit
   `9036410` accepts and emits V6, generates
   structured summaries and exact-coverage narrative metrics with deterministic
   fallbacks, selects five recommendations from eight candidates per
   dimension/status and batch-adapts them without changing identity/order. Core
-  still produces V5; rollout/deployed health and the producer switch remain
-  separate. Full local evidence: 301 Python tests, 324 Core tests, literals,
+  now produces V6 after the completed rollout above. Full local evidence: 301
+  Python tests, 324 Core tests, literals,
   typecheck, ESLint, production build and a real Python-fallback-to-Core V6
-  validation. The implementation is not deployed and does not switch the Core
-  producer.
+  validation.
 
 - **Contract V6 Core consumer merged into `main`, 2026-08-02.** Commit `e2a472d`
   publishes the V6 manifest, strict callback
   validation/evidence cross-check, OpenAPI schemas and narrative Dashboard
-  rendering. Core remains on V5 and the change is not deployed. Full local
+  rendering. The consumer is now deployed and Core produces V6. Full local
   evidence at that checkpoint: 323 Core tests, 290 Python tests,
   literals, typecheck, ESLint, production build and a browser semantic smoke.
 

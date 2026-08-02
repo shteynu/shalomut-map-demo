@@ -9,22 +9,28 @@ TypeScript-тестов, 7 PostgreSQL-тестов и 286 Python-тестов. C
 [30717540724](https://github.com/shteynu/shalomut-map-demo/actions/runs/30717540724)
 прошёл для TypeScript и Python. Последующие Contract V6 Core consumer и Python
 producer также объединены в `main`; их завершённые задачи находятся в
-`docs/agent-tasks/archive/`. Unset producer default остаётся `5.0`. Deployment,
-environment и deployed database в этой сессии не менялись.
+`docs/agent-tasks/archive/`. Contract V6 rollout завершён в `97f0641`:
+Production явно производит `6.0`, а unset/rollback default остаётся `5.0`.
 
 `main` содержит принятый V6 manifest/Core consumer из commit `e2a472d` и Python
 producer из commit `9036410`: Python parser/health поддерживают `6.0`,
 graph выдаёт structured summary, narrative metrics и пять batch-adapted
 recommendations с полностью валидным fallback, а каталог содержит восемь
-кандидатов на каждую dimension/status пару. Core producer остаётся на `5.0`;
-V6 consumer/producer changes не deployed.
+кандидатов на каждую dimension/status пару. Deployed source Vercel и Render
+содержит `97f0641`; Render health поддерживает `1.0`–`6.0`, а production MCP после
+переключения отдаёт `contractVersion: "6.0"`.
 
 Текущий V6 Python gate прошёл локально: `npm run verify:core` — 324 Core tests,
 literals, typecheck, ESLint и production build; Python `.venv/bin/python -m
 pytest -q` — 301/301. Реальный Python V6 deterministic-fallback payload прошёл
 Core `validateStoneMapResult` с восемью stones. Database/browser/deploy не
-проверялись, потому что этот diff не меняет persistence/UI и rollout остаётся
-отдельной задачей. Временные dependency directories игнорируются Git.
+проверялись в implementation-срезе, но теперь дополнены полным rollout
+evidence: deployed durable run `615489f9-24f5-421c-af31-5921bc9c5f45`
+завершился `succeeded` за 213.5 секунды, callback сохранён, результат содержит
+восемь stones, три summary-параграфа и пять рекомендаций на stone.
+Authenticated Dashboard подтвердил overview, balance summary, три qualitative
+metrics и пять recommendations. Пять stones имеют `outcome: llm`, три —
+`deterministic_fallback`; live fallback rate 37.5%.
 
 Это оперативная точка входа для перехода от исходного статического demo
 Shalomut Map к `shalomut-tracker`, где сохранённые данные должны быть единственным
@@ -93,18 +99,16 @@ read-only deployed audit.
 ### Решение по producer default и контракту 6.0
 
 В объединённом `main` unset `AI_ANALYTICS_CONTRACT_VERSION` производит `5.0`;
-явные
-`3.0`, `4.0` и `5.0` остаются допустимыми, неизвестное значение по-прежнему
+явные `3.0`, `4.0`, `5.0` и `6.0` допустимы, неизвестное значение по-прежнему
 fail-closed. Контракт `6.0` опубликован в `main`: его
 accepted delta — три summary-параграфа на dimension, качественный `insightText`
 на каждой метрике и ровно пять адаптированных рекомендаций. Core callback
 сохраняет числовые evidence-поля, перепроверяет их против собственных агрегатов
-и не показывает число/распределение как основной V6 metric UI. Producer
-остаётся на `5.0` и fail-closed отклоняет `6.0`; Python parser в `main`,
-pipeline и health уже поддерживают `1.0`–`6.0` в commit `9036410`, но изменения
-ещё не deployed. Следующий порядок — rollout Python с deployed health evidence,
-полный local V6 round, и только после этого
-отдельный Core producer switch по `docs/ai-contract-version-matrix.md`.
+и не показывает число/распределение как основной V6 metric UI. Producer в
+Production явно установлен на `6.0`; unset и rollback остаются `5.0`.
+Consumer-first rollout, deployed health и полный callback/persistence/Dashboard
+round завершены. Точный порядок и rollback записаны в
+`docs/ai-contract-version-matrix.md`.
 
 ## Что делать в начале следующей сессии
 
