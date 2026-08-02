@@ -5,8 +5,8 @@
 - Branch: `feat/threshold-next-step-copy`
 - Base branch: `main`
 - Base commit: `1b5e54a`
-- Current HEAD: `f539d89`
-- Status: implemented, verified and committed; ready for main integration
+- Current branch tip: `0be636c`
+- Status: merged into `main`, combined gate passed and published
 - Last updated: 2026-08-02
 - Last agent/tool: Codex
 
@@ -98,7 +98,7 @@ claiming that closing the round is what starts analysis.
 
 ## Remaining
 
-- Merge the committed branch into `main`.
+- None for this task.
 
 ## Changed files
 
@@ -120,8 +120,8 @@ claiming that closing the round is what starts analysis.
 
 ## Current Git state
 
-- HEAD: `f539d89`; implementation is committed in
-  `feat(round): clarify privacy threshold next steps`.
+- Branch tip: `0be636c`; implementation commit `f539d89` plus task archive
+  commit are included in published `main`.
 - Staged: none.
 - Unstaged unrelated user file: `next-env.d.ts`.
 - Untracked task files: none.
@@ -201,5 +201,4 @@ claiming that closing the round is what starts analysis.
 
 ## Next concrete step
 
-Merge commit `f539d89` into `main` while preserving the unrelated local
-`next-env.d.ts` diff outside the merge.
+Select the next independently deliverable product-backlog task.

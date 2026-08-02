@@ -5,8 +5,8 @@
 - Branch: `refactor/contract-v6-pipeline-ops`
 - Base branch: `main`
 - Base commit: `1b5e54a`
-- Current HEAD: `46d2c23`
-- Status: implementation verified and committed; ready for main integration
+- Current branch tip: `4c4d5d5`
+- Status: merged into `main`, combined gate passed and published
 - Last updated: 2026-08-02
 - Last agent/tool: Codex
 
@@ -160,7 +160,7 @@ configuration variable is absent.
 
 ## Remaining
 
-- Merge the committed branch into `main` and push the verified integration.
+- None for the code task.
 - Applying the two deployed migrations remains an explicit approval-gated
   operation and is not required for the code diff to be locally complete.
 
@@ -193,13 +193,11 @@ configuration variable is absent.
 
 ## Current Git state
 
-- HEAD: `46d2c23`; implementation is committed in
-  `refactor(ai): decompose pipeline and align contract default`.
-- Upstream: `origin/main`; branch is one commit ahead of its base.
+- Branch tip: `4c4d5d5`; implementation commit `46d2c23` plus task archive
+  commit are included in published `main`.
 - Staged: none.
 - Unstaged and untracked task files: none.
-- Visibility: the commit is available to every worktree in this clone; it is
-  not remote-portable until `main` is pushed.
+- Visibility: published through `origin/main`.
 
 ## Verification evidence
 
@@ -223,6 +221,9 @@ configuration variable is absent.
   build all passed.
 - `npm run verify:db` against `postgresql://127.0.0.1:5433/shalomut_test` — all
   seven migrations current and 7/7 PostgreSQL tests passed.
+- Final combined-main `npm run verify:core` — 316/316 TypeScript tests,
+  literals, typecheck, ESLint and production build passed; Python remained
+  290/290 and PostgreSQL remained 7/7.
 - `git diff --check` — passed after the final documentation update.
 
 ### Failed
@@ -250,7 +251,7 @@ configuration variable is absent.
   `20260730150000_add_ai_analysis_runs` pending.
 - Deployed Core health remains unreadable without manager application auth;
   repository and deployed-AI evidence provide the version boundary instead.
-- Push, deployment and deployed migration application were not run.
+- Deployment and deployed migration application were not run.
 
 ### Environment
 
@@ -297,5 +298,5 @@ configuration variable is absent.
 
 ## Next concrete step
 
-Merge commit `46d2c23` with the threshold-next-step branch on `main`, resolve
-the shared handoff in favor of the combined deployed/local state, and verify.
+Obtain an explicit owner decision before applying the two pending migrations
+to the deployed Supabase target.

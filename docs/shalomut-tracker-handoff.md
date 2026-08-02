@@ -13,6 +13,11 @@ TypeScript-тестов, 7 PostgreSQL-тестов и 286 Python-тестов. C
 задачи находятся в `docs/agent-tasks/archive/`. Deployment, environment и
 deployed database в этой сессии не менялись.
 
+Финальный combined-main gate прошёл локально: `npm run verify:core` — 316/316
+TypeScript tests, literals, typecheck, ESLint и production build;
+`.venv/bin/python -m pytest` — 290/290; `npm run verify:db` — 7/7 на
+`shalomut_test`. Временные dependency directories игнорируются Git.
+
 Это оперативная точка входа для перехода от исходного статического demo
 Shalomut Map к `shalomut-tracker`, где сохранённые данные должны быть единственным
 источником runtime-состояния. `src/lib/shalomut-source.ts` остаётся источником
