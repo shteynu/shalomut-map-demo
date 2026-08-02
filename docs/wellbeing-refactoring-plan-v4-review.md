@@ -393,10 +393,16 @@ JSON в MCP-клиенте закрыт через `structuredContent` и `outpu
 `USE_MOCK_MCP` фейлится вне development, то есть production-fallback на mock
 запрещён и без самого порта.
 
-Нет: тонких routes (callback route — 427 строк оркестрации), composition root
-вместо `getRepositories()`, constructor injection в Python вместо глобальных
-`mcp_client_manager` и `analytics_graph`, портов `AnalyticsSource`,
-`ResultSink`, `TextGenerator`, `JobStore` — ни одного.
+Нет: composition root вместо `getRepositories()`, constructor injection в
+Python вместо глобальных `mcp_client_manager` и `analytics_graph`, портов
+`AnalyticsSource`, `ResultSink`, `TextGenerator`, `JobStore` — ни одного.
+
+Закрыто после аудита: callback route сведён к транспорту. 427 строк стали
+173: оркестрация ушла в `applyAiInsightsCallback` с outcome-union по образцу
+`enqueueAiAnalyticsAfterResponse`, dual-read GET — в `readAiInsights`, а сверка
+Stone Map с собственными агрегатами Core — в `verifyAiResultAgainstRound`.
+Порядок проверок не менялся: идентичность резолвится до валидации, иначе
+callback в чужой раунд ронял бы корректный leased run одним невалидным payload.
 
 Закрыто после аудита: `IAiInsightsRepository` выделен из `IRoundRepository`
 тем же движением, что и `IAiAnalysisRunRepository`. Хранение не переехало —
@@ -485,11 +491,13 @@ identity на Argon2 или managed IdP — пароль всё ещё хеши�
 | `4510384` | этот раздел в текущем виде |
 | `1467fdd` | исходящий payload проверяется до callback: переписываемый отказ становится replay, остальные валят раунд сразу |
 | `13c9e03` | `IAiInsightsRepository`: AI-результат ушёл с `IRoundRepository` без миграции и без смены хранения |
+| `e29dc55` | тонкий callback route: 427 строк оркестрации → 173 строки транспорта, тесты route не правились |
 
 Остальное из списков «Нет» выше — открытая работа: этап 3 целиком, порты и
 composition root этапа 4, DTO представления и identity этапа 5.
 
-Крупнейший независимый слайс из оставшегося — тонкий callback route: 427 строк
-оркестрации в `src/app/api/rounds/[roundId]/ai-insights/route.ts` теперь имеют
-куда переехать, потому что обе стороны persistence AI-результата — job и сам
-результат — уже за отдельными репозиториями.
+Крупнейший независимый слайс из оставшегося — этап 3: `CanonicalRoundAnalytics`,
+`contract.encodeAnalyticsInput(canonical)` и output adapter вместо доменного
+расчёта, который сам формирует wire-форму. Из этапа 4 остались composition root
+и порты; из этапа 5 — `DashboardInsightsDto` и вынос production-типов из
+`demo-data.ts`. Все три — работа больше одного слайса.
