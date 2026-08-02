@@ -1,6 +1,6 @@
 import { ManagerOnboarding } from "@/components/manager";
 import { MetricCard, PageIntro } from "@/components/ui";
-import { RoundControls } from "@/components/round";
+import { RoundControls, RoundThresholdNextStep } from "@/components/round";
 import { loadManagerContext } from "@/lib/server/manager-context";
 import { MINIMUM_PRIVACY_THRESHOLD } from "@/lib/survey-definition";
 
@@ -58,9 +58,11 @@ export default async function RoundPage() {
         status={currentRound.status}
       />
 
-      <div className="next-step-band">
-        <span>אחרי סגירת סבב האבחון, המפה מציגה חוזקות, סיכונים ופירוט לפי ממדים.</span>
-      </div>
+      <RoundThresholdNextStep
+        roundId={currentRound.id}
+        responseCount={responseCount}
+        minimumResponses={currentRound.privacyThreshold}
+      />
     </div>
   );
 }

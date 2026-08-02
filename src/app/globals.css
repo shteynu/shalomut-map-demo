@@ -3451,6 +3451,78 @@ textarea {
   z-index: 1;
 }
 
+.stone-page .round-next-step-band {
+  background: color-mix(in srgb, var(--pastel-sky) 34%, var(--surface-panel) 66%);
+}
+
+.stone-page .round-next-step-ready {
+  background: var(--surface-success-panel);
+}
+
+.stone-page .round-next-step-below-threshold,
+.stone-page .round-next-step-locked {
+  background: color-mix(in srgb, var(--pastel-lilac) 36%, var(--surface-panel) 64%);
+}
+
+.stone-page .round-next-step-not-found {
+  background: color-mix(in srgb, var(--pastel-yellow) 38%, var(--surface-panel) 62%);
+}
+
+.stone-page .round-next-step-error {
+  background: color-mix(in srgb, var(--pastel-pink) 40%, var(--surface-panel) 60%);
+}
+
+.stone-page .round-next-step-copy {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+}
+
+.stone-page .round-next-step-copy h2 {
+  display: block;
+  margin: 0 0 0.2rem;
+  color: var(--ink);
+  font-size: 1.08rem;
+}
+
+.stone-page .round-next-step-copy p {
+  max-width: 48rem;
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.stone-page .round-next-step-icon {
+  display: inline-grid;
+  flex: 0 0 auto;
+  width: 2.5rem;
+  height: 2.5rem;
+  place-items: center;
+  border-radius: var(--radius-control);
+  background: var(--surface-panel-strong);
+  color: var(--navy);
+}
+
+.stone-page .round-next-step-ready .round-next-step-icon {
+  color: var(--success-ink);
+}
+
+.stone-page .round-next-step-error .round-next-step-icon {
+  color: var(--danger-ink);
+}
+
+.round-next-step-spinner {
+  animation: ai-insights-spin 900ms linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .round-next-step-spinner {
+    animation: none;
+  }
+}
+
 /* Round Progress and Share Panels */
 .stone-page .round-progress,
 .stone-page .share-panel {
