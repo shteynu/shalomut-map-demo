@@ -309,7 +309,7 @@ Definition of Done документа v3. Всё, что он нашёл отк�
 | 0. Regression Safety Net | В основном выполнен; направление callback закрыто после аудита |
 | 1. Correctness и reliability | 6 пунктов из 6 |
 | 2. Contract Registry | Capabilities выполнены, strategy/adapter — нет |
-| 3. Canonical internal models | Не начат |
+| 3. Canonical internal models | Выполнен в обоих рантаймах |
 | 4. Application layer и ports | Частично |
 | 5. Presentation и hardening | Частично |
 
@@ -385,9 +385,15 @@ Core знает, включая распределение, а вопрос «н
 analytics route и сверка callback. Байты на проводе не изменились — это
 проверяет общий golden corpus и Core → AI → callback E2E.
 
-Нет в Python: `CanonicalAnalysisInput` и output adapter отсутствуют, pipeline
-по-прежнему получает версию как управляющий параметр, хотя ветвление внутри
-него идёт через capabilities. Это оставшаяся половина этапа.
+Есть в Python: `CanonicalAnalysisInput` как read-model над уже проверенным
+payload'ом и output adapter `src/schemas/analytics_output.py`, через который
+идут все три исходящих формы — success, failure и locked. Байты не изменились:
+общие корпуса, callback corpus и outgoing payload gate прошли без правок.
+
+Нет: ноды по-прежнему спрашивают capabilities сами, и это сознательно — что
+просить у провайдера, решает генерация, а не кодирование; версия, которая копию
+не понесёт, не должна за неё платить. Порт `TextGenerator` из этапа 4 закрыл бы
+и это.
 
 ### Этап 4
 
@@ -496,13 +502,16 @@ identity на Argon2 или managed IdP — пароль всё ещё хеши�
 | `13c9e03` | `IAiInsightsRepository`: AI-результат ушёл с `IRoundRepository` без миграции и без смены хранения |
 | `e29dc55` | тонкий callback route: 427 строк оркестрации → 173 строки транспорта, тесты route не правились |
 | `489b260` | этап 3 в Core: `CanonicalRoundAnalytics` и encoder, домен перестал знать версию контракта |
+| `624d7f7` | этап 3 в Python: `CanonicalAnalysisInput` и output adapter, три исходящих payload'а собираются в одном месте |
 
 Остальное из списков «Нет» выше — открытая работа: этап 3 целиком, порты и
 composition root этапа 4, DTO представления и identity этапа 5.
 
-Крупнейший независимый слайс из оставшегося — вторая половина этапа 3:
-`CanonicalAnalysisInput` и output adapter в Python, зеркало уже сделанного в
-Core. Из этапа 4 остались composition root и порты; из этапа 5 —
+Крупнейший независимый слайс из оставшегося — порты этапа 4:
+`AnalyticsSource`, `ResultSink`, `TextGenerator` и `JobStore` вместо глобальных
+`mcp_client_manager` и `analytics_graph`. `TextGenerator` заодно закрывает
+последнее место, где версия контракта доходит до нод. Из этапа 4 остаётся ещё
+composition root вместо `getRepositories()`; из этапа 5 —
 `DashboardInsightsDto` и вынос production-типов из `demo-data.ts`.
 
 Отдельно от плана: ветка `refactor/canonical-models` (три коммита, 2026-08-02,
