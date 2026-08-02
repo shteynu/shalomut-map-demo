@@ -5,8 +5,8 @@
 - Branch: `feat/threshold-next-step-copy`
 - Base branch: `main`
 - Base commit: `1b5e54a`
-- Current HEAD: `1b5e54a`
-- Status: implemented and verified; uncommitted
+- Current HEAD: `f539d89`
+- Status: implemented, verified and committed; ready for main integration
 - Last updated: 2026-08-02
 - Last agent/tool: Codex
 
@@ -94,12 +94,11 @@ claiming that closing the round is what starts analysis.
 
 ## In progress
 
-- No implementation work remains; the verified diff awaits owner review and a
-  commit decision.
+- No implementation work remains.
 
 ## Remaining
 
-- Review and commit the branch if requested.
+- Merge the committed branch into `main`.
 
 ## Changed files
 
@@ -121,17 +120,11 @@ claiming that closing the round is what starts analysis.
 
 ## Current Git state
 
-- HEAD: `1b5e54a`; no task commits exist yet and the branch has no upstream.
+- HEAD: `f539d89`; implementation is committed in
+  `feat(round): clarify privacy threshold next steps`.
 - Staged: none.
-- Unstaged task files: `docs/product-behaviour-backlog.md`,
-  `docs/shalomut-tracker-handoff.md`, `src/app/globals.css`,
-  `src/app/round/page.tsx`, `src/components/round/index.ts`, and
-  `src/components/round/round-controls.tsx`.
 - Unstaged unrelated user file: `next-env.d.ts`.
-- Untracked task files:
-  `docs/agent-tasks/active/feat--threshold-next-step-copy.md`,
-  `src/components/round/round-threshold-next-step.tsx`, and
-  `src/components/round/__tests__/round-threshold-next-step.test.tsx`.
+- Untracked task files: none.
 
 ## Verification evidence
 
@@ -208,5 +201,5 @@ claiming that closing the round is what starts analysis.
 
 ## Next concrete step
 
-Obtain owner approval to commit the verified feature diff while excluding the
-unrelated `next-env.d.ts` change.
+Merge commit `f539d89` into `main` while preserving the unrelated local
+`next-env.d.ts` diff outside the merge.
