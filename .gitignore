@@ -12,6 +12,7 @@ build
 
 # scratch
 tmp/
+reports/
 
 # logs
 npm-debug.log*

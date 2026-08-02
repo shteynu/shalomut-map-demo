@@ -95,6 +95,17 @@ describe('Contract 5.0 Validation Tests', () => {
       isValidScoreDistribution({ green: -1, yellow: 10, red: 11 }, 20),
       false,
     );
+    for (const distribution of [
+      { green: 0, yellow: 10, red: 10 },
+      { green: 10, yellow: 0, red: 10 },
+      { green: 10, yellow: 10, red: 0 },
+    ]) {
+      assert.strictEqual(
+        isValidScoreDistribution(distribution, 20),
+        true,
+        JSON.stringify(distribution),
+      );
+    }
   });
 
   test('validateStoneMapResult accepts valid 5.0 payload', () => {

@@ -12,6 +12,7 @@
     "lint": "eslint",
     "lint:literals": "node --test scripts/check-version-literals.test.mjs && node scripts/check-version-literals.mjs && python3 ai-analytics-service/scripts/check_version_literals.py",
     "test": "node scripts/run-tests.mjs",
+    "test:mutation:ai-contract": "stryker run",
     "verify:core": "npm run lint:literals && npm run typecheck && npm test && npm run lint && npm run build",
     "verify:db": "node scripts/verify-db.mjs",
     "verify:ai": "node scripts/verify-ai.mjs",
@@ -32,6 +33,8 @@
   },
   "devDependencies": {
     "@prisma/client": "^7.9.0",
+    "@stryker-mutator/core": "9.6.1",
+    "@stryker-mutator/tap-runner": "9.6.1",
     "@tailwindcss/postcss": "4.3.1",
     "@types/node": "25.9.3",
     "@types/react": "19.2.17",
