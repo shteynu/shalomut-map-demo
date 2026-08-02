@@ -34,7 +34,7 @@ privacy, auth, persistence, contracts или deployment.
 | Survey source, scoring или privacy | Survey-definition/math/API tests, `npm test`, respondent и locked/ready browser states |
 | OpenAPI JSON/YAML или API contract | OpenAPI integrity tests, parse обеих specs, проверить синхронность route/schema changes |
 | `contracts/ai-analytics-v1.json` или AI TypeScript | Contract/client/view-model tests, `npm test`, Python tests и local boundary E2E |
-| `ai-analytics-service` | `python3 -m pytest` из `ai-analytics-service` — полный набор, включая contract suites |
+| `ai-analytics-service` | `.venv/bin/python -m pytest` из `ai-analytics-service` — полный набор, включая contract suites |
 | Auth, secrets или authorization | Unauthorized/missing-secret/organization-isolation tests и security-focused diff review |
 | Deploy, env или runtime config | Полный local suite, preview build/status/logs и безопасный browser smoke |
 
@@ -118,6 +118,10 @@ environment.
 - Не исправляй unrelated failure без расширения scope. Определи, существовал ли
   он до текущего diff, если это можно проверить безопасно.
 - После исправления повтори сначала упавшую проверку, затем затронутый suite.
+- Если diff затрагивает privacy, authentication, authorization, contracts,
+  deployment или границу Core/AI и остаточный риск требует независимого review,
+  верни tracker короткий сигнал `Independent review recommended.`; итоговую
+  model recommendation формирует tracker.
 
 ## Формат evidence
 
@@ -132,4 +136,8 @@ Verification:
 - Residual risk: <what remains unverified>
 ```
 
-Не записывай в handoff или `PROGRESS.md` проверки, которые не выполнялись.
+Если существует активный branch task document и готовится handoff, до передачи
+обнови в нём `Verification evidence`: `Passed`, `Failed`, `Blocked or not run`,
+`Environment` и `Residual risk`. Не записывай проверки, которые не выполнялись,
+и не копируй обычное task evidence в `PROGRESS.md` или global operational
+handoff, если оно не меняет project-wide или deployed state.

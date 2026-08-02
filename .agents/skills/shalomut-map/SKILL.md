@@ -13,6 +13,9 @@ description: Работай с продуктом и кодом Shalomut Map в 
 
 ## Старт работы
 
+Перед существенной реализацией используй `../shalomut-tracker/SKILL.md`, чтобы
+определить task-файл текущей ветки, scope и `Next concrete step`.
+
 1. Определи корень репозитория через `git rev-parse --show-toplevel`.
 2. Прочитай `docs/source-of-truth.md` и релевантный код.
 3. Загрузи дополнительный контекст по типу задачи:
@@ -54,11 +57,11 @@ description: Работай с продуктом и кодом Shalomut Map в 
   input требует новой breaking contract version и consumer-first rollout.
 - Сохраняй configurable scoring thresholds: green `>=75`, yellow `50–74`, red
   `<50`.
-- Применяй настроенный privacy threshold (настраиваемый, по умолчанию 1). Не раскрывай
-  respondent identity, индивидуальные ответы или detailed results ниже порога.
-  Для dynamic questionnaire не делай partial unlocked analysis: если total или
-  хотя бы один анализируемый вопрос ниже threshold, весь detailed result
-  остаётся locked и provider не вызывается.
+- Применяй настроенный privacy threshold: `10` — и default, и minimum, менеджер
+  может только повысить его. Не раскрывай respondent identity, индивидуальные
+  ответы или detailed results ниже порога. Для dynamic questionnaire не делай
+  partial unlocked analysis: если total или хотя бы один анализируемый вопрос
+  ниже threshold, весь detailed result остаётся locked и provider не вызывается.
 - Сохраняй границу между Core Data Layer и внешним AI analytics service.
   Проверяй versioned contract и используй fail-closed transport.
 
@@ -75,8 +78,9 @@ description: Работай с продуктом и кодом Shalomut Map в 
 
 ## Безопасность изменений
 
-- Проект на стадии проектирования: одно окружение, реальных respondents и
-  production data нет, алиас `Production` в Vercel — операционный staging.
+- Проект на стадии проектирования: есть ровно два окружения — local и deployed;
+  реальных respondents и production data нет, алиас `Production` в Vercel —
+  операционный staging.
   Считай содержимое базы расходным: `db:clear`, reseed, сброс схемы и
   применение миграций — обычная работа без approval-ритуала, backup и
   PITR-чекпоинта. Подтверждай target environment, чтобы не потерять время на
@@ -85,6 +89,9 @@ description: Работай с продуктом и кодом Shalomut Map в 
   authentication configuration и переключения deployment aliases.
 - Не подключай публичные manager writes к реальным данным без authentication,
   authorization или подтверждённой deployment protection.
+- Если реализация выявила новый architecture, privacy, contract, persistence
+  или deployment risk, верни управление `shalomut-tracker` для обновления
+  task-state и решения об эскалации.
 
 ## Проверка
 
