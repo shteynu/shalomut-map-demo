@@ -27,7 +27,8 @@ primary V6 metric content.
 This remains a consumer-first state. Core still produces only `3.0`–`5.0` and
 defaults to `5.0`; configuring its producer to `6.0` fails closed. The local
 Python branch now parses and emits V6 and reports it from local health, but it
-has not been pushed, merged or deployed, so deployed Core must not emit V6 yet.
+is committed locally but has not been deployed, so deployed Core must not emit
+V6 yet.
 
 ## Adding a real next version
 

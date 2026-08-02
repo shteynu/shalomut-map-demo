@@ -15,13 +15,12 @@ deployed database в этой сессии не менялись.
 
 Локальная ветка `feat/contract-v6-core-consumer` в commit `e2a472d` публикует
 принятый V6 manifest и завершает первый consumer-first срез. Следующий локальный
-срез реализован, но ещё не закоммичен, на
+срез зафиксирован в commit `9036410` на
 `feat/contract-v6-python-producer`: Python parser/health поддерживают `6.0`,
 graph выдаёт structured summary, narrative metrics и пять batch-adapted
 recommendations с полностью валидным fallback, а каталог содержит восемь
 кандидатов на каждую dimension/status пару. Core producer остаётся на `5.0`;
-ни одна из V6 веток не pushed, merged или deployed. Текущий Python diff видим
-только в worktree `shalomut-map-demo-contract-v6-core-consumer`.
+V6 commits готовы к интеграции в `main`, но не deployed.
 
 Текущий V6 Python gate прошёл локально: `npm run verify:core` — 324 Core tests,
 literals, typecheck, ESLint и production build; Python `.venv/bin/python -m
@@ -105,9 +104,9 @@ accepted delta — три summary-параграфа на dimension, качес�
 сохраняет числовые evidence-поля, перепроверяет их против собственных агрегатов
 и не показывает число/распределение как основной V6 metric UI. Producer
 остаётся на `5.0` и fail-closed отклоняет `6.0`; локальный Python parser,
-pipeline и health уже поддерживают `1.0`–`6.0`, но этот diff ещё не committed,
-pushed, merged или deployed. Следующий порядок — commit этого среза, rollout
-Python с deployed health evidence, полный local V6 round, и только после этого
+pipeline и health уже поддерживают `1.0`–`6.0` в commit `9036410`, но изменения
+ещё не deployed. Следующий порядок — rollout Python с deployed health evidence,
+полный local V6 round, и только после этого
 отдельный Core producer switch по `docs/ai-contract-version-matrix.md`.
 
 ## Что делать в начале следующей сессии

@@ -5,8 +5,9 @@
 - Branch: `feat/contract-v6-python-producer`
 - Base branch: `feat/contract-v6-core-consumer`
 - Base commit: `1639cb5`
-- Current HEAD: `1639cb5`
-- Status: complete; ready to commit and archive
+- Implementation commit: `9036410`
+- Current HEAD before archival commit: `9036410`
+- Status: complete and archived; ready for main integration
 - Last updated: 2026-08-02
 - Last agent/tool: Codex
 
@@ -142,7 +143,6 @@ remains detail-free and old contract versions behave as before.
 
 ## Remaining
 
-- Commit and archive this completed local implementation slice.
 - In a separate branch, deploy the Core consumer and Python V6 service, verify
   deployed Python health at the expected commit, run a full local V6 round, and
   only then enable/switch the Core producer under explicit rollout authority.
@@ -236,18 +236,16 @@ remains detail-free and old contract versions behave as before.
 
 ## Next concrete step
 
-Commit the verified Python V6 producer/catalog slice, then archive this task and
+Integrate commits through `9036410` plus this archival commit into `main`, then
 create a separate rollout/readiness branch before any deploy or producer switch.
 
-## Exact Git state at handoff
+## Exact Git state at archival
 
-- HEAD: `1639cb5dfa881e92caac00877d476ee4e2a16304`.
-- Upstream: none; branch is local and based on the archived Core-consumer HEAD.
-- Staged: none.
-- Unstaged: all tracked implementation/test/catalog/docs files listed under
-  `Changed files` except the two untracked files below.
-- Untracked: `ai-analytics-service/tests/test_contract_v6.py` and
-  `docs/agent-tasks/active/feat--contract-v6-python-producer.md`.
+- Implementation HEAD: `9036410` (`feat(ai): add contract v6 python producer`);
+  the archival document change is committed immediately after it.
+- Upstream: none; the local branch contains the two committed Core-consumer
+  commits plus the Python V6 implementation.
+- Staged, unstaged and untracked files before this archival update: none.
 - Ignored local environment: `ai-analytics-service/.venv/`.
-- Visibility: uncommitted changes are visible only in this worktree; the branch
-  is not pushed, merged or deployed.
+- Visibility at archival: commits are available to local worktrees; `main` and
+  `origin/main` are updated only by the following authorized integration step.

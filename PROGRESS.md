@@ -2,9 +2,8 @@
 
 Updated: 2026-08-02 (**the architecture refactoring plan, privacy-threshold UI
 follow-up and Python pipeline/contract follow-up are merged into `main`; the
-producer default remains `5.0`, while the local Contract V6 Core-consumer is
-committed and the follow-up Python V6 producer branch is complete but not yet
-committed, pushed or merged**;
+producer default remains `5.0`, while the Contract V6 Core consumer and Python
+producer implementation are committed locally and ready for main integration**;
 the two remaining deployed Supabase migrations were applied and verified up to
 date on 2026-08-02. The
 exposed-credential decision remains accepted for the design stage, with
@@ -12,15 +11,16 @@ rotation required before the first real respondents.)
 
 ## Current State
 
-- **Contract V6 Python producer completed locally, 2026-08-02.** The
-  `feat/contract-v6-python-producer` worktree accepts and emits V6, generates
+- **Contract V6 Python producer completed locally, 2026-08-02.** Commit
+  `9036410` accepts and emits V6, generates
   structured summaries and exact-coverage narrative metrics with deterministic
   fallbacks, selects five recommendations from eight candidates per
   dimension/status and batch-adapts them without changing identity/order. Core
   still produces V5; rollout/deployed health and the producer switch remain
   separate. Full local evidence: 301 Python tests, 324 Core tests, literals,
   typecheck, ESLint, production build and a real Python-fallback-to-Core V6
-  validation. The branch is uncommitted and local-worktree-only.
+  validation. The committed branch is ready for main integration but is not
+  deployed and does not switch the Core producer.
 
 - **Contract V6 Core consumer completed locally, 2026-08-02.** Commit `e2a472d`
   on `feat/contract-v6-core-consumer` publishes the V6 manifest, strict callback
