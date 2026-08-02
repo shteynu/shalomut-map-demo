@@ -5,8 +5,8 @@
 - Branch: `test/callback-corpus-parity`
 - Base branch: `origin/main`
 - Base commit: `956daf5` (`origin/main`)
-- Current HEAD: tip of `test/callback-corpus-parity`, one commit past `956daf5`
-- Status: complete, verified, committed, unpushed
+- Current HEAD: merged into `main` by `0b57e6b`
+- Status: complete, verified and merged into `main`
 - Last updated: 2026-08-02
 - Last agent/tool: Claude Code (Opus 5); earlier sections drafted by Codex in
   the same worktree, which is the concurrency incident recorded under Known
@@ -204,8 +204,7 @@ already spent and the safety loop has finished — into one more replay.
 
 ## Next concrete step
 
-Owner action: push and merge this branch, then merge
-`docs/refactoring-plan-status` last, rewriting section 6 of
-`docs/wellbeing-refactoring-plan-v4-review.md` in the same pass. That section
-still describes five branches as unpushed and names the stage 0 corpus gap this
-branch closes; both statements are now wrong.
+Done: merged by `0b57e6b`, ahead of `docs/refactoring-plan-status` as
+planned. The open follow-up this branch deliberately left is wiring
+`stone_map_refusal` into the callback path — a behaviour change, and its own
+slice.

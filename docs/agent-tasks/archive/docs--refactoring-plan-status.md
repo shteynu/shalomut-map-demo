@@ -5,9 +5,8 @@
 - Branch: `docs/refactoring-plan-status`
 - Base branch: `origin/main`
 - Base commit: `ae3c3c4`, merged up to `956daf5`
-- Current HEAD: tip of `docs/refactoring-plan-status`, four commits past
-  `ae3c3c4` (two content commits, one merge of `956daf5`, one rewrite)
-- Status: complete, committed on the branch, pushed through `b86383e` only
+- Current HEAD: merged into `main` by `4510384`
+- Status: complete and merged into `main`
 - Last updated: 2026-08-02
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -202,10 +201,7 @@ gap. This branch only records the gap; it does not schedule the work.
 
 ## Next concrete step
 
-Owner action: merge `test/callback-corpus-parity` first, then this branch, and
-drop the "не влито" paragraph under "Чем закрыто" as part of that merge — it is
-the only passage in section 6 that the merge makes stale.
-
-```bash
-git push origin docs/refactoring-plan-status
-```
+Done: both branches merged in that order, and the "не влито" paragraph was
+dropped during the merge as planned. Section 6's "Чем закрыто" table is now the
+one place carrying merge state, and it lists every commit including the two
+merges themselves.
