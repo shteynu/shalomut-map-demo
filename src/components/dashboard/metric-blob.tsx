@@ -15,7 +15,10 @@ export function MetricBlob({
 }) {
   const fitKey = `${metric.label}-${metric.value}-${metric.highlightText ?? metric.helper}`;
   const { containerRef, contentRef } = useBlobFit(fitKey);
-  const distribution = metric.highlightText ? undefined : metric.distribution;
+  const distribution =
+    metric.highlightText || metric.narrativeOnly
+      ? undefined
+      : metric.distribution;
   const distributionTotal = distribution
     ? distribution.green + distribution.yellow + distribution.red
     : 0;
@@ -28,7 +31,7 @@ export function MetricBlob({
     >
       <div ref={contentRef as any} style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
         <span className="dashboard-metric-label">{metric.label}</span>
-        <strong>{metric.value}</strong>
+        {metric.narrativeOnly ? null : <strong>{metric.value}</strong>}
         <p>{metric.highlightText ?? metric.helper}</p>
         {distribution && distributionTotal > 0 ? (
           // The same three counts the sentence above already carries, drawn to

@@ -7,6 +7,8 @@ export interface ContractCapabilities {
   supportsScoreDistribution: boolean;
   supportsPartialMaps: boolean;
   supportsAdaptationOutcome: boolean;
+  usesStructuredDimensionSummary: boolean;
+  usesNarrativeMetrics: boolean;
   hasOverallSummarySentenceLimit: boolean;
   stoneInterpretationSentenceLimit: '2' | '2-5';
 }
@@ -18,6 +20,8 @@ const BOOLEAN_CAPABILITY_FIELDS = [
   'supportsScoreDistribution',
   'supportsPartialMaps',
   'supportsAdaptationOutcome',
+  'usesStructuredDimensionSummary',
+  'usesNarrativeMetrics',
   'hasOverallSummarySentenceLimit',
 ] as const;
 

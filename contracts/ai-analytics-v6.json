@@ -1,0 +1,110 @@
+{
+  "version": "6.0",
+  "previousVersions": ["1.0", "2.0", "3.0", "4.0", "5.0"],
+  "breakingChange": "Replace each stone psychologicalInterpretation string with exactly three summary paragraphs, add a qualitative insightText to every metric, and require exactly five adapted recommendations per dimension while retaining Core-owned evidence fields.",
+  "questionnaire": {
+    "sourceOfTruth": "SurveyRound.surveyDefinition",
+    "minimumEnabledQuestionsPerDimension": 1,
+    "stableQuestionIdsRequired": true,
+    "uniqueQuestionIdsRequired": true,
+    "explicitDimensionMappingRequired": true,
+    "snapshotIdentity": {
+      "field": "surveyDefinitionHash",
+      "algorithm": "sha256",
+      "prefix": "sha256:",
+      "projection": ["questionId", "dimensionId", "questionText"],
+      "ordering": "questionId ascending by Unicode code point",
+      "serialization": "UTF-8 compact JSON array with the projection keys in the documented order, non-ASCII characters unescaped, and no whitespace normalization"
+    }
+  },
+  "privacy": {
+    "defaultThreshold": 10,
+    "minimumThreshold": 10,
+    "unlockedPolicy": "total-and-every-question-at-or-above-threshold",
+    "lockedAggregatePolicy": "empty",
+    "partialUnlockedAnalysis": false,
+    "providerInvokedWhenLocked": false
+  },
+  "statuses": [
+    { "id": "green", "minScore": 75, "maxScore": 100 },
+    { "id": "yellow", "minScore": 50, "maxScore": 74 },
+    { "id": "red", "minScore": 0, "maxScore": 49 }
+  ],
+  "dimensions": [
+    { "id": "self-expression", "nameHebrew": "ביטוי עצמי" },
+    { "id": "professional-competence", "nameHebrew": "מסוגלות מקצועית" },
+    { "id": "social-resource", "nameHebrew": "קשרים חברתיים" },
+    { "id": "balance", "nameHebrew": "איזון" },
+    { "id": "management-support", "nameHebrew": "עורף מקצועי" },
+    { "id": "certainty", "nameHebrew": "ודאות" },
+    { "id": "organizational-climate", "nameHebrew": "אקלים ארגוני" },
+    { "id": "meaning", "nameHebrew": "משמעות" }
+  ],
+  "input": {
+    "inherits": "5.0",
+    "required": [
+      "contractVersion",
+      "roundId",
+      "organizationId",
+      "surveyDefinitionHash",
+      "dimensionScores",
+      "questionAggregates",
+      "calculatedAt",
+      "totalResponses",
+      "privacyThreshold",
+      "isLocked"
+    ],
+    "optional": ["backgroundContext"],
+    "dimensionScoreCountWhenUnlocked": 8,
+    "questionAggregateFields": [
+      "questionId",
+      "dimensionId",
+      "questionText",
+      "averageScore",
+      "responseCount",
+      "scoreDistribution"
+    ]
+  },
+  "output": {
+    "stoneCountWhenSuccessful": 8,
+    "dynamicMetrics": true,
+    "metricCoverage": "exactly every input question aggregate in its persisted dimension",
+    "coreOwnedFields": ["score", "status", "dimensionId", "averageScore", "responseCount", "scoreDistribution"],
+    "hebrewUserFacingText": true,
+    "dimensionSummary": {
+      "field": "summary",
+      "paragraphCount": 3,
+      "psychologicalInterpretationFieldForbidden": true
+    },
+    "metricInsight": {
+      "field": "insightText",
+      "requiredOnEveryMetric": true,
+      "language": "Hebrew",
+      "visibleDigitsForbidden": true,
+      "visiblePercentagesForbidden": true,
+      "minCharacters": 300,
+      "maxCharacters": 500
+    },
+    "recommendations": {
+      "countPerDimension": 5,
+      "adaptationOutcomeRequired": true,
+      "bodyMinCharacters": 300,
+      "bodyMaxCharacters": 500
+    },
+    "overallPsychologicalSummary": {
+      "sentencesMin": 2,
+      "sentencesMax": 4,
+      "language": "Hebrew"
+    },
+    "provenanceFields": [
+      "outcome",
+      "attempts",
+      "retryCount",
+      "sourceQuestionIds",
+      "surveyDefinitionHash",
+      "backgroundContextIncluded",
+      "distributionIncluded",
+      "crossDimensionContextIncluded"
+    ]
+  }
+}

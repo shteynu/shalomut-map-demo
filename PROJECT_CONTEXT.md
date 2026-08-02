@@ -40,11 +40,14 @@
 
 ### ADR-002: Versioned AI Analytics Contract и fail-closed transport
 - **Решение**: `contracts/ai-analytics-v1.json` и `contracts/ai-analytics-v2.json` остаются immutable deployed contracts. Breaking dynamic requirements опубликованы отдельно в `contracts/ai-analytics-v3.json`; они заменяют exact-24 allowlist на exact persisted round questions, сохраняя восемь dimensions, strict Hebrew/status validation, metrics и provenance. Callback имеет отдельные validator-ветки для `1.0`, `2.0` и `3.0`, поэтому legacy semantics не ужесточаются молча.
-- **Current default and reserved next version (2026-08-02)**: Core defaults an
-  unset `AI_ANALYTICS_CONTRACT_VERSION` to supported contract `5.0`, matching
-  the documented and deployed producer behavior. `6.0` remains reserved: the
-  registry extension tests prove readiness to add it, but no runtime may claim
-  support until a semantic manifest and consumer-first rollout are accepted.
+- **Current default and consumer-first next version (2026-08-02)**: Core
+  defaults an unset `AI_ANALYTICS_CONTRACT_VERSION` to produced contract `5.0`,
+  matching the documented and deployed producer behavior. Contract `6.0` now
+  has an accepted manifest: Core can consume three summary paragraphs,
+  qualitative metric narratives and five recommendations while retaining
+  numeric evidence for callback verification. The producer still refuses V6;
+  Python parser/generation and health remain `1.0`–`5.0` until the next rollout
+  slice is implemented and deployed.
 - **Rollout**: consumer-first rollout `3.0` завершён 2026-07-26: Python сначала принял все три версии, затем Core callback и Dashboard readers, после чего Core MCP producer начал отправлять `3.0`. Producer `2.0` остаётся rollback boundary.
 - **Персистентность**: Core владеет durable lifecycle в `AiAnalysisRun`: `queued` → `running` → `succeeded`/`failed`, с попытками, heartbeat, lease и результатом. PostgreSQL partial unique index допускает только один активный run на раунд. `SurveyRound.aiInsights` временно остаётся dual-read/dual-write rollback boundary; legacy `aiInsightsUpdatedAt` больше не является claim-marker. Миграция durable jobs применяется отдельно к каждому подтверждённому окружению.
 - **Транспорт**: MCP, legacy webhook и callback/worker API поддерживают независимые Bearer secrets. Основной путь сначала фиксирует job в Core; Python polling worker получает атомарную 90-секундную lease, продлевает её heartbeat и завершает callback с run/lease identity. После трёх брошенных попыток job становится `failed`. Legacy webhook остаётся rollback boundary. При недоступности удалённого MCP/AI-сервиса обработка завершается ошибкой; mock data разрешены только при явном `USE_MOCK_MCP=true`.

@@ -17,7 +17,7 @@ test('shared capabilities, Core support and producer choices stay aligned', () =
   );
   assert.deepStrictEqual(
     PRODUCIBLE_ANALYTICS_CONTRACT_VERSIONS,
-    manifestVersions.filter((version) => !['1.0', '2.0'].includes(version)),
+    ['3.0', '4.0', '5.0'],
   );
   assert.strictEqual(
     DEFAULT_PRODUCED_ANALYTICS_CONTRACT_VERSION,
@@ -25,11 +25,11 @@ test('shared capabilities, Core support and producer choices stay aligned', () =
   );
 });
 
-test('6.0 stays reserved until a production manifest publishes it', () => {
-  assert.strictEqual('6.0' in capabilitiesManifest.versions, false);
+test('6.0 is callback-readable but remains unavailable to the producer', () => {
+  assert.strictEqual('6.0' in capabilitiesManifest.versions, true);
   assert.strictEqual(
     AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS.includes('6.0'),
-    false,
+    true,
   );
   assert.strictEqual(
     (PRODUCIBLE_ANALYTICS_CONTRACT_VERSIONS as readonly string[]).includes(

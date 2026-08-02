@@ -52,16 +52,16 @@ test('every producible version resolves to itself', () => {
 });
 
 test('an unknown version does not silently become the default', () => {
-  for (const value of ['6.0', '5', 'five', '5.0.0', '4,0']) {
+  for (const value of ['7.0', '5', 'five', '5.0.0', '4,0']) {
     const resolved = resolveProducedAnalyticsContractVersion(value);
     assert.ok(!resolved.ok, `'${value}' must not resolve`);
   }
 });
 
 test('a version Core cannot produce is refused even though it is supported', () => {
-  // `1.0` and `2.0` are still accepted on a callback, so a permissive check
+  // These versions are accepted on a callback, so a permissive check
   // would wave them through here and leave the calculator unable to emit them.
-  for (const value of ['1.0', '2.0']) {
+  for (const value of ['1.0', '2.0', '6.0']) {
     const resolved = resolveProducedAnalyticsContractVersion(value);
     assert.ok(!resolved.ok, `'${value}' is readable but not producible`);
   }

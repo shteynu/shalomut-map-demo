@@ -40,6 +40,8 @@ export type ResponseMetric = {
   value: string;
   helper: string;
   highlightText?: string;
+  /** Contract 6.0: render qualitative copy without exposing numeric evidence. */
+  narrativeOnly?: boolean;
   /**
    * How the answers to this question split. Present only when the question
    * cleared the privacy threshold; the counts are always spelled out in

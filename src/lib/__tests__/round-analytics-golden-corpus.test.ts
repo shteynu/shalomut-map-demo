@@ -26,19 +26,17 @@ test('TypeScript and Python share every round analytics golden-corpus case', () 
   }
 });
 
-test('dummy 6.0 is validated by an injected registry, not shipped as supported', () => {
-  assert.strictEqual('6.0' in capabilitiesManifest.versions, false);
+test('published 6.0 capabilities describe the new narrative output', () => {
+  assert.strictEqual('6.0' in capabilitiesManifest.versions, true);
 
   const registry = loadContractRegistry({
     versions: {
       ...capabilitiesManifest.versions,
-      '6.0': {
-        ...capabilitiesManifest.versions['5.0'],
-        supportsBackgroundContext: false,
-      },
+      '6.0': capabilitiesManifest.versions['6.0'],
     },
   });
 
   assert.strictEqual(registry['6.0'].supportsDynamicQuestions, true);
-  assert.strictEqual(registry['6.0'].supportsBackgroundContext, false);
+  assert.strictEqual(registry['6.0'].usesStructuredDimensionSummary, true);
+  assert.strictEqual(registry['6.0'].usesNarrativeMetrics, true);
 });

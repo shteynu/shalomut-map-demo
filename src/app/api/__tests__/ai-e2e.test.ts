@@ -16,6 +16,7 @@ import {
 } from '@/lib/repositories';
 import { surveyInstrument } from '@/lib/shalomut-source';
 import { DEFAULT_PRODUCED_ANALYTICS_CONTRACT_VERSION } from '@/lib/ai-contract-version';
+import { AI_ANALYTICS_V6_CONTRACT_VERSION } from '@/lib/ai-contract';
 import type {
   AnswerValue,
   SurveyDefinition,
@@ -181,6 +182,42 @@ function runPythonPipeline(analytics: unknown) {
   });
   assert.strictEqual(python.status, 0, python.stderr);
   return JSON.parse(python.stdout);
+}
+
+function v6Narrative(seed: string): string {
+  return `${seed} ${'הטקסט מסביר את המשמעות של התשובות בשפה זהירה ומחבר בין החוויה המשותפת לבין צעד מעשי שהצוות יכול לבחון יחד לאורך זמן. '.repeat(3)}`.trim();
+}
+
+function upgradeV5ResultForV6Consumer(stoneMap: any) {
+  const result = structuredClone(stoneMap);
+  result.contractVersion = AI_ANALYTICS_V6_CONTRACT_VERSION;
+  delete result.dimensionsWithoutInterpretation;
+
+  for (const stone of Object.values(result.stones) as any[]) {
+    stone.summary = [
+      'התשובות מצביעות על תמונה משותפת שיש בה כוחות לצד תחומים הדורשים תשומת לב.',
+      'נראה כי שיחה עקבית ומכבדת תעזור לצוות להבין את השונות בין החוויות ולבחור מוקד מתאים.',
+      'מומלץ לבחור צעד אחד, ליישם אותו לאורך זמן ולבדוק יחד כיצד הוא משפיע על התחושה בתחום.',
+    ];
+    delete stone.psychologicalInterpretation;
+    stone.metrics = stone.metrics.map((metric: any) => ({
+      ...metric,
+      insightText: v6Narrative(
+        'הממצא מלמד שהחוויה בתחום אינה אחידה ושכדאי לבחון אותה יחד.',
+      ),
+    }));
+
+    const source = stone.recommendedInterventions[0];
+    stone.recommendedInterventions = Array.from({ length: 5 }, (_, index) => ({
+      ...source,
+      id: `${source.id}-v6-${index + 1}`,
+      summary: v6Narrative(
+        'המהלך המוצע יוצר שגרה ברורה ומזמין את הצוות להתקדם באופן הדרגתי.',
+      ),
+    }));
+  }
+
+  return result;
 }
 
 function configureFixture(
@@ -507,6 +544,63 @@ test('a 5.0 round carries its distributions to Python and back under Core verifi
         .scoreDistribution,
       { green: 3, yellow: 3, red: 4 },
     );
+
+    const v6Result = upgradeV5ResultForV6Consumer(stoneMap);
+    const v6CallbackResponse = await postInsightsHandler(
+      new Request(
+        `http://localhost:3000/api/rounds/${fixture.roundId}/ai-insights`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(v6Result),
+        },
+      ),
+      { params: Promise.resolve({ roundId: fixture.roundId }) },
+    );
+    assert.strictEqual(
+      v6CallbackResponse.status,
+      200,
+      JSON.stringify(await v6CallbackResponse.clone().json()),
+    );
+
+    const firstDimensionId = surveyInstrument.dimensions[0].id;
+    const v6TamperingCases = [
+      (payload: any) => {
+        payload.stones[firstDimensionId].score = 40;
+        payload.stones[firstDimensionId].status = 'red';
+      },
+      (payload: any) => {
+        payload.stones[firstDimensionId].metrics[0].averageScore = 61;
+      },
+      (payload: any) => {
+        const metric = payload.stones[firstDimensionId].metrics[0];
+        metric.responseCount += 1;
+        metric.scoreDistribution.red += 1;
+      },
+      (payload: any) => {
+        const distribution =
+          payload.stones[firstDimensionId].metrics[0].scoreDistribution;
+        distribution.green += 1;
+        distribution.red -= 1;
+      },
+    ];
+
+    for (const tamper of v6TamperingCases) {
+      const tampered = structuredClone(v6Result);
+      tamper(tampered);
+      const rejection = await postInsightsHandler(
+        new Request(
+          `http://localhost:3000/api/rounds/${fixture.roundId}/ai-insights`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(tampered),
+          },
+        ),
+        { params: Promise.resolve({ roundId: fixture.roundId }) },
+      );
+      assert.strictEqual(rejection.status, 400);
+    }
   } finally {
     resetDefaultRepositories();
     if (previousDatabaseUrl === undefined) delete process.env.DATABASE_URL;

@@ -48,3 +48,23 @@ test("an AI highlight replaces the helper line, so its bar goes with it", () => 
   assert.match(html, /הציון בשאלה זו נמוך מהשאר/u);
   assert.doesNotMatch(html, /dashboard-metric-distribution/u);
 });
+
+test("a Contract V6 narrative metric renders no numeric value or distribution", () => {
+  const html = renderToStaticMarkup(
+    <MetricBlob
+      metric={{
+        ...METRIC,
+        value: "",
+        helper: "",
+        highlightText: "התשובות מצביעות על צורך בחיזוק שגרה משותפת.",
+        narrativeOnly: true,
+      }}
+    />,
+  );
+  const text = html.replace(/<[^>]*>/gu, "");
+
+  assert.match(text, /התשובות מצביעות/u);
+  assert.doesNotMatch(text, /\d/u);
+  assert.doesNotMatch(html, /<strong>/u);
+  assert.doesNotMatch(html, /dashboard-metric-distribution/u);
+});

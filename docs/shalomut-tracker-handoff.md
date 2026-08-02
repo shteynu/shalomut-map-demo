@@ -13,6 +13,13 @@ TypeScript-тестов, 7 PostgreSQL-тестов и 286 Python-тестов. C
 задачи находятся в `docs/agent-tasks/archive/`. Deployment, environment и
 deployed database в этой сессии не менялись.
 
+Активная ветка `feat/contract-v6-core-consumer` публикует принятый V6 manifest
+и завершает первый consumer-first срез: Core callback/OpenAPI/UI принимают,
+перепроверяют и отображают V6, но Core producer и Python по-прежнему работают
+только до `5.0`. Изменения пока не закоммичены и видимы только в worktree
+`shalomut-map-demo-contract-v6-core-consumer`; следующий самостоятельный срез —
+Python V6 parser/generation/fallback/catalog — нельзя считать начатым.
+
 Финальный combined-main gate прошёл локально: `npm run verify:core` — 316/316
 TypeScript tests, literals, typecheck, ESLint и production build;
 `.venv/bin/python -m pytest` — 290/290; `npm run verify:db` — 7/7 на
@@ -87,10 +94,15 @@ read-only deployed audit.
 В объединённом `main` unset `AI_ANALYTICS_CONTRACT_VERSION` производит `5.0`;
 явные
 `3.0`, `4.0` и `5.0` остаются допустимыми, неизвестное значение по-прежнему
-fail-closed. Контракт `6.0` не опубликован: для него нет принятой семантики или
-manifest, поэтому Core, Python, OpenAPI и golden corpus намеренно знают только
-`1.0`–`5.0`. Добавление `6.0` требует consumer-first rollout по матрице
-`docs/ai-contract-version-matrix.md`.
+fail-closed. Контракт `6.0` опубликован в активной Core-consumer ветке: его
+accepted delta — три summary-параграфа на dimension, качественный `insightText`
+на каждой метрике и ровно пять адаптированных рекомендаций. Core callback
+сохраняет числовые evidence-поля, перепроверяет их против собственных агрегатов
+и не показывает число/распределение как основной V6 metric UI. Producer
+остаётся на `5.0` и fail-closed отклоняет `6.0`; Python parser, pipeline и health
+пока поддерживают только `1.0`–`5.0`. Следующий порядок — сначала Python
+parser/generation/fallback и каталог, затем deployed health evidence, и только
+после этого producer switch по `docs/ai-contract-version-matrix.md`.
 
 ## Что делать в начале следующей сессии
 

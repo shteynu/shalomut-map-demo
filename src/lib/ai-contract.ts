@@ -3,6 +3,7 @@ import contractManifest from '../../contracts/ai-analytics-v2.json';
 import dynamicContractManifest from '../../contracts/ai-analytics-v3.json';
 import v4ContractManifest from '../../contracts/ai-analytics-v4.json';
 import v5ContractManifest from '../../contracts/ai-analytics-v5.json';
+import v6ContractManifest from '../../contracts/ai-analytics-v6.json';
 import { getCapabilities, type ContractCapabilities } from './contract-registry';
 import type {
   WellbeingDimensionId,
@@ -15,6 +16,7 @@ export const AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION =
   dynamicContractManifest.version;
 export const AI_ANALYTICS_V4_CONTRACT_VERSION = v4ContractManifest.version;
 export const AI_ANALYTICS_V5_CONTRACT_VERSION = v5ContractManifest.version;
+export const AI_ANALYTICS_V6_CONTRACT_VERSION = v6ContractManifest.version;
 
 export const AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS = Object.freeze([
   AI_ANALYTICS_V1_CONTRACT_VERSION,
@@ -22,6 +24,7 @@ export const AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS = Object.freeze([
   AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
   AI_ANALYTICS_V4_CONTRACT_VERSION,
   AI_ANALYTICS_V5_CONTRACT_VERSION,
+  AI_ANALYTICS_V6_CONTRACT_VERSION,
 ]);
 
 export type AiAnalyticsContractVersion =
@@ -84,6 +87,11 @@ export interface StoneMetric {
   scoreDistribution?: ScoreDistribution;
 }
 
+export interface StoneMetricV6 extends StoneMetric {
+  /** Qualitative Hebrew copy shown instead of Core-owned numeric evidence. */
+  insightText: string;
+}
+
 export interface StoneIntervention {
   id: string;
   dimensionId: WellbeingDimensionId;
@@ -132,6 +140,25 @@ export interface StoneDetail {
   generationProvenance?: StoneGenerationProvenance;
 }
 
+export interface StoneDetailV6 {
+  dimensionId: WellbeingDimensionId;
+  dimensionNameHebrew: string;
+  status: WellbeingStatus;
+  score: number;
+  summary: [string, string, string];
+  recommendedInterventions: [
+    StoneIntervention,
+    StoneIntervention,
+    StoneIntervention,
+    StoneIntervention,
+    StoneIntervention,
+  ];
+  metrics: StoneMetricV6[];
+  generationProvenance: StoneGenerationProvenance;
+}
+
+export type AnyStoneDetail = StoneDetail | StoneDetailV6;
+
 export interface StoneMapResult {
   contractVersion: AiAnalyticsKnownContractVersion;
   roundId: string;
@@ -141,7 +168,7 @@ export interface StoneMapResult {
   status: 'success' | 'locked_error' | 'validation_failed';
   errorMessage?: string;
   overallPsychologicalSummary?: string;
-  stones?: Record<WellbeingDimensionId, StoneDetail>;
+  stones?: Record<WellbeingDimensionId, AnyStoneDetail>;
   /**
    * 5.0 only: the dimensions whose interpretation the provider never produced.
    * Derivable by walking the stones, and stated here anyway so a reader — a
@@ -261,6 +288,36 @@ function hasTwoToFourCompleteSentences(value: string): boolean {
     sentences.length >= 2 &&
     sentences.length <= 4 &&
     sentences.join('').replace(/\s/gu, '') === normalized.replace(/\s/gu, '')
+  );
+}
+
+function hasExactlyThreeHebrewParagraphs(
+  value: unknown,
+): value is [string, string, string] {
+  return (
+    Array.isArray(value) &&
+    value.length === 3 &&
+    value.every(
+      (paragraph) =>
+        typeof paragraph === 'string' &&
+        paragraph.trim().length > 0 &&
+        containsOnlyHebrewUserText(paragraph) &&
+        !/[\p{Number}%٪]/u.test(paragraph) &&
+        !/\p{Script=Latin}/u.test(paragraph) &&
+        /[.!?؟]$/u.test(paragraph.trim()),
+    )
+  );
+}
+
+function isQualitativeNarrative(value: unknown): value is string {
+  if (typeof value !== 'string') return false;
+  const length = Array.from(value.trim()).length;
+  return (
+    length >= 300 &&
+    length <= 500 &&
+    containsOnlyHebrewUserText(value) &&
+    !/[\p{Number}%٪]/u.test(value) &&
+    !/\p{Script=Latin}/u.test(value)
   );
 }
 
@@ -415,6 +472,15 @@ function isValidV5QuestionMetric(value: unknown): value is StoneMetric {
   return isValidScoreDistribution(
     value.scoreDistribution,
     Number(value.responseCount),
+  );
+}
+
+function isValidV6QuestionMetric(value: unknown): value is StoneMetricV6 {
+  return (
+    isValidV5QuestionMetric(value) &&
+    isQualitativeNarrative(
+      (value as unknown as Record<string, unknown>).insightText,
+    )
   );
 }
 
@@ -606,6 +672,57 @@ function isValidV5Stone(
   );
 }
 
+function isValidV6Stone(
+  value: unknown,
+  dimensionId: WellbeingDimensionId,
+  surveyDefinitionHash: string,
+): value is StoneDetailV6 {
+  if (
+    !isRecord(value) ||
+    value.dimensionId !== dimensionId ||
+    value.dimensionNameHebrew !==
+      AI_ANALYTICS_DIMENSION_NAMES_HEBREW[dimensionId] ||
+    !WELLBEING_STATUSES.has(value.status as WellbeingStatus) ||
+    typeof value.score !== 'number' ||
+    !Number.isFinite(value.score) ||
+    value.score < 0 ||
+    value.score > 100 ||
+    statusForScore(value.score) !== value.status ||
+    value.psychologicalInterpretation !== undefined ||
+    !hasExactlyThreeHebrewParagraphs(value.summary) ||
+    !Array.isArray(value.metrics) ||
+    value.metrics.length < 1 ||
+    !value.metrics.every(isValidV6QuestionMetric) ||
+    !Array.isArray(value.recommendedInterventions) ||
+    value.recommendedInterventions.length !== 5
+  ) {
+    return false;
+  }
+
+  const status = value.status as WellbeingStatus;
+  const metrics = value.metrics as StoneMetricV6[];
+  const metricQuestionIds = metrics.map((metric) => metric.questionId!);
+  const interventions = value.recommendedInterventions as StoneIntervention[];
+  const provenance = value.generationProvenance;
+
+  return (
+    new Set(metricQuestionIds).size === metricQuestionIds.length &&
+    new Set(interventions.map((intervention) => intervention.id)).size === 5 &&
+    interventions.every(
+      (intervention) =>
+        isValidV5Intervention(intervention, dimensionId, status) &&
+        isQualitativeNarrative(intervention.summary),
+    ) &&
+    isValidV5GenerationProvenance(
+      provenance,
+      metricQuestionIds,
+      surveyDefinitionHash,
+    ) &&
+    isRecord(provenance) &&
+    provenance.outcome !== 'unavailable'
+  );
+}
+
 function validateStatusFields(
   payload: Record<string, unknown>,
 ): StoneMapValidationResult | null {
@@ -749,7 +866,7 @@ export function validateStoneMapResult(
   ) {
     return {
       ok: false,
-      error: 'The 3.0/4.0/5.0 payload requires a valid surveyDefinitionHash.',
+      error: 'Dynamic analytics payloads require a valid surveyDefinitionHash.',
     };
   }
 
@@ -805,19 +922,25 @@ export function validateStoneMapResult(
   for (const dimensionId of AI_ANALYTICS_DIMENSION_IDS) {
     const isValidStone = !caps.isSemanticContract
       ? isValidLegacyStone(payload.stones[dimensionId], dimensionId)
-      : caps.supportsScoreDistribution
-        ? isValidV5Stone(
+      : caps.usesStructuredDimensionSummary
+        ? isValidV6Stone(
             payload.stones[dimensionId],
             dimensionId,
             payload.surveyDefinitionHash as string,
           )
-        : caps.supportsDynamicQuestions
-          ? isValidV3Stone(
+        : caps.supportsScoreDistribution
+          ? isValidV5Stone(
               payload.stones[dimensionId],
               dimensionId,
               payload.surveyDefinitionHash as string,
             )
-          : isValidV2Stone(payload.stones[dimensionId], dimensionId);
+          : caps.supportsDynamicQuestions
+            ? isValidV3Stone(
+                payload.stones[dimensionId],
+                dimensionId,
+                payload.surveyDefinitionHash as string,
+              )
+            : isValidV2Stone(payload.stones[dimensionId], dimensionId);
     if (!isValidStone) {
       return {
         ok: false,

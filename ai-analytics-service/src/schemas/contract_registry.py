@@ -11,6 +11,8 @@ class ContractCapabilities:
     supportsScoreDistribution: bool
     supportsPartialMaps: bool
     supportsAdaptationOutcome: bool
+    usesStructuredDimensionSummary: bool
+    usesNarrativeMetrics: bool
     hasOverallSummarySentenceLimit: bool
     stoneInterpretationSentenceLimit: Literal["2", "2-5"]
 

@@ -1,6 +1,6 @@
 import assert from 'node:assert';
 import test from 'node:test';
-import type { StoneDetail } from '../ai-contract';
+import type { StoneDetail, StoneDetailV6 } from '../ai-contract';
 import { applyStoneInsightToDimension } from '../ai-insights-view-model';
 import { getDimensionById } from '../demo-data';
 
@@ -38,6 +38,48 @@ test('applyStoneInsightToDimension replaces demo analysis with AI content', () =
   assert.deepStrictEqual(result.summary, ['נדרש שינוי בעומס העבודה.']);
   assert.strictEqual(result.metrics[0].value, '40.0');
   assert.match(result.recommendations[0].body, /שני חלונות/);
+});
+
+test('Contract V6 maps three summary paragraphs and qualitative metrics', () => {
+  const dimension = getDimensionById('balance');
+  assert.ok(dimension);
+
+  const stone: StoneDetailV6 = {
+    dimensionId: 'balance',
+    dimensionNameHebrew: 'איזון',
+    status: 'yellow',
+    score: 62,
+    summary: ['פסקה ראשונה.', 'פסקה שנייה.', 'פסקה שלישית.'],
+    metrics: [
+      {
+        label: 'עומס משימות',
+        value: '62 מתוך 100',
+        questionId: 'balance-q1',
+        averageScore: 62,
+        responseCount: 20,
+        scoreDistribution: { green: 4, yellow: 12, red: 4 },
+        insightText: 'הצוות מתאר עומס משתנה שמצריך תשומת לב משותפת.',
+      },
+    ],
+    recommendedInterventions: [] as unknown as StoneDetailV6['recommendedInterventions'],
+    generationProvenance: {
+      outcome: 'llm',
+      attempts: 1,
+      retryCount: 0,
+      sourceQuestionIds: ['balance-q1'],
+    },
+  };
+
+  const result = applyStoneInsightToDimension(dimension, stone);
+
+  assert.deepStrictEqual(result.summary, stone.summary);
+  assert.deepStrictEqual(result.metrics[0], {
+    label: 'עומס משימות',
+    value: '',
+    helper: '',
+    highlightText: stone.metrics[0].insightText,
+    narrativeOnly: true,
+  });
 });
 
 function stoneWithMetric(metric: StoneDetail['metrics'][number]): StoneDetail {

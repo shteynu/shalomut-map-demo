@@ -7,6 +7,8 @@
       "supportsScoreDistribution": false,
       "supportsPartialMaps": false,
       "supportsAdaptationOutcome": false,
+      "usesStructuredDimensionSummary": false,
+      "usesNarrativeMetrics": false,
       "hasOverallSummarySentenceLimit": false,
       "stoneInterpretationSentenceLimit": "2"
     },
@@ -17,6 +19,8 @@
       "supportsScoreDistribution": false,
       "supportsPartialMaps": false,
       "supportsAdaptationOutcome": false,
+      "usesStructuredDimensionSummary": false,
+      "usesNarrativeMetrics": false,
       "hasOverallSummarySentenceLimit": false,
       "stoneInterpretationSentenceLimit": "2"
     },
@@ -27,6 +31,8 @@
       "supportsScoreDistribution": false,
       "supportsPartialMaps": false,
       "supportsAdaptationOutcome": false,
+      "usesStructuredDimensionSummary": false,
+      "usesNarrativeMetrics": false,
       "hasOverallSummarySentenceLimit": false,
       "stoneInterpretationSentenceLimit": "2"
     },
@@ -37,6 +43,8 @@
       "supportsScoreDistribution": false,
       "supportsPartialMaps": false,
       "supportsAdaptationOutcome": false,
+      "usesStructuredDimensionSummary": false,
+      "usesNarrativeMetrics": false,
       "hasOverallSummarySentenceLimit": false,
       "stoneInterpretationSentenceLimit": "2"
     },
@@ -47,6 +55,20 @@
       "supportsScoreDistribution": true,
       "supportsPartialMaps": true,
       "supportsAdaptationOutcome": true,
+      "usesStructuredDimensionSummary": false,
+      "usesNarrativeMetrics": false,
+      "hasOverallSummarySentenceLimit": true,
+      "stoneInterpretationSentenceLimit": "2-5"
+    },
+    "6.0": {
+      "isSemanticContract": true,
+      "supportsDynamicQuestions": true,
+      "supportsBackgroundContext": true,
+      "supportsScoreDistribution": true,
+      "supportsPartialMaps": false,
+      "supportsAdaptationOutcome": true,
+      "usesStructuredDimensionSummary": true,
+      "usesNarrativeMetrics": true,
       "hasOverallSummarySentenceLimit": true,
       "stoneInterpretationSentenceLimit": "2-5"
     }

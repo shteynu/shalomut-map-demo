@@ -133,14 +133,17 @@ describe('OpenAPI Specification Integrity', () => {
     assert.ok(schemas.StoneMapResultV3, 'Must include StoneMapResultV3 schema');
     assert.ok(schemas.StoneMapResultV4, 'Must include StoneMapResultV4 schema');
     assert.ok(schemas.StoneMapResultV5, 'Must include StoneMapResultV5 schema');
+    assert.ok(schemas.StoneMapResultV6, 'Must include StoneMapResultV6 schema');
     assert.ok(schemas.StoneDetail, 'Must include StoneDetail schema');
     assert.ok(schemas.StoneDetailV4, 'Must include StoneDetailV4 schema');
     assert.ok(schemas.StoneDetailV5, 'Must include StoneDetailV5 schema');
+    assert.ok(schemas.StoneDetailV6, 'Must include StoneDetailV6 schema');
     assert.strictEqual(schemas.StoneMapResultV1.properties.contractVersion.example, '1.0');
     assert.strictEqual(schemas.StoneMapResultV2.properties.contractVersion.example, '2.0');
     assert.strictEqual(schemas.StoneMapResultV3.properties.contractVersion.example, '3.0');
     assert.strictEqual(schemas.StoneMapResultV4.properties.contractVersion.example, '4.0');
     assert.strictEqual(schemas.StoneMapResultV5.properties.contractVersion.example, '5.0');
+    assert.strictEqual(schemas.StoneMapResultV6.properties.contractVersion.example, '6.0');
     assert.strictEqual(schemas.RoundAnalyticsResultV2.properties.contractVersion.example, '2.0');
     assert.strictEqual(schemas.RoundAnalyticsResultV3.properties.contractVersion.example, '3.0');
     assert.strictEqual(schemas.RoundAnalyticsResultV4.properties.contractVersion.example, '4.0');
@@ -162,6 +165,7 @@ describe('OpenAPI Specification Integrity', () => {
         '#/components/schemas/StoneMapResultV3',
         '#/components/schemas/StoneMapResultV4',
         '#/components/schemas/StoneMapResultV5',
+        '#/components/schemas/StoneMapResultV6',
       ],
     );
   });
@@ -252,18 +256,23 @@ describe('OpenAPI Specification Integrity', () => {
       'StoneMapResultV3',
       'StoneMapResultV4',
       'StoneMapResultV5',
+      'StoneMapResultV6',
       'StoneDetail',
       'StoneDetailV3',
       'StoneDetailV4',
       'StoneDetailV5',
+      'StoneDetailV6',
       'StoneMetric',
       'StoneMetricV5',
+      'StoneMetricV6',
       'StoneIntervention',
       'StoneInterventionV5',
+      'StoneInterventionV6',
       'StoneGenerationProvenance',
       'StoneGenerationProvenanceV3',
       'StoneGenerationProvenanceV4',
       'StoneGenerationProvenanceV5',
+      'StoneGenerationProvenanceV6',
       'RoundAnalyticsResultV4',
       'RoundAnalyticsResultV5',
       'ScoreDistribution',

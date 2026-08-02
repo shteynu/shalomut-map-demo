@@ -1,7 +1,7 @@
 import {
   AI_ANALYTICS_DIMENSION_IDS,
+  type AnyStoneDetail,
   type ScoreDistribution,
-  type StoneDetail,
   type StoneMapResult,
 } from './ai-contract';
 import type { WellbeingDimension } from './demo-data';
@@ -90,7 +90,7 @@ function displayableDistribution(
 export function getStoneInsight(
   stoneMap: StoneMapResult,
   dimensionId: string,
-): StoneDetail | undefined {
+): AnyStoneDetail | undefined {
   if (
     !AI_ANALYTICS_DIMENSION_IDS.includes(
       dimensionId as WellbeingDimensionId,
@@ -104,13 +104,16 @@ export function getStoneInsight(
 
 export function applyStoneInsightToDimension(
   dimension: WellbeingDimension,
-  stone: StoneDetail,
+  stone: AnyStoneDetail,
   overallSummary?: string,
 ): WellbeingDimension {
   void overallSummary;
-  const summary = [stone.psychologicalInterpretation].filter(
-    (paragraph): paragraph is string => Boolean(paragraph?.trim()),
-  );
+  const summary =
+    'summary' in stone
+      ? stone.summary
+      : [stone.psychologicalInterpretation].filter(
+          (paragraph): paragraph is string => Boolean(paragraph?.trim()),
+        );
 
   return {
     ...dimension,
@@ -123,6 +126,16 @@ export function applyStoneInsightToDimension(
     interpretationUnavailable:
       stone.generationProvenance?.outcome === 'unavailable',
     metrics: stone.metrics.map((metric) => {
+      if ('insightText' in metric) {
+        return {
+          label: metric.label,
+          value: '',
+          helper: '',
+          highlightText: metric.insightText,
+          narrativeOnly: true,
+        };
+      }
+
       const hasQuestionAggregate =
         typeof metric.questionId === 'string' &&
         typeof metric.averageScore === 'number' &&

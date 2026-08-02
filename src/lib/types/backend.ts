@@ -124,8 +124,8 @@ export interface RoundAnalyticsV2Result {
 }
 
 export interface RoundAnalyticsV3Result {
-  // `4.0` and `5.0` keep the dynamic analytics shape, adding context / distributions.
-  contractVersion: '3.0' | '4.0' | '5.0';
+  // Later contracts keep this Core-owned aggregate shape while changing AI copy.
+  contractVersion: '3.0' | '4.0' | '5.0' | '6.0';
   roundId: string;
   organizationId: string;
   surveyDefinitionHash: SurveyDefinitionHash;
