@@ -11,6 +11,7 @@ from src.agents.nodes import (
     _effective_contract_version,
 )
 from src.agents.safety_report import violation
+from src.application.ports import TextGenerator
 from src.schemas.analytics_output import encode_failure, encode_stone_map
 from src.schemas.canonical import (
     CanonicalAnalysisInput,
@@ -19,6 +20,7 @@ from src.schemas.canonical import (
     CanonicalStone,
 )
 from src.schemas.stone_map_validation import outgoing_refusal
+from src.services.llm_provider import llm_provider_service
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +55,14 @@ class AnalyticsGraphEngine:
     """
     Async graph-style engine implementing the directed cyclic workflow:
     Privacy_Gate -> Psychologist -> Intervention Catalog -> Adaptation -> Safety Validator (Loop / Pass) -> Output Formatter
+
+    The engine owns the one collaborator its nodes cannot do without: whatever
+    writes the Hebrew copy. Everything else a node needs is in the state.
     """
+
+    def __init__(self, *, generator: TextGenerator = llm_provider_service):
+        self.generator = generator
+
     async def ainvoke(self, state: AnalyticsState) -> AnalyticsState:
         # Step 1: Privacy Gate
         current_state = privacy_gate_node(state)
@@ -62,7 +71,10 @@ class AnalyticsGraphEngine:
 
         # Step 2: Psychologist Node & Loop
         while True:
-            current_state = await agent_psychologist_node(current_state)
+            current_state = await agent_psychologist_node(
+                current_state,
+                generator=self.generator,
+            )
 
             # A provider that answered nothing is not a quality problem, so the
             # safety loop has nothing to improve on a second pass: the transport
@@ -79,7 +91,10 @@ class AnalyticsGraphEngine:
                 }
 
             current_state = agent_rag_intervention_node(current_state)
-            current_state = await agent_adaptation_node(current_state)
+            current_state = await agent_adaptation_node(
+                current_state,
+                generator=self.generator,
+            )
             current_state = agent_safety_validator_node(current_state)
 
             if current_state.get("safety_status") == "fail" and current_state.get("retry_count", 0) < 3:

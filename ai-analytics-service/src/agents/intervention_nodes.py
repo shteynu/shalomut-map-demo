@@ -11,6 +11,7 @@ from src.agents.node_support import (
     _replay_plan,
 )
 from src.agents.state import AnalyticsState
+from src.application.ports import TextGenerator
 from src.rag.store import LocalInterventionVectorStore
 from src.schemas.contract_registry import get_capabilities
 from src.services.llm_provider import llm_provider_service
@@ -73,7 +74,11 @@ def agent_rag_intervention_node(state: AnalyticsState) -> AnalyticsState:
     }
 
 
-async def agent_adaptation_node(state: AnalyticsState) -> AnalyticsState:
+async def agent_adaptation_node(
+    state: AnalyticsState,
+    *,
+    generator: TextGenerator = llm_provider_service,
+) -> AnalyticsState:
     """Adapt selected interventions when the contract declares that output."""
     round_data = state.get("round_data", {})
     if not get_capabilities(
@@ -137,7 +142,7 @@ async def agent_adaptation_node(state: AnalyticsState) -> AnalyticsState:
         adaptations.append(
             _in_provider_slot(
                 slots,
-                llm_provider_service.adapt_interventions_result,
+                generator.adapt_interventions_result,
                 **adaptation_kwargs,
             )
         )

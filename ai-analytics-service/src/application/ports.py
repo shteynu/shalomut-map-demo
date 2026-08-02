@@ -63,6 +63,31 @@ class JobStore(Protocol):
     ) -> bool: ...
 
 
+class TextGenerator(Protocol):
+    """The five things this analysis asks a language model for.
+
+    Named as operations, not as prompts: the caller says which dimension needs
+    copy and on what evidence, and the implementation owns the prompt, the
+    model tier, the retries and the deterministic fallback. Keyword arguments
+    stay open because the provider carries a wide, still-moving set of prompt
+    inputs; what the port pins down is the set of operations and the shape each
+    one answers with.
+    """
+
+    def generate_psychological_interpretation_result(
+        self,
+        **kwargs: Any,
+    ) -> Any: ...
+
+    def generate_structured_summary_result(self, **kwargs: Any) -> Any: ...
+
+    def generate_metric_insights_result(self, **kwargs: Any) -> Any: ...
+
+    def generate_overall_summary(self, **kwargs: Any) -> str: ...
+
+    def adapt_interventions_result(self, **kwargs: Any) -> list: ...
+
+
 class AnalysisRunner(Protocol):
     """One round, analysed and delivered."""
 

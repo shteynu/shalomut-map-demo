@@ -13,6 +13,7 @@ from src.agents.node_support import (
     _v5_prompt_inclusions,
 )
 from src.agents.state import AnalyticsState
+from src.application.ports import TextGenerator
 from src.schemas.contract_registry import get_capabilities
 from src.services.llm_provider import (
     ProviderUnavailableError,
@@ -23,8 +24,17 @@ from src.services.llm_provider import (
 logger = logging.getLogger(__name__)
 
 
-async def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
-    """Generate dimension interpretations, provenance and the round summary."""
+async def agent_psychologist_node(
+    state: AnalyticsState,
+    *,
+    generator: TextGenerator = llm_provider_service,
+) -> AnalyticsState:
+    """Generate dimension interpretations, provenance and the round summary.
+
+    The generator arrives from the graph. The default is the real provider, so
+    a caller with nothing to say about it — a test exercising the node's own
+    logic — keeps working unchanged.
+    """
     round_data = state.get("round_data", {})
     dim_scores = round_data.get("dimensionScores", {})
     retry_count = state.get("retry_count", 0)
@@ -91,7 +101,7 @@ async def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
             generations.append(
                 _in_provider_slot(
                     slots,
-                    llm_provider_service.generate_structured_summary_result,
+                    generator.generate_structured_summary_result,
                     dim_id=dim_id,
                     dim_hebrew=dim_hebrew,
                     status=status,
@@ -106,7 +116,7 @@ async def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
             generations.append(
                 _in_provider_slot(
                     slots,
-                    llm_provider_service.generate_psychological_interpretation_result,
+                    generator.generate_psychological_interpretation_result,
                     dim_id=dim_id,
                     dim_hebrew=dim_hebrew,
                     score=score,
@@ -253,7 +263,7 @@ async def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
             metric_generations.append(
                 _in_provider_slot(
                     metric_slots,
-                    llm_provider_service.generate_metric_insights_result,
+                    generator.generate_metric_insights_result,
                     dim_id=dim_id,
                     dim_hebrew=DIMENSION_NAMES_HEBREW.get(dim_id, dim_id),
                     status=status,
@@ -290,7 +300,7 @@ async def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
     try:
         overall_summary = previous_summary if keeps_summary else (
             await asyncio.to_thread(
-                llm_provider_service.generate_overall_summary,
+                generator.generate_overall_summary,
                 dim_scores=dim_scores,
                 background_context=background_context,
                 retry_tier=retry_tier,
