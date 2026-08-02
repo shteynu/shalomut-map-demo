@@ -402,9 +402,21 @@ JSON в MCP-клиенте закрыт через `structuredContent` и `outpu
 `USE_MOCK_MCP` фейлится вне development, то есть production-fallback на mock
 запрещён и без самого порта.
 
-Нет: composition root вместо `getRepositories()`, constructor injection в
-Python вместо глобальных `mcp_client_manager` и `analytics_graph`, портов
-`AnalyticsSource`, `ResultSink`, `TextGenerator`, `JobStore` — ни одного.
+Нет: composition root вместо `getRepositories()` и порта `TextGenerator`.
+
+Закрыто после аудита: `AnalyticsSource`, `ResultSink` и `JobStore` названы
+протоколами в `src/application/ports.py`, а `AnalyticsRunnerService` получает
+источник, пайплайн и sink через конструктор — глобальные `mcp_client_manager` и
+`analytics_graph` остались только в дефолтной композиции внизу модуля. Доставка
+вместе с построением callback-URL уехала в `HttpResultSink`. Проверяется тем,
+что полный раунд проходит source → pipeline → sink на трёх подставных объектах,
+без MCP-сервера, графа и HTTP.
+
+`TextGenerator` сознательно не сделан: вызовы провайдера живут в четырёх
+модулях нод, а ноды — свободные функции над `AnalyticsState`. Инъекция значит
+либо положить сервис в state-контракт, либо превратить ноды в методы; это
+работа отдельного слайса, и там же живёт последний вопрос к capabilities
+внутри нод.
 
 Закрыто после аудита: callback route сведён к транспорту. 427 строк стали
 173: оркестрация ушла в `applyAiInsightsCallback` с outcome-union по образцу
@@ -503,16 +515,16 @@ identity на Argon2 или managed IdP — пароль всё ещё хеши�
 | `e29dc55` | тонкий callback route: 427 строк оркестрации → 173 строки транспорта, тесты route не правились |
 | `489b260` | этап 3 в Core: `CanonicalRoundAnalytics` и encoder, домен перестал знать версию контракта |
 | `624d7f7` | этап 3 в Python: `CanonicalAnalysisInput` и output adapter, три исходящих payload'а собираются в одном месте |
+| `6fefc9c` | порты этапа 4: `AnalyticsSource`, `ResultSink`, `JobStore` и constructor injection в раннере |
 
 Остальное из списков «Нет» выше — открытая работа: этап 3 целиком, порты и
 composition root этапа 4, DTO представления и identity этапа 5.
 
-Крупнейший независимый слайс из оставшегося — порты этапа 4:
-`AnalyticsSource`, `ResultSink`, `TextGenerator` и `JobStore` вместо глобальных
-`mcp_client_manager` и `analytics_graph`. `TextGenerator` заодно закрывает
-последнее место, где версия контракта доходит до нод. Из этапа 4 остаётся ещё
-composition root вместо `getRepositories()`; из этапа 5 —
-`DashboardInsightsDto` и вынос production-типов из `demo-data.ts`.
+Крупнейший независимый слайс из оставшегося — порт `TextGenerator`: ноды
+перестают звать `llm_provider_service` напрямую, и вместе с этим уходит
+последний вопрос к capabilities внутри нод. Из этапа 4 остаётся ещё composition
+root вместо `getRepositories()`; из этапа 5 — `DashboardInsightsDto` и вынос
+production-типов из `demo-data.ts`.
 
 Отдельно от плана: ветка `refactor/canonical-models` (три коммита, 2026-08-02,
 worktree Gemini) — независимая попытка этого же этапа 3 вместе с портами
