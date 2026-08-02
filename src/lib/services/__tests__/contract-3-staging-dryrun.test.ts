@@ -1,5 +1,5 @@
 import assert from 'node:assert';
-import test from 'node:test';
+import test, { after, before } from 'node:test';
 import { InMemoryRoundRepository } from '../../repositories/in-memory/in-memory-round.repository';
 import { InMemorySurveyRepository } from '../../repositories/in-memory/in-memory-survey.repository';
 import {
@@ -31,6 +31,21 @@ const ALL_DIMENSION_IDS: WellbeingDimensionId[] = [
   'organizational-climate',
   'meaning',
 ];
+
+let previousContractVersion: string | undefined;
+
+before(() => {
+  previousContractVersion = process.env.AI_ANALYTICS_CONTRACT_VERSION;
+  process.env.AI_ANALYTICS_CONTRACT_VERSION = '3.0';
+});
+
+after(() => {
+  if (previousContractVersion === undefined) {
+    delete process.env.AI_ANALYTICS_CONTRACT_VERSION;
+  } else {
+    process.env.AI_ANALYTICS_CONTRACT_VERSION = previousContractVersion;
+  }
+});
 
 function createCustomSurveyDefinition(
   questions: SurveyDefinitionQuestion[],
@@ -408,6 +423,10 @@ test('Workstream A Dry-Run: Contract 5.0 calculates scoreDistribution per questi
       { green: 5, yellow: 3, red: 2 },
     );
   } finally {
-    process.env.AI_ANALYTICS_CONTRACT_VERSION = previousEnv;
+    if (previousEnv === undefined) {
+      delete process.env.AI_ANALYTICS_CONTRACT_VERSION;
+    } else {
+      process.env.AI_ANALYTICS_CONTRACT_VERSION = previousEnv;
+    }
   }
 });

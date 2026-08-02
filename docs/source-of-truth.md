@@ -9,6 +9,9 @@ round questionnaires and from demo result data.
 > continues to describe the exact default 24-question legacy exchange. The
 > consumer-first boundary is described in
 > `docs/dynamic-questionnaire-ai-contract.md`.
+> An unset Core producer version defaults to the current `5.0`; `6.0` is
+> reserved and is not supported until a new manifest and consumer-first rollout
+> are explicitly accepted.
 
 ## Canonical Decisions
 

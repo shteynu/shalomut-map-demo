@@ -15,6 +15,7 @@ import {
   setRepositories,
 } from '@/lib/repositories';
 import { surveyInstrument } from '@/lib/shalomut-source';
+import { DEFAULT_PRODUCED_ANALYTICS_CONTRACT_VERSION } from '@/lib/ai-contract-version';
 import type {
   AnswerValue,
   SurveyDefinition,
@@ -229,7 +230,10 @@ test('two dynamic questionnaires cross Core MCP -> Python -> callback with exact
       );
 
       const analytics = await fetchMcpAnalytics(fixture.roundId);
-      assert.strictEqual(analytics.contractVersion, '3.0');
+      assert.strictEqual(
+        analytics.contractVersion,
+        DEFAULT_PRODUCED_ANALYTICS_CONTRACT_VERSION,
+      );
       assert.strictEqual(analytics.organizationId, fixture.organizationId);
       assert.strictEqual(analytics.isLocked, false);
       assert.deepStrictEqual(
@@ -244,7 +248,10 @@ test('two dynamic questionnaires cross Core MCP -> Python -> callback with exact
       }
 
       const stoneMap = runPythonPipeline(analytics);
-      assert.strictEqual(stoneMap.contractVersion, '3.0');
+      assert.strictEqual(
+        stoneMap.contractVersion,
+        DEFAULT_PRODUCED_ANALYTICS_CONTRACT_VERSION,
+      );
       assert.strictEqual(
         stoneMap.surveyDefinitionHash,
         analytics.surveyDefinitionHash,
@@ -311,7 +318,10 @@ test('two dynamic questionnaires cross Core MCP -> Python -> callback with exact
       );
       assert.strictEqual(getResponse.status, 200);
       const persisted = await getResponse.json();
-      assert.strictEqual(persisted.contractVersion, '3.0');
+      assert.strictEqual(
+        persisted.contractVersion,
+        DEFAULT_PRODUCED_ANALYTICS_CONTRACT_VERSION,
+      );
       assert.strictEqual(Object.keys(persisted.stones).length, 8);
 
       for (const dimension of surveyInstrument.dimensions) {
@@ -529,14 +539,20 @@ test('one below-threshold dynamic question locks the whole cross-service pipelin
 
   try {
     const analytics = await fetchMcpAnalytics(fixture.roundId);
-    assert.strictEqual(analytics.contractVersion, '3.0');
+    assert.strictEqual(
+      analytics.contractVersion,
+      DEFAULT_PRODUCED_ANALYTICS_CONTRACT_VERSION,
+    );
     assert.strictEqual(analytics.totalResponses, 10);
     assert.strictEqual(analytics.isLocked, true);
     assert.deepStrictEqual(analytics.dimensionScores, {});
     assert.deepStrictEqual(analytics.questionAggregates, {});
 
     const stoneMap = runPythonPipeline(analytics);
-    assert.strictEqual(stoneMap.contractVersion, '3.0');
+    assert.strictEqual(
+      stoneMap.contractVersion,
+      DEFAULT_PRODUCED_ANALYTICS_CONTRACT_VERSION,
+    );
     assert.strictEqual(stoneMap.status, 'locked_error');
     assert.strictEqual(stoneMap.isLocked, true);
     assert.strictEqual(stoneMap.stones, undefined);

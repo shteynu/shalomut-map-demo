@@ -2,6 +2,12 @@ import json
 from pathlib import Path
 
 from src.schemas.contract_registry import load_contract_registry
+from src.schemas.contract_registry import CONTRACT_REGISTRY
+from src.contracts import AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS
+
+
+def test_python_support_matches_the_shared_capability_manifest():
+    assert tuple(CONTRACT_REGISTRY) == AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS
 
 
 def test_dummy_six_contract_is_a_test_only_registry_extension():

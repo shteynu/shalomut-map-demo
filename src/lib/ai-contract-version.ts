@@ -50,14 +50,14 @@ export const PRODUCIBLE_ANALYTICS_CONTRACT_VERSIONS: readonly ProducedAnalyticsC
 }
 
 /**
- * What an unset variable means. Unset is a decision the project already made
- * and documents: a deployment that has not opted in keeps producing the oldest
- * dynamic contract, and the consumer-first rollout is what moves it forward.
- * An unset variable is therefore not the failure this module guards against —
- * a misspelled one is.
+ * What an unset variable means. Every current consumer accepts 5.0 and the
+ * deployed producer already uses it, so an absent variable must preserve the
+ * complete current payload rather than silently drop background context and
+ * score distributions by falling back to 3.0. A misspelled value still fails
+ * closed below.
  */
 export const DEFAULT_PRODUCED_ANALYTICS_CONTRACT_VERSION: ProducedAnalyticsContractVersion =
-  '3.0';
+  '5.0';
 
 export type ResolvedProducerContractVersion =
   | {
