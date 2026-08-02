@@ -61,21 +61,32 @@ rotation required before the first real respondents.)
   reports all seven migrations up to date. Exact deployed-state evidence is in
   `docs/shalomut-tracker-handoff.md`.
 
-- **Architecture refactoring plan completed and merged, 2026-08-01.** `main`
-  and `origin/main` include the published 2026-08-02 follow-up. The completed
-  sequence includes v5
+- **The agreed refactoring sequence is merged; the v3 plan is not finished,
+  2026-08-01.** The work followed the v4 ordering accepted on 2026-07-30, which
+  put four correctness and reliability defects ahead of v3's stage 0. That
+  sequence is complete and merged: v5
   background-context preservation, database-enforced response idempotency,
   fail-closed producer config, durable AI jobs, Contract Registry,
   capability-driven Python policy, standard MCP `structuredContent` plus
   `outputSchema`, cross-language golden corpus and a version-branch fitness
-  gate. GitHub Build & Validate run
+  gate. Stages 3 to 5 of the v3 document — canonical internal models, the
+  application/ports layer and presentation hardening — were never started, and
+  three of its P1 defects survived the sequence: the TS/Python Hebrew-only
+  drift, the dormant database-auth password bypass and a safety retry that
+  carried no critique. All three were closed on 2026-08-02, along with the
+  version-literal allowlist leak, and the shared corpus finally covers the
+  callback direction that let the first of them hide. A stage-by-stage audit
+  against `origin/main` is in `docs/wellbeing-refactoring-plan-v4-review.md`
+  section 6, kept current with what is merged; read that before treating any
+  part of the plan as delivered. GitHub Build & Validate run
   [30717540728](https://github.com/shteynu/shalomut-map-demo/actions/runs/30717540728)
   passed on a clean runner with 307 TypeScript, 7 PostgreSQL and 286 Python
   tests; CodeQL run
   [30717540724](https://github.com/shteynu/shalomut-map-demo/actions/runs/30717540724)
-  passed for TypeScript and Python. No open PR or genuinely unmerged branch
-  remains; stale refs are squash-merged history. The only non-documentation
-  worktree diff is the preserved unrelated generated `next-env.d.ts` change.
+  passed for TypeScript and Python. That run predates the 2026-08-02 fixes; its
+  test counts are the numbers of that day, not of `main` now. No open PR or
+  genuinely unmerged branch remained as of 2026-08-01; stale refs are
+  squash-merged history.
 
 - **Session close, 2026-07-30: the unfinished cleanup session is complete locally.** Item 12 is recorded as a
   bounded design-stage decision rather than an open risk; `ROADMAP.md` now reflects the built persistence/API/UI
