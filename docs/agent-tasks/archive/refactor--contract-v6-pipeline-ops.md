@@ -5,8 +5,8 @@
 - Branch: `refactor/contract-v6-pipeline-ops`
 - Base branch: `main`
 - Base commit: `1b5e54a`
-- Current HEAD: `1b5e54a`
-- Status: implementation and local verification complete; uncommitted
+- Current HEAD: `46d2c23`
+- Status: implementation verified and committed; ready for main integration
 - Last updated: 2026-08-02
 - Last agent/tool: Codex
 
@@ -160,7 +160,7 @@ configuration variable is absent.
 
 ## Remaining
 
-- Owner review, commit and push are not yet authorized or performed.
+- Merge the committed branch into `main` and push the verified integration.
 - Applying the two deployed migrations remains an explicit approval-gated
   operation and is not required for the code diff to be locally complete.
 
@@ -193,14 +193,13 @@ configuration variable is absent.
 
 ## Current Git state
 
-- HEAD: `1b5e54a08b1760daa357f7a65b6c296aa431118d`.
-- Upstream: `origin/main`; branch is 0 ahead and 0 behind its base. No task
-  commit exists yet.
+- HEAD: `46d2c23`; implementation is committed in
+  `refactor(ai): decompose pipeline and align contract default`.
+- Upstream: `origin/main`; branch is one commit ahead of its base.
 - Staged: none.
-- Unstaged and untracked: exactly the paths listed in `Changed files` above.
-- Visibility: this work is available only in
-  `/Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo-v6-pipeline`
-  until a commit is created.
+- Unstaged and untracked task files: none.
+- Visibility: the commit is available to every worktree in this clone; it is
+  not remote-portable until `main` is pushed.
 
 ## Verification evidence
 
@@ -251,7 +250,7 @@ configuration variable is absent.
   `20260730150000_add_ai_analysis_runs` pending.
 - Deployed Core health remains unreadable without manager application auth;
   repository and deployed-AI evidence provide the version boundary instead.
-- Commit, push, deployment and deployed migration application were not run.
+- Push, deployment and deployed migration application were not run.
 
 ### Environment
 
@@ -265,8 +264,8 @@ configuration variable is absent.
   its deployed commit and local source still show the same `1.0`–`5.0` boundary.
 - `npm ci` reports ten dependency audit findings (one moderate, nine high);
   dependency remediation is outside this behavior-neutral refactor.
-- The complete diff is verified locally but remains visible only in this
-  worktree until it is committed.
+- The complete diff is verified and committed locally; combined-main
+  verification remains before push.
 
 ## Failed approaches
 
@@ -288,7 +287,8 @@ configuration variable is absent.
 
 - Explicit bounded approval is required before applying the two migrations to
   the deployed Supabase database.
-- Deployment, secrets/env changes, aliases, commit and push are not authorized.
+- Deployment, secrets/env changes and aliases are not authorized. Commit and
+  push were authorized on 2026-08-02.
 
 ## Questions requiring an owner decision
 
@@ -297,5 +297,5 @@ configuration variable is absent.
 
 ## Next concrete step
 
-Review the complete uncommitted diff in this worktree and, if accepted, commit
-it on `refactor/contract-v6-pipeline-ops`.
+Merge commit `46d2c23` with the threshold-next-step branch on `main`, resolve
+the shared handoff in favor of the combined deployed/local state, and verify.
