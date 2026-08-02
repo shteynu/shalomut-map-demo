@@ -4,11 +4,12 @@
 
 - Branch: `docs/refactoring-plan-status`
 - Base branch: `origin/main`
-- Base commit: `ae3c3c4`
-- Current HEAD: tip of `docs/refactoring-plan-status`, two commits past `ae3c3c4`
-- Status: complete, committed on the branch, not pushed
+- Base commit: `ae3c3c4`, merged up to `956daf5`
+- Current HEAD: tip of `docs/refactoring-plan-status`, four commits past
+  `ae3c3c4` (two content commits, one merge of `956daf5`, one rewrite)
+- Status: complete, committed on the branch, pushed through `b86383e` only
 - Last updated: 2026-08-02
-- Last agent/tool: Claude Code
+- Last agent/tool: Claude Code (Opus 5)
 
 ## Objective
 
@@ -102,6 +103,24 @@ survive close reading of the code:
 - Stage 0 and the preamble record that `origin/main` moved to `8debfc7` after
   the audit commit, carrying the opt-in Stryker pilot for `src/lib/ai-contract.ts`.
 
+Fourth commit, rewriting section 6 for the merged state after four of the
+branches it described landed in `main` (`origin/main` @ `956daf5`):
+
+- The branch merged `956daf5` rather than rebasing onto it. The branch is
+  already pushed, and rebasing would rewrite shared history.
+- Every "closed on branch X" sentence became a description of what is in `main`.
+  Branch state now lives in exactly one place — a commit table titled
+  "Чем закрыто" — so only one passage can go stale next time.
+- Stage 0 was rewritten around the gap rather than around the fixture: the
+  corpus had no callback direction, which is why the Hebrew drift survived green
+  runs. It names `callback_corpus.json` and `stone_map_refusal` as work done and
+  not yet merged.
+- The stage table moved stage 1 to "6 пунктов из 6" and marked stage 0's
+  callback direction closed.
+- `PROGRESS.md`: the bullet now names all three surviving P1 defects instead of
+  two, and its "no unmerged branch remains" claim is dated to 2026-08-01 rather
+  than stated in the present tense, since two branches are open right now.
+
 ## In progress
 
 None.
@@ -126,7 +145,11 @@ machine cannot.
 
 ### Passed
 
-- `git diff --check`: clean, no whitespace errors, both commits.
+- `git diff --check`: clean, no whitespace errors, every commit.
+- Every commit hash cited in the "Чем закрыто" table resolves
+  (`a6599d3`, `48d6f5d`, `1bca033`, `f86acf8`, `6d42f4c`, `8debfc7`, `956daf5`,
+  `fa0bd1e`), and the two files the table describes as not yet merged exist on
+  `test/callback-corpus-parity`.
 - Every repository path named in the new section exists on this branch, except
   `contracts/fixtures/hebrew_text_corpus.json`, which the text explicitly
   describes as arriving with the unmerged `fix/hebrew-only-parity` branch.
@@ -179,8 +202,10 @@ gap. This branch only records the gap; it does not schedule the work.
 
 ## Next concrete step
 
-Owner action: push this branch with the four fix branches and decide the merge
-order. Whoever merges rewrites the three passages section 6 marks as going
-stale — the allowlist sentence in stage 2, the Hebrew corpus sentence in stage 0
-and the closing branch list — in the same pass, so the audit does not describe
-branch state that no longer exists.
+Owner action: merge `test/callback-corpus-parity` first, then this branch, and
+drop the "не влито" paragraph under "Чем закрыто" as part of that merge — it is
+the only passage in section 6 that the merge makes stale.
+
+```bash
+git push origin docs/refactoring-plan-status
+```
