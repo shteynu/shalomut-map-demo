@@ -7,11 +7,10 @@ lifecycle-aware UI после privacy threshold и follow-up по Python pipelin
 прошёл на чистом runner, включая Prisma generation, migrations, 307
 TypeScript-тестов, 7 PostgreSQL-тестов и 286 Python-тестов. CodeQL
 [30717540724](https://github.com/shteynu/shalomut-map-demo/actions/runs/30717540724)
-прошёл для TypeScript и Python. Новое продолжение разделяет Python nodes по
-ответственностям, типизирует pipeline state, переводит unset producer default
-на `5.0` и резервирует `6.0` как неподдерживаемую версию. Обе завершённые
-задачи находятся в `docs/agent-tasks/archive/`. Deployment, environment и
-deployed database в этой сессии не менялись.
+прошёл для TypeScript и Python. Последующие Contract V6 Core consumer и Python
+producer также объединены в `main`; их завершённые задачи находятся в
+`docs/agent-tasks/archive/`. Unset producer default остаётся `5.0`. Deployment,
+environment и deployed database в этой сессии не менялись.
 
 `main` содержит принятый V6 manifest/Core consumer из commit `e2a472d` и Python
 producer из commit `9036410`: Python parser/health поддерживают `6.0`,
@@ -96,7 +95,7 @@ read-only deployed audit.
 В объединённом `main` unset `AI_ANALYTICS_CONTRACT_VERSION` производит `5.0`;
 явные
 `3.0`, `4.0` и `5.0` остаются допустимыми, неизвестное значение по-прежнему
-fail-closed. Контракт `6.0` опубликован в активной Core-consumer ветке: его
+fail-closed. Контракт `6.0` опубликован в `main`: его
 accepted delta — три summary-параграфа на dimension, качественный `insightText`
 на каждой метрике и ровно пять адаптированных рекомендаций. Core callback
 сохраняет числовые evidence-поля, перепроверяет их против собственных агрегатов

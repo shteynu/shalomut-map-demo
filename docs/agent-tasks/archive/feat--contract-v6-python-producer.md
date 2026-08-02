@@ -249,5 +249,5 @@ producer switch.
 - Ignored local environment: `ai-analytics-service/.venv/`.
 - Visibility at archival: commits are available to local worktrees; `main` and
   `origin/main` are updated only by the following authorized integration step.
-- Integration: local `main` was fast-forwarded through archival commit `b2505c4`;
-  the final status-document commit and authorized `origin/main` push follow.
+- Integration and publication: `main` and `origin/main` contain the Core V6
+  consumer, Python V6 producer and both archived task records.
