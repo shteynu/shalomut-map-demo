@@ -4,6 +4,10 @@
 документа v4). Локальный `main` при этом стоит на `f3dbce4` — два документационных
 коммита позади, как и написано в v4.
 
+Дополнено 2026-08-02: §6 содержит аудит фактической реализации v3 против
+`origin/main` @ `ae3c3c4`. Разделы 1–5 остались такими, какими были написаны
+2026-07-30, и читать их нужно как состояние на ту дату.
+
 Входные документы:
 
 - `wellbeing_architecture_refactoring_plan_ru_v3.pdf` — срез на `01fd852`.
@@ -263,9 +267,13 @@ Python — унаследованная запись. Перед PR 1 нужно
    следующий шаг. Отдельная ветка,
    не параллельно с продуктовыми пунктами 5–6 backlog (A1). Метрики из A3 входят
    в DoD. Размер L, 2–3 коммита.
-6. **Auth.** Выполнено (2026-07-30). Устаревшие ветки `agent/database-backed-manager-ui` и
+6. **Auth — организационная часть выполнена (2026-07-30), код не трогали.**
+   Устаревшие ветки `agent/database-backed-manager-ui` и
    `agent/empty-runtime-repositories` удалены локально. В план этапа E явно включена работа
    над application-level manager identity/roles и tenant authorization, как указано в C5.
+   **Формулировка «выполнено» здесь относилась только к веткам и планированию.**
+   Сам dormant bypass в `authenticateCredentials` остался в коде и был закрыт
+   лишь 2026-08-02 — см. §6.
 7. Дальше — этапы C и D по v4, с оговоркой A5 и с `structuredContent` как
    consumer-first изменением (C4).
 
@@ -278,3 +286,134 @@ Python — унаследованная запись. Перед PR 1 нужно
 - продуктовый backlog из `docs/product-behaviour-backlog.md`.
 
 План рефакторинга не должен их поглощать и не должен ими блокироваться.
+
+## 6. Статус реализации v3 на 2026-08-02
+
+Статический аудит `origin/main` @ `ae3c3c4` против roadmap и Definition of Done
+документа v3. Проверки не перезапускались ради аудита: выводы получены чтением
+кода, а единственная исполненная проверка — сравнение Hebrew-only предикатов
+двух рантаймов.
+
+Порядок работ шёл по v4, поэтому «не сделано» ниже означает «до этого этапа v3
+не дошли», а не срыв. Исключение — два P1-дефекта, которые сама
+последовательность обязана была закрыть.
+
+| Этап v3 | Статус |
+| --- | --- |
+| 0. Regression Safety Net | В основном выполнен |
+| 1. Correctness и reliability | 5 пунктов из 6 |
+| 2. Contract Registry | Capabilities выполнены, strategy/adapter — нет |
+| 3. Canonical internal models | Не начат |
+| 4. Application layer и ports | Частично |
+| 5. Presentation и hardening | Частично |
+
+### Этап 0
+
+Есть: characterization-покрытие расчётов, общий golden corpus, прогоняемый
+обоими рантаймами, PostgreSQL concurrency suite на настоящей базе,
+детерминированный Core → AI → callback E2E и обязательный CI-gate с postgres
+service.
+
+Нет: общий corpus покрывает только направление input (Core → AI), по одному
+positive и negative payload на версию. Направления callback в нём нет
+вовсе; ветка `fix/hebrew-only-parity` добавляет
+`contracts/fixtures/hebrew_text_corpus.json`, но и он покрывает одно
+семантическое правило, а на `main` его пока нет.
+Contract-test suite для адаптеров `AnalyticsSource`
+невозможен, пока нет самого порта. CI execution model §9.4 сведена к одному
+job: nightly и отдельного real-provider smoke по расписанию нет.
+
+### Этап 1
+
+Есть: capability-driven `backgroundContext` для v5, unique constraints на
+`(roundId, anonymousTokenHash)` и `(responseId, questionId)`, `AiAnalysisRun`
+со state machine, lease и heartbeat, идемпотентный callback, polling worker в
+`lifespan`. Legacy webhook с `BackgroundTasks` сохранён намеренно как rollback
+boundary.
+
+Не было сделано до 2026-08-02: пункт 6, dormant auth bypass. Ветка `repository`
+в `authenticateCredentials` возвращала `ok: true` без проверки пароля; закрыта
+на ветке `fix/dormant-auth-bypass`.
+
+### Этап 2
+
+Есть: общий манифест `contracts/capabilities.json` c именованными
+capabilities, загружаемый обоими рантаймами; producer-версия в одном месте с
+fail-closed на неизвестном значении; MCP route, callback route и Python parser
+ветвятся по capabilities; fitness-функция на литералы версий в обоих языках.
+
+Нет: интерфейса `AiContractDefinition` из §4.2 с `decodeAnalyticsInput` и
+`encodeStoneMap`, а также отдельных адаптеров `versions/vN`. Валидаторы
+`isValidV2Stone`…`isValidV6Stone` лежат вручную в одном файле `ai-contract.ts`,
+поэтому критерий расширяемости из §3.2 не достигнут: v6 добавлялся правкой
+существующих валидаторов, а не одним адаптером. Отдельно: allowlist
+fitness-функции разрешает литералы в `src/lib/services/analytics.service.ts`,
+то есть в доменном сервисе, тогда как DoD §12.2 допускает их только внутри
+contract package, схем и тестов.
+
+### Этап 3
+
+Не начат. Доменный расчёт сам формирует wire-форму
+(`if (getCapabilities(producedVersion).supportsScoreDistribution)`), то есть
+находится на среднем варианте из §3.2, а не на целевом
+`contract.encodeAnalyticsInput(canonical)`. `CanonicalRoundAnalytics`,
+`CanonicalAnalysisInput`, encoder и output adapter отсутствуют в обоих
+рантаймах; pipeline по-прежнему получает версию как управляющий параметр, хотя
+ветвление внутри него идёт через capabilities.
+
+### Этап 4
+
+Есть: `IAiAnalysisRunRepository` выделен из `IRoundRepository`; двойной разбор
+JSON в MCP-клиенте закрыт через `structuredContent` и `outputSchema`;
+`USE_MOCK_MCP` фейлится вне development, то есть production-fallback на mock
+запрещён и без самого порта.
+
+Нет: `AiInsightsRepository` (AI-результаты остались на `IRoundRepository`),
+тонких routes (callback route — 427 строк оркестрации), composition root вместо
+`getRepositories()`, constructor injection в Python вместо глобальных
+`mcp_client_manager` и `analytics_graph`, портов `AnalyticsSource`,
+`ResultSink`, `TextGenerator`, `JobStore` — ни одного. Адресный safety repair
+из §6.4 тоже не сделан: `safety_feedback` записывается и не читается никем,
+цикл повторяет весь pipeline до трёх раз без critique в prompt.
+
+### Этап 5
+
+Есть: observability джобов почти по всему списку §12.6 и CHECK-констрейнты с
+индексами для `ai_analysis_runs`; UI фактически не знает версий контракта, хотя
+именованного стабильного DTO нет.
+
+Нет: `DashboardInsightsDto` как явного контракта представления, выноса
+production-типов из `demo-data.ts` (их импортируют 17 файлов), генерации
+OpenAPI из одного источника (по-прежнему два редактируемых артефакта с
+integrity-тестом), enum/CHECK-констрейнтов на остальных таблицах и перевода
+identity на Argon2 или managed IdP — пароль всё ещё хешируется SHA-256 со
+статическим перцем.
+
+### Дефекты §8
+
+| Дефект | Статус |
+| --- | --- |
+| P0 `backgroundContext` теряется для v5 | Исправлен |
+| P0 `BackgroundTasks` после 202 | Исправлен; legacy webhook оставлен как rollback boundary |
+| P0 один timestamp для job и result | Исправлен |
+| P0 check-then-create submission | Исправлен |
+| P1 MCP double JSON parsing | Исправлен |
+| P1 TS/Python Hebrew-only drift | Пережил последовательность; закрыт 2026-08-02 |
+| P1 dormant DB-auth password bypass | Пережил последовательность; закрыт 2026-08-02 |
+| P1 safety retry без critique | Открыт |
+
+Про Hebrew-only drift стоит сказать отдельно: он не просто не был закрыт, а
+успел разойтись сильнее. Python ужесточил правило 2026-07-30, Core остался на
+«запрещена только латиница», и до 2026-08-02 Core принимал кириллический или
+арабский текст, который сам генерирующий сервис отверг бы. Общий corpus этого
+не ловил, потому что не покрывал направление callback.
+
+### Что из этого уже закрыто и чем
+
+Обе правки лежат на отдельных ветках от `ae3c3c4` и не запушены:
+
+- `fix/hebrew-only-parity` — правило Core приведено к правилу Python, добавлен
+  общий `contracts/fixtures/hebrew_text_corpus.json` и регрессии на уровне
+  callback;
+- `fix/dormant-auth-bypass` — параметр `repository` и его ветка удалены,
+  добавлена регрессия «manager record — не credential».
