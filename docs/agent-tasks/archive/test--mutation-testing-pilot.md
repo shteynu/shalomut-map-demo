@@ -5,8 +5,8 @@
 - Branch: `test/mutation-testing-pilot`
 - Base branch: `origin/main`
 - Base commit: `ae3c3c4fa8157dd7c0b736e37126da5b6df93856`
-- Current HEAD: `ae3c3c4fa8157dd7c0b736e37126da5b6df93856`
-- Status: First TypeScript pilot implemented; survivor classification remains
+- Current HEAD: `6d42f4c` (`test: add AI contract mutation pilot`)
+- Status: Complete
 - Last updated: 2026-08-02
 - Last agent/tool: Codex
 
@@ -82,13 +82,11 @@ Maintainers can run a focused, non-blocking mutation-testing pilot for `src/lib/
 
 ## In progress
 
-- Classifying the remaining `ai-contract.ts` survivors before expanding mutation scope.
+- None; this first report-only pilot is complete.
 
 ## Remaining
 
-- Classify the remaining 350 survivors as missing tests, equivalent mutants, dead code, or overly complex implementation.
-- Add only the next meaningful contract tests or small validator simplifications found by that classification.
-- After the AI-contract baseline is reviewed, continue Stage C with analytics privacy/invalid-answer tests and a separate analytics mutation target.
+- None within this closed task. Survivor classification and the analytics target are follow-up work that should use a new branch and task file.
 
 ## Changed files
 
@@ -102,13 +100,13 @@ Maintainers can run a focused, non-blocking mutation-testing pilot for `src/lib/
 
 ## Git state
 
-- Current HEAD: `ae3c3c4fa8157dd7c0b736e37126da5b6df93856` (`origin/main`, ahead 0 / behind 0).
-- Committed on this branch: no task commits yet.
+- Implementation commit: `6d42f4c` (`test: add AI contract mutation pilot`).
+- Base: `ae3c3c4fa8157dd7c0b736e37126da5b6df93856` (`origin/main` before publication).
 - Staged: none.
-- Unstaged: `.gitignore`, `package.json`, `package-lock.json`, `src/lib/__tests__/ai-contract-v5.test.ts`, `src/lib/__tests__/ai-contract-v6.test.ts`.
-- Untracked: `stryker.config.mjs`, `docs/agent-tasks/active/test--mutation-testing-pilot.md`.
+- Unstaged: none before archival documentation update.
+- Untracked: none before archival documentation update.
 - Ignored local evidence: `reports/mutation/mutation.html`, `reports/mutation/mutation.json`.
-- Visibility: the implementation is currently visible only in this worktree; another worktree can consume it after a commit exists on this branch, and another checkout or machine only after the branch is pushed.
+- Visibility at task closure: the implementation commit is portable across worktrees in this clone; publication to `origin/main` is the next user-authorized Git operation.
 
 ## Verification evidence
 
@@ -163,4 +161,4 @@ Maintainers can run a focused, non-blocking mutation-testing pilot for `src/lib/
 
 ## Next concrete step
 
-Review the remaining survivors in `reports/mutation/mutation.html`, classify the high-value validator conditions first, and add tests only for the next meaningful missing contract behavior before adding `analytics.service.ts` to mutation scope.
+Start a new follow-up branch from updated `main` to classify the highest-value surviving `ai-contract.ts` mutants before adding `analytics.service.ts` to mutation scope.
