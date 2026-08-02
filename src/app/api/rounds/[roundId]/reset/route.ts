@@ -13,7 +13,8 @@ export async function POST(
     if (unavailable) return unavailable;
 
     const { roundId } = await params;
-    const { aiAnalysisRunRepo, orgRepo, roundRepo, surveyRepo } = getRepositories();
+    const { aiAnalysisRunRepo, aiInsightsRepo, orgRepo, roundRepo, surveyRepo } =
+      getRepositories();
 
     const authorization = await authorizeManagerRound(
       request,
@@ -31,7 +32,7 @@ export async function POST(
     await surveyRepo.deleteByRoundId(roundId);
 
     // A persisted analysis describes responses that no longer exist.
-    await roundRepo.clearAiInsights(roundId);
+    await aiInsightsRepo.deleteByRoundId(roundId);
     // Pending and terminal runs describe the same deleted response snapshot.
     // Removing them also releases the stable `automatic` request key so a new
     // collection cycle can enqueue once it reaches the threshold again.

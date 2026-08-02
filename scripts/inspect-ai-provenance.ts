@@ -70,7 +70,7 @@ async function main() {
         if (rounds.length > 0) {
           roundId = rounds[0].id;
           roundTitle = rounds[0].title;
-          aiInsights = await repos.roundRepo.getAiInsights(roundId);
+          aiInsights = await repos.aiInsightsRepo.findByRoundId(roundId);
           break;
         }
       }
@@ -79,7 +79,7 @@ async function main() {
       if (found) {
         roundId = found.id;
         roundTitle = found.title;
-        aiInsights = await repos.roundRepo.getAiInsights(roundId);
+        aiInsights = await repos.aiInsightsRepo.findByRoundId(roundId);
       }
     }
   }

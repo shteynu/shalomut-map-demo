@@ -1,6 +1,7 @@
 import assert from 'node:assert';
 import test from 'node:test';
 import {
+  PrismaAiInsightsRepository,
   PrismaOrganizationRepository,
   PrismaRoundRepository,
   PrismaSurveyRepository,
@@ -281,11 +282,11 @@ test('PrismaRoundRepository returns an isolated questionnaire snapshot', async (
   );
 });
 
-test('PrismaRoundRepository persists AI insights across repository instances', async () => {
+test('PrismaAiInsightsRepository persists AI insights across repository instances', async () => {
   const mockPrisma = createMockPrismaClient();
-  const writer = new PrismaRoundRepository(mockPrisma);
+  const writer = new PrismaAiInsightsRepository(mockPrisma);
 
-  await writer.create({
+  await new PrismaRoundRepository(mockPrisma).create({
     id: 'round_ai_insights',
     organizationId: 'org_prisma_1',
     title: 'AI insights persistence',
@@ -302,20 +303,17 @@ test('PrismaRoundRepository persists AI insights across repository instances', a
     status: 'success',
   };
 
-  assert.strictEqual(
-    await writer.saveAiInsights('round_ai_insights', insights),
-    true,
-  );
+  assert.strictEqual(await writer.save('round_ai_insights', insights), true);
 
-  const reader = new PrismaRoundRepository(mockPrisma);
+  const reader = new PrismaAiInsightsRepository(mockPrisma);
   assert.deepStrictEqual(
-    await reader.getAiInsights('round_ai_insights'),
+    await reader.findByRoundId('round_ai_insights'),
     insights,
   );
-  assert.strictEqual(
-    await reader.saveAiInsights('missing_round', insights),
-    false,
-  );
+  assert.strictEqual(await reader.save('missing_round', insights), false);
+
+  await reader.deleteByRoundId('round_ai_insights');
+  assert.strictEqual(await writer.findByRoundId('round_ai_insights'), null);
 });
 
 test('PrismaSurveyRepository saves responses and counts total submissions', async () => {

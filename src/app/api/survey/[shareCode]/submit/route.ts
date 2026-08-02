@@ -24,7 +24,8 @@ export async function POST(
       anonymousTokenHash?: string;
     };
 
-    const { aiAnalysisRunRepo, roundRepo, surveyRepo } = getRepositories();
+    const { aiAnalysisRunRepo, aiInsightsRepo, roundRepo, surveyRepo } =
+      getRepositories();
     const round = await RoundService.getRoundByShareCode(shareCode, roundRepo);
 
     if (!round) {
@@ -77,7 +78,7 @@ export async function POST(
         round.id,
         round.privacyThreshold,
         aiAnalysisRunRepo,
-        roundRepo,
+        aiInsightsRepo,
         surveyRepo,
       );
     } catch (error) {

@@ -1,5 +1,6 @@
 import assert from 'node:assert';
 import test, { after, before } from 'node:test';
+import { InMemoryAiInsightsRepository } from '../../repositories/in-memory/in-memory-ai-insights.repository';
 import { InMemoryRoundRepository } from '../../repositories/in-memory/in-memory-round.repository';
 import { InMemorySurveyRepository } from '../../repositories/in-memory/in-memory-survey.repository';
 import {
@@ -264,10 +265,11 @@ test('Workstream A Dry-Run: Scenario A1 (Unlocked disposable round with custom q
   );
 
   // Persist to in-memory repository and read back
-  const saved = await roundRepo.saveAiInsights(roundId, aiPayload);
+  const aiInsightsRepo = new InMemoryAiInsightsRepository(roundRepo);
+  const saved = await aiInsightsRepo.save(roundId, aiPayload);
   assert.ok(saved, 'AI insights should be saved successfully');
 
-  const retrieved = await roundRepo.getAiInsights(roundId);
+  const retrieved = await aiInsightsRepo.findByRoundId(roundId);
   assert.deepStrictEqual(retrieved, aiPayload);
 });
 

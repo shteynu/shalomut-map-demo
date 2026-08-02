@@ -84,28 +84,7 @@ export class InMemoryRoundRepository implements IRoundRepository {
     return cloneRound(updated);
   }
 
-  private aiInsightsStore: Map<string, Record<string, any>> = new Map();
-
-  public async saveAiInsights(id: string, insights: Record<string, any>): Promise<boolean> {
-    if (!this.rounds.has(id)) {
-      return false;
-    }
-
-    this.aiInsightsStore.set(id, { ...insights });
-    return true;
-  }
-
-  public async getAiInsights(id: string): Promise<Record<string, any> | null> {
-    const found = this.aiInsightsStore.get(id);
-    return found ? { ...found } : null;
-  }
-
-  public async clearAiInsights(id: string): Promise<void> {
-    this.aiInsightsStore.delete(id);
-  }
-
   public clear(): void {
     this.rounds.clear();
-    this.aiInsightsStore.clear();
   }
 }

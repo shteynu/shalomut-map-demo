@@ -3,11 +3,13 @@ import test from 'node:test';
 import {
   DEMO_ORGANIZATION,
   DEMO_ROUND,
+  InMemoryAiInsightsRepository,
   InMemoryOrganizationRepository,
   InMemoryRoundRepository,
   InMemorySurveyRepository,
   getRepositories,
   resetDefaultRepositories,
+  setRepositories,
 } from '..';
 import { AnalyticsService, RoundService, SurveyService } from '../../services';
 import { surveyInstrument } from '../../shalomut-source';
@@ -219,6 +221,56 @@ test('default repositories do not invent demo records when no database is config
     assert.strictEqual(await roundRepo.findById(DEMO_ROUND.id), null);
     assert.strictEqual(await surveyRepo.getResponseCount(DEMO_ROUND.id), 0);
   } finally {
+    if (previousDatabaseUrl === undefined) {
+      delete process.env.DATABASE_URL;
+    } else {
+      process.env.DATABASE_URL = previousDatabaseUrl;
+    }
+  }
+});
+
+test('InMemoryAiInsightsRepository refuses a result for a round nobody created', async () => {
+  const roundRepo = new InMemoryRoundRepository([DEMO_ROUND]);
+  const aiInsightsRepo = new InMemoryAiInsightsRepository(roundRepo);
+
+  assert.strictEqual(
+    await aiInsightsRepo.save('round_never_created', { status: 'success' }),
+    false,
+  );
+  assert.strictEqual(
+    await aiInsightsRepo.findByRoundId('round_never_created'),
+    null,
+  );
+
+  assert.strictEqual(
+    await aiInsightsRepo.save(DEMO_ROUND.id, { status: 'success' }),
+    true,
+  );
+  assert.deepStrictEqual(await aiInsightsRepo.findByRoundId(DEMO_ROUND.id), {
+    status: 'success',
+  });
+
+  await aiInsightsRepo.deleteByRoundId(DEMO_ROUND.id);
+  assert.strictEqual(await aiInsightsRepo.findByRoundId(DEMO_ROUND.id), null);
+});
+
+test('a replaced round repository brings a matching insights repository', async () => {
+  const previousDatabaseUrl = process.env.DATABASE_URL;
+  delete process.env.DATABASE_URL;
+  resetDefaultRepositories();
+
+  try {
+    // Injecting only the round store is the common shape in route tests; the
+    // insights store must still recognise the rounds that store holds.
+    setRepositories({ roundRepo: new InMemoryRoundRepository([DEMO_ROUND]) });
+
+    const { aiInsightsRepo } = getRepositories();
+    assert.strictEqual(
+      await aiInsightsRepo.save(DEMO_ROUND.id, { status: 'success' }),
+      true,
+    );
+  } finally {
+    resetDefaultRepositories();
     if (previousDatabaseUrl === undefined) {
       delete process.env.DATABASE_URL;
     } else {

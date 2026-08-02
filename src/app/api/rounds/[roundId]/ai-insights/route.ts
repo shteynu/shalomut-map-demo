@@ -187,7 +187,7 @@ export async function GET(request: Request, { params }: RouteParams) {
 
     // Dual-read during rollout: a result written before AiAnalysisRun existed
     // remains available from the legacy round column.
-    const insights = await repositories.roundRepo.getAiInsights(roundId);
+    const insights = await repositories.aiInsightsRepo.findByRoundId(roundId);
     if (!insights) {
       return NextResponse.json(
         {
@@ -400,7 +400,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     }
 
     // Dual-write during rollout keeps the legacy reader/rollback path viable.
-    const saved = await repositories.roundRepo.saveAiInsights(
+    const saved = await repositories.aiInsightsRepo.save(
       roundId,
       validation.value,
     );

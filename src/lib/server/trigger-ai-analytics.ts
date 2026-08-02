@@ -1,6 +1,6 @@
 import type {
   IAiAnalysisRunRepository,
-  IRoundRepository,
+  IAiInsightsRepository,
   ISurveyRepository,
 } from '@/lib/repositories/interfaces';
 import { effectivePrivacyThreshold } from '@/lib/survey-definition';
@@ -23,7 +23,7 @@ export async function enqueueAiAnalyticsAfterResponse(
   roundId: string,
   storedPrivacyThreshold: number,
   aiAnalysisRunRepo: IAiAnalysisRunRepository,
-  roundRepo: IRoundRepository,
+  aiInsightsRepo: IAiInsightsRepository,
   surveyRepo: ISurveyRepository,
 ): Promise<AutoEnqueueOutcome> {
   const responseCount = await surveyRepo.getResponseCount(roundId);
@@ -31,7 +31,7 @@ export async function enqueueAiAnalyticsAfterResponse(
     return 'below_threshold';
   }
 
-  if (await roundRepo.getAiInsights(roundId)) {
+  if (await aiInsightsRepo.findByRoundId(roundId)) {
     return 'already_generated';
   }
 

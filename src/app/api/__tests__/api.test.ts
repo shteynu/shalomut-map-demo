@@ -16,6 +16,7 @@ import {
   DEMO_ROUND,
   InMemoryAiAnalysisRunRepository,
   InMemoryOrganizationRepository,
+  InMemoryAiInsightsRepository,
   InMemoryRoundRepository,
   InMemorySurveyRepository,
   resetDefaultRepositories,
@@ -570,9 +571,11 @@ test('Saving a complete questionnaire activates a draft round, an incomplete one
 test('API Route POST /api/rounds/[roundId]/reset drops stale insights and writes an audit event', async () => {
   const aiAnalysisRunRepo = new InMemoryAiAnalysisRunRepository();
   const roundRepo = new InMemoryRoundRepository([DEMO_ROUND]);
+  const aiInsightsRepo = new InMemoryAiInsightsRepository(roundRepo);
   const surveyRepo = new InMemorySurveyRepository();
   setRepositories({
     aiAnalysisRunRepo,
+    aiInsightsRepo,
     orgRepo: new InMemoryOrganizationRepository([DEMO_ORGANIZATION]),
     roundRepo,
     surveyRepo,
@@ -596,7 +599,7 @@ test('API Route POST /api/rounds/[roundId]/reset drops stale insights and writes
       }),
       { params: Promise.resolve({ shareCode: DEMO_ROUND.shareCode }) },
     );
-    await roundRepo.saveAiInsights(DEMO_ROUND.id, { status: 'success' });
+    await aiInsightsRepo.save(DEMO_ROUND.id, { status: 'success' });
     await aiAnalysisRunRepo.enqueue(DEMO_ROUND.id, {
       requestKey: 'automatic',
       trigger: 'automatic',
@@ -611,7 +614,10 @@ test('API Route POST /api/rounds/[roundId]/reset drops stale insights and writes
 
     assert.strictEqual(response.status, 200);
     // The analysis described responses that no longer exist.
-    assert.strictEqual(await roundRepo.getAiInsights(DEMO_ROUND.id), null);
+    assert.strictEqual(
+      await aiInsightsRepo.findByRoundId(DEMO_ROUND.id),
+      null,
+    );
     assert.strictEqual(
       await aiAnalysisRunRepo.findLatestByRoundId(DEMO_ROUND.id),
       null,

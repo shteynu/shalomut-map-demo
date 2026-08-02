@@ -4,6 +4,7 @@ import { POST as submitSurvey } from '../survey/[shareCode]/submit/route';
 import {
   InMemoryOrganizationRepository,
   InMemoryAiAnalysisRunRepository,
+  InMemoryAiInsightsRepository,
   InMemoryRoundRepository,
   InMemorySurveyRepository,
   resetDefaultRepositories,
@@ -115,9 +116,11 @@ test('does not enqueue AI analytics below the privacy threshold', async () => {
 
 test('enqueues one automatic run only, however many responses arrive', async () => {
   const roundRepo = new InMemoryRoundRepository([createRound(1)]);
+  const aiInsightsRepo = new InMemoryAiInsightsRepository(roundRepo);
   const aiAnalysisRunRepo = new InMemoryAiAnalysisRunRepository();
   setRepositories({
     aiAnalysisRunRepo,
+    aiInsightsRepo,
     roundRepo,
     surveyRepo: new InMemorySurveyRepository(),
     orgRepo: new InMemoryOrganizationRepository(),
@@ -131,7 +134,7 @@ test('enqueues one automatic run only, however many responses arrive', async () 
 
   // A later submission on a round that already has a persisted result must not
   // regenerate it automatically; that is the manager's explicit action.
-  await roundRepo.saveAiInsights('auto-trigger-round-1', { status: 'success' });
+  await aiInsightsRepo.save('auto-trigger-round-1', { status: 'success' });
   await submit('token-d');
   const afterResult = await aiAnalysisRunRepo.findLatestByRoundId(
     'auto-trigger-round-1',

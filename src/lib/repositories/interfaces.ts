@@ -28,13 +28,25 @@ export interface IRoundRepository {
   findByOrganizationId(organizationId: string): Promise<SurveyRound[]>;
   update(id: string, input: UpdateRoundInput): Promise<SurveyRound | null>;
   updateStatus(id: string, status: RoundStatus): Promise<SurveyRound | null>;
-  saveAiInsights(id: string, insights: Record<string, any>): Promise<boolean>;
-  getAiInsights(id: string): Promise<Record<string, any> | null>;
+}
+
+/**
+ * The persisted AI result of a round, kept apart from the round itself the way
+ * `IAiAnalysisRunRepository` keeps the durable job. The result still lives in
+ * the `survey_rounds` columns; only ownership of the read and write moved.
+ */
+export interface IAiInsightsRepository {
+  /**
+   * Returns `false` when the round does not exist, which is what turns a
+   * callback for an unknown round into a 404 instead of a silent write.
+   */
+  save(roundId: string, insights: Record<string, any>): Promise<boolean>;
+  findByRoundId(roundId: string): Promise<Record<string, any> | null>;
   /**
    * Drops a persisted legacy AI result. The run repository separately deletes
    * durable jobs when a round is reset.
    */
-  clearAiInsights(id: string): Promise<void>;
+  deleteByRoundId(roundId: string): Promise<void>;
 }
 
 export interface IAiAnalysisRunRepository {
