@@ -58,10 +58,10 @@ test('an unknown version does not silently become the default', () => {
   }
 });
 
-test('a version Core cannot produce is refused even though it is supported', () => {
+test('historical callback-only versions remain unavailable to the producer', () => {
   // These versions are accepted on a callback, so a permissive check
   // would wave them through here and leave the calculator unable to emit them.
-  for (const value of ['1.0', '2.0', '6.0']) {
+  for (const value of ['1.0', '2.0']) {
     const resolved = resolveProducedAnalyticsContractVersion(value);
     assert.ok(!resolved.ok, `'${value}' is readable but not producible`);
   }
@@ -87,12 +87,12 @@ test('the getter throws on an unknown version instead of returning one', () => {
   assert.throws(
     () =>
       getProducedAnalyticsContractVersion({
-        [PRODUCER_CONTRACT_VERSION_ENV]: '6.0',
+        [PRODUCER_CONTRACT_VERSION_ENV]: '7.0',
       }),
     (error: unknown) => {
       assert.ok(error instanceof UnsupportedProducerContractVersionError);
       // The thrown error stays in logs, so here the value is worth having.
-      assert.match((error as Error).message, /6\.0/);
+      assert.match((error as Error).message, /7\.0/);
       return true;
     },
   );
@@ -100,10 +100,10 @@ test('the getter throws on an unknown version instead of returning one', () => {
 
 test('the getter returns the configured version when it is producible', () => {
   const version = getProducedAnalyticsContractVersion({
-    [PRODUCER_CONTRACT_VERSION_ENV]: '5.0',
+    [PRODUCER_CONTRACT_VERSION_ENV]: '6.0',
   });
 
-  assert.strictEqual(version, '5.0');
+  assert.strictEqual(version, '6.0');
 });
 
 test('the getter falls back to the default only when nothing is configured', () => {

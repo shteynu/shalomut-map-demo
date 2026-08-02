@@ -8,11 +8,11 @@ Updated: 2026-08-02.
 | --- | --- | --- |
 | Shared capability registry | `contracts/capabilities.json` | `1.0`–`6.0` capability metadata |
 | Core callback validators | `AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS` | `1.0`–`6.0` |
-| Core producer | `PRODUCIBLE_ANALYTICS_CONTRACT_VERSIONS` | `3.0`–`5.0`; unset defaults to `5.0` |
+| Core producer | `PRODUCIBLE_ANALYTICS_CONTRACT_VERSIONS` | rollout branch permits `3.0`–`6.0`; unset defaults to `5.0`; deployed config remains `5.0` until the final gate |
 | Core health | producer resolver + callback list | reports produced/producible/supported separately |
-| Core MCP/OpenAPI | registry plus OpenAPI discriminator integrity tests | callback output `1.0`–`6.0`; produced round analytics through `5.0` |
+| Core MCP/OpenAPI | registry plus OpenAPI discriminator integrity tests | callback output `1.0`–`6.0`; rollout branch can produce through `6.0` while the default remains `5.0` |
 | Python parser and pipeline | Python supported-version tuple plus shared capabilities | `1.0`–`6.0`; V6 structured summary, narrative metrics and top-five recommendations are implemented in `main` |
-| Python health | `AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS` | `main` reports `1.0`–`6.0`; deployed health is still `1.0`–`5.0` until rollout |
+| Python health | `AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS` | deployed health reports `1.0`–`6.0` at `cf9ae07` |
 | Shared golden corpus | `contracts/fixtures/golden_corpus.json` | positive/negative cases for `1.0`, `3.0`, `4.0`, `5.0`, `6.0` |
 
 ## Contract `6.0`
@@ -24,10 +24,12 @@ metric `insightText` and exactly five recommendations. Numeric metric evidence
 remains in the payload for callback verification but is not rendered as the
 primary V6 metric content.
 
-This remains a consumer-first state. Core still produces only `3.0`–`5.0` and
-defaults to `5.0`; configuring its producer to `6.0` fails closed. Python in
-`main` now parses and emits V6 and reports it from health, but it has not been
-deployed, so deployed Core must not emit V6 yet.
+The consumer-first deployment gate is satisfied at `cf9ae07`: deployed Python
+reports V6 support and deployed Core contains the V6 consumer. The rollout
+branch explicitly permits `6.0` as a Core producer choice while preserving the
+unset default at `5.0`. The deployed configuration remains `5.0` until this
+branch is deployed, health is reconfirmed, and the final configuration switch
+is made.
 
 ## Adding a real next version
 

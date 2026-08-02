@@ -17,15 +17,12 @@ test('shared capabilities, Core support and producer choices stay aligned', () =
   );
   assert.deepStrictEqual(
     PRODUCIBLE_ANALYTICS_CONTRACT_VERSIONS,
-    ['3.0', '4.0', '5.0'],
+    ['3.0', '4.0', '5.0', '6.0'],
   );
-  assert.strictEqual(
-    DEFAULT_PRODUCED_ANALYTICS_CONTRACT_VERSION,
-    PRODUCIBLE_ANALYTICS_CONTRACT_VERSIONS.at(-1),
-  );
+  assert.strictEqual(DEFAULT_PRODUCED_ANALYTICS_CONTRACT_VERSION, '5.0');
 });
 
-test('6.0 is callback-readable but remains unavailable to the producer', () => {
+test('6.0 is callback-readable and explicitly available to the producer', () => {
   assert.strictEqual('6.0' in capabilitiesManifest.versions, true);
   assert.strictEqual(
     AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS.includes('6.0'),
@@ -35,6 +32,6 @@ test('6.0 is callback-readable but remains unavailable to the producer', () => {
     (PRODUCIBLE_ANALYTICS_CONTRACT_VERSIONS as readonly string[]).includes(
       '6.0',
     ),
-    false,
+    true,
   );
 });

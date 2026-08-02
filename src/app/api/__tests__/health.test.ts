@@ -38,11 +38,11 @@ async function callHealth(configuredVersion: string | undefined) {
 }
 
 test('a configured version is reported as configured', async () => {
-  const { response, body } = await callHealth('5.0');
+  const { response, body } = await callHealth('6.0');
 
   assert.strictEqual(response.status, 200);
   assert.strictEqual(body.status, 'ok');
-  assert.strictEqual(body.analytics.producedContractVersion, '5.0');
+  assert.strictEqual(body.analytics.producedContractVersion, '6.0');
   assert.strictEqual(body.analytics.producedContractVersionSource, 'configured');
 });
 
@@ -78,7 +78,7 @@ test('produced and supported versions are reported separately', async () => {
 });
 
 test('a misconfigured version answers 503 and names the problem', async () => {
-  const { response, body } = await callHealth('6.0');
+  const { response, body } = await callHealth('7.0');
 
   assert.strictEqual(response.status, 503);
   assert.strictEqual(body.status, 'misconfigured');
