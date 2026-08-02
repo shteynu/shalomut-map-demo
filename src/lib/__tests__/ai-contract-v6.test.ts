@@ -3,85 +3,13 @@ import test from 'node:test';
 
 import {
   AI_ANALYTICS_DIMENSION_IDS,
-  AI_ANALYTICS_DIMENSION_NAMES_HEBREW,
   AI_ANALYTICS_V6_CONTRACT_VERSION,
   validateStoneMapResult,
 } from '../ai-contract';
-
-const SURVEY_DEFINITION_HASH = `sha256:${'a'.repeat(64)}`;
-
-function narrative(seed: string): string {
-  return `${seed} ${'הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. '.repeat(4)}`.trim();
-}
-
-export function createValidV6Payload(roundId = 'round-v6') {
-  return {
-    contractVersion: AI_ANALYTICS_V6_CONTRACT_VERSION,
-    roundId,
-    processedAt: '2026-08-02T08:00:00.000Z',
-    surveyDefinitionHash: SURVEY_DEFINITION_HASH,
-    isLocked: false,
-    status: 'success' as const,
-    overallPsychologicalSummary:
-      'התמונה הכללית מצביעה על שילוב של כוחות ושל אזורים הזקוקים לתשומת לב. מומלץ להתקדם באופן הדרגתי ולבדוק את השינוי יחד עם הצוות.',
-    stones: Object.fromEntries(
-      AI_ANALYTICS_DIMENSION_IDS.map((dimensionId, dimensionIndex) => {
-        const questionId = `question-${dimensionIndex + 1}`;
-        return [
-          dimensionId,
-          {
-            dimensionId,
-            dimensionNameHebrew:
-              AI_ANALYTICS_DIMENSION_NAMES_HEBREW[dimensionId],
-            status: 'yellow' as const,
-            score: 62,
-            summary: [
-              'התשובות מצביעות על בסיס יציב לצד שונות מסוימת בין החוויות של המשתתפים.',
-              'נראה כי חיזוק השיח המשותף יכול לעזור לצוות להבין טוב יותר את הצרכים שעולים מן הממצאים.',
-              'כדאי לבחור צעד ממוקד אחד, ליישם אותו בעקביות ולבדוק בהמשך כיצד הוא משפיע על התחושה הכללית.',
-            ],
-            recommendedInterventions: Array.from({ length: 5 }, (_, index) => ({
-              id: `${dimensionId}-intervention-${index + 1}`,
-              dimensionId,
-              status: 'yellow' as const,
-              source: 'shalomut_catalog',
-              title: 'מהלך צוותי ממוקד',
-              summary: narrative('המהלך המוצע מחזק שגרה משותפת וברורה.'),
-              actionable_steps: [
-                'לקבוע זמן קבוע לשיחה קצרה עם הצוות.',
-                'לאסוף משוב ולבחון את ההתקדמות יחד.',
-              ],
-              adaptationOutcome: 'llm' as const,
-            })),
-            metrics: [
-              {
-                questionId,
-                label: 'עד כמה התחושה בתחום זה יציבה',
-                value: 'מגמה בינונית',
-                averageScore: 62,
-                responseCount: 10,
-                scoreDistribution: { green: 3, yellow: 5, red: 2 },
-                insightText: narrative(
-                  'התשובות מלמדות שהחוויה אינה אחידה ושיש מקום לחיזוק עקבי.',
-                ),
-              },
-            ],
-            generationProvenance: {
-              outcome: 'llm' as const,
-              attempts: 1,
-              retryCount: 0,
-              sourceQuestionIds: [questionId],
-              surveyDefinitionHash: SURVEY_DEFINITION_HASH,
-              backgroundContextIncluded: true,
-              distributionIncluded: true,
-              crossDimensionContextIncluded: true,
-            },
-          },
-        ];
-      }),
-    ),
-  };
-}
+import {
+  SURVEY_DEFINITION_HASH,
+  createValidV6Payload,
+} from './fixtures/v6-payload';
 
 test('accepts a complete Contract V6 Stone Map', () => {
   const payload = createValidV6Payload();

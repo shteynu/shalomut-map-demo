@@ -1,0 +1,77 @@
+{
+  "description": "Shared semantic corpus for the Hebrew-only rule that both runtimes apply to model copy. TypeScript runs it through the callback validator's predicate, Python through is_hebrew_only_copy. The rule judges letters only: digits, punctuation, Hebrew points and whitespace are not letters here, and the per-version limits that forbid digits in narrative copy live elsewhere.",
+  "cases": [
+    {
+      "id": "plain-hebrew-sentence",
+      "text": "הצוות מדווח על עומס מתמשך בשבועות האחרונים.",
+      "isHebrewOnly": true,
+      "note": "The ordinary case: every letter is Hebrew."
+    },
+    {
+      "id": "hebrew-with-digits",
+      "text": "הממוצע בתחום זה הוא 62 מתוך 100.",
+      "isHebrewOnly": true,
+      "note": "Digits are not letters. Contracts that forbid numbers in narrative copy enforce that separately."
+    },
+    {
+      "id": "hebrew-with-punctuation",
+      "text": "\"שיחה קצרה\" עוזרת לצוות; כך עולה מן התשובות.",
+      "isHebrewOnly": true,
+      "note": "Quotes, semicolons and periods are not letters."
+    },
+    {
+      "id": "hebrew-with-points",
+      "text": "שָׁלוֹם לַצֶּוֶת.",
+      "isHebrewOnly": true,
+      "note": "Hebrew points are combining marks, not letters."
+    },
+    {
+      "id": "hebrew-presentation-form",
+      "text": "שׁלום לצוות.",
+      "isHebrewOnly": true,
+      "note": "U+FB2A is the precomposed shin a model may emit instead of the base letter plus its point. It reads as Hebrew, so it counts as Hebrew."
+    },
+    {
+      "id": "latin-word-inside-hebrew",
+      "text": "הצוות משתמש בכלי feedback חדש.",
+      "isHebrewOnly": false,
+      "note": "The one script the old TypeScript rule refused."
+    },
+    {
+      "id": "cyrillic-sentence-with-one-hebrew-letter",
+      "text": "Команда сообщает об усталости ש.",
+      "isHebrewOnly": false,
+      "note": "A whole sentence in Cyrillic used to pass Core's callback validation as long as one Hebrew letter stood somewhere in it."
+    },
+    {
+      "id": "arabic-waw-inside-hebrew-word",
+      "text": "אי وדאות מלווה את הצוות.",
+      "isHebrewOnly": false,
+      "note": "The Arabic waw a provider sent twice on 2026-07-30. The generation pipeline repairs this confusable before validating; a payload that reaches the callback with it unrepaired is refused."
+    },
+    {
+      "id": "greek-letter-inside-hebrew",
+      "text": "הציון בתחום α נשאר יציב.",
+      "isHebrewOnly": false,
+      "note": "Any script other than Hebrew, not a named list of refused ones."
+    },
+    {
+      "id": "latin-only",
+      "text": "The team reports sustained fatigue.",
+      "isHebrewOnly": false,
+      "note": "No Hebrew letter at all."
+    },
+    {
+      "id": "digits-only",
+      "text": "62 100.",
+      "isHebrewOnly": false,
+      "note": "At least one Hebrew letter is required, and digits are not letters."
+    },
+    {
+      "id": "whitespace-only",
+      "text": "   ",
+      "isHebrewOnly": false,
+      "note": "Empty copy is not Hebrew copy."
+    }
+  ]
+}
