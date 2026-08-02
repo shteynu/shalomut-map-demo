@@ -64,6 +64,19 @@ Direct system, developer and user instructions take precedence over this file.
   `docs/agent-tasks/README.md`; detailed start/save behavior remains owned by
   the `shalomut-tracker` skill.
 
+## Documentation lifecycle
+
+- Use `docs/README.md` to distinguish living documentation, implemented
+  specifications, historical plans and branch-local task records.
+- Current code, tests, schemas and configuration outrank prose. When a living
+  document disagrees with them, update the document in the same task.
+- Do not rewrite dated plans or archived task files as if they were current.
+  Preserve them as historical evidence and point readers to the living source.
+- Keep `PROGRESS.md` to concise product-level milestones and keep
+  `docs/shalomut-tracker-handoff.md` to current cross-task operational state,
+  external blockers and approval gates. Git and archived task files own the
+  detailed session history.
+
 ## Mandatory progress handoff
 
 Every agent must perform this protocol before switching agents, handing work to

@@ -6,7 +6,7 @@ product
 
 ## Users
 
-School principals, wellbeing coordinators, and district supervisors in Hebrew-speaking (Israeli) schools. They use the platform during the school day, on desktop in the office and occasionally on mobile, to review staff wellbeing survey results, set up new survey rounds, and decide where to act. Teachers answer the wellbeing surveys themselves on their own devices. All primary users read Hebrew; the interface is RTL-first (`dir="rtl"`), with a secondary English (LTR) variant.
+School principals, wellbeing coordinators, and district supervisors in Hebrew-speaking (Israeli) schools. They use the platform during the school day, on desktop in the office and occasionally on mobile, to review staff wellbeing survey results, set up new survey rounds, and decide where to act. Teachers answer the wellbeing surveys themselves on their own devices. All primary users read Hebrew; the current product interface is Hebrew RTL-first (`dir="rtl"`).
 
 ## Product Purpose
 
@@ -39,7 +39,7 @@ Warm, humane, trustworthy. The stone metaphor deliberately avoids clinical dashb
 
 ## Design Principles
 
-1. **RTL is the primary reality, not a translation** — layout, arrows, chevrons, and reading order are designed right-to-left first; the English version adapts from it.
+1. **RTL is the primary reality, not a translation** — layout, arrows, chevrons, and reading order are designed right-to-left first. Any future localization must adapt from that behavior deliberately.
 2. **Privacy before insight** — never render data below the anonymity threshold; the locked state is a first-class, explained UI state.
 3. **Organic over industrial** — asymmetric border-radii, scattered composition, subtle motion (`transform 150ms ease`, no heavy springs).
 4. **Status must be readable without color** — ink text over status colors, explicit status labels (e.g. "נדרש טיפול מיידי"), not color alone.
@@ -47,4 +47,4 @@ Warm, humane, trustworthy. The stone metaphor deliberately avoids clinical dashb
 
 ## Accessibility & Inclusion
 
-WCAG AA target. Ink-on-cream body text aims for 7:1+ contrast. White text on the bright status colors is banned (fails AA); use ink instead. A dedicated high-contrast view exists for both desktop and mobile. Reduced-motion alternatives required for map/stone animations. Hebrew font stack (`Arial, Noto Sans Hebrew, system-ui`) chosen for Hebrew letterform readability.
+WCAG AA target. Ink-on-cream body text aims for 7:1+ contrast. White text on the bright green/yellow status colors is banned (fails AA); use ink instead. Status text and controls must remain readable in desktop and mobile layouts without relying on color alone. Reduced-motion alternatives are required for map/stone animations. Hebrew font stack (`Arial, Noto Sans Hebrew, system-ui`) is chosen for Hebrew letterform readability.

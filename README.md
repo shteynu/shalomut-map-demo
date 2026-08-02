@@ -1,52 +1,95 @@
 # Shalomut Map
 
-Hebrew RTL Next.js application for a school wellbeing platform.
+Hebrew RTL platform for running configurable school-staff wellbeing surveys and
+turning privacy-safe aggregates into an eight-dimension Stone Map.
+
+The repository contains two runtimes:
+
+- a Next.js 16 Core application for manager/respondent flows, PostgreSQL
+  persistence, privacy gating, aggregation and Dashboard rendering;
+- a Python FastAPI analytics service that reads aggregates through MCP,
+  generates versioned Hebrew insights and returns them through the durable
+  analysis-run callback.
+
+Current product capabilities include persisted round setup, a dynamic survey
+builder, anonymous respondent links, application-level manager sessions,
+database-enforced response idempotency, lifecycle-aware AI jobs, contracts
+`1.0`–`6.0`, AI-assisted question suggestions and the V6 narrative Dashboard.
 
 ## Local development
 
 The project has two environments and no others: local and deployed. The local
-one runs the core app and the Python AI service against a Postgres container,
-wired the way the deployment is wired — see
-[docs/local-environment.md](docs/local-environment.md) for the one-time setup.
+stack mirrors the deployed Core/AI/PostgreSQL wiring; see
+[docs/local-environment.md](docs/local-environment.md) for one-time setup.
 
 ```bash
 npm run local
 ```
 
-That one command brings up the Postgres container, applies the migrations and
-starts both halves: the core app on `:3000` and the AI service on `:8000`.
-`npm run dev` starts the core app alone, without the AI service or a database.
+This starts PostgreSQL, applies migrations, then runs Core on `:3000` and the
+AI service on `:8000`. `npm run dev` starts Core alone without the AI service or
+a database.
 
 ## Production build
-
-Running:
 
 ```bash
 npm run build
 npm start
 ```
 
-starts the full-stack Next.js application. Manager pages and API routes render
-at request time and read PostgreSQL through Prisma.
+This builds and starts the Core Next.js server. PostgreSQL configuration is
+required; the Python AI service runs separately.
+
+## Verification
+
+```bash
+npm run verify
+```
+
+The canonical gate runs literals fitness, TypeScript typechecking, every
+`src/**/__tests__/*.test.ts(x)` test, ESLint, the production build, PostgreSQL
+integration tests and the full Python pytest suite from the project virtualenv.
+`TEST_DATABASE_URL` must point at a disposable test database.
+
+Useful narrower commands:
+
+| Command | Purpose |
+| --- | --- |
+| `npm run verify:core` | TypeScript/Core tests, types, lint and build |
+| `npm run verify:db` | PostgreSQL constraints and concurrency |
+| `npm run verify:ai` | Full `ai-analytics-service` pytest suite |
+| `npm run test:mutation:ai-contract -- --dryRunOnly` | Validate focused Stryker wiring |
+| `npm run test:mutation:ai-contract` | Opt-in mutation pilot for `src/lib/ai-contract.ts` |
+
+Mutation testing is intentionally non-blocking and is not part of `npm run
+verify` or CI. Its current scope is one critical contract validator, not the
+whole repository.
+
+## Documentation
+
+Start with [docs/README.md](docs/README.md), which separates living sources of
+truth from implemented specifications, historical plans and branch task
+records. Architecture lives in [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md),
+product milestones in [PROGRESS.md](PROGRESS.md), and current cross-task
+operational state in
+[docs/shalomut-tracker-handoff.md](docs/shalomut-tracker-handoff.md).
 
 ## AI-assisted development
 
 Repository files, rather than a previous chat, carry work between agents:
 
-1. Read [`AGENTS.md`](AGENTS.md).
-2. Run `npm run agent:context` to inspect the branch, working tree, expected
-   task file and documented next step.
-3. Read or create the matching active task document under
-   [`docs/agent-tasks/`](docs/agent-tasks/README.md).
-4. Work in a dedicated branch and worktree; parallel agents use different
-   branches, worktrees and task files.
-5. Run the verification selected through the repository skills. The canonical
-   complete local gate is `npm run verify`.
-6. Before switching agents, inspect the complete diff and update the task file
-   with exact Git state, evidence and one next concrete step.
+1. Read [AGENTS.md](AGENTS.md).
+2. Run `npm run agent:context`.
+3. Read or create the matching branch task document under
+   [docs/agent-tasks/](docs/agent-tasks/README.md).
+4. Work in a dedicated branch/worktree; parallel agents never share one.
+5. Select checks through the version-controlled project skills.
+6. Before handoff, record exact Git state, actual evidence and one next step.
 
 ## Deployment
 
-Deploy the application to a Next.js server runtime such as Vercel and configure
-`DATABASE_URL`. GitHub Pages and other static-only hosts are not supported:
-they cannot execute the request-time database reads or mutation endpoints.
+Core requires a Next.js server runtime such as Vercel and `DATABASE_URL`; it
+cannot run on a static-only host. The Python service is built from the root
+`Dockerfile` and requires an always-available worker or an explicit wake
+mechanism for durable polling. Deployment details and current gates are in the
+operational handoff.

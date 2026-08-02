@@ -17,13 +17,14 @@ description: Работай с продуктом и кодом Shalomut Map в 
 определить task-файл текущей ветки, scope и `Next concrete step`.
 
 1. Определи корень репозитория через `git rev-parse --show-toplevel`.
-2. Прочитай `docs/source-of-truth.md` и релевантный код.
+2. Прочитай `docs/source-of-truth.md`, `docs/README.md` и релевантный код.
 3. Загрузи дополнительный контекст по типу задачи:
    - UI/UX: `PRODUCT.md` и `design.md`;
    - runtime, API и persistence: `PROJECT_CONTEXT.md` и
      `docs/shalomut-tracker-handoff.md`;
-   - AI analytics: `docs/ai-analytics-handoff.md`,
-     `contracts/ai-analytics-v1.json` и `ai-analytics-service/README.md`;
+   - AI analytics: `docs/ai-contract-version-matrix.md`,
+     `contracts/capabilities.json`, релевантный versioned manifest,
+     `docs/ai-analytics-handoff.md` и `ai-analytics-service/README.md`;
    - survey methodology: `src/lib/shalomut-source.ts`.
 4. Проверь существующие компоненты, тесты и patterns до добавления новых
    abstractions.
@@ -53,8 +54,10 @@ description: Работай с продуктом и кодом Shalomut Map в 
   Hebrew interpretation/actions, общий summary и question-grounded metrics.
   Если безопасных данных недостаточно для покрытия всех восьми dimensions,
   заверши анализ locked/validation state, а не выдумывай отсутствующие stones.
-- Не меняй семантику immutable contracts `1.0` и `2.0`. Dynamic-questionnaire
-  input требует новой breaking contract version и consumer-first rollout.
+- Не меняй молча семантику опубликованных contracts `1.0`–`6.0`. Capability
+  policy находится в `contracts/capabilities.json`, а runtime status — в
+  `docs/ai-contract-version-matrix.md`. Новая несовместимая семантика требует
+  новой versioned manifest и consumer-first rollout.
 - Сохраняй configurable scoring thresholds: green `>=75`, yellow `50–74`, red
   `<50`.
 - Применяй настроенный privacy threshold: `10` — и default, и minimum, менеджер
@@ -64,6 +67,12 @@ description: Работай с продуктом и кодом Shalomut Map в 
   ниже threshold, весь detailed result остаётся locked и provider не вызывается.
 - Сохраняй границу между Core Data Layer и внешним AI analytics service.
   Проверяй versioned contract и используй fail-closed transport.
+- Сохраняй отделение canonical domain models от wire contracts: Core считает
+  `CanonicalRoundAnalytics` и кодирует его через `encodeAnalyticsInput`, а
+  Python разбирает `CanonicalAnalysisInput` и формирует payload через output
+  adapter. В Python application boundary используются порты `AnalyticsSource`,
+  `ResultSink`, `JobStore` и `TextGenerator`; в Core composition root вместо
+  прямых `getRepositories()` остаётся следующей архитектурной задачей.
 
 ## Product и UI
 

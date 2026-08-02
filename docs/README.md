@@ -1,0 +1,71 @@
+# Documentation map
+
+Use this index to decide whether a document describes current behavior,
+freezes an implemented contract, or only records how earlier work was planned.
+Current code, tests, schemas and configuration always win over prose.
+
+## Living sources of truth
+
+These files must stay aligned with `main`:
+
+| Document | Owns |
+| --- | --- |
+| [`../README.md`](../README.md) | Repository entry point, local start and verification commands |
+| [`../PRODUCT.md`](../PRODUCT.md) | Users, product purpose, privacy posture, voice and design principles |
+| [`../PROJECT_CONTEXT.md`](../PROJECT_CONTEXT.md) | Stable architecture, environments and long-lived decisions |
+| [`../ROADMAP.md`](../ROADMAP.md) | Completed platform phases and the next product/architecture outcomes |
+| [`../PROGRESS.md`](../PROGRESS.md) | Concise product-level milestones and major completed capabilities |
+| [`source-of-truth.md`](source-of-truth.md) | Survey methodology, field ownership and runtime source roles |
+| [`local-environment.md`](local-environment.md) | Supported local stack and setup |
+| [`ai-contract-version-matrix.md`](ai-contract-version-matrix.md) | Contract capabilities, produced/supported versions and rollout rule |
+| [`ai-analytics-handoff.md`](ai-analytics-handoff.md) | Current cross-service AI architecture and boundaries |
+| [`shalomut-tracker-handoff.md`](shalomut-tracker-handoff.md) | Current deployed/operational state, external blockers and approval gates |
+| [`../ai-analytics-service/README.md`](../ai-analytics-service/README.md) | Python service runtime, configuration and verification |
+| [`../AGENTS.md`](../AGENTS.md) and [`.agents/skills/`](../.agents/skills/) | Canonical repository instructions for coding agents |
+
+## Implemented specifications
+
+These documents define behavior that remains testable, even when their rollout
+sections are historical:
+
+- [`dashboard-semantic-contract.md`](dashboard-semantic-contract.md) — semantic
+  foundation introduced in `2.0`; current runtime extends it through `6.0`.
+- [`dynamic-questionnaire-ai-contract.md`](dynamic-questionnaire-ai-contract.md)
+  — dynamic-questionnaire foundation introduced in `3.0`.
+- [`product-requirements-summary.md`](product-requirements-summary.md) — source
+  summary for the original product and methodology.
+- [`product-behaviour-backlog.md`](product-behaviour-backlog.md) — remaining
+  user-behavior improvements; completed items stay marked completed.
+- [`adr/`](adr/) — accepted architectural decisions. Later living docs may
+  refine operational detail without rewriting the decision history.
+
+Versioned machine-readable contracts live under `contracts/`; shared behavior
+is indexed by `contracts/capabilities.json`. OpenAPI has two checked mirrors:
+`docs/openapi.yaml` and `public/openapi.json`.
+
+## Historical plans and evidence
+
+Dated plans and rollout records are evidence of decisions at that time, not a
+current task queue. Do not mechanically update their old commands, test counts
+or deployment snapshots:
+
+- `*-plan*.md`, `completion-plan-*`, `manager-feedback-plan-*`,
+  `provider-quota-plan-*` and `e2-step3-contract-version-rollout.md`;
+- `wellbeing-refactoring-plan-v4-review.md` (its section 6 is the final audit of
+  the merged refactoring stack; remaining work is summarized in `ROADMAP.md`);
+- `redesign-change-log.md`;
+- [`agent-tasks/archive/`](agent-tasks/archive/) and Git history.
+
+Branch-local in-progress state belongs only in
+[`agent-tasks/active/`](agent-tasks/active/) and follows
+[`agent-tasks/README.md`](agent-tasks/README.md).
+
+## Update rules
+
+- Update a living document when its owned state changes.
+- Update an implemented specification only when its contract changes; keep
+  older-version sections explicitly historical.
+- Do not copy task evidence into `PROGRESS.md` or the operational handoff.
+- Keep exact test counts in task evidence, not evergreen instructions.
+- Never store secrets, credentials, respondent data, chats or private session
+  URLs in documentation.

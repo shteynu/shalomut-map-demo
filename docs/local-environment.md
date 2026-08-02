@@ -123,3 +123,25 @@ alongside the AI service — but nothing in the daily loop needs that.
   arrives after a handful. A local round that ends in `deterministic_fallback`
   everywhere is usually the quota, not the code: check the AI service log for
   `status=429`.
+
+## Verification commands
+
+Run the canonical all-layer gate from the repository root:
+
+```bash
+npm run verify
+```
+
+It combines Core literals/typecheck/tests/lint/build, PostgreSQL integration
+tests against the disposable `TEST_DATABASE_URL`, and the full Python suite
+through `ai-analytics-service/.venv/bin/python`.
+
+The focused Stryker pilot is separate and non-blocking:
+
+```bash
+npm run test:mutation:ai-contract -- --dryRunOnly
+npm run test:mutation:ai-contract
+```
+
+It mutates only `src/lib/ai-contract.ts`, is not part of `npm run verify` or CI,
+and writes ignored reports under `reports/mutation/`.

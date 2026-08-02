@@ -227,7 +227,11 @@ SVG progress ring for the overall wellbeing score: navy track at 18% opacity, te
 The respondent survey shows one question per screen with three large answer stones: pastel fill + status-colored border + face icon (Smile / Meh / Frown). Selection auto-advances after 260ms; the previous-question button lets respondents revise.
 
 ### 7. Survey Builder (`.survey-builder-*`)
-The admin builder keeps the full 8-dimension / 24-question model but presents questions through dimension filter pills. Summary metric stones retain the organic metaphor; repeated editable question rows use compact product-panel geometry and icon actions with accessible labels/tooltips.
+The admin builder keeps the stable eight-dimension taxonomy while editing the
+dynamic question snapshot of the current round. The original 24 questions are
+the default template, not a fixed runtime count. Dimension filter pills,
+summary metric stones and compact editable rows retain the organic metaphor;
+template/AI suggestions open in the editor and never bypass manager review.
 
 ### 8. Dashboard Detail Suite
 Dimension detail, metrics, and recommendations stay fullscreen and no-header. Metrics display a label chip plus primary/secondary visual emphasis. Recommendations use priority chips ("יעד ראשון", "יעד 2"...) so principals can identify the next action without relying on shape or color alone.

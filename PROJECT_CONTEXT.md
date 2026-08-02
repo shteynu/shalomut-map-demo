@@ -1,194 +1,179 @@
 # PROJECT CONTEXT: Shalomut Map (מפת שלומות)
 
-## 📌 Описание проекта
-"Shalomut Map" (מפת שלומות) — веб-платформа для визиуализации благополучия педагогического состава в израильских школах. Визуализируется в виде интерактивной карты органических "камней" (stones) — по одному на каждое измерение благополучия (самовыражение, компетентность, микроклимат и т.д.).
+Updated: 2026-08-02. This file owns stable architecture and long-lived product
+decisions. Current branch work belongs in `docs/agent-tasks/active/`, milestones
+in `PROGRESS.md`, and deployed/operational state in
+`docs/shalomut-tracker-handoff.md`.
 
-## 🛠 Технический стек
-- **Фреймворк**: Next.js 16 (App Router), React 19, TypeScript 6.
-- **Стилизация**: Tailwind CSS v4, PostCSS, CSS variables для цветовой палитры.
-- **Иконки**: Lucide React.
-- **Локализация и макет**: RTL-first (`dir="rtl"`), поддержка иврита как основного языка.
-- **Определения дизайна**:
-  - Ивритский типографический стек: `"Arial", "Noto Sans Hebrew", system-ui, sans-serif`.
-  - Цветовая палитра: теплый бумажный фон (`#fbf4dd`), чернильный текст (`--ink: #383838`), органические скругления.
-  - Стандарты доступности: WCAG AA compliance (минимальный контраст 4.5:1, доступные интерактивные камни).
+## Product and stack
 
-## 📁 Ключевые файлы документации
-- [Data Layer and backend plan](docs/data-layer-and-backend-plan.md) — **Бэкенд и Data Layer**: ERD, спецификация сервисов и API.
-- [PRODUCT.md](PRODUCT.md) — Потребности пользователей, бренд, принципы дизайна и анонимность.
-- [design.md](design.md) — Полный гайд по дизайн-системе, цветам и компонентам.
-- [ROADMAP.md](ROADMAP.md) — Завершенные типографические оптимизации и WCAG AA адаптация.
-- [PROGRESS.md](PROGRESS.md) — **Память проекта**: product-level milestones и крупные завершённые возможности.
-- [Operational handoff](docs/shalomut-tracker-handoff.md) — текущий cross-task operational/deployment state, внешние blockers и approval gates.
-- [AI analytics handoff](docs/ai-analytics-handoff.md) — границы и история AI analytics.
-- [AI analytics contract 1.0](contracts/ai-analytics-v1.json) — immutable deployed structural contract `1.0`.
-- [AI analytics contract 2.0](contracts/ai-analytics-v2.json) — breaking semantic contract `2.0`: те же восемь измерений, 24 canonical questions, status-scoped output и provenance.
-- [AI analytics contract 3.0](contracts/ai-analytics-v3.json) — deployed breaking contract `3.0`: dynamic exact round questions при фиксированном eight-stone output.
-- [Dynamic questionnaire AI contract](docs/dynamic-questionnaire-ai-contract.md) — реализованный contract и завершённый consumer-first rollout для динамических round-scoped вопросов.
-- [AI analytics service README](ai-analytics-service/README.md) — локальный запуск, границы runtime и переменные AI-сервиса.
-- [ADR-008: branch-aware agent handoff](docs/adr/008-branch-aware-agent-handoff.md) — разделение branch-local task state и глобальной памяти проекта.
+Shalomut Map is an RTL-first platform for school-staff wellbeing surveys. A
+manager configures a round and its questionnaire, teachers answer anonymously,
+and privacy-safe aggregates become an eight-dimension organic Stone Map.
 
+- Core: Next.js 16 App Router, React 19, TypeScript 6.
+- Persistence: PostgreSQL through Prisma 7.
+- AI analytics: separate Python 3.11+ FastAPI service.
+- Styling: Tailwind CSS 4, CSS variables and warm organic tokens.
+- Deployment shape: Vercel Core, Render Python service, Supabase PostgreSQL.
+- Contracts: JSON manifests `1.0`–`6.0`, shared capability registry and checked
+  OpenAPI JSON/YAML mirrors.
 
-## 📐 Архитектурные Решения (Architectural Decision Records - ADR)
+The documentation lifecycle and owners are indexed in `docs/README.md`.
 
-### ADR-001: Строгое разделение Data Layer (Core App) и AI-Сервиса Аналитики
-- **Решение**: Вся аналитическая логика высокого уровня, инсайты, выводы и генерация рекомендаций **полностью вынесены во внешний AI-сервис** (отдельный микросервис / AI-агент).
-- **Границы ответственности данного репозитория (`shalomut-map`)**:
-  1. **Чистый Data Layer**: Репозитории (`IRoundRepository`, `ISurveyRepository`), модели Prisma (`schema.prisma`), сбор и анонимное сохранение ответов.
-  2. **Core App & API**: Создание раундов опросов (`SHALOM-XXXX`), выдача вопросов анкеты, анонимная отправка ответов, базовая агрегация баллов 8 измерений и контроль порога анонимности (`privacyThreshold`, десять респондентов — это и дефолт, и минимум, с которым можно завести раунд; настраивается только вверх).
-  3. **Запрет внутренней аналитики**: Внутри данного приложения **ЗАПРЕЩЕНО** строить внутренние экспертные движки рекомендаций или тяжёлый бизнес-анализ. Приложение выполняет роль надёжного источника и хранилища сырых данных (*Single Source of Raw Data*).
+## Stable architectural decisions
 
-### ADR-002: Versioned AI Analytics Contract и fail-closed transport
-- **Решение**: `contracts/ai-analytics-v1.json` и `contracts/ai-analytics-v2.json` остаются immutable deployed contracts. Breaking dynamic requirements опубликованы отдельно в `contracts/ai-analytics-v3.json`; они заменяют exact-24 allowlist на exact persisted round questions, сохраняя восемь dimensions, strict Hebrew/status validation, metrics и provenance. Callback имеет отдельные validator-ветки для `1.0`, `2.0` и `3.0`, поэтому legacy semantics не ужесточаются молча.
-- **Current default and consumer-first next version (2026-08-02)**: Core
-  defaults an unset `AI_ANALYTICS_CONTRACT_VERSION` to produced contract `5.0`,
-  matching the documented and deployed producer behavior. Contract `6.0` now
-  has an accepted manifest: Core can consume three summary paragraphs,
-  qualitative metric narratives and five recommendations while retaining
-  numeric evidence for callback verification. The local Python V6 producer
-  implements aggregate-only parsing, exact-ID batch narratives, deterministic
-  fallbacks and top-five recommendations, while Core still refuses to produce
-  V6. Deployment/health verification and the Core producer switch remain a
-  separate consumer-first rollout slice.
-- **Rollout**: consumer-first rollout `3.0` завершён 2026-07-26: Python сначала принял все три версии, затем Core callback и Dashboard readers, после чего Core MCP producer начал отправлять `3.0`. Producer `2.0` остаётся rollback boundary.
-- **Персистентность**: Core владеет durable lifecycle в `AiAnalysisRun`: `queued` → `running` → `succeeded`/`failed`, с попытками, heartbeat, lease и результатом. PostgreSQL partial unique index допускает только один активный run на раунд. `SurveyRound.aiInsights` временно остаётся dual-read/dual-write rollback boundary; legacy `aiInsightsUpdatedAt` больше не является claim-marker. Миграция durable jobs применяется отдельно к каждому подтверждённому окружению.
-- **Транспорт**: MCP, legacy webhook и callback/worker API поддерживают независимые Bearer secrets. Основной путь сначала фиксирует job в Core; Python polling worker получает атомарную 90-секундную lease, продлевает её heartbeat и завершает callback с run/lease identity. После трёх брошенных попыток job становится `failed`. Legacy webhook остаётся rollback boundary. При недоступности удалённого MCP/AI-сервиса обработка завершается ошибкой; mock data разрешены только при явном `USE_MOCK_MCP=true`.
-- **UI**: Dashboard читает AI-insights по `roundId`, валидирует контракт на клиентской границе и отдельно отображает loading для `queued`/`running`, privacy-locked, failed/not-found и error состояния.
+### ADR-001: Core owns data; the AI service owns generated interpretation
 
-### ADR-003: Empty persistence must remain empty
-- **Решение**: отсутствие `DATABASE_URL`, недоступный Prisma client или пустая БД не должны автоматически создавать школу, раунд или ответы. Default in-memory repositories стартуют пустыми.
-- **Demo boundary**: `DEMO_ORGANIZATION`, `DEMO_ROUND`, `SHALOM-DEMO` и `src/lib/demo-data.ts` разрешены только как явные test/demo fixtures и визуальные mock metadata, но не как скрытый production fallback.
-- **UI**: manager routes получают organization/current round/counts/analytics через `ManagerContextService`. Если организации или раунда нет, показывается явный onboarding state. `src/lib/demo-data.ts` не является источником runtime records.
+Core owns organizations, rounds, exact questionnaire snapshots, anonymous
+responses, privacy gating, deterministic score/status facts, persistence and
+Dashboard delivery. The external AI service reads only privacy-safe aggregates
+and writes Hebrew interpretations, summaries, narrative metrics and
+recommendations. It never receives respondent identity or individual answers.
 
-### ADR-004: Manager UI требует server runtime и persisted configuration
-- **Решение**: Home, setup, round tracking, survey builder, dashboard и respondent survey используют request-time Data Layer. Setup и definition сохраняются через manager API; текущий раунд выбирается по явному приоритету статуса и времени создания.
-- **Хранилище**: `SurveyRound.backgroundContext` и `SurveyRound.surveyDefinition` хранятся как JSON. Миграция `20260724180000_add_round_configuration` должна применяться отдельно к каждому подтверждённому окружению.
-- **Deployment**: `output: "export"`, GitHub Pages workflow и demo `generateStaticParams` несовместимы с database-backed route handlers и удалены. Поддерживаемая модель — Next.js server runtime (Vercel или эквивалент).
-- **Security boundary**: manager UI/API закрыты application-level сессией
-  (cookie или Bearer JWT); browser Basic Auth challenge не выдаётся,
-  неаутентифицированные page requests уходят на `/login`, API отвечает `401`.
-  `MANAGER_ORGANIZATION_ID` привязывает выданную сессию ровно к одной
-  организации. Middleware всегда удаляет клиентский scope header и добавляет
-  server-owned organization ID; manager routes повторно проверяют
-  принадлежность раунда и скрывают чужие ресурсы как `404`. На deployed runtime
-  (`NODE_ENV=production` или Vercel, кроме фазы production build) обязательны
-  три значения — `SESSION_SECRET`, `MANAGER_ADMIN_PASSWORD` и
-  `MANAGER_ORGANIZATION_ID`; отсутствие любого из них fail-closed отвечает
-  `503 UNCONFIGURED` на `POST /api/auth/login`, вместо выдачи сессии с
-  фолбэком. Хардкод-фолбэков организации в коде нет: вне deployed runtime
-  используется явный local-development fallback. Respondent routes и
-  machine-to-machine MCP/callback endpoints остаются вне browser challenge и
-  используют свои boundaries. Это по-прежнему single-organization deployment
-  gate, а не полноценная multi-tenant authorization.
-- **Fail-closed persistence**: deployed runtime (`NODE_ENV=production` или Vercel) без `DATABASE_URL` может показывать пустой onboarding, но отклоняет data writes с `503`. Локальный development fallback хранится в общем `globalThis` state между server bundles.
+Core does not hide an expert recommendation engine behind a runtime fallback.
+Human-authored catalog copy and aggregate-grounded green fallback text are
+explicit, provenance-labelled boundaries, not simulated provider output.
 
-### ADR-005: AI analytics service поставляется как контейнер, а не как Vercel-функция
-- **Решение**: изолированный FastAPI-сервис собирается корневым `Dockerfile` в отдельный образ. Build context — корень репозитория, потому что `src/contracts.py` читает общий `contracts/ai-analytics-v1.json`; образ сохраняет ту же относительную раскладку. `render.yaml` описывает тот же образ для Render.
-- **Почему не Vercel**: пакет не содержит Python entrypoint в `api/`, а секция `[tool.vercel]` в `pyproject.toml` не была конвенцией Vercel и удалена как вводящая в заблуждение.
-- **Fail-closed environment**: если не заданы ни `ENV`, ни `VERCEL_ENV`, сервис считает окружение production и требует `AI_WEBHOOK_SECRET`. Локальный запуск без секретов требует явного `ENV=development`.
-- **Production readiness**: вне development сервис требует все три shared secrets, non-local `DATA_LAYER_MCP_URL`/`DATA_LAYER_CALLBACK_URL` и `USE_MOCK_MCP=false`. Невалидная конфигурация блокирует startup; webhook credentials проверяются до раскрытия transport-readiness details.
-- **Callback boundary**: callback destination строится только из доверенного `DATA_LAYER_CALLBACK_URL` и URL-encoded `roundId`; durable callback дополнительно несёт выданные Core `runId` и `leaseToken`. Поле `callbackUrl` входного webhook принимается для обратной совместимости, но не управляет transport. Direct `POST /api/v1/analyze` доступен только в `ENV=development`.
-- **Транспорт**: интерпретации всех измерений выполняются параллельно в worker threads, MCP-запрос, heartbeat и доставка callback не блокируют event loop. Polling включается явным `AI_JOB_POLLING_ENABLED`; scale-to-zero hosting без внешнего wake/scheduler не гарантирует своевременный poll, поэтому deployed rollout требует постоянно доступный worker либо отдельный wake-механизм. Legacy webhook сохраняется для rollback, но не является durable source of execution state.
+### ADR-002: Versioned contracts and consumer-first rollout
 
-### ADR-006: Dynamic questionnaire input, fixed Dashboard output
-- **Решение**: вопросы являются persisted содержимым конкретного
-  `SurveyRound.surveyDefinition`, а не глобальным AI allowlist. Исходные 24
-  вопроса остаются default/legacy template. Новый раунд может использовать
-  другие ID, формулировки и количество продуктовых wellbeing-вопросов.
-- **Стабильная taxonomy**: восемь wellbeing dimensions, scoring thresholds и
-  восьмикаменная Dashboard result shape остаются фиксированными. Каждый
-  анализируемый вопрос явно привязан к одной dimension; AI не выдумывает
-  отсутствующие dimension data.
-- **Reproducibility**: Core агрегирует ответы по exact persisted round snapshot
-  и передаёт AI фактические question ID/text/dimension/score/count плюс
-  проверяемую revision/hash. После начала сбора ответов изменение snapshot
-  требует нового round/revision, чтобы старые ответы не сменили смысл.
-- **Compatibility**: deployed contracts `1.0` и `2.0` immutable. Переход от
-  exact 24 canonical questions к dynamic aggregates является breaking change;
-  contract `3.0` опубликован отдельно и развёрнут consumer-first. Deployed Core
-  producer теперь формирует `3.0`; rollback на producer `2.0` остаётся валидным.
-- **Privacy**: partial unlocked analysis запрещён. AI получает полный набор
-  aggregates только когда total и каждый анализируемый вопрос достигли
-  threshold. Иначе весь detailed result остаётся locked, provider не
-  вызывается и missing stones не синтезируются.
+Published contracts `1.0`–`6.0` retain their released semantics. Their machine
+sources live under `contracts/`; cross-version policy lives in
+`contracts/capabilities.json`, and current produced/supported status lives in
+`docs/ai-contract-version-matrix.md`.
 
-### ADR-007: Недоступный провайдер — это отказ, а не текст сервиса
-- **Решение (2026-07-28)**: если провайдер не выдал приемлемый ответ —
-  отсутствует ключ, `429`, таймаут, битый ответ, вывод отвергнут валидаторами на
-  всех попытках — сервис **не** подставляет собственную копию. Раунд целиком
-  завершается `status: "validation_failed"` с `failureReason:
-  "provider_unavailable"` и иврит-сообщением, а UI говорит, что сервис анализа
-  временно недоступен.
-- **Почему**: подставленный текст неотличим на дашборде от настоящего анализа.
-  Школа не может понять, что действует по выдуманному выводу, а сбой квоты
-  выглядит как готовый результат. Отказ — единственная честная форма.
-- **Границы**: детерминированная копия остаётся у зелёного измерения и у текста
-  каталога, написанного человеком, при неудачной адаптации рекомендации на
-  `5.0`. Ни то ни другое не прикрывает упавший вызов. У зелёного к ней две
-  дороги, и провенанс их различает: `ONLY_LLM_FOR_PROBLEMATIC` не делает вызова
-  вовсе (`deterministic_fallback`/`attempts=0`), а с выключенным флагом —
-  значение по умолчанию с 2026-07-30 — зелёное спрашивают наравне с остальными и
-  при отказе оно получает ту же фразу с числом реально потраченных попыток. Это
-  не исключение из fail-closed, а его граница: фраза выведена из агрегатов, ярлык
-  `llm` на неё не ставится, и жёлтому с красным она недоступна — там подстановка
-  была бы догадкой о проблеме.
-- **Совместимость**: статус остаётся внутри версионированного набора
-  (`success`/`locked_error`/`validation_failed`), а `failureReason` — additive
-  optional поле, которое существующий callback-валидатор принимает на
-  не-успешном payload. Контракты `1.0`–`5.0` не меняются, consumer-first порядок
-  выката не требуется.
-- **Наблюдаемость состояния запуска**: Core читает явный persisted lifecycle
-  `queued`/`running`/`succeeded`/`failed`, а не вычисляет его из timestamp.
-  Lease recovery, retry count, queue/processing/callback latency, contract
-  violations, partial-map samples и duplicate submissions выходят как
-  структурированные operational metrics без respondent data.
+Core currently can produce `3.0`–`6.0`. An unset
+`AI_ANALYTICS_CONTRACT_VERSION` resolves to rollback-safe `5.0`; the deployed
+environment explicitly selects `6.0`. Unknown values fail closed. A new
+incompatible exchange requires a new manifest and a consumer-first sequence:
+consumer acceptance, callback/read compatibility, producer capability, then
+the configured switch.
 
----
+Core computes version-free `CanonicalRoundAnalytics` and encodes a chosen wire
+contract through `encodeAnalyticsInput`. Python parses validated input into
+`CanonicalAnalysisInput` and builds success/locked/failure payloads through its
+output adapter. This prevents domain calculations and graph state from becoming
+version-specific wire models.
 
-## 🌐 Окружения и Деплой (Environments & Deployment)
+### ADR-003: Empty persistence remains empty
 
-С 2026-07-26 у продукта **одно развёрнутое окружение**. Прежний второй адрес
-`shalomut-map-demo-ui-redesign.vercel.app` снят по указанию пользователя: alias
-удалён, URL отвечает `404`, сам preview-деплой не удалялся. GitHub Pages снят с
-публикации в тот же день.
+Missing `DATABASE_URL`, an unavailable Prisma client or an empty database must
+not invent an organization, round or response. In-memory repositories start
+empty. `DEMO_ORGANIZATION`, `DEMO_ROUND`, `SHALOM-DEMO` and demo scores are
+fixtures/visual metadata only, never a hidden runtime fallback.
 
-- **Staging (единственное окружение)**:
-  - **URL**: `https://shalomut-map-demo.vercel.app/`
-  - **Vercel target**: `production` — Git-интеграция автоматически собирает
-    каждый push в `main` и переназначает на него этот alias. В терминах Vercel
-    это production target, в терминах продукта — staging.
-  - **Данные**: единственная база проекта — Supabase `tpfzhyalaftotljmlont`
-    (`aws-1-ap-northeast-2`, Сеул). На неё указывают и deployed runtime, и
-    локальный `.env`, из которого `prisma.config.ts` берёт цель миграций.
-    Второй проект `fvnulyirrqjrnjbahmsn` выведен из обращения 2026-07-27: он
-    содержал одну пустую организацию и ноль раундов, ни один рантайм на него
-    больше не ссылался, и 2026-07-27 он удалён владельцем.
-  - **Правило одной базы**: не заводи второй `DATABASE_URL` в `.env.local` —
-    Next.js отдаёт ему приоритет над `.env`, а миграции читают `.env`, и эти два
-    пути расходятся молча. Именно так миграции 2026-07-27 ушли в базу, которую
-    приложение не обслуживает. Перед `prisma migrate` сверяй хост в выводе Prisma.
-  - **Доступ**: менеджерская сессия (`/login`); Basic Auth приложения снят —
-    `BASIC_AUTH_USER`/`BASIC_AUTH_PASSWORD` удалены из Vercel 2026-07-27 и не
-    читаются кодом. Vercel SSO на этом адресе не включён.
-  - **Обязательная конфигурация рантайма**: `SESSION_SECRET`,
-    `MANAGER_ADMIN_PASSWORD` и `MANAGER_ORGANIZATION_ID`. Без любого из них
-    `POST /api/auth/login` отвечает `503 UNCONFIGURED` и сессия не выдаётся.
-- **Production**: отдельное окружение будет создано позднее по необходимости —
-  с собственным alias, собственной БД и явным решением о деплой-гейтах.
+Deployed writes without durable persistence fail closed. Manager screens show
+explicit onboarding/empty/error states.
 
-### Переменные AI-интеграции
-- Core app: `AI_SERVICE_URL`, `AI_SERVICE_TIMEOUT_MS`, `MCP_SHARED_SECRET`,
-  `AI_WEBHOOK_SECRET`, `AI_CALLBACK_SECRET`, а также manager-gate настройки
-  `SESSION_SECRET`, `MANAGER_ADMIN_EMAIL`, `MANAGER_ADMIN_PASSWORD` и
-  `MANAGER_ORGANIZATION_ID`.
-- AI service: `ENV`, `DATA_LAYER_MCP_URL`, `DATA_LAYER_CALLBACK_URL`, те же три shared secrets и `USE_MOCK_MCP`.
-- Durable worker: `AI_JOB_POLLING_ENABLED`, `AI_JOB_POLL_INTERVAL_SECONDS` и
-  `AI_JOB_HEARTBEAT_INTERVAL_SECONDS`; heartbeat должен оставаться заметно
-  короче 90-секундной Core lease.
-- Безопасные шаблоны находятся в `.env.example` и `ai-analytics-service/.env.example`; реальные значения не коммитятся.
+### ADR-004: Dynamic questionnaire input, fixed Dashboard taxonomy
 
-## ⚠️ Правила разработки
-1. RTL-first: все макеты создаются с учетом чтения справа налево.
-2. Никаких холодных корпоративных серок: всегда используем теплые токены бренда.
-3. WCAG AA: текст внутри цветных камней должен быть читаемым (`#383838`).
-4. Соблюдение ADR-001: Data Layer только формирует и хранит данные; вся аналитическая рефлексия — задача внешнего AI-сервиса.
+`SurveyRound.surveyDefinition` is the exact runtime snapshot. The original 24
+questions are the default/legacy template, not a product-wide allowlist. Every
+enabled analyzed question has a stable round-scoped ID, exact text and one of
+the eight canonical dimension mappings.
+
+The Dashboard always uses the same eight wellbeing dimensions and Core-owned
+score/status thresholds. A valid active questionnaire covers all eight. Once a
+response is accepted, changing the meaning of the snapshot requires a new
+round/revision.
+
+Unlocked analysis is all-or-nothing: total responses and every analyzed
+question must meet the configured threshold. A low-count question blocks the
+whole detailed result; it is never silently removed to produce a partial map.
+
+### ADR-005: Privacy is a product invariant
+
+Ten respondents is both the default and minimum configurable threshold; a
+manager may raise it. Respondent identity, individual answers and detailed
+results below the threshold never cross the manager or AI boundary. Core
+recomputes callback evidence and rejects mismatched scores, statuses, question
+aggregates, counts or questionnaire identity.
+
+### ADR-006: Durable AI execution belongs to Core
+
+Core persists `AiAnalysisRun` with `queued` → `running` →
+`succeeded`/`failed`, request idempotency, bounded attempts, a 90-second lease,
+heartbeat and durable result. PostgreSQL permits one active run per round.
+Python polls and atomically claims work; an expired owner cannot complete it.
+
+The legacy webhook remains a rollback boundary, not the source of execution
+truth. `SurveyRound.aiInsights` remains a temporary dual-read/dual-write
+compatibility field while `AiAnalysisRun.result` is the durable read source.
+
+### ADR-007: Provider failure is visible, not disguised
+
+Missing keys, quota exhaustion, timeouts and output rejected after bounded
+attempts fail the round as `provider_unavailable`; raw provider errors are not
+rendered to managers. Yellow/red text is never fabricated. Green may retain one
+aggregate-grounded deterministic sentence, labelled
+`deterministic_fallback` with the actual attempt count.
+
+Python validates its assembled outgoing Stone Map before callback. Repair
+replays only rejected dimensions/parts and carries safe Hebrew critique into
+the repair prompt; non-repairable contract violations fail immediately.
+
+### ADR-008: Explicit application and repository boundaries
+
+Python application services depend on the ports `AnalyticsSource`,
+`ResultSink`, `JobStore`, `AnalysisRunner` and `TextGenerator`; default HTTP/MCP
+and provider objects are composed at module boundaries. Core has separate
+organization, round, survey, AI-run and AI-insights repositories, but routes
+still call `getRepositories()`. Replacing that service locator with a Core
+composition root is the next architecture slice.
+
+### ADR-009: Manager UI requires server runtime and server-owned scope
+
+Manager UI/API uses application-level session authentication. Unauthenticated
+pages redirect to `/login`; APIs return `401`. Middleware removes client scope
+headers and supplies the server-owned `MANAGER_ORGANIZATION_ID`; routes verify
+round ownership and hide foreign resources as `404`.
+
+Deployed login fails closed when `SESSION_SECRET`,
+`MANAGER_ADMIN_PASSWORD` or `MANAGER_ORGANIZATION_ID` is missing. This is a
+single-organization design-stage gate, not the final multi-tenant identity
+model. Respondent routes and machine endpoints use separate boundaries.
+
+### ADR-010: The Python service is a container and polling needs uptime
+
+The root `Dockerfile` builds the FastAPI service; `render.yaml` configures the
+deployed worker. The service is stateless and owns no database. Durable polling
+requires an always-available process or explicit wake/scheduler; scale-to-zero
+without one is not reliable execution.
+
+Outside development the service requires all shared secrets, non-local Core
+URLs and `USE_MOCK_MCP=false`. Callback destinations are derived only from
+trusted configuration. Direct `/analyze` is development-only.
+
+## Environments
+
+The project supports exactly two environments:
+
+| Environment | Core | AI | Database |
+| --- | --- | --- | --- |
+| local | `next dev` on `:3000` | FastAPI on `:8000` | Docker PostgreSQL on `127.0.0.1:5433` |
+| deployed | Vercel alias `shalomut-map-demo.vercel.app` | Render service | Supabase PostgreSQL |
+
+The Vercel target is named Production operationally but is the product's
+design-stage deployed/staging endpoint; there are no real respondents or
+production data. Database contents are disposable. Confirm the target before
+writes to avoid operating on the wrong environment; separate approval is not
+required for clear/reseed/schema reset/migrations.
+
+Explicit bounded approval is required before changing secrets, credentials,
+authentication configuration or deployment aliases. Rotate the previously
+exposed design-stage credentials before the first real respondents.
+
+Local `.env` points to the Docker database. Deployed credentials belong in the
+gitignored deployed environment configuration and must be passed explicitly to
+deployment/migration commands. Do not create a competing `DATABASE_URL` in
+`.env.local`; Next.js and Prisma would then target different databases.
+
+## Development invariants
+
+1. RTL-first and WCAG AA; status is never communicated only by color.
+2. Use the warm token system; do not introduce a cold corporate dashboard.
+3. Preserve the eight-dimension taxonomy and configurable status thresholds.
+4. Keep empty/loading/error/privacy-locked states first-class.
+5. Released contracts change only through a new version and consumer-first
+   rollout.
+6. Preserve unrelated worktree changes and verify in proportion to risk.

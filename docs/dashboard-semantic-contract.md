@@ -1,5 +1,12 @@
 # Dashboard Semantic Contract
 
+> Lifecycle note (2026-08-02): this document defines the semantic foundation
+> introduced by contracts `2.0` and `3.0`. The current runtime extends it
+> through deployed `6.0`; current capabilities and sentence/output differences
+> are canonical in `contracts/capabilities.json` and
+> `docs/ai-contract-version-matrix.md`. Historical rollout steps below are not
+> the current producer configuration.
+
 ## Status and versioning
 
 The persisted AI analytics `1.0` contract is the deployed structural baseline.

@@ -33,13 +33,16 @@ also the configuration rollback value.
 
 The rollout remains consumer-first:
 
-1. Deploy the Core callback/OpenAPI consumer and verify Core health advertises
-   V6 callback support while the produced version remains `5.0`.
-2. Deploy the completed Python V6 parser/generation/fallback/catalog branch and
-   verify deployed health reports `6.0` at the expected commit.
-3. Run a complete local V6 round through callback persistence and Dashboard
-   rendering while Core still produces `5.0` by default.
-4. Add `6.0` to Core producible versions and only then change the configured or
-   default producer version.
-5. Run version-fitness, TypeScript, Python, OpenAPI and boundary E2E checks and
+1. Publish a new immutable manifest and capability entry without changing the
+   semantics of `1.0`–`6.0`.
+2. Deploy Python parser/generation support and verify health reports the new
+   accepted version while Core still produces the previous rollback value.
+3. Deploy Core callback/OpenAPI/Dashboard consumer support and verify the
+   produced version is still unchanged.
+4. Run a complete local round through callback persistence and Dashboard
+   rendering for the new version.
+5. Add the version to Core producible choices and only then change the explicit
+   deployed producer configuration. Change the unset default only as a separate
+   rollback-policy decision.
+6. Run version-fitness, TypeScript, Python, OpenAPI and boundary E2E checks and
    record deployed health evidence from both services.

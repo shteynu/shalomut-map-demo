@@ -1,7 +1,8 @@
 # Product Behaviour Backlog
 
-Date: 2026-07-03
-Status: remaining product behaviour proposals after the redesign pass
+Updated: 2026-08-02
+Status: remaining product behavior after persisted rounds, AI suggestions and
+the lifecycle-aware privacy flow landed
 
 ## Completed In This Pass
 
@@ -38,12 +39,15 @@ Why it matters:
 
 ### 3. Survey Builder Efficiency
 
-Current state: the builder supports filtering by dimension, toggling required/enabled state, duplicating questions, and adding demo-bank questions.
+Current state: the builder supports filtering by dimension, toggling
+required/enabled state, duplicating questions, full eight-dimension template
+suggestions and AI suggestions. Suggested text is source-labelled, opens in the
+editor and cannot join the questionnaire until the manager changes it.
 
 Proposal:
 - Add search across question text and dimension labels.
 - Add bulk controls for enabling/disabling questions by dimension.
-- Add explicit reorder support or remove drag affordances until reorder is implemented.
+- Add explicit reorder support or avoid implying that reorder already works.
 - Add keyboard-friendly edit actions for common builder operations.
 
 Why it matters:
@@ -52,12 +56,15 @@ Why it matters:
 
 ### 4. Dashboard Map Accessibility
 
-Current state: desktop stones can be dragged, mobile stones are tap-first, and reset is available on desktop.
+Current state: desktop stones can be dragged, mobile stones are tap-first, and
+the conditional reset control is a native keyboard-focusable button. Several
+map transitions already honor `prefers-reduced-motion`.
 
 Proposal:
 - Add keyboard nudge controls for selected stones on desktop.
-- Add an accessible "reset map arrangement" action reachable by keyboard.
-- Add a reduced-motion treatment for drag and hover transitions.
+- Verify focus/announcement behavior after pointer movement and reset.
+- Audit drag and hover transitions so every relevant motion path honors
+  `prefers-reduced-motion`.
 - Consider saving customized map positions per session if rearrangement becomes a product feature.
 
 Why it matters:

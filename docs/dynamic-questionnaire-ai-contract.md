@@ -7,8 +7,9 @@
 как breaking contract `3.0` в `contracts/ai-analytics-v3.json`. Contracts
 `1.0` и `2.0` остаются immutable. Реализация `3.0` завершена, проверена,
 зафиксирована в ordered commits `f1cd906`, `6833cb2` и `3e3f43f` и развёрнута
-consumer-first 2026-07-26. Deployed Core producer формирует `3.0`; `2.0`
-сохраняется как совместимый legacy/rollback contract.
+consumer-first 2026-07-26. Это историческая основа dynamic-questionnaire:
+текущий deployed Core формирует `6.0`, а rollback-safe producer value — `5.0`.
+Текущий version status находится в `docs/ai-contract-version-matrix.md`.
 
 ## Цель
 
@@ -121,11 +122,10 @@ Persisted `1.0` и `2.0` payloads остаются читаемыми сущес
    exact persisted round questionnaire.
 5. Сохранить rollback path на producer `2.0`.
 
-Локальная история уже разделена на Python consumer `f1cd906`, Core consumers
-`6833cb2` и producer/survey UX `3e3f43f`. Их нельзя push/deploy одним release
-step: сначала должен стать live и пройти проверку Python, затем Core callback и
-Dashboard consumers, и только после этого producer может начать отправлять
-`3.0`.
+Историческая реализация была разделена на Python consumer `f1cd906`, Core
+consumers `6833cb2` и producer/survey UX `3e3f43f` и развёрнута именно в этом
+порядке. Тот же consumer-first порядок обязателен для следующей версии; эти
+старые commits не являются текущим deployment checklist.
 
 ## Acceptance criteria
 

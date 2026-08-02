@@ -16,7 +16,8 @@ description: Управляй контекстом, продолжением р�
 4. `docs/shalomut-tracker-handoff.md` — operational snapshot, blockers и
    approval gates.
 5. `PROJECT_CONTEXT.md` — устойчивые архитектурные решения.
-6. `PROGRESS.md` — журнал и память прошлых сессий.
+6. `PROGRESS.md` — краткие product-level milestones и крупные завершённые
+   возможности.
 7. `PRODUCT.md`, `design.md` и специализированные документы.
 
 Не считай устаревший пункт в документации более надёжным, чем текущий код или
@@ -59,10 +60,14 @@ description: Управляй контекстом, продолжением р�
   конкретные разделы `PROJECT_CONTEXT.md` — только когда нужен устойчивый
   архитектурный контекст; конкретные разделы operational handoff — только для
   deployed state, внешних blockers или approval gates.
-- AI analytics: `docs/ai-analytics-handoff.md`,
-  `contracts/ai-analytics-v1.json` и `ai-analytics-service/README.md`.
+- AI analytics: `docs/ai-contract-version-matrix.md`,
+  `contracts/capabilities.json`, релевантный versioned manifest и
+  `ai-analytics-service/README.md`. `docs/ai-analytics-handoff.md` даёт
+  cross-service overview; archived rollout details не являются current state.
 - Deployment и migrations: operational handoff, environment configuration и
   migration state.
+- Documentation audit: `docs/README.md`, фактические commands/configuration и
+  только те living docs, владельцы которых затронуты найденным расхождением.
 
 Когда работа переходит от статуса или handoff к реализации, прочитай и соблюдай
 `../shalomut-map/SKILL.md`.
@@ -78,8 +83,10 @@ description: Управляй контекстом, продолжением р�
   вопроса — default/legacy template, а не обязательный runtime-инструмент:
   вопросы конкретного раунда могут иметь другие ID, количество и формулировки,
   если они persisted, привязаны к восьми dimensions и проходят privacy gate.
-- Не изменяй immutable AI contracts `1.0`/`2.0` молча; dynamic-questionnaire
-  rollout должен получить новую breaking version и идти consumer-first.
+- Не меняй молча семантику опубликованных contracts `1.0`–`6.0`. Capability
+  policy находится в `contracts/capabilities.json`, а runtime status — в
+  `docs/ai-contract-version-matrix.md`. Новая несовместимая семантика требует
+  новой versioned manifest и consumer-first rollout.
 - Соблюдай RTL-first, WCAG AA и тёплую дизайн-систему.
 - Сохраняй границу между Core Data Layer и внешним AI analytics service.
 - Обеспечивай fail-closed поведение AI transport и persistence.
@@ -161,6 +168,8 @@ Handoff: <task-файл и следующий шаг>.
   долгоживущие решения.
 - `PROGRESS.md` — краткие product-level milestones и крупные завершённые
   возможности.
+- `docs/README.md` — lifecycle-index: какие документы живые, какие фиксируют
+  реализованный контракт, а какие являются историческими планами.
 
 Task-файл — текущий snapshot, а не append-only журнал сессий. При обновлении
 заменяй устаревшее состояние, удаляй уже неактуальные подробности и ссылайся на

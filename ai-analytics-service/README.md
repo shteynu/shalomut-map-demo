@@ -32,6 +32,15 @@ The graph nodes are split by responsibility under `src/agents/`:
 `state.py` names the stable nested graph records while leaving version-specific
 external JSON rules to the shared manifests and `schemas/mcp_types.py`.
 
+Application orchestration is separated from transport through protocols in
+`src/application/ports.py`: `AnalyticsSource`, `ResultSink`, `JobStore`,
+`AnalysisRunner` and `TextGenerator`. `AnalyticsRunnerService` receives source,
+pipeline and sink explicitly; the durable worker depends on the runner/job-store
+ports; generating nodes receive the graph's `TextGenerator`. The module-level
+objects are only the default composition. Validated wire input becomes
+`CanonicalAnalysisInput`, and every success/locked/failure response is built by
+`schemas/analytics_output.py` before outgoing validation.
+
 The model-facing half lives in four files under `src/services/`, split by what
 each one is responsible for:
 
@@ -49,9 +58,9 @@ each one is responsible for:
 
 ## Contract
 
-Runtime input/output support spans `1.0` through `6.0`. Python health therefore
-advertises `6.0`, while the Core producer remains on `5.0` until the separate
-rollout/configuration step. See
+Runtime input/output support spans `1.0` through `6.0`. Python health advertises
+that range, Core can produce `3.0`–`6.0`, and the deployed Core explicitly
+produces `6.0`; an unset Core setting remains rollback-safe `5.0`. See
 [`../docs/ai-contract-version-matrix.md`](../docs/ai-contract-version-matrix.md).
 
 The immutable deployed source of truth for structural contract `1.0` is
@@ -64,14 +73,14 @@ Breaking dynamic-questionnaire contract `3.0` is published separately in
 [`../contracts/ai-analytics-v3.json`](../contracts/ai-analytics-v3.json). It
 keeps the same eight dimensions and score/status semantics, but replaces the
 24-question allowlist with exact persisted round question IDs, text and counts.
-This implementation is deployed consumer-first; the live Core producer sends
-dynamic `3.0`, while exact-canonical-24 `2.0` remains supported for rollback.
+This implementation was deployed consumer-first. Contract `3.0` remains the
+dynamic-questionnaire foundation used by later versions; current deployed
+production is `6.0` and rollback configuration is `5.0`.
 
-The rollout is consumer-first. The Python service first accepts legacy input
-(missing version or `1.0`) and explicit `2.0`, returning the effective input
-version. Core then deploys dual-version callback acceptance before its MCP
-producer starts sending `2.0`. This keeps the existing Render `1.0` baseline
-compatible throughout the rollback window.
+Every rollout remains consumer-first: Python/parser support first, Core
+callback/read compatibility second, Core producer capability third, and only
+then the configured producer switch. Published manifests are not edited to
+smuggle incompatible semantics into an old version.
 
 A successful `2.0` result contains exactly the eight canonical dimensions,
 three canonical question metrics per Stone, strict Hebrew semantic output,
@@ -84,10 +93,10 @@ Privacy-locked rounds return a `locked_error` payload without stones or any
 detailed aggregates. The core app validates callback payloads again before
 persisting them.
 
-The `3.0` rollout completed consumer-first: Python accepted `1.0`, `2.0` and
-`3.0`; Core callback/Dashboard readers then accepted all three; only afterward
-did the Core MCP producer switch from `2.0` to `3.0`. A Core producer rollback
-to `2.0` remains valid throughout the compatibility window.
+The historical `3.0` rollout completed in that order. Later `4.0`/`5.0` and
+`6.0` capabilities follow the same registry in
+`../contracts/capabilities.json`; current runtime status belongs in the version
+matrix rather than in old rollout prose.
 
 ### `4.0` and `5.0`
 
@@ -414,15 +423,19 @@ docker run --rm -p 8000:8000 -e ENV=development shalomut-ai-analytics
 ## Verification
 
 Run the whole service suite — contracts, privacy gate, LLM provider, RAG store
-and the end-to-end graph:
+and the end-to-end graph — through the project virtualenv:
 
 ```bash
-python3 -m pytest
+.venv/bin/python -m pytest
 ```
 
 `run_tests.py` still exists and now only forwards to the same command. Until
 2026-07-27 it carried sixteen tests of its own and never collected `tests/`,
 so a green run there proved nothing about the contract suites.
+
+From the repository root, `npm run verify:ai` invokes the same virtualenv
+command. A system `python3` is not canonical evidence because it may not have
+the project's dev dependencies installed.
 
 The repository-level suite includes a real local boundary test:
 

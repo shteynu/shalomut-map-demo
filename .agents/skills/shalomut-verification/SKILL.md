@@ -1,6 +1,6 @@
 ---
 name: shalomut-verification
-description: Проверяй изменения и runtime-поведение проекта shalomut-map-demo. Используй, когда нужно доказать корректность bugfix или feature, выбрать tests по diff, проверить готовность к merge, выполнить lint/build/Prisma/Python/OpenAPI/AI E2E/browser smoke, проверить preview или зафиксировать verification evidence без неподтверждённых claims.
+description: Проверяй изменения и runtime-поведение проекта shalomut-map-demo. Используй, когда нужно доказать корректность bugfix или feature, выбрать tests по diff, проверить готовность к merge, выполнить lint/build/Prisma/Python/OpenAPI/AI E2E/browser smoke, проверить deployed environment или зафиксировать verification evidence без неподтверждённых claims.
 ---
 
 # Shalomut Verification
@@ -19,7 +19,8 @@ privacy, auth, persistence, contracts или deployment.
 3. Проверь `git status --short`, staged/unstaged diff и список изменённых файлов.
 4. Определи затронутые слои: UI, API, services, persistence, Prisma, survey
    methodology, OpenAPI, AI contract, Python service, auth/security или deploy.
-5. Зафиксируй environment проверки: local, test, preview или staging. Не
+5. Зафиксируй контекст evidence: local, test или deployed. `test` обозначает
+   изолированную проверку, а не третье продуктовое окружение. Не
    смешивай evidence из разных environments без явного обозначения.
 
 ## Матрица выбора
@@ -27,16 +28,17 @@ privacy, auth, persistence, contracts или deployment.
 | Изменённая область | Обязательный минимум |
 | --- | --- |
 | Только Markdown, instructions или skills | Frontmatter/links, `git diff --check`, релевантная structural validation |
+| Mutation config или tests для `src/lib/ai-contract.ts` | Stryker dry run; полный mutation run, если задача меняет mutation evidence или просит оценить test strength |
 | `src/components`, page TSX, CSS | Targeted tests, `npm run lint`, `npm run build`; browser smoke для user-visible flow |
 | `src/app/api`, services, hooks, utilities | Ближайшие API/unit tests, затем `npm test` и `npm run build` |
 | Repositories или server guards | Repository/API regression tests, `npm test`, `npm run lint`, `npm run build` |
 | `prisma/schema.prisma` или migrations | `npx prisma validate`, `npx prisma generate`, repository tests; status/migration только по правилам ниже |
 | Survey source, scoring или privacy | Survey-definition/math/API tests, `npm test`, respondent и locked/ready browser states |
 | OpenAPI JSON/YAML или API contract | OpenAPI integrity tests, parse обеих specs, проверить синхронность route/schema changes |
-| `contracts/ai-analytics-v1.json` или AI TypeScript | Contract/client/view-model tests, `npm test`, Python tests и local boundary E2E |
+| Versioned AI manifest, `contracts/capabilities.json` или AI TypeScript | Contract/registry/client/view-model tests, `npm test`, Python tests и local boundary E2E |
 | `ai-analytics-service` | `.venv/bin/python -m pytest` из `ai-analytics-service` — полный набор, включая contract suites |
 | Auth, secrets или authorization | Unauthorized/missing-secret/organization-isolation tests и security-focused diff review |
-| Deploy, env или runtime config | Полный local suite, preview build/status/logs и безопасный browser smoke |
+| Deploy, env или runtime config | Полный local suite, deployed source/build/health/status/logs и безопасный read-only browser smoke |
 
 Если diff затрагивает несколько строк таблицы, объедини проверки и устрани
 дубликаты.
@@ -55,6 +57,19 @@ privacy, auth, persistence, contracts или deployment.
 - Проверяй lint через `npm run lint`.
 - Проверяй production compilation и App Router boundaries через
   `npm run build`.
+
+### Mutation testing
+
+- Текущий mutation scope — opt-in pilot только для
+  `src/lib/ai-contract.ts`; конфигурация находится в `stryker.config.mjs`.
+- Проверяй wiring без полного прогона через
+  `npm run test:mutation:ai-contract -- --dryRunOnly`.
+- Полный `npm run test:mutation:ai-contract` запускай, когда изменён сам
+  validator, mutation config/набор тестов либо пользователь просит доказать
+  силу тестов. Он не входит в `npm run verify` и не является blocking CI gate.
+- Не обещай repository-wide mutation coverage. Разделяй killed, survived,
+  no-coverage и runtime-error mutants; HTML/JSON reports под
+  `reports/mutation/` являются локальным ignored evidence.
 
 `npm run dev` запускает runtime, но сам по себе не является evidence.
 
@@ -81,7 +96,7 @@ privacy, auth, persistence, contracts или deployment.
 - После contract, MCP, webhook или callback changes запускай соответствующие
   TypeScript tests и local Next.js → Python → callback boundary test через
   `npm test`.
-- Не считай mock MCP доказательством реального staging transport.
+- Не считай mock MCP доказательством реального deployed transport.
 
 ### OpenAPI
 
@@ -104,9 +119,9 @@ privacy, auth, persistence, contracts или deployment.
   changes.
 
 Для local UI используй `playwright` или `playwright-interactive`, если они
-доступны. Для preview/staging используй read-only smoke по умолчанию. Не создавай
-данные, не вызывай webhook и не меняй alias без разрешения, соответствующего
-environment.
+доступны. Для deployed environment используй read-only smoke по умолчанию. Не
+создавай данные, не вызывай webhook и не меняй alias без разрешения,
+соответствующего environment.
 
 ## Обработка результатов
 
@@ -132,7 +147,7 @@ Verification:
 - Passed: <command or smoke and result>
 - Failed: <command and concise cause>
 - Blocked/not run: <check and reason>
-- Environment: <local/test/preview/staging>
+- Environment: <local/test/deployed>
 - Residual risk: <what remains unverified>
 ```
 

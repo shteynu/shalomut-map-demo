@@ -33,9 +33,10 @@ round questionnaires and from demo result data.
   privacy-safe aggregates, then return the fixed eight-stone Dashboard output.
   It must not substitute canonical question text or silently ignore additional
   configured questions.
-- Existing AI contracts `1.0` and `2.0` remain immutable. Breaking contract
-  `3.0` removes the exact 24-question restriction while preserving the fixed
-  eight-stone output and requires a consumer-first rollout.
+- Published AI contracts `1.0`–`6.0` keep their released semantics. Contract
+  `3.0` introduced dynamic questions; later versions add capabilities without
+  making the default 24-question template mandatory again. Any new
+  incompatible exchange requires a new manifest and consumer-first rollout.
 - A green dimension is a strength to preserve (`חוזקה לשימור`). Its action
   experience offers supporting or maintenance actions (`פעולות לשימור`), not
   improvement goals or remedial recommendations.
@@ -58,8 +59,13 @@ round questionnaires and from demo result data.
   scoring thresholds, status labels, eight dimensions, and the default 24-question template.
 - `SurveyRound.surveyDefinition`: exact versioned questionnaire snapshot for a
   runtime round.
-- `contracts/ai-analytics-v3.json`: deployed breaking dynamic-questionnaire AI
-  boundary.
+- `contracts/capabilities.json`: shared cross-runtime capability policy for
+  versions `1.0`–`6.0`.
+- `contracts/ai-analytics-v3.json`: dynamic-questionnaire foundation.
+- `contracts/ai-analytics-v6.json`: currently deployed structured summary,
+  narrative-metric and five-recommendation output boundary.
+- `docs/ai-contract-version-matrix.md`: current producer/parser/callback status
+  and rollback value.
 - `src/lib/survey-definition-hash.ts`: deterministic hash of the exact enabled
   AI-visible question snapshot.
 - `src/lib/demo-data.ts`: demo organization, active round, mock dashboard scores, map positions, metrics, recommendations, and compatibility exports for existing components.
