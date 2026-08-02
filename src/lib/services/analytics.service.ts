@@ -1,4 +1,5 @@
 import {
+  LEGACY_ANALYTICS_CONTRACT_VERSION,
   PRODUCER_CONTRACT_VERSION_ENV,
   UnsupportedProducerContractVersionError,
   getProducedAnalyticsContractVersion,
@@ -117,7 +118,7 @@ export class AnalyticsService {
 
     if (isLocked) {
       return {
-        contractVersion: '2.0',
+        contractVersion: LEGACY_ANALYTICS_CONTRACT_VERSION,
         roundId,
         totalResponses,
         privacyThreshold,
@@ -176,7 +177,7 @@ export class AnalyticsService {
     }
 
     return {
-      contractVersion: '2.0',
+      contractVersion: LEGACY_ANALYTICS_CONTRACT_VERSION,
       roundId,
       totalResponses,
       privacyThreshold,

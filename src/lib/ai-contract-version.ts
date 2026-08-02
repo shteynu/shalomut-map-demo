@@ -1,4 +1,5 @@
 import {
+  AI_ANALYTICS_CONTRACT_VERSION,
   AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
   AI_ANALYTICS_V4_CONTRACT_VERSION,
   AI_ANALYTICS_V5_CONTRACT_VERSION,
@@ -51,6 +52,30 @@ export const PRODUCIBLE_ANALYTICS_CONTRACT_VERSIONS: readonly ProducedAnalyticsC
       'The producible analytics contract versions no longer match the ' +
         `contract manifests: manifests say ${fromManifests.join(', ')}, ` +
         `this module says ${declared}.`,
+    );
+  }
+}
+
+/**
+ * The version `AnalyticsService.calculateRoundAnalytics` stamps on the
+ * immutable canonical result for the default 24-question questionnaire.
+ *
+ * It holds the same value as `AI_ANALYTICS_CONTRACT_VERSION`, and exists
+ * because that one comes from imported JSON and so widens to `string`, while
+ * `RoundAnalyticsResult.contractVersion` is the literal. Without a typed
+ * constant the calculator has to write the literal itself, which is a contract
+ * version living in a domain service — the thing the architecture fitness
+ * check exists to prevent. The check below fails the import if this constant
+ * and the manifest ever disagree.
+ */
+export const LEGACY_ANALYTICS_CONTRACT_VERSION: '2.0' = '2.0';
+
+{
+  if (AI_ANALYTICS_CONTRACT_VERSION !== LEGACY_ANALYTICS_CONTRACT_VERSION) {
+    throw new Error(
+      'The legacy analytics contract version no longer matches its manifest: ' +
+        `the manifest says ${AI_ANALYTICS_CONTRACT_VERSION}, this module says ` +
+        `${LEGACY_ANALYTICS_CONTRACT_VERSION}.`,
     );
   }
 }
