@@ -6,7 +6,7 @@
 - Base branch: `refactor/thin-ai-callback-route`
 - Base commit: `436eda4`
 - Current HEAD: `470ee78`; включён в локальный `main` через `f313613`
-- Status: завершено, проверено и влито в локальный `main`; `main` ещё не запушен
+- Status: завершено, проверено и опубликовано в `origin/main`
 - Last updated: 2026-08-02
 - Last agent/tool: Claude Code (Opus 5)
 

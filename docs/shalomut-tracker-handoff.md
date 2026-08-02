@@ -119,14 +119,13 @@ round завершены. Точный порядок и rollback записан
 
 ## Что делать в начале следующей сессии
 
-1. Опубликовать локальный `main` после отдельного запроса владельца и проверить
-   чистый GitHub CI. В локальный `main` уже включены шесть refactoring-слайсов
+1. Проверить чистый GitHub CI для опубликованного `main`. В `origin/main`
+   включены шесть refactoring-слайсов
    в порядке `AiInsightsRepository` → thin callback route → canonical Core
-   input → canonical Python output → analysis-runner ports → `TextGenerator`;
-   `origin/main` их пока не содержит.
-   После публикации ближайший independently deliverable слайс — composition
-   root вместо `getRepositories()` в Core; создать для него отдельную ветку и
-   `docs/agent-tasks/active/<branch>.md`.
+   input → canonical Python output → analysis-runner ports → `TextGenerator`.
+   После зелёного CI ближайший independently deliverable слайс — composition
+   root вместо `getRepositories()` в Core; создать для него отдельную ветку
+   и `docs/agent-tasks/active/<branch>.md`.
 2. Перед первым реальным респондентом остаётся обязательной ротация четырёх
    ранее засвеченных credentials. Это прежняя approval boundary, не новый
    blocker текущей design-stage работы.
