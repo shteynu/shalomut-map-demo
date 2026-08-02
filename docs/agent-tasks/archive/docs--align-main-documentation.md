@@ -5,9 +5,9 @@
 - Branch: `docs/align-main-documentation`
 - Base branch: `origin/main`
 - Base commit: `278ba9b`
-- Current HEAD: `278ba9b`
-- Status: docs/instructions пакет завершён и проверен; публикация в `main`
-  авторизована пользователем
+- Current HEAD: `238fe1d` (`docs: align project guidance with current main`);
+  task archival записан следующим metadata commit
+- Status: завершено и проверено; пакет опубликован в `origin/main`
 - Last updated: 2026-08-02
 - Last agent/tool: Codex
 
@@ -111,40 +111,21 @@ state, а глобальные memory-файлы снова имеют огра�
 
 ## Remaining
 
-- Commit scoped documentation changes, archive this task, fast-forward local
-  `main`, push `origin/main` and verify the published refs.
+Ничего в scope этой задачи.
 
-## Changed files
+## Changed files and exact Git state at archival
 
-Scope, unstaged:
-
-- `.agents/skills/shalomut-map/SKILL.md`
-- `.agents/skills/shalomut-tracker/SKILL.md`
-- `.agents/skills/shalomut-verification/SKILL.md`
-- `.env.example`
-- `AGENTS.md`, `README.md`, `PRODUCT.md`, `PROJECT_CONTEXT.md`, `PROGRESS.md`,
-  `ROADMAP.md`, `design.md`
-- `ai-analytics-service/README.md`
-- `docs/ai-analytics-handoff.md`
-- `docs/ai-contract-version-matrix.md`
-- `docs/dashboard-semantic-contract.md`
-- `docs/dynamic-questionnaire-ai-contract.md`
-- `docs/local-environment.md`
-- `docs/product-behaviour-backlog.md`
-- `docs/shalomut-tracker-handoff.md`
-- `docs/source-of-truth.md`
-
-Scope, untracked:
-
-- `docs/README.md`
-- этот task-файл
-
-Unrelated, pre-existing unstaged and untouched:
-
-- `.idea/shalomut-map-demo.iml`
-- `next-env.d.ts`
-
-Staged files: none. Commits on this branch: none. Upstream is `origin/main`.
+- Documentation/instruction scope is committed in `238fe1d`; no scoped
+  unstaged or untracked implementation files remain.
+- This task-file move from `active/` to `archive/` is recorded by the immediate
+  metadata commit after `238fe1d`.
+- Unrelated pre-existing `.idea/shalomut-map-demo.iml` and `next-env.d.ts`
+  changes remain unstaged in the documentation worktree and are not included
+  in either commit.
+- The separate `main` worktree also retains its own unstaged `next-env.d.ts`;
+  fast-forward publication does not include or overwrite it.
+- Visibility after session close: both task commits are reachable from pushed
+  `origin/main` and therefore portable to other worktrees, clones and machines.
 
 ## Verification evidence
 
@@ -234,6 +215,6 @@ Node dependencies from `package-lock.json`.
 
 ## Next concrete step
 
-Commit the scoped docs package, archive this task, fast-forward local `main`,
-push `origin/main`, then verify the published refs while preserving unrelated
-`.idea/shalomut-map-demo.iml` and `next-env.d.ts` changes.
+Done: documentation alignment and this archived task were fast-forwarded to
+`main` and published to `origin/main`; start the next independently deliverable
+task from the refreshed remote state.
