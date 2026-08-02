@@ -1,0 +1,113 @@
+import assert from "node:assert";
+import test from "node:test";
+import { renderToStaticMarkup } from "react-dom/server";
+import type { StoneMapResult } from "@/lib/ai-contract";
+import { RoundControls } from "../round-controls";
+import { RoundThresholdNextStepContent } from "../round-threshold-next-step";
+
+const readyResult: StoneMapResult = {
+  contractVersion: "2.0",
+  roundId: "round-threshold-state",
+  processedAt: "2026-08-02T10:00:00.000Z",
+  isLocked: false,
+  status: "success",
+  overallPsychologicalSummary: "סיכום ארגוני מוכן.",
+};
+
+const lockedResult: StoneMapResult = {
+  contractVersion: "2.0",
+  roundId: "round-threshold-state",
+  processedAt: "2026-08-02T10:00:00.000Z",
+  isLocked: true,
+  status: "locked_error",
+  errorMessage: "Detailed metrics are locked below the privacy threshold.",
+};
+
+function renderState(
+  state: Parameters<typeof RoundThresholdNextStepContent>[0]["state"],
+  responseCount = 10,
+) {
+  return renderToStaticMarkup(
+    <RoundThresholdNextStepContent
+      state={state}
+      responseCount={responseCount}
+      minimumResponses={10}
+    />,
+  );
+}
+
+test("round next step names the remaining responses and automatic threshold action", () => {
+  const html = renderState({ status: "below-threshold" }, 7);
+
+  assert.match(html, /עוד 3 תשובות/);
+  assert.match(html, /המפה נשארת נעולה/);
+  assert.match(html, /הניתוח יתחיל אוטומטית/);
+  assert.doesNotMatch(html, /סגירת סבב/);
+});
+
+test("round next step uses singular Hebrew for the final missing response", () => {
+  const html = renderState({ status: "below-threshold" }, 9);
+
+  assert.match(html, /עוד תשובה אחת/);
+  assert.doesNotMatch(html, /עוד 1 תשובות/);
+});
+
+test("round next step distinguishes checking and active analysis", () => {
+  const checking = renderState({ status: "loading" });
+  const running = renderState({ status: "running" });
+
+  assert.match(checking, /בודקים את מצב הניתוח/);
+  assert.match(checking, /aria-live="polite"/);
+  assert.match(checking, /<h2 id="round-analysis-next-step-title">/);
+  assert.match(running, /הניתוח התחיל אוטומטית/);
+  assert.match(running, /בתוך דקות ספורות/);
+  assert.doesNotMatch(running, /להפעיל רענון/);
+});
+
+test("round next step links to a readable completed map", () => {
+  const html = renderState({ status: "ready", value: readyResult });
+
+  assert.match(html, /המפה מוכנה/);
+  assert.match(html, /אין צורך לסגור את הסבב/);
+  assert.match(html, /href="\/dashboard"/);
+});
+
+test("round next step keeps question-level privacy locking explicit", () => {
+  const html = renderState({ status: "locked", value: lockedResult });
+
+  assert.match(html, /לפחות שאלה אחת/);
+  assert.match(html, /נשארת נעולה/);
+  assert.doesNotMatch(html, /המפה מוכנה/);
+});
+
+test("round next step gives missing and failed analysis a localized recovery action", () => {
+  const missing = renderState({ status: "not-found" });
+  const failed = renderState({
+    status: "error",
+    error: "provider-secret-must-not-render",
+  });
+
+  for (const html of [missing, failed]) {
+    assert.match(html, /href="#refresh-round-analysis"/);
+    assert.match(html, /רענון ניתוח/);
+  }
+  assert.match(missing, /עדיין לא נוצר ניתוח/);
+  assert.match(failed, /התשובות שנאספו נשמרו/);
+  assert.doesNotMatch(failed, /provider-secret-must-not-render/);
+});
+
+test("round controls expose the recovery target named by the next-step link", () => {
+  const html = renderToStaticMarkup(
+    <RoundControls
+      roundId="round-threshold-state"
+      shareCode="ROUND-STATE"
+      responseCount={10}
+      expectedResponses={24}
+      minimumResponses={10}
+      status="active"
+    />,
+  );
+
+  assert.match(html, /id="refresh-round-analysis"/);
+  assert.match(html, />רענון ניתוח</);
+});

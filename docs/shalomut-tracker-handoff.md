@@ -1,13 +1,13 @@
 # Shalomut Tracker — актуальный handoff
 
-Обновлено: 2026-08-01. `main` и `origin/main` находятся на `47333be`; план
+Обновлено: 2026-08-02. `main` и `origin/main` находятся на `1b5e54a`; план
 архитектурного рефакторинга завершён и слит. GitHub Build & Validate
 [30717540728](https://github.com/shteynu/shalomut-map-demo/actions/runs/30717540728)
 прошёл на чистом runner, включая Prisma generation, migrations, 307
 TypeScript-тестов, 7 PostgreSQL-тестов и 286 Python-тестов. CodeQL
 [30717540724](https://github.com/shteynu/shalomut-map-demo/actions/runs/30717540724)
-прошёл для TypeScript и Python. В этой сессии deployment и environment не
-менялись.
+прошёл для TypeScript и Python. В deployed environment ничего не менялось;
+локальная БД доведена до всех семи migrations, как зафиксировано ниже.
 
 Единственный не-документационный diff рабочего дерева — сохранённый
 пользовательский generated `next-env.d.ts`; он не относится к рефакторингу и
@@ -66,12 +66,18 @@ exact вопросы раунда принадлежат persisted `SurveyRound.
    раунда с `idle/running/stalled` на `queued/running/succeeded/failed`.
    Остальные пункты backlog с PR 3 не пересекаются.
 
-### Миграция, ожидающая применения
+### Состояние локальных и deployed migrations
 
 `prisma/migrations/20260730120000_add_response_idempotency_constraints` создана
-и применена только к изолированной тестовой базе `shalomut_test`. К рабочей
-локальной и к deployed БД не применялась. Миграция сначала удаляет строки,
-которые констрейнт не пропустил бы, оставляя самую раннюю.
+и была доказана на изолированной тестовой базе `shalomut_test`. На 2026-08-02
+`prisma migrate status` для подтверждённой локальной БД
+`127.0.0.1:5433/shalomut` показал её уже применённой; единственной pending была
+`20260730150000_add_ai_analysis_runs`. Она применена к этой локальной БД через
+`prisma migrate deploy`, после чего durable worker polls вернулись с `204`.
+Состояние deployed БД в этой сессии не читалось и не менялось, поэтому
+применение обеих миграций там всё ещё требует отдельной проверки target.
+Idempotency-миграция сначала удаляет строки, которые констрейнт не пропустил бы,
+оставляя самую раннюю.
 
 ## Что делать в начале следующей сессии
 

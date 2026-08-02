@@ -76,12 +76,16 @@ Proposal:
 Why it matters:
 - The product principle is "from picture to action"; tracked goals are the likely next step beyond visual diagnosis.
 
-### 6. Privacy Threshold States Across Routes
+### 6. Privacy Threshold States Across Routes (completed 2026-08-02)
 
-Current state: manager context exposes one persisted threshold/count model; home, round, dashboard and dimension routes use it, and detailed analytics stay locked below threshold.
-
-Remaining proposal:
-- Add a clear "what happens next" message when the threshold is reached.
+Current state: manager context exposes one persisted threshold/count model;
+home, round, dashboard and dimension routes use it, and detailed analytics stay
+locked below threshold. The round screen now explains the next step before the
+threshold and distinguishes the persisted analysis lifecycle after it:
+checking, queued/running, ready, question-level privacy lock, missing result and
+failure. Ready and running states lead to the map; missing and failed states
+lead to the existing analysis refresh action without exposing raw service
+errors.
 
 Why it matters:
 - Privacy is a primary product promise.

@@ -151,6 +151,7 @@ export function RoundControls({
 
         <div className="round-actions">
           <button
+            id="refresh-round-analysis"
             className="secondary-button"
             type="button"
             disabled={analyzing || responseCount < minimumResponses}
