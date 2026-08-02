@@ -39,6 +39,11 @@ class Calls:
         self.interpretations = []
         self.adaptations = []
         self.summaries = []
+        # What each call was told about the previous attempt, keyed the same
+        # way as the call lists above. `None` is the ordinary first-pass value.
+        self.interpretation_critiques = []
+        self.adaptation_critiques = []
+        self.summary_critiques = []
 
     def interpretations_of(self, dimension_id):
         return [
@@ -70,8 +75,9 @@ def _install(
     """
     calls = Calls()
 
-    def interpretation(*, dim_id, retry_tier="fast", **kwargs):
+    def interpretation(*, dim_id, retry_tier="fast", repair_critique=None, **kwargs):
         calls.interpretations.append((dim_id, retry_tier))
+        calls.interpretation_critiques.append((dim_id, repair_critique))
         first_call = len(calls.interpretations_of(dim_id)) == 1
         if dim_id in bad_interpretation_for and first_call:
             return type(
@@ -93,8 +99,9 @@ def _install(
             )()
         return _answer_dimension(dim_id=dim_id, retry_tier=retry_tier, **kwargs)
 
-    def summary(*, retry_tier="fast", **kwargs):
+    def summary(*, retry_tier="fast", repair_critique=None, **kwargs):
         calls.summaries.append(retry_tier)
+        calls.summary_critiques.append(repair_critique)
         if len(calls.summaries) <= bad_summaries:
             return REFUSED_COPY
         return _answer_summary(retry_tier=retry_tier, **kwargs)
@@ -108,9 +115,11 @@ def _install(
         question_aggregates=None,
         background_context=None,
         retry_tier="fast",
+        repair_critique=None,
     ):
         dimension_id = interventions[0]["dimensionId"]
         calls.adaptations.append((dimension_id, retry_tier))
+        calls.adaptation_critiques.append((dimension_id, repair_critique))
         first_call = len(
             [
                 dim_id

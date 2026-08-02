@@ -39,6 +39,7 @@ def _answer_dimension(
     background_context=None,
     contract_version="4.0",
     all_dimension_scores=None,
+    repair_critique=None,
 ):
     if settings.only_llm_for_problematic and status == "green":
         return _REAL_INTERPRETATION(
@@ -51,6 +52,7 @@ def _answer_dimension(
             background_context=background_context,
             contract_version=contract_version,
             all_dimension_scores=all_dimension_scores,
+            repair_critique=repair_critique,
         )
 
     return InterpretationGeneration(
@@ -75,6 +77,7 @@ def _answer_summary(
     retry_tier="fast",
     contract_version="4.0",
     question_aggregates=None,
+    repair_critique=None,
 ):
     # Below 5.0 this text is written by the service anyway, so asking for it
     # under that version is the shortest route to a summary the validators
@@ -85,6 +88,7 @@ def _answer_summary(
         retry_tier=retry_tier,
         contract_version="4.0",
         question_aggregates=question_aggregates,
+        repair_critique=repair_critique,
     )
 
 
