@@ -1,0 +1,2558 @@
+{
+  "note": "Callback direction (AI analytics service -> Core) of the shared contract corpus. Both runtimes must reach the same verdict on every case. A refused case is a mutation of the accepted payload named by `from`: `delete` removes each dotted path, then `set` assigns each one. Paths walk plain object keys and array indices.",
+  "roundId": "round-callback-corpus",
+  "accepted": [
+    {
+      "id": "accepted-1.0",
+      "contractVersion": "1.0",
+      "payload": {
+        "contractVersion": "1.0",
+        "roundId": "round-callback-corpus",
+        "processedAt": "2026-08-02T08:00:00.000Z",
+        "isLocked": false,
+        "status": "success",
+        "overallPsychologicalSummary": "סיכום ארגוני",
+        "stones": {
+          "self-expression": {
+            "dimensionId": "self-expression",
+            "dimensionNameHebrew": "ביטוי עצמי",
+            "status": "yellow",
+            "score": 60,
+            "psychologicalInterpretation": "פירוש",
+            "recommendedInterventions": [],
+            "metrics": []
+          },
+          "professional-competence": {
+            "dimensionId": "professional-competence",
+            "dimensionNameHebrew": "מסוגלות מקצועית",
+            "status": "yellow",
+            "score": 60,
+            "psychologicalInterpretation": "פירוש",
+            "recommendedInterventions": [],
+            "metrics": []
+          },
+          "social-resource": {
+            "dimensionId": "social-resource",
+            "dimensionNameHebrew": "קשרים חברתיים",
+            "status": "yellow",
+            "score": 60,
+            "psychologicalInterpretation": "פירוש",
+            "recommendedInterventions": [],
+            "metrics": []
+          },
+          "balance": {
+            "dimensionId": "balance",
+            "dimensionNameHebrew": "איזון",
+            "status": "yellow",
+            "score": 60,
+            "psychologicalInterpretation": "פירוש",
+            "recommendedInterventions": [],
+            "metrics": []
+          },
+          "management-support": {
+            "dimensionId": "management-support",
+            "dimensionNameHebrew": "עורף מקצועי",
+            "status": "yellow",
+            "score": 60,
+            "psychologicalInterpretation": "פירוש",
+            "recommendedInterventions": [],
+            "metrics": []
+          },
+          "certainty": {
+            "dimensionId": "certainty",
+            "dimensionNameHebrew": "ודאות",
+            "status": "yellow",
+            "score": 60,
+            "psychologicalInterpretation": "פירוש",
+            "recommendedInterventions": [],
+            "metrics": []
+          },
+          "organizational-climate": {
+            "dimensionId": "organizational-climate",
+            "dimensionNameHebrew": "אקלים ארגוני",
+            "status": "yellow",
+            "score": 60,
+            "psychologicalInterpretation": "פירוש",
+            "recommendedInterventions": [],
+            "metrics": []
+          },
+          "meaning": {
+            "dimensionId": "meaning",
+            "dimensionNameHebrew": "משמעות",
+            "status": "yellow",
+            "score": 60,
+            "psychologicalInterpretation": "פירוש",
+            "recommendedInterventions": [],
+            "metrics": []
+          }
+        }
+      }
+    },
+    {
+      "id": "accepted-2.0",
+      "contractVersion": "2.0",
+      "payload": {
+        "contractVersion": "2.0",
+        "roundId": "round-callback-corpus",
+        "processedAt": "2026-08-02T08:00:00.000Z",
+        "isLocked": false,
+        "status": "success",
+        "overallPsychologicalSummary": "סיכום ארגוני",
+        "stones": {
+          "self-expression": {
+            "dimensionId": "self-expression",
+            "dimensionNameHebrew": "ביטוי עצמי",
+            "status": "yellow",
+            "score": 62,
+            "psychologicalInterpretation": "תחושת הביטחון של צוות ההוראה יציבה ברוב התשובות. התקשורת בין המורים תורמת לתחושת השייכות.",
+            "recommendedInterventions": [],
+            "metrics": [
+              {
+                "questionId": "self-expression-1",
+                "label": "אני יכולה להביע בחופשיות את הרעיונות והמחשבות שלי בעבודה.",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10
+              },
+              {
+                "questionId": "self-expression-2",
+                "label": "אני מרגישה ששומעים אותי ומתחשבים בדעתי.",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10
+              },
+              {
+                "questionId": "self-expression-3",
+                "label": "אני מרגישה שאני עצמי בעבודה, ושאין לי צורך להעמיד פנים.",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10
+              }
+            ],
+            "generationProvenance": {
+              "outcome": "llm",
+              "attempts": 1,
+              "retryCount": 0,
+              "sourceQuestionIds": [
+                "self-expression-1",
+                "self-expression-2",
+                "self-expression-3"
+              ]
+            }
+          },
+          "professional-competence": {
+            "dimensionId": "professional-competence",
+            "dimensionNameHebrew": "מסוגלות מקצועית",
+            "status": "yellow",
+            "score": 62,
+            "psychologicalInterpretation": "תחושת הביטחון של צוות ההוראה יציבה ברוב התשובות. התקשורת בין המורים תורמת לתחושת השייכות.",
+            "recommendedInterventions": [],
+            "metrics": [
+              {
+                "questionId": "professional-competence-1",
+                "label": "אני מקבלת באופן קבוע חיזוק לכך שהמאמצים והכישורים שלי בעלי ערך.",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10
+              },
+              {
+                "questionId": "professional-competence-2",
+                "label": "אני בטוחה במומחיות המקצועית שלי וביכולות שלי.",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10
+              },
+              {
+                "questionId": "professional-competence-3",
+                "label": "אני מרגישה כשירה מספיק כדי להתמודד עם המשימות שעולות.",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10
+              }
+            ],
+            "generationProvenance": {
+              "outcome": "llm",
+              "attempts": 1,
+              "retryCount": 0,
+              "sourceQuestionIds": [
+                "professional-competence-1",
+                "professional-competence-2",
+                "professional-competence-3"
+              ]
+            }
+          },
+          "social-resource": {
+            "dimensionId": "social-resource",
+            "dimensionNameHebrew": "קשרים חברתיים",
+            "status": "yellow",
+            "score": 62,
+            "psychologicalInterpretation": "תחושת הביטחון של צוות ההוראה יציבה ברוב התשובות. התקשורת בין המורים תורמת לתחושת השייכות.",
+            "recommendedInterventions": [],
+            "metrics": [
+              {
+                "questionId": "social-resource-1",
+                "label": "יש לי לפחות אדם אחד בעבודה שאני סומכת עליו/עליה ושאני יכולה לדבר איתו/איתה בפתיחות.",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10
+              },
+              {
+                "questionId": "social-resource-2",
+                "label": "בצוות קיימים כבוד הדדי ותמיכה.",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10
+              },
+              {
+                "questionId": "social-resource-3",
+                "label": "התקשורת עם הקולגות נותנת לי אנרגיה ורגשות חיוביים.",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10
+              }
+            ],
+            "generationProvenance": {
+              "outcome": "llm",
+              "attempts": 1,
+              "retryCount": 0,
+              "sourceQuestionIds": [
+                "social-resource-1",
+                "social-resource-2",
+                "social-resource-3"
+              ]
+            }
+          },
+          "balance": {
+            "dimensionId": "balance",
+            "dimensionNameHebrew": "איזון",
+            "status": "yellow",
+            "score": 62,
+            "psychologicalInterpretation": "תחושת הביטחון של צוות ההוראה יציבה ברוב התשובות. התקשורת בין המורים תורמת לתחושת השייכות.",
+            "recommendedInterventions": [],
+            "metrics": [
+              {
+                "questionId": "balance-1",
+                "label": "אני מצליחה לבצע את משימות העבודה בזמן שנקבע.",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10
+              },
+              {
+                "questionId": "balance-2",
+                "label": "יש לי מספיק זמן למנוחה ולהתאוששות אחרי העבודה.",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10
+              },
+              {
+                "questionId": "balance-3",
+                "label": "אני מרגישה שהעומס בעבודה מתאים לי והוא בהישג יד/בר־ביצוע עבורי.",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10
+              }
+            ],
+            "generationProvenance": {
+              "outcome": "llm",
+              "attempts": 1,
+              "retryCount": 0,
+              "sourceQuestionIds": [
+                "balance-1",
+                "balance-2",
+                "balance-3"
+              ]
+            }
+          },
+          "management-support": {
+            "dimensionId": "management-support",
+            "dimensionNameHebrew": "עורף מקצועי",
+            "status": "yellow",
+            "score": 62,
+            "psychologicalInterpretation": "תחושת הביטחון של צוות ההוראה יציבה ברוב התשובות. התקשורת בין המורים תורמת לתחושת השייכות.",
+            "recommendedInterventions": [],
+            "metrics": [
+              {
+                "questionId": "management-support-1",
+                "label": "אני מקבלת באופן קבוע תמיכה ומשוב מההנהלה.",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10
+              },
+              {
+                "questionId": "management-support-2",
+                "label": "אני יכולה לפנות למנהל/ת לעזרה בלי חשש.",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10
+              },
+              {
+                "questionId": "management-support-3",
+                "label": "המנהל/ת מעריכ/ה את המאמצים שלי ומביע/ה זאת באופן גלוי.",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10
+              }
+            ],
+            "generationProvenance": {
+              "outcome": "llm",
+              "attempts": 1,
+              "retryCount": 0,
+              "sourceQuestionIds": [
+                "management-support-1",
+                "management-support-2",
+                "management-support-3"
+              ]
+            }
+          },
+          "certainty": {
+            "dimensionId": "certainty",
+            "dimensionNameHebrew": "ודאות",
+            "status": "yellow",
+            "score": 62,
+            "psychologicalInterpretation": "תחושת הביטחון של צוות ההוראה יציבה ברוב התשובות. התקשורת בין המורים תורמת לתחושת השייכות.",
+            "recommendedInterventions": [],
+            "metrics": [
+              {
+                "questionId": "certainty-1",
+                "label": "אני מבינה מה מצפה לי בעבודה מחר ובזמן הקרוב.",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10
+              },
+              {
+                "questionId": "certainty-2",
+                "label": "בעבודה יש מינימום שינויים בלתי צפויים ולא מתוכננים.",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10
+              },
+              {
+                "questionId": "certainty-3",
+                "label": "המשימות והאחריות שלי מוגדרות בבירור ואינן משתנות ללא התראה מראש.",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10
+              }
+            ],
+            "generationProvenance": {
+              "outcome": "llm",
+              "attempts": 1,
+              "retryCount": 0,
+              "sourceQuestionIds": [
+                "certainty-1",
+                "certainty-2",
+                "certainty-3"
+              ]
+            }
+          },
+          "organizational-climate": {
+            "dimensionId": "organizational-climate",
+            "dimensionNameHebrew": "אקלים ארגוני",
+            "status": "yellow",
+            "score": 62,
+            "psychologicalInterpretation": "תחושת הביטחון של צוות ההוראה יציבה ברוב התשובות. התקשורת בין המורים תורמת לתחושת השייכות.",
+            "recommendedInterventions": [],
+            "metrics": [
+              {
+                "questionId": "organizational-climate-1",
+                "label": "בארגון מקובל לדבר באופן פתוח על קשיים רגשיים ופסיכולוגיים.",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10
+              },
+              {
+                "questionId": "organizational-climate-2",
+                "label": "המצב הנפשי שלי נלקח בחשבון בעת חלוקת המשימות.",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10
+              },
+              {
+                "questionId": "organizational-climate-3",
+                "label": "האווירה בצוות חיובית ואינה יוצרת לחץ מיותר.",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10
+              }
+            ],
+            "generationProvenance": {
+              "outcome": "llm",
+              "attempts": 1,
+              "retryCount": 0,
+              "sourceQuestionIds": [
+                "organizational-climate-1",
+                "organizational-climate-2",
+                "organizational-climate-3"
+              ]
+            }
+          },
+          "meaning": {
+            "dimensionId": "meaning",
+            "dimensionNameHebrew": "משמעות",
+            "status": "yellow",
+            "score": 62,
+            "psychologicalInterpretation": "תחושת הביטחון של צוות ההוראה יציבה ברוב התשובות. התקשורת בין המורים תורמת לתחושת השייכות.",
+            "recommendedInterventions": [],
+            "metrics": [
+              {
+                "questionId": "meaning-1",
+                "label": "אני רואה תועלת ברורה עבור אנשים אחרים בעבודה שלי.",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10
+              },
+              {
+                "questionId": "meaning-2",
+                "label": "ברור לי למה אני עושה את מה שאני עושה.",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10
+              },
+              {
+                "questionId": "meaning-3",
+                "label": "אני מרגישה שלעבודה שלי יש משמעות והיא חשובה לי באופן אישי.",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10
+              }
+            ],
+            "generationProvenance": {
+              "outcome": "llm",
+              "attempts": 1,
+              "retryCount": 0,
+              "sourceQuestionIds": [
+                "meaning-1",
+                "meaning-2",
+                "meaning-3"
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "accepted-3.0",
+      "contractVersion": "3.0",
+      "payload": {
+        "contractVersion": "3.0",
+        "roundId": "round-callback-corpus",
+        "processedAt": "2026-08-02T08:00:00.000Z",
+        "isLocked": false,
+        "status": "success",
+        "surveyDefinitionHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "overallPsychologicalSummary": "התמונה הכללית מצביעה על שילוב של כוחות ושל אזורים הזקוקים לתשומת לב. מומלץ להתקדם באופן הדרגתי ולבדוק את השינוי יחד עם הצוות.",
+        "stones": {
+          "self-expression": {
+            "dimensionId": "self-expression",
+            "dimensionNameHebrew": "ביטוי עצמי",
+            "status": "yellow",
+            "score": 62,
+            "psychologicalInterpretation": "תחושת הביטחון של צוות ההוראה יציבה ברוב התשובות. התקשורת בין המורים תורמת לתחושת השייכות.",
+            "recommendedInterventions": [
+              {
+                "id": "self-expression-intervention-1",
+                "dimensionId": "self-expression",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה בין אנשי הצוות.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות."
+                ],
+                "adaptationOutcome": "llm"
+              }
+            ],
+            "metrics": [
+              {
+                "questionId": "question-1",
+                "label": "עד כמה התחושה בתחום זה יציבה",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10
+              }
+            ],
+            "generationProvenance": {
+              "outcome": "llm",
+              "attempts": 1,
+              "retryCount": 0,
+              "sourceQuestionIds": [
+                "question-1"
+              ],
+              "surveyDefinitionHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "backgroundContextIncluded": true,
+              "distributionIncluded": true,
+              "crossDimensionContextIncluded": true
+            }
+          },
+          "professional-competence": {
+            "dimensionId": "professional-competence",
+            "dimensionNameHebrew": "מסוגלות מקצועית",
+            "status": "yellow",
+            "score": 62,
+            "psychologicalInterpretation": "תחושת הביטחון של צוות ההוראה יציבה ברוב התשובות. התקשורת בין המורים תורמת לתחושת השייכות.",
+            "recommendedInterventions": [
+              {
+                "id": "professional-competence-intervention-1",
+                "dimensionId": "professional-competence",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה בין אנשי הצוות.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות."
+                ],
+                "adaptationOutcome": "llm"
+              }
+            ],
+            "metrics": [
+              {
+                "questionId": "question-2",
+                "label": "עד כמה התחושה בתחום זה יציבה",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10
+              }
+            ],
+            "generationProvenance": {
+              "outcome": "llm",
+              "attempts": 1,
+              "retryCount": 0,
+              "sourceQuestionIds": [
+                "question-2"
+              ],
+              "surveyDefinitionHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "backgroundContextIncluded": true,
+              "distributionIncluded": true,
+              "crossDimensionContextIncluded": true
+            }
+          },
+          "social-resource": {
+            "dimensionId": "social-resource",
+            "dimensionNameHebrew": "קשרים חברתיים",
+            "status": "yellow",
+            "score": 62,
+            "psychologicalInterpretation": "תחושת הביטחון של צוות ההוראה יציבה ברוב התשובות. התקשורת בין המורים תורמת לתחושת השייכות.",
+            "recommendedInterventions": [
+              {
+                "id": "social-resource-intervention-1",
+                "dimensionId": "social-resource",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה בין אנשי הצוות.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות."
+                ],
+                "adaptationOutcome": "llm"
+              }
+            ],
+            "metrics": [
+              {
+                "questionId": "question-3",
+                "label": "עד כמה התחושה בתחום זה יציבה",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10
+              }
+            ],
+            "generationProvenance": {
+              "outcome": "llm",
+              "attempts": 1,
+              "retryCount": 0,
+              "sourceQuestionIds": [
+                "question-3"
+              ],
+              "surveyDefinitionHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "backgroundContextIncluded": true,
+              "distributionIncluded": true,
+              "crossDimensionContextIncluded": true
+            }
+          },
+          "balance": {
+            "dimensionId": "balance",
+            "dimensionNameHebrew": "איזון",
+            "status": "yellow",
+            "score": 62,
+            "psychologicalInterpretation": "תחושת הביטחון של צוות ההוראה יציבה ברוב התשובות. התקשורת בין המורים תורמת לתחושת השייכות.",
+            "recommendedInterventions": [
+              {
+                "id": "balance-intervention-1",
+                "dimensionId": "balance",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה בין אנשי הצוות.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות."
+                ],
+                "adaptationOutcome": "llm"
+              }
+            ],
+            "metrics": [
+              {
+                "questionId": "question-4",
+                "label": "עד כמה התחושה בתחום זה יציבה",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10
+              }
+            ],
+            "generationProvenance": {
+              "outcome": "llm",
+              "attempts": 1,
+              "retryCount": 0,
+              "sourceQuestionIds": [
+                "question-4"
+              ],
+              "surveyDefinitionHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "backgroundContextIncluded": true,
+              "distributionIncluded": true,
+              "crossDimensionContextIncluded": true
+            }
+          },
+          "management-support": {
+            "dimensionId": "management-support",
+            "dimensionNameHebrew": "עורף מקצועי",
+            "status": "yellow",
+            "score": 62,
+            "psychologicalInterpretation": "תחושת הביטחון של צוות ההוראה יציבה ברוב התשובות. התקשורת בין המורים תורמת לתחושת השייכות.",
+            "recommendedInterventions": [
+              {
+                "id": "management-support-intervention-1",
+                "dimensionId": "management-support",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה בין אנשי הצוות.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות."
+                ],
+                "adaptationOutcome": "llm"
+              }
+            ],
+            "metrics": [
+              {
+                "questionId": "question-5",
+                "label": "עד כמה התחושה בתחום זה יציבה",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10
+              }
+            ],
+            "generationProvenance": {
+              "outcome": "llm",
+              "attempts": 1,
+              "retryCount": 0,
+              "sourceQuestionIds": [
+                "question-5"
+              ],
+              "surveyDefinitionHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "backgroundContextIncluded": true,
+              "distributionIncluded": true,
+              "crossDimensionContextIncluded": true
+            }
+          },
+          "certainty": {
+            "dimensionId": "certainty",
+            "dimensionNameHebrew": "ודאות",
+            "status": "yellow",
+            "score": 62,
+            "psychologicalInterpretation": "תחושת הביטחון של צוות ההוראה יציבה ברוב התשובות. התקשורת בין המורים תורמת לתחושת השייכות.",
+            "recommendedInterventions": [
+              {
+                "id": "certainty-intervention-1",
+                "dimensionId": "certainty",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה בין אנשי הצוות.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות."
+                ],
+                "adaptationOutcome": "llm"
+              }
+            ],
+            "metrics": [
+              {
+                "questionId": "question-6",
+                "label": "עד כמה התחושה בתחום זה יציבה",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10
+              }
+            ],
+            "generationProvenance": {
+              "outcome": "llm",
+              "attempts": 1,
+              "retryCount": 0,
+              "sourceQuestionIds": [
+                "question-6"
+              ],
+              "surveyDefinitionHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "backgroundContextIncluded": true,
+              "distributionIncluded": true,
+              "crossDimensionContextIncluded": true
+            }
+          },
+          "organizational-climate": {
+            "dimensionId": "organizational-climate",
+            "dimensionNameHebrew": "אקלים ארגוני",
+            "status": "yellow",
+            "score": 62,
+            "psychologicalInterpretation": "תחושת הביטחון של צוות ההוראה יציבה ברוב התשובות. התקשורת בין המורים תורמת לתחושת השייכות.",
+            "recommendedInterventions": [
+              {
+                "id": "organizational-climate-intervention-1",
+                "dimensionId": "organizational-climate",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה בין אנשי הצוות.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות."
+                ],
+                "adaptationOutcome": "llm"
+              }
+            ],
+            "metrics": [
+              {
+                "questionId": "question-7",
+                "label": "עד כמה התחושה בתחום זה יציבה",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10
+              }
+            ],
+            "generationProvenance": {
+              "outcome": "llm",
+              "attempts": 1,
+              "retryCount": 0,
+              "sourceQuestionIds": [
+                "question-7"
+              ],
+              "surveyDefinitionHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "backgroundContextIncluded": true,
+              "distributionIncluded": true,
+              "crossDimensionContextIncluded": true
+            }
+          },
+          "meaning": {
+            "dimensionId": "meaning",
+            "dimensionNameHebrew": "משמעות",
+            "status": "yellow",
+            "score": 62,
+            "psychologicalInterpretation": "תחושת הביטחון של צוות ההוראה יציבה ברוב התשובות. התקשורת בין המורים תורמת לתחושת השייכות.",
+            "recommendedInterventions": [
+              {
+                "id": "meaning-intervention-1",
+                "dimensionId": "meaning",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה בין אנשי הצוות.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות."
+                ],
+                "adaptationOutcome": "llm"
+              }
+            ],
+            "metrics": [
+              {
+                "questionId": "question-8",
+                "label": "עד כמה התחושה בתחום זה יציבה",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10
+              }
+            ],
+            "generationProvenance": {
+              "outcome": "llm",
+              "attempts": 1,
+              "retryCount": 0,
+              "sourceQuestionIds": [
+                "question-8"
+              ],
+              "surveyDefinitionHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "backgroundContextIncluded": true,
+              "distributionIncluded": true,
+              "crossDimensionContextIncluded": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "accepted-4.0",
+      "contractVersion": "4.0",
+      "payload": {
+        "contractVersion": "4.0",
+        "roundId": "round-callback-corpus",
+        "processedAt": "2026-08-02T08:00:00.000Z",
+        "isLocked": false,
+        "status": "success",
+        "surveyDefinitionHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "overallPsychologicalSummary": "התמונה הכללית מצביעה על שילוב של כוחות ושל אזורים הזקוקים לתשומת לב. מומלץ להתקדם באופן הדרגתי ולבדוק את השינוי יחד עם הצוות.",
+        "stones": {
+          "self-expression": {
+            "dimensionId": "self-expression",
+            "dimensionNameHebrew": "ביטוי עצמי",
+            "status": "yellow",
+            "score": 62,
+            "psychologicalInterpretation": "תחושת הביטחון של צוות ההוראה יציבה ברוב התשובות. התקשורת בין המורים תורמת לתחושת השייכות.",
+            "recommendedInterventions": [
+              {
+                "id": "self-expression-intervention-1",
+                "dimensionId": "self-expression",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה בין אנשי הצוות.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות."
+                ],
+                "adaptationOutcome": "llm"
+              }
+            ],
+            "metrics": [
+              {
+                "questionId": "question-1",
+                "label": "עד כמה התחושה בתחום זה יציבה",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10
+              }
+            ],
+            "generationProvenance": {
+              "outcome": "llm",
+              "attempts": 1,
+              "retryCount": 0,
+              "sourceQuestionIds": [
+                "question-1"
+              ],
+              "surveyDefinitionHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "backgroundContextIncluded": true,
+              "distributionIncluded": true,
+              "crossDimensionContextIncluded": true
+            }
+          },
+          "professional-competence": {
+            "dimensionId": "professional-competence",
+            "dimensionNameHebrew": "מסוגלות מקצועית",
+            "status": "yellow",
+            "score": 62,
+            "psychologicalInterpretation": "תחושת הביטחון של צוות ההוראה יציבה ברוב התשובות. התקשורת בין המורים תורמת לתחושת השייכות.",
+            "recommendedInterventions": [
+              {
+                "id": "professional-competence-intervention-1",
+                "dimensionId": "professional-competence",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה בין אנשי הצוות.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות."
+                ],
+                "adaptationOutcome": "llm"
+              }
+            ],
+            "metrics": [
+              {
+                "questionId": "question-2",
+                "label": "עד כמה התחושה בתחום זה יציבה",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10
+              }
+            ],
+            "generationProvenance": {
+              "outcome": "llm",
+              "attempts": 1,
+              "retryCount": 0,
+              "sourceQuestionIds": [
+                "question-2"
+              ],
+              "surveyDefinitionHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "backgroundContextIncluded": true,
+              "distributionIncluded": true,
+              "crossDimensionContextIncluded": true
+            }
+          },
+          "social-resource": {
+            "dimensionId": "social-resource",
+            "dimensionNameHebrew": "קשרים חברתיים",
+            "status": "yellow",
+            "score": 62,
+            "psychologicalInterpretation": "תחושת הביטחון של צוות ההוראה יציבה ברוב התשובות. התקשורת בין המורים תורמת לתחושת השייכות.",
+            "recommendedInterventions": [
+              {
+                "id": "social-resource-intervention-1",
+                "dimensionId": "social-resource",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה בין אנשי הצוות.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות."
+                ],
+                "adaptationOutcome": "llm"
+              }
+            ],
+            "metrics": [
+              {
+                "questionId": "question-3",
+                "label": "עד כמה התחושה בתחום זה יציבה",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10
+              }
+            ],
+            "generationProvenance": {
+              "outcome": "llm",
+              "attempts": 1,
+              "retryCount": 0,
+              "sourceQuestionIds": [
+                "question-3"
+              ],
+              "surveyDefinitionHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "backgroundContextIncluded": true,
+              "distributionIncluded": true,
+              "crossDimensionContextIncluded": true
+            }
+          },
+          "balance": {
+            "dimensionId": "balance",
+            "dimensionNameHebrew": "איזון",
+            "status": "yellow",
+            "score": 62,
+            "psychologicalInterpretation": "תחושת הביטחון של צוות ההוראה יציבה ברוב התשובות. התקשורת בין המורים תורמת לתחושת השייכות.",
+            "recommendedInterventions": [
+              {
+                "id": "balance-intervention-1",
+                "dimensionId": "balance",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה בין אנשי הצוות.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות."
+                ],
+                "adaptationOutcome": "llm"
+              }
+            ],
+            "metrics": [
+              {
+                "questionId": "question-4",
+                "label": "עד כמה התחושה בתחום זה יציבה",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10
+              }
+            ],
+            "generationProvenance": {
+              "outcome": "llm",
+              "attempts": 1,
+              "retryCount": 0,
+              "sourceQuestionIds": [
+                "question-4"
+              ],
+              "surveyDefinitionHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "backgroundContextIncluded": true,
+              "distributionIncluded": true,
+              "crossDimensionContextIncluded": true
+            }
+          },
+          "management-support": {
+            "dimensionId": "management-support",
+            "dimensionNameHebrew": "עורף מקצועי",
+            "status": "yellow",
+            "score": 62,
+            "psychologicalInterpretation": "תחושת הביטחון של צוות ההוראה יציבה ברוב התשובות. התקשורת בין המורים תורמת לתחושת השייכות.",
+            "recommendedInterventions": [
+              {
+                "id": "management-support-intervention-1",
+                "dimensionId": "management-support",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה בין אנשי הצוות.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות."
+                ],
+                "adaptationOutcome": "llm"
+              }
+            ],
+            "metrics": [
+              {
+                "questionId": "question-5",
+                "label": "עד כמה התחושה בתחום זה יציבה",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10
+              }
+            ],
+            "generationProvenance": {
+              "outcome": "llm",
+              "attempts": 1,
+              "retryCount": 0,
+              "sourceQuestionIds": [
+                "question-5"
+              ],
+              "surveyDefinitionHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "backgroundContextIncluded": true,
+              "distributionIncluded": true,
+              "crossDimensionContextIncluded": true
+            }
+          },
+          "certainty": {
+            "dimensionId": "certainty",
+            "dimensionNameHebrew": "ודאות",
+            "status": "yellow",
+            "score": 62,
+            "psychologicalInterpretation": "תחושת הביטחון של צוות ההוראה יציבה ברוב התשובות. התקשורת בין המורים תורמת לתחושת השייכות.",
+            "recommendedInterventions": [
+              {
+                "id": "certainty-intervention-1",
+                "dimensionId": "certainty",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה בין אנשי הצוות.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות."
+                ],
+                "adaptationOutcome": "llm"
+              }
+            ],
+            "metrics": [
+              {
+                "questionId": "question-6",
+                "label": "עד כמה התחושה בתחום זה יציבה",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10
+              }
+            ],
+            "generationProvenance": {
+              "outcome": "llm",
+              "attempts": 1,
+              "retryCount": 0,
+              "sourceQuestionIds": [
+                "question-6"
+              ],
+              "surveyDefinitionHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "backgroundContextIncluded": true,
+              "distributionIncluded": true,
+              "crossDimensionContextIncluded": true
+            }
+          },
+          "organizational-climate": {
+            "dimensionId": "organizational-climate",
+            "dimensionNameHebrew": "אקלים ארגוני",
+            "status": "yellow",
+            "score": 62,
+            "psychologicalInterpretation": "תחושת הביטחון של צוות ההוראה יציבה ברוב התשובות. התקשורת בין המורים תורמת לתחושת השייכות.",
+            "recommendedInterventions": [
+              {
+                "id": "organizational-climate-intervention-1",
+                "dimensionId": "organizational-climate",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה בין אנשי הצוות.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות."
+                ],
+                "adaptationOutcome": "llm"
+              }
+            ],
+            "metrics": [
+              {
+                "questionId": "question-7",
+                "label": "עד כמה התחושה בתחום זה יציבה",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10
+              }
+            ],
+            "generationProvenance": {
+              "outcome": "llm",
+              "attempts": 1,
+              "retryCount": 0,
+              "sourceQuestionIds": [
+                "question-7"
+              ],
+              "surveyDefinitionHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "backgroundContextIncluded": true,
+              "distributionIncluded": true,
+              "crossDimensionContextIncluded": true
+            }
+          },
+          "meaning": {
+            "dimensionId": "meaning",
+            "dimensionNameHebrew": "משמעות",
+            "status": "yellow",
+            "score": 62,
+            "psychologicalInterpretation": "תחושת הביטחון של צוות ההוראה יציבה ברוב התשובות. התקשורת בין המורים תורמת לתחושת השייכות.",
+            "recommendedInterventions": [
+              {
+                "id": "meaning-intervention-1",
+                "dimensionId": "meaning",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה בין אנשי הצוות.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות."
+                ],
+                "adaptationOutcome": "llm"
+              }
+            ],
+            "metrics": [
+              {
+                "questionId": "question-8",
+                "label": "עד כמה התחושה בתחום זה יציבה",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10
+              }
+            ],
+            "generationProvenance": {
+              "outcome": "llm",
+              "attempts": 1,
+              "retryCount": 0,
+              "sourceQuestionIds": [
+                "question-8"
+              ],
+              "surveyDefinitionHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "backgroundContextIncluded": true,
+              "distributionIncluded": true,
+              "crossDimensionContextIncluded": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "accepted-5.0",
+      "contractVersion": "5.0",
+      "payload": {
+        "contractVersion": "5.0",
+        "roundId": "round-callback-corpus",
+        "processedAt": "2026-08-02T08:00:00.000Z",
+        "isLocked": false,
+        "status": "success",
+        "surveyDefinitionHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "overallPsychologicalSummary": "התמונה הכללית מצביעה על שילוב של כוחות ושל אזורים הזקוקים לתשומת לב. מומלץ להתקדם באופן הדרגתי ולבדוק את השינוי יחד עם הצוות.",
+        "stones": {
+          "self-expression": {
+            "dimensionId": "self-expression",
+            "dimensionNameHebrew": "ביטוי עצמי",
+            "status": "yellow",
+            "score": 62,
+            "psychologicalInterpretation": "תחושת הביטחון של צוות ההוראה יציבה ברוב התשובות. התקשורת בין המורים תורמת לתחושת השייכות.",
+            "recommendedInterventions": [
+              {
+                "id": "self-expression-intervention-1",
+                "dimensionId": "self-expression",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה בין אנשי הצוות.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות."
+                ],
+                "adaptationOutcome": "llm"
+              }
+            ],
+            "metrics": [
+              {
+                "questionId": "question-1",
+                "label": "עד כמה התחושה בתחום זה יציבה",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10,
+                "scoreDistribution": {
+                  "green": 3,
+                  "yellow": 5,
+                  "red": 2
+                }
+              }
+            ],
+            "generationProvenance": {
+              "outcome": "llm",
+              "attempts": 1,
+              "retryCount": 0,
+              "sourceQuestionIds": [
+                "question-1"
+              ],
+              "surveyDefinitionHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "backgroundContextIncluded": true,
+              "distributionIncluded": true,
+              "crossDimensionContextIncluded": true
+            }
+          },
+          "professional-competence": {
+            "dimensionId": "professional-competence",
+            "dimensionNameHebrew": "מסוגלות מקצועית",
+            "status": "yellow",
+            "score": 62,
+            "psychologicalInterpretation": "תחושת הביטחון של צוות ההוראה יציבה ברוב התשובות. התקשורת בין המורים תורמת לתחושת השייכות.",
+            "recommendedInterventions": [
+              {
+                "id": "professional-competence-intervention-1",
+                "dimensionId": "professional-competence",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה בין אנשי הצוות.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות."
+                ],
+                "adaptationOutcome": "llm"
+              }
+            ],
+            "metrics": [
+              {
+                "questionId": "question-2",
+                "label": "עד כמה התחושה בתחום זה יציבה",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10,
+                "scoreDistribution": {
+                  "green": 3,
+                  "yellow": 5,
+                  "red": 2
+                }
+              }
+            ],
+            "generationProvenance": {
+              "outcome": "llm",
+              "attempts": 1,
+              "retryCount": 0,
+              "sourceQuestionIds": [
+                "question-2"
+              ],
+              "surveyDefinitionHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "backgroundContextIncluded": true,
+              "distributionIncluded": true,
+              "crossDimensionContextIncluded": true
+            }
+          },
+          "social-resource": {
+            "dimensionId": "social-resource",
+            "dimensionNameHebrew": "קשרים חברתיים",
+            "status": "yellow",
+            "score": 62,
+            "psychologicalInterpretation": "תחושת הביטחון של צוות ההוראה יציבה ברוב התשובות. התקשורת בין המורים תורמת לתחושת השייכות.",
+            "recommendedInterventions": [
+              {
+                "id": "social-resource-intervention-1",
+                "dimensionId": "social-resource",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה בין אנשי הצוות.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות."
+                ],
+                "adaptationOutcome": "llm"
+              }
+            ],
+            "metrics": [
+              {
+                "questionId": "question-3",
+                "label": "עד כמה התחושה בתחום זה יציבה",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10,
+                "scoreDistribution": {
+                  "green": 3,
+                  "yellow": 5,
+                  "red": 2
+                }
+              }
+            ],
+            "generationProvenance": {
+              "outcome": "llm",
+              "attempts": 1,
+              "retryCount": 0,
+              "sourceQuestionIds": [
+                "question-3"
+              ],
+              "surveyDefinitionHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "backgroundContextIncluded": true,
+              "distributionIncluded": true,
+              "crossDimensionContextIncluded": true
+            }
+          },
+          "balance": {
+            "dimensionId": "balance",
+            "dimensionNameHebrew": "איזון",
+            "status": "yellow",
+            "score": 62,
+            "psychologicalInterpretation": "תחושת הביטחון של צוות ההוראה יציבה ברוב התשובות. התקשורת בין המורים תורמת לתחושת השייכות.",
+            "recommendedInterventions": [
+              {
+                "id": "balance-intervention-1",
+                "dimensionId": "balance",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה בין אנשי הצוות.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות."
+                ],
+                "adaptationOutcome": "llm"
+              }
+            ],
+            "metrics": [
+              {
+                "questionId": "question-4",
+                "label": "עד כמה התחושה בתחום זה יציבה",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10,
+                "scoreDistribution": {
+                  "green": 3,
+                  "yellow": 5,
+                  "red": 2
+                }
+              }
+            ],
+            "generationProvenance": {
+              "outcome": "llm",
+              "attempts": 1,
+              "retryCount": 0,
+              "sourceQuestionIds": [
+                "question-4"
+              ],
+              "surveyDefinitionHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "backgroundContextIncluded": true,
+              "distributionIncluded": true,
+              "crossDimensionContextIncluded": true
+            }
+          },
+          "management-support": {
+            "dimensionId": "management-support",
+            "dimensionNameHebrew": "עורף מקצועי",
+            "status": "yellow",
+            "score": 62,
+            "psychologicalInterpretation": "תחושת הביטחון של צוות ההוראה יציבה ברוב התשובות. התקשורת בין המורים תורמת לתחושת השייכות.",
+            "recommendedInterventions": [
+              {
+                "id": "management-support-intervention-1",
+                "dimensionId": "management-support",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה בין אנשי הצוות.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות."
+                ],
+                "adaptationOutcome": "llm"
+              }
+            ],
+            "metrics": [
+              {
+                "questionId": "question-5",
+                "label": "עד כמה התחושה בתחום זה יציבה",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10,
+                "scoreDistribution": {
+                  "green": 3,
+                  "yellow": 5,
+                  "red": 2
+                }
+              }
+            ],
+            "generationProvenance": {
+              "outcome": "llm",
+              "attempts": 1,
+              "retryCount": 0,
+              "sourceQuestionIds": [
+                "question-5"
+              ],
+              "surveyDefinitionHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "backgroundContextIncluded": true,
+              "distributionIncluded": true,
+              "crossDimensionContextIncluded": true
+            }
+          },
+          "certainty": {
+            "dimensionId": "certainty",
+            "dimensionNameHebrew": "ודאות",
+            "status": "yellow",
+            "score": 62,
+            "psychologicalInterpretation": "תחושת הביטחון של צוות ההוראה יציבה ברוב התשובות. התקשורת בין המורים תורמת לתחושת השייכות.",
+            "recommendedInterventions": [
+              {
+                "id": "certainty-intervention-1",
+                "dimensionId": "certainty",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה בין אנשי הצוות.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות."
+                ],
+                "adaptationOutcome": "llm"
+              }
+            ],
+            "metrics": [
+              {
+                "questionId": "question-6",
+                "label": "עד כמה התחושה בתחום זה יציבה",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10,
+                "scoreDistribution": {
+                  "green": 3,
+                  "yellow": 5,
+                  "red": 2
+                }
+              }
+            ],
+            "generationProvenance": {
+              "outcome": "llm",
+              "attempts": 1,
+              "retryCount": 0,
+              "sourceQuestionIds": [
+                "question-6"
+              ],
+              "surveyDefinitionHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "backgroundContextIncluded": true,
+              "distributionIncluded": true,
+              "crossDimensionContextIncluded": true
+            }
+          },
+          "organizational-climate": {
+            "dimensionId": "organizational-climate",
+            "dimensionNameHebrew": "אקלים ארגוני",
+            "status": "yellow",
+            "score": 62,
+            "psychologicalInterpretation": "תחושת הביטחון של צוות ההוראה יציבה ברוב התשובות. התקשורת בין המורים תורמת לתחושת השייכות.",
+            "recommendedInterventions": [
+              {
+                "id": "organizational-climate-intervention-1",
+                "dimensionId": "organizational-climate",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה בין אנשי הצוות.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות."
+                ],
+                "adaptationOutcome": "llm"
+              }
+            ],
+            "metrics": [
+              {
+                "questionId": "question-7",
+                "label": "עד כמה התחושה בתחום זה יציבה",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10,
+                "scoreDistribution": {
+                  "green": 3,
+                  "yellow": 5,
+                  "red": 2
+                }
+              }
+            ],
+            "generationProvenance": {
+              "outcome": "llm",
+              "attempts": 1,
+              "retryCount": 0,
+              "sourceQuestionIds": [
+                "question-7"
+              ],
+              "surveyDefinitionHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "backgroundContextIncluded": true,
+              "distributionIncluded": true,
+              "crossDimensionContextIncluded": true
+            }
+          },
+          "meaning": {
+            "dimensionId": "meaning",
+            "dimensionNameHebrew": "משמעות",
+            "status": "yellow",
+            "score": 62,
+            "psychologicalInterpretation": "תחושת הביטחון של צוות ההוראה יציבה ברוב התשובות. התקשורת בין המורים תורמת לתחושת השייכות.",
+            "recommendedInterventions": [
+              {
+                "id": "meaning-intervention-1",
+                "dimensionId": "meaning",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה בין אנשי הצוות.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות."
+                ],
+                "adaptationOutcome": "llm"
+              }
+            ],
+            "metrics": [
+              {
+                "questionId": "question-8",
+                "label": "עד כמה התחושה בתחום זה יציבה",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10,
+                "scoreDistribution": {
+                  "green": 3,
+                  "yellow": 5,
+                  "red": 2
+                }
+              }
+            ],
+            "generationProvenance": {
+              "outcome": "llm",
+              "attempts": 1,
+              "retryCount": 0,
+              "sourceQuestionIds": [
+                "question-8"
+              ],
+              "surveyDefinitionHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "backgroundContextIncluded": true,
+              "distributionIncluded": true,
+              "crossDimensionContextIncluded": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "accepted-6.0",
+      "contractVersion": "6.0",
+      "payload": {
+        "contractVersion": "6.0",
+        "roundId": "round-callback-corpus",
+        "processedAt": "2026-08-02T08:00:00.000Z",
+        "isLocked": false,
+        "status": "success",
+        "surveyDefinitionHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "overallPsychologicalSummary": "התמונה הכללית מצביעה על שילוב של כוחות ושל אזורים הזקוקים לתשומת לב. מומלץ להתקדם באופן הדרגתי ולבדוק את השינוי יחד עם הצוות.",
+        "stones": {
+          "self-expression": {
+            "dimensionId": "self-expression",
+            "dimensionNameHebrew": "ביטוי עצמי",
+            "status": "yellow",
+            "score": 62,
+            "summary": [
+              "התשובות מצביעות על בסיס יציב לצד שונות מסוימת בין החוויות של המשתתפים.",
+              "נראה כי חיזוק השיח המשותף יכול לעזור לצוות להבין טוב יותר את הצרכים שעולים מן הממצאים.",
+              "כדאי לבחור צעד ממוקד אחד, ליישם אותו בעקביות ולבדוק בהמשך כיצד הוא משפיע על התחושה הכללית."
+            ],
+            "recommendedInterventions": [
+              {
+                "id": "self-expression-intervention-1",
+                "dimensionId": "self-expression",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות.",
+                  "לאסוף משוב ולבחון את ההתקדמות יחד."
+                ],
+                "adaptationOutcome": "llm"
+              },
+              {
+                "id": "self-expression-intervention-2",
+                "dimensionId": "self-expression",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות.",
+                  "לאסוף משוב ולבחון את ההתקדמות יחד."
+                ],
+                "adaptationOutcome": "llm"
+              },
+              {
+                "id": "self-expression-intervention-3",
+                "dimensionId": "self-expression",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות.",
+                  "לאסוף משוב ולבחון את ההתקדמות יחד."
+                ],
+                "adaptationOutcome": "llm"
+              },
+              {
+                "id": "self-expression-intervention-4",
+                "dimensionId": "self-expression",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות.",
+                  "לאסוף משוב ולבחון את ההתקדמות יחד."
+                ],
+                "adaptationOutcome": "llm"
+              },
+              {
+                "id": "self-expression-intervention-5",
+                "dimensionId": "self-expression",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות.",
+                  "לאסוף משוב ולבחון את ההתקדמות יחד."
+                ],
+                "adaptationOutcome": "llm"
+              }
+            ],
+            "metrics": [
+              {
+                "questionId": "question-1",
+                "label": "עד כמה התחושה בתחום זה יציבה",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10,
+                "scoreDistribution": {
+                  "green": 3,
+                  "yellow": 5,
+                  "red": 2
+                },
+                "insightText": "התשובות מלמדות שהחוויה אינה אחידה ושיש מקום לחיזוק עקבי. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף."
+              }
+            ],
+            "generationProvenance": {
+              "outcome": "llm",
+              "attempts": 1,
+              "retryCount": 0,
+              "sourceQuestionIds": [
+                "question-1"
+              ],
+              "surveyDefinitionHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "backgroundContextIncluded": true,
+              "distributionIncluded": true,
+              "crossDimensionContextIncluded": true
+            }
+          },
+          "professional-competence": {
+            "dimensionId": "professional-competence",
+            "dimensionNameHebrew": "מסוגלות מקצועית",
+            "status": "yellow",
+            "score": 62,
+            "summary": [
+              "התשובות מצביעות על בסיס יציב לצד שונות מסוימת בין החוויות של המשתתפים.",
+              "נראה כי חיזוק השיח המשותף יכול לעזור לצוות להבין טוב יותר את הצרכים שעולים מן הממצאים.",
+              "כדאי לבחור צעד ממוקד אחד, ליישם אותו בעקביות ולבדוק בהמשך כיצד הוא משפיע על התחושה הכללית."
+            ],
+            "recommendedInterventions": [
+              {
+                "id": "professional-competence-intervention-1",
+                "dimensionId": "professional-competence",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות.",
+                  "לאסוף משוב ולבחון את ההתקדמות יחד."
+                ],
+                "adaptationOutcome": "llm"
+              },
+              {
+                "id": "professional-competence-intervention-2",
+                "dimensionId": "professional-competence",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות.",
+                  "לאסוף משוב ולבחון את ההתקדמות יחד."
+                ],
+                "adaptationOutcome": "llm"
+              },
+              {
+                "id": "professional-competence-intervention-3",
+                "dimensionId": "professional-competence",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות.",
+                  "לאסוף משוב ולבחון את ההתקדמות יחד."
+                ],
+                "adaptationOutcome": "llm"
+              },
+              {
+                "id": "professional-competence-intervention-4",
+                "dimensionId": "professional-competence",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות.",
+                  "לאסוף משוב ולבחון את ההתקדמות יחד."
+                ],
+                "adaptationOutcome": "llm"
+              },
+              {
+                "id": "professional-competence-intervention-5",
+                "dimensionId": "professional-competence",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות.",
+                  "לאסוף משוב ולבחון את ההתקדמות יחד."
+                ],
+                "adaptationOutcome": "llm"
+              }
+            ],
+            "metrics": [
+              {
+                "questionId": "question-2",
+                "label": "עד כמה התחושה בתחום זה יציבה",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10,
+                "scoreDistribution": {
+                  "green": 3,
+                  "yellow": 5,
+                  "red": 2
+                },
+                "insightText": "התשובות מלמדות שהחוויה אינה אחידה ושיש מקום לחיזוק עקבי. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף."
+              }
+            ],
+            "generationProvenance": {
+              "outcome": "llm",
+              "attempts": 1,
+              "retryCount": 0,
+              "sourceQuestionIds": [
+                "question-2"
+              ],
+              "surveyDefinitionHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "backgroundContextIncluded": true,
+              "distributionIncluded": true,
+              "crossDimensionContextIncluded": true
+            }
+          },
+          "social-resource": {
+            "dimensionId": "social-resource",
+            "dimensionNameHebrew": "קשרים חברתיים",
+            "status": "yellow",
+            "score": 62,
+            "summary": [
+              "התשובות מצביעות על בסיס יציב לצד שונות מסוימת בין החוויות של המשתתפים.",
+              "נראה כי חיזוק השיח המשותף יכול לעזור לצוות להבין טוב יותר את הצרכים שעולים מן הממצאים.",
+              "כדאי לבחור צעד ממוקד אחד, ליישם אותו בעקביות ולבדוק בהמשך כיצד הוא משפיע על התחושה הכללית."
+            ],
+            "recommendedInterventions": [
+              {
+                "id": "social-resource-intervention-1",
+                "dimensionId": "social-resource",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות.",
+                  "לאסוף משוב ולבחון את ההתקדמות יחד."
+                ],
+                "adaptationOutcome": "llm"
+              },
+              {
+                "id": "social-resource-intervention-2",
+                "dimensionId": "social-resource",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות.",
+                  "לאסוף משוב ולבחון את ההתקדמות יחד."
+                ],
+                "adaptationOutcome": "llm"
+              },
+              {
+                "id": "social-resource-intervention-3",
+                "dimensionId": "social-resource",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות.",
+                  "לאסוף משוב ולבחון את ההתקדמות יחד."
+                ],
+                "adaptationOutcome": "llm"
+              },
+              {
+                "id": "social-resource-intervention-4",
+                "dimensionId": "social-resource",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות.",
+                  "לאסוף משוב ולבחון את ההתקדמות יחד."
+                ],
+                "adaptationOutcome": "llm"
+              },
+              {
+                "id": "social-resource-intervention-5",
+                "dimensionId": "social-resource",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות.",
+                  "לאסוף משוב ולבחון את ההתקדמות יחד."
+                ],
+                "adaptationOutcome": "llm"
+              }
+            ],
+            "metrics": [
+              {
+                "questionId": "question-3",
+                "label": "עד כמה התחושה בתחום זה יציבה",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10,
+                "scoreDistribution": {
+                  "green": 3,
+                  "yellow": 5,
+                  "red": 2
+                },
+                "insightText": "התשובות מלמדות שהחוויה אינה אחידה ושיש מקום לחיזוק עקבי. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף."
+              }
+            ],
+            "generationProvenance": {
+              "outcome": "llm",
+              "attempts": 1,
+              "retryCount": 0,
+              "sourceQuestionIds": [
+                "question-3"
+              ],
+              "surveyDefinitionHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "backgroundContextIncluded": true,
+              "distributionIncluded": true,
+              "crossDimensionContextIncluded": true
+            }
+          },
+          "balance": {
+            "dimensionId": "balance",
+            "dimensionNameHebrew": "איזון",
+            "status": "yellow",
+            "score": 62,
+            "summary": [
+              "התשובות מצביעות על בסיס יציב לצד שונות מסוימת בין החוויות של המשתתפים.",
+              "נראה כי חיזוק השיח המשותף יכול לעזור לצוות להבין טוב יותר את הצרכים שעולים מן הממצאים.",
+              "כדאי לבחור צעד ממוקד אחד, ליישם אותו בעקביות ולבדוק בהמשך כיצד הוא משפיע על התחושה הכללית."
+            ],
+            "recommendedInterventions": [
+              {
+                "id": "balance-intervention-1",
+                "dimensionId": "balance",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות.",
+                  "לאסוף משוב ולבחון את ההתקדמות יחד."
+                ],
+                "adaptationOutcome": "llm"
+              },
+              {
+                "id": "balance-intervention-2",
+                "dimensionId": "balance",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות.",
+                  "לאסוף משוב ולבחון את ההתקדמות יחד."
+                ],
+                "adaptationOutcome": "llm"
+              },
+              {
+                "id": "balance-intervention-3",
+                "dimensionId": "balance",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות.",
+                  "לאסוף משוב ולבחון את ההתקדמות יחד."
+                ],
+                "adaptationOutcome": "llm"
+              },
+              {
+                "id": "balance-intervention-4",
+                "dimensionId": "balance",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות.",
+                  "לאסוף משוב ולבחון את ההתקדמות יחד."
+                ],
+                "adaptationOutcome": "llm"
+              },
+              {
+                "id": "balance-intervention-5",
+                "dimensionId": "balance",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות.",
+                  "לאסוף משוב ולבחון את ההתקדמות יחד."
+                ],
+                "adaptationOutcome": "llm"
+              }
+            ],
+            "metrics": [
+              {
+                "questionId": "question-4",
+                "label": "עד כמה התחושה בתחום זה יציבה",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10,
+                "scoreDistribution": {
+                  "green": 3,
+                  "yellow": 5,
+                  "red": 2
+                },
+                "insightText": "התשובות מלמדות שהחוויה אינה אחידה ושיש מקום לחיזוק עקבי. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף."
+              }
+            ],
+            "generationProvenance": {
+              "outcome": "llm",
+              "attempts": 1,
+              "retryCount": 0,
+              "sourceQuestionIds": [
+                "question-4"
+              ],
+              "surveyDefinitionHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "backgroundContextIncluded": true,
+              "distributionIncluded": true,
+              "crossDimensionContextIncluded": true
+            }
+          },
+          "management-support": {
+            "dimensionId": "management-support",
+            "dimensionNameHebrew": "עורף מקצועי",
+            "status": "yellow",
+            "score": 62,
+            "summary": [
+              "התשובות מצביעות על בסיס יציב לצד שונות מסוימת בין החוויות של המשתתפים.",
+              "נראה כי חיזוק השיח המשותף יכול לעזור לצוות להבין טוב יותר את הצרכים שעולים מן הממצאים.",
+              "כדאי לבחור צעד ממוקד אחד, ליישם אותו בעקביות ולבדוק בהמשך כיצד הוא משפיע על התחושה הכללית."
+            ],
+            "recommendedInterventions": [
+              {
+                "id": "management-support-intervention-1",
+                "dimensionId": "management-support",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות.",
+                  "לאסוף משוב ולבחון את ההתקדמות יחד."
+                ],
+                "adaptationOutcome": "llm"
+              },
+              {
+                "id": "management-support-intervention-2",
+                "dimensionId": "management-support",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות.",
+                  "לאסוף משוב ולבחון את ההתקדמות יחד."
+                ],
+                "adaptationOutcome": "llm"
+              },
+              {
+                "id": "management-support-intervention-3",
+                "dimensionId": "management-support",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות.",
+                  "לאסוף משוב ולבחון את ההתקדמות יחד."
+                ],
+                "adaptationOutcome": "llm"
+              },
+              {
+                "id": "management-support-intervention-4",
+                "dimensionId": "management-support",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות.",
+                  "לאסוף משוב ולבחון את ההתקדמות יחד."
+                ],
+                "adaptationOutcome": "llm"
+              },
+              {
+                "id": "management-support-intervention-5",
+                "dimensionId": "management-support",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות.",
+                  "לאסוף משוב ולבחון את ההתקדמות יחד."
+                ],
+                "adaptationOutcome": "llm"
+              }
+            ],
+            "metrics": [
+              {
+                "questionId": "question-5",
+                "label": "עד כמה התחושה בתחום זה יציבה",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10,
+                "scoreDistribution": {
+                  "green": 3,
+                  "yellow": 5,
+                  "red": 2
+                },
+                "insightText": "התשובות מלמדות שהחוויה אינה אחידה ושיש מקום לחיזוק עקבי. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף."
+              }
+            ],
+            "generationProvenance": {
+              "outcome": "llm",
+              "attempts": 1,
+              "retryCount": 0,
+              "sourceQuestionIds": [
+                "question-5"
+              ],
+              "surveyDefinitionHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "backgroundContextIncluded": true,
+              "distributionIncluded": true,
+              "crossDimensionContextIncluded": true
+            }
+          },
+          "certainty": {
+            "dimensionId": "certainty",
+            "dimensionNameHebrew": "ודאות",
+            "status": "yellow",
+            "score": 62,
+            "summary": [
+              "התשובות מצביעות על בסיס יציב לצד שונות מסוימת בין החוויות של המשתתפים.",
+              "נראה כי חיזוק השיח המשותף יכול לעזור לצוות להבין טוב יותר את הצרכים שעולים מן הממצאים.",
+              "כדאי לבחור צעד ממוקד אחד, ליישם אותו בעקביות ולבדוק בהמשך כיצד הוא משפיע על התחושה הכללית."
+            ],
+            "recommendedInterventions": [
+              {
+                "id": "certainty-intervention-1",
+                "dimensionId": "certainty",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות.",
+                  "לאסוף משוב ולבחון את ההתקדמות יחד."
+                ],
+                "adaptationOutcome": "llm"
+              },
+              {
+                "id": "certainty-intervention-2",
+                "dimensionId": "certainty",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות.",
+                  "לאסוף משוב ולבחון את ההתקדמות יחד."
+                ],
+                "adaptationOutcome": "llm"
+              },
+              {
+                "id": "certainty-intervention-3",
+                "dimensionId": "certainty",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות.",
+                  "לאסוף משוב ולבחון את ההתקדמות יחד."
+                ],
+                "adaptationOutcome": "llm"
+              },
+              {
+                "id": "certainty-intervention-4",
+                "dimensionId": "certainty",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות.",
+                  "לאסוף משוב ולבחון את ההתקדמות יחד."
+                ],
+                "adaptationOutcome": "llm"
+              },
+              {
+                "id": "certainty-intervention-5",
+                "dimensionId": "certainty",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות.",
+                  "לאסוף משוב ולבחון את ההתקדמות יחד."
+                ],
+                "adaptationOutcome": "llm"
+              }
+            ],
+            "metrics": [
+              {
+                "questionId": "question-6",
+                "label": "עד כמה התחושה בתחום זה יציבה",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10,
+                "scoreDistribution": {
+                  "green": 3,
+                  "yellow": 5,
+                  "red": 2
+                },
+                "insightText": "התשובות מלמדות שהחוויה אינה אחידה ושיש מקום לחיזוק עקבי. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף."
+              }
+            ],
+            "generationProvenance": {
+              "outcome": "llm",
+              "attempts": 1,
+              "retryCount": 0,
+              "sourceQuestionIds": [
+                "question-6"
+              ],
+              "surveyDefinitionHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "backgroundContextIncluded": true,
+              "distributionIncluded": true,
+              "crossDimensionContextIncluded": true
+            }
+          },
+          "organizational-climate": {
+            "dimensionId": "organizational-climate",
+            "dimensionNameHebrew": "אקלים ארגוני",
+            "status": "yellow",
+            "score": 62,
+            "summary": [
+              "התשובות מצביעות על בסיס יציב לצד שונות מסוימת בין החוויות של המשתתפים.",
+              "נראה כי חיזוק השיח המשותף יכול לעזור לצוות להבין טוב יותר את הצרכים שעולים מן הממצאים.",
+              "כדאי לבחור צעד ממוקד אחד, ליישם אותו בעקביות ולבדוק בהמשך כיצד הוא משפיע על התחושה הכללית."
+            ],
+            "recommendedInterventions": [
+              {
+                "id": "organizational-climate-intervention-1",
+                "dimensionId": "organizational-climate",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות.",
+                  "לאסוף משוב ולבחון את ההתקדמות יחד."
+                ],
+                "adaptationOutcome": "llm"
+              },
+              {
+                "id": "organizational-climate-intervention-2",
+                "dimensionId": "organizational-climate",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות.",
+                  "לאסוף משוב ולבחון את ההתקדמות יחד."
+                ],
+                "adaptationOutcome": "llm"
+              },
+              {
+                "id": "organizational-climate-intervention-3",
+                "dimensionId": "organizational-climate",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות.",
+                  "לאסוף משוב ולבחון את ההתקדמות יחד."
+                ],
+                "adaptationOutcome": "llm"
+              },
+              {
+                "id": "organizational-climate-intervention-4",
+                "dimensionId": "organizational-climate",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות.",
+                  "לאסוף משוב ולבחון את ההתקדמות יחד."
+                ],
+                "adaptationOutcome": "llm"
+              },
+              {
+                "id": "organizational-climate-intervention-5",
+                "dimensionId": "organizational-climate",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות.",
+                  "לאסוף משוב ולבחון את ההתקדמות יחד."
+                ],
+                "adaptationOutcome": "llm"
+              }
+            ],
+            "metrics": [
+              {
+                "questionId": "question-7",
+                "label": "עד כמה התחושה בתחום זה יציבה",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10,
+                "scoreDistribution": {
+                  "green": 3,
+                  "yellow": 5,
+                  "red": 2
+                },
+                "insightText": "התשובות מלמדות שהחוויה אינה אחידה ושיש מקום לחיזוק עקבי. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף."
+              }
+            ],
+            "generationProvenance": {
+              "outcome": "llm",
+              "attempts": 1,
+              "retryCount": 0,
+              "sourceQuestionIds": [
+                "question-7"
+              ],
+              "surveyDefinitionHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "backgroundContextIncluded": true,
+              "distributionIncluded": true,
+              "crossDimensionContextIncluded": true
+            }
+          },
+          "meaning": {
+            "dimensionId": "meaning",
+            "dimensionNameHebrew": "משמעות",
+            "status": "yellow",
+            "score": 62,
+            "summary": [
+              "התשובות מצביעות על בסיס יציב לצד שונות מסוימת בין החוויות של המשתתפים.",
+              "נראה כי חיזוק השיח המשותף יכול לעזור לצוות להבין טוב יותר את הצרכים שעולים מן הממצאים.",
+              "כדאי לבחור צעד ממוקד אחד, ליישם אותו בעקביות ולבדוק בהמשך כיצד הוא משפיע על התחושה הכללית."
+            ],
+            "recommendedInterventions": [
+              {
+                "id": "meaning-intervention-1",
+                "dimensionId": "meaning",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות.",
+                  "לאסוף משוב ולבחון את ההתקדמות יחד."
+                ],
+                "adaptationOutcome": "llm"
+              },
+              {
+                "id": "meaning-intervention-2",
+                "dimensionId": "meaning",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות.",
+                  "לאסוף משוב ולבחון את ההתקדמות יחד."
+                ],
+                "adaptationOutcome": "llm"
+              },
+              {
+                "id": "meaning-intervention-3",
+                "dimensionId": "meaning",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות.",
+                  "לאסוף משוב ולבחון את ההתקדמות יחד."
+                ],
+                "adaptationOutcome": "llm"
+              },
+              {
+                "id": "meaning-intervention-4",
+                "dimensionId": "meaning",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות.",
+                  "לאסוף משוב ולבחון את ההתקדמות יחד."
+                ],
+                "adaptationOutcome": "llm"
+              },
+              {
+                "id": "meaning-intervention-5",
+                "dimensionId": "meaning",
+                "status": "yellow",
+                "source": "shalomut_catalog",
+                "title": "מהלך צוותי ממוקד",
+                "summary": "המהלך המוצע מחזק שגרה משותפת וברורה. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף.",
+                "actionable_steps": [
+                  "לקבוע זמן קבוע לשיחה קצרה עם הצוות.",
+                  "לאסוף משוב ולבחון את ההתקדמות יחד."
+                ],
+                "adaptationOutcome": "llm"
+              }
+            ],
+            "metrics": [
+              {
+                "questionId": "question-8",
+                "label": "עד כמה התחושה בתחום זה יציבה",
+                "value": "מגמה בינונית",
+                "averageScore": 62,
+                "responseCount": 10,
+                "scoreDistribution": {
+                  "green": 3,
+                  "yellow": 5,
+                  "red": 2
+                },
+                "insightText": "התשובות מלמדות שהחוויה אינה אחידה ושיש מקום לחיזוק עקבי. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף. הטקסט מתאר את המשמעות הרגשית והחברתית של התשובות ומציע התבוננות זהירה המבוססת רק על המידע שנאסף."
+              }
+            ],
+            "generationProvenance": {
+              "outcome": "llm",
+              "attempts": 1,
+              "retryCount": 0,
+              "sourceQuestionIds": [
+                "question-8"
+              ],
+              "surveyDefinitionHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "backgroundContextIncluded": true,
+              "distributionIncluded": true,
+              "crossDimensionContextIncluded": true
+            }
+          }
+        }
+      }
+    }
+  ],
+  "refused": [
+    {
+      "id": "unsupported-version",
+      "from": "5.0",
+      "rule": "unsupported_contract_version",
+      "note": "A version no manifest describes.",
+      "mutation": {
+        "set": {
+          "contractVersion": "9.9"
+        }
+      }
+    },
+    {
+      "id": "summary-cyrillic",
+      "from": "5.0",
+      "rule": "summary_not_hebrew_only",
+      "note": "A Cyrillic summary carrying one Hebrew letter — what Core accepted until 2026-08-02.",
+      "mutation": {
+        "set": {
+          "overallPsychologicalSummary": "Команда сообщает об усталости ש. Требуется внимание к нагрузке."
+        }
+      }
+    },
+    {
+      "id": "summary-arabic-confusable",
+      "from": "5.0",
+      "rule": "summary_not_hebrew_only",
+      "note": "An Arabic waw inside an otherwise Hebrew word.",
+      "mutation": {
+        "set": {
+          "overallPsychologicalSummary": "התמונה הכללית מצביعה על יציבות. מומלץ להמשיך במעקب."
+        }
+      }
+    },
+    {
+      "id": "summary-one-sentence",
+      "from": "5.0",
+      "rule": "summary_sentence_count",
+      "note": "One sentence where the contract asks for two to four.",
+      "mutation": {
+        "set": {
+          "overallPsychologicalSummary": "התמונה הכללית יציבה."
+        }
+      }
+    },
+    {
+      "id": "interpretation-cyrillic",
+      "from": "5.0",
+      "rule": "interpretation_not_hebrew_only",
+      "note": "A stone interpretation in Cyrillic.",
+      "mutation": {
+        "set": {
+          "stones.balance.psychologicalInterpretation": "Команда сообщает об усталости ש. Требуется внимание."
+        }
+      }
+    },
+    {
+      "id": "interpretation-one-sentence",
+      "from": "5.0",
+      "rule": "interpretation_sentence_count",
+      "note": "A truncated interpretation: one sentence instead of the two the contract asks for.",
+      "mutation": {
+        "set": {
+          "stones.balance.psychologicalInterpretation": "תחושת הביטחון של צוות ההוראה יציבה ברוב התשובות."
+        }
+      }
+    },
+    {
+      "id": "missing-dimension",
+      "from": "5.0",
+      "rule": "dimension_set_incomplete",
+      "note": "Seven dimensions instead of the eight canonical ones.",
+      "mutation": {
+        "delete": [
+          "stones.meaning"
+        ]
+      }
+    },
+    {
+      "id": "extra-dimension",
+      "from": "5.0",
+      "rule": "dimension_set_incomplete",
+      "note": "A ninth dimension the instrument does not define.",
+      "mutation": {
+        "set": {
+          "stones.made-up": {
+            "dimensionId": "made-up"
+          }
+        }
+      }
+    },
+    {
+      "id": "missing-hash",
+      "from": "3.0",
+      "rule": "survey_definition_hash_required",
+      "note": "A dynamic-questionnaire version with no surveyDefinitionHash.",
+      "mutation": {
+        "delete": [
+          "surveyDefinitionHash"
+        ]
+      }
+    },
+    {
+      "id": "malformed-hash",
+      "from": "3.0",
+      "rule": "survey_definition_hash_required",
+      "note": "A hash of the wrong shape.",
+      "mutation": {
+        "set": {
+          "surveyDefinitionHash": "sha256:short"
+        }
+      }
+    },
+    {
+      "id": "v6-summary-two-paragraphs",
+      "from": "6.0",
+      "rule": "v6_summary_shape",
+      "note": "Two narrative parts where 6.0 requires exactly three.",
+      "mutation": {
+        "set": {
+          "stones.balance.summary": [
+            "התשובות מצביעות על בסיס יציב לצד שונות מסוימת בין החוויות של המשתתפים.",
+            "נראה כי חיזוק השיח המשותף יכול לעזור לצוות להבין טוב יותר את הצרכים שעולים מן הממצאים."
+          ]
+        }
+      }
+    },
+    {
+      "id": "v6-metric-insight-missing",
+      "from": "6.0",
+      "rule": "v6_metric_insight_required",
+      "note": "A 6.0 metric with no insightText.",
+      "mutation": {
+        "delete": [
+          "stones.balance.metrics.0.insightText"
+        ]
+      }
+    },
+    {
+      "id": "status-mismatch",
+      "from": "5.0",
+      "rule": "status_inconsistent_with_score",
+      "note": "A green status on a red score.",
+      "mutation": {
+        "set": {
+          "stones.balance.status": "green",
+          "stones.balance.score": 20
+        }
+      }
+    },
+    {
+      "id": "gap-not-declared",
+      "from": "5.0",
+      "rule": "interpretation_gap_undeclared",
+      "note": "A stone whose outcome is unavailable, absent from dimensionsWithoutInterpretation.",
+      "mutation": {
+        "set": {
+          "stones.balance.psychologicalInterpretation": "",
+          "stones.balance.generationProvenance.outcome": "unavailable"
+        }
+      }
+    },
+    {
+      "id": "gap-declared-wrong",
+      "from": "5.0",
+      "rule": "interpretation_gap_undeclared",
+      "note": "A declared gap that no stone actually has.",
+      "mutation": {
+        "set": {
+          "dimensionsWithoutInterpretation": [
+            "meaning"
+          ]
+        }
+      }
+    }
+  ]
+}
