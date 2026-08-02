@@ -2,12 +2,22 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+/**
+ * Where a contract version may be written as a literal: the contract package
+ * and the wire types it describes. Definition of Done 12.2 of the refactoring
+ * plan allows the contract package, schemas and tests, and nothing else.
+ *
+ * `src/lib/services/analytics.service.ts` was on this list until 2026-08-02.
+ * A domain service that spells a version out is precisely the coupling this
+ * check exists to catch, so allowing it there meant the check could not fail
+ * on the one file whose literals mattered most. It now imports
+ * `LEGACY_ANALYTICS_CONTRACT_VERSION` instead.
+ */
 const ALLOWED_FILES = [
   'src/lib/types/backend.ts',
   'src/lib/ai-contract.ts',
   'src/lib/ai-contract-version.ts',
   'src/lib/contract-registry.ts',
-  'src/lib/services/analytics.service.ts',
 ];
 
 const VERSION_LITERAL = /["']([1-6]\.0)["']/g;
@@ -15,7 +25,7 @@ const VERSION_IDENTIFIER =
   /AI_ANALYTICS_(?:V\d+_|DYNAMIC_|SUPPORTED_)?CONTRACT_VERSIONS?/;
 const COMPARISON = /===|!==|==|!=|\.includes\s*\(/;
 
-function isAllowedFile(filePath) {
+export function isAllowedFile(filePath) {
   if (filePath.includes('__tests__')) return true;
   return ALLOWED_FILES.some((allowed) => filePath.endsWith(allowed));
 }
