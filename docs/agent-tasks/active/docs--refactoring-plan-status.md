@@ -5,7 +5,7 @@
 - Branch: `docs/refactoring-plan-status`
 - Base branch: `origin/main`
 - Base commit: `ae3c3c4`
-- Current HEAD: tip of `docs/refactoring-plan-status`, one commit past `ae3c3c4`
+- Current HEAD: tip of `docs/refactoring-plan-status`, two commits past `ae3c3c4`
 - Status: complete, committed on the branch, not pushed
 - Last updated: 2026-08-02
 - Last agent/tool: Claude Code
@@ -86,6 +86,22 @@ is edited only when its own state changed) and the docs-only row of
   note to the header, qualified item 6 of section 4, and added section 6 with
   the stage table, per-stage detail and the defect table from section 8 of v3.
 
+Second commit, correcting section 6 after the audit's stage 4 claim did not
+survive close reading of the code:
+
+- Stage 4: the statement that the safety loop "повторяет весь pipeline до трёх
+  раз" was wrong. Selective replay by dimension already existed on `ae3c3c4`
+  (`ReplayPlan` in `ai-analytics-service/src/agents/node_support.py`, covered by
+  `tests/test_replay_targets.py`); only the critique never reached the prompt.
+  The correction is stated as a correction rather than swapped in silently.
+- Defect table: `P1 safety retry без critique` moves from open to closed on
+  2026-08-02.
+- Stage 2 and the closing list now name `refactor/version-literal-allowlist` and
+  `fix/selective-safety-repair` alongside the first two branches, and the list
+  says which three passages go stale at merge.
+- Stage 0 and the preamble record that `origin/main` moved to `8debfc7` after
+  the audit commit, carrying the opt-in Stryker pilot for `src/lib/ai-contract.ts`.
+
 ## In progress
 
 None.
@@ -96,12 +112,13 @@ Nothing in this task's scope.
 
 ## Changed files
 
-Committed as the single commit on `docs/refactoring-plan-status`. The branch is
-not pushed, so another worktree in this clone can consume it and another
-checkout or machine cannot.
+Committed as two commits on `docs/refactoring-plan-status`. The branch is not
+pushed, so another worktree in this clone can consume it and another checkout or
+machine cannot.
 
 - Modified: `PROGRESS.md`,
-  `docs/wellbeing-refactoring-plan-v4-review.md`
+  `docs/wellbeing-refactoring-plan-v4-review.md`,
+  `docs/agent-tasks/active/docs--refactoring-plan-status.md`
 - Unrelated, still unstaged and preserved: `.idea/shalomut-map-demo.iml`,
   `next-env.d.ts`
 
@@ -109,10 +126,15 @@ checkout or machine cannot.
 
 ### Passed
 
-- `git diff --check`: clean, no whitespace errors.
+- `git diff --check`: clean, no whitespace errors, both commits.
 - Every repository path named in the new section exists on this branch, except
   `contracts/fixtures/hebrew_text_corpus.json`, which the text explicitly
   describes as arriving with the unmerged `fix/hebrew-only-parity` branch.
+- The corrected stage 4 claim was checked against the code rather than against
+  the earlier audit: `ReplayPlan` and the three `retry_*` fields are present in
+  `ai-analytics-service/src/agents/node_support.py` on this branch, which is
+  `ae3c3c4` for that file. `.venv/bin/python -m pytest` was run on
+  `fix/selective-safety-repair`, not here.
 
 ### Failed
 
@@ -125,17 +147,22 @@ None.
 
 ### Environment
 
-Local. `origin/main` at `ae3c3c4`.
+Local. The branch is based on `origin/main` @ `ae3c3c4`; `origin/main` has since
+moved to `8debfc7`.
 
 ### Residual risk
 
-The audit is a point-in-time statement about `ae3c3c4`. Merging
-`fix/hebrew-only-parity` or `fix/dormant-auth-bypass` will make two of its
-sentences stale, and section 6 names both branches so a later reader can tell.
+The audit is a point-in-time statement about `ae3c3c4`, and one of its claims
+has already needed correcting — the others came from the same reading pass and
+carry the same risk. Merging any of the four fix branches makes three passages
+stale; section 6 names them and says so explicitly.
 
 ## Failed approaches
 
-None.
+The first version of section 6 asserted, about stage 4, that the safety loop
+replays the whole pipeline. It came from reading `safety_node.py` and the graph
+edges without reading `node_support.py`, where the replay is actually narrowed.
+Naming a file the claim depends on, and opening it, is what would have caught it.
 
 ## Known risks
 
@@ -152,8 +179,8 @@ gap. This branch only records the gap; it does not schedule the work.
 
 ## Next concrete step
 
-Nothing here. If the unfinished stages should become work rather than a note,
-the smallest independent slice is the fitness-function allowlist: remove
-`src/lib/services/analytics.service.ts` from `scripts/check-version-literals.mjs`
-and move the two remaining `'2.0'` literals behind the contract package, which
-is what DoD 12.2 of v3 actually asks for.
+Owner action: push this branch with the four fix branches and decide the merge
+order. Whoever merges rewrites the three passages section 6 marks as going
+stale — the allowlist sentence in stage 2, the Hebrew corpus sentence in stage 0
+and the closing branch list — in the same pass, so the audit does not describe
+branch state that no longer exists.

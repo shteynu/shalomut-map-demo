@@ -292,7 +292,12 @@ Python — унаследованная запись. Перед PR 1 нужно
 Статический аудит `origin/main` @ `ae3c3c4` против roadmap и Definition of Done
 документа v3. Проверки не перезапускались ради аудита: выводы получены чтением
 кода, а единственная исполненная проверка — сравнение Hebrew-only предикатов
-двух рантаймов.
+двух рантаймов. С тех пор `origin/main` ушёл на `8debfc7`; что именно там
+появилось, отмечено в этапе 0.
+
+Раздел правился 2026-08-02 после того, как одно утверждение про этап 4 не
+подтвердилось при чтении кода вплотную. Исправление стоит на месте, а не
+переписано молча, — см. этап 4.
 
 Порядок работ шёл по v4, поэтому «не сделано» ниже означает «до этого этапа v3
 не дошли», а не срыв. Исключение — два P1-дефекта, которые сама
@@ -323,6 +328,11 @@ Contract-test suite для адаптеров `AnalyticsSource`
 невозможен, пока нет самого порта. CI execution model §9.4 сведена к одному
 job: nightly и отдельного real-provider smoke по расписанию нет.
 
+После коммита аудита в `main` попал `test/mutation-testing-pilot` (`8debfc7`):
+opt-in и неблокирующий Stryker по одному файлу `src/lib/ai-contract.ts` плюс
+boundary-тесты к нему. Это первый шаг к «сеть ловит регрессии, а не только
+компиляцию» из этапа 0, но пилот по одному файлу — ещё не покрытие этапа.
+
 ### Этап 1
 
 Есть: capability-driven `backgroundContext` для v5, unique constraints на
@@ -347,9 +357,10 @@ fail-closed на неизвестном значении; MCP route, callback ro
 `isValidV2Stone`…`isValidV6Stone` лежат вручную в одном файле `ai-contract.ts`,
 поэтому критерий расширяемости из §3.2 не достигнут: v6 добавлялся правкой
 существующих валидаторов, а не одним адаптером. Отдельно: allowlist
-fitness-функции разрешает литералы в `src/lib/services/analytics.service.ts`,
+fitness-функции разрешал литералы в `src/lib/services/analytics.service.ts`,
 то есть в доменном сервисе, тогда как DoD §12.2 допускает их только внутри
-contract package, схем и тестов.
+contract package, схем и тестов; закрыто на ветке
+`refactor/version-literal-allowlist`.
 
 ### Этап 3
 
@@ -372,9 +383,18 @@ JSON в MCP-клиенте закрыт через `structuredContent` и `outpu
 тонких routes (callback route — 427 строк оркестрации), composition root вместо
 `getRepositories()`, constructor injection в Python вместо глобальных
 `mcp_client_manager` и `analytics_graph`, портов `AnalyticsSource`,
-`ResultSink`, `TextGenerator`, `JobStore` — ни одного. Адресный safety repair
-из §6.4 тоже не сделан: `safety_feedback` записывается и не читается никем,
-цикл повторяет весь pipeline до трёх раз без critique в prompt.
+`ResultSink`, `TextGenerator`, `JobStore` — ни одного.
+
+Адресный safety repair из §6.4 был сделан наполовину, и первая версия этого
+раздела описывала его неверно. Выборочный replay по измерениям на `ae3c3c4`
+уже существовал: `ReplayPlan` в `node_support.py` вместе с
+`retry_interpretation_dimensions`, `retry_recommendation_dimensions` и
+`retry_overall_summary` перезаписывал только отвергнутые части раунда, и это
+покрыто `tests/test_replay_targets.py`. Утверждение «цикл повторяет весь
+pipeline до трёх раз» было ошибкой аудита. Не хватало ровно одного: critique не
+доходил до prompt — `safety_feedback` записывался и не читался никем, поэтому
+отвергнутое измерение переспрашивалось байт-в-байт тем же prompt на более
+дорогой модели. Закрыто на ветке `fix/selective-safety-repair`.
 
 ### Этап 5
 
@@ -400,7 +420,7 @@ identity на Argon2 или managed IdP — пароль всё ещё хеши�
 | P1 MCP double JSON parsing | Исправлен |
 | P1 TS/Python Hebrew-only drift | Пережил последовательность; закрыт 2026-08-02 |
 | P1 dormant DB-auth password bypass | Пережил последовательность; закрыт 2026-08-02 |
-| P1 safety retry без critique | Открыт |
+| P1 safety retry без critique | Пережил последовательность; закрыт 2026-08-02 |
 
 Про Hebrew-only drift стоит сказать отдельно: он не просто не был закрыт, а
 успел разойтись сильнее. Python ужесточил правило 2026-07-30, Core остался на
@@ -410,10 +430,21 @@ identity на Argon2 или managed IdP — пароль всё ещё хеши�
 
 ### Что из этого уже закрыто и чем
 
-Обе правки лежат на отдельных ветках от `ae3c3c4` и не запушены:
+Все правки лежат на отдельных ветках от `ae3c3c4` и не запушены:
 
 - `fix/hebrew-only-parity` — правило Core приведено к правилу Python, добавлен
   общий `contracts/fixtures/hebrew_text_corpus.json` и регрессии на уровне
   callback;
 - `fix/dormant-auth-bypass` — параметр `repository` и его ветка удалены,
-  добавлена регрессия «manager record — не credential».
+  добавлена регрессия «manager record — не credential»;
+- `refactor/version-literal-allowlist` — литералы версий убраны из
+  `analytics.service.ts`, allowlist fitness-функции сокращён до contract
+  package;
+- `fix/selective-safety-repair` — отказы safety-валидатора кодируются и
+  доходят до prompt как одна ивритская строка; выборочный replay не менялся;
+- `docs/refactoring-plan-status` — этот раздел и соответствующая правка в
+  `PROGRESS.md`.
+
+После merge три места здесь устареют и должны быть переписаны одним проходом:
+предложение про allowlist в этапе 2, предложение про Hebrew corpus в этапе 0 и
+сам этот список.
