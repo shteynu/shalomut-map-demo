@@ -14,16 +14,21 @@ TypeScript-тестов, 7 PostgreSQL-тестов и 286 Python-тестов. C
 deployed database в этой сессии не менялись.
 
 Локальная ветка `feat/contract-v6-core-consumer` в commit `e2a472d` публикует
-принятый V6 manifest и завершает первый consumer-first срез: Core
-callback/OpenAPI/UI принимают, перепроверяют и отображают V6, но Core producer
-и Python по-прежнему работают только до `5.0`. Commit доступен другим локальным
-worktree, но ветка не pushed и не merged в `main`; следующий самостоятельный
-срез — Python V6 parser/generation/fallback/catalog — ещё не начат.
+принятый V6 manifest и завершает первый consumer-first срез. Следующий локальный
+срез реализован, но ещё не закоммичен, на
+`feat/contract-v6-python-producer`: Python parser/health поддерживают `6.0`,
+graph выдаёт structured summary, narrative metrics и пять batch-adapted
+recommendations с полностью валидным fallback, а каталог содержит восемь
+кандидатов на каждую dimension/status пару. Core producer остаётся на `5.0`;
+ни одна из V6 веток не pushed, merged или deployed. Текущий Python diff видим
+только в worktree `shalomut-map-demo-contract-v6-core-consumer`.
 
-Финальный combined-main gate прошёл локально: `npm run verify:core` — 316/316
-TypeScript tests, literals, typecheck, ESLint и production build;
-`.venv/bin/python -m pytest` — 290/290; `npm run verify:db` — 7/7 на
-`shalomut_test`. Временные dependency directories игнорируются Git.
+Текущий V6 Python gate прошёл локально: `npm run verify:core` — 324 Core tests,
+literals, typecheck, ESLint и production build; Python `.venv/bin/python -m
+pytest -q` — 301/301. Реальный Python V6 deterministic-fallback payload прошёл
+Core `validateStoneMapResult` с восемью stones. Database/browser/deploy не
+проверялись, потому что этот diff не меняет persistence/UI и rollout остаётся
+отдельной задачей. Временные dependency directories игнорируются Git.
 
 Это оперативная точка входа для перехода от исходного статического demo
 Shalomut Map к `shalomut-tracker`, где сохранённые данные должны быть единственным
@@ -99,10 +104,11 @@ accepted delta — три summary-параграфа на dimension, качес�
 на каждой метрике и ровно пять адаптированных рекомендаций. Core callback
 сохраняет числовые evidence-поля, перепроверяет их против собственных агрегатов
 и не показывает число/распределение как основной V6 metric UI. Producer
-остаётся на `5.0` и fail-closed отклоняет `6.0`; Python parser, pipeline и health
-пока поддерживают только `1.0`–`5.0`. Следующий порядок — сначала Python
-parser/generation/fallback и каталог, затем deployed health evidence, и только
-после этого producer switch по `docs/ai-contract-version-matrix.md`.
+остаётся на `5.0` и fail-closed отклоняет `6.0`; локальный Python parser,
+pipeline и health уже поддерживают `1.0`–`6.0`, но этот diff ещё не committed,
+pushed, merged или deployed. Следующий порядок — commit этого среза, rollout
+Python с deployed health evidence, полный local V6 round, и только после этого
+отдельный Core producer switch по `docs/ai-contract-version-matrix.md`.
 
 ## Что делать в начале следующей сессии
 

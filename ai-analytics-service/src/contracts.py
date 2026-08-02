@@ -18,18 +18,21 @@ _CONTRACT = _load_contract("ai-analytics-v2.json")
 _DYNAMIC_CONTRACT = _load_contract("ai-analytics-v3.json")
 _V4_CONTRACT = _load_contract("ai-analytics-v4.json")
 _V5_CONTRACT = _load_contract("ai-analytics-v5.json")
+_V6_CONTRACT = _load_contract("ai-analytics-v6.json")
 
 AI_ANALYTICS_V1_CONTRACT_VERSION: str = _LEGACY_CONTRACT["version"]
 AI_ANALYTICS_CONTRACT_VERSION: str = _CONTRACT["version"]
 AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION: str = _DYNAMIC_CONTRACT["version"]
 AI_ANALYTICS_V4_CONTRACT_VERSION: str = _V4_CONTRACT["version"]
 AI_ANALYTICS_V5_CONTRACT_VERSION: str = _V5_CONTRACT["version"]
+AI_ANALYTICS_V6_CONTRACT_VERSION: str = _V6_CONTRACT["version"]
 AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS: Tuple[str, ...] = (
     AI_ANALYTICS_V1_CONTRACT_VERSION,
     AI_ANALYTICS_CONTRACT_VERSION,
     AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
     AI_ANALYTICS_V4_CONTRACT_VERSION,
     AI_ANALYTICS_V5_CONTRACT_VERSION,
+    AI_ANALYTICS_V6_CONTRACT_VERSION,
 )
 # Versions that speak the dynamic questionnaire boundary: exact question
 # snapshot, surveyDefinitionHash, eight-stone output. 4.0 and 5.0 are 3.0 plus
@@ -38,6 +41,7 @@ AI_ANALYTICS_DYNAMIC_CONTRACT_VERSIONS: Tuple[str, ...] = (
     AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION,
     AI_ANALYTICS_V4_CONTRACT_VERSION,
     AI_ANALYTICS_V5_CONTRACT_VERSION,
+    AI_ANALYTICS_V6_CONTRACT_VERSION,
 )
 AI_ANALYTICS_DIMENSION_IDS: Tuple[str, ...] = tuple(
     dimension["id"] for dimension in _CONTRACT["dimensions"]
@@ -81,6 +85,11 @@ if tuple(
     dimension["id"] for dimension in _V5_CONTRACT["dimensions"]
 ) != AI_ANALYTICS_DIMENSION_IDS:
     raise RuntimeError("AI contract 5.0 must preserve the canonical dimensions")
+
+if tuple(
+    dimension["id"] for dimension in _V6_CONTRACT["dimensions"]
+) != AI_ANALYTICS_DIMENSION_IDS:
+    raise RuntimeError("AI contract 6.0 must preserve the canonical dimensions")
 
 if len(AI_ANALYTICS_QUESTION_IDS) != 24 or len(
     set(AI_ANALYTICS_QUESTION_IDS)

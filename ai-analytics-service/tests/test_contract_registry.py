@@ -9,7 +9,7 @@ from src.contracts import AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS
 def test_python_support_matches_the_shared_capability_manifest():
     assert set(AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS).issubset(CONTRACT_REGISTRY)
     assert "6.0" in CONTRACT_REGISTRY
-    assert "6.0" not in AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS
+    assert "6.0" in AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS
 
 
 def test_published_six_contract_exposes_narrative_capabilities():

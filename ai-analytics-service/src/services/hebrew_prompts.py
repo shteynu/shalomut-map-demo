@@ -9,6 +9,7 @@ over a round's aggregates and neither needs a network, so they sit apart from th
 transport that carries them.
 """
 
+import json
 import re
 from typing import Any, Dict, Iterable, Optional
 
@@ -244,6 +245,204 @@ def overall_summary_prompt(
         "לטיניות, ורשום מספרים בספרות ולא במילים."
     )
 
+
+def v6_structured_summary_prompt(
+    *,
+    dim_hebrew: str,
+    status: str,
+    question_aggregates: list[Dict[str, Any]],
+    background_context: Optional[Dict[str, Any]] = None,
+) -> str:
+    """Ask for the three semantic parts of one existing overview stone."""
+    aggregates = json.dumps(
+        question_aggregates,
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+    context = json.dumps(
+        background_context or {},
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+    return (
+        "נתח/י ממד רווחה בית ספרי מתוך נתונים מצרפיים בלבד. "
+        f"הממד הוא {dim_hebrew} והמצב הוא {status_label(status)}. "
+        f"נתוני השאלות הם {aggregates}. רקע מותר הוא {context}. "
+        "החזר/י מערך תקין של שלוש מחרוזות JSON בלבד, ללא כותרת וללא "
+        "מעטפת קוד. הפסקה הראשונה מתארת את המצב הנוכחי; השנייה מתארת "
+        "דפוסים, שונות ומגבלות בלי להמציא סיבות; השלישית מציעה מוקד "
+        "ארגוני לבדיקה או לשיחה. כל פסקה בעברית בלבד, שלמה, מסתיימת "
+        "בסימן פיסוק, ואינה כוללת ספרות, אחוזים, אבחנות או מידע על אדם."
+    )
+
+
+def v6_structured_summary_fallback(
+    *,
+    dim_hebrew: str,
+    status: str,
+    question_aggregates: list[Dict[str, Any]],
+) -> tuple[str, str, str]:
+    """Three conservative paragraphs derived from status/distribution only."""
+    state = {
+        "green": "התמונה המצרפית מצביעה על חוזקה יציבה שכדאי לשמר",
+        "yellow": "התמונה המצרפית מצביעה על תחום שאינו אחיד ודורש מעקב",
+        "red": "התמונה המצרפית מצביעה על מתח משמעותי הדורש התייחסות",
+    }.get(status, "התמונה המצרפית דורשת קריאה זהירה")
+    distribution = summed_distribution(question_aggregates)
+    if distribution and distribution["green"] and distribution["red"]:
+        pattern = (
+            "הפיזור בין סוגי המענה מצביע על חוויות שונות בתוך הצוות, "
+            "ולכן הממוצע לבדו אינו מתאר את מלוא התמונה."
+        )
+    else:
+        pattern = (
+            "האותות מן השאלות נעים בכיוון דומה יחסית, אך עדיין חשוב "
+            "לקרוא כל נושא בפני עצמו ולא להסיק סיבה שאינה מופיעה בנתונים."
+        )
+    focus = {
+        "green": "מומלץ לברר אילו שגרות ארגוניות תומכות בחוזקה ולשמור עליהן לאורך זמן.",
+        "yellow": "מומלץ לבחור נושא אחד לבדיקה עם הצוות, להגדיר סימן לשינוי ולחזור אליו במועד קבוע.",
+        "red": "מומלץ להציב את הנושא בעדיפות ארגונית, לקיים בירור מוגן ולבחון פעולה קרובה שאפשר לעקוב אחריה.",
+    }.get(
+        status,
+        "מומלץ לקיים בירור ארגוני זהיר ולהגדיר דרך מעקב שאינה חושפת משיבים.",
+    )
+    return (
+        f"בממד {dim_hebrew}, {state} על בסיס השאלות שנכללו בסבב.",
+        pattern,
+        focus,
+    )
+
+
+def v6_metric_insights_prompt(
+    *,
+    dim_hebrew: str,
+    status: str,
+    question_aggregates: list[Dict[str, Any]],
+    background_context: Optional[Dict[str, Any]] = None,
+) -> str:
+    """Request one qualitative paragraph for every exact question ID."""
+    aggregates = json.dumps(
+        question_aggregates,
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+    context = json.dumps(
+        background_context or {},
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+    return (
+        "כתוב/י פרשנות איכותנית נפרדת לכל שאלת רווחה בנתונים המצרפיים. "
+        f"הממד הוא {dim_hebrew} והמצב הוא {status_label(status)}. "
+        f"נתוני השאלות הם {aggregates}. רקע מותר הוא {context}. "
+        "החזר/י מערך JSON בלבד. לכל פריט יהיו בדיוק questionId המקורי "
+        "ו-insightText. החזר/י כל מזהה פעם אחת, בלי מזהים נוספים ובלי "
+        "לשנות את המספרים. insightText יהיה בין שלוש מאות לחמש מאות "
+        "תווים בעברית בלבד, בלי ספרות או סימן אחוז, ויתאר את המשמעות "
+        "האיכותנית של הממוצע והפיזור בלי להמציא סיבה, אבחנה או עובדה על אדם."
+    )
+
+
+def _without_visible_numbers(text: str) -> str:
+    return re.sub(r"[\d%٪]", "", text)
+
+
+def v6_metric_insight_fallback(
+    *,
+    aggregate: Dict[str, Any],
+    dim_hebrew: str,
+    status: str,
+) -> str:
+    """A full qualitative paragraph grounded only in one aggregate."""
+    distribution = aggregate.get("scoreDistribution", {})
+    polarized = (
+        isinstance(distribution, dict)
+        and bool(distribution.get("green"))
+        and bool(distribution.get("red"))
+    )
+    signal = {
+        "green": "האות המצרפי בנושא זה מתאר נקודת חוזק יחסית בממד",
+        "yellow": "האות המצרפי בנושא זה מתאר תמונה מעורבת שראויה למעקב בממד",
+        "red": "האות המצרפי בנושא זה מתאר מתח בולט שראוי לקבל עדיפות בממד",
+    }.get(status, "האות המצרפי בנושא זה דורש קריאה זהירה בממד")
+    pattern = (
+        "הפיזור מצביע על חוויות שונות בתוך הצוות, ולכן אין לפרש את "
+        "הממוצע כאילו הוא מתאר חוויה אחידה."
+        if polarized
+        else "הפיזור מצביע על כיוון משותף יחסית, אך אינו מאפשר להסיק מה גרם לו."
+    )
+    sentences = [
+        f"{signal} {dim_hebrew}.",
+        pattern,
+        "הקריאה נשענת על תשובות מצרפיות בלבד ואינה מלמדת מי השיב כך, מה הייתה כוונתו או אילו נסיבות אישיות השפיעו עליו.",
+        "כדאי להשתמש בנושא כפתיחה לבירור מוגן עם הצוות, להקשיב לדוגמאות כלליות ולבדוק אם התמונה חוזרת גם בנקודת המעקב הבאה.",
+        "פעולה ארגונית מתאימה תגדיר שינוי קטן שאפשר לזהות בשגרה, בעל תפקיד שאחראי לקדם אותו ומועד מוסכם לבחינה מחודשת.",
+    ]
+    narrative = " ".join(_without_visible_numbers(sentence) for sentence in sentences)
+    if len(narrative) < 300:
+        narrative += (
+            " כך נשמרת הבחנה בין אות שמצריך תשומת לב לבין הסבר שלא נבדק בנתונים."
+        )
+    return narrative[:500].rstrip()
+
+
+def v6_intervention_batch_prompt(
+    *,
+    interventions: list[Dict[str, Any]],
+    dim_hebrew: str,
+    status: str,
+    question_aggregates: list[Dict[str, Any]],
+    background_context: Optional[Dict[str, Any]] = None,
+) -> str:
+    """Adapt five catalog objects in one identity-preserving JSON response."""
+    return (
+        "התאם/י את חמש ההמלצות הבאות לבית הספר מתוך נתונים מצרפיים בלבד. "
+        f"הממד הוא {dim_hebrew} והמצב הוא {status_label(status)}. "
+        f"הנתונים הם {json.dumps(question_aggregates, ensure_ascii=False)}. "
+        f"הרקע המותר הוא {json.dumps(background_context or {}, ensure_ascii=False)}. "
+        f"ההמלצות הן {json.dumps(interventions, ensure_ascii=False)}. "
+        "החזר/י מערך JSON בלבד ובאותו סדר. בכל פריט שמור/י בדיוק את id, "
+        "כתוב/י summary בין שלוש מאות לחמש מאות תווים בעברית בלבד בלי "
+        "ספרות או אחוזים, והחזר/י actionable_steps באותו מספר ובאותו סדר "
+        "רעיוני. אל תמציא/י סיבות, אבחנות, אנשים או נתונים חדשים."
+    )
+
+
+def v6_intervention_fallback(
+    *,
+    intervention: Dict[str, Any],
+    dim_hebrew: str,
+    status: str,
+) -> str:
+    """Enrich human-authored catalog copy to the V6 visible body boundary."""
+    title = _without_visible_numbers(str(intervention.get("title", "")))
+    catalog_summary = _without_visible_numbers(
+        str(intervention.get("summary", "")),
+    )
+    steps = [
+        _without_visible_numbers(str(step))
+        for step in intervention.get("actionable_steps", [])
+    ]
+    purpose = {
+        "green": "המטרה היא לשמר חוזקה קיימת ולהפוך אותה לשגרה שאינה תלויה באדם יחיד.",
+        "yellow": "המטרה היא לבדוק את הנושא באופן ממוקד ולחזק אותו לפני שהוא הופך לקושי קבוע.",
+        "red": "המטרה היא לתת לנושא עדיפות קרובה, לצמצם עומס וליצור סימן ברור להתקדמות.",
+    }.get(status, "המטרה היא לקדם את הנושא בזהירות ובאופן שניתן למעקב.")
+    action = " ".join(steps)
+    sentences = [
+        f"המלצת {title} מתאימה לממד {dim_hebrew} משום שהיא מתרגמת את האות המצרפי לפעולה ארגונית מוגדרת בלי לייחס סיבה לעובד מסוים.",
+        catalog_summary if catalog_summary.endswith(".") else f"{catalog_summary}.",
+        purpose,
+        f"דרך יישום אפשרית היא {action}" if action else "דרך היישום תיקבע עם הצוות בשיחה מוגנת.",
+        "כדאי לקבוע אחראי, מסגרת זמן ונקודת בדיקה, ולאסוף משוב כללי שמאפשר ללמוד אם השינוי מורגש בלי לחשוף תשובות אישיות.",
+    ]
+    narrative = " ".join(sentence.strip() for sentence in sentences if sentence.strip())
+    if not narrative.endswith((".", "!", "?", "؟")):
+        narrative += "."
+    if len(narrative) < 300:
+        narrative += " ההמלצה נשארת נאמנה לנתונים המצרפיים ולגבולות הפרטיות של הסבב."
+    return narrative[:500].rstrip()
 
 def canonical_statements_for_dimension(dimension_id: str) -> list[str]:
     """The instrument's own items for one dimension.

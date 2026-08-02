@@ -39,6 +39,8 @@ class RoundAnalyticsState(TypedDict, total=False):
 class InterpretationState(TypedDict):
     overall_summary: str
     dimension_interpretations: Dict[str, str]
+    dimension_summaries: NotRequired[Dict[str, list[str]]]
+    metric_insights: NotRequired[Dict[str, Dict[str, str]]]
 
 
 class GenerationProvenanceState(TypedDict, total=False):

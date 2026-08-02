@@ -116,6 +116,14 @@ def format_stone_map_output_node(state: AnalyticsState) -> AnalyticsState:
     round_data = state.get("round_data", {})
     dim_scores = round_data.get("dimensionScores", {})
     interpretations = state.get("interpretations", {}).get("dimension_interpretations", {})
+    dimension_summaries = state.get("interpretations", {}).get(
+        "dimension_summaries",
+        {},
+    )
+    metric_insights = state.get("interpretations", {}).get(
+        "metric_insights",
+        {},
+    )
     overall_summary = state.get("interpretations", {}).get("overall_summary", "")
     recommendations = state.get("recommendations", {})
     generation_provenance = state.get("generation_provenance", {})
@@ -168,12 +176,19 @@ def format_stone_map_output_node(state: AnalyticsState) -> AnalyticsState:
                 # never recomputed: Core owns these numbers and now has
                 # something to check them against.
                 if (
-                    get_capabilities(contract_version).supportsPartialMaps
+                    get_capabilities(contract_version).supportsScoreDistribution
                     and isinstance(aggregate.get("scoreDistribution"), dict)
                 ):
                     metric["scoreDistribution"] = dict(
                         aggregate["scoreDistribution"],
                     )
+                if get_capabilities(
+                    contract_version,
+                ).usesNarrativeMetrics:
+                    metric["insightText"] = metric_insights.get(
+                        dim_id,
+                        {},
+                    ).get(aggregate["questionId"], "")
                 metrics.append(metric)
         else:
             metrics = [
@@ -194,10 +209,13 @@ def format_stone_map_output_node(state: AnalyticsState) -> AnalyticsState:
             "dimensionNameHebrew": dim_hebrew,
             "status": status,
             "score": score,
-            "psychologicalInterpretation": interp,
             "recommendedInterventions": recs,
             "metrics": metrics
         }
+        if get_capabilities(contract_version).usesStructuredDimensionSummary:
+            stone["summary"] = dimension_summaries.get(dim_id, [])
+        else:
+            stone["psychologicalInterpretation"] = interp
         if get_capabilities(contract_version).isSemanticContract:
             if dim_id not in generation_provenance:
                 raise ValueError(

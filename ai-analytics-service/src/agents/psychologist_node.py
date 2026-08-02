@@ -33,6 +33,14 @@ async def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
         {},
     )
     previous_provenance = state.get("generation_provenance", {})
+    previous_summaries = state.get("interpretations", {}).get(
+        "dimension_summaries",
+        {},
+    )
+    previous_metric_insights = state.get("interpretations", {}).get(
+        "metric_insights",
+        {},
+    )
 
     retry_tier = "heavy" if retry_count > 0 else "fast"
     if retry_count > 0:
@@ -53,6 +61,7 @@ async def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
     dim_ids = []
     generations = []
     slots = _provider_slots()
+    eff_version = _effective_contract_version(round_data)
 
     for dim_id, score_obj in dim_scores.items():
         if isinstance(score_obj, dict):
@@ -75,23 +84,37 @@ async def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
             dim_id,
         )
         background_context = _background_context_for_prompt(round_data, state)
-        eff_version = _effective_contract_version(round_data)
         dim_ids.append(dim_id)
-        generations.append(
-            _in_provider_slot(
-                slots,
-                llm_provider_service.generate_psychological_interpretation_result,
-                dim_id=dim_id,
-                dim_hebrew=dim_hebrew,
-                score=score,
-                status=status,
-                retry_tier=retry_tier,
-                question_aggregates=question_aggregates,
-                background_context=background_context,
-                contract_version=eff_version,
-                all_dimension_scores=dim_scores,
+        if get_capabilities(eff_version).usesStructuredDimensionSummary:
+            generations.append(
+                _in_provider_slot(
+                    slots,
+                    llm_provider_service.generate_structured_summary_result,
+                    dim_id=dim_id,
+                    dim_hebrew=dim_hebrew,
+                    status=status,
+                    retry_tier=retry_tier,
+                    question_aggregates=question_aggregates,
+                    background_context=background_context,
+                    contract_version=eff_version,
+                )
             )
-        )
+        else:
+            generations.append(
+                _in_provider_slot(
+                    slots,
+                    llm_provider_service.generate_psychological_interpretation_result,
+                    dim_id=dim_id,
+                    dim_hebrew=dim_hebrew,
+                    score=score,
+                    status=status,
+                    retry_tier=retry_tier,
+                    question_aggregates=question_aggregates,
+                    background_context=background_context,
+                    contract_version=eff_version,
+                    all_dimension_scores=dim_scores,
+                )
+            )
 
     settled = await asyncio.gather(*generations, return_exceptions=True)
     failures = [
@@ -107,16 +130,24 @@ async def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
             raise result
 
     regenerated = dict(zip(dim_ids, settled))
+    structured = get_capabilities(eff_version).usesStructuredDimensionSummary
     interpretations = {}
+    dimension_summaries = {}
     for dim_id in dim_scores:
         if dim_id not in regenerated:
             interpretations[dim_id] = previous_interpretations.get(dim_id, "")
+            if structured and dim_id in previous_summaries:
+                dimension_summaries[dim_id] = previous_summaries[dim_id]
             continue
         generation = regenerated[dim_id]
-        interpretations[dim_id] = (
-            "" if isinstance(generation, ProviderUnavailableError)
-            else generation.text
-        )
+        if structured:
+            interpretations[dim_id] = ""
+            dimension_summaries[dim_id] = list(generation.paragraphs)
+        else:
+            interpretations[dim_id] = (
+                "" if isinstance(generation, ProviderUnavailableError)
+                else generation.text
+            )
 
     eff_version = _effective_contract_version(round_data)
     partial_allowed = (
@@ -197,6 +228,47 @@ async def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
             )
 
     background_context = _background_context_for_prompt(round_data, state)
+    metric_insights = dict(previous_metric_insights)
+    if structured:
+        metric_targets = []
+        metric_generations = []
+        metric_slots = _provider_slots()
+        for dim_id, score_obj in dim_scores.items():
+            if (
+                plan is not None
+                and dim_id not in plan.interpretations
+                and dim_id in metric_insights
+            ):
+                continue
+            status = (
+                score_obj.get("computedStatus", "green")
+                if isinstance(score_obj, dict)
+                else getattr(score_obj, "computedStatus", "green")
+            )
+            metric_targets.append(dim_id)
+            metric_generations.append(
+                _in_provider_slot(
+                    metric_slots,
+                    llm_provider_service.generate_metric_insights_result,
+                    dim_id=dim_id,
+                    dim_hebrew=DIMENSION_NAMES_HEBREW.get(dim_id, dim_id),
+                    status=status,
+                    retry_tier=retry_tier,
+                    question_aggregates=_question_aggregates_for_dimension(
+                        round_data,
+                        dim_id,
+                    ),
+                    background_context=background_context,
+                    contract_version=eff_version,
+                )
+            )
+        metric_results = await asyncio.gather(*metric_generations)
+        metric_insights.update(
+            {
+                dim_id: result.insights
+                for dim_id, result in zip(metric_targets, metric_results)
+            },
+        )
     previous_summary = state.get("interpretations", {}).get(
         "overall_summary",
         "",
@@ -236,6 +308,14 @@ async def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
         "interpretations": {
             "overall_summary": overall_summary,
             "dimension_interpretations": interpretations,
+            **(
+                {
+                    "dimension_summaries": dimension_summaries,
+                    "metric_insights": metric_insights,
+                }
+                if structured
+                else {}
+            ),
         },
         "generation_provenance": generation_provenance,
     }

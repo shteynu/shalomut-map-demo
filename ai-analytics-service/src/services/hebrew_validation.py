@@ -8,6 +8,7 @@ safety validator runs it over copy no model wrote. It is kept apart from the
 transport so that judging a sentence never depends on how the sentence arrived.
 """
 
+import json
 import re
 from typing import Any, Dict, Iterable, NamedTuple, Optional, Tuple
 
@@ -31,6 +32,7 @@ _HEBREW_CONFUSABLES = {
 _WHITESPACE_SPLIT_PATTERN = re.compile(r"(\s+)")
 _COMPLETE_SENTENCE_PATTERN = re.compile(r"[^.!?؟]+[.!?؟]")
 _INTEGER_PATTERN = re.compile(r"\d+")
+_VISIBLE_NUMBER_PATTERN = re.compile(r"[\d%٪]")
 
 # A period between two digits belongs to the number, not to the sentence. It is
 # masked before splitting: otherwise "הממוצע הוא 45.0 מתוך 100." counts as two
@@ -171,6 +173,147 @@ def is_hebrew_only_copy(text: str) -> bool:
         character.isalpha() and not _HEBREW_PATTERN.match(character)
         for character in normalized
     )
+
+
+V6_NARRATIVE_MIN_CHARACTERS = 300
+V6_NARRATIVE_MAX_CHARACTERS = 500
+
+
+def is_v6_qualitative_narrative(text: str) -> bool:
+    """Validate visible V6 metric/recommendation copy like the Core reader."""
+    normalized = sanitize_model_text(text)
+    return (
+        V6_NARRATIVE_MIN_CHARACTERS
+        <= len(normalized)
+        <= V6_NARRATIVE_MAX_CHARACTERS
+        and is_hebrew_only_copy(normalized)
+        and not _VISIBLE_NUMBER_PATTERN.search(normalized)
+    )
+
+
+def parse_v6_structured_summary(
+    text: Optional[str],
+    *,
+    status: str,
+) -> Optional[tuple[str, str, str]]:
+    """Accept exactly three complete Hebrew JSON strings without visible data."""
+    if not text:
+        return None
+    try:
+        candidate = json.loads(text)
+    except (TypeError, json.JSONDecodeError):
+        return None
+    if not isinstance(candidate, list) or len(candidate) != 3:
+        return None
+
+    paragraphs = []
+    for value in candidate:
+        if not isinstance(value, str):
+            return None
+        paragraph = sanitize_model_text(value)
+        if (
+            not is_hebrew_only_copy(paragraph)
+            or _VISIBLE_NUMBER_PATTERN.search(paragraph)
+            or not paragraph.rstrip(_TRAILING_CLOSERS).rstrip().endswith(
+                (".", "!", "?", "؟"),
+            )
+            or not is_status_consistent(paragraph, status)
+        ):
+            return None
+        paragraphs.append(paragraph)
+    if len(set(paragraphs)) != 3:
+        return None
+    return tuple(paragraphs)  # type: ignore[return-value]
+
+
+def parse_v6_metric_insights(
+    text: Optional[str],
+    *,
+    expected_question_ids: list[str],
+    status: str,
+) -> Optional[Dict[str, str]]:
+    """Parse one exact, ordered-independent narrative per input question."""
+    if not text:
+        return None
+    try:
+        candidate = json.loads(text)
+    except (TypeError, json.JSONDecodeError):
+        return None
+    if not isinstance(candidate, list) or len(candidate) != len(
+        expected_question_ids,
+    ):
+        return None
+
+    insights: Dict[str, str] = {}
+    for item in candidate:
+        if not isinstance(item, dict):
+            return None
+        question_id = item.get("questionId")
+        insight = item.get("insightText")
+        if (
+            not isinstance(question_id, str)
+            or question_id in insights
+            or not isinstance(insight, str)
+        ):
+            return None
+        normalized = sanitize_model_text(insight)
+        if (
+            not is_v6_qualitative_narrative(normalized)
+            or not is_status_consistent(normalized, status)
+        ):
+            return None
+        insights[question_id] = normalized
+
+    return (
+        insights
+        if set(insights) == set(expected_question_ids)
+        else None
+    )
+
+
+def parse_v6_intervention_batch(
+    text: Optional[str],
+    *,
+    interventions: list[Dict[str, Any]],
+    status: str,
+) -> Optional[list[Tuple[str, list[str]]]]:
+    """Parse five JSON adaptations while preserving catalog identity/order."""
+    if not text:
+        return None
+    try:
+        candidate = json.loads(text)
+    except (TypeError, json.JSONDecodeError):
+        return None
+    if not isinstance(candidate, list) or len(candidate) != len(interventions):
+        return None
+
+    parsed = []
+    for expected, item in zip(interventions, candidate):
+        if not isinstance(item, dict) or item.get("id") != expected.get("id"):
+            return None
+        summary = item.get("summary")
+        steps = item.get("actionable_steps")
+        expected_steps = expected.get("actionable_steps", [])
+        if (
+            not isinstance(summary, str)
+            or not isinstance(steps, list)
+            or len(steps) != len(expected_steps)
+            or not all(isinstance(step, str) for step in steps)
+        ):
+            return None
+        normalized_summary = sanitize_model_text(summary)
+        normalized_steps = [sanitize_model_text(step) for step in steps]
+        if (
+            not is_v6_qualitative_narrative(normalized_summary)
+            or not all(is_hebrew_only_copy(step) for step in normalized_steps)
+            or not is_status_consistent(
+                " ".join([normalized_summary, *normalized_steps]),
+                status,
+            )
+        ):
+            return None
+        parsed.append((normalized_summary, normalized_steps))
+    return parsed
 
 
 def is_complete_hebrew_copy(text: str, contract_version: str = AI_ANALYTICS_CONTRACT_VERSION) -> bool:

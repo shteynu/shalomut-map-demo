@@ -107,11 +107,13 @@ def test_query_returns_only_exact_status_matches_without_backfill(tmp_path):
 def test_catalog_has_exact_status_coverage_for_every_canonical_dimension():
     catalog = load_catalog()
 
+    assert len({item["id"] for item in catalog}) == len(catalog)
     assert {item["dimension_id"] for item in catalog} == set(
         AI_ANALYTICS_DIMENSION_IDS,
     )
     for item in catalog:
         assert item["target_status"]
+        assert len(item["target_status"]) == 1, item["id"]
         assert set(item["target_status"]) <= set(DIMENSION_STATUSES)
 
     for dimension_id in AI_ANALYTICS_DIMENSION_IDS:
@@ -193,14 +195,15 @@ def test_every_dimension_and_status_pair_has_room_to_choose():
                 if item["dimension_id"] == dimension_id
                 and status in item["target_status"]
             ]
-            assert len(pool) >= 5, f"{dimension_id}/{status} has {len(pool)}"
+            assert len(pool) >= 8, f"{dimension_id}/{status} has {len(pool)}"
 
             selected = store.get_interventions_for_dimension(
                 dimension_id,
                 status,
-                limit=3,
+                limit=5,
             )
-            assert len(selected) == 3, f"{dimension_id}/{status}"
+            assert len(selected) == 5, f"{dimension_id}/{status}"
+            assert len({item.id for item in selected}) == 5
 
 
 def test_the_average_cannot_tell_a_lukewarm_round_from_a_split_one():
@@ -233,7 +236,7 @@ def test_a_split_staff_and_a_lukewarm_staff_get_different_recommendations():
         lukewarm = store.get_interventions_for_dimension(
             "balance",
             status,
-            limit=3,
+            limit=5,
             question_aggregates=balance_aggregates(
                 {"green": 0, "yellow": 10, "red": 0},
             ),
@@ -241,7 +244,7 @@ def test_a_split_staff_and_a_lukewarm_staff_get_different_recommendations():
         split = store.get_interventions_for_dimension(
             "balance",
             status,
-            limit=3,
+            limit=5,
             question_aggregates=balance_aggregates(
                 {"green": 5, "yellow": 0, "red": 5},
             ),

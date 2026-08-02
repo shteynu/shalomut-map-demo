@@ -1,3 +1,4 @@
+import json
 import logging
 
 from src.agents.node_support import (
@@ -21,6 +22,14 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
     dim_scores = round_data.get("dimensionScores", {})
     interpretations = state.get("interpretations", {}).get(
         "dimension_interpretations",
+        {},
+    )
+    dimension_summaries = state.get("interpretations", {}).get(
+        "dimension_summaries",
+        {},
+    )
+    metric_insights = state.get("interpretations", {}).get(
+        "metric_insights",
         {},
     )
     overall_summary = state.get("interpretations", {}).get(
@@ -64,7 +73,33 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
             .get(dim_id, {})
             .get("outcome") == "unavailable"
         )
-        if unavailable:
+        if capabilities.usesStructuredDimensionSummary:
+            summaries = dimension_summaries.get(dim_id, [])
+            parsed_summary = hebrew_validation.parse_v6_structured_summary(
+                json.dumps(summaries, ensure_ascii=False),
+                status=status,
+            )
+            expected_metrics = _question_aggregates_for_dimension(
+                round_data,
+                dim_id,
+            )
+            narratives = metric_insights.get(dim_id, {})
+            metric_copy_valid = (
+                set(narratives)
+                == {item["questionId"] for item in expected_metrics}
+                and all(
+                    hebrew_validation.is_v6_qualitative_narrative(text)
+                    and hebrew_validation.is_status_consistent(text, status)
+                    for text in narratives.values()
+                )
+            )
+            if parsed_summary is None or not metric_copy_valid:
+                is_safe = False
+                rejected_interpretations.add(dim_id)
+                feedback.append(
+                    f"Structured V6 narrative is invalid for {dim_id}"
+                )
+        elif unavailable:
             if interp != "":
                 is_safe = False
                 rejected_interpretations.add(dim_id)
@@ -89,10 +124,20 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
                 f"Interpretation is invalid for status {status}: {dim_id}"
             )
 
-        for intervention in state.get("recommendations", {}).get(
+        dimension_interventions = state.get("recommendations", {}).get(
             dim_id,
             [],
+        )
+        if (
+            capabilities.usesStructuredDimensionSummary
+            and len(dimension_interventions) != 5
         ):
+            is_safe = False
+            rejected_recommendations.add(dim_id)
+            feedback.append(
+                f"V6 requires five interventions for {dim_id}"
+            )
+        for intervention in dimension_interventions:
             user_facing_copy = [
                 intervention.get("title", ""),
                 intervention.get("summary", ""),
@@ -119,6 +164,12 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
                         status,
                         contract_version=contract_version,
                         distribution_counts=distribution_counts,
+                    )
+                )
+                or (
+                    capabilities.usesStructuredDimensionSummary
+                    and not hebrew_validation.is_v6_qualitative_narrative(
+                        intervention.get("summary", ""),
                     )
                 )
             ):

@@ -2297,5 +2297,1373 @@
       "meaning",
       "green"
     ]
+  },
+  {
+    "id": "kb-v6-self-expression-green-01",
+    "dimension_id": "self-expression",
+    "source": "OECD TALIS — מסגרת לשימור רווחה והשתתפות מקצועית",
+    "title": "שימור קול והשתתפות",
+    "summary": "שגרה ממוקדת לשימור שיתוף רעיונות והצעות בממד ביטוי עצמי.",
+    "actionable_steps": [
+      "לקיים מעגל שיח מוגן",
+      "לתעד הצעות ולהחזיר מענה"
+    ],
+    "target_status": [
+      "green"
+    ],
+    "intent": "preserve",
+    "tags": [
+      "v6",
+      "preserve"
+    ]
+  },
+  {
+    "id": "kb-v6-self-expression-yellow-01",
+    "dimension_id": "self-expression",
+    "source": "ISO 45003 — עקרונות להתערבות ארגונית ומעקב",
+    "title": "חיזוק קול והשתתפות",
+    "summary": "מהלך ממוקד לחיזוק שיתוף רעיונות והצעות בממד ביטוי עצמי, עם אחריות ומעקב שאינם חושפים משיבים.",
+    "actionable_steps": [
+      "לקיים מעגל שיח מוגן",
+      "לתעד הצעות ולהחזיר מענה"
+    ],
+    "target_status": [
+      "yellow"
+    ],
+    "intent": "improve",
+    "tags": [
+      "v6",
+      "improve"
+    ]
+  },
+  {
+    "id": "kb-v6-self-expression-red-01",
+    "dimension_id": "self-expression",
+    "source": "ISO 45003 — עקרונות להתערבות ארגונית ומעקב",
+    "title": "מענה קרוב לקול והשתתפות",
+    "summary": "מהלך קרוב לצמצום מתח ולחיזוק שיתוף רעיונות והצעות בממד ביטוי עצמי, עם אחריות ומעקב שאינם חושפים משיבים.",
+    "actionable_steps": [
+      "לקיים מעגל שיח מוגן",
+      "לתעד הצעות ולהחזיר מענה"
+    ],
+    "target_status": [
+      "red"
+    ],
+    "intent": "improve",
+    "tags": [
+      "v6",
+      "improve"
+    ]
+  },
+  {
+    "id": "kb-v6-self-expression-green-02",
+    "dimension_id": "self-expression",
+    "source": "OECD TALIS — מסגרת לשימור רווחה והשתתפות מקצועית",
+    "title": "שימור בחירה ביוזמות",
+    "summary": "שגרה ממוקדת לשימור בחירה וגמישות ביוזמות מקצועיות בממד ביטוי עצמי.",
+    "actionable_steps": [
+      "לפתוח מסלול בחירה קטן",
+      "לבדוק אילו יוזמות מבשילות"
+    ],
+    "target_status": [
+      "green"
+    ],
+    "intent": "preserve",
+    "tags": [
+      "v6",
+      "preserve"
+    ]
+  },
+  {
+    "id": "kb-v6-self-expression-yellow-02",
+    "dimension_id": "self-expression",
+    "source": "ISO 45003 — עקרונות להתערבות ארגונית ומעקב",
+    "title": "חיזוק בחירה ביוזמות",
+    "summary": "מהלך ממוקד לחיזוק בחירה וגמישות ביוזמות מקצועיות בממד ביטוי עצמי, עם אחריות ומעקב שאינם חושפים משיבים.",
+    "actionable_steps": [
+      "לפתוח מסלול בחירה קטן",
+      "לבדוק אילו יוזמות מבשילות"
+    ],
+    "target_status": [
+      "yellow"
+    ],
+    "intent": "improve",
+    "tags": [
+      "v6",
+      "improve"
+    ]
+  },
+  {
+    "id": "kb-v6-self-expression-red-02",
+    "dimension_id": "self-expression",
+    "source": "ISO 45003 — עקרונות להתערבות ארגונית ומעקב",
+    "title": "מענה קרוב לבחירה ביוזמות",
+    "summary": "מהלך קרוב לצמצום מתח ולחיזוק בחירה וגמישות ביוזמות מקצועיות בממד ביטוי עצמי, עם אחריות ומעקב שאינם חושפים משיבים.",
+    "actionable_steps": [
+      "לפתוח מסלול בחירה קטן",
+      "לבדוק אילו יוזמות מבשילות"
+    ],
+    "target_status": [
+      "red"
+    ],
+    "intent": "improve",
+    "tags": [
+      "v6",
+      "improve"
+    ]
+  },
+  {
+    "id": "kb-v6-self-expression-green-03",
+    "dimension_id": "self-expression",
+    "source": "OECD TALIS — מסגרת לשימור רווחה והשתתפות מקצועית",
+    "title": "שימור אמון ופתיחות",
+    "summary": "שגרה ממוקדת לשימור אמון המאפשר להביע דעה בכנות בממד ביטוי עצמי.",
+    "actionable_steps": [
+      "להגדיר כללי דיסקרטיות",
+      "לאסוף משוב על תחושת הפתיחות"
+    ],
+    "target_status": [
+      "green"
+    ],
+    "intent": "preserve",
+    "tags": [
+      "v6",
+      "preserve"
+    ]
+  },
+  {
+    "id": "kb-v6-self-expression-yellow-03",
+    "dimension_id": "self-expression",
+    "source": "ISO 45003 — עקרונות להתערבות ארגונית ומעקב",
+    "title": "חיזוק אמון ופתיחות",
+    "summary": "מהלך ממוקד לחיזוק אמון המאפשר להביע דעה בכנות בממד ביטוי עצמי, עם אחריות ומעקב שאינם חושפים משיבים.",
+    "actionable_steps": [
+      "להגדיר כללי דיסקרטיות",
+      "לאסוף משוב על תחושת הפתיחות"
+    ],
+    "target_status": [
+      "yellow"
+    ],
+    "intent": "improve",
+    "tags": [
+      "v6",
+      "improve"
+    ]
+  },
+  {
+    "id": "kb-v6-self-expression-red-03",
+    "dimension_id": "self-expression",
+    "source": "ISO 45003 — עקרונות להתערבות ארגונית ומעקב",
+    "title": "מענה קרוב לאמון ופתיחות",
+    "summary": "מהלך קרוב לצמצום מתח ולחיזוק אמון המאפשר להביע דעה בכנות בממד ביטוי עצמי, עם אחריות ומעקב שאינם חושפים משיבים.",
+    "actionable_steps": [
+      "להגדיר כללי דיסקרטיות",
+      "לאסוף משוב על תחושת הפתיחות"
+    ],
+    "target_status": [
+      "red"
+    ],
+    "intent": "improve",
+    "tags": [
+      "v6",
+      "improve"
+    ]
+  },
+  {
+    "id": "kb-v6-professional-competence-green-01",
+    "dimension_id": "professional-competence",
+    "source": "OECD TALIS — מסגרת לשימור רווחה והשתתפות מקצועית",
+    "title": "שימור חונכות מקצועית",
+    "summary": "שגרה ממוקדת לשימור למידה באמצעות חונכות וליווי בממד מסוגלות מקצועית.",
+    "actionable_steps": [
+      "לחבר בין מורה לחונך מתאים",
+      "לקבוע מפגש ליווי קבוע"
+    ],
+    "target_status": [
+      "green"
+    ],
+    "intent": "preserve",
+    "tags": [
+      "v6",
+      "preserve"
+    ]
+  },
+  {
+    "id": "kb-v6-professional-competence-yellow-01",
+    "dimension_id": "professional-competence",
+    "source": "ISO 45003 — עקרונות להתערבות ארגונית ומעקב",
+    "title": "חיזוק חונכות מקצועית",
+    "summary": "מהלך ממוקד לחיזוק למידה באמצעות חונכות וליווי בממד מסוגלות מקצועית, עם אחריות ומעקב שאינם חושפים משיבים.",
+    "actionable_steps": [
+      "לחבר בין מורה לחונך מתאים",
+      "לקבוע מפגש ליווי קבוע"
+    ],
+    "target_status": [
+      "yellow"
+    ],
+    "intent": "improve",
+    "tags": [
+      "v6",
+      "improve"
+    ]
+  },
+  {
+    "id": "kb-v6-professional-competence-red-01",
+    "dimension_id": "professional-competence",
+    "source": "ISO 45003 — עקרונות להתערבות ארגונית ומעקב",
+    "title": "מענה קרוב לחונכות מקצועית",
+    "summary": "מהלך קרוב לצמצום מתח ולחיזוק למידה באמצעות חונכות וליווי בממד מסוגלות מקצועית, עם אחריות ומעקב שאינם חושפים משיבים.",
+    "actionable_steps": [
+      "לחבר בין מורה לחונך מתאים",
+      "לקבוע מפגש ליווי קבוע"
+    ],
+    "target_status": [
+      "red"
+    ],
+    "intent": "improve",
+    "tags": [
+      "v6",
+      "improve"
+    ]
+  },
+  {
+    "id": "kb-v6-professional-competence-green-02",
+    "dimension_id": "professional-competence",
+    "source": "OECD TALIS — מסגרת לשימור רווחה והשתתפות מקצועית",
+    "title": "שימור משוב פדגוגי",
+    "summary": "שגרה ממוקדת לשימור משוב ותצפית התומכים בהתפתחות בממד מסוגלות מקצועית.",
+    "actionable_steps": [
+      "לתאם תצפית עמיתים מוגנת",
+      "לבחור יעד מקצועי להמשך"
+    ],
+    "target_status": [
+      "green"
+    ],
+    "intent": "preserve",
+    "tags": [
+      "v6",
+      "preserve"
+    ]
+  },
+  {
+    "id": "kb-v6-professional-competence-yellow-02",
+    "dimension_id": "professional-competence",
+    "source": "ISO 45003 — עקרונות להתערבות ארגונית ומעקב",
+    "title": "חיזוק משוב פדגוגי",
+    "summary": "מהלך ממוקד לחיזוק משוב ותצפית התומכים בהתפתחות בממד מסוגלות מקצועית, עם אחריות ומעקב שאינם חושפים משיבים.",
+    "actionable_steps": [
+      "לתאם תצפית עמיתים מוגנת",
+      "לבחור יעד מקצועי להמשך"
+    ],
+    "target_status": [
+      "yellow"
+    ],
+    "intent": "improve",
+    "tags": [
+      "v6",
+      "improve"
+    ]
+  },
+  {
+    "id": "kb-v6-professional-competence-red-02",
+    "dimension_id": "professional-competence",
+    "source": "ISO 45003 — עקרונות להתערבות ארגונית ומעקב",
+    "title": "מענה קרוב למשוב פדגוגי",
+    "summary": "מהלך קרוב לצמצום מתח ולחיזוק משוב ותצפית התומכים בהתפתחות בממד מסוגלות מקצועית, עם אחריות ומעקב שאינם חושפים משיבים.",
+    "actionable_steps": [
+      "לתאם תצפית עמיתים מוגנת",
+      "לבחור יעד מקצועי להמשך"
+    ],
+    "target_status": [
+      "red"
+    ],
+    "intent": "improve",
+    "tags": [
+      "v6",
+      "improve"
+    ]
+  },
+  {
+    "id": "kb-v6-professional-competence-green-03",
+    "dimension_id": "professional-competence",
+    "source": "OECD TALIS — מסגרת לשימור רווחה והשתתפות מקצועית",
+    "title": "שימור מאגר משאבים",
+    "summary": "שגרה ממוקדת לשימור משאבים ומערכי הוראה נגישים בממד מסוגלות מקצועית.",
+    "actionable_steps": [
+      "למפות חומרים שחסרים לצוות",
+      "לבנות מאגר משותף ומתוחזק"
+    ],
+    "target_status": [
+      "green"
+    ],
+    "intent": "preserve",
+    "tags": [
+      "v6",
+      "preserve"
+    ]
+  },
+  {
+    "id": "kb-v6-professional-competence-yellow-03",
+    "dimension_id": "professional-competence",
+    "source": "ISO 45003 — עקרונות להתערבות ארגונית ומעקב",
+    "title": "חיזוק מאגר משאבים",
+    "summary": "מהלך ממוקד לחיזוק משאבים ומערכי הוראה נגישים בממד מסוגלות מקצועית, עם אחריות ומעקב שאינם חושפים משיבים.",
+    "actionable_steps": [
+      "למפות חומרים שחסרים לצוות",
+      "לבנות מאגר משותף ומתוחזק"
+    ],
+    "target_status": [
+      "yellow"
+    ],
+    "intent": "improve",
+    "tags": [
+      "v6",
+      "improve"
+    ]
+  },
+  {
+    "id": "kb-v6-professional-competence-red-03",
+    "dimension_id": "professional-competence",
+    "source": "ISO 45003 — עקרונות להתערבות ארגונית ומעקב",
+    "title": "מענה קרוב למאגר משאבים",
+    "summary": "מהלך קרוב לצמצום מתח ולחיזוק משאבים ומערכי הוראה נגישים בממד מסוגלות מקצועית, עם אחריות ומעקב שאינם חושפים משיבים.",
+    "actionable_steps": [
+      "למפות חומרים שחסרים לצוות",
+      "לבנות מאגר משותף ומתוחזק"
+    ],
+    "target_status": [
+      "red"
+    ],
+    "intent": "improve",
+    "tags": [
+      "v6",
+      "improve"
+    ]
+  },
+  {
+    "id": "kb-v6-social-resource-green-01",
+    "dimension_id": "social-resource",
+    "source": "OECD TALIS — מסגרת לשימור רווחה והשתתפות מקצועית",
+    "title": "שימור מפגשי עמיתים",
+    "summary": "שגרה ממוקדת לשימור קשרים ומפגשים המחזקים שייכות בממד קשרים חברתיים.",
+    "actionable_steps": [
+      "לקבוע מפגש עמיתים קצר",
+      "לאפשר היכרות מעבר למשימות"
+    ],
+    "target_status": [
+      "green"
+    ],
+    "intent": "preserve",
+    "tags": [
+      "v6",
+      "preserve"
+    ]
+  },
+  {
+    "id": "kb-v6-social-resource-yellow-01",
+    "dimension_id": "social-resource",
+    "source": "ISO 45003 — עקרונות להתערבות ארגונית ומעקב",
+    "title": "חיזוק מפגשי עמיתים",
+    "summary": "מהלך ממוקד לחיזוק קשרים ומפגשים המחזקים שייכות בממד קשרים חברתיים, עם אחריות ומעקב שאינם חושפים משיבים.",
+    "actionable_steps": [
+      "לקבוע מפגש עמיתים קצר",
+      "לאפשר היכרות מעבר למשימות"
+    ],
+    "target_status": [
+      "yellow"
+    ],
+    "intent": "improve",
+    "tags": [
+      "v6",
+      "improve"
+    ]
+  },
+  {
+    "id": "kb-v6-social-resource-red-01",
+    "dimension_id": "social-resource",
+    "source": "ISO 45003 — עקרונות להתערבות ארגונית ומעקב",
+    "title": "מענה קרוב למפגשי עמיתים",
+    "summary": "מהלך קרוב לצמצום מתח ולחיזוק קשרים ומפגשים המחזקים שייכות בממד קשרים חברתיים, עם אחריות ומעקב שאינם חושפים משיבים.",
+    "actionable_steps": [
+      "לקבוע מפגש עמיתים קצר",
+      "לאפשר היכרות מעבר למשימות"
+    ],
+    "target_status": [
+      "red"
+    ],
+    "intent": "improve",
+    "tags": [
+      "v6",
+      "improve"
+    ]
+  },
+  {
+    "id": "kb-v6-social-resource-green-02",
+    "dimension_id": "social-resource",
+    "source": "OECD TALIS — מסגרת לשימור רווחה והשתתפות מקצועית",
+    "title": "שימור תמיכה הדדית",
+    "summary": "שגרה ממוקדת לשימור תמיכה וקשר בזמן עומס בממד קשרים חברתיים.",
+    "actionable_steps": [
+      "ליצור זוגות תמיכה גמישים",
+      "לבדוק מי זקוק לחיבור נוסף"
+    ],
+    "target_status": [
+      "green"
+    ],
+    "intent": "preserve",
+    "tags": [
+      "v6",
+      "preserve"
+    ]
+  },
+  {
+    "id": "kb-v6-social-resource-yellow-02",
+    "dimension_id": "social-resource",
+    "source": "ISO 45003 — עקרונות להתערבות ארגונית ומעקב",
+    "title": "חיזוק תמיכה הדדית",
+    "summary": "מהלך ממוקד לחיזוק תמיכה וקשר בזמן עומס בממד קשרים חברתיים, עם אחריות ומעקב שאינם חושפים משיבים.",
+    "actionable_steps": [
+      "ליצור זוגות תמיכה גמישים",
+      "לבדוק מי זקוק לחיבור נוסף"
+    ],
+    "target_status": [
+      "yellow"
+    ],
+    "intent": "improve",
+    "tags": [
+      "v6",
+      "improve"
+    ]
+  },
+  {
+    "id": "kb-v6-social-resource-red-02",
+    "dimension_id": "social-resource",
+    "source": "ISO 45003 — עקרונות להתערבות ארגונית ומעקב",
+    "title": "מענה קרוב לתמיכה הדדית",
+    "summary": "מהלך קרוב לצמצום מתח ולחיזוק תמיכה וקשר בזמן עומס בממד קשרים חברתיים, עם אחריות ומעקב שאינם חושפים משיבים.",
+    "actionable_steps": [
+      "ליצור זוגות תמיכה גמישים",
+      "לבדוק מי זקוק לחיבור נוסף"
+    ],
+    "target_status": [
+      "red"
+    ],
+    "intent": "improve",
+    "tags": [
+      "v6",
+      "improve"
+    ]
+  },
+  {
+    "id": "kb-v6-social-resource-green-03",
+    "dimension_id": "social-resource",
+    "source": "OECD TALIS — מסגרת לשימור רווחה והשתתפות מקצועית",
+    "title": "שימור קליטת צוות חדש",
+    "summary": "שגרה ממוקדת לשימור קליטה וחונכות לעובדים חדשים בממד קשרים חברתיים.",
+    "actionable_steps": [
+      "למנות מלווה לכל מצטרף",
+      "לקיים שיחת קליטה ומעקב"
+    ],
+    "target_status": [
+      "green"
+    ],
+    "intent": "preserve",
+    "tags": [
+      "v6",
+      "preserve"
+    ]
+  },
+  {
+    "id": "kb-v6-social-resource-yellow-03",
+    "dimension_id": "social-resource",
+    "source": "ISO 45003 — עקרונות להתערבות ארגונית ומעקב",
+    "title": "חיזוק קליטת צוות חדש",
+    "summary": "מהלך ממוקד לחיזוק קליטה וחונכות לעובדים חדשים בממד קשרים חברתיים, עם אחריות ומעקב שאינם חושפים משיבים.",
+    "actionable_steps": [
+      "למנות מלווה לכל מצטרף",
+      "לקיים שיחת קליטה ומעקב"
+    ],
+    "target_status": [
+      "yellow"
+    ],
+    "intent": "improve",
+    "tags": [
+      "v6",
+      "improve"
+    ]
+  },
+  {
+    "id": "kb-v6-social-resource-red-03",
+    "dimension_id": "social-resource",
+    "source": "ISO 45003 — עקרונות להתערבות ארגונית ומעקב",
+    "title": "מענה קרוב לקליטת צוות חדש",
+    "summary": "מהלך קרוב לצמצום מתח ולחיזוק קליטה וחונכות לעובדים חדשים בממד קשרים חברתיים, עם אחריות ומעקב שאינם חושפים משיבים.",
+    "actionable_steps": [
+      "למנות מלווה לכל מצטרף",
+      "לקיים שיחת קליטה ומעקב"
+    ],
+    "target_status": [
+      "red"
+    ],
+    "intent": "improve",
+    "tags": [
+      "v6",
+      "improve"
+    ]
+  },
+  {
+    "id": "kb-v6-balance-green-01",
+    "dimension_id": "balance",
+    "source": "OECD TALIS — מסגרת לשימור רווחה והשתתפות מקצועית",
+    "title": "שימור מיפוי עומס",
+    "summary": "שגרה ממוקדת לשימור עומס ותיעדוף של משימות ומועדים בממד איזון.",
+    "actionable_steps": [
+      "למפות משימות חוזרות",
+      "להסיר דיווח או משימה שאינם נחוצים"
+    ],
+    "target_status": [
+      "green"
+    ],
+    "intent": "preserve",
+    "tags": [
+      "v6",
+      "preserve"
+    ]
+  },
+  {
+    "id": "kb-v6-balance-yellow-01",
+    "dimension_id": "balance",
+    "source": "ISO 45003 — עקרונות להתערבות ארגונית ומעקב",
+    "title": "חיזוק מיפוי עומס",
+    "summary": "מהלך ממוקד לחיזוק עומס ותיעדוף של משימות ומועדים בממד איזון, עם אחריות ומעקב שאינם חושפים משיבים.",
+    "actionable_steps": [
+      "למפות משימות חוזרות",
+      "להסיר דיווח או משימה שאינם נחוצים"
+    ],
+    "target_status": [
+      "yellow"
+    ],
+    "intent": "improve",
+    "tags": [
+      "v6",
+      "improve"
+    ]
+  },
+  {
+    "id": "kb-v6-balance-red-01",
+    "dimension_id": "balance",
+    "source": "ISO 45003 — עקרונות להתערבות ארגונית ומעקב",
+    "title": "מענה קרוב למיפוי עומס",
+    "summary": "מהלך קרוב לצמצום מתח ולחיזוק עומס ותיעדוף של משימות ומועדים בממד איזון, עם אחריות ומעקב שאינם חושפים משיבים.",
+    "actionable_steps": [
+      "למפות משימות חוזרות",
+      "להסיר דיווח או משימה שאינם נחוצים"
+    ],
+    "target_status": [
+      "red"
+    ],
+    "intent": "improve",
+    "tags": [
+      "v6",
+      "improve"
+    ]
+  },
+  {
+    "id": "kb-v6-balance-green-02",
+    "dimension_id": "balance",
+    "source": "OECD TALIS — מסגרת לשימור רווחה והשתתפות מקצועית",
+    "title": "שימור זמן להתאוששות",
+    "summary": "שגרה ממוקדת לשימור מנוחה והתאוששות כחלק מהשגרה בממד איזון.",
+    "actionable_steps": [
+      "להגן על זמן ללא פגישות",
+      "לבדוק אם ההפוגה נשמרת בפועל"
+    ],
+    "target_status": [
+      "green"
+    ],
+    "intent": "preserve",
+    "tags": [
+      "v6",
+      "preserve"
+    ]
+  },
+  {
+    "id": "kb-v6-balance-yellow-02",
+    "dimension_id": "balance",
+    "source": "ISO 45003 — עקרונות להתערבות ארגונית ומעקב",
+    "title": "חיזוק זמן להתאוששות",
+    "summary": "מהלך ממוקד לחיזוק מנוחה והתאוששות כחלק מהשגרה בממד איזון, עם אחריות ומעקב שאינם חושפים משיבים.",
+    "actionable_steps": [
+      "להגן על זמן ללא פגישות",
+      "לבדוק אם ההפוגה נשמרת בפועל"
+    ],
+    "target_status": [
+      "yellow"
+    ],
+    "intent": "improve",
+    "tags": [
+      "v6",
+      "improve"
+    ]
+  },
+  {
+    "id": "kb-v6-balance-red-02",
+    "dimension_id": "balance",
+    "source": "ISO 45003 — עקרונות להתערבות ארגונית ומעקב",
+    "title": "מענה קרוב לזמן להתאוששות",
+    "summary": "מהלך קרוב לצמצום מתח ולחיזוק מנוחה והתאוששות כחלק מהשגרה בממד איזון, עם אחריות ומעקב שאינם חושפים משיבים.",
+    "actionable_steps": [
+      "להגן על זמן ללא פגישות",
+      "לבדוק אם ההפוגה נשמרת בפועל"
+    ],
+    "target_status": [
+      "red"
+    ],
+    "intent": "improve",
+    "tags": [
+      "v6",
+      "improve"
+    ]
+  },
+  {
+    "id": "kb-v6-balance-green-03",
+    "dimension_id": "balance",
+    "source": "OECD TALIS — מסגרת לשימור רווחה והשתתפות מקצועית",
+    "title": "שימור גמישות במערכת",
+    "summary": "שגרה ממוקדת לשימור שעות ושיבוץ גמישים מול צרכים משתנים בממד איזון.",
+    "actionable_steps": [
+      "לזהות נקודות לחץ במערכת",
+      "לבחון החלפה או גמישות בשיבוץ"
+    ],
+    "target_status": [
+      "green"
+    ],
+    "intent": "preserve",
+    "tags": [
+      "v6",
+      "preserve"
+    ]
+  },
+  {
+    "id": "kb-v6-balance-yellow-03",
+    "dimension_id": "balance",
+    "source": "ISO 45003 — עקרונות להתערבות ארגונית ומעקב",
+    "title": "חיזוק גמישות במערכת",
+    "summary": "מהלך ממוקד לחיזוק שעות ושיבוץ גמישים מול צרכים משתנים בממד איזון, עם אחריות ומעקב שאינם חושפים משיבים.",
+    "actionable_steps": [
+      "לזהות נקודות לחץ במערכת",
+      "לבחון החלפה או גמישות בשיבוץ"
+    ],
+    "target_status": [
+      "yellow"
+    ],
+    "intent": "improve",
+    "tags": [
+      "v6",
+      "improve"
+    ]
+  },
+  {
+    "id": "kb-v6-balance-red-03",
+    "dimension_id": "balance",
+    "source": "ISO 45003 — עקרונות להתערבות ארגונית ומעקב",
+    "title": "מענה קרוב לגמישות במערכת",
+    "summary": "מהלך קרוב לצמצום מתח ולחיזוק שעות ושיבוץ גמישים מול צרכים משתנים בממד איזון, עם אחריות ומעקב שאינם חושפים משיבים.",
+    "actionable_steps": [
+      "לזהות נקודות לחץ במערכת",
+      "לבחון החלפה או גמישות בשיבוץ"
+    ],
+    "target_status": [
+      "red"
+    ],
+    "intent": "improve",
+    "tags": [
+      "v6",
+      "improve"
+    ]
+  },
+  {
+    "id": "kb-v6-management-support-green-01",
+    "dimension_id": "management-support",
+    "source": "OECD TALIS — מסגרת לשימור רווחה והשתתפות מקצועית",
+    "title": "שימור זמינות הנהלה",
+    "summary": "שגרה ממוקדת לשימור זמינות ומענה ברור לפניות בממד עורף מקצועי.",
+    "actionable_steps": [
+      "לקבוע ערוץ פנייה מוסכם",
+      "להחזיר מענה גם כשאין פתרון מיידי"
+    ],
+    "target_status": [
+      "green"
+    ],
+    "intent": "preserve",
+    "tags": [
+      "v6",
+      "preserve"
+    ]
+  },
+  {
+    "id": "kb-v6-management-support-yellow-01",
+    "dimension_id": "management-support",
+    "source": "ISO 45003 — עקרונות להתערבות ארגונית ומעקב",
+    "title": "חיזוק זמינות הנהלה",
+    "summary": "מהלך ממוקד לחיזוק זמינות ומענה ברור לפניות בממד עורף מקצועי, עם אחריות ומעקב שאינם חושפים משיבים.",
+    "actionable_steps": [
+      "לקבוע ערוץ פנייה מוסכם",
+      "להחזיר מענה גם כשאין פתרון מיידי"
+    ],
+    "target_status": [
+      "yellow"
+    ],
+    "intent": "improve",
+    "tags": [
+      "v6",
+      "improve"
+    ]
+  },
+  {
+    "id": "kb-v6-management-support-red-01",
+    "dimension_id": "management-support",
+    "source": "ISO 45003 — עקרונות להתערבות ארגונית ומעקב",
+    "title": "מענה קרוב לזמינות הנהלה",
+    "summary": "מהלך קרוב לצמצום מתח ולחיזוק זמינות ומענה ברור לפניות בממד עורף מקצועי, עם אחריות ומעקב שאינם חושפים משיבים.",
+    "actionable_steps": [
+      "לקבוע ערוץ פנייה מוסכם",
+      "להחזיר מענה גם כשאין פתרון מיידי"
+    ],
+    "target_status": [
+      "red"
+    ],
+    "intent": "improve",
+    "tags": [
+      "v6",
+      "improve"
+    ]
+  },
+  {
+    "id": "kb-v6-management-support-green-02",
+    "dimension_id": "management-support",
+    "source": "OECD TALIS — מסגרת לשימור רווחה והשתתפות מקצועית",
+    "title": "שימור משוב ניהולי",
+    "summary": "שגרה ממוקדת לשימור משוב והכרה מצד ההנהלה בממד עורף מקצועי.",
+    "actionable_steps": [
+      "לקיים שיחת משוב קצרה",
+      "לתעד חוזקה וצעד מקצועי הבא"
+    ],
+    "target_status": [
+      "green"
+    ],
+    "intent": "preserve",
+    "tags": [
+      "v6",
+      "preserve"
+    ]
+  },
+  {
+    "id": "kb-v6-management-support-yellow-02",
+    "dimension_id": "management-support",
+    "source": "ISO 45003 — עקרונות להתערבות ארגונית ומעקב",
+    "title": "חיזוק משוב ניהולי",
+    "summary": "מהלך ממוקד לחיזוק משוב והכרה מצד ההנהלה בממד עורף מקצועי, עם אחריות ומעקב שאינם חושפים משיבים.",
+    "actionable_steps": [
+      "לקיים שיחת משוב קצרה",
+      "לתעד חוזקה וצעד מקצועי הבא"
+    ],
+    "target_status": [
+      "yellow"
+    ],
+    "intent": "improve",
+    "tags": [
+      "v6",
+      "improve"
+    ]
+  },
+  {
+    "id": "kb-v6-management-support-red-02",
+    "dimension_id": "management-support",
+    "source": "ISO 45003 — עקרונות להתערבות ארגונית ומעקב",
+    "title": "מענה קרוב למשוב ניהולי",
+    "summary": "מהלך קרוב לצמצום מתח ולחיזוק משוב והכרה מצד ההנהלה בממד עורף מקצועי, עם אחריות ומעקב שאינם חושפים משיבים.",
+    "actionable_steps": [
+      "לקיים שיחת משוב קצרה",
+      "לתעד חוזקה וצעד מקצועי הבא"
+    ],
+    "target_status": [
+      "red"
+    ],
+    "intent": "improve",
+    "tags": [
+      "v6",
+      "improve"
+    ]
+  },
+  {
+    "id": "kb-v6-management-support-green-03",
+    "dimension_id": "management-support",
+    "source": "OECD TALIS — מסגרת לשימור רווחה והשתתפות מקצועית",
+    "title": "שימור בהירות סמכויות",
+    "summary": "שגרה ממוקדת לשימור בהירות של תפקידים וסמכויות בממד עורף מקצועי.",
+    "actionable_steps": [
+      "למפות תחומי אחריות",
+      "לפרסם כתובת לכל סוג החלטה"
+    ],
+    "target_status": [
+      "green"
+    ],
+    "intent": "preserve",
+    "tags": [
+      "v6",
+      "preserve"
+    ]
+  },
+  {
+    "id": "kb-v6-management-support-yellow-03",
+    "dimension_id": "management-support",
+    "source": "ISO 45003 — עקרונות להתערבות ארגונית ומעקב",
+    "title": "חיזוק בהירות סמכויות",
+    "summary": "מהלך ממוקד לחיזוק בהירות של תפקידים וסמכויות בממד עורף מקצועי, עם אחריות ומעקב שאינם חושפים משיבים.",
+    "actionable_steps": [
+      "למפות תחומי אחריות",
+      "לפרסם כתובת לכל סוג החלטה"
+    ],
+    "target_status": [
+      "yellow"
+    ],
+    "intent": "improve",
+    "tags": [
+      "v6",
+      "improve"
+    ]
+  },
+  {
+    "id": "kb-v6-management-support-red-03",
+    "dimension_id": "management-support",
+    "source": "ISO 45003 — עקרונות להתערבות ארגונית ומעקב",
+    "title": "מענה קרוב לבהירות סמכויות",
+    "summary": "מהלך קרוב לצמצום מתח ולחיזוק בהירות של תפקידים וסמכויות בממד עורף מקצועי, עם אחריות ומעקב שאינם חושפים משיבים.",
+    "actionable_steps": [
+      "למפות תחומי אחריות",
+      "לפרסם כתובת לכל סוג החלטה"
+    ],
+    "target_status": [
+      "red"
+    ],
+    "intent": "improve",
+    "tags": [
+      "v6",
+      "improve"
+    ]
+  },
+  {
+    "id": "kb-v6-certainty-green-01",
+    "dimension_id": "certainty",
+    "source": "OECD TALIS — מסגרת לשימור רווחה והשתתפות מקצועית",
+    "title": "שימור תכנון ושיבוץ",
+    "summary": "שגרה ממוקדת לשימור לוח ושיבוץ צפויים ככל האפשר בממד ודאות.",
+    "actionable_steps": [
+      "לפרסם תכנון מוקדם",
+      "לסמן מה סופי ומה עדיין פתוח"
+    ],
+    "target_status": [
+      "green"
+    ],
+    "intent": "preserve",
+    "tags": [
+      "v6",
+      "preserve"
+    ]
+  },
+  {
+    "id": "kb-v6-certainty-yellow-01",
+    "dimension_id": "certainty",
+    "source": "ISO 45003 — עקרונות להתערבות ארגונית ומעקב",
+    "title": "חיזוק תכנון ושיבוץ",
+    "summary": "מהלך ממוקד לחיזוק לוח ושיבוץ צפויים ככל האפשר בממד ודאות, עם אחריות ומעקב שאינם חושפים משיבים.",
+    "actionable_steps": [
+      "לפרסם תכנון מוקדם",
+      "לסמן מה סופי ומה עדיין פתוח"
+    ],
+    "target_status": [
+      "yellow"
+    ],
+    "intent": "improve",
+    "tags": [
+      "v6",
+      "improve"
+    ]
+  },
+  {
+    "id": "kb-v6-certainty-red-01",
+    "dimension_id": "certainty",
+    "source": "ISO 45003 — עקרונות להתערבות ארגונית ומעקב",
+    "title": "מענה קרוב לתכנון ושיבוץ",
+    "summary": "מהלך קרוב לצמצום מתח ולחיזוק לוח ושיבוץ צפויים ככל האפשר בממד ודאות, עם אחריות ומעקב שאינם חושפים משיבים.",
+    "actionable_steps": [
+      "לפרסם תכנון מוקדם",
+      "לסמן מה סופי ומה עדיין פתוח"
+    ],
+    "target_status": [
+      "red"
+    ],
+    "intent": "improve",
+    "tags": [
+      "v6",
+      "improve"
+    ]
+  },
+  {
+    "id": "kb-v6-certainty-green-02",
+    "dimension_id": "certainty",
+    "source": "OECD TALIS — מסגרת לשימור רווחה והשתתפות מקצועית",
+    "title": "שימור תיעוד החלטות",
+    "summary": "שגרה ממוקדת לשימור תיעוד ברור של החלטות ושינויים בממד ודאות.",
+    "actionable_steps": [
+      "לרכז החלטות במקום משותף",
+      "לשלוח סיכום קצר לאחר דיון"
+    ],
+    "target_status": [
+      "green"
+    ],
+    "intent": "preserve",
+    "tags": [
+      "v6",
+      "preserve"
+    ]
+  },
+  {
+    "id": "kb-v6-certainty-yellow-02",
+    "dimension_id": "certainty",
+    "source": "ISO 45003 — עקרונות להתערבות ארגונית ומעקב",
+    "title": "חיזוק תיעוד החלטות",
+    "summary": "מהלך ממוקד לחיזוק תיעוד ברור של החלטות ושינויים בממד ודאות, עם אחריות ומעקב שאינם חושפים משיבים.",
+    "actionable_steps": [
+      "לרכז החלטות במקום משותף",
+      "לשלוח סיכום קצר לאחר דיון"
+    ],
+    "target_status": [
+      "yellow"
+    ],
+    "intent": "improve",
+    "tags": [
+      "v6",
+      "improve"
+    ]
+  },
+  {
+    "id": "kb-v6-certainty-red-02",
+    "dimension_id": "certainty",
+    "source": "ISO 45003 — עקרונות להתערבות ארגונית ומעקב",
+    "title": "מענה קרוב לתיעוד החלטות",
+    "summary": "מהלך קרוב לצמצום מתח ולחיזוק תיעוד ברור של החלטות ושינויים בממד ודאות, עם אחריות ומעקב שאינם חושפים משיבים.",
+    "actionable_steps": [
+      "לרכז החלטות במקום משותף",
+      "לשלוח סיכום קצר לאחר דיון"
+    ],
+    "target_status": [
+      "red"
+    ],
+    "intent": "improve",
+    "tags": [
+      "v6",
+      "improve"
+    ]
+  },
+  {
+    "id": "kb-v6-certainty-green-03",
+    "dimension_id": "certainty",
+    "source": "OECD TALIS — מסגרת לשימור רווחה והשתתפות מקצועית",
+    "title": "שימור התראה על שינוי",
+    "summary": "שגרה ממוקדת לשימור התרעה והסבר כאשר המציאות משתנה בממד ודאות.",
+    "actionable_steps": [
+      "להגדיר דרך לעדכון דחוף",
+      "לצרף לכל שינוי משמעות מעשית"
+    ],
+    "target_status": [
+      "green"
+    ],
+    "intent": "preserve",
+    "tags": [
+      "v6",
+      "preserve"
+    ]
+  },
+  {
+    "id": "kb-v6-certainty-yellow-03",
+    "dimension_id": "certainty",
+    "source": "ISO 45003 — עקרונות להתערבות ארגונית ומעקב",
+    "title": "חיזוק התראה על שינוי",
+    "summary": "מהלך ממוקד לחיזוק התרעה והסבר כאשר המציאות משתנה בממד ודאות, עם אחריות ומעקב שאינם חושפים משיבים.",
+    "actionable_steps": [
+      "להגדיר דרך לעדכון דחוף",
+      "לצרף לכל שינוי משמעות מעשית"
+    ],
+    "target_status": [
+      "yellow"
+    ],
+    "intent": "improve",
+    "tags": [
+      "v6",
+      "improve"
+    ]
+  },
+  {
+    "id": "kb-v6-certainty-red-03",
+    "dimension_id": "certainty",
+    "source": "ISO 45003 — עקרונות להתערבות ארגונית ומעקב",
+    "title": "מענה קרוב להתראה על שינוי",
+    "summary": "מהלך קרוב לצמצום מתח ולחיזוק התרעה והסבר כאשר המציאות משתנה בממד ודאות, עם אחריות ומעקב שאינם חושפים משיבים.",
+    "actionable_steps": [
+      "להגדיר דרך לעדכון דחוף",
+      "לצרף לכל שינוי משמעות מעשית"
+    ],
+    "target_status": [
+      "red"
+    ],
+    "intent": "improve",
+    "tags": [
+      "v6",
+      "improve"
+    ]
+  },
+  {
+    "id": "kb-v6-organizational-climate-green-01",
+    "dimension_id": "organizational-climate",
+    "source": "OECD TALIS — מסגרת לשימור רווחה והשתתפות מקצועית",
+    "title": "שימור שיח מכבד",
+    "summary": "שגרה ממוקדת לשימור שיח מכבד גם בזמן מחלוקת בממד אקלים ארגוני.",
+    "actionable_steps": [
+      "לנסח כללי שיחה משותפים",
+      "לעצור ולתקן פגיעה בזמן אמת"
+    ],
+    "target_status": [
+      "green"
+    ],
+    "intent": "preserve",
+    "tags": [
+      "v6",
+      "preserve"
+    ]
+  },
+  {
+    "id": "kb-v6-organizational-climate-yellow-01",
+    "dimension_id": "organizational-climate",
+    "source": "ISO 45003 — עקרונות להתערבות ארגונית ומעקב",
+    "title": "חיזוק שיח מכבד",
+    "summary": "מהלך ממוקד לחיזוק שיח מכבד גם בזמן מחלוקת בממד אקלים ארגוני, עם אחריות ומעקב שאינם חושפים משיבים.",
+    "actionable_steps": [
+      "לנסח כללי שיחה משותפים",
+      "לעצור ולתקן פגיעה בזמן אמת"
+    ],
+    "target_status": [
+      "yellow"
+    ],
+    "intent": "improve",
+    "tags": [
+      "v6",
+      "improve"
+    ]
+  },
+  {
+    "id": "kb-v6-organizational-climate-red-01",
+    "dimension_id": "organizational-climate",
+    "source": "ISO 45003 — עקרונות להתערבות ארגונית ומעקב",
+    "title": "מענה קרוב לשיח מכבד",
+    "summary": "מהלך קרוב לצמצום מתח ולחיזוק שיח מכבד גם בזמן מחלוקת בממד אקלים ארגוני, עם אחריות ומעקב שאינם חושפים משיבים.",
+    "actionable_steps": [
+      "לנסח כללי שיחה משותפים",
+      "לעצור ולתקן פגיעה בזמן אמת"
+    ],
+    "target_status": [
+      "red"
+    ],
+    "intent": "improve",
+    "tags": [
+      "v6",
+      "improve"
+    ]
+  },
+  {
+    "id": "kb-v6-organizational-climate-green-02",
+    "dimension_id": "organizational-climate",
+    "source": "OECD TALIS — מסגרת לשימור רווחה והשתתפות מקצועית",
+    "title": "שימור אמון וביטחון",
+    "summary": "שגרה ממוקדת לשימור אמון ותחושת ביטחון בשיתוף קושי בממד אקלים ארגוני.",
+    "actionable_steps": [
+      "ליצור מרחב שיחה דיסקרטי",
+      "להבהיר כיצד מטופל מידע רגיש"
+    ],
+    "target_status": [
+      "green"
+    ],
+    "intent": "preserve",
+    "tags": [
+      "v6",
+      "preserve"
+    ]
+  },
+  {
+    "id": "kb-v6-organizational-climate-yellow-02",
+    "dimension_id": "organizational-climate",
+    "source": "ISO 45003 — עקרונות להתערבות ארגונית ומעקב",
+    "title": "חיזוק אמון וביטחון",
+    "summary": "מהלך ממוקד לחיזוק אמון ותחושת ביטחון בשיתוף קושי בממד אקלים ארגוני, עם אחריות ומעקב שאינם חושפים משיבים.",
+    "actionable_steps": [
+      "ליצור מרחב שיחה דיסקרטי",
+      "להבהיר כיצד מטופל מידע רגיש"
+    ],
+    "target_status": [
+      "yellow"
+    ],
+    "intent": "improve",
+    "tags": [
+      "v6",
+      "improve"
+    ]
+  },
+  {
+    "id": "kb-v6-organizational-climate-red-02",
+    "dimension_id": "organizational-climate",
+    "source": "ISO 45003 — עקרונות להתערבות ארגונית ומעקב",
+    "title": "מענה קרוב לאמון וביטחון",
+    "summary": "מהלך קרוב לצמצום מתח ולחיזוק אמון ותחושת ביטחון בשיתוף קושי בממד אקלים ארגוני, עם אחריות ומעקב שאינם חושפים משיבים.",
+    "actionable_steps": [
+      "ליצור מרחב שיחה דיסקרטי",
+      "להבהיר כיצד מטופל מידע רגיש"
+    ],
+    "target_status": [
+      "red"
+    ],
+    "intent": "improve",
+    "tags": [
+      "v6",
+      "improve"
+    ]
+  },
+  {
+    "id": "kb-v6-organizational-climate-green-03",
+    "dimension_id": "organizational-climate",
+    "source": "OECD TALIS — מסגרת לשימור רווחה והשתתפות מקצועית",
+    "title": "שימור הוקרה ופרגון",
+    "summary": "שגרה ממוקדת לשימור הוקרה גלויה למאמץ ולהתקדמות בממד אקלים ארגוני.",
+    "actionable_steps": [
+      "לשלב הוקרה בשגרת הצוות",
+      "לגוון מי מקבל הכרה ועל מה"
+    ],
+    "target_status": [
+      "green"
+    ],
+    "intent": "preserve",
+    "tags": [
+      "v6",
+      "preserve"
+    ]
+  },
+  {
+    "id": "kb-v6-organizational-climate-yellow-03",
+    "dimension_id": "organizational-climate",
+    "source": "ISO 45003 — עקרונות להתערבות ארגונית ומעקב",
+    "title": "חיזוק הוקרה ופרגון",
+    "summary": "מהלך ממוקד לחיזוק הוקרה גלויה למאמץ ולהתקדמות בממד אקלים ארגוני, עם אחריות ומעקב שאינם חושפים משיבים.",
+    "actionable_steps": [
+      "לשלב הוקרה בשגרת הצוות",
+      "לגוון מי מקבל הכרה ועל מה"
+    ],
+    "target_status": [
+      "yellow"
+    ],
+    "intent": "improve",
+    "tags": [
+      "v6",
+      "improve"
+    ]
+  },
+  {
+    "id": "kb-v6-organizational-climate-red-03",
+    "dimension_id": "organizational-climate",
+    "source": "ISO 45003 — עקרונות להתערבות ארגונית ומעקב",
+    "title": "מענה קרוב להוקרה ופרגון",
+    "summary": "מהלך קרוב לצמצום מתח ולחיזוק הוקרה גלויה למאמץ ולהתקדמות בממד אקלים ארגוני, עם אחריות ומעקב שאינם חושפים משיבים.",
+    "actionable_steps": [
+      "לשלב הוקרה בשגרת הצוות",
+      "לגוון מי מקבל הכרה ועל מה"
+    ],
+    "target_status": [
+      "red"
+    ],
+    "intent": "improve",
+    "tags": [
+      "v6",
+      "improve"
+    ]
+  },
+  {
+    "id": "kb-v6-meaning-green-01",
+    "dimension_id": "meaning",
+    "source": "OECD TALIS — מסגרת לשימור רווחה והשתתפות מקצועית",
+    "title": "שימור חיבור לתכלית",
+    "summary": "שגרה ממוקדת לשימור חיבור בין משימות לערכים חינוכיים בממד משמעות.",
+    "actionable_steps": [
+      "לפתוח ישיבה בסיפור השפעה",
+      "לקשור החלטה למטרה חינוכית"
+    ],
+    "target_status": [
+      "green"
+    ],
+    "intent": "preserve",
+    "tags": [
+      "v6",
+      "preserve"
+    ]
+  },
+  {
+    "id": "kb-v6-meaning-yellow-01",
+    "dimension_id": "meaning",
+    "source": "ISO 45003 — עקרונות להתערבות ארגונית ומעקב",
+    "title": "חיזוק חיבור לתכלית",
+    "summary": "מהלך ממוקד לחיזוק חיבור בין משימות לערכים חינוכיים בממד משמעות, עם אחריות ומעקב שאינם חושפים משיבים.",
+    "actionable_steps": [
+      "לפתוח ישיבה בסיפור השפעה",
+      "לקשור החלטה למטרה חינוכית"
+    ],
+    "target_status": [
+      "yellow"
+    ],
+    "intent": "improve",
+    "tags": [
+      "v6",
+      "improve"
+    ]
+  },
+  {
+    "id": "kb-v6-meaning-red-01",
+    "dimension_id": "meaning",
+    "source": "ISO 45003 — עקרונות להתערבות ארגונית ומעקב",
+    "title": "מענה קרוב לחיבור לתכלית",
+    "summary": "מהלך קרוב לצמצום מתח ולחיזוק חיבור בין משימות לערכים חינוכיים בממד משמעות, עם אחריות ומעקב שאינם חושפים משיבים.",
+    "actionable_steps": [
+      "לפתוח ישיבה בסיפור השפעה",
+      "לקשור החלטה למטרה חינוכית"
+    ],
+    "target_status": [
+      "red"
+    ],
+    "intent": "improve",
+    "tags": [
+      "v6",
+      "improve"
+    ]
+  },
+  {
+    "id": "kb-v6-meaning-green-02",
+    "dimension_id": "meaning",
+    "source": "OECD TALIS — מסגרת לשימור רווחה והשתתפות מקצועית",
+    "title": "שימור הכרה בהשפעה",
+    "summary": "שגרה ממוקדת לשימור הכרה בהתקדמות ובהשפעה על תלמידים בממד משמעות.",
+    "actionable_steps": [
+      "לאסוף דוגמאות להתקדמות",
+      "לשתף הצלחות בלי לזהות אדם"
+    ],
+    "target_status": [
+      "green"
+    ],
+    "intent": "preserve",
+    "tags": [
+      "v6",
+      "preserve"
+    ]
+  },
+  {
+    "id": "kb-v6-meaning-yellow-02",
+    "dimension_id": "meaning",
+    "source": "ISO 45003 — עקרונות להתערבות ארגונית ומעקב",
+    "title": "חיזוק הכרה בהשפעה",
+    "summary": "מהלך ממוקד לחיזוק הכרה בהתקדמות ובהשפעה על תלמידים בממד משמעות, עם אחריות ומעקב שאינם חושפים משיבים.",
+    "actionable_steps": [
+      "לאסוף דוגמאות להתקדמות",
+      "לשתף הצלחות בלי לזהות אדם"
+    ],
+    "target_status": [
+      "yellow"
+    ],
+    "intent": "improve",
+    "tags": [
+      "v6",
+      "improve"
+    ]
+  },
+  {
+    "id": "kb-v6-meaning-red-02",
+    "dimension_id": "meaning",
+    "source": "ISO 45003 — עקרונות להתערבות ארגונית ומעקב",
+    "title": "מענה קרוב להכרה בהשפעה",
+    "summary": "מהלך קרוב לצמצום מתח ולחיזוק הכרה בהתקדמות ובהשפעה על תלמידים בממד משמעות, עם אחריות ומעקב שאינם חושפים משיבים.",
+    "actionable_steps": [
+      "לאסוף דוגמאות להתקדמות",
+      "לשתף הצלחות בלי לזהות אדם"
+    ],
+    "target_status": [
+      "red"
+    ],
+    "intent": "improve",
+    "tags": [
+      "v6",
+      "improve"
+    ]
+  },
+  {
+    "id": "kb-v6-meaning-green-03",
+    "dimension_id": "meaning",
+    "source": "OECD TALIS — מסגרת לשימור רווחה והשתתפות מקצועית",
+    "title": "שימור בחירה במטרות",
+    "summary": "שגרה ממוקדת לשימור השתתפות הצוות בבחירת מטרות בממד משמעות.",
+    "actionable_steps": [
+      "לבחור יעד משותף לשיפור",
+      "לבדוק כיצד היעד מורגש בעבודה"
+    ],
+    "target_status": [
+      "green"
+    ],
+    "intent": "preserve",
+    "tags": [
+      "v6",
+      "preserve"
+    ]
+  },
+  {
+    "id": "kb-v6-meaning-yellow-03",
+    "dimension_id": "meaning",
+    "source": "ISO 45003 — עקרונות להתערבות ארגונית ומעקב",
+    "title": "חיזוק בחירה במטרות",
+    "summary": "מהלך ממוקד לחיזוק השתתפות הצוות בבחירת מטרות בממד משמעות, עם אחריות ומעקב שאינם חושפים משיבים.",
+    "actionable_steps": [
+      "לבחור יעד משותף לשיפור",
+      "לבדוק כיצד היעד מורגש בעבודה"
+    ],
+    "target_status": [
+      "yellow"
+    ],
+    "intent": "improve",
+    "tags": [
+      "v6",
+      "improve"
+    ]
+  },
+  {
+    "id": "kb-v6-meaning-red-03",
+    "dimension_id": "meaning",
+    "source": "ISO 45003 — עקרונות להתערבות ארגונית ומעקב",
+    "title": "מענה קרוב לבחירה במטרות",
+    "summary": "מהלך קרוב לצמצום מתח ולחיזוק השתתפות הצוות בבחירת מטרות בממד משמעות, עם אחריות ומעקב שאינם חושפים משיבים.",
+    "actionable_steps": [
+      "לבחור יעד משותף לשיפור",
+      "לבדוק כיצד היעד מורגש בעבודה"
+    ],
+    "target_status": [
+      "red"
+    ],
+    "intent": "improve",
+    "tags": [
+      "v6",
+      "improve"
+    ]
   }
 ]

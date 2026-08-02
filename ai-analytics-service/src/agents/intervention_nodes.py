@@ -26,6 +26,12 @@ def agent_rag_intervention_node(state: AnalyticsState) -> AnalyticsState:
     plan = _replay_plan(state)
     previous_recommendations = state.get("recommendations", {})
     recommendations = {}
+    contract_version = _effective_contract_version(round_data)
+    intervention_limit = (
+        5
+        if get_capabilities(contract_version).usesStructuredDimensionSummary
+        else 3
+    )
 
     for dim_id, score_obj in dim_scores.items():
         if isinstance(score_obj, dict):
@@ -45,7 +51,7 @@ def agent_rag_intervention_node(state: AnalyticsState) -> AnalyticsState:
         interventions = vector_store.get_interventions_for_dimension(
             dimension_id=dim_id,
             status=status,
-            limit=3,
+            limit=intervention_limit,
             question_aggregates=q_aggregates,
             background_context=bg_context,
         )
@@ -71,7 +77,7 @@ async def agent_adaptation_node(state: AnalyticsState) -> AnalyticsState:
     round_data = state.get("round_data", {})
     if not get_capabilities(
         _effective_contract_version(round_data),
-    ).supportsPartialMaps:
+    ).supportsAdaptationOutcome:
         return state
 
     dim_scores = round_data.get("dimensionScores", {})
@@ -107,17 +113,26 @@ async def agent_adaptation_node(state: AnalyticsState) -> AnalyticsState:
             dim_id,
         )
         targets.append((dim_id, len(interventions)))
+        adaptation_kwargs = {
+            "interventions": list(interventions),
+            "dim_hebrew": DIMENSION_NAMES_HEBREW.get(dim_id, dim_id),
+            "score": score,
+            "status": status,
+            "question_aggregates": question_aggregates,
+            "background_context": background_context,
+            "retry_tier": retry_tier,
+        }
+        if get_capabilities(
+            _effective_contract_version(round_data),
+        ).usesStructuredDimensionSummary:
+            adaptation_kwargs["contract_version"] = (
+                _effective_contract_version(round_data)
+            )
         adaptations.append(
             _in_provider_slot(
                 slots,
                 llm_provider_service.adapt_interventions_result,
-                interventions=list(interventions),
-                dim_hebrew=DIMENSION_NAMES_HEBREW.get(dim_id, dim_id),
-                score=score,
-                status=status,
-                question_aggregates=question_aggregates,
-                background_context=background_context,
-                retry_tier=retry_tier,
+                **adaptation_kwargs,
             )
         )
 

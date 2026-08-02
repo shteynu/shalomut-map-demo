@@ -1,4 +1,7 @@
-from src.contracts import AI_ANALYTICS_CONTRACT_VERSION
+from src.contracts import (
+    AI_ANALYTICS_CONTRACT_VERSION,
+    AI_ANALYTICS_V6_CONTRACT_VERSION,
+)
 from src.schemas.contract_registry import get_capabilities
 """What the service asks a model for, and what it does with the answer.
 
@@ -35,9 +38,11 @@ logger = logging.getLogger(__name__)
 __all__ = [
     "AdaptedIntervention",
     "InterpretationGeneration",
+    "MetricInsightsGeneration",
     "LLMProviderService",
     "ProviderUnavailableError",
     "QuestionSuggestion",
+    "StructuredSummaryGeneration",
     "llm_provider_service",
 ]
 
@@ -51,6 +56,20 @@ class InterpretationGeneration:
     @property
     def retry_count(self) -> int:
         return max(0, self.attempts - 1)
+
+
+@dataclass(frozen=True)
+class StructuredSummaryGeneration:
+    paragraphs: tuple[str, str, str]
+    outcome: Literal["llm", "deterministic_fallback"]
+    attempts: int
+
+
+@dataclass(frozen=True)
+class MetricInsightsGeneration:
+    insights: Dict[str, str]
+    outcome: Literal["llm", "deterministic_fallback"]
+    attempts: int
 
 
 @dataclass(frozen=True)
@@ -290,7 +309,11 @@ class LLMProviderService:
             "כל המסקנות נשענות על נתונים מצרפיים מעל סף הפרטיות."
         )
 
-        if not get_capabilities(contract_version).supportsPartialMaps:
+        capabilities = get_capabilities(contract_version)
+        if not (
+            capabilities.supportsPartialMaps
+            or capabilities.usesStructuredDimensionSummary
+        ):
             return deterministic_summary
 
         model_name = self._model_for_tier(retry_tier)
@@ -312,6 +335,15 @@ class LLMProviderService:
             ),
         )
         if text is None:
+            if get_capabilities(contract_version).usesStructuredDimensionSummary:
+                logger.info(
+                    "[LLM Service] outcome=deterministic_fallback model=%s "
+                    "reason=%s attempts=%s scope=overall_summary",
+                    model_name,
+                    fallback_reason,
+                    attempts,
+                )
+                return deterministic_summary
             logger.warning(
                 "[LLM Service] outcome=provider_unavailable model=%s "
                 "reason=%s attempts=%s scope=overall_summary",
@@ -321,6 +353,131 @@ class LLMProviderService:
             )
             raise ProviderUnavailableError(fallback_reason)
         return text
+
+    def generate_structured_summary_result(
+        self,
+        *,
+        dim_id: str,
+        dim_hebrew: str,
+        status: str,
+        question_aggregates: Iterable[Dict[str, Any]],
+        background_context: Optional[Dict[str, Any]] = None,
+        retry_tier: str = "fast",
+        contract_version: str = AI_ANALYTICS_V6_CONTRACT_VERSION,
+    ) -> StructuredSummaryGeneration:
+        """Generate V6's three overview paragraphs with a total fallback."""
+        aggregates = list(question_aggregates)
+        model_name = self._model_for_tier(retry_tier)
+        text, attempts, fallback_reason = self._complete_with_retries(
+            build_prompt=lambda: hebrew_prompts.v6_structured_summary_prompt(
+                dim_hebrew=dim_hebrew,
+                status=status,
+                question_aggregates=aggregates,
+                background_context=background_context,
+            ),
+            system_prompt=(
+                "את/ה פסיכולוג/ית ארגוני/ת הכותב/ת ניתוח מצרפי בעברית. "
+                "החזר/י JSON בלבד."
+            ),
+            model_name=model_name,
+            is_acceptable=lambda candidate, finish_reason: (
+                finish_reason == "stop"
+                and hebrew_validation.parse_v6_structured_summary(
+                    candidate,
+                    status=status,
+                )
+                is not None
+            ),
+        )
+        parsed = hebrew_validation.parse_v6_structured_summary(
+            text,
+            status=status,
+        )
+        if parsed is not None:
+            return StructuredSummaryGeneration(parsed, "llm", attempts)
+
+        logger.info(
+            "[LLM Service] outcome=deterministic_fallback model=%s "
+            "reason=%s attempts=%s scope=structured_summary dimension=%s",
+            model_name,
+            fallback_reason,
+            attempts,
+            dim_id,
+        )
+        return StructuredSummaryGeneration(
+            hebrew_prompts.v6_structured_summary_fallback(
+                dim_hebrew=dim_hebrew,
+                status=status,
+                question_aggregates=aggregates,
+            ),
+            "deterministic_fallback",
+            attempts,
+        )
+
+    def generate_metric_insights_result(
+        self,
+        *,
+        dim_id: str,
+        dim_hebrew: str,
+        status: str,
+        question_aggregates: Iterable[Dict[str, Any]],
+        background_context: Optional[Dict[str, Any]] = None,
+        retry_tier: str = "fast",
+        contract_version: str = AI_ANALYTICS_V6_CONTRACT_VERSION,
+    ) -> MetricInsightsGeneration:
+        """Generate every V6 metric narrative in one exact-coverage call."""
+        aggregates = list(question_aggregates)
+        expected_ids = [str(item["questionId"]) for item in aggregates]
+        model_name = self._model_for_tier(retry_tier)
+        text, attempts, fallback_reason = self._complete_with_retries(
+            build_prompt=lambda: hebrew_prompts.v6_metric_insights_prompt(
+                dim_hebrew=dim_hebrew,
+                status=status,
+                question_aggregates=aggregates,
+                background_context=background_context,
+            ),
+            system_prompt=(
+                "את/ה מנתח/ת נתוני רווחה מצרפיים בעברית. החזר/י JSON בלבד."
+            ),
+            model_name=model_name,
+            is_acceptable=lambda candidate, finish_reason: (
+                finish_reason == "stop"
+                and hebrew_validation.parse_v6_metric_insights(
+                    candidate,
+                    expected_question_ids=expected_ids,
+                    status=status,
+                )
+                is not None
+            ),
+        )
+        parsed = hebrew_validation.parse_v6_metric_insights(
+            text,
+            expected_question_ids=expected_ids,
+            status=status,
+        )
+        if parsed is not None:
+            return MetricInsightsGeneration(parsed, "llm", attempts)
+
+        logger.info(
+            "[LLM Service] outcome=deterministic_fallback model=%s "
+            "reason=%s attempts=%s scope=metric_insights dimension=%s",
+            model_name,
+            fallback_reason,
+            attempts,
+            dim_id,
+        )
+        return MetricInsightsGeneration(
+            {
+                question_id: hebrew_prompts.v6_metric_insight_fallback(
+                    aggregate=aggregate,
+                    dim_hebrew=dim_hebrew,
+                    status=status,
+                )
+                for question_id, aggregate in zip(expected_ids, aggregates)
+            },
+            "deterministic_fallback",
+            attempts,
+        )
 
     def suggest_question_result(
         self,
@@ -399,6 +556,7 @@ class LLMProviderService:
         question_aggregates: Iterable[Dict[str, Any]] | None = None,
         background_context: Optional[Dict[str, Any]] = None,
         retry_tier: str = "fast",
+        contract_version: str = AI_ANALYTICS_CONTRACT_VERSION,
     ) -> list[AdaptedIntervention]:
         """Rewrite every catalog entry of one dimension in a single request.
 
@@ -433,12 +591,22 @@ class LLMProviderService:
         def catalog_result(attempts: int) -> list[AdaptedIntervention]:
             return [
                 AdaptedIntervention(
-                    summary=summary,
+                    summary=(
+                        hebrew_prompts.v6_intervention_fallback(
+                            intervention=entry,
+                            dim_hebrew=dim_hebrew,
+                            status=status,
+                        )
+                        if get_capabilities(
+                            contract_version,
+                        ).usesStructuredDimensionSummary
+                        else summary
+                    ),
                     actionable_steps=steps,
                     outcome="deterministic_fallback",
                     attempts=attempts,
                 )
-                for summary, steps in catalog
+                for entry, (summary, steps) in zip(entries, catalog)
             ]
 
         # An entry without copy to rewrite has nothing to send, and mixing it
@@ -451,6 +619,56 @@ class LLMProviderService:
         expected_steps_per_entry = [len(steps) for _, steps in catalog]
         model_name = self._model_for_tier(retry_tier)
         distribution_counts = self.distribution_counts(aggregates)
+        if get_capabilities(contract_version).usesStructuredDimensionSummary:
+            text, attempts, fallback_reason = self._complete_with_retries(
+                build_prompt=lambda: hebrew_prompts.v6_intervention_batch_prompt(
+                    interventions=entries,
+                    dim_hebrew=dim_hebrew,
+                    status=status,
+                    question_aggregates=aggregates,
+                    background_context=background_context,
+                ),
+                system_prompt=(
+                    "את/ה פסיכולוג/ית ארגוני/ת המתאים/ה המלצות לבית ספר. "
+                    "החזר/י JSON בלבד."
+                ),
+                model_name=model_name,
+                is_acceptable=lambda candidate, finish_reason: (
+                    finish_reason == "stop"
+                    and hebrew_validation.parse_v6_intervention_batch(
+                        candidate,
+                        interventions=entries,
+                        status=status,
+                    )
+                    is not None
+                ),
+            )
+            parsed_v6 = hebrew_validation.parse_v6_intervention_batch(
+                text,
+                interventions=entries,
+                status=status,
+            )
+            if parsed_v6 is None:
+                logger.info(
+                    "[LLM Service] adaptation=deterministic_fallback "
+                    "model=%s reason=%s dimension=%s attempts=%s entries=%s",
+                    model_name,
+                    fallback_reason,
+                    entries[0].get("dimensionId") or "unavailable",
+                    attempts,
+                    len(entries),
+                )
+                return catalog_result(attempts)
+            return [
+                AdaptedIntervention(
+                    summary=summary,
+                    actionable_steps=steps,
+                    outcome="llm",
+                    attempts=attempts,
+                )
+                for summary, steps in parsed_v6
+            ]
+
         # Carries the last attempt's refusal out of the predicate, so the
         # fallback line can say which gate closed instead of leaving the
         # dimension to be reconstructed from the database later.

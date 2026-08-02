@@ -7,11 +7,12 @@ The current implementation is deliberately small:
 
 - it reads aggregate round data through the core app's JSON-RPC MCP endpoint;
 - it enforces the privacy lock before any interpretation;
-- it runs an async graph-style sequence of interpretation, intervention lookup,
-  intervention adaptation (`5.0` only), safety validation, and formatting;
+- it runs an async graph-style sequence of interpretation, narrative metric
+  generation, intervention lookup, intervention adaptation (`5.0` and `6.0`),
+  safety validation, and formatting;
 - it reads interventions from the structured local
   `data/interventions_kb.json` catalog, scoped strictly by dimension and
-  status, and on `5.0` ranks the candidates by the round's distributions;
+  status, and on `5.0`/`6.0` ranks the candidates by the round's distributions;
 - it polls durable analysis jobs from Core, keeps each lease alive while the
   pipeline runs, and posts the validated result back with the run identity.
 
@@ -48,9 +49,9 @@ each one is responsible for:
 
 ## Contract
 
-Runtime support currently ends at `5.0`. Contract `6.0` is reserved and has no
-accepted manifest; the dummy `6.0` registry cases are test-only readiness
-checks, not an advertised service capability. See
+Runtime input/output support spans `1.0` through `6.0`. Python health therefore
+advertises `6.0`, while the Core producer remains on `5.0` until the separate
+rollout/configuration step. See
 [`../docs/ai-contract-version-matrix.md`](../docs/ai-contract-version-matrix.md).
 
 The immutable deployed source of truth for structural contract `1.0` is
@@ -130,6 +131,25 @@ status colour contradicts the numbers, because nothing in the prompt ever
 mentioned one. On `5.0` the prompt states the distribution in those very
 words, so a foreign colour is allowed where it reads as a count — the sentence
 has to carry a number matching one of the buckets — and never as a verdict.
+
+### `6.0`
+
+`6.0` ([`../contracts/ai-analytics-v6.json`](../contracts/ai-analytics-v6.json))
+keeps the aggregate-only `5.0` input and numeric evidence, but replaces each
+dimension interpretation with three structured Hebrew summary paragraphs and
+adds a qualitative narrative to every question metric. Both paths use strict
+JSON parsers, exact input-ID coverage, bounded attempts and deterministic
+fallbacks that remain valid when the provider is missing, unavailable or
+returns malformed/unsafe copy.
+
+Each dimension selects five recommendations from at least eight exact
+dimension/status candidates. The five objects are adapted in one
+identity-preserving JSON batch call; reordered, duplicate, missing or invalid
+items fall back together to enriched human-authored catalog copy. V6 does not
+allow partial maps: success always contains eight stones, three summary
+paragraphs, every input question metric and five recommendations per stone.
+Locked input still short-circuits before any provider call and contains no
+details.
 
 ## Local setup
 

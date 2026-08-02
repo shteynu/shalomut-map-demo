@@ -464,7 +464,7 @@ def test_the_catalog_survives_the_hebrew_check():
     ]
 
     assert offenders == []
-    assert len(catalog) == 120
+    assert len(catalog) == 192
 
 
 # --- the adaptation batch, and what it survives ------------------------------

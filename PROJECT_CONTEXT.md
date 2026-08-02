@@ -45,9 +45,11 @@
   matching the documented and deployed producer behavior. Contract `6.0` now
   has an accepted manifest: Core can consume three summary paragraphs,
   qualitative metric narratives and five recommendations while retaining
-  numeric evidence for callback verification. The producer still refuses V6;
-  Python parser/generation and health remain `1.0`–`5.0` until the next rollout
-  slice is implemented and deployed.
+  numeric evidence for callback verification. The local Python V6 producer
+  implements aggregate-only parsing, exact-ID batch narratives, deterministic
+  fallbacks and top-five recommendations, while Core still refuses to produce
+  V6. Deployment/health verification and the Core producer switch remain a
+  separate consumer-first rollout slice.
 - **Rollout**: consumer-first rollout `3.0` завершён 2026-07-26: Python сначала принял все три версии, затем Core callback и Dashboard readers, после чего Core MCP producer начал отправлять `3.0`. Producer `2.0` остаётся rollback boundary.
 - **Персистентность**: Core владеет durable lifecycle в `AiAnalysisRun`: `queued` → `running` → `succeeded`/`failed`, с попытками, heartbeat, lease и результатом. PostgreSQL partial unique index допускает только один активный run на раунд. `SurveyRound.aiInsights` временно остаётся dual-read/dual-write rollback boundary; legacy `aiInsightsUpdatedAt` больше не является claim-marker. Миграция durable jobs применяется отдельно к каждому подтверждённому окружению.
 - **Транспорт**: MCP, legacy webhook и callback/worker API поддерживают независимые Bearer secrets. Основной путь сначала фиксирует job в Core; Python polling worker получает атомарную 90-секундную lease, продлевает её heartbeat и завершает callback с run/lease identity. После трёх брошенных попыток job становится `failed`. Legacy webhook остаётся rollback boundary. При недоступности удалённого MCP/AI-сервиса обработка завершается ошибкой; mock data разрешены только при явном `USE_MOCK_MCP=true`.
