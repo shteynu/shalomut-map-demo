@@ -1,8 +1,6 @@
 import logging
-from datetime import datetime, timezone
-from typing import Dict, Any, Literal
+from typing import Dict, Any
 from src.agents.state import AnalyticsState
-from src.schemas.contract_registry import get_capabilities
 from src.agents.nodes import (
     privacy_gate_node,
     agent_psychologist_node,
@@ -11,11 +9,14 @@ from src.agents.nodes import (
     agent_safety_validator_node,
     DIMENSION_NAMES_HEBREW,
     _effective_contract_version,
-    _question_aggregates_for_dimension,
 )
 from src.agents.safety_report import violation
-from src.contracts import (
-    AI_ANALYTICS_DIMENSION_IDS,
+from src.schemas.analytics_output import encode_failure, encode_stone_map
+from src.schemas.canonical import (
+    CanonicalAnalysisInput,
+    CanonicalAnalysisResult,
+    CanonicalMetric,
+    CanonicalStone,
 )
 from src.schemas.stone_map_validation import outgoing_refusal
 
@@ -39,28 +40,13 @@ def build_failure_payload(
     failure_reason: str,
     error_message: str,
 ) -> Dict[str, Any]:
-    """The one shape a failed round travels in.
-
-    `status` stays inside the versioned set Core validates. `failureReason` is
-    additive and optional: the existing callback validator accepts it on a
-    non-success payload, so a stored failure can say whether the provider was
-    unreachable or its output never passed validation without a contract bump.
-    """
-    dynamic_metadata = (
-        {"surveyDefinitionHash": round_data.get("surveyDefinitionHash")}
-        if get_capabilities(_effective_contract_version(round_data)).supportsDynamicQuestions
-        else {}
+    """The shape a failed round travels in, as this version describes it."""
+    return encode_failure(
+        CanonicalAnalysisInput.from_round_data(round_data),
+        _effective_contract_version(round_data),
+        failure_reason=failure_reason,
+        error_message=error_message,
     )
-    return {
-        "contractVersion": _effective_contract_version(round_data),
-        "roundId": round_data.get("roundId", ""),
-        **dynamic_metadata,
-        "processedAt": datetime.now(timezone.utc).isoformat(),
-        "isLocked": False,
-        "status": "validation_failed",
-        "failureReason": failure_reason,
-        "errorMessage": error_message,
-    }
 
 
 class AnalyticsGraphEngine:
@@ -176,150 +162,96 @@ def _replay_for_outgoing_refusal(state, refusal) -> AnalyticsState:
     }
 
 def format_stone_map_output_node(state: AnalyticsState) -> AnalyticsState:
-    """
-    Final Formatter Node: Assembles the structured "Stone Map" JSON payload.
+    """Final Formatter Node: assembles the analysis, then encodes it.
+
+    What the run found is gathered here without a contract version in sight;
+    which of it this deployment's version carries is `encode_stone_map`'s
+    question and nobody else's.
     """
     round_data = state.get("round_data", {})
-    dim_scores = round_data.get("dimensionScores", {})
-    interpretations = state.get("interpretations", {}).get("dimension_interpretations", {})
-    dimension_summaries = state.get("interpretations", {}).get(
-        "dimension_summaries",
+    contract_version = _effective_contract_version(round_data)
+    analysis_input = CanonicalAnalysisInput.from_round_data(round_data)
+    interpretations = state.get("interpretations", {})
+    dimension_interpretations = interpretations.get(
+        "dimension_interpretations",
         {},
     )
-    metric_insights = state.get("interpretations", {}).get(
-        "metric_insights",
-        {},
-    )
-    overall_summary = state.get("interpretations", {}).get("overall_summary", "")
+    dimension_summaries = interpretations.get("dimension_summaries", {})
+    metric_insights = interpretations.get("metric_insights", {})
     recommendations = state.get("recommendations", {})
     generation_provenance = state.get("generation_provenance", {})
-    contract_version = _effective_contract_version(round_data)
 
-    if (
-        get_capabilities(contract_version).supportsDynamicQuestions
-        and set(dim_scores) != set(AI_ANALYTICS_DIMENSION_IDS)
-    ):
-        raise ValueError(
-            "AI analytics contract 3.0 requires exactly eight stones"
-        )
-
-    stones = {}
-    for dim_id, score_obj in dim_scores.items():
-        if isinstance(score_obj, dict):
-            status = score_obj.get("computedStatus", "green")
-            score = score_obj.get("averageScore", 0.0)
-        else:
-            status = getattr(score_obj, "computedStatus", "green")
-            score = getattr(score_obj, "averageScore", 0.0)
-
-        dim_hebrew = DIMENSION_NAMES_HEBREW.get(dim_id, dim_id)
-        interp = interpretations.get(dim_id, "")
-        recs = recommendations.get(dim_id, [])
-        question_aggregates = _question_aggregates_for_dimension(
-            round_data,
-            dim_id,
-        )
-
-        if question_aggregates:
-            question_text_field = (
-                "questionText"
-                if contract_version
-                and get_capabilities(contract_version).supportsDynamicQuestions
-                else "questionTextHebrew"
-            )
-            metrics = []
-            for aggregate in question_aggregates:
-                metric = {
-                    "questionId": aggregate["questionId"],
-                    "label": aggregate[question_text_field],
-                    "value": (
-                        f"{aggregate['averageScore']:.1f} מתוך 100"
-                    ),
-                    "averageScore": aggregate["averageScore"],
-                    "responseCount": aggregate["responseCount"],
-                }
-                # 5.0 carries the distribution back out exactly as it came in,
-                # never recomputed: Core owns these numbers and now has
-                # something to check them against.
-                if (
-                    get_capabilities(contract_version).supportsScoreDistribution
-                    and isinstance(aggregate.get("scoreDistribution"), dict)
-                ):
-                    metric["scoreDistribution"] = dict(
-                        aggregate["scoreDistribution"],
-                    )
-                if get_capabilities(
-                    contract_version,
-                ).usesNarrativeMetrics:
-                    metric["insightText"] = metric_insights.get(
-                        dim_id,
-                        {},
-                    ).get(aggregate["questionId"], "")
-                metrics.append(metric)
-        else:
+    stones: Dict[str, CanonicalStone] = {}
+    for dimension_id, score in analysis_input.dimension_scores.items():
+        aggregates = analysis_input.aggregates_for_dimension(dimension_id)
+        if aggregates:
             metrics = [
-                {"label": "ציון ממוצע", "value": f"{score:.1f}"},
-                {"label": "סטטוס מחוון", "value": status.upper()},
-                {
-                    "label": "רמת סיכון",
-                    "value": (
-                        "גבוהה"
-                        if status == "red"
-                        else "בינונית" if status == "yellow" else "תקינה"
+                CanonicalMetric(
+                    question_id=aggregate.question_id,
+                    label=aggregate.question_text,
+                    value=f"{aggregate.average_score:.1f} מתוך 100",
+                    average_score=aggregate.average_score,
+                    response_count=aggregate.response_count,
+                    score_distribution=aggregate.score_distribution,
+                    insight_text=metric_insights.get(dimension_id, {}).get(
+                        aggregate.question_id,
+                        "",
                     ),
-                },
+                )
+                for aggregate in aggregates
+            ]
+        else:
+            # A dimension with no questions of its own still gets a readable
+            # stone: three fixed lines about the dimension itself.
+            metrics = [
+                CanonicalMetric(
+                    question_id=None,
+                    label="ציון ממוצע",
+                    value=f"{score.average_score:.1f}",
+                ),
+                CanonicalMetric(
+                    question_id=None,
+                    label="סטטוס מחוון",
+                    value=score.computed_status.upper(),
+                ),
+                CanonicalMetric(
+                    question_id=None,
+                    label="רמת סיכון",
+                    value=(
+                        "גבוהה"
+                        if score.computed_status == "red"
+                        else "בינונית"
+                        if score.computed_status == "yellow"
+                        else "תקינה"
+                    ),
+                ),
             ]
 
-        stone = {
-            "dimensionId": dim_id,
-            "dimensionNameHebrew": dim_hebrew,
-            "status": status,
-            "score": score,
-            "recommendedInterventions": recs,
-            "metrics": metrics
-        }
-        if get_capabilities(contract_version).usesStructuredDimensionSummary:
-            stone["summary"] = dimension_summaries.get(dim_id, [])
-        else:
-            stone["psychologicalInterpretation"] = interp
-        if get_capabilities(contract_version).isSemanticContract:
-            if dim_id not in generation_provenance:
-                raise ValueError(
-                    f"Missing generation provenance for '{dim_id}'"
-                )
-            stone["generationProvenance"] = generation_provenance[dim_id]
-        stones[dim_id] = stone
+        stones[dimension_id] = CanonicalStone(
+            dimension_id=dimension_id,
+            dimension_name_hebrew=DIMENSION_NAMES_HEBREW.get(
+                dimension_id,
+                dimension_id,
+            ),
+            status=score.computed_status,
+            score=score.average_score,
+            interpretation=dimension_interpretations.get(dimension_id, ""),
+            summary=dimension_summaries.get(dimension_id, []),
+            recommended_interventions=recommendations.get(dimension_id, []),
+            metrics=metrics,
+            generation_provenance=generation_provenance.get(dimension_id),
+        )
 
-    final_payload = {
-        "contractVersion": contract_version,
-        "roundId": round_data.get("roundId", ""),
-        "processedAt": datetime.now(timezone.utc).isoformat(),
-        "isLocked": False,
-        "status": "success",
-        "overallPsychologicalSummary": overall_summary,
-        "stones": stones
-    }
-    if get_capabilities(contract_version).supportsDynamicQuestions:
-        final_payload["surveyDefinitionHash"] = round_data.get(
-            "surveyDefinitionHash",
-        )
-    if get_capabilities(contract_version).supportsPartialMaps:
-        # Stated whenever the map is partial, and omitted when it is whole, so
-        # a full round's payload is byte-identical to what it was before the
-        # partial map existed. Core requires this list to agree exactly with
-        # the stones: a banner that disagrees with the map is how a manager
-        # stops trusting the screen.
-        gaps = sorted(
-            dim_id
-            for dim_id, provenance in generation_provenance.items()
-            if provenance.get("outcome") == "unavailable"
-        )
-        if gaps:
-            final_payload["dimensionsWithoutInterpretation"] = gaps
+    result = CanonicalAnalysisResult(
+        round_id=analysis_input.round_id,
+        survey_definition_hash=analysis_input.survey_definition_hash,
+        overall_summary=interpretations.get("overall_summary", ""),
+        stones=stones,
+    )
 
     return {
         **state,
-        "final_payload": final_payload
+        "final_payload": encode_stone_map(result, contract_version),
     }
 
 analytics_graph = AnalyticsGraphEngine()

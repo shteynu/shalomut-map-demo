@@ -3,7 +3,8 @@ import logging
 from src.agents.node_support import _effective_contract_version
 from src.agents.state import AnalyticsState
 from src.config import settings
-from src.schemas.contract_registry import get_capabilities
+from src.schemas.analytics_output import encode_locked
+from src.schemas.canonical import CanonicalAnalysisInput
 
 
 logger = logging.getLogger(__name__)
@@ -26,31 +27,14 @@ def privacy_gate_node(state: AnalyticsState) -> AnalyticsState:
     )
 
     if is_locked or total_responses < privacy_threshold:
-        dynamic_metadata = (
-            {
-                "surveyDefinitionHash": round_data.get(
-                    "surveyDefinitionHash",
-                ),
-            }
-            if get_capabilities(
-                _effective_contract_version(round_data),
-            ).supportsDynamicQuestions
-            else {}
-        )
         return {
             **state,
             "safety_status": "privacy_locked",
-            "final_payload": {
-                "contractVersion": _effective_contract_version(round_data),
-                "roundId": round_data.get("roundId", ""),
-                **dynamic_metadata,
-                "isLocked": True,
-                "status": "locked_error",
-                "errorMessage": (
-                    "תוצאות מפורטות נעולות עד להשלמת סף הפרטיות "
-                    f"של {privacy_threshold} משיבים."
-                ),
-            },
+            "final_payload": encode_locked(
+                CanonicalAnalysisInput.from_round_data(round_data),
+                _effective_contract_version(round_data),
+                privacy_threshold=privacy_threshold,
+            ),
         }
 
     return {
