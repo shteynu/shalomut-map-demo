@@ -1,6 +1,7 @@
 import asyncio
 from typing import Any, Dict, NamedTuple, Optional
 
+from src.agents.safety_report import SafetyViolationTarget, critique
 from src.agents.state import AnalyticsState
 from src.config import settings
 from src.contracts import (
@@ -55,6 +56,26 @@ def _replay_plan(state: AnalyticsState) -> Optional[ReplayPlan]:
     ):
         return None
     return plan
+
+
+def _repair_critique(
+    state: AnalyticsState,
+    target: SafetyViolationTarget,
+    dimension_id: Optional[str] = None,
+) -> Optional[str]:
+    """Return what to tell the model it got wrong last time, if anything.
+
+    Only a replay carries one. A first pass has no violations, and a dimension
+    the validator accepted is not regenerated at all, so the common answer here
+    is ``None``.
+    """
+    if state.get("retry_count", 0) <= 0:
+        return None
+    return critique(
+        state.get("safety_violations") or (),
+        target,
+        dimension_id,
+    )
 
 
 def _effective_contract_version(round_data: Dict[str, Any]) -> str:
