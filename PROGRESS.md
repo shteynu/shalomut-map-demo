@@ -1,15 +1,38 @@
 # Shalomut Map — PROGRESS.md
 
-Updated: 2026-08-01 (**the architecture refactoring plan is merged through
-`47333be` and clean-runner CI now proves TypeScript, build, PostgreSQL and
-Python together**; deployed runtime state was not changed in this session. The
+Updated: 2026-08-02 (**the architecture refactoring plan is merged through
+`1b5e54a`; an isolated, uncommitted follow-up decomposes the Python pipeline,
+sets the producer default to `5.0` and explicitly reserves unsupported `6.0`**;
+deployed runtime state was not changed in this session. The
 exposed-credential decision remains accepted for the design stage, with
 rotation required before the first real respondents.)
 
 ## Current State
 
+- **Privacy-threshold next-step copy is complete locally in a separate
+  uncommitted worktree, 2026-08-02.** Branch
+  `feat/threshold-next-step-copy` distinguishes below-threshold, queued/running,
+  ready and recoverable failed/missing-analysis states using the durable AI run
+  lifecycle. Its focused tests passed 7/7 and its active task file records the
+  full 314-test, typecheck, lint, build and local browser evidence. The diff is
+  preserved in the primary worktree and has not been deployed.
+
+- **Contract/pipeline follow-up is complete locally, not committed or
+  deployed, 2026-08-02.** Branch `refactor/contract-v6-pipeline-ops` splits the
+  851-line Python node module into bounded node/support modules behind a
+  compatibility facade, replaces broad evolving state maps with named
+  `TypedDict` structures, makes unset Core production resolve to `5.0`, and
+  adds a cross-service version matrix. `6.0` remains deliberately unsupported
+  until it has an accepted manifest and consumer-first rollout. Local evidence:
+  `npm run verify:core` passed all 309 TypeScript tests plus literals,
+  typecheck, ESLint and production build; Python passed 290/290; PostgreSQL
+  passed 7/7. A read-only deployed Supabase check found the idempotency and
+  durable-AI-run migrations pending; they were not applied. Exact state and
+  approval boundary are in
+  `docs/agent-tasks/active/refactor--contract-v6-pipeline-ops.md`.
+
 - **Architecture refactoring plan completed and merged, 2026-08-01.** `main`
-  and `origin/main` are at `47333be`. The completed sequence includes v5
+  and `origin/main` are at `1b5e54a`. The completed sequence includes v5
   background-context preservation, database-enforced response idempotency,
   fail-closed producer config, durable AI jobs, Contract Registry,
   capability-driven Python policy, standard MCP `structuredContent` plus

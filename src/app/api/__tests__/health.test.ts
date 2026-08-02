@@ -47,6 +47,7 @@ test('a configured version is reported as configured', async () => {
 });
 
 test('an unset version is reported as the default, not as a choice', async () => {
+  assert.strictEqual(DEFAULT_PRODUCED_ANALYTICS_CONTRACT_VERSION, '5.0');
   const { response, body } = await callHealth(undefined);
 
   assert.strictEqual(response.status, 200);

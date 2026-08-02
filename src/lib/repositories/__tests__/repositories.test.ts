@@ -13,6 +13,7 @@ import { AnalyticsService, RoundService, SurveyService } from '../../services';
 import { surveyInstrument } from '../../shalomut-source';
 import { createCanonicalSurveyDefinition } from '../../survey-definition';
 import { QuestionAnswerInput, SurveyResponseInput } from '../../types/backend';
+import { DEFAULT_PRODUCED_ANALYTICS_CONTRACT_VERSION } from '../../ai-contract-version';
 
 function buildDummyAnswers(value: 'green' | 'yellow' | 'red' = 'green'): QuestionAnswerInput[] {
   return surveyInstrument.questions.map((q) => ({
@@ -190,7 +191,10 @@ test('End-to-End Workflow: Round creation -> 10 submissions -> Analytics Unlocki
   );
   assert.strictEqual(analytics?.totalResponses, 10);
   assert.strictEqual(analytics?.isLocked, false);
-  assert.strictEqual(analytics?.contractVersion, '3.0');
+  assert.strictEqual(
+    analytics?.contractVersion,
+    DEFAULT_PRODUCED_ANALYTICS_CONTRACT_VERSION,
+  );
   assert.strictEqual(Object.keys(analytics?.questionAggregates ?? {}).length, 24);
   assert.strictEqual(analytics?.dimensionScores['self-expression'].isLocked, false);
   assert.strictEqual(typeof analytics?.dimensionScores['self-expression'].averageScore, 'number');

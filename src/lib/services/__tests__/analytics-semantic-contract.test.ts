@@ -12,6 +12,7 @@ import type {
 } from '../../types/backend';
 import { AnalyticsService } from '../analytics.service';
 import { createSurveyDefinitionHash } from '../../survey-definition-hash';
+import { DEFAULT_PRODUCED_ANALYTICS_CONTRACT_VERSION } from '../../ai-contract-version';
 
 type QuestionAggregate = {
   questionId: string;
@@ -243,7 +244,10 @@ test('AnalyticsService uses the exact persisted questionnaire for a round with e
 
   assert.ok(result);
   const dynamicResult = result as unknown as DynamicAnalyticsResult;
-  assert.strictEqual(dynamicResult.contractVersion, '3.0');
+  assert.strictEqual(
+    dynamicResult.contractVersion,
+    DEFAULT_PRODUCED_ANALYTICS_CONTRACT_VERSION,
+  );
   assert.strictEqual(dynamicResult.organizationId, 'org_dynamic_a');
   assert.strictEqual(
     dynamicResult.surveyDefinitionHash,
@@ -299,7 +303,10 @@ test('AnalyticsService preserves revised persisted text and includes a supplemen
 
   assert.ok(result);
   const dynamicResult = result as unknown as DynamicAnalyticsResult;
-  assert.strictEqual(dynamicResult.contractVersion, '3.0');
+  assert.strictEqual(
+    dynamicResult.contractVersion,
+    DEFAULT_PRODUCED_ANALYTICS_CONTRACT_VERSION,
+  );
   assert.strictEqual(
     Object.keys(dynamicResult.questionAggregates).length,
     questions.length,
@@ -341,7 +348,10 @@ test('AnalyticsService locks all dynamic details when one enabled question is be
   );
 
   assert.ok(result);
-  assert.strictEqual(result.contractVersion, '3.0');
+  assert.strictEqual(
+    result.contractVersion,
+    DEFAULT_PRODUCED_ANALYTICS_CONTRACT_VERSION,
+  );
   assert.strictEqual(result.totalResponses, 10);
   assert.strictEqual(result.isLocked, true);
   assert.deepStrictEqual(result.dimensionScores, {});

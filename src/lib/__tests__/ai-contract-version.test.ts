@@ -18,6 +18,7 @@ import {
 } from '../ai-contract-version';
 
 test('an unset variable keeps the documented default', () => {
+  assert.strictEqual(DEFAULT_PRODUCED_ANALYTICS_CONTRACT_VERSION, '5.0');
   const resolved = resolveProducedAnalyticsContractVersion(undefined);
 
   assert.ok(resolved.ok);

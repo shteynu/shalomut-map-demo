@@ -10,6 +10,7 @@ import {
 import { surveyInstrument } from '@/lib/shalomut-source';
 import { createCanonicalSurveyDefinition } from '@/lib/survey-definition';
 import { createSurveyDefinitionHash } from '@/lib/survey-definition-hash';
+import { DEFAULT_PRODUCED_ANALYTICS_CONTRACT_VERSION } from '@/lib/ai-contract-version';
 import type {
   SurveyDefinitionQuestion,
   SurveyResponseRecord,
@@ -127,7 +128,10 @@ test('MCP exposes exact dynamic privacy-safe question aggregates for an unlocked
     | Record<string, Record<string, unknown>>
     | undefined;
 
-  assert.strictEqual(payload.contractVersion, '3.0');
+  assert.strictEqual(
+    payload.contractVersion,
+    DEFAULT_PRODUCED_ANALYTICS_CONTRACT_VERSION,
+  );
   assert.strictEqual(payload.organizationId, 'org_semantic');
   assert.strictEqual(
     payload.surveyDefinitionHash,

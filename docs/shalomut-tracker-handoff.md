@@ -1,21 +1,23 @@
 # Shalomut Tracker — актуальный handoff
 
-Обновлено: 2026-08-01. `main` и `origin/main` находятся на `47333be`; план
-архитектурного рефакторинга завершён и слит. GitHub Build & Validate
+Обновлено: 2026-08-02. `main` и `origin/main` находятся на `1b5e54a`; основной
+план архитектурного рефакторинга завершён и слит. GitHub Build & Validate
 [30717540728](https://github.com/shteynu/shalomut-map-demo/actions/runs/30717540728)
 прошёл на чистом runner, включая Prisma generation, migrations, 307
 TypeScript-тестов, 7 PostgreSQL-тестов и 286 Python-тестов. CodeQL
 [30717540724](https://github.com/shteynu/shalomut-map-demo/actions/runs/30717540724)
-прошёл для TypeScript и Python. В этой сессии deployment и environment не
-менялись.
+прошёл для TypeScript и Python. В ветке
+`refactor/contract-v6-pipeline-ops` подготовлено, но пока не закоммичено
+продолжение: Python nodes разделены по ответственностям, pipeline state
+типизирован, unset producer default переведён на `5.0`, а матрица контрактов
+явно резервирует `6.0` как неподдерживаемую версию. Deployment, environment и
+deployed database в этой сессии не менялись.
 
-Единственный не-документационный diff рабочего дерева — сохранённый
-пользовательский generated `next-env.d.ts`; он не относится к рефакторингу и
-не вошёл ни в один commit. Session-close изменения progress/handoff и перенос
-пяти завершённых task-файлов сохранены отдельным documentation commit после
-`47333be`. Открытых PR и реально незамерженных веток нет. Девять старых
-локальных refs формально видны в `git branch --no-merged` из-за squash merge,
-но их tips совпадают с tips уже слитых PR #5, #6 и #11–#17.
+Отдельный primary worktree на `feat/threshold-next-step-copy` сохраняет
+завершённый UI diff и пользовательский generated `next-env.d.ts`; его точное
+состояние записано в соответствующем active task-файле. Продолжение по
+контрактам и Python pipeline изолировано в другом worktree и до commit видно
+только там.
 
 Это оперативная точка входа для перехода от исходного статического demo
 Shalomut Map к `shalomut-tracker`, где сохранённые данные должны быть единственным
@@ -58,20 +60,35 @@ exact вопросы раунда принадлежат persisted `SurveyRound.
 
 ### Незакрытые вопросы владельцу
 
-1. Оставляем ли `3.0` как значение по умолчанию при незаданном
-   `AI_ANALYTICS_CONTRACT_VERSION`. Сейчас оставлено: незаданная переменная —
-   документированный default, падает только заданное нераспознанное значение.
-2. Пункт 6 продуктового backlog («сообщение о том, что происходит после
-   достижения порога») стоит делать **после** PR 3: тот меняет словарь состояний
-   раунда с `idle/running/stalled` на `queued/running/succeeded/failed`.
-   Остальные пункты backlog с PR 3 не пересекаются.
+1. Применять ли две подтверждённо pending миграции к deployed Supabase после
+   review текущей ветки. Нужна отдельная ограниченная команда владельца.
 
-### Миграция, ожидающая применения
+Пункт 6 продуктового backlog больше не открыт: lifecycle-aware сообщение после
+достижения privacy threshold реализовано и проверено в отдельном незакоммиченном
+worktree `feat/threshold-next-step-copy`.
 
-`prisma/migrations/20260730120000_add_response_idempotency_constraints` создана
-и применена только к изолированной тестовой базе `shalomut_test`. К рабочей
-локальной и к deployed БД не применялась. Миграция сначала удаляет строки,
-которые констрейнт не пропустил бы, оставляя самую раннюю.
+### Миграции, ожидающие применения
+
+Read-only `prisma migrate status` от 2026-08-02 против подтверждённого
+non-loopback Supabase pooler показал две pending миграции:
+`20260730120000_add_response_idempotency_constraints` и
+`20260730150000_add_ai_analysis_runs`. Первая перед добавлением constraints
+удаляет несовместимые дубликаты, оставляя самую раннюю запись. В deployed БД
+ничего не применялось. Локальная расходная `shalomut_test` содержит все семь
+миграций; `npm run verify:db` прошёл 7/7. Основная локальная
+`127.0.0.1:5433/shalomut` также содержит все семь: AI-run migration была
+применена и проверена в worktree `feat/threshold-next-step-copy` до этого
+read-only deployed audit.
+
+### Решение по producer default и контракту 6.0
+
+В незакоммиченной ветке `refactor/contract-v6-pipeline-ops` прежний открытый
+вопрос решён: unset `AI_ANALYTICS_CONTRACT_VERSION` производит `5.0`; явные
+`3.0`, `4.0` и `5.0` остаются допустимыми, неизвестное значение по-прежнему
+fail-closed. Контракт `6.0` не опубликован: для него нет принятой семантики или
+manifest, поэтому Core, Python, OpenAPI и golden corpus намеренно знают только
+`1.0`–`5.0`. Добавление `6.0` требует consumer-first rollout по матрице
+`docs/ai-contract-version-matrix.md`.
 
 ## Что делать в начале следующей сессии
 

@@ -18,6 +18,19 @@ The current implementation is deliberately small:
 The service does not currently use LangGraph or ChromaDB at runtime, so those
 heavy packages are intentionally absent from the deployment manifest.
 
+The graph nodes are split by responsibility under `src/agents/`:
+
+- `privacy_node.py` owns the fail-closed privacy gate;
+- `psychologist_node.py` owns interpretations, the round summary and generation
+  provenance;
+- `intervention_nodes.py` owns catalog selection and provider adaptation;
+- `safety_node.py` owns semantic/provenance validation and replay targets;
+- `node_support.py` owns contract-aware lookup and bounded provider-call helpers;
+- `nodes.py` is only the compatibility facade for existing imports.
+
+`state.py` names the stable nested graph records while leaving version-specific
+external JSON rules to the shared manifests and `schemas/mcp_types.py`.
+
 The model-facing half lives in four files under `src/services/`, split by what
 each one is responsible for:
 
@@ -34,6 +47,11 @@ each one is responsible for:
   answer means for the round.
 
 ## Contract
+
+Runtime support currently ends at `5.0`. Contract `6.0` is reserved and has no
+accepted manifest; the dummy `6.0` registry cases are test-only readiness
+checks, not an advertised service capability. See
+[`../docs/ai-contract-version-matrix.md`](../docs/ai-contract-version-matrix.md).
 
 The immutable deployed source of truth for structural contract `1.0` is
 [`../contracts/ai-analytics-v1.json`](../contracts/ai-analytics-v1.json). The

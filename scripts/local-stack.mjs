@@ -419,7 +419,7 @@ async function main() {
   }
 
   const { environment, llmKeys } = aiEnvironment();
-  const contractVersion = configured("AI_ANALYTICS_CONTRACT_VERSION") || "3.0 (default)";
+  const contractVersion = configured("AI_ANALYTICS_CONTRACT_VERSION") || "5.0 (default)";
 
   process.stdout.write(
     [
