@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { encodeRoundAnalytics } from '@/lib/analytics-encoder';
 import { getRepositories } from '@/lib/repositories';
 import { AnalyticsService } from '@/lib/services';
 import { authorizeManagerRound } from '@/lib/server/manager-scope';
@@ -31,7 +32,7 @@ export async function GET(
       );
     }
 
-    return NextResponse.json({ analytics });
+    return NextResponse.json({ analytics: encodeRoundAnalytics(analytics) });
   } catch (error) {
     return NextResponse.json(
       { error: 'Failed to fetch round analytics' },

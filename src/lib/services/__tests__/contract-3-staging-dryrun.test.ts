@@ -1,5 +1,6 @@
 import assert from 'node:assert';
 import test, { after, before } from 'node:test';
+import { encodeRoundAnalytics } from '../../analytics-encoder';
 import { InMemoryAiInsightsRepository } from '../../repositories/in-memory/in-memory-ai-insights.repository';
 import { InMemoryRoundRepository } from '../../repositories/in-memory/in-memory-round.repository';
 import { InMemorySurveyRepository } from '../../repositories/in-memory/in-memory-survey.repository';
@@ -158,7 +159,7 @@ test('Workstream A Dry-Run: Scenario A1 (Unlocked disposable round with custom q
   );
 
   assert.ok(analytics, 'Analytics result must not be null');
-  assert.strictEqual(analytics.contractVersion, '3.0');
+  assert.strictEqual(encodeRoundAnalytics(analytics).contractVersion, '3.0');
   assert.strictEqual(analytics.roundId, roundId);
   assert.strictEqual(analytics.organizationId, orgId);
   assert.strictEqual(analytics.isLocked, false);
@@ -303,7 +304,7 @@ test('Workstream A Dry-Run: Scenario A2.1 (Privacy locked round with < 10 total 
   );
 
   assert.ok(analytics);
-  assert.strictEqual(analytics.contractVersion, '3.0');
+  assert.strictEqual(encodeRoundAnalytics(analytics).contractVersion, '3.0');
   assert.strictEqual(analytics.totalResponses, 9);
   assert.strictEqual(analytics.privacyThreshold, 10);
   assert.strictEqual(analytics.isLocked, true);
@@ -363,7 +364,7 @@ test('Workstream A Dry-Run: Scenario A2.2 (Privacy locked round with 1 question 
   );
 
   assert.ok(analytics);
-  assert.strictEqual(analytics.contractVersion, '3.0');
+  assert.strictEqual(encodeRoundAnalytics(analytics).contractVersion, '3.0');
   assert.strictEqual(analytics.totalResponses, 10);
   assert.strictEqual(analytics.privacyThreshold, 10);
   assert.strictEqual(analytics.isLocked, true);
@@ -417,11 +418,12 @@ test('Workstream A Dry-Run: Contract 5.0 calculates scoreDistribution per questi
     );
 
     assert.ok(analytics);
-    assert.strictEqual(analytics.contractVersion, '5.0');
+    const encoded = encodeRoundAnalytics(analytics);
+    assert.strictEqual(encoded.contractVersion, '5.0');
     assert.strictEqual(analytics.isLocked, false);
-    assert.ok(analytics.questionAggregates['q-1'].scoreDistribution);
+    assert.ok(encoded.questionAggregates['q-1'].scoreDistribution);
     assert.deepStrictEqual(
-      analytics.questionAggregates['q-1'].scoreDistribution,
+      encoded.questionAggregates['q-1'].scoreDistribution,
       { green: 5, yellow: 3, red: 2 },
     );
   } finally {

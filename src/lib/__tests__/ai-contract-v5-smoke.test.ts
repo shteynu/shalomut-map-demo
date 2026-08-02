@@ -5,6 +5,7 @@ import {
   AI_ANALYTICS_V5_CONTRACT_VERSION,
   validateStoneMapResult,
 } from '../ai-contract';
+import { encodeRoundAnalytics } from '../analytics-encoder';
 import { AnalyticsService } from '../services/analytics.service';
 import { createSurveyDefinitionHash } from '../survey-definition-hash';
 import type {
@@ -79,11 +80,13 @@ test('Smoke Test 1: Full Contract 5.0 analytical calculation and validation', as
 
   try {
     const analytics = AnalyticsService.calculateDynamicRoundAnalytics(round, responses);
-    assert.strictEqual(analytics.contractVersion, '5.0');
+    const encoded = encodeRoundAnalytics(analytics);
+    assert.strictEqual(encoded.contractVersion, '5.0');
     assert.strictEqual(analytics.isLocked, false);
     assert.strictEqual(analytics.totalResponses, 10);
 
-    const firstQuestionDist = analytics.questionAggregates['q-smoke-1'].scoreDistribution;
+    const firstQuestionDist =
+      encoded.questionAggregates['q-smoke-1'].scoreDistribution;
     assert.ok(firstQuestionDist);
     assert.deepStrictEqual(firstQuestionDist, { green: 5, yellow: 5, red: 0 });
 

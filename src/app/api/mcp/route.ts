@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { AnalyticsService } from '@/lib/services/analytics.service';
+import { encodeAnalyticsInput } from '@/lib/analytics-encoder';
 import { getRepositories } from '@/lib/repositories';
-import { getCapabilities } from '@/lib/contract-registry';
 import { validateRoundAnalyticsPayload } from '@/lib/round-analytics-payload';
 import { hasConfiguredSharedSecret } from '@/lib/server/shared-secret';
 
@@ -124,33 +124,11 @@ export async function POST(request: Request) {
           }, { status: 404 });
         }
 
-        const round = await repositories.roundRepo.findById(roundId);
-
-        // The school background context belongs to contract 4.0 only, and a
-        // locked round must not leak anything beyond the lock state: the
-        // provider is never called for it, so the context has no reason to
-        // cross the boundary.
-        const caps = getCapabilities(result.contractVersion);
-        const includesBackgroundContext =
-          caps.supportsBackgroundContext && !result.isLocked;
-
-        // Format into strict RoundAnalyticsResult MCP payload
-        const mcpPayload = {
-          contractVersion: result.contractVersion,
-          roundId: result.roundId,
-          organizationId: result.organizationId,
-          surveyDefinitionHash: result.surveyDefinitionHash,
-          totalResponses: result.totalResponses,
-          privacyThreshold: result.privacyThreshold,
-          isLocked: result.isLocked,
-          dimensionScores: result.dimensionScores,
-          questionAggregates: result.questionAggregates,
-          backgroundContext: includesBackgroundContext
-            ? (round?.backgroundContext ?? undefined)
-            : undefined,
-          calculatedAt: result.calculatedAt.toISOString(),
-        };
-        const validation = validateRoundAnalyticsPayload(mcpPayload);
+        // Which fields this deployment's contract version carries is the
+        // encoder's question, not the route's.
+        const validation = validateRoundAnalyticsPayload(
+          encodeAnalyticsInput(result),
+        );
         if (!validation.ok) {
           throw new Error(`Core produced an invalid MCP payload: ${validation.error}`);
         }

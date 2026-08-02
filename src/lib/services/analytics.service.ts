@@ -5,7 +5,6 @@ import {
   getProducedAnalyticsContractVersion,
   resolveProducedAnalyticsContractVersion,
 } from '../ai-contract-version';
-import { getCapabilities } from '../contract-registry';
 import { IRoundRepository, ISurveyRepository } from '../repositories/interfaces';
 import {
   WellbeingDimensionId,
@@ -20,14 +19,16 @@ import {
 } from '../survey-definition';
 import { createSurveyDefinitionHash } from '../survey-definition-hash';
 import {
-  DynamicQuestionAggregate,
   QuestionAggregate,
   RoundAnalyticsResult,
-  RoundAnalyticsV3Result,
   RoundDimensionScore,
   SurveyResponseRecord,
   SurveyRound,
 } from '../types/backend';
+import {
+  CanonicalQuestionAggregate,
+  CanonicalRoundAnalytics,
+} from '../types/canonical-analytics';
 
 /**
  * Which analytics contract this deployment produces.
@@ -189,14 +190,17 @@ export class AnalyticsService {
   }
 
   /**
-   * Calculate the dynamic 3.0 boundary from the exact enabled questionnaire
-   * snapshot persisted on the round. Legacy callers can continue using
-   * calculateRoundAnalytics for the immutable canonical 2.0 shape.
+   * Calculate what Core knows about a round from the exact enabled
+   * questionnaire snapshot persisted on it. The result carries no contract
+   * version and hides nothing a version would hide; encoding it for the AI
+   * service or for the manager API belongs to `../analytics-encoder`. Legacy
+   * callers can continue using calculateRoundAnalytics for the immutable
+   * canonical 2.0 shape.
    */
   public static calculateDynamicRoundAnalytics(
     round: SurveyRound,
     responses: SurveyResponseRecord[],
-  ): RoundAnalyticsV3Result {
+  ): CanonicalRoundAnalytics {
     const definition =
       round.surveyDefinition ??
       createCanonicalSurveyDefinition(round.title, round.privacyThreshold);
@@ -280,7 +284,6 @@ export class AnalyticsService {
 
     if (isLocked) {
       return {
-        contractVersion: getProducedAnalyticsContractVersion(),
         roundId: round.id,
         organizationId: round.organizationId,
         surveyDefinitionHash,
@@ -292,6 +295,7 @@ export class AnalyticsService {
           RoundDimensionScore
         >,
         questionAggregates: {},
+        backgroundContext: round.backgroundContext,
         calculatedAt,
       };
     }
@@ -300,8 +304,7 @@ export class AnalyticsService {
       Math.round(
         scores.reduce((sum, score) => sum + score, 0) / scores.length,
       );
-    const producedVersion = getProducedAnalyticsContractVersion();
-    const questionAggregates: Record<string, DynamicQuestionAggregate> =
+    const questionAggregates: Record<string, CanonicalQuestionAggregate> =
       Object.fromEntries(
         enabledQuestions.map((question) => {
           const scores = scoresByQuestion.get(question.id) ?? [];
@@ -310,16 +313,14 @@ export class AnalyticsService {
             yellow: 0,
             red: 0,
           };
-          const aggregate: DynamicQuestionAggregate = {
+          const aggregate: CanonicalQuestionAggregate = {
             questionId: question.id,
             dimensionId: question.dimensionId,
             questionText: question.text,
             averageScore: average(scores),
             responseCount: scores.length,
+            scoreDistribution: { ...dist },
           };
-          if (getCapabilities(producedVersion).supportsScoreDistribution) {
-            aggregate.scoreDistribution = { ...dist };
-          }
           return [question.id, aggregate];
         }),
       );
@@ -345,7 +346,6 @@ export class AnalyticsService {
     }
 
     return {
-      contractVersion: getProducedAnalyticsContractVersion(),
       roundId: round.id,
       organizationId: round.organizationId,
       surveyDefinitionHash,
@@ -354,6 +354,7 @@ export class AnalyticsService {
       isLocked: false,
       dimensionScores,
       questionAggregates,
+      backgroundContext: round.backgroundContext,
       calculatedAt,
     };
   }
@@ -365,7 +366,7 @@ export class AnalyticsService {
     roundId: string,
     roundRepo: IRoundRepository,
     surveyRepo: ISurveyRepository
-  ): Promise<RoundAnalyticsV3Result | null> {
+  ): Promise<CanonicalRoundAnalytics | null> {
     const round = await roundRepo.findById(roundId);
     if (!round) return null;
 

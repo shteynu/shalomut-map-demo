@@ -3,11 +3,8 @@ import type {
   IRoundRepository,
   ISurveyRepository,
 } from "../repositories";
-import type {
-  Organization,
-  RoundAnalyticsResult,
-  SurveyRound,
-} from "../types/backend";
+import type { Organization, SurveyRound } from "../types/backend";
+import type { CanonicalRoundAnalytics } from "../types/canonical-analytics";
 import { AnalyticsService } from "./analytics.service";
 import {
   ManagerScopeRequiredError,
@@ -25,7 +22,7 @@ export interface ManagerContext {
   organization: Organization | null;
   currentRound: SurveyRound | null;
   responseCount: number;
-  analytics: RoundAnalyticsResult | null;
+  analytics: CanonicalRoundAnalytics | null;
 }
 
 const roundStatusPriority: Record<SurveyRound["status"], number> = {

@@ -10,6 +10,7 @@ import type {
   SurveyResponseRecord,
   SurveyRound,
 } from '../../types/backend';
+import { encodeRoundAnalytics } from '../../analytics-encoder';
 import { AnalyticsService } from '../analytics.service';
 import { createSurveyDefinitionHash } from '../../survey-definition-hash';
 import { DEFAULT_PRODUCED_ANALYTICS_CONTRACT_VERSION } from '../../ai-contract-version';
@@ -243,7 +244,9 @@ test('AnalyticsService uses the exact persisted questionnaire for a round with e
   );
 
   assert.ok(result);
-  const dynamicResult = result as unknown as DynamicAnalyticsResult;
+  const dynamicResult = encodeRoundAnalytics(
+    result,
+  ) as unknown as DynamicAnalyticsResult;
   assert.strictEqual(
     dynamicResult.contractVersion,
     DEFAULT_PRODUCED_ANALYTICS_CONTRACT_VERSION,
@@ -302,7 +305,9 @@ test('AnalyticsService preserves revised persisted text and includes a supplemen
   );
 
   assert.ok(result);
-  const dynamicResult = result as unknown as DynamicAnalyticsResult;
+  const dynamicResult = encodeRoundAnalytics(
+    result,
+  ) as unknown as DynamicAnalyticsResult;
   assert.strictEqual(
     dynamicResult.contractVersion,
     DEFAULT_PRODUCED_ANALYTICS_CONTRACT_VERSION,
@@ -349,7 +354,7 @@ test('AnalyticsService locks all dynamic details when one enabled question is be
 
   assert.ok(result);
   assert.strictEqual(
-    result.contractVersion,
+    encodeRoundAnalytics(result).contractVersion,
     DEFAULT_PRODUCED_ANALYTICS_CONTRACT_VERSION,
   );
   assert.strictEqual(result.totalResponses, 10);

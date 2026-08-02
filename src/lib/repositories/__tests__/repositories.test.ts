@@ -11,6 +11,7 @@ import {
   resetDefaultRepositories,
   setRepositories,
 } from '..';
+import { encodeRoundAnalytics } from '../../analytics-encoder';
 import { AnalyticsService, RoundService, SurveyService } from '../../services';
 import { surveyInstrument } from '../../shalomut-source';
 import { createCanonicalSurveyDefinition } from '../../survey-definition';
@@ -193,8 +194,9 @@ test('End-to-End Workflow: Round creation -> 10 submissions -> Analytics Unlocki
   );
   assert.strictEqual(analytics?.totalResponses, 10);
   assert.strictEqual(analytics?.isLocked, false);
+  assert.ok(analytics);
   assert.strictEqual(
-    analytics?.contractVersion,
+    encodeRoundAnalytics(analytics).contractVersion,
     DEFAULT_PRODUCED_ANALYTICS_CONTRACT_VERSION,
   );
   assert.strictEqual(Object.keys(analytics?.questionAggregates ?? {}).length, 24);

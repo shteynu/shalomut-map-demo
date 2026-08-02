@@ -2,6 +2,7 @@ import assert from 'node:assert';
 import { test } from 'node:test';
 import { surveyInstrument } from '../../shalomut-source';
 import { AnswerValue, SurveyResponseRecord } from '../../types/backend';
+import { encodeRoundAnalytics } from '../../analytics-encoder';
 import { AnalyticsService } from '../analytics.service';
 import {
   DEFAULT_PRIVACY_THRESHOLD,
@@ -274,7 +275,7 @@ test('a locked 5.0 round carries no distributions across the service boundary', 
       responses,
     );
 
-    assert.strictEqual(result.contractVersion, '5.0');
+    assert.strictEqual(encodeRoundAnalytics(result).contractVersion, '5.0');
     assert.strictEqual(result.isLocked, true);
     assert.deepStrictEqual(result.questionAggregates, {});
     assert.deepStrictEqual(result.dimensionScores, {});
@@ -327,12 +328,28 @@ test('an unlocked 5.0 round carries a distribution for every question', () => {
     );
 
     assert.strictEqual(result.isLocked, false);
-    for (const aggregate of Object.values(result.questionAggregates)) {
+    // Core always counts the distribution; 5.0 is what carries it across.
+    const encoded = encodeRoundAnalytics(result);
+    for (const aggregate of Object.values(encoded.questionAggregates)) {
       assert.deepStrictEqual(aggregate.scoreDistribution, {
         green: 5,
         yellow: 3,
         red: 2,
       });
+      assert.strictEqual(aggregate.responseCount, MINIMUM_PRIVACY_THRESHOLD);
+    }
+
+    // The same round encoded for a version without distributions drops them
+    // and changes nothing else — the counting never depended on the version.
+    const encodedV3 = encodeRoundAnalytics(result, '3.0');
+    for (const [questionId, aggregate] of Object.entries(
+      encodedV3.questionAggregates,
+    )) {
+      assert.strictEqual(aggregate.scoreDistribution, undefined);
+      assert.strictEqual(
+        aggregate.averageScore,
+        encoded.questionAggregates[questionId].averageScore,
+      );
       assert.strictEqual(aggregate.responseCount, MINIMUM_PRIVACY_THRESHOLD);
     }
   } finally {

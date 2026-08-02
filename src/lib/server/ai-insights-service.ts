@@ -1,4 +1,5 @@
 import { validateStoneMapResult } from '@/lib/ai-contract';
+import { encodeRoundAnalytics } from '@/lib/analytics-encoder';
 import { getCapabilities } from '@/lib/contract-registry';
 import type {
   IAiAnalysisRunRepository,
@@ -136,9 +137,13 @@ export async function applyAiInsightsCallback(
     ? verifyAiResultAgainstRound(
         validation.value,
         round,
-        AnalyticsService.calculateDynamicRoundAnalytics(
-          round,
-          await repositories.surveyRepo.findResponsesByRoundId(roundId),
+        // Verified against what Core would have sent for this deployment's
+        // contract version, not against everything Core knows.
+        encodeRoundAnalytics(
+          AnalyticsService.calculateDynamicRoundAnalytics(
+            round,
+            await repositories.surveyRepo.findResponsesByRoundId(roundId),
+          ),
         ),
       )
     : null;
