@@ -5,9 +5,8 @@
 - Branch: `feat/validate-outgoing-stone-map`
 - Base branch: `origin/main`
 - Base commit: `fb7be19`
-- Current HEAD: tip of `feat/validate-outgoing-stone-map`, one commit past
-  `fb7be19`
-- Status: implementation complete, verified, committed, unpushed
+- Current HEAD: merged into `main` by `1467fdd`
+- Status: complete, verified and merged into `main`
 - Last updated: 2026-08-02
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -172,7 +171,9 @@ None.
 
 ## Next concrete step
 
-Owner action: push and merge. The next open items in the v3 audit are stage 3
-(canonical internal models) and the stage 4 ports; the largest independent
-slice below those is `AiInsightsRepository`, which mirrors the
-`IAiAnalysisRunRepository` split already done.
+Done: merged by `1467fdd`, and section 6 of
+`docs/wellbeing-refactoring-plan-v4-review.md` records the gate under stage 4.
+The next open items in the v3 audit are stage 3 (canonical internal models) and
+the stage 4 ports; the largest independent slice below those is
+`AiInsightsRepository`, which mirrors the `IAiAnalysisRunRepository` split
+already done.
