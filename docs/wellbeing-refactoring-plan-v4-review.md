@@ -393,11 +393,17 @@ JSON в MCP-клиенте закрыт через `structuredContent` и `outpu
 `USE_MOCK_MCP` фейлится вне development, то есть production-fallback на mock
 запрещён и без самого порта.
 
-Нет: `AiInsightsRepository` (AI-результаты остались на `IRoundRepository`),
-тонких routes (callback route — 427 строк оркестрации), composition root вместо
-`getRepositories()`, constructor injection в Python вместо глобальных
+Нет: тонких routes (callback route — 427 строк оркестрации), composition root
+вместо `getRepositories()`, constructor injection в Python вместо глобальных
 `mcp_client_manager` и `analytics_graph`, портов `AnalyticsSource`,
 `ResultSink`, `TextGenerator`, `JobStore` — ни одного.
+
+Закрыто после аудита: `IAiInsightsRepository` выделен из `IRoundRepository`
+тем же движением, что и `IAiAnalysisRunRepository`. Хранение не переехало —
+результат по-прежнему лежит в колонках `survey_rounds`, миграции нет.
+Отказ записи для несуществующего раунда остался частью контракта: Postgres даёт
+его провалившимся update, in-memory — вопросом к round store, и именно он держит
+404 на callback для неизвестного раунда.
 
 Адресный safety repair из §6.4 был сделан наполовину, и первая версия этого
 раздела описывала его неверно. Выборочный replay по измерениям на `ae3c3c4`
@@ -478,10 +484,12 @@ identity на Argon2 или managed IdP — пароль всё ещё хеши�
 | `0b57e6b` | направление callback в общем корпусе плюс `stone_map_refusal` на стороне сервиса |
 | `4510384` | этот раздел в текущем виде |
 | `1467fdd` | исходящий payload проверяется до callback: переписываемый отказ становится replay, остальные валят раунд сразу |
+| `13c9e03` | `IAiInsightsRepository`: AI-результат ушёл с `IRoundRepository` без миграции и без смены хранения |
 
 Остальное из списков «Нет» выше — открытая работа: этап 3 целиком, порты и
 composition root этапа 4, DTO представления и identity этапа 5.
 
-Крупнейший независимый слайс из оставшегося — `AiInsightsRepository`: он
-повторяет уже сделанное выделение `IAiAnalysisRunRepository` и не требует ни
-одного из отсутствующих портов.
+Крупнейший независимый слайс из оставшегося — тонкий callback route: 427 строк
+оркестрации в `src/app/api/rounds/[roundId]/ai-insights/route.ts` теперь имеют
+куда переехать, потому что обе стороны persistence AI-результата — job и сам
+результат — уже за отдельными репозиториями.
