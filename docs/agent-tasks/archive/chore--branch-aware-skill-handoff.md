@@ -5,8 +5,8 @@
 - Branch: `chore/branch-aware-skill-handoff`
 - Base branch: `origin/main`
 - Base commit: `2160caa8bfa3481522f476a7a3354b344bea94e7`
-- Current HEAD: `2160caa8bfa3481522f476a7a3354b344bea94e7`
-- Status: Verified; publication to `main` authorized
+- Current implementation HEAD: `109581ce3d84fd55c1d4c2d6fa91615a184e4664`
+- Status: Complete; archived for direct `origin/main` publication
 - Last updated: 2026-08-02
 - Last agent/tool: Codex
 
@@ -108,17 +108,16 @@ canonical skills and root routing.
 
 ## Remaining
 
-- No implementation work remains. The authorized implementation commit,
-  terminal archive commit and direct fast-forward push to `main` are pending.
+- No implementation work remains. The terminal archive commit containing this
+  snapshot is published together with the implementation commit.
 
 ## Changed files
 
-- Committed on this branch: none; `HEAD` remains the `origin/main` base.
-- Staged: none.
-- Unstaged tracked: `.agents/skills/shalomut-tracker/SKILL.md`,
-  `.agents/skills/shalomut-map/SKILL.md`,
-  `.agents/skills/shalomut-verification/SKILL.md`.
-- Untracked: this active task file.
+- Implementation: committed as
+  `109581ce3d84fd55c1d4c2d6fa91615a184e4664`.
+- Terminal handoff: this task file moved from `active/` to `archive/`.
+- Staged, unstaged and untracked: none expected after the terminal archive
+  commit; final Git state remains authoritative and must be checked after push.
 
 ## Verification evidence
 
@@ -151,8 +150,8 @@ canonical skills and root routing.
 
 - Structural checks prove the instructions and references are present; actual
   compliance still depends on each agent/client following the canonical skills.
-- Changes are visible only in this worktree until committed, and only in this
-  local clone until pushed.
+- Clean-runner CI and deployed runtime were not exercised for this
+  instructions-only change.
 
 ## Failed approaches
 
@@ -175,5 +174,4 @@ canonical skills and root routing.
 
 ## Next concrete step
 
-Create the implementation commit, archive this task file, and fast-forward push
-both commits to `origin/main`.
+Inspect the GitHub Actions result for the published `origin/main` commit.
