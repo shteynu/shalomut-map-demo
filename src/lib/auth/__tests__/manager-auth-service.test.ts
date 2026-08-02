@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { InMemoryManagerRepository } from "../domain-contract";
 import {
   ManagerAuthenticationService,
   resolveManagerOrganizationId,
@@ -91,6 +92,53 @@ test("ManagerAuthenticationService: rejects non-existent user", async () => {
   const result = await ManagerAuthenticationService.authenticateCredentials(
     "unknown@shalomut.edu.il",
     "password123",
+  );
+
+  assert.strictEqual(result.ok, false);
+  if (!result.ok) {
+    assert.strictEqual(result.reason, "USER_NOT_FOUND");
+  }
+});
+
+test("ManagerAuthenticationService: a manager record is not a credential", async () => {
+  // The service used to take an optional manager repository and, when one was
+  // supplied, hand back a session for anyone that repository could find by
+  // email — no password verified, and none stored to verify, because a manager
+  // record carries no credential. The parameter is gone; this passes one
+  // anyway, the way a future caller might, and requires it to change nothing.
+  const knownManager = {
+    id: "mgr-cohen",
+    email: "cohen@school-a.ac.il",
+    name: "Cohen",
+    createdAt: new Date(),
+  };
+  const membership = {
+    id: "mbs-school-a",
+    managerId: knownManager.id,
+    organizationId: "org-school-a",
+    role: "admin" as const,
+    status: "active" as const,
+    createdAt: new Date(),
+  };
+  const repository = new InMemoryManagerRepository(
+    [knownManager],
+    [membership],
+  );
+  assert.ok(await repository.findByEmail(knownManager.email));
+
+  const authenticateWithRepository =
+    ManagerAuthenticationService.authenticateCredentials.bind(
+      ManagerAuthenticationService,
+    ) as unknown as (
+      email: string,
+      password: string,
+      repository: unknown,
+    ) => ReturnType<typeof ManagerAuthenticationService.authenticateCredentials>;
+
+  const result = await authenticateWithRepository(
+    knownManager.email,
+    "any-password-at-all",
+    repository,
   );
 
   assert.strictEqual(result.ok, false);

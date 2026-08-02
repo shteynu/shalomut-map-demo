@@ -1,4 +1,3 @@
-import type { IManagerRepository } from "./domain-contract";
 import type { Manager, OrganizationMembership } from "./types";
 
 export type AuthFailureReason =
@@ -207,10 +206,24 @@ export class ManagerAuthenticationService {
     ];
   }
 
+  /**
+   * Authenticates by verified password only.
+   *
+   * This used to accept an optional `IManagerRepository` and, when one was
+   * passed, return a session for any manager that repository could find by
+   * email — no password checked, no password even stored, because `Manager`
+   * carries no credential. Nothing production wired it up, so the hole was
+   * dormant rather than open, and dormant is exactly how it would have gone
+   * unnoticed the day the database-backed manager store was connected.
+   *
+   * The parameter is gone rather than fixed. Verifying a credential needs a
+   * credential to verify, and giving `Manager` one belongs to the persistent
+   * identity work that also replaces this SHA-256 hash with Argon2 or a
+   * managed identity provider. Until then, this method has one path.
+   */
   public static async authenticateCredentials(
     email: string,
     password: string,
-    repository?: IManagerRepository,
   ): Promise<AuthenticateResult> {
     if (this.isUnconfigured()) {
       return {
@@ -228,27 +241,6 @@ export class ManagerAuthenticationService {
         reason: "INVALID_CREDENTIALS",
         message: "יש להזין כתובת דוא\"ל וסיסמה",
       };
-    }
-
-    if (repository) {
-      const manager = await repository.findByEmail(normalizedEmail);
-      if (manager) {
-        const memberships = await repository.findMembershipsByManagerId(manager.id);
-        const hasActive = memberships.some((m) => m.status === "active");
-        if (!hasActive) {
-          return {
-            ok: false,
-            reason: "ACCOUNT_SUSPENDED",
-            message: "חשבון זה מוקפא או שאין לו הרשאות פעילות בארגון",
-          };
-        }
-
-        return {
-          ok: true,
-          manager,
-          memberships,
-        };
-      }
     }
 
     const accounts = await this.defaultAccounts();
