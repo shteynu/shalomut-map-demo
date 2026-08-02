@@ -5,8 +5,8 @@
 - Branch: `fix/selective-safety-repair`
 - Base branch: `origin/main`
 - Base commit: `ae3c3c4`
-- Current HEAD: tip of `fix/selective-safety-repair`, one commit past `ae3c3c4`
-- Status: implementation complete, verified, committed, unpushed
+- Current HEAD: merged into `main` by `f86acf8`
+- Status: complete, verified and merged into `main`
 - Last updated: 2026-08-02
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -192,12 +192,9 @@ None. No credential, deployment alias, schema or privacy-threshold change.
 
 ## Questions requiring an owner decision
 
-- Merge order for the five unpushed branches of this track.
+None.
 
 ## Next concrete step
 
-Owner action: push `fix/selective-safety-repair` along with the other four
-branches of the track, then decide the merge order. After the merge, section 6
-of `docs/wellbeing-refactoring-plan-v4-review.md` needs two corrections in one
-pass: the selective-replay claim above, and the sentences about the allowlist
-leak and the Hebrew corpus, which go stale once their branches land.
+None. Archived after merge into `main` at `f86acf8`. The documentation cleanup
+remains owned by `docs/refactoring-plan-status`.

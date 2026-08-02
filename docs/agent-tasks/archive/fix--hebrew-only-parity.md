@@ -5,8 +5,8 @@
 - Branch: `fix/hebrew-only-parity`
 - Base branch: `origin/main`
 - Base commit: `ae3c3c4`
-- Current HEAD: tip of `fix/hebrew-only-parity`, one commit past `ae3c3c4`
-- Status: complete and verified, committed on the branch, not pushed
+- Current HEAD: merged into `main` by `48d6f5d`
+- Status: complete, verified and merged into `main`
 - Last updated: 2026-08-02
 - Last agent/tool: Claude Code
 
@@ -200,7 +200,4 @@ None.
 
 ## Next concrete step
 
-Nothing here. The branch is ready for review or merge as it stands; the agreed
-follow-up is a separate branch for the dormant repository path in
-`src/lib/auth/manager-auth-service.ts:233-247`, which returns `ok: true`
-without verifying a password.
+None. Archived after merge into `main` at `48d6f5d`.

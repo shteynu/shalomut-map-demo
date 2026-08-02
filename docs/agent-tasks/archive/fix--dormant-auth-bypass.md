@@ -5,8 +5,8 @@
 - Branch: `fix/dormant-auth-bypass`
 - Base branch: `origin/main`
 - Base commit: `ae3c3c4`
-- Current HEAD: tip of `fix/dormant-auth-bypass`, one commit past `ae3c3c4`
-- Status: complete and verified, committed on the branch, not pushed
+- Current HEAD: merged into `main` by `a6599d3`
+- Status: complete, verified and merged into `main`
 - Last updated: 2026-08-02
 - Last agent/tool: Claude Code
 
@@ -175,7 +175,4 @@ None.
 
 ## Next concrete step
 
-Nothing here. The branch is ready for review or merge as it stands. Two v3
-findings from the same audit remain open and unclaimed: `PROGRESS.md` presents
-the refactoring plan as complete while stages 3 to 5 of v3 are not implemented,
-and the shared corpus still covers only the analytics input direction.
+None. Archived after merge into `main` at `a6599d3`.

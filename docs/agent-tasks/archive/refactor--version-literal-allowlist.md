@@ -5,9 +5,8 @@
 - Branch: `refactor/version-literal-allowlist`
 - Base branch: `origin/main`
 - Base commit: `ae3c3c4`
-- Current HEAD: tip of `refactor/version-literal-allowlist`, one commit past
-  `ae3c3c4`
-- Status: complete and verified, committed on the branch, not pushed
+- Current HEAD: merged into `main` by `1bca033`
+- Status: complete, verified and merged into `main`
 - Last updated: 2026-08-02
 - Last agent/tool: Claude Code
 
@@ -186,10 +185,5 @@ None.
 
 ## Next concrete step
 
-Take the next slice of the track: the open P1 defect from section 8 of v3,
-"safety retry без critique". `ai-analytics-service/src/agents/safety_node.py:255`
-writes `safety_feedback` and nothing reads it, so
-`ai-analytics-service/src/agents/graph.py:92-96` replays the whole pipeline up
-to three times without telling the model what was wrong. Turn the feedback into
-a structured report the repair prompt consumes, and retry only the invalid
-dimensions. Branch `fix/selective-safety-repair`, Python-side, size M.
+None. Archived after merge into `main` at `1bca033`; the follow-up
+`fix/selective-safety-repair` was merged immediately afterward.
