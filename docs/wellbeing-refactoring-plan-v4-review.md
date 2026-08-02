@@ -378,13 +378,16 @@ DoD §12.2 допускает их только внутри contract package, �
 
 ### Этап 3
 
-Не начат. Доменный расчёт сам формирует wire-форму
-(`if (getCapabilities(producedVersion).supportsScoreDistribution)`), то есть
-находится на среднем варианте из §3.2, а не на целевом
-`contract.encodeAnalyticsInput(canonical)`. `CanonicalRoundAnalytics`,
-`CanonicalAnalysisInput`, encoder и output adapter отсутствуют в обоих
-рантаймах; pipeline по-прежнему получает версию как управляющий параметр, хотя
-ветвление внутри него идёт через capabilities.
+Есть в Core: `CanonicalRoundAnalytics` без версии и `encodeAnalyticsInput`
+из §3.2. Доменный расчёт больше не формирует wire-форму — он считает всё, что
+Core знает, включая распределение, а вопрос «несёт ли эта версия такое поле»
+задаётся один раз в encoder'е. Кодируют три границы: MCP route, manager
+analytics route и сверка callback. Байты на проводе не изменились — это
+проверяет общий golden corpus и Core → AI → callback E2E.
+
+Нет в Python: `CanonicalAnalysisInput` и output adapter отсутствуют, pipeline
+по-прежнему получает версию как управляющий параметр, хотя ветвление внутри
+него идёт через capabilities. Это оставшаяся половина этапа.
 
 ### Этап 4
 
@@ -492,12 +495,20 @@ identity на Argon2 или managed IdP — пароль всё ещё хеши�
 | `1467fdd` | исходящий payload проверяется до callback: переписываемый отказ становится replay, остальные валят раунд сразу |
 | `13c9e03` | `IAiInsightsRepository`: AI-результат ушёл с `IRoundRepository` без миграции и без смены хранения |
 | `e29dc55` | тонкий callback route: 427 строк оркестрации → 173 строки транспорта, тесты route не правились |
+| `489b260` | этап 3 в Core: `CanonicalRoundAnalytics` и encoder, домен перестал знать версию контракта |
 
 Остальное из списков «Нет» выше — открытая работа: этап 3 целиком, порты и
 composition root этапа 4, DTO представления и identity этапа 5.
 
-Крупнейший независимый слайс из оставшегося — этап 3: `CanonicalRoundAnalytics`,
-`contract.encodeAnalyticsInput(canonical)` и output adapter вместо доменного
-расчёта, который сам формирует wire-форму. Из этапа 4 остались composition root
-и порты; из этапа 5 — `DashboardInsightsDto` и вынос production-типов из
-`demo-data.ts`. Все три — работа больше одного слайса.
+Крупнейший независимый слайс из оставшегося — вторая половина этапа 3:
+`CanonicalAnalysisInput` и output adapter в Python, зеркало уже сделанного в
+Core. Из этапа 4 остались composition root и порты; из этапа 5 —
+`DashboardInsightsDto` и вынос production-типов из `demo-data.ts`.
+
+Отдельно от плана: ветка `refactor/canonical-models` (три коммита, 2026-08-02,
+worktree Gemini) — независимая попытка этого же этапа 3 вместе с портами
+этапа 4 сразу в обоих рантаймах. Она отстала от `main` на 38 коммитов, её
+`scoreDistribution` описан как `Record<number, number>` вместо
+`{green, yellow, red}`, и она переписывает callback route в редакции, которая с
+тех пор менялась дважды. Решение владельца 2026-08-02: не трогать её и писать
+этап 3 заново против текущего `main`; судьба самой ветки — отдельный вопрос.
