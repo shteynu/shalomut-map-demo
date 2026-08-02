@@ -494,8 +494,8 @@ async def test_runner_rejects_cross_round_mcp_result_before_graph_or_callback(
     )
     monkeypatch.setattr(analytics_graph, "ainvoke", graph_call)
     monkeypatch.setattr(
-        analytics_runner_service,
-        "_send_callback",
+        analytics_runner_service.sink,
+        "deliver",
         callback_call,
     )
 
@@ -528,8 +528,8 @@ async def test_a_crashed_round_still_reports_a_failure_to_the_data_layer(
         AsyncMock(side_effect=RuntimeError("graph exploded")),
     )
     monkeypatch.setattr(
-        analytics_runner_service,
-        "_send_callback",
+        analytics_runner_service.sink,
+        "deliver",
         callback_call,
     )
 
@@ -537,7 +537,7 @@ async def test_a_crashed_round_still_reports_a_failure_to_the_data_layer(
         await analytics_runner_service.process_round(returned.roundId)
 
     callback_call.assert_awaited_once()
-    _url, payload = callback_call.await_args.args
+    _round_id, payload = callback_call.await_args.args
     assert payload["status"] == "validation_failed"
     assert payload["failureReason"] == "service_error"
     assert payload["roundId"] == returned.roundId
@@ -570,8 +570,8 @@ async def test_runner_carries_dynamic_organization_isolation_into_state(
     )
     monkeypatch.setattr(analytics_graph, "ainvoke", graph_call)
     monkeypatch.setattr(
-        analytics_runner_service,
-        "_send_callback",
+        analytics_runner_service.sink,
+        "deliver",
         callback_call,
     )
 

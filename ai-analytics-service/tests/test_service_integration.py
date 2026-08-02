@@ -27,6 +27,7 @@ from src.contracts import (
 from src.config import Settings, settings
 from src.mcp_client.client import MCPClientManager, mcp_client_manager
 from src.services.analytics_runner import analytics_runner_service
+from src.services.result_sink import HttpResultSink
 from tests.llm_stub import answering_llm_provider
 
 class TestShalomutAIService(unittest.TestCase):
@@ -206,7 +207,7 @@ class TestShalomutAIService(unittest.TestCase):
                 with self.assertRaises(RuntimeError):
                     await client.fetch_round_analytics("round-bypass")
                 with self.assertRaises(RuntimeError):
-                    await analytics_runner_service._send_callback(
+                    await HttpResultSink().post(
                         "https://data-layer.example/api/rounds/round-bypass/ai-insights",
                         {},
                     )
@@ -257,7 +258,7 @@ class TestShalomutAIService(unittest.TestCase):
                     RuntimeError,
                     "Refusing callback outside the configured Data Layer origin",
                 ):
-                    await analytics_runner_service._send_callback(
+                    await HttpResultSink().post(
                         "https://attacker.example/collect",
                         {},
                     )
@@ -294,7 +295,7 @@ class TestShalomutAIService(unittest.TestCase):
                     RuntimeError,
                     "Refusing callback outside the configured Data Layer origin",
                 ):
-                    await analytics_runner_service._send_callback(
+                    await HttpResultSink().post(
                         "https://attacker.example/collect",
                         {"status": "success"},
                     )
@@ -370,8 +371,8 @@ class TestShalomutAIService(unittest.TestCase):
                     new=AsyncMock(return_value={"final_payload": final_payload}),
                 ),
                 patch.object(
-                    analytics_runner_service,
-                    "_send_callback",
+                    analytics_runner_service.sink,
+                    "post",
                     new=send_callback,
                 ),
             ):
@@ -381,6 +382,8 @@ class TestShalomutAIService(unittest.TestCase):
                 "https://data-layer.example/api/rounds/"
                 "round%2Fwith%20space/ai-insights/",
                 final_payload,
+                run_id=None,
+                lease_token=None,
             )
 
         previous_callback_url = settings.data_layer_callback_url
@@ -419,8 +422,8 @@ class TestShalomutAIService(unittest.TestCase):
                     new=AsyncMock(return_value={"final_payload": final_payload}),
                 ),
                 patch.object(
-                    analytics_runner_service,
-                    "_send_callback",
+                    analytics_runner_service.sink,
+                    "post",
                     new=send_callback,
                 ),
             ):
@@ -456,11 +459,11 @@ class TestShalomutAIService(unittest.TestCase):
 
         async def send_callback():
             with patch.object(
-                analytics_runner_service,
+                HttpResultSink,
                 "_post_callback",
                 side_effect=capture_callback,
             ):
-                await analytics_runner_service._send_callback(
+                await HttpResultSink().post(
                     "https://data-layer.example/api/rounds/round-1/ai-insights/",
                     {},
                     run_id="run-1",

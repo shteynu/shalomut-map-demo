@@ -3,11 +3,12 @@ import logging
 import os
 import uuid
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Optional
 from urllib.parse import urlsplit
 
 import httpx
 
+from src.application.ports import AnalysisRunner, JobStore
 from src.config import settings
 from src.services.analytics_runner import analytics_runner_service
 
@@ -117,8 +118,8 @@ class AiAnalysisJobWorker:
     def __init__(
         self,
         *,
-        client: Any,
-        runner: Any,
+        client: JobStore,
+        runner: AnalysisRunner,
         worker_id: str,
         heartbeat_interval_seconds: float,
     ):
@@ -213,15 +214,21 @@ class AiAnalysisJobWorker:
                     pass
 
 
-def create_ai_analysis_job_worker() -> AiAnalysisJobWorker:
+def create_ai_analysis_job_worker(
+    *,
+    client: Optional[JobStore] = None,
+    runner: Optional[AnalysisRunner] = None,
+) -> AiAnalysisJobWorker:
+    """Compose the worker from configuration, or from what a caller supplies."""
     worker_id = os.getenv("AI_JOB_WORKER_ID") or f"worker-{uuid.uuid4()}"
     return AiAnalysisJobWorker(
-        client=CoreJobClient(
+        client=client
+        or CoreJobClient(
             callback_base=settings.data_layer_callback_url,
             callback_secret=settings.ai_callback_secret,
             protection_bypass=settings.vercel_protection_bypass,
         ),
-        runner=analytics_runner_service,
+        runner=runner or analytics_runner_service,
         worker_id=worker_id,
         heartbeat_interval_seconds=settings.ai_job_heartbeat_interval_seconds,
     )
