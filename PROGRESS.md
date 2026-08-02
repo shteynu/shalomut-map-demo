@@ -2,13 +2,21 @@
 
 Updated: 2026-08-02 (**the architecture refactoring plan, privacy-threshold UI
 follow-up and Python pipeline/contract follow-up are merged into `main`; the
-producer default is `5.0` and unsupported `6.0` is explicitly reserved**;
+producer default remains `5.0`, while the local Contract V6 Core-consumer
+branch is complete but not pushed or merged**;
 the two remaining deployed Supabase migrations were applied and verified up to
 date on 2026-08-02. The
 exposed-credential decision remains accepted for the design stage, with
 rotation required before the first real respondents.)
 
 ## Current State
+
+- **Contract V6 Core consumer completed locally, 2026-08-02.** Commit `e2a472d`
+  on `feat/contract-v6-core-consumer` publishes the V6 manifest, strict callback
+  validation/evidence cross-check, OpenAPI schemas and narrative Dashboard
+  rendering. Core/Python producers remain on V5; the branch is not pushed,
+  merged or deployed. Full local evidence: 323 Core tests, 290 Python tests,
+  literals, typecheck, ESLint, production build and a browser semantic smoke.
 
 - **Privacy-threshold next-step copy is merged into `main`, 2026-08-02.** It
   distinguishes below-threshold, queued/running,

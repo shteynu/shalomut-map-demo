@@ -5,8 +5,8 @@
 - Branch: `feat/contract-v6-core-consumer`
 - Base branch: `main`
 - Base commit: `40781c9`
-- Current HEAD: `40781c9`
-- Status: complete; ready to commit and archive
+- Current implementation commit: `e2a472d`
+- Status: complete and archived
 - Last updated: 2026-08-02
 - Last agent/tool: Codex
 
@@ -224,16 +224,15 @@ value and distribution bar. Existing V5 results continue to render unchanged.
 
 ## Next concrete step
 
-Commit the verified Core-consumer slice, then archive this task file.
+Create a separate Python V6 parser/generation branch and task from `e2a472d`.
 
-## Exact Git state at handoff
+## Exact Git state at archival
 
-- HEAD: `40781c94fe58dcca42b47cdeaa7998626e5029c7`.
-- Upstream: `origin/main`; ahead 0, behind 0.
-- Staged: none.
-- Unstaged: every tracked file listed under `Changed files` except the three
-  untracked files below.
-- Untracked: `contracts/ai-analytics-v6.json`,
-  `src/lib/__tests__/ai-contract-v6.test.ts`, and
-  `docs/agent-tasks/active/feat--contract-v6-core-consumer.md`.
-- Visibility: local worktree only; there is no commit or push for this slice.
+- Implementation commit: `e2a472d` (`feat(ai): add contract v6 core consumer`).
+- Upstream remains `origin/main`; the feature branch is one implementation
+  commit ahead before this archival commit.
+- Staged/unstaged/untracked implementation changes: none after `e2a472d`.
+- The task-file move and final milestone/handoff wording are recorded in the
+  subsequent archival commit.
+- Visibility: committed in the local feature branch and portable across local
+  worktrees; not pushed and therefore not available to other clones/machines.

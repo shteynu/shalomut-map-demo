@@ -13,12 +13,12 @@ TypeScript-тестов, 7 PostgreSQL-тестов и 286 Python-тестов. C
 задачи находятся в `docs/agent-tasks/archive/`. Deployment, environment и
 deployed database в этой сессии не менялись.
 
-Активная ветка `feat/contract-v6-core-consumer` публикует принятый V6 manifest
-и завершает первый consumer-first срез: Core callback/OpenAPI/UI принимают,
-перепроверяют и отображают V6, но Core producer и Python по-прежнему работают
-только до `5.0`. Изменения пока не закоммичены и видимы только в worktree
-`shalomut-map-demo-contract-v6-core-consumer`; следующий самостоятельный срез —
-Python V6 parser/generation/fallback/catalog — нельзя считать начатым.
+Локальная ветка `feat/contract-v6-core-consumer` в commit `e2a472d` публикует
+принятый V6 manifest и завершает первый consumer-first срез: Core
+callback/OpenAPI/UI принимают, перепроверяют и отображают V6, но Core producer
+и Python по-прежнему работают только до `5.0`. Commit доступен другим локальным
+worktree, но ветка не pushed и не merged в `main`; следующий самостоятельный
+срез — Python V6 parser/generation/fallback/catalog — ещё не начат.
 
 Финальный combined-main gate прошёл локально: `npm run verify:core` — 316/316
 TypeScript tests, literals, typecheck, ESLint и production build;
