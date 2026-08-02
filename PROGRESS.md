@@ -75,10 +75,14 @@ rotation required before the first real respondents.)
   drift, the dormant database-auth password bypass and a safety retry that
   carried no critique. All three were closed on 2026-08-02, along with the
   version-literal allowlist leak, and the shared corpus finally covers the
-  callback direction that let the first of them hide. A stage-by-stage audit
-  against `origin/main` is in `docs/wellbeing-refactoring-plan-v4-review.md`
-  section 6, kept current with what is merged; read that before treating any
-  part of the plan as delivered. GitHub Build & Validate run
+  callback direction that let the first of them hide. The service also checks
+  its own assembled Stone Map before sending it: a refusal a second attempt
+  could fix becomes a replay, and one it could not ends the round naming the
+  rule, instead of both being discovered at the callback with every model call
+  of the round already paid for. A stage-by-stage audit against `origin/main`
+  is in `docs/wellbeing-refactoring-plan-v4-review.md` section 6, kept current
+  with what is merged; read that before treating any part of the plan as
+  delivered. GitHub Build & Validate run
   [30717540728](https://github.com/shteynu/shalomut-map-demo/actions/runs/30717540728)
   passed on a clean runner with 307 TypeScript, 7 PostgreSQL and 286 Python
   tests; CodeQL run
