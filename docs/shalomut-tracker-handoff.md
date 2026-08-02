@@ -49,14 +49,21 @@ exact вопросы раунда принадлежат persisted `SurveyRound.
 - durable AI jobs с lease/heartbeat, идемпотентным callback и operational
   metrics;
 - Contract Registry и capability-driven Python pipeline;
-- стандартный MCP `structuredContent` с `outputSchema`, полный shared golden
-  corpus, test-only dummy 6.0 и усиленный version-branch fitness gate;
+- стандартный MCP `structuredContent` с `outputSchema`, shared golden corpus,
+  test-only dummy 6.0 и усиленный version-branch fitness gate;
 - исправленный чистый CI-порядок Prisma generate → migrate deploy → оба
   PostgreSQL suite.
 
 Финальные code fixes находятся в `b1549fd`, task archive — в `47333be`.
 Завершённые task-файлы плана перенесены из `docs/agent-tasks/active/` в
 `docs/agent-tasks/archive/`.
+
+**Заголовок этого раздела относится к последовательности v4, а не к плану v3.**
+Аудит 2026-08-02 показал, что этапы 3–5 v3 не начаты, а три его P1-дефекта
+пережили последовательность. Все три закрыты 2026-08-02; текущий постатейный
+статус — в §6 `docs/wellbeing-refactoring-plan-v4-review.md`, и это
+единственное место, которое держится актуальным. Здесь остаётся только
+операционное состояние.
 
 ### Что изменилось в общих правилах проверки
 
@@ -114,10 +121,18 @@ round завершены. Точный порядок и rollback записан
 
 1. Выбрать один следующий independently deliverable пункт из
    `PROGRESS.md` / product backlog и создать для него отдельную ветку и
-   `docs/agent-tasks/active/<branch>.md`.
+   `docs/agent-tasks/active/<branch>.md`. На 2026-08-02 `active/` пуст: вся
+   работа сессии влита в `main`, ничего не осталось в полёте.
+   Из закрытия v3 ближайший независимый слайс — `AiInsightsRepository`,
+   повторяющий уже сделанное выделение `IAiAnalysisRunRepository`; обоснование
+   и остальные открытые пункты — в §6 плана-ревью.
 2. Перед первым реальным респондентом остаётся обязательной ротация четырёх
    ранее засвеченных credentials. Это прежняя approval boundary, не новый
    blocker текущей design-stage работы.
+3. Проверить, что параллельные агенты не делят один worktree. 2026-08-02 сессия
+   Codex писала в тот же каталог, где работал Claude Code, — реализацию это не
+   задело, но правило из `AGENTS.md` было нарушено. Подробности в
+   `docs/agent-tasks/archive/test--callback-corpus-parity.md`.
 
 ### Исторический deployment checklist 2026-07-30
 
