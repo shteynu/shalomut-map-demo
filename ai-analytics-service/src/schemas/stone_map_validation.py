@@ -18,8 +18,9 @@ with.
 """
 
 import re
-from typing import Any, Dict, Optional
+from typing import Any, Dict, NamedTuple, Optional
 
+from src.agents.safety_report import SafetyViolationTarget
 from src.contracts import AI_ANALYTICS_DIMENSION_IDS
 from src.schemas.contract_registry import CONTRACT_REGISTRY, get_capabilities
 from src.services.hebrew_validation import (
@@ -149,6 +150,69 @@ def _refusal_for_gaps(payload: Dict[str, Any]) -> Optional[str]:
         return "interpretation_gap_undeclared"
     if len(actual) == len(AI_ANALYTICS_DIMENSION_IDS):
         return "interpretation_gap_undeclared"
+    return None
+
+
+# Which refusals another attempt could plausibly fix, and what it would have to
+# write again.
+#
+# The distinction is the whole point of checking here rather than only at the
+# callback. A refused summary is copy a second attempt can rewrite. A missing
+# `surveyDefinitionHash` arrived in the round data and no amount of regenerating
+# will conjure one, so replaying it would spend a heavy-tier request to produce
+# the identical refusal. Anything absent from this table fails the round
+# immediately and says which rule did it.
+_REPAIRABLE: Dict[str, SafetyViolationTarget] = {
+    "summary_not_hebrew_only": "overall_summary",
+    "summary_sentence_count": "overall_summary",
+    "interpretation_not_hebrew_only": "interpretation",
+    "interpretation_sentence_count": "interpretation",
+    "v6_summary_shape": "interpretation",
+    "v6_metric_insight_required": "interpretation",
+}
+
+
+class OutgoingRefusal(NamedTuple):
+    """Why this payload would be refused, and who has to write again."""
+
+    rule: str
+    target: Optional[SafetyViolationTarget]
+    dimension_id: Optional[str]
+
+    @property
+    def repairable(self) -> bool:
+        return self.target is not None
+
+
+def outgoing_refusal(payload: Any) -> Optional[OutgoingRefusal]:
+    """`stone_map_refusal` plus what a replay would have to do about it."""
+    rule = stone_map_refusal(payload)
+    if rule is None:
+        return None
+
+    target = _REPAIRABLE.get(rule)
+    dimension_id = None
+    if target == "interpretation" and isinstance(payload, dict):
+        dimension_id = _first_refused_dimension(payload, rule)
+        if dimension_id is None:
+            # The rule points at a stone and we cannot say which one, so a
+            # targeted replay would rewrite nothing. Fail rather than loop.
+            return OutgoingRefusal(rule, None, None)
+    return OutgoingRefusal(rule, target, dimension_id)
+
+
+def _first_refused_dimension(payload: Dict[str, Any], rule: str) -> Optional[str]:
+    stones = payload.get("stones") or {}
+    contract_version = str(payload.get("contractVersion"))
+    for dimension_id in AI_ANALYTICS_DIMENSION_IDS:
+        if dimension_id not in stones:
+            continue
+        if _refusal_for_stone(
+            stones[dimension_id],
+            dimension_id,
+            contract_version,
+        ) == rule:
+            return dimension_id
     return None
 
 

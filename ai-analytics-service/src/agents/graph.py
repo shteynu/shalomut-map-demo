@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timezone
 from typing import Dict, Any, Literal
 from src.agents.state import AnalyticsState
@@ -12,9 +13,13 @@ from src.agents.nodes import (
     _effective_contract_version,
     _question_aggregates_for_dimension,
 )
+from src.agents.safety_report import violation
 from src.contracts import (
     AI_ANALYTICS_DIMENSION_IDS,
 )
+from src.schemas.stone_map_validation import outgoing_refusal
+
+logger = logging.getLogger(__name__)
 
 # Copy the manager reads when no analysis could be produced. One sentence for
 # what happened and one for what to do; the machine-readable `failureReason`
@@ -93,21 +98,82 @@ class AnalyticsGraphEngine:
 
             if current_state.get("safety_status") == "fail" and current_state.get("retry_count", 0) < 3:
                 continue
-            break
 
-        if current_state.get("safety_status") != "pass":
+            if current_state.get("safety_status") != "pass":
+                return {
+                    **current_state,
+                    "final_payload": build_failure_payload(
+                        current_state.get("round_data", {}),
+                        failure_reason="validation_failed",
+                        error_message=VALIDATION_FAILED_MESSAGE_HEBREW,
+                    ),
+                }
+
+            # Step 3: Format Output, and ask whether Core would take it.
+            #
+            # The safety validator judges the state — the copy each node wrote.
+            # Nothing judged the assembled payload, so a round could pass every
+            # check here and still be refused at the callback, where the model
+            # calls are already paid for and no retry is left. This asks the
+            # same question one step earlier, while the loop can still act.
+            formatted = format_stone_map_output_node(current_state)
+            refusal = outgoing_refusal(formatted.get("final_payload"))
+            if refusal is None:
+                return formatted
+
+            if refusal.repairable and current_state.get("retry_count", 0) < 3:
+                logger.warning(
+                    "[Output] The assembled payload would be refused: %s. "
+                    "Replaying target=%s dimension=%s",
+                    refusal.rule,
+                    refusal.target,
+                    refusal.dimension_id or "-",
+                )
+                current_state = _replay_for_outgoing_refusal(
+                    current_state,
+                    refusal,
+                )
+                continue
+
+            logger.error(
+                "[Output] The assembled payload would be refused and cannot "
+                "be repaired by a replay: %s",
+                refusal.rule,
+            )
             return {
                 **current_state,
                 "final_payload": build_failure_payload(
                     current_state.get("round_data", {}),
-                    failure_reason="validation_failed",
+                    failure_reason=f"outgoing_{refusal.rule}",
                     error_message=VALIDATION_FAILED_MESSAGE_HEBREW,
                 ),
             }
 
-        # Step 3: Format Output
-        current_state = format_stone_map_output_node(current_state)
-        return current_state
+
+def _replay_for_outgoing_refusal(state, refusal) -> AnalyticsState:
+    """Turn a payload-level refusal into the replay the loop already knows.
+
+    It writes the same bookkeeping the safety validator writes, including the
+    coded violation, so the repair prompt carries a critique rather than asking
+    for the identical answer on a costlier model.
+    """
+    dimensions = [refusal.dimension_id] if refusal.dimension_id else []
+    return {
+        **state,
+        "safety_status": "fail",
+        "safety_feedback": f"Outgoing payload would be refused: {refusal.rule}",
+        "safety_violations": [
+            violation(refusal.rule, refusal.target, refusal.dimension_id),
+        ],
+        "retry_count": min(3, state.get("retry_count", 0) + 1),
+        "retry_interpretation_dimensions": (
+            dimensions if refusal.target == "interpretation" else []
+        ),
+        "retry_recommendation_dimensions": (
+            dimensions if refusal.target == "recommendation" else []
+        ),
+        "retry_overall_summary": refusal.target == "overall_summary",
+    }
 
 def format_stone_map_output_node(state: AnalyticsState) -> AnalyticsState:
     """
