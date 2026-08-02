@@ -60,6 +60,35 @@ _CRITIQUES: Dict[str, str] = {
         "הסיכום הקודם לא נכתב בעברית בלבד. כתוב אותו מחדש בעברית בלבד, בלי "
         "אותיות משפות אחרות."
     ),
+    # The codes below arrive from the outgoing-payload gate rather than from the
+    # safety validator. They describe the same copy, refused one step later —
+    # after the payload is assembled — and a replay that carried no critique
+    # here would ask the identical question on a costlier model, which is the
+    # defect this table exists to prevent.
+    "summary_not_hebrew_only": (
+        "הסיכום הקודם לא נכתב בעברית בלבד. כתוב אותו מחדש בעברית בלבד, בלי "
+        "אותיות משפות אחרות."
+    ),
+    "summary_sentence_count": (
+        "הסיכום הקודם לא שמר על מספר המשפטים הנדרש. כתוב סיכום של שניים עד "
+        "ארבעה משפטים שלמים, שכל אחד מהם מסתיים בסימן פיסוק."
+    ),
+    "interpretation_not_hebrew_only": (
+        "הניסוח הקודם לא נכתב בעברית בלבד. כתוב אותו מחדש בעברית בלבד, בלי "
+        "אותיות משפות אחרות."
+    ),
+    "interpretation_sentence_count": (
+        "הניסוח הקודם לא שמר על מספר המשפטים הנדרש, או שנקטע באמצע. כתוב "
+        "אותו מחדש כמשפטים שלמים לפי הכללים שלמעלה."
+    ),
+    "v6_summary_shape": (
+        "הפסקאות הקודמות נדחו: נדרשות בדיוק שלוש פסקאות בעברית בלבד, בלי "
+        "מספרים גלויים, שכל אחת מסתיימת בסימן פיסוק."
+    ),
+    "v6_metric_insight_required": (
+        "תובנת המדד הקודמת חסרה או נדחתה. כתוב תובנה בעברית בלבד, באורך "
+        "הנדרש ובלי מספרים גלויים."
+    ),
 }
 
 
