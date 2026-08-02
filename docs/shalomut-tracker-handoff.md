@@ -59,20 +59,24 @@ exact вопросы раунда принадлежат persisted `SurveyRound.
 
 ### Незакрытые вопросы владельцу
 
-1. Применять ли две подтверждённо pending миграции к deployed Supabase после
-   review текущей ветки. Нужна отдельная ограниченная команда владельца.
+Открытых migration-решений нет. Обе ранее pending migrations применены по
+явной команде владельца 2026-08-02.
 
 Пункт 6 продуктового backlog больше не открыт: lifecycle-aware сообщение после
 достижения privacy threshold реализовано, проверено и объединено в `main`.
 
-### Миграции, ожидающие применения
+### Deployed migrations применены
 
 Read-only `prisma migrate status` от 2026-08-02 против подтверждённого
 non-loopback Supabase pooler показал две pending миграции:
 `20260730120000_add_response_idempotency_constraints` и
 `20260730150000_add_ai_analysis_runs`. Первая перед добавлением constraints
-удаляет несовместимые дубликаты, оставляя самую раннюю запись. В deployed БД
-ничего не применялось. Локальная расходная `shalomut_test` содержит все семь
+удаляет несовместимые дубликаты, оставляя самую раннюю запись. По явному
+разрешению владельца `prisma migrate deploy` применил ровно эти две migration
+к `aws-1-ap-northeast-2.pooler.supabase.com:5432`, database `postgres`, schema
+`public`. Повторный `prisma migrate status` завершился с exit code `0` и
+`Database schema is up to date`; deployed database теперь содержит все семь
+migrations. Локальная расходная `shalomut_test` также содержит все семь
 миграций; `npm run verify:db` прошёл 7/7. Основная локальная
 `127.0.0.1:5433/shalomut` также содержит все семь: AI-run migration была
 применена и проверена в worktree `feat/threshold-next-step-copy` до этого
@@ -80,8 +84,8 @@ read-only deployed audit.
 
 ### Решение по producer default и контракту 6.0
 
-В незакоммиченной ветке `refactor/contract-v6-pipeline-ops` прежний открытый
-вопрос решён: unset `AI_ANALYTICS_CONTRACT_VERSION` производит `5.0`; явные
+В объединённом `main` unset `AI_ANALYTICS_CONTRACT_VERSION` производит `5.0`;
+явные
 `3.0`, `4.0` и `5.0` остаются допустимыми, неизвестное значение по-прежнему
 fail-closed. Контракт `6.0` не опубликован: для него нет принятой семантики или
 manifest, поэтому Core, Python, OpenAPI и golden corpus намеренно знают только

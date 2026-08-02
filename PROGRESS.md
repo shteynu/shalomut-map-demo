@@ -3,7 +3,8 @@
 Updated: 2026-08-02 (**the architecture refactoring plan, privacy-threshold UI
 follow-up and Python pipeline/contract follow-up are merged into `main`; the
 producer default is `5.0` and unsupported `6.0` is explicitly reserved**;
-deployed runtime state was not changed in this session. The
+the two remaining deployed Supabase migrations were applied and verified up to
+date on 2026-08-02. The
 exposed-credential decision remains accepted for the design stage, with
 rotation required before the first real respondents.)
 
@@ -12,7 +13,7 @@ rotation required before the first real respondents.)
 - **Privacy-threshold next-step copy is merged into `main`, 2026-08-02.** It
   distinguishes below-threshold, queued/running,
   ready and recoverable failed/missing-analysis states using the durable AI run
-  lifecycle. Its focused tests passed 7/7 and its active task file records the
+  lifecycle. Its focused tests passed 7/7 and its archived task file records the
   full 314-test, typecheck, lint, build and local browser evidence. The
   combined-main gate later passed all 316 TypeScript tests. It has not been
   deployed.
@@ -26,13 +27,14 @@ rotation required before the first real respondents.)
   until it has an accepted manifest and consumer-first rollout. Local evidence:
   the final combined `npm run verify:core` passed all 316 TypeScript tests plus
   literals, typecheck, ESLint and production build; Python passed 290/290;
-  PostgreSQL passed 7/7. A read-only deployed Supabase check found the idempotency and
-  durable-AI-run migrations pending; they were not applied. Exact state and
-  approval boundary are in
-  `docs/agent-tasks/archive/refactor--contract-v6-pipeline-ops.md`.
+  PostgreSQL passed 7/7. The idempotency and durable-AI-run migrations were
+  subsequently applied to the confirmed deployed Supabase target; post-status
+  reports all seven migrations up to date. Exact deployed-state evidence is in
+  `docs/shalomut-tracker-handoff.md`.
 
 - **Architecture refactoring plan completed and merged, 2026-08-01.** `main`
-  and `origin/main` are at `1b5e54a`. The completed sequence includes v5
+  and `origin/main` include the published 2026-08-02 follow-up. The completed
+  sequence includes v5
   background-context preservation, database-enforced response idempotency,
   fail-closed producer config, durable AI jobs, Contract Registry,
   capability-driven Python policy, standard MCP `structuredContent` plus
