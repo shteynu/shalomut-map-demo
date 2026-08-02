@@ -170,6 +170,7 @@ class LLMProviderService:
         background_context: Optional[Dict[str, Any]] = None,
         contract_version: str = AI_ANALYTICS_CONTRACT_VERSION,
         all_dimension_scores: Optional[Dict[str, Any]] = None,
+        repair_critique: Optional[str] = None,
     ) -> InterpretationGeneration:
         """
         Generate a semantically validated interpretation and auditable outcome.
@@ -227,6 +228,7 @@ class LLMProviderService:
                 background_context=background_context,
                 contract_version=contract_version,
                 all_dimension_scores=all_dimension_scores,
+                repair_critique=repair_critique,
             ),
             system_prompt=(
                 "את/ה פסיכולוג/ית ארגוני/ת תמציתי/ת עבור צוותי חינוך. "
@@ -293,6 +295,7 @@ class LLMProviderService:
         retry_tier: str = "fast",
         contract_version: str = AI_ANALYTICS_CONTRACT_VERSION,
         question_aggregates: Iterable[Dict[str, Any]] | None = None,
+        repair_critique: Optional[str] = None,
     ) -> str:
         yellow_red_count = sum(
             1
@@ -322,6 +325,7 @@ class LLMProviderService:
                 dim_scores,
                 question_aggregates,
                 background_context,
+                repair_critique=repair_critique,
             ),
             system_prompt=(
                 "את/ה פסיכולוג/ית ארגוני/ת המסכם/ת רווחת צוות בבית ספר. "
@@ -364,6 +368,7 @@ class LLMProviderService:
         background_context: Optional[Dict[str, Any]] = None,
         retry_tier: str = "fast",
         contract_version: str = AI_ANALYTICS_V6_CONTRACT_VERSION,
+        repair_critique: Optional[str] = None,
     ) -> StructuredSummaryGeneration:
         """Generate V6's three overview paragraphs with a total fallback."""
         aggregates = list(question_aggregates)
@@ -374,6 +379,7 @@ class LLMProviderService:
                 status=status,
                 question_aggregates=aggregates,
                 background_context=background_context,
+                repair_critique=repair_critique,
             ),
             system_prompt=(
                 "את/ה פסיכולוג/ית ארגוני/ת הכותב/ת ניתוח מצרפי בעברית. "
@@ -424,6 +430,7 @@ class LLMProviderService:
         background_context: Optional[Dict[str, Any]] = None,
         retry_tier: str = "fast",
         contract_version: str = AI_ANALYTICS_V6_CONTRACT_VERSION,
+        repair_critique: Optional[str] = None,
     ) -> MetricInsightsGeneration:
         """Generate every V6 metric narrative in one exact-coverage call."""
         aggregates = list(question_aggregates)
@@ -435,6 +442,7 @@ class LLMProviderService:
                 status=status,
                 question_aggregates=aggregates,
                 background_context=background_context,
+                repair_critique=repair_critique,
             ),
             system_prompt=(
                 "את/ה מנתח/ת נתוני רווחה מצרפיים בעברית. החזר/י JSON בלבד."
@@ -557,6 +565,7 @@ class LLMProviderService:
         background_context: Optional[Dict[str, Any]] = None,
         retry_tier: str = "fast",
         contract_version: str = AI_ANALYTICS_CONTRACT_VERSION,
+        repair_critique: Optional[str] = None,
     ) -> list[AdaptedIntervention]:
         """Rewrite every catalog entry of one dimension in a single request.
 
@@ -681,6 +690,7 @@ class LLMProviderService:
                 status=status,
                 question_aggregates=aggregates,
                 background_context=background_context,
+                repair_critique=repair_critique,
             ),
             system_prompt=(
                 "את/ה פסיכולוג/ית ארגוני/ת המתאים/ה המלצות מקטלוג לבית ספר "
@@ -792,6 +802,7 @@ class LLMProviderService:
         background_context: Optional[Dict[str, Any]] = None,
         contract_version: str = AI_ANALYTICS_CONTRACT_VERSION,
         all_dimension_scores: Optional[Dict[str, Any]] = None,
+        repair_critique: Optional[str] = None,
     ) -> str:
         return hebrew_prompts.interpretation_prompt(
             dim_id=dim_id,
@@ -802,6 +813,7 @@ class LLMProviderService:
             background_context=background_context,
             contract_version=contract_version,
             all_dimension_scores=all_dimension_scores,
+            repair_critique=repair_critique,
         )
 
     def _build_overall_summary_prompt(
@@ -809,11 +821,13 @@ class LLMProviderService:
         dim_scores: Dict[str, Any],
         question_aggregates: Iterable[Dict[str, Any]] | None = None,
         background_context: Optional[Dict[str, Any]] = None,
+        repair_critique: Optional[str] = None,
     ) -> str:
         return hebrew_prompts.overall_summary_prompt(
             dim_scores,
             question_aggregates,
             background_context,
+            repair_critique=repair_critique,
         )
 
     def _heuristic_fallback(

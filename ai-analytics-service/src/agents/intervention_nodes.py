@@ -7,6 +7,7 @@ from src.agents.node_support import (
     _in_provider_slot,
     _provider_slots,
     _question_aggregates_for_dimension,
+    _repair_critique,
     _replay_plan,
 )
 from src.agents.state import AnalyticsState
@@ -121,6 +122,11 @@ async def agent_adaptation_node(state: AnalyticsState) -> AnalyticsState:
             "question_aggregates": question_aggregates,
             "background_context": background_context,
             "retry_tier": retry_tier,
+            "repair_critique": _repair_critique(
+                state,
+                "recommendation",
+                dim_id,
+            ),
         }
         if get_capabilities(
             _effective_contract_version(round_data),

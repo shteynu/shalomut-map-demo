@@ -258,9 +258,40 @@ function isValidLegacyStone(
   );
 }
 
-function containsOnlyHebrewUserText(value: string): boolean {
-  return /[\u0590-\u05ff]/u.test(value) && !/[A-Za-z]/u.test(value);
+/**
+ * The Hebrew block, plus the presentation forms a model may reach for instead
+ * of the base letter with its point. Both are Hebrew to a reader, so both
+ * count as Hebrew here \u2014 the same range the Python validator uses.
+ */
+const HEBREW_CHARACTER_PATTERN = /[\u0590-\u05ff\ufb1d-\ufb4f]/u;
+
+/**
+ * True when every letter in the copy is Hebrew and at least one is.
+ *
+ * The check used to name the one script it refused \u2014 Latin \u2014 so a whole
+ * sentence in Cyrillic or Arabic passed as long as one Hebrew letter stood
+ * somewhere in it. Python tightened the same rule on 2026-07-30 and Core did
+ * not, which left the callback accepting copy the service that generates it
+ * would refuse. `contracts/fixtures/hebrew_text_corpus.json` now holds the
+ * cases both runtimes answer identically.
+ *
+ * Digits, punctuation and Hebrew points are not letters and are unaffected;
+ * the per-version rules that forbid numbers in narrative copy are separate.
+ */
+export function isHebrewOnlyUserText(value: string): boolean {
+  const normalized = value.trim();
+  if (!normalized || !HEBREW_CHARACTER_PATTERN.test(normalized)) return false;
+
+  for (const character of normalized) {
+    if (/\p{L}/u.test(character) && !HEBREW_CHARACTER_PATTERN.test(character)) {
+      return false;
+    }
+  }
+
+  return true;
 }
+
+const containsOnlyHebrewUserText = isHebrewOnlyUserText;
 
 function hasExactlyTwoCompleteSentences(value: string): boolean {
   const normalized = value.trim();

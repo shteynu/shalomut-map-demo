@@ -33,6 +33,18 @@ def status_label(status: str) -> str:
     return _STATUS_LABELS_HEBREW.get(status, status)
 
 
+def repair_section(repair_critique: Optional[str]) -> str:
+    """The critique from the attempt that was refused, or nothing.
+
+    Placed last in every prompt that carries it, after the rules it qualifies,
+    because the correction has to be read against them rather than before them.
+    A first attempt passes ``None`` and the prompt is byte-identical to what it
+    has always been — which is what keeps a replay the only thing this changes.
+    """
+    if not repair_critique:
+        return ""
+    return f"\nתיקון לניסיון הקודם: {repair_critique}"
+
 def question_text(aggregate: Dict[str, Any]) -> str:
     dynamic_text = aggregate.get("questionText")
     if isinstance(dynamic_text, str):
@@ -102,6 +114,7 @@ def interpretation_prompt(
     background_context: Optional[Dict[str, Any]] = None,
     contract_version: str = AI_ANALYTICS_CONTRACT_VERSION,
     all_dimension_scores: Optional[Dict[str, Any]] = None,
+    repair_critique: Optional[str] = None,
 ) -> str:
     uses_dynamic_questions = any(
         isinstance(aggregate.get("questionText"), str)
@@ -166,6 +179,7 @@ def interpretation_prompt(
         "סיבות, אבחנות, זהויות או עובדות על משיב יחיד, ושמור על עקביות "
         f"עם המצב שצוין.{bucket_instruction} כתוב בעברית בלבד, בלי "
         "אותיות לטיניות, ורשום מספרים בספרות ולא במילים."
+        + repair_section(repair_critique)
     )
 
 
@@ -173,6 +187,7 @@ def overall_summary_prompt(
     dim_scores: Dict[str, Any],
     question_aggregates: Iterable[Dict[str, Any]] | None = None,
     background_context: Optional[Dict[str, Any]] = None,
+    repair_critique: Optional[str] = None,
 ) -> str:
     """The round-level picture: eight dimensions with their distributions.
 
@@ -243,6 +258,7 @@ def overall_summary_prompt(
         "בין ממדים או בין קבוצות צבע. שמור על טון מקצועי ותומך המעוגן "
         "בנתונים, אל תמציא סיבות או אבחנות, כתוב בעברית בלבד בלי אותיות "
         "לטיניות, ורשום מספרים בספרות ולא במילים."
+        + repair_section(repair_critique)
     )
 
 
@@ -252,6 +268,7 @@ def v6_structured_summary_prompt(
     status: str,
     question_aggregates: list[Dict[str, Any]],
     background_context: Optional[Dict[str, Any]] = None,
+    repair_critique: Optional[str] = None,
 ) -> str:
     """Ask for the three semantic parts of one existing overview stone."""
     aggregates = json.dumps(
@@ -273,6 +290,7 @@ def v6_structured_summary_prompt(
         "דפוסים, שונות ומגבלות בלי להמציא סיבות; השלישית מציעה מוקד "
         "ארגוני לבדיקה או לשיחה. כל פסקה בעברית בלבד, שלמה, מסתיימת "
         "בסימן פיסוק, ואינה כוללת ספרות, אחוזים, אבחנות או מידע על אדם."
+        + repair_section(repair_critique)
     )
 
 
@@ -320,6 +338,7 @@ def v6_metric_insights_prompt(
     status: str,
     question_aggregates: list[Dict[str, Any]],
     background_context: Optional[Dict[str, Any]] = None,
+    repair_critique: Optional[str] = None,
 ) -> str:
     """Request one qualitative paragraph for every exact question ID."""
     aggregates = json.dumps(
@@ -341,6 +360,7 @@ def v6_metric_insights_prompt(
         "לשנות את המספרים. insightText יהיה בין שלוש מאות לחמש מאות "
         "תווים בעברית בלבד, בלי ספרות או סימן אחוז, ויתאר את המשמעות "
         "האיכותנית של הממוצע והפיזור בלי להמציא סיבה, אבחנה או עובדה על אדם."
+        + repair_section(repair_critique)
     )
 
 
@@ -541,6 +561,7 @@ def adaptation_batch_prompt(
     status: str,
     question_aggregates: list[Dict[str, Any]],
     background_context: Optional[Dict[str, Any]] = None,
+    repair_critique: Optional[str] = None,
 ) -> str:
     """Every catalog entry of one dimension, adapted in a single request.
 
@@ -606,6 +627,7 @@ def adaptation_batch_prompt(
         "וכשאתה מזכיר קבוצת צבע כתוב באותו משפט את מספר התשובות שלה "
         "בספרות, למשל '0 תשובות ירוקות', ולא במילים כמו 'היעדר' או 'אפס'. "
         "רשום מספרים בספרות ולא במילים."
+        + repair_section(repair_critique)
     )
 
 

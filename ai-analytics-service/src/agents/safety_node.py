@@ -7,6 +7,7 @@ from src.agents.node_support import (
     _question_aggregates_for_dimension,
     _v5_prompt_inclusions,
 )
+from src.agents.safety_report import SafetyViolation, violation
 from src.agents.state import AnalyticsState
 from src.schemas.contract_registry import get_capabilities
 from src.schemas.mcp_types import status_for_score
@@ -44,6 +45,7 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
 
     is_safe = True
     feedback = []
+    violations: list[SafetyViolation] = []
     rejected_interpretations = set()
     rejected_recommendations = set()
     rejected_summary = False
@@ -63,6 +65,9 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
             rejected_interpretations.add(dim_id)
             feedback.append(
                 f"Status is inconsistent with score for {dim_id}"
+            )
+            violations.append(
+                violation("status_inconsistent", "interpretation", dim_id),
             )
 
         distribution_counts = hebrew_validation.distribution_counts(
@@ -99,12 +104,18 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
                 feedback.append(
                     f"Structured V6 narrative is invalid for {dim_id}"
                 )
+                violations.append(
+                    violation("v6_narrative_invalid", "interpretation", dim_id),
+                )
         elif unavailable:
             if interp != "":
                 is_safe = False
                 rejected_interpretations.add(dim_id)
                 feedback.append(
                     f"An unavailable interpretation must be empty: {dim_id}"
+                )
+                violations.append(
+                    violation("unavailable_not_empty", "interpretation", dim_id),
                 )
         elif (
             not hebrew_validation.is_complete_hebrew_copy(
@@ -123,6 +134,9 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
             feedback.append(
                 f"Interpretation is invalid for status {status}: {dim_id}"
             )
+            violations.append(
+                violation("interpretation_invalid", "interpretation", dim_id),
+            )
 
         dimension_interventions = state.get("recommendations", {}).get(
             dim_id,
@@ -136,6 +150,9 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
             rejected_recommendations.add(dim_id)
             feedback.append(
                 f"V6 requires five interventions for {dim_id}"
+            )
+            violations.append(
+                violation("v6_intervention_count", "recommendation", dim_id),
             )
         for intervention in dimension_interventions:
             user_facing_copy = [
@@ -177,6 +194,9 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
                 rejected_recommendations.add(dim_id)
                 feedback.append(
                     f"Intervention is invalid for status {status}: {dim_id}"
+                )
+                violations.append(
+                    violation("intervention_invalid", "recommendation", dim_id),
                 )
 
         if is_semantic_contract:
@@ -231,6 +251,9 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
                 feedback.append(
                     f"Generation provenance is invalid for {dim_id}"
                 )
+                violations.append(
+                    violation("provenance_invalid", "interpretation", dim_id),
+                )
 
     if is_semantic_contract and not hebrew_validation.is_hebrew_only_copy(
         overall_summary,
@@ -238,6 +261,9 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
         is_safe = False
         rejected_summary = True
         feedback.append("Overall summary is not Hebrew-only")
+        violations.append(
+            violation("overall_summary_not_hebrew", "overall_summary"),
+        )
 
     if not is_safe:
         next_retry_count = min(3, retry_count + 1)
@@ -253,6 +279,7 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
             **state,
             "safety_status": "fail",
             "safety_feedback": "; ".join(feedback),
+            "safety_violations": violations,
             "retry_count": next_retry_count,
             "retry_interpretation_dimensions": sorted(
                 rejected_interpretations,
@@ -267,4 +294,5 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
         **state,
         "safety_status": "pass",
         "safety_feedback": None,
+        "safety_violations": [],
     }

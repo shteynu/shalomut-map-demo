@@ -1,5 +1,7 @@
 from typing import Any, Dict, List, Literal, NotRequired, TypedDict
 
+from src.agents.safety_report import SafetyViolation
+
 
 class DimensionScoreState(TypedDict):
     averageScore: float
@@ -84,6 +86,9 @@ class AnalyticsState(TypedDict, total=False):
         "provider_unavailable",
     ]
     safety_feedback: str | None
+    # The same refusals as `safety_feedback`, coded so the replay can turn them
+    # into a critique for the prompt instead of only logging a sentence.
+    safety_violations: List[SafetyViolation]
     provider_failure_reason: str
     retry_count: int
     retry_interpretation_dimensions: List[str]

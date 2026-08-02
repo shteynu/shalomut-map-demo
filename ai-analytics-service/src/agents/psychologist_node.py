@@ -8,6 +8,7 @@ from src.agents.node_support import (
     _in_provider_slot,
     _provider_slots,
     _question_aggregates_for_dimension,
+    _repair_critique,
     _replay_plan,
     _v5_prompt_inclusions,
 )
@@ -79,6 +80,7 @@ async def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
             continue
 
         dim_hebrew = DIMENSION_NAMES_HEBREW.get(dim_id, dim_id)
+        dimension_critique = _repair_critique(state, "interpretation", dim_id)
         question_aggregates = _question_aggregates_for_dimension(
             round_data,
             dim_id,
@@ -97,6 +99,7 @@ async def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
                     question_aggregates=question_aggregates,
                     background_context=background_context,
                     contract_version=eff_version,
+                    repair_critique=dimension_critique,
                 )
             )
         else:
@@ -113,6 +116,7 @@ async def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
                     background_context=background_context,
                     contract_version=eff_version,
                     all_dimension_scores=dim_scores,
+                    repair_critique=dimension_critique,
                 )
             )
 
@@ -260,6 +264,11 @@ async def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
                     ),
                     background_context=background_context,
                     contract_version=eff_version,
+                    repair_critique=_repair_critique(
+                        state,
+                        "interpretation",
+                        dim_id,
+                    ),
                 )
             )
         metric_results = await asyncio.gather(*metric_generations)
@@ -289,6 +298,7 @@ async def agent_psychologist_node(state: AnalyticsState) -> AnalyticsState:
                 question_aggregates=list(
                     round_data.get("questionAggregates", {}).values(),
                 ),
+                repair_critique=_repair_critique(state, "overall_summary"),
             )
         )
     except ProviderUnavailableError as error:
