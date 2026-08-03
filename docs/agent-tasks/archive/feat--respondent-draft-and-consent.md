@@ -6,7 +6,8 @@
 - Base branch: `origin/main`
 - Base commit: `8f9c29d`
 - Current HEAD: `63f668e`
-- Status: все три коммита сделаны и проверены; ветка готова к push и review
+- Status: закрыта. Все три коммита сделаны, проверены и слиты в `main`
+  2026-08-03 по прямому решению владельца, без отдельного review
 - Last updated: 2026-08-03
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -428,8 +429,5 @@ deployment aliases. Миграций и записей в базу нет.
 
 ## Next concrete step
 
-Запушить ветку `feat/respondent-draft-and-consent` (`63f668e`, 6 коммитов
-впереди `origin/main`) — действие владельца, агенту `git push` здесь
-недоступен. До push handoff ограничен этим worktree. После review задача
-закрывается и файл переезжает в `docs/agent-tasks/archive/`; следующая работа —
-PR 2 `feat/round-history-selection` на отдельной ветке.
+Ничего. Задача закрыта и слита в `main`. Следующая работа — PR 2
+`feat/round-history-selection` на отдельной ветке от свежего `main`.
