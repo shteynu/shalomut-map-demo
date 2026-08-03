@@ -6,8 +6,7 @@
 - Base branch: `main`
 - Base commit: `baf229b`
 - Current HEAD: this documentation commit, directly on top of `7d60b59`
-- Status: implementation complete and verified locally; pushed to
-  `origin/refactor/openapi-single-source`, not merged
+- Status: complete, merged and archived. Reached `main` on 2026-08-03.
 - Last updated: 2026-08-03
 - Last agent/tool: Claude Opus 5 (Claude Code)
 
@@ -119,7 +118,7 @@ All met:
 
 ## Remaining
 
-- Owner action: push `refactor/openapi-single-source` and merge.
+- Nothing.
 
 ## Changed files
 
@@ -141,6 +140,10 @@ Commit `7d60b59` (15 files, +212/−126, of which `public/openapi.json` is
   check passed again.
 - The regeneration was diffed semantically against `HEAD:public/openapi.json`
   before committing: exactly one value differs, the `reset` description.
+- `npm run verify:db` — exit 0, 7 PostgreSQL integration tests, and
+  `npm run verify:ai` — exit 0, 368 Python tests. Both were run later, at the
+  stack tip `d588b97`, which contains this branch; neither was expected to be
+  affected and neither was.
 
 ### Failed
 
@@ -148,8 +151,6 @@ Commit `7d60b59` (15 files, +212/−126, of which `public/openapi.json` is
 
 ### Blocked or not run
 
-- `npm run verify:db` and `npm run verify:ai`: not run. No repository, schema,
-  route handler or Python change is in the diff.
 - Browser check of `/api-docs`: not run. The page fetches `/openapi.json`,
   whose content is byte-verified against its source and semantically identical
   to the previously served file except for one description string.
@@ -185,8 +186,10 @@ Commit `7d60b59` (15 files, +212/−126, of which `public/openapi.json` is
 
 - None.
 
-## Next concrete step
+## Final state
 
-Hand the branch to the owner to merge. Visibility today: both commits are on
-`origin/refactor/openapi-single-source` at `ae19d0f`, so any checkout or machine
-can consume them from the published branch; they are not on `main`.
+Archived 2026-08-03. Final commits `7d60b59` and `ae19d0f`, fast-forwarded into
+`main` together with the identity-decision slice stacked on top of them; there
+is no merge commit and no pull request — this repository merges branches
+directly. The branch `refactor/openapi-single-source` is fully contained in
+`main` and can be deleted.

@@ -5,8 +5,9 @@
 - Branch: `docs/single-manager-identity-decision`
 - Base branch: `refactor/openapi-single-source` (itself based on `main` @ `baf229b`)
 - Base commit: `ae19d0f`
-- Current HEAD: the single commit on this branch
-- Status: complete; not pushed
+- Final commits: `3939555` (the decision), `d588b97` (handoff correction) and
+  the archive commit on top of them
+- Status: complete, merged and archived. Reached `main` on 2026-08-03.
 - Last updated: 2026-08-03
 - Last agent/tool: Claude Opus 5 (Claude Code)
 
@@ -113,8 +114,7 @@ All met:
 
 ## Remaining
 
-- Owner action: merge `refactor/openapi-single-source` first, then push and
-  merge this branch.
+- Nothing.
 
 ## Changed files
 
@@ -132,6 +132,12 @@ Six documentation files in one commit. No code, no tests, no configuration.
   carried over from an earlier document.
 - `ROADMAP.md` list numbering re-read after editing: one numbered item, no
   duplicate left behind.
+- The full gate ran at `d588b97`, the tip of this branch before archiving:
+  `npm run verify:core` exit 0 (359 TypeScript tests, both fitness checks,
+  typecheck, ESLint, build), `npm run verify:db` exit 0 (7 PostgreSQL tests),
+  `npm run verify:ai` exit 0 (368 Python tests). A Markdown diff cannot move
+  those numbers; they are recorded because this stack goes to `main`, where
+  the same three commands are the CI gate.
 
 ### Failed
 
@@ -139,10 +145,7 @@ Six documentation files in one commit. No code, no tests, no configuration.
 
 ### Blocked or not run
 
-- `npm run verify:core` — not run. The diff is Markdown only; the verification
-  skill's first matrix row asks for structural checks, not the suite. The
-  previous commit on the parent branch (`7d60b59`) is the last state where
-  `verify:core` ran, and it passed.
+- Browser smoke: not run and not applicable; the diff is Markdown only.
 
 ### Environment
 
@@ -174,12 +177,10 @@ Six documentation files in one commit. No code, no tests, no configuration.
 
 - None.
 
-## Next concrete step
+## Final state
 
-Hand both branches to the owner in order: merge
-`refactor/openapi-single-source`, then push and merge
-`docs/single-manager-identity-decision`. Visibility today: the two commits this
-branch stacks on are published as `origin/refactor/openapi-single-source`, so
-any checkout can consume those; this branch's own commits are not pushed, so
-another worktree on this machine can consume them from the branch and no other
-checkout or machine can.
+Archived 2026-08-03. This branch stacked on `refactor/openapi-single-source`,
+so its tip `d588b97` carried all four commits and fast-forwarded into `main`
+in one push; both branches are published and fully contained in `main`, and
+both can be deleted. This archive commit itself sits on top of `d588b97` and
+reaches `main` the same way.

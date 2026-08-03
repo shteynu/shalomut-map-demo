@@ -7,16 +7,21 @@ state, external blockers and approval gates. Product milestones belong in
 
 ## Repository snapshot
 
-- `main` and `origin/main` are both `baf229b`: the merge `16510d7` and its
-  documentation commit have since been pushed, so the merged `main` is visible
-  outside this machine.
+- `main` and `origin/main` are both `d588b97` and published, so the merged
+  `main` is visible outside this machine.
 - The 2026-08-02 refactoring stack is merged and published: AI-insights
   repository, thin callback route, canonical Core input, canonical Python
   output, analytics-runner ports and `TextGenerator`.
-- Checkpoint evidence on merged `main` (2026-08-03): `npm run verify:core`
-  passed with 359 TypeScript tests, both fitness checks, typecheck, ESLint and
-  production build; `npm run verify:db` passed 7 PostgreSQL integration tests.
-  Python was not re-run: neither merged slice touches it.
+- Two slices reached `main` on 2026-08-03 by fast-forward, not by merge commit:
+  the OpenAPI single source (`7d60b59`, `ae19d0f`) and the single-manager
+  identity decision (`3939555`, `d588b97`). Their branches
+  `refactor/openapi-single-source` and `docs/single-manager-identity-decision`
+  are published and now fully contained in `main`; they can be deleted.
+- Checkpoint evidence at `main` = `d588b97` (2026-08-03): the full
+  `npm run verify` gate passed — `verify:core` with 359 TypeScript tests, both
+  fitness checks, typecheck, ESLint and production build; `verify:db` with 7
+  PostgreSQL integration tests; `verify:ai` with 368 Python tests. These are
+  the same three commands the CI `validate` job runs on a push to `main`.
 - The repository record does not claim that this final refactoring stack has
   been deployed. Verify deployment source/health before relying on it at the
   deployed endpoint.
