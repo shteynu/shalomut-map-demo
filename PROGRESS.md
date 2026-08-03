@@ -91,10 +91,14 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 
 ### Architecture
 
-1. Choose the long-term identity model before real respondents or multi-tenant
-   deployment.
-2. Classify high-value surviving Stryker mutants before expanding mutation
+1. Classify high-value surviving Stryker mutants before expanding mutation
    scope.
+
+The long-term identity model left this list on 2026-08-03: one manager per
+deployment is the requested product shape, so it is requirement-gated future
+work in `docs/product-behaviour-backlog.md` §8, not an open task. See
+`PROJECT_CONTEXT.md` ADR-013 for why swapping the password hash alone does not
+close it.
 
 ## Durable references
 

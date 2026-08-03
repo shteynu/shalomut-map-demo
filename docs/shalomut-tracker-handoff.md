@@ -7,10 +7,9 @@ state, external blockers and approval gates. Product milestones belong in
 
 ## Repository snapshot
 
-- Local `main` is the merge `16510d7` plus this documentation commit, ahead of
-  published `origin/main` (`44982f0`). Both merged branches are themselves
-  published, but the merge is not, so nothing outside this machine sees the
-  merged `main` until it is pushed.
+- `main` and `origin/main` are both `baf229b`: the merge `16510d7` and its
+  documentation commit have since been pushed, so the merged `main` is visible
+  outside this machine.
 - The 2026-08-02 refactoring stack is merged and published: AI-insights
   repository, thin callback route, canonical Core input, canonical Python
   output, analytics-runner ports and `TextGenerator`.
@@ -85,7 +84,14 @@ and the presentation half of stage 5. Deployed Core has not been updated for
 either, so deployed and `main` differ by these two slices until the next
 deployment. Neither changes an API, a contract version, a schema or a migration.
 
-The next independently deliverable architecture slice is the long-term identity
-model: manager passwords are still hashed with SHA-256 and a static pepper, and
-the same item covers replacing the organization-scoped shared gate with real
-tenant authorization.
+The long-term identity model is no longer the next architecture slice. Owner
+decision 2026-08-03: one manager per deployment is the requested product shape,
+so identity is requirement-gated future work — `PROJECT_CONTEXT.md` ADR-013 and
+`docs/product-behaviour-backlog.md` §8. The SHA-256 password hash stays as it
+is; it is derived from `MANAGER_ADMIN_PASSWORD` per login and never stored, so
+replacing the algorithm alone would close nothing.
+
+What this leaves standing as an operational item: the deployment secret is the
+credential, so rotating it means a redeploy, and the open rotation of the
+exposed design-stage credentials before the first real respondents is
+unaffected by this decision.

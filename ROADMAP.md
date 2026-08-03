@@ -42,13 +42,16 @@ belongs in archived task files and Git.
 
 ## Next architecture outcomes
 
-1. Replace the current single-organization/password gate with the chosen
-   long-term identity model before multi-tenant or real-respondent rollout.
-2. Expand mutation testing only after classifying high-value surviving mutants;
+1. Expand mutation testing only after classifying high-value surviving mutants;
    the current pilot is intentionally focused and non-blocking.
 
 ## Conditional, not scheduled
 
+- The long-term identity model, when a second manager per school, multi-tenant
+  hosting or real respondents is actually requested. One manager per deployment
+  is the current product shape and a deliberate decision, not unfinished work;
+  see `PROJECT_CONTEXT.md` ADR-013 and
+  `docs/product-behaviour-backlog.md` §8.
 - Nx monorepo migration only if the product is actually split into independently
   built applications such as survey, admin and mobile.
 - Additional deployed environments only when product operations require them;

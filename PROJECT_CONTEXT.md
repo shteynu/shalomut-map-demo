@@ -175,6 +175,29 @@ hand-maintained list of AI schema names — so a path, a response or a schema
 outside that list could drift unobserved. Now `npm run openapi:check`, which
 `npm test` runs, compares the whole document byte for byte.
 
+### ADR-013: One manager per deployment, until a second one is requested
+
+There is no persistent identity, and that is deliberate rather than unfinished.
+The signed-in manager is not a database record: it is constructed in
+`src/lib/auth/manager-auth-service.ts` from `MANAGER_ADMIN_PASSWORD`, and
+`MANAGER_ORGANIZATION_ID` binds the session to one organization. Roles,
+memberships, permissions and an audit-log interface exist as types and
+in-memory services and are not persisted.
+
+Owner decision 2026-08-03: a second manager per school is not a requirement, so
+the long-term identity model is requirement-gated future work, tracked in
+`docs/product-behaviour-backlog.md` §8 rather than as an open architecture task.
+
+Replacing the SHA-256 password hash with Argon2 on its own is explicitly not
+that work and does not close it. Nothing stores that hash — it is derived from
+the environment variable on each login and discarded — so a memory-hard KDF
+protects a credential database that does not exist. What the current shape
+actually costs is named in the backlog entry: the deployment secret is the
+credential, rotation means a redeploy, and there is no per-user revocation.
+
+The trigger for real identity work is a second manager, multi-tenant hosting or
+real respondents — whichever arrives first.
+
 ## Environments
 
 The project supports exactly two environments:

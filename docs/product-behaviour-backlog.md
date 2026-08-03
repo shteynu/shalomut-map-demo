@@ -1,6 +1,6 @@
 # Product Behaviour Backlog
 
-Updated: 2026-08-02
+Updated: 2026-08-03
 Status: remaining product behavior after persisted rounds, AI suggestions and
 the lifecycle-aware privacy flow landed
 
@@ -114,3 +114,33 @@ Why it matters:
 - A zeroed mock screen can look correct while still not reflecting PostgreSQL.
 - Runtime data provenance must be unambiguous for school leaders to trust the
   product.
+
+### 8. More Than One Manager Per School (not requested yet)
+
+Current state: one manager signs in per deployment. The account is not a
+database record — it is built in `src/lib/auth/manager-auth-service.ts` from
+`MANAGER_ADMIN_PASSWORD`, and `MANAGER_ORGANIZATION_ID` binds the session to a
+single organization. Roles, memberships, permissions and an audit-log interface
+already exist as types and in-memory services; nothing persists them.
+
+Owner decision 2026-08-03: a second manager is not a requirement today, so this
+stays a future feature rather than an open architecture task. Recorded here so
+the trigger is explicit rather than assumed.
+
+Proposal, when a second manager is actually requested:
+- Persist `Manager`, `OrganizationMembership` and audit events, or delegate
+  authentication to an identity provider and keep membership in Core either way.
+- Store a real credential with a memory-hard KDF, or store none at all under an
+  identity provider.
+- Add invitation, revocation and password recovery, each with Hebrew RTL
+  screens, or accept the provider's hosted screens only after checking their RTL
+  behaviour by hand.
+
+Why it matters:
+- Every part of this is a data model and a set of flows, not a configuration
+  change; treating it as one would surface late.
+- Building invitation and recovery flows before a second manager exists means
+  maintaining Hebrew screens nobody opens.
+- The single-account shape has real limits worth naming while it lasts: the
+  deployment secret is the credential, rotation means a redeploy, and per-user
+  revocation and a meaningful "who signed in" audit trail do not exist.
