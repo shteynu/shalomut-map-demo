@@ -1,10 +1,15 @@
 import { ManagerOnboarding } from "@/components/manager";
 import { SurveyBuilder } from "@/components/survey";
+import { readRoundParam } from "@/lib/navigation";
 import { loadManagerContext } from "@/lib/server/manager-context";
 import { createEmptyDraftSurveyDefinition } from "@/lib/survey-definition";
 
-export default async function SurveyPage() {
-  const context = await loadManagerContext();
+export default async function SurveyPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ round?: string | string[] }>;
+}) {
+  const context = await loadManagerContext(readRoundParam(await searchParams));
 
   if (!context.organization || !context.selectedRound) {
     return (

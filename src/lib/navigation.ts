@@ -183,6 +183,15 @@ export function shouldHideGlobalHeader(pathname: string | null | undefined) {
 export const DASHBOARD_ROUND_PARAM = "round";
 
 /**
+ * The value that asks the setup screen for a round that does not exist yet.
+ *
+ * It shares the `round` parameter rather than adding a second one so a screen
+ * has one question to answer — which round is this about — and "a new one" is
+ * one of the answers. No round id can collide with it: ids are uuids.
+ */
+export const NEW_ROUND_PARAM = "new";
+
+/**
  * Read the round out of a page's search params. A repeated parameter is not a
  * link this app produces, so the first value wins rather than the request
  * being refused.
@@ -197,6 +206,11 @@ export function readRoundParam(searchParams: {
   return value?.trim() || undefined;
 }
 
+/** Whether the screen was asked for a round that does not exist yet. */
+export function isNewRoundParam(value: string | undefined): boolean {
+  return value === NEW_ROUND_PARAM;
+}
+
 function withRound(path: string, roundId?: string) {
   if (!roundId) {
     return path;
@@ -207,6 +221,23 @@ function withRound(path: string, roundId?: string) {
 
 export function dashboardMapRoute(roundId?: string) {
   return withRound(routes.dashboard, roundId);
+}
+
+export function setupRoute(roundId?: string) {
+  return withRound(routes.setup, roundId);
+}
+
+/** The setup screen, asked for a round the school does not have yet. */
+export function newRoundSetupRoute() {
+  return withRound(routes.setup, NEW_ROUND_PARAM);
+}
+
+export function surveyBuilderRoute(roundId?: string) {
+  return withRound(routes.surveyBuilder, roundId);
+}
+
+export function roundTrackingRoute(roundId?: string) {
+  return withRound(routes.round, roundId);
 }
 
 export function dashboardDimensionRoute(dimensionId: string, roundId?: string) {

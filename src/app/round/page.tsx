@@ -1,6 +1,7 @@
 import { ManagerOnboarding } from "@/components/manager";
 import { MetricCard, PageIntro } from "@/components/ui";
 import { RoundControls, RoundThresholdNextStep } from "@/components/round";
+import { readRoundParam } from "@/lib/navigation";
 import { loadManagerContext } from "@/lib/server/manager-context";
 import { MINIMUM_PRIVACY_THRESHOLD } from "@/lib/survey-definition";
 
@@ -10,8 +11,12 @@ const dateFormatter = new Intl.DateTimeFormat("he-IL", {
   year: "numeric",
 });
 
-export default async function RoundPage() {
-  const context = await loadManagerContext();
+export default async function RoundPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ round?: string | string[] }>;
+}) {
+  const context = await loadManagerContext(readRoundParam(await searchParams));
 
   if (!context.organization || !context.selectedRound) {
     return (

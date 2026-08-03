@@ -1,6 +1,11 @@
 import assert from "node:assert";
 import { test } from "node:test";
 import {
+  isNewRoundParam,
+  newRoundSetupRoute,
+  roundTrackingRoute,
+  setupRoute,
+  surveyBuilderRoute,
   dashboardMapRoute,
   readRoundParam,
   dashboardDimensionMetricsRoute,
@@ -137,4 +142,19 @@ test("readRoundParam trims, ignores an empty value and takes the first of a repe
   assert.strictEqual(readRoundParam({ round: "   " }), undefined);
   assert.strictEqual(readRoundParam({}), undefined);
   assert.strictEqual(readRoundParam({ round: ["first", "second"] }), "first");
+});
+
+test("the manager routes take a round the same way the dashboard does", () => {
+  assert.strictEqual(setupRoute("round-7"), "/setup?round=round-7");
+  assert.strictEqual(surveyBuilderRoute("round-7"), "/survey?round=round-7");
+  assert.strictEqual(roundTrackingRoute("round-7"), "/round?round=round-7");
+  assert.strictEqual(setupRoute(), "/setup");
+});
+
+test("a round that does not exist yet is asked for by name, not by id", () => {
+  assert.strictEqual(newRoundSetupRoute(), "/setup?round=new");
+  assert.strictEqual(isNewRoundParam(readRoundParam({ round: "new" })), true);
+  assert.strictEqual(isNewRoundParam(readRoundParam({ round: " new " })), true);
+  assert.strictEqual(isNewRoundParam(readRoundParam({ round: "round-7" })), false);
+  assert.strictEqual(isNewRoundParam(readRoundParam({})), false);
 });
