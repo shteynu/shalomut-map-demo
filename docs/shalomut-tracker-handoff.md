@@ -22,6 +22,11 @@ state, external blockers and approval gates. Product milestones belong in
   fitness checks, typecheck, ESLint and production build; `verify:db` with 7
   PostgreSQL integration tests; `verify:ai` with 368 Python tests. These are
   the same three commands the CI `validate` job runs on a push to `main`.
+- One branch is waiting to reach `main`: `test/classify-surviving-mutants`,
+  a fast-forward carrying the AI-contract refusal tests, the archive of the two
+  slices above and this snapshot. `verify:core` passed on it with 381
+  TypeScript tests; `verify:db` and `verify:ai` were not re-run because its
+  diff is tests, mutation config and documentation only.
 - The repository record does not claim that this final refactoring stack has
   been deployed. Verify deployment source/health before relying on it at the
   deployed endpoint.

@@ -6,8 +6,9 @@
 - Base branch: `docs/single-manager-identity-decision` (itself a fast-forward
   descendant of `main` @ `d588b97`)
 - Base commit: `6504838`
-- Current HEAD: the commits on this branch
-- Status: complete
+- Final commits: `492aa47` (tests and config), `33d4283` (this file) and the
+  archive commit on top of them
+- Status: complete and archived
 - Last updated: 2026-08-03
 - Last agent/tool: Claude Opus 5 (Claude Code)
 
@@ -231,9 +232,10 @@ Five files: the config, one new test file, one skill, `ROADMAP.md`,
 - None. Whether to give contracts `1.0`–`4.0` their own payload fixtures is
   recorded in `ROADMAP.md` as conditional work, not as a question.
 
-## Next concrete step
+## Final state
 
-Hand the branch to the owner to push and fast-forward `main`. Visibility today:
-the commits exist only in this worktree and are not pushed, so another worktree
-on this machine can consume them from the branch, and no other checkout or
-machine can.
+Archived 2026-08-03 with the work complete; only the owner's push and
+fast-forward of `main` remain, which is an external action rather than
+unfinished work. Visibility at archiving: the commits exist only in this
+worktree and are not pushed, so another worktree on this machine can consume
+them from the branch, and no other checkout or machine can.
