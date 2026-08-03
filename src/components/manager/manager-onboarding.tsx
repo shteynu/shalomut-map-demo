@@ -21,7 +21,47 @@ export function ManagerOnboarding({
   state,
 }: ManagerOnboardingProps) {
   const scopeRequired = state === "scope-required";
+  const roundNotFound = state === "round-not-found";
   const needsOrganization = !organizationName;
+
+  // A link naming a round this school does not have. Showing another round's
+  // numbers under it would misreport, so the screen says so and offers the
+  // active round by name.
+  if (roundNotFound) {
+    return (
+      <div
+        className={
+          surface === "dashboard"
+            ? "page stone-page manager-onboarding-page"
+            : "page stone-page"
+        }
+      >
+        <PageIntro
+          eyebrow={organizationName ?? "מפת השלומות"}
+          title="הסבב המבוקש לא נמצא"
+          description="הקישור מפנה לסבב אבחון שאינו קיים בבית הספר הזה. ייתכן שהסבב נמחק או שהקישור הגיע מבית ספר אחר."
+        />
+
+        <section className="form-panel manager-onboarding-panel">
+          <span className="form-section-icon" aria-hidden="true">
+            <ShieldAlert size={28} />
+          </span>
+          <div>
+            <h2>לא הוצגו נתונים</h2>
+            <p>
+              כדי לא להציג נתונים של סבב אחר תחת הקישור הזה, המערכת אינה בוחרת
+              סבב חלופי בעצמה. אפשר לחזור למפה של הסבב הפעיל ולבחור סבב מהרשימה.
+            </p>
+          </div>
+          <Link className="primary-button" href={routes.dashboard}>
+            חזרה למפת הסבב הפעיל
+            <ArrowLeft size={18} aria-hidden="true" />
+          </Link>
+        </section>
+      </div>
+    );
+  }
+
   const title = scopeRequired
     ? "נדרש שיוך לבית ספר"
     : needsOrganization

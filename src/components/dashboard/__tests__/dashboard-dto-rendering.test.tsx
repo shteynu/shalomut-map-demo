@@ -44,6 +44,7 @@ function renderDetail(value: DashboardStone) {
     <DashboardDimensionDetail
       dimension={dimension}
       stone={value}
+      roundId="round-1"
       organizationName="בית ספר"
       roundTitle="סבב אבחון"
     />,
@@ -72,6 +73,7 @@ test("the metrics screen shows the question text, its average and its split", ()
     <DashboardMetricsStage
       dimension={dimension}
       stone={stone()}
+      roundId="round-1"
       organizationName="בית ספר"
       roundTitle="סבב אבחון"
     />,
@@ -89,6 +91,7 @@ test("a green dimension gets preservation language, a yellow one gets goals", ()
     <DashboardRecommendationsStage
       dimension={dimension}
       stone={stone({ status: "green" })}
+      roundId="round-1"
       organizationName="בית ספר"
       roundTitle="סבב אבחון"
     />,
@@ -97,6 +100,7 @@ test("a green dimension gets preservation language, a yellow one gets goals", ()
     <DashboardRecommendationsStage
       dimension={dimension}
       stone={stone()}
+      roundId="round-1"
       organizationName="בית ספר"
       roundTitle="סבב אבחון"
     />,

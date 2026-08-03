@@ -50,7 +50,7 @@ export function DashboardDimensionPage({
           roundId={roundId}
         />
         <DashboardCtaRow
-          actions={getDashboardDetailActions(dimension.id)}
+          actions={getDashboardDetailActions(dimension.id, roundId)}
         />
       </div>
     );
@@ -77,6 +77,7 @@ export function DashboardDimensionPage({
     <DashboardDimensionDetail
       dimension={dimension}
       stone={stone}
+      roundId={roundId}
       organizationName={organizationName}
       roundTitle={roundTitle}
       blobRefs={{ containerRef, contentRef }}
@@ -91,12 +92,14 @@ export function DashboardDimensionPage({
 export function DashboardDimensionDetail({
   dimension,
   stone,
+  roundId,
   organizationName,
   roundTitle,
   blobRefs,
 }: {
   dimension: DimensionPresentation;
   stone: DashboardStone;
+  roundId: string;
   organizationName: string;
   roundTitle: string;
   blobRefs?: {
@@ -136,7 +139,7 @@ export function DashboardDimensionDetail({
       </article>
 
       <DashboardCtaRow
-        actions={getDashboardDetailActions(dimension.id)}
+        actions={getDashboardDetailActions(dimension.id, roundId)}
       />
     </div>
   );

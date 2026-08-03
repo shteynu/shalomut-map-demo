@@ -4,7 +4,7 @@ import { resolveCoreRepositories } from "@/lib/composition-root";
 import { ManagerContextService } from "@/lib/services";
 import { MANAGER_ORGANIZATION_HEADER } from "@/lib/server/manager-scope";
 
-export async function loadManagerContext() {
+export async function loadManagerContext(roundId?: string) {
   await connection();
   const { orgRepo, roundRepo, surveyRepo } = resolveCoreRepositories();
   const requestHeaders = await headers();
@@ -16,5 +16,6 @@ export async function loadManagerContext() {
     roundRepo,
     surveyRepo,
     organizationId,
+    roundId?.trim() || undefined,
   );
 }

@@ -81,10 +81,13 @@ type DashboardMapInteractiveProps = {
     WellbeingDimensionId,
     { averageScore: number; computedStatus: WellbeingStatus }
   >;
+  /** Carried into every stone link so a detail page opens the same round. */
+  roundId: string;
 };
 
 export function DashboardMapInteractive({
   dimensionScores,
+  roundId,
 }: DashboardMapInteractiveProps) {
   const stageRef = useRef<HTMLElement | null>(null);
   const stoneRefs = useRef<Record<string, HTMLAnchorElement | null>>({});
@@ -301,7 +304,7 @@ export function DashboardMapInteractive({
           <Link
             key={dimension.id}
             ref={registerStoneRef(dimension.id)}
-            href={dashboardDimensionRoute(dimension.id)}
+            href={dashboardDimensionRoute(dimension.id, roundId)}
             className={`dashboard-map-blob${draggingId === dimension.id ? " is-dragging" : ""}`}
             style={
               {

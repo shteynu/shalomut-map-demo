@@ -62,6 +62,7 @@ test("ManagerContextService returns organization onboarding for empty persistenc
     state: "needs-organization",
     organization: null,
     selectedRound: null,
+    rounds: [],
     responseCount: 0,
     analytics: null,
   });
@@ -146,4 +147,81 @@ test("ManagerContextService fails closed when multiple schools exist without a s
   assert.strictEqual(context.organization, null);
   assert.strictEqual(context.selectedRound, null);
   assert.strictEqual(context.analytics, null);
+});
+
+test("a requested round is what the context selects, not the active one", async () => {
+  const activeRound = round("active", "active", "2026-07-20T00:00:00.000Z");
+  const closedRound = round("closed", "closed", "2026-03-01T00:00:00.000Z");
+
+  const context = await ManagerContextService.load(
+    new InMemoryOrganizationRepository([organization]),
+    new InMemoryRoundRepository([activeRound, closedRound]),
+    new InMemorySurveyRepository(),
+    undefined,
+    closedRound.id,
+  );
+
+  assert.strictEqual(context.state, "round-ready");
+  assert.strictEqual(context.selectedRound?.id, closedRound.id);
+  assert.strictEqual(context.analytics?.roundId, closedRound.id);
+});
+
+test("the context offers the school's rounds in reading order, active first", async () => {
+  const activeRound = round("active", "active", "2026-03-01T00:00:00.000Z");
+  const newerClosed = round("closed-new", "closed", "2026-07-01T00:00:00.000Z");
+  const olderClosed = round("closed-old", "closed", "2026-01-01T00:00:00.000Z");
+
+  const context = await ManagerContextService.load(
+    new InMemoryOrganizationRepository([organization]),
+    new InMemoryRoundRepository([olderClosed, newerClosed, activeRound]),
+    new InMemorySurveyRepository(),
+  );
+
+  assert.deepStrictEqual(
+    context.rounds.map((entry) => entry.id),
+    [activeRound.id, newerClosed.id, olderClosed.id],
+  );
+  assert.strictEqual(context.selectedRound?.id, context.rounds[0].id);
+});
+
+test("an unknown round is reported instead of falling back to the active one", async () => {
+  const activeRound = round("active", "active", "2026-07-20T00:00:00.000Z");
+
+  const context = await ManagerContextService.load(
+    new InMemoryOrganizationRepository([organization]),
+    new InMemoryRoundRepository([activeRound]),
+    new InMemorySurveyRepository(),
+    undefined,
+    "round-that-does-not-exist",
+  );
+
+  assert.strictEqual(context.state, "round-not-found");
+  assert.strictEqual(context.selectedRound, null);
+  assert.strictEqual(context.analytics, null);
+  assert.strictEqual(context.responseCount, 0);
+});
+
+test("a round belonging to another school is unknown, not readable", async () => {
+  const ownRound = round("own", "active", "2026-07-20T00:00:00.000Z");
+  const foreignRound = round(
+    "foreign",
+    "active",
+    "2026-07-20T00:00:00.000Z",
+    otherOrganization.id,
+  );
+
+  const context = await ManagerContextService.load(
+    new InMemoryOrganizationRepository([organization]),
+    new InMemoryRoundRepository([ownRound, foreignRound]),
+    new InMemorySurveyRepository(),
+    organization.id,
+    foreignRound.id,
+  );
+
+  assert.strictEqual(context.state, "round-not-found");
+  assert.strictEqual(context.selectedRound, null);
+  assert.deepStrictEqual(
+    context.rounds.map((entry) => entry.id),
+    [ownRound.id],
+  );
 });

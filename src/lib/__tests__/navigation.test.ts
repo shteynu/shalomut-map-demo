@@ -1,6 +1,8 @@
 import assert from "node:assert";
 import { test } from "node:test";
 import {
+  dashboardMapRoute,
+  readRoundParam,
   dashboardDimensionMetricsRoute,
   dashboardDimensionRecommendationsRoute,
   dashboardDimensionRoute,
@@ -83,4 +85,56 @@ test("getDashboardDetailActions and metrics actions return correct links", () =>
 test("mainNavItems follows exact product workflow order: home, setup, surveyBuilder, round, dashboard", () => {
   const ids = mainNavItems.map((item) => item.id);
   assert.deepStrictEqual(ids, ["home", "setup", "surveyBuilder", "round", "dashboard"]);
+});
+
+test("every dashboard link carries the round it is about", () => {
+  assert.strictEqual(dashboardMapRoute("round-7"), "/dashboard?round=round-7");
+  assert.strictEqual(
+    dashboardDimensionRoute("balance", "round-7"),
+    "/dashboard/balance?round=round-7",
+  );
+  assert.strictEqual(
+    dashboardDimensionMetricsRoute("balance", "round-7"),
+    "/dashboard/balance/metrics?round=round-7",
+  );
+  assert.strictEqual(
+    dashboardDimensionRecommendationsRoute("balance", "round-7"),
+    "/dashboard/balance/recommendations?round=round-7",
+  );
+
+  const detailActions = getDashboardDetailActions("balance", "round-7");
+  assert.strictEqual(detailActions[0].href, "/dashboard/balance/metrics?round=round-7");
+  assert.strictEqual(detailActions[1].href, "/dashboard?round=round-7");
+
+  const metricsActions = getDashboardMetricsActions("balance", "round-7");
+  assert.strictEqual(
+    metricsActions[0].href,
+    "/dashboard/balance/recommendations?round=round-7",
+  );
+  assert.strictEqual(metricsActions[1].href, "/dashboard?round=round-7");
+
+  assert.strictEqual(
+    getDashboardRecommendationsActions("round-7")[0].href,
+    "/dashboard?round=round-7",
+  );
+});
+
+test("a round id that needs escaping does not break out of the query string", () => {
+  assert.strictEqual(
+    dashboardDimensionRoute("balance", "a b&c=d"),
+    "/dashboard/balance?round=a%20b%26c%3Dd",
+  );
+});
+
+test("without a round the dashboard links stay plain, which is the active round", () => {
+  assert.strictEqual(dashboardMapRoute(), "/dashboard");
+  assert.strictEqual(dashboardDimensionRoute("balance"), "/dashboard/balance");
+});
+
+test("readRoundParam trims, ignores an empty value and takes the first of a repeat", () => {
+  assert.strictEqual(readRoundParam({ round: "round-7" }), "round-7");
+  assert.strictEqual(readRoundParam({ round: "  round-7  " }), "round-7");
+  assert.strictEqual(readRoundParam({ round: "   " }), undefined);
+  assert.strictEqual(readRoundParam({}), undefined);
+  assert.strictEqual(readRoundParam({ round: ["first", "second"] }), "first");
 });

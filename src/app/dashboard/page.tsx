@@ -1,10 +1,18 @@
 import { ManagerOnboarding } from "@/components/manager";
 import { DashboardMapPage } from "@/components/dashboard";
+import { toDashboardRoundOptions } from "@/lib/dashboard/round-options";
+import { readRoundParam } from "@/lib/navigation";
 import { loadManagerContext } from "@/lib/server/manager-context";
 import { surveyInstrument } from "@/lib/shalomut-source";
 
-export default async function DashboardPage() {
-  const context = await loadManagerContext();
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ round?: string | string[] }>;
+}) {
+  const context = await loadManagerContext(
+    readRoundParam(await searchParams),
+  );
 
   if (
     !context.organization ||
@@ -41,6 +49,7 @@ export default async function DashboardPage() {
       minimumResponses={selectedRound.privacyThreshold}
       overallScore={overallScore}
       dimensionScores={dimensionScores}
+      roundOptions={toDashboardRoundOptions(context.rounds, selectedRound.id)}
     />
   );
 }

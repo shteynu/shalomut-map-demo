@@ -5,6 +5,7 @@ import {
   getDimensionPresentation,
   getDimensionStaticParams,
 } from "@/lib/dashboard/dimension-presentation";
+import { readRoundParam } from "@/lib/navigation";
 import { loadManagerContext } from "@/lib/server/manager-context";
 
 export const dynamicParams = false;
@@ -15,12 +16,14 @@ export function generateStaticParams() {
 
 export default async function DimensionRecommendationsPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ dimension: string }>;
+  searchParams: Promise<{ round?: string | string[] }>;
 }) {
   const { dimension } = await params;
   const entry = getDimensionPresentation(dimension);
-  const context = await loadManagerContext();
+  const context = await loadManagerContext(readRoundParam(await searchParams));
 
   if (!entry) {
     notFound();

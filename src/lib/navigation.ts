@@ -172,16 +172,62 @@ export function shouldHideGlobalHeader(pathname: string | null | undefined) {
   return headerlessRoutes.some((route) => isPathWithin(pathname, route));
 }
 
-export function dashboardDimensionRoute(dimensionId: string) {
-  return `${routes.dashboard}/${dimensionId}`;
+/**
+ * Which round a dashboard screen is about, carried in the URL.
+ *
+ * Every dashboard link takes the selected round with it. Dropping the
+ * parameter on any hop would land the manager back on the active round midway
+ * through reading an older one, which looks like the data changed rather than
+ * the round.
+ */
+export const DASHBOARD_ROUND_PARAM = "round";
+
+/**
+ * Read the round out of a page's search params. A repeated parameter is not a
+ * link this app produces, so the first value wins rather than the request
+ * being refused.
+ */
+export function readRoundParam(searchParams: {
+  round?: string | string[];
+}): string | undefined {
+  const value = Array.isArray(searchParams.round)
+    ? searchParams.round[0]
+    : searchParams.round;
+
+  return value?.trim() || undefined;
 }
 
-export function dashboardDimensionMetricsRoute(dimensionId: string) {
-  return `${dashboardDimensionRoute(dimensionId)}/metrics`;
+function withRound(path: string, roundId?: string) {
+  if (!roundId) {
+    return path;
+  }
+
+  return `${path}?${DASHBOARD_ROUND_PARAM}=${encodeURIComponent(roundId)}`;
 }
 
-export function dashboardDimensionRecommendationsRoute(dimensionId: string) {
-  return `${dashboardDimensionRoute(dimensionId)}/recommendations`;
+export function dashboardMapRoute(roundId?: string) {
+  return withRound(routes.dashboard, roundId);
+}
+
+export function dashboardDimensionRoute(dimensionId: string, roundId?: string) {
+  return withRound(`${routes.dashboard}/${dimensionId}`, roundId);
+}
+
+export function dashboardDimensionMetricsRoute(
+  dimensionId: string,
+  roundId?: string,
+) {
+  return withRound(`${routes.dashboard}/${dimensionId}/metrics`, roundId);
+}
+
+export function dashboardDimensionRecommendationsRoute(
+  dimensionId: string,
+  roundId?: string,
+) {
+  return withRound(
+    `${routes.dashboard}/${dimensionId}/recommendations`,
+    roundId,
+  );
 }
 
 export function respondentSurveyRoute(shareCode: string) {
@@ -197,45 +243,53 @@ export type DashboardNavigationAction = {
   variant: "primary" | "secondary";
 };
 
-export function getDashboardDetailActions(dimensionId: string): DashboardNavigationAction[] {
+export function getDashboardDetailActions(
+  dimensionId: string,
+  roundId?: string,
+): DashboardNavigationAction[] {
   return [
     {
       id: "dimensionMetrics",
-      href: dashboardDimensionMetricsRoute(dimensionId),
+      href: dashboardDimensionMetricsRoute(dimensionId, roundId),
       label: navigationLabels.highlightedMetrics,
       variant: "primary",
     },
     {
       id: "dashboardMap",
-      href: routes.dashboard,
+      href: dashboardMapRoute(roundId),
       label: navigationLabels.backToMap,
       variant: "secondary",
     },
   ];
 }
 
-export function getDashboardMetricsActions(dimensionId: string): DashboardNavigationAction[] {
+export function getDashboardMetricsActions(
+  dimensionId: string,
+  roundId?: string,
+): DashboardNavigationAction[] {
   return [
     {
       id: "dimensionRecommendations",
-      href: dashboardDimensionRecommendationsRoute(dimensionId),
+      href: dashboardDimensionRecommendationsRoute(dimensionId, roundId),
       label: navigationLabels.goals,
       variant: "primary",
     },
     {
       id: "dashboardMap",
-      href: routes.dashboard,
+      href: dashboardMapRoute(roundId),
       label: navigationLabels.backToMap,
       variant: "secondary",
     },
   ];
 }
 
-export function getDashboardRecommendationsActions(): DashboardNavigationAction[] {
+export function getDashboardRecommendationsActions(
+  roundId?: string,
+): DashboardNavigationAction[] {
   return [
     {
       id: "dashboardMap",
-      href: routes.dashboard,
+      href: dashboardMapRoute(roundId),
       label: navigationLabels.backToMap,
       variant: "secondary",
     },

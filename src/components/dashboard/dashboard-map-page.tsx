@@ -2,6 +2,7 @@
 
 import { Download, Info, MousePointer2, Move } from "lucide-react";
 import { ScoreRing } from "@/components/ui/score-ring";
+import type { DashboardRoundOption } from "@/lib/dashboard/round-options";
 import type { AiInsightsUiState } from "@/lib/hooks/use-ai-insights";
 import { useAiInsights } from "@/lib/hooks/use-ai-insights";
 import type { WellbeingDimensionId, WellbeingStatus } from "@/lib/shalomut-source";
@@ -10,6 +11,7 @@ import { DashboardMapInteractive } from "./dashboard-map-interactive";
 import { DashboardHeading } from "./dashboard-heading";
 import { DashboardHomeLink } from "./dashboard-home-link";
 import { DashboardMapLocked } from "./dashboard-map-locked";
+import { DashboardRoundSwitcher } from "./dashboard-round-switcher";
 
 type DashboardMapPageProps = {
   roundId: string;
@@ -22,6 +24,7 @@ type DashboardMapPageProps = {
     WellbeingDimensionId,
     { averageScore: number; computedStatus: WellbeingStatus }
   >;
+  roundOptions: DashboardRoundOption[];
 };
 
 export function DashboardMapPage({
@@ -32,6 +35,7 @@ export function DashboardMapPage({
   minimumResponses,
   overallScore,
   dimensionScores,
+  roundOptions,
 }: DashboardMapPageProps) {
   const isLocked = responseCount < minimumResponses;
 
@@ -43,6 +47,8 @@ export function DashboardMapPage({
           organizationName={organizationName}
           roundTitle={roundTitle}
         />
+        {/* A locked round is exactly when a manager wants the other rounds. */}
+        <DashboardRoundSwitcher options={roundOptions} />
         <DashboardMapLocked
           responseCount={responseCount}
           minimumResponses={minimumResponses}
@@ -59,6 +65,7 @@ export function DashboardMapPage({
       minimumResponses={minimumResponses}
       overallScore={overallScore}
       dimensionScores={dimensionScores}
+      roundOptions={roundOptions}
     />
   );
 }
@@ -109,6 +116,7 @@ function DashboardMapReady({
   minimumResponses,
   overallScore,
   dimensionScores,
+  roundOptions,
 }: Omit<DashboardMapPageProps, "responseCount">) {
   const { state, reload } = useAiInsights(roundId);
 
@@ -123,6 +131,8 @@ function DashboardMapReady({
           <p className="map-sidebar-org">
             {organizationName}, {roundTitle}
           </p>
+
+          <DashboardRoundSwitcher options={roundOptions} />
 
           <div className="score-ring-card">
             <div className="score-ring-value">
@@ -165,7 +175,7 @@ function DashboardMapReady({
             <span className="hint-text-desktop">גררו את האבנים כדי לסדר את המפה, או לחצו על אבן כדי לפתוח פירוט.</span>
             <span className="hint-text-mobile">לחצו על אבן כדי לפתוח פירוט.</span>
           </div>
-          <DashboardMapInteractive dimensionScores={dimensionScores} />
+          <DashboardMapInteractive dimensionScores={dimensionScores} roundId={roundId} />
         </div>
       </div>
     </div>

@@ -31,6 +31,9 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 - Builder editing, enable/required controls, duplication, dimension coverage,
   template suggestions and AI-generated suggestions. An AI suggestion names
   its source and must be edited by a manager before it can be added.
+- The dashboard reads any round the school owns, chosen from a switcher and
+  carried through every dashboard link, with each round read through its own
+  snapshot, threshold and analysis. The home screen stays on the active round.
 - Anonymous respondent flow with stable attempt tokens and database-enforced
   idempotency.
 - Explicit informed consent before the first question, stating the guarantees
@@ -94,8 +97,9 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 
 ### Product
 
-1. Per-round dashboard access and comparative multi-round analytics across
-   semesters (`docs/product-behaviour-backlog.md` §10).
+1. Creating a second round for a school, then comparative multi-round analytics
+   across semesters (`docs/product-behaviour-backlog.md` §10). Per-round
+   dashboard reading landed on 2026-08-03.
 2. Decide whether recommendations become tracked goals/action plans.
 3. Improve survey-builder recovery/search/bulk/reorder behavior.
 4. Complete keyboard/reduced-motion support for the interactive map.

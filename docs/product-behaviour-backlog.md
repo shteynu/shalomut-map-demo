@@ -230,27 +230,32 @@ which is their own answer colour rather than an aggregate, so it deliberately
 does not consult these bands. That path now says so in
 `src/lib/services/analytics.service.ts` instead of repeating the numbers.
 
-### 10. Dashboard Per Round And Round History
+### 10. Dashboard Per Round And Round History (reading side done 2026-08-03)
 
 Requirements document §5.5 and §8.1: the dashboard should be viewable per
 measurement round, and a new round for the same organization must keep history.
 
-Current state: rounds are persisted with dates and statuses, and status
-transitions allow closing and archiving. But the manager context resolves a
-single current round, and every manager route renders that one. There is no way
-to open a closed round's dashboard or to compare two rounds.
+Current state: the dashboard reads whichever round the URL names. The manager
+context resolves a requested round inside the manager's own organization,
+offers the school's rounds in reading order, and every dashboard link carries
+the selected round so a detail screen stays on it. Each round is read through
+its own questionnaire snapshot, its own privacy threshold and its own stored
+analysis, so an older round below its threshold stays locked on its own terms.
+A round id that does not belong to the school reads as unknown and says so
+rather than showing another round's numbers under the requested one.
 
-Proposal:
-- Add a round selector to the dashboard and dimension routes, scoped to the
-  manager's organization.
-- Keep each round's own questionnaire snapshot, threshold and stored analysis
-  when an older round is opened, instead of reinterpreting it with today's
-  configuration.
-- Decide whether comparison across rounds is a separate surface or a delta
-  shown on the existing map. This is the same work `PROGRESS.md` lists as
-  comparative multi-round analytics.
-- Apply the privacy gate per round: an older round below its own threshold
-  stays locked.
+The home screen deliberately stays on the active round: it answers "what is
+this school doing now", which is not the same question as "what did we measure
+last spring". Owner decision 2026-08-03.
+
+Remaining:
+- Creating a second round for the same school, which is what makes the switcher
+  worth using.
+- Comparison across rounds: a separate surface or a delta on the existing map.
+  This is the same work `PROGRESS.md` lists as comparative multi-round
+  analytics.
+- Decide whether archived rounds belong in the switcher; today they are listed
+  last rather than hidden.
 
 Why it matters:
 - Repeat measurement is the product's stated second act; without history the

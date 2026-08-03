@@ -11,3 +11,4 @@ export * from "./dashboard-recommendations-page";
 export * from "./dimension-identity-chip";
 export * from "./metric-blob";
 export * from "./recommendation-blob";
+export * from "./dashboard-round-switcher";

@@ -46,7 +46,7 @@ export function DashboardMetricsPage({
         />
         <DashboardAiInsightsState state={state} onRetry={reload} roundId={roundId} />
         <DashboardCtaRow
-          actions={getDashboardMetricsActions(dimension.id)}
+          actions={getDashboardMetricsActions(dimension.id, roundId)}
         />
       </div>
     );
@@ -73,6 +73,7 @@ export function DashboardMetricsPage({
     <DashboardMetricsStage
       dimension={dimension}
       stone={stone}
+      roundId={roundId}
       organizationName={organizationName}
       roundTitle={roundTitle}
     />
@@ -86,17 +87,19 @@ export function DashboardMetricsPage({
 export function DashboardMetricsStage({
   dimension,
   stone,
+  roundId,
   organizationName,
   roundTitle,
 }: {
   dimension: DimensionPresentation;
   stone: DashboardStone;
+  roundId: string;
   organizationName: string;
   roundTitle: string;
 }) {
   const metrics = getDisplayedMetrics(stone);
   const actionPresentation = getDimensionActionPresentation(stone.status);
-  const actions = getDashboardMetricsActions(dimension.id).map((action) =>
+  const actions = getDashboardMetricsActions(dimension.id, roundId).map((action) =>
     action.id === "dimensionRecommendations"
       ? { ...action, label: actionPresentation.actionsTitle }
       : action,

@@ -97,7 +97,7 @@ export function DashboardRecommendationsPage({
         <DashboardAiInsightsState state={state} onRetry={reload} roundId={roundId} />
         <DashboardCtaRow
           center
-          actions={getDashboardRecommendationsActions()}
+          actions={getDashboardRecommendationsActions(roundId)}
         />
       </div>
     );
@@ -124,6 +124,7 @@ export function DashboardRecommendationsPage({
     <DashboardRecommendationsStage
       dimension={dimension}
       stone={stone}
+      roundId={roundId}
       organizationName={organizationName}
       roundTitle={roundTitle}
     />
@@ -137,11 +138,13 @@ export function DashboardRecommendationsPage({
 export function DashboardRecommendationsStage({
   dimension,
   stone,
+  roundId,
   organizationName,
   roundTitle,
 }: {
   dimension: DimensionPresentation;
   stone: DashboardStone;
+  roundId: string;
   organizationName: string;
   roundTitle: string;
 }) {
@@ -198,7 +201,7 @@ export function DashboardRecommendationsStage({
 
       <DashboardCtaRow
         center
-        actions={getDashboardRecommendationsActions()}
+        actions={getDashboardRecommendationsActions(roundId)}
       />
     </div>
   );
