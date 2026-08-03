@@ -1,14 +1,20 @@
 # Shalomut Tracker — operational handoff
 
-Updated: 2026-08-03. This document owns only cross-task operational/deployed
+Updated: 2026-08-03 (respondent consent and draft recovery merged). This
+document owns only cross-task operational/deployed
 state, external blockers and approval gates. Product milestones belong in
 `PROGRESS.md`; branch work and exact verification belong in
 `docs/agent-tasks/{active,archive}/`; older snapshots remain available in Git.
 
 ## Repository snapshot
 
-- `main` and `origin/main` are both `d588b97` and published, so the merged
-  `main` is visible outside this machine.
+- `origin/main` is published and carries this document. It was reached by
+  fast-forward from `8f9c29d`, pushing `feat/respondent-draft-and-consent`
+  straight onto `main` by owner decision, without a separate review.
+- **The local `main` in this checkout is stale.** It lives in the worktree
+  `shalomut-map-demo-contract-v6-core-consumer` and could not be updated from
+  here without touching another worktree. Run `git fetch` and fast-forward it
+  there before branching from local `main`.
 - The 2026-08-02 refactoring stack is merged and published: AI-insights
   repository, thin callback route, canonical Core input, canonical Python
   output, analytics-runner ports and `TextGenerator`.
@@ -17,16 +23,26 @@ state, external blockers and approval gates. Product milestones belong in
   identity decision (`3939555`, `d588b97`). Their branches
   `refactor/openapi-single-source` and `docs/single-manager-identity-decision`
   are published and now fully contained in `main`; they can be deleted.
-- Checkpoint evidence at `main` = `d588b97` (2026-08-03): the full
+- Checkpoint evidence at `63f668e`, the last code commit before the docs tail
+  (2026-08-03): `npm run verify` passed with a real exit code 0 —
+  `verify:core` with 429 TypeScript tests,
+  both fitness checks, typecheck, ESLint and production build; `verify:db` with
+  7 PostgreSQL integration tests; `verify:ai` with 368 Python tests. The
+  respondent flow was additionally smoke-tested in a browser; the evidence is
+  in `docs/agent-tasks/archive/feat--respondent-draft-and-consent.md`.
+- The submit endpoint now answers a duplicate attempt with `409` and a typed
+  `code`, not `400` with prose. This is an observable API change; the only
+  known consumer is the questionnaire itself.
+- Earlier checkpoint at `main` = `d588b97` (2026-08-03): the full
   `npm run verify` gate passed — `verify:core` with 359 TypeScript tests, both
   fitness checks, typecheck, ESLint and production build; `verify:db` with 7
   PostgreSQL integration tests; `verify:ai` with 368 Python tests. These are
   the same three commands the CI `validate` job runs on a push to `main`.
-- One branch is waiting to reach `main`: `test/classify-surviving-mutants`,
-  a fast-forward carrying the AI-contract refusal tests, the archive of the two
-  slices above and this snapshot. `verify:core` passed on it with 381
-  TypeScript tests; `verify:db` and `verify:ai` were not re-run because its
-  diff is tests, mutation config and documentation only.
+- `test/classify-surviving-mutants` reached `main` as `8f9c29d`, and
+  `feat/respondent-draft-and-consent` reached it with the commits up to and
+  including this snapshot. Both are fully contained in `main` and can be
+  deleted.
+- No branch is waiting to reach `main`.
 - The repository record does not claim that this final refactoring stack has
   been deployed. Verify deployment source/health before relying on it at the
   deployed endpoint.
@@ -87,6 +103,11 @@ state, external blockers and approval gates. Product milestones belong in
 Before the next deployment-sensitive task, compare `origin/main` with deployed
 Core and Python source/health, then record only fresh read-only evidence in the
 new branch task file.
+
+Deployed Core additionally lags `main` by the respondent consent step, the
+draft recovery and the submit `409` contract. None of them touches a schema, a
+migration or an AI contract version, so the gap is a redeploy, not a
+coordination problem.
 
 `main` moved on 2026-08-03: the Core composition root and the Dashboard
 presentation DTO are both merged, which closes stage 4 of the refactoring plan
