@@ -544,6 +544,7 @@ identity на Argon2 или managed IdP — пароль всё ещё хеши�
 | `624d7f7` | этап 3 в Python: `CanonicalAnalysisInput` и output adapter, три исходящих payload'а собираются в одном месте |
 | `6fefc9c` | порты этапа 4: `AnalyticsSource`, `ResultSink`, `JobStore` и constructor injection в раннере |
 | `612b4fb` | `TextGenerator`: ноды берут генератор параметром, граф передаёт свой, дефолт не изменился |
+| `4802b22` | composition root в Core: `getRepositories()` удалён, проводка живёт в одном модуле, границу держит fitness-функция. Единственная строка таблицы, которой ещё нет в `main` — ветка `refactor/core-composition-root` |
 
 Остальное из списков «Нет» выше — открытая работа: этап 4 закрыт целиком,
 осталось представление и identity этапа 5.
