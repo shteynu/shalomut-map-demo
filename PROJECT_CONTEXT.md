@@ -1,6 +1,6 @@
 # PROJECT CONTEXT: Shalomut Map (מפת שלומות)
 
-Updated: 2026-08-02. This file owns stable architecture and long-lived product
+Updated: 2026-08-03. This file owns stable architecture and long-lived product
 decisions. Current branch work belongs in `docs/agent-tasks/active/`, milestones
 in `PROGRESS.md`, and deployed/operational state in
 `docs/shalomut-tracker-handoff.md`.
@@ -16,8 +16,8 @@ and privacy-safe aggregates become an eight-dimension organic Stone Map.
 - AI analytics: separate Python 3.11+ FastAPI service.
 - Styling: Tailwind CSS 4, CSS variables and warm organic tokens.
 - Deployment shape: Vercel Core, Render Python service, Supabase PostgreSQL.
-- Contracts: JSON manifests `1.0`–`6.0`, shared capability registry and checked
-  OpenAPI JSON/YAML mirrors.
+- Contracts: JSON manifests `1.0`–`6.0`, shared capability registry and an
+  OpenAPI specification with one editable source.
 
 The documentation lifecycle and owners are indexed in `docs/README.md`.
 
@@ -163,6 +163,17 @@ new contract version changes one function and no component.
 A dimension's stable presentation — labels, map geometry, concept colour — is
 separate again, in `src/lib/dashboard/dimension-presentation.ts`. The two were
 one type, which is why fixture analysis lived in a production module.
+
+### ADR-012: OpenAPI has one editable source and one generated mirror
+
+`docs/openapi.yaml` is the specification. `public/openapi.json` is generated
+from it by `npm run openapi:generate` and stays committed only because
+`/api-docs` fetches `/openapi.json` as a static file out of `public/`.
+
+Both files were previously hand-edited, and the integrity test compared a
+hand-maintained list of AI schema names — so a path, a response or a schema
+outside that list could drift unobserved. Now `npm run openapi:check`, which
+`npm test` runs, compares the whole document byte for byte.
 
 ## Environments
 

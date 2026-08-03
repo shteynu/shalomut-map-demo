@@ -115,6 +115,7 @@ description: Работай с продуктом и кодом Shalomut Map в 
 - Перед утверждением о готовности прочитай и соблюдай
   `../shalomut-verification/SKILL.md`.
 - После изменения survey source проверяй respondent и dashboard flows.
-- После изменения API синхронизируй и проверяй OpenAPI JSON/YAML и contract
-  tests.
+- После изменения API правь только `docs/openapi.yaml`, затем запускай
+  `npm run openapi:generate` и коммить обновлённый `public/openapi.json`.
+  Не редактируй JSON вручную: он генерируемый.
 - Сообщай только о проверках, которые действительно были выполнены.

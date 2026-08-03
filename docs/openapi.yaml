@@ -1,3 +1,7 @@
+# This file is the OpenAPI specification. `public/openapi.json`, which Core
+# serves at `/openapi.json` and `/api-docs` renders, is generated from it:
+# run `npm run openapi:generate` after every change here and commit both files.
+# `npm run openapi:check` — part of `npm test` — fails when they disagree.
 openapi: 3.0.3
 info:
   title: Shalomut Map API (מפת שלומות)

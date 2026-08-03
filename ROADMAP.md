@@ -44,9 +44,7 @@ belongs in archived task files and Git.
 
 1. Replace the current single-organization/password gate with the chosen
    long-term identity model before multi-tenant or real-respondent rollout.
-2. Decide whether OpenAPI remains two integrity-checked mirrors or is generated
-   from one source.
-3. Expand mutation testing only after classifying high-value surviving mutants;
+2. Expand mutation testing only after classifying high-value surviving mutants;
    the current pilot is intentionally focused and non-blocking.
 
 ## Conditional, not scheduled

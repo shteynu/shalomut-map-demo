@@ -611,7 +611,7 @@
           "Rounds"
         ],
         "summary": "Reset survey round responses and set status back to draft",
-        "description": "Clears all collected anonymous survey responses for the given round and resets its status to draft so questions can be edited. Deleting the responses also drops any persisted AI result for the round and records a ROUND_RESET audit event.",
+        "description": "Clears all collected anonymous survey responses for the given round and resets its status to draft so questions can be edited. Also drops any persisted AI result for the round and records a ROUND_RESET audit event.",
         "security": [
           {
             "managerSession": []
@@ -1223,16 +1223,16 @@
   },
   "components": {
     "securitySchemes": {
-      "bearerAuth": {
-        "type": "http",
-        "scheme": "bearer",
-        "description": "Shared service secret. Required only when the corresponding environment variable is configured."
-      },
       "managerSession": {
         "type": "apiKey",
         "in": "cookie",
         "name": "shalomut_session",
         "description": "Manager session cookie issued by POST /api/auth/login and bound server-side to MANAGER_ORGANIZATION_ID. A Bearer token carrying the same JWT is also accepted."
+      },
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Shared service secret. Required only when the corresponding environment variable is configured."
       }
     },
     "schemas": {
@@ -3080,13 +3080,30 @@
           "insightText"
         ],
         "properties": {
-          "questionId": { "type": "string" },
-          "label": { "type": "string" },
-          "value": { "type": "string" },
-          "averageScore": { "type": "number", "minimum": 0, "maximum": 100 },
-          "responseCount": { "type": "integer", "minimum": 1 },
-          "trend": { "type": "string" },
-          "scoreDistribution": { "$ref": "#/components/schemas/ScoreDistribution" },
+          "questionId": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          },
+          "averageScore": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "responseCount": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "trend": {
+            "type": "string"
+          },
+          "scoreDistribution": {
+            "$ref": "#/components/schemas/ScoreDistribution"
+          },
           "insightText": {
             "type": "string",
             "minLength": 300,
@@ -3108,20 +3125,39 @@
           "adaptationOutcome"
         ],
         "properties": {
-          "id": { "type": "string" },
-          "dimensionId": { "$ref": "#/components/schemas/WellbeingDimensionId" },
-          "status": { "$ref": "#/components/schemas/WellbeingStatus" },
-          "source": { "type": "string" },
-          "title": { "type": "string" },
-          "summary": { "type": "string", "minLength": 300, "maxLength": 500 },
+          "id": {
+            "type": "string"
+          },
+          "dimensionId": {
+            "$ref": "#/components/schemas/WellbeingDimensionId"
+          },
+          "status": {
+            "$ref": "#/components/schemas/WellbeingStatus"
+          },
+          "source": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 300,
+            "maxLength": 500
+          },
           "actionable_steps": {
             "type": "array",
             "minItems": 1,
-            "items": { "type": "string" }
+            "items": {
+              "type": "string"
+            }
           },
           "adaptationOutcome": {
             "type": "string",
-            "enum": ["llm", "deterministic_fallback"]
+            "enum": [
+              "llm",
+              "deterministic_fallback"
+            ]
           }
         }
       },
@@ -3137,23 +3173,40 @@
         "properties": {
           "outcome": {
             "type": "string",
-            "enum": ["llm", "deterministic_fallback"]
+            "enum": [
+              "llm",
+              "deterministic_fallback"
+            ]
           },
-          "attempts": { "type": "integer", "minimum": 0 },
-          "retryCount": { "type": "integer", "minimum": 0 },
+          "attempts": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "retryCount": {
+            "type": "integer",
+            "minimum": 0
+          },
           "sourceQuestionIds": {
             "type": "array",
             "minItems": 1,
             "uniqueItems": true,
-            "items": { "type": "string" }
+            "items": {
+              "type": "string"
+            }
           },
           "surveyDefinitionHash": {
             "type": "string",
             "pattern": "^sha256:[a-f0-9]{64}$"
           },
-          "backgroundContextIncluded": { "type": "boolean" },
-          "distributionIncluded": { "type": "boolean" },
-          "crossDimensionContextIncluded": { "type": "boolean" }
+          "backgroundContextIncluded": {
+            "type": "boolean"
+          },
+          "distributionIncluded": {
+            "type": "boolean"
+          },
+          "crossDimensionContextIncluded": {
+            "type": "boolean"
+          }
         }
       },
       "StoneDetailV6": {
@@ -3170,26 +3223,43 @@
           "generationProvenance"
         ],
         "properties": {
-          "dimensionId": { "$ref": "#/components/schemas/WellbeingDimensionId" },
-          "dimensionNameHebrew": { "type": "string" },
-          "status": { "$ref": "#/components/schemas/WellbeingStatus" },
-          "score": { "type": "number", "minimum": 0, "maximum": 100 },
+          "dimensionId": {
+            "$ref": "#/components/schemas/WellbeingDimensionId"
+          },
+          "dimensionNameHebrew": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/WellbeingStatus"
+          },
+          "score": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
           "summary": {
             "type": "array",
             "minItems": 3,
             "maxItems": 3,
-            "items": { "type": "string", "minLength": 1 }
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
           },
           "recommendedInterventions": {
             "type": "array",
             "minItems": 5,
             "maxItems": 5,
-            "items": { "$ref": "#/components/schemas/StoneInterventionV6" }
+            "items": {
+              "$ref": "#/components/schemas/StoneInterventionV6"
+            }
           },
           "metrics": {
             "type": "array",
             "minItems": 1,
-            "items": { "$ref": "#/components/schemas/StoneMetricV6" }
+            "items": {
+              "$ref": "#/components/schemas/StoneMetricV6"
+            }
           },
           "generationProvenance": {
             "$ref": "#/components/schemas/StoneGenerationProvenanceV6"
@@ -3209,22 +3279,39 @@
         "properties": {
           "contractVersion": {
             "type": "string",
-            "enum": ["6.0"],
+            "enum": [
+              "6.0"
+            ],
             "example": "6.0"
           },
-          "roundId": { "type": "string" },
+          "roundId": {
+            "type": "string"
+          },
           "surveyDefinitionHash": {
             "type": "string",
             "pattern": "^sha256:[a-f0-9]{64}$"
           },
-          "processedAt": { "type": "string", "format": "date-time" },
-          "isLocked": { "type": "boolean" },
+          "processedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "isLocked": {
+            "type": "boolean"
+          },
           "status": {
             "type": "string",
-            "enum": ["success", "locked_error", "validation_failed"]
+            "enum": [
+              "success",
+              "locked_error",
+              "validation_failed"
+            ]
           },
-          "errorMessage": { "type": "string" },
-          "overallPsychologicalSummary": { "type": "string" },
+          "errorMessage": {
+            "type": "string"
+          },
+          "overallPsychologicalSummary": {
+            "type": "string"
+          },
           "stones": {
             "type": "object",
             "minProperties": 8,

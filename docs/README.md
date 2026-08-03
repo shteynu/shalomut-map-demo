@@ -40,8 +40,9 @@ sections are historical:
   refine operational detail without rewriting the decision history.
 
 Versioned machine-readable contracts live under `contracts/`; shared behavior
-is indexed by `contracts/capabilities.json`. OpenAPI has two checked mirrors:
-`docs/openapi.yaml` and `public/openapi.json`.
+is indexed by `contracts/capabilities.json`. OpenAPI has one editable source,
+[`openapi.yaml`](openapi.yaml); `public/openapi.json` is generated from it by
+`npm run openapi:generate` and must never be edited by hand.
 
 ## Historical plans and evidence
 

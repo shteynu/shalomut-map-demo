@@ -363,8 +363,9 @@ compatibility, but it is ignored and cannot control callback transport.
 - `POST /api/v1/webhook/events`
 - `POST /api/v1/rounds/{round_id}/analyze` (`ENV=development` only)
 
-The core application API is documented in `../public/openapi.json` and
-`../docs/openapi.yaml`.
+The core application API is documented in `../docs/openapi.yaml`.
+`../public/openapi.json` is generated from it and is what Core serves at
+`/openapi.json`.
 
 ## Deployment
 

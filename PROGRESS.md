@@ -1,13 +1,13 @@
 # Shalomut Map — product progress
 
-Updated: 2026-08-02. This file is a concise product-level milestone record, not
+Updated: 2026-08-03. This file is a concise product-level milestone record, not
 a session log. Branch evidence lives in `docs/agent-tasks/archive/`; current
 deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 
 ## Current state
 
-- `origin/main` is `278ba9b` after the 2026-08-02 refactoring stack was merged
-  and published.
+- `origin/main` is `baf229b`: the 2026-08-02 refactoring stack plus the
+  Dashboard DTO slice merged on 2026-08-03.
 - Contract `6.0` is deployed end to end and the deployed Core explicitly
   produces it. The unset configuration default remains rollback-safe `5.0`.
 - The six latest architecture slices are in `main`: separate AI-insights
@@ -75,6 +75,8 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
   and `src/lib/demo-data.ts` is gone along with the fixture analysis it held.
 - StrykerJS provides an opt-in, non-blocking mutation pilot for
   `src/lib/ai-contract.ts`. It is not repository-wide coverage or a CI gate.
+- The OpenAPI specification has one editable source, `docs/openapi.yaml`;
+  `public/openapi.json` is generated from it and checked as a whole document.
 
 ## Next up
 
@@ -91,8 +93,7 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 
 1. Choose the long-term identity model before real respondents or multi-tenant
    deployment.
-2. Decide whether OpenAPI should be generated from one source.
-3. Classify high-value surviving Stryker mutants before expanding mutation
+2. Classify high-value surviving Stryker mutants before expanding mutation
    scope.
 
 ## Durable references

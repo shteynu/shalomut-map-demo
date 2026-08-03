@@ -1,13 +1,8 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
-import { createRequire } from 'node:module';
 import path from 'node:path';
-
-const require = createRequire(import.meta.url);
-const yaml = require('js-yaml') as {
-  load(source: string): Record<string, any>;
-};
 
 describe('OpenAPI Specification Integrity', () => {
   const openapiPath = path.join(process.cwd(), 'public', 'openapi.json');
@@ -236,55 +231,26 @@ describe('OpenAPI Specification Integrity', () => {
     }
   });
 
-  it('keeps the versioned AI schemas synchronized in JSON and YAML', () => {
-    const jsonSpec = JSON.parse(fs.readFileSync(openapiPath, 'utf8'));
-    const yamlSpec = yaml.load(
-      fs.readFileSync(
-        path.join(process.cwd(), 'docs', 'openapi.yaml'),
-        'utf8',
-      ),
+  /**
+   * `public/openapi.json` is generated from `docs/openapi.yaml`, so the whole
+   * document is compared, not a list of schema names.
+   *
+   * The list this replaces named 32 AI schemas and nothing else, which meant
+   * every path, every response and every other schema could drift unobserved —
+   * and one did: the `/api/rounds/{roundId}/reset` description disagreed
+   * between the two artifacts until the JSON became a generated mirror.
+   */
+  it('serves a public/openapi.json generated from docs/openapi.yaml', () => {
+    const check = spawnSync(
+      process.execPath,
+      [path.join('scripts', 'generate-openapi.mjs'), '--check'],
+      { cwd: process.cwd(), encoding: 'utf8' },
     );
-    const aiSchemas = [
-      'RoundAnalyticsResult',
-      'RoundAnalyticsResultV2',
-      'RoundAnalyticsResultV3',
-      'QuestionAggregate',
-      'DynamicQuestionAggregate',
-      'StoneMapResult',
-      'StoneMapResultV1',
-      'StoneMapResultV2',
-      'StoneMapResultV3',
-      'StoneMapResultV4',
-      'StoneMapResultV5',
-      'StoneMapResultV6',
-      'StoneDetail',
-      'StoneDetailV3',
-      'StoneDetailV4',
-      'StoneDetailV5',
-      'StoneDetailV6',
-      'StoneMetric',
-      'StoneMetricV5',
-      'StoneMetricV6',
-      'StoneIntervention',
-      'StoneInterventionV5',
-      'StoneInterventionV6',
-      'StoneGenerationProvenance',
-      'StoneGenerationProvenanceV3',
-      'StoneGenerationProvenanceV4',
-      'StoneGenerationProvenanceV5',
-      'StoneGenerationProvenanceV6',
-      'RoundAnalyticsResultV4',
-      'RoundAnalyticsResultV5',
-      'ScoreDistribution',
-      'QuestionAggregateV5',
-    ];
 
-    for (const schemaName of aiSchemas) {
-      assert.deepStrictEqual(
-        yamlSpec.components.schemas[schemaName],
-        jsonSpec.components.schemas[schemaName],
-        `${schemaName} must stay synchronized between JSON and YAML`,
-      );
-    }
+    assert.strictEqual(
+      check.status,
+      0,
+      `${check.stdout}${check.stderr}`,
+    );
   });
 });

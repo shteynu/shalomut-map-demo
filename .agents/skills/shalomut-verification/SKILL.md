@@ -34,7 +34,7 @@ privacy, auth, persistence, contracts или deployment.
 | Repositories или server guards | Repository/API regression tests, `npm test`, `npm run lint`, `npm run build` |
 | `prisma/schema.prisma` или migrations | `npx prisma validate`, `npx prisma generate`, repository tests; status/migration только по правилам ниже |
 | Survey source, scoring или privacy | Survey-definition/math/API tests, `npm test`, respondent и locked/ready browser states |
-| OpenAPI JSON/YAML или API contract | OpenAPI integrity tests, parse обеих specs, проверить синхронность route/schema changes |
+| `docs/openapi.yaml` или API contract | `npm run openapi:generate`, OpenAPI integrity tests, сверка route/schema changes с реальными handlers |
 | Versioned AI manifest, `contracts/capabilities.json` или AI TypeScript | Contract/registry/client/view-model tests, `npm test`, Python tests и local boundary E2E |
 | `ai-analytics-service` | `.venv/bin/python -m pytest` из `ai-analytics-service` — полный набор, включая contract suites |
 | Auth, secrets или authorization | Unauthorized/missing-secret/organization-isolation tests и security-focused diff review |
@@ -100,10 +100,15 @@ privacy, auth, persistence, contracts или deployment.
 
 ### OpenAPI
 
+- `docs/openapi.yaml` — единственный редактируемый источник. После правки
+  запускай `npm run openapi:generate` и коммить сгенерированный
+  `public/openapi.json`. Ручная правка JSON — не изменение, а drift.
 - Запускай `src/app/api/__tests__/openapi.test.ts` после route/schema changes.
-- Валидируй `public/openapi.json` и `docs/openapi.yaml`.
+  Он включает `npm run openapi:check`, который сравнивает весь документ.
 - Проверяй совпадение status codes, authentication requirements, payload
-  schemas и versioned contract semantics с реальными handlers.
+  schemas и versioned contract semantics с реальными handlers. Это то, чего
+  генератор проверить не может: он гарантирует идентичность артефактов, а не
+  их правдивость.
 
 ## Browser и runtime scenarios
 
