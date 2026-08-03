@@ -8,14 +8,14 @@ state, external blockers and approval gates. Product milestones belong in
 
 ## Repository snapshot
 
-- `origin/main` is still `8f9c29d`. The owner decided on 2026-08-03 to put
-  `feat/respondent-draft-and-consent` straight onto `main` without a separate
-  review; the branch is a clean fast-forward from `8f9c29d`, but **the push has
-  not happened yet** — `git push` is not available to the agent here. Until the
-  owner runs it, this whole slice is visible only in this worktree.
-- **The local `main` is stale and cannot be updated from this checkout.** It is
-  checked out in the worktree `shalomut-map-demo-contract-v6-core-consumer`.
-  After the push, fetch and fast-forward it there before branching from it.
+- `origin/main` is `87027a5` and published, so the respondent slice is visible
+  outside this machine. It arrived as a fast-forward from `8f9c29d`: the owner
+  decided on 2026-08-03 to put `feat/respondent-draft-and-consent` straight
+  onto `main` without a separate review, and pushed it themselves.
+- **The local `main` is behind `origin/main` and cannot be updated from this
+  checkout.** It is checked out in the worktree
+  `shalomut-map-demo-contract-v6-core-consumer`. Fetch and fast-forward it
+  there before branching from local `main`.
 - The 2026-08-02 refactoring stack is merged and published: AI-insights
   repository, thin callback route, canonical Core input, canonical Python
   output, analytics-runner ports and `TextGenerator`.
@@ -41,9 +41,10 @@ state, external blockers and approval gates. Product milestones belong in
   the same three commands the CI `validate` job runs on a push to `main`.
 - `test/classify-surviving-mutants` reached `main` as `8f9c29d` and can be
   deleted.
-- One branch is waiting to reach `main`: `feat/respondent-draft-and-consent`,
-  a fast-forward carrying respondent consent, draft recovery, the submit `409`
-  contract and this snapshot.
+- `feat/respondent-draft-and-consent` reached `main` as `87027a5`, carrying
+  respondent consent, draft recovery, the submit `409` contract and this
+  snapshot. It is fully contained in `main` and can be deleted.
+- No branch is waiting to reach `main`.
 - The repository record does not claim that this final refactoring stack has
   been deployed. Verify deployment source/health before relying on it at the
   deployed endpoint.
@@ -105,10 +106,9 @@ Before the next deployment-sensitive task, compare `origin/main` with deployed
 Core and Python source/health, then record only fresh read-only evidence in the
 new branch task file.
 
-Once the respondent branch is pushed, deployed Core will additionally lag
-`main` by the consent step, the draft recovery and the submit `409` contract.
-None of them touches a schema, a migration or an AI contract version, so that
-gap is a redeploy, not a coordination problem.
+Deployed Core additionally lags `main` by the consent step, the draft recovery
+and the submit `409` contract. None of them touches a schema, a migration or an
+AI contract version, so the gap is a redeploy, not a coordination problem.
 
 `main` moved on 2026-08-03: the Core composition root and the Dashboard
 presentation DTO are both merged, which closes stage 4 of the refactoring plan

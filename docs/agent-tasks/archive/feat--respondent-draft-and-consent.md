@@ -6,9 +6,8 @@
 - Base branch: `origin/main`
 - Base commit: `8f9c29d`
 - Current HEAD: `63f668e`
-- Status: работа закончена и проверена. Владелец решил 2026-08-03 отправить
-  ветку прямо в `main` без отдельного review; push остаётся за владельцем,
-  агенту он здесь недоступен
+- Status: закрыта. Работа закончена, проверена и 2026-08-03 отправлена
+  владельцем прямо в `main` (`87027a5`) fast-forward'ом, без отдельного review
 - Last updated: 2026-08-03
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -430,7 +429,6 @@ deployment aliases. Миграций и записей в базу нет.
 
 ## Next concrete step
 
-Владельцу: `git push origin feat/respondent-draft-and-consent:main`. Это
-fast-forward от `8f9c29d`. Локальный `main` живёт в другом worktree и должен
-быть подтянут там же. Следующая работа — PR 2 `feat/round-history-selection`
-на отдельной ветке от свежего `main`.
+Ничего по этой задаче. Локальный `main` живёт в другом worktree и отстаёт от
+`origin/main` — подтянуть его там перед следующей веткой. Следующая работа —
+PR 2 `feat/round-history-selection` от свежего `main`.
