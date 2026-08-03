@@ -5,8 +5,8 @@
 - Branch: `feat/respondent-draft-and-consent`
 - Base branch: `origin/main`
 - Base commit: `8f9c29d`
-- Current HEAD: `e6aa04b`
-- Status: commits 1 и 2 сделаны и проверены; остаётся commit 3
+- Current HEAD: `63f668e`
+- Status: все три коммита сделаны и проверены; ветка готова к push и review
 - Last updated: 2026-08-03
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -93,8 +93,7 @@ recovery and consent». Документ живёт вне репозитори�
 ## Acceptance criteria
 
 - [x] Ответы и текущий вопрос переживают refresh текущей вкладки (browser smoke).
-- [ ] Consent не спрашивается повторно после refresh той же attempt-сессии
-      (шага согласия ещё нет — commit 3).
+- [x] Consent не спрашивается повторно после refresh той же attempt-сессии.
 - [x] Изменившаяся анкета не восстанавливает старые ответы (unit).
 - [x] Successful submit очищает draft.
 - [x] Lost-response + refresh + retry не создаёт второй response и показывает
@@ -102,12 +101,12 @@ recovery and consent». Документ живёт вне репозитори�
 - [x] «מילוי שאלון נוסף» создаёт новый token и чистое состояние.
 - [x] Storage failure не мешает отправить анкету.
 - [x] Ответ, данный за ~100 ms до `pagehide`, переживает refresh (browser smoke).
-- [ ] Первый вопрос недоступен до явного accept; decline не создаёт request.
+- [x] Первый вопрос недоступен до явного accept; decline не создаёт request.
 - [x] В `sessionStorage` нет PII и нет server response ID (unit: список ключей).
 - [x] `docs/openapi.yaml` описывает `409`/`ALREADY_SUBMITTED`,
       `public/openapi.json` перегенерирован (commit 1).
-- [ ] `npm run verify` завершается с реальным exit code 0 на финальном состоянии
-      ветки (на commit 1 уже проходил).
+- [x] `npm run verify` завершается с реальным exit code 0 на финальном состоянии
+      ветки (`63f668e`).
 
 ## Relevant repository instructions
 
@@ -221,16 +220,43 @@ recovery and consent». Документ живёт вне репозитори�
     `src/components/survey/__tests__/survey-flow-draft.test.tsx` (3 кейса,
     `renderToStaticMarkup` фиксирует серверный проход).
 
+- **Commit 3 — consent state (`63f668e`), проверен.**
+  - Новый `src/components/survey/survey-consent-step.tsx`: объём анкеты
+    (число вопросов и `estimatedMinutes`), три обещания, которыми владеет код,
+    и менеджерский `anonymityText` отдельным, визуально более лёгким блоком.
+  - `SurveyPhase` из четырёх состояний в `SurveyFlow` вместо булева
+    `submitted`; `review` и `submitting` остались derived.
+  - Восстановленный draft восстанавливает и согласие (`consentAcceptedAt`),
+    поэтому после refresh согласие не спрашивается повторно; «מилуй нового
+    ответа» на общем компьютере возвращает в `consent`, потому что то согласие
+    давал другой человек.
+  - Экран отказа: компонент не содержит сетевого кода, поэтому decline
+    физически не может ничего отправить.
+  - Фокус после accept переносится на заголовок первого вопроса, но только
+    когда согласие дал человек, а не когда восстановился draft.
+  - `estimatedMinutes` прокинут из `src/app/answer/[shareCode]/page.tsx`.
+  - **Удалён `variant="internal"`** по решению владельца: ни один вызывающий
+    его не передавал, а его ветка несла второй, более слабый набор
+    privacy-утверждений, который никогда не отображался.
+  - Тест переименован в `survey-flow-server-render.test.tsx` и расширен до
+    6 кейсов: серверный проход показывает согласие и **не** показывает вопрос.
+
 ## In progress
 
-Ничего. Commit 2 закрыт и проверен.
+Ничего. Все три коммита закрыты и проверены.
 
 ## Remaining
 
-Commit 3 из раздела Scope (шаг согласия), затем smoke consent-пути: decline не
-шлёт ни одного запроса, а accept не спрашивается повторно после refresh.
+Push ветки и review — оба действия владельца. Кода в scope этой задачи не
+осталось.
 
 ## Changed files
+
+Закоммичено в `63f668e`: `src/components/survey/survey-consent-step.tsx`
+(новый), `src/components/survey/survey-flow.tsx`,
+`src/components/survey/index.ts`, `src/app/answer/[shareCode]/page.tsx`,
+`src/app/globals.css`, переименование
+`survey-flow-draft.test.tsx` → `survey-flow-server-render.test.tsx`.
 
 Закоммичено в `e6aa04b`: `src/components/survey/survey-flow.tsx`,
 `src/lib/survey-draft-storage.ts`, `src/lib/survey-submission-outcome.ts`,
@@ -247,7 +273,27 @@ Commit 3 из раздела Scope (шаг согласия), затем smoke c
 
 ## Verification evidence
 
-Состояние на `e6aa04b` (commit 2).
+Состояние на `63f668e` (commit 3).
+
+### Passed — commit 3
+
+- `npm run verify` на `63f668e` — реальный exit code 0: `lint:literals`
+  (5 pass), `lint:composition` (5 pass), `typecheck`, `npm test`
+  (**429 pass, 0 fail**), `npm run lint`, `npm run build`
+  (compiled successfully, 41 страница), `verify:db` (7 pass),
+  `verify:ai` (368 passed).
+- Browser smoke, раунд `SHALOM-LOCAL` временно `active`, чистая вкладка:
+  - экран согласия показан до первого вопроса; в DOM нет ни одного вопроса;
+  - «לא עכשיו» → экран отказа, `read_network_requests` по шаблону `api` —
+    **ни одного запроса**, `sessionStorage` без ключа draft;
+  - «הבנתי, אפשר להתחיל» → `שאלה 1 מתוך 24`, `document.activeElement` —
+    заголовок первого вопроса (`H2`), draft записан с `consentAcceptedAt`
+    и новым attempt-token;
+  - вкладка с существующим draft открывает `שאלה 3 מתוך 24` с notice о
+    восстановлении и **без** экрана согласия;
+  - mobile 375×812: обещания читаются, кнопки переносятся в колонку,
+    primary первой.
+  После smoke раунд возвращён в `status='closed'`, dev-сервер остановлен.
 
 ### Passed — commit 2
 
@@ -284,6 +330,13 @@ Commit 3 из раздела Scope (шаг согласия), затем smoke c
 
 ### Failed
 
+- Первые пробы браузера на commit 3 сообщали, что при существующем draft
+  показан экран согласия. Ложная тревога: пробы читали фоновую вкладку
+  (`document.visibilityState === 'hidden'`), где клиентский проход ещё не
+  отработал. После скриншота, который выводит вкладку на передний план,
+  показан вопрос 3 из 24 с notice о восстановлении. Тот же урок о задержке,
+  что и на commit 2: состояние страницы нельзя читать раньше, чем клиент
+  успел смонтироваться.
 - ESLint `react-hooks/refs` на промежуточном состоянии commit 2: чтение
   `attemptTokenRef.current` в фазе рендера. Код был там и раньше, но стал
   ошибкой, как только `attemptToken` попал в зависимости эффекта. Заменено на
@@ -370,17 +423,13 @@ deployment aliases. Миграций и записей в базу нет.
 
 ## Questions requiring an owner decision
 
-- Судьба `variant="internal"` в `SurveyFlow`: ни один вызывающий его не
-  использует, единственный потребитель передаёт `"public"`. Удалить в commit 3
-  или сохранить с обоснованием. Не блокирует commit 1 и commit 2.
+Открытых нет. `variant="internal"` решено удалить (владелец, 2026-08-03),
+удалён в commit 3.
 
 ## Next concrete step
 
-Реализовать commit 3: новый `src/components/survey/survey-consent-step.tsx` и
-`SurveyPhase` из четырёх состояний (`consent`, `questions`, `complete`,
-`declined`) в `SurveyFlow`, с восстановлением фазы из draft — уже
-восстановленный `consentAcceptedAt` означает, что согласие спрашивать повторно
-не нужно. Прокинуть `estimatedMinutes` через `SurveyFlowProps` из
-`src/app/answer/[shareCode]/page.tsx`, зафиксировать privacy-обещания
-отдельным блоком от менеджерских `introText`/`anonymityText`, и вынести на
-владельца решение по мёртвому `variant="internal"`.
+Запушить ветку `feat/respondent-draft-and-consent` (`63f668e`, 6 коммитов
+впереди `origin/main`) — действие владельца, агенту `git push` здесь
+недоступен. До push handoff ограничен этим worktree. После review задача
+закрывается и файл переезжает в `docs/agent-tasks/archive/`; следующая работа —
+PR 2 `feat/round-history-selection` на отдельной ветке.

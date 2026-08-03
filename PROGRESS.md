@@ -33,6 +33,10 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
   its source and must be edited by a manager before it can be added.
 - Anonymous respondent flow with stable attempt tokens and database-enforced
   idempotency.
+- Explicit informed consent before the first question, stating the guarantees
+  the code owns rather than manager-edited copy; declining sends nothing.
+- An unfinished attempt survives a reload of the same tab, consent included,
+  and a retry after a lost response completes instead of recording twice.
 - Application-level manager session, server-owned organization scope and
   fail-closed deployed authentication configuration.
 
