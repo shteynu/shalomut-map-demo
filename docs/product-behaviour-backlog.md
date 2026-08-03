@@ -2,13 +2,67 @@
 
 Updated: 2026-08-03
 Status: remaining product behavior after persisted rounds, AI suggestions and
-the lifecycle-aware privacy flow landed
+the lifecycle-aware privacy flow landed, reconciled against the owner's
+development requirements document ("פיתוח פלטפורמת מפת שלומות — MVP + הכנה
+לשלב הבא", Google Docs)
 
 ## Completed In This Pass
 
 - Centralized navigation and route/action metadata in `src/lib/navigation.ts`.
 - Removed duplicated workflow navigation from setup and round next-step bands.
 - Kept global navigation as the persistent route switcher and kept local CTAs only where they represent the next workflow action.
+
+## Alignment With The Development Requirements Document
+
+Reviewed on 2026-08-03 against the requirements document section by section.
+This section records where the shipped product deliberately differs from that
+document, so the difference stays visible instead of looking like an oversight.
+Sections of the document with no entry here are either already delivered or
+tracked as numbered items below.
+
+### Already delivered
+
+- §5.1 respondent experience: mobile-first Hebrew RTL flow, progress bar,
+  autosaved draft that survives a reload of the same tab, and an explicit
+  consent screen before the first question.
+- §5.2 rounds: organization and round records, start and end dates, share code
+  distribution, numeric-only response counts and a manual round-close action.
+- §5.3 organizational background: staff count on the organization plus the
+  round background context (sickness days, new staff, student count,
+  socio-economic index, classes per grade and a free-text note).
+- §5.5 dashboard: the stone map with per-dimension colour, an organizational
+  summary, verbal interpretation and highlighted metrics behind each stone, and
+  recommendations per dimension.
+- §6.1 privacy: no personal identifiers are stored, no screen can show who
+  answered, and detailed results stay locked below the response threshold.
+- §8.2 intervention recommendations, partially and earlier than the document
+  expected: contract `6.0` already returns five recommendations per stone.
+  Whether they become tracked goals is item 5 below.
+
+### Deliberate differences
+
+- **Answer model (§5.1).** The document lists Likert scales, choice questions,
+  open text fields and 100% distribution items. The product uses one
+  three-colour scale (`green`/`yellow`/`red`, scored `100`/`60`/`0`). Owner
+  decision 2026-08-03: this is the intended product simplification, not a gap.
+  The scale carries the whole analytics pipeline — dimension scores, colour
+  categories, per-question distributions and published contracts `1.0`–`6.0` —
+  so the document is out of date on this point and no backlog item follows from
+  it. Open text also carries a privacy cost the colour scale does not: free
+  writing can identify its author inside a small staff room.
+- **Roles (§3.1, §3.4, §5.6, §7.7).** The document places Owner/Admin and
+  read-only Viewer access inside MVP scope. Owner decision 2026-08-03: one
+  manager per deployment is the requested shape, so viewer and admin roles are
+  deferred. Item 8 below owns the trigger and the work required when a second
+  user is actually requested.
+- **Privacy threshold (§6.1).** The document suggests a configurable minimum of
+  roughly 5–10 respondents. The product enforces ten as both the default and
+  the floor; a manager can only raise it. Owner decision 2026-08-03: keep the
+  floor at ten. This is a deliberate tightening of the document, not a
+  configuration gap.
+- **Environments (§6.3).** Staging/production separation is infrastructure, not
+  product behavior. It stays out of this backlog; `AGENTS.md` and
+  `docs/shalomut-tracker-handoff.md` own the current environment shape.
 
 ## Remaining Product Behaviour Work
 
@@ -144,3 +198,77 @@ Why it matters:
 - The single-account shape has real limits worth naming while it lasts: the
   deployment secret is the credential, rotation means a redeploy, and per-user
   revocation and a meaningful "who signed in" audit trail do not exist.
+
+### 9. Configurable Scoring Thresholds
+
+Requirements document §5.4: the scoring mechanism must be tunable after the
+pilot through configuration rather than code, so thresholds and mappings can
+move without taking the system apart.
+
+Current state: dimension colour boundaries are literals inside
+`src/lib/services/analytics.service.ts` — a score at or above 75 is green, at
+or above 50 is yellow, below that red. The same boundaries are repeated in the
+per-question distribution path. The privacy threshold and the questionnaire
+itself are already persisted per round; only the colour boundaries are not.
+
+Proposal:
+- Move the green/yellow boundaries into round-scoped configuration with the
+  current values as defaults, and read them in one place instead of two.
+- Decide whether a manager may change them at all, or whether they stay an
+  owner-level methodology setting.
+- Keep already-analysed rounds readable: a stored analysis must keep the
+  boundaries it was produced with, or state which ones it used.
+
+Why it matters:
+- A pilot is exactly when the boundaries are expected to move, and today moving
+  them is a code change plus a redeploy.
+- Two copies of the same boundary can drift, which would let a stone's colour
+  disagree with its own question distribution.
+
+### 10. Dashboard Per Round And Round History
+
+Requirements document §5.5 and §8.1: the dashboard should be viewable per
+measurement round, and a new round for the same organization must keep history.
+
+Current state: rounds are persisted with dates and statuses, and status
+transitions allow closing and archiving. But the manager context resolves a
+single current round, and every manager route renders that one. There is no way
+to open a closed round's dashboard or to compare two rounds.
+
+Proposal:
+- Add a round selector to the dashboard and dimension routes, scoped to the
+  manager's organization.
+- Keep each round's own questionnaire snapshot, threshold and stored analysis
+  when an older round is opened, instead of reinterpreting it with today's
+  configuration.
+- Decide whether comparison across rounds is a separate surface or a delta
+  shown on the existing map. This is the same work `PROGRESS.md` lists as
+  comparative multi-round analytics.
+- Apply the privacy gate per round: an older round below its own threshold
+  stays locked.
+
+Why it matters:
+- Repeat measurement is the product's stated second act; without history the
+  second round replaces the first instead of extending it.
+- A principal comparing semesters is the first real test of whether the map
+  drives action.
+
+### 11. Repeat-Measurement Reminders (future)
+
+Requirements document §8.1: automatic reminders for the next measurement in
+6–12 months, explicitly named as architectural preparation rather than MVP
+work.
+
+Current state: nothing schedules or notifies. There is no respondent or manager
+contact channel at all, which is consistent with storing no personal
+identifiers.
+
+Proposal, when this is actually requested:
+- Decide who is reminded. Reminding respondents would require contact data the
+  privacy model deliberately does not hold; reminding the manager does not.
+- Keep the trigger derivable from round records — the closing date of the last
+  round plus an interval — rather than a new scheduling entity.
+
+Why it matters:
+- Naming the manager as the only reachable party keeps a future reminder
+  feature from quietly introducing respondent contact details.

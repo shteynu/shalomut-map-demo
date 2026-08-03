@@ -89,12 +89,21 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 
 ### Product
 
-1. Comparative multi-round analytics across semesters.
+1. Per-round dashboard access and comparative multi-round analytics across
+   semesters (`docs/product-behaviour-backlog.md` §10).
 2. Decide whether recommendations become tracked goals/action plans.
-3. Improve survey-builder recovery/search/bulk/reorder behavior.
-4. Complete keyboard/reduced-motion support for the interactive map.
-5. Report clipboard permission failure honestly instead of treating it as a
+3. Move the green/yellow score boundaries out of `analytics.service.ts` into
+   round-scoped configuration (§9).
+4. Improve survey-builder recovery/search/bulk/reorder behavior.
+5. Complete keyboard/reduced-motion support for the interactive map.
+6. Report clipboard permission failure honestly instead of treating it as a
    successful copy.
+
+The backlog was reconciled with the owner's development requirements document
+on 2026-08-03. Its opening section records the four points where the shipped
+product deliberately differs from that document: the single three-colour answer
+scale, deferred viewer/admin roles, the privacy-threshold floor of ten, and
+environment separation being infrastructure rather than product behavior.
 
 ### Architecture
 
