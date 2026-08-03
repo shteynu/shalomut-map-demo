@@ -22,6 +22,8 @@ type SidebarProps = {
   onSuggestFromTemplate: () => void;
   isFrozen?: boolean;
   saved: boolean;
+  /** Rounds this save took off the air, if saving activated this one. */
+  closedRoundTitles?: string[];
   questionnaireReady: boolean;
 };
 
@@ -33,6 +35,7 @@ export function SurveyBuilderSidebar({
   onSuggestFromTemplate,
   isFrozen = false,
   saved,
+  closedRoundTitles = [],
   questionnaireReady,
 }: SidebarProps) {
   const openRespondentSurveyAction = getNavigationAction("openRespondentSurvey");
@@ -125,6 +128,15 @@ export function SurveyBuilderSidebar({
         )}
 
         {saved ? <p className="success-note">טיוטת השאלון נשמרה וניתן להמשיך להפצה.</p> : null}
+        {saved && closedRoundTitles.length > 0 ? (
+          <p className="success-note" role="status">
+            {`השאלון הושלם, הסבב הזה עלה לאוויר ו${
+              closedRoundTitles.length > 1 ? "הסבבים" : "הסבב"
+            } ${closedRoundTitles.join(", ")} נסגר${
+              closedRoundTitles.length > 1 ? "ו" : ""
+            }. בית ספר מריץ סבב אחד בכל רגע נתון.`}
+          </p>
+        ) : null}
         {!questionnaireReady ? (
           <p className="quiet-note">
             ההפעלה תתאפשר לאחר תיקון מזהים כפולים וכיסוי כל שמונת ממדי השלומות.

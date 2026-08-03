@@ -105,6 +105,7 @@ export function SurveyBuilder({
     })),
   );
   const [saved, setSaved] = useState(false);
+  const [closedRoundTitles, setClosedRoundTitles] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const { copied, copy } = useClipboard();
@@ -348,6 +349,13 @@ export function SurveyBuilder({
       return;
     }
 
+    const payload = (await response.json().catch(() => null)) as {
+      closedRoundTitles?: string[];
+    } | null;
+
+    setClosedRoundTitles(
+      Array.isArray(payload?.closedRoundTitles) ? payload.closedRoundTitles : [],
+    );
     setSaved(true);
     setSaving(false);
   }
@@ -489,6 +497,7 @@ export function SurveyBuilder({
           onSuggestFromTemplate={suggestFromTemplate}
           isFrozen={isFrozen}
           saved={saved}
+          closedRoundTitles={closedRoundTitles}
           questionnaireReady={questionnaireValidation.isValid}
         />
       </div>

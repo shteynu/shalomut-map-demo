@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { resolveCoreRepositories } from "@/lib/composition-root";
+import { RoundService } from "@/lib/services";
 import {
   createCanonicalSurveyDefinition,
   hasSameQuestionSnapshot,
@@ -87,13 +88,17 @@ export async function PUT(request: Request, { params }: RouteParams) {
     });
 
     // A draft round goes live as soon as its questionnaire covers all eight
-    // dimensions. Closed and archived rounds are never reopened here.
+    // dimensions, and going live closes whichever round the school was running.
+    // Closed and archived rounds are never reopened here.
+    let closedRoundTitles: string[] = [];
     if (
       updated &&
       updated.status === 'draft' &&
       isActivatableSurveyDefinition(parsed.value)
     ) {
-      await roundRepo.updateStatus(roundId, 'active');
+      const activation = await RoundService.activateRound(roundId, roundRepo);
+      closedRoundTitles =
+        activation?.closedRounds.map((round) => round.title) ?? [];
     }
 
     if (!updated) {
@@ -106,6 +111,9 @@ export async function PUT(request: Request, { params }: RouteParams) {
     return NextResponse.json({
       success: true,
       definition: updated.surveyDefinition,
+      // Named so the builder can tell the manager which round stopped running,
+      // rather than leaving the school to notice on the dashboard later.
+      closedRoundTitles,
     });
   } catch {
     return NextResponse.json(

@@ -70,7 +70,63 @@ export class RoundService {
     roundRepo: IRoundRepository
   ): Promise<SurveyRound> {
     const round = this.createRound(input);
-    return roundRepo.create(round);
+    const created = await roundRepo.create(round);
+
+    // A round created with a complete questionnaire is born active, which makes
+    // it the school's running round the moment it exists.
+    if (created.status === 'active') {
+      await this.closeOtherActiveRounds(created, roundRepo);
+    }
+
+    return created;
+  }
+
+  /**
+   * Make a draft round the school's running round.
+   *
+   * One school runs one round at a time (owner decision 2026-08-03), so
+   * activating a round closes whichever round was active before it. Two active
+   * rounds would mean two live share links and no answer to which round a
+   * respondent is answering.
+   */
+  public static async activateRound(
+    roundId: string,
+    roundRepo: IRoundRepository,
+  ): Promise<{ round: SurveyRound; closedRounds: SurveyRound[] } | null> {
+    const activated = await roundRepo.updateStatus(roundId, 'active');
+    if (!activated) return null;
+
+    return {
+      round: activated,
+      closedRounds: await this.closeOtherActiveRounds(activated, roundRepo),
+    };
+  }
+
+  /**
+   * Close every other active round of the same school, and report which ones.
+   *
+   * These are separate writes rather than one transaction: the repository
+   * interface has no transaction primitive, and a deployment has one manager,
+   * so nothing else is activating rounds concurrently. The durable version of
+   * this rule is a partial unique index on `(organization_id) where status =
+   * 'active'`, which is not in the schema yet — until then the rule is upheld
+   * here rather than by the database.
+   */
+  public static async closeOtherActiveRounds(
+    round: SurveyRound,
+    roundRepo: IRoundRepository,
+  ): Promise<SurveyRound[]> {
+    const siblings = await roundRepo.findByOrganizationId(round.organizationId);
+    const closed: SurveyRound[] = [];
+
+    for (const sibling of siblings) {
+      if (sibling.id === round.id || sibling.status !== 'active') continue;
+
+      const result = await roundRepo.updateStatus(sibling.id, 'closed');
+      if (result) closed.push(result);
+    }
+
+    return closed;
   }
 
   /**
