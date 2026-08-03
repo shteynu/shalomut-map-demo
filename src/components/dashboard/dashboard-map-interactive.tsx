@@ -5,7 +5,11 @@ import Link from "next/link";
 import { Plus, Undo2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DimensionIcon } from "@/components/ui/dimension-icon";
-import { getDimensionSurface, statusLabels, wellbeingDimensions } from "@/lib/demo-data";
+import {
+  dimensionPresentations,
+  getDimensionSurface,
+  statusLabels,
+} from "@/lib/dashboard/dimension-presentation";
 import { dashboardDimensionRoute } from "@/lib/navigation";
 import type { WellbeingDimensionId, WellbeingStatus } from "@/lib/shalomut-source";
 import { clamp } from "@/lib/utils/math";
@@ -33,7 +37,7 @@ type DragState = {
   maxY: number;
 };
 
-const zeroOffsets = wellbeingDimensions.reduce<StoneOffsetMap>((accumulator, dimension) => {
+const zeroOffsets = dimensionPresentations.reduce<StoneOffsetMap>((accumulator, dimension) => {
   accumulator[dimension.id] = { x: 0, y: 0 };
   return accumulator;
 }, {});
@@ -43,7 +47,7 @@ function isValidOffsetMap(value: unknown): value is StoneOffsetMap {
     return false;
   }
 
-  return wellbeingDimensions.every((dimension) => {
+  return dimensionPresentations.every((dimension) => {
     const offset = (value as StoneOffsetMap)[dimension.id];
     return Boolean(offset) && typeof offset.x === "number" && typeof offset.y === "number";
   });
@@ -260,7 +264,7 @@ export function DashboardMapInteractive({
 
   const hasCustomLayout = useMemo(
     () =>
-      wellbeingDimensions.some((dimension) => {
+      dimensionPresentations.some((dimension) => {
         const offset = offsets[dimension.id];
         return Boolean(offset) && (offset.x !== 0 || offset.y !== 0);
       }),
@@ -284,20 +288,14 @@ export function DashboardMapInteractive({
           איפוס סידור המפה
         </button>
       ) : null}
-      {wellbeingDimensions.map((dimension, index) => {
-        const dimensionScore = dimensionScores[dimension.id as WellbeingDimensionId];
-        const liveDimension = {
-          ...dimension,
-          score: dimensionScore.averageScore,
-          status: dimensionScore.computedStatus,
-        };
+      {dimensionPresentations.map((dimension, index) => {
+        const { averageScore: score, computedStatus: status } =
+          dimensionScores[dimension.id as WellbeingDimensionId];
         const offset = offsets[dimension.id] ?? zeroOffsets[dimension.id];
         const dragX = offset.x;
         const dragY = offset.y;
         const displayStatusLabel =
-          liveDimension.status === "green"
-            ? "חוזקה לשימור"
-            : statusLabels[liveDimension.status];
+          status === "green" ? "חוזקה לשימור" : statusLabels[status];
 
         return (
           <Link
@@ -318,7 +316,7 @@ export function DashboardMapInteractive({
                 width: dimension.conceptPosition.width,
                 height: dimension.conceptPosition.height,
                 borderRadius: dimension.conceptPosition.radius,
-                backgroundColor: getDimensionSurface(liveDimension),
+                backgroundColor: getDimensionSurface(status),
                 zIndex: draggingId === dimension.id ? 20 : undefined,
               } as CSSProperties
             }
@@ -326,7 +324,7 @@ export function DashboardMapInteractive({
             data-drag-y={Math.round(dragY)}
             data-dimension={dimension.id}
             data-stone-index={String(index + 1).padStart(2, "0")}
-            aria-label={`${dimension.conceptLabel}: ${dimension.subtitle}. ציון ${liveDimension.score}, ${displayStatusLabel}`}
+            aria-label={`${dimension.conceptLabel}: ${dimension.subtitle}. ציון ${score}, ${displayStatusLabel}`}
             draggable={false}
             onPointerDown={handlePointerDown(dimension.id)}
             onClick={handleClick(dimension.id)}
@@ -340,10 +338,10 @@ export function DashboardMapInteractive({
                 <DimensionIcon dimensionId={dimension.id} size={22} />
               </span>
               <strong>{dimension.conceptLabel}</strong>
-              <span className="dashboard-map-blob-score">{liveDimension.score}%</span>
+              <span className="dashboard-map-blob-score">{score}%</span>
             </span>
             <span className="dashboard-map-blob-status">
-              <span className={`status-dot status-${liveDimension.status}`} aria-hidden="true" />
+              <span className={`status-dot status-${status}`} aria-hidden="true" />
               {displayStatusLabel}
             </span>
           </Link>

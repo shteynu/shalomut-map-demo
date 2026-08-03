@@ -6,7 +6,7 @@ import { useState } from "react";
 import { PageIntro } from "@/components/ui/page-intro";
 import { PrivacyTooltip } from "@/components/ui/privacy-tooltip";
 import { useClipboard } from "@/lib/hooks/use-clipboard";
-import { wellbeingDimensions } from "@/lib/demo-data";
+import { dimensionPresentations } from "@/lib/dashboard/dimension-presentation";
 import { getNavigationAction } from "@/lib/navigation";
 import { useShareUrl } from "@/lib/use-share-url";
 import type { SurveyDefinition } from "@/lib/types/backend";
@@ -110,7 +110,11 @@ export function SurveyBuilder({
   const { copied, copy } = useClipboard();
   const shareUrl = useShareUrl(shareCode);
   const openRespondentSurveyAction = getNavigationAction("openRespondentSurvey");
-  const [selectedDimensionId, setSelectedDimensionId] = useState(wellbeingDimensions[0]?.id ?? "all");
+  // "all" is a filter value, not a dimension, so the state is wider than the
+  // presentation ids the list is built from.
+  const [selectedDimensionId, setSelectedDimensionId] = useState<string>(
+    dimensionPresentations[0]?.id ?? "all",
+  );
   const [editingQuestion, setEditingQuestion] = useState<BuilderQuestion | null>(null);
   const [pendingSuggestion, setPendingSuggestion] = useState<{
     draft: BuilderQuestion;
@@ -467,7 +471,7 @@ export function SurveyBuilder({
             isSuggesting={isSuggesting}
             suggestionNote={suggestionNote}
             suggestionDimensionLabel={
-              wellbeingDimensions.find(
+              dimensionPresentations.find(
                 (dimension) => dimension.id === targetDimensionId,
               )?.conceptLabel ?? targetDimensionId
             }

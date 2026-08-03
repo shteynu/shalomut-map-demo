@@ -37,9 +37,14 @@ description: Работай с продуктом и кодом Shalomut Map в 
   persisted `SurveyRound.surveyDefinition` snapshot.
 - Считай Google Form upstream-источником default/v1 questionnaire template, а
   Adobe XD — визуальной reference, согласно `docs/source-of-truth.md`.
-- Не используй `src/lib/demo-data.ts`, `DEMO_ORGANIZATION`, `DEMO_ROUND` или
-  `SHALOM-DEMO` как скрытый runtime fallback. Demo data допустимы только как
-  явные fixtures или визуальные mock metadata.
+- Не используй `DEMO_ORGANIZATION`, `DEMO_ROUND` или `SHALOM-DEMO` как скрытый
+  runtime fallback; они допустимы только как явные test fixtures.
+  `src/lib/demo-data.ts` удалён — не возвращай demo-аналитику в production-модуль.
+- Экраны Dashboard рендерят `DashboardInsightsDto`
+  (`src/lib/dashboard/dashboard-insights.ts`), а не wire-тип. Единственный
+  перевод из `StoneMapResult` — `toDashboardInsights` в
+  `ai-insights-view-model.ts`. Статическая презентация измерения (подписи,
+  геометрия карты, цвет) живёт в `src/lib/dashboard/dimension-presentation.ts`.
 - Оставляй пустую или недоступную persistence пустой; deployed writes без
   `DATABASE_URL` должны завершаться fail-closed.
 - Сохраняй восемь wellbeing dimensions как стабильную выходную taxonomy для

@@ -82,7 +82,7 @@ export function DashboardOverviewSummary({
     );
   }
 
-  const summary = state.value.overallPsychologicalSummary?.trim();
+  const summary = state.value.overallSummary;
 
   if (!summary) {
     return (

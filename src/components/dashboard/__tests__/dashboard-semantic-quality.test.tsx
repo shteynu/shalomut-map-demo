@@ -1,8 +1,10 @@
 import assert from "node:assert";
 import test from "node:test";
 import { renderToStaticMarkup } from "react-dom/server";
-import type { StoneMapResult } from "@/lib/ai-contract";
-import { getDimensionById } from "@/lib/demo-data";
+import type {
+  DashboardInsightsDto,
+  DashboardStone,
+} from "@/lib/dashboard/dashboard-insights";
 import { surveyInstrument } from "@/lib/shalomut-source";
 import {
   DashboardOverviewSummary,
@@ -16,14 +18,25 @@ import {
 } from "../../survey/survey-builder/types";
 import { SurveyQuestionCard } from "../../survey/survey-builder/survey-question-card";
 
-function createReadyResult(summary: string): StoneMapResult {
+function createReadyResult(summary: string): DashboardInsightsDto {
   return {
-    contractVersion: "2.0",
     roundId: "round-dashboard-summary",
-    processedAt: "2026-07-26T12:00:00.000Z",
-    isLocked: false,
-    status: "success",
-    overallPsychologicalSummary: summary,
+    overallSummary: summary,
+    stones: {},
+  };
+}
+
+function stoneWithMetrics(
+  metrics: DashboardStone["metrics"],
+): DashboardStone {
+  return {
+    dimensionId: "balance",
+    score: 62,
+    status: "yellow",
+    summary: ["פסקה אחת."],
+    interpretationUnavailable: false,
+    metrics,
+    recommendations: [],
   };
 }
 
@@ -70,9 +83,6 @@ test("DashboardOverviewSummary tells a run in flight apart from a failed one", (
 });
 
 test("getDisplayedMetrics forwards variable question metrics to the metrics screen", () => {
-  const dimension = getDimensionById("balance");
-  assert.ok(dimension);
-
   const shortRoundMetrics = [
     { label: "שאלה ראשונה", value: "70 מתוך 100", helper: "12 משיבים" },
     { label: "שאלה שנייה", value: "60 מתוך 100", helper: "12 משיבים" },
@@ -84,11 +94,11 @@ test("getDisplayedMetrics forwards variable question metrics to the metrics scre
   ];
 
   assert.deepStrictEqual(
-    getDisplayedMetrics({ ...dimension, metrics: shortRoundMetrics }),
+    getDisplayedMetrics(stoneWithMetrics(shortRoundMetrics)),
     shortRoundMetrics,
   );
   assert.deepStrictEqual(
-    getDisplayedMetrics({ ...dimension, metrics: expandedRoundMetrics }),
+    getDisplayedMetrics(stoneWithMetrics(expandedRoundMetrics)),
     expandedRoundMetrics,
   );
 });

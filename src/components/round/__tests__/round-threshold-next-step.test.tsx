@@ -1,26 +1,20 @@
 import assert from "node:assert";
 import test from "node:test";
 import { renderToStaticMarkup } from "react-dom/server";
-import type { StoneMapResult } from "@/lib/ai-contract";
+import type { DashboardInsightsDto } from "@/lib/dashboard/dashboard-insights";
 import { RoundControls } from "../round-controls";
 import { RoundThresholdNextStepContent } from "../round-threshold-next-step";
 
-const readyResult: StoneMapResult = {
-  contractVersion: "2.0",
+const readyResult: DashboardInsightsDto = {
   roundId: "round-threshold-state",
-  processedAt: "2026-08-02T10:00:00.000Z",
-  isLocked: false,
-  status: "success",
-  overallPsychologicalSummary: "סיכום ארגוני מוכן.",
+  overallSummary: "סיכום ארגוני מוכן.",
+  stones: {},
 };
 
-const lockedResult: StoneMapResult = {
-  contractVersion: "2.0",
+const lockedResult: DashboardInsightsDto = {
   roundId: "round-threshold-state",
-  processedAt: "2026-08-02T10:00:00.000Z",
-  isLocked: true,
-  status: "locked_error",
-  errorMessage: "Detailed metrics are locked below the privacy threshold.",
+  overallSummary: "",
+  stones: {},
 };
 
 function renderState(

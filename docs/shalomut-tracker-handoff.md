@@ -73,8 +73,15 @@ state, external blockers and approval gates. Product milestones belong in
 
 Before the next deployment-sensitive task, compare `origin/main` with deployed
 Core and Python source/health, then record only fresh read-only evidence in the
-new branch task file. The Core composition root is written on
-`refactor/core-composition-root` and is not yet on `main`; the next
-independently deliverable architecture slice after it is the presentation DTO
-(`DashboardInsightsDto`) with the production types still owned by
-`src/lib/demo-data.ts`.
+new branch task file.
+
+`main` moved on 2026-08-03: the Core composition root and the Dashboard
+presentation DTO are both merged, which closes stage 4 of the refactoring plan
+and the presentation half of stage 5. Deployed Core has not been updated for
+either, so deployed and `main` differ by these two slices until the next
+deployment. Neither changes an API, a contract version, a schema or a migration.
+
+The next independently deliverable architecture slice is the long-term identity
+model: manager passwords are still hashed with SHA-256 and a static pepper, and
+the same item covers replacing the organization-scoped shared gate with real
+tenant authorization.

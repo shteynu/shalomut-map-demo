@@ -1,14 +1,15 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import type { WellbeingDimension } from "@/lib/demo-data";
-import { getDimensionSurface } from "@/lib/demo-data";
-import { useBlobFit } from "@/lib/hooks/use-blob-fit";
+import type { DimensionPresentation } from "@/lib/dashboard/dimension-presentation";
+import { getDimensionSurface } from "@/lib/dashboard/dimension-presentation";
 import {
-  applyStoneInsightToDimension,
-  getDimensionActionPresentation,
-  getStoneInsight,
-} from "@/lib/ai-insights-view-model";
+  getDashboardStone,
+  type DashboardRecommendation,
+  type DashboardStone,
+} from "@/lib/dashboard/dashboard-insights";
+import { useBlobFit } from "@/lib/hooks/use-blob-fit";
+import { getDimensionActionPresentation } from "@/lib/ai-insights-view-model";
 import { useAiInsights } from "@/lib/hooks/use-ai-insights";
 import { getDashboardRecommendationsActions, navigationLabels } from "@/lib/navigation";
 import { DashboardAiInsightsState } from "./dashboard-ai-insights-state";
@@ -25,8 +26,8 @@ const recommendationBlobClasses = [
   "dashboard-recommendation-blob dashboard-recommendation-blob-bottom-right",
 ];
 
-function getDisplayRecommendations(dimension: WellbeingDimension) {
-  return dimension.recommendations;
+function getDisplayRecommendations(stone: DashboardStone) {
+  return stone.recommendations;
 }
 
 function PreservationRecommendationBlob({
@@ -37,7 +38,7 @@ function PreservationRecommendationBlob({
   featured,
   itemLabel,
 }: {
-  recommendation: { title: string; body: string };
+  recommendation: DashboardRecommendation;
   className: string;
   color: string;
   priority: number;
@@ -74,7 +75,7 @@ export function DashboardRecommendationsPage({
   organizationName,
   roundTitle,
 }: {
-  dimension: WellbeingDimension;
+  dimension: DimensionPresentation;
   roundId: string;
   organizationName: string;
   roundTitle: string;
@@ -82,7 +83,7 @@ export function DashboardRecommendationsPage({
   const { state, reload } = useAiInsights(roundId);
   const stone =
     state.status === "ready"
-      ? getStoneInsight(state.value, dimension.id)
+      ? getDashboardStone(state.value, dimension.id)
       : undefined;
 
   if (state.status !== "ready") {
@@ -119,30 +120,49 @@ export function DashboardRecommendationsPage({
     );
   }
 
-  const displayDimension = applyStoneInsightToDimension(
-    dimension,
-    stone,
+  return (
+    <DashboardRecommendationsStage
+      dimension={dimension}
+      stone={stone}
+      organizationName={organizationName}
+      roundTitle={roundTitle}
+    />
   );
-  const recommendations = getDisplayRecommendations(displayDimension);
+}
+
+/**
+ * The screen once the analysis is in hand. Split from the state machine above
+ * so the DTO path can be rendered and asserted without a fetch.
+ */
+export function DashboardRecommendationsStage({
+  dimension,
+  stone,
+  organizationName,
+  roundTitle,
+}: {
+  dimension: DimensionPresentation;
+  stone: DashboardStone;
+  organizationName: string;
+  roundTitle: string;
+}) {
+  const recommendations = getDisplayRecommendations(stone);
   const isFiveItemLayout = recommendations.length >= 5;
-  const dimensionSurface = getDimensionSurface(displayDimension);
-  const actionPresentation = getDimensionActionPresentation(
-    displayDimension.status,
-  );
-  const isPreservation = displayDimension.status === "green";
+  const dimensionSurface = getDimensionSurface(stone.status);
+  const actionPresentation = getDimensionActionPresentation(stone.status);
+  const isPreservation = stone.status === "green";
 
   return (
     <div className="dashboard-mock-page dashboard-recommendations-screen">
       <DashboardHeading
-        title={`${actionPresentation.actionsTitle} | ${displayDimension.conceptLabel}`}
+        title={`${actionPresentation.actionsTitle} | ${dimension.conceptLabel}`}
         organizationName={organizationName}
         roundTitle={roundTitle}
       />
-      <DimensionIdentityChip dimension={displayDimension} />
+      <DimensionIdentityChip dimension={dimension} status={stone.status} />
 
       <section
         className={`dashboard-recommendations-stage${isFiveItemLayout ? " is-five-items" : " is-generic-items"}`}
-        aria-label={`${actionPresentation.actionsTitle} עבור ${displayDimension.conceptLabel}`}
+        aria-label={`${actionPresentation.actionsTitle} עבור ${dimension.conceptLabel}`}
       >
         {recommendations.map((recommendation, index) => {
           const className = isFiveItemLayout

@@ -1,16 +1,17 @@
 import Link from "next/link";
 import { Clipboard, Copy, Eye, Plus, ShieldCheck } from "lucide-react";
 import type { CSSProperties } from "react";
-import { wellbeingDimensions, responseOptions } from "@/lib/demo-data";
+import { dimensionPresentations } from "@/lib/dashboard/dimension-presentation";
+import { responseScale } from "@/lib/shalomut-source";
 import { getNavigationAction } from "@/lib/navigation";
 import type { QuestionSuggestion } from "./question-suggestions";
 
 function getDimensionLabel(dimensionId: string) {
-  return wellbeingDimensions.find((dimension) => dimension.id === dimensionId)?.conceptLabel ?? dimensionId;
+  return dimensionPresentations.find((dimension) => dimension.id === dimensionId)?.conceptLabel ?? dimensionId;
 }
 
 function getDimensionColor(dimensionId: string) {
-  return wellbeingDimensions.find((dimension) => dimension.id === dimensionId)?.conceptColor ?? "#e49902";
+  return dimensionPresentations.find((dimension) => dimension.id === dimensionId)?.conceptColor ?? "#e49902";
 }
 
 type SidebarProps = {
@@ -80,7 +81,7 @@ export function SurveyBuilderSidebar({
         </div>
 
         <div className="builder-response-list">
-          {responseOptions.map((option) => (
+          {responseScale.map((option) => (
             <article key={option.value} className={`legend-card option-${option.value}`}>
               <strong>{option.title}</strong>
               <span>{option.text}</span>

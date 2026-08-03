@@ -42,13 +42,11 @@ belongs in archived task files and Git.
 
 ## Next architecture outcomes
 
-1. Define a stable `DashboardInsightsDto` and remove remaining production type
-   ownership from `src/lib/demo-data.ts`.
-2. Replace the current single-organization/password gate with the chosen
+1. Replace the current single-organization/password gate with the chosen
    long-term identity model before multi-tenant or real-respondent rollout.
-3. Decide whether OpenAPI remains two integrity-checked mirrors or is generated
+2. Decide whether OpenAPI remains two integrity-checked mirrors or is generated
    from one source.
-4. Expand mutation testing only after classifying high-value surviving mutants;
+3. Expand mutation testing only after classifying high-value surviving mutants;
    the current pilot is intentionally focused and non-blocking.
 
 ## Conditional, not scheduled

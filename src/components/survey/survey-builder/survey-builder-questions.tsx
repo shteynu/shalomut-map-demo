@@ -1,10 +1,10 @@
 import { Loader2, Lock, Plus, RotateCcw, Sparkles, Trash2 } from "lucide-react";
-import { wellbeingDimensions } from "@/lib/demo-data";
+import { dimensionPresentations } from "@/lib/dashboard/dimension-presentation";
 import { SurveyQuestionCard } from "./survey-question-card";
 import type { BuilderQuestion } from "./types";
 
 function getDimensionLabel(dimensionId: string) {
-  return wellbeingDimensions.find((dimension) => dimension.id === dimensionId)?.conceptLabel ?? dimensionId;
+  return dimensionPresentations.find((dimension) => dimension.id === dimensionId)?.conceptLabel ?? dimensionId;
 }
 
 type QuestionsPanelProps = {
@@ -146,7 +146,7 @@ export function SurveyBuilderQuestions({
       ) : null}
 
       <div className="survey-builder-dimension-tabs" role="group" aria-label="סינון שאלות לפי ממד שלומות">
-        {wellbeingDimensions.map((dimension, index) => {
+        {dimensionPresentations.map((dimension, index) => {
           const dimensionQuestions = questions.filter((question) => question.dimensionId === dimension.id);
           const activeCount = dimensionQuestions.filter((q) => q.enabled).length;
           return (

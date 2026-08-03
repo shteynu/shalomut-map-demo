@@ -6,7 +6,7 @@
 - Base branch: `main`
 - Base commit: `44982f0`
 - Current HEAD: this documentation commit, directly on top of `4802b22`
-- Status: implementation complete and verified locally; not pushed
+- Status: closed; merged into `main` on 2026-08-03
 - Last updated: 2026-08-03
 - Last agent/tool: Claude Opus 5 (Claude Code)
 
