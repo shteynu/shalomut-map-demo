@@ -1,18 +1,18 @@
 import assert from 'node:assert';
 import test from 'node:test';
-import type { StoneDetail } from '../ai-contract';
+import type { StoneDetail, StoneMapResult } from '../ai-contract';
 import {
-  applyStoneInsightToDimension,
   getDimensionActionPresentation,
+  toDashboardInsights,
+  toDashboardStone,
 } from '../ai-insights-view-model';
-import { getDimensionById } from '../demo-data';
+import { DEFAULT_PRODUCED_ANALYTICS_CONTRACT_VERSION } from '../ai-contract-version';
 
-test('applyStoneInsightToDimension keeps the round summary out of dimension detail copy', () => {
-  const dimension = getDimensionById('balance');
-  assert.ok(dimension);
-
+test('the round summary stays out of dimension detail copy', () => {
   const interpretation =
     'ממוצעי שאלות האיזון מצביעים על קושי. זמן ההתאוששות הוא המדד הנמוך ביותר.';
+  const overallSummary =
+    'זהו סיכום כללי שמופיע פעם אחת בלבד במפת השלומות.';
   const stone: StoneDetail = {
     dimensionId: 'balance',
     dimensionNameHebrew: 'איזון',
@@ -22,20 +22,24 @@ test('applyStoneInsightToDimension keeps the round summary out of dimension deta
     metrics: [],
     recommendedInterventions: [],
   };
+  const result: StoneMapResult = {
+    contractVersion: DEFAULT_PRODUCED_ANALYTICS_CONTRACT_VERSION,
+    roundId: 'round-summary',
+    isLocked: false,
+    status: 'success',
+    overallPsychologicalSummary: overallSummary,
+    stones: { balance: stone } as StoneMapResult['stones'],
+  };
 
-  const result = applyStoneInsightToDimension(
-    dimension,
-    stone,
-    'זהו סיכום כללי שמופיע פעם אחת בלבד במפת השלומות.',
-  );
+  // The DTO gives the round summary exactly one home. The stone mapper no
+  // longer even receives it, so it cannot leak into a dimension's paragraphs.
+  const insights = toDashboardInsights(result);
 
-  assert.deepStrictEqual(result.summary, [interpretation]);
+  assert.strictEqual(insights.overallSummary, overallSummary);
+  assert.deepStrictEqual(insights.stones.balance?.summary, [interpretation]);
 });
 
-test('applyStoneInsightToDimension exposes all three canonical question aggregates as UI metrics', () => {
-  const dimension = getDimensionById('balance');
-  assert.ok(dimension);
-
+test('the mapper exposes all three canonical question aggregates as UI metrics', () => {
   const stone: StoneDetail = {
     dimensionId: 'balance',
     dimensionNameHebrew: 'איזון',
@@ -70,7 +74,7 @@ test('applyStoneInsightToDimension exposes all three canonical question aggregat
     recommendedInterventions: [],
   };
 
-  const result = applyStoneInsightToDimension(dimension, stone);
+  const result = toDashboardStone(stone);
 
   assert.strictEqual(result.metrics.length, 3);
   assert.deepStrictEqual(
@@ -87,10 +91,7 @@ test('applyStoneInsightToDimension exposes all three canonical question aggregat
   );
 });
 
-test('applyStoneInsightToDimension preserves exact dynamic question text and variable metric counts across rounds', () => {
-  const dimension = getDimensionById('balance');
-  assert.ok(dimension);
-
+test('the mapper preserves exact dynamic question text and variable metric counts across rounds', () => {
   const roundFixtures = [
     {
       roundId: 'round-short',
@@ -158,7 +159,7 @@ test('applyStoneInsightToDimension preserves exact dynamic question text and var
       recommendedInterventions: [],
     };
 
-    const result = applyStoneInsightToDimension(dimension, stone);
+    const result = toDashboardStone(stone);
 
     assert.strictEqual(result.metrics.length, fixture.metrics.length, fixture.roundId);
     assert.deepStrictEqual(
@@ -174,10 +175,7 @@ test('applyStoneInsightToDimension preserves exact dynamic question text and var
   }
 });
 
-test('applyStoneInsightToDimension never uses an intervention from a different status', () => {
-  const dimension = getDimensionById('balance');
-  assert.ok(dimension);
-
+test('the mapper never uses an intervention from a different status', () => {
   const stone: StoneDetail = {
     dimensionId: 'balance',
     dimensionNameHebrew: 'איזון',
@@ -208,7 +206,7 @@ test('applyStoneInsightToDimension never uses an intervention from a different s
     ],
   };
 
-  const result = applyStoneInsightToDimension(dimension, stone);
+  const result = toDashboardStone(stone);
 
   assert.deepStrictEqual(
     result.recommendations.map((recommendation) => recommendation.title),

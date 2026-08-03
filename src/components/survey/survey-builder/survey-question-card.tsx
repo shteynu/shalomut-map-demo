@@ -1,14 +1,14 @@
 import type { CSSProperties } from "react";
 import { ClipboardList, Clock3, Copy, Edit3, Eye, GripVertical, ShieldCheck, Trash2 } from "lucide-react";
-import { wellbeingDimensions } from "@/lib/demo-data";
+import { dimensionPresentations } from "@/lib/dashboard/dimension-presentation";
 import type { BuilderQuestion } from "./types";
 
 function getDimensionLabel(dimensionId: string) {
-  return wellbeingDimensions.find((dimension) => dimension.id === dimensionId)?.conceptLabel ?? dimensionId;
+  return dimensionPresentations.find((dimension) => dimension.id === dimensionId)?.conceptLabel ?? dimensionId;
 }
 
 function getDimensionColor(dimensionId: string) {
-  return wellbeingDimensions.find((dimension) => dimension.id === dimensionId)?.conceptColor ?? "#e49902";
+  return dimensionPresentations.find((dimension) => dimension.id === dimensionId)?.conceptColor ?? "#e49902";
 }
 
 type QuestionCardProps = {
@@ -161,7 +161,7 @@ export function SurveyQuestionCard({
             }
             aria-label={`ממד שלומות לשאלה ${questionIndex}`}
           >
-            {wellbeingDimensions.map((dimension) => (
+            {dimensionPresentations.map((dimension) => (
               <option key={dimension.id} value={dimension.id}>
                 {dimension.conceptLabel}
               </option>

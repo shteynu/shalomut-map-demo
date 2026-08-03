@@ -26,9 +26,11 @@ round questionnaires and from demo result data.
   every analyzed question must map to one of those dimensions.
 - `SurveyRound.surveyDefinition` is the runtime source of truth for the exact
   questions shown and analyzed in that round. `src/lib/shalomut-source.ts`
-  supplies the dimension/status model and default questionnaire template;
-  demo scores, mock school data, summaries, metrics, and recommendations may
-  remain in `src/lib/demo-data.ts`.
+  supplies the dimension/status model and default questionnaire template. The
+  Dashboard's static presentation of those dimensions — labels, map geometry,
+  colours — lives in `src/lib/dashboard/dimension-presentation.ts`, and
+  everything about a round comes from the analysis as a `DashboardInsightsDto`.
+  `src/lib/demo-data.ts` no longer exists; nothing renders fixture analysis.
 - AI must consume the exact persisted round-question snapshot and its
   privacy-safe aggregates, then return the fixed eight-stone Dashboard output.
   It must not substitute canonical question text or silently ignore additional
@@ -68,7 +70,8 @@ round questionnaires and from demo result data.
   and rollback value.
 - `src/lib/survey-definition-hash.ts`: deterministic hash of the exact enabled
   AI-visible question snapshot.
-- `src/lib/demo-data.ts`: demo organization, active round, mock dashboard scores, map positions, metrics, recommendations, and compatibility exports for existing components.
+- `src/lib/dashboard/dashboard-insights.ts`: `DashboardInsightsDto`, the stable presentation contract the screens render; `ai-insights-view-model.ts` is the only translation from the versioned wire payload.
+- `src/lib/dashboard/dimension-presentation.ts`: per-dimension labels, map geometry, concept colours and status surfaces.
 - `PRODUCT.md`: product voice, users, principles, privacy posture, accessibility expectations, and brand personality.
 - `docs/product-requirements-summary.md`: canonical summary of original product requirements documents, methodology, MVP definition, 8 wellbeing dimensions, and pilot roadmap.
 - `design.md`: design tokens and implementation notes for the current Next.js demo.

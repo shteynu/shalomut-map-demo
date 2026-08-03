@@ -40,7 +40,7 @@ test('loadAiInsights returns a validated ready state', async () => {
 
   assert.strictEqual(result.status, 'ready');
   if (result.status === 'ready') {
-    assert.strictEqual(result.value.stones?.balance.status, 'red');
+    assert.strictEqual(result.value.stones.balance?.status, 'red');
   }
 });
 

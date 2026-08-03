@@ -4,7 +4,12 @@ import {
   type ScoreDistribution,
   type StoneMapResult,
 } from './ai-contract';
-import type { WellbeingDimension } from './demo-data';
+import type {
+  DashboardInsightsDto,
+  DashboardMetric,
+  DashboardRecommendation,
+  DashboardStone,
+} from './dashboard/dashboard-insights';
 import { MINIMUM_PRIVACY_THRESHOLD } from './survey-definition';
 import type {
   WellbeingDimensionId,
@@ -87,27 +92,83 @@ function displayableDistribution(
   return total === responseCount ? distribution : undefined;
 }
 
-export function getStoneInsight(
-  stoneMap: StoneMapResult,
-  dimensionId: string,
-): AnyStoneDetail | undefined {
-  if (
-    !AI_ANALYTICS_DIMENSION_IDS.includes(
-      dimensionId as WellbeingDimensionId,
-    )
-  ) {
-    return undefined;
-  }
+function toDashboardMetrics(stone: AnyStoneDetail): DashboardMetric[] {
+  return stone.metrics.map((metric) => {
+    if ('insightText' in metric) {
+      return {
+        label: metric.label,
+        value: '',
+        helper: '',
+        highlightText: metric.insightText,
+        narrativeOnly: true,
+      };
+    }
 
-  return stoneMap.stones?.[dimensionId as WellbeingDimensionId];
+    const hasQuestionAggregate =
+      typeof metric.questionId === 'string' &&
+      typeof metric.averageScore === 'number' &&
+      Number.isFinite(metric.averageScore) &&
+      typeof metric.responseCount === 'number' &&
+      Number.isInteger(metric.responseCount);
+
+    if (!hasQuestionAggregate) {
+      return {
+        label: metric.label,
+        value: metric.value,
+        helper: metric.trend || 'נתון מתוך ניתוח השלומות',
+      };
+    }
+
+    const trend = metric.trend?.trim();
+    const distribution = displayableDistribution(
+      metric.scoreDistribution,
+      metric.responseCount!,
+    );
+    if (distribution) {
+      return {
+        label: metric.label,
+        value: formatQuestionAverage(metric.averageScore!),
+        // The counts live in the sentence, never in the bar alone.
+        helper: formatDistribution(distribution, metric.responseCount!),
+        distribution,
+      };
+    }
+
+    return {
+      label: metric.label,
+      value: formatQuestionAverage(metric.averageScore!),
+      helper: `${metric.responseCount} משיבים${trend ? ` • ${trend}` : ''}`,
+    };
+  });
 }
 
-export function applyStoneInsightToDimension(
-  dimension: WellbeingDimension,
+function toDashboardRecommendations(
   stone: AnyStoneDetail,
-  overallSummary?: string,
-): WellbeingDimension {
-  void overallSummary;
+): DashboardRecommendation[] {
+  return stone.recommendedInterventions
+    .filter(
+      (intervention) =>
+        intervention.dimensionId === stone.dimensionId &&
+        (intervention.status === undefined ||
+          intervention.status === stone.status),
+    )
+    .map((intervention) => {
+      const actionSteps = intervention.actionable_steps
+        .map((step) => step.trim())
+        .filter(Boolean);
+      const actionText =
+        actionSteps.length > 0
+          ? ` צעדים מוצעים: ${actionSteps.join(' • ')}`
+          : '';
+
+      return {
+        title: intervention.title,
+        body: `${intervention.summary}${actionText}`,
+      };
+    });
+}
+
+export function toDashboardStone(stone: AnyStoneDetail): DashboardStone {
   const summary =
     'summary' in stone
       ? stone.summary
@@ -116,7 +177,7 @@ export function applyStoneInsightToDimension(
         );
 
   return {
-    ...dimension,
+    dimensionId: stone.dimensionId,
     score: Math.round(stone.score),
     status: stone.status,
     summary,
@@ -125,73 +186,31 @@ export function applyStoneInsightToDimension(
     // of the partial map.
     interpretationUnavailable:
       stone.generationProvenance?.outcome === 'unavailable',
-    metrics: stone.metrics.map((metric) => {
-      if ('insightText' in metric) {
-        return {
-          label: metric.label,
-          value: '',
-          helper: '',
-          highlightText: metric.insightText,
-          narrativeOnly: true,
-        };
-      }
+    metrics: toDashboardMetrics(stone),
+    recommendations: toDashboardRecommendations(stone),
+  };
+}
 
-      const hasQuestionAggregate =
-        typeof metric.questionId === 'string' &&
-        typeof metric.averageScore === 'number' &&
-        Number.isFinite(metric.averageScore) &&
-        typeof metric.responseCount === 'number' &&
-        Number.isInteger(metric.responseCount);
+/**
+ * The single translation from the wire contract to what the screens render.
+ *
+ * Every version-shaped question — does this stone carry a three-part summary or
+ * one interpretation paragraph, is this metric narrative or numeric — is
+ * answered here, so no component ever holds a `StoneMapResult`.
+ */
+export function toDashboardInsights(
+  result: StoneMapResult,
+): DashboardInsightsDto {
+  const stones: Partial<Record<WellbeingDimensionId, DashboardStone>> = {};
 
-      if (!hasQuestionAggregate) {
-        return {
-          label: metric.label,
-          value: metric.value,
-          helper: metric.trend || 'נתון מתוך ניתוח השלומות',
-        };
-      }
+  for (const dimensionId of AI_ANALYTICS_DIMENSION_IDS) {
+    const stone = result.stones?.[dimensionId];
+    if (stone) stones[dimensionId] = toDashboardStone(stone);
+  }
 
-      const trend = metric.trend?.trim();
-      const distribution = displayableDistribution(
-        metric.scoreDistribution,
-        metric.responseCount!,
-      );
-      if (distribution) {
-        return {
-          label: metric.label,
-          value: formatQuestionAverage(metric.averageScore!),
-          // The counts live in the sentence, never in the bar alone.
-          helper: formatDistribution(distribution, metric.responseCount!),
-          distribution,
-        };
-      }
-
-      return {
-        label: metric.label,
-        value: formatQuestionAverage(metric.averageScore!),
-        helper: `${metric.responseCount} משיבים${trend ? ` • ${trend}` : ''}`,
-      };
-    }),
-    recommendations: stone.recommendedInterventions
-      .filter(
-        (intervention) =>
-          intervention.dimensionId === stone.dimensionId &&
-          (intervention.status === undefined ||
-            intervention.status === stone.status),
-      )
-      .map((intervention) => {
-        const actionSteps = intervention.actionable_steps
-          .map((step) => step.trim())
-          .filter(Boolean);
-        const actionText =
-          actionSteps.length > 0
-            ? ` צעדים מוצעים: ${actionSteps.join(' • ')}`
-            : '';
-
-        return {
-          title: intervention.title,
-          body: `${intervention.summary}${actionText}`,
-        };
-      }),
+  return {
+    roundId: result.roundId,
+    overallSummary: result.overallPsychologicalSummary?.trim() ?? '',
+    stones,
   };
 }

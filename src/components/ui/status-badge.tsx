@@ -1,5 +1,5 @@
-import type { WellbeingStatus } from "@/lib/demo-data";
-import { statusLabels } from "@/lib/demo-data";
+import type { WellbeingStatus } from "@/lib/shalomut-source";
+import { statusLabels } from "@/lib/shalomut-source";
 
 export const statusLabelShort: Record<WellbeingStatus, string> = {
   green: "ירוק",

@@ -69,6 +69,8 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 - CI runs TypeScript tests/types/lint/build, PostgreSQL integration tests and
   the full Python suite through `npm run verify`; CodeQL covers TypeScript and
   Python.
+- The Dashboard renders `DashboardInsightsDto` instead of the AI wire payload,
+  and `src/lib/demo-data.ts` is gone along with the fixture analysis it held.
 - StrykerJS provides an opt-in, non-blocking mutation pilot for
   `src/lib/ai-contract.ts`. It is not repository-wide coverage or a CI gate.
 
@@ -86,12 +88,10 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 ### Architecture
 
 1. Replace direct Core `getRepositories()` calls with a composition root.
-2. Define a stable `DashboardInsightsDto` and remove production type ownership
-   from `src/lib/demo-data.ts`.
-3. Choose the long-term identity model before real respondents or multi-tenant
+2. Choose the long-term identity model before real respondents or multi-tenant
    deployment.
-4. Decide whether OpenAPI should be generated from one source.
-5. Classify high-value surviving Stryker mutants before expanding mutation
+3. Decide whether OpenAPI should be generated from one source.
+4. Classify high-value surviving Stryker mutants before expanding mutation
    scope.
 
 ## Durable references

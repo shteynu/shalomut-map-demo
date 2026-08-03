@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Check, Eye, Sparkles, X } from "lucide-react";
-import { wellbeingDimensions } from "@/lib/demo-data";
+import { dimensionPresentations } from "@/lib/dashboard/dimension-presentation";
 import type { QuestionSuggestionSource } from "./question-suggestions";
 import type { BuilderQuestion } from "./types";
 
@@ -159,7 +159,7 @@ export function QuestionEditDialog({
     onClose();
   };
 
-  const selectedDimension = wellbeingDimensions.find((d) => d.id === dimensionId);
+  const selectedDimension = dimensionPresentations.find((d) => d.id === dimensionId);
 
   return (
     <div
@@ -229,7 +229,7 @@ export function QuestionEditDialog({
                 value={dimensionId}
                 onChange={(e) => setDimensionId(e.target.value)}
               >
-                {wellbeingDimensions.map((d) => (
+                {dimensionPresentations.map((d) => (
                   <option key={d.id} value={d.id}>
                     {d.conceptLabel}
                   </option>

@@ -1,13 +1,14 @@
 "use client";
 
+import type { RefObject } from "react";
 import { useBlobFit } from "@/lib/hooks/use-blob-fit";
-import type { WellbeingDimension } from "@/lib/demo-data";
-import { getDimensionSurface } from "@/lib/demo-data";
+import type { DimensionPresentation } from "@/lib/dashboard/dimension-presentation";
+import { getDimensionSurface } from "@/lib/dashboard/dimension-presentation";
 import {
-  applyStoneInsightToDimension,
-  getDimensionActionPresentation,
-  getStoneInsight,
-} from "@/lib/ai-insights-view-model";
+  getDashboardStone,
+  type DashboardStone,
+} from "@/lib/dashboard/dashboard-insights";
+import { getDimensionActionPresentation } from "@/lib/ai-insights-view-model";
 import { useAiInsights } from "@/lib/hooks/use-ai-insights";
 import { getDashboardDetailActions } from "@/lib/navigation";
 import { DashboardAiInsightsState } from "./dashboard-ai-insights-state";
@@ -21,7 +22,7 @@ export function DashboardDimensionPage({
   organizationName,
   roundTitle,
 }: {
-  dimension: WellbeingDimension;
+  dimension: DimensionPresentation;
   roundId: string;
   organizationName: string;
   roundTitle: string;
@@ -29,17 +30,10 @@ export function DashboardDimensionPage({
   const { state, reload } = useAiInsights(roundId);
   const stone =
     state.status === "ready"
-      ? getStoneInsight(state.value, dimension.id)
+      ? getDashboardStone(state.value, dimension.id)
       : undefined;
-  const displayDimension = stone
-    ? applyStoneInsightToDimension(dimension, stone)
-    : dimension;
-  const actionPresentation = getDimensionActionPresentation(
-    displayDimension.status,
-  );
-  const dimensionSurface = getDimensionSurface(displayDimension);
   const { containerRef, contentRef } = useBlobFit(
-    `${displayDimension.id}-${displayDimension.summary.join("|")}`,
+    `${dimension.id}-${stone?.summary.join("|") ?? ""}`,
   );
 
   if (state.status !== "ready") {
@@ -80,27 +74,61 @@ export function DashboardDimensionPage({
   }
 
   return (
+    <DashboardDimensionDetail
+      dimension={dimension}
+      stone={stone}
+      organizationName={organizationName}
+      roundTitle={roundTitle}
+      blobRefs={{ containerRef, contentRef }}
+    />
+  );
+}
+
+/**
+ * The screen once the analysis is in hand. Split from the state machine above
+ * so the DTO path can be rendered and asserted without a fetch.
+ */
+export function DashboardDimensionDetail({
+  dimension,
+  stone,
+  organizationName,
+  roundTitle,
+  blobRefs,
+}: {
+  dimension: DimensionPresentation;
+  stone: DashboardStone;
+  organizationName: string;
+  roundTitle: string;
+  blobRefs?: {
+    containerRef: RefObject<HTMLElement | null>;
+    contentRef: RefObject<HTMLElement | null>;
+  };
+}) {
+  const actionPresentation = getDimensionActionPresentation(stone.status);
+  const dimensionSurface = getDimensionSurface(stone.status);
+
+  return (
     <div className="dashboard-mock-page dashboard-detail-screen">
       <DashboardHeading
-        title={`${actionPresentation.dimensionTitle} | ${displayDimension.conceptLabel}`}
+        title={`${actionPresentation.dimensionTitle} | ${dimension.conceptLabel}`}
         organizationName={organizationName}
         roundTitle={roundTitle}
       />
-      <DimensionIdentityChip dimension={displayDimension} />
+      <DimensionIdentityChip dimension={dimension} status={stone.status} />
 
       <article
-        ref={containerRef as any}
+        ref={blobRefs?.containerRef as any}
         className="dashboard-single-blob"
         style={{ backgroundColor: dimensionSurface, display: "grid" }}
       >
-        <div ref={contentRef as any} className="dashboard-single-blob-copy">
-          {displayDimension.interpretationUnavailable ? (
+        <div ref={blobRefs?.contentRef as any} className="dashboard-single-blob-copy">
+          {stone.interpretationUnavailable ? (
             <p role="status">
               הניתוח המילולי לממד הזה לא נוצר בסבב האחרון. הציון, פירוט השאלות
               וההמלצות מלאים, ואפשר להפעיל ניתוח מחדש כדי לנסות שוב.
             </p>
           ) : (
-            displayDimension.summary.map((paragraph) => (
+            stone.summary.map((paragraph) => (
               <p key={paragraph}>{paragraph}</p>
             ))
           )}
@@ -108,7 +136,7 @@ export function DashboardDimensionPage({
       </article>
 
       <DashboardCtaRow
-        actions={getDashboardDetailActions(displayDimension.id)}
+        actions={getDashboardDetailActions(dimension.id)}
       />
     </div>
   );

@@ -1,13 +1,9 @@
 import assert from 'node:assert';
 import test from 'node:test';
 import type { StoneDetail, StoneDetailV6 } from '../ai-contract';
-import { applyStoneInsightToDimension } from '../ai-insights-view-model';
-import { getDimensionById } from '../demo-data';
+import { toDashboardStone } from '../ai-insights-view-model';
 
-test('applyStoneInsightToDimension replaces demo analysis with AI content', () => {
-  const dimension = getDimensionById('balance');
-  assert.ok(dimension);
-
+test('a stone becomes the dashboard shape the screens render', () => {
   const stone: StoneDetail = {
     dimensionId: 'balance',
     dimensionNameHebrew: 'איזון',
@@ -27,11 +23,7 @@ test('applyStoneInsightToDimension replaces demo analysis with AI content', () =
     ],
   };
 
-  const result = applyStoneInsightToDimension(
-    dimension,
-    stone,
-    'סיכום ארגוני',
-  );
+  const result = toDashboardStone(stone);
 
   assert.strictEqual(result.status, 'red');
   assert.strictEqual(result.score, 40);
@@ -41,9 +33,6 @@ test('applyStoneInsightToDimension replaces demo analysis with AI content', () =
 });
 
 test('Contract V6 maps three summary paragraphs and qualitative metrics', () => {
-  const dimension = getDimensionById('balance');
-  assert.ok(dimension);
-
   const stone: StoneDetailV6 = {
     dimensionId: 'balance',
     dimensionNameHebrew: 'איזון',
@@ -70,7 +59,7 @@ test('Contract V6 maps three summary paragraphs and qualitative metrics', () => 
     },
   };
 
-  const result = applyStoneInsightToDimension(dimension, stone);
+  const result = toDashboardStone(stone);
 
   assert.deepStrictEqual(result.summary, stone.summary);
   assert.deepStrictEqual(result.metrics[0], {
@@ -95,11 +84,7 @@ function stoneWithMetric(metric: StoneDetail['metrics'][number]): StoneDetail {
 }
 
 test('a question that cleared the threshold shows its split, in words and in a bar', () => {
-  const dimension = getDimensionById('balance');
-  assert.ok(dimension);
-
-  const result = applyStoneInsightToDimension(
-    dimension,
+  const result = toDashboardStone(
     stoneWithMetric({
       label: 'עומס משימות',
       value: '60.0',
@@ -128,12 +113,8 @@ test('a question that cleared the threshold shows its split, in words and in a b
 });
 
 test('a question below the threshold keeps the count and loses the split', () => {
-  const dimension = getDimensionById('balance');
-  assert.ok(dimension);
-
   // Three answers as three counts is close to a list of who said what.
-  const result = applyStoneInsightToDimension(
-    dimension,
+  const result = toDashboardStone(
     stoneWithMetric({
       label: 'עומס משימות',
       value: '60.0',
@@ -150,11 +131,7 @@ test('a question below the threshold keeps the count and loses the split', () =>
 });
 
 test('a split that does not add up to the count is not drawn', () => {
-  const dimension = getDimensionById('balance');
-  assert.ok(dimension);
-
-  const result = applyStoneInsightToDimension(
-    dimension,
+  const result = toDashboardStone(
     stoneWithMetric({
       label: 'עומס משימות',
       value: '60.0',
@@ -173,9 +150,6 @@ test('a stone the provider never wrote is marked, not merely left empty', () => 
   // exists. The screens need to tell "not analysed yet" from "the round
   // finished and this paragraph could not be written", and they say different
   // things to the manager.
-  const dimension = getDimensionById('certainty');
-  assert.ok(dimension);
-
   const stone: StoneDetail = {
     dimensionId: 'certainty',
     dimensionNameHebrew: 'ודאות',
@@ -192,7 +166,7 @@ test('a stone the provider never wrote is marked, not merely left empty', () => 
     },
   };
 
-  const result = applyStoneInsightToDimension(dimension, stone);
+  const result = toDashboardStone(stone);
 
   assert.deepStrictEqual(result.summary, []);
   assert.strictEqual(result.interpretationUnavailable, true);
@@ -202,9 +176,6 @@ test('a stone the provider never wrote is marked, not merely left empty', () => 
 });
 
 test('a stone the model wrote is not marked unavailable', () => {
-  const dimension = getDimensionById('balance');
-  assert.ok(dimension);
-
   const stone: StoneDetail = {
     dimensionId: 'balance',
     dimensionNameHebrew: 'איזון',
@@ -221,7 +192,7 @@ test('a stone the model wrote is not marked unavailable', () => {
     },
   };
 
-  const result = applyStoneInsightToDimension(dimension, stone);
+  const result = toDashboardStone(stone);
 
   assert.strictEqual(result.interpretationUnavailable, false);
   assert.deepStrictEqual(result.summary, ['נדרש שינוי בעומס העבודה.']);

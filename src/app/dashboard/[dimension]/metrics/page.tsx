@@ -1,7 +1,10 @@
 import { notFound } from "next/navigation";
 import { DashboardMetricsPage } from "@/components/dashboard";
 import { ManagerOnboarding } from "@/components/manager";
-import { getDimensionById, getDimensionStaticParams } from "@/lib/demo-data";
+import {
+  getDimensionPresentation,
+  getDimensionStaticParams,
+} from "@/lib/dashboard/dimension-presentation";
 import { loadManagerContext } from "@/lib/server/manager-context";
 
 export const dynamicParams = false;
@@ -16,7 +19,7 @@ export default async function DimensionMetricsPage({
   params: Promise<{ dimension: string }>;
 }) {
   const { dimension } = await params;
-  const entry = getDimensionById(dimension);
+  const entry = getDimensionPresentation(dimension);
   const context = await loadManagerContext();
 
   if (!entry) {

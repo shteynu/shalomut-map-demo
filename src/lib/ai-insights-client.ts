@@ -1,11 +1,15 @@
-import {
-  type StoneMapResult,
-  validateStoneMapResult,
-} from './ai-contract';
+import { validateStoneMapResult } from './ai-contract';
+import { toDashboardInsights } from './ai-insights-view-model';
+import type { DashboardInsightsDto } from './dashboard/dashboard-insights';
 
+/**
+ * The wire contract stops here. Everything upstream of this module speaks
+ * `StoneMapResult`; everything downstream — the hook, the screens — holds the
+ * presentation DTO and cannot read a payload field by name.
+ */
 export type AiInsightsLoadResult =
-  | { status: 'ready'; value: StoneMapResult }
-  | { status: 'locked'; value: StoneMapResult }
+  | { status: 'ready'; value: DashboardInsightsDto }
+  | { status: 'locked'; value: DashboardInsightsDto }
   | { status: 'not-found' }
   | { status: 'running' }
   | { status: 'error'; error: string };
@@ -71,7 +75,7 @@ export async function loadAiInsights(
     }
 
     if (validation.value.isLocked) {
-      return { status: 'locked', value: validation.value };
+      return { status: 'locked', value: toDashboardInsights(validation.value) };
     }
 
     if (
@@ -84,7 +88,7 @@ export async function loadAiInsights(
       };
     }
 
-    return { status: 'ready', value: validation.value };
+    return { status: 'ready', value: toDashboardInsights(validation.value) };
   } catch (error) {
     return {
       status: 'error',

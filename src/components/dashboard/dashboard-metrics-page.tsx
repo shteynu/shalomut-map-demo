@@ -1,12 +1,12 @@
 "use client";
 
-import type { WellbeingDimension } from "@/lib/demo-data";
-import { getDimensionSurface } from "@/lib/demo-data";
+import type { DimensionPresentation } from "@/lib/dashboard/dimension-presentation";
+import { getDimensionSurface } from "@/lib/dashboard/dimension-presentation";
 import {
-  applyStoneInsightToDimension,
-  getDimensionActionPresentation,
-  getStoneInsight,
-} from "@/lib/ai-insights-view-model";
+  getDashboardStone,
+  type DashboardStone,
+} from "@/lib/dashboard/dashboard-insights";
+import { getDimensionActionPresentation } from "@/lib/ai-insights-view-model";
 import { useAiInsights } from "@/lib/hooks/use-ai-insights";
 import { getDashboardMetricsActions, navigationLabels } from "@/lib/navigation";
 import { DashboardAiInsightsState } from "./dashboard-ai-insights-state";
@@ -15,8 +15,8 @@ import { DashboardHeading } from "./dashboard-heading";
 import { DimensionIdentityChip } from "./dimension-identity-chip";
 import { MetricBlob } from "./metric-blob";
 
-export function getDisplayedMetrics(dimension: WellbeingDimension) {
-  return dimension.metrics;
+export function getDisplayedMetrics(stone: DashboardStone) {
+  return stone.metrics;
 }
 
 export function DashboardMetricsPage({
@@ -25,7 +25,7 @@ export function DashboardMetricsPage({
   organizationName,
   roundTitle,
 }: {
-  dimension: WellbeingDimension;
+  dimension: DimensionPresentation;
   roundId: string;
   organizationName: string;
   roundTitle: string;
@@ -33,7 +33,7 @@ export function DashboardMetricsPage({
   const { state, reload } = useAiInsights(roundId);
   const stone =
     state.status === "ready"
-      ? getStoneInsight(state.value, dimension.id)
+      ? getDashboardStone(state.value, dimension.id)
       : undefined;
 
   if (state.status !== "ready") {
@@ -69,32 +69,50 @@ export function DashboardMetricsPage({
     );
   }
 
-  const displayDimension = applyStoneInsightToDimension(
-    dimension,
-    stone,
+  return (
+    <DashboardMetricsStage
+      dimension={dimension}
+      stone={stone}
+      organizationName={organizationName}
+      roundTitle={roundTitle}
+    />
   );
-  const metrics = getDisplayedMetrics(displayDimension);
-  const actionPresentation = getDimensionActionPresentation(
-    displayDimension.status,
+}
+
+/**
+ * The screen once the analysis is in hand. Split from the state machine above
+ * so the DTO path can be rendered and asserted without a fetch.
+ */
+export function DashboardMetricsStage({
+  dimension,
+  stone,
+  organizationName,
+  roundTitle,
+}: {
+  dimension: DimensionPresentation;
+  stone: DashboardStone;
+  organizationName: string;
+  roundTitle: string;
+}) {
+  const metrics = getDisplayedMetrics(stone);
+  const actionPresentation = getDimensionActionPresentation(stone.status);
+  const actions = getDashboardMetricsActions(dimension.id).map((action) =>
+    action.id === "dimensionRecommendations"
+      ? { ...action, label: actionPresentation.actionsTitle }
+      : action,
   );
-  const actions = getDashboardMetricsActions(displayDimension.id).map(
-    (action) =>
-      action.id === "dimensionRecommendations"
-        ? { ...action, label: actionPresentation.actionsTitle }
-        : action,
-  );
-  const dimensionSurface = getDimensionSurface(displayDimension);
+  const dimensionSurface = getDimensionSurface(stone.status);
 
   return (
     <div className="dashboard-mock-page dashboard-metrics-screen">
       <DashboardHeading
-        title={`${navigationLabels.highlightedMetrics} | ${displayDimension.conceptLabel}`}
+        title={`${navigationLabels.highlightedMetrics} | ${dimension.conceptLabel}`}
         organizationName={organizationName}
         roundTitle={roundTitle}
       />
-      <DimensionIdentityChip dimension={displayDimension} />
+      <DimensionIdentityChip dimension={dimension} status={stone.status} />
 
-      <section className="dashboard-metrics-stage" aria-label={`${navigationLabels.highlightedMetrics} עבור ${displayDimension.conceptLabel}`}>
+      <section className="dashboard-metrics-stage" aria-label={`${navigationLabels.highlightedMetrics} עבור ${dimension.conceptLabel}`}>
         {metrics.map((metric, index) => (
           <MetricBlob
             key={`${metric.label}-${metric.value}`}

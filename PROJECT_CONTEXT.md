@@ -59,8 +59,10 @@ version-specific wire models.
 
 Missing `DATABASE_URL`, an unavailable Prisma client or an empty database must
 not invent an organization, round or response. In-memory repositories start
-empty. `DEMO_ORGANIZATION`, `DEMO_ROUND`, `SHALOM-DEMO` and demo scores are
-fixtures/visual metadata only, never a hidden runtime fallback.
+empty. `DEMO_ORGANIZATION`, `DEMO_ROUND` and `SHALOM-DEMO` are test fixtures
+only, never a hidden runtime fallback. Since 2026-08-03 there are no demo
+scores or demo analysis copy to fall back to: `src/lib/demo-data.ts` is gone,
+and a screen with no analysis says so.
 
 Deployed writes without durable persistence fail closed. Manager screens show
 explicit onboarding/empty/error states.
@@ -143,6 +145,18 @@ without one is not reliable execution.
 Outside development the service requires all shared secrets, non-local Core
 URLs and `USE_MOCK_MCP=false`. Callback destinations are derived only from
 trusted configuration. Direct `/analyze` is development-only.
+
+### ADR-011: The Dashboard renders a presentation DTO, not the wire payload
+
+`DashboardInsightsDto` (`src/lib/dashboard/dashboard-insights.ts`) is what the
+screens hold: round summary, and per dimension a score, status, summary
+paragraphs, metrics and recommendations. `toDashboardInsights` in
+`ai-insights-view-model.ts` is the only translation from `StoneMapResult`, so a
+new contract version changes one function and no component.
+
+A dimension's stable presentation — labels, map geometry, concept colour — is
+separate again, in `src/lib/dashboard/dimension-presentation.ts`. The two were
+one type, which is why fixture analysis lived in a production module.
 
 ## Environments
 

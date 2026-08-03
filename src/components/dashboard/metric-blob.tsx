@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 import { useBlobFit } from "@/lib/hooks/use-blob-fit";
-import type { ResponseMetric } from "@/lib/demo-data";
+import type { DashboardMetric } from "@/lib/dashboard/dashboard-insights";
 
 export function MetricBlob({
   metric,
@@ -8,7 +8,7 @@ export function MetricBlob({
   emphasis = "secondary",
   onRed = false,
 }: {
-  metric: ResponseMetric;
+  metric: DashboardMetric;
   color?: string;
   emphasis?: "primary" | "secondary";
   onRed?: boolean;
