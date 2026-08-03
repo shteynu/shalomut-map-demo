@@ -49,6 +49,11 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
   failed, missing and refresh states without exposing service internals.
 - Green dimensions are strengths to preserve; yellow/red use attention or
   improvement semantics.
+- The green/yellow/red score bands live in `contracts/scoring-bands.json` and
+  are read by both runtimes, so tuning the methodology after the pilot is one
+  edit rather than five code copies. They are deployment-wide by decision: the
+  service checks a payload's status against its score, so per-round bands would
+  be new contract semantics.
 
 ### AI analytics
 
@@ -92,11 +97,9 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 1. Per-round dashboard access and comparative multi-round analytics across
    semesters (`docs/product-behaviour-backlog.md` §10).
 2. Decide whether recommendations become tracked goals/action plans.
-3. Move the green/yellow score boundaries out of `analytics.service.ts` into
-   round-scoped configuration (§9).
-4. Improve survey-builder recovery/search/bulk/reorder behavior.
-5. Complete keyboard/reduced-motion support for the interactive map.
-6. Report clipboard permission failure honestly instead of treating it as a
+3. Improve survey-builder recovery/search/bulk/reorder behavior.
+4. Complete keyboard/reduced-motion support for the interactive map.
+5. Report clipboard permission failure honestly instead of treating it as a
    successful copy.
 
 The backlog was reconciled with the owner's development requirements document

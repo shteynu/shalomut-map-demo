@@ -10,7 +10,7 @@ School principals, wellbeing coordinators, and district supervisors in Hebrew-sp
 
 ## Product Purpose
 
-"Shalomut Map" (מפת שלומות) visualizes multi-dimensional school-staff wellbeing as an interactive map of organic "stones" — one per wellbeing dimension (self-expression, professional competence, social resources, balance, management support, certainty, organizational climate, meaning). Each stone carries a status color (green ≥75, yellow 50–74, red <50). Success means a principal can read the school's wellbeing state at a glance, trust that individual anonymity is protected (privacy threshold: results lock below 10 respondents), and move to concrete goals/recommendations.
+"Shalomut Map" (מפת שלומות) visualizes multi-dimensional school-staff wellbeing as an interactive map of organic "stones" — one per wellbeing dimension (self-expression, professional competence, social resources, balance, management support, certainty, organizational climate, meaning). Each stone carries a status color (green ≥75, yellow 50–74, red <50, tunable in `contracts/scoring-bands.json`). Success means a principal can read the school's wellbeing state at a glance, trust that individual anonymity is protected (privacy threshold: results lock below 10 respondents), and move to concrete goals/recommendations.
 
 Survey questions are configurable round content, not a fixed product-wide
 questionnaire. Managers may use different wellbeing questions, wording, IDs,

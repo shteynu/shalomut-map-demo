@@ -6,9 +6,11 @@ import {
   resolveProducedAnalyticsContractVersion,
 } from '../ai-contract-version';
 import { IRoundRepository, ISurveyRepository } from '../repositories/interfaces';
+import { statusForScore } from '../scoring-bands';
 import {
   WellbeingDimensionId,
   WellbeingStatus,
+  responseScale,
   surveyInstrument,
 } from '../shalomut-source';
 import {
@@ -20,6 +22,7 @@ import {
 import { createSurveyDefinitionHash } from '../survey-definition-hash';
 import {
   QuestionAggregate,
+  QuestionAnswerRecord,
   RoundAnalyticsResult,
   RoundDimensionScore,
   SurveyResponseRecord,
@@ -61,17 +64,34 @@ export { getProducedAnalyticsContractVersion };
   }
 }
 
+/**
+ * Which colour a single answer counts as in a question's distribution.
+ *
+ * This is the respondent's own choice rather than an aggregation, so the shared
+ * score bands have no say here: a distribution reports what people picked. The
+ * score fallback covers a stored row whose value is not one of the three, and
+ * it reads the response scale that produced the score in the first place.
+ */
+function bucketForAnswer(answer: QuestionAnswerRecord): WellbeingStatus {
+  const chosen = responseScale.find((option) => option.value === answer.value);
+  if (chosen) return chosen.value;
+
+  return responseScale.reduce((closest, option) =>
+    Math.abs(option.score - answer.score) <
+    Math.abs(closest.score - answer.score)
+      ? option
+      : closest,
+  ).value;
+}
+
 export class AnalyticsService {
   /**
-   * Determine wellbeing status from average numerical score (0-100)
-   * - Green: 75..100
-   * - Yellow: 50..74
-   * - Red: 0..49
+   * Determine wellbeing status from an average numerical score (0-100). The
+   * bands themselves live in `contracts/scoring-bands.json` and are shared with
+   * the Python service, so this stays a delegation rather than a fourth copy.
    */
   public static computeStatus(score: number): WellbeingStatus {
-    if (score >= 75) return 'green';
-    if (score >= 50) return 'yellow';
-    return 'red';
+    return statusForScore(score);
   }
 
   /**
@@ -260,13 +280,7 @@ export class AnalyticsService {
 
         scoresByQuestion.get(answer.questionId)!.push(answer.score);
         const dist = distributionsByQuestion.get(answer.questionId)!;
-        if (answer.value === 'green' || answer.score >= 75) {
-          dist.green++;
-        } else if (answer.value === 'yellow' || answer.score >= 50) {
-          dist.yellow++;
-        } else {
-          dist.red++;
-        }
+        dist[bucketForAnswer(answer)]++;
         answeredQuestionIds.add(answer.questionId);
       }
     }

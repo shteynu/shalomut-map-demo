@@ -199,31 +199,36 @@ Why it matters:
   deployment secret is the credential, rotation means a redeploy, and per-user
   revocation and a meaningful "who signed in" audit trail do not exist.
 
-### 9. Configurable Scoring Thresholds
+### 9. Configurable Scoring Thresholds (completed 2026-08-03)
 
 Requirements document §5.4: the scoring mechanism must be tunable after the
 pilot through configuration rather than code, so thresholds and mappings can
 move without taking the system apart.
 
-Current state: dimension colour boundaries are literals inside
-`src/lib/services/analytics.service.ts` — a score at or above 75 is green, at
-or above 50 is yellow, below that red. The same boundaries are repeated in the
-per-question distribution path. The privacy threshold and the questionnaire
-itself are already persisted per round; only the colour boundaries are not.
+Current state: `contracts/scoring-bands.json` is the single source of the
+green/yellow/red bands. Core reads it through `src/lib/scoring-bands.ts` and the
+AI analytics service through `src/schemas/scoring_bands.py`; dimension scoring,
+the methodology table, Core's payload validation, the service's input parsing
+and its outgoing-payload validation all resolve to that one definition. The
+loader refuses a manifest whose bands are out of order, non-integer, inverted,
+overlapping, gapped or short of either end of the 0-100 scale, so a bad edit
+fails at import rather than colouring a stone wrongly. Tuning after the pilot is
+an edit to that file plus a deploy of both services.
 
-Proposal:
-- Move the green/yellow boundaries into round-scoped configuration with the
-  current values as defaults, and read them in one place instead of two.
-- Decide whether a manager may change them at all, or whether they stay an
-  owner-level methodology setting.
-- Keep already-analysed rounds readable: a stored analysis must keep the
-  boundaries it was produced with, or state which ones it used.
+The five code copies this replaced were spread across both runtimes, and the
+cross-runtime corpus was the only thing that would have noticed one drifting.
 
-Why it matters:
-- A pilot is exactly when the boundaries are expected to move, and today moving
-  them is a code change plus a redeploy.
-- Two copies of the same boundary can drift, which would let a stone's colour
-  disagree with its own question distribution.
+Owner decision 2026-08-03: the bands are deployment-wide, not per round. The
+service validates that a payload's status matches its score, so per-round bands
+would have to travel inside the payload — new semantics for contracts
+`1.0`–`6.0`, requiring a version of its own and a consumer-first rollout. The
+requirements document asks for configuration rather than hard-coding, which
+deployment-wide bands satisfy.
+
+Not part of this: the per-question distribution counts what respondents picked,
+which is their own answer colour rather than an aggregate, so it deliberately
+does not consult these bands. That path now says so in
+`src/lib/services/analytics.service.ts` instead of repeating the numbers.
 
 ### 10. Dashboard Per Round And Round History
 

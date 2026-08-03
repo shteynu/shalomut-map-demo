@@ -1,3 +1,5 @@
+import { SCORING_BANDS } from "./scoring-bands";
+
 export type WellbeingStatus = "green" | "yellow" | "red";
 
 export type WellbeingDimensionId =
@@ -153,17 +155,22 @@ export const responseScale: SurveyResponseOption[] = [
   },
 ];
 
-export const scoringThresholds: ScoringThreshold[] = [
-  { status: "green", label: "הכל טוב", min: 75, max: 100 },
-  { status: "yellow", label: "מצב סביר", min: 50, max: 74 },
-  { status: "red", label: "נדרש טיפול מיידי", min: 0, max: 49 },
-];
-
 export const statusLabels: Record<WellbeingStatus, string> = {
   green: "הכל טוב",
   yellow: "מצב סביר",
   red: "נדרש טיפול מיידי",
 };
+
+// The numbers come from `contracts/scoring-bands.json`, which the AI analytics
+// service reads too; only the Hebrew labels belong to this file.
+export const scoringThresholds: ScoringThreshold[] = SCORING_BANDS.map(
+  (band) => ({
+    status: band.status,
+    label: statusLabels[band.status],
+    min: band.min,
+    max: band.max,
+  }),
+);
 
 function question(id: string, dimensionId: WellbeingDimensionId, text: string): SurveyQuestion {
   return {

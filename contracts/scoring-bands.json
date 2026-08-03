@@ -1,0 +1,8 @@
+{
+  "description": "Score bands shared by Core and the AI analytics service. A dimension average, or any other 0-100 score, becomes green, yellow or red here and nowhere else. Both runtimes read this file, so tuning the methodology after the pilot is an edit here plus a deploy of both services, not a code change in six places. Bands are inclusive integer ranges because every score reaching them is already rounded. They must cover 0-100 exactly once, in descending order.",
+  "bands": [
+    { "status": "green", "min": 75, "max": 100 },
+    { "status": "yellow", "min": 50, "max": 74 },
+    { "status": "red", "min": 0, "max": 49 }
+  ]
+}

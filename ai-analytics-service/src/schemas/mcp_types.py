@@ -19,7 +19,12 @@ from src.contracts import (
 )
 from src.schemas.contract_registry import get_capabilities
 
-DimensionStatus = Literal["green", "yellow", "red"]
+# Both re-exported so the many modules importing them from here keep working;
+# the manifest-backed definitions live in scoring_bands.
+from src.schemas.scoring_bands import (  # noqa: F401
+    DimensionStatus,
+    status_for_score,
+)
 
 # Respondents a round needs before anything below the round total may be read.
 # Core owns the number; this mirror exists so a payload from an older Core, or
@@ -42,13 +47,6 @@ _DYNAMIC_FORBIDDEN_FIELDS = frozenset(
     },
 )
 
-
-def status_for_score(score: float) -> DimensionStatus:
-    if score >= 75:
-        return "green"
-    if score >= 50:
-        return "yellow"
-    return "red"
 
 @dataclass
 class RoundDimensionScore:

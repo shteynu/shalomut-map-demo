@@ -5,6 +5,9 @@ import v4ContractManifest from '../../contracts/ai-analytics-v4.json';
 import v5ContractManifest from '../../contracts/ai-analytics-v5.json';
 import v6ContractManifest from '../../contracts/ai-analytics-v6.json';
 import { getCapabilities, type ContractCapabilities } from './contract-registry';
+// The bands a payload's status is checked against are the ones Core scores
+// with and the ones Python validates its own output with.
+import { statusForScore } from './scoring-bands';
 import type {
   WellbeingDimensionId,
   WellbeingStatus,
@@ -366,12 +369,6 @@ export function isValidScoreDistribution(
     Number(dist.red) >= 0 &&
     Number(dist.green) + Number(dist.yellow) + Number(dist.red) === responseCount
   );
-}
-
-function statusForScore(score: number): WellbeingStatus {
-  if (score >= 75) return 'green';
-  if (score >= 50) return 'yellow';
-  return 'red';
 }
 
 function canonicalQuestionsForDimension(

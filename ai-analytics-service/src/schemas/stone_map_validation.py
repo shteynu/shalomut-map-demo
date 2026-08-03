@@ -23,6 +23,7 @@ from typing import Any, Dict, NamedTuple, Optional
 from src.agents.safety_report import SafetyViolationTarget
 from src.contracts import AI_ANALYTICS_DIMENSION_IDS
 from src.schemas.contract_registry import CONTRACT_REGISTRY, get_capabilities
+from src.schemas.scoring_bands import status_for_score
 from src.services.hebrew_validation import (
     is_complete_hebrew_copy,
     is_hebrew_only_copy,
@@ -35,22 +36,6 @@ SURVEY_DEFINITION_HASH_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
 
 OVERALL_SUMMARY_MIN_SENTENCES = 2
 OVERALL_SUMMARY_MAX_SENTENCES = 4
-
-
-def _status_for_score(score: float) -> str:
-    """Core's bands, and the reason this function is a private copy.
-
-    `mcp_types.status_for_score` already holds the same three lines, and Core
-    holds them twice more. Naming that here rather than importing it would hide
-    the duplication; importing it would tie payload validation to the input
-    parser. Both are wrong in the long run — the bands belong in the shared
-    manifest — and the corpus is what catches it if any copy drifts.
-    """
-    if score >= 75:
-        return "green"
-    if score >= 50:
-        return "yellow"
-    return "red"
 
 
 def _has_overall_summary_sentence_count(text: str) -> bool:
@@ -94,7 +79,7 @@ def _refusal_for_stone(
     status = stone.get("status")
     if not isinstance(score, (int, float)) or isinstance(score, bool):
         return "stone_shape_invalid"
-    if _status_for_score(float(score)) != status:
+    if status_for_score(float(score)) != status:
         return "status_inconsistent_with_score"
 
     if not caps.isSemanticContract:

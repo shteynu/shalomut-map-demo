@@ -120,7 +120,14 @@ Which screen owns which value, so the same fact is never edited in two places:
   round may be configured with; a round persisted below it is read at ten rather
   than refused, and the manager screens name the gap explicitly — below five
   they say plainly that the published average describes individual respondents.
-- Treat scoring thresholds as configurable source data: green `>=75`, yellow `50-74`, red `<50`.
+- Treat scoring thresholds as configurable source data. They live in
+  `contracts/scoring-bands.json`, which Core reads through
+  `src/lib/scoring-bands.ts` and the AI analytics service through
+  `src/schemas/scoring_bands.py`. The shipped bands are green `>=75`, yellow
+  `50-74`, red `<50`. Changing them is an edit to that one file plus a deploy of
+  both services; they are deployment-wide rather than per round, because the
+  service validates a payload's status against its score and per-round bands
+  would be new contract semantics.
 - Keep visual mock data distinct from persisted round questionnaires so pilot
   data can replace demo values without rewriting the Dashboard taxonomy.
 - When changing dimension labels, scoring, or the default template, update

@@ -141,7 +141,9 @@ may format those numeric facts for display.
 The current generic `score / status / risk` triplet is not a question-level
 metric set and MUST be rejected. A Stone's dimension score and status MUST be
 consistent with the Core aggregate and the configured thresholds: green
-`>=75`, yellow `50-74`, and red `<50`.
+`>=75`, yellow `50-74`, and red `<50`. Since 2026-08-03 both runtimes read
+those bands from `contracts/scoring-bands.json`, so this rule is checked
+against one definition rather than a copy per validator.
 
 ## Contract `2.0` generation provenance
 

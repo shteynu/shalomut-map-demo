@@ -63,8 +63,12 @@ description: Работай с продуктом и кодом Shalomut Map в 
   policy находится в `contracts/capabilities.json`, а runtime status — в
   `docs/ai-contract-version-matrix.md`. Новая несовместимая семантика требует
   новой versioned manifest и consumer-first rollout.
-- Сохраняй configurable scoring thresholds: green `>=75`, yellow `50–74`, red
-  `<50`.
+- Держи scoring thresholds в единственном источнике `contracts/scoring-bands.json`
+  (Core — `src/lib/scoring-bands.ts`, Python — `src/schemas/scoring_bands.py`).
+  Текущие полосы: green `>=75`, yellow `50–74`, red `<50`. Не возвращай литералы
+  порогов в код. Полосы общие для деплоя, а не пораундовые: сервис валидирует
+  status по score, поэтому пораундовые полосы означают новую семантику контракта
+  и новую versioned manifest.
 - Применяй настроенный privacy threshold: `10` — и default, и minimum, менеджер
   может только повысить его. Не раскрывай respondent identity, индивидуальные
   ответы или detailed results ниже порога. Для dynamic questionnaire не делай
