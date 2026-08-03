@@ -110,7 +110,7 @@ All met:
 
 ## Remaining
 
-- Owner action: push `refactor/core-composition-root` and merge into `main`.
+- Nothing on this branch; it is merged.
 
 ## Changed files
 
@@ -175,8 +175,6 @@ this task file; that row names `4802b22`, which is the hash that matters.
 
 ## Next concrete step
 
-Hand the branch to the owner to push
-(`git push -u origin refactor/core-composition-root`) and merge into `main`.
-Visibility today: both commits exist only on this branch in this worktree and
-have not been pushed, so another worktree on this machine can consume them from
-the branch, and no other checkout or machine can.
+Nothing. Merged into `main` on 2026-08-03 (merge `16510d7`, with the composition
+root itself in `4802b22`). The merged `main` has not been pushed; that is the
+owner's action.

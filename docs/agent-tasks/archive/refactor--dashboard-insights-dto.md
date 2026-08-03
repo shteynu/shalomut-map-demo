@@ -117,7 +117,7 @@ All met:
 
 ## Remaining
 
-- Owner action: push `refactor/dashboard-insights-dto` and merge.
+- Nothing on this branch; it is merged.
 - Optional owner check: a visual pass over the dashboard with `npm run local`
   (manager surfaces need a signed-in session, see `Blocked or not run`).
 
@@ -185,8 +185,6 @@ review's `Чем закрыто` row and this task file.
 
 ## Next concrete step
 
-Hand the branch to the owner to push
-(`git push -u origin refactor/dashboard-insights-dto`) and merge. Visibility
-today: both commits exist only on this branch in this worktree and have not been
-pushed, so another worktree on this machine can consume them from the branch,
-and no other checkout or machine can.
+Nothing. Merged into `main` on 2026-08-03 (merge `16510d7`, with the DTO itself
+in `906f2ba`). The merged `main` has not been pushed; that is the owner's
+action. The open product question above stands.

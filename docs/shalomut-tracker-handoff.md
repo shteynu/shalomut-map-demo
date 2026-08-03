@@ -1,19 +1,23 @@
 # Shalomut Tracker — operational handoff
 
-Updated: 2026-08-02. This document owns only cross-task operational/deployed
+Updated: 2026-08-03. This document owns only cross-task operational/deployed
 state, external blockers and approval gates. Product milestones belong in
 `PROGRESS.md`; branch work and exact verification belong in
 `docs/agent-tasks/{active,archive}/`; older snapshots remain available in Git.
 
 ## Repository snapshot
 
-- Current published `origin/main`: `278ba9b`.
+- Local `main` is the merge `16510d7` plus this documentation commit, ahead of
+  published `origin/main` (`44982f0`). Both merged branches are themselves
+  published, but the merge is not, so nothing outside this machine sees the
+  merged `main` until it is pushed.
 - The 2026-08-02 refactoring stack is merged and published: AI-insights
   repository, thin callback route, canonical Core input, canonical Python
   output, analytics-runner ports and `TextGenerator`.
-- Checkpoint evidence for the combined stack: `npm run verify:core` passed 352
-  TypeScript tests, literals, typecheck, ESLint and production build; Python
-  passed 368 tests.
+- Checkpoint evidence on merged `main` (2026-08-03): `npm run verify:core`
+  passed with 359 TypeScript tests, both fitness checks, typecheck, ESLint and
+  production build; `npm run verify:db` passed 7 PostgreSQL integration tests.
+  Python was not re-run: neither merged slice touches it.
 - The repository record does not claim that this final refactoring stack has
   been deployed. Verify deployment source/health before relying on it at the
   deployed endpoint.
