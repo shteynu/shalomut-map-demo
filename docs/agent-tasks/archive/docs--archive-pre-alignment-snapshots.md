@@ -5,9 +5,9 @@
 - Branch: `docs/archive-pre-alignment-snapshots`
 - Base branch: `origin/main`
 - Base commit: `4a3e795`
-- Current HEAD: `4a3e795`
-- Status: implementation complete and verified; publication to `main`
-  authorized by the owner
+- Current HEAD: `b8c7e53` (`docs: archive pre-alignment documentation
+  snapshots`); task archival recorded by the immediate metadata commit
+- Status: complete, verified and published to `origin/main`
 - Last updated: 2026-08-03
 - Last agent/tool: Codex
 
@@ -88,26 +88,20 @@ session history и устаревших operational snapshots. Исходные 
 
 ## Remaining
 
-- Commit scoped archive files, archive this task, fast-forward local `main`,
-  push `origin/main` and verify published refs.
+Nothing in scope.
 
-## Changed files
+## Changed files and exact Git state at archival
 
-Scoped unstaged: `docs/README.md`.
-
-Scoped untracked:
-
-- этот task-файл;
-- `docs/archive/documentation-snapshots/2026-08-02-pre-alignment/README.md`;
-- пять `.md.txt` payload-файлов в том же snapshot-каталоге.
-
-Unrelated pre-existing unstaged and untouched:
-
-- `.idea/shalomut-map-demo.iml`;
-- `next-env.d.ts`.
-
-Staged files: none. Commits on this branch: none. Upstream is `origin/main` at
-`4a3e795`.
+- Archive payload, README/index update and initial active task are committed in
+  `b8c7e53`; no scoped implementation files remain unstaged or untracked.
+- This task-file move from `active/` to `archive/` is recorded by the immediate
+  metadata commit after `b8c7e53`.
+- Unrelated pre-existing `.idea/shalomut-map-demo.iml` and `next-env.d.ts`
+  changes remain unstaged in this worktree and are absent from both commits.
+- The separate `main` worktree retains its own unstaged `next-env.d.ts`;
+  fast-forward publication does not include or overwrite it.
+- Visibility after session close: both commits are reachable from pushed
+  `origin/main` and portable to other worktrees, clones and machines.
 
 ## Verification evidence
 
@@ -177,6 +171,6 @@ None.
 
 ## Next concrete step
 
-Commit the scoped archive package, archive this task, fast-forward local
-`main`, push `origin/main`, then verify the published refs while excluding
-`.idea/shalomut-map-demo.iml` and `next-env.d.ts`.
+Done: the exact historical snapshots and this archived task were fast-forwarded
+to `main` and published to `origin/main`; start the next independently
+deliverable task from refreshed remote state.
