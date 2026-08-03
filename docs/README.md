@@ -54,6 +54,9 @@ or deployment snapshots:
 - `wellbeing-refactoring-plan-v4-review.md` (its section 6 is the final audit of
   the merged refactoring stack; remaining work is summarized in `ROADMAP.md`);
 - `redesign-change-log.md`;
+- [`archive/documentation-snapshots/`](archive/documentation-snapshots/) —
+  explicitly labelled pre-compaction copies of substantially rewritten living
+  documents;
 - [`agent-tasks/archive/`](agent-tasks/archive/) and Git history.
 
 Branch-local in-progress state belongs only in
