@@ -42,10 +42,17 @@ belongs in archived task files and Git.
 
 ## Next architecture outcomes
 
-1. Expand mutation testing only after classifying high-value surviving mutants;
-   the current pilot is intentionally focused and non-blocking.
+None open. The last item — classifying high-value surviving mutants before
+expanding mutation scope — was closed on 2026-08-03; what it found is in
+`docs/agent-tasks/archive/test--classify-surviving-mutants.md`.
 
 ## Conditional, not scheduled
+
+- Widening mutation scope beyond `src/lib/ai-contract.ts`, once the older
+  contracts have payload fixtures of their own. Roughly three fifths of the
+  remaining survivors sit in validators for contracts `1.0`–`4.0` that no
+  current fixture exercises, so a second mutation target would be measured
+  against the same blind spot. The pilot stays opt-in and non-blocking.
 
 - The long-term identity model, when a second manager per school, multi-tenant
   hosting or real respondents is actually requested. One manager per deployment

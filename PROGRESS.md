@@ -75,6 +75,9 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
   and `src/lib/demo-data.ts` is gone along with the fixture analysis it held.
 - StrykerJS provides an opt-in, non-blocking mutation pilot for
   `src/lib/ai-contract.ts`. It is not repository-wide coverage or a CI gate.
+  Its survivors were classified on 2026-08-03, which turned into one refusal
+  test per contract rule that had only ever been tested from the accepting
+  side; the pilot's score moved 60.00% to 69.34%.
 - The OpenAPI specification has one editable source, `docs/openapi.yaml`;
   `public/openapi.json` is generated from it and checked as a whole document.
 
@@ -91,8 +94,9 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 
 ### Architecture
 
-1. Classify high-value surviving Stryker mutants before expanding mutation
-   scope.
+Nothing open. Mutant classification closed on 2026-08-03; widening mutation
+scope is now conditional on giving contracts `1.0`–`4.0` payload fixtures, and
+`ROADMAP.md` records why.
 
 The long-term identity model left this list on 2026-08-03: one manager per
 deployment is the requested product shape, so it is requirement-gated future

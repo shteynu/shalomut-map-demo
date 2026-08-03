@@ -62,6 +62,10 @@ privacy, auth, persistence, contracts или deployment.
 
 - Текущий mutation scope — opt-in pilot только для
   `src/lib/ai-contract.ts`; конфигурация находится в `stryker.config.mjs`.
+- `tap.testFiles` должен содержать каждый test-файл, предметом которого является
+  мутируемый файл. Пропущенный файл не занижает score честно: он показывает как
+  survivor мутант, который реальный тест убил бы. Так до 2026-08-03 правило
+  Hebrew-only выглядело непокрытым при существующем `hebrew-only-corpus.test.ts`.
 - Проверяй wiring без полного прогона через
   `npm run test:mutation:ai-contract -- --dryRunOnly`.
 - Полный `npm run test:mutation:ai-contract` запускай, когда изменён сам
