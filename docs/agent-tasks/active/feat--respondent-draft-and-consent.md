@@ -5,8 +5,8 @@
 - Branch: `feat/respondent-draft-and-consent`
 - Base branch: `origin/main`
 - Base commit: `8f9c29d`
-- Current HEAD: `86e0279`
-- Status: commit 1 done and verified; commits 2 and 3 remaining
+- Current HEAD: `e6aa04b`
+- Status: commits 1 и 2 сделаны и проверены; остаётся commit 3
 - Last updated: 2026-08-03
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -92,17 +92,18 @@ recovery and consent». Документ живёт вне репозитори�
 
 ## Acceptance criteria
 
-- [ ] Ответы и текущий вопрос переживают refresh текущей вкладки.
-- [ ] Consent не спрашивается повторно после refresh той же attempt-сессии.
-- [ ] Изменившаяся анкета не восстанавливает старые ответы.
-- [ ] Successful submit очищает draft.
-- [ ] Lost-response + refresh + retry не создаёт второй response и показывает
-      завершённый экран.
-- [ ] «מילוי שאלון נוסף» создаёт новый token и чистое состояние.
-- [ ] Storage failure не мешает отправить анкету.
-- [ ] Ответ, данный за ~100 ms до `pagehide`, переживает refresh.
+- [x] Ответы и текущий вопрос переживают refresh текущей вкладки (browser smoke).
+- [ ] Consent не спрашивается повторно после refresh той же attempt-сессии
+      (шага согласия ещё нет — commit 3).
+- [x] Изменившаяся анкета не восстанавливает старые ответы (unit).
+- [x] Successful submit очищает draft.
+- [x] Lost-response + refresh + retry не создаёт второй response и показывает
+      завершённый экран (`resolveSubmissionOutcome`, unit).
+- [x] «מילוי שאלון נוסף» создаёт новый token и чистое состояние.
+- [x] Storage failure не мешает отправить анкету.
+- [x] Ответ, данный за ~100 ms до `pagehide`, переживает refresh (browser smoke).
 - [ ] Первый вопрос недоступен до явного accept; decline не создаёт request.
-- [ ] В `sessionStorage` нет PII и нет server response ID.
+- [x] В `sessionStorage` нет PII и нет server response ID (unit: список ключей).
 - [x] `docs/openapi.yaml` описывает `409`/`ALREADY_SUBMITTED`,
       `public/openapi.json` перегенерирован (commit 1).
 - [ ] `npm run verify` завершается с реальным exit code 0 на финальном состоянии
@@ -199,18 +200,44 @@ recovery and consent». Документ живёт вне репозитори�
     `survey-attempt-token.test.ts` (3 кейса на restore), обновлён и расширен
     `src/app/api/__tests__/api.test.ts`.
 
+- **Commit 2 — autosave integration (`e6aa04b`), проверен.**
+  - `createSurveyDraftStore` и `getSurveyDraftStorage` в
+    `src/lib/survey-draft-storage.ts`: источник для `useSyncExternalStore` с
+    кэшированным снимком и `getServerSnapshot`, у которого `checked: false`.
+  - `survey-flow.tsx`: seeding состояния из снимка происходит в фазе рендера
+    (санкционированный React adjust-during-render), а не в эффекте;
+    восстанавливаются answers, currentIndex, attempt-token и `consentAcceptedAt`.
+  - Debounced save (400 ms) плюс синхронный flush на `pagehide` и на
+    `visibilitychange` при `document.visibilityState === 'hidden'`.
+  - Новый `src/lib/survey-submission-outcome.ts`: `ALREADY_SUBMITTED`
+    трактуется как завершение, каждый остальной код получает ивритский текст,
+    неизвестный код — общий retry-текст.
+  - Draft удаляется при завершении отправки и при запуске новой попытки,
+    которая также сбрасывает токен и время согласия.
+  - UI: notice о восстановлении (`role="status"`) и неблокирующее
+    предупреждение при недоступном storage; стили `.survey-draft-note` и
+    `.survey-draft-note-warning` в `globals.css`.
+  - Тесты: `src/lib/__tests__/survey-submission-outcome.test.ts` (6 кейсов) и
+    `src/components/survey/__tests__/survey-flow-draft.test.tsx` (3 кейса,
+    `renderToStaticMarkup` фиксирует серверный проход).
+
 ## In progress
 
-Ничего. Commit 1 закрыт и проверен.
+Ничего. Commit 2 закрыт и проверен.
 
 ## Remaining
 
-Commit 2 и commit 3 из раздела Scope, затем ручной smoke респондентского flow
-(refresh, потерянный ответ, decline, «мילוי שאלון נוסף»).
+Commit 3 из раздела Scope (шаг согласия), затем smoke consent-пути: decline не
+шлёт ни одного запроса, а accept не спрашивается повторно после refresh.
 
 ## Changed files
 
-Пока нет. В worktree присутствуют два **не относящихся к задаче** изменения,
+Закоммичено в `e6aa04b`: `src/components/survey/survey-flow.tsx`,
+`src/lib/survey-draft-storage.ts`, `src/lib/survey-submission-outcome.ts`,
+`src/app/globals.css`, `src/lib/__tests__/survey-submission-outcome.test.ts`,
+`src/components/survey/__tests__/survey-flow-draft.test.tsx`.
+
+В worktree присутствуют два **не относящихся к задаче** изменения,
 унаследованных от предыдущей сессии и намеренно сохранённых:
 
 - `.idea/shalomut-map-demo.iml` (изменён, не staged)
@@ -220,9 +247,29 @@ Commit 2 и commit 3 из раздела Scope, затем ручной smoke р
 
 ## Verification evidence
 
-Состояние на `86e0279` (commit 1).
+Состояние на `e6aa04b` (commit 2).
 
-### Passed
+### Passed — commit 2
+
+- `npm run verify` на `e6aa04b` — реальный exit code 0. Внутри:
+  `lint:literals` (5 pass), `lint:composition` (5 pass), `typecheck`,
+  `npm test` (**426 pass, 0 fail**), `npm run lint`, `npm run build`
+  (compiled successfully, 41 статических страниц), `verify:db` (7 pass),
+  `verify:ai` (pytest, 368 passed).
+- Browser smoke на локальном dev-сервере, раунд `SHALOM-LOCAL` временно
+  переведён в `active`:
+  - отвечено на два вопроса, затем refresh → страница показала
+    `שאלה 3 מתוך 24`, notice
+    `ההתקדמות מהטעינה הקודמת שוחזרה. אפשר להמשיך מאותה נקודה.`,
+    а `aria-valuenow=8` подтвердил, что оба ответа вернулись в state, а не
+    только позиция курсора;
+  - ответ, данный непосредственно перед refresh (внутри окна debounce),
+    пережил перезагрузку — то есть flush на `pagehide` действительно
+    срабатывает;
+  - `sessionStorage` содержал только поля `SurveyDraftV1`.
+  После smoke раунд возвращён в `status='closed'`, dev-сервер остановлен.
+
+### Passed — commit 1
 
 - `npx tsx --test src/lib/__tests__/survey-draft-storage.test.ts
   src/lib/__tests__/survey-attempt-token.test.ts` — 40 pass, 0 fail.
@@ -237,6 +284,14 @@ Commit 2 и commit 3 из раздела Scope, затем ручной smoke р
 
 ### Failed
 
+- ESLint `react-hooks/refs` на промежуточном состоянии commit 2: чтение
+  `attemptTokenRef.current` в фазе рендера. Код был там и раньше, но стал
+  ошибкой, как только `attemptToken` попал в зависимости эффекта. Заменено на
+  ленивый `useState(createAttemptTokenSource)`.
+- ESLint `react-hooks/set-state-in-effect` на промежуточном состоянии commit 2:
+  синхронный `setState` внутри hydration-эффекта. Исправлено переходом на
+  `useSyncExternalStore` — тот же приём, что уже используется в
+  `src/lib/use-share-url.ts`.
 - `npx tsx --test src/app/api/__tests__/api.test.ts` на промежуточном состоянии:
   `API Route submit accepts a second attempt from the same device` ожидал `400`,
   получил `409`. Это ожидаемое следствие намеренной смены статуса; тест обновлён
@@ -248,12 +303,17 @@ Commit 2 и commit 3 из раздела Scope, затем ручной smoke р
 
 ### Blocked or not run
 
-- Ручной browser smoke респондентского flow — **not run**, и на commit 1 он
-  преждевременен: пользовательского поведения этот коммит не меняет. Draft ещё
-  никем не пишется и не читается, а изменившийся статус ответа сервера клиент
-  по-прежнему показывает тем же текстом, что и раньше. Smoke становится
-  осмысленным и обязательным после commit 2 и commit 3.
+- Browser smoke на commit 1 был бы преждевременен (коммит не менял видимого
+  поведения) и выполнен на commit 2 — см. Passed выше.
+- Проверка отказа по `fingerprint-mismatch` в браузере — **not run**, и в
+  текущем виде невыполнима: правка `sessionStorage` с последующим `reload()`
+  перезаписывается flush-обработчиком `pagehide` той же страницы, который
+  честно кладёт обратно валидный draft. Попытка проверить это через браузер
+  проверяла бы flush, а не fingerprint. Сам путь покрыт unit-тестом
+  «refuses a draft written for another questionnaire».
 - Проверка на реальном общем устройстве (два человека, одна вкладка) — not run.
+- Safari private mode (`sessionStorage` бросает при доступе) — not run;
+  покрыто только дублями в unit-тестах.
 
 ### Environment
 
@@ -293,8 +353,9 @@ local
 
 ## Known risks
 
-- **Пустой state перезапишет draft при hydration.** Смягчено синхронным
-  fingerprint плюс флагом `hydrated` как вторым слоем.
+- **Пустой state перезапишет draft при hydration.** Снято: сид происходит в
+  фазе рендера из снимка `useSyncExternalStore`, а save-эффект не работает,
+  пока `seeded` ложно, поэтому окна для перезаписи не возникает.
 - **Потеря последнего ответа из-за debounce.** Смягчается обязательным flush.
 - **Утечка черновика на общем устройстве.** Смягчается `sessionStorage`,
   очисткой после успеха/отказа/новой попытки и тем, что другая вкладка получает
@@ -315,9 +376,11 @@ deployment aliases. Миграций и записей в базу нет.
 
 ## Next concrete step
 
-Реализовать commit 2 в `src/components/survey/survey-flow.tsx`: один
-синхронный hydration-эффект на mount (fingerprint → `loadSurveyDraft` →
-`attemptToken.restore` → answers/currentIndex/consent → `hydrated = true`),
-затем save-эффект с debounce и обязательным синхронным flush на `pagehide` и
-`visibilitychange: hidden`, очистка draft при `res.ok` и при `code ===
-'ALREADY_SUBMITTED'` (последнее показывает завершённый экран, а не ошибку).
+Реализовать commit 3: новый `src/components/survey/survey-consent-step.tsx` и
+`SurveyPhase` из четырёх состояний (`consent`, `questions`, `complete`,
+`declined`) в `SurveyFlow`, с восстановлением фазы из draft — уже
+восстановленный `consentAcceptedAt` означает, что согласие спрашивать повторно
+не нужно. Прокинуть `estimatedMinutes` через `SurveyFlowProps` из
+`src/app/answer/[shareCode]/page.tsx`, зафиксировать privacy-обещания
+отдельным блоком от менеджерских `introText`/`anonymityText`, и вынести на
+владельца решение по мёртвому `variant="internal"`.
