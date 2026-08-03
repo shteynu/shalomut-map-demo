@@ -5,8 +5,8 @@
 - Branch: `feat/respondent-draft-and-consent`
 - Base branch: `origin/main`
 - Base commit: `8f9c29d`
-- Current HEAD: `8f9c29d` плюс единственный коммит, добавляющий этот файл
-- Status: started, no implementation commits yet
+- Current HEAD: `86e0279`
+- Status: commit 1 done and verified; commits 2 and 3 remaining
 - Last updated: 2026-08-03
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -103,9 +103,10 @@ recovery and consent». Документ живёт вне репозитори�
 - [ ] Ответ, данный за ~100 ms до `pagehide`, переживает refresh.
 - [ ] Первый вопрос недоступен до явного accept; decline не создаёт request.
 - [ ] В `sessionStorage` нет PII и нет server response ID.
-- [ ] `docs/openapi.yaml` описывает `409`/`ALREADY_SUBMITTED`,
-      `public/openapi.json` перегенерирован.
-- [ ] `npm run verify` завершается с реальным exit code 0.
+- [x] `docs/openapi.yaml` описывает `409`/`ALREADY_SUBMITTED`,
+      `public/openapi.json` перегенерирован (commit 1).
+- [ ] `npm run verify` завершается с реальным exit code 0 на финальном состоянии
+      ветки (на commit 1 уже проходил).
 
 ## Relevant repository instructions
 
@@ -175,19 +176,37 @@ recovery and consent». Документ живёт вне репозитори�
 ## Completed
 
 - Ветка `feat/respondent-draft-and-consent` создана от `origin/main` (`8f9c29d`).
-- Task-файл создан.
+- Task-файл создан (`a09962f`).
 - План сверен с кодом: подтверждены анкеры в `survey-flow.tsx`,
   `survey-attempt-token.ts`, `survey.service.ts`, submit route,
   `docs/openapi.yaml`, `answer/[shareCode]/page.tsx`.
+- **Commit 1 — draft primitives (`86e0279`), проверен.**
+  - Новый `src/lib/survey-draft-storage.ts`: `SurveyDraftV1`, чистый
+    `parseSurveyDraft` с типизированными причинами отказа, обёртки
+    `loadSurveyDraft`/`writeSurveyDraft`/`clearSurveyDraft`, синхронный
+    `questionnaireFingerprint` (FNV-1a), `createSurveyDraft` с инъекцией времени,
+    `surveyDraftStorageKey`.
+  - `src/lib/survey-attempt-token.ts`: `restore(token)` и общий предикат
+    `isAttemptToken`, которым пользуется и разбор draft.
+  - `SurveySubmissionErrorCode` из пяти значений и необязательное поле `code` в
+    `SubmitSurveyResult` (`src/lib/types/backend.ts`).
+  - `SURVEY_SUBMISSION_ERROR_STATUS` в `survey.service.ts` — таблица
+    код → HTTP-статус, чтобы route и OpenAPI не разошлись.
+  - Submit route: все отказы проходят через `refuse()`; duplicate стал `409`.
+  - `docs/openapi.yaml`: схема `SurveySubmissionError`, ответы `400`/`404`/`409`
+    у submit; `public/openapi.json` перегенерирован через `npm run openapi:generate`.
+  - Тесты: новый `survey-draft-storage.test.ts` (30 кейсов), дополнен
+    `survey-attempt-token.test.ts` (3 кейса на restore), обновлён и расширен
+    `src/app/api/__tests__/api.test.ts`.
 
 ## In progress
 
-Ничего. Реализация не начата.
+Ничего. Commit 1 закрыт и проверен.
 
 ## Remaining
 
-Commit 1, commit 2, commit 3 из раздела Scope, затем `npm run verify` и
-ручной smoke респондентского flow.
+Commit 2 и commit 3 из раздела Scope, затем ручной smoke респондентского flow
+(refresh, потерянный ответ, decline, «мילוי שאלון נוסף»).
 
 ## Changed files
 
@@ -201,18 +220,40 @@ Commit 1, commit 2, commit 3 из раздела Scope, затем `npm run veri
 
 ## Verification evidence
 
+Состояние на `86e0279` (commit 1).
+
 ### Passed
 
-Ничего. Кода ещё нет.
+- `npx tsx --test src/lib/__tests__/survey-draft-storage.test.ts
+  src/lib/__tests__/survey-attempt-token.test.ts` — 40 pass, 0 fail.
+- `npm run openapi:generate`, затем
+  `npx tsx --test src/app/api/__tests__/openapi.test.ts` — 8 pass, 0 fail.
+- `npx tsx --test src/app/api/__tests__/api.test.ts
+  src/app/api/__tests__/submit-auto-trigger.test.ts` — 23 pass, 0 fail.
+- `npm run verify` — реальный exit code 0. Внутри: `lint:literals`,
+  `lint:composition` (5 pass), `typecheck`, `npm test` (417 pass, 0 fail),
+  `npm run lint`, `npm run build` (compiled successfully), `verify:db`,
+  `verify:ai` (pytest, 368 passed).
 
 ### Failed
 
-Ничего.
+- `npx tsx --test src/app/api/__tests__/api.test.ts` на промежуточном состоянии:
+  `API Route submit accepts a second attempt from the same device` ожидал `400`,
+  получил `409`. Это ожидаемое следствие намеренной смены статуса; тест обновлён
+  на новый контракт и дополнен проверкой поля `code`. После правки проходит.
+- `npm run typecheck` на промежуточном состоянии: TS2322/TS2345 в новом тесте —
+  `'belonging'` не входит в `WellbeingDimensionId`. Исправлено на
+  `'social-resource'` и `'balance'`. Показательно, что это поймал именно
+  `typecheck`: `npm test` был зелёным, потому что `tsx` стирает типы.
 
 ### Blocked or not run
 
-- `npm run verify` — not run: изменений нет.
-- Ручной smoke респондентского flow — not run: изменений нет.
+- Ручной browser smoke респондентского flow — **not run**, и на commit 1 он
+  преждевременен: пользовательского поведения этот коммит не меняет. Draft ещё
+  никем не пишется и не читается, а изменившийся статус ответа сервера клиент
+  по-прежнему показывает тем же текстом, что и раньше. Smoke становится
+  осмысленным и обязательным после commit 2 и commit 3.
+- Проверка на реальном общем устройстве (два человека, одна вкладка) — not run.
 
 ### Environment
 
@@ -220,7 +261,31 @@ local
 
 ### Residual risk
 
-Не применимо на этом этапе.
+- Поведение `sessionStorage` при недоступном или переполненном хранилище
+  проверено только на дублях, не в реальном Safari private mode.
+- Коллизия FNV-1a не проверяется тестом на реальном корпусе анкет; принята как
+  осознанный остаточный риск (восстановление ответов в анкету того же размера у
+  одного респондента).
+- Смена `400` → `409` наблюдаема для любого внешнего клиента submit-эндпоинта.
+  Известный потребитель один — `SurveyFlow`, и он читает `res.ok`, поэтому
+  регрессии нет; внешних интеграций у публичного submit не обнаружено.
+
+## Deviations from the plan
+
+- `restore(token)` возвращает `boolean`, а не `void`, как было в плане. Молча
+  проигнорированный невалидный токен оставил бы вызывающего в уверенности, что
+  он восстановил попытку, хотя `current()` выдаст новый токен.
+- Добавлена причина отказа `absent` — плану она не требовалась, но
+  `parseSurveyDraft(null, …)` должна чем-то отвечать, и обёртка не должна
+  удалять ключ, которого нет.
+- Нецелое значение `currentIndex` отвергается как `malformed`, а не
+  нормализуется. План говорил про нормализацию индекса вне диапазона; `'first'`
+  или `NaN` — это сломанная форма, а не выход за границы, и приводить их к нулю
+  было бы произволом.
+- Формат токена проверяет общий предикат `isAttemptToken`, а не UUID-регэксп:
+  фабрика токенов инъектируемая, поэтому UUID — не контракт модуля. Строгость
+  здесь ничего не защищает — токен лежит в собственном `sessionStorage`
+  респондента, и правка даёт ровно то же, что и очистка.
 
 ## Failed approaches
 
@@ -250,7 +315,9 @@ deployment aliases. Миграций и записей в базу нет.
 
 ## Next concrete step
 
-Реализовать commit 1: создать `src/lib/survey-draft-storage.ts` с
-`SurveyDraftV1`, чистым `parseSurveyDraft`, обёрткой `loadSurveyDraft`,
-`writeSurveyDraft`, `clearSurveyDraft` и синхронным `questionnaireFingerprint`,
-и покрыть его новым `src/lib/__tests__/survey-draft-storage.test.ts`.
+Реализовать commit 2 в `src/components/survey/survey-flow.tsx`: один
+синхронный hydration-эффект на mount (fingerprint → `loadSurveyDraft` →
+`attemptToken.restore` → answers/currentIndex/consent → `hydrated = true`),
+затем save-эффект с debounce и обязательным синхронным flush на `pagehide` и
+`visibilitychange: hidden`, очистка draft при `res.ok` и при `code ===
+'ALREADY_SUBMITTED'` (последнее показывает завершённый экран, а не ошибку).
