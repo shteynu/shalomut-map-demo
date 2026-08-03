@@ -10,7 +10,7 @@ export default async function SetupPage() {
   }
 
   const organizationName = context.organization?.name ?? "בית ספר חדש";
-  const roundTitle = context.currentRound?.title ?? "סבב אבחון חדש";
+  const roundTitle = context.selectedRound?.title ?? "סבב אבחון חדש";
 
   return (
     <div className="page stone-page">
@@ -33,14 +33,14 @@ export default async function SetupPage() {
             : null
         }
         round={
-          context.currentRound
+          context.selectedRound
             ? {
-                id: context.currentRound.id,
-                title: context.currentRound.title,
-                startDate: context.currentRound.startDate.toISOString().slice(0, 10),
-                endDate: context.currentRound.endDate?.toISOString().slice(0, 10) ?? "",
-                privacyThreshold: context.currentRound.privacyThreshold,
-                backgroundContext: context.currentRound.backgroundContext,
+                id: context.selectedRound.id,
+                title: context.selectedRound.title,
+                startDate: context.selectedRound.startDate.toISOString().slice(0, 10),
+                endDate: context.selectedRound.endDate?.toISOString().slice(0, 10) ?? "",
+                privacyThreshold: context.selectedRound.privacyThreshold,
+                backgroundContext: context.selectedRound.backgroundContext,
               }
             : null
         }

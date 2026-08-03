@@ -13,7 +13,7 @@ const dateFormatter = new Intl.DateTimeFormat("he-IL", {
 export default async function RoundPage() {
   const context = await loadManagerContext();
 
-  if (!context.organization || !context.currentRound) {
+  if (!context.organization || !context.selectedRound) {
     return (
       <ManagerOnboarding
         organizationName={context.organization?.name}
@@ -22,46 +22,46 @@ export default async function RoundPage() {
     );
   }
 
-  const { organization, currentRound, responseCount } = context;
+  const { organization, selectedRound, responseCount } = context;
 
   return (
     <div className="page stone-page">
       <PageIntro
-        eyebrow={`${organization.name}, ${currentRound.title}`}
+        eyebrow={`${organization.name}, ${selectedRound.title}`}
         title="מעקב סבב אבחון"
         description="מסך המעקב מציג כמות תשובות בלבד. אין בו רשימת משיבים, שמות, מיילים או פרטים מזהים."
       />
 
       <section className="metric-grid" aria-label="נתוני סבב אבחון">
-        <MetricCard className="stone-variant-navy" value={dateFormatter.format(currentRound.startDate)} label="פתיחה" helper="מועד הפצת הלינק" />
-        <MetricCard className="stone-variant-green" value={currentRound.endDate ? dateFormatter.format(currentRound.endDate) : "לא נקבע"} label="סגירה" helper="סיום איסוף מתוכנן" />
+        <MetricCard className="stone-variant-navy" value={dateFormatter.format(selectedRound.startDate)} label="פתיחה" helper="מועד הפצת הלינק" />
+        <MetricCard className="stone-variant-green" value={selectedRound.endDate ? dateFormatter.format(selectedRound.endDate) : "לא נקבע"} label="סגירה" helper="סיום איסוף מתוכנן" />
         <MetricCard className="stone-variant-orange" value={`${responseCount}`} label="תשובות" helper="מספר מצרפי בלבד" />
         <MetricCard
           className="stone-variant-teal"
-          value={`${currentRound.privacyThreshold}`}
+          value={`${selectedRound.privacyThreshold}`}
           label="סף פרטיות"
           helper={
-            currentRound.privacyThreshold < MINIMUM_PRIVACY_THRESHOLD
+            selectedRound.privacyThreshold < MINIMUM_PRIVACY_THRESHOLD
               ? `הגנה על אנונימיות — הסף הנדרש ${MINIMUM_PRIVACY_THRESHOLD}`
               : "הגנה על אנונימיות"
           }
-          minimumResponses={currentRound.privacyThreshold}
+          minimumResponses={selectedRound.privacyThreshold}
         />
       </section>
 
       <RoundControls
-        roundId={currentRound.id}
-        shareCode={currentRound.shareCode}
+        roundId={selectedRound.id}
+        shareCode={selectedRound.shareCode}
         responseCount={responseCount}
         expectedResponses={organization.totalStaffCount}
-        minimumResponses={currentRound.privacyThreshold}
-        status={currentRound.status}
+        minimumResponses={selectedRound.privacyThreshold}
+        status={selectedRound.status}
       />
 
       <RoundThresholdNextStep
-        roundId={currentRound.id}
+        roundId={selectedRound.id}
         responseCount={responseCount}
-        minimumResponses={currentRound.privacyThreshold}
+        minimumResponses={selectedRound.privacyThreshold}
       />
     </div>
   );

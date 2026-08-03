@@ -20,7 +20,13 @@ export type ManagerOnboardingState =
 export interface ManagerContext {
   state: ManagerOnboardingState;
   organization: Organization | null;
-  currentRound: SurveyRound | null;
+  /**
+   * The round these screens are about. It is the active round unless a caller
+   * asks for another one, which is why it is no longer called `currentRound`:
+   * a school with several rounds has exactly one active round but can be
+   * looking at any of them.
+   */
+  selectedRound: SurveyRound | null;
   responseCount: number;
   analytics: CanonicalRoundAnalytics | null;
 }
@@ -32,7 +38,12 @@ const roundStatusPriority: Record<SurveyRound["status"], number> = {
   archived: 3,
 };
 
-export function selectCurrentRound(rounds: SurveyRound[]): SurveyRound | null {
+/**
+ * The one round a school is working on right now: active first, then the newest
+ * draft, then the newest closed one. This is what a manager lands on when they
+ * have not asked for a particular round.
+ */
+export function selectActiveRound(rounds: SurveyRound[]): SurveyRound | null {
   return (
     [...rounds].sort((left, right) => {
       const statusDifference =
@@ -62,7 +73,7 @@ export class ManagerContextService {
       return {
         state: "scope-required",
         organization: null,
-        currentRound: null,
+        selectedRound: null,
         responseCount: 0,
         analytics: null,
       };
@@ -76,28 +87,28 @@ export class ManagerContextService {
       return {
         state: "needs-organization",
         organization: null,
-        currentRound: null,
+        selectedRound: null,
         responseCount: 0,
         analytics: null,
       };
     }
 
-    const currentRound = selectCurrentRound(
+    const selectedRound = selectActiveRound(
       await roundRepo.findByOrganizationId(organization.id),
     );
 
-    if (!currentRound) {
+    if (!selectedRound) {
       return {
         state: "needs-round",
         organization,
-        currentRound: null,
+        selectedRound: null,
         responseCount: 0,
         analytics: null,
       };
     }
 
     const analytics = await AnalyticsService.getAnalyticsForRound(
-      currentRound.id,
+      selectedRound.id,
       roundRepo,
       surveyRepo,
     );
@@ -105,7 +116,7 @@ export class ManagerContextService {
     return {
       state: "round-ready",
       organization,
-      currentRound,
+      selectedRound,
       responseCount: analytics?.totalResponses ?? 0,
       analytics,
     };

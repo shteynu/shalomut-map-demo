@@ -7,7 +7,7 @@ import {
 } from "@/lib/repositories";
 import {
   ManagerContextService,
-  selectCurrentRound,
+  selectActiveRound,
 } from "@/lib/services/manager-context.service";
 import type {
   Organization,
@@ -61,7 +61,7 @@ test("ManagerContextService returns organization onboarding for empty persistenc
   assert.deepStrictEqual(context, {
     state: "needs-organization",
     organization: null,
-    currentRound: null,
+    selectedRound: null,
     responseCount: 0,
     analytics: null,
   });
@@ -76,7 +76,7 @@ test("ManagerContextService returns round onboarding when the school has no roun
 
   assert.strictEqual(context.state, "needs-round");
   assert.strictEqual(context.organization?.id, organization.id);
-  assert.strictEqual(context.currentRound, null);
+  assert.strictEqual(context.selectedRound, null);
   assert.strictEqual(context.responseCount, 0);
   assert.strictEqual(context.analytics, null);
 });
@@ -98,16 +98,16 @@ test("ManagerContextService selects the active round and returns its aggregate r
   );
 
   assert.strictEqual(context.state, "round-ready");
-  assert.strictEqual(context.currentRound?.id, activeRound.id);
+  assert.strictEqual(context.selectedRound?.id, activeRound.id);
   assert.strictEqual(context.responseCount, 1);
   assert.strictEqual(context.analytics?.isLocked, true);
 });
 
-test("selectCurrentRound uses the newest round within the same status", () => {
+test("selectActiveRound uses the newest round within the same status", () => {
   const older = round("older", "closed", "2026-06-01T00:00:00.000Z");
   const newer = round("newer", "closed", "2026-07-01T00:00:00.000Z");
 
-  assert.strictEqual(selectCurrentRound([older, newer])?.id, newer.id);
+  assert.strictEqual(selectActiveRound([older, newer])?.id, newer.id);
 });
 
 test("ManagerContextService uses the explicitly scoped organization instead of the newest school", async () => {
@@ -132,7 +132,7 @@ test("ManagerContextService uses the explicitly scoped organization instead of t
   );
 
   assert.strictEqual(context.organization?.id, organization.id);
-  assert.strictEqual(context.currentRound?.id, scopedRound.id);
+  assert.strictEqual(context.selectedRound?.id, scopedRound.id);
 });
 
 test("ManagerContextService fails closed when multiple schools exist without a scope", async () => {
@@ -144,6 +144,6 @@ test("ManagerContextService fails closed when multiple schools exist without a s
 
   assert.strictEqual(context.state, "scope-required");
   assert.strictEqual(context.organization, null);
-  assert.strictEqual(context.currentRound, null);
+  assert.strictEqual(context.selectedRound, null);
   assert.strictEqual(context.analytics, null);
 });

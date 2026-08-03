@@ -6,7 +6,7 @@ import { createEmptyDraftSurveyDefinition } from "@/lib/survey-definition";
 export default async function SurveyPage() {
   const context = await loadManagerContext();
 
-  if (!context.organization || !context.currentRound) {
+  if (!context.organization || !context.selectedRound) {
     return (
       <ManagerOnboarding
         organizationName={context.organization?.name}
@@ -18,17 +18,17 @@ export default async function SurveyPage() {
   return (
     <SurveyBuilder
       organizationName={context.organization.name}
-      roundId={context.currentRound.id}
-      roundTitle={context.currentRound.title}
-      shareCode={context.currentRound.shareCode}
+      roundId={context.selectedRound.id}
+      roundTitle={context.selectedRound.title}
+      shareCode={context.selectedRound.shareCode}
       initialDefinition={
-        context.currentRound.surveyDefinition ??
+        context.selectedRound.surveyDefinition ??
         createEmptyDraftSurveyDefinition(
-          context.currentRound.title,
-          context.currentRound.privacyThreshold,
+          context.selectedRound.title,
+          context.selectedRound.privacyThreshold,
         )
       }
-      isFrozen={context.responseCount > 0 || context.currentRound.status === "closed"}
+      isFrozen={context.responseCount > 0 || context.selectedRound.status === "closed"}
     />
   );
 }

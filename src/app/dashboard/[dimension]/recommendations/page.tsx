@@ -26,7 +26,7 @@ export default async function DimensionRecommendationsPage({
     notFound();
   }
 
-  if (!context.organization || !context.currentRound) {
+  if (!context.organization || !context.selectedRound) {
     return (
       <ManagerOnboarding
         organizationName={context.organization?.name}
@@ -39,9 +39,9 @@ export default async function DimensionRecommendationsPage({
   return (
     <DashboardRecommendationsPage
       dimension={entry}
-      roundId={context.currentRound.id}
+      roundId={context.selectedRound.id}
       organizationName={context.organization.name}
-      roundTitle={context.currentRound.title}
+      roundTitle={context.selectedRound.title}
     />
   );
 }

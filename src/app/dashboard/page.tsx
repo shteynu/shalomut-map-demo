@@ -8,7 +8,7 @@ export default async function DashboardPage() {
 
   if (
     !context.organization ||
-    !context.currentRound ||
+    !context.selectedRound ||
     !context.analytics
   ) {
     return (
@@ -20,7 +20,7 @@ export default async function DashboardPage() {
     );
   }
 
-  const { organization, currentRound, analytics } = context;
+  const { organization, selectedRound, analytics } = context;
   const dimensionScores = analytics.dimensionScores;
   const overallScore = analytics.isLocked
     ? 0
@@ -34,11 +34,11 @@ export default async function DashboardPage() {
 
   return (
     <DashboardMapPage
-      roundId={currentRound.id}
+      roundId={selectedRound.id}
       organizationName={organization.name}
-      roundTitle={currentRound.title}
+      roundTitle={selectedRound.title}
       responseCount={context.responseCount}
-      minimumResponses={currentRound.privacyThreshold}
+      minimumResponses={selectedRound.privacyThreshold}
       overallScore={overallScore}
       dimensionScores={dimensionScores}
     />

@@ -44,7 +44,7 @@ export async function GET(request?: Request) {
       );
     }
 
-    return NextResponse.json({ round: context.currentRound });
+    return NextResponse.json({ round: context.selectedRound });
   } catch (error) {
     return NextResponse.json(
       { error: 'Failed to fetch round' },
