@@ -5,9 +5,8 @@
 - Branch: `feat/round-history-selection`
 - Base branch: `main`
 - Base commit: `8e1906e`
-- Current HEAD: `11daa6f` (rename commit); behaviour changes uncommitted at the
-  time of writing
-- Status: implementation complete, browser verification blocked on manager login
+- Current HEAD: `e17f905`
+- Status: complete and verified in a browser; not pushed
 - Last updated: 2026-08-03
 - Last agent/tool: Claude Code
 
@@ -59,8 +58,7 @@ sequencing argument and the two open questions.
 
 ## Remaining
 
-- Browser verification of the switcher (see below).
-- Creating a second round from the UI is PR 3.
+Creating a second round from the UI is PR 3.
 
 ## Verification evidence
 
@@ -68,27 +66,45 @@ sequencing argument and the two open questions.
 
 - `npm run verify:core`: fitness checks, `tsc --noEmit`, 448 TypeScript tests
   (11 new), ESLint, `next build`.
+- Browser, local dev server, owner-authenticated session, against a school with
+  two rounds (`סבב סתיו 2026` active with no responses, `סבב בדיקה מקומי` closed
+  with twelve):
+  - `/dashboard` opens the active round, locked at 0 of 10, with the switcher
+    present on the locked screen.
+  - Selecting the closed round navigates to
+    `/dashboard/?round=round_local_...` and renders its map, overall score 76
+    and per-dimension statuses.
+  - A stone opens `/dashboard/balance/?round=round_local_...`; from its metrics
+    screen both dashboard links keep the round
+    (`.../recommendations/?round=...` and `/dashboard/?round=...`), while
+    `חזרה למסך הראשי` stays plain `/`.
+  - `?round=round-that-does-not-exist` renders the not-found screen and no
+    data.
+  - Home shows `סבב סתיו 2026` while the dashboard was on the closed round,
+    which is variant A.
+  - The switcher exposes `aria-label="בחירת סבב אבחון"`, `aria-current="page"`
+    on the selected round and a status word per entry; in the 352px sidebar
+    column the entries stack rather than overflow.
 
 ### Blocked or not run
 
-- Browser verification is blocked: `/dashboard` requires a manager login and
-  the agent must not type credentials. The local server runs, the login screen
-  renders, and a second round (`סבב סתיו 2026`, active, no responses) was added
-  to the local database so the switcher has something to switch between. The
-  owner logs in, then the switcher can be checked on the map screen, the locked
-  branch, a detail screen and a bad `?round=` value.
+- A true mobile viewport was not verified: the browser resize call did not
+  change `window.innerWidth`, which stayed 1728. The narrow-column stacking
+  above is the closest evidence taken.
 - `npm run verify:db` and `npm run verify:ai` were not re-run for this diff: it
   touches no schema, no repository and no contract. They passed on this base
   commit earlier today.
 
 ### Environment
 
-Local worktree, local PostgreSQL, local dev server on port 3000.
+Local worktree, local PostgreSQL, local dev server on port 3000. The second
+round was added to the local development database for this check and is
+disposable test data.
 
 ### Residual risk
 
-The switcher is unverified in a browser. The rendering is covered by
-server-rendered markup assertions, so the risk is layout rather than logic.
+Low. The narrow-viewport rendering of the switcher rests on `flex-wrap` and the
+sidebar observation rather than on a mobile-width run.
 
 ## Questions requiring an owner decision
 
@@ -96,7 +112,6 @@ None open. Variant A answered the one that blocked this slice.
 
 ## Next concrete step
 
-Log in locally, open `/dashboard`, and confirm the switcher lists both rounds,
-that selecting the closed round keeps `?round=` through a stone and back, and
-that a made-up `?round=` value shows the not-found screen. Then commit the
-behaviour change.
+The owner runs `git push origin feat/round-history-selection:main`; pushing is
+blocked for the agent in this environment. Archive this file once it lands. The
+next slice is PR 3, creating a round for a school that already has one.
