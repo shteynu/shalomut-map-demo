@@ -24,11 +24,11 @@ export default async function SharedSurveyPage({
 
   return (
     <SurveyFlow
-      variant="public"
       shareCode={round.shareCode}
       surveyTitle={definition.title}
       introText={definition.introText}
       anonymityText={definition.anonymityText}
+      estimatedMinutes={definition.estimatedMinutes}
       questions={definition.questions.filter((question) => question.enabled)}
     />
   );

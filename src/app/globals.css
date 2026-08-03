@@ -4484,6 +4484,49 @@ label .custom-tooltip-wrapper:hover .custom-tooltip-icon {
   color: var(--ink);
 }
 
+/* The screen that has to be read, not skimmed: wider line height and real
+   spacing between the promises, so none of them reads as fine print. */
+.survey-consent-scope {
+  margin: -1rem 0 1.6rem;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.survey-consent-promises {
+  margin: 0 0 1.6rem;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 1rem;
+}
+
+.survey-consent-promises li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  line-height: 1.7;
+}
+
+.survey-consent-promises svg {
+  flex: none;
+  margin-block-start: 0.2rem;
+  color: var(--muted);
+}
+
+.survey-consent-manager-note {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.survey-consent-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.8rem;
+  margin-block-start: 1.8rem;
+}
+
 .survey-review-card p {
   margin: 0 0 1.6rem;
   color: var(--muted);

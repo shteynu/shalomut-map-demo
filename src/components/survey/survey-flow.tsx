@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { AlertTriangle, Check, ChevronLeft, ChevronRight, Frown, Loader2, Meh, RefreshCw, RotateCcw, ShieldCheck, Smile, type LucideIcon } from "lucide-react";
 import {
   useCallback,
@@ -11,8 +10,8 @@ import {
   useSyncExternalStore,
 } from "react";
 import { calculatePercentage } from "@/lib/utils/math";
-import { getNavigationAction } from "@/lib/navigation";
 import { responseScale } from "@/lib/shalomut-source";
+import { SurveyConsentStep } from "./survey-consent-step";
 import {
   createAttemptTokenSource,
   hashAnonymousToken,
@@ -40,12 +39,22 @@ type AnswerValue = (typeof responseScale)[number]["value"];
  */
 const SAVE_DEBOUNCE_MS = 400;
 
+/**
+ * Where the attempt is.
+ *
+ * `review` and `submitting` are deliberately absent: they are already derivable
+ * from `currentIndex === total` and from the in-flight request, and duplicating
+ * them here would create a second source of truth that can disagree with the
+ * first.
+ */
+type SurveyPhase = "consent" | "questions" | "complete" | "declined";
+
 type SurveyFlowProps = {
-  variant?: "internal" | "public";
   shareCode: string;
   surveyTitle: string;
   introText: string;
   anonymityText: string;
+  estimatedMinutes: number;
   questions: SurveyDefinitionQuestion[];
 };
 
@@ -56,31 +65,32 @@ const optionIcons: Record<AnswerValue, LucideIcon> = {
 };
 
 export function SurveyFlow({
-  variant = "internal",
   shareCode,
   surveyTitle,
   introText,
   anonymityText,
+  estimatedMinutes,
   questions,
 }: SurveyFlowProps) {
   const [answers, setAnswers] = useState<Record<string, AnswerValue>>({});
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [submitted, setSubmitted] = useState(false);
+  const [phase, setPhase] = useState<SurveyPhase>("consent");
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [seeded, setSeeded] = useState(false);
   const [restoredDraft, setRestoredDraft] = useState(false);
   const [writeRefused, setWriteRefused] = useState(false);
   const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Set only when the respondent themselves accepted, so a restored attempt
+  // does not pull focus out from under someone mid-page-load.
+  const focusOnEnter = useRef(false);
+  const questionHeading = useRef<HTMLHeadingElement | null>(null);
   // Held as state, not a ref: it is read inside effects and callbacks, and a
   // lazy initializer gives one stable source for the whole attempt without
   // touching a ref during render.
   const [attemptToken] = useState<SurveyAttemptTokenSource>(
     createAttemptTokenSource,
   );
-  const isPublicLink = variant === "public";
-  const trackRoundAction = getNavigationAction("trackRound");
-
   const surveyQuestions = questions;
   const total = surveyQuestions.length;
   const answeredCount = Object.keys(answers).length;
@@ -88,11 +98,9 @@ export function SurveyFlow({
   const isReviewStep = currentIndex === total;
   const question = surveyQuestions[currentIndex];
 
-  // Until the consent step lands this is the moment the attempt began. The two
-  // coincide once answering can only start after an explicit accept.
-  const [attemptStartedAt, setAttemptStartedAt] = useState(() =>
-    new Date().toISOString(),
-  );
+  // The moment consent was given. Empty until it is, which is safe because a
+  // draft is only ever written from the `questions` phase.
+  const [consentAcceptedAt, setConsentAcceptedAt] = useState("");
 
   const storageKey = useMemo(
     () => surveyDraftStorageKey(shareCode),
@@ -137,6 +145,10 @@ export function SurveyFlow({
    * never observes the empty initial state and never writes it over the draft.
    * `stored.checked` is false on the server and during hydration, so this runs
    * exactly once, on the client, after the two passes agree.
+   *
+   * A draft only exists because someone accepted the terms to create it, so
+   * restoring one restores the consent with it. Asking the same person to agree
+   * again after a refresh would be a worse kind of consent, not a stricter one.
    */
   if (!seeded && stored.checked) {
     setSeeded(true);
@@ -144,8 +156,9 @@ export function SurveyFlow({
     if (stored.draft) {
       setAnswers(stored.draft.answers);
       setCurrentIndex(stored.draft.currentIndex);
-      setAttemptStartedAt(stored.draft.consentAcceptedAt);
+      setConsentAcceptedAt(stored.draft.consentAcceptedAt);
       setRestoredDraft(true);
+      setPhase("questions");
     }
   }
 
@@ -175,14 +188,14 @@ export function SurveyFlow({
         attemptToken: attemptToken.current(),
         answers,
         currentIndex,
-        consentAcceptedAt: attemptStartedAt,
+        consentAcceptedAt,
       }),
     );
 
     setWriteRefused(!result.ok);
   }, [
     answers,
-    attemptStartedAt,
+    consentAcceptedAt,
     attemptToken,
     currentIndex,
     draftExpectation.questionnaireFingerprint,
@@ -201,11 +214,11 @@ export function SurveyFlow({
   }, [storageKey]);
 
   useEffect(() => {
-    if (!seeded || submitted) return;
+    if (!seeded || phase !== "questions") return;
 
     const timer = setTimeout(persistDraft, SAVE_DEBOUNCE_MS);
     return () => clearTimeout(timer);
-  }, [persistDraft, seeded, submitted]);
+  }, [persistDraft, phase, seeded]);
 
   /**
    * Writes immediately when the page is going away.
@@ -217,7 +230,7 @@ export function SurveyFlow({
    * `visibilitychange` covers the backgrounding that never fires `pagehide`.
    */
   useEffect(() => {
-    if (!seeded || submitted) return;
+    if (!seeded || phase !== "questions") return;
 
     const flush = () => {
       if (document.visibilityState === "hidden") persistDraft();
@@ -231,7 +244,28 @@ export function SurveyFlow({
       window.removeEventListener("pagehide", flushNow);
       document.removeEventListener("visibilitychange", flush);
     };
-  }, [persistDraft, seeded, submitted]);
+  }, [persistDraft, phase, seeded]);
+
+  /**
+   * Moves the reading position into the questionnaire after an accept.
+   *
+   * The consent screen and the first question are one document, so without this
+   * a keyboard or screen-reader user would be returned to the top of the page
+   * and would have to find the question that just replaced the button they
+   * pressed.
+   */
+  useEffect(() => {
+    if (phase !== "questions" || !focusOnEnter.current) return;
+
+    focusOnEnter.current = false;
+    questionHeading.current?.focus();
+  }, [phase]);
+
+  const acceptConsent = () => {
+    focusOnEnter.current = true;
+    setConsentAcceptedAt(new Date().toISOString());
+    setPhase("questions");
+  };
 
   const selectAnswer = (value: AnswerValue) => {
     if (!question) {
@@ -285,7 +319,7 @@ export function SurveyFlow({
         // the connection dropped and the retry carried the same token. Both mean
         // the answers are safe, and the draft has nothing left to protect.
         dropDraft();
-        setSubmitted(true);
+        setPhase("complete");
         return;
       }
 
@@ -300,53 +334,76 @@ export function SurveyFlow({
   /** Starts a separate anonymous attempt on the same device, with its own token. */
   const startAnotherResponse = () => {
     // The next person at this computer must inherit nothing: not the token,
-    // which would make the round refuse their answers as a duplicate, and not
-    // the draft, which would show them what the previous person answered.
+    // which would make the round refuse their answers as a duplicate, not the
+    // draft, which would show them what the previous person answered, and not
+    // the consent, which was somebody else's to give.
     dropDraft();
     attemptToken.reset();
-    setAttemptStartedAt(new Date().toISOString());
+    setConsentAcceptedAt("");
     setAnswers({});
     setCurrentIndex(0);
     setSubmitError(null);
     setSubmitting(false);
-    setSubmitted(false);
+    setPhase("consent");
     setRestoredDraft(false);
   };
 
-  if (submitted) {
+  if (phase === "consent") {
+    return (
+      <SurveyConsentStep
+        surveyTitle={surveyTitle}
+        introText={introText}
+        anonymityText={anonymityText}
+        estimatedMinutes={estimatedMinutes}
+        questionCount={total}
+        onAccept={acceptConsent}
+        onDecline={() => setPhase("declined")}
+      />
+    );
+  }
+
+  if (phase === "declined") {
+    return (
+      <section className="survey-shell stone-page survey-builder-stone-page" style={{ maxWidth: "38rem", margin: "2rem auto" }}>
+        <div className="survey-complete">
+          <ShieldCheck size={42} aria-hidden="true" />
+          <h1>לא נשלח דבר</h1>
+          <p>
+            הבחירה לא להשתתף לגיטימית לגמרי, ולא נשמר שום מידע — גם לא העובדה
+            שנפתח הקישור. אפשר לסגור את החלון.
+          </p>
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={() => setPhase("consent")}
+          >
+            <RefreshCw size={18} aria-hidden="true" />
+            חזרה למסך הפתיחה
+          </button>
+        </div>
+      </section>
+    );
+  }
+
+  if (phase === "complete") {
     return (
       <section className="survey-shell stone-page survey-builder-stone-page" style={{ maxWidth: "38rem", margin: "2rem auto" }}>
         <div className="survey-complete">
           <ShieldCheck size={42} aria-hidden="true" />
           <h1>תודה, התשובות נקלטו</h1>
-          {isPublicLink ? (
-            <p>
-              {anonymityText}
-            </p>
-          ) : (
-            <p>התשובות נשמרות בצורה מצרפית בלבד. אין במסך ניהול מקום שבו ניתן לראות מי ענה.</p>
-          )}
-          {isPublicLink ? (
-            <>
-              <p className="quiet-note">אפשר לסגור את החלון. תודה על המענה.</p>
-              <button
-                className="secondary-button"
-                type="button"
-                onClick={startAnotherResponse}
-              >
-                <RefreshCw size={18} aria-hidden="true" />
-                מילוי שאלון נוסף
-              </button>
-              <p className="quiet-note">
-                מיועד למחשב משותף: כל מילוי נשמר כתשובה אנונימית נפרדת.
-              </p>
-            </>
-          ) : (
-            <Link className="primary-button" href={trackRoundAction.href}>
-              {trackRoundAction.label}
-              <ChevronRight size={18} aria-hidden="true" />
-            </Link>
-          )}
+          <p>{anonymityText}</p>
+          <p className="quiet-note">אפשר לסגור את החלון. תודה על המענה.</p>
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={startAnotherResponse}
+          >
+            <RefreshCw size={18} aria-hidden="true" />
+            מילוי שאלון נוסף
+          </button>
+          <p className="quiet-note">
+            מיועד למחשב משותף: כל מילוי נשמר כתשובה אנונימית נפרדת.
+          </p>
         </div>
       </section>
     );
@@ -421,7 +478,9 @@ export function SurveyFlow({
           <span className="question-index" aria-hidden="true">
             {currentIndex + 1}
           </span>
-          <h2>{question.text}</h2>
+          <h2 ref={questionHeading} tabIndex={-1}>
+            {question.text}
+          </h2>
           <div className="survey-answer-stones">
             {responseScale.map((option) => {
               const Icon = optionIcons[option.value];
