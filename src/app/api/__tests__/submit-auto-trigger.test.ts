@@ -7,9 +7,8 @@ import {
   InMemoryAiInsightsRepository,
   InMemoryRoundRepository,
   InMemorySurveyRepository,
-  resetDefaultRepositories,
-  setRepositories,
 } from '@/lib/repositories';
+import { overrideCoreRepositories, resetCoreRepositories } from '@/lib/composition-root';
 import { surveyInstrument } from '@/lib/shalomut-source';
 import {
   createCanonicalSurveyDefinition,
@@ -30,7 +29,7 @@ after(() => {
   } else {
     delete process.env.DATABASE_URL;
   }
-  resetDefaultRepositories();
+  resetCoreRepositories();
 });
 
 function createRound(privacyThreshold: number): SurveyRound {
@@ -79,7 +78,7 @@ async function submitUpToThreshold() {
 
 test('durably enqueues AI analytics when submission reaches the privacy threshold', async () => {
   const aiAnalysisRunRepo = new InMemoryAiAnalysisRunRepository();
-  setRepositories({
+  overrideCoreRepositories({
     aiAnalysisRunRepo,
     roundRepo: new InMemoryRoundRepository([createRound(1)]),
     surveyRepo: new InMemorySurveyRepository(),
@@ -98,7 +97,7 @@ test('durably enqueues AI analytics when submission reaches the privacy threshol
 
 test('does not enqueue AI analytics below the privacy threshold', async () => {
   const aiAnalysisRunRepo = new InMemoryAiAnalysisRunRepository();
-  setRepositories({
+  overrideCoreRepositories({
     aiAnalysisRunRepo,
     roundRepo: new InMemoryRoundRepository([createRound(10)]),
     surveyRepo: new InMemorySurveyRepository(),
@@ -118,7 +117,7 @@ test('enqueues one automatic run only, however many responses arrive', async () 
   const roundRepo = new InMemoryRoundRepository([createRound(1)]);
   const aiInsightsRepo = new InMemoryAiInsightsRepository(roundRepo);
   const aiAnalysisRunRepo = new InMemoryAiAnalysisRunRepository();
-  setRepositories({
+  overrideCoreRepositories({
     aiAnalysisRunRepo,
     aiInsightsRepo,
     roundRepo,

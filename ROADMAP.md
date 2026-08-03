@@ -42,15 +42,13 @@ belongs in archived task files and Git.
 
 ## Next architecture outcomes
 
-1. Introduce a Core composition root so routes/services receive repositories
-   instead of calling `getRepositories()` directly.
-2. Define a stable `DashboardInsightsDto` and remove remaining production type
+1. Define a stable `DashboardInsightsDto` and remove remaining production type
    ownership from `src/lib/demo-data.ts`.
-3. Replace the current single-organization/password gate with the chosen
+2. Replace the current single-organization/password gate with the chosen
    long-term identity model before multi-tenant or real-respondent rollout.
-4. Decide whether OpenAPI remains two integrity-checked mirrors or is generated
+3. Decide whether OpenAPI remains two integrity-checked mirrors or is generated
    from one source.
-5. Expand mutation testing only after classifying high-value surviving mutants;
+4. Expand mutation testing only after classifying high-value surviving mutants;
    the current pilot is intentionally focused and non-blocking.
 
 ## Conditional, not scheduled

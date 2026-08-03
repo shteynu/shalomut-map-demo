@@ -310,7 +310,7 @@ Definition of Done документа v3. Всё, что он нашёл отк�
 | 1. Correctness и reliability | 6 пунктов из 6 |
 | 2. Contract Registry | Capabilities выполнены, strategy/adapter — нет |
 | 3. Canonical internal models | Выполнен в обоих рантаймах |
-| 4. Application layer и ports | Частично |
+| 4. Application layer и ports | Выполнен |
 | 5. Presentation и hardening | Частично |
 
 ### Этап 0
@@ -404,7 +404,25 @@ JSON в MCP-клиенте закрыт через `structuredContent` и `outpu
 `USE_MOCK_MCP` фейлится вне development, то есть production-fallback на mock
 запрещён и без самого порта.
 
-Нет: composition root вместо `getRepositories()` в Core.
+Закрыто после аудита: composition root вместо `getRepositories()` в Core.
+`src/lib/composition-root.ts` — единственный модуль, который конструирует
+репозитории, и решение Prisma-vs-ephemeral принимается там же. Резолвят его
+только entrypoints: route handler, загрузчик контекста server components,
+script или тест; всё, что ниже этой границы, уже получало репозитории
+параметром и продолжает получать. `src/lib/repositories/index.ts` вернулся к
+роли каталога портов и адаптеров без собственного состояния.
+
+Границу держит fitness-функция `scripts/check-composition-root.mjs` в составе
+`npm run verify:core`: она валит сборку, когда `resolveCoreRepositories()`
+вызывают не из entrypoint и когда репозиторий конструируют вне composition root.
+Именованное исключение одно — process-local `InMemoryAuditLogRepository` в
+`src/lib/server/manager-audit.ts`, который ждёт durable audit table.
+
+Test seam остался: route handlers в тестах вызываются напрямую, передать им
+аргумент неоткуда. Разница в том, что seam теперь принадлежит модулю проводки
+(`overrideCoreRepositories`), а не каталогу репозиториев, и ephemeral-набор
+по-прежнему живёт на `globalThis` — иначе два module graph'а Next.js
+(route handlers и RSC) увидят разное локальное состояние.
 
 Закрыто после аудита: `AnalyticsSource`, `ResultSink` и `JobStore` названы
 протоколами в `src/application/ports.py`, а `AnalyticsRunnerService` получает
@@ -527,14 +545,12 @@ identity на Argon2 или managed IdP — пароль всё ещё хеши�
 | `6fefc9c` | порты этапа 4: `AnalyticsSource`, `ResultSink`, `JobStore` и constructor injection в раннере |
 | `612b4fb` | `TextGenerator`: ноды берут генератор параметром, граф передаёт свой, дефолт не изменился |
 
-Остальное из списков «Нет» выше — открытая работа: composition root этапа 4,
-DTO представления и identity этапа 5.
+Остальное из списков «Нет» выше — открытая работа: этап 4 закрыт целиком,
+осталось представление и identity этапа 5.
 
-Крупнейший независимый слайс из оставшегося — composition root вместо
-`getRepositories()` в Core: единственная оставшаяся точка, где зависимость
-берётся из модуля, а не из конструктора. Из этапа 5 — `DashboardInsightsDto`,
-вынос production-типов из `demo-data.ts` (17 импортов) и identity на Argon2 или
-managed IdP.
+Крупнейший независимый слайс из оставшегося — `DashboardInsightsDto` вместе с
+выносом production-типов из `demo-data.ts` (17 импортов). Дальше — identity на
+Argon2 или managed IdP.
 
 Отдельно от плана: ветка `refactor/canonical-models` (три коммита, 2026-08-02,
 worktree Gemini) — независимая попытка этого же этапа 3 вместе с портами

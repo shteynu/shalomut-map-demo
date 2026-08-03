@@ -116,10 +116,16 @@ the repair prompt; non-repairable contract violations fail immediately.
 
 Python application services depend on the ports `AnalyticsSource`,
 `ResultSink`, `JobStore`, `AnalysisRunner` and `TextGenerator`; default HTTP/MCP
-and provider objects are composed at module boundaries. Core has separate
-organization, round, survey, AI-run and AI-insights repositories, but routes
-still call `getRepositories()`. Replacing that service locator with a Core
-composition root is the next architecture slice.
+and provider objects are composed at module boundaries.
+
+Core has separate organization, round, survey, AI-run and AI-insights
+repositories, and `src/lib/composition-root.ts` is the only module that
+constructs them. Only an entrypoint — a route handler, the server-component
+context loader, a script or a test — calls `resolveCoreRepositories()`;
+everything below that edge receives repositories as arguments.
+`npm run lint:composition` enforces both halves. The one acknowledged exception
+is the process-local audit log in `src/lib/server/manager-audit.ts`, which waits
+on a durable audit table.
 
 ### ADR-009: Manager UI requires server runtime and server-owned scope
 

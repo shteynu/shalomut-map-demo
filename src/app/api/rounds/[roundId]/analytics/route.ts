@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { encodeRoundAnalytics } from '@/lib/analytics-encoder';
-import { getRepositories } from '@/lib/repositories';
+import { resolveCoreRepositories } from '@/lib/composition-root';
 import { AnalyticsService } from '@/lib/services';
 import { authorizeManagerRound } from '@/lib/server/manager-scope';
 
@@ -10,7 +10,7 @@ export async function GET(
 ) {
   try {
     const { roundId } = await params;
-    const { orgRepo, roundRepo, surveyRepo } = getRepositories();
+    const { orgRepo, roundRepo, surveyRepo } = resolveCoreRepositories();
     const authorization = await authorizeManagerRound(
       request,
       roundId,

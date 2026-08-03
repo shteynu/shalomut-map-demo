@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getRepositories } from "@/lib/repositories";
+import { resolveCoreRepositories } from "@/lib/composition-root";
 import {
   ManagerScopeService,
   ManagerSetupService,
@@ -148,7 +148,7 @@ export async function PUT(request: Request) {
       );
     }
 
-    const { orgRepo, roundRepo } = getRepositories();
+    const { orgRepo, roundRepo } = resolveCoreRepositories();
     const organizationId = await ManagerScopeService.resolveOrganizationId(
       orgRepo,
       getManagerOrganizationId(request),

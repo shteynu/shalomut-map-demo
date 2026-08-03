@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { AnalyticsService } from '@/lib/services/analytics.service';
 import { encodeAnalyticsInput } from '@/lib/analytics-encoder';
-import { getRepositories } from '@/lib/repositories';
+import { resolveCoreRepositories } from '@/lib/composition-root';
 import { validateRoundAnalyticsPayload } from '@/lib/round-analytics-payload';
 import { hasConfiguredSharedSecret } from '@/lib/server/shared-secret';
 
@@ -109,7 +109,7 @@ export async function POST(request: Request) {
           }, { status: 400 });
         }
 
-        const repositories = getRepositories();
+        const repositories = resolveCoreRepositories();
 
         const result = await AnalyticsService.getAnalyticsForRound(
           roundId,

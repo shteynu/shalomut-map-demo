@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getRepositories } from '@/lib/repositories';
+import { resolveCoreRepositories } from '@/lib/composition-root';
 import { getDurableWriteGuardResponse } from '@/lib/server/durable-write-guard';
 import { recordAiJobQueued } from '@/lib/server/ai-operational-metrics';
 import { authorizeManagerRound } from '@/lib/server/manager-scope';
@@ -16,7 +16,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     if (unavailable) return unavailable;
 
     const { roundId } = await params;
-    const { aiAnalysisRunRepo, orgRepo, roundRepo } = getRepositories();
+    const { aiAnalysisRunRepo, orgRepo, roundRepo } = resolveCoreRepositories();
     const authorization = await authorizeManagerRound(
       request,
       roundId,

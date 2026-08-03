@@ -11,9 +11,8 @@ import {
   InMemoryOrganizationRepository,
   InMemoryRoundRepository,
   InMemorySurveyRepository,
-  resetDefaultRepositories,
-  setRepositories,
 } from '@/lib/repositories';
+import { overrideCoreRepositories, resetCoreRepositories } from '@/lib/composition-root';
 import { surveyInstrument } from '@/lib/shalomut-source';
 import { DEFAULT_PRODUCED_ANALYTICS_CONTRACT_VERSION } from '@/lib/ai-contract-version';
 import { AI_ANALYTICS_V6_CONTRACT_VERSION } from '@/lib/ai-contract';
@@ -224,7 +223,7 @@ function configureFixture(
   fixture: DynamicRoundFixture,
   responses: SurveyResponseRecord[],
 ) {
-  setRepositories({
+  overrideCoreRepositories({
     orgRepo: new InMemoryOrganizationRepository([
       {
         id: fixture.organizationId,
@@ -390,7 +389,7 @@ test('two dynamic questionnaires cross Core MCP -> Python -> callback with exact
       }
     }
   } finally {
-    resetDefaultRepositories();
+    resetCoreRepositories();
     if (previousDatabaseUrl === undefined) delete process.env.DATABASE_URL;
     else process.env.DATABASE_URL = previousDatabaseUrl;
   }
@@ -602,7 +601,7 @@ test('a 5.0 round carries its distributions to Python and back under Core verifi
       assert.strictEqual(rejection.status, 400);
     }
   } finally {
-    resetDefaultRepositories();
+    resetCoreRepositories();
     if (previousDatabaseUrl === undefined) delete process.env.DATABASE_URL;
     else process.env.DATABASE_URL = previousDatabaseUrl;
     if (previousContractVersion === undefined) {
@@ -665,7 +664,7 @@ test('one below-threshold dynamic question locks the whole cross-service pipelin
     );
     assert.strictEqual(callbackResponse.status, 200);
   } finally {
-    resetDefaultRepositories();
+    resetCoreRepositories();
     if (previousDatabaseUrl === undefined) delete process.env.DATABASE_URL;
     else process.env.DATABASE_URL = previousDatabaseUrl;
   }

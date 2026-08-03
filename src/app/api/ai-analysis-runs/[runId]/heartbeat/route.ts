@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getRepositories } from '@/lib/repositories';
+import { resolveCoreRepositories } from '@/lib/composition-root';
 import {
   AI_ANALYSIS_JOB_LEASE_MS,
   isValidLeaseToken,
@@ -27,7 +27,7 @@ export async function POST(
     return NextResponse.json({ error: 'Invalid lease token' }, { status: 400 });
   }
 
-  const { aiAnalysisRunRepo } = getRepositories();
+  const { aiAnalysisRunRepo } = resolveCoreRepositories();
   const renewed = await aiAnalysisRunRepo.heartbeat(runId, leaseToken, {
     leaseMs: AI_ANALYSIS_JOB_LEASE_MS,
   });

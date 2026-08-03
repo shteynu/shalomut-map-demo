@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getRepositories } from "@/lib/repositories";
+import { resolveCoreRepositories } from "@/lib/composition-root";
 import { RoundService } from "@/lib/services";
 import { getDurableWriteGuardResponse } from "@/lib/server/durable-write-guard";
 import { authorizeManagerRound } from "@/lib/server/manager-scope";
@@ -25,7 +25,7 @@ export async function PATCH(
     if (unavailable) return unavailable;
 
     const { roundId } = await params;
-    const { orgRepo, roundRepo } = getRepositories();
+    const { orgRepo, roundRepo } = resolveCoreRepositories();
     const authorization = await authorizeManagerRound(
       request,
       roundId,

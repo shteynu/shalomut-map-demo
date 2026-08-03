@@ -12,9 +12,8 @@ import {
   InMemoryOrganizationRepository,
   InMemoryRoundRepository,
   InMemorySurveyRepository,
-  resetDefaultRepositories,
-  setRepositories,
 } from '@/lib/repositories';
+import { overrideCoreRepositories, resetCoreRepositories } from '@/lib/composition-root';
 
 const testRoundId = 'round_demo_1';
 // A second round keeps the dispatch-failure test independent of the claim the
@@ -25,7 +24,7 @@ let aiAnalysisRunRepo = new InMemoryAiAnalysisRunRepository();
 
 function installDefaultRepositories() {
   aiAnalysisRunRepo = new InMemoryAiAnalysisRunRepository();
-  setRepositories({
+  overrideCoreRepositories({
     aiAnalysisRunRepo,
     orgRepo: new InMemoryOrganizationRepository([DEMO_ORGANIZATION]),
     roundRepo: new InMemoryRoundRepository([
@@ -43,7 +42,7 @@ before(() => {
 });
 
 after(() => {
-  resetDefaultRepositories();
+  resetCoreRepositories();
   if (previousDatabaseUrl === undefined) {
     delete process.env.DATABASE_URL;
   } else {
@@ -216,7 +215,7 @@ test('MCP payload carries the school background context on 4.0 only, never when 
 
   try {
     // Locked round: no responses at all, so nothing may cross the boundary.
-    setRepositories({
+    overrideCoreRepositories({
       orgRepo: new InMemoryOrganizationRepository([DEMO_ORGANIZATION]),
       roundRepo: new InMemoryRoundRepository([
         {
@@ -236,7 +235,7 @@ test('MCP payload carries the school background context on 4.0 only, never when 
     assert.strictEqual(locked.backgroundContext, undefined);
 
     // Unlocked round on 3.0 keeps the immutable 3.0 semantics: no context.
-    setRepositories({
+    overrideCoreRepositories({
       orgRepo: new InMemoryOrganizationRepository([DEMO_ORGANIZATION]),
       roundRepo: new InMemoryRoundRepository([
         {
@@ -395,7 +394,7 @@ test('AI Insights callback verifies run ownership before it can fail a durable r
     shareCode: 'SHALOM-CALLBACK-OTHER',
   };
   const protectedRunRepo = new InMemoryAiAnalysisRunRepository();
-  setRepositories({
+  overrideCoreRepositories({
     aiAnalysisRunRepo: protectedRunRepo,
     orgRepo: new InMemoryOrganizationRepository([DEMO_ORGANIZATION]),
     roundRepo: new InMemoryRoundRepository([DEMO_ROUND, otherRound]),
@@ -445,7 +444,7 @@ test('An empty AI result reports the durable queued, running, and failed lifecyc
   const round = { ...DEMO_ROUND, id: runStateRoundId, shareCode: 'SHALOM-RUNSTATE' };
 
   async function readRunState(runRepo: InMemoryAiAnalysisRunRepository) {
-    setRepositories({
+    overrideCoreRepositories({
       aiAnalysisRunRepo: runRepo,
       orgRepo: new InMemoryOrganizationRepository([DEMO_ORGANIZATION]),
       roundRepo: new InMemoryRoundRepository([round]),
@@ -500,7 +499,7 @@ test('An empty AI result reports the durable queued, running, and failed lifecyc
 
 test('AI Insights API keeps legacy 1.0 persistence independent from 3.0 questionnaire validation', async () => {
   const legacyRoundId = 'round_legacy_snapshot';
-  setRepositories({
+  overrideCoreRepositories({
     orgRepo: new InMemoryOrganizationRepository([DEMO_ORGANIZATION]),
     roundRepo: new InMemoryRoundRepository([
       {

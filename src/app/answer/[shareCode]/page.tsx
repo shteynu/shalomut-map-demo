@@ -1,7 +1,7 @@
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { SurveyFlow } from "@/components/survey";
-import { getRepositories } from "@/lib/repositories";
+import { resolveCoreRepositories } from "@/lib/composition-root";
 import { createCanonicalSurveyDefinition } from "@/lib/survey-definition";
 
 export default async function SharedSurveyPage({
@@ -11,7 +11,7 @@ export default async function SharedSurveyPage({
 }) {
   await connection();
   const { shareCode } = await params;
-  const { roundRepo } = getRepositories();
+  const { roundRepo } = resolveCoreRepositories();
   const round = await roundRepo.findByShareCode(shareCode);
 
   if (!round || round.status !== "active") {

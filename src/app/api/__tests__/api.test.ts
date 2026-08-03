@@ -19,9 +19,8 @@ import {
   InMemoryAiInsightsRepository,
   InMemoryRoundRepository,
   InMemorySurveyRepository,
-  resetDefaultRepositories,
-  setRepositories,
 } from '@/lib/repositories';
+import { overrideCoreRepositories, resetCoreRepositories } from '@/lib/composition-root';
 import { InMemoryAuditLogRepository } from '@/lib/auth/domain-contract';
 import { setAuditLogRepositoryForTests } from '@/lib/server/manager-audit';
 import { surveyInstrument } from '@/lib/shalomut-source';
@@ -31,7 +30,7 @@ import { QuestionAnswerInput } from '@/lib/types/backend';
 let previousDatabaseUrl: string | undefined;
 
 function useDemoRepositories() {
-  setRepositories({
+  overrideCoreRepositories({
     aiAnalysisRunRepo: new InMemoryAiAnalysisRunRepository(),
     orgRepo: new InMemoryOrganizationRepository([DEMO_ORGANIZATION]),
     roundRepo: new InMemoryRoundRepository([DEMO_ROUND]),
@@ -46,7 +45,7 @@ before(() => {
 });
 
 after(() => {
-  resetDefaultRepositories();
+  resetCoreRepositories();
   if (previousDatabaseUrl === undefined) {
     delete process.env.DATABASE_URL;
   } else {
@@ -70,7 +69,7 @@ test('API Route GET /api/rounds returns demo round', async () => {
 });
 
 test('API Route GET /api/rounds returns an empty state instead of an implicit demo round', async () => {
-  resetDefaultRepositories();
+  resetCoreRepositories();
 
   try {
     const res = await getRounds();
@@ -105,7 +104,7 @@ test('API Route POST /api/rounds rejects an organization outside the manager sco
     id: 'org_other_school',
     name: 'בית ספר אחר',
   };
-  setRepositories({
+  overrideCoreRepositories({
     orgRepo: new InMemoryOrganizationRepository([
       DEMO_ORGANIZATION,
       otherOrganization,
@@ -219,7 +218,7 @@ test('API Route analytics hides a round owned by another organization', async ()
     shareCode: 'SHALOM-OTHER',
   };
 
-  setRepositories({
+  overrideCoreRepositories({
     orgRepo: new InMemoryOrganizationRepository([
       DEMO_ORGANIZATION,
       otherOrganization,
@@ -248,7 +247,7 @@ test('API Route analytics hides a round owned by another organization', async ()
 });
 
 test('API Route PUT /api/manager/setup persists the first organization and round', async () => {
-  resetDefaultRepositories();
+  resetCoreRepositories();
 
   try {
     const request = new Request('http://localhost/api/manager/setup', {
@@ -291,7 +290,7 @@ test('API Route PUT /api/manager/setup persists the first organization and round
 });
 
 test('API Route PUT /api/manager/setup creates the configured scoped organization ID', async () => {
-  resetDefaultRepositories();
+  resetCoreRepositories();
 
   try {
     const scopedOrganizationId = 'org_scoped_school';
@@ -460,7 +459,7 @@ test('Round status API rejects activation when persisted questions do not cover 
     shareCode: 'SHALOM-INCOMPLETE',
     surveyDefinition: invalidDefinition,
   };
-  setRepositories({
+  overrideCoreRepositories({
     orgRepo: new InMemoryOrganizationRepository([DEMO_ORGANIZATION]),
     roundRepo: new InMemoryRoundRepository([draftRound]),
     surveyRepo: new InMemorySurveyRepository(),
@@ -530,7 +529,7 @@ test('Saving a complete questionnaire activates a draft round, an incomplete one
       },
     },
   ]);
-  setRepositories({
+  overrideCoreRepositories({
     orgRepo: new InMemoryOrganizationRepository([DEMO_ORGANIZATION]),
     roundRepo,
     surveyRepo: new InMemorySurveyRepository(),
@@ -573,7 +572,7 @@ test('API Route POST /api/rounds/[roundId]/reset drops stale insights and writes
   const roundRepo = new InMemoryRoundRepository([DEMO_ROUND]);
   const aiInsightsRepo = new InMemoryAiInsightsRepository(roundRepo);
   const surveyRepo = new InMemorySurveyRepository();
-  setRepositories({
+  overrideCoreRepositories({
     aiAnalysisRunRepo,
     aiInsightsRepo,
     orgRepo: new InMemoryOrganizationRepository([DEMO_ORGANIZATION]),

@@ -73,5 +73,8 @@ state, external blockers and approval gates. Product milestones belong in
 
 Before the next deployment-sensitive task, compare `origin/main` with deployed
 Core and Python source/health, then record only fresh read-only evidence in the
-new branch task file. The next independently deliverable architecture slice on
-`main` is a Core composition root replacing direct `getRepositories()` calls.
+new branch task file. The Core composition root is written on
+`refactor/core-composition-root` and is not yet on `main`; the next
+independently deliverable architecture slice after it is the presentation DTO
+(`DashboardInsightsDto`) with the production types still owned by
+`src/lib/demo-data.ts`.

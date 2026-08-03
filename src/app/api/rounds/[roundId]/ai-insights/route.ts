@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getRepositories } from '@/lib/repositories';
+import { resolveCoreRepositories } from '@/lib/composition-root';
 import { isValidLeaseToken } from '@/lib/server/ai-analysis-worker';
 import {
   applyAiInsightsCallback,
@@ -68,7 +68,7 @@ function runSummary(run: AiAnalysisRun) {
 export async function GET(request: Request, { params }: RouteParams) {
   try {
     const { roundId } = await params;
-    const repositories = getRepositories();
+    const repositories = resolveCoreRepositories();
     const authorization = await authorizeManagerRound(
       request,
       roundId,
@@ -121,7 +121,7 @@ export async function POST(request: Request, { params }: RouteParams) {
       roundId,
       identity.identity,
       payload,
-      getRepositories(),
+      resolveCoreRepositories(),
     );
 
     switch (result.outcome) {

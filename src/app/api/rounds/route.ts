@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getRepositories } from '@/lib/repositories';
+import { resolveCoreRepositories } from '@/lib/composition-root';
 import {
   ManagerContextService,
   ManagerScopeService,
@@ -15,7 +15,7 @@ import { CreateRoundInput } from '@/lib/types/backend';
 
 export async function GET(request?: Request) {
   try {
-    const { orgRepo, roundRepo, surveyRepo } = getRepositories();
+    const { orgRepo, roundRepo, surveyRepo } = resolveCoreRepositories();
     const roundId = request
       ? new URL(request.url).searchParams.get('roundId')?.trim()
       : undefined;
@@ -66,7 +66,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { orgRepo, roundRepo } = getRepositories();
+    const { orgRepo, roundRepo } = resolveCoreRepositories();
     const organizationId = await ManagerScopeService.resolveOrganizationId(
       orgRepo,
       getManagerOrganizationId(request),

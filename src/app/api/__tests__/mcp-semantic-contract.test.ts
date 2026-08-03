@@ -4,9 +4,8 @@ import { POST as mcpHandler } from '../mcp/route';
 import {
   InMemoryRoundRepository,
   InMemorySurveyRepository,
-  resetDefaultRepositories,
-  setRepositories,
 } from '@/lib/repositories';
+import { overrideCoreRepositories, resetCoreRepositories } from '@/lib/composition-root';
 import { surveyInstrument } from '@/lib/shalomut-source';
 import { createCanonicalSurveyDefinition } from '@/lib/survey-definition';
 import { createSurveyDefinitionHash } from '@/lib/survey-definition-hash';
@@ -85,7 +84,7 @@ before(() => {
     10,
   );
   definition.questions = dynamicQuestions;
-  setRepositories({
+  overrideCoreRepositories({
     roundRepo: new InMemoryRoundRepository([
       {
         id: unlockedRoundId,
@@ -115,7 +114,7 @@ before(() => {
 });
 
 after(() => {
-  resetDefaultRepositories();
+  resetCoreRepositories();
   if (previousDatabaseUrl === undefined) delete process.env.DATABASE_URL;
   else process.env.DATABASE_URL = previousDatabaseUrl;
   if (previousMcpSecret === undefined) delete process.env.MCP_SHARED_SECRET;

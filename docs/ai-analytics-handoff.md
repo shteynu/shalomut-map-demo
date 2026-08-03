@@ -103,8 +103,8 @@ Python uses:
 - `CanonicalAnalysisInput` and `schemas/analytics_output.py` for internal/wire
   separation.
 
-The next architecture slice is on the Core side: replace direct
-`getRepositories()` calls with a composition root.
+Core has the matching shape since 2026-08-03: `src/lib/composition-root.ts`
+constructs every repository and only entrypoints resolve it.
 
 ## Verification
 

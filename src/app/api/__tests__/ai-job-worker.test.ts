@@ -3,11 +3,8 @@ import test, { after, before, beforeEach } from 'node:test';
 import { POST as claimJob } from '../ai-analysis-runs/claim/route';
 import { POST as heartbeatJob } from '../ai-analysis-runs/[runId]/heartbeat/route';
 import { POST as failJob } from '../ai-analysis-runs/[runId]/fail/route';
-import {
-  InMemoryAiAnalysisRunRepository,
-  resetDefaultRepositories,
-  setRepositories,
-} from '@/lib/repositories';
+import { InMemoryAiAnalysisRunRepository } from '@/lib/repositories';
+import { overrideCoreRepositories, resetCoreRepositories } from '@/lib/composition-root';
 
 const workerSecret = 'worker-test-secret';
 let previousDatabaseUrl: string | undefined;
@@ -23,11 +20,11 @@ before(() => {
 
 beforeEach(() => {
   repository = new InMemoryAiAnalysisRunRepository();
-  setRepositories({ aiAnalysisRunRepo: repository });
+  overrideCoreRepositories({ aiAnalysisRunRepo: repository });
 });
 
 after(() => {
-  resetDefaultRepositories();
+  resetCoreRepositories();
   if (previousDatabaseUrl === undefined) delete process.env.DATABASE_URL;
   else process.env.DATABASE_URL = previousDatabaseUrl;
   if (previousCallbackSecret === undefined) delete process.env.AI_CALLBACK_SECRET;

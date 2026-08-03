@@ -7,9 +7,6 @@ import {
   InMemoryOrganizationRepository,
   InMemoryRoundRepository,
   InMemorySurveyRepository,
-  getRepositories,
-  resetDefaultRepositories,
-  setRepositories,
 } from '..';
 import { encodeRoundAnalytics } from '../../analytics-encoder';
 import { AnalyticsService, RoundService, SurveyService } from '../../services';
@@ -204,33 +201,6 @@ test('End-to-End Workflow: Round creation -> 10 submissions -> Analytics Unlocki
   assert.strictEqual(typeof analytics?.dimensionScores['self-expression'].averageScore, 'number');
 });
 
-test('getRepositories returns default repository singletons', () => {
-  const { orgRepo, roundRepo, surveyRepo } = getRepositories();
-  assert.notStrictEqual(orgRepo, undefined);
-  assert.notStrictEqual(roundRepo, undefined);
-  assert.notStrictEqual(surveyRepo, undefined);
-});
-
-test('default repositories do not invent demo records when no database is configured', async () => {
-  const previousDatabaseUrl = process.env.DATABASE_URL;
-  delete process.env.DATABASE_URL;
-  resetDefaultRepositories();
-
-  try {
-    const { orgRepo, roundRepo, surveyRepo } = getRepositories();
-
-    assert.deepStrictEqual(await orgRepo.findAll(), []);
-    assert.strictEqual(await roundRepo.findById(DEMO_ROUND.id), null);
-    assert.strictEqual(await surveyRepo.getResponseCount(DEMO_ROUND.id), 0);
-  } finally {
-    if (previousDatabaseUrl === undefined) {
-      delete process.env.DATABASE_URL;
-    } else {
-      process.env.DATABASE_URL = previousDatabaseUrl;
-    }
-  }
-});
-
 test('InMemoryAiInsightsRepository refuses a result for a round nobody created', async () => {
   const roundRepo = new InMemoryRoundRepository([DEMO_ROUND]);
   const aiInsightsRepo = new InMemoryAiInsightsRepository(roundRepo);
@@ -254,29 +224,4 @@ test('InMemoryAiInsightsRepository refuses a result for a round nobody created',
 
   await aiInsightsRepo.deleteByRoundId(DEMO_ROUND.id);
   assert.strictEqual(await aiInsightsRepo.findByRoundId(DEMO_ROUND.id), null);
-});
-
-test('a replaced round repository brings a matching insights repository', async () => {
-  const previousDatabaseUrl = process.env.DATABASE_URL;
-  delete process.env.DATABASE_URL;
-  resetDefaultRepositories();
-
-  try {
-    // Injecting only the round store is the common shape in route tests; the
-    // insights store must still recognise the rounds that store holds.
-    setRepositories({ roundRepo: new InMemoryRoundRepository([DEMO_ROUND]) });
-
-    const { aiInsightsRepo } = getRepositories();
-    assert.strictEqual(
-      await aiInsightsRepo.save(DEMO_ROUND.id, { status: 'success' }),
-      true,
-    );
-  } finally {
-    resetDefaultRepositories();
-    if (previousDatabaseUrl === undefined) {
-      delete process.env.DATABASE_URL;
-    } else {
-      process.env.DATABASE_URL = previousDatabaseUrl;
-    }
-  }
 });

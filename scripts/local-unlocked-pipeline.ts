@@ -20,8 +20,8 @@ import {
   InMemoryOrganizationRepository,
   InMemoryRoundRepository,
   InMemorySurveyRepository,
-  setRepositories,
 } from "@/lib/repositories";
+import { overrideCoreRepositories } from "@/lib/composition-root";
 import { surveyInstrument } from "@/lib/shalomut-source";
 import { createCanonicalSurveyDefinition } from "@/lib/survey-definition";
 import type {
@@ -86,7 +86,7 @@ async function main() {
     }),
   );
 
-  setRepositories({
+  overrideCoreRepositories({
     orgRepo: new InMemoryOrganizationRepository([
       {
         id: ORGANIZATION_ID,

@@ -71,8 +71,11 @@ description: Работай с продуктом и кодом Shalomut Map в 
   `CanonicalRoundAnalytics` и кодирует его через `encodeAnalyticsInput`, а
   Python разбирает `CanonicalAnalysisInput` и формирует payload через output
   adapter. В Python application boundary используются порты `AnalyticsSource`,
-  `ResultSink`, `JobStore` и `TextGenerator`; в Core composition root вместо
-  прямых `getRepositories()` остаётся следующей архитектурной задачей.
+  `ResultSink`, `JobStore` и `TextGenerator`; в Core все репозитории собираются
+  в `src/lib/composition-root.ts`, и `resolveCoreRepositories()` вызывают только
+  entrypoints — route handler, загрузчик контекста server components, script или
+  тест. Всё, что ниже этой границы, получает репозитории параметром; проверяет
+  это `npm run lint:composition`.
 
 ## Product и UI
 

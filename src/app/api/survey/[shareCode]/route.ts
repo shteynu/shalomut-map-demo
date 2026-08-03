@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getRepositories } from '@/lib/repositories';
+import { resolveCoreRepositories } from '@/lib/composition-root';
 import { RoundService } from '@/lib/services';
 import { surveyInstrument } from '@/lib/shalomut-source';
 import {
@@ -13,7 +13,7 @@ export async function GET(
 ) {
   try {
     const { shareCode } = await params;
-    const { roundRepo } = getRepositories();
+    const { roundRepo } = resolveCoreRepositories();
     const round = await RoundService.getRoundByShareCode(shareCode, roundRepo);
 
     if (!round) {

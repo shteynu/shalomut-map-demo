@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getRepositories } from '@/lib/repositories';
+import { resolveCoreRepositories } from '@/lib/composition-root';
 import {
   isValidFailureCode,
   isValidLeaseToken,
@@ -35,7 +35,7 @@ export async function POST(
     );
   }
 
-  const { aiAnalysisRunRepo } = getRepositories();
+  const { aiAnalysisRunRepo } = resolveCoreRepositories();
   const outcome = await aiAnalysisRunRepo.finish(runId, {
     state: 'failed',
     failureCode,

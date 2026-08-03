@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getRepositories } from "@/lib/repositories";
+import { resolveCoreRepositories } from "@/lib/composition-root";
 import { getDurableWriteGuardResponse } from "@/lib/server/durable-write-guard";
 import { authorizeManagerRound } from "@/lib/server/manager-scope";
 import { recordRoundAuditEvent } from "@/lib/server/manager-audit";
@@ -14,7 +14,7 @@ export async function POST(
 
     const { roundId } = await params;
     const { aiAnalysisRunRepo, aiInsightsRepo, orgRepo, roundRepo, surveyRepo } =
-      getRepositories();
+      resolveCoreRepositories();
 
     const authorization = await authorizeManagerRound(
       request,

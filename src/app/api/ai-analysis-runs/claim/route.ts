@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getRepositories } from '@/lib/repositories';
+import { resolveCoreRepositories } from '@/lib/composition-root';
 import {
   AI_ANALYSIS_JOB_LEASE_MS,
   AI_ANALYSIS_JOB_MAX_ATTEMPTS,
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const { aiAnalysisRunRepo } = getRepositories();
+  const { aiAnalysisRunRepo } = resolveCoreRepositories();
   const lease = await aiAnalysisRunRepo.claimNext({
     workerId,
     leaseMs: AI_ANALYSIS_JOB_LEASE_MS,

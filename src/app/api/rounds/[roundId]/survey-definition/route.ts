@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getRepositories } from "@/lib/repositories";
+import { resolveCoreRepositories } from "@/lib/composition-root";
 import {
   createCanonicalSurveyDefinition,
   hasSameQuestionSnapshot,
@@ -16,7 +16,7 @@ interface RouteParams {
 export async function GET(request: Request, { params }: RouteParams) {
   try {
     const { roundId } = await params;
-    const { orgRepo, roundRepo } = getRepositories();
+    const { orgRepo, roundRepo } = resolveCoreRepositories();
     const authorization = await authorizeManagerRound(
       request,
       roundId,
@@ -45,7 +45,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
     if (unavailable) return unavailable;
 
     const { roundId } = await params;
-    const { orgRepo, roundRepo, surveyRepo } = getRepositories();
+    const { orgRepo, roundRepo, surveyRepo } = resolveCoreRepositories();
     const authorization = await authorizeManagerRound(
       request,
       roundId,

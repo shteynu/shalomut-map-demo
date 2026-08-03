@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getRepositories } from '@/lib/repositories';
+import { resolveCoreRepositories } from '@/lib/composition-root';
 import { RoundService, SurveyService } from '@/lib/services';
 import { getDurableWriteGuardResponse } from '@/lib/server/durable-write-guard';
 import { enqueueAiAnalyticsAfterResponse } from '@/lib/server/trigger-ai-analytics';
@@ -25,7 +25,7 @@ export async function POST(
     };
 
     const { aiAnalysisRunRepo, aiInsightsRepo, roundRepo, surveyRepo } =
-      getRepositories();
+      resolveCoreRepositories();
     const round = await RoundService.getRoundByShareCode(shareCode, roundRepo);
 
     if (!round) {
