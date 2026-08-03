@@ -545,6 +545,7 @@ summary, метрики, рекомендации). Из-за второй по�
 | `624d7f7` | этап 3 в Python: `CanonicalAnalysisInput` и output adapter, три исходящих payload'а собираются в одном месте |
 | `6fefc9c` | порты этапа 4: `AnalyticsSource`, `ResultSink`, `JobStore` и constructor injection в раннере |
 | `612b4fb` | `TextGenerator`: ноды берут генератор параметром, граф передаёт свой, дефолт не изменился |
+| `906f2ba` | `DashboardInsightsDto`: экраны держат DTO вместо `StoneMapResult`, `demo-data.ts` удалён вместе с demo-аналитикой. Ветка `refactor/dashboard-insights-dto`, ещё не в `main` |
 
 Остальное из списков «Нет» выше — открытая работа: composition root этапа 4,
 identity и OpenAPI этапа 5.
