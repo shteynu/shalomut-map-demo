@@ -5,9 +5,8 @@
 - Branch: `docs/product-backlog-doc-sync`
 - Base branch: `main`
 - Base commit: `39a4339`
-- Current HEAD: `39a4339` (documentation edits uncommitted at the time of
-  writing)
-- Status: documentation edits complete, awaiting commit
+- Current HEAD: `a5cf1dc`
+- Status: complete and archived; the work is one commit on top of `39a4339`
 - Last updated: 2026-08-03
 - Last agent/tool: Claude Code
 
@@ -74,7 +73,8 @@ Nothing in this task beyond committing.
 
 - `docs/product-behaviour-backlog.md` (modified)
 - `PROGRESS.md` (modified)
-- `docs/agent-tasks/active/docs--product-backlog-doc-sync.md` (new)
+- `docs/agent-tasks/archive/docs--product-backlog-doc-sync.md` (this file, new;
+  created under `active/` and archived in the same session)
 
 Pre-existing unrelated modifications left untouched: `.idea/shalomut-map-demo.iml`,
 `next-env.d.ts`.
@@ -120,6 +120,7 @@ None open. The four questions raised in this session were answered on
 
 ## Next concrete step
 
-Commit the three files on `docs/product-backlog-doc-sync` with a
-`docs(product)` message, then hand the push to the owner
-(`git push origin docs/product-backlog-doc-sync:main`).
+The owner runs `git push origin docs/product-backlog-doc-sync:main`; pushing is
+blocked for the agent in this environment. Until then the work exists only in
+this worktree's branch. After that, the next product step is whichever backlog
+item the owner picks, most likely §9 or §10.
