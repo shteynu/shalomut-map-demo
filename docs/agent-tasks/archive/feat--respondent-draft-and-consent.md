@@ -6,8 +6,9 @@
 - Base branch: `origin/main`
 - Base commit: `8f9c29d`
 - Current HEAD: `63f668e`
-- Status: закрыта. Все три коммита сделаны, проверены и слиты в `main`
-  2026-08-03 по прямому решению владельца, без отдельного review
+- Status: работа закончена и проверена. Владелец решил 2026-08-03 отправить
+  ветку прямо в `main` без отдельного review; push остаётся за владельцем,
+  агенту он здесь недоступен
 - Last updated: 2026-08-03
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -429,5 +430,7 @@ deployment aliases. Миграций и записей в базу нет.
 
 ## Next concrete step
 
-Ничего. Задача закрыта и слита в `main`. Следующая работа — PR 2
-`feat/round-history-selection` на отдельной ветке от свежего `main`.
+Владельцу: `git push origin feat/respondent-draft-and-consent:main`. Это
+fast-forward от `8f9c29d`. Локальный `main` живёт в другом worktree и должен
+быть подтянут там же. Следующая работа — PR 2 `feat/round-history-selection`
+на отдельной ветке от свежего `main`.
