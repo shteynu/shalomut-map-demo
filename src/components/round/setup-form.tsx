@@ -1,19 +1,27 @@
 "use client";
 
 import Link from "next/link";
-import { Check, ChevronLeft, ClipboardPen, Lightbulb, Loader2, ShieldCheck, Users } from "lucide-react";
+import { CalendarPlus, Check, ChevronLeft, ClipboardPen, Lightbulb, Loader2, ShieldCheck, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 import { PrivacyThresholdNotice } from "@/components/ui/privacy-threshold-notice";
 import { PrivacyTooltip } from "@/components/ui/privacy-tooltip";
 import { AUDIENCE_OPTIONS, DEFAULT_AUDIENCE } from "@/lib/audience";
-import { getNavigationAction } from "@/lib/navigation";
+import {
+  getNavigationAction,
+  newRoundSetupRoute,
+  surveyBuilderRoute,
+} from "@/lib/navigation";
 import {
   DEFAULT_PRIVACY_THRESHOLD,
   MINIMUM_PRIVACY_THRESHOLD,
 } from "@/lib/survey-definition";
 
 type SetupFormProps = {
+  /** Opening a round the school does not have yet rather than editing one. */
+  isNewRound?: boolean;
+  /** Whether offering a second round makes sense: a school with a round. */
+  canOpenNewRound?: boolean;
   organization: {
     id: string;
     name: string;
@@ -41,15 +49,28 @@ type SetupFormProps = {
 
 const gradeLabels = ["א", "ב", "ג", "ד", "ה", "ו", "ז", "ח", "ט", "י", "יא", "יב"];
 
-export function SetupForm({ organization, round }: SetupFormProps) {
+export function SetupForm({
+  isNewRound = false,
+  canOpenNewRound = false,
+  organization,
+  round,
+}: SetupFormProps) {
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [savedRoundId, setSavedRoundId] = useState<string | null>(null);
   const [minimumResponses, setMinimumResponses] = useState(
     round?.privacyThreshold ?? DEFAULT_PRIVACY_THRESHOLD,
   );
   const router = useRouter();
   const distributeSurveyAction = getNavigationAction("distributeSurvey");
+  // A new round is a draft with no questionnaire yet, so its builder link has
+  // to name it. Without the id the builder would open the running round and
+  // the manager would edit the wrong questionnaire.
+  const builderHref =
+    isNewRound && savedRoundId
+      ? surveyBuilderRoute(savedRoundId)
+      : distributeSurveyAction.href;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -77,7 +98,9 @@ export function SetupForm({ organization, round }: SetupFormProps) {
           totalStaffCount: Number(formData.get("totalStaffCount")),
         },
         round: {
-          id: round?.id,
+          // No id is what tells the server this is a new round rather than an
+          // edit of the running one.
+          id: isNewRound ? undefined : round?.id,
           title: formData.get("title"),
           startDate: formData.get("startDate"),
           endDate: formData.get("endDate"),
@@ -108,6 +131,11 @@ export function SetupForm({ organization, round }: SetupFormProps) {
       return;
     }
 
+    const payload = (await response.json().catch(() => null)) as {
+      round?: { id?: string };
+    } | null;
+
+    setSavedRoundId(payload?.round?.id ?? null);
     setSaved(true);
     setSaving(false);
     router.refresh();
@@ -314,17 +342,33 @@ export function SetupForm({ organization, round }: SetupFormProps) {
           ) : (
             <Check size={18} aria-hidden="true" />
           )}
-          {saving ? "שומר..." : "שמירת סבב אבחון"}
+          {saving
+            ? "שומר..."
+            : isNewRound
+              ? "פתיחת הסבב החדש"
+              : "שמירת סבב אבחון"}
         </button>
         {saved ? (
-          <Link className="secondary-button" href={distributeSurveyAction.href}>
+          <Link className="secondary-button" href={builderHref}>
             {distributeSurveyAction.label}
             <ChevronLeft size={18} aria-hidden="true" />
           </Link>
         ) : null}
+        {!isNewRound && canOpenNewRound && !saved ? (
+          <Link className="secondary-button" href={newRoundSetupRoute()}>
+            <CalendarPlus size={18} aria-hidden="true" />
+            פתיחת סבב חדש
+          </Link>
+        ) : null}
       </div>
 
-      {saved ? <p className="success-note">סבב האבחון נשמר והלינק האנונימי מוכן להפצה.</p> : null}
+      {saved ? (
+        <p className="success-note">
+          {isNewRound
+            ? "הסבב החדש נפתח כטיוטה. הוא יעלה לאוויר במקום הסבב הנוכחי רק לאחר שהשאלון שלו יכסה את שמונת הממדים."
+            : "סבב האבחון נשמר והלינק האנונימי מוכן להפצה."}
+        </p>
+      ) : null}
       {errorMessage ? (
         <p className="survey-submit-error" role="alert">
           {errorMessage}
