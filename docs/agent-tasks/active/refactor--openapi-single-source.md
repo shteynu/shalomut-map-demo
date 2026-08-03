@@ -6,7 +6,8 @@
 - Base branch: `main`
 - Base commit: `baf229b`
 - Current HEAD: this documentation commit, directly on top of `7d60b59`
-- Status: implementation complete and verified locally; not pushed
+- Status: implementation complete and verified locally; pushed to
+  `origin/refactor/openapi-single-source`, not merged
 - Last updated: 2026-08-03
 - Last agent/tool: Claude Opus 5 (Claude Code)
 
@@ -186,8 +187,6 @@ Commit `7d60b59` (15 files, +212/−126, of which `public/openapi.json` is
 
 ## Next concrete step
 
-Hand the branch to the owner to push
-(`git push -u origin refactor/openapi-single-source`) and merge. Visibility
-today: both commits exist only on this branch in this worktree and have not been
-pushed, so another worktree on this machine can consume them from the branch,
-and no other checkout or machine can.
+Hand the branch to the owner to merge. Visibility today: both commits are on
+`origin/refactor/openapi-single-source` at `ae19d0f`, so any checkout or machine
+can consume them from the published branch; they are not on `main`.

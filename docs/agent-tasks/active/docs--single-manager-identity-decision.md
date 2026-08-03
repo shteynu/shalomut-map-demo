@@ -178,7 +178,8 @@ Six documentation files in one commit. No code, no tests, no configuration.
 
 Hand both branches to the owner in order: merge
 `refactor/openapi-single-source`, then push and merge
-`docs/single-manager-identity-decision`. Visibility today: this branch's commit
-and the two commits it stacks on exist only in this worktree and are not pushed,
-so another worktree on this machine can consume them from their branches, and no
-other checkout or machine can.
+`docs/single-manager-identity-decision`. Visibility today: the two commits this
+branch stacks on are published as `origin/refactor/openapi-single-source`, so
+any checkout can consume those; this branch's own commits are not pushed, so
+another worktree on this machine can consume them from the branch and no other
+checkout or machine can.
