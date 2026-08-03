@@ -6,8 +6,9 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 
 ## Current state
 
-- `origin/main` is `baf229b`: the 2026-08-02 refactoring stack plus the
-  Dashboard DTO slice merged on 2026-08-03.
+- `origin/main` was `0fa9d3f` when the round-creation slice branched: the
+  2026-08-02 refactoring stack, the Dashboard DTO slice, the shared scoring
+  bands and per-round dashboard reading, all merged on 2026-08-03.
 - Contract `6.0` is deployed end to end and the deployed Core explicitly
   produces it. The unset configuration default remains rollback-safe `5.0`.
 - The six latest architecture slices are in `main`: separate AI-insights
@@ -34,6 +35,9 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 - The dashboard reads any round the school owns, chosen from a switcher and
   carried through every dashboard link, with each round read through its own
   snapshot, threshold and analysis. The home screen stays on the active round.
+- A school can open a second round from `/setup?round=new`, keeping its own
+  details and starting an empty measurement period. A school runs one round at
+  a time: a round going live closes the previous one and the builder names it.
 - Anonymous respondent flow with stable attempt tokens and database-enforced
   idempotency.
 - Explicit informed consent before the first question, stating the guarantees
@@ -97,9 +101,10 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 
 ### Product
 
-1. Creating a second round for a school, then comparative multi-round analytics
-   across semesters (`docs/product-behaviour-backlog.md` §10). Per-round
-   dashboard reading landed on 2026-08-03.
+1. Comparative multi-round analytics across semesters
+   (`docs/product-behaviour-backlog.md` §10). Per-round dashboard reading and
+   second-round creation both landed on 2026-08-03; the single-active-round
+   rule still lives in `RoundService` rather than in the schema.
 2. Decide whether recommendations become tracked goals/action plans.
 3. Improve survey-builder recovery/search/bulk/reorder behavior.
 4. Complete keyboard/reduced-motion support for the interactive map.

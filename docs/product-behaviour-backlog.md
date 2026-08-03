@@ -230,7 +230,7 @@ which is their own answer colour rather than an aggregate, so it deliberately
 does not consult these bands. That path now says so in
 `src/lib/services/analytics.service.ts` instead of repeating the numbers.
 
-### 10. Dashboard Per Round And Round History (reading side done 2026-08-03)
+### 10. Dashboard Per Round And Round History (reading and creation done 2026-08-03)
 
 Requirements document §5.5 and §8.1: the dashboard should be viewable per
 measurement round, and a new round for the same organization must keep history.
@@ -244,18 +244,30 @@ analysis, so an older round below its threshold stays locked on its own terms.
 A round id that does not belong to the school reads as unknown and says so
 rather than showing another round's numbers under the requested one.
 
+A school can now open a second round. `/setup?round=new` prefills the school's
+own details and empties the round fields, so the manager describes the new
+measurement period without re-entering the school. The round is created as a
+draft with no questionnaire, and the builder link that follows names it, so the
+manager edits the new questionnaire rather than the running one. It goes live
+only once its questionnaire covers all eight dimensions — and going live closes
+whichever round the school was running, because a school runs one round at a
+time (owner decision 2026-08-03, recorded as ADR-014). The builder names the
+round that stopped running rather than leaving the school to notice it on the
+dashboard.
+
 The home screen deliberately stays on the active round: it answers "what is
 this school doing now", which is not the same question as "what did we measure
 last spring". Owner decision 2026-08-03.
 
 Remaining:
-- Creating a second round for the same school, which is what makes the switcher
-  worth using.
 - Comparison across rounds: a separate surface or a delta on the existing map.
   This is the same work `PROGRESS.md` lists as comparative multi-round
   analytics.
 - Decide whether archived rounds belong in the switcher; today they are listed
   last rather than hidden.
+- Make the single-active-round rule durable in the schema — a partial unique
+  index on `(organization_id) where status = 'active'`. Today it is upheld by
+  `RoundService` alone.
 
 Why it matters:
 - Repeat measurement is the product's stated second act; without history the

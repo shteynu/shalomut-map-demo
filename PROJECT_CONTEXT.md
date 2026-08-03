@@ -198,6 +198,26 @@ credential, rotation means a redeploy, and there is no per-user revocation.
 The trigger for real identity work is a second manager, multi-tenant hosting or
 real respondents — whichever arrives first.
 
+### ADR-014: A school runs one round at a time
+
+Owner decision 2026-08-03. A school may hold any number of rounds — drafts
+being prepared, closed rounds kept as history — but only one is active, and
+activating a round closes whichever round was active before it.
+
+Two active rounds would mean two live share links for the same staff room, with
+no answer to which round a respondent is answering and no way to read the
+result of either. The rule therefore lives at both points where a round can go
+live: `RoundService.activateRound`, which the survey-definition route calls once
+a draft covers all eight dimensions, and `createAndSaveRound`, for a round born
+with a complete questionnaire.
+
+It is enforced in the service rather than by the database. The repository
+interface has no transaction primitive and a deployment has one manager, so
+concurrent activation is not reachable today. The durable form of this rule is
+a partial unique index on `(organization_id) where status = 'active'`, which the
+schema does not have yet; until then two activations racing could leave two
+active rounds.
+
 ## Environments
 
 The project supports exactly two environments:
