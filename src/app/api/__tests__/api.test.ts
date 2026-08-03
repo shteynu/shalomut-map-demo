@@ -184,10 +184,42 @@ test('API Route submit accepts a second attempt from the same device', async () 
   assert.strictEqual(second.status, 200);
 
   // The same token still de-duplicates, which is what protects a retry of one
-  // attempt from counting twice.
+  // attempt from counting twice. The refusal is a conflict, not a bad request:
+  // the payload is fine, it just loses to a response the round already holds.
   const replay = await submit('attempt-token-hash-2');
-  assert.strictEqual(replay.status, 400);
-  assert.match((await replay.json()).error, /already submitted/i);
+  assert.strictEqual(replay.status, 409);
+
+  // The reason travels as a code so a respondent client can recognise its own
+  // earlier success without matching English server copy.
+  const replayBody = await replay.json();
+  assert.strictEqual(replayBody.code, 'ALREADY_SUBMITTED');
+  assert.match(replayBody.error, /already submitted/i);
+
+  useDemoRepositories();
+});
+
+test('API Route submit names why it refused, not only that it refused', async () => {
+  useDemoRepositories();
+
+  const missingRound = await submitSurvey(
+    new Request('http://localhost/api/survey/SHALOM-NOPE/submit', {
+      method: 'POST',
+      body: JSON.stringify({ answers: buildAnswers() }),
+    }),
+    { params: Promise.resolve({ shareCode: 'SHALOM-NOPE' }) },
+  );
+  assert.strictEqual(missingRound.status, 404);
+  assert.strictEqual((await missingRound.json()).code, 'ROUND_NOT_FOUND');
+
+  const badAnswers = await submitSurvey(
+    new Request('http://localhost/api/survey/SHALOM-DEMO/submit', {
+      method: 'POST',
+      body: JSON.stringify({ answers: [] }),
+    }),
+    { params: Promise.resolve({ shareCode: 'SHALOM-DEMO' }) },
+  );
+  assert.strictEqual(badAnswers.status, 400);
+  assert.strictEqual((await badAnswers.json()).code, 'INVALID_ANSWERS');
 
   useDemoRepositories();
 });

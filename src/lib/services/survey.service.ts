@@ -8,6 +8,7 @@ import {
   SurveyResponseInput,
   SurveyResponseRecord,
   SurveyDefinitionQuestion,
+  SurveySubmissionErrorCode,
 } from '../types/backend';
 import { recordDuplicateSubmissionConflict } from '../server/ai-operational-metrics';
 
@@ -17,6 +18,27 @@ import { recordDuplicateSubmissionConflict } from '../server/ai-operational-metr
  */
 export const ALREADY_SUBMITTED_ERROR =
   'You have already submitted a response for this survey round.';
+
+/**
+ * The HTTP status each refusal maps to, kept next to the codes rather than
+ * inside the route so the contract has one home and `docs/openapi.yaml` has
+ * one thing to agree with.
+ *
+ * A duplicate is `409`, not `400`: the request is well formed, and it conflicts
+ * with a response the round already holds. That distinction is what lets a
+ * restored attempt recognise its own earlier success instead of asking the
+ * respondent to answer everything again.
+ */
+export const SURVEY_SUBMISSION_ERROR_STATUS: Record<
+  SurveySubmissionErrorCode,
+  number
+> = {
+  ROUND_NOT_FOUND: 404,
+  ROUND_NOT_ACTIVE: 400,
+  DEFINITION_INVALID: 409,
+  INVALID_ANSWERS: 400,
+  ALREADY_SUBMITTED: 409,
+};
 
 export class SurveyService {
   /**
@@ -124,6 +146,7 @@ export class SurveyService {
         result: {
           success: false,
           error: validation.error,
+          code: 'INVALID_ANSWERS',
         },
       };
     }
@@ -172,7 +195,11 @@ export class SurveyService {
       );
       if (alreadySubmitted) {
         recordDuplicateSubmissionConflict(input.roundId);
-        return { success: false, error: ALREADY_SUBMITTED_ERROR };
+        return {
+          success: false,
+          error: ALREADY_SUBMITTED_ERROR,
+          code: 'ALREADY_SUBMITTED',
+        };
       }
     }
 
@@ -193,7 +220,11 @@ export class SurveyService {
     } catch (error) {
       if (error instanceof DuplicateResponseError) {
         recordDuplicateSubmissionConflict(input.roundId);
-        return { success: false, error: ALREADY_SUBMITTED_ERROR };
+        return {
+          success: false,
+          error: ALREADY_SUBMITTED_ERROR,
+          code: 'ALREADY_SUBMITTED',
+        };
       }
       throw error;
     }

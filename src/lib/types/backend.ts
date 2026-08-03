@@ -141,10 +141,31 @@ export type RoundAnalyticsResult =
   | RoundAnalyticsV2Result
   | RoundAnalyticsV3Result;
 
+/**
+ * Why a submission was refused, as a value the client can branch on.
+ *
+ * The respondent has to be told "your answer is already saved" differently
+ * from "something went wrong, try again", and a restored attempt hits the
+ * first case routinely: the server stored the response, the connection died
+ * before the `200`, and the retry carries the same token hash. Deciding that
+ * by comparing the English `error` text would tie respondent-facing behaviour
+ * to server copy, so the reason travels separately from the message.
+ *
+ * A refusal without a code is an unexpected failure. Clients must treat it as
+ * retryable rather than inventing a meaning for it.
+ */
+export type SurveySubmissionErrorCode =
+  | 'ROUND_NOT_FOUND'
+  | 'ROUND_NOT_ACTIVE'
+  | 'DEFINITION_INVALID'
+  | 'INVALID_ANSWERS'
+  | 'ALREADY_SUBMITTED';
+
 export interface SubmitSurveyResult {
   success: boolean;
   responseId?: string;
   error?: string;
+  code?: SurveySubmissionErrorCode;
 }
 
 export interface CreateRoundInput {

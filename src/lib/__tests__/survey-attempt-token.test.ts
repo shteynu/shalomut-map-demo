@@ -41,6 +41,35 @@ describe('survey attempt token', () => {
     assert.equal(created, 1);
   });
 
+  it('adopts a token recovered from a draft so a retry is still one attempt', () => {
+    const source = createAttemptTokenSource();
+    const recovered = 'a2f0a5f4-0a5a-4a41-9a0f-4f4f8f4a1a11';
+
+    assert.equal(source.restore(recovered), true);
+    assert.equal(source.current(), recovered);
+  });
+
+  it('refuses a token that could not have been issued', () => {
+    for (const candidate of [undefined, null, '', '   ', 42, {}]) {
+      const source = createAttemptTokenSource(() => 'fresh');
+
+      assert.equal(source.restore(candidate), false);
+      assert.equal(source.current(), 'fresh');
+    }
+  });
+
+  it('issues a new token after a reset even if one was restored', () => {
+    const source = createAttemptTokenSource();
+    source.restore('a2f0a5f4-0a5a-4a41-9a0f-4f4f8f4a1a11');
+
+    source.reset();
+
+    assert.notEqual(
+      source.current(),
+      'a2f0a5f4-0a5a-4a41-9a0f-4f4f8f4a1a11',
+    );
+  });
+
   it('hashes the token with SHA-256 and never sends it raw', async () => {
     const token = 'a2f0a5f4-0a5a-4a41-9a0f-4f4f8f4a1a11';
 

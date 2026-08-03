@@ -1,13 +1,32 @@
 import { NextResponse } from 'next/server';
 import { resolveCoreRepositories } from '@/lib/composition-root';
-import { RoundService, SurveyService } from '@/lib/services';
+import {
+  RoundService,
+  SurveyService,
+  SURVEY_SUBMISSION_ERROR_STATUS,
+} from '@/lib/services';
 import { getDurableWriteGuardResponse } from '@/lib/server/durable-write-guard';
 import { enqueueAiAnalyticsAfterResponse } from '@/lib/server/trigger-ai-analytics';
-import { QuestionAnswerInput } from '@/lib/types/backend';
+import {
+  QuestionAnswerInput,
+  SurveySubmissionErrorCode,
+} from '@/lib/types/backend';
 import {
   createCanonicalSurveyDefinition,
   parseSurveyDefinition,
 } from '@/lib/survey-definition';
+
+/**
+ * Every refusal the respondent client can act on carries its reason. The status
+ * comes from the shared table rather than from this handler, so the route and
+ * `docs/openapi.yaml` cannot drift into disagreeing about what a duplicate is.
+ */
+function refuse(code: SurveySubmissionErrorCode, error: string) {
+  return NextResponse.json(
+    { error, code },
+    { status: SURVEY_SUBMISSION_ERROR_STATUS[code] },
+  );
+}
 
 export async function POST(
   request: Request,
@@ -29,17 +48,14 @@ export async function POST(
     const round = await RoundService.getRoundByShareCode(shareCode, roundRepo);
 
     if (!round) {
-      return NextResponse.json(
-        { error: `Survey round with code '${shareCode}' not found` },
-        { status: 404 }
+      return refuse(
+        'ROUND_NOT_FOUND',
+        `Survey round with code '${shareCode}' not found`,
       );
     }
 
     if (round.status !== 'active') {
-      return NextResponse.json(
-        { error: `Survey round is not active` },
-        { status: 400 }
-      );
+      return refuse('ROUND_NOT_ACTIVE', `Survey round is not active`);
     }
 
     const definitionCandidate =
@@ -47,9 +63,9 @@ export async function POST(
       createCanonicalSurveyDefinition(round.title, round.privacyThreshold);
     const parsedDefinition = parseSurveyDefinition(definitionCandidate);
     if (!parsedDefinition.ok) {
-      return NextResponse.json(
-        { error: `Survey definition is invalid: ${parsedDefinition.error}` },
-        { status: 409 },
+      return refuse(
+        'DEFINITION_INVALID',
+        `Survey definition is invalid: ${parsedDefinition.error}`,
       );
     }
 
@@ -64,10 +80,13 @@ export async function POST(
     );
 
     if (!result.success) {
-      return NextResponse.json(
-        { error: result.error || 'Submission failed' },
-        { status: 400 }
-      );
+      const error = result.error || 'Submission failed';
+
+      // A refusal the service could not name stays a plain 400 without a code:
+      // inventing one would tell the client a story the server does not know.
+      return result.code
+        ? refuse(result.code, error)
+        : NextResponse.json({ error }, { status: 400 });
     }
 
     // Enqueue before returning so a process restart cannot lose the threshold

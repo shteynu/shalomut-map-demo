@@ -340,9 +340,27 @@ paths:
                   responseId:
                     type: string
         "400":
-          description: Invalid submission or duplicate response
+          description: Invalid answers (INVALID_ANSWERS) or inactive round (ROUND_NOT_ACTIVE)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SurveySubmissionError'
         "404":
-          description: Survey round not found
+          description: Survey round not found (ROUND_NOT_FOUND)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SurveySubmissionError'
+        "409":
+          description: >-
+            The round already holds a response carrying this attempt token
+            (ALREADY_SUBMITTED), or the stored survey definition is not usable
+            (DEFINITION_INVALID). A client retrying a submission whose response
+            it never received should treat ALREADY_SUBMITTED as success.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SurveySubmissionError'
         "500":
           description: Internal server error
         "503":
@@ -2024,3 +2042,20 @@ components:
       properties:
         error:
           type: string
+    SurveySubmissionError:
+      type: object
+      description: >-
+        A refused submission. `error` is human-readable and may change; `code`
+        is the stable value clients branch on. A refusal without `code` is an
+        unexpected failure and should be treated as retryable.
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+          enum:
+            - ROUND_NOT_FOUND
+            - ROUND_NOT_ACTIVE
+            - DEFINITION_INVALID
+            - INVALID_ANSWERS
+            - ALREADY_SUBMITTED
