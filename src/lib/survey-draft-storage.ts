@@ -274,6 +274,82 @@ export function clearSurveyDraft(
   }
 }
 
+export interface SurveyDraftSnapshot {
+  /** False until a browser has been asked. The server never asks. */
+  checked: boolean;
+  storageAvailable: boolean;
+  draft: SurveyDraftV1 | null;
+}
+
+const SERVER_SNAPSHOT: SurveyDraftSnapshot = Object.freeze({
+  checked: false,
+  storageAvailable: true,
+  draft: null,
+});
+
+/**
+ * A `useSyncExternalStore` source for the draft of the attempt being filled.
+ *
+ * Reading `sessionStorage` while rendering on the server is impossible, and
+ * seeding component state from an effect is how a save effect ends up
+ * overwriting the draft it was about to read. This is the shape React offers
+ * for exactly that: the server renders the empty questionnaire, the client
+ * takes over with whatever the tab had stored, and the two passes never
+ * disagree about which one is authoritative.
+ *
+ * The read happens once and is cached, because `getSnapshot` must return a
+ * stable reference — a fresh object every call would re-render forever.
+ */
+export function createSurveyDraftStore(
+  key: string,
+  expected: SurveyDraftExpectation,
+) {
+  let snapshot: SurveyDraftSnapshot | null = null;
+
+  return {
+    /**
+     * Nothing to subscribe to. `sessionStorage` is per tab, and the only writer
+     * of this key is the questionnaire the respondent is filling right now, so
+     * no other party can change it underneath us.
+     */
+    subscribe() {
+      return () => {};
+    },
+    getSnapshot(): SurveyDraftSnapshot {
+      if (!snapshot) {
+        const storage = getSurveyDraftStorage();
+        snapshot = {
+          checked: true,
+          storageAvailable: storage !== null,
+          draft: storage ? loadSurveyDraft(storage, key, expected) : null,
+        };
+      }
+
+      return snapshot;
+    },
+    getServerSnapshot(): SurveyDraftSnapshot {
+      return SERVER_SNAPSHOT;
+    },
+  };
+}
+
+/**
+ * The storage a draft lives in, or `null` when the browser will not give it.
+ *
+ * `sessionStorage` is not merely absent during server rendering — reading the
+ * property itself throws in some privacy modes, which is why the access is
+ * inside the `try`. A questionnaire that cannot save progress must still be a
+ * questionnaire that can be filled in, so callers treat `null` as "warn, then
+ * carry on".
+ */
+export function getSurveyDraftStorage(): Storage | null {
+  try {
+    return typeof window === 'undefined' ? null : window.sessionStorage;
+  } catch {
+    return null;
+  }
+}
+
 function isQuotaError(error: unknown): boolean {
   if (!(error instanceof Error)) return false;
 

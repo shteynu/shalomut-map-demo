@@ -1,8 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { Check, ChevronLeft, ChevronRight, Frown, Loader2, Meh, RefreshCw, ShieldCheck, Smile, type LucideIcon } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { AlertTriangle, Check, ChevronLeft, ChevronRight, Frown, Loader2, Meh, RefreshCw, RotateCcw, ShieldCheck, Smile, type LucideIcon } from "lucide-react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { calculatePercentage } from "@/lib/utils/math";
 import { getNavigationAction } from "@/lib/navigation";
 import { responseScale } from "@/lib/shalomut-source";
@@ -11,9 +18,27 @@ import {
   hashAnonymousToken,
   type SurveyAttemptTokenSource,
 } from "@/lib/survey-attempt-token";
+import {
+  clearSurveyDraft,
+  createSurveyDraft,
+  createSurveyDraftStore,
+  getSurveyDraftStorage,
+  questionnaireFingerprint,
+  surveyDraftStorageKey,
+  writeSurveyDraft,
+} from "@/lib/survey-draft-storage";
+import { resolveSubmissionOutcome } from "@/lib/survey-submission-outcome";
 import type { SurveyDefinitionQuestion } from "@/lib/types/backend";
 
 type AnswerValue = (typeof responseScale)[number]["value"];
+
+/**
+ * Long enough that answering quickly does not write on every keystroke-like
+ * tap, short enough to be invisible. It is not the last line of defence: the
+ * flush on `pagehide` is, because an answer given moments before a refresh
+ * would otherwise be the one thing autosave failed to save.
+ */
+const SAVE_DEBOUNCE_MS = 400;
 
 type SurveyFlowProps = {
   variant?: "internal" | "public";
@@ -43,10 +68,16 @@ export function SurveyFlow({
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [seeded, setSeeded] = useState(false);
+  const [restoredDraft, setRestoredDraft] = useState(false);
+  const [writeRefused, setWriteRefused] = useState(false);
   const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const attemptTokenRef = useRef<SurveyAttemptTokenSource | null>(null);
-  attemptTokenRef.current ??= createAttemptTokenSource();
-  const attemptToken = attemptTokenRef.current;
+  // Held as state, not a ref: it is read inside effects and callbacks, and a
+  // lazy initializer gives one stable source for the whole attempt without
+  // touching a ref during render.
+  const [attemptToken] = useState<SurveyAttemptTokenSource>(
+    createAttemptTokenSource,
+  );
   const isPublicLink = variant === "public";
   const trackRoundAction = getNavigationAction("trackRound");
 
@@ -57,6 +88,38 @@ export function SurveyFlow({
   const isReviewStep = currentIndex === total;
   const question = surveyQuestions[currentIndex];
 
+  // Until the consent step lands this is the moment the attempt began. The two
+  // coincide once answering can only start after an explicit accept.
+  const [attemptStartedAt, setAttemptStartedAt] = useState(() =>
+    new Date().toISOString(),
+  );
+
+  const storageKey = useMemo(
+    () => surveyDraftStorageKey(shareCode),
+    [shareCode],
+  );
+
+  const draftExpectation = useMemo(
+    () => ({
+      shareCode,
+      questionnaireFingerprint: questionnaireFingerprint(surveyQuestions),
+      questionIds: new Set(surveyQuestions.map((item) => item.id)),
+      questionCount: surveyQuestions.length,
+    }),
+    [shareCode, surveyQuestions],
+  );
+
+  const draftStore = useMemo(
+    () => createSurveyDraftStore(storageKey, draftExpectation),
+    [draftExpectation, storageKey],
+  );
+
+  const stored = useSyncExternalStore(
+    draftStore.subscribe,
+    draftStore.getSnapshot,
+    draftStore.getServerSnapshot,
+  );
+
   useEffect(() => {
     return () => {
       if (advanceTimer.current) {
@@ -64,6 +127,111 @@ export function SurveyFlow({
       }
     };
   }, []);
+
+  /**
+   * Seeds the attempt from whatever this tab had stored.
+   *
+   * A render-phase update rather than an effect, which is what React prescribes
+   * for adjusting state to a changed input: the component re-renders with the
+   * restored answers before anything is committed, so the save effect below
+   * never observes the empty initial state and never writes it over the draft.
+   * `stored.checked` is false on the server and during hydration, so this runs
+   * exactly once, on the client, after the two passes agree.
+   */
+  if (!seeded && stored.checked) {
+    setSeeded(true);
+
+    if (stored.draft) {
+      setAnswers(stored.draft.answers);
+      setCurrentIndex(stored.draft.currentIndex);
+      setAttemptStartedAt(stored.draft.consentAcceptedAt);
+      setRestoredDraft(true);
+    }
+  }
+
+  /**
+   * Brings the attempt token back with the answers.
+   *
+   * Without it a refresh after a lost `200` would submit under a fresh token,
+   * and the round would record the same person twice. This is the one thing
+   * that cannot be seeded during render: the token source is an external object
+   * rather than React state, so telling it about the restored attempt belongs
+   * in an effect.
+   */
+  useEffect(() => {
+    if (stored.draft) attemptToken.restore(stored.draft.attemptToken);
+  }, [attemptToken, stored.draft]);
+
+  const persistDraft = useCallback(() => {
+    const storage = getSurveyDraftStorage();
+    if (!storage) return;
+
+    const result = writeSurveyDraft(
+      storage,
+      storageKey,
+      createSurveyDraft({
+        shareCode,
+        questionnaireFingerprint: draftExpectation.questionnaireFingerprint,
+        attemptToken: attemptToken.current(),
+        answers,
+        currentIndex,
+        consentAcceptedAt: attemptStartedAt,
+      }),
+    );
+
+    setWriteRefused(!result.ok);
+  }, [
+    answers,
+    attemptStartedAt,
+    attemptToken,
+    currentIndex,
+    draftExpectation.questionnaireFingerprint,
+    shareCode,
+    storageKey,
+  ]);
+
+  // Either the browser refused storage outright, or it accepted it and then
+  // refused a write. The respondent needs the same warning for both.
+  const draftUnavailable =
+    (stored.checked && !stored.storageAvailable) || writeRefused;
+
+  const dropDraft = useCallback(() => {
+    const storage = getSurveyDraftStorage();
+    if (storage) clearSurveyDraft(storage, storageKey);
+  }, [storageKey]);
+
+  useEffect(() => {
+    if (!seeded || submitted) return;
+
+    const timer = setTimeout(persistDraft, SAVE_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [persistDraft, seeded, submitted]);
+
+  /**
+   * Writes immediately when the page is going away.
+   *
+   * `selectAnswer` advances after 260 ms, so a respondent can answer and reload
+   * well inside the debounce window. Without this the feature would lose the
+   * most recent answer — exactly the one the respondent expects to find on the
+   * way back. `pagehide` covers reload, navigation and mobile app switching;
+   * `visibilitychange` covers the backgrounding that never fires `pagehide`.
+   */
+  useEffect(() => {
+    if (!seeded || submitted) return;
+
+    const flush = () => {
+      if (document.visibilityState === "hidden") persistDraft();
+    };
+    const flushNow = () => persistDraft();
+
+    window.addEventListener("pagehide", flushNow);
+    document.addEventListener("visibilitychange", flush);
+
+    return () => {
+      window.removeEventListener("pagehide", flushNow);
+      document.removeEventListener("visibilitychange", flush);
+    };
+  }, [persistDraft, seeded, submitted]);
 
   const selectAnswer = (value: AnswerValue) => {
     if (!question) {
@@ -104,15 +272,25 @@ export function SurveyFlow({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ answers: formattedAnswers, anonymousTokenHash }),
       });
-      if (res.ok) {
+      const payload = res.ok
+        ? null
+        : ((await res.json().catch(() => null)) as { code?: unknown } | null);
+      const outcome = resolveSubmissionOutcome({
+        ok: res.ok,
+        code: payload?.code,
+      });
+
+      if (outcome.kind === "complete") {
+        // Either the round stored this attempt just now, or it stored it before
+        // the connection dropped and the retry carried the same token. Both mean
+        // the answers are safe, and the draft has nothing left to protect.
+        dropDraft();
         setSubmitted(true);
-      } else {
-        const payload = (await res.json().catch(() => null)) as
-          | { error?: string }
-          | null;
-        setSubmitError(payload?.error ?? "לא ניתן היה לשמור את התשובות. נסו שוב.");
-        setSubmitting(false);
+        return;
       }
+
+      setSubmitError(outcome.message);
+      setSubmitting(false);
     } catch {
       setSubmitError("לא ניתן להתחבר לשרת. בדקו את החיבור ונסו שוב.");
       setSubmitting(false);
@@ -121,12 +299,18 @@ export function SurveyFlow({
 
   /** Starts a separate anonymous attempt on the same device, with its own token. */
   const startAnotherResponse = () => {
+    // The next person at this computer must inherit nothing: not the token,
+    // which would make the round refuse their answers as a duplicate, and not
+    // the draft, which would show them what the previous person answered.
+    dropDraft();
     attemptToken.reset();
+    setAttemptStartedAt(new Date().toISOString());
     setAnswers({});
     setCurrentIndex(0);
     setSubmitError(null);
     setSubmitting(false);
     setSubmitted(false);
+    setRestoredDraft(false);
   };
 
   if (submitted) {
@@ -194,6 +378,21 @@ export function SurveyFlow({
         </div>
         <small>{isReviewStep ? `נענו ${answeredCount} מתוך ${total}` : `שאלה ${currentIndex + 1} מתוך ${total}`}</small>
       </div>
+
+      {restoredDraft ? (
+        <p className="survey-draft-note" role="status">
+          <RotateCcw size={18} aria-hidden="true" />
+          ההתקדמות מהטעינה הקודמת שוחזרה. אפשר להמשיך מאותה נקודה.
+        </p>
+      ) : null}
+
+      {draftUnavailable ? (
+        <p className="survey-draft-note survey-draft-note-warning" role="status">
+          <AlertTriangle size={18} aria-hidden="true" />
+          לא ניתן לשמור התקדמות בדפדפן הזה. אפשר להמשיך לענות, אך רענון הדף יאפס
+          את המענה.
+        </p>
+      ) : null}
 
       {isReviewStep ? (
         <div className="survey-focus-card survey-review-card">
