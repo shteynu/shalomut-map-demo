@@ -10,6 +10,11 @@ import {
   getDimensionSurface,
   statusLabels,
 } from "@/lib/dashboard/dimension-presentation";
+import {
+  deltaDirection,
+  describeDelta,
+  formatDelta,
+} from "@/lib/dashboard/round-comparison";
 import { dashboardDimensionRoute } from "@/lib/navigation";
 import type { WellbeingDimensionId, WellbeingStatus } from "@/lib/shalomut-source";
 import { clamp } from "@/lib/utils/math";
@@ -83,11 +88,17 @@ type DashboardMapInteractiveProps = {
   >;
   /** Carried into every stone link so a detail page opens the same round. */
   roundId: string;
+  /**
+   * Change per dimension against the previous round, or nothing when the school
+   * has no comparable round yet.
+   */
+  dimensionDeltas: Record<WellbeingDimensionId, number> | null;
 };
 
 export function DashboardMapInteractive({
   dimensionScores,
   roundId,
+  dimensionDeltas,
 }: DashboardMapInteractiveProps) {
   const stageRef = useRef<HTMLElement | null>(null);
   const stoneRefs = useRef<Record<string, HTMLAnchorElement | null>>({});
@@ -299,6 +310,7 @@ export function DashboardMapInteractive({
         const dragY = offset.y;
         const displayStatusLabel =
           status === "green" ? "חוזקה לשימור" : statusLabels[status];
+        const delta = dimensionDeltas?.[dimension.id as WellbeingDimensionId];
 
         return (
           <Link
@@ -327,7 +339,9 @@ export function DashboardMapInteractive({
             data-drag-y={Math.round(dragY)}
             data-dimension={dimension.id}
             data-stone-index={String(index + 1).padStart(2, "0")}
-            aria-label={`${dimension.conceptLabel}: ${dimension.subtitle}. ציון ${score}, ${displayStatusLabel}`}
+            aria-label={`${dimension.conceptLabel}: ${dimension.subtitle}. ציון ${score}, ${displayStatusLabel}${
+              delta === undefined ? "" : `, ${describeDelta(delta)} מהסבב הקודם`
+            }`}
             draggable={false}
             onPointerDown={handlePointerDown(dimension.id)}
             onClick={handleClick(dimension.id)}
@@ -341,7 +355,17 @@ export function DashboardMapInteractive({
                 <DimensionIcon dimensionId={dimension.id} size={22} />
               </span>
               <strong>{dimension.conceptLabel}</strong>
-              <span className="dashboard-map-blob-score">{score}%</span>
+              <span className="dashboard-map-blob-score">
+                {score}%
+                {delta === undefined ? null : (
+                  <span
+                    className={`round-delta round-delta-${deltaDirection(delta)}`}
+                    aria-hidden="true"
+                  >
+                    {formatDelta(delta)}
+                  </span>
+                )}
+              </span>
             </span>
             <span className="dashboard-map-blob-status">
               <span className={`status-dot status-${status}`} aria-hidden="true" />

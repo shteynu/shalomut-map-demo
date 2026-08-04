@@ -2138,6 +2138,45 @@ textarea {
   font-size: 0.85rem;
 }
 
+/* Change against the previous round. The sign is part of the text and the
+   direction is spelled out in Hebrew nearby, so colour is a third channel and
+   never the only one. */
+/* The sign belongs on the left of the number even inside Hebrew text, so the
+   delta is isolated as its own left-to-right run. Without this the bidi
+   algorithm moves the plus to the other side and "+3" reads as "3+". */
+.round-delta {
+  direction: ltr;
+  unicode-bidi: isolate;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.round-delta-up {
+  color: var(--success-ink);
+}
+
+.round-delta-down {
+  color: var(--danger-ink);
+}
+
+.round-delta-flat {
+  color: var(--muted);
+}
+
+.map-sidebar-comparison {
+  margin: 0.75rem 0 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.dashboard-map-blob-score .round-delta {
+  margin-inline-start: 0.4rem;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .dashboard-round-option {
     transition: none;

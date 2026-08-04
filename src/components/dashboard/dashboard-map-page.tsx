@@ -2,6 +2,12 @@
 
 import { Download, Info, MousePointer2, Move } from "lucide-react";
 import { ScoreRing } from "@/components/ui/score-ring";
+import {
+  deltaDirection,
+  describeDelta,
+  formatDelta,
+  type RoundComparison,
+} from "@/lib/dashboard/round-comparison";
 import type { DashboardRoundOption } from "@/lib/dashboard/round-options";
 import type { AiInsightsUiState } from "@/lib/hooks/use-ai-insights";
 import { useAiInsights } from "@/lib/hooks/use-ai-insights";
@@ -25,6 +31,8 @@ type DashboardMapPageProps = {
     { averageScore: number; computedStatus: WellbeingStatus }
   >;
   roundOptions: DashboardRoundOption[];
+  /** The previous round's numbers, when there is a comparable one. */
+  comparison: RoundComparison | null;
 };
 
 export function DashboardMapPage({
@@ -36,6 +44,7 @@ export function DashboardMapPage({
   overallScore,
   dimensionScores,
   roundOptions,
+  comparison,
 }: DashboardMapPageProps) {
   const isLocked = responseCount < minimumResponses;
 
@@ -66,6 +75,7 @@ export function DashboardMapPage({
       overallScore={overallScore}
       dimensionScores={dimensionScores}
       roundOptions={roundOptions}
+      comparison={comparison}
     />
   );
 }
@@ -117,6 +127,7 @@ function DashboardMapReady({
   overallScore,
   dimensionScores,
   roundOptions,
+  comparison,
 }: Omit<DashboardMapPageProps, "responseCount">) {
   const { state, reload } = useAiInsights(roundId);
 
@@ -142,6 +153,18 @@ function DashboardMapReady({
             </div>
             <ScoreRing value={overallScore} />
           </div>
+
+          {comparison ? (
+            <p className="map-sidebar-comparison">
+              <span
+                className={`round-delta round-delta-${deltaDirection(comparison.overallDelta)}`}
+                aria-hidden="true"
+              >
+                {formatDelta(comparison.overallDelta)}
+              </span>{" "}
+              {describeDelta(comparison.overallDelta)} בהשוואה ל{comparison.previousRoundTitle}.
+            </p>
+          ) : null}
 
           <p className="map-sidebar-desc">
             המפה מציגה תמונת מצב עדכנית של ממדי השלומות בבית הספר. כל אבן מייצגת ממד אחד,
@@ -175,7 +198,11 @@ function DashboardMapReady({
             <span className="hint-text-desktop">גררו את האבנים כדי לסדר את המפה, או לחצו על אבן כדי לפתוח פירוט.</span>
             <span className="hint-text-mobile">לחצו על אבן כדי לפתוח פירוט.</span>
           </div>
-          <DashboardMapInteractive dimensionScores={dimensionScores} roundId={roundId} />
+          <DashboardMapInteractive
+            dimensionScores={dimensionScores}
+            roundId={roundId}
+            dimensionDeltas={comparison?.dimensionDeltas ?? null}
+          />
         </div>
       </div>
     </div>

@@ -2,7 +2,10 @@ import { ManagerOnboarding } from "@/components/manager";
 import { DashboardMapPage } from "@/components/dashboard";
 import { toDashboardRoundOptions } from "@/lib/dashboard/round-options";
 import { readRoundParam } from "@/lib/navigation";
-import { loadManagerContext } from "@/lib/server/manager-context";
+import {
+  loadManagerContext,
+  loadRoundComparison,
+} from "@/lib/server/manager-context";
 import { surveyInstrument } from "@/lib/shalomut-source";
 
 export default async function DashboardPage({
@@ -40,9 +43,12 @@ export default async function DashboardPage({
         ) / surveyInstrument.dimensions.length,
       );
 
+  const comparison = await loadRoundComparison(context);
+
   return (
     <DashboardMapPage
       roundId={selectedRound.id}
+      comparison={comparison}
       organizationName={organization.name}
       roundTitle={selectedRound.title}
       responseCount={context.responseCount}
