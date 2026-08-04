@@ -450,6 +450,11 @@ From the repository root, `npm run verify:ai` invokes the same virtualenv
 command. A system `python3` is not canonical evidence because it may not have
 the project's dev dependencies installed.
 
+Tests answer whether the service is correct. `evals/` is a separate question —
+whether the generated Hebrew is any good — and answers it with deterministic,
+provider-free graders over a synthetic corpus. Nothing there gates anything;
+see `evals/README.md`, including what it deliberately does not do.
+
 The repository-level suite includes a real local boundary test:
 
 ```bash
