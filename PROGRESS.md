@@ -1,22 +1,25 @@
 # Shalomut Map — product progress
 
-Updated: 2026-08-03. This file is a concise product-level milestone record, not
+Updated: 2026-08-04. This file is a concise product-level milestone record, not
 a session log. Branch evidence lives in `docs/agent-tasks/archive/`; current
 deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 
 ## Current state
 
-- `origin/main` was `0fa9d3f` when the round-creation slice branched: the
-  2026-08-02 refactoring stack, the Dashboard DTO slice, the shared scoring
-  bands and per-round dashboard reading, all merged on 2026-08-03.
+- `origin/main` is `6d574b7`: the 2026-08-02 refactoring stack, the Dashboard
+  DTO slice, and seven manager-facing slices merged on 2026-08-03/04 — shared
+  scoring bands, round selection, round creation, the map comparison, map
+  keyboard and reduced-motion support, clipboard failure states and the builder
+  list work.
 - Contract `6.0` is deployed end to end and the deployed Core explicitly
   produces it. The unset configuration default remains rollback-safe `5.0`.
 - The six latest architecture slices are in `main`: separate AI-insights
   repository, thin callback route, canonical Core analytics input, canonical
   Python analysis output, application runner ports and `TextGenerator`.
-- The combined refactoring checkpoint passed `npm run verify:core` with 352
-  TypeScript tests and the full Python suite with 368 tests. Those counts are
-  checkpoint evidence, not evergreen expectations.
+- The checkpoint at `6d574b7` passed `npm run verify:core` with 481 TypeScript
+  tests. `verify:db` and `verify:ai` were not re-run across the 2026-08-03/04
+  slices: none of them touched a schema, a migration, a contract version or the
+  Python service. Counts are checkpoint evidence, not evergreen expectations.
 - All seven repository migrations were applied to the confirmed deployed
   database and to the local test database at the recorded checkpoint.
 - There are no real respondents or production data. The deployed Vercel alias
@@ -112,12 +115,12 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 
 ### Product
 
-1. Question-level and narrative comparison across rounds
-   (`docs/product-behaviour-backlog.md` §10). Per-round reading and
-   second-round creation landed on 2026-08-03 and the deterministic
-   dimension-level delta on 2026-08-04; the AI analysis still reads one round
-   at a time, and the single-active-round rule still lives in `RoundService`
-   rather than in the schema.
+1. Make the single-active-round rule durable in the schema
+   (`docs/product-behaviour-backlog.md` §10). It lives in `RoundService` today.
+   Cross-round work is otherwise **closed for now**: per-round reading and
+   second-round creation landed on 2026-08-03, the deterministic dimension-level
+   delta on 2026-08-04, and the owner decided on 2026-08-04 that AI analysis
+   across rounds is not wanted yet.
 2. Decide whether recommendations become tracked goals/action plans.
 3. Keyboard accelerators for per-question builder actions
    (`docs/product-behaviour-backlog.md` §3); search, bulk enable/hide and

@@ -1,6 +1,6 @@
 # PROJECT CONTEXT: Shalomut Map (מפת שלומות)
 
-Updated: 2026-08-03. This file owns stable architecture and long-lived product
+Updated: 2026-08-04. This file owns stable architecture and long-lived product
 decisions. Current branch work belongs in `docs/agent-tasks/active/`, milestones
 in `PROGRESS.md`, and deployed/operational state in
 `docs/shalomut-tracker-handoff.md`.

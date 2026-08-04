@@ -1,6 +1,6 @@
 # Product Behaviour Backlog
 
-Updated: 2026-08-03
+Updated: 2026-08-04
 Status: remaining product behavior after persisted rounds, AI suggestions and
 the lifecycle-aware privacy flow landed, reconciled against the owner's
 development requirements document ("פיתוח פלטפורמת מפת שלומות — MVP + הכנה
@@ -295,9 +295,11 @@ below its privacy threshold is skipped rather than compared: it has no numbers,
 and a delta against it would hand back the very scores the gate is withholding.
 
 Remaining:
-- Question-level and narrative comparison. Today the delta is per dimension and
-  deterministic; the AI analysis still reads one round at a time. This is what
-  `PROGRESS.md` calls comparative multi-round analytics.
+- Not wanted yet: AI analysis across rounds. Owner decision 2026-08-04 — the
+  narrative stays per round, and the comparison stays the deterministic
+  dimension delta Core computes. Question-level comparison waits with it. This
+  is what `PROGRESS.md` used to call comparative multi-round analytics; it is a
+  deliberate hold, not an open task.
 - Decide whether archived rounds belong in the switcher; today they are listed
   last rather than hidden.
 - Make the single-active-round rule durable in the schema — a partial unique
