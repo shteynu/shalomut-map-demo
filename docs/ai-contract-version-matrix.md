@@ -1,6 +1,6 @@
 # AI analytics contract version matrix
 
-Updated: 2026-08-02.
+Updated: 2026-08-04.
 
 ## Runtime status
 
@@ -23,6 +23,14 @@ render its callback output: three dimension summary paragraphs, qualitative
 metric `insightText` and exactly five recommendations. Numeric metric evidence
 remains in the payload for callback verification but is not rendered as the
 primary V6 metric content.
+
+Since 2026-08-04 `6.0` also declares `supportsPartialMaps`. A stone whose
+overview this round could not write carries `summary: []`,
+`generationProvenance.outcome: "unavailable"` and a matching entry in
+`dimensionsWithoutInterpretation`; its metric narratives and recommendations
+are still required, so the gap is the three paragraphs about the dimension and
+nothing else. What produces one is repair exhaustion, not a silent provider —
+on `6.0` a silent provider still falls back (ADR-007).
 
 The consumer-first rollout is complete. Deployed Python and Core source includes
 `97f0641`; Python health reports V6 support, Core permits V6 production, and

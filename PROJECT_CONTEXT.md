@@ -129,6 +129,16 @@ Python validates its assembled outgoing Stone Map before callback. Repair
 replays only rejected dimensions/parts and carries safe Hebrew critique into
 the repair prompt; non-repairable contract violations fail immediately.
 
+When the repair budget is spent and every refusal left is one dimension's own
+copy, contracts that declare `supportsPartialMaps` — 5.0 and 6.0 — report those
+dimensions as a stated gap instead of failing the round: `summary: []` or an
+empty interpretation, `outcome: unavailable`, and a matching
+`dimensionsWithoutInterpretation`. The validator runs again over the degraded
+state, so a gap is accepted rather than assumed. A refused overall summary, a
+refused recommendation, a refusal with no dimension attached, and eight failed
+dimensions all still fail the round whole — the last because a map with nothing
+written is a failed round wearing a map's shape.
+
 ### ADR-008: Explicit application and repository boundaries
 
 Python application services depend on the ports `AnalyticsSource`,

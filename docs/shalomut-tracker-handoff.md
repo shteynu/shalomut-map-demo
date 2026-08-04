@@ -172,6 +172,11 @@ state, external blockers and approval gates. Product milestones belong in
   `ai_deterministic_summary_ratio_sample`. **Read that share before reading any
   round as evidence about the prompts**; on a rate-limited key it is close to 1
   while `ai_jobs_succeeded` looks healthy.
+- Since 2026-08-04 `6.0` also declares `supportsPartialMaps`, and what produces
+  a gap is repair exhaustion rather than a silent provider: when the budget is
+  spent and every refusal left is one dimension's own copy, that dimension is
+  reported as a stated gap instead of the round failing whole. Gated on the
+  capability, so `5.0` behaves the same way.
 - The metric narratives are not covered by that disclosure. Each has its own
   outcome inside Python and the wire contract carries only the dimension's
   summary provenance, so closing that gap needs a contract change.
