@@ -230,7 +230,7 @@ which is their own answer colour rather than an aggregate, so it deliberately
 does not consult these bands. That path now says so in
 `src/lib/services/analytics.service.ts` instead of repeating the numbers.
 
-### 10. Dashboard Per Round And Round History (reading and creation done 2026-08-03)
+### 10. Dashboard Per Round And Round History (reading, creation and map comparison done 2026-08-04)
 
 Requirements document §5.5 and §8.1: the dashboard should be viewable per
 measurement round, and a new round for the same organization must keep history.
@@ -259,10 +259,18 @@ The home screen deliberately stays on the active round: it answers "what is
 this school doing now", which is not the same question as "what did we measure
 last spring". Owner decision 2026-08-03.
 
+The map carries the comparison rather than a second screen. Each stone shows
+the change against the round the school measured before this one, and the
+sidebar states the overall change and names the round it compared with. The
+comparison is per dimension because the eight dimensions are what stays stable
+across rounds while each round keeps its own questionnaire snapshot. A round
+below its privacy threshold is skipped rather than compared: it has no numbers,
+and a delta against it would hand back the very scores the gate is withholding.
+
 Remaining:
-- Comparison across rounds: a separate surface or a delta on the existing map.
-  This is the same work `PROGRESS.md` lists as comparative multi-round
-  analytics.
+- Question-level and narrative comparison. Today the delta is per dimension and
+  deterministic; the AI analysis still reads one round at a time. This is what
+  `PROGRESS.md` calls comparative multi-round analytics.
 - Decide whether archived rounds belong in the switcher; today they are listed
   last rather than hidden.
 - Make the single-active-round rule durable in the schema — a partial unique
