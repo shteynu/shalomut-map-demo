@@ -43,7 +43,12 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
   snapshot, threshold and analysis. The home screen stays on the active round.
 - A school can open a second round from `/setup?round=new`, keeping its own
   details and starting an empty measurement period. A school runs one round at
-  a time: a round going live closes the previous one and the builder names it.
+  a time: a round going live closes the previous one and the builder names it,
+  and a partial unique index makes the rule the database's rather than the
+  service's alone.
+- Setup and builder say when their work last reached the database, and say so
+  again as "not saved yet" the moment the manager edits. The time is the one the
+  save endpoint reports, so it is evidence of a completed write.
 - The map shows the change against the previous measured round — per stone and
   overall — naming the round it compared with and skipping any round that never
   reached its privacy threshold.
@@ -115,18 +120,15 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 
 ### Product
 
-1. Make the single-active-round rule durable in the schema
-   (`docs/product-behaviour-backlog.md` §10). It lives in `RoundService` today.
-   Cross-round work is otherwise **closed for now**: per-round reading and
-   second-round creation landed on 2026-08-03, the deterministic dimension-level
-   delta on 2026-08-04, and the owner decided on 2026-08-04 that AI analysis
-   across rounds is not wanted yet.
-2. Decide whether recommendations become tracked goals/action plans.
-3. Keyboard accelerators for per-question builder actions
+1. Decide whether recommendations become tracked goals/action plans.
+2. Keyboard accelerators for per-question builder actions
    (`docs/product-behaviour-backlog.md` §3); search, bulk enable/hide and
    reordering landed on 2026-08-04.
-4. Add a visible "last saved" timestamp to setup and builder saves
-   (`docs/product-behaviour-backlog.md` §1).
+
+Cross-round work is **closed for now**: per-round reading and second-round
+creation landed on 2026-08-03, the deterministic dimension-level delta and the
+partial unique index behind the single-active-round rule on 2026-08-04, and the
+owner decided on 2026-08-04 that AI analysis across rounds is not wanted yet.
 
 The backlog was reconciled with the owner's development requirements document
 on 2026-08-03. Its opening section records the four points where the shipped

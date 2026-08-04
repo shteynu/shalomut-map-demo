@@ -66,12 +66,24 @@ tracked as numbered items below.
 
 ## Remaining Product Behaviour Work
 
-### 1. Draft Persistence And Recovery
+### 1. Draft Persistence And Recovery (last-saved timestamp done 2026-08-04)
 
 Current state: setup and survey-builder edits persist through the Data Layer into the current organization/round. The 24 canonical questions are protected from disabling or reassignment.
 
+Since 2026-08-04 both save surfaces say when the work last reached the database.
+The setup screen and the builder show one shared `SaveStatus` line under their
+save button: "נשמר בשעה HH:MM" after a completed write, and "יש שינויים שטרם
+נשמרו" the moment the manager edits again — with the last save's time kept
+beside it, because it is still a fact, just no longer the state of the screen.
+The time comes from a `savedAt` the save endpoints report, not from the browser
+clock, so it is evidence that a write completed rather than that a button was
+pressed; a response without a usable time shows no time at all rather than
+inventing one. The stale success note is gone with it: it used to sit there
+claiming a save while the manager typed.
+
 Remaining proposal:
-- Add a visible "last saved" timestamp after save actions.
+- The timestamp covers this session. It does not survive a reload, which would
+  need a persisted `updatedAt` on the round.
 - Add explicit draft/version history if editors need recovery beyond the latest persisted definition.
 
 Why it matters:

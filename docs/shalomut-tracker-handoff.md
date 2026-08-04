@@ -28,12 +28,23 @@ state, external blockers and approval gates. Product milestones belong in
   code 0 on `feat/one-active-round-index`: 481 TypeScript tests, both fitness
   checks, typecheck, ESLint, production build; 12 PostgreSQL tests; 375 Python
   tests.
-- **One branch is waiting to reach `main`:** `feat/one-active-round-index`,
-  based on `3adb18a`, unpushed. It adds the partial unique index that makes the
-  single-active-round rule durable in the database, plus the write ordering that
-  keeps the ordinary path off the constraint. Details and the owner's two
-  commands are in
-  `docs/agent-tasks/active/feat--one-active-round-index.md`.
+- **Two stacked branches are waiting to reach `main`,** both unpushed:
+  `feat/one-active-round-index` (based on `3adb18a`) adds the partial unique
+  index that makes the single-active-round rule durable in the database, plus
+  the write ordering that keeps the ordinary path off the constraint;
+  `feat/last-saved-timestamp` sits on top of it and adds the "last saved" line
+  to setup and builder, with a `savedAt` on both save responses. Pushing the
+  second lands both. Details and the owner's commands are in
+  `docs/agent-tasks/active/feat--one-active-round-index.md` and
+  `docs/agent-tasks/active/feat--last-saved-timestamp.md`.
+- The full `npm run verify` passed again at the tip of
+  `feat/last-saved-timestamp` on 2026-08-04: 488 TypeScript tests, 12
+  PostgreSQL tests, 375 Python tests, both fitness checks, typecheck, ESLint and
+  the production build.
+- Observable API change, additive: `PUT /api/manager/setup` and
+  `PUT /api/rounds/{roundId}/survey-definition` now return `savedAt`. Both are
+  documented in `docs/openapi.yaml`; the survey-definition `200` body had no
+  documented schema before.
 - Earlier snapshot, superseded: `origin/main` was `87027a5` after
   `feat/respondent-draft-and-consent`, which the owner pushed on 2026-08-03.
 - **The local `main` is behind `origin/main` and cannot be updated from this
@@ -68,8 +79,7 @@ state, external blockers and approval gates. Product milestones belong in
 - `feat/respondent-draft-and-consent` reached `main` as `87027a5`, carrying
   respondent consent, draft recovery, the submit `409` contract and this
   snapshot. It is fully contained in `main` and can be deleted.
-- Apart from `feat/one-active-round-index` above, no branch is waiting to reach
-  `main`.
+- Apart from the two branches above, no branch is waiting to reach `main`.
 - The repository record does not claim that this final refactoring stack has
   been deployed. Verify deployment source/health before relying on it at the
   deployed endpoint.
