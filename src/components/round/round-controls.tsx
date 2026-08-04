@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { CheckCircle2, Clipboard, Loader2, Lock, Map, RotateCcw, Sparkles } from "lucide-react";
 import type { CSSProperties } from "react";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { CopyLinkStatus } from "@/components/ui/copy-link-status";
 import { useClipboard } from "@/lib/hooks/use-clipboard";
 import { calculatePercentage } from "@/lib/utils/math";
 import { getNavigationAction } from "@/lib/navigation";
@@ -33,8 +34,18 @@ export function RoundControls({
   const [analysisNote, setAnalysisNote] = useState<string | null>(null);
   const [closeError, setCloseError] = useState<string | null>(null);
   const shareUrl = useShareUrl(shareCode);
-  const { copied, copy } = useClipboard();
+  const { status: copyStatus, copy } = useClipboard();
+  const shareInputRef = useRef<HTMLInputElement | null>(null);
   const openDashboardAction = getNavigationAction("openDashboard");
+
+  /**
+   * Copy the link, and when the browser refuses, select it so the manual copy
+   * the failure note asks for is a single keystroke away.
+   */
+  async function copyShareUrl() {
+    const written = await copy(shareUrl);
+    if (!written) shareInputRef.current?.select();
+  }
 
   const progress = calculatePercentage(responseCount, expectedResponses);
 
@@ -142,12 +153,21 @@ export function RoundControls({
       <div className="share-panel">
         <p className="eyebrow">לינק הפצה</p>
         <div className="copy-row">
-          <input readOnly dir="ltr" value={shareUrl} aria-label="לינק אנונימי לשאלון" />
-          <button className="icon-button" type="button" onClick={() => copy(shareUrl)} aria-label="העתקת לינק">
+          <input
+            ref={shareInputRef}
+            readOnly
+            dir="ltr"
+            value={shareUrl}
+            aria-label="לינק אנונימי לשאלון"
+          />
+          <button className="icon-button" type="button" onClick={copyShareUrl} aria-label="העתקת לינק">
             <Clipboard size={18} aria-hidden="true" />
           </button>
         </div>
-        {copied ? <p className="success-note">הלינק הועתק. אפשר לשלוח לצוות.</p> : null}
+        <CopyLinkStatus
+          status={copyStatus}
+          successText="הלינק הועתק. אפשר לשלוח לצוות."
+        />
 
         <div className="round-actions">
           <button

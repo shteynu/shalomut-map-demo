@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { CheckCircle2, Eye, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { PageIntro } from "@/components/ui/page-intro";
 import { PrivacyTooltip } from "@/components/ui/privacy-tooltip";
 import { useClipboard } from "@/lib/hooks/use-clipboard";
@@ -108,8 +108,18 @@ export function SurveyBuilder({
   const [closedRoundTitles, setClosedRoundTitles] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const { copied, copy } = useClipboard();
+  const { status: copyStatus, copy } = useClipboard();
   const shareUrl = useShareUrl(shareCode);
+  const shareInputRef = useRef<HTMLInputElement | null>(null);
+
+  /**
+   * Copy the link, and when the browser refuses, select it so the manual copy
+   * the failure note asks for is a single keystroke away.
+   */
+  async function copyRespondentLink() {
+    const written = await copy(shareUrl);
+    if (!written) shareInputRef.current?.select();
+  }
   const openRespondentSurveyAction = getNavigationAction("openRespondentSurvey");
   // "all" is a filter value, not a dimension, so the state is wider than the
   // presentation ids the list is built from.
@@ -491,8 +501,9 @@ export function SurveyBuilder({
 
         <SurveyBuilderSidebar
           shareUrl={shareUrl}
-          copied={copied}
-          onCopyRespondentLink={() => copy(shareUrl)}
+          copyStatus={copyStatus}
+          shareInputRef={shareInputRef}
+          onCopyRespondentLink={copyRespondentLink}
           templateSuggestion={templateSuggestion}
           onSuggestFromTemplate={suggestFromTemplate}
           isFrozen={isFrozen}

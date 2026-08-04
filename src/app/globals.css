@@ -596,6 +596,20 @@ textarea {
   font-weight: 800;
 }
 
+/* A clipboard the browser refused. It sits where the success note would have
+   sat, so the difference is impossible to miss, and it stays until the next
+   attempt because it asks the manager to do something. */
+.copy-failure-note {
+  margin: 0;
+  border: 1px solid var(--warning-ink);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--ink);
+  padding: 0.85rem 1rem;
+  font-weight: 700;
+  line-height: 1.6;
+}
+
 /* Status of the saved draft. Never colour alone: the icon and the wording
    carry the meaning, so the state survives a monochrome or high-contrast
    rendering. */

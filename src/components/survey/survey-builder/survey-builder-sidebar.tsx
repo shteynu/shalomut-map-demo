@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Clipboard, Copy, Eye, Plus, ShieldCheck } from "lucide-react";
-import type { CSSProperties } from "react";
+import type { CSSProperties, RefObject } from "react";
+import { CopyLinkStatus } from "@/components/ui/copy-link-status";
+import type { ClipboardStatus } from "@/lib/hooks/use-clipboard";
 import { dimensionPresentations } from "@/lib/dashboard/dimension-presentation";
 import { responseScale } from "@/lib/shalomut-source";
 import { getNavigationAction } from "@/lib/navigation";
@@ -16,7 +18,9 @@ function getDimensionColor(dimensionId: string) {
 
 type SidebarProps = {
   shareUrl: string;
-  copied: boolean;
+  copyStatus: ClipboardStatus;
+  /** Selected for a manual copy when the browser blocks the clipboard. */
+  shareInputRef: RefObject<HTMLInputElement | null>;
   onCopyRespondentLink: () => void;
   templateSuggestion: QuestionSuggestion | null;
   onSuggestFromTemplate: () => void;
@@ -29,7 +33,8 @@ type SidebarProps = {
 
 export function SurveyBuilderSidebar({
   shareUrl,
-  copied,
+  copyStatus,
+  shareInputRef,
   onCopyRespondentLink,
   templateSuggestion,
   onSuggestFromTemplate,
@@ -55,13 +60,22 @@ export function SurveyBuilderSidebar({
         </div>
 
         <div className="copy-row">
-          <input readOnly dir="ltr" value={shareUrl} aria-label="קישור משיבים חיצוני" />
+          <input
+            ref={shareInputRef}
+            readOnly
+            dir="ltr"
+            value={shareUrl}
+            aria-label="קישור משיבים חיצוני"
+          />
           <button className="icon-button" type="button" onClick={onCopyRespondentLink} aria-label="העתקת קישור">
             <Clipboard size={18} aria-hidden="true" />
           </button>
         </div>
 
-        {copied ? <p className="success-note">קישור המשיבים הועתק ומוכן לשליחה לצוות.</p> : null}
+        <CopyLinkStatus
+          status={copyStatus}
+          successText="קישור המשיבים הועתק ומוכן לשליחה לצוות."
+        />
 
         <div className="round-actions">
           <Link className="secondary-button" href={shareUrl} target="_blank" rel="noreferrer">
