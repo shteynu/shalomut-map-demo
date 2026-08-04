@@ -87,6 +87,8 @@ state, external blockers and approval gates. Product milestones belong in
   `PATCH`/`DELETE /api/rounds/{roundId}/goals/{goalId}`, documented in
   `docs/openapi.yaml`. `POST /api/rounds/{roundId}/reset` now also deletes the
   round's goals and records `deletedGoalCount` in its audit entry.
+- No branch is waiting to reach `main`. The docs close-out for the tracked-goals
+  slice reached it as `6edb2df` on 2026-08-04.
 - The repository record does not claim that this final refactoring stack has
   been deployed. Verify deployment source/health before relying on it at the
   deployed endpoint.
