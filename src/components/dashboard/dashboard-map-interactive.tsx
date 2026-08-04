@@ -15,6 +15,7 @@ import {
   describeDelta,
   formatDelta,
 } from "@/lib/dashboard/round-comparison";
+import { isNudgeKey, nextNudgeOffset } from "@/lib/dashboard/map-nudge";
 import { dashboardDimensionRoute } from "@/lib/navigation";
 import type { WellbeingDimensionId, WellbeingStatus } from "@/lib/shalomut-source";
 import { clamp } from "@/lib/utils/math";
@@ -107,6 +108,7 @@ export function DashboardMapInteractive({
   const suppressClickIdRef = useRef<string | null>(null);
   const [offsets, setOffsets] = useState<StoneOffsetMap>(zeroOffsets);
   const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [resetMessage, setResetMessage] = useState("");
 
   useEffect(() => {
     offsetsRef.current = offsets;
@@ -221,6 +223,69 @@ export function DashboardMapInteractive({
     [],
   );
 
+  /**
+   * How far this stone can still travel before it leaves the stage. Read from
+   * the live rectangles rather than stored, because the stage resizes with the
+   * window and a stale bound would let a stone escape it.
+   */
+  const boundsFor = useCallback((dimensionId: string) => {
+    const stage = stageRef.current;
+    const stone = stoneRefs.current[dimensionId];
+
+    if (!stage || !stone) return null;
+
+    const stageRect = stage.getBoundingClientRect();
+    const stoneRect = stone.getBoundingClientRect();
+    const current = offsetsRef.current[dimensionId] ?? { x: 0, y: 0 };
+
+    return {
+      current,
+      minX: current.x - (stoneRect.left - stageRect.left),
+      maxX: current.x + (stageRect.right - stoneRect.right),
+      minY: current.y - (stoneRect.top - stageRect.top),
+      maxY: current.y + (stageRect.bottom - stoneRect.bottom),
+    };
+  }, []);
+
+  /**
+   * Arrow keys move a focused stone, which is the keyboard equivalent of the
+   * drag. The four arrows are consumed only while a stone has focus, so the
+   * page still scrolls with the keyboard everywhere else — and a screen reader
+   * in browse mode takes the arrows before the page ever sees them.
+   */
+  const handleKeyDown = useCallback(
+    (dimensionId: string) => (event: React.KeyboardEvent<HTMLAnchorElement>) => {
+      if (!isNudgeKey(event.key)) return;
+      if (event.altKey || event.ctrlKey || event.metaKey) return;
+      if (typeof window !== "undefined" && window.innerWidth <= 980) return;
+
+      const bounds = boundsFor(dimensionId);
+      if (!bounds) return;
+
+      event.preventDefault();
+      setResetMessage("");
+
+      // The step is taken from the offset React is holding rather than the one
+      // measured a moment ago, so two arrow presses inside one render still add
+      // up. The stage bounds stay valid either way: they were measured from the
+      // stone where it currently sits.
+      setOffsets((previous) => {
+        const nextOffset = nextNudgeOffset(
+          event.key,
+          previous[dimensionId] ?? bounds.current,
+          bounds,
+          event.shiftKey,
+        );
+        if (!nextOffset) return previous;
+
+        const updated = { ...previous, [dimensionId]: nextOffset };
+        offsetsRef.current = updated;
+        return updated;
+      });
+    },
+    [boundsFor],
+  );
+
   const handlePointerDown = useCallback(
     (dimensionId: string) => (event: ReactPointerEvent<HTMLAnchorElement>) => {
       if (event.button !== 0) {
@@ -233,35 +298,32 @@ export function DashboardMapInteractive({
 
       event.preventDefault();
 
-      const stage = stageRef.current;
       const stone = stoneRefs.current[dimensionId];
+      const bounds = boundsFor(dimensionId);
 
-      if (!stage || !stone) {
+      if (!stone || !bounds) {
         return;
       }
-
-      const stageRect = stage.getBoundingClientRect();
-      const stoneRect = stone.getBoundingClientRect();
-      const currentOffset = offsetsRef.current[dimensionId] ?? { x: 0, y: 0 };
 
       dragStateRef.current = {
         id: dimensionId,
         pointerId: event.pointerId,
         startX: event.clientX,
         startY: event.clientY,
-        baseX: currentOffset.x,
-        baseY: currentOffset.y,
-        minX: currentOffset.x - (stoneRect.left - stageRect.left),
-        maxX: currentOffset.x + (stageRect.right - stoneRect.right),
-        minY: currentOffset.y - (stoneRect.top - stageRect.top),
-        maxY: currentOffset.y + (stageRect.bottom - stoneRect.bottom),
+        baseX: bounds.current.x,
+        baseY: bounds.current.y,
+        minX: bounds.minX,
+        maxX: bounds.maxX,
+        minY: bounds.minY,
+        maxY: bounds.maxY,
       };
 
       suppressClickIdRef.current = null;
+      setResetMessage("");
       setDraggingId(dimensionId);
       stone.setPointerCapture?.(event.pointerId);
     },
-    [],
+    [boundsFor],
   );
 
   const handleClick = useCallback(
@@ -292,10 +354,24 @@ export function DashboardMapInteractive({
     if (typeof window !== "undefined") {
       window.localStorage.removeItem(LAYOUT_STORAGE_KEY);
     }
+
+    // The reset control only exists while the map is rearranged, so pressing it
+    // removes the element that has focus. Focus moves to the map itself and the
+    // outcome is announced, instead of both being lost to the document body.
+    setResetMessage("סידור המפה אופס. האבנים חזרו למקומן המקורי.");
+    stageRef.current?.focus();
   }, []);
 
   return (
-    <section ref={stageRef} className={stageClassName} aria-label="מפת השלומות לפי ממדים">
+    <section
+      ref={stageRef}
+      className={stageClassName}
+      aria-label="מפת השלומות לפי ממדים"
+      tabIndex={-1}
+    >
+      <p className="visually-hidden" role="status">
+        {resetMessage}
+      </p>
       {hasCustomLayout ? (
         <button type="button" className="map-reset-button" onClick={resetLayout}>
           <Undo2 size={16} aria-hidden="true" />
@@ -344,6 +420,7 @@ export function DashboardMapInteractive({
             }`}
             draggable={false}
             onPointerDown={handlePointerDown(dimension.id)}
+            onKeyDown={handleKeyDown(dimension.id)}
             onClick={handleClick(dimension.id)}
             onDragStart={(event) => event.preventDefault()}
           >

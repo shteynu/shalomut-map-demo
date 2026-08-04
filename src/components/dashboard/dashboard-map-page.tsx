@@ -195,7 +195,10 @@ function DashboardMapReady({
           <div className="dashboard-map-hint" aria-label="הנחיית שימוש במפה">
             <Move className="hint-icon-desktop" size={18} aria-hidden="true" />
             <MousePointer2 className="hint-icon-mobile" size={18} aria-hidden="true" />
-            <span className="hint-text-desktop">גררו את האבנים כדי לסדר את המפה, או לחצו על אבן כדי לפתוח פירוט.</span>
+            <span className="hint-text-desktop">
+              גררו את האבנים כדי לסדר את המפה, או לחצו על אבן כדי לפתוח פירוט.
+              במקלדת: מקשי החיצים מזיזים את האבן שבמיקוד, ועם Shift בצעד גדול.
+            </span>
             <span className="hint-text-mobile">לחצו על אבן כדי לפתוח פירוט.</span>
           </div>
           <DashboardMapInteractive
