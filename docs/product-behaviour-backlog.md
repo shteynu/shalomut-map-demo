@@ -110,7 +110,7 @@ Why it matters:
 - Mobile browsers and embedded browsers often block clipboard access.
 - A false success state can make the distribution flow feel unreliable.
 
-### 3. Survey Builder Efficiency (search, bulk and reorder done 2026-08-04)
+### 3. Survey Builder Efficiency (completed 2026-08-04)
 
 Current state: the builder supports filtering by dimension, toggling
 required/enabled state, duplicating questions, full eight-dimension template
@@ -130,9 +130,29 @@ works from the keyboard. A move is measured in the current view: with a filter
 on, a question swaps with the one above it on screen and nothing outside the
 view moves.
 
+Since 2026-08-04 the per-question actions also have accelerators, which is speed
+rather than access: every one of them was already a native button reachable by
+Tab. Inside the question the caret is in — no "selected question" concept, the
+card being read is the card that answers — `Alt+↑`/`Alt+↓` move it, `Alt+E`
+opens the editor, `Alt+D` duplicates, `Alt+H` hides or restores, `Alt+R`
+switches required. Screen-wide, `/` reaches the search field and `Ctrl`/`Cmd+S`
+saves.
+
+Three rules decided the set. Deleting a question has no chord and stays a
+deliberate button press with its confirmation. The chords are read from the
+physical key (`event.code`), because on a Hebrew layout the character for the D
+key is `ג` and a character-matched shortcut would work only for managers typing
+English; a keyboard that reports no physical key falls back to the character and
+simply has no accelerator for Hebrew letters, rather than a wrong one. And the
+move is on the arrow keys because up and down mean the same thing in RTL as in
+LTR, while a left/right chord would have to reverse with direction.
+
+The chords are listed above the question list and repeated in each button's
+tooltip and `aria-keyshortcuts`: a shortcut nobody can see is folklore.
+
 Remaining:
-- Keyboard shortcuts for the per-question actions. Every action is a native
-  button and reachable by Tab, but there are no accelerators.
+- Nothing here. Bulk actions and the dimension tabs have no chords, which looks
+  deliberate rather than missing: both are one click from the top of the list.
 
 Why it matters:
 - A real 24-question instrument is small but still benefits from fast review and batch editing.

@@ -38,6 +38,9 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 - Builder search across text, dimension and question id; bulk enable/hide of
   whatever the filter and search leave on screen; and real reordering through
   move-up/move-down buttons rather than a drag handle that did nothing.
+- Keyboard accelerators for the per-question actions, read from the physical key
+  so they work on a Hebrew layout, listed on screen, and deliberately absent
+  from deletion.
 - The dashboard reads any round the school owns, chosen from a switcher and
   carried through every dashboard link, with each round read through its own
   snapshot, threshold and analysis. The home screen stays on the active round.
@@ -120,10 +123,9 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 
 ### Product
 
-1. Decide whether recommendations become tracked goals/action plans.
-2. Keyboard accelerators for per-question builder actions
-   (`docs/product-behaviour-backlog.md` §3); search, bulk enable/hide and
-   reordering landed on 2026-08-04.
+1. Decide whether recommendations become tracked goals/action plans. This is the
+   only open product decision left in the backlog; §3 (builder efficiency) and
+   §1's last-saved timestamp both closed on 2026-08-04.
 
 Cross-round work is **closed for now**: per-round reading and second-round
 creation landed on 2026-08-03, the deterministic dimension-level delta and the

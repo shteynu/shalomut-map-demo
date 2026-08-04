@@ -1,6 +1,6 @@
 # Shalomut Tracker — operational handoff
 
-Updated: 2026-08-04 (deployment checked; single-active-round index pending). This
+Updated: 2026-08-04 (deployment checked; three branches pending a push). This
 document owns only cross-task operational/deployed
 state, external blockers and approval gates. Product milestones belong in
 `PROGRESS.md`; branch work and exact verification belong in
@@ -28,19 +28,25 @@ state, external blockers and approval gates. Product milestones belong in
   code 0 on `feat/one-active-round-index`: 481 TypeScript tests, both fitness
   checks, typecheck, ESLint, production build; 12 PostgreSQL tests; 375 Python
   tests.
-- **Two stacked branches are waiting to reach `main`,** both unpushed:
+- **Three stacked branches are waiting to reach `main`,** all unpushed. Pushing
+  the last one lands all three; the third is
+  `feat/builder-keyboard-accelerators`, the builder's per-question keyboard
+  chords, closing backlog §3
+  (`docs/agent-tasks/active/feat--builder-keyboard-accelerators.md`). The two
+  below it:
   `feat/one-active-round-index` (based on `3adb18a`) adds the partial unique
   index that makes the single-active-round rule durable in the database, plus
   the write ordering that keeps the ordinary path off the constraint;
   `feat/last-saved-timestamp` sits on top of it and adds the "last saved" line
-  to setup and builder, with a `savedAt` on both save responses. Pushing the
-  second lands both. Details and the owner's commands are in
+  to setup and builder, with a `savedAt` on both save responses. Details and the
+  owner's commands are in
   `docs/agent-tasks/active/feat--one-active-round-index.md` and
   `docs/agent-tasks/active/feat--last-saved-timestamp.md`.
-- The full `npm run verify` passed again at the tip of
-  `feat/last-saved-timestamp` on 2026-08-04: 488 TypeScript tests, 12
-  PostgreSQL tests, 375 Python tests, both fitness checks, typecheck, ESLint and
-  the production build.
+- The full `npm run verify` passed again at the tip of each of the two branches
+  above on 2026-08-04: 488 TypeScript tests at `feat/last-saved-timestamp` and
+  498 at `feat/builder-keyboard-accelerators`, both with 12 PostgreSQL tests,
+  375 Python tests, both fitness checks, typecheck, ESLint and the production
+  build.
 - Observable API change, additive: `PUT /api/manager/setup` and
   `PUT /api/rounds/{roundId}/survey-definition` now return `savedAt`. Both are
   documented in `docs/openapi.yaml`; the survey-definition `200` body had no
@@ -79,7 +85,7 @@ state, external blockers and approval gates. Product milestones belong in
 - `feat/respondent-draft-and-consent` reached `main` as `87027a5`, carrying
   respondent consent, draft recovery, the submit `409` contract and this
   snapshot. It is fully contained in `main` and can be deleted.
-- Apart from the two branches above, no branch is waiting to reach `main`.
+- Apart from the three branches above, no branch is waiting to reach `main`.
 - The repository record does not claim that this final refactoring stack has
   been deployed. Verify deployment source/health before relying on it at the
   deployed endpoint.
