@@ -14,6 +14,9 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
   "last saved" line, and the builder's keyboard accelerators.
 - `origin/main` moved to `233f905` with the tracked-goals slice, which closed
   the last open item in the product-behaviour backlog.
+- The setup screen and the survey builder now open with the round's stored save
+  time, so "when did this last save?" survives a reload. It needs the tenth
+  migration on the deployed database — see the handoff.
 - Contract `6.0` is deployed end to end and the deployed Core explicitly
   produces it. The unset configuration default remains rollback-safe `5.0`.
 - The six latest architecture slices are in `main`: separate AI-insights

@@ -5,120 +5,158 @@
 - Branch: `feat/persisted-save-timestamp`
 - Base branch: `main`
 - Base commit: `e7a2ea6`
-- Current HEAD: `e7a2ea6`
-- Status: in progress
+- Current HEAD: `1443a20` plus one uncommitted documentation commit in progress
+- Status: implementation and verification complete; awaiting the owner's push
 - Last updated: 2026-08-04
 - Last agent/tool: Claude Code (Opus 5)
 
 ## Objective
 
 Close the remaining half of `docs/product-behaviour-backlog.md` §1: the setup
-screen and the survey builder show when the round last reached the database,
-and that time survives a page reload.
+screen and the survey builder show when the round last reached the database, and
+that time survives a page reload.
 
 ## User-visible outcome
 
-Reopening the setup screen or the builder shows "נשמר בשעה HH:MM" for the last
-save the database actually recorded, instead of showing nothing until the
-manager saves again in that session.
-
-## Context
-
-The 2026-08-04 slice added a shared `SaveStatus` line fed by a `savedAt` the
-save endpoints report. Both endpoints stamp `new Date()` in the route handler
-and nothing persists it, so the line exists only for the current session.
+Reopening the setup screen or the builder shows the last save the database
+recorded — "נשמר בשעה 13:59" for today's work, "נשמר ב־1 באוגוסט 2026 בשעה
+13:59" when it is older — instead of nothing until the manager saves again in
+that tab.
 
 ## Scope
 
 - `survey_rounds.updated_at`, its migration and the Prisma model.
-- `SurveyRound.updatedAt` through the repository interface and both
-  implementations.
-- The two save endpoints reporting the persisted time.
+- `SurveyRound.updatedAt` through both repository implementations.
+- The two save endpoints reporting the persisted value.
 - The setup page and the survey page seeding the components with it.
 
 ## Non-goals
 
-- Draft/version history or recovery beyond the latest persisted definition
-  (the other, undecided half of §1).
+- Draft/version history or recovery beyond the latest persisted definition —
+  the other, undecided half of §1, still open in the backlog.
 - A per-organization save time; the round is what these two screens edit.
-
-## Acceptance criteria
-
-- A save writes `updated_at`, and the endpoints report that value rather than a
-  handler-local clock reading.
-- A reload of either screen shows the persisted time.
-- A round that was never saved since the column existed shows no time rather
-  than an invented one.
-
-## Relevant repository instructions
-
-- `.agents/skills/shalomut-map/SKILL.md` — persistence and UI boundaries.
-- `.agents/skills/shalomut-verification/SKILL.md` — evidence before claiming.
-
-## Relevant architecture and contracts
-
-- Repositories are assembled in `src/lib/composition-root.ts`; nothing below
-  that boundary resolves them.
-- The AI contract is untouched: this is a Core persistence and UI change.
 
 ## Decisions made
 
-_None recorded yet._
+- The column is nullable and not backfilled. A round written before it existed
+  has no honest save time, and `created_at` answers a different question — when
+  the row appeared, not when its questionnaire was last edited. Those rounds
+  show no time, which is the same rule the screens already applied to a response
+  without a usable time.
+- `savedAt` in both responses is now the round's stored `updatedAt` rather than
+  a `new Date()` next to the write, so the value the manager sees after saving
+  and the value they see after reloading are the same one.
+- In the builder, the activation write wins when completing the questionnaire
+  put the round on the air — that write is the moment the round last reached the
+  database.
+- The line dates itself when the save is not from today. A stored time arrives
+  with the page and can be days old; an hour alone would read as this morning's.
+- Times are formatted in `Asia/Jerusalem` rather than the runtime's zone. The
+  line is now server-rendered before hydration, so server and browser have to
+  produce the same words, and the school day is the right frame for "at what
+  time".
+- The in-memory repository stamps `updatedAt` on create, update and status
+  change, because the Prisma column is `@updatedAt` and a repository that let
+  the caller decide would report a save time the deployed one had moved on.
 
 ## Assumptions
 
-_None recorded yet._
+- The manager screens are the only readers of this column, so no consumer
+  depends on it being non-null.
 
 ## Completed
 
-_Nothing yet._
-
-## In progress
-
-- Persisting the timestamp.
+- `9ea91aa` — the column, the migration, the domain field, both repositories and
+  both endpoints.
+- `c33957e` — both screens open with the stored time; the dated form and the
+  pinned time zone; unit tests.
+- `1443a20` — OpenAPI descriptions and the `SurveyRound.updatedAt` field, the
+  regenerated `public/openapi.json`, and a PostgreSQL test for the stamping.
+- Uncommitted at the time of writing: `PROGRESS.md`, the handoff's pending
+  migration entry, backlog §1 and this file.
 
 ## Remaining
 
-- Persistence, UI, verification, documentation.
+- Nothing in code. The deployed database needs the migration; see the approval
+  and operational note below.
 
 ## Changed files
 
-_None yet._
+`prisma/schema.prisma`, `prisma/migrations/20260804190000_add_round_updated_at/`,
+`src/lib/types/backend.ts`, both round repositories,
+`src/app/api/manager/setup/route.ts`,
+`src/app/api/rounds/[roundId]/survey-definition/route.ts`,
+`src/app/setup/page.tsx`, `src/app/survey/page.tsx`,
+`src/components/round/setup-form.tsx`, `src/components/survey/survey-builder.tsx`,
+`src/components/ui/save-status.tsx` and its test,
+`src/lib/services/__tests__/manager-setup.service.test.ts`,
+`src/lib/repositories/__dbtests__/postgres-one-active-round.test.ts`,
+`docs/openapi.yaml`, `public/openapi.json`, `PROGRESS.md`,
+`docs/shalomut-tracker-handoff.md`, `docs/product-behaviour-backlog.md`.
 
 ## Verification evidence
 
 ### Passed
 
-_None yet._
+- `npm run verify:core` — exit 0: both fitness checks, typecheck, 531 TypeScript
+  tests, ESLint and the production build.
+- `npm run verify:db` — exit 0, 19 PostgreSQL tests, including the new
+  `every write stamps when the round reached the database`.
+- Local browser evidence against `npm run local` with the seeded round:
+  - `PUT /api/manager/setup` returned `savedAt` equal to the round's stored
+    `updatedAt`, and `select updated_at from survey_rounds` held the same value.
+  - A subsequent load of `/setup/` server-rendered
+    `<time datetime="2026-08-04T10:59:52.939Z">13:59</time>` inside
+    `p.save-status.save-status-saved`, and `/survey/` rendered the same time —
+    the reload-survival this task is about.
+  - With the row's `updated_at` moved back three days, the same screen rendered
+    "נשמר ב־1 באוגוסט 2026 בשעה 13:59", so the dated form is real and not only
+    unit-tested. The local row was saved again afterwards, so nothing is left
+    artificially backdated.
 
 ### Failed
 
-_None._
+None.
 
 ### Blocked or not run
 
-- Everything; no check has run on this branch.
+- `npm run verify:ai` — not run. The diff touches no contract, manifest, prompt
+  or Python code.
+- A pixel screenshot of the line. The Browser pane repeatedly returned a stale
+  or blank viewport for this route; the evidence above is DOM and server-rendered
+  HTML instead.
+- Deployed behaviour. Unchanged from the standing gate: manager routes need the
+  owner's credentials.
 
 ### Environment
 
-Local worktree at `/Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo`.
+Local worktree at `/Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo`,
+local Postgres on `127.0.0.1:5433`, `shalomut_test` for `verify:db`.
 
 ### Residual risk
 
-_None recorded yet._
+The deployed database must receive `20260804190000_add_round_updated_at` before
+or immediately after the deploy. Prisma selects the model's columns by name, so
+between a deploy and the migration every round read raises "column
+`survey_rounds.updated_at` does not exist" and the manager screens fail rather
+than degrade. The build command runs `prisma generate`, not
+`prisma migrate deploy`, so the push alone does not apply it.
 
 ## Failed approaches
 
-_None._
+- Driving the save button through the Browser pane. The pane clicked before
+  hydration, which submitted the form natively, and later returned blank
+  screenshots. Verification went through in-page `fetch` on the real endpoint
+  plus server-rendered HTML instead.
 
 ## Known risks
 
-_None recorded yet._
+Recorded above under residual risk.
 
 ## Approval gates
 
-None. This touches no secret, credential, authentication configuration or
-deployment alias.
+None for the code. The deployed migration is an owner action, like the push:
+`npm run db:migrate:deploy` against the deployed database.
 
 ## Questions requiring an owner decision
 
@@ -126,5 +164,6 @@ None.
 
 ## Next concrete step
 
-Add `survey_rounds.updated_at` with its migration and carry it through the
-round repositories.
+Hand the push to the owner — `git push origin feat/persisted-save-timestamp:main`
+— and have them run `npm run db:migrate:deploy` against the deployed database in
+the same sitting.

@@ -115,8 +115,18 @@ state, external blockers and approval gates. Product milestones belong in
   2026-08-04: `prisma migrate status` reports nine migrations and a schema that
   is up to date, and a read-back confirms `round_goals` with its unique key on
   `(round_id, dimension_id, title)`, its `(round_id, created_at)` index and a
-  cascading foreign key to `survey_rounds`. The table holds no rows. No
-  migration is pending.
+  cascading foreign key to `survey_rounds`. The table holds no rows.
+- **A tenth migration is pending on the deployed database.**
+  `20260804190000_add_round_updated_at` adds the nullable
+  `survey_rounds.updated_at` that carries the manager screens' save time across
+  a reload. The build command runs `prisma generate` and not
+  `prisma migrate deploy`, so pushing the branch does not apply it: run
+  `npm run db:migrate:deploy` against the deployed database. Do it **before or
+  immediately after** the push: Prisma selects the model's columns by name, so
+  between the deploy and the migration every round read raises "column
+  `survey_rounds.updated_at` does not exist" — the manager screens fail rather
+  than fall back. Applied locally on 2026-08-04, where `prisma migrate status`
+  reports ten migrations and a schema that is up to date.
 - No real respondents or production data exist. Database contents are
   disposable at this stage.
 

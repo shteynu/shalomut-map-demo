@@ -66,7 +66,7 @@ tracked as numbered items below.
 
 ## Remaining Product Behaviour Work
 
-### 1. Draft Persistence And Recovery (last-saved timestamp done 2026-08-04)
+### 1. Draft Persistence And Recovery (last-saved timestamp done and persisted 2026-08-04)
 
 Current state: setup and survey-builder edits persist through the Data Layer into the current organization/round. The 24 canonical questions are protected from disabling or reassignment.
 
@@ -81,9 +81,16 @@ pressed; a response without a usable time shows no time at all rather than
 inventing one. The stale success note is gone with it: it used to sit there
 claiming a save while the manager typed.
 
+Since later the same day the answer outlives the tab. `survey_rounds.updated_at`
+holds it, both save endpoints report that stored value, and both screens open
+with it — so a reload no longer erases what the manager just saw. Because a
+stored time can be days old, the line dates itself when it is not from today,
+and it is formatted in the school's own time zone so the server and the browser
+render the same words. A round last written before the column existed has no
+honest value and shows none: `created_at` is when the row appeared, not when its
+questionnaire was last edited.
+
 Remaining proposal:
-- The timestamp covers this session. It does not survive a reload, which would
-  need a persisted `updatedAt` on the round.
 - Add explicit draft/version history if editors need recovery beyond the latest persisted definition.
 
 Why it matters:
