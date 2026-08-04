@@ -6,7 +6,7 @@
 - Base branch: `main`
 - Base commit: `2a1f284` (the docs close-out for the previous three slices)
 - Current HEAD: `5f3693c`
-- Status: implementation complete and verified; not pushed
+- Status: merged into `main` and archived
 - Last updated: 2026-08-04
 - Last agent/tool: Claude Opus 5 (Claude Code)
 
@@ -94,8 +94,7 @@ Nothing.
 
 ## Remaining
 
-The owner pushes the branch, then applies the migration to the deployed
-database.
+Nothing.
 
 ## Changed files
 
@@ -168,9 +167,21 @@ respondents.
 Whether a goal ever gains an owner, a due date or a plan of steps. Deliberately
 left open; the backlog §5 entry records it.
 
+## Outcome
+
+The owner pushed the branch on 2026-08-04; `origin/main` is `233f905`. The
+migration `20260804170000_add_round_goals` was applied to the deployed Supabase
+database the same day: `prisma migrate status` reports nine migrations and a
+schema that is up to date, and a read-back confirms the table with its unique
+key on `(round_id, dimension_id, title)`, the `(round_id, created_at)` index and
+a cascading foreign key to `survey_rounds`. It holds no rows, which is what a
+school that has not chosen a goal yet looks like.
+
+The live deployment `dpl_HFYRvMxBp6uq5LvrvkRkCxEhRfgT` is READY and built from
+`main` at `233f905`, so the deployed Core carries this slice. Its behaviour was
+not exercised there: every deployed route redirects to `/login`, so this is
+deployment and database metadata, not a manager screen that was used.
+
 ## Next concrete step
 
-Hand the owner the push command
-`git push origin feat/round-goals:main`, then apply
-`20260804170000_add_round_goals` to the deployed database with
-`npm run db:migrate:deploy` and read the table back.
+None. This task is closed.

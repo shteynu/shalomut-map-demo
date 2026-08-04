@@ -11,8 +11,9 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
   scoring bands, round selection, round creation, the map comparison, map
   keyboard and reduced-motion support, clipboard failure states and the builder
   list work — and three more on 2026-08-04: the single-active-round index, the
-  "last saved" line, and the builder's keyboard accelerators. Tracked goals sit
-  on a branch that has not reached `main`.
+  "last saved" line, and the builder's keyboard accelerators.
+- `origin/main` moved to `233f905` with the tracked-goals slice, which closed
+  the last open item in the product-behaviour backlog.
 - Contract `6.0` is deployed end to end and the deployed Core explicitly
   produces it. The unset configuration default remains rollback-safe `5.0`.
 - The six latest architecture slices are in `main`: separate AI-insights
@@ -21,10 +22,11 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 - The checkpoint at `26f4c37` passed the full `npm run verify`: 498 TypeScript
   tests, 12 PostgreSQL tests and 375 Python tests, with both fitness checks,
   typecheck, ESLint and the production build. The tracked-goals branch passed
-  the same gate at its tip with 529, 18 and 375. Counts are checkpoint evidence,
-  not evergreen expectations.
-- Eight of the nine repository migrations are applied to the confirmed deployed
-  database; the ninth, `round_goals`, is applied locally and is pending there.
+  the same gate at its tip, `233f905`, with 529, 18 and 375. Counts are
+  checkpoint evidence, not evergreen expectations.
+- All nine repository migrations are applied to the confirmed deployed database
+  and to the local test database; the ninth, `round_goals`, landed on
+  2026-08-04.
 - There are no real respondents or production data. The deployed Vercel alias
   remains an operational staging endpoint for the design stage.
 
