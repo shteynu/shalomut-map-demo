@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, Any
+from typing import Any, Dict, Optional
 from src.agents.state import AnalyticsState
 from src.agents.nodes import (
     privacy_gate_node,
@@ -11,8 +11,10 @@ from src.agents.nodes import (
     _effective_contract_version,
 )
 from src.agents.safety_report import violation
+from src.contracts import AI_ANALYTICS_DIMENSION_IDS
 from src.application.ports import TextGenerator
 from src.schemas.analytics_output import encode_failure, encode_stone_map
+from src.schemas.contract_registry import get_capabilities
 from src.schemas.canonical import (
     CanonicalAnalysisInput,
     CanonicalAnalysisResult,
@@ -101,6 +103,19 @@ class AnalyticsGraphEngine:
                 continue
 
             if current_state.get("safety_status") != "pass":
+                # The repair budget is spent. If what is left is a few
+                # dimensions whose copy this round could not get right, the
+                # round still knows seven other things worth saying, and
+                # throwing all of them away to report one refusal is the
+                # expensive answer. Drop those dimensions to a stated gap and
+                # ask the validator again — the second pass is what decides,
+                # so nothing is assumed to be safe merely because it was
+                # degraded.
+                degraded = _degrade_to_partial_map(current_state)
+                if degraded is not None:
+                    current_state = agent_safety_validator_node(degraded)
+
+            if current_state.get("safety_status") != "pass":
                 return {
                     **current_state,
                     "final_payload": build_failure_payload(
@@ -149,6 +164,75 @@ class AnalyticsGraphEngine:
                     error_message=VALIDATION_FAILED_MESSAGE_HEBREW,
                 ),
             }
+
+
+def _degrade_to_partial_map(state: AnalyticsState) -> Optional[AnalyticsState]:
+    """Turn dimensions this round could not write into a stated gap.
+
+    Returns ``None`` — meaning the round fails whole — unless every refusal
+    left is one dimension's copy on a contract that describes partial maps.
+    The exclusions are deliberate:
+
+    * A refused overall summary or a refused recommendation is not a gap. The
+      contract has no way to say "this round has no summary", so a map missing
+      one is a map Core will reject.
+    * A refusal with no dimension attached cannot be attributed, and a gap that
+      cannot be attributed is a map that disagrees with its own banner.
+    * Every dimension failing is not a partial map. Core says so explicitly,
+      and it is the right rule: eight gaps is a failed round wearing a map's
+      shape.
+    """
+    round_data = state.get("round_data", {})
+    capabilities = get_capabilities(_effective_contract_version(round_data))
+    if not capabilities.supportsPartialMaps:
+        return None
+
+    violations = state.get("safety_violations", [])
+    if not violations:
+        return None
+    if any(
+        item.get("target") != "interpretation" or not item.get("dimensionId")
+        for item in violations
+    ):
+        return None
+
+    gaps = {str(item["dimensionId"]) for item in violations}
+    if len(gaps) >= len(AI_ANALYTICS_DIMENSION_IDS):
+        return None
+
+    logger.warning(
+        "[Safety] Repair budget spent; reporting %s of %s dimension(s) as a "
+        "stated gap rather than failing the round: %s",
+        len(gaps),
+        len(AI_ANALYTICS_DIMENSION_IDS),
+        ",".join(sorted(gaps)),
+    )
+
+    interpretations = dict(state.get("interpretations", {}))
+    summaries = dict(interpretations.get("dimension_summaries", {}))
+    texts = dict(interpretations.get("dimension_interpretations", {}))
+    provenance = {
+        dim_id: dict(record)
+        for dim_id, record in state.get("generation_provenance", {}).items()
+    }
+    for dim_id in gaps:
+        # The copy that was refused does not survive as evidence of anything.
+        if capabilities.usesStructuredDimensionSummary:
+            summaries[dim_id] = []
+        texts[dim_id] = ""
+        if dim_id in provenance:
+            provenance[dim_id]["outcome"] = "unavailable"
+
+    interpretations["dimension_summaries"] = summaries
+    interpretations["dimension_interpretations"] = texts
+    return {
+        **state,
+        "interpretations": interpretations,
+        "generation_provenance": provenance,
+        "retry_interpretation_dimensions": [],
+        "retry_recommendation_dimensions": [],
+        "retry_overall_summary": False,
+    }
 
 
 def _replay_for_outgoing_refusal(state, refusal) -> AnalyticsState:

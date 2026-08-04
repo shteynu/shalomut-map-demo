@@ -13,7 +13,10 @@ from src.contracts import (
 )
 from src.schemas.mcp_types import RoundAnalyticsResult
 from src.rag.store import LocalInterventionVectorStore
-from src.services.llm_provider import llm_provider_service
+from src.services.llm_provider import (
+    StructuredSummaryGeneration,
+    llm_provider_service,
+)
 
 
 BACKGROUND_CONTEXT = {
@@ -363,3 +366,87 @@ async def test_locked_v6_short_circuits_every_provider_path(monkeypatch):
 
     assert result["final_payload"]["status"] == "locked_error"
     assert "stones" not in result["final_payload"]
+
+
+def _v6_state(round_data):
+    return {
+        "round_data": round_data,
+        "org_context": {},
+        "interpretations": {},
+        "recommendations": {},
+        "safety_status": "pending",
+        "safety_feedback": None,
+        "retry_count": 0,
+        "final_payload": {},
+    }
+
+
+def _refuse_dimension_summary(monkeypatch, refused):
+    """Make one dimension's overview copy something the validator never takes.
+
+    Everything else answers with the ordinary deterministic fallback, so the
+    round is a real round with one dimension the repair budget cannot save.
+    """
+    monkeypatch.setattr(
+        llm_provider_service,
+        "_complete_with_retries",
+        lambda **_kwargs: (None, 1, "http_503"),
+    )
+    real = llm_provider_service.generate_structured_summary_result
+
+    def summary(*, dim_id, **kwargs):
+        if dim_id in refused:
+            return StructuredSummaryGeneration(("x", "y", "z"), "llm", 1)
+        return real(dim_id=dim_id, **kwargs)
+
+    monkeypatch.setattr(
+        llm_provider_service,
+        "generate_structured_summary_result",
+        summary,
+    )
+
+
+@pytest.mark.asyncio
+async def test_v6_reports_a_dimension_it_could_not_write_as_a_stated_gap(
+    monkeypatch,
+):
+    # Before partial maps returned to 6.0 this round was thrown away whole:
+    # one dimension whose copy the validator kept refusing cost the manager
+    # the seven that were fine.
+    _refuse_dimension_summary(monkeypatch, {"balance"})
+    round_data = RoundAnalyticsResult.from_dict(build_v6_input_payload()).to_dict()
+
+    result = await analytics_graph.ainvoke(_v6_state(round_data))
+    payload = result["final_payload"]
+
+    assert payload["status"] == "success", result.get("safety_feedback")
+    assert payload["dimensionsWithoutInterpretation"] == ["balance"]
+
+    gap = payload["stones"]["balance"]
+    assert gap["summary"] == []
+    assert gap["generationProvenance"]["outcome"] == "unavailable"
+    # The gap is the overview and nothing else: the score, the reading of each
+    # question and the recommendations are all still there.
+    assert gap["score"] > 0
+    assert len(gap["recommendedInterventions"]) == 5
+    assert 300 <= len(gap["metrics"][0]["insightText"]) <= 500
+
+    for dimension_id, stone in payload["stones"].items():
+        if dimension_id == "balance":
+            continue
+        assert len(stone["summary"]) == 3, dimension_id
+        assert stone["generationProvenance"]["outcome"] != "unavailable"
+
+
+@pytest.mark.asyncio
+async def test_v6_still_fails_whole_when_no_dimension_can_be_written(
+    monkeypatch,
+):
+    # Eight gaps is not a partial map. Core refuses one and it is right to:
+    # a map with nothing written is a failed round wearing a map's shape.
+    _refuse_dimension_summary(monkeypatch, set(AI_ANALYTICS_DIMENSION_IDS))
+    round_data = RoundAnalyticsResult.from_dict(build_v6_input_payload()).to_dict()
+
+    result = await analytics_graph.ainvoke(_v6_state(round_data))
+
+    assert result["final_payload"]["status"] == "validation_failed"

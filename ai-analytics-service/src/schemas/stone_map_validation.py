@@ -85,8 +85,18 @@ def _refusal_for_stone(
     if not caps.isSemanticContract:
         return None
 
+    provenance = stone.get("generationProvenance")
+    outcome = provenance.get("outcome") if isinstance(provenance, dict) else None
+
     if caps.usesStructuredDimensionSummary:
-        if not _three_hebrew_paragraphs(stone.get("summary")):
+        # A declared gap has no overview; `_refusal_for_gaps` below is what
+        # checks it was declared. The metric narratives are still required —
+        # the gap covers the three paragraphs about the dimension, not the
+        # reading of each question in it.
+        if outcome == "unavailable":
+            if stone.get("summary") != []:
+                return "unavailable_not_empty"
+        elif not _three_hebrew_paragraphs(stone.get("summary")):
             return "v6_summary_shape"
         for metric in stone.get("metrics") or ():
             insight = metric.get("insightText") if isinstance(metric, dict) else None
@@ -96,8 +106,6 @@ def _refusal_for_stone(
                 return "v6_metric_insight_required"
         return None
 
-    provenance = stone.get("generationProvenance")
-    outcome = provenance.get("outcome") if isinstance(provenance, dict) else None
     interpretation = stone.get("psychologicalInterpretation")
     if outcome == "unavailable":
         # An absent interpretation is a declared gap, not broken copy; the

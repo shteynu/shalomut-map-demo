@@ -133,10 +133,14 @@ def test_a_partial_map_names_exactly_the_dimensions_it_could_not_write():
     payload = encode_stone_map(_result(stones=stones), "5.0")
 
     assert payload["dimensionsWithoutInterpretation"] == ["balance"]
-    # The version that does not declare partial maps stays silent about them.
+    # 6.0 declares partial maps too, so it names the same gap.
+    assert encode_stone_map(_result(stones=stones), "6.0")[
+        "dimensionsWithoutInterpretation"
+    ] == ["balance"]
+    # A version that does not declare partial maps stays silent about them.
     assert "dimensionsWithoutInterpretation" not in encode_stone_map(
         _result(stones=stones),
-        "6.0",
+        "4.0",
     )
 
 

@@ -98,14 +98,28 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
                     for text in narratives.values()
                 )
             )
-            if parsed_summary is None or not metric_copy_valid:
+            # A V6 gap covers the three overview paragraphs and nothing else.
+            # The metric narratives are still required, because a dimension
+            # that lost its overview can still say what each question means —
+            # and because Core refuses a metric without one either way.
+            summary_valid = (
+                summaries == [] if unavailable else parsed_summary is not None
+            )
+            if not summary_valid or not metric_copy_valid:
                 is_safe = False
                 rejected_interpretations.add(dim_id)
                 feedback.append(
-                    f"Structured V6 narrative is invalid for {dim_id}"
+                    f"An unavailable overview must be empty: {dim_id}"
+                    if unavailable
+                    else f"Structured V6 narrative is invalid for {dim_id}"
                 )
                 violations.append(
-                    violation("v6_narrative_invalid", "interpretation", dim_id),
+                    violation(
+                        "unavailable_not_empty" if unavailable
+                        else "v6_narrative_invalid",
+                        "interpretation",
+                        dim_id,
+                    ),
                 )
         elif unavailable:
             if interp != "":

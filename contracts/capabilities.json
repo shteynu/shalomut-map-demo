@@ -65,7 +65,7 @@
       "supportsDynamicQuestions": true,
       "supportsBackgroundContext": true,
       "supportsScoreDistribution": true,
-      "supportsPartialMaps": false,
+      "supportsPartialMaps": true,
       "supportsAdaptationOutcome": true,
       "usesStructuredDimensionSummary": true,
       "usesNarrativeMetrics": true,
