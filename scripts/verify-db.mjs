@@ -91,6 +91,10 @@ run(
       repositoryRoot,
       'src/lib/repositories/__dbtests__/postgres-one-active-round.test.ts',
     ),
+    path.join(
+      repositoryRoot,
+      'src/lib/repositories/__dbtests__/postgres-round-goals.test.ts',
+    ),
   ],
   'PostgreSQL suite',
 );

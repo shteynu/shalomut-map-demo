@@ -36,6 +36,11 @@ describe('OpenAPI Specification Integrity', () => {
     assert.ok(paths.includes('/api/ai-analysis-runs/{runId}/heartbeat'), 'Must include durable AI job heartbeat path');
     assert.ok(paths.includes('/api/ai-analysis-runs/{runId}/fail'), 'Must include durable AI job failure path');
     assert.ok(paths.includes('/api/rounds/{roundId}/reset'), 'Must include reset round path');
+    assert.ok(paths.includes('/api/rounds/{roundId}/goals'), 'Must include the round goals collection path');
+    assert.ok(
+      paths.includes('/api/rounds/{roundId}/goals/{goalId}'),
+      'Must include the single round goal path',
+    );
     assert.ok(
       paths.includes('/api/manager/question-suggestion'),
       'Must include the question suggestion path',

@@ -8,12 +8,14 @@ export * from './interfaces';
 export * from './in-memory/in-memory-organization.repository';
 export * from './in-memory/in-memory-ai-analysis-run.repository';
 export * from './in-memory/in-memory-ai-insights.repository';
+export * from './in-memory/in-memory-round-goal.repository';
 export * from './in-memory/in-memory-round.repository';
 export * from './in-memory/in-memory-survey.repository';
 export * from './prisma/prisma-client';
 export * from './prisma/prisma-organization.repository';
 export * from './prisma/prisma-ai-analysis-run.repository';
 export * from './prisma/prisma-ai-insights.repository';
+export * from './prisma/prisma-round-goal.repository';
 export * from './prisma/prisma-round.repository';
 export * from './prisma/prisma-survey.repository';
 

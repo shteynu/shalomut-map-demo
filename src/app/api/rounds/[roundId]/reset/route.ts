@@ -13,8 +13,14 @@ export async function POST(
     if (unavailable) return unavailable;
 
     const { roundId } = await params;
-    const { aiAnalysisRunRepo, aiInsightsRepo, orgRepo, roundRepo, surveyRepo } =
-      resolveCoreRepositories();
+    const {
+      aiAnalysisRunRepo,
+      aiInsightsRepo,
+      orgRepo,
+      roundGoalRepo,
+      roundRepo,
+      surveyRepo,
+    } = resolveCoreRepositories();
 
     const authorization = await authorizeManagerRound(
       request,
@@ -37,6 +43,11 @@ export async function POST(
     // Removing them also releases the stable `automatic` request key so a new
     // collection cycle can enqueue once it reaches the threshold again.
     await aiAnalysisRunRepo.deleteByRoundId(roundId);
+    // Goals normally outlive an analysis — that is the point of copying the
+    // recommendation text into them. Reset is the exception: it does not re-run
+    // the analysis, it declares that this round measured nothing, and a goal
+    // chosen from an erased measurement has nothing left to track.
+    const deletedGoalCount = await roundGoalRepo.deleteByRoundId(roundId);
 
     // Re-set round status to draft to allow question re-editing
     const updatedRound = await roundRepo.updateStatus(roundId, "draft");
@@ -46,7 +57,7 @@ export async function POST(
       "ROUND_RESET",
       roundId,
       authorization.round.organizationId,
-      { deletedResponseCount },
+      { deletedResponseCount, deletedGoalCount },
     );
 
     return NextResponse.json({

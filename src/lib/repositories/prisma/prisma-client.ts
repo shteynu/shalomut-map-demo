@@ -28,6 +28,13 @@ export interface MinimalPrismaClient {
     updateMany: (args: any) => Promise<{ count: number }>;
     deleteMany: (args?: any) => Promise<any>;
   };
+  roundGoal?: {
+    create: (args: any) => Promise<any>;
+    findFirst: (args: any) => Promise<any>;
+    findMany: (args: any) => Promise<any[]>;
+    updateMany: (args: any) => Promise<{ count: number }>;
+    deleteMany: (args?: any) => Promise<{ count: number }>;
+  };
   surveyResponse: {
     create: (args: any) => Promise<any>;
     findMany: (args: any) => Promise<any[]>;

@@ -25,6 +25,8 @@ tags:
     description: Respondent questionnaire delivery and anonymous response submission
   - name: Analytics
     description: Aggregated wellbeing scores and privacy threshold enforcement
+  - name: Goals
+    description: Recommendations a school decided to work on, tracked per round
   - name: AI Integration
     description: MCP transport, AI processing trigger, and versioned Stone Map insights
 
@@ -411,7 +413,7 @@ paths:
     post:
       tags: [Rounds]
       summary: Reset survey round responses and set status back to draft
-      description: Clears all collected anonymous survey responses for the given round and resets its status to draft so questions can be edited. Also drops any persisted AI result for the round and records a ROUND_RESET audit event.
+      description: Clears all collected anonymous survey responses for the given round and resets its status to draft so questions can be edited. Also drops any persisted AI result, any durable analysis run and every tracked goal of the round, and records a ROUND_RESET audit event.
       security:
         - managerSession: []
       parameters:
@@ -443,6 +445,175 @@ paths:
           description: Survey round not found
         "500":
           description: Failed to reset round responses
+        "503":
+          description: Persistent storage is not configured for this deployment
+
+  /api/rounds/{roundId}/goals:
+    parameters:
+      - name: roundId
+        in: path
+        required: true
+        schema:
+          type: string
+          example: 4f88af95-0ec4-4872-85ac-67466c3cd8f2
+    get:
+      tags: [Goals]
+      summary: List the goals a round is tracking
+      security:
+        - managerSession: []
+      responses:
+        "200":
+          description: The goals of this round, oldest decision first
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [roundId, goals]
+                properties:
+                  roundId:
+                    type: string
+                  goals:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RoundGoal'
+        "403":
+          description: Manager organization scope is required
+        "404":
+          description: Survey round not found
+        "500":
+          description: Failed to read round goals
+    post:
+      tags: [Goals]
+      summary: Track a recommendation as a goal
+      description: >-
+        The recommendation text is copied into the goal rather than referenced,
+        so the goal survives the next analysis run. The text is not checked
+        against the current analysis: it can be re-run between the screen
+        rendering and the button being pressed.
+      security:
+        - managerSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRoundGoalRequest'
+      responses:
+        "201":
+          description: The goal was created
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [goal]
+                properties:
+                  goal:
+                    $ref: '#/components/schemas/RoundGoal'
+        "400":
+          description: The request names an unknown dimension or carries empty or oversized text
+        "403":
+          description: Manager organization scope is required
+        "404":
+          description: Survey round not found
+        "409":
+          description: >-
+            This recommendation is already tracked. The existing goal is
+            returned with the error so a double-tapped button can reconcile.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  code:
+                    type: string
+                    example: goal_already_exists
+                  goal:
+                    $ref: '#/components/schemas/RoundGoal'
+        "500":
+          description: Failed to create round goal
+        "503":
+          description: Persistent storage is not configured for this deployment
+
+  /api/rounds/{roundId}/goals/{goalId}:
+    parameters:
+      - name: roundId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: goalId
+        in: path
+        required: true
+        schema:
+          type: string
+    patch:
+      tags: [Goals]
+      summary: Move a goal to another status
+      security:
+        - managerSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  $ref: '#/components/schemas/RoundGoalStatus'
+      responses:
+        "200":
+          description: The goal was updated
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [goal]
+                properties:
+                  goal:
+                    $ref: '#/components/schemas/RoundGoal'
+        "400":
+          description: Unknown goal status
+        "403":
+          description: Manager organization scope is required
+        "404":
+          description: Survey round or goal not found
+        "500":
+          description: Failed to update round goal
+        "503":
+          description: Persistent storage is not configured for this deployment
+    delete:
+      tags: [Goals]
+      summary: Stop tracking a goal
+      description: >-
+        Removes the row. A school that changed its mind is not reporting an
+        outcome, so there is no status for it, and the same recommendation can
+        be chosen again afterwards.
+      security:
+        - managerSession: []
+      responses:
+        "200":
+          description: The goal was removed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted:
+                    type: boolean
+                    example: true
+                  roundId:
+                    type: string
+                  goalId:
+                    type: string
+        "403":
+          description: Manager organization scope is required
+        "404":
+          description: Survey round or goal not found
+        "500":
+          description: Failed to delete round goal
         "503":
           description: Persistent storage is not configured for this deployment
 
@@ -821,6 +992,46 @@ components:
         - certainty
         - organizational-climate
         - meaning
+    RoundGoalStatus:
+      type: string
+      enum: [selected, in_progress, done]
+    RoundGoal:
+      type: object
+      required: [id, roundId, dimensionId, title, body, status, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+        roundId:
+          type: string
+        dimensionId:
+          $ref: '#/components/schemas/WellbeingDimensionId'
+        title:
+          type: string
+          description: The recommendation's title as it read when the goal was chosen.
+          maxLength: 200
+        body:
+          type: string
+          maxLength: 2000
+        status:
+          $ref: '#/components/schemas/RoundGoalStatus'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    CreateRoundGoalRequest:
+      type: object
+      required: [dimensionId, title, body]
+      properties:
+        dimensionId:
+          $ref: '#/components/schemas/WellbeingDimensionId'
+        title:
+          type: string
+          maxLength: 200
+        body:
+          type: string
+          maxLength: 2000
     QuestionSuggestionRequest:
       type: object
       required: [dimensionId]

@@ -39,6 +39,7 @@ model SurveyRound {
   organization     Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   responses        SurveyResponse[]
   aiAnalysisRuns   AiAnalysisRun[]
+  goals            RoundGoal[]
 
   // A school runs one round at a time, enforced by the partial unique index
   // `survey_rounds_one_active_per_organization` on `(organization_id) where
@@ -46,6 +47,36 @@ model SurveyRound {
   // owned by migration `20260804120000_one_active_round_per_organization` and
   // changed by writing another migration rather than by editing this model.
   @@map("survey_rounds")
+}
+
+/**
+ * A recommendation a manager decided to work on.
+ *
+ * The title and body are copied here at the moment of the decision rather than
+ * referenced. A recommendation belongs to the analysis and is rewritten by the
+ * next run; a goal belongs to the school and must outlive it, otherwise
+ * "tracked" means nothing. That copy is also why there is no foreign key into
+ * the AI result: the goal is complete on its own.
+ */
+model RoundGoal {
+  id          String   @id @default(uuid())
+  roundId     String   @map("round_id")
+  dimensionId String   @map("dimension_id")
+  title       String
+  body        String
+  status      String   // 'selected' | 'in_progress' | 'done'
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  round SurveyRound @relation(fields: [roundId], references: [id], onDelete: Cascade)
+
+  // One recommendation becomes one goal. The service checks before inserting,
+  // which a double-tapped button passes twice; only the database can refuse
+  // atomically. The title is the recommendation's identity — the payload
+  // carries no id of its own.
+  @@unique([roundId, dimensionId, title])
+  @@index([roundId, createdAt])
+  @@map("round_goals")
 }
 
 model AiAnalysisRun {

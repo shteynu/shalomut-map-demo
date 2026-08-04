@@ -2,11 +2,13 @@ import {
   InMemoryAiAnalysisRunRepository,
   InMemoryAiInsightsRepository,
   InMemoryOrganizationRepository,
+  InMemoryRoundGoalRepository,
   InMemoryRoundRepository,
   InMemorySurveyRepository,
   PrismaAiAnalysisRunRepository,
   PrismaAiInsightsRepository,
   PrismaOrganizationRepository,
+  PrismaRoundGoalRepository,
   PrismaRoundRepository,
   PrismaSurveyRepository,
 } from '@/lib/repositories';
@@ -14,6 +16,7 @@ import type {
   IAiAnalysisRunRepository,
   IAiInsightsRepository,
   IOrganizationRepository,
+  IRoundGoalRepository,
   IRoundRepository,
   ISurveyRepository,
 } from '@/lib/repositories/interfaces';
@@ -37,11 +40,12 @@ export interface CoreRepositories {
   aiAnalysisRunRepo: IAiAnalysisRunRepository;
   aiInsightsRepo: IAiInsightsRepository;
   orgRepo: IOrganizationRepository;
+  roundGoalRepo: IRoundGoalRepository;
   roundRepo: IRoundRepository;
   surveyRepo: ISurveyRepository;
 }
 
-/** The durable wiring: one Prisma client, five repositories over it. */
+/** The durable wiring: one Prisma client, six repositories over it. */
 export function createPersistentRepositories(
   prisma: MinimalPrismaClient,
 ): CoreRepositories {
@@ -49,6 +53,7 @@ export function createPersistentRepositories(
     aiAnalysisRunRepo: new PrismaAiAnalysisRunRepository(prisma),
     aiInsightsRepo: new PrismaAiInsightsRepository(prisma),
     orgRepo: new PrismaOrganizationRepository(prisma),
+    roundGoalRepo: new PrismaRoundGoalRepository(prisma),
     roundRepo: new PrismaRoundRepository(prisma),
     surveyRepo: new PrismaSurveyRepository(prisma),
   };
@@ -67,6 +72,7 @@ export function createEphemeralRepositories(): CoreRepositories {
     aiAnalysisRunRepo: new InMemoryAiAnalysisRunRepository(),
     aiInsightsRepo: new InMemoryAiInsightsRepository(roundRepo),
     orgRepo: new InMemoryOrganizationRepository(),
+    roundGoalRepo: new InMemoryRoundGoalRepository(),
     roundRepo,
     surveyRepo: new InMemorySurveyRepository([]),
   };
@@ -111,6 +117,9 @@ export function overrideCoreRepositories(
     ephemeralRepositories.aiAnalysisRunRepo = repositories.aiAnalysisRunRepo;
   }
   if (repositories.orgRepo) ephemeralRepositories.orgRepo = repositories.orgRepo;
+  if (repositories.roundGoalRepo) {
+    ephemeralRepositories.roundGoalRepo = repositories.roundGoalRepo;
+  }
   if (repositories.roundRepo) {
     ephemeralRepositories.roundRepo = repositories.roundRepo;
     // An insights store can only answer for the rounds it can see, so a

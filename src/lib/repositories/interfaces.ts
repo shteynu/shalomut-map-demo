@@ -13,6 +13,12 @@ import type {
   EnqueueAiAnalysisRunResult,
   FinishAiAnalysisRunResult,
 } from '../types/ai-analysis-run';
+import type {
+  CreateRoundGoalInput,
+  CreateRoundGoalResult,
+  RoundGoal,
+  RoundGoalStatus,
+} from '../types/round-goal';
 
 export interface IOrganizationRepository {
   create(org: Organization): Promise<Organization>;
@@ -87,6 +93,29 @@ export interface IAiAnalysisRunRepository {
   findById(runId: string): Promise<AiAnalysisRun | null>;
   findLatestByRoundId(roundId: string): Promise<AiAnalysisRun | null>;
   deleteByRoundId(roundId: string): Promise<void>;
+}
+
+/**
+ * The goals a round carries. Every method is round-scoped, including the ones
+ * that already hold a goal id: authorization happens per round, so a repository
+ * that could reach a goal without naming its round would let a guessed id cross
+ * a school boundary the route already checked.
+ */
+export interface IRoundGoalRepository {
+  create(
+    roundId: string,
+    input: CreateRoundGoalInput,
+  ): Promise<CreateRoundGoalResult>;
+  findByRoundId(roundId: string): Promise<RoundGoal[]>;
+  updateStatus(
+    roundId: string,
+    goalId: string,
+    status: RoundGoalStatus,
+  ): Promise<RoundGoal | null>;
+  /** `false` when the round holds no such goal, which is a 404 and not a retry. */
+  delete(roundId: string, goalId: string): Promise<boolean>;
+  /** Returns how many were removed, which the reset audit entry records. */
+  deleteByRoundId(roundId: string): Promise<number>;
 }
 
 export interface ISurveyRepository {
