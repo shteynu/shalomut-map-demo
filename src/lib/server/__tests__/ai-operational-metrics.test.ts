@@ -6,6 +6,7 @@ import {
   recordAiJobCompleted,
   recordAiJobQueued,
   recordContractValidation,
+  recordDeterministicSummarySample,
   recordDuplicateSubmissionConflict,
   setOperationalMetricSinkForTests,
   type OperationalMetric,
@@ -95,4 +96,59 @@ test('contract, partial-map, and duplicate-submission metrics use bounded labels
     violationCode: 'partial_map',
   });
   assert.strictEqual(metrics[1]?.value, 1);
+});
+
+
+test('an accepted map reports how much of it the service wrote itself', () => {
+  const metrics: OperationalMetric[] = [];
+  setOperationalMetricSinkForTests((metric) => metrics.push(metric));
+
+  recordDeterministicSummarySample({
+    contractVersion: '6.0',
+    outcomes: [
+      'llm',
+      ...Array.from({ length: 7 }, () => 'deterministic_fallback'),
+    ],
+    roundId: 'round-1',
+    runId: 'run-1',
+  });
+
+  // The shape of the pilot run: one dimension the model wrote and seven the
+  // provider never answered, reported as a success either way.
+  assert.strictEqual(metrics[0]?.name, 'ai_deterministic_summary_ratio_sample');
+  assert.strictEqual(metrics[0]?.value, 7 / 8);
+  assert.deepStrictEqual(metrics[0]?.labels, {
+    contractVersion: '6.0',
+    dimensions: '8',
+    deterministic: '7',
+  });
+});
+
+test('a map the model wrote reports a zero share rather than nothing', () => {
+  // A metric that is only emitted when something went wrong has no
+  // denominator, and a share with no denominator cannot be read as a rate.
+  const metrics: OperationalMetric[] = [];
+  setOperationalMetricSinkForTests((metric) => metrics.push(metric));
+
+  recordDeterministicSummarySample({
+    contractVersion: '6.0',
+    outcomes: ['llm', 'llm'],
+    roundId: 'round-1',
+  });
+
+  assert.strictEqual(metrics.length, 1);
+  assert.strictEqual(metrics[0]?.value, 0);
+});
+
+test('a map with no stones emits nothing rather than dividing by zero', () => {
+  const metrics: OperationalMetric[] = [];
+  setOperationalMetricSinkForTests((metric) => metrics.push(metric));
+
+  recordDeterministicSummarySample({
+    contractVersion: '6.0',
+    outcomes: [],
+    roundId: 'round-1',
+  });
+
+  assert.deepStrictEqual(metrics, []);
 });

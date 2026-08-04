@@ -13,6 +13,7 @@ export type OperationalMetricName =
   | 'ai_job_callback_delivery_latency_ms'
   | 'ai_contract_validation_failures'
   | 'ai_partial_map_ratio_sample'
+  | 'ai_deterministic_summary_ratio_sample'
   | 'duplicate_submission_conflicts';
 
 export interface OperationalMetric {
@@ -225,6 +226,39 @@ export function recordValidMapSample(input: {
     value: 0,
     unit: 'ratio_sample',
     labels: { contractVersion: input.contractVersion },
+    runId: input.runId,
+    roundId: input.roundId,
+  });
+}
+
+/**
+ * How much of an accepted map the service wrote itself.
+ *
+ * Contract 6.0 never fails a dimension over a silent provider: it falls back
+ * to copy derived from the aggregates and reports the round a success. That is
+ * a deliberate product choice, but it leaves `ai_jobs_succeeded` unable to
+ * distinguish a round the model wrote from one it never answered, and a
+ * rate-limited key produces the second while looking like the first.
+ */
+export function recordDeterministicSummarySample(input: {
+  contractVersion: string;
+  outcomes: string[];
+  runId?: string;
+  roundId: string;
+}) {
+  if (input.outcomes.length === 0) return;
+  const deterministic = input.outcomes.filter(
+    (outcome) => outcome === 'deterministic_fallback',
+  ).length;
+  emit({
+    name: 'ai_deterministic_summary_ratio_sample',
+    value: deterministic / input.outcomes.length,
+    unit: 'ratio_sample',
+    labels: {
+      contractVersion: input.contractVersion,
+      dimensions: String(input.outcomes.length),
+      deterministic: String(deterministic),
+    },
     runId: input.runId,
     roundId: input.roundId,
   });

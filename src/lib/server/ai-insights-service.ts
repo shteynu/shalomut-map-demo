@@ -11,6 +11,7 @@ import { AnalyticsService } from '@/lib/services/analytics.service';
 import {
   recordAiJobCompleted,
   recordContractValidation,
+  recordDeterministicSummarySample,
   recordValidMapSample,
 } from '@/lib/server/ai-operational-metrics';
 import { verifyAiResultAgainstRound } from '@/lib/server/verify-ai-result';
@@ -205,6 +206,14 @@ export async function applyAiInsightsCallback(
   if (!runId || completionOutcome === 'transitioned') {
     recordValidMapSample({
       contractVersion: validation.value.contractVersion,
+      roundId,
+      runId: runId ?? undefined,
+    });
+    recordDeterministicSummarySample({
+      contractVersion: validation.value.contractVersion,
+      outcomes: Object.values(validation.value.stones ?? {}).map(
+        (stone) => stone.generationProvenance?.outcome ?? 'unknown',
+      ),
       roundId,
       runId: runId ?? undefined,
     });

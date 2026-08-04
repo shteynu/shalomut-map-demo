@@ -16,6 +16,10 @@ import { overrideCoreRepositories, resetCoreRepositories } from '@/lib/compositi
 import { surveyInstrument } from '@/lib/shalomut-source';
 import { DEFAULT_PRODUCED_ANALYTICS_CONTRACT_VERSION } from '@/lib/ai-contract-version';
 import { AI_ANALYTICS_V6_CONTRACT_VERSION } from '@/lib/ai-contract';
+import {
+  setOperationalMetricSinkForTests,
+  type OperationalMetric,
+} from '@/lib/server/ai-operational-metrics';
 import type {
   AnswerValue,
   SurveyDefinition,
@@ -328,6 +332,11 @@ test('two dynamic questionnaires cross Core MCP -> Python -> callback with exact
         assert.strictEqual(aggregateRejection.status, 400);
       }
 
+      // How much of the accepted map the service wrote itself, measured on the
+      // real payload Python just produced rather than on a hand-built one.
+      const metrics: OperationalMetric[] = [];
+      setOperationalMetricSinkForTests((metric) => metrics.push(metric));
+
       const callbackResponse = await postInsightsHandler(
         new Request(
           `http://localhost:3000/api/rounds/${fixture.roundId}/ai-insights`,
@@ -345,6 +354,14 @@ test('two dynamic questionnaires cross Core MCP -> Python -> callback with exact
         200,
         JSON.stringify(callbackBody),
       );
+
+      setOperationalMetricSinkForTests(null);
+      const share = metrics.find(
+        (metric) => metric.name === 'ai_deterministic_summary_ratio_sample',
+      );
+      assert.ok(share, 'an accepted map reports its deterministic share');
+      assert.strictEqual(share.labels?.dimensions, '8');
+      assert.strictEqual(share.roundId, fixture.roundId);
 
       const getResponse = await getInsightsHandler(
         new Request(
