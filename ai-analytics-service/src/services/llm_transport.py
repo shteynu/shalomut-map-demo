@@ -8,8 +8,6 @@ answer is the caller's business and arrives as a predicate — this module never
 reads the Hebrew it carries.
 """
 
-from datetime import datetime, timezone
-from email.utils import parsedate_to_datetime
 import json
 import logging
 import random
@@ -21,6 +19,7 @@ import urllib.request
 from src.config import settings
 from src.services.hebrew_validation import sanitize_model_text
 from src.services.provider_rate_limit import provider_rate_limiter
+from src.services.retry_after import parse_retry_after
 
 logger = logging.getLogger(__name__)
 
@@ -428,7 +427,7 @@ def retry_delay_seconds(
     error: urllib.error.HTTPError,
     attempt: int,
 ) -> float:
-    retry_after = _parse_retry_after(
+    retry_after = parse_retry_after(
         error.headers.get("Retry-After"),
     )
     return _backoff_delay_seconds(attempt, retry_after)
@@ -457,24 +456,6 @@ def _backoff_delay_seconds(
         exponential_delay + jitter,
         settings.llm_retry_max_delay_seconds,
     )
-
-
-def _parse_retry_after(value: str | None) -> float | None:
-    if not value:
-        return None
-    try:
-        return max(0.0, float(value))
-    except ValueError:
-        try:
-            retry_at = parsedate_to_datetime(value)
-            if retry_at.tzinfo is None:
-                retry_at = retry_at.replace(tzinfo=timezone.utc)
-            return max(
-                0.0,
-                (retry_at - datetime.now(timezone.utc)).total_seconds(),
-            )
-        except (TypeError, ValueError, OverflowError):
-            return None
 
 
 def _safe_log_token(value: object) -> str:
