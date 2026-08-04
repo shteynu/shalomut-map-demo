@@ -274,6 +274,33 @@ the row is the evidence that the round's input moved. `ai_jobs_rearmed` counts
 these, and its rate is the measurement that says whether the durable run needs
 to carry its own immutable input.
 
+### ADR-017: A lost reply is retried; a verdict is not
+
+The Stone Map behind one callback costs roughly two dozen provider calls, and
+the sink used to make exactly one HTTP attempt. A dropped connection therefore
+threw the analysis away — including the case where Core had already persisted
+it and only the answer was lost.
+
+`HttpResultSink.deliver` now makes up to four attempts with exponential backoff
+and jitter. What it retries is the class of answer that judges nothing: `408`,
+`425`, `429`, every `5xx`, and transport failures. What it does not retry is
+Core's opinion of the payload — `400` rejected, `404` unknown run, `409` stale
+lease, `401` unauthorized. Repeating those repeats the verdict at the cost of
+another delivery.
+
+The retry is safe because every attempt sends the same bytes under the same run
+identity, and `finish` recognises an identical result for a run already in that
+state as a duplicate rather than a second write. Core answers `200` with
+`duplicate: true`, so a lost reply resolves as the success it always was.
+
+The split is in the code as well as the policy: `post` is one attempt and
+carries the classification, `deliver` is the port's promise and owns the
+budget. Nothing about delivery state is persisted — the worker heartbeats
+through the retries so the budget stays inside the lease, and Core's
+`callbackReceivedAt` already records the acknowledgement. A separate delivery
+record would be the right shape only once something outside the worker needed
+to read the attempt history.
+
 ## Environments
 
 The project supports exactly two environments:

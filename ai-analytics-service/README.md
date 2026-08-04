@@ -408,6 +408,18 @@ unhandled worker exception is reported through Core's failure endpoint. Core
 can therefore recover abandoned work without treating a `202` acknowledgement
 as completion.
 
+Callback delivery is retried, bounded at four attempts with exponential backoff
+from `1s`, capped at `8s`, with up to `0.5s` jitter and `Retry-After` honored as
+sent. Only answers that judge nothing are retried — `408`, `425`, `429`, every
+`5xx`, and dropped connections or timeouts, which are the case where Core may
+have persisted the result and lost only the reply. A `400` rejected payload, a
+`404` unknown run, a `409` stale lease and a `401` are verdicts on the analysis,
+and repeating the request repeats the verdict, so they end delivery at once.
+Every attempt sends the same bytes under the same run identity, which is what
+lets Core answer a repeat with `200` and `duplicate: true` rather than storing
+it twice. The worker heartbeats throughout, so the retry budget cannot outlive
+the lease it is delivering for.
+
 `POST /api/v1/webhook/events` remains available for rollback compatibility. It
 still authenticates, answers `202 Accepted`, and runs the pipeline in an
 in-process background task, but new Core enqueue flows do not use it as their
