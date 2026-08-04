@@ -154,6 +154,15 @@ state, external blockers and approval gates. Product milestones belong in
 - Runtime contract details and the rollout rule are canonical in
   `docs/ai-contract-version-matrix.md`; do not reconstruct them from old rollout
   plans.
+- A durable run still refetches the round's aggregates instead of owning an
+  immutable snapshot, so a response landing mid-analysis fails the callback with
+  `round_validation_failed`. Since 2026-08-04 the automatic path retries that
+  one failure up to three runs per round (`PROJECT_CONTEXT.md` ADR-016); before
+  that a single late response left the round with no analysis and no signal.
+  The new `ai_jobs_rearmed` operational metric counts the retries. **Its rate is
+  the evidence for whether to build the immutable input snapshot**, which is
+  Phase 1 of the AI harness improvement plan the owner is holding outside the
+  repository.
 
 ## Operational invariants
 
