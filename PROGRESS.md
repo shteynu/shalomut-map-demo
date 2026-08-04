@@ -41,6 +41,9 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 - The map shows the change against the previous measured round — per stone and
   overall — naming the round it compared with and skipping any round that never
   reached its privacy threshold.
+- Map stones move with the arrow keys as well as the pointer, reset returns
+  focus to the map and announces itself, and stone motion is instant under
+  `prefers-reduced-motion`.
 - Anonymous respondent flow with stable attempt tokens and database-enforced
   idempotency.
 - Explicit informed consent before the first question, stating the guarantees
@@ -112,8 +115,7 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
    rather than in the schema.
 2. Decide whether recommendations become tracked goals/action plans.
 3. Improve survey-builder recovery/search/bulk/reorder behavior.
-4. Complete keyboard/reduced-motion support for the interactive map.
-5. Report clipboard permission failure honestly instead of treating it as a
+4. Report clipboard permission failure honestly instead of treating it as a
    successful copy.
 
 The backlog was reconciled with the owner's development requirements document

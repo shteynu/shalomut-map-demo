@@ -108,18 +108,27 @@ Why it matters:
 - A real 24-question instrument is small but still benefits from fast review and batch editing.
 - Visible drag handles imply a behaviour that is not fully implemented yet.
 
-### 4. Dashboard Map Accessibility
+### 4. Dashboard Map Accessibility (completed 2026-08-04)
 
-Current state: desktop stones can be dragged, mobile stones are tap-first, and
-the conditional reset control is a native keyboard-focusable button. Several
-map transitions already honor `prefers-reduced-motion`.
+Current state: desktop stones can be dragged and moved with the arrow keys —
+one step per press, a large step with Shift, and never past the edge of the
+stage. Mobile stays tap-first; the arrows are ignored below the drag breakpoint,
+where there is nothing to rearrange. The map hint says so in Hebrew.
 
-Proposal:
-- Add keyboard nudge controls for selected stones on desktop.
-- Verify focus/announcement behavior after pointer movement and reset.
-- Audit drag and hover transitions so every relevant motion path honors
-  `prefers-reduced-motion`.
-- Consider saving customized map positions per session if rearrangement becomes a product feature.
+Pressing reset removes the control that has focus, so focus moves to the map
+itself and a `role="status"` line announces that the stones went back. The stage
+takes focus only when it is given, never on the way through.
+
+The stone's own motion — pointer or keyboard — is instant under
+`prefers-reduced-motion`, as is the reset button's hover lift. Colour and shadow
+transitions stay: they are not motion. A rearranged map already persists in
+`localStorage`.
+
+Remaining:
+- No announcement per nudge. A stone that moves sixteen pixels does not warrant
+  interrupting a screen reader on every keypress; if rearranging becomes
+  meaningful rather than cosmetic, a position summary on blur would be the way.
+- Screen-reader output has not been heard, only the markup verified.
 
 Why it matters:
 - The map is a core interaction, so keyboard and reduced-motion support should match its importance.
