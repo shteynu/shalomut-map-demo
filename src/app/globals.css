@@ -2952,6 +2952,164 @@ textarea {
   line-height: 1.5;
 }
 
+/* The goals panel under the recommendation stage. Deliberately a panel and not
+   another set of blobs: the stage is the picture, and this is the decision the
+   school made about it, so it should not compete visually with the advice. */
+.dashboard-goals-panel {
+  width: min(76rem, 100%);
+  margin: 2.6rem auto 0;
+  padding: 1.6rem 1.8rem;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-panel-organic);
+  background: var(--surface-panel);
+  box-shadow: var(--shadow-ambient);
+}
+
+.dashboard-goals-heading h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.4rem;
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.dashboard-goals-heading .quiet-note {
+  margin: 0;
+  max-width: 46rem;
+}
+
+.dashboard-goals-note {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 1rem 0 0;
+}
+
+.dashboard-goals-error {
+  margin: 1rem 0 0;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--red-strong);
+  border-radius: var(--radius-control);
+  background: var(--surface-panel-strong);
+  color: var(--danger-ink);
+  font-weight: 700;
+}
+
+.dashboard-goal-list {
+  display: grid;
+  gap: 0.7rem;
+  margin: 1.2rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dashboard-goal-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem 1.2rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+}
+
+/* A tracked goal is marked by the border weight as well as the status control,
+   so the distinction does not rest on colour alone. */
+.dashboard-goal-row.is-tracked {
+  border-color: var(--ink);
+  background: var(--surface-strong);
+}
+
+.dashboard-goal-text {
+  flex: 1 1 22rem;
+  min-width: 0;
+}
+
+.dashboard-goal-text h3 {
+  margin: 0;
+  font-size: 1.02rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.dashboard-goal-provenance {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin: 0.35rem 0 0;
+}
+
+.dashboard-goal-provenance svg {
+  flex: none;
+  margin-top: 0.15rem;
+}
+
+.dashboard-goal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.dashboard-goal-status {
+  display: inline-flex;
+  padding: 0.2rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  background: var(--surface-panel-strong);
+}
+
+.dashboard-goal-status-option {
+  min-height: 2.25rem;
+  padding: 0.35rem 0.9rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.dashboard-goal-status-option.is-current {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--cream);
+  cursor: default;
+}
+
+.dashboard-goal-status-option:disabled {
+  cursor: progress;
+  opacity: 0.6;
+}
+
+.dashboard-goal-track,
+.dashboard-goal-remove {
+  min-height: 2.5rem;
+}
+
+@media (max-width: 640px) {
+  .dashboard-goals-panel {
+    padding: 1.2rem 1rem;
+    border-radius: var(--radius-organic-mobile);
+  }
+
+  .dashboard-goal-actions {
+    width: 100%;
+  }
+
+  .dashboard-goal-status {
+    flex: 1 1 auto;
+  }
+
+  .dashboard-goal-status-option {
+    flex: 1 1 auto;
+  }
+}
+
 .dashboard-recommendation-blob-top-left {
   grid-column: 1 / span 3;
   min-height: 13.6rem;

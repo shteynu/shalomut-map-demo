@@ -14,6 +14,7 @@ import { useAiInsights } from "@/lib/hooks/use-ai-insights";
 import { getDashboardRecommendationsActions, navigationLabels } from "@/lib/navigation";
 import { DashboardAiInsightsState } from "./dashboard-ai-insights-state";
 import { DashboardCtaRow } from "./dashboard-cta-row";
+import { DashboardGoalsPanel } from "./dashboard-goals-panel";
 import { DashboardHeading } from "./dashboard-heading";
 import { DimensionIdentityChip } from "./dimension-identity-chip";
 import { RecommendationBlob } from "./recommendation-blob";
@@ -198,6 +199,13 @@ export function DashboardRecommendationsStage({
           );
         })}
       </section>
+
+      <DashboardGoalsPanel
+        roundId={roundId}
+        dimensionId={dimension.id}
+        dimensionLabel={dimension.conceptLabel}
+        recommendations={recommendations}
+      />
 
       <DashboardCtaRow
         center

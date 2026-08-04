@@ -1,6 +1,7 @@
 export * from "./dashboard-cta-row";
 export * from "./dashboard-ai-insights-state";
 export * from "./dashboard-dimension-page";
+export * from "./dashboard-goals-panel";
 export * from "./dashboard-heading";
 export * from "./dashboard-home-link";
 export * from "./dashboard-map-interactive";
