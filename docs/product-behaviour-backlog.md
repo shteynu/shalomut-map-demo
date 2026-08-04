@@ -302,9 +302,16 @@ Remaining:
   deliberate hold, not an open task.
 - Decide whether archived rounds belong in the switcher; today they are listed
   last rather than hidden.
-- Make the single-active-round rule durable in the schema — a partial unique
-  index on `(organization_id) where status = 'active'`. Today it is upheld by
-  `RoundService` alone.
+
+Done 2026-08-04: the single-active-round rule is durable in the database. The
+partial unique index `survey_rounds_one_active_per_organization` on
+`(organization_id) where status = 'active'` refuses a second active round, so
+the rule no longer rests on `RoundService` alone. The service now closes the
+previous round *before* the next one goes live — the other order would be
+refused by the index, and this one fails in the safer direction: a lost write
+leaves a school with no running round rather than two. Only `active` is
+constrained; drafts, closed and archived rounds are the history a second round
+extends, so a school may hold any number of them.
 
 Why it matters:
 - Repeat measurement is the product's stated second act; without history the

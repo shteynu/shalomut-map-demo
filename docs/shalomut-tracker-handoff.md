@@ -1,6 +1,6 @@
 # Shalomut Tracker — operational handoff
 
-Updated: 2026-08-04 (seven manager-facing slices merged). This
+Updated: 2026-08-04 (deployment checked; single-active-round index pending). This
 document owns only cross-task operational/deployed
 state, external blockers and approval gates. Product milestones belong in
 `PROGRESS.md`; branch work and exact verification belong in
@@ -8,7 +8,8 @@ state, external blockers and approval gates. Product milestones belong in
 
 ## Repository snapshot
 
-- `origin/main` is `6d574b7` and published. Seven slices reached it on
+- `origin/main` is `3adb18a` and published — `6d574b7` plus the session-close
+  documentation commit. Seven slices reached it on
   2026-08-03/04, each as a fast-forward the owner pushed themselves — the agent
   cannot push in this environment, so every branch was handed over as a command:
   shared scoring bands, round selection on the dashboard, round creation with
@@ -22,8 +23,17 @@ state, external blockers and approval gates. Product milestones belong in
 - Checkpoint evidence at `6d574b7`: `npm run verify:core` passed with 481
   TypeScript tests. `verify:db` and `verify:ai` were **not** run across these
   seven slices — none of them touched a schema, a migration, a contract version
-  or the Python service. Run the full `npm run verify` before the next
-  deployment-sensitive change.
+  or the Python service.
+- That gap is closed. On 2026-08-04 the full `npm run verify` passed with exit
+  code 0 on `feat/one-active-round-index`: 481 TypeScript tests, both fitness
+  checks, typecheck, ESLint, production build; 12 PostgreSQL tests; 375 Python
+  tests.
+- **One branch is waiting to reach `main`:** `feat/one-active-round-index`,
+  based on `3adb18a`, unpushed. It adds the partial unique index that makes the
+  single-active-round rule durable in the database, plus the write ordering that
+  keeps the ordinary path off the constraint. Details and the owner's two
+  commands are in
+  `docs/agent-tasks/active/feat--one-active-round-index.md`.
 - Earlier snapshot, superseded: `origin/main` was `87027a5` after
   `feat/respondent-draft-and-consent`, which the owner pushed on 2026-08-03.
 - **The local `main` is behind `origin/main` and cannot be updated from this
@@ -58,7 +68,8 @@ state, external blockers and approval gates. Product milestones belong in
 - `feat/respondent-draft-and-consent` reached `main` as `87027a5`, carrying
   respondent consent, draft recovery, the submit `409` contract and this
   snapshot. It is fully contained in `main` and can be deleted.
-- No branch is waiting to reach `main`.
+- Apart from `feat/one-active-round-index` above, no branch is waiting to reach
+  `main`.
 - The repository record does not claim that this final refactoring stack has
   been deployed. Verify deployment source/health before relying on it at the
   deployed endpoint.
@@ -74,7 +85,9 @@ state, external blockers and approval gates. Product milestones belong in
   mechanism; scale-to-zero alone is not a reliable worker.
 - Database: the confirmed deployed Supabase PostgreSQL target contained all
   seven repository migrations after `prisma migrate deploy` and a successful
-  follow-up `prisma migrate status` on 2026-08-02.
+  follow-up `prisma migrate status` on 2026-08-02. The repository now holds an
+  eighth, `20260804120000_one_active_round_per_organization`, which has **not**
+  been applied there — it lands with `feat/one-active-round-index`.
 - No real respondents or production data exist. Database contents are
   disposable at this stage.
 
@@ -120,16 +133,22 @@ Before the next deployment-sensitive task, compare `origin/main` with deployed
 Core and Python source/health, then record only fresh read-only evidence in the
 new branch task file.
 
-Deployed Core additionally lags `main` by the consent step, the draft recovery,
-the submit `409` contract and the seven 2026-08-03/04 manager slices listed in
-the repository snapshot. None of them touches a schema, a migration or an AI
-contract version, so the gap is a redeploy, not a coordination problem.
+**Deployed Core is not behind `main`.** Checked read-only on 2026-08-04: the
+GitHub integration builds every push to `main`, and the deployment holding
+`shalomut-map-demo.vercel.app` is `dpl_8BUBFVB15Q27gydmNLq3xvN83bsG`, ready,
+built from `main` at `3adb18a` — the current tip. The seven 2026-08-03/04
+slices, the consent step, the draft recovery and the submit `409` contract are
+all live; each push produced its own production deployment. No manual redeploy
+is pending. Earlier snapshots of this document claimed a ten-slice lag; that was
+written before those deployments finished and is superseded.
 
-One thing the redeploy does carry: after it, activating a round closes whichever
-round that school was running (`PROJECT_CONTEXT.md` ADR-014). The rule is
-enforced in `RoundService`, not in the schema — the durable form is a partial
-unique index on `(organization_id) where status = 'active'`, tracked in
-`docs/product-behaviour-backlog.md` §10.
+What the deployed endpoint therefore already does: activating a round closes
+whichever round that school was running (`PROJECT_CONTEXT.md` ADR-014).
+
+The functional half of this check is unfinished: every route the agent could
+reach redirects to `/login`, so the read-only evidence above is deployment
+metadata, not deployed behaviour. Exercising a manager screen needs the owner's
+credentials.
 
 `main` moved on 2026-08-03: the Core composition root and the Dashboard
 presentation DTO are both merged, which closes stage 4 of the refactoring plan
