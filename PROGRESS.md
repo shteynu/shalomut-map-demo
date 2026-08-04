@@ -6,22 +6,24 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 
 ## Current state
 
-- `origin/main` is `6d574b7`: the 2026-08-02 refactoring stack, the Dashboard
-  DTO slice, and seven manager-facing slices merged on 2026-08-03/04 — shared
+- `origin/main` is `26f4c37`: the 2026-08-02 refactoring stack, the Dashboard
+  DTO slice, seven manager-facing slices merged on 2026-08-03/04 — shared
   scoring bands, round selection, round creation, the map comparison, map
   keyboard and reduced-motion support, clipboard failure states and the builder
-  list work.
+  list work — and three more on 2026-08-04: the single-active-round index, the
+  "last saved" line, and the builder's keyboard accelerators.
 - Contract `6.0` is deployed end to end and the deployed Core explicitly
   produces it. The unset configuration default remains rollback-safe `5.0`.
 - The six latest architecture slices are in `main`: separate AI-insights
   repository, thin callback route, canonical Core analytics input, canonical
   Python analysis output, application runner ports and `TextGenerator`.
-- The checkpoint at `6d574b7` passed `npm run verify:core` with 481 TypeScript
-  tests. `verify:db` and `verify:ai` were not re-run across the 2026-08-03/04
-  slices: none of them touched a schema, a migration, a contract version or the
-  Python service. Counts are checkpoint evidence, not evergreen expectations.
-- All seven repository migrations were applied to the confirmed deployed
-  database and to the local test database at the recorded checkpoint.
+- The checkpoint at `26f4c37` passed the full `npm run verify`: 498 TypeScript
+  tests, 12 PostgreSQL tests and 375 Python tests, with both fitness checks,
+  typecheck, ESLint and the production build. Counts are checkpoint evidence,
+  not evergreen expectations.
+- All eight repository migrations are applied to the confirmed deployed database
+  and to the local test database; the eighth, the single-active-round index,
+  landed on 2026-08-04.
 - There are no real respondents or production data. The deployed Vercel alias
   remains an operational staging endpoint for the design stage.
 

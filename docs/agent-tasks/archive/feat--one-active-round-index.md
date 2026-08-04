@@ -10,7 +10,7 @@
   `.idea/shalomut-map-demo.iml` and generated `next-env.d.ts`
 - Git state: both commits are local and unpushed; visible only in this worktree
   until the owner pushes the branch
-- Status: implementation complete, verified, unpushed
+- Status: merged into `main` and archived
 - Last updated: 2026-08-04
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -144,3 +144,13 @@ Then, with the deployed `DATABASE_URL`/`DIRECT_URL` in the environment:
 ```bash
 npm run db:migrate:deploy
 ```
+
+## Outcome
+
+Merged into `main` as part of `26f4c37` (2026-08-04) and the migration was
+applied to the deployed Supabase database the same day: `prisma migrate status`
+reports the schema up to date with eight migrations, and
+`survey_rounds_one_active_per_organization` is present there as a partial unique
+index on `(organization_id) WHERE status = 'active'`. No school held two active
+rounds at the time it was created, so the migration's cleanup step changed
+nothing.

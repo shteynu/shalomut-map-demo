@@ -6,7 +6,7 @@
 - Base branch: `feat/one-active-round-index` (which is based on `main` = `3adb18a`)
 - Base commit: `166c300`
 - Current HEAD: the two commits listed under `Git state`
-- Status: implementation complete, verified locally, unpushed
+- Status: merged into `main` and archived
 - Last updated: 2026-08-04
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -117,3 +117,8 @@ came with the index branch to the deployed database.
 ```bash
 git push origin feat/last-saved-timestamp:main
 ```
+
+## Outcome
+
+Merged into `main` as part of `26f4c37` (2026-08-04). No deployment step of its
+own: the Vercel GitHub integration builds every push to `main`.

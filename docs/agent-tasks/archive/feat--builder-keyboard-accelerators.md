@@ -6,7 +6,7 @@
 - Base branch: `feat/last-saved-timestamp` (itself on `feat/one-active-round-index`, on `main` = `3adb18a`)
 - Base commit: `a394e60`
 - Current HEAD: the two commits under `Git state`
-- Status: implementation complete, verified locally, unpushed
+- Status: merged into `main` and archived
 - Last updated: 2026-08-04
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -132,3 +132,8 @@ git push origin feat/builder-keyboard-accelerators:main
 
 Then apply the migration from the index slice to the deployed database with
 `npm run db:migrate:deploy`.
+
+## Outcome
+
+Merged into `main` as `26f4c37` (2026-08-04). No deployment step of its own.
+The macOS `Option`+letter composition question stays open and unverified.

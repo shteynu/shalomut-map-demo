@@ -1,6 +1,6 @@
 # Shalomut Tracker — operational handoff
 
-Updated: 2026-08-04 (deployment checked; three branches pending a push). This
+Updated: 2026-08-04 (three slices merged, deployed and migrated). This
 document owns only cross-task operational/deployed
 state, external blockers and approval gates. Product milestones belong in
 `PROGRESS.md`; branch work and exact verification belong in
@@ -8,8 +8,7 @@ state, external blockers and approval gates. Product milestones belong in
 
 ## Repository snapshot
 
-- `origin/main` is `3adb18a` and published — `6d574b7` plus the session-close
-  documentation commit. Seven slices reached it on
+- `origin/main` is `26f4c37` and published. Seven slices reached it on
   2026-08-03/04, each as a fast-forward the owner pushed themselves — the agent
   cannot push in this environment, so every branch was handed over as a command:
   shared scoring bands, round selection on the dashboard, round creation with
@@ -28,25 +27,17 @@ state, external blockers and approval gates. Product milestones belong in
   code 0 on `feat/one-active-round-index`: 481 TypeScript tests, both fitness
   checks, typecheck, ESLint, production build; 12 PostgreSQL tests; 375 Python
   tests.
-- **Three stacked branches are waiting to reach `main`,** all unpushed. Pushing
-  the last one lands all three; the third is
-  `feat/builder-keyboard-accelerators`, the builder's per-question keyboard
-  chords, closing backlog §3
-  (`docs/agent-tasks/active/feat--builder-keyboard-accelerators.md`). The two
-  below it:
-  `feat/one-active-round-index` (based on `3adb18a`) adds the partial unique
-  index that makes the single-active-round rule durable in the database, plus
-  the write ordering that keeps the ordinary path off the constraint;
-  `feat/last-saved-timestamp` sits on top of it and adds the "last saved" line
-  to setup and builder, with a `savedAt` on both save responses. Details and the
-  owner's commands are in
-  `docs/agent-tasks/active/feat--one-active-round-index.md` and
-  `docs/agent-tasks/active/feat--last-saved-timestamp.md`.
-- The full `npm run verify` passed again at the tip of each of the two branches
-  above on 2026-08-04: 488 TypeScript tests at `feat/last-saved-timestamp` and
-  498 at `feat/builder-keyboard-accelerators`, both with 12 PostgreSQL tests,
-  375 Python tests, both fitness checks, typecheck, ESLint and the production
-  build.
+- Three slices reached `main` on 2026-08-04 as `26f4c37`, pushed by the owner:
+  the partial unique index behind the single-active-round rule
+  (`feat/one-active-round-index`), the "last saved" line on setup and builder
+  (`feat/last-saved-timestamp`), and the builder's keyboard accelerators
+  (`feat/builder-keyboard-accelerators`). All three branches are fully contained
+  in `main` and can be deleted; their task files are in
+  `docs/agent-tasks/archive/`.
+- `npm run verify` passed at the tip of each of those three branches on
+  2026-08-04 — 481, 488 and 498 TypeScript tests as the slices added theirs,
+  each run with 12 PostgreSQL tests, 375 Python tests, both fitness checks,
+  typecheck, ESLint and the production build. The count at `main` is 498.
 - Observable API change, additive: `PUT /api/manager/setup` and
   `PUT /api/rounds/{roundId}/survey-definition` now return `savedAt`. Both are
   documented in `docs/openapi.yaml`; the survey-definition `200` body had no
@@ -85,7 +76,7 @@ state, external blockers and approval gates. Product milestones belong in
 - `feat/respondent-draft-and-consent` reached `main` as `87027a5`, carrying
   respondent consent, draft recovery, the submit `409` contract and this
   snapshot. It is fully contained in `main` and can be deleted.
-- Apart from the three branches above, no branch is waiting to reach `main`.
+- No branch is waiting to reach `main`.
 - The repository record does not claim that this final refactoring stack has
   been deployed. Verify deployment source/health before relying on it at the
   deployed endpoint.
@@ -101,9 +92,13 @@ state, external blockers and approval gates. Product milestones belong in
   mechanism; scale-to-zero alone is not a reliable worker.
 - Database: the confirmed deployed Supabase PostgreSQL target contained all
   seven repository migrations after `prisma migrate deploy` and a successful
-  follow-up `prisma migrate status` on 2026-08-02. The repository now holds an
-  eighth, `20260804120000_one_active_round_per_organization`, which has **not**
-  been applied there — it lands with `feat/one-active-round-index`.
+  follow-up `prisma migrate status` on 2026-08-02. The eighth,
+  `20260804120000_one_active_round_per_organization`, was applied there on
+  2026-08-04: `prisma migrate status` reports the schema up to date, and a
+  read-back confirms `survey_rounds_one_active_per_organization` exists as a
+  partial unique index on `(organization_id) WHERE status = 'active'`. No school
+  held two active rounds when it was created, so the migration's cleanup step
+  changed no row. The deployed database holds one round, and it is active.
 - No real respondents or production data exist. Database contents are
   disposable at this stage.
 
@@ -149,28 +144,27 @@ Before the next deployment-sensitive task, compare `origin/main` with deployed
 Core and Python source/health, then record only fresh read-only evidence in the
 new branch task file.
 
-**Deployed Core is not behind `main`.** Checked read-only on 2026-08-04: the
-GitHub integration builds every push to `main`, and the deployment holding
-`shalomut-map-demo.vercel.app` is `dpl_8BUBFVB15Q27gydmNLq3xvN83bsG`, ready,
-built from `main` at `3adb18a` — the current tip. The seven 2026-08-03/04
-slices, the consent step, the draft recovery and the submit `409` contract are
-all live; each push produced its own production deployment. No manual redeploy
-is pending. Earlier snapshots of this document claimed a ten-slice lag; that was
+**Deployed Core is not behind `main`.** Checked read-only on 2026-08-04 after
+today's push: the GitHub integration builds every push to `main`, and the
+deployment holding `shalomut-map-demo.vercel.app` is
+`dpl_Av1HzCVroARXid6tfYeQ9mpXTgyC`, ready, built from `main` at `26f4c37` — the
+current tip. Everything merged today is live, and no manual redeploy is ever
+pending. Earlier snapshots of this document claimed a ten-slice lag; that was
 written before those deployments finished and is superseded.
 
 What the deployed endpoint therefore already does: activating a round closes
-whichever round that school was running (`PROJECT_CONTEXT.md` ADR-014).
+whichever round that school was running (`PROJECT_CONTEXT.md` ADR-014), and the
+deployed database now refuses a second active round rather than trusting the
+service to close the first.
 
 The functional half of this check is unfinished: every route the agent could
 reach redirects to `/login`, so the read-only evidence above is deployment
 metadata, not deployed behaviour. Exercising a manager screen needs the owner's
 credentials.
 
-`main` moved on 2026-08-03: the Core composition root and the Dashboard
-presentation DTO are both merged, which closes stage 4 of the refactoring plan
-and the presentation half of stage 5. Deployed Core has not been updated for
-either, so deployed and `main` differ by these two slices until the next
-deployment. Neither changes an API, a contract version, a schema or a migration.
+The Core composition root and the Dashboard presentation DTO, which closed
+stage 4 of the refactoring plan and the presentation half of stage 5, are merged
+and deployed with everything else on `main`.
 
 The long-term identity model is no longer the next architecture slice. Owner
 decision 2026-08-03: one manager per deployment is the requested product shape,
