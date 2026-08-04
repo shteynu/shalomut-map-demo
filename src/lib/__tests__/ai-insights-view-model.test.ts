@@ -229,6 +229,26 @@ test('a stone the model wrote is not marked deterministic', () => {
   assert.strictEqual(result.summaryIsDeterministic, false);
 });
 
+test('a V6 gap reaches the screen as missing, not as three empty paragraphs', () => {
+  const result = toDashboardStone(
+    v6Stone({
+      summary: [],
+      generationProvenance: {
+        outcome: 'unavailable',
+        attempts: 4,
+        retryCount: 3,
+        sourceQuestionIds: ['management-support-q1'],
+      },
+    }),
+  );
+
+  assert.deepStrictEqual(result.summary, []);
+  assert.strictEqual(result.interpretationUnavailable, true);
+  // A gap is not fallback copy, so it must not also claim the service wrote
+  // something.
+  assert.strictEqual(result.summaryIsDeterministic, false);
+});
+
 function v6Stone(overrides: Partial<StoneDetailV6> = {}): StoneDetailV6 {
   return {
     dimensionId: 'management-support',

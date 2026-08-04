@@ -72,7 +72,9 @@ export function createValidV6Payload(roundId = 'round-v6') {
               },
             ],
             generationProvenance: {
-              outcome: 'llm' as const,
+              // Widened deliberately: 6.0 carries gaps, so a fixture that
+              // could not express one would exclude the cases worth testing.
+              outcome: 'llm' as 'llm' | 'deterministic_fallback' | 'unavailable',
               attempts: 1,
               retryCount: 0,
               sourceQuestionIds: [questionId],

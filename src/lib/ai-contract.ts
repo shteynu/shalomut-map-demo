@@ -115,7 +115,7 @@ export interface ScoreDistribution {
 
 export interface StoneGenerationProvenance {
   /**
-   * `unavailable` is 5.0 only: the provider answered nothing for this one
+   * `unavailable` is 5.0 and above: nothing was produced for this one
    * dimension and the stone carries no interpretation. It is not a third kind
    * of copy — it is the absence of copy, said out loud. A stone that claimed
    * `deterministic_fallback` with heuristic text would be the fallback posing
@@ -148,7 +148,8 @@ export interface StoneDetailV6 {
   dimensionNameHebrew: string;
   status: WellbeingStatus;
   score: number;
-  summary: [string, string, string];
+  /** Empty exactly when `generationProvenance.outcome` is `unavailable`. */
+  summary: [string, string, string] | [];
   recommendedInterventions: [
     StoneIntervention,
     StoneIntervention,
@@ -173,7 +174,7 @@ export interface StoneMapResult {
   overallPsychologicalSummary?: string;
   stones?: Record<WellbeingDimensionId, AnyStoneDetail>;
   /**
-   * 5.0 only: the dimensions whose interpretation the provider never produced.
+   * 5.0 and above: the dimensions this round has no interpretation for.
    * Derivable by walking the stones, and stated here anyway so a reader — a
    * log, a support question, the screens' banner — can see that the map is
    * partial without inspecting eight provenance blocks.
@@ -622,7 +623,7 @@ function isValidV5GenerationProvenance(
 
   const sortedMetricIds = [...metricQuestionIds].sort();
   return (
-    // `unavailable` is accepted here and nowhere below 5.0: the older
+    // `unavailable` is accepted from 5.0 up and nowhere below: the older
     // contracts are closed boundaries, and a stone with no interpretation is
     // not a shape they ever described.
     ['llm', 'deterministic_fallback', 'unavailable'].includes(
@@ -717,7 +718,6 @@ function isValidV6Stone(
     value.score > 100 ||
     statusForScore(value.score) !== value.status ||
     value.psychologicalInterpretation !== undefined ||
-    !hasExactlyThreeHebrewParagraphs(value.summary) ||
     !Array.isArray(value.metrics) ||
     value.metrics.length < 1 ||
     !value.metrics.every(isValidV6QuestionMetric) ||
@@ -732,8 +732,19 @@ function isValidV6Stone(
   const metricQuestionIds = metrics.map((metric) => metric.questionId!);
   const interventions = value.recommendedInterventions as StoneIntervention[];
   const provenance = value.generationProvenance;
+  const unavailable =
+    isRecord(provenance) && provenance.outcome === 'unavailable';
+  // The V6 mirror of the V5 rule: an `unavailable` stone carries no overview
+  // at all, and every other outcome carries all three paragraphs. What the gap
+  // never covers is the metric narratives — those are validated above for
+  // every stone, so a dimension can lose its overview and keep the reading of
+  // each question, which is the difference between a gap and a hole.
+  const summaryValid = unavailable
+    ? Array.isArray(value.summary) && value.summary.length === 0
+    : hasExactlyThreeHebrewParagraphs(value.summary);
 
   return (
+    summaryValid &&
     new Set(metricQuestionIds).size === metricQuestionIds.length &&
     new Set(interventions.map((intervention) => intervention.id)).size === 5 &&
     interventions.every(
@@ -746,8 +757,7 @@ function isValidV6Stone(
       metricQuestionIds,
       surveyDefinitionHash,
     ) &&
-    isRecord(provenance) &&
-    provenance.outcome !== 'unavailable'
+    isRecord(provenance)
   );
 }
 

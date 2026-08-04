@@ -273,3 +273,58 @@ test('does not accept the removed single psychologicalInterpretation field', () 
   assert.ok(!validation.ok);
   assert.match(validation.error, new RegExp(dimensionId, 'u'));
 });
+
+test('a V6 map may state a gap where a dimension could not be written', () => {
+  // 6.0 gained the gap back once repair exhaustion stopped throwing away the
+  // seven dimensions that were fine to report the one that was not.
+  const payload = createValidV6Payload();
+  const dimensionId = AI_ANALYTICS_DIMENSION_IDS[0];
+  payload.stones[dimensionId].summary = [];
+  payload.stones[dimensionId].generationProvenance.outcome = 'unavailable';
+  (payload as Record<string, unknown>).dimensionsWithoutInterpretation = [
+    dimensionId,
+  ];
+
+  const validation = validateStoneMapResult(payload, payload.roundId);
+
+  assert.ok(validation.ok, !validation.ok ? validation.error : '');
+  // The gap is the overview only: the metric narratives still had to be there
+  // for the stone to be accepted at all.
+  assert.ok(payload.stones[dimensionId].metrics[0].insightText.length > 0);
+});
+
+test('a V6 gap must be empty, declared, and never every dimension', () => {
+  const withGap = (mutate: (payload: ReturnType<typeof createValidV6Payload>) => void) => {
+    const payload = createValidV6Payload();
+    mutate(payload);
+    return validateStoneMapResult(payload, payload.roundId);
+  };
+  const first = AI_ANALYTICS_DIMENSION_IDS[0];
+
+  // Copy under a label that says nothing was generated is the one thing the
+  // gap exists to prevent.
+  const keptCopy = withGap((payload) => {
+    payload.stones[first].generationProvenance.outcome = 'unavailable';
+    (payload as Record<string, unknown>).dimensionsWithoutInterpretation = [first];
+  });
+  assert.ok(!keptCopy.ok);
+
+  const undeclared = withGap((payload) => {
+    payload.stones[first].summary = [];
+    payload.stones[first].generationProvenance.outcome = 'unavailable';
+  });
+  assert.ok(!undeclared.ok);
+  assert.match(undeclared.error, /dimensionsWithoutInterpretation/u);
+
+  const everything = withGap((payload) => {
+    for (const dimensionId of AI_ANALYTICS_DIMENSION_IDS) {
+      payload.stones[dimensionId].summary = [];
+      payload.stones[dimensionId].generationProvenance.outcome = 'unavailable';
+    }
+    (payload as Record<string, unknown>).dimensionsWithoutInterpretation = [
+      ...AI_ANALYTICS_DIMENSION_IDS,
+    ];
+  });
+  assert.ok(!everything.ok);
+  assert.match(everything.error, /failure, not a partial map/u);
+});
