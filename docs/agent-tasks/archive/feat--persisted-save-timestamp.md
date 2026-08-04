@@ -5,8 +5,8 @@
 - Branch: `feat/persisted-save-timestamp`
 - Base branch: `main`
 - Base commit: `e7a2ea6`
-- Current HEAD: `1443a20` plus one uncommitted documentation commit in progress
-- Status: implementation and verification complete; awaiting the owner's push
+- Current HEAD: `f883035`, merged into `origin/main` and deployed
+- Status: complete, deployed and migrated
 - Last updated: 2026-08-04
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -72,13 +72,15 @@ that tab.
   pinned time zone; unit tests.
 - `1443a20` — OpenAPI descriptions and the `SurveyRound.updatedAt` field, the
   regenerated `public/openapi.json`, and a PostgreSQL test for the stamping.
-- Uncommitted at the time of writing: `PROGRESS.md`, the handoff's pending
-  migration entry, backlog §1 and this file.
+- `f883035` — `PROGRESS.md`, the handoff, backlog §1 and this file. The owner
+  pushed the four commits to `main`; Vercel built `f883035` and it holds the
+  Production alias.
+- The migration reached the deployed Supabase database on 2026-08-04, on the
+  second attempt. See the deployment incident below.
 
 ## Remaining
 
-- Nothing in code. The deployed database needs the migration; see the approval
-  and operational note below.
+Nothing.
 
 ## Changed files
 
@@ -125,8 +127,20 @@ None.
 - A pixel screenshot of the line. The Browser pane repeatedly returned a stale
   or blank viewport for this route; the evidence above is DOM and server-rendered
   HTML instead.
-- Deployed behaviour. Unchanged from the standing gate: manager routes need the
-  owner's credentials.
+- Manager screens on the deployed app. Unchanged from the standing gate: those
+  routes need the owner's credentials. The deployed round has
+  `updated_at NULL`, so its setup screen would show no save time until someone
+  saves once — the documented behaviour, not a fault.
+
+### Deployed evidence after the migration
+
+- `prisma migrate status` against the deployed `DIRECT_URL`: ten migrations,
+  schema up to date.
+- `GET /api/survey/NOPE-0000/` returns the domain `404` again on both the
+  Production alias and the deployment's own URL; before the migration the same
+  request returned `500`.
+- `GET /api/survey/SHALOM-N74F/` returns the real active round, so a full round
+  read — repository, `mapToDomain`, the new column — works on the deployed app.
 
 ### Environment
 
@@ -135,12 +149,26 @@ local Postgres on `127.0.0.1:5433`, `shalomut_test` for `verify:db`.
 
 ### Residual risk
 
-The deployed database must receive `20260804190000_add_round_updated_at` before
-or immediately after the deploy. Prisma selects the model's columns by name, so
-between a deploy and the migration every round read raises "column
-`survey_rounds.updated_at` does not exist" and the manager screens fail rather
-than degrade. The build command runs `prisma generate`, not
-`prisma migrate deploy`, so the push alone does not apply it.
+None outstanding. The risk this task recorded in advance did materialise; what
+it cost and what prevents a repeat is in the incident below and in the handoff.
+
+## Deployment incident, 2026-08-04
+
+The deployed app returned `500` on every round read for roughly twenty minutes
+after the push.
+
+- Cause: `npm run db:migrate:deploy` reads `.env`, which points at local
+  PostgreSQL on purpose. Run that way it reported success while applying
+  nothing to Supabase, and the new build selects `survey_rounds.updated_at` by
+  name.
+- What identified it: the previous deployment's own URL still answered `404`
+  while the Production alias answered `500`. Same database, so the difference
+  was the schema the new build expects — not connectivity, credentials or the
+  build.
+- Fix: `DATABASE_URL="$DIRECT_URL" npx prisma migrate deploy` with `DIRECT_URL`
+  taken from `.env.deployed.local`. No alias change and no rollback were needed.
+- Recorded in `docs/shalomut-tracker-handoff.md` so the next schema change
+  sequences the migration against the deployed database itself.
 
 ## Failed approaches
 
@@ -155,8 +183,9 @@ Recorded above under residual risk.
 
 ## Approval gates
 
-None for the code. The deployed migration is an owner action, like the push:
-`npm run db:migrate:deploy` against the deployed database.
+None outstanding. The push was the owner's; the deployed migration was applied
+from this worktree with the owner's explicit instruction and the target
+confirmed before the write.
 
 ## Questions requiring an owner decision
 
@@ -164,6 +193,6 @@ None.
 
 ## Next concrete step
 
-Hand the push to the owner — `git push origin feat/persisted-save-timestamp:main`
-— and have them run `npm run db:migrate:deploy` against the deployed database in
-the same sitting.
+None for this slice. The one commit this branch still holds beyond `main` is the
+close-out documentation; hand its push to the owner
+(`git push origin feat/persisted-save-timestamp:main`) and archive this file.

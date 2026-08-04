@@ -1,6 +1,7 @@
 # Shalomut Tracker — operational handoff
 
-Updated: 2026-08-04 (four slices merged, deployed and migrated). This
+Updated: 2026-08-04 (five slices merged, deployed and migrated; the persisted
+save time needed a second attempt at the deployed migration). This
 document owns only cross-task operational/deployed
 state, external blockers and approval gates. Product milestones belong in
 `PROGRESS.md`; branch work and exact verification belong in
@@ -116,17 +117,28 @@ state, external blockers and approval gates. Product milestones belong in
   is up to date, and a read-back confirms `round_goals` with its unique key on
   `(round_id, dimension_id, title)`, its `(round_id, created_at)` index and a
   cascading foreign key to `survey_rounds`. The table holds no rows.
-- **A tenth migration is pending on the deployed database.**
-  `20260804190000_add_round_updated_at` adds the nullable
+- The tenth migration, `20260804190000_add_round_updated_at`, was applied to the
+  deployed database on 2026-08-04: `prisma migrate status` reports ten
+  migrations and a schema that is up to date. It adds the nullable
   `survey_rounds.updated_at` that carries the manager screens' save time across
-  a reload. The build command runs `prisma generate` and not
-  `prisma migrate deploy`, so pushing the branch does not apply it: run
-  `npm run db:migrate:deploy` against the deployed database. Do it **before or
-  immediately after** the push: Prisma selects the model's columns by name, so
-  between the deploy and the migration every round read raises "column
-  `survey_rounds.updated_at` does not exist" — the manager screens fail rather
-  than fall back. Applied locally on 2026-08-04, where `prisma migrate status`
-  reports ten migrations and a schema that is up to date.
+  a reload. The deployed round has `updated_at NULL`, so its setup screen shows
+  no save time until someone saves once — the documented behaviour for a round
+  written before the column existed. No migration is pending.
+- **`npm run db:migrate:deploy` targets the local database, not the deployed
+  one.** It reads `.env`, which points at local PostgreSQL on purpose. The
+  deployed database is reached by passing `DIRECT_URL` from
+  `.env.deployed.local` as `DATABASE_URL`. This cost a broken deployment on
+  2026-08-04: the push went out, the migration was run against local, reported
+  success, and every round read on the deployed app returned 500 until the
+  migration reached Supabase.
+- Sequencing rule this leaves behind: the build command runs `prisma generate`,
+  not `prisma migrate deploy`, so a schema change must reach the deployed
+  database **before or immediately after** the push. Prisma selects the model's
+  columns by name, so in between, every read of the changed table fails rather
+  than falling back. The discriminating check when it happens: the previous
+  deployment's own URL still answers correctly while the Production alias
+  returns 500 — same database, so the difference is the schema the new build
+  expects.
 - No real respondents or production data exist. Database contents are
   disposable at this stage.
 
