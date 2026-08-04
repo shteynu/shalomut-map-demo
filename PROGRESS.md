@@ -44,6 +44,8 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 - Map stones move with the arrow keys as well as the pointer, reset returns
   focus to the map and announces itself, and stone motion is instant under
   `prefers-reduced-motion`.
+- A blocked clipboard is reported as a blocked clipboard: the share link is
+  selected, the note names Ctrl+C/Cmd+C and stays until the next attempt.
 - Anonymous respondent flow with stable attempt tokens and database-enforced
   idempotency.
 - Explicit informed consent before the first question, stating the guarantees
@@ -115,8 +117,8 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
    rather than in the schema.
 2. Decide whether recommendations become tracked goals/action plans.
 3. Improve survey-builder recovery/search/bulk/reorder behavior.
-4. Report clipboard permission failure honestly instead of treating it as a
-   successful copy.
+4. Add a visible "last saved" timestamp to setup and builder saves
+   (`docs/product-behaviour-backlog.md` §1).
 
 The backlog was reconciled with the owner's development requirements document
 on 2026-08-03. Its opening section records the four points where the shipped

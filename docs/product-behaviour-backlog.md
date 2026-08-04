@@ -78,14 +78,21 @@ Why it matters:
 - Principals will expect setup and survey edits to survive accidental refreshes.
 - Demo reviewers need clarity about whether "save" is a product promise or a prototype signal.
 
-### 2. Save, Copy, And Clipboard Failure States
+### 2. Save, Copy, And Clipboard Failure States (completed 2026-08-04)
 
-Current state: copy actions show success even if clipboard writing fails.
+Current state: a copy attempt has three outcomes and the screen distinguishes
+them. Success says so and fades; a refusal — no clipboard API, a denied
+permission, an embedded webview that blocks it — says the browser blocked the
+copy, names Ctrl+C/Cmd+C, and stays until the next attempt, because it asks the
+manager to do something. The link is selected in its field at that moment, so
+the manual copy is one keystroke.
 
-Proposal:
-- Track copy success and failure separately.
-- Show fallback instructions when clipboard access is blocked.
-- Keep Hebrew, privacy-first copy and avoid exposing respondent identity.
+Both copy surfaces, the round-tracking screen and the survey builder, share one
+`CopyLinkStatus` component, so the two cannot drift apart. The link is the
+anonymous share URL; nothing about a respondent is involved.
+
+Remaining:
+- A "last saved" timestamp is still §1's, not this item's.
 
 Why it matters:
 - Mobile browsers and embedded browsers often block clipboard access.
