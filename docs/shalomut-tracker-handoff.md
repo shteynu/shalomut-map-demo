@@ -190,17 +190,36 @@ the deployment holding `shalomut-map-demo.vercel.app` is
 `dpl_HFYRvMxBp6uq5LvrvkRkCxEhRfgT`, ready, built from `main` at `233f905` — the
 current tip. Everything merged today is live, and no manual redeploy is ever
 pending. Earlier snapshots of this document claimed a ten-slice lag; that was
-written before those deployments finished and is superseded.
+written before those deployments finished and is superseded. Later the same day
+the alias moved on with the persisted save time and its close-out docs; the
+Production deployment was built from `f883035`.
 
 What the deployed endpoint therefore already does: activating a round closes
 whichever round that school was running (`PROJECT_CONTEXT.md` ADR-014), and the
 deployed database now refuses a second active round rather than trusting the
 service to close the first.
 
-The functional half of this check is unfinished: every route the agent could
-reach redirects to `/login`, so the read-only evidence above is deployment
-metadata, not deployed behaviour. Exercising a manager screen needs the owner's
-credentials.
+**The functional half of this check is done, 2026-08-04.** It had stood open
+because every manager route redirects to `/login`. The owner signed in
+themselves in their own Chrome and handed the session over; the agent never saw
+or typed the credentials, and that remains the rule.
+
+What was exercised on `shalomut-map-demo.vercel.app`, signed in:
+
+- Setup, builder, round tracking and the dashboard all render real persisted
+  data. The stone map is unlocked at ten responses against a threshold of ten,
+  with all eight dimensions, statuses carried by words as well as colour, and no
+  respondent-level detail anywhere.
+- The persisted save time end to end: saving on the setup screen showed
+  "נשמר בשעה 14:43", a full reload kept it — server-rendered from the column,
+  not tab state — and the builder showed the same time, because both screens
+  read one `updated_at`.
+- The round's `updated_at` was then set back to `NULL` so the deployed data is
+  as it was, and both screens correctly went back to showing no save time. The
+  round itself was rewritten only with the values it already held.
+
+This is behaviour, not deployment metadata. What still needs the owner is the
+sign-in itself, so plan a deployed functional check as something done together.
 
 The Core composition root and the Dashboard presentation DTO, which closed
 stage 4 of the refactoring plan and the presentation half of stage 5, are merged
