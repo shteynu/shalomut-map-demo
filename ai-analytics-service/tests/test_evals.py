@@ -6,6 +6,7 @@ must score well and a payload it must not.
 """
 
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -187,13 +188,30 @@ def test_overreach_is_measured_inside_a_recommendation_too():
     assert result.score < 0.1
 
 
-def test_a_word_that_merely_contains_a_causal_term_is_not_a_finding():
-    # "בעקביות" — consistently — contains the causal "עקב". The first version
-    # of this grader reported it on every stone of the shared V6 fixture.
-    innocent = "הצוות מיישם את המהלך בעקביות ונדרשת עקביות גם בשיח."
+@pytest.mark.parametrize(
+    "innocent",
+    [
+        # "בעקביות" — consistently — contains the causal "עקב". Reported on
+        # every stone of the shared V6 fixture by the first version.
+        "הצוות מיישם את המהלך בעקביות ונדרשת עקביות גם בשיח.",
+        # "מעקב" — follow-up — is not "מ" plus "עקב", and the service's own
+        # deterministic copy says it in nearly every round. Reported by the
+        # second version, on real provider output.
+        "בממד איזון התמונה מצביעה על תחום שאינו אחיד ודורש מעקב.",
+    ],
+    ids=["consistently", "follow-up"],
+)
+def test_a_word_that_merely_contains_a_causal_term_is_not_a_finding(innocent):
     result = grade_no_overreach(stone_map(HEALTHY, summary=innocent), HEALTHY)
     assert result.score == 1.0
     assert result.findings == ()
+
+
+def test_a_genuine_causal_word_still_is_a_finding():
+    # The boundary rules must not have quietly disabled the term itself.
+    guilty = "הציון בממד ירד עקב העומס בתקופה זו."
+    result = grade_no_overreach(stone_map(HEALTHY, summary=guilty), HEALTHY)
+    assert result.measured["assertedCauses"] == 1
 
 
 # --- specificity ------------------------------------------------------------
@@ -367,3 +385,58 @@ def test_the_shared_callback_fixture_is_scored_as_the_filler_it_is():
 
     assert distinctness.score < 0.2, distinctness.measured
     assert specificity.score < 0.5, specificity.measured
+
+
+# --- the provider run -------------------------------------------------------
+
+
+def test_an_env_file_supplies_names_without_overwriting_the_environment(
+    tmp_path, monkeypatch
+):
+    from evals.run_corpus import load_env_file
+
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "# a comment\nALREADY_SET=from-file\nFRESH=\"from-file\"\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("ALREADY_SET", "from-shell")
+
+    names = load_env_file(env_file)
+
+    assert sorted(names) == ["ALREADY_SET", "FRESH"]
+    # An exported value wins, so a stale file cannot swap the key under a run.
+    assert os.environ["ALREADY_SET"] == "from-shell"
+    assert os.environ["FRESH"] == "from-file"
+
+
+def test_a_run_without_a_provider_key_refuses_instead_of_faking_it(
+    tmp_path, monkeypatch, capsys
+):
+    """The mistake this exists for was made while building it.
+
+    `src.config` builds its settings singleton on import and the provider reads
+    the key from it once, so importing the service before loading the env file
+    leaves the run keyless. That does not fail: every dimension falls back to
+    deterministic copy, the round comes back `success`, and the payloads look
+    like evidence about the prompts while containing none.
+    """
+    from src.config import settings
+    from evals.run_corpus import main as run_corpus_main
+
+    monkeypatch.setattr(settings, "llm_api_key", "", raising=False)
+
+    exit_code = run_corpus_main(
+        [
+            "--out",
+            str(tmp_path / "payloads"),
+            "--cases",
+            "uniformly-healthy",
+            "--env-file",
+            str(tmp_path / "absent.env"),
+        ]
+    )
+
+    assert exit_code == 2
+    assert "refusing to run" in capsys.readouterr().err
+    assert not (tmp_path / "payloads").exists()

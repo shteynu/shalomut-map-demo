@@ -73,17 +73,32 @@ _ATTACHED_PREFIXES = r"[\u05d5\u05d4\u05d1\u05dc\u05de\u05db\u05e9]{0,2}"
 _CLITIC_PARTICLES = frozenset("למבש")
 
 
+# Below this length, a term is not looked for behind an attached prefix.
+# Hebrew gives no way to tell "\u05de + \u05e2\u05e7\u05d1" from the ordinary noun "\u05de\u05e2\u05e7\u05d1" \u2014
+# follow-up, which the service's own deterministic copy uses in nearly every
+# round \u2014 without a morphological analyser. Longer terms are safe: nothing
+# reads "\u05de\u05e9\u05d7\u05d9\u05e7\u05d4" as a word in its own right.
+_MIN_LENGTH_FOR_PREFIXES = 4
+
+
 def _compile_term(term: str) -> "re.Pattern[str]":
     """A term matched as a word, not as a run of letters inside one.
 
-    Written the long way because the naive `term in text` reported every
-    "\u05d1\u05e2\u05e7\u05d1\u05d9\u05d5\u05ea" \u2014 consistently \u2014 as the causal "\u05e2\u05e7\u05d1". A grader that invents
-    findings is worse than no grader: it spends the reader's trust on noise.
+    Written the long way because the naive `term in text` found the causal
+    "\u05e2\u05e7\u05d1" inside both "\u05d1\u05e2\u05e7\u05d1\u05d9\u05d5\u05ea" \u2014 consistently \u2014 and "\u05de\u05e2\u05e7\u05d1" \u2014
+    follow-up. Both turned up by running the graders over payloads nobody
+    wrote for them. A grader that invents findings is worse than no grader: it
+    spends the reader's trust on noise.
     """
+    opening = (
+        _ATTACHED_PREFIXES
+        if len(term.split()[0]) >= _MIN_LENGTH_FOR_PREFIXES
+        else ""
+    )
     trails_a_particle = term.split()[-1] in _CLITIC_PARTICLES
     closing = "" if trails_a_particle else f"(?!{_HEBREW_LETTER})"
     return re.compile(
-        f"(?<!{_HEBREW_LETTER}){_ATTACHED_PREFIXES}{re.escape(term)}{closing}"
+        f"(?<!{_HEBREW_LETTER}){opening}{re.escape(term)}{closing}"
     )
 
 

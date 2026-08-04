@@ -54,19 +54,48 @@ a case is real contract input rather than a plausible-looking placeholder.
 
 ## Running it
 
+Producing payloads and scoring them are two commands on purpose: the first
+calls a provider and costs money, the second is free and deterministic.
+
 ```bash
 # what each case is built to catch
 .venv/bin/python -m evals.report --list-cases
 
-# write the eight contract inputs somewhere, to drive a real run
-.venv/bin/python -m evals.report --emit-inputs /tmp/eval-inputs
+# run the corpus through the real pipeline — this spends provider quota
+.venv/bin/python -m evals.run_corpus --out /tmp/eval-payloads
 
-# score the payloads that came back
+# score whatever came back
 .venv/bin/python -m evals.report /tmp/eval-payloads/*.json > report.json
 ```
 
-Payloads are matched to cases by the `roundId` they carry (`eval-<caseId>`). A
-payload with no matching case is skipped loudly on stderr, never silently.
+`run_corpus` loads `.env` before importing the service, and refuses to run at
+all without a provider key. Both matter: `src.config` builds its settings
+singleton at import time, so a service imported too early runs keyless — and a
+keyless run does not fail. Every dimension falls back to deterministic copy and
+the round is reported `success`, which would file a corpus of the service's own
+boilerplate as evidence about the prompts.
+
+`--emit-inputs DIR` writes the contract inputs instead, for driving a run some
+other way. Payloads are matched to cases by the `roundId` they carry
+(`eval-<caseId>`); one with no matching case is skipped loudly on stderr.
+
+**Check the provenance before reading a report.** A round whose provider was
+rate-limited comes back full of `deterministic_fallback`, and the graders will
+happily score that text. It is a valid measurement of the fallback copy and
+says nothing at all about the prompts:
+
+```bash
+.venv/bin/python - <<'EOF'
+import json, glob, collections
+for path in sorted(glob.glob("/tmp/eval-payloads/*.json")):
+    payload = json.load(open(path))
+    outcomes = collections.Counter(
+        (stone.get("generationProvenance") or {}).get("outcome")
+        for stone in (payload.get("stones") or {}).values()
+    )
+    print(path.split("/")[-1], dict(outcomes))
+EOF
+```
 
 ## What is not automated
 
@@ -84,3 +113,16 @@ The natural next steps, in order, are: run the corpus against the current
 prompts and keep the report; do it again after a prompt or model change and
 diff the two; and only then decide whether any grader deserves to become a
 threshold.
+
+## Provider quota
+
+A full corpus run is roughly 140 provider requests — eight dimensions times a
+dimension summary and a metric narrative, plus the overall summary and the
+intervention adaptation, for each of the seven unlocked cases.
+
+The Gemini free tier allows **20 requests per day per model**
+(`GenerateRequestsPerDayPerProjectPerModel-FreeTier`), so a full run needs a
+key with real quota. A free-tier key does not fail the run — it produces one
+or two model-written stones and fills the rest with deterministic fallback,
+which is why the provenance check above is the first thing to do with any
+report.
