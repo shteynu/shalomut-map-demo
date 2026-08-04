@@ -197,7 +197,7 @@ paths:
                   savedAt:
                     type: string
                     format: date-time
-                    description: When the server completed the write. The setup screen shows this as its "last saved" time, so it is reported by the side that wrote rather than read from the browser clock.
+                    description: The round's stored updatedAt after this write. The setup screen shows it as its "last saved" time, so it is the value the database holds rather than a reading from the browser clock, and a reload shows the same time. Absent when the round reports none.
                   organization:
                     $ref: '#/components/schemas/Organization'
                   round:
@@ -668,7 +668,7 @@ paths:
                   savedAt:
                     type: string
                     format: date-time
-                    description: When the server completed the write. The builder shows this as its "last saved" time, so it is reported by the side that wrote rather than read from the browser clock.
+                    description: The round's stored updatedAt after this write, including the activation write when completing the questionnaire put the round on the air. The builder shows it as its "last saved" time, and a reload shows the same time. Absent when the round reports none.
                   definition:
                     $ref: '#/components/schemas/SurveyDefinition'
                   closedRoundTitles:
@@ -1234,6 +1234,10 @@ components:
         createdAt:
           type: string
           format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+          description: When the round last reached the database. Absent for a round last written before the column existed; the manager screens then show no save time rather than falling back to createdAt.
     WellbeingDimension:
       type: object
       properties:

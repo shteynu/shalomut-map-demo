@@ -168,3 +168,29 @@ test('creating a live round through the service satisfies the index', async () =
   );
   assert.deepStrictEqual(active.map((entry) => entry.id), [created.id]);
 });
+
+/**
+ * `updated_at` is Prisma's `@updatedAt`, which the in-memory repository can
+ * only imitate. Whether PostgreSQL actually receives a new value on every write
+ * is decided here, and the manager screens read it as their save time.
+ */
+test('every write stamps when the round reached the database', async () => {
+  const created = await roundRepo.create(roundRecord('draft'));
+  assert.ok(created.updatedAt instanceof Date);
+
+  const edited = await roundRepo.update(created.id, { title: 'סבב אחרי עריכה' });
+  assert.ok(edited?.updatedAt instanceof Date);
+  assert.ok(edited.updatedAt.getTime() >= created.updatedAt!.getTime());
+
+  // Activation is a write of its own, so it moves the time the builder shows.
+  const activated = await roundRepo.updateStatus(created.id, 'active');
+  assert.ok(activated?.updatedAt instanceof Date);
+  assert.ok(activated.updatedAt.getTime() >= edited.updatedAt.getTime());
+
+  // And a fresh read returns the stored value rather than the write's own copy.
+  const reloaded = await roundRepo.findById(created.id);
+  assert.strictEqual(
+    reloaded?.updatedAt?.getTime(),
+    activated.updatedAt.getTime(),
+  );
+});
