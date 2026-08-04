@@ -211,12 +211,39 @@ live: `RoundService.activateRound`, which the survey-definition route calls once
 a draft covers all eight dimensions, and `createAndSaveRound`, for a round born
 with a complete questionnaire.
 
-It is enforced in the service rather than by the database. The repository
-interface has no transaction primitive and a deployment has one manager, so
-concurrent activation is not reachable today. The durable form of this rule is
-a partial unique index on `(organization_id) where status = 'active'`, which the
-schema does not have yet; until then two activations racing could leave two
-active rounds.
+Since 2026-08-04 the database enforces it too, through the partial unique index
+`survey_rounds_one_active_per_organization` on
+`(organization_id) where status = 'active'`
+(`20260804120000_one_active_round_per_organization`). Both service paths
+therefore close the previous round before activating the next one; the reverse
+order would collide with the index, and closing first also fails in the safer
+direction — a school with no running round rather than two.
+
+### ADR-015: A goal is a copy of a recommendation, not a reference to one
+
+Owner decision 2026-08-04, backlog §5, in its minimal form: a manager can mark a
+recommendation as a goal, move it through selected → in progress → done, and
+stop tracking it. There is no owner, no due date and no plan of steps.
+
+A recommendation belongs to an analysis run and is rewritten wholesale by the
+next one. A goal belongs to the school, so `round_goals` stores the title and
+body as they read at the moment of the decision. A goal the current analysis no
+longer recommends stays on the screen, marked as chosen from an earlier
+analysis — the alternative, letting goals follow the payload, would erase the
+decision every time the provider rephrased its advice.
+
+The title is a recommendation's only identity: the AI payload gives it no id.
+So a unique key on `(round_id, dimension_id, title)` is what makes one
+recommendation into one goal, and a rephrased title reads as a new
+recommendation beside the older goal rather than as the same advice.
+
+Dropping a goal deletes the row rather than adding a fourth status: a school
+that changed its mind is not reporting an outcome, and the recommendation
+becomes choosable again. Round reset is the one other thing that removes goals —
+it does not re-run the analysis, it declares that the round measured nothing.
+
+Goals hold no respondent data. They name a dimension and repeat manager-facing
+copy that had already cleared the privacy gate before it could be shown.
 
 ## Environments
 

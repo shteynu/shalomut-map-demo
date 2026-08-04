@@ -1,6 +1,6 @@
 # Shalomut Tracker — operational handoff
 
-Updated: 2026-08-04 (three slices merged, deployed and migrated). This
+Updated: 2026-08-04 (three slices merged and migrated; tracked goals on a branch). This
 document owns only cross-task operational/deployed
 state, external blockers and approval gates. Product milestones belong in
 `PROGRESS.md`; branch work and exact verification belong in
@@ -76,7 +76,16 @@ state, external blockers and approval gates. Product milestones belong in
 - `feat/respondent-draft-and-consent` reached `main` as `87027a5`, carrying
   respondent consent, draft recovery, the submit `409` contract and this
   snapshot. It is fully contained in `main` and can be deleted.
-- No branch is waiting to reach `main`.
+- `feat/round-goals` is waiting to reach `main`: the tracked-goals slice
+  (backlog §5, `PROJECT_CONTEXT.md` ADR-015). It is committed locally and not
+  pushed, so it is visible only in this worktree until the owner pushes it.
+- `npm run verify` passed at its tip on 2026-08-04 with exit code 0: 529
+  TypeScript tests, 18 PostgreSQL tests, 375 Python tests, both fitness checks,
+  typecheck, ESLint and the production build.
+- Observable API change, additive: `GET`/`POST /api/rounds/{roundId}/goals` and
+  `PATCH`/`DELETE /api/rounds/{roundId}/goals/{goalId}`, documented in
+  `docs/openapi.yaml`. `POST /api/rounds/{roundId}/reset` now also deletes the
+  round's goals and records `deletedGoalCount` in its audit entry.
 - The repository record does not claim that this final refactoring stack has
   been deployed. Verify deployment source/health before relying on it at the
   deployed endpoint.
@@ -99,6 +108,12 @@ state, external blockers and approval gates. Product milestones belong in
   partial unique index on `(organization_id) WHERE status = 'active'`. No school
   held two active rounds when it was created, so the migration's cleanup step
   changed no row. The deployed database holds one round, and it is active.
+- **One migration is pending on the deployed database**:
+  `20260804170000_add_round_goals`, which creates the `round_goals` table for
+  the tracked-goals slice. It is applied to the local development and local test
+  databases. It creates a new table and touches nothing existing, so it is safe
+  to apply before or after the deployment that uses it — but the goals endpoints
+  fail until it is applied.
 - No real respondents or production data exist. Database contents are
   disposable at this stage.
 

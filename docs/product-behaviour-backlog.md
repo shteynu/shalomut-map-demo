@@ -184,14 +184,36 @@ Why it matters:
 - The map is a core interaction, so keyboard and reduced-motion support should match its importance.
 - If rearranging stones is meaningful, users will expect their arrangement to persist.
 
-### 5. Dashboard Action Follow-Through
+### 5. Dashboard Action Follow-Through (minimal version done 2026-08-04)
 
-Current state: detail pages lead from summary to highlighted metrics to recommendations, with a back-to-map action.
+Current state: detail pages lead from summary to highlighted metrics to
+recommendations, and the recommendations screen now carries the decision as well
+as the advice.
 
-Proposal:
-- Define whether recommendations are only read-only guidance or can become tracked goals.
-- If tracked goals are desired, add a goal selection state and a lightweight action plan surface.
-- Keep results aggregated and never expose per-person data.
+Owner decision 2026-08-04: recommendations can become tracked goals, in the
+smallest form that makes the word "tracked" true. A panel under the stage lists
+every current recommendation of the dimension with one action — track it — and a
+tracked row gains three states, `נבחר → בתהליך → הושלם`, and a way to stop
+tracking. There is no owner, no due date and no plan of steps: a school that has
+never tracked a goal should not have to fill a form to try one.
+
+A goal stores the recommendation's title and body as they read at the moment of
+the decision rather than pointing at the analysis, because the next run rewrites
+its recommendations wholesale. A goal the current analysis no longer recommends
+therefore stays on the screen and says where it came from. One recommendation is
+one goal, enforced by a unique key on `(round_id, dimension_id, title)` — the
+title is the only identity the AI payload gives a recommendation. Dropping a
+goal deletes it rather than adding a fourth state, and the recommendation
+becomes choosable again. `PROJECT_CONTEXT.md` ADR-015 records the reasoning.
+
+Goals name a dimension and repeat copy that already cleared the privacy gate;
+nothing about a respondent reaches them.
+
+Remaining:
+- Whether an action plan of steps, an owner or a due date is wanted is a
+  separate decision, deliberately not taken here.
+- Goals are per round and per dimension. Reading a school's goals across rounds,
+  or beside the delta of the dimension they belong to, is not built.
 
 Why it matters:
 - The product principle is "from picture to action"; tracked goals are the likely next step beyond visual diagnosis.

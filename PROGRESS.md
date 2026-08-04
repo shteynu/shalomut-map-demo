@@ -11,7 +11,8 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
   scoring bands, round selection, round creation, the map comparison, map
   keyboard and reduced-motion support, clipboard failure states and the builder
   list work — and three more on 2026-08-04: the single-active-round index, the
-  "last saved" line, and the builder's keyboard accelerators.
+  "last saved" line, and the builder's keyboard accelerators. Tracked goals sit
+  on a branch that has not reached `main`.
 - Contract `6.0` is deployed end to end and the deployed Core explicitly
   produces it. The unset configuration default remains rollback-safe `5.0`.
 - The six latest architecture slices are in `main`: separate AI-insights
@@ -19,11 +20,11 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
   Python analysis output, application runner ports and `TextGenerator`.
 - The checkpoint at `26f4c37` passed the full `npm run verify`: 498 TypeScript
   tests, 12 PostgreSQL tests and 375 Python tests, with both fitness checks,
-  typecheck, ESLint and the production build. Counts are checkpoint evidence,
+  typecheck, ESLint and the production build. The tracked-goals branch passed
+  the same gate at its tip with 529, 18 and 375. Counts are checkpoint evidence,
   not evergreen expectations.
-- All eight repository migrations are applied to the confirmed deployed database
-  and to the local test database; the eighth, the single-active-round index,
-  landed on 2026-08-04.
+- Eight of the nine repository migrations are applied to the confirmed deployed
+  database; the ninth, `round_goals`, is applied locally and is pending there.
 - There are no real respondents or production data. The deployed Vercel alias
   remains an operational staging endpoint for the design stage.
 
@@ -51,6 +52,11 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
   a time: a round going live closes the previous one and the builder names it,
   and a partial unique index makes the rule the database's rather than the
   service's alone.
+- A recommendation can become a tracked goal: chosen from the dimension's
+  recommendations screen, moved through selected, in progress and done, and
+  dropped when the school changes its mind. The goal keeps the recommendation's
+  words as they read when it was chosen, so it survives the next analysis and
+  says so when that analysis no longer recommends it.
 - Setup and builder say when their work last reached the database, and say so
   again as "not saved yet" the moment the manager edits. The time is the one the
   save endpoint reports, so it is evidence of a completed write.
@@ -125,9 +131,10 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 
 ### Product
 
-1. Decide whether recommendations become tracked goals/action plans. This is the
-   only open product decision left in the backlog; §3 (builder efficiency) and
-   §1's last-saved timestamp both closed on 2026-08-04.
+Nothing open. The last product decision in the backlog — whether recommendations
+become tracked goals — was taken on 2026-08-04 and shipped in its minimal form
+(§5). What §5 deliberately leaves undecided is whether a goal ever gains an
+owner, a due date or a plan of steps.
 
 Cross-round work is **closed for now**: per-round reading and second-round
 creation landed on 2026-08-03, the deterministic dimension-level delta and the
