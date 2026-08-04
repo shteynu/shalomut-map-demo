@@ -40,6 +40,11 @@ model SurveyRound {
   responses        SurveyResponse[]
   aiAnalysisRuns   AiAnalysisRun[]
 
+  // A school runs one round at a time, enforced by the partial unique index
+  // `survey_rounds_one_active_per_organization` on `(organization_id) where
+  // status = 'active'`. Prisma cannot express a partial index here, so it is
+  // owned by migration `20260804120000_one_active_round_per_organization` and
+  // changed by writing another migration rather than by editing this model.
   @@map("survey_rounds")
 }
 

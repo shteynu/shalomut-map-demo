@@ -87,6 +87,10 @@ run(
       repositoryRoot,
       'src/lib/repositories/__dbtests__/prisma-ai-analysis-runs.integration.test.ts',
     ),
+    path.join(
+      repositoryRoot,
+      'src/lib/repositories/__dbtests__/postgres-one-active-round.test.ts',
+    ),
   ],
   'PostgreSQL suite',
 );

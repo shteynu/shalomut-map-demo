@@ -70,15 +70,17 @@ export class RoundService {
     roundRepo: IRoundRepository
   ): Promise<SurveyRound> {
     const round = this.createRound(input);
-    const created = await roundRepo.create(round);
 
     // A round created with a complete questionnaire is born active, which makes
-    // it the school's running round the moment it exists.
-    if (created.status === 'active') {
-      await this.closeOtherActiveRounds(created, roundRepo);
+    // it the school's running round the moment it exists — so the round it
+    // replaces has to be closed first. The partial unique index refuses a
+    // second active round, and this row does not exist yet to be excluded from
+    // the closing sweep.
+    if (round.status === 'active') {
+      await this.closeOtherActiveRounds(round, roundRepo);
     }
 
-    return created;
+    return roundRepo.create(round);
   }
 
   /**
@@ -93,13 +95,20 @@ export class RoundService {
     roundId: string,
     roundRepo: IRoundRepository,
   ): Promise<{ round: SurveyRound; closedRounds: SurveyRound[] } | null> {
+    const round = await roundRepo.findById(roundId);
+    if (!round) return null;
+
+    // The previous round is closed before this one goes live, not after: the
+    // database now refuses two active rounds of one school, so the other order
+    // would be rejected on the very write that makes this round live. It also
+    // fails in the safer direction — if the activation write is lost, the
+    // school is left with no running round rather than two.
+    const closedRounds = await this.closeOtherActiveRounds(round, roundRepo);
+
     const activated = await roundRepo.updateStatus(roundId, 'active');
     if (!activated) return null;
 
-    return {
-      round: activated,
-      closedRounds: await this.closeOtherActiveRounds(activated, roundRepo),
-    };
+    return { round: activated, closedRounds };
   }
 
   /**
@@ -107,10 +116,10 @@ export class RoundService {
    *
    * These are separate writes rather than one transaction: the repository
    * interface has no transaction primitive, and a deployment has one manager,
-   * so nothing else is activating rounds concurrently. The durable version of
-   * this rule is a partial unique index on `(organization_id) where status =
-   * 'active'`, which is not in the schema yet — until then the rule is upheld
-   * here rather than by the database.
+   * so nothing else is activating rounds concurrently. The rule itself is now
+   * durable — the partial unique index `survey_rounds_one_active_per_organization`
+   * refuses a second active round — and this method is what keeps the ordinary
+   * path from running into it.
    */
   public static async closeOtherActiveRounds(
     round: SurveyRound,
