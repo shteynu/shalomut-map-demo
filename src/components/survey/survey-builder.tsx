@@ -5,6 +5,7 @@ import { CheckCircle2, Eye, Loader2 } from "lucide-react";
 import { useRef, useState } from "react";
 import { PageIntro } from "@/components/ui/page-intro";
 import { PrivacyTooltip } from "@/components/ui/privacy-tooltip";
+import { SaveStatus, parseSavedAt } from "@/components/ui/save-status";
 import { useClipboard } from "@/lib/hooks/use-clipboard";
 import { dimensionPresentations } from "@/lib/dashboard/dimension-presentation";
 import { getNavigationAction } from "@/lib/navigation";
@@ -113,6 +114,26 @@ export function SurveyBuilder({
   const [closedRoundTitles, setClosedRoundTitles] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  // When the server confirmed the last write of this session, and whether the
+  // questionnaire has moved since. Every edit goes through `markEdited`, so the
+  // time on screen never outlives the state it describes.
+  const [savedAt, setSavedAt] = useState<Date | null>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  /** One entry point for every change that leaves the draft unsaved. */
+  function markEdited() {
+    setSaved(false);
+    setSaveError(null);
+    setHasUnsavedChanges(true);
+  }
+
+  /** Wrap a settings setter so editing a field counts as an edit. */
+  function edited<Value>(setter: (value: Value) => void) {
+    return (value: Value) => {
+      markEdited();
+      setter(value);
+    };
+  }
   const { status: copyStatus, copy } = useClipboard();
   const shareUrl = useShareUrl(shareCode);
   const shareInputRef = useRef<HTMLInputElement | null>(null);
@@ -189,29 +210,25 @@ export function SurveyBuilder({
 
   /** Enable or hide everything the current tab and search leave on screen. */
   function setVisibleQuestionsEnabled(enabled: boolean) {
-    setSaved(false);
-    setSaveError(null);
+    markEdited();
     setQuestions((current) => setEnabledForKeys(current, visibleKeys, enabled));
   }
 
   /** Move a question one place up or down the order respondents will see. */
   function moveQuestion(draftKey: string, direction: -1 | 1) {
-    setSaved(false);
-    setSaveError(null);
+    markEdited();
     setQuestions((current) =>
       moveQuestionWithinView(current, visibleKeys, draftKey, direction),
     );
   }
 
   function updateQuestion(draftKey: string, updater: (question: BuilderQuestion) => BuilderQuestion) {
-    setSaved(false);
-    setSaveError(null);
+    markEdited();
     setQuestions((current) => current.map((question) => (question.draftKey === draftKey ? updater(question) : question)));
   }
 
   function duplicateQuestion(draftKey: string) {
-    setSaved(false);
-    setSaveError(null);
+    markEdited();
     setQuestions((current) => {
       const index = current.findIndex((question) => question.draftKey === draftKey);
       const source = current[index];
@@ -234,8 +251,7 @@ export function SurveyBuilder({
     if (typeof window !== "undefined" && !window.confirm("האם למחוק שאלה זו מהשאלון?")) {
       return;
     }
-    setSaved(false);
-    setSaveError(null);
+    markEdited();
     setQuestions((current) => current.filter((q) => q.draftKey !== draftKey));
   }
 
@@ -243,8 +259,7 @@ export function SurveyBuilder({
     if (typeof window !== "undefined" && !window.confirm("האם למחוק את כל השאלות ולהתחיל מטיוטה ריקה?")) {
       return;
     }
-    setSaved(false);
-    setSaveError(null);
+    markEdited();
     setQuestions([]);
   }
 
@@ -265,8 +280,7 @@ export function SurveyBuilder({
       answerMode: "סקאלת צבעים",
       draftKey: createDraftId(`default-${idx}`),
     }));
-    setSaved(false);
-    setSaveError(null);
+    markEdited();
     setQuestions(defaultQuestions);
   }
 
@@ -277,8 +291,7 @@ export function SurveyBuilder({
    * the questionnaire is the manager's, and a school reads it as theirs.
    */
   function openSuggestion(suggestion: QuestionSuggestion) {
-    setSaved(false);
-    setSaveError(null);
+    markEdited();
     setEditingQuestion(null);
     setPendingSuggestion({
       draft: buildSuggestedQuestion(suggestion),
@@ -334,8 +347,7 @@ export function SurveyBuilder({
   ) {
     if (pendingSuggestion && pendingSuggestion.draft.draftKey === draftKey) {
       const edited = updater(pendingSuggestion.draft);
-      setSaved(false);
-      setSaveError(null);
+      markEdited();
       setQuestions((current) => [...current, edited]);
       setPendingSuggestion(null);
       return;
@@ -352,8 +364,7 @@ export function SurveyBuilder({
     }
 
     setSaving(true);
-    setSaved(false);
-    setSaveError(null);
+    markEdited();
 
     const response = await fetch(
       `/api/rounds/${encodeURIComponent(roundId)}/survey-definition`,
@@ -385,11 +396,14 @@ export function SurveyBuilder({
 
     const payload = (await response.json().catch(() => null)) as {
       closedRoundTitles?: string[];
+      savedAt?: string;
     } | null;
 
     setClosedRoundTitles(
       Array.isArray(payload?.closedRoundTitles) ? payload.closedRoundTitles : [],
     );
+    setSavedAt(parseSavedAt(payload?.savedAt));
+    setHasUnsavedChanges(false);
     setSaved(true);
     setSaving(false);
   }
@@ -432,6 +446,10 @@ export function SurveyBuilder({
           </>
         }
       />
+
+      {/* Directly under the save button, where the manager is already looking
+          when they wonder whether the last click landed. */}
+      <SaveStatus savedAt={savedAt} hasUnsavedChanges={hasUnsavedChanges} />
 
       {saveError ? (
         <p className="survey-submit-error" role="alert">
@@ -487,16 +505,16 @@ export function SurveyBuilder({
         <div className="survey-builder-main">
           <SurveyBuilderSettings
             title={title}
-            setTitle={setTitle}
+            setTitle={edited(setTitle)}
             audience={audience}
             estimatedMinutes={estimatedMinutes}
-            setEstimatedMinutes={setEstimatedMinutes}
+            setEstimatedMinutes={edited(setEstimatedMinutes)}
             minimumResponses={minimumResponses}
-            setMinimumResponses={setMinimumResponses}
+            setMinimumResponses={edited(setMinimumResponses)}
             introText={introText}
-            setIntroText={setIntroText}
+            setIntroText={edited(setIntroText)}
             anonymityText={anonymityText}
-            setAnonymityText={setAnonymityText}
+            setAnonymityText={edited(setAnonymityText)}
           />
 
           <SurveyBuilderQuestions

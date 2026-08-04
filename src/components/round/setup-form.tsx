@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 import { PrivacyThresholdNotice } from "@/components/ui/privacy-threshold-notice";
 import { PrivacyTooltip } from "@/components/ui/privacy-tooltip";
+import { SaveStatus, parseSavedAt } from "@/components/ui/save-status";
 import { AUDIENCE_OPTIONS, DEFAULT_AUDIENCE } from "@/lib/audience";
 import {
   getNavigationAction,
@@ -57,6 +58,10 @@ export function SetupForm({
 }: SetupFormProps) {
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
+  // When the server confirmed the write, and whether the form has moved since.
+  // The fields are uncontrolled, so any input is what marks the form dirty.
+  const [savedAt, setSavedAt] = useState<Date | null>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [savedRoundId, setSavedRoundId] = useState<string | null>(null);
   const [minimumResponses, setMinimumResponses] = useState(
@@ -133,9 +138,12 @@ export function SetupForm({
 
     const payload = (await response.json().catch(() => null)) as {
       round?: { id?: string };
+      savedAt?: string;
     } | null;
 
     setSavedRoundId(payload?.round?.id ?? null);
+    setSavedAt(parseSavedAt(payload?.savedAt));
+    setHasUnsavedChanges(false);
     setSaved(true);
     setSaving(false);
     router.refresh();
@@ -145,6 +153,8 @@ export function SetupForm({
     <form
       className="form-panel setup-form"
       onSubmit={handleSubmit}
+      onInput={() => setHasUnsavedChanges(true)}
+      onChange={() => setHasUnsavedChanges(true)}
     >
       <section className="form-section-card">
         <header className="form-section-header">
@@ -362,7 +372,9 @@ export function SetupForm({
         ) : null}
       </div>
 
-      {saved ? (
+      <SaveStatus savedAt={savedAt} hasUnsavedChanges={hasUnsavedChanges} />
+
+      {saved && !hasUnsavedChanges ? (
         <p className="success-note">
           {isNewRound
             ? "הסבב החדש נפתח כטיוטה. הוא יעלה לאוויר במקום הסבב הנוכחי רק לאחר שהשאלון שלו יכסה את שמונת הממדים."

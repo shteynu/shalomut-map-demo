@@ -3,6 +3,7 @@ export * from "./dimension-icon";
 export * from "./metric-card";
 export * from "./page-intro";
 export * from "./privacy-tooltip";
+export * from "./save-status";
 export * from "./score-ring";
 export * from "./stat-stone";
 export * from "./status-badge";

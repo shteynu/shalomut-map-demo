@@ -304,6 +304,11 @@
                     "success": {
                       "type": "boolean"
                     },
+                    "savedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "When the server completed the write. The setup screen shows this as its \"last saved\" time, so it is reported by the side that wrote rather than read from the browser clock."
+                    },
                     "organization": {
                       "$ref": "#/components/schemas/Organization"
                     },
@@ -758,7 +763,34 @@
         },
         "responses": {
           "200": {
-            "description": "Survey definition saved"
+            "description": "Survey definition saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "savedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "When the server completed the write. The builder shows this as its \"last saved\" time, so it is reported by the side that wrote rather than read from the browser clock."
+                    },
+                    "definition": {
+                      "$ref": "#/components/schemas/SurveyDefinition"
+                    },
+                    "closedRoundTitles": {
+                      "type": "array",
+                      "description": "Rounds this save took off the air, when completing the questionnaire activated this one. A school runs one round at a time.",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
           },
           "400": {
             "description": "Invalid survey definition"

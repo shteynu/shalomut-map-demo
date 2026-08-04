@@ -110,6 +110,9 @@ export async function PUT(request: Request, { params }: RouteParams) {
 
     return NextResponse.json({
       success: true,
+      // When the write completed, as the server saw it. The builder shows this
+      // rather than the moment the button was pressed.
+      savedAt: new Date().toISOString(),
       definition: updated.surveyDefinition,
       // Named so the builder can tell the manager which round stopped running,
       // rather than leaving the school to notice on the dashboard later.

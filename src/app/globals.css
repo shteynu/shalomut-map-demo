@@ -632,6 +632,34 @@ textarea {
   font-weight: 700;
 }
 
+/* When the screen last reached the database. Like the draft note above, the
+   icon and the wording carry the state, so "saved" and "not saved yet" stay
+   distinguishable without colour. */
+.save-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+  font-weight: 700;
+  line-height: 1.6;
+}
+
+.save-status svg {
+  flex: none;
+}
+
+.save-status time {
+  font-variant-numeric: tabular-nums;
+}
+
+.save-status-saved {
+  color: var(--success-ink);
+}
+
+.save-status-pending {
+  color: var(--muted);
+}
+
 .round-layout {
   display: grid;
   grid-template-columns: 0.85fr 1.15fr;

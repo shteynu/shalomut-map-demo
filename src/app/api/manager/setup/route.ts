@@ -186,7 +186,13 @@ export async function PUT(request: Request) {
       roundRepo,
     );
 
-    return NextResponse.json({ success: true, ...result });
+    // The screen shows when the work reached the database, so the time has to
+    // come from the side that wrote it rather than from the browser clock.
+    return NextResponse.json({
+      success: true,
+      savedAt: new Date().toISOString(),
+      ...result,
+    });
   } catch (error) {
     const scopeResponse = getManagerScopeErrorResponse(error);
     if (scopeResponse) return scopeResponse;
