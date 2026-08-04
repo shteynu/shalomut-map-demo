@@ -44,8 +44,13 @@ function applyMutation(payload: unknown, mutation: Mutation): unknown {
   return next;
 }
 
+// A version may have several accepted payloads - 6.0 has a whole map and a
+// partial one - so the source a refused case mutates is named in the fixture
+// rather than left to whichever entry happens to come last.
 const acceptedByVersion = new Map(
-  callbackCorpus.accepted.map((item) => [item.contractVersion, item.payload]),
+  callbackCorpus.accepted
+    .filter((item) => (item as { canonical?: boolean }).canonical)
+    .map((item) => [item.contractVersion, item.payload]),
 );
 
 test('Core accepts every callback payload the corpus marks accepted', () => {

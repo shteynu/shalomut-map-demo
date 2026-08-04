@@ -27,8 +27,13 @@ CORPUS_PATH = (
 with CORPUS_PATH.open("r", encoding="utf-8") as _handle:
     CORPUS = json.load(_handle)
 
+# A version may have several accepted payloads - 6.0 has a whole map and a
+# partial one - so the source a refused case mutates is named in the fixture
+# rather than left to whichever entry happens to come last.
 ACCEPTED_BY_VERSION = {
-    case["contractVersion"]: case["payload"] for case in CORPUS["accepted"]
+    case["contractVersion"]: case["payload"]
+    for case in CORPUS["accepted"]
+    if case.get("canonical")
 }
 
 
@@ -117,5 +122,8 @@ def test_the_corpus_covers_both_directions_of_the_boundary():
     """A corpus that quietly loses its callback half is the original defect."""
     assert len(CORPUS["accepted"]) >= 6
     assert len({case["contractVersion"] for case in CORPUS["accepted"]}) >= 6
+    assert len(ACCEPTED_BY_VERSION) == len(
+        {case["contractVersion"] for case in CORPUS["accepted"]}
+    ), "every version needs exactly one canonical payload to mutate"
     assert len(CORPUS["refused"]) >= 10
     assert len({case["rule"] for case in CORPUS["refused"]}) >= 8
