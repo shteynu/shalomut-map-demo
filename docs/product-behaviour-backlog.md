@@ -98,18 +98,29 @@ Why it matters:
 - Mobile browsers and embedded browsers often block clipboard access.
 - A false success state can make the distribution flow feel unreliable.
 
-### 3. Survey Builder Efficiency
+### 3. Survey Builder Efficiency (search, bulk and reorder done 2026-08-04)
 
 Current state: the builder supports filtering by dimension, toggling
 required/enabled state, duplicating questions, full eight-dimension template
 suggestions and AI suggestions. Suggested text is source-labelled, opens in the
 editor and cannot join the questionnaire until the manager changes it.
 
-Proposal:
-- Add search across question text and dimension labels.
-- Add bulk controls for enabling/disabling questions by dimension.
-- Add explicit reorder support or avoid implying that reorder already works.
-- Add keyboard-friendly edit actions for common builder operations.
+Since 2026-08-04 the list also has search, bulk enable/hide and real reordering.
+Search reads the question text, the dimension label and the stable question id,
+so "איזון" finds the dimension's questions as well as the word. The bulk buttons
+act on whatever the dimension tab and the search leave on screen — not on a
+dimension — so what they change is what the manager can see, and the button says
+how many that is.
+
+The order badge used to carry a drag-handle icon that did nothing. It is now two
+buttons that move the question one place up or down, which reorders for real and
+works from the keyboard. A move is measured in the current view: with a filter
+on, a question swaps with the one above it on screen and nothing outside the
+view moves.
+
+Remaining:
+- Keyboard shortcuts for the per-question actions. Every action is a native
+  button and reachable by Tab, but there are no accelerators.
 
 Why it matters:
 - A real 24-question instrument is small but still benefits from fast review and batch editing.

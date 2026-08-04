@@ -32,6 +32,9 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 - Builder editing, enable/required controls, duplication, dimension coverage,
   template suggestions and AI-generated suggestions. An AI suggestion names
   its source and must be edited by a manager before it can be added.
+- Builder search across text, dimension and question id; bulk enable/hide of
+  whatever the filter and search leave on screen; and real reordering through
+  move-up/move-down buttons rather than a drag handle that did nothing.
 - The dashboard reads any round the school owns, chosen from a switcher and
   carried through every dashboard link, with each round read through its own
   snapshot, threshold and analysis. The home screen stays on the active round.
@@ -116,7 +119,9 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
    at a time, and the single-active-round rule still lives in `RoundService`
    rather than in the schema.
 2. Decide whether recommendations become tracked goals/action plans.
-3. Improve survey-builder recovery/search/bulk/reorder behavior.
+3. Keyboard accelerators for per-question builder actions
+   (`docs/product-behaviour-backlog.md` §3); search, bulk enable/hide and
+   reordering landed on 2026-08-04.
 4. Add a visible "last saved" timestamp to setup and builder saves
    (`docs/product-behaviour-backlog.md` §1).
 
