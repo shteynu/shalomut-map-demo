@@ -187,6 +187,10 @@ function renderQuestionsPanel(
       visibleQuestions={[]}
       selectedDimensionId="certainty"
       setSelectedDimensionId={() => {}}
+      searchTerm=""
+      setSearchTerm={() => {}}
+      onSetVisibleEnabled={() => {}}
+      onMoveQuestion={() => {}}
       onUpdateQuestion={() => {}}
       onDuplicateQuestion={() => {}}
       onSuggestFromTemplate={() => {}}

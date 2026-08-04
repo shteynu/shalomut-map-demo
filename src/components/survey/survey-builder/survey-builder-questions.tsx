@@ -1,4 +1,4 @@
-import { Loader2, Lock, Plus, RotateCcw, Sparkles, Trash2 } from "lucide-react";
+import { Loader2, Lock, Plus, RotateCcw, Search, Sparkles, Trash2 } from "lucide-react";
 import { dimensionPresentations } from "@/lib/dashboard/dimension-presentation";
 import { SurveyQuestionCard } from "./survey-question-card";
 import type { BuilderQuestion } from "./types";
@@ -12,6 +12,11 @@ type QuestionsPanelProps = {
   visibleQuestions: BuilderQuestion[];
   selectedDimensionId: string;
   setSelectedDimensionId: (id: string) => void;
+  searchTerm: string;
+  setSearchTerm: (term: string) => void;
+  /** Enable or hide every question currently on screen. */
+  onSetVisibleEnabled: (enabled: boolean) => void;
+  onMoveQuestion: (draftKey: string, direction: -1 | 1) => void;
   onUpdateQuestion: (id: string, updater: (question: BuilderQuestion) => BuilderQuestion) => void;
   onDuplicateQuestion: (id: string) => void;
   onEditQuestion?: (question: BuilderQuestion) => void;
@@ -31,6 +36,10 @@ export function SurveyBuilderQuestions({
   visibleQuestions,
   selectedDimensionId,
   setSelectedDimensionId,
+  searchTerm,
+  setSearchTerm,
+  onSetVisibleEnabled,
+  onMoveQuestion,
   onUpdateQuestion,
   onDuplicateQuestion,
   onEditQuestion,
@@ -173,8 +182,43 @@ export function SurveyBuilderQuestions({
         </button>
       </div>
 
-      <p className="quiet-note survey-builder-filter-note">
-        מוצגות {visibleQuestions.length} שאלות ב{selectedDimensionLabel}. רק שאלות פעילות ממוספרות ברצף. שאלות מוסתרות מוצגות ללא מספר ואינן נשלחות למשיבים.
+      <div className="survey-builder-list-tools">
+        <label className="survey-builder-search">
+          <Search size={16} aria-hidden="true" />
+          <span className="visually-hidden">חיפוש שאלה לפי נוסח, ממד או מזהה</span>
+          <input
+            type="search"
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            placeholder="חיפוש לפי נוסח, ממד או מזהה"
+          />
+        </label>
+
+        {/* Bulk actions follow the list, not the tab: with a search running,
+            what they change is exactly what is on screen. */}
+        <div className="survey-builder-bulk-actions">
+          <button
+            className="ghost-button"
+            type="button"
+            onClick={() => onSetVisibleEnabled(true)}
+            disabled={isFrozen || visibleQuestions.length === 0}
+          >
+            הפעלת המוצגות ({visibleQuestions.length})
+          </button>
+          <button
+            className="ghost-button"
+            type="button"
+            onClick={() => onSetVisibleEnabled(false)}
+            disabled={isFrozen || visibleQuestions.length === 0}
+          >
+            הסתרת המוצגות ({visibleQuestions.length})
+          </button>
+        </div>
+      </div>
+
+      <p className="quiet-note survey-builder-filter-note" role="status">
+        מוצגות {visibleQuestions.length} שאלות ב{selectedDimensionLabel}
+        {searchTerm.trim() ? ` התואמות לחיפוש "${searchTerm.trim()}"` : ""}. רק שאלות פעילות ממוספרות ברצף. שאלות מוסתרות מוצגות ללא מספר ואינן נשלחות למשיבים.
       </p>
 
       {visibleQuestions.length === 0 ? (
@@ -197,13 +241,16 @@ export function SurveyBuilderQuestions({
         </div>
       ) : (
         <div className="survey-builder-question-list">
-          {visibleQuestions.map((question) => {
+          {visibleQuestions.map((question, index) => {
             const activeIndex = activeIndexMap.get(question.draftKey) ?? 0;
             return (
               <SurveyQuestionCard
                 key={question.draftKey}
                 question={question}
                 questionIndex={activeIndex}
+                onMove={onMoveQuestion}
+                canMoveUp={index > 0}
+                canMoveDown={index < visibleQuestions.length - 1}
                 onUpdate={onUpdateQuestion}
                 onDuplicate={onDuplicateQuestion}
                 onEdit={onEditQuestion}

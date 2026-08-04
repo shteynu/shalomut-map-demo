@@ -178,6 +178,9 @@ test("survey question card exposes editable stable ID, exact text, and dimension
     <SurveyQuestionCard
       question={question}
       questionIndex={1}
+      onMove={() => undefined}
+      canMoveUp={false}
+      canMoveDown={false}
       onUpdate={() => undefined}
       onDuplicate={() => undefined}
     />,

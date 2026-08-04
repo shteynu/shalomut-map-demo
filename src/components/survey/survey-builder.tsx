@@ -11,6 +11,11 @@ import { getNavigationAction } from "@/lib/navigation";
 import { useShareUrl } from "@/lib/use-share-url";
 import type { SurveyDefinition } from "@/lib/types/backend";
 import { surveyInstrument } from "@/lib/shalomut-source";
+import {
+  moveQuestionWithinView,
+  setEnabledForKeys,
+  visibleQuestionsFor,
+} from "./survey-builder/question-list-operations";
 import { SurveyBuilderQuestions } from "./survey-builder/survey-builder-questions";
 import { SurveyBuilderSettings } from "./survey-builder/survey-builder-settings";
 import { SurveyBuilderSidebar } from "./survey-builder/survey-builder-sidebar";
@@ -126,6 +131,7 @@ export function SurveyBuilder({
   const [selectedDimensionId, setSelectedDimensionId] = useState<string>(
     dimensionPresentations[0]?.id ?? "all",
   );
+  const [searchTerm, setSearchTerm] = useState("");
   const [editingQuestion, setEditingQuestion] = useState<BuilderQuestion | null>(null);
   const [pendingSuggestion, setPendingSuggestion] = useState<{
     draft: BuilderQuestion;
@@ -138,10 +144,12 @@ export function SurveyBuilder({
   const enabledQuestions = questions.filter((question) => question.enabled);
   const requiredQuestions = enabledQuestions.filter((question) => question.required);
   const activeDimensions = new Set(enabledQuestions.map((question) => question.dimensionId)).size;
-  const visibleQuestions =
-    selectedDimensionId === "all"
-      ? questions
-      : questions.filter((question) => question.dimensionId === selectedDimensionId);
+  const visibleQuestions = visibleQuestionsFor(
+    questions,
+    selectedDimensionId,
+    searchTerm,
+  );
+  const visibleKeys = visibleQuestions.map((question) => question.draftKey);
   const questionnaireValidation = getBuilderQuestionnaireValidation(questions);
   const targetDimensionId = suggestionDimensionId(
     selectedDimensionId,
@@ -178,6 +186,22 @@ export function SurveyBuilder({
       className: "stone-variant-teal",
     },
   ];
+
+  /** Enable or hide everything the current tab and search leave on screen. */
+  function setVisibleQuestionsEnabled(enabled: boolean) {
+    setSaved(false);
+    setSaveError(null);
+    setQuestions((current) => setEnabledForKeys(current, visibleKeys, enabled));
+  }
+
+  /** Move a question one place up or down the order respondents will see. */
+  function moveQuestion(draftKey: string, direction: -1 | 1) {
+    setSaved(false);
+    setSaveError(null);
+    setQuestions((current) =>
+      moveQuestionWithinView(current, visibleKeys, draftKey, direction),
+    );
+  }
 
   function updateQuestion(draftKey: string, updater: (question: BuilderQuestion) => BuilderQuestion) {
     setSaved(false);
@@ -480,6 +504,10 @@ export function SurveyBuilder({
             visibleQuestions={visibleQuestions}
             selectedDimensionId={selectedDimensionId}
             setSelectedDimensionId={setSelectedDimensionId}
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            onSetVisibleEnabled={setVisibleQuestionsEnabled}
+            onMoveQuestion={moveQuestion}
             onUpdateQuestion={updateQuestion}
             onDuplicateQuestion={duplicateQuestion}
             onEditQuestion={(q) => setEditingQuestion(q)}

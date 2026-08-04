@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import { ClipboardList, Clock3, Copy, Edit3, Eye, GripVertical, ShieldCheck, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, ClipboardList, Clock3, Copy, Edit3, Eye, ShieldCheck, Trash2 } from "lucide-react";
 import { dimensionPresentations } from "@/lib/dashboard/dimension-presentation";
 import type { BuilderQuestion } from "./types";
 
@@ -14,6 +14,10 @@ function getDimensionColor(dimensionId: string) {
 type QuestionCardProps = {
   question: BuilderQuestion;
   questionIndex: number;
+  /** Move this question one place up (-1) or down (1) in the shown order. */
+  onMove: (draftKey: string, direction: -1 | 1) => void;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
   onUpdate: (draftKey: string, updater: (question: BuilderQuestion) => BuilderQuestion) => void;
   onDuplicate: (draftKey: string) => void;
   onEdit?: (question: BuilderQuestion) => void;
@@ -27,6 +31,9 @@ const FROZEN_HINT =
 export function SurveyQuestionCard({
   question,
   questionIndex,
+  onMove,
+  canMoveUp,
+  canMoveDown,
   onUpdate,
   onDuplicate,
   onEdit,
@@ -40,9 +47,33 @@ export function SurveyQuestionCard({
       aria-describedby={isFrozen ? "survey-builder-frozen-note" : undefined}
     >
       <div className="survey-builder-question-row">
+        {/* This used to be a drag handle icon that did nothing. Two buttons
+            instead: they reorder for real, and they work from the keyboard,
+            which a drag handle never did. */}
         <span className="survey-builder-order">
-          <GripVertical size={16} aria-hidden="true" />
-          {question.enabled && questionIndex > 0 ? questionIndex : "-"}
+          <button
+            className="question-move-button"
+            type="button"
+            title={isFrozen ? FROZEN_HINT : "העברת השאלה למעלה"}
+            aria-label="העברת השאלה למעלה"
+            disabled={isFrozen || !canMoveUp}
+            onClick={() => onMove(question.draftKey, -1)}
+          >
+            <ChevronUp size={15} aria-hidden="true" />
+          </button>
+          <span className="survey-builder-order-number">
+            {question.enabled && questionIndex > 0 ? questionIndex : "-"}
+          </span>
+          <button
+            className="question-move-button"
+            type="button"
+            title={isFrozen ? FROZEN_HINT : "העברת השאלה למטה"}
+            aria-label="העברת השאלה למטה"
+            disabled={isFrozen || !canMoveDown}
+            onClick={() => onMove(question.draftKey, 1)}
+          >
+            <ChevronDown size={15} aria-hidden="true" />
+          </button>
         </span>
 
         <div className="survey-builder-question-copy">
