@@ -3,7 +3,10 @@ import test from "node:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import { SaveStatus, parseSavedAt } from "../save-status";
 
-const savedAt = new Date("2026-08-04T11:32:07.000Z");
+// Today, because "at 14:03" is only the whole truth for work saved today. The
+// instant is taken from the clock rather than written down, so the test does not
+// start failing the day after it was written.
+const savedAt = new Date();
 
 test("nothing is said before anything has happened", () => {
   const markup = renderToStaticMarkup(
@@ -22,6 +25,27 @@ test("a completed save says when it happened", () => {
   assert.ok(markup.includes(savedAt.toISOString()));
   assert.ok(markup.includes('role="status"'));
   assert.ok(!markup.includes("טרם נשמרו"));
+});
+
+test("a save from another day is dated, not left reading as this morning", () => {
+  const earlier = new Date(savedAt.getTime() - 3 * 24 * 60 * 60 * 1000);
+  const markup = renderToStaticMarkup(
+    <SaveStatus savedAt={earlier} hasUnsavedChanges={false} />,
+  );
+
+  // A stored save time arrives with the page and can be days old, so the hour
+  // alone would be a claim about today that nobody made.
+  assert.ok(markup.includes("נשמר ב"));
+  assert.ok(!markup.includes("נשמר בשעה"));
+  assert.ok(markup.includes(earlier.toISOString()));
+  assert.ok(
+    markup.includes(
+      new Intl.DateTimeFormat("he-IL", {
+        dateStyle: "long",
+        timeZone: "Asia/Jerusalem",
+      }).format(earlier),
+    ),
+  );
 });
 
 test("an edit after the save stops the time from reading as current", () => {

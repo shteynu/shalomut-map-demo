@@ -33,6 +33,7 @@ export default async function SurveyPage({
           context.selectedRound.privacyThreshold,
         )
       }
+      lastSavedAt={context.selectedRound.updatedAt?.toISOString()}
       isFrozen={context.responseCount > 0 || context.selectedRound.status === "closed"}
     />
   );

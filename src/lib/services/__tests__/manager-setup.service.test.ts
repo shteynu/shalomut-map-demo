@@ -129,3 +129,39 @@ test("ManagerSetupService updates the existing records without creating duplicat
   assert.strictEqual(updated.round.privacyThreshold, 12);
   assert.strictEqual(updated.round.surveyDefinition?.minimumResponses, 12);
 });
+
+test("a saved round carries the moment it reached the database", async () => {
+  const orgRepo = new InMemoryOrganizationRepository();
+  const roundRepo = new InMemoryRoundRepository();
+  const created = await ManagerSetupService.save(
+    setupInput(),
+    orgRepo,
+    roundRepo,
+  );
+
+  assert.ok(created.round.updatedAt instanceof Date);
+
+  const updated = await ManagerSetupService.save(
+    {
+      organization: { ...setupInput().organization, id: created.organization.id },
+      round: { ...setupInput().round, id: created.round.id, privacyThreshold: 14 },
+    },
+    orgRepo,
+    roundRepo,
+  );
+
+  // The setup screen reports this value as its save time, so a second save has
+  // to move it; a stale one would tell the manager their edit was already
+  // stored.
+  assert.ok(updated.round.updatedAt instanceof Date);
+  assert.ok(
+    updated.round.updatedAt.getTime() >= created.round.updatedAt.getTime(),
+  );
+
+  // And it is what a reload reads, not something the save response invented.
+  const reloaded = await roundRepo.findById(created.round.id);
+  assert.strictEqual(
+    reloaded?.updatedAt?.getTime(),
+    updated.round.updatedAt.getTime(),
+  );
+});

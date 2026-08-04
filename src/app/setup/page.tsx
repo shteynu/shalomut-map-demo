@@ -64,6 +64,7 @@ export default async function SetupPage({
                 startDate: round.startDate.toISOString().slice(0, 10),
                 endDate: round.endDate?.toISOString().slice(0, 10) ?? "",
                 privacyThreshold: round.privacyThreshold,
+                updatedAt: round.updatedAt?.toISOString(),
                 backgroundContext: round.backgroundContext,
               }
             : null

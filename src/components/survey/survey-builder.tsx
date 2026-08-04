@@ -85,6 +85,12 @@ type SurveyBuilderProps = {
   roundTitle: string;
   shareCode: string;
   initialDefinition: SurveyDefinition;
+  /**
+   * When this round last reached the database, as the round records it. It
+   * covers the setup screen's saves too, which rewrite the round — including
+   * the questionnaire's privacy threshold and audience.
+   */
+  lastSavedAt?: string;
   isFrozen?: boolean;
 };
 
@@ -94,6 +100,7 @@ export function SurveyBuilder({
   roundTitle,
   shareCode,
   initialDefinition,
+  lastSavedAt,
   isFrozen = false,
 }: SurveyBuilderProps) {
   const [title, setTitle] = useState(initialDefinition.title);
@@ -118,10 +125,13 @@ export function SurveyBuilder({
   const [closedRoundTitles, setClosedRoundTitles] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  // When the server confirmed the last write of this session, and whether the
-  // questionnaire has moved since. Every edit goes through `markEdited`, so the
-  // time on screen never outlives the state it describes.
-  const [savedAt, setSavedAt] = useState<Date | null>(null);
+  // When the round last reached the database, and whether the questionnaire has
+  // moved since. It starts at the stored save time, which is what carries the
+  // answer across a reload. Every edit goes through `markEdited`, so the time on
+  // screen never outlives the state it describes.
+  const [savedAt, setSavedAt] = useState<Date | null>(() =>
+    parseSavedAt(lastSavedAt),
+  );
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   /** One entry point for every change that leaves the draft unsaved. */

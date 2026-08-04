@@ -36,6 +36,8 @@ type SetupFormProps = {
     startDate: string;
     endDate: string;
     privacyThreshold: number;
+    /** When this round last reached the database, as the round records it. */
+    updatedAt?: string;
     backgroundContext?: {
       notes: string;
       audience: string;
@@ -60,7 +62,11 @@ export function SetupForm({
   const [saving, setSaving] = useState(false);
   // When the server confirmed the write, and whether the form has moved since.
   // The fields are uncontrolled, so any input is what marks the form dirty.
-  const [savedAt, setSavedAt] = useState<Date | null>(null);
+  // It starts at the round's stored save time, which is what carries the answer
+  // across a reload; a new round has none to show yet.
+  const [savedAt, setSavedAt] = useState<Date | null>(() =>
+    parseSavedAt(round?.updatedAt),
+  );
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [savedRoundId, setSavedRoundId] = useState<string | null>(null);
