@@ -106,9 +106,24 @@ compatibility field while `AiAnalysisRun.result` is the durable read source.
 
 Missing keys, quota exhaustion, timeouts and output rejected after bounded
 attempts fail the round as `provider_unavailable`; raw provider errors are not
-rendered to managers. Yellow/red text is never fabricated. Green may retain one
-aggregate-grounded deterministic sentence, labelled
-`deterministic_fallback` with the actual attempt count.
+rendered to managers.
+
+Up to contract 5.0, yellow and red have no deterministic copy at all: a
+two-sentence interpretation of a problem would have to say something the
+numbers do not, so a spent attempt budget raises. Green may retain one
+aggregate-grounded sentence, labelled `deterministic_fallback` with the actual
+attempt count.
+
+Contract 6.0 does not raise per dimension. Its three-paragraph summary and its
+metric narratives fall back at every status, because the V6 fallback is built
+to restate the status and the distribution and nothing else — it names no
+cause, no diagnosis and no person, so it is not the guess 5.0 refused to make.
+The obligation this transfers is disclosure, not silence: the outcome stays
+`deterministic_fallback`, the dimension screen tells the manager in Hebrew that
+no model wrote those paragraphs, and every accepted map emits
+`ai_deterministic_summary_ratio_sample` so a round the provider never answered
+is distinguishable from one it did. Copy the service wrote may be shown; it may
+not be presented as the model's.
 
 Python validates its assembled outgoing Stone Map before callback. Repair
 replays only rejected dimensions/parts and carries safe Hebrew critique into

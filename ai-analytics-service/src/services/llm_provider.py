@@ -370,7 +370,23 @@ class LLMProviderService:
         contract_version: str = AI_ANALYTICS_V6_CONTRACT_VERSION,
         repair_critique: Optional[str] = None,
     ) -> StructuredSummaryGeneration:
-        """Generate V6's three overview paragraphs with a total fallback."""
+        """Generate V6's three overview paragraphs, falling back at any status.
+
+        This is deliberately unlike
+        ``generate_psychological_interpretation_result``, which raises for
+        yellow and red rather than write copy about a problem it was not told
+        about. The V6 fallback restates the status and the distribution and
+        stops: no cause, no diagnosis, no claim about a person. So the reason
+        5.0 refuses does not apply, and refusing here would throw away a round
+        whose scores, metrics and recommendations are all real.
+
+        What it costs is that a silent provider now produces a ``success``
+        round. That is paid for outside this function: the outcome stays
+        ``deterministic_fallback``, the dimension screen says in Hebrew that no
+        model wrote these paragraphs, and Core emits
+        ``ai_deterministic_summary_ratio_sample`` for every accepted map. See
+        ADR-007.
+        """
         aggregates = list(question_aggregates)
         model_name = self._model_for_tier(retry_tier)
         text, attempts, fallback_reason = self._complete_with_retries(

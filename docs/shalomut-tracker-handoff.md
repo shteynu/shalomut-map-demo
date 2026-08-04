@@ -164,6 +164,18 @@ state, external blockers and approval gates. Product milestones belong in
   Phase 1 of the AI harness improvement plan the owner is holding outside the
   repository.
 
+- On contract `6.0` a silent provider does not fail a dimension: the structured
+  summary and the metric narratives fall back to aggregate-derived copy and the
+  round is reported `success`. Since 2026-08-04 that is disclosed rather than
+  implicit — ADR-007 now describes it, the dimension screen tells the manager
+  no model wrote those paragraphs, and every accepted map emits
+  `ai_deterministic_summary_ratio_sample`. **Read that share before reading any
+  round as evidence about the prompts**; on a rate-limited key it is close to 1
+  while `ai_jobs_succeeded` looks healthy.
+- The metric narratives are not covered by that disclosure. Each has its own
+  outcome inside Python and the wire contract carries only the dimension's
+  summary provenance, so closing that gap needs a contract change.
+
 ## Operational invariants
 
 - Confirm the database/environment before any write so work does not land on
