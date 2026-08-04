@@ -660,6 +660,45 @@ textarea {
   color: var(--muted);
 }
 
+/* The builder's shortcut legend. Quiet by design: it is a reference for the
+   manager who wants it, not a second instruction competing with the list. */
+.survey-builder-shortcut-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.survey-builder-shortcut-note svg {
+  flex: none;
+  margin-block-start: 0.2rem;
+}
+
+/* A chord and the word it means stay on one line: "Alt+D" alone at the end of a
+   line, with "שכפול" starting the next, reads as two different things. */
+.survey-builder-shortcut-note .shortcut-chord {
+  white-space: nowrap;
+}
+
+.survey-builder-shortcut-note kbd {
+  display: inline-block;
+  min-width: 1.5em;
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  padding: 0.05rem 0.35rem;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 0.85em;
+  font-weight: 700;
+  text-align: center;
+  /* The chords are Latin keys inside a Hebrew sentence; without this the
+     punctuation between them lands on the wrong side. */
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
 .round-layout {
   display: grid;
   grid-template-columns: 0.85fr 1.15fr;

@@ -1,6 +1,7 @@
-import type { CSSProperties } from "react";
+import type { CSSProperties, KeyboardEvent } from "react";
 import { ChevronDown, ChevronUp, ClipboardList, Clock3, Copy, Edit3, Eye, ShieldCheck, Trash2 } from "lucide-react";
 import { dimensionPresentations } from "@/lib/dashboard/dimension-presentation";
+import { questionAcceleratorFor } from "./keyboard-accelerators";
 import type { BuilderQuestion } from "./types";
 
 function getDimensionLabel(dimensionId: string) {
@@ -40,11 +41,56 @@ export function SurveyQuestionCard({
   onDelete,
   isFrozen = false,
 }: QuestionCardProps) {
+  function toggle(field: "enabled" | "required") {
+    onUpdate(question.draftKey, (current) => ({
+      ...current,
+      [field]: !current[field],
+    }));
+  }
+
+  /**
+   * The accelerators act on the question the caret is in, which is what makes
+   * them worth having: no chord needs a "selected question" concept, and the
+   * card the manager is reading is the card that answers.
+   *
+   * A chord that cannot act — moving the first question up, editing a frozen
+   * questionnaire — is left alone rather than swallowed, so the browser's own
+   * behaviour survives where this screen has nothing to offer.
+   */
+  function handleKeyDown(event: KeyboardEvent<HTMLElement>) {
+    if (isFrozen) return;
+
+    const accelerator = questionAcceleratorFor(event);
+    if (!accelerator) return;
+
+    if (accelerator === "move-up" || accelerator === "move-down") {
+      const direction = accelerator === "move-up" ? -1 : 1;
+      if (direction === -1 ? !canMoveUp : !canMoveDown) return;
+
+      event.preventDefault();
+      onMove(question.draftKey, direction);
+      return;
+    }
+
+    if (accelerator === "edit") {
+      if (!onEdit) return;
+      event.preventDefault();
+      onEdit(question);
+      return;
+    }
+
+    event.preventDefault();
+    if (accelerator === "duplicate") onDuplicate(question.draftKey);
+    if (accelerator === "toggle-enabled") toggle("enabled");
+    if (accelerator === "toggle-required") toggle("required");
+  }
+
   return (
     <article
       className={`survey-builder-question-card${question.enabled ? "" : " is-disabled"}`}
       style={{ "--question-color": getDimensionColor(question.dimensionId) } as CSSProperties}
       aria-describedby={isFrozen ? "survey-builder-frozen-note" : undefined}
+      onKeyDown={handleKeyDown}
     >
       <div className="survey-builder-question-row">
         {/* This used to be a drag handle icon that did nothing. Two buttons
@@ -54,8 +100,9 @@ export function SurveyQuestionCard({
           <button
             className="question-move-button"
             type="button"
-            title={isFrozen ? FROZEN_HINT : "העברת השאלה למעלה"}
+            title={isFrozen ? FROZEN_HINT : "העברת השאלה למעלה (Alt+↑)"}
             aria-label="העברת השאלה למעלה"
+            aria-keyshortcuts="Alt+ArrowUp"
             disabled={isFrozen || !canMoveUp}
             onClick={() => onMove(question.draftKey, -1)}
           >
@@ -67,8 +114,9 @@ export function SurveyQuestionCard({
           <button
             className="question-move-button"
             type="button"
-            title={isFrozen ? FROZEN_HINT : "העברת השאלה למטה"}
+            title={isFrozen ? FROZEN_HINT : "העברת השאלה למטה (Alt+↓)"}
             aria-label="העברת השאלה למטה"
+            aria-keyshortcuts="Alt+ArrowDown"
             disabled={isFrozen || !canMoveDown}
             onClick={() => onMove(question.draftKey, 1)}
           >
@@ -86,8 +134,9 @@ export function SurveyQuestionCard({
             <button
               className="question-icon-button"
               type="button"
-              title={isFrozen ? FROZEN_HINT : "עריכת שאלה בחלון צף"}
+              title={isFrozen ? FROZEN_HINT : "עריכת שאלה בחלון צף (Alt+E)"}
               aria-label="עריכת שאלה בחלון צף"
+              aria-keyshortcuts="Alt+E"
               disabled={isFrozen}
               onClick={() => onEdit(question)}
             >
@@ -101,17 +150,13 @@ export function SurveyQuestionCard({
               isFrozen
                 ? FROZEN_HINT
                 : question.required
-                  ? "להפוך לרשות"
-                  : "להפוך לחובה"
+                  ? "להפוך לרשות (Alt+R)"
+                  : "להפוך לחובה (Alt+R)"
             }
             aria-label={question.required ? "להפוך לרשות" : "להפוך לחובה"}
+            aria-keyshortcuts="Alt+R"
             disabled={isFrozen}
-            onClick={() =>
-              onUpdate(question.draftKey, (current) => ({
-                ...current,
-                required: !current.required,
-              }))
-            }
+            onClick={() => toggle("required")}
           >
             <ShieldCheck size={17} aria-hidden="true" />
           </button>
@@ -122,25 +167,22 @@ export function SurveyQuestionCard({
               isFrozen
                 ? FROZEN_HINT
                 : question.enabled
-                  ? "להסתיר מסבב האבחון"
-                  : "להחזיר לסבב האבחון"
+                  ? "להסתיר מסבב האבחון (Alt+H)"
+                  : "להחזיר לסבב האבחון (Alt+H)"
             }
             aria-label={question.enabled ? "להסתיר מסבב האבחון" : "להחזיר לסבב האבחון"}
+            aria-keyshortcuts="Alt+H"
             disabled={isFrozen}
-            onClick={() =>
-              onUpdate(question.draftKey, (current) => ({
-                ...current,
-                enabled: !current.enabled,
-              }))
-            }
+            onClick={() => toggle("enabled")}
           >
             <Eye size={17} aria-hidden="true" />
           </button>
           <button
             className="question-icon-button"
             type="button"
-            title={isFrozen ? FROZEN_HINT : "שכפול שאלה"}
+            title={isFrozen ? FROZEN_HINT : "שכפול שאלה (Alt+D)"}
             aria-label="שכפול שאלה"
+            aria-keyshortcuts="Alt+D"
             disabled={isFrozen}
             onClick={() => onDuplicate(question.draftKey)}
           >

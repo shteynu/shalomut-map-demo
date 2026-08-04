@@ -1,4 +1,5 @@
-import { Loader2, Lock, Plus, RotateCcw, Search, Sparkles, Trash2 } from "lucide-react";
+import { Keyboard, Loader2, Lock, Plus, RotateCcw, Search, Sparkles, Trash2 } from "lucide-react";
+import type { RefObject } from "react";
 import { dimensionPresentations } from "@/lib/dashboard/dimension-presentation";
 import { SurveyQuestionCard } from "./survey-question-card";
 import type { BuilderQuestion } from "./types";
@@ -7,6 +8,55 @@ function getDimensionLabel(dimensionId: string) {
   return dimensionPresentations.find((dimension) => dimension.id === dimensionId)?.conceptLabel ?? dimensionId;
 }
 
+/**
+ * The legend under the list. It repeats what each button already carries in its
+ * tooltip and `aria-keyshortcuts`, because a shortcut nobody can see is
+ * folklore — and it is kept next to the list the chords act on rather than in a
+ * help screen nobody opens.
+ */
+const QUESTION_SHORTCUTS = [
+  {
+    label: "העברה",
+    keys: (
+      <>
+        <kbd>Alt</kbd>+<kbd>↑</kbd>/<kbd>↓</kbd>
+      </>
+    ),
+  },
+  {
+    label: "עריכה",
+    keys: (
+      <>
+        <kbd>Alt</kbd>+<kbd>E</kbd>
+      </>
+    ),
+  },
+  {
+    label: "שכפול",
+    keys: (
+      <>
+        <kbd>Alt</kbd>+<kbd>D</kbd>
+      </>
+    ),
+  },
+  {
+    label: "הסתרה",
+    keys: (
+      <>
+        <kbd>Alt</kbd>+<kbd>H</kbd>
+      </>
+    ),
+  },
+  {
+    label: "חובה",
+    keys: (
+      <>
+        <kbd>Alt</kbd>+<kbd>R</kbd>
+      </>
+    ),
+  },
+];
+
 type QuestionsPanelProps = {
   questions: BuilderQuestion[];
   visibleQuestions: BuilderQuestion[];
@@ -14,6 +64,8 @@ type QuestionsPanelProps = {
   setSelectedDimensionId: (id: string) => void;
   searchTerm: string;
   setSearchTerm: (term: string) => void;
+  /** Focused by the `/` accelerator, which lives on the page above. */
+  searchInputRef?: RefObject<HTMLInputElement | null>;
   /** Enable or hide every question currently on screen. */
   onSetVisibleEnabled: (enabled: boolean) => void;
   onMoveQuestion: (draftKey: string, direction: -1 | 1) => void;
@@ -38,6 +90,7 @@ export function SurveyBuilderQuestions({
   setSelectedDimensionId,
   searchTerm,
   setSearchTerm,
+  searchInputRef,
   onSetVisibleEnabled,
   onMoveQuestion,
   onUpdateQuestion,
@@ -187,10 +240,12 @@ export function SurveyBuilderQuestions({
           <Search size={16} aria-hidden="true" />
           <span className="visually-hidden">חיפוש שאלה לפי נוסח, ממד או מזהה</span>
           <input
+            ref={searchInputRef}
             type="search"
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
-            placeholder="חיפוש לפי נוסח, ממד או מזהה"
+            placeholder='חיפוש לפי נוסח, ממד או מזהה (מקש /)'
+            aria-keyshortcuts="/"
           />
         </label>
 
@@ -220,6 +275,34 @@ export function SurveyBuilderQuestions({
         מוצגות {visibleQuestions.length} שאלות ב{selectedDimensionLabel}
         {searchTerm.trim() ? ` התואמות לחיפוש "${searchTerm.trim()}"` : ""}. רק שאלות פעילות ממוספרות ברצף. שאלות מוסתרות מוצגות ללא מספר ואינן נשלחות למשיבים.
       </p>
+
+      {/* A shortcut nobody can see is folklore. The chords are listed where the
+          list they act on begins, and each button repeats its own in the
+          tooltip and in `aria-keyshortcuts`. Hidden while the questionnaire is
+          frozen: none of them do anything then. */}
+      {!isFrozen && visibleQuestions.length > 0 ? (
+        <p className="quiet-note survey-builder-shortcut-note">
+          <Keyboard size={16} aria-hidden="true" />
+          <span>
+            קיצורי מקלדת בשאלה שהסמן נמצא בה:{" "}
+            {QUESTION_SHORTCUTS.map((shortcut, index) => (
+              <span key={shortcut.label} className="shortcut-chord">
+                {shortcut.keys}
+                {` ${shortcut.label}`}
+                {index < QUESTION_SHORTCUTS.length - 1 ? ", " : ". "}
+              </span>
+            ))}
+            בכל המסך:{" "}
+            <span className="shortcut-chord">
+              <kbd>/</kbd> חיפוש,{" "}
+            </span>
+            <span className="shortcut-chord">
+              <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>S</kbd> שמירה.
+            </span>{" "}
+            מחיקה נשארה בכפתור בלבד.
+          </span>
+        </p>
+      ) : null}
 
       {visibleQuestions.length === 0 ? (
         <div className="survey-builder-empty-note">

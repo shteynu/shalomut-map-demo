@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { CheckCircle2, Eye, Loader2 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { PageIntro } from "@/components/ui/page-intro";
 import { PrivacyTooltip } from "@/components/ui/privacy-tooltip";
 import { SaveStatus, parseSavedAt } from "@/components/ui/save-status";
@@ -20,6 +20,10 @@ import {
 import { SurveyBuilderQuestions } from "./survey-builder/survey-builder-questions";
 import { SurveyBuilderSettings } from "./survey-builder/survey-builder-settings";
 import { SurveyBuilderSidebar } from "./survey-builder/survey-builder-sidebar";
+import {
+  builderAcceleratorFor,
+  isTextEntryElement,
+} from "./survey-builder/keyboard-accelerators";
 import { QuestionEditDialog } from "./survey-builder/question-edit-dialog";
 import {
   requestAiQuestionSuggestion,
@@ -137,6 +141,7 @@ export function SurveyBuilder({
   const { status: copyStatus, copy } = useClipboard();
   const shareUrl = useShareUrl(shareCode);
   const shareInputRef = useRef<HTMLInputElement | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   /**
    * Copy the link, and when the browser refuses, select it so the manual copy
@@ -408,6 +413,44 @@ export function SurveyBuilder({
     setSaving(false);
   }
 
+  /**
+   * The two chords that belong to the screen rather than to one question.
+   *
+   * Ctrl/Cmd+S is the one every editor has, and the browser's own Save-page
+   * dialog is worthless here, so it is taken over — but only when saving is
+   * actually possible, otherwise the manager gets the browser dialog they know
+   * instead of nothing at all. `/` reaches the search field, and stands down
+   * whenever the caret is somewhere a `/` is a character.
+   *
+   * Registered fresh on every render on purpose: the handler closes over the
+   * questionnaire state, and one listener is cheaper than the bookkeeping to
+   * keep a stale one correct.
+   */
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      const accelerator = builderAcceleratorFor(
+        event,
+        isTextEntryElement(event.target),
+      );
+      if (!accelerator) return;
+
+      if (accelerator === "focus-search") {
+        event.preventDefault();
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+        return;
+      }
+
+      if (saving || isFrozen || !questionnaireValidation.isSaveable) return;
+
+      event.preventDefault();
+      void saveDefinition();
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  });
+
   return (
     <div className="page survey-builder-stone-page">
       <PageIntro
@@ -524,6 +567,7 @@ export function SurveyBuilder({
             setSelectedDimensionId={setSelectedDimensionId}
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
+            searchInputRef={searchInputRef}
             onSetVisibleEnabled={setVisibleQuestionsEnabled}
             onMoveQuestion={moveQuestion}
             onUpdateQuestion={updateQuestion}
