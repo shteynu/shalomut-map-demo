@@ -91,6 +91,9 @@ export async function PUT(request: Request, { params }: RouteParams) {
     // dimensions, and going live closes whichever round the school was running.
     // Closed and archived rounds are never reopened here.
     let closedRoundTitles: string[] = [];
+    // Activation writes the round again, so it, and not the definition write,
+    // is then the moment the round last reached the database.
+    let savedRound = updated;
     if (
       updated &&
       updated.status === 'draft' &&
@@ -99,6 +102,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
       const activation = await RoundService.activateRound(roundId, roundRepo);
       closedRoundTitles =
         activation?.closedRounds.map((round) => round.title) ?? [];
+      savedRound = activation?.round ?? updated;
     }
 
     if (!updated) {
@@ -110,9 +114,10 @@ export async function PUT(request: Request, { params }: RouteParams) {
 
     return NextResponse.json({
       success: true,
-      // When the write completed, as the server saw it. The builder shows this
-      // rather than the moment the button was pressed.
-      savedAt: new Date().toISOString(),
+      // When the write completed, as the round itself records it. The builder
+      // shows this rather than the moment the button was pressed, and the next
+      // page load reads the same column, so the answer outlives the tab.
+      savedAt: savedRound?.updatedAt?.toISOString(),
       definition: updated.surveyDefinition,
       // Named so the builder can tell the manager which round stopped running,
       // rather than leaving the school to notice on the dashboard later.

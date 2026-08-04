@@ -186,11 +186,14 @@ export async function PUT(request: Request) {
       roundRepo,
     );
 
-    // The screen shows when the work reached the database, so the time has to
-    // come from the side that wrote it rather than from the browser clock.
+    // The screen shows when the work reached the database, so the time is the
+    // round's own `updatedAt` — the value the write stored — rather than the
+    // browser clock or a reading this handler takes afterwards. That is also
+    // what lets the time survive a reload: the next page load reads the same
+    // column.
     return NextResponse.json({
       success: true,
-      savedAt: new Date().toISOString(),
+      savedAt: result.round.updatedAt?.toISOString(),
       ...result,
     });
   } catch (error) {

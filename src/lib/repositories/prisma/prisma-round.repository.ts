@@ -63,6 +63,7 @@ export class PrismaRoundRepository implements IRoundRepository {
           ? structuredClone(record.surveyDefinition)
           : undefined,
       createdAt: new Date(record.createdAt),
+      updatedAt: record.updatedAt ? new Date(record.updatedAt) : undefined,
     };
   }
 

@@ -30,8 +30,11 @@ export class InMemoryRoundRepository implements IRoundRepository {
     }
   }
 
+  // `updated_at` is a database-side `@updatedAt` column, so every write here
+  // stamps it too. Leaving it to the caller would let the in-memory repository
+  // report a save time the deployed one would have moved on.
   public async create(round: SurveyRound): Promise<SurveyRound> {
-    const copy = cloneRound(round);
+    const copy = cloneRound({ ...round, updatedAt: new Date() });
     this.rounds.set(copy.id, copy);
     return cloneRound(copy);
   }
@@ -68,7 +71,7 @@ export class InMemoryRoundRepository implements IRoundRepository {
     const round = this.rounds.get(id);
     if (!round) return null;
 
-    const updated = cloneRound({ ...round, ...input });
+    const updated = cloneRound({ ...round, ...input, updatedAt: new Date() });
     this.rounds.set(id, updated);
     return cloneRound(updated);
   }
@@ -79,7 +82,7 @@ export class InMemoryRoundRepository implements IRoundRepository {
   ): Promise<SurveyRound | null> {
     const round = this.rounds.get(id);
     if (!round) return null;
-    const updated: SurveyRound = { ...round, status };
+    const updated: SurveyRound = { ...round, status, updatedAt: new Date() };
     this.rounds.set(id, updated);
     return cloneRound(updated);
   }

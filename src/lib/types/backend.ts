@@ -54,6 +54,13 @@ export interface SurveyRound {
   backgroundContext?: RoundBackgroundContext;
   surveyDefinition?: SurveyDefinition;
   createdAt: Date;
+  /**
+   * When the round last reached the database, or undefined for a round last
+   * written before the column existed. The manager screens report it as their
+   * save time, so an absent value must stay absent rather than fall back to
+   * `createdAt`, which answers a different question.
+   */
+  updatedAt?: Date;
 }
 
 export interface QuestionAnswerInput {

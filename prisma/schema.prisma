@@ -33,6 +33,10 @@ model SurveyRound {
   backgroundContext   Json?            @map("background_context")
   surveyDefinition    Json?            @map("survey_definition")
   createdAt           DateTime         @default(now()) @map("created_at")
+  // When the round last reached the database. Nullable on purpose: rounds that
+  // predate the column have no honest value, and the screens would rather show
+  // no time than one they made up.
+  updatedAt           DateTime?        @updatedAt @map("updated_at")
   aiInsights          Json?            @map("ai_insights")
   aiInsightsUpdatedAt DateTime?        @map("ai_insights_updated_at")
 
