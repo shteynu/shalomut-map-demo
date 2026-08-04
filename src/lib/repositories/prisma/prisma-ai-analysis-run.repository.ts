@@ -71,6 +71,12 @@ export class PrismaAiAnalysisRunRepository
       trigger: AiAnalysisRun['trigger'];
     },
   ): Promise<EnqueueAiAnalysisRunResult> {
+    // The automatic path now varies its request key per attempt, so the
+    // `(round_id, request_key)` constraint no longer doubles as the
+    // one-run-at-a-time guard for it. Nothing needs to change here: the
+    // partial unique index `ai_analysis_runs_one_active_per_round_key` holds
+    // that invariant across processes whatever the key, and its violation is
+    // resolved as `already_active` below.
     try {
       const created = await this.delegate.create({
         data: {
@@ -271,6 +277,14 @@ export class PrismaAiAnalysisRunRepository
       orderBy: { sequence: 'desc' },
     });
     return run ? mapRun(run) : null;
+  }
+
+  async findByRoundId(roundId: string): Promise<AiAnalysisRun[]> {
+    const runs = await this.delegate.findMany({
+      where: { roundId },
+      orderBy: { sequence: 'asc' },
+    });
+    return runs.map(mapRun);
   }
 
   async deleteByRoundId(roundId: string): Promise<void> {

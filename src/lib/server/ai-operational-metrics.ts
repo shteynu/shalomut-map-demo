@@ -2,6 +2,7 @@ import type { AiAnalysisRun } from '../types/ai-analysis-run';
 
 export type OperationalMetricName =
   | 'ai_jobs_queued'
+  | 'ai_jobs_rearmed'
   | 'ai_jobs_running'
   | 'ai_jobs_succeeded'
   | 'ai_jobs_failed'
@@ -56,6 +57,29 @@ export function recordAiJobQueued(run: AiAnalysisRun) {
     value: 1,
     unit: 'count',
     labels: { trigger: run.trigger },
+    ...correlation(run),
+  });
+}
+
+/**
+ * A round whose automatic analysis had to be started again because responses
+ * moved under the previous run. The rate of this counter is the measurement
+ * that says how often the round's input changes mid-analysis, so it is the
+ * evidence for whether the durable run needs to own an immutable input
+ * snapshot rather than refetching one.
+ */
+export function recordAiJobRearmed(
+  run: AiAnalysisRun,
+  input: { attempt: number; previousFailureCode: string },
+) {
+  emit({
+    name: 'ai_jobs_rearmed',
+    value: 1,
+    unit: 'count',
+    labels: {
+      attempt: String(input.attempt),
+      previousFailureCode: input.previousFailureCode,
+    },
     ...correlation(run),
   });
 }

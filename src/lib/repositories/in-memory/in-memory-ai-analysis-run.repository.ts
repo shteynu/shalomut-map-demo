@@ -225,6 +225,13 @@ export class InMemoryAiAnalysisRunRepository
     return latest ? cloneRun(latest) : null;
   }
 
+  async findByRoundId(roundId: string): Promise<AiAnalysisRun[]> {
+    return [...this.runs.values()]
+      .filter((run) => run.roundId === roundId)
+      .sort((left, right) => left.sequence - right.sequence)
+      .map(cloneRun);
+  }
+
   async deleteByRoundId(roundId: string): Promise<void> {
     for (const [runId, run] of this.runs) {
       if (run.roundId === roundId) this.runs.delete(runId);

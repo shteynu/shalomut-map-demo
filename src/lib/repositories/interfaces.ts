@@ -92,6 +92,14 @@ export interface IAiAnalysisRunRepository {
   ): Promise<FinishAiAnalysisRunResult>;
   findById(runId: string): Promise<AiAnalysisRun | null>;
   findLatestByRoundId(roundId: string): Promise<AiAnalysisRun | null>;
+  /**
+   * Every run the round has had, oldest first. The automatic enqueue policy
+   * needs the history rather than the latest row: whether a run already
+   * succeeded, whether one is in flight and how many automatic attempts have
+   * been spent are three different questions, and the newest run answers none
+   * of them on its own.
+   */
+  findByRoundId(roundId: string): Promise<AiAnalysisRun[]>;
   deleteByRoundId(roundId: string): Promise<void>;
 }
 

@@ -113,3 +113,100 @@ test(
     }
   },
 );
+
+test(
+  'a numbered automatic key re-arms the round without escaping the one-active-run index',
+  { skip: !connectionString },
+  async () => {
+    assert.ok(prisma);
+    const suffix = globalThis.crypto.randomUUID();
+    const organizationId = `org-ai-rearm-${suffix}`;
+    const roundId = `round-ai-rearm-${suffix}`;
+    await prisma.organization.create({
+      data: {
+        id: organizationId,
+        name: 'AI re-arm integration test',
+        city: 'local',
+        schoolType: 'test',
+        totalStaffCount: 10,
+      },
+    });
+    await prisma.surveyRound.create({
+      data: {
+        id: roundId,
+        organizationId,
+        title: 'Automatic re-arm',
+        status: 'active',
+        shareCode: `AI-REARM-${suffix}`,
+        privacyThreshold: 10,
+      },
+    });
+
+    try {
+      const repo = new PrismaAiAnalysisRunRepository(prisma as any);
+      const first = await repo.enqueue(roundId, {
+        requestKey: 'automatic',
+        trigger: 'automatic',
+      });
+      assert.strictEqual(first.outcome, 'enqueued');
+
+      // A second attempt while the first is still queued must be refused by
+      // the partial unique index, not admitted just because the key differs.
+      assert.strictEqual(
+        (
+          await repo.enqueue(roundId, {
+            requestKey: 'automatic:2',
+            trigger: 'automatic',
+          })
+        ).outcome,
+        'already_active',
+      );
+
+      const lease = await repo.claimNext({
+        workerId: 'worker-rearm',
+        leaseMs: 60_000,
+      });
+      assert.ok(lease);
+      assert.strictEqual(
+        await repo.finish(lease.run.id, {
+          state: 'failed',
+          leaseToken: lease.leaseToken,
+          failureCode: 'round_validation_failed',
+        }),
+        'transitioned',
+      );
+
+      // Now that the round holds no active run, the numbered key is what lets
+      // the automatic path start again: the original key would still collide.
+      assert.strictEqual(
+        (
+          await repo.enqueue(roundId, {
+            requestKey: 'automatic',
+            trigger: 'automatic',
+          })
+        ).outcome,
+        'duplicate',
+      );
+      assert.strictEqual(
+        (
+          await repo.enqueue(roundId, {
+            requestKey: 'automatic:2',
+            trigger: 'automatic',
+          })
+        ).outcome,
+        'enqueued',
+      );
+
+      const runs = await repo.findByRoundId(roundId);
+      assert.deepStrictEqual(
+        runs.map((run) => [run.requestKey, run.state]),
+        [
+          ['automatic', 'failed'],
+          ['automatic:2', 'queued'],
+        ],
+      );
+    } finally {
+      await prisma.organization.delete({ where: { id: organizationId } });
+    }
+  },
+);

@@ -245,6 +245,35 @@ it does not re-run the analysis, it declares that the round measured nothing.
 Goals hold no respondent data. They name a dimension and repeat manager-facing
 copy that had already cleared the privacy gate before it could be shown.
 
+### ADR-016: A run invalidated by newer responses is retried; nothing else is
+
+A durable run reads the round's aggregates when it starts and Core re-verifies
+the callback against aggregates recalculated when it arrives. The round keeps
+accepting responses in between, so a response landing mid-analysis makes a
+correct result fail with `round_validation_failed`. Until a run owns an
+immutable input snapshot, that is the expected outcome of a normal submission
+burst, not a defect in the payload.
+
+The automatic path therefore starts a new run when the previous automatic run
+failed that way, keyed `automatic`, `automatic:2`, `automatic:3`. Keys stay
+derived from the round's own history rather than random so two concurrent
+submissions compute the same key and collapse on
+`(round_id, request_key)`; the partial unique index
+`ai_analysis_runs_one_active_per_round_key` separately keeps one run in flight
+whatever the key.
+
+No other failure is retried. `contract_validation_failed` and
+`analysis_validation_failed` describe the payload the service produced and
+`lease_exhausted` describes a worker that keeps dying — a fresh input changes
+none of them, and each attempt costs roughly two dozen provider calls. Three
+automatic runs per round is the ceiling, so a round receiving a long tail of
+responses cannot spend quota one submission at a time.
+
+The failed run is kept, not reset in place: terminal state stays terminal and
+the row is the evidence that the round's input moved. `ai_jobs_rearmed` counts
+these, and its rate is the measurement that says whether the durable run needs
+to carry its own immutable input.
+
 ## Environments
 
 The project supports exactly two environments:
