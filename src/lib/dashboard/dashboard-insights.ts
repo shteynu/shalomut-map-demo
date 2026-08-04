@@ -50,6 +50,14 @@ export interface DashboardStone {
    * words on the screen.
    */
   interpretationUnavailable: boolean;
+  /**
+   * True when this dimension's paragraphs were written by the service from the
+   * aggregates rather than by the model. The copy is real and says nothing the
+   * numbers do not, but a manager reading a red dimension is entitled to know
+   * that no model looked at it — otherwise a round the provider never answered
+   * is indistinguishable on screen from one it did.
+   */
+  summaryIsDeterministic: boolean;
   metrics: DashboardMetric[];
   recommendations: DashboardRecommendation[];
 }

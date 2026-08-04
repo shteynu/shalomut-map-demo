@@ -186,6 +186,12 @@ export function toDashboardStone(stone: AnyStoneDetail): DashboardStone {
     // of the partial map.
     interpretationUnavailable:
       stone.generationProvenance?.outcome === 'unavailable',
+    // Contract 6.0 has no `unavailable` for a dimension: the structured
+    // summary falls back at every status rather than failing the round, so
+    // without this flag a red dimension the provider never answered reads
+    // exactly like one it did.
+    summaryIsDeterministic:
+      stone.generationProvenance?.outcome === 'deterministic_fallback',
     metrics: toDashboardMetrics(stone),
     recommendations: toDashboardRecommendations(stone),
   };

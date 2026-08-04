@@ -131,9 +131,18 @@ export function DashboardDimensionDetail({
               וההמלצות מלאים, ואפשר להפעיל ניתוח מחדש כדי לנסות שוב.
             </p>
           ) : (
-            stone.summary.map((paragraph) => (
-              <p key={paragraph}>{paragraph}</p>
-            ))
+            <>
+              {stone.summary.map((paragraph) => (
+                <p key={paragraph}>{paragraph}</p>
+              ))}
+              {stone.summaryIsDeterministic ? (
+                <p className="dashboard-blob-provenance" role="note">
+                  הפסקאות האלה נגזרו מן הנתונים המצרפיים של הסבב ולא נכתבו על
+                  ידי המודל. הן אינן מוסיפות סיבה או פרשנות מעבר למספרים, ואפשר
+                  להפעיל ניתוח מחדש כדי לקבל קריאה מלאה.
+                </p>
+              ) : null}
+            </>
           )}
         </div>
       </article>

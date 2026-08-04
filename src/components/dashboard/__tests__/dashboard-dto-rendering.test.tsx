@@ -24,6 +24,7 @@ function stone(overrides: Partial<DashboardStone> = {}): DashboardStone {
     status: "yellow",
     summary: ["פסקה ראשונה על האיזון.", "פסקה שנייה על ההתאוששות."],
     interpretationUnavailable: false,
+    summaryIsDeterministic: false,
     metrics: [
       {
         label: "יש לי מספיק זמן למנוחה ולהתאוששות אחרי העבודה.",
@@ -66,6 +67,21 @@ test("a dimension the provider never interpreted says so instead of showing noth
 
   assert.match(html, /הניתוח המילולי לממד הזה לא נוצר בסבב האחרון/);
   assert.match(html, /role="status"/);
+});
+
+test("copy the service wrote itself is shown, and labelled as not the model's", () => {
+  const html = renderDetail(stone({ summaryIsDeterministic: true }));
+
+  // Both, in this order: the paragraphs are aggregate-derived and worth
+  // reading, and the sentence that says no model wrote them.
+  assert.match(html, /פסקה ראשונה על האיזון\./);
+  assert.match(html, /לא נכתבו על ידי המודל/);
+});
+
+test("a dimension the model interpreted carries no provenance note", () => {
+  const html = renderDetail(stone());
+
+  assert.doesNotMatch(html, /לא נכתבו על ידי המודל/);
 });
 
 test("the metrics screen shows the question text, its average and its split", () => {

@@ -35,6 +35,7 @@ function stoneWithMetrics(
     status: "yellow",
     summary: ["פסקה אחת."],
     interpretationUnavailable: false,
+    summaryIsDeterministic: false,
     metrics,
     recommendations: [],
   };

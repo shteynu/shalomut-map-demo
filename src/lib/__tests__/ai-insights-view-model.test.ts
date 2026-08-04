@@ -197,3 +197,54 @@ test('a stone the model wrote is not marked unavailable', () => {
   assert.strictEqual(result.interpretationUnavailable, false);
   assert.deepStrictEqual(result.summary, ['נדרש שינוי בעומס העבודה.']);
 });
+
+test('a red dimension the service wrote itself says so', () => {
+  // Contract 6.0 has no `unavailable` for a dimension: a silent provider
+  // produces aggregate-derived copy and a `success` round. Without this flag
+  // the screen cannot tell that apart from an analysis the model wrote, which
+  // is the one distinction a manager reading a red stone needs.
+  const result = toDashboardStone(
+    v6Stone({
+      status: 'red',
+      score: 28,
+      generationProvenance: {
+        outcome: 'deterministic_fallback',
+        attempts: 3,
+        retryCount: 2,
+        sourceQuestionIds: ['management-support-q1'],
+      },
+    }),
+  );
+
+  assert.strictEqual(result.summaryIsDeterministic, true);
+  // The paragraphs are still shown: they are derived from the aggregates and
+  // assert nothing beyond them. Only the claim of authorship changes.
+  assert.strictEqual(result.summary.length, 3);
+  assert.strictEqual(result.interpretationUnavailable, false);
+});
+
+test('a stone the model wrote is not marked deterministic', () => {
+  const result = toDashboardStone(v6Stone());
+
+  assert.strictEqual(result.summaryIsDeterministic, false);
+});
+
+function v6Stone(overrides: Partial<StoneDetailV6> = {}): StoneDetailV6 {
+  return {
+    dimensionId: 'management-support',
+    dimensionNameHebrew: 'תמיכת הנהלה',
+    status: 'yellow',
+    score: 55,
+    summary: ['פסקה ראשונה.', 'פסקה שנייה.', 'פסקה שלישית.'],
+    metrics: [],
+    recommendedInterventions:
+      [] as unknown as StoneDetailV6['recommendedInterventions'],
+    generationProvenance: {
+      outcome: 'llm',
+      attempts: 1,
+      retryCount: 0,
+      sourceQuestionIds: ['management-support-q1'],
+    },
+    ...overrides,
+  };
+}
