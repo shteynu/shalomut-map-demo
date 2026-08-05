@@ -382,6 +382,90 @@ def test_the_adaptation_prompt_asks_for_the_count_beside_the_colour():
     assert "0 תשובות ירוקות" in prompt
 
 
+def _every_round_prompt() -> dict[str, str]:
+    """Every prompt that writes prose a manager reads about a round.
+
+    `question_suggestion_prompt` is deliberately absent: it carries no round,
+    no aggregates and no school, and nothing it writes is about respondents.
+    """
+    store = LocalInterventionVectorStore()
+    interventions = [
+        entry.to_dict()
+        for entry in store.get_interventions_for_dimension("balance", "red")
+    ]
+    return {
+        "interpretation": _interpretation_prompt("5.0"),
+        "overall_summary": llm_provider_service._build_overall_summary_prompt(
+            DIMENSION_SCORES,
+            AGGREGATES,
+            None,
+        ),
+        "v6_structured_summary": hebrew_prompts.v6_structured_summary_prompt(
+            dim_hebrew="איזון",
+            status="red",
+            question_aggregates=AGGREGATES,
+        ),
+        "v6_metric_insights": hebrew_prompts.v6_metric_insights_prompt(
+            dim_hebrew="איזון",
+            status="red",
+            question_aggregates=AGGREGATES,
+        ),
+        "v6_intervention_batch": hebrew_prompts.v6_intervention_batch_prompt(
+            interventions=interventions,
+            dim_hebrew="איזון",
+            status="red",
+            question_aggregates=AGGREGATES,
+        ),
+        "adaptation_batch": hebrew_prompts.adaptation_batch_prompt(
+            interventions=interventions,
+            dim_hebrew="איזון",
+            score=38.5,
+            status="red",
+            question_aggregates=AGGREGATES,
+            background_context=None,
+        ),
+    }
+
+
+def test_every_round_prompt_forbids_clinical_words_and_asserted_causes():
+    """The corpus run of 2026-08-05 found both in every unlocked case.
+
+    "Do not invent causes or diagnoses" was already in all of these prompts and
+    produced 21 clinical terms and 9 asserted causes anyway, so the rule now
+    names the words. A prompt added later without it would put the finding back
+    without anything failing, which is what this test is for.
+    """
+    for name, prompt in _every_round_prompt().items():
+        assert hebrew_prompts.NO_CLINICAL_TERMS_RULE in prompt, name
+        assert hebrew_prompts.NO_ASSERTED_CAUSE_RULE in prompt, name
+
+
+def test_the_rules_name_the_words_the_grader_looks_for():
+    """The prompt and the measurement have to be about the same words.
+
+    A term forbidden in prose the grader does not look for is unmeasured; a
+    term the grader flags that no prompt forbids is a finding nobody asked the
+    model to avoid. This keeps the two lists in contact — not identical, since
+    the grader's list is deliberately wider than what one prompt can recite.
+    """
+    from evals.graders import CAUSAL_PHRASES_HEBREW, CLINICAL_TERMS_HEBREW
+
+    named_clinical = [
+        term for term in CLINICAL_TERMS_HEBREW
+        if term in hebrew_prompts.NO_CLINICAL_TERMS_RULE
+    ]
+    named_causal = [
+        phrase for phrase in CAUSAL_PHRASES_HEBREW
+        if phrase in hebrew_prompts.NO_ASSERTED_CAUSE_RULE
+    ]
+
+    # Every word the 2026-08-05 run actually produced is named.
+    assert "שחיקה" in named_clinical
+    assert {"עקב", "בגלל"} <= set(named_causal)
+    assert len(named_clinical) >= 6
+    assert len(named_causal) >= 5
+
+
 # --- Hebrew that is only nearly Hebrew ---------------------------------------
 
 def test_a_hebrew_word_wearing_one_arabic_letter_is_repaired():

@@ -33,6 +33,36 @@ def status_label(status: str) -> str:
     return _STATUS_LABELS_HEBREW.get(status, status)
 
 
+# The two overreaches the offline corpus found and no validator refuses.
+#
+# Measured on `gemini-3.5-flash-lite`, 2026-08-05, over the whole eval corpus:
+# 21 uses of clinical vocabulary and 9 asserted causes across seven rounds.
+# `שחיקה` — burnout — was nearly all of the first, and it reached the round
+# summary as well as the stones. The runtime denies it on a green dimension
+# only, because there it contradicts the score; on a yellow or red one it is
+# not a contradiction, just a diagnosis of people nobody examined.
+#
+# Both rules name the words rather than describing them. "Do not invent causes
+# or diagnoses" was already in every one of these prompts and produced the
+# numbers above, so the change is from a principle to a list — and the words
+# are the same ones `evals/graders.py` looks for, which is what makes the next
+# corpus run a measurement of this text rather than an impression of it.
+NO_CLINICAL_TERMS_RULE = (
+    "אל תשתמש/י באוצר מילים קליני — שחיקה, דיכאון, חרדה, טראומה, הפרעה, "
+    "אבחנה, תסמונת או משבר נפשי — גם לא כדי לשלול אותו. סקר עמדות מצרפי "
+    "אינו מאבחן איש. כתוב/י על מה שנמדד: עומס מדווח, מתח מדווח, תחושת "
+    "מיצוי, שביעות רצון נמוכה."
+)
+
+NO_ASSERTED_CAUSE_RULE = (
+    "אל תטען/י שדבר אחד גרם לאחר ואל תשתמש/י בצירופים בגלל, עקב, כתוצאה "
+    "מ, גורם ל, נובע מ או מוביל ל. נתונים מצרפיים מראים הופעה משותפת ולא "
+    "סיבה. מותר לכתוב שדפוסים מופיעים יחד ולהציע לברר את הקשר עם הצוות."
+)
+
+GROUNDED_LANGUAGE_RULES = f"{NO_CLINICAL_TERMS_RULE} {NO_ASSERTED_CAUSE_RULE}"
+
+
 def repair_section(repair_critique: Optional[str]) -> str:
     """The critique from the attempt that was refused, or nothing.
 
@@ -178,7 +208,8 @@ def interpretation_prompt(
         f"{length_instruction} בסס כל טענה על הנתונים שלמעלה, אל תמציא "
         "סיבות, אבחנות, זהויות או עובדות על משיב יחיד, ושמור על עקביות "
         f"עם המצב שצוין.{bucket_instruction} כתוב בעברית בלבד, בלי "
-        "אותיות לטיניות, ורשום מספרים בספרות ולא במילים."
+        "אותיות לטיניות, ורשום מספרים בספרות ולא במילים. "
+        + GROUNDED_LANGUAGE_RULES
         + repair_section(repair_critique)
     )
 
@@ -257,7 +288,8 @@ def overall_summary_prompt(
         "על כל שאלות הממד: אל תציג אותם כמספר אנשי צוות ואל תחבר מספרים "
         "בין ממדים או בין קבוצות צבע. שמור על טון מקצועי ותומך המעוגן "
         "בנתונים, אל תמציא סיבות או אבחנות, כתוב בעברית בלבד בלי אותיות "
-        "לטיניות, ורשום מספרים בספרות ולא במילים."
+        "לטיניות, ורשום מספרים בספרות ולא במילים. "
+        + GROUNDED_LANGUAGE_RULES
         + repair_section(repair_critique)
     )
 
@@ -289,7 +321,8 @@ def v6_structured_summary_prompt(
         "מעטפת קוד. הפסקה הראשונה מתארת את המצב הנוכחי; השנייה מתארת "
         "דפוסים, שונות ומגבלות בלי להמציא סיבות; השלישית מציעה מוקד "
         "ארגוני לבדיקה או לשיחה. כל פסקה בעברית בלבד, שלמה, מסתיימת "
-        "בסימן פיסוק, ואינה כוללת ספרות, אחוזים, אבחנות או מידע על אדם."
+        "בסימן פיסוק, ואינה כוללת ספרות, אחוזים, אבחנות או מידע על אדם. "
+        + GROUNDED_LANGUAGE_RULES
         + repair_section(repair_critique)
     )
 
@@ -357,9 +390,11 @@ def v6_metric_insights_prompt(
         f"נתוני השאלות הם {aggregates}. רקע מותר הוא {context}. "
         "החזר/י מערך JSON בלבד. לכל פריט יהיו בדיוק questionId המקורי "
         "ו-insightText. החזר/י כל מזהה פעם אחת, בלי מזהים נוספים ובלי "
-        "לשנות את המספרים. insightText יהיה בין שלוש מאות לחמש מאות "
-        "תווים בעברית בלבד, בלי ספרות או סימן אחוז, ויתאר את המשמעות "
-        "האיכותנית של הממוצע והפיזור בלי להמציא סיבה, אבחנה או עובדה על אדם."
+        "לשנות את המספרים. insightText יהיה בין שלוש מאות וחמישים לארבע "
+        "מאות וחמישים תווים בעברית בלבד, בלי אותיות לטיניות או ערביות, "
+        "בלי ספרות או סימן אחוז, ויתאר את המשמעות "
+        "האיכותנית של הממוצע והפיזור בלי להמציא סיבה, אבחנה או עובדה על אדם. "
+        + GROUNDED_LANGUAGE_RULES
         + repair_section(repair_critique)
     )
 
@@ -423,9 +458,11 @@ def v6_intervention_batch_prompt(
         f"הרקע המותר הוא {json.dumps(background_context or {}, ensure_ascii=False)}. "
         f"ההמלצות הן {json.dumps(interventions, ensure_ascii=False)}. "
         "החזר/י מערך JSON בלבד ובאותו סדר. בכל פריט שמור/י בדיוק את id, "
-        "כתוב/י summary בין שלוש מאות לחמש מאות תווים בעברית בלבד בלי "
+        "כתוב/י summary בין שלוש מאות וחמישים לארבע מאות וחמישים תווים "
+        "בעברית בלבד, בלי אותיות לטיניות או ערביות ובלי "
         "ספרות או אחוזים, והחזר/י actionable_steps באותו מספר ובאותו סדר "
-        "רעיוני. אל תמציא/י סיבות, אבחנות, אנשים או נתונים חדשים."
+        "רעיוני. אל תמציא/י סיבות, אבחנות, אנשים או נתונים חדשים. "
+        + GROUNDED_LANGUAGE_RULES
     )
 
 
@@ -626,7 +663,8 @@ def adaptation_batch_prompt(
         "אל תחבר קבוצות צבע או שאלות שונות למספר אחד, "
         "וכשאתה מזכיר קבוצת צבע כתוב באותו משפט את מספר התשובות שלה "
         "בספרות, למשל '0 תשובות ירוקות', ולא במילים כמו 'היעדר' או 'אפס'. "
-        "רשום מספרים בספרות ולא במילים."
+        "רשום מספרים בספרות ולא במילים. "
+        + GROUNDED_LANGUAGE_RULES
         + repair_section(repair_critique)
     )
 
