@@ -158,7 +158,12 @@ state, external blockers and approval gates. Product milestones belong in
   timer, which the service's own outbound polling does not. Live since
   2026-08-05: the workflow is registered and active, and a manual
   `workflow_dispatch` run finished green in 9s with `status: online` and
-  `commit: 80930a4` in its log. It costs nearly the account's whole free
+  `commit: 80930a4` in its log. What has **not** been observed yet is a run on
+  the schedule itself — `gh run list --workflow=render-keepalive.yml` showed
+  only the manual one twenty minutes after the push. A first scheduled firing is
+  the remaining proof that the instance stops sleeping; GitHub also disables
+  schedules in a repository idle for sixty days, so that is the first thing to
+  check if it starts sleeping again. It costs nearly the account's whole free
   allowance of 750
   instance-hours a month, so a second free service does not fit beside it, and a
   paid instance type is the version that needs no workflow.
