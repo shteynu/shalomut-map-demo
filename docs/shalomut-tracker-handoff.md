@@ -279,9 +279,13 @@ state, external blockers and approval gates. Product milestones belong in
   `docs/agent-tasks/active/test--eval-corpus-baseline.md`. The open question it
   raised — whether `summary_grounding` counts what it claims to count — was
   answered no and fixed the same day; the baseline is the corrected scoring of
-  the same payloads. The one weak grader left is `no_overreach`, and that is
-  prompt work nobody has started. Still run the provenance check before reading
-  any report, per `evals/README.md`.
+  the same payloads. `no_overreach`, the one weak grader, was then worked on in
+  `fix/prompt-no-overreach` and stands at 0.94 with a second baseline beside
+  the first. Four asserted causes survive, and closing them means a runtime
+  refusal rather than a prompt line — an owner decision, not a blocker. Still
+  run the provenance check before reading any report, per `evals/README.md`.
+- Two branches are finished and unpushed, in order: `test/eval-corpus-baseline`
+  and `fix/prompt-no-overreach` on top of it. Pushing is the owner's action.
 - **Settled 2026-08-05, no longer a gate.** The two amendments published
   contract `6.0` took on 2026-08-04 — `supportsPartialMaps` and
   `generationProvenance.unavailableReason` — stood against ADR-002's rule that

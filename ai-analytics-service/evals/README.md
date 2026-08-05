@@ -108,14 +108,21 @@ models `render.yaml` deploys, with `outcome: "llm"` on 55 of 56 stones. Read it
 next to `docs/agent-tasks/active/test--eval-corpus-baseline.md`, which records
 what the low grader turned out to mean.
 
-It is the second scoring of those payloads. The first read every "18 green
-*answers*" as a claim about dimensions and reported `summary_grounding` at
-0.375; the grader was fixed and the same payloads rescored, which is exactly
-the kind of correction a saved report is for — rescoring costs nothing and
-needs no provider. `summary_grounding` now reads 1.0 on `claims: 0`, meaning
-the run never made a countable claim about dimensions at all, not that it
-counted correctly. Read the two numbers together; that is why the report
-carries `measured` next to every score.
+`2026-08-05-gemini-3.5-flash-lite-language-rules.json` is the same corpus on
+the same models after the prompts were told which words they may not use — the
+clinical vocabulary and the causal connectives the first report found. Two
+reports of one model differ only by the prompts between them, which is the
+comparison this directory exists to make: `no_overreach` 0.2725 to 0.94,
+21 clinical terms to 0, 9 asserted causes to 4.
+
+Both files are rescorings rather than first drafts. `summary_grounding` read
+every "18 green *answers*" as a claim about dimensions and scored the first run
+at 0.375; the grader was fixed and the same payloads rescored, which is exactly
+what a saved report is for — rescoring costs nothing and needs no provider.
+Both now read 1.0 on `claims: 0`, meaning neither run made a countable claim
+about dimensions at all, not that either counted correctly. Read the two
+numbers together; that is why the report carries `measured` next to every
+score.
 
 ## What is not automated
 

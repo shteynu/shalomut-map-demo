@@ -196,9 +196,19 @@ Closed 2026-08-05: the eval corpus scored real provider output for the first
 time, on a paid key and on the models `render.yaml` deploys. The prompts now
 have a baseline. It also found a defect in a grader rather than in the prompts:
 `summary_grounding` read "18 green *answers*" as a claim about dimensions, so it
-now requires the noun and the same payloads were rescored for free. The one weak
-grader left is `no_overreach` — clinical vocabulary and asserted causes, which
-is prompt work and open.
+now requires the noun and the same payloads were rescored for free.
+
+Closed 2026-08-05: the corpus was then used for what it is for. `no_overreach`
+was the one weak grader — 21 uses of clinical vocabulary and 9 asserted causes,
+`שחיקה` among them in the round summary itself. Every prompt already said "do
+not invent causes or diagnoses"; the rule now names the words, and a second run
+on the same models scored 0.94 against 0.2725, with no clinical term left. The
+first attempt at it also showed what a prompt change costs elsewhere: more
+rules made the model write longer, metric narratives crossed the 500-character
+refusal and 13 more dimensions lost their model-written text, so the prompts
+ask for 350–450 within a validator that allows 300–500. Four asserted causes
+survive; removing them needs a runtime refusal, not another sentence in a
+prompt.
 
 Closed 2026-08-05: the two amendments `6.0` took on 2026-08-04 no longer sit
 against ADR-002. Owner decision — a published contract may gain an **optional
