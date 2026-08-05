@@ -2193,6 +2193,64 @@ textarea {
   font-size: clamp(1rem, 1.5vw, 1.15rem);
 }
 
+
+/* The questionnaire's earlier saves (backlog §1). It sits below the builder's
+   two columns rather than inside the sidebar: it is read when something went
+   wrong, not while writing questions, and a list that can hold twenty entries
+   would crowd a column that already carries the share link. */
+.survey-builder-history-slot {
+  width: min(1240px, calc(100% - 2rem));
+  margin: 1.25rem auto 0;
+}
+
+.survey-version-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.survey-version-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0.85rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  background: rgba(255, 250, 240, 0.6);
+}
+
+.survey-version-row > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+/* Secondary sentences beside the history: quieter than body copy, but still
+   held above the WCAG AA contrast floor by `--muted` rather than by opacity. */
+.muted-note {
+  margin: 0.6rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.survey-version-meta {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+/* The current version is named in words rather than only held apart by
+   position, so the list is readable without counting rows. */
+.survey-version-current {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
 /* Named `dashboard-mock-page` until 2026-08-05, on four screens that render
    PostgreSQL. The demo layer it was named after is gone (backlog §7). */
 .dashboard-page {

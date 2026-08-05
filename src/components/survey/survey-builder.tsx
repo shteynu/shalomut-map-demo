@@ -20,6 +20,7 @@ import {
 import { SurveyBuilderQuestions } from "./survey-builder/survey-builder-questions";
 import { SurveyBuilderSettings } from "./survey-builder/survey-builder-settings";
 import { SurveyBuilderSidebar } from "./survey-builder/survey-builder-sidebar";
+import { SurveyBuilderHistory } from "./survey-builder/survey-builder-history";
 import {
   builderAcceleratorFor,
   isTextEntryElement,
@@ -133,6 +134,11 @@ export function SurveyBuilder({
     parseSavedAt(lastSavedAt),
   );
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  // Bumped after every save so the history panel refetches. A counter rather
+  // than the save time: two saves inside one minute produce the same time and
+  // would not refetch.
+  const [historyToken, setHistoryToken] = useState(0);
+  const [loadedVersionAt, setLoadedVersionAt] = useState<string | null>(null);
 
   /** One entry point for every change that leaves the draft unsaved. */
   function markEdited() {
@@ -421,6 +427,33 @@ export function SurveyBuilder({
     setHasUnsavedChanges(false);
     setSaved(true);
     setSaving(false);
+    setLoadedVersionAt(null);
+    setHistoryToken((token) => token + 1);
+  }
+
+  /**
+   * An earlier questionnaire is loaded into the editor, not written. The
+   * manager reads what they are about to get and presses save, which is the
+   * same path every other change takes — and the version being left is already
+   * in the history, so the step back is itself reversible.
+   */
+  function loadVersion(definition: SurveyDefinition, savedAt: string) {
+    markEdited();
+    setTitle(definition.title);
+    // Audience is not editable in the builder, so a version cannot carry a
+    // different one; restoring it would only be able to reintroduce a value
+    // this screen never offered.
+    setEstimatedMinutes(definition.estimatedMinutes);
+    setMinimumResponses(definition.minimumResponses);
+    setIntroText(definition.introText);
+    setAnonymityText(definition.anonymityText);
+    setQuestions(
+      definition.questions.map((question, index) => ({
+        ...question,
+        draftKey: createDraftId(`version-${index}`),
+      })),
+    );
+    setLoadedVersionAt(savedAt);
   }
 
   /**
@@ -503,6 +536,14 @@ export function SurveyBuilder({
       {/* Directly under the save button, where the manager is already looking
           when they wonder whether the last click landed. */}
       <SaveStatus savedAt={savedAt} hasUnsavedChanges={hasUnsavedChanges} />
+
+      {/* A loaded version is on screen but not in the database, and the save
+          line above says only "unsaved changes". This says which change. */}
+      {loadedVersionAt ? (
+        <p className="muted-note" role="status">
+          נטענה גרסה קודמת של השאלון. היא תיכנס לתוקף רק לאחר שמירה.
+        </p>
+      ) : null}
 
       {saveError ? (
         <p className="survey-submit-error" role="alert">
@@ -610,6 +651,15 @@ export function SurveyBuilder({
           saved={saved}
           closedRoundTitles={closedRoundTitles}
           questionnaireReady={questionnaireValidation.isValid}
+        />
+      </div>
+
+      <div className="survey-builder-history-slot">
+        <SurveyBuilderHistory
+          roundId={roundId}
+          refreshToken={historyToken}
+          onLoadVersion={loadVersion}
+          isFrozen={isFrozen}
         />
       </div>
 
