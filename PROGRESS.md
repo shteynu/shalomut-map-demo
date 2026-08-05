@@ -6,8 +6,11 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 
 ## Current state
 
-- `origin/main` is `763e38f`. The product-behaviour backlog is closed except for
-  its two requirement-gated items; `ROADMAP.md` has no open product outcome.
+- `origin/main` is `4b0a4bd`. The product-behaviour backlog is closed except for
+  its two requirement-gated items; `ROADMAP.md` has no open product outcome, and
+  `docs/shalomut-tracker-handoff.md` lists under "What is open, and what it
+  waits on" the four things that remain — two owner decisions, two requests, and
+  a signed-in walk of the newest screens that only the owner can perform.
 - The last three slices, all on 2026-08-05: the questionnaire keeps a version
   history a manager can restore from, an archived round became genuinely
   read-only rather than merely hidden, and a school reads its goals in one place

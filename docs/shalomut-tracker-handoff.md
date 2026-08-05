@@ -1,7 +1,7 @@
 # Shalomut Tracker — operational handoff
 
-Updated: 2026-08-05 (`origin/main` is `763e38f`; no migration is pending and no
-branch is waiting).
+Updated: 2026-08-05, session close (`origin/main` is `4b0a4bd`; nothing is
+pending, nothing is waiting, and what is left is decisions rather than work).
 This
 document owns only cross-task operational/deployed
 state, external blockers and approval gates. Product milestones belong in
@@ -10,11 +10,13 @@ state, external blockers and approval gates. Product milestones belong in
 
 ## Repository snapshot
 
-- `origin/main` is `763e38f` — the school-wide goals screen, pushed by the owner
-  on 2026-08-05. It carries `3c551a5` (the read-only archive) and `143d460`
-  (backlog §1, the questionnaire version history) before it; every branch up to
-  `feat/goals-across-rounds` is fully contained in `main` and can be deleted,
-  and their task files are in `docs/agent-tasks/archive/`.
+- `origin/main` is `4b0a4bd` — the documentation reconciliation, pushed by the
+  owner on 2026-08-05. Five branches reached `main` that day, each as a
+  fast-forward the owner pushed themselves: `feat/survey-definition-history`
+  (backlog §1), `feat/archived-rounds-read-only` (§10),
+  `feat/goals-across-rounds` (§5), plus `docs/close-causal-refusal-decision` and
+  `docs/roadmap-reconciliation`. All are fully contained in `main` and can be
+  deleted; their task files are in `docs/agent-tasks/archive/`.
 - Nothing is waiting. No branch holds unpushed work the product needs; the one
   unmerged branch, `fix/refuse-asserted-causes`, is a decided **no** and is
   described below.
@@ -24,14 +26,15 @@ state, external blockers and approval gates. Product milestones belong in
   `prisma generate`, never `prisma migrate deploy`, so this is a hand step every
   schema change still needs. Details and the read-back are in the database
   section below. Nothing after it changed a schema.
-- Verification at `763e38f`: `npm run verify:core` exit 0 with 606 TypeScript
-  tests, and `npm run verify:db` 26 tests, 26 pass, against local PostgreSQL on
-  `127.0.0.1:5433`. `verify:ai` was **not** run since 2026-08-05 morning — the
-  three slices that day changed no Python. No manager screen was smoke-tested in
-  a browser: every one is behind `/login`, so that check is done with the owner
-  signed in.
-- Python (Render) answers `commit: 763e38f` and Core still answers `307` to
-  `/login` anonymously, both read at 18:0x on 2026-08-05.
+- Verification at `763e38f`, the last commit that changed code: `npm run
+  verify:core` exit 0 with 606 TypeScript tests, and `npm run verify:db` 26
+  tests, 26 pass, against local PostgreSQL on `127.0.0.1:5433`. `verify:core`
+  was run again at `4b0a4bd` and still exits 0 with 606. `verify:ai` was **not**
+  run after 2026-08-05 morning — nothing that day changed Python. No manager
+  screen was smoke-tested in a browser: every one is behind `/login`, so that
+  check is done with the owner signed in.
+- Deployment of `4b0a4bd` itself was **not** read. The reading below is of
+  `763e38f`, and the two commits after it are documentation only.
 - Superseded snapshot: `origin/main` was `45f38c2` — the round archive.
   Verification there: `verify:core` exit 0 with 576 tests; `verify:db` and
   `verify:ai` not run, and the archive flow not smoke-tested in a browser.
@@ -231,10 +234,10 @@ state, external blockers and approval gates. Product milestones belong in
   measurement decided it — see the entry below. This is settled, not open.
   Still run the provenance check before reading any report, per
   `evals/README.md`.
-- Four branches were built on 2026-08-05 and land as one fast-forward, in this
-  order: `test/eval-corpus-baseline`, `fix/prompt-no-overreach`,
-  `feat/retry-carries-a-critique`, `feat/adaptation-retry-critique`. The last
-  one contains the other three; pushing is the owner's action.
+- That chain has landed. `test/eval-corpus-baseline`, `fix/prompt-no-overreach`,
+  `feat/retry-carries-a-critique` and `feat/adaptation-retry-critique` are all
+  contained in `main`; the retry that carries a critique is `f8c08a5`. Nothing
+  from that work is waiting to be pushed.
 - `fix/refuse-asserted-causes` is deliberately **not** in that chain, and owner
   decision 2026-08-05 closed the question rather than deferring it: the rule is
   not merged. It refused asserted causes at runtime, which worked and cost 8 to
@@ -258,6 +261,48 @@ state, external blockers and approval gates. Product milestones belong in
   fields without enumerating keys, so a validator that ever starts rejecting
   unknown keys revokes it. `docs/ai-contract-version-matrix.md` carries the
   operational form under "Amending a published version".
+
+## What is open, and what it waits on
+
+Recorded at the 2026-08-05 session close. Nothing here is unfinished work; each
+item waits on a decision, a request or the owner's own hands.
+
+**Waits on an owner decision**
+
+- Whether a tracked goal ever gains an owner, a due date or a plan of steps.
+  `docs/product-behaviour-backlog.md` §5 has held this open deliberately since
+  2026-08-04: the three-state goal was built as the smallest thing that makes
+  "tracked" true, and anything more is a product choice rather than a gap.
+- Whether a goal should be read beside the delta of the dimension it belongs to.
+  The goals screen names the dimension and the round; it shows no numbers, and
+  putting a score next to a goal is a different question from where goals live.
+
+**Waits on being requested**
+
+- A second manager per school (§8). One manager per deployment is the requested
+  shape; the work behind a second one is a data model and a set of flows, and
+  `PROJECT_CONTEXT.md` ADR-013 says why swapping the password hash closes
+  nothing.
+- Repeat-measurement reminders (§11). Reminding respondents would need contact
+  data the privacy model deliberately does not hold; reminding the manager would
+  not.
+
+**Waits on the owner's hands**
+
+- A signed-in walk of the three newest screens on the deployed endpoint: the
+  builder's version history, an archived round's read-only round screen, and
+  `מעקב יעדים`. Every manager route redirects to `/login`, and the agent never
+  sees or types the manager password. The last signed-in check was 2026-08-04
+  and predates all three.
+- Rotating the four design-stage credentials before the first real respondents.
+  Listed above as an accepted deferred gate; it is still open.
+
+**Worth a look, cheap**
+
+- The UptimeRobot keep-alive was created on 2026-08-05 and reported `Up` at its
+  first checks. Two minutes of `Up` is not evidence that the Render instance
+  stays awake across a quiet night. Whoever opens the next session should read
+  the monitor's uptime before anything in this repository.
 
 ## Next operational check
 
