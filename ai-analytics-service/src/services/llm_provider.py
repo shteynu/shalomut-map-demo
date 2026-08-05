@@ -97,6 +97,21 @@ class AdaptedIntervention:
     attempts: int
 
 
+def _joined_critique(
+    replay_critique: Optional[str],
+    retry_critique: Optional[str],
+) -> Optional[str]:
+    """The two critiques a prompt can carry, in the order they were learned.
+
+    The first comes from the safety validator, about the attempt that produced
+    the payload before this one. The second comes from the transport, about the
+    answer it just refused. They are about different attempts and both are
+    true, so a repair that is refused again is told about both.
+    """
+    parts = [part for part in (replay_critique, retry_critique) if part]
+    return " ".join(parts) if parts else None
+
+
 def _record_refusal(
     candidate: str,
     finish_reason: object,
@@ -219,7 +234,7 @@ class LLMProviderService:
         model_name = self._model_for_tier(retry_tier)
         provider = settings.resolved_llm_provider(model_name)
         text, attempts, fallback_reason = self._complete_with_retries(
-            build_prompt=lambda: self._build_prompt(
+            build_prompt=lambda retry_critique=None: self._build_prompt(
                 dim_id=dim_id,
                 dim_hebrew=dim_hebrew,
                 score=score,
@@ -228,7 +243,7 @@ class LLMProviderService:
                 background_context=background_context,
                 contract_version=contract_version,
                 all_dimension_scores=all_dimension_scores,
-                repair_critique=repair_critique,
+                repair_critique=_joined_critique(repair_critique, retry_critique),
             ),
             system_prompt=(
                 "את/ה פסיכולוג/ית ארגוני/ת תמציתי/ת עבור צוותי חינוך. "
@@ -321,11 +336,11 @@ class LLMProviderService:
 
         model_name = self._model_for_tier(retry_tier)
         text, attempts, fallback_reason = self._complete_with_retries(
-            build_prompt=lambda: self._build_overall_summary_prompt(
+            build_prompt=lambda retry_critique=None: self._build_overall_summary_prompt(
                 dim_scores,
                 question_aggregates,
                 background_context,
-                repair_critique=repair_critique,
+                repair_critique=_joined_critique(repair_critique, retry_critique),
             ),
             system_prompt=(
                 "את/ה פסיכולוג/ית ארגוני/ת המסכם/ת רווחת צוות בבית ספר. "
@@ -390,12 +405,12 @@ class LLMProviderService:
         aggregates = list(question_aggregates)
         model_name = self._model_for_tier(retry_tier)
         text, attempts, fallback_reason = self._complete_with_retries(
-            build_prompt=lambda: hebrew_prompts.v6_structured_summary_prompt(
+            build_prompt=lambda retry_critique=None: hebrew_prompts.v6_structured_summary_prompt(
                 dim_hebrew=dim_hebrew,
                 status=status,
                 question_aggregates=aggregates,
                 background_context=background_context,
-                repair_critique=repair_critique,
+                repair_critique=_joined_critique(repair_critique, retry_critique),
             ),
             system_prompt=(
                 "את/ה פסיכולוג/ית ארגוני/ת הכותב/ת ניתוח מצרפי בעברית. "
@@ -453,12 +468,12 @@ class LLMProviderService:
         expected_ids = [str(item["questionId"]) for item in aggregates]
         model_name = self._model_for_tier(retry_tier)
         text, attempts, fallback_reason = self._complete_with_retries(
-            build_prompt=lambda: hebrew_prompts.v6_metric_insights_prompt(
+            build_prompt=lambda retry_critique=None: hebrew_prompts.v6_metric_insights_prompt(
                 dim_hebrew=dim_hebrew,
                 status=status,
                 question_aggregates=aggregates,
                 background_context=background_context,
-                repair_critique=repair_critique,
+                repair_critique=_joined_critique(repair_critique, retry_critique),
             ),
             system_prompt=(
                 "את/ה מנתח/ת נתוני רווחה מצרפיים בעברית. החזר/י JSON בלבד."
@@ -528,7 +543,7 @@ class LLMProviderService:
         model_name = self._model_for_tier(retry_tier)
         existing = [text for text in existing_texts if text and text.strip()]
         text, attempts, fallback_reason = self._complete_with_retries(
-            build_prompt=lambda: hebrew_prompts.question_suggestion_prompt(
+            build_prompt=lambda retry_critique=None: hebrew_prompts.question_suggestion_prompt(
                 dimension_id=dimension_id,
                 dimension_hebrew=dimension_hebrew,
                 existing_texts=existing,
@@ -646,7 +661,7 @@ class LLMProviderService:
         distribution_counts = self.distribution_counts(aggregates)
         if get_capabilities(contract_version).usesStructuredDimensionSummary:
             text, attempts, fallback_reason = self._complete_with_retries(
-                build_prompt=lambda: hebrew_prompts.v6_intervention_batch_prompt(
+                build_prompt=lambda retry_critique=None: hebrew_prompts.v6_intervention_batch_prompt(
                     interventions=entries,
                     dim_hebrew=dim_hebrew,
                     status=status,
@@ -699,14 +714,14 @@ class LLMProviderService:
         # dimension to be reconstructed from the database later.
         refusal = [hebrew_validation.AdaptationRefusal()]
         text, attempts, fallback_reason = self._complete_with_retries(
-            build_prompt=lambda: hebrew_prompts.adaptation_batch_prompt(
+            build_prompt=lambda retry_critique=None: hebrew_prompts.adaptation_batch_prompt(
                 interventions=entries,
                 dim_hebrew=dim_hebrew,
                 score=score,
                 status=status,
                 question_aggregates=aggregates,
                 background_context=background_context,
-                repair_critique=repair_critique,
+                repair_critique=_joined_critique(repair_critique, retry_critique),
             ),
             system_prompt=(
                 "את/ה פסיכולוג/ית ארגוני/ת המתאים/ה המלצות מקטלוג לבית ספר "
@@ -790,12 +805,14 @@ class LLMProviderService:
         system_prompt: str,
         model_name: str,
         is_acceptable,
+        critique_for=None,
     ) -> Tuple[Optional[str], int, str]:
         return complete_with_retries(
             build_prompt=build_prompt,
             system_prompt=system_prompt,
             model_name=model_name,
             is_acceptable=is_acceptable,
+            critique_for=critique_for,
         )
 
     def _resolve_endpoint(self, model_name: str) -> str:

@@ -8,6 +8,7 @@ from src.services.llm_provider import (
     ProviderUnavailableError,
     llm_provider_service,
 )
+from src.services.llm_transport import complete_with_retries
 
 LLM_KEY_ENV_VARS = (
     "LLM_API_KEY",
@@ -294,6 +295,82 @@ def test_semantically_invalid_output_retries_then_records_llm_provenance(
     assert generation.attempts == 2
     assert generation.retry_count == 1
     assert len(attempts) == 2
+
+
+def _complete(monkeypatch, responses, **kwargs):
+    """Drive the transport directly, keeping every prompt it sent."""
+    sent = []
+    stream = iter(responses)
+
+    def fake_urlopen(request, *_args, **_kwargs):
+        sent.append(
+            json.loads(request.data.decode("utf-8"))["messages"][1]["content"],
+        )
+        return next(stream)
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+    result = complete_with_retries(
+        system_prompt="מערכת",
+        model_name="gemini-test-model",
+        **kwargs,
+    )
+    return result, sent
+
+
+def test_a_retry_carries_what_the_last_attempt_got_wrong(monkeypatch):
+    """The defect: a refused answer was answered by re-sending the same bytes.
+
+    The request was built once above the attempt loop, so the second attempt
+    was the first one again. Measured on the eval corpus of 2026-08-05, with a
+    refusal rule that was not kept: the model wrote the refused sentence three
+    times and 22 of 56 dimensions fell back to service-written copy.
+    """
+    configure_gemini_retry_test(monkeypatch, max_attempts=2)
+
+    (text, attempts, reason), sent = _complete(
+        monkeypatch,
+        [FakeLLMResponse("ראשון"), FakeLLMResponse("שני")],
+        build_prompt=lambda critique=None: (
+            "שאלה" + (f" תיקון: {critique}" if critique else "")
+        ),
+        is_acceptable=lambda candidate, _finish: candidate == "שני",
+        critique_for=lambda candidate, _finish: f"אל תכתוב {candidate}",
+    )
+
+    assert text == "שני"
+    assert attempts == 2
+    assert sent == ["שאלה", "שאלה תיקון: אל תכתוב ראשון"]
+
+
+def test_without_a_critique_a_retry_is_the_same_question_again(monkeypatch):
+    """The hook is optional, and its absence changes nothing about a retry."""
+    configure_gemini_retry_test(monkeypatch, max_attempts=2)
+
+    (_text, _attempts, _reason), sent = _complete(
+        monkeypatch,
+        [FakeLLMResponse("ראשון"), FakeLLMResponse("שני")],
+        build_prompt=lambda critique=None: "שאלה",
+        is_acceptable=lambda candidate, _finish: candidate == "שני",
+    )
+
+    assert sent == ["שאלה", "שאלה"]
+
+
+def test_a_critique_that_declines_to_speak_leaves_the_prompt_alone(monkeypatch):
+    """A hook returning None is how a caller says "not my kind of refusal"."""
+    configure_gemini_retry_test(monkeypatch, max_attempts=2)
+
+    (_text, _attempts, _reason), sent = _complete(
+        monkeypatch,
+        [FakeLLMResponse("ראשון"), FakeLLMResponse("שני")],
+        build_prompt=lambda critique=None: (
+            "שאלה" + (f" תיקון: {critique}" if critique else "")
+        ),
+        is_acceptable=lambda candidate, _finish: candidate == "שני",
+        critique_for=lambda _candidate, _finish: None,
+    )
+
+    assert sent == ["שאלה", "שאלה"]
 
 
 def test_output_that_never_becomes_valid_fails_the_dimension(

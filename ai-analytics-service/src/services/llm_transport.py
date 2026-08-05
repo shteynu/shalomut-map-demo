@@ -92,15 +92,32 @@ def resolve_endpoint(model_name: str) -> str:
 
 def complete_with_retries(
     *,
-    build_prompt: Callable[[], str],
+    build_prompt: Callable[..., str],
     system_prompt: str,
     model_name: str,
     is_acceptable: Callable[[str, object], bool],
+    critique_for: Optional[Callable[[str, object], Optional[str]]] = None,
 ) -> Tuple[Optional[str], int, str]:
     """Run one bounded provider conversation and report what happened.
 
     Returns the accepted text (or None), how many attempts were made and
     the reason a caller has to fall back.
+
+    A retry used to re-send the identical request. The payload was built once,
+    above the loop, so an answer refused for its content was answered by asking
+    the same question again — and a model asked the same question tends to give
+    the same answer. Measured on the eval corpus of 2026-08-05 with an
+    experimental refusal rule in place: the refused sentence came back three
+    times and 22 of 56 dimensions ended up written by this service instead.
+    That rule was not kept; this is.
+
+    `critique_for` closes the loop. It receives the refused candidate and the
+    provider's finish reason, and returns one line saying what to change, which
+    `build_prompt` is given for the next attempt. It is optional, and without
+    it a retry is what it always was — the same question, one more time.
+
+    This module still never reads the Hebrew it carries: the caller writes the
+    critique and the caller decides where it lands in the prompt.
     """
     provider = settings.resolved_llm_provider(model_name)
     attempts = 0
@@ -110,25 +127,28 @@ def complete_with_retries(
     fallback_reason = "provider_error"
     try:
         endpoint = resolve_endpoint(model_name)
-        req_payload = json.dumps({
-            "model": model_name,
-            "messages": [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": build_prompt()}
-            ],
-            "max_tokens": settings.max_tokens_per_dimension,
-            "temperature": 0.2
-        }).encode("utf-8")
 
-        req = urllib.request.Request(
-            endpoint,
-            data=req_payload,
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {settings.llm_api_key}"
-            },
-            method="POST"
-        )
+        def request_for(critique: Optional[str]) -> urllib.request.Request:
+            payload = json.dumps({
+                "model": model_name,
+                "messages": [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": build_prompt(critique)}
+                ],
+                "max_tokens": settings.max_tokens_per_dimension,
+                "temperature": 0.2
+            }).encode("utf-8")
+            return urllib.request.Request(
+                endpoint,
+                data=payload,
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {settings.llm_api_key}"
+                },
+                method="POST"
+            )
+
+        req = request_for(None)
         # Every request this process sends passes through here, so this
         # is where the account's pace is charged — and it is charged before
         # the retry clock starts. Waiting for a turn is the rate limit's
@@ -227,12 +247,17 @@ def complete_with_retries(
                             else None
                         )
                         if retry_wait is not None:
+                            critique = (
+                                critique_for(result, finish_reason)
+                                if critique_for is not None
+                                else None
+                            )
                             logger.warning(
                                 "[LLM Service] outcome=retry "
                                 "provider=%s model=%s reason=%s "
                                 "finish_reason=%s "
                                 "attempt=%s max_attempts=%s "
-                                "delay_ms=%s",
+                                "delay_ms=%s critique=%s",
                                 provider,
                                 model_name,
                                 fallback_reason,
@@ -240,7 +265,10 @@ def complete_with_retries(
                                 attempt,
                                 settings.llm_max_attempts,
                                 round(retry_wait * 1000),
+                                "yes" if critique else "no",
                             )
+                            if critique:
+                                req = request_for(critique)
                             time.sleep(retry_wait)
                             continue
                         # Every other exhausted path logs `no_answer`; this one
