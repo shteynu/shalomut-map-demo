@@ -1,8 +1,9 @@
 # Product Behaviour Backlog
 
-Updated: 2026-08-04
-Status: remaining product behavior after persisted rounds, AI suggestions and
-the lifecycle-aware privacy flow landed, reconciled against the owner's
+Updated: 2026-08-05
+Status: every numbered item below is closed except the two that wait on being
+requested — §8, a second manager per school, and §11, repeat-measurement
+reminders. Reconciled against the owner's
 development requirements document ("פיתוח פלטפורמת מפת שלומות — MVP + הכנה
 לשלב הבא", Google Docs)
 

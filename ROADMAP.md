@@ -1,6 +1,6 @@
 # Product Roadmap — Shalomut Map (מפת שלומות)
 
-Updated: 2026-08-02. This roadmap summarizes outcomes; detailed session history
+Updated: 2026-08-05. This roadmap summarizes outcomes; detailed session history
 belongs in archived task files and Git.
 
 ## Completed platform foundation
@@ -30,16 +30,38 @@ belongs in archived task files and Git.
 
 ## Next product outcomes
 
-1. **Comparative multi-round analytics** — compare wellbeing across semesters
-   instead of treating each round as an island.
-2. **From recommendations to action** — decide whether recommendations remain
-   read-only or become tracked goals/action plans.
-3. **Survey-builder recovery and efficiency** — visible save metadata,
-   search/bulk/reorder behavior and optional version history.
-4. **Dashboard interaction accessibility** — keyboard stone movement and a
-   focused audit of labels, focus behavior and reduced-motion coverage.
-5. **Clipboard failure honesty** — distinguish a successful copy from a
-   browser permission failure and show a fallback.
+None open. All five outcomes this section listed were delivered or decided
+between 2026-08-02 and 2026-08-05, and the list is recorded here as shipped
+rather than deleted, so nobody rebuilds it from an old copy of this file.
+`docs/product-behaviour-backlog.md` is the living record of each; this is the
+summary.
+
+1. **Comparative multi-round analytics** — shipped as the deterministic
+   dimension delta the map carries per stone, plus the round switcher, second
+   rounds and the read-only archive. AI analysis *across* rounds was decided
+   against on 2026-08-04 and is a hold, not a gap (backlog §10).
+2. **From recommendations to action** — decided on 2026-08-04: a recommendation
+   becomes a tracked goal with three states and no form to fill. Since
+   2026-08-05 a school also reads its goals in one place, across every round
+   (backlog §5, ADR-015). Owners, due dates and plans of steps remain a separate
+   decision that has not been taken.
+3. **Survey-builder recovery and efficiency** — shipped whole: search, bulk
+   enable/hide, real reordering, keyboard accelerators read from the physical
+   key, a save time that survives a reload, and the version history with restore
+   that closed the "optional" half on 2026-08-05 (backlog §1, §3, ADR-019).
+4. **Dashboard interaction accessibility** — shipped: keyboard stone movement,
+   focus returned and announced on reset, reduced-motion coverage. Two items
+   stay deliberately undone and are reasoned in backlog §4 — no announcement per
+   nudge while rearranging is cosmetic, and screen-reader output that has been
+   read as markup but never heard.
+5. **Clipboard failure honesty** — shipped on 2026-08-04: three outcomes, a
+   refusal that names Ctrl+C/Cmd+C and selects the link, shared by both copy
+   surfaces (backlog §2).
+
+What is left in the product backlog is gated rather than queued: a second
+manager per school (§8) and repeat-measurement reminders (§11) both wait on
+being requested, and §5's remaining question — whether a goal gains an owner, a
+due date or a plan — is a decision rather than work.
 
 ## Next architecture outcomes
 
