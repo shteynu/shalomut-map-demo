@@ -52,6 +52,49 @@ test("the status of each round is a word, not only the border", () => {
   assert.match(html, /סגור/);
 });
 
+test("an archived round is not one of the choices", () => {
+  const html = renderToStaticMarkup(
+    <DashboardRoundSwitcher
+      options={toDashboardRoundOptions(
+        [...rounds, round("round-0", "סבב ניסיון", "archived")],
+        "round-2",
+      )}
+    />,
+  );
+
+  assert.doesNotMatch(html, /סבב ניסיון/);
+  assert.doesNotMatch(html, /href="\/dashboard\?round=round-0"/);
+  assert.match(html, /סבב ראשון/);
+});
+
+test("the archived round a manager is looking at stays in the list", () => {
+  const html = renderToStaticMarkup(
+    <DashboardRoundSwitcher
+      options={toDashboardRoundOptions(
+        [...rounds, round("round-0", "סבב ניסיון", "archived")],
+        "round-0",
+      )}
+    />,
+  );
+
+  assert.match(html, /סבב ניסיון/);
+  assert.match(html, /בארכיון/);
+  assert.match(html, /aria-current="page"/);
+});
+
+test("a school whose only other round is archived gets no switcher", () => {
+  const html = renderToStaticMarkup(
+    <DashboardRoundSwitcher
+      options={toDashboardRoundOptions(
+        [rounds[0], round("round-0", "סבב ניסיון", "archived")],
+        "round-2",
+      )}
+    />,
+  );
+
+  assert.strictEqual(html, "");
+});
+
 test("a school with one round gets no switcher at all", () => {
   const html = renderToStaticMarkup(
     <DashboardRoundSwitcher

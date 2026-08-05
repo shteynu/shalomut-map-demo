@@ -23,15 +23,31 @@ export const roundStatusLabels: Record<RoundStatus, string> = {
   archived: "בארכיון",
 };
 
+/**
+ * Archiving a round means taking it out of the everyday list, and that is the
+ * only thing it means (ADR-018). The round keeps its URL, its dashboard and its
+ * place in the comparison history; it stops being one of the choices offered
+ * here.
+ *
+ * The selected round is the exception, and it has to be: a manager who followed
+ * a link to an archived round would otherwise read a switcher that names every
+ * round except the one on screen.
+ */
+function belongsInSwitcher(round: SurveyRound, selectedRoundId: string): boolean {
+  return round.status !== "archived" || round.id === selectedRoundId;
+}
+
 export function toDashboardRoundOptions(
   rounds: SurveyRound[],
   selectedRoundId: string,
 ): DashboardRoundOption[] {
-  return rounds.map((round) => ({
-    id: round.id,
-    title: round.title,
-    statusLabel: roundStatusLabels[round.status],
-    href: dashboardMapRoute(round.id),
-    isSelected: round.id === selectedRoundId,
-  }));
+  return rounds
+    .filter((round) => belongsInSwitcher(round, selectedRoundId))
+    .map((round) => ({
+      id: round.id,
+      title: round.title,
+      statusLabel: roundStatusLabels[round.status],
+      href: dashboardMapRoute(round.id),
+      isSelected: round.id === selectedRoundId,
+    }));
 }
