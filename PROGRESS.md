@@ -194,8 +194,11 @@ environment separation being infrastructure rather than product behavior.
 
 Closed 2026-08-05: the eval corpus scored real provider output for the first
 time, on a paid key and on the models `render.yaml` deploys. The prompts now
-have a baseline; the one weak grader is `no_overreach`, and whether
-`summary_grounding` counts what it claims to count is an open question.
+have a baseline. It also found a defect in a grader rather than in the prompts:
+`summary_grounding` read "18 green *answers*" as a claim about dimensions, so it
+now requires the noun and the same payloads were rescored for free. The one weak
+grader left is `no_overreach` — clinical vocabulary and asserted causes, which
+is prompt work and open.
 
 Closed 2026-08-05: the two amendments `6.0` took on 2026-08-04 no longer sit
 against ADR-002. Owner decision — a published contract may gain an **optional

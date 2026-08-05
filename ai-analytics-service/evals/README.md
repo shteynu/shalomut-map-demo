@@ -27,7 +27,7 @@ asserting something the numbers do not support.
 
 | Grader | The failure it exists for |
 | --- | --- |
-| `summary_grounding` | "Three dimensions are green" when four are. The runtime checks the summary's language and shape, not its arithmetic. |
+| `summary_grounding` | "Three dimensions are green" when four are. The runtime checks the summary's language and shape, not its arithmetic. Number, noun and status all have to be present: a summary counting *answers* is counting a different set, and goes unmeasured rather than wrong. |
 | `no_overreach` | Clinical vocabulary and asserted causes. Aggregates show co-occurrence; a survey of ten people diagnoses nobody. |
 | `evidence_specificity` | A paragraph that would read identically for any school, measured as overlap with the round's own question texts. |
 | `distinctness` | One paragraph written eight times. Each stone can pass its own validation while the map says one thing. |
@@ -106,7 +106,16 @@ two of them diff cleanly — that is the whole point of keeping one.
 `2026-08-05-gemini-3.5-flash-lite.json` is the first. It is a full run on the
 models `render.yaml` deploys, with `outcome: "llm"` on 55 of 56 stones. Read it
 next to `docs/agent-tasks/active/test--eval-corpus-baseline.md`, which records
-what the two low graders turned out to mean.
+what the low grader turned out to mean.
+
+It is the second scoring of those payloads. The first read every "18 green
+*answers*" as a claim about dimensions and reported `summary_grounding` at
+0.375; the grader was fixed and the same payloads rescored, which is exactly
+the kind of correction a saved report is for — rescoring costs nothing and
+needs no provider. `summary_grounding` now reads 1.0 on `claims: 0`, meaning
+the run never made a countable claim about dimensions at all, not that it
+counted correctly. Read the two numbers together; that is why the report
+carries `measured` next to every score.
 
 ## What is not automated
 

@@ -140,24 +140,22 @@
           "score": 1.0
         },
         {
-          "findings": [
-            "summary claims 20 green dimensions; the evidence has 1"
-          ],
+          "findings": [],
           "measured": {
             "actualStatusCounts": {
               "green": 1,
               "red": 1,
               "yellow": 6
             },
-            "claims": 1,
-            "unsupported": 1
+            "claims": 0,
+            "unsupported": 0
           },
           "name": "summary_grounding",
-          "score": 0.0
+          "score": 1.0
         }
       ],
       "isLocked": false,
-      "meanScore": 0.636,
+      "meanScore": 0.836,
       "status": "success"
     },
     {
@@ -278,25 +276,22 @@
           "score": 1.0
         },
         {
-          "findings": [
-            "summary claims 2 green dimensions; the evidence has 0",
-            "summary claims 2 red dimensions; the evidence has 0"
-          ],
+          "findings": [],
           "measured": {
             "actualStatusCounts": {
               "green": 0,
               "red": 0,
               "yellow": 8
             },
-            "claims": 2,
-            "unsupported": 2
+            "claims": 0,
+            "unsupported": 0
           },
           "name": "summary_grounding",
-          "score": 0.0
+          "score": 1.0
         }
       ],
       "isLocked": false,
-      "meanScore": 0.5521,
+      "meanScore": 0.7521,
       "status": "success"
     },
     {
@@ -359,25 +354,22 @@
           "score": 1.0
         },
         {
-          "findings": [
-            "summary claims 10 green dimensions; the evidence has 0",
-            "summary claims 10 red dimensions; the evidence has 0"
-          ],
+          "findings": [],
           "measured": {
             "actualStatusCounts": {
               "green": 0,
               "red": 0,
               "yellow": 8
             },
-            "claims": 2,
-            "unsupported": 2
+            "claims": 0,
+            "unsupported": 0
           },
           "name": "summary_grounding",
-          "score": 0.0
+          "score": 1.0
         }
       ],
       "isLocked": false,
-      "meanScore": 0.5582,
+      "meanScore": 0.7582,
       "status": "success"
     },
     {
@@ -437,25 +429,22 @@
           "score": 1.0
         },
         {
-          "findings": [
-            "summary claims 18 green dimensions; the evidence has 8",
-            "summary claims 2 yellow dimensions; the evidence has 0"
-          ],
+          "findings": [],
           "measured": {
             "actualStatusCounts": {
               "green": 8,
               "red": 0,
               "yellow": 0
             },
-            "claims": 2,
-            "unsupported": 2
+            "claims": 0,
+            "unsupported": 0
           },
           "name": "summary_grounding",
-          "score": 0.0
+          "score": 1.0
         }
       ],
       "isLocked": false,
-      "meanScore": 0.7442,
+      "meanScore": 0.9442,
       "status": "success"
     },
     {
@@ -528,7 +517,7 @@
               "red": 8,
               "yellow": 0
             },
-            "claims": 1,
+            "claims": 0,
             "unsupported": 0
           },
           "name": "summary_grounding",
@@ -601,37 +590,32 @@
           "score": 1.0
         },
         {
-          "findings": [
-            "summary claims 14 yellow dimensions; the evidence has 7",
-            "summary claims 4 green dimensions; the evidence has 0",
-            "summary claims 16 red dimensions; the evidence has 1",
-            "summary claims 4 yellow dimensions; the evidence has 7"
-          ],
+          "findings": [],
           "measured": {
             "actualStatusCounts": {
               "green": 0,
               "red": 1,
               "yellow": 7
             },
-            "claims": 4,
-            "unsupported": 4
+            "claims": 0,
+            "unsupported": 0
           },
           "name": "summary_grounding",
-          "score": 0.0
+          "score": 1.0
         }
       ],
       "isLocked": false,
-      "meanScore": 0.5751,
+      "meanScore": 0.7751,
       "status": "success"
     }
   ],
-  "findings": 51,
+  "findings": 40,
   "graderMeans": {
     "distinctness": 0.9029,
     "evidence_specificity": 0.9084,
     "no_overreach": 0.2725,
     "recommendation_fit": 1.0,
-    "summary_grounding": 0.375
+    "summary_grounding": 1.0
   },
-  "meanScore": 0.6917
+  "meanScore": 0.8167
 }

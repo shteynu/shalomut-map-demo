@@ -5,8 +5,8 @@
 - Branch: `test/eval-corpus-baseline`
 - Base branch: `docs/archive-mutation-tasks`
 - Base commit: `d18b7fd`
-- Current HEAD: `5c728ce`
-- Status: done, awaiting an owner decision on the grader
+- Current HEAD: `28018d2` плюс незакоммиченная правка грейдера
+- Status: done; остаётся только пуш ветки владельцем
 - Last updated: 2026-08-05
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -37,6 +37,8 @@ corpus has never scored real provider output».
 
 - Правка промптов по результатам отчёта. Сначала базовая линия, потом решение.
 - Превращение любого грейдера в порог.
+- Расширение `no_overreach` или любого другого грейдера. Правка коснулась
+  только `summary_grounding`, где предикат не соответствовал объявленному.
 - Изменение `.env`, секретов и настроек деплоя.
 
 ## Acceptance criteria
@@ -81,6 +83,12 @@ corpus has never scored real provider output».
   `ai-analytics-service/evals/baselines/2026-08-05-gemini-3.5-flash-lite.json`.
 - Обновлены `PROGRESS.md`, `docs/shalomut-tracker-handoff.md` и
   `ai-analytics-service/evals/README.md`.
+- По решению владельца починен `summary_grounding`: предикат теперь требует
+  существительное «ממד» рядом с числительным и цветовым словом. Добавлены
+  сопряжённые формы числительных (`שמונת` и прочие) — именно ими модель и
+  пишет «все восемь измерений». Два теста на случай «18 зелёных ответов».
+- Отчёт переснят из сохранённых payload-ов, без обращения к провайдеру, и
+  положен в тот же файл базовой линии.
 
 ## In progress
 
@@ -88,15 +96,15 @@ corpus has never scored real provider output».
 
 ## Remaining
 
-- Решение владельца по `summary_grounding`: чинить грейдер или оставить.
 - Решение по `no_overreach`: правка промптов — отдельная задача.
 
 ## Changed files
 
 - `docs/agent-tasks/active/test--eval-corpus-baseline.md` (новый)
 - `ai-analytics-service/evals/baselines/2026-08-05-gemini-3.5-flash-lite.json`
-  (новый)
-- `ai-analytics-service/evals/README.md` (раздел «Baselines»)
+  (новый; переснят после правки грейдера)
+- `ai-analytics-service/evals/graders.py`, `ai-analytics-service/tests/test_evals.py`
+- `ai-analytics-service/evals/README.md` (таблица грейдеров и раздел «Baselines»)
 - `PROGRESS.md`, `docs/shalomut-tracker-handoff.md`
 
 ## Verification evidence
@@ -106,17 +114,23 @@ corpus has never scored real provider output».
 - `.venv/bin/python -m evals.run_corpus` — 8/8 кейсов вернули ожидаемый статус,
   время на кейс 56–76 секунд, суммарно около девяти минут.
 - Провенанс по скрипту из `evals/README.md` — `llm` на 55 из 56 камней.
-- `.venv/bin/python -m evals.report` — отчёт снят, `meanScore` 0.6917.
+- `.venv/bin/python -m evals.report` — отчёт снят, `meanScore` 0.6917 до
+  правки грейдера и 0.8167 после неё, на тех же payload-ах.
+- `.venv/bin/python -m pytest tests/test_evals.py` — 43 теста, все проходят.
+- `.venv/bin/python -m pytest` — весь Python-набор, 448 тестов, все проходят.
 
-Средние по грейдерам:
+Средние по грейдерам (второй столбец — после правки `summary_grounding`):
 
-| грейдер | среднее |
-| --- | --- |
-| `recommendation_fit` | 1.0 |
-| `evidence_specificity` | 0.9084 |
-| `distinctness` | 0.9029 |
-| `summary_grounding` | 0.375 |
-| `no_overreach` | 0.2725 |
+| грейдер | до | после |
+| --- | --- | --- |
+| `recommendation_fit` | 1.0 | 1.0 |
+| `evidence_specificity` | 0.9084 | 0.9084 |
+| `distinctness` | 0.9029 | 0.9029 |
+| `summary_grounding` | 0.375 | 1.0 при `claims: 0` |
+| `no_overreach` | 0.2725 | 0.2725 |
+
+`findings` по всему прогону: 51 → 40. Одиннадцать выпавших — ровно те ложные
+претензии к арифметике; ни одна настоящая находка не исчезла.
 
 ### Failed
 
@@ -173,6 +187,16 @@ corpus has never scored real provider output».
 измерения неправильно. Настоящих ошибок арифметики в резюме этот прогон не
 нашёл — но и не искал, потому что грейдер до них не добирается.
 
+**Что дала правка.** После неё `claims: 0` во всех восьми кейсах: за весь
+прогон модель ни разу не написала «столько-то *измерений* такого-то цвета».
+Она либо считает ответы, либо описывает измерения скопом и без цветового слова
+(`כל 8 הממדים נקלעו למצב הדורש התערבות דחופה`). Поэтому 1.0 здесь читается как
+«нечего было мерить», а не как «модель посчитала верно», и смотреть надо на
+`measured.claims` рядом со счётом. Чтобы это утверждение опиралось на разбор
+текста, а не на пробел в парсере, в словарь числительных добавлены сопряжённые
+формы: модель пишет `שמונת הממדים`, а не `שמונה ממדים`, и без них грейдер не
+увидел бы даже правильно оформленную претензию.
+
 ## Approval gates
 
 - Ротация четырёх засвеченных секретов остаётся отложенным гейтом, к этой задаче
@@ -180,9 +204,8 @@ corpus has never scored real provider output».
 
 ## Questions requiring an owner decision
 
-- Чинить ли `summary_grounding` — требовать слово «измерение» рядом с
-  числительным. Это правка `evals/graders.py` и его тестов, и она меняет смысл
-  базовой линии, поэтому базовая линия сохранена до правки, а не после.
+- ~~Чинить ли `summary_grounding`~~ — решено 2026-08-05: чинить. Сделано,
+  отчёт переснят из сохранённых payload-ов, базовая линия теперь после правки.
 - Нужно ли поднять `LLM_MAX_REQUESTS_PER_MINUTE` на Render под платный ключ.
   Сейчас там `14`, подогнанные под free tier.
 - Локальный `.env` не задаёт `LLM_MODEL_FAST`/`LLM_MODEL_HEAVY`, из-за чего
@@ -191,7 +214,6 @@ corpus has never scored real provider output».
 
 ## Next concrete step
 
-Владелец решает по `summary_grounding`. Если чинить — правка предиката в
-`grade_summary_grounding` (`ai-analytics-service/evals/graders.py:190`), тест в
-`tests/test_evals.py` на случай «18 зелёных ответов» и повторное снятие отчёта
-из уже сохранённых payload-ов: пересчёт бесплатен, провайдер не нужен.
+Пуш ветки — действие владельца: `git push origin test/eval-corpus-baseline`.
+После этого следующая задача — отдельная ветка на `no_overreach`: клиническое
+`שחיקה` и утверждения причинности в промптах.

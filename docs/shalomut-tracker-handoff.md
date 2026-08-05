@@ -276,10 +276,12 @@ state, external blockers and approval gates. Product milestones belong in
   `gemini-3.5-flash-lite` produced `outcome: "llm"` on 55 of 56 stones with no
   `429` in the log. The quota argument for the free tier no longer applies.
   What the first report says lives in
-  `docs/agent-tasks/active/test--eval-corpus-baseline.md`; the open question it
-  raised is whether the `summary_grounding` grader counts what it claims to
-  count. Still run the provenance check before reading any report, per
-  `evals/README.md`.
+  `docs/agent-tasks/active/test--eval-corpus-baseline.md`. The open question it
+  raised — whether `summary_grounding` counts what it claims to count — was
+  answered no and fixed the same day; the baseline is the corrected scoring of
+  the same payloads. The one weak grader left is `no_overreach`, and that is
+  prompt work nobody has started. Still run the provenance check before reading
+  any report, per `evals/README.md`.
 - **Settled 2026-08-05, no longer a gate.** The two amendments published
   contract `6.0` took on 2026-08-04 — `supportsPartialMaps` and
   `generationProvenance.unavailableReason` — stood against ADR-002's rule that
