@@ -200,6 +200,30 @@ export function hasSameQuestionSnapshot(
 }
 
 /**
+ * Whether two definitions are the same document.
+ *
+ * Stricter than `hasSameQuestionSnapshot`, which asks the narrower question the
+ * response guard needs: whether the questions themselves still match. This one
+ * also counts the surrounding copy, the audience and the threshold, because the
+ * version history records saves that changed anything a manager typed — a
+ * rewritten intro is a change worth being able to undo.
+ */
+export function isSameSurveyDefinition(
+  current: SurveyDefinition,
+  next: SurveyDefinition,
+): boolean {
+  return (
+    current.title === next.title &&
+    current.audience === next.audience &&
+    current.estimatedMinutes === next.estimatedMinutes &&
+    current.minimumResponses === next.minimumResponses &&
+    current.introText === next.introText &&
+    current.anonymityText === next.anonymityText &&
+    hasSameQuestionSnapshot(current, next)
+  );
+}
+
+/**
  * A questionnaire may only go live once every dashboard dimension has at least
  * one enabled question, so this is the single activation gate shared by round
  * creation, saving and the respondent route.

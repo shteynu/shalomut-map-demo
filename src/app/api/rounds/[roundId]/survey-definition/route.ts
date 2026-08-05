@@ -5,6 +5,7 @@ import {
   createCanonicalSurveyDefinition,
   hasSameQuestionSnapshot,
   isActivatableSurveyDefinition,
+  isSameSurveyDefinition,
   parseSurveyDefinition,
 } from "@/lib/survey-definition";
 import { getDurableWriteGuardResponse } from "@/lib/server/durable-write-guard";
@@ -46,7 +47,8 @@ export async function PUT(request: Request, { params }: RouteParams) {
     if (unavailable) return unavailable;
 
     const { roundId } = await params;
-    const { orgRepo, roundRepo, surveyRepo } = resolveCoreRepositories();
+    const { orgRepo, roundRepo, surveyRepo, surveyDefinitionVersionRepo } =
+      resolveCoreRepositories();
     const authorization = await authorizeManagerRound(
       request,
       roundId,
@@ -86,6 +88,28 @@ export async function PUT(request: Request, { params }: RouteParams) {
       privacyThreshold: parsed.value.minimumResponses,
       surveyDefinition: parsed.value,
     });
+
+    // The history records saves that changed something, not saves that
+    // happened. A builder that autosaves an untouched form would otherwise
+    // fill the list with twenty identical entries and push the version worth
+    // recovering off the end of it.
+    //
+    // Recorded after the write and only when the write succeeded: a version the
+    // round never reached is not a state anyone can go back to. A failure to
+    // record is deliberately not a failure to save — the questionnaire is
+    // already stored, and refusing the response would tell the manager their
+    // work was lost when it was not.
+    if (updated && !isSameSurveyDefinition(currentDefinition, parsed.value)) {
+      try {
+        await surveyDefinitionVersionRepo.record(
+          roundId,
+          parsed.value,
+          updated.updatedAt ?? undefined,
+        );
+      } catch (error) {
+        console.error('Failed to record a survey definition version', error);
+      }
+    }
 
     // A draft round goes live as soon as its questionnaire covers all eight
     // dimensions, and going live closes whichever round the school was running.

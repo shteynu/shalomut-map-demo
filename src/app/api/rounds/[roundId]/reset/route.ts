@@ -49,6 +49,11 @@ export async function POST(
     // chosen from an erased measurement has nothing left to track.
     const deletedGoalCount = await roundGoalRepo.deleteByRoundId(roundId);
 
+    // The questionnaire's version history is deliberately left alone. Reset
+    // erases what was measured, not what was written, and it hands the round
+    // back for re-editing — which is exactly when an earlier questionnaire is
+    // worth being able to return to.
+
     // Re-set round status to draft to allow question re-editing
     const updatedRound = await roundRepo.updateStatus(roundId, "draft");
 

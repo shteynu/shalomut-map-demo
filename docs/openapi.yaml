@@ -685,6 +685,95 @@ paths:
         "503":
           description: Persistent storage is not configured for this deployment
 
+  /api/rounds/{roundId}/survey-definition/versions:
+    parameters:
+      - name: roundId
+        in: path
+        required: true
+        schema:
+          type: string
+          example: 4f88af95-0ec4-4872-85ac-67466c3cd8f2
+    get:
+      tags: [Manager Setup]
+      summary: List the questionnaire's earlier versions
+      description: >-
+        Newest first. A version is recorded by each save that changed the
+        definition, so the first entry is the questionnaire the round is on now.
+        At most twenty versions are kept per round; older ones are pruned.
+        Summaries only — fetch one version by id to read its definition.
+      security:
+        - managerSession: []
+      responses:
+        "200":
+          description: Questionnaire history retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  versions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        savedAt:
+                          type: string
+                          format: date-time
+                        title:
+                          type: string
+                        questionCount:
+                          type: integer
+                        enabledQuestionCount:
+                          type: integer
+                        isCurrent:
+                          type: boolean
+                          description: True for the newest version, which is the questionnaire in force.
+        "404":
+          description: Survey round not found
+
+  /api/rounds/{roundId}/survey-definition/versions/{versionId}:
+    parameters:
+      - name: roundId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: versionId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Manager Setup]
+      summary: Fetch one earlier questionnaire
+      description: >-
+        Returns the stored definition whole. There is no restore endpoint:
+        restoring is sending this definition back through
+        PUT /api/rounds/{roundId}/survey-definition, so a restore passes the
+        same validation, the same post-response freeze and the same activation
+        rule as any other save.
+      security:
+        - managerSession: []
+      responses:
+        "200":
+          description: Questionnaire version retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  savedAt:
+                    type: string
+                    format: date-time
+                  definition:
+                    $ref: '#/components/schemas/SurveyDefinition'
+        "404":
+          description: This round holds no such version
+
   /api/rounds/{roundId}/analytics:
     get:
       tags: [Analytics]
