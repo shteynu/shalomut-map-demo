@@ -139,6 +139,28 @@ def test_a_wrong_count_in_digits_is_caught_too():
     assert result.score == 0.0
 
 
+def test_counting_answers_is_not_read_as_counting_dimensions():
+    """The real 2026-08-05 run, where the summary counted answers correctly.
+
+    `uniformly-healthy` has eight green dimensions and twenty answers, of which
+    eighteen were green. Without the noun in the predicate, "18 green answers"
+    scored as a claim that eighteen dimensions are green.
+    """
+    payload = stone_map(
+        HEALTHY,
+        summary="המפה כוללת 18 תשובות ירוקות ו-2 תשובות צהובות מתוך 20.",
+    )
+    result = grade_summary_grounding(payload, HEALTHY)
+    assert result.measured["claims"] == 0
+    assert result.score == 1.0
+
+
+def test_counting_answers_in_words_is_not_read_as_dimensions_either():
+    payload = stone_map(HEALTHY, summary="שלוש תשובות ירוקות עלו בשאלה הזאת.")
+    result = grade_summary_grounding(payload, HEALTHY)
+    assert result.measured["claims"] == 0
+
+
 def test_a_summary_that_counts_nothing_is_not_penalised():
     payload = stone_map(HEALTHY, summary="התמונה הכללית יציבה ומעודדת.")
     result = grade_summary_grounding(payload, HEALTHY)

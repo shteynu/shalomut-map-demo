@@ -24,6 +24,10 @@ HEBREW_CARDINALS: Dict[str, int] = {
     "אחד": 1, "אחת": 1, "שני": 2, "שתי": 2, "שניים": 2, "שתיים": 2,
     "שלוש": 3, "שלושה": 3, "ארבע": 4, "ארבעה": 4, "חמש": 5, "חמישה": 5,
     "שש": 6, "שישה": 6, "שבע": 7, "שבעה": 7, "שמונה": 8,
+    # The construct forms, which is how a summary says "all eight dimensions":
+    # "בכל שמונת הממדים". The 2026-08-05 run used them and the plain forms
+    # never appeared.
+    "שלושת": 3, "ארבעת": 4, "חמשת": 5, "ששת": 6, "שבעת": 7, "שמונת": 8,
 }
 # "כל" is deliberately absent. It reads as eight only when the sentence is
 # about all eight dimensions, and "כל הממדים האדומים" is about however many
@@ -100,6 +104,20 @@ def _compile_term(term: str) -> "re.Pattern[str]":
     return re.compile(
         f"(?<!{_HEBREW_LETTER}){opening}{re.escape(term)}{closing}"
     )
+
+
+# The noun a counting claim has to be about. A summary that counts *answers* —
+# "18 תשובות ירוקות ו-2 תשובות צהובות מתוך 20" — is counting something else,
+# and reading it as a count of dimensions is how this grader used to invent
+# findings. Written with the same attached prefixes as every other term here,
+# so "הממדים" and "ובממד" are found.
+_DIMENSION_NOUN_PATTERN = re.compile(
+    f"(?<!{_HEBREW_LETTER}){_ATTACHED_PREFIXES}ממד(?:ים|י)?(?!{_HEBREW_LETTER})"
+)
+
+
+def _names_dimensions(words: Sequence[str]) -> bool:
+    return any(_DIMENSION_NOUN_PATTERN.search(word) for word in words)
 
 
 _CLINICAL_PATTERNS = tuple(
@@ -180,6 +198,12 @@ def grade_summary_grounding(
     one assertion in the summary that the evidence can settle outright, and the
     only part of the summary the runtime currently checks is its language and
     its shape — so a wrong count reaches a manager today.
+
+    All three parts have to be there: the number, the noun and the status. A
+    summary counting anything else — answers, questions, points — is counting a
+    different set, and the evidence here cannot settle it. Those go unmeasured
+    rather than wrong; a claim this grader cannot check is not a claim the
+    model got wrong.
     """
     summary = str(payload.get("overallPsychologicalSummary") or "")
     actual = _actual_status_counts(case)
@@ -193,6 +217,8 @@ def grade_summary_grounding(
             continue
         # The status word can trail the counted noun: "שלושה ממדים ירוקים".
         window = words[index + 1 : index + 4]
+        if not _names_dimensions(window):
+            continue
         for status, markers in STATUS_WORDS_HEBREW.items():
             if not any(marker in window for marker in markers):
                 continue
@@ -207,6 +233,8 @@ def grade_summary_grounding(
     for match in re.finditer(r"(\d+)\s+(\S+)\s*(\S*)", summary):
         count = int(match.group(1))
         tail = f"{match.group(2)} {match.group(3)}"
+        if not _names_dimensions(_words(tail)):
+            continue
         for status, markers in STATUS_WORDS_HEBREW.items():
             if any(marker in tail for marker in markers):
                 claims.append({"claimed": count, "status": status, "actual": actual[status]})
