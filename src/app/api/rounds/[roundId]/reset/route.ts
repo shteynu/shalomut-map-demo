@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { resolveCoreRepositories } from "@/lib/composition-root";
+import { getArchivedRoundGuardResponse } from "@/lib/server/archived-round-guard";
 import { getDurableWriteGuardResponse } from "@/lib/server/durable-write-guard";
 import { authorizeManagerRound } from "@/lib/server/manager-scope";
 import { recordRoundAuditEvent } from "@/lib/server/manager-audit";
@@ -29,6 +30,12 @@ export async function POST(
       roundRepo,
     );
     if (!authorization.ok) return authorization.response;
+
+    // Reset ends by writing `draft`, which is not a transition the status table
+    // allows out of `archived` — and it wrote it directly, so nothing refused
+    // it. Refusing here keeps the archive terminal.
+    const archived = getArchivedRoundGuardResponse(authorization.round);
+    if (archived) return archived;
 
     // Reset is irreversible, so the number of responses about to be destroyed
     // is captured before the delete and recorded in the audit trail.

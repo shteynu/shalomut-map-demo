@@ -8,6 +8,7 @@ import {
   isSameSurveyDefinition,
   parseSurveyDefinition,
 } from "@/lib/survey-definition";
+import { getArchivedRoundGuardResponse } from "@/lib/server/archived-round-guard";
 import { getDurableWriteGuardResponse } from "@/lib/server/durable-write-guard";
 import { authorizeManagerRound } from "@/lib/server/manager-scope";
 
@@ -66,6 +67,14 @@ export async function PUT(request: Request, { params }: RouteParams) {
     }
 
     const { round } = authorization;
+
+    // A round with answers already refuses a changed question snapshot below.
+    // This refuses the rest of it — the title, the intro, the threshold — and
+    // it also refuses an archived round that never reached a first answer,
+    // where that rule would have let the questionnaire be rewritten.
+    const archived = getArchivedRoundGuardResponse(round);
+    if (archived) return archived;
+
     const responseCount = await surveyRepo.getResponseCount(roundId);
     const currentDefinition =
       round.surveyDefinition ??
