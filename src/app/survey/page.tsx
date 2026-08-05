@@ -34,7 +34,14 @@ export default async function SurveyPage({
         )
       }
       lastSavedAt={context.selectedRound.updatedAt?.toISOString()}
-      isFrozen={context.responseCount > 0 || context.selectedRound.status === "closed"}
+      // An archived round is read-only, and its questionnaire route answers
+      // 409. A draft can be archived without ever taking an answer, so the
+      // response count does not cover this on its own.
+      isFrozen={
+        context.responseCount > 0 ||
+        context.selectedRound.status === "closed" ||
+        context.selectedRound.status === "archived"
+      }
     />
   );
 }

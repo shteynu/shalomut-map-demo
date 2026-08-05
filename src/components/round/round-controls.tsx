@@ -210,39 +210,46 @@ export function RoundControls({
         />
 
         <div className="round-actions">
-          <button
-            id="refresh-round-analysis"
-            className="secondary-button"
-            type="button"
-            disabled={analyzing || responseCount < minimumResponses}
-            onClick={refreshAnalysis}
-            title={
-              responseCount < minimumResponses
-                ? `הניתוח יופעל לאחר ${minimumResponses} תשובות לפחות`
-                : "הפעלת ניתוח מחדש על כל התשובות שהתקבלו עד כה"
-            }
-          >
-            {analyzing ? (
-              <Loader2 size={18} className="animate-spin" aria-hidden="true" />
-            ) : (
-              <Sparkles size={18} aria-hidden="true" />
-            )}
-            {analyzing ? "מפעיל ניתוח..." : "רענון ניתוח"}
-          </button>
-          <button
-            className="secondary-button"
-            type="button"
-            disabled={resetting}
-            onClick={resetRound}
-            title="מחיקת תשובות והחזרה לעריכת שאלון"
-          >
-            {resetting ? (
-              <Loader2 size={18} className="animate-spin" aria-hidden="true" />
-            ) : (
-              <RotateCcw size={18} aria-hidden="true" />
-            )}
-            {resetting ? "מאפס..." : "איפוס נתונים"}
-          </button>
+          {/* An archived round is read-only. Both of these rewrite what it
+              measured, and the routes answer them with 409, so the screen does
+              not offer them at all rather than offering a button that fails. */}
+          {archived ? null : (
+            <>
+              <button
+                id="refresh-round-analysis"
+                className="secondary-button"
+                type="button"
+                disabled={analyzing || responseCount < minimumResponses}
+                onClick={refreshAnalysis}
+                title={
+                  responseCount < minimumResponses
+                    ? `הניתוח יופעל לאחר ${minimumResponses} תשובות לפחות`
+                    : "הפעלת ניתוח מחדש על כל התשובות שהתקבלו עד כה"
+                }
+              >
+                {analyzing ? (
+                  <Loader2 size={18} className="animate-spin" aria-hidden="true" />
+                ) : (
+                  <Sparkles size={18} aria-hidden="true" />
+                )}
+                {analyzing ? "מפעיל ניתוח..." : "רענון ניתוח"}
+              </button>
+              <button
+                className="secondary-button"
+                type="button"
+                disabled={resetting}
+                onClick={resetRound}
+                title="מחיקת תשובות והחזרה לעריכת שאלון"
+              >
+                {resetting ? (
+                  <Loader2 size={18} className="animate-spin" aria-hidden="true" />
+                ) : (
+                  <RotateCcw size={18} aria-hidden="true" />
+                )}
+                {resetting ? "מאפס..." : "איפוס נתונים"}
+              </button>
+            </>
+          )}
           <button
             className="secondary-button"
             type="button"
@@ -292,7 +299,8 @@ export function RoundControls({
           <div className="closed-note">
             <Archive size={18} aria-hidden="true" />
             הסבב הועבר לארכיון. הוא יצא מרשימת הסבבים ונשאר זמין דרך הארכיון
-            שבתחתית הרשימה, עם כל הנתונים והניתוח שלו.
+            שבתחתית הרשימה, עם כל הנתונים והניתוח שלו — לקריאה בלבד. היעדים
+            שנבחרו בו ממשיכים להתעדכן כרגיל.
           </div>
         ) : null}
         {analysisNote ? (

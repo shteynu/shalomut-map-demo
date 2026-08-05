@@ -43,3 +43,22 @@ test("closing is not offered on an archived round, which has no way out", () => 
   assert.match(controls("archived"), closeButton);
   assert.doesNotMatch(controls("active"), closeButton);
 });
+
+test("an archived round offers nothing that would rewrite what it measured", () => {
+  const html = controls("archived");
+
+  // Both routes answer 409 now, so a button here would only fail. Reset is the
+  // one that mattered most: it used to write `draft` and take the round back
+  // out of the archive.
+  assert.doesNotMatch(html, /איפוס נתונים/);
+  assert.doesNotMatch(html, /רענון ניתוח/);
+  assert.match(controls("closed"), /איפוס נתונים/);
+  assert.match(controls("closed"), /רענון ניתוח/);
+});
+
+test("the archive note says it is read-only and that goals are not", () => {
+  const html = controls("archived");
+
+  assert.match(html, /לקריאה בלבד/);
+  assert.match(html, /היעדים שנבחרו בו ממשיכים להתעדכן/);
+});
