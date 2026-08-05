@@ -2262,6 +2262,31 @@ textarea {
   list-style: none;
 }
 
+/* The archive opens with `details`, so it works without JavaScript and stays
+   closed until a manager asks for it. It is quieter than the rounds above it
+   because it is a way in, not one of the choices. */
+.dashboard-round-archive {
+  margin-top: 0.6rem;
+  text-align: center;
+}
+
+.dashboard-round-archive summary {
+  display: inline-block;
+  min-height: 2.5rem;
+  padding: 0.6rem 0.5rem;
+  color: var(--accent-dark);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.dashboard-round-archive summary:hover {
+  text-decoration: underline;
+}
+
+.dashboard-round-archive ul {
+  margin-top: 0.35rem;
+}
+
 .dashboard-round-option {
   display: inline-flex;
   align-items: baseline;

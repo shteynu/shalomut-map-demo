@@ -16,6 +16,15 @@ export type DashboardRoundOption = {
   isSelected: boolean;
 };
 
+/**
+ * The school's rounds in two groups (ADR-018): the ones a manager works with,
+ * and the archive they filed away and can still open.
+ */
+export type DashboardRoundOptions = {
+  current: DashboardRoundOption[];
+  archived: DashboardRoundOption[];
+};
+
 export const roundStatusLabels: Record<RoundStatus, string> = {
   draft: "טיוטה",
   active: "פעיל",
@@ -24,30 +33,36 @@ export const roundStatusLabels: Record<RoundStatus, string> = {
 };
 
 /**
- * Archiving a round means taking it out of the everyday list, and that is the
- * only thing it means (ADR-018). The round keeps its URL, its dashboard and its
- * place in the comparison history; it stops being one of the choices offered
- * here.
+ * Archiving a round takes it out of the everyday list; it does not take it
+ * away. The archived rounds stay behind a disclosure the manager can open, so
+ * returning to an old semester never requires having kept its URL.
  *
- * The selected round is the exception, and it has to be: a manager who followed
- * a link to an archived round would otherwise read a switcher that names every
- * round except the one on screen.
+ * The round on screen is the exception, and it has to be: a manager who
+ * followed a link to an archived round would otherwise read a switcher naming
+ * every round except the one they are looking at. It stays in the everyday
+ * list, marked `בארכיון`, so the current position is announced.
  */
-function belongsInSwitcher(round: SurveyRound, selectedRoundId: string): boolean {
-  return round.status !== "archived" || round.id === selectedRoundId;
-}
-
 export function toDashboardRoundOptions(
   rounds: SurveyRound[],
   selectedRoundId: string,
-): DashboardRoundOption[] {
-  return rounds
-    .filter((round) => belongsInSwitcher(round, selectedRoundId))
-    .map((round) => ({
+): DashboardRoundOptions {
+  const options = rounds.map((round) => ({
+    round,
+    option: {
       id: round.id,
       title: round.title,
       statusLabel: roundStatusLabels[round.status],
       href: dashboardMapRoute(round.id),
       isSelected: round.id === selectedRoundId,
-    }));
+    },
+  }));
+
+  return {
+    current: options
+      .filter(({ round, option }) => round.status !== "archived" || option.isSelected)
+      .map(({ option }) => option),
+    archived: options
+      .filter(({ round, option }) => round.status === "archived" && !option.isSelected)
+      .map(({ option }) => option),
+  };
 }

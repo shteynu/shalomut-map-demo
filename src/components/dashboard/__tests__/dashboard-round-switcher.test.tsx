@@ -27,6 +27,8 @@ const rounds = [
   round("round-1", "סבב ראשון", "closed"),
 ];
 
+const withArchive = [...rounds, round("round-0", "סבב ניסיון", "archived")];
+
 test("each round links to its own dashboard and the selected one is announced", () => {
   const html = renderToStaticMarkup(
     <DashboardRoundSwitcher
@@ -52,37 +54,50 @@ test("the status of each round is a word, not only the border", () => {
   assert.match(html, /סגור/);
 });
 
-test("an archived round is not one of the choices", () => {
-  const html = renderToStaticMarkup(
-    <DashboardRoundSwitcher
-      options={toDashboardRoundOptions(
-        [...rounds, round("round-0", "סבב ניסיון", "archived")],
-        "round-2",
-      )}
-    />,
-  );
+test("an archived round is not one of the everyday choices", () => {
+  const { current } = toDashboardRoundOptions(withArchive, "round-2");
 
-  assert.doesNotMatch(html, /סבב ניסיון/);
-  assert.doesNotMatch(html, /href="\/dashboard\?round=round-0"/);
-  assert.match(html, /סבב ראשון/);
+  assert.deepStrictEqual(
+    current.map((option) => option.id),
+    ["round-2", "round-1"],
+  );
 });
 
-test("the archived round a manager is looking at stays in the list", () => {
+test("the archive is reachable without knowing the round's URL", () => {
   const html = renderToStaticMarkup(
     <DashboardRoundSwitcher
-      options={toDashboardRoundOptions(
-        [...rounds, round("round-0", "סבב ניסיון", "archived")],
-        "round-0",
-      )}
+      options={toDashboardRoundOptions(withArchive, "round-2")}
     />,
   );
 
+  assert.match(html, /<details/);
+  assert.match(html, /הצגת הארכיון \(1\)/);
+  assert.match(html, /href="\/dashboard\?round=round-0"/);
+  assert.match(html, /סבב ניסיון/);
+});
+
+test("the archive stays closed until a manager asks for it", () => {
+  const html = renderToStaticMarkup(
+    <DashboardRoundSwitcher
+      options={toDashboardRoundOptions(withArchive, "round-2")}
+    />,
+  );
+
+  assert.doesNotMatch(html, /<details open/);
+});
+
+test("the archived round a manager is looking at stays in the everyday list", () => {
+  const options = toDashboardRoundOptions(withArchive, "round-0");
+  const html = renderToStaticMarkup(<DashboardRoundSwitcher options={options} />);
+
+  assert.deepStrictEqual(options.archived, []);
   assert.match(html, /סבב ניסיון/);
   assert.match(html, /בארכיון/);
   assert.match(html, /aria-current="page"/);
+  assert.doesNotMatch(html, /<details/);
 });
 
-test("a school whose only other round is archived gets no switcher", () => {
+test("a school whose only other round is archived still gets the switcher", () => {
   const html = renderToStaticMarkup(
     <DashboardRoundSwitcher
       options={toDashboardRoundOptions(
@@ -92,7 +107,7 @@ test("a school whose only other round is archived gets no switcher", () => {
     />,
   );
 
-  assert.strictEqual(html, "");
+  assert.match(html, /הצגת הארכיון \(1\)/);
 });
 
 test("a school with one round gets no switcher at all", () => {

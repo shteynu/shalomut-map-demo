@@ -8,7 +8,7 @@ import {
   formatDelta,
   type RoundComparison,
 } from "@/lib/dashboard/round-comparison";
-import type { DashboardRoundOption } from "@/lib/dashboard/round-options";
+import type { DashboardRoundOptions } from "@/lib/dashboard/round-options";
 import type { AiInsightsUiState } from "@/lib/hooks/use-ai-insights";
 import { useAiInsights } from "@/lib/hooks/use-ai-insights";
 import type { WellbeingDimensionId, WellbeingStatus } from "@/lib/shalomut-source";
@@ -31,7 +31,7 @@ type DashboardMapPageProps = {
     WellbeingDimensionId,
     { averageScore: number; computedStatus: WellbeingStatus }
   >;
-  roundOptions: DashboardRoundOption[];
+  roundOptions: DashboardRoundOptions;
   /** The previous round's numbers, when there is a comparable one. */
   comparison: RoundComparison | null;
 };
