@@ -147,10 +147,19 @@ test('a stone must be filed under its own dimension', () => {
   assert.match(error, /does not match AI analytics contract/);
 });
 
-test('a V6 stone may not report that it has no interpretation', () => {
+test('a stone with no overview must be a stone that declares one is missing', () => {
+  // Until `8b75754` a 6.0 stone could not report `unavailable` at all, and the
+  // refusal this replaces asserted that. It kept passing afterwards for a
+  // reason it did not name: the payload it built also kept its three
+  // paragraphs, so it was testing the gap rule while claiming to test a ban.
+  //
+  // The half no test pinned is this one. An empty overview beside an outcome
+  // that says copy was written is a stone whose absence nothing accounts for,
+  // and the manager's screen would show a blank dimension with no reason for
+  // it.
   const error = refusal(
     payloadWith((payload) => {
-      firstStone(payload).generationProvenance.outcome = 'unavailable';
+      firstStone(payload).summary = [];
     }),
   );
   assert.match(error, /does not match AI analytics contract/);
