@@ -407,6 +407,32 @@ closed first. The action confirms before it acts, because `archived` is terminal
 — which is also why closing is disabled on an archived round rather than
 answering `409` from the route.
 
+**Amended 2026-08-05, owner decision: the archive is read-only.** The heading
+above is still the shape of the decision — archiving takes a round out of the
+everyday list — but "and nothing else" was not survivable. `archived` was
+terminal only in `RoundService.isTransitionAllowed`; reset wrote `draft`
+directly, without going through that table, so resetting an archived round took
+it back out of the archive. Re-running the analysis had no status check at all
+and would rewrite the narrative of a round the school had already filed, while
+a later round's comparison went on naming it.
+
+So three writes now answer `409` with `code: round_archived`, through one guard
+in `src/lib/server/archived-round-guard.ts`: reset, the manual analysis run and
+the questionnaire save. The last of those matters even though a round with
+answers already refuses a changed question snapshot — a draft can be archived
+without ever taking an answer, and that round's questionnaire was still
+editable.
+
+The goals a round produced are deliberately **not** guarded. They are the
+school's own work rather than part of the measurement: a recommendation chosen
+last spring can be finished this autumn, and freezing it would mean a school
+either never files a round or loses the ability to mark a goal done. Reset
+still deletes goals — but reset no longer happens to an archived round at all.
+
+The screen does not offer what the routes refuse: an archived round shows no
+reset and no analysis button, and its questionnaire opens frozen, the way a
+round with answers already does.
+
 ### ADR-019: Restoring a questionnaire version is an ordinary save
 
 Backlog §1, 2026-08-05. Every save that changes a round's questionnaire copies

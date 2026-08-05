@@ -78,6 +78,12 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 - Setup and builder say when their work last reached the database, and say so
   again as "not saved yet" the moment the manager edits. The time is the one the
   save endpoint reports, so it is evidence of a completed write.
+- A round can be filed away. Archiving takes it out of the everyday switcher and
+  leaves it behind a disclosure, keeping its URL, its dashboard, its analysis and
+  its place in the comparison history — and an archived round is read-only:
+  reset, a new analysis run and a questionnaire save are all refused. Its goals
+  are not frozen with it, because finishing what a measurement started is the
+  school's work rather than part of the measurement.
 - The questionnaire has a history: every save that changes it keeps a copy, the
   builder lists the last twenty newest first, and an earlier one can be loaded
   back into the editor. Restoring is the ordinary save, so it is validated like

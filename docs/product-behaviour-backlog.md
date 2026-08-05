@@ -424,11 +424,27 @@ Three parts, and they only make sense together:
   looking at stays in the everyday list, marked `בארכיון`, because a switcher
   naming every round except the current one would be lying about where they are.
 
-Remaining:
-- Nothing stops other actions on an archived round: refreshing the analysis and
-  resetting the data still work. Only closing is disabled, and that is because
-  the route would answer `409`, not because the archive is read-only. Whether
-  the archive should be read-only is a separate decision.
+Done 2026-08-05, and this closes the item: the archive is read-only. Owner
+decision, recorded as an amendment to ADR-018.
+
+The separate decision this section used to name turned out to rest on a leak
+rather than on a preference. `archived` was terminal in `RoundService`, but
+reset wrote `draft` straight through the repository without consulting that
+table — so resetting an archived round returned it to the everyday list as a
+draft, out of a state that has no way out. Refreshing the analysis had no status
+check at all, and would rewrite the narrative of a filed round while a later
+round's comparison went on naming it.
+
+Three writes now answer `409` with `code: round_archived`: reset, the manual
+analysis run and the questionnaire save. The screen stops offering them, and an
+archived round's questionnaire opens frozen the way a round with answers does —
+which is why the questionnaire is included even though answers already froze
+its questions: a draft can be archived without ever taking an answer.
+
+The goals are deliberately exempt. They are the school's work rather than part
+of the measurement, so a recommendation chosen last spring can still be marked
+done this autumn. Freezing them would mean a school either never files a round
+or gives up finishing what the round started.
 
 Done 2026-08-04: the single-active-round rule is durable in the database. The
 partial unique index `survey_rounds_one_active_per_organization` on

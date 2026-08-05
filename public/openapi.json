@@ -644,7 +644,7 @@
           "Rounds"
         ],
         "summary": "Reset survey round responses and set status back to draft",
-        "description": "Clears all collected anonymous survey responses for the given round and resets its status to draft so questions can be edited. Also drops any persisted AI result, any durable analysis run and every tracked goal of the round, and records a ROUND_RESET audit event.",
+        "description": "Clears all collected anonymous survey responses for the given round and resets its status to draft so questions can be edited. Also drops any persisted AI result, any durable analysis run and every tracked goal of the round, and records a ROUND_RESET audit event. The questionnaire's version history is deliberately kept. An archived round is refused, because writing `draft` would take it back out of the archive, which has no transition out.",
         "security": [
           {
             "managerSession": []
@@ -690,6 +690,9 @@
           },
           "404": {
             "description": "Survey round not found"
+          },
+          "409": {
+            "description": "The round is archived and read-only (`code` is `round_archived`)"
           },
           "500": {
             "description": "Failed to reset round responses"
@@ -1072,6 +1075,9 @@
           },
           "404": {
             "description": "Survey round not found"
+          },
+          "409": {
+            "description": "The question snapshot cannot change after the first accepted response, or the round is archived and read-only (`code` is `round_archived`)"
           },
           "500": {
             "description": "Failed to save survey definition"
@@ -1509,7 +1515,7 @@
             "description": "Survey round not found in the manager scope"
           },
           "409": {
-            "description": "An analytics run for this round is already queued or running"
+            "description": "An analytics run for this round is already queued or running, or the round is archived and read-only (`code` is `round_archived`)"
           },
           "500": {
             "description": "Failed to enqueue the analysis run"
