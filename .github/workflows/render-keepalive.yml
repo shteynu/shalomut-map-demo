@@ -1,0 +1,59 @@
+name: "Keep the Render AI service awake"
+
+# The AI analytics service runs on Render's free plan, which sleeps an instance
+# after fifteen minutes without inbound traffic. Sleep is not only a cold start:
+# durable analysis jobs are claimed by that service polling Core, and a sleeping
+# instance polls nothing, so a queued round waits for a visitor instead of being
+# worked. Its own outbound polling does not count as traffic — only a request
+# arriving from outside does, which is what this workflow sends.
+#
+# Ten minutes, not fifteen: GitHub's scheduler is best-effort and routinely runs
+# a cron several minutes late, so a fifteen-minute period would drift past the
+# window it is meant to stay inside.
+#
+# What this costs: the free plan grants 750 instance-hours a month across the
+# account and a month is about 730, so an always-awake service spends nearly all
+# of them and leaves no room for a second free service. The alternative is the
+# paid instance type, which is the owner's decision and not something a workflow
+# can make. Actions minutes are free here because the repository is public.
+#
+# GitHub disables scheduled workflows in a repository with no activity for sixty
+# days. If the service starts sleeping again, check that this schedule is still
+# enabled before looking anywhere else.
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: render-keepalive
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    name: Ping /health
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Wake the service and read its health
+        run: |
+          set -euo pipefail
+          url="https://shalomut-ai-analytics.onrender.com/health"
+          # --max-time 150 rather than a default: a request that arrives during
+          # a cold start waits for the container to build up, which the free
+          # plan documents as roughly a minute and which has been slower.
+          # One retry covers the cold start that ends after the first attempt
+          # has already given up.
+          body="$(curl -fsS --max-time 150 --retry 1 --retry-delay 15 "$url")"
+          echo "$body"
+          case "$body" in
+            *'"status":"online"'*) ;;
+            *)
+              echo "::error::/health answered without status online"
+              exit 1
+              ;;
+          esac

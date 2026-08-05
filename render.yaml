@@ -1,6 +1,11 @@
 # Render blueprint for the isolated AI analytics service.
-# Free plan instances sleep after 15 minutes of inactivity; the first request
-# after a sleep pays a cold start of roughly a minute.
+# Free plan instances sleep after 15 minutes without *inbound* traffic, and the
+# first request after a sleep pays a cold start of roughly a minute. The cold
+# start is the smaller half: durable analysis jobs are pulled by this service
+# from Core's `/api/ai-analysis-runs/claim`, so a sleeping instance is not a
+# slow instance, it is one that claims nothing until something knocks. Its
+# own polling is outbound and does not count as traffic.
+# `.github/workflows/render-keepalive.yml` does the knocking every ten minutes.
 services:
   - type: web
     name: shalomut-ai-analytics
@@ -38,18 +43,27 @@ services:
       # every live round has died on, so the model and the pace it is paced at
       # belong together and in sight, not on a default nobody can read.
       #
-      # Fourteen, not the fifteen the tier allows. Evenly spaced sends land
-      # every 60/R seconds, and at exactly fifteen that is four seconds — a
-      # sixty-second window then catches both endpoints, sixteen sends, one
-      # over. Any rate below fifteen leaves the window at fifteen. The four
-      # seconds this costs a round are not worth a `429`.
+      # Sixty since 2026-08-05, and the number is measured rather than read off
+      # a tier table. The owner attached a billed Gemini key that day, and seven
+      # eval-corpus runs went through this same fast model at sixty a minute —
+      # roughly 140 provider requests each — without one quota failure. The
+      # fourteen this replaces was the free tier's fifteen minus the boundary
+      # send, and it is what made a round take four seconds per request for no
+      # reason a billed key can see.
+      #
+      # It rests on one fact this file cannot check: that `GEMINI_API_KEY` in
+      # the Render dashboard is that billed key and not the free one it was set
+      # to before. If it is the free key, sixty buys `429` on almost every send
+      # — retried with `Retry-After`, so the round crawls rather than dies —
+      # and the honest fix is to put the billed key on the dashboard, not to
+      # move this number back.
       - key: LLM_MAX_REQUESTS_PER_MINUTE
-        value: "14"
+        value: "60"
       # Free tier for this model, read in AI Studio 2026-07-29: 15 RPM and
       # 1000 RPD, against 5 and 20 for gemini-3.5-flash. Limits are counted per
       # model, so this is a different budget rather than a bigger share of the
-      # same one — and 1000 a day against 17 a round is what turns one debug
-      # round per day into roughly sixty. Its Hebrew was checked on this
+      # same one. That is the shape the pace above still follows on a billed
+      # key, where both numbers are far higher. Its Hebrew was checked on this
       # project's own 5.0 prompts the same day.
       - key: LLM_MODEL_FAST
         value: "gemini-3.5-flash-lite"
@@ -62,20 +76,23 @@ services:
       # counted against.
       - key: LLM_MODEL_HEAVY
         sync: false
-      # Four, against the 5 RPM and 20 RPD gemini-3.5-flash allows on the free
-      # tier. Four rather than five for the reason fourteen is not fifteen: at
-      # exactly five the interval is twelve seconds, and a sixty-second window
-      # holds both endpoints — six sends, one over. Unset defaults to five in
-      # `config.py`, deliberately not to the fast pace, which would rebuild the
-      # defect the next time that number moved.
+      # Thirty, half the fast pace, and measured the same way: the eval-corpus
+      # runs of 2026-08-05 paced the heavy model at thirty while the fast one
+      # ran at sixty. It stays a separate number rather than inheriting the
+      # fast one — the free tier allowed 5 RPM and 20 RPD here against 15 and
+      # 1000 there, so the two buckets were never the same size and a billed
+      # key does not make them one. Unset defaults to five in `config.py`,
+      # deliberately not to the fast pace, which would rebuild the defect the
+      # next time that number moved.
       #
       # The daily count was the residual risk no pace could fix: a replay used
       # to rewrite the whole round, seventeen heavy requests of the twenty a day
       # to repair one stone. A replay now writes only what the validator
-      # rejected — one request for one dimension, measured — so the day is
-      # reached only by a round rejected in many dimensions over and over.
+      # rejected — one request for one dimension, measured — so on the free key
+      # the day was reached only by a round rejected in many dimensions over and
+      # over, and on a billed key it is not the binding limit at all.
       - key: LLM_MAX_REQUESTS_PER_MINUTE_HEAVY
-        value: "4"
+        value: "30"
       # False: the model writes all eight dimensions, green included. It was
       # true to save tokens when a round did not fit in a day, and that reason
       # is gone — the live round of 2026-07-29 was already an all-eight-model

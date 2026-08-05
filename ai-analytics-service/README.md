@@ -245,24 +245,34 @@ free tier counts the minute. That is what every live round had been failing on �
 
 The rate belongs to a model, not to the service: Google counts per model, so
 `LLM_MAX_REQUESTS_PER_MINUTE` and `LLM_MODEL_FAST` have to move together.
-`render.yaml` carries both — `gemini-3.5-flash-lite` at `14`, against a tier
-that allows `15` per minute and `1000` a day. The missing fifteenth is not
-caution for its own sake: evenly spaced sends arrive every `60/R` seconds, so at
-exactly `15` they arrive every four seconds and some sixty-second window holds
-both endpoints — sixteen sends, one over. Any rate below `15` keeps the worst
-window at `15`. The default of `5` matches `gemini-3.5-flash` (`5` per minute,
-`20` a day), which is the stricter bucket and the right assumption for an
-environment that has not said which model it runs.
+`render.yaml` carries both — `gemini-3.5-flash-lite` at `60` since 2026-08-05.
+It was `14` for as long as the key was a free one, where the tier allowed `15`
+per minute and the missing fifteenth was not caution for its own sake: evenly
+spaced sends arrive every `60/R` seconds, so at exactly `15` they arrive every
+four seconds and some sixty-second window holds both endpoints — sixteen sends,
+one over. `60` is not read off the billed tier's table either; it is the pace
+seven eval-corpus runs actually sustained through this model on the billed key,
+about 140 provider requests a run with no quota failure. The default of `5`
+matches `gemini-3.5-flash` on the free tier (`5` per minute, `20` a day), which
+is the stricter bucket and the right assumption for an environment that has not
+said which model or which key it runs.
 
 Which is why `LLM_MAX_REQUESTS_PER_MINUTE_HEAVY` exists and paces
-`LLM_MODEL_HEAVY` separately, at `4` in `render.yaml`. The heavy model is not an
-occasional single request that could round down into the fast model's budget:
-a replay used to switch an entire node to it, so a replayed round sent every
-problematic dimension there back to back. On the fast model's `14` that is
-nearly three times what `gemini-3.5-flash` allows — the original `429`, moved
-into the path that only opens once the round is already in trouble. Unset it
-defaults to `5` rather than to the fast pace, because inheriting would rebuild
-the defect the next time the fast number was raised.
+`LLM_MODEL_HEAVY` separately, at `30` in `render.yaml` — half the fast pace,
+and the pace those same runs used. The heavy model is not an occasional single
+request that could round down into the fast model's budget: a replay used to
+switch an entire node to it, so a replayed round sent every problematic
+dimension there back to back. On the free key's numbers the fast model's `14`
+was nearly three times what `gemini-3.5-flash` allowed — the original `429`,
+moved into the path that only opens once the round is already in trouble. Unset
+it defaults to `5` rather than to the fast pace, because inheriting would
+rebuild the defect the next time the fast number was raised.
+
+Both values assume the billed key is the one on the Render dashboard, which
+`render.yaml` cannot check because `GEMINI_API_KEY` is `sync: false`. On a free
+key `60` earns `429` on nearly every send; the transport retries those with
+`Retry-After`, so the round crawls instead of failing, and the fix is the key
+rather than the number.
 
 A replay now sends only what the safety validator actually rejected — the
 dimensions it named, and the parts of them it named — so repairing one refused
@@ -392,9 +402,16 @@ secret must be set. Configure the remaining variables from
 [`./.env.example`](./.env.example) and keep `USE_MOCK_MCP=false`.
 
 [`../render.yaml`](../render.yaml) describes the same image for Render and
-enables polling. Render's free web service still sleeps after inactivity;
-outbound polls are not an inbound wake-up guarantee. Use an always-on worker or
-an explicit scheduler/wake mechanism for the deployed durable path.
+enables polling. Render's free web service still sleeps after fifteen minutes
+without inbound traffic, and outbound polls are not inbound traffic — a sleeping
+instance claims nothing, so a queued run waits for a visitor rather than for a
+worker. The wake mechanism that closes this is
+[`../.github/workflows/render-keepalive.yml`](../.github/workflows/render-keepalive.yml):
+a scheduled `GET /health` every ten minutes, which is inbound and therefore
+resets the timer. It is a workaround with a price — the free plan grants 750
+instance-hours a month against a month's 730, so an always-awake service spends
+the account's whole free allowance. A paid instance type is the version of this
+that needs no workflow.
 
 Vercel needs more than this package provides: a Python entrypoint under
 `api/`, which does not exist here. The previous `[tool.vercel]` block in
