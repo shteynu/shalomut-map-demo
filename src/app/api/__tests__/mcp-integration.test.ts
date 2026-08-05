@@ -6,14 +6,13 @@ import { POST as triggerAiHandler } from '../rounds/[roundId]/trigger-ai/route';
 import { AI_ANALYTICS_DIMENSION_IDS } from '@/lib/ai-contract';
 import { surveyInstrument } from '@/lib/shalomut-source';
 import {
-  DEMO_ORGANIZATION,
-  DEMO_ROUND,
   InMemoryAiAnalysisRunRepository,
   InMemoryOrganizationRepository,
   InMemoryRoundRepository,
   InMemorySurveyRepository,
 } from '@/lib/repositories';
 import { overrideCoreRepositories, resetCoreRepositories } from '@/lib/composition-root';
+import { DEMO_ORGANIZATION, DEMO_ROUND } from '@/lib/repositories/__fixtures__/demo-records';
 
 const testRoundId = 'round_demo_1';
 // A second round keeps the dispatch-failure test independent of the claim the

@@ -1,8 +1,6 @@
 import assert from 'node:assert';
 import test from 'node:test';
 import {
-  DEMO_ORGANIZATION,
-  DEMO_ROUND,
   InMemoryAiInsightsRepository,
   InMemoryOrganizationRepository,
   InMemoryRoundRepository,
@@ -14,6 +12,7 @@ import { surveyInstrument } from '../../shalomut-source';
 import { createCanonicalSurveyDefinition } from '../../survey-definition';
 import { QuestionAnswerInput, SurveyResponseInput } from '../../types/backend';
 import { DEFAULT_PRODUCED_ANALYTICS_CONTRACT_VERSION } from '../../ai-contract-version';
+import { DEMO_ORGANIZATION, DEMO_ROUND } from '../__fixtures__/demo-records';
 
 function buildDummyAnswers(value: 'green' | 'yellow' | 'red' = 'green'): QuestionAnswerInput[] {
   return surveyInstrument.questions.map((q) => ({

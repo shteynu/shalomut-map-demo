@@ -12,8 +12,6 @@ import { PUT as saveManagerSetup } from '../manager/setup/route';
 import { GET as getSurveyMeta } from '../survey/[shareCode]/route';
 import { POST as submitSurvey } from '../survey/[shareCode]/submit/route';
 import {
-  DEMO_ORGANIZATION,
-  DEMO_ROUND,
   InMemoryAiAnalysisRunRepository,
   InMemoryOrganizationRepository,
   InMemoryAiInsightsRepository,
@@ -26,6 +24,7 @@ import { setAuditLogRepositoryForTests } from '@/lib/server/manager-audit';
 import { surveyInstrument } from '@/lib/shalomut-source';
 import { createCanonicalSurveyDefinition } from '@/lib/survey-definition';
 import { QuestionAnswerInput } from '@/lib/types/backend';
+import { DEMO_ORGANIZATION, DEMO_ROUND } from '@/lib/repositories/__fixtures__/demo-records';
 
 let previousDatabaseUrl: string | undefined;
 

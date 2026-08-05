@@ -8,8 +8,6 @@ import {
 import { GET as listGoals, POST as createGoal } from '../rounds/[roundId]/goals/route';
 import { POST as resetRound } from '../rounds/[roundId]/reset/route';
 import {
-  DEMO_ORGANIZATION,
-  DEMO_ROUND,
   InMemoryOrganizationRepository,
   InMemoryRoundGoalRepository,
   InMemoryRoundRepository,
@@ -21,6 +19,7 @@ import {
 } from '@/lib/composition-root';
 import { InMemoryAuditLogRepository } from '@/lib/auth/domain-contract';
 import { setAuditLogRepositoryForTests } from '@/lib/server/manager-audit';
+import { DEMO_ORGANIZATION, DEMO_ROUND } from '@/lib/repositories/__fixtures__/demo-records';
 
 const ROUND_ID = DEMO_ROUND.id;
 

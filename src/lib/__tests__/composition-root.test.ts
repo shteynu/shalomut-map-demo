@@ -7,12 +7,13 @@ import {
   resetCoreRepositories,
   resolveCoreRepositories,
 } from '../composition-root';
-import { DEMO_ROUND, InMemoryRoundRepository } from '../repositories';
+import { InMemoryRoundRepository } from '../repositories';
 import { PrismaRoundRepository } from '../repositories/prisma/prisma-round.repository';
 import {
   resetPrismaClientForTests,
   type MinimalPrismaClient,
 } from '../repositories/prisma/prisma-client';
+import { DEMO_ROUND } from '../repositories/__fixtures__/demo-records';
 
 const STUB_CLIENT = {} as MinimalPrismaClient;
 
