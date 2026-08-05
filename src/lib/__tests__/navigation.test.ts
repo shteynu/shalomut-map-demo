@@ -87,9 +87,18 @@ test("getDashboardDetailActions and metrics actions return correct links", () =>
   assert.strictEqual(recActions[0].href, "/dashboard");
 });
 
-test("mainNavItems follows exact product workflow order: home, setup, surveyBuilder, round, dashboard", () => {
+test("mainNavItems follows exact product workflow order: home, setup, surveyBuilder, round, dashboard, goals", () => {
   const ids = mainNavItems.map((item) => item.id);
-  assert.deepStrictEqual(ids, ["home", "setup", "surveyBuilder", "round", "dashboard"]);
+  // Goals come last because they come after the map in the work as well: the
+  // school reads the picture, then decides what to do about it.
+  assert.deepStrictEqual(ids, [
+    "home",
+    "setup",
+    "surveyBuilder",
+    "round",
+    "dashboard",
+    "goals",
+  ]);
 });
 
 test("every dashboard link carries the round it is about", () => {

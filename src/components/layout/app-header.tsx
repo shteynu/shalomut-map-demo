@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, ClipboardList, Home, Map, Send, type LucideIcon } from "lucide-react";
+import { Activity, ClipboardList, Home, Map, Send, Target, type LucideIcon } from "lucide-react";
 import { isMainNavItemActive, mainNavItems, navigationLabels, routes, type MainNavItemId } from "@/lib/navigation";
 import { ManagerUserBar } from "@/components/layout/manager-user-bar";
 
@@ -12,6 +12,7 @@ const navIcons: Record<MainNavItemId, LucideIcon> = {
   round: Send,
   surveyBuilder: ClipboardList,
   dashboard: Map,
+  goals: Target,
 };
 
 export function AppHeader() {

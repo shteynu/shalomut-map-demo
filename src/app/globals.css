@@ -5302,6 +5302,97 @@ label .custom-tooltip-wrapper:hover .custom-tooltip-icon {
   }
 }
 
+/* The school's goals across rounds. The rows reuse the dimension screen's
+   status control on purpose: one goal, one vocabulary, wherever it is read. */
+.school-goals {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.school-goals h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.6rem 0 0;
+  font-size: 1.08rem;
+  font-weight: 700;
+}
+
+.school-goal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Finished goals are still readable, just no longer the thing being worked on.
+   The weight carries that, not colour alone. */
+.school-goal-list.is-done .school-goal-row {
+  background: var(--surface-panel);
+}
+
+.school-goal-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem 1.2rem;
+  padding: 0.9rem 1.05rem;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+}
+
+.school-goal-text {
+  flex: 1 1 24rem;
+  min-width: 0;
+}
+
+.school-goal-text h3 {
+  margin: 0 0 0.25rem;
+  font-size: 1.02rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.school-goal-origin {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0.45rem 0 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.school-goal-archived {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+}
+
+.school-goals-empty {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 1.1rem 1.2rem;
+  border: 1px dashed var(--border-soft);
+  border-radius: var(--radius-panel);
+  background: var(--surface-panel);
+  color: var(--muted);
+}
+
+.school-goals-empty p {
+  margin: 0;
+  line-height: 1.6;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

@@ -6,9 +6,16 @@ export const routes = {
   surveyBuilder: "/survey",
   respondentSurvey: "/answer",
   dashboard: "/dashboard",
+  goals: "/goals",
 } as const;
 
-export type MainNavItemId = "home" | "setup" | "round" | "surveyBuilder" | "dashboard";
+export type MainNavItemId =
+  | "home"
+  | "setup"
+  | "round"
+  | "surveyBuilder"
+  | "dashboard"
+  | "goals";
 
 export type AppRouteId = keyof typeof routes;
 
@@ -78,9 +85,26 @@ export const routeMetadata = {
     actionBody: "אבחון צבעוני, פירוט מילולי, מטרות ויעדים לשיחה ניהולית.",
     actionGlow: "var(--pastel-green)",
   },
+  goals: {
+    id: "goals",
+    href: routes.goals,
+    // The screen is about the school rather than about one round, so it sits
+    // beside the map rather than inside it.
+    navLabel: "מעקב יעדים",
+    actionTitle: "מעקב יעדים",
+    actionBody: "כל היעדים שנבחרו, מכל סבבי האבחון, עם המצב שלהם.",
+    actionGlow: "var(--pastel-peach)",
+  },
 } satisfies Record<AppRouteId, RouteMetadata>;
 
-const mainNavOrder: MainNavItemId[] = ["home", "setup", "surveyBuilder", "round", "dashboard"];
+const mainNavOrder: MainNavItemId[] = [
+  "home",
+  "setup",
+  "surveyBuilder",
+  "round",
+  "dashboard",
+  "goals",
+];
 
 export const mainNavItems: MainNavItem[] = mainNavOrder.map((id) => ({
   id,
@@ -88,7 +112,13 @@ export const mainNavItems: MainNavItem[] = mainNavOrder.map((id) => ({
   label: routeMetadata[id].navLabel,
 }));
 
-export const homeActionRouteIds = ["setup", "surveyBuilder", "round", "dashboard"] as const;
+export const homeActionRouteIds = [
+  "setup",
+  "surveyBuilder",
+  "round",
+  "dashboard",
+  "goals",
+] as const;
 
 export const navigationLabels = {
   productName: "מפת השלומות",

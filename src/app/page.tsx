@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, ClipboardList, LockKeyhole, Map, Send, Settings2, TrendingUp, TriangleAlert, Users } from "lucide-react";
+import { ArrowLeft, ClipboardList, LockKeyhole, Map, Send, Settings2, Target, TrendingUp, TriangleAlert, Users } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { ManagerOnboarding } from "@/components/manager";
 import { ActionCard, PrivacyTooltip, StatStone } from "@/components/ui";
@@ -13,6 +13,7 @@ const actionIcons: Record<(typeof homeActionRouteIds)[number], LucideIcon> = {
   round: Send,
   surveyBuilder: ClipboardList,
   dashboard: Map,
+  goals: Target,
 };
 
 export default async function HomePage() {
