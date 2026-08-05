@@ -92,7 +92,15 @@ test('a stone score must agree with the status derived from it', () => {
   const error = refusal(
     payloadWith((payload) => {
       // 62 is yellow; claiming green is the disagreement the Dashboard would show.
-      firstStone(payload).status = 'green';
+      const stone = firstStone(payload);
+      stone.status = 'green';
+      // The recommendations must move with it. Left at yellow they are refused
+      // for disagreeing with their own stone, and this case would then prove
+      // that rule instead of the one it names — as it did until 2026-08-05,
+      // when a mutant that deleted the score/status check survived it.
+      for (const intervention of stone.recommendedInterventions) {
+        intervention.status = 'green';
+      }
     }),
   );
   assert.match(error, /does not match AI analytics contract/);
