@@ -328,3 +328,51 @@ test('a V6 gap must be empty, declared, and never every dimension', () => {
   assert.ok(!everything.ok);
   assert.match(everything.error, /failure, not a partial map/u);
 });
+
+test('a gap may say why, and only a gap may', () => {
+  const withProvenance = (
+    mutate: (payload: ReturnType<typeof createValidV6Payload>) => void,
+  ) => {
+    const payload = createValidV6Payload();
+    mutate(payload);
+    return validateStoneMapResult(payload, payload.roundId);
+  };
+  const first = AI_ANALYTICS_DIMENSION_IDS[0];
+  const asGap = (payload: ReturnType<typeof createValidV6Payload>) => {
+    payload.stones[first].summary = [];
+    payload.stones[first].generationProvenance.outcome = 'unavailable';
+    (payload as Record<string, unknown>).dimensionsWithoutInterpretation = [
+      first,
+    ];
+  };
+
+  for (const reason of ['provider_unavailable', 'validation_rejected']) {
+    const stated = withProvenance((payload) => {
+      asGap(payload);
+      (
+        payload.stones[first].generationProvenance as Record<string, unknown>
+      ).unavailableReason = reason;
+    });
+    assert.ok(stated.ok, !stated.ok ? stated.error : '');
+  }
+
+  // Rounds analysed before the reason existed carry none, and refusing them
+  // would refuse this product's own history.
+  assert.ok(withProvenance(asGap).ok);
+
+  const invented = withProvenance((payload) => {
+    asGap(payload);
+    (
+      payload.stones[first].generationProvenance as Record<string, unknown>
+    ).unavailableReason = 'because';
+  });
+  assert.ok(!invented.ok);
+
+  // A stone claiming its copy is both written and missing.
+  const onWrittenCopy = withProvenance((payload) => {
+    (
+      payload.stones[first].generationProvenance as Record<string, unknown>
+    ).unavailableReason = 'provider_unavailable';
+  });
+  assert.ok(!onWrittenCopy.ok);
+});

@@ -122,6 +122,17 @@ export interface StoneGenerationProvenance {
    * as analysis, which the product does not do.
    */
   outcome: 'llm' | 'deterministic_fallback' | 'unavailable';
+  /**
+   * Why there is no interpretation, present only when `outcome` is
+   * `unavailable`. Two causes reach the same absence and they are not the same
+   * news: `provider_unavailable` is a service that did not answer and probably
+   * will in a minute; `validation_rejected` is copy that was written, refused
+   * by this service's own checks and thrown away rather than shown.
+   *
+   * Optional because rounds analysed before it existed carry no reason, and a
+   * screen that demanded one would break on its own history.
+   */
+  unavailableReason?: 'provider_unavailable' | 'validation_rejected';
   attempts: number;
   retryCount: number;
   sourceQuestionIds: string[];
@@ -614,6 +625,23 @@ function isValidV3Stone(
   );
 }
 
+/**
+ * A reason belongs to an absence and to nothing else.
+ *
+ * A stone that carries a reason beside `llm` is a stone claiming its copy is
+ * both written and missing, which is not a state the product has. Absent is
+ * always allowed: the field arrived after rounds had already been analysed.
+ */
+function isValidUnavailableReason(value: Record<string, unknown>): boolean {
+  if (value.unavailableReason === undefined) return true;
+  return (
+    value.outcome === 'unavailable' &&
+    ['provider_unavailable', 'validation_rejected'].includes(
+      String(value.unavailableReason),
+    )
+  );
+}
+
 function isValidV5GenerationProvenance(
   value: unknown,
   metricQuestionIds: string[],
@@ -629,6 +657,7 @@ function isValidV5GenerationProvenance(
     ['llm', 'deterministic_fallback', 'unavailable'].includes(
       String(value.outcome),
     ) &&
+    isValidUnavailableReason(value) &&
     Number.isInteger(value.attempts) &&
     Number(value.attempts) >= 0 &&
     Number.isInteger(value.retryCount) &&

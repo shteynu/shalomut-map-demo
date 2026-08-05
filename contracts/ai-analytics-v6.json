@@ -96,6 +96,17 @@
       "sentencesMax": 4,
       "language": "Hebrew"
     },
+    "partialMap": {
+      "generationOutcomes": ["llm", "deterministic_fallback", "unavailable"],
+      "unavailableSummaryIsEmpty": true,
+      "declaredIn": "dimensionsWithoutInterpretation",
+      "declaredOnlyWhenPartial": true,
+      "mustMatchUnavailableStonesExactly": true,
+      "allEightUnavailableIsAFailedRound": true,
+      "scoreMetricsAndInterventionsStillPresent": true,
+      "metricInsightStillRequired": true,
+      "unavailableReasons": ["provider_unavailable", "validation_rejected"]
+    },
     "provenanceFields": [
       "outcome",
       "attempts",
@@ -104,7 +115,8 @@
       "surveyDefinitionHash",
       "backgroundContextIncluded",
       "distributionIncluded",
-      "crossDimensionContextIncluded"
+      "crossDimensionContextIncluded",
+      "unavailableReason"
     ]
   }
 }
