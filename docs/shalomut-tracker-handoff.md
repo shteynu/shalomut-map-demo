@@ -1,7 +1,7 @@
 # Shalomut Tracker — operational handoff
 
-Updated: 2026-08-05 (`origin/main` is `5616e66`; a migration is waiting on an
-unpushed branch and the deployed database has not seen it yet).
+Updated: 2026-08-05 (`origin/main` is `143d460`; a migration is on `main` and
+the deployed database takes it on the next deploy).
 This
 document owns only cross-task operational/deployed
 state, external blockers and approval gates. Product milestones belong in
@@ -10,20 +10,21 @@ state, external blockers and approval gates. Product milestones belong in
 
 ## Repository snapshot
 
-- `origin/main` is `5616e66` — backlog §7, the fixtures out of the runtime
-  barrel, pushed by the owner on 2026-08-05. It carries `45f38c2` (the round
-  archive) and `chore/external-keepalive-pinger` before it; every branch up to
-  `chore/fixtures-out-of-runtime` is fully contained in `main` and can be
+- `origin/main` is `143d460` — backlog §1, the questionnaire version history,
+  pushed by the owner on 2026-08-05. It carries `5616e66` (backlog §7) and
+  `45f38c2` (the round archive) before it; every branch up to
+  `feat/survey-definition-history` is fully contained in `main` and can be
   deleted, and their task files are in `docs/agent-tasks/archive/`.
-- **Waiting**: `feat/survey-definition-history`, four commits closing backlog
-  §1 — the questionnaire version history. Committed locally and unpushed, so it
-  exists in this worktree only.
+- Nothing is waiting. No branch holds unpushed work the product needs; the one
+  unmerged branch, `fix/refuse-asserted-causes`, is a decided **no** and is
+  described below.
 - **Migration pending on the deployed database**:
-  `20260805170000_add_survey_definition_versions` exists only on that branch and
-  has been applied only to the disposable local test database. The deployed
-  database takes it when the branch reaches `main` and the deploy runs. Until
-  then the deployed build is unaffected — it has no code that reads the table.
-- Verification on that branch: `npm run verify:core` exit 0 with 589 TypeScript
+  `20260805170000_add_survey_definition_versions` is on `main` and has run only
+  against the disposable local test database. Vercel applies it on the deploy
+  that follows this push. A Prisma client generated before it raises a named
+  error from the repository rather than a `TypeError` inside a route, so a
+  half-applied deploy says what is wrong.
+- Verification at `143d460`: `npm run verify:core` exit 0 with 589 TypeScript
   tests, and `npm run verify:db` 25 tests, 25 pass, against local PostgreSQL on
   `127.0.0.1:5433`. `verify:ai` was **not** run — no Python change. The builder
   history panel was **not** smoke-tested in a browser: every manager screen is
@@ -339,17 +340,26 @@ state, external blockers and approval gates. Product milestones belong in
   answered no and fixed the same day; the baseline is the corrected scoring of
   the same payloads. `no_overreach`, the one weak grader, was then worked on in
   `fix/prompt-no-overreach` and stands at 0.94 with a second baseline beside
-  the first. Four asserted causes survive, and closing them means a runtime
-  refusal rather than a prompt line — an owner decision, not a blocker. Still
-  run the provenance check before reading any report, per `evals/README.md`.
+  the first. Four asserted causes survive it. **Owner decision 2026-08-05: they
+  stay.** The runtime refusal that removes them was built and measured, and the
+  measurement decided it — see the entry below. This is settled, not open.
+  Still run the provenance check before reading any report, per
+  `evals/README.md`.
 - Four branches were built on 2026-08-05 and land as one fast-forward, in this
   order: `test/eval-corpus-baseline`, `fix/prompt-no-overreach`,
   `feat/retry-carries-a-critique`, `feat/adaptation-retry-critique`. The last
   one contains the other three; pushing is the owner's action.
-- `fix/refuse-asserted-causes` is deliberately **not** in that chain. It refused
-  asserted causes at runtime, which worked and cost about half the map's
-  model-written prose, and eight of its eleven refusals were caveats about the
-  sample. Its record is archived; the code stays on the branch.
+- `fix/refuse-asserted-causes` is deliberately **not** in that chain, and owner
+  decision 2026-08-05 closed the question rather than deferring it: the rule is
+  not merged. It refused asserted causes at runtime, which worked and cost 8 to
+  14 percent of the map's model-written prose, and eight of its eleven refusals
+  were the model's own caveats about the sample. The code stays on the branch as
+  the measurement. Do not re-open it as an unfinished task; the one thing that
+  branch carried and `main` needed — the retry that rebuilds its request with a
+  critique — landed separately as `f8c08a5`, so nothing there is waiting. If the
+  rule is ever revisited, the branch's own note says fix the subject rather than
+  the mechanism: refuse a cause attributed to the school or to people, allow one
+  attributed to the data and the sample.
 - **Settled 2026-08-05, no longer a gate.** The two amendments published
   contract `6.0` took on 2026-08-04 — `supportsPartialMaps` and
   `generationProvenance.unavailableReason` — stood against ADR-002's rule that

@@ -210,9 +210,17 @@ on the same models scored 0.94 against 0.2725, with no clinical term left. The
 first attempt at it also showed what a prompt change costs elsewhere: more
 rules made the model write longer, metric narratives crossed the 500-character
 refusal and 13 more dimensions lost their model-written text, so the prompts
-ask for 350–450 within a validator that allows 300–500. Four asserted causes
-survive; removing them needs a runtime refusal, not another sentence in a
-prompt.
+ask for 350–450 within a validator that allows 300–500.
+
+Four asserted causes survive that, and owner decision 2026-08-05 leaves them.
+Refusing them at runtime was built and measured on `fix/refuse-asserted-causes`:
+it works — no model-written causal claim survives it — and it costs 8 to 14
+percent of the map's model-written prose, because eight of its eleven refusals
+were the model's own caveats about a small sample, the caution the prompts ask
+for. One disputable sentence is not worth half a dimension's text. The branch
+stays unmerged as the measurement; the retry critique it needed landed
+separately and is on `main`, where a refused answer no longer means the same
+question asked again.
 
 Closed 2026-08-05: the two amendments `6.0` took on 2026-08-04 no longer sit
 against ADR-002. Owner decision — a published contract may gain an **optional
