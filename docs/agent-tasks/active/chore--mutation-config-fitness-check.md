@@ -128,11 +128,26 @@ what CI enforces about mutation testing.
 
 - None.
 
-### Blocked or not run
+- GitHub run `30996895975` on `main`: `Run canonical verification` succeeded,
+  so `lint:mutation-config` passes in CI.
 
-- The CI step itself has not run on GitHub: this branch is unpushed. It is the
-  same command that passes locally, but the first real evidence will be the
-  first pull request.
+### Failed then fixed
+
+- The same run's `Check that the mutation runner still starts` failed with
+  `EISDIR ... copyfile ai-analytics-service/.venv/lib64`. Stryker sandboxes
+  the project by copying it, and a Linux virtual environment contains `lib64`
+  as a symlink to a directory. macOS venvs do not, so no local dry run could
+  have shown it.
+
+  Fixed by `ignorePatterns: ['**/.venv']` on branch `fix/mutation-sandbox-venv`
+  (`c3a8c19`), verified by running the dry run with `--cleanTempDir false` and
+  confirming the sandbox holds `ai-analytics-service` without a `.venv` inside
+  it. Awaiting push; `main` is red until it lands.
+
+  The step did what it was added to do on its first real run: it caught a
+  mutation config that does not start.
+
+### Blocked or not run
 - `verify:db` and `verify:ai` — no repository, schema, route or Python change.
 
 ### Environment
