@@ -155,9 +155,11 @@ state, external blockers and approval gates. Product milestones belong in
   mechanism; scale-to-zero alone is not a reliable worker. The wake mechanism is
   `.github/workflows/render-keepalive.yml` — a scheduled `GET /health` every ten
   minutes, inbound and therefore resetting the free plan's fifteen-minute sleep
-  timer, which the service's own outbound polling does not. Committed on
-  `chore/render-pace-and-wakeup`; until that branch is pushed the instance still
-  sleeps. It costs nearly the account's whole free allowance of 750
+  timer, which the service's own outbound polling does not. Live since
+  2026-08-05: the workflow is registered and active, and a manual
+  `workflow_dispatch` run finished green in 9s with `status: online` and
+  `commit: 80930a4` in its log. It costs nearly the account's whole free
+  allowance of 750
   instance-hours a month, so a second free service does not fit beside it, and a
   paid instance type is the version that needs no workflow.
 - Database: the confirmed deployed Supabase PostgreSQL target contained all
@@ -284,9 +286,10 @@ state, external blockers and approval gates. Product milestones belong in
   `429` in the log. The quota argument for the free tier no longer applies —
   which is why `render.yaml` now paces the fast model at `60` and the heavy one
   at `30`, the rates those runs actually sustained, instead of the `14` and `4`
-  the free tier dictated. That change rides `chore/render-pace-and-wakeup` and
-  reaches the service only when the branch is pushed, and it assumes the
-  dashboard's `GEMINI_API_KEY` is the billed key, which no agent can read.
+  the free tier dictated. Applied on 2026-08-05: the service is blueprint
+  managed, and its dashboard now reads `60` and `30`. It assumes the dashboard's
+  `GEMINI_API_KEY` is the billed key, which no agent can read — the one thing
+  about this pace still taken on trust.
   What the first report says lives in
   `docs/agent-tasks/archive/test--eval-corpus-baseline.md`. The open question it
   raised — whether `summary_grounding` counts what it claims to count — was
