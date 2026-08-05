@@ -78,6 +78,21 @@ jobs:
       - name: Run canonical verification
         run: npm run verify
 
+      # The mutation runner has its own wiring — a test runner, a mutated file
+      # list and a test file list — and none of it is exercised by `npm run
+      # verify`. A dry run starts Stryker, instruments the sources and runs the
+      # listed tests once without mutating anything, so a config that no longer
+      # starts is caught here rather than the next time somebody asks how
+      # strong the tests are.
+      #
+      # This is deliberately not a mutation run and deliberately not a score
+      # gate. The score moves when a function changes file or a test file joins
+      # the list, neither of which is a change in test strength; a threshold on
+      # it would fail honest work and pass the refactor that quietly removed a
+      # rule from measurement. See `ROADMAP.md`.
+      - name: Check that the mutation runner still starts
+        run: npm run test:mutation:ai-contract -- --dryRunOnly
+
   deploy-prod-manual:
     name: Deploy to Production (Manual)
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.target_env == 'production'
