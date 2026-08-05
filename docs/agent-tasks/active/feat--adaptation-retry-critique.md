@@ -5,7 +5,7 @@
 - Branch: `feat/adaptation-retry-critique`
 - Base branch: `feat/retry-carries-a-critique`
 - Base commit: `5a4fbf7`
-- Current HEAD: (заполняется после коммита)
+- Current HEAD: `e78319e`
 - Status: сделано и измерено; эффект в пределах шума одного прогона
 - Last updated: 2026-08-05
 - Last agent/tool: Claude Code (Opus 5)
