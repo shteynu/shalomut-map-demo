@@ -315,10 +315,14 @@ new branch task file.
 the check that had stood open since `233f905`. Read-only, nothing changed:
 
 - **Python (Render):** `GET https://shalomut-ai-analytics.onrender.com/health`
-  answers `commit: 67048b5` — the current `origin/main` — with
-  `supportedContractVersions` `1.0`–`6.0`, `env: production`,
-  `privacyThreshold: 10` and `jobPollingEnabled: true`. The service auto-builds
-  from `main`; no manual redeploy was needed or is pending.
+  answers `commit: 65b2885` — the current `origin/main`, re-read after the
+  prompt/transport chain landed — with `supportedContractVersions` `1.0`–`6.0`,
+  `env: production`, `privacyThreshold: 10` and `jobPollingEnabled: true`. The
+  Render service `shalomut-ai-analytics` (`srv-d9i8vhnavr4c73ad298g`) shows that
+  commit as an **Auto-Deploy** that finished in 37.1s at 17:05 GMT+3 on
+  2026-08-05, so the grounded-language prompt rules are what the deployed
+  service now sends. No manual redeploy was needed or is pending; earlier the
+  same day it answered `67048b5`.
 - **Core (Vercel):** the Production alias `shalomut-map-demo.vercel.app` holds
   `dpl_3Zbn5Zj4Gkn57o8GaKFe3ha3yLqT`, `READY`/`PROMOTED`, built from `main` at
   `67048b5`. Read from the projects API in the owner's own signed-in Chrome; no
