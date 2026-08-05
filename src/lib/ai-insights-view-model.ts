@@ -196,6 +196,13 @@ export function toDashboardStone(stone: AnyStoneDetail): DashboardStone {
     // exactly like one it did.
     summaryIsDeterministic:
       stone.generationProvenance?.outcome === 'deterministic_fallback',
+    // Read from its own field, not from the summary's outcome: one call writes
+    // the paragraphs and another writes the narratives, so a stone can have one
+    // from the model and the other from the aggregates. A round that recorded
+    // nothing says nothing here.
+    metricNarrativesAreDeterministic:
+      stone.generationProvenance?.metricInsightsOutcome ===
+      'deterministic_fallback',
     metrics: toDashboardMetrics(stone),
     recommendations: toDashboardRecommendations(stone),
   };

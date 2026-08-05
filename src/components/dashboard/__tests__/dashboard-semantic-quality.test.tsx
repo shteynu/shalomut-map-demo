@@ -42,6 +42,7 @@ function stoneWithMetrics(
     summary: ["פסקה אחת."],
     interpretationUnavailable: false,
     summaryIsDeterministic: false,
+    metricNarrativesAreDeterministic: false,
     metrics,
     recommendations: [],
   };

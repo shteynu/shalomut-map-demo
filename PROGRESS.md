@@ -185,12 +185,13 @@ additive** field and nothing else, under conditions ADR-002 now states, so
 rather than tolerated. A changed meaning, a new required field or a removal
 still needs a new version.
 
-Known and deliberately not closed: on `6.0` each metric narrative has its own
-generation outcome and the wire contract carries only the dimension summary's,
-so a stone can show model-written paragraphs beside fallback metric narratives
-with no label. The new clause is what makes closing it cheap — carrying a
-per-narrative outcome is an optional additive field, so it can amend `6.0`
-consumer-first rather than wait for `7.0`.
+Closed 2026-08-05, the first use of that clause: a stone now says who wrote its
+metric narratives as well as its overview. The two are written by separate calls
+and fall back independently, so a dimension could open with the model's
+interpretation and read every question in copy the service derived, with nothing
+saying so. One outcome covers all of a dimension's narratives — one call writes
+them together — and the metrics screen carries the note, because that is where
+the sentences are.
 
 ### Architecture
 

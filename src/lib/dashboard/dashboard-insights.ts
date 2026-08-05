@@ -73,6 +73,17 @@ export interface DashboardStone {
    * is indistinguishable on screen from one it did.
    */
   summaryIsDeterministic: boolean;
+  /**
+   * The same fact for the metric narratives, which fall back on their own.
+   * `summaryIsDeterministic` says nothing about them: the two calls succeed and
+   * fail independently, so a stone can open with the model's three paragraphs
+   * and then read every question in words the service derived.
+   *
+   * False on a round analysed before the service recorded this, which is the
+   * one case where false does not mean "a model wrote them". The screen
+   * therefore only ever adds a note; it never claims authorship.
+   */
+  metricNarrativesAreDeterministic: boolean;
   metrics: DashboardMetric[];
   recommendations: DashboardRecommendation[];
 }

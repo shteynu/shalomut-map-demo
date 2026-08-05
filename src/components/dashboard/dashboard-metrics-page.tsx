@@ -126,6 +126,20 @@ export function DashboardMetricsStage({
         ))}
       </section>
 
+      {/*
+        Said here and not on the overview, because this is where the sentences
+        are. The overview may well have been written by the model — the two
+        fall back separately, and a manager who read a real interpretation has
+        no reason to suspect the readings underneath it.
+      */}
+      {stone.metricNarrativesAreDeterministic ? (
+        <p className="dashboard-blob-provenance" role="note">
+          המשפטים שליד כל שאלה נגזרו מן הנתונים המצרפיים של הסבב ולא נכתבו על ידי
+          המודל. הם מתארים את ההתפלגות בלבד ואינם מוסיפים סיבה או פרשנות, ואפשר
+          להפעיל ניתוח מחדש כדי לקבל קריאה מלאה.
+        </p>
+      ) : null}
+
       <DashboardCtaRow
         actions={actions}
       />

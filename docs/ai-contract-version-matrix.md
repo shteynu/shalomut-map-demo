@@ -1,6 +1,6 @@
 # AI analytics contract version matrix
 
-Updated: 2026-08-05.
+Updated: 2026-08-05 (metric-narrative provenance).
 
 ## Runtime status
 
@@ -43,10 +43,17 @@ The consumer-first rollout is complete. Deployed Python and Core source includes
 Production explicitly selects `6.0`. The unset default remains `5.0`, which is
 also the configuration rollback value.
 
+Since 2026-08-05 a stone also says who wrote its metric narratives, in
+`generationProvenance.metricInsightsOutcome`: `llm` or `deterministic_fallback`,
+one value for all of the dimension's narratives, and never `unavailable`. It is
+optional, is refused on any version without narrative metrics, and is absent on
+rounds analysed before it existed.
+
 ## Amending a published version
 
-`supportsPartialMaps` and `generationProvenance.unavailableReason` were added to
-`6.0` after it was published. That is allowed, and only in the narrow form
+`supportsPartialMaps`, `generationProvenance.unavailableReason` and
+`generationProvenance.metricInsightsOutcome` were added to `6.0` after it was
+published. That is allowed, and only in the narrow form
 ADR-002 describes since 2026-08-05: an optional field whose absence means what
 the version already meant, no existing field touched, a consumer written before
 it still working, and the consumer still accepting before the producer emits.

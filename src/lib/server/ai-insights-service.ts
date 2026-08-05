@@ -11,6 +11,7 @@ import { AnalyticsService } from '@/lib/services/analytics.service';
 import {
   recordAiJobCompleted,
   recordContractValidation,
+  recordDeterministicMetricNarrativeSample,
   recordDeterministicSummarySample,
   recordValidMapSample,
 } from '@/lib/server/ai-operational-metrics';
@@ -213,6 +214,14 @@ export async function applyAiInsightsCallback(
       contractVersion: validation.value.contractVersion,
       outcomes: Object.values(validation.value.stones ?? {}).map(
         (stone) => stone.generationProvenance?.outcome ?? 'unknown',
+      ),
+      roundId,
+      runId: runId ?? undefined,
+    });
+    recordDeterministicMetricNarrativeSample({
+      contractVersion: validation.value.contractVersion,
+      outcomes: Object.values(validation.value.stones ?? {}).map(
+        (stone) => stone.generationProvenance?.metricInsightsOutcome,
       ),
       roundId,
       runId: runId ?? undefined,

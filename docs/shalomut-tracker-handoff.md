@@ -1,7 +1,8 @@
 # Shalomut Tracker — operational handoff
 
-Updated: 2026-08-05 (the ADR-002 amendment rule settled; `origin/main` is
-`55d1eea`). This
+Updated: 2026-08-05 (the ADR-002 amendment rule settled and first used, for
+metric-narrative provenance; `origin/main` is `55d1eea` and two branches are
+waiting to reach it). This
 document owns only cross-task operational/deployed
 state, external blockers and approval gates. Product milestones belong in
 `PROGRESS.md`; branch work and exact verification belong in
@@ -99,8 +100,11 @@ state, external blockers and approval gates. Product milestones belong in
   `PATCH`/`DELETE /api/rounds/{roundId}/goals/{goalId}`, documented in
   `docs/openapi.yaml`. `POST /api/rounds/{roundId}/reset` now also deletes the
   round's goals and records `deletedGoalCount` in its audit entry.
-- No branch is waiting to reach `main`. The docs close-out for the tracked-goals
-  slice reached it as `6edb2df` on 2026-08-04.
+- **Two branches are waiting to reach `main`,** both from 2026-08-05 and in
+  order: `docs/adr-002-additive-fields` (the amendment clause, docs only) and
+  `feat/metric-narrative-provenance` on top of it (the first field added under
+  the clause). The second contains the first, so pushing it alone lands both.
+  The agent cannot push here; the owner does it.
 - The repository record does not claim that this final refactoring stack has
   been deployed. Verify deployment source/health before relying on it at the
   deployed endpoint.
@@ -196,9 +200,19 @@ state, external blockers and approval gates. Product milestones belong in
   in a few minutes for a silent provider, retry for a different wording when
   this service refused its own copy. Rounds analysed before 2026-08-04 carry no
   reason and get a sentence that claims neither.
-- The metric narratives are not covered by that disclosure. Each has its own
-  outcome inside Python and the wire contract carries only the dimension's
-  summary provenance, so closing that gap needs a contract change.
+- Since 2026-08-05 the metric narratives are covered too:
+  `generationProvenance.metricInsightsOutcome` says whether the model or this
+  service wrote them, separately from the overview, and the metrics screen says
+  so in Hebrew when they are derived. One value per dimension, because one call
+  writes all of its narratives. The operational half is
+  `ai_deterministic_metric_narrative_ratio_sample`, and a round that recorded
+  nothing emits no sample rather than counting as model-written — **read it
+  beside the summary ratio, not instead of it**: a key that answers the short
+  prompt and times out on the longer one shows a healthy summary ratio and
+  derived narratives underneath.
+- The same slice documented `unavailableReason` and the `unavailable` outcome in
+  `docs/openapi.yaml`, which the partial-map work put on the wire and never
+  wrote down. `public/openapi.json` was regenerated.
 
 ## Operational invariants
 

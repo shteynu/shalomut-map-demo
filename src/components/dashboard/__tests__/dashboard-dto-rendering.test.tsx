@@ -25,6 +25,7 @@ function stone(overrides: Partial<DashboardStone> = {}): DashboardStone {
     summary: ["פסקה ראשונה על האיזון.", "פסקה שנייה על ההתאוששות."],
     interpretationUnavailable: false,
     summaryIsDeterministic: false,
+    metricNarrativesAreDeterministic: false,
     metrics: [
       {
         label: "יש לי מספיק זמן למנוחה ולהתאוששות אחרי העבודה.",
@@ -131,6 +132,36 @@ test("the metrics screen shows the question text, its average and its split", ()
   // The counts are in the sentence; the bar beside it is decoration only.
   assert.match(html, /14 משיבים · 4 גבוה · 6 באמצע · 4 נמוך/);
   assert.match(html, /aria-hidden="true"/);
+});
+
+test("metric narratives the service derived are labelled on the metrics screen", () => {
+  const renderMetrics = (value: DashboardStone) =>
+    renderToStaticMarkup(
+      <DashboardMetricsStage
+        dimension={dimension}
+        stone={value}
+        roundId="round-1"
+        organizationName="בית ספר"
+        roundTitle="סבב אבחון"
+      />,
+    );
+
+  const derived = renderMetrics(
+    stone({ metricNarrativesAreDeterministic: true }),
+  );
+  assert.match(derived, /לא נכתבו על ידי המודל/);
+  // The readings themselves stay: they describe the distribution and are worth
+  // reading. Only the claim of authorship changes.
+  assert.match(derived, /48\.5 מתוך 100/);
+
+  assert.doesNotMatch(renderMetrics(stone()), /לא נכתבו על ידי המודל/);
+
+  // The two provenances are independent, and each screen says only its own.
+  // A summary the service derived must not put a note on the metrics screen.
+  assert.doesNotMatch(
+    renderMetrics(stone({ summaryIsDeterministic: true })),
+    /לא נכתבו על ידי המודל/,
+  );
 });
 
 test("a green dimension gets preservation language, a yellow one gets goals", () => {

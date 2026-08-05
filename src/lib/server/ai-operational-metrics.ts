@@ -14,6 +14,7 @@ export type OperationalMetricName =
   | 'ai_contract_validation_failures'
   | 'ai_partial_map_ratio_sample'
   | 'ai_deterministic_summary_ratio_sample'
+  | 'ai_deterministic_metric_narrative_ratio_sample'
   | 'duplicate_submission_conflicts';
 
 export interface OperationalMetric {
@@ -257,6 +258,45 @@ export function recordDeterministicSummarySample(input: {
     labels: {
       contractVersion: input.contractVersion,
       dimensions: String(input.outcomes.length),
+      deterministic: String(deterministic),
+    },
+    runId: input.runId,
+    roundId: input.roundId,
+  });
+}
+
+/**
+ * The same reading for the metric narratives, which fall back on their own.
+ *
+ * Separate from the summary sample rather than folded into it, because the two
+ * calls fail independently: a key that answers the short summary prompt and
+ * times out on the longer narrative one produces a healthy summary ratio and
+ * eight dimensions of derived sentences.
+ *
+ * A round that recorded no outcome emits nothing. Counting it as model-written
+ * would make every round analysed before the field existed improve the ratio,
+ * which is the one direction a provenance metric must never drift.
+ */
+export function recordDeterministicMetricNarrativeSample(input: {
+  contractVersion: string;
+  outcomes: (string | undefined)[];
+  runId?: string;
+  roundId: string;
+}) {
+  const recorded = input.outcomes.filter(
+    (outcome): outcome is string => outcome !== undefined,
+  );
+  if (recorded.length === 0) return;
+  const deterministic = recorded.filter(
+    (outcome) => outcome === 'deterministic_fallback',
+  ).length;
+  emit({
+    name: 'ai_deterministic_metric_narrative_ratio_sample',
+    value: deterministic / recorded.length,
+    unit: 'ratio_sample',
+    labels: {
+      contractVersion: input.contractVersion,
+      dimensions: String(recorded.length),
       deterministic: String(deterministic),
     },
     runId: input.runId,

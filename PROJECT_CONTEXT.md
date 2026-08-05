@@ -168,6 +168,19 @@ refused recommendation, a refusal with no dimension attached, and eight failed
 dimensions all still fail the round whole — the last because a map with nothing
 written is a failed round wearing a map's shape.
 
+Since 2026-08-05 the metric narratives carry their own outcome,
+`generationProvenance.metricInsightsOutcome`. `outcome` is the dimension's
+three paragraphs and was never an answer about the sentence under each
+question: the two are written by separate calls and fall back independently, so
+a stone could open with the model's interpretation and read every question in
+copy the service derived, with nothing on screen saying so. One value covers all
+of a dimension's narratives because one exact-coverage call writes them, and
+there is no `unavailable` — a dimension whose overview is a gap still owes its
+narratives. The metrics screen carries the disclosure, not the overview screen,
+and `ai_deterministic_metric_narrative_ratio_sample` carries the operational
+half; a round that recorded nothing emits no sample rather than counting as
+model-written.
+
 A gap states its cause in `generationProvenance.unavailableReason`:
 `provider_unavailable` for a service that did not answer, `validation_rejected`
 for copy this service wrote and then refused. The field is optional because
