@@ -14,6 +14,7 @@ from src.contracts import (
 from src.schemas.mcp_types import RoundAnalyticsResult
 from src.rag.store import LocalInterventionVectorStore
 from src.services.llm_provider import (
+    MetricInsightsGeneration,
     StructuredSummaryGeneration,
     llm_provider_service,
 )
@@ -455,3 +456,84 @@ async def test_v6_still_fails_whole_when_no_dimension_can_be_written(
     result = await analytics_graph.ainvoke(_v6_state(round_data))
 
     assert result["final_payload"]["status"] == "validation_failed"
+
+
+@pytest.mark.asyncio
+async def test_v6_records_who_wrote_the_metric_narratives(monkeypatch):
+    # A silent provider on 6.0 does not fail a dimension: the summary and the
+    # narratives both fall back and the round is reported a success. Until the
+    # narratives carried their own outcome, the payload said that about the
+    # three paragraphs and nothing about the sentence under every question.
+    monkeypatch.setattr(
+        llm_provider_service,
+        "_complete_with_retries",
+        lambda **_kwargs: (None, 1, "http_503"),
+    )
+    round_data = RoundAnalyticsResult.from_dict(build_v6_input_payload()).to_dict()
+
+    result = await analytics_graph.ainvoke(_v6_state(round_data))
+    payload = result["final_payload"]
+
+    assert payload["status"] == "success", result.get("safety_feedback")
+    for dimension_id, stone in payload["stones"].items():
+        provenance = stone["generationProvenance"]
+        assert provenance["outcome"] == "deterministic_fallback", dimension_id
+        assert (
+            provenance["metricInsightsOutcome"] == "deterministic_fallback"
+        ), dimension_id
+
+
+@pytest.mark.asyncio
+async def test_v6_metric_narratives_and_summary_are_labelled_separately(
+    monkeypatch,
+):
+    # The mixture the single outcome could not express. Here the summary falls
+    # back and the narratives are the model's; on a rate-limited key the same
+    # split happens the other way, and a manager reading a real interpretation
+    # has no reason to suspect the readings underneath it.
+    monkeypatch.setattr(
+        llm_provider_service,
+        "_complete_with_retries",
+        lambda **_kwargs: (None, 1, "http_503"),
+    )
+    real_metrics = llm_provider_service.generate_metric_insights_result
+
+    def as_model_written(**kwargs):
+        generated = real_metrics(**kwargs)
+        return MetricInsightsGeneration(generated.insights, "llm", 1)
+
+    monkeypatch.setattr(
+        llm_provider_service,
+        "generate_metric_insights_result",
+        as_model_written,
+    )
+    round_data = RoundAnalyticsResult.from_dict(build_v6_input_payload()).to_dict()
+
+    result = await analytics_graph.ainvoke(_v6_state(round_data))
+    payload = result["final_payload"]
+
+    assert payload["status"] == "success", result.get("safety_feedback")
+    for dimension_id, stone in payload["stones"].items():
+        provenance = stone["generationProvenance"]
+        assert provenance["outcome"] == "deterministic_fallback", dimension_id
+        assert provenance["metricInsightsOutcome"] == "llm", dimension_id
+
+
+@pytest.mark.asyncio
+async def test_v6_gap_still_says_who_wrote_its_metric_narratives(monkeypatch):
+    # A dimension can lose its overview and keep the reading of every question,
+    # so the gap is the one place the two provenances must not collapse into
+    # each other: `unavailable` is the summary's, and the narratives are still
+    # somebody's.
+    _refuse_dimension_summary(monkeypatch, {"balance"})
+    round_data = RoundAnalyticsResult.from_dict(build_v6_input_payload()).to_dict()
+
+    result = await analytics_graph.ainvoke(_v6_state(round_data))
+    gap = result["final_payload"]["stones"]["balance"]
+
+    assert gap["generationProvenance"]["outcome"] == "unavailable"
+    assert (
+        gap["generationProvenance"]["metricInsightsOutcome"]
+        == "deterministic_fallback"
+    )
+    assert 300 <= len(gap["metrics"][0]["insightText"]) <= 500

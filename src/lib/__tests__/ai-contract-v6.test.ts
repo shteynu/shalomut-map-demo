@@ -376,3 +376,40 @@ test('a gap may say why, and only a gap may', () => {
   });
   assert.ok(!onWrittenCopy.ok);
 });
+
+test('the metric narratives say who wrote them, separately from the summary', () => {
+  const first = AI_ANALYTICS_DIMENSION_IDS[0];
+  const withOutcome = (outcome: unknown) => {
+    const payload = createValidV6Payload();
+    (
+      payload.stones[first].generationProvenance as Record<string, unknown>
+    ).metricInsightsOutcome = outcome;
+    return validateStoneMapResult(payload, payload.roundId);
+  };
+
+  for (const outcome of ['llm', 'deterministic_fallback']) {
+    const stated = withOutcome(outcome);
+    assert.ok(stated.ok, !stated.ok ? stated.error : '');
+  }
+
+  // The point of the field: the summary is the model's and the narratives are
+  // not, which no other field on this payload can express.
+  const mixed = (() => {
+    const payload = createValidV6Payload();
+    const provenance = payload.stones[first].generationProvenance as Record<
+      string,
+      unknown
+    >;
+    provenance.outcome = 'llm';
+    provenance.metricInsightsOutcome = 'deterministic_fallback';
+    return validateStoneMapResult(payload, payload.roundId);
+  })();
+  assert.ok(mixed.ok, !mixed.ok ? mixed.error : '');
+
+  // Rounds analysed before the field existed carry none.
+  const payload = createValidV6Payload();
+  assert.ok(validateStoneMapResult(payload, payload.roundId).ok);
+
+  assert.ok(!withOutcome('unavailable').ok);
+  assert.ok(!withOutcome('probably').ok);
+});

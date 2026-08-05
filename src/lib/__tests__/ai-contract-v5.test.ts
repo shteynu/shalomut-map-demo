@@ -120,6 +120,20 @@ describe('Contract 5.0 Validation Tests', () => {
     }
   });
 
+  test('5.0 refuses a metric-narrative outcome it has no narratives for', () => {
+    // The field describes copy this contract does not carry: 5.0 metrics are
+    // numeric. Accepting it would let a payload label something that is not
+    // there, which is worse than the gap it was meant to close.
+    const payload = createValidV5Payload();
+    (
+      payload.stones['balance'].generationProvenance as Record<string, unknown>
+    ).metricInsightsOutcome = 'deterministic_fallback';
+    assert.strictEqual(
+      validateStoneMapResult(payload, 'round-v5-test').ok,
+      false,
+    );
+  });
+
   test('validateStoneMapResult accepts 3-sentence psychological interpretation in 5.0', () => {
     const payload = createValidV5Payload();
     payload.stones['balance'].psychologicalInterpretation =

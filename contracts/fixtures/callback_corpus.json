@@ -2811,7 +2811,8 @@
               "backgroundContextIncluded": true,
               "distributionIncluded": true,
               "crossDimensionContextIncluded": true,
-              "unavailableReason": "validation_rejected"
+              "unavailableReason": "validation_rejected",
+              "metricInsightsOutcome": "deterministic_fallback"
             }
           },
           "management-support": {
@@ -3425,6 +3426,28 @@
       "mutation": {
         "set": {
           "stones.balance.generationProvenance.unavailableReason": "because"
+        }
+      }
+    },
+    {
+      "id": "refused-6.0-metric-outcome-invented",
+      "from": "6.0",
+      "rule": "metric_insights_outcome_invalid",
+      "note": "An outcome outside the two the contract names. There is no `unavailable` here: a dimension whose overview is a gap still owes its metric narratives.",
+      "mutation": {
+        "set": {
+          "stones.balance.generationProvenance.metricInsightsOutcome": "unavailable"
+        }
+      }
+    },
+    {
+      "id": "refused-5.0-metric-outcome-without-narrative-metrics",
+      "from": "5.0",
+      "rule": "metric_insights_outcome_invalid",
+      "note": "5.0 metrics are numeric, so the payload would be labelling copy this contract does not carry.",
+      "mutation": {
+        "set": {
+          "stones.balance.generationProvenance.metricInsightsOutcome": "deterministic_fallback"
         }
       }
     },

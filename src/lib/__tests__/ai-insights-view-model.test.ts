@@ -350,3 +350,45 @@ function v6Stone(overrides: Partial<StoneDetailV6> = {}): StoneDetailV6 {
     ...overrides,
   };
 }
+
+test('the metric narratives carry their own provenance, not the summary’s', () => {
+  // The case the summary outcome cannot express: the model wrote the three
+  // paragraphs and the narrative call fell back, so a manager reading a real
+  // interpretation would have no reason to suspect the readings under it.
+  const mixed = toDashboardStone(
+    v6Stone({
+      generationProvenance: {
+        outcome: 'llm',
+        metricInsightsOutcome: 'deterministic_fallback',
+        attempts: 1,
+        retryCount: 0,
+        sourceQuestionIds: ['management-support-q1'],
+      },
+    }),
+  );
+
+  assert.strictEqual(mixed.summaryIsDeterministic, false);
+  assert.strictEqual(mixed.metricNarrativesAreDeterministic, true);
+
+  const written = toDashboardStone(
+    v6Stone({
+      generationProvenance: {
+        outcome: 'deterministic_fallback',
+        metricInsightsOutcome: 'llm',
+        attempts: 2,
+        retryCount: 1,
+        sourceQuestionIds: ['management-support-q1'],
+      },
+    }),
+  );
+
+  assert.strictEqual(written.summaryIsDeterministic, true);
+  assert.strictEqual(written.metricNarrativesAreDeterministic, false);
+
+  // A round analysed before the field existed claims nothing either way, and
+  // the screen adds no note rather than asserting a model wrote them.
+  assert.strictEqual(
+    toDashboardStone(v6Stone()).metricNarrativesAreDeterministic,
+    false,
+  );
+});
