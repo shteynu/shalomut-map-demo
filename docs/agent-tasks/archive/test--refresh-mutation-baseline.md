@@ -6,10 +6,9 @@
 - Base branch: `main`
 - Base commit: `297e259` (also `origin/main` and the tip of
   `docs/tip-pointer-closeout`)
-- Current HEAD: the `docs(task): record the refreshed mutation baseline`
-  commit, sitting on `7a08293`. Named rather than hashed because it is this
-  file's own commit.
-- Status: complete, pending push
+- Final commits: `d1d2999`, `6605636`, `fa9fc20`, `74d60c2`, `7a08293` and
+  `d1a8899`, all on `main`.
+- Status: complete and archived
 - Last updated: 2026-08-05
 - Last agent/tool: Claude Opus 5 (Claude Code)
 
@@ -131,7 +130,7 @@ the contract, and the documents that state the pilot's scope and score.
 
 ## Remaining
 
-- Owner action only: push and fast-forward `main`.
+- Nothing. Pushed to `main` on 2026-08-05; GitHub run `30996388155` passed.
 
 ## Changed files
 
@@ -213,5 +212,5 @@ Local.
 
 ## Next concrete step
 
-Owner: push this branch and fast-forward `main`
-(`git push origin test/refresh-mutation-baseline:main`).
+None. The task is closed; the mutation pilot's living state is `ROADMAP.md`,
+`PROGRESS.md` and `stryker.config.mjs`.

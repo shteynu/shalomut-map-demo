@@ -3,12 +3,13 @@
 ## Metadata
 
 - Branch: `chore/mutation-config-fitness-check`
-- Base branch: `test/refresh-mutation-baseline`, not `main`. That branch is
-  committed but unpushed, and this one depends on the two-file `mutate` list it
-  introduced.
+- Base branch: `test/refresh-mutation-baseline`, not `main`. That branch was
+  still unpushed at the time, and this one depends on the two-file `mutate`
+  list it introduced. Both have since landed on `main`.
 - Base commit: `d1a8899`
-- Current HEAD: the `docs(mutation)` commit named below, on `105efa7`
-- Status: complete, pending push
+- Final commits: `b76cbfb`, `105efa7` and `a038881`, plus the follow-up fix
+  `c3a8c19` and `4773800` from `fix/mutation-sandbox-venv`. All on `main`.
+- Status: complete and archived
 - Last updated: 2026-08-05
 - Last agent/tool: Claude Opus 5 (Claude Code)
 
@@ -25,7 +26,7 @@ None. Tooling, CI and documentation.
 ## Context
 
 - The drift and the refreshed baseline are in
-  `docs/agent-tasks/active/test--refresh-mutation-baseline.md`.
+  `docs/agent-tasks/archive/test--refresh-mutation-baseline.md`.
 - CI runs `npm run verify` in the `validate` job of
   `.github/workflows/deploy-vercel.yml`, so anything inside `verify:core` runs
   on every pull request without a workflow change.
@@ -99,14 +100,15 @@ what CI enforces about mutation testing.
 
 ## Remaining
 
-- Owner action only: push both branches. `test/refresh-mutation-baseline`
-  first — this branch sits on it.
+- Nothing. Both branches and the follow-up fix are on `main`; GitHub run
+  `30997233881` passed every step, including the dry run.
 
 ## Changed files
 
 `scripts/check-mutation-config.mjs`, `scripts/check-mutation-config.test.mjs`,
 `package.json`, `.github/workflows/deploy-vercel.yml`, `ROADMAP.md`,
-`PROGRESS.md`, `.agents/skills/shalomut-verification/SKILL.md`, this file.
+`PROGRESS.md`, `.agents/skills/shalomut-verification/SKILL.md`, this file, and
+`stryker.config.mjs` in the follow-up fix.
 
 ## Verification evidence
 
@@ -124,16 +126,14 @@ what CI enforces about mutation testing.
 - `npm run test:mutation:ai-contract -- --dryRunOnly` — exit 0 locally, the
   same command the new CI step runs.
 
-### Failed
-
-- None.
-
 - GitHub run `30996895975` on `main`: `Run canonical verification` succeeded,
   so `lint:mutation-config` passes in CI.
+- GitHub run `30997233881` after the fix below: every step succeeded,
+  including the dry run.
 
-### Failed then fixed
+### Failed, then fixed
 
-- The same run's `Check that the mutation runner still starts` failed with
+- Run `30996895975`'s `Check that the mutation runner still starts` failed with
   `EISDIR ... copyfile ai-analytics-service/.venv/lib64`. Stryker sandboxes
   the project by copying it, and a Linux virtual environment contains `lib64`
   as a symlink to a directory. macOS venvs do not, so no local dry run could
@@ -142,12 +142,15 @@ what CI enforces about mutation testing.
   Fixed by `ignorePatterns: ['**/.venv']` on branch `fix/mutation-sandbox-venv`
   (`c3a8c19`), verified by running the dry run with `--cleanTempDir false` and
   confirming the sandbox holds `ai-analytics-service` without a `.venv` inside
-  it. Awaiting push; `main` is red until it lands.
+  it. Landed on `main` the same day; run `30997233881` passed every step,
+  with the dry run instrumenting 1255 mutants and running the 11 test files
+  in 4 seconds. `main` was red for seven minutes, 10:18 to 10:25 UTC.
 
   The step did what it was added to do on its first real run: it caught a
   mutation config that does not start.
 
 ### Blocked or not run
+
 - `verify:db` and `verify:ai` — no repository, schema, route or Python change.
 
 ### Environment
@@ -174,6 +177,5 @@ Local.
 
 ## Next concrete step
 
-Owner: push both branches in order —
-`git push origin test/refresh-mutation-baseline:main`, then
-`git push origin chore/mutation-config-fitness-check:main`.
+None. The task is closed; what CI enforces about mutation testing is recorded
+in `ROADMAP.md` and `.agents/skills/shalomut-verification/SKILL.md`.
