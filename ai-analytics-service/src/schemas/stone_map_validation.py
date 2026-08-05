@@ -91,6 +91,9 @@ def _refusal_for_stone(
     if not has_valid_unavailable_reason(provenance):
         return "unavailable_reason_invalid"
 
+    if not has_valid_metric_insights_outcome(provenance, contract_version):
+        return "metric_insights_outcome_invalid"
+
     if caps.usesStructuredDimensionSummary:
         # A declared gap has no overview; `_refusal_for_gaps` below is what
         # checks it was declared. The metric narratives are still required —
@@ -138,6 +141,33 @@ def has_valid_unavailable_reason(provenance: Any) -> bool:
     return (
         provenance.get("outcome") == "unavailable"
         and reason in {"provider_unavailable", "validation_rejected"}
+    )
+
+
+def has_valid_metric_insights_outcome(
+    provenance: Any,
+    contract_version: str,
+) -> bool:
+    """Who wrote the metric narratives, on a version that has any.
+
+    Absent is always allowed, on every version: rounds analysed before the
+    field existed carry none, and a version without narrative metrics has
+    nothing for it to describe. Present on such a version is a payload
+    describing copy the contract does not contain, so it is refused rather
+    than ignored.
+
+    There is no `unavailable`. A dimension whose overview is a gap still owes
+    its metric narratives, so the only two answers are the model's or this
+    service's own.
+    """
+    if not isinstance(provenance, dict):
+        return False
+    outcome = provenance.get("metricInsightsOutcome")
+    if outcome is None:
+        return True
+    return (
+        get_capabilities(contract_version).usesNarrativeMetrics
+        and outcome in {"llm", "deterministic_fallback"}
     )
 
 

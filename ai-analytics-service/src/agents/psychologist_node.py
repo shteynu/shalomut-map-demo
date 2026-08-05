@@ -294,6 +294,17 @@ async def agent_psychologist_node(
                 for dim_id, result in zip(metric_targets, metric_results)
             },
         )
+        # One call writes every metric narrative of a dimension, so one outcome
+        # covers all of them. It is recorded separately from the summary's
+        # because the two fall back independently, and a replaced dictionary
+        # rather than a mutated one: an untouched dimension keeps the provenance
+        # object the previous run put in the state.
+        if get_capabilities(eff_version).usesNarrativeMetrics:
+            for dim_id, result in zip(metric_targets, metric_results):
+                generation_provenance[dim_id] = {
+                    **generation_provenance.get(dim_id, {}),
+                    "metricInsightsOutcome": result.outcome,
+                }
     previous_summary = state.get("interpretations", {}).get(
         "overall_summary",
         "",

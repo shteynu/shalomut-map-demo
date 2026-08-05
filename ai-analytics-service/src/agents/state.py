@@ -47,6 +47,11 @@ class InterpretationState(TypedDict):
 
 class GenerationProvenanceState(TypedDict, total=False):
     outcome: Literal["llm", "deterministic_fallback", "unavailable"]
+    # The metric narratives of one dimension are written in a single
+    # exact-coverage call, so they share one outcome. `outcome` above is the
+    # dimension's summary and says nothing about them: a stone can carry
+    # model-written paragraphs beside derived metric narratives.
+    metricInsightsOutcome: Literal["llm", "deterministic_fallback"]
     attempts: int
     retryCount: int
     sourceQuestionIds: List[str]

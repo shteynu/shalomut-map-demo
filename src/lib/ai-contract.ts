@@ -133,6 +133,22 @@ export interface StoneGenerationProvenance {
    * screen that demanded one would break on its own history.
    */
   unavailableReason?: 'provider_unavailable' | 'validation_rejected';
+  /**
+   * Who wrote this dimension's metric narratives — which `outcome` above does
+   * not answer. The summary and the narratives fall back independently, so a
+   * stone can carry three model-written paragraphs beside eight sentences the
+   * service derived from the aggregates, and until this field existed the
+   * screen could not tell the manager which.
+   *
+   * One value for all of them, because one exact-coverage call writes every
+   * narrative of a dimension: they are the model's together or derived
+   * together. There is no `unavailable` — a dimension whose overview is a gap
+   * still owes its narratives.
+   *
+   * Optional, and only on a contract with narrative metrics: `6.0` and up.
+   * Rounds analysed before it existed carry none.
+   */
+  metricInsightsOutcome?: 'llm' | 'deterministic_fallback';
   attempts: number;
   retryCount: number;
   sourceQuestionIds: string[];
@@ -642,15 +658,39 @@ function isValidUnavailableReason(value: Record<string, unknown>): boolean {
   );
 }
 
+/**
+ * Who wrote the metric narratives, on a contract that has narrative metrics.
+ *
+ * Absent is always allowed and on every version: rounds analysed before the
+ * field existed carry none, and a version with numeric metrics has no
+ * narratives for it to describe. Present on such a version is a payload
+ * labelling copy the contract does not carry, so it is refused rather than
+ * quietly dropped.
+ */
+function isValidMetricInsightsOutcome(
+  value: Record<string, unknown>,
+  narrativeMetrics: boolean,
+): boolean {
+  if (value.metricInsightsOutcome === undefined) return true;
+  return (
+    narrativeMetrics &&
+    ['llm', 'deterministic_fallback'].includes(
+      String(value.metricInsightsOutcome),
+    )
+  );
+}
+
 function isValidV5GenerationProvenance(
   value: unknown,
   metricQuestionIds: string[],
   surveyDefinitionHash: string,
+  narrativeMetrics = false,
 ): value is StoneGenerationProvenance {
   if (!isRecord(value)) return false;
 
   const sortedMetricIds = [...metricQuestionIds].sort();
   return (
+    isValidMetricInsightsOutcome(value, narrativeMetrics) &&
     // `unavailable` is accepted from 5.0 up and nowhere below: the older
     // contracts are closed boundaries, and a stone with no interpretation is
     // not a shape they ever described.
@@ -785,6 +825,7 @@ function isValidV6Stone(
       provenance,
       metricQuestionIds,
       surveyDefinitionHash,
+      true,
     ) &&
     isRecord(provenance)
   );

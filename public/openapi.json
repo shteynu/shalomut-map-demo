@@ -3350,6 +3350,14 @@
             "type": "string",
             "pattern": "^sha256:[a-f0-9]{64}$"
           },
+          "unavailableReason": {
+            "type": "string",
+            "description": "Why there is no interpretation. Present only beside `outcome: unavailable`, and optional there: rounds analysed before the field existed carry none.",
+            "enum": [
+              "provider_unavailable",
+              "validation_rejected"
+            ]
+          },
           "backgroundContextIncluded": {
             "type": "boolean"
           },
@@ -3572,6 +3580,7 @@
       },
       "StoneGenerationProvenanceV6": {
         "type": "object",
+        "description": "6.0 provenance. `outcome` is the dimension's three-paragraph overview and `metricInsightsOutcome` is the sentence under every question: the two are written by separate calls and fall back independently, so a stone can carry the model's overview above narratives the service derived.",
         "required": [
           "outcome",
           "attempts",
@@ -3582,6 +3591,23 @@
         "properties": {
           "outcome": {
             "type": "string",
+            "enum": [
+              "llm",
+              "deterministic_fallback",
+              "unavailable"
+            ]
+          },
+          "unavailableReason": {
+            "type": "string",
+            "description": "Why there is no overview. Present only beside `outcome: unavailable`, and optional there.",
+            "enum": [
+              "provider_unavailable",
+              "validation_rejected"
+            ]
+          },
+          "metricInsightsOutcome": {
+            "type": "string",
+            "description": "Who wrote every metric narrative of this dimension — one value for all of them, because one call writes them together. No `unavailable`: a dimension whose overview is a gap still carries its narratives. Optional; rounds analysed before the field existed carry none.",
             "enum": [
               "llm",
               "deterministic_fallback"

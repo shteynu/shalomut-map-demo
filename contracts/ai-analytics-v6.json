@@ -83,7 +83,11 @@
       "visibleDigitsForbidden": true,
       "visiblePercentagesForbidden": true,
       "minCharacters": 300,
-      "maxCharacters": 500
+      "maxCharacters": 500,
+      "provenanceField": "metricInsightsOutcome",
+      "provenanceOutcomes": ["llm", "deterministic_fallback"],
+      "provenanceScope": "every metric narrative of the dimension, written in one call",
+      "provenanceOptional": true
     },
     "recommendations": {
       "countPerDimension": 5,
@@ -116,7 +120,8 @@
       "backgroundContextIncluded",
       "distributionIncluded",
       "crossDimensionContextIncluded",
-      "unavailableReason"
+      "unavailableReason",
+      "metricInsightsOutcome"
     ]
   }
 }
