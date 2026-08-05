@@ -10,7 +10,9 @@ state, external blockers and approval gates. Product milestones belong in
 
 ## Repository snapshot
 
-- `origin/main` is `67048b5`. Two branches reached it on 2026-08-05, pushed by
+- `origin/main` is `c63736e` — `67048b5` plus this document's own close-out,
+  which carries the deployment evidence below and the two archived task files.
+  The code tip is `67048b5`. Two branches reached it on 2026-08-05, pushed by
   the owner: `docs/adr-002-additive-fields` (the ADR-002 amendment clause) and
   `feat/metric-narrative-provenance` on top of it (the clause's first use). Both
   are fully contained in `main` and can be deleted; their task files are in

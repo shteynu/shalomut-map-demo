@@ -6,11 +6,11 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 
 ## Current state
 
-- `origin/main` is `67048b5`, and both services are deployed from it, checked
-  read-only on 2026-08-05. Its two newest slices: published contracts may now
-  gain an optional additive field under a stated rule (ADR-002), and the first
-  one added under it — a stone says who wrote its metric narratives, separately
-  from who wrote its overview.
+- `origin/main` is `c63736e`; the code tip is `67048b5`, and both services are
+  deployed from it, checked read-only on 2026-08-05. Its two newest slices:
+  published contracts may now gain an optional additive field under a stated
+  rule (ADR-002), and the first one added under it — a stone says who wrote its
+  metric narratives, separately from who wrote its overview.
 - Earlier snapshots of this pointer, kept for the shape of the history:
   `origin/main` was `26f4c37`: the 2026-08-02 refactoring stack, the Dashboard
   DTO slice, seven manager-facing slices merged on 2026-08-03/04 — shared
