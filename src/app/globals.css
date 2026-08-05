@@ -2193,7 +2193,9 @@ textarea {
   font-size: clamp(1rem, 1.5vw, 1.15rem);
 }
 
-.dashboard-mock-page {
+/* Named `dashboard-mock-page` until 2026-08-05, on four screens that render
+   PostgreSQL. The demo layer it was named after is gone (backlog §7). */
+.dashboard-page {
   position: relative;
   width: min(1240px, calc(100% - 2rem));
   min-height: 100vh;
@@ -3223,7 +3225,7 @@ textarea {
 }
 
 @media (max-width: 980px) {
-  .dashboard-mock-page {
+  .dashboard-page {
     width: min(100% - 1rem, 1240px);
   }
 
@@ -3743,7 +3745,7 @@ textarea {
     width: 100%;
   }
 
-  .dashboard-mock-page {
+  .dashboard-page {
     width: min(100% - 0.75rem, 1240px);
     padding-top: 0.75rem;
   }

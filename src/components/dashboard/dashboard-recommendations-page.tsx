@@ -89,7 +89,7 @@ export function DashboardRecommendationsPage({
 
   if (state.status !== "ready") {
     return (
-      <div className="dashboard-mock-page dashboard-recommendations-screen">
+      <div className="dashboard-page dashboard-recommendations-screen">
         <DashboardHeading
           title={`${navigationLabels.goals} | ${dimension.conceptLabel}`}
           organizationName={organizationName}
@@ -106,7 +106,7 @@ export function DashboardRecommendationsPage({
 
   if (!stone) {
     return (
-      <div className="dashboard-mock-page dashboard-recommendations-screen">
+      <div className="dashboard-page dashboard-recommendations-screen">
         <DashboardHeading
           title={`${navigationLabels.goals} | ${dimension.conceptLabel}`}
           organizationName={organizationName}
@@ -156,7 +156,7 @@ export function DashboardRecommendationsStage({
   const isPreservation = stone.status === "green";
 
   return (
-    <div className="dashboard-mock-page dashboard-recommendations-screen">
+    <div className="dashboard-page dashboard-recommendations-screen">
       <DashboardHeading
         title={`${actionPresentation.actionsTitle} | ${dimension.conceptLabel}`}
         organizationName={organizationName}

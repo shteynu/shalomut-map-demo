@@ -39,7 +39,7 @@ export function DashboardDimensionPage({
 
   if (state.status !== "ready") {
     return (
-      <div className="dashboard-mock-page dashboard-detail-screen">
+      <div className="dashboard-page dashboard-detail-screen">
         <DashboardHeading
           title={`תמונת מצב | ${dimension.conceptLabel}`}
           organizationName={organizationName}
@@ -59,7 +59,7 @@ export function DashboardDimensionPage({
 
   if (!stone) {
     return (
-      <div className="dashboard-mock-page dashboard-detail-screen">
+      <div className="dashboard-page dashboard-detail-screen">
         <DashboardHeading
           title={`תמונת מצב | ${dimension.conceptLabel}`}
           organizationName={organizationName}
@@ -142,7 +142,7 @@ export function DashboardDimensionDetail({
   const dimensionSurface = getDimensionSurface(stone.status);
 
   return (
-    <div className="dashboard-mock-page dashboard-detail-screen">
+    <div className="dashboard-page dashboard-detail-screen">
       <DashboardHeading
         title={`${actionPresentation.dimensionTitle} | ${dimension.conceptLabel}`}
         organizationName={organizationName}

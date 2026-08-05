@@ -38,7 +38,7 @@ export function DashboardMetricsPage({
 
   if (state.status !== "ready") {
     return (
-      <div className="dashboard-mock-page dashboard-metrics-screen">
+      <div className="dashboard-page dashboard-metrics-screen">
         <DashboardHeading
           title={`${navigationLabels.highlightedMetrics} | ${dimension.conceptLabel}`}
           organizationName={organizationName}
@@ -54,7 +54,7 @@ export function DashboardMetricsPage({
 
   if (!stone) {
     return (
-      <div className="dashboard-mock-page dashboard-metrics-screen">
+      <div className="dashboard-page dashboard-metrics-screen">
         <DashboardHeading
           title={`${navigationLabels.highlightedMetrics} | ${dimension.conceptLabel}`}
           organizationName={organizationName}
@@ -107,7 +107,7 @@ export function DashboardMetricsStage({
   const dimensionSurface = getDimensionSurface(stone.status);
 
   return (
-    <div className="dashboard-mock-page dashboard-metrics-screen">
+    <div className="dashboard-page dashboard-metrics-screen">
       <DashboardHeading
         title={`${navigationLabels.highlightedMetrics} | ${dimension.conceptLabel}`}
         organizationName={organizationName}

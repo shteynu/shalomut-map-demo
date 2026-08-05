@@ -51,7 +51,7 @@ export function DashboardMapPage({
 
   if (isLocked) {
     return (
-      <div className="dashboard-mock-page stone-page">
+      <div className="dashboard-page stone-page">
         <DashboardHeading
           title="מפת השלומות"
           organizationName={organizationName}
@@ -133,7 +133,7 @@ function DashboardMapReady({
   const { state, reload } = useAiInsights(roundId);
 
   return (
-    <div className="dashboard-mock-page stone-page dashboard-map-screen">
+    <div className="dashboard-page stone-page dashboard-map-screen">
       <DashboardHomeLink />
 
       <div className="dashboard-map-layout">
