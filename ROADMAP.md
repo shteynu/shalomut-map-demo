@@ -25,7 +25,8 @@ belongs in archived task files and Git.
 - Canonical Core analytics separated from wire encoding; Python parsing/output
   adapters and application ports for source, sink, job store and text generator.
 - Full TypeScript, PostgreSQL and Python verification in CI, plus an opt-in
-  Stryker mutation-testing pilot for `src/lib/ai-contract.ts`.
+  Stryker mutation-testing pilot for the AI-contract validator and the shared
+  scoring bands one of its rules moved into.
 
 ## Next product outcomes
 
@@ -48,11 +49,14 @@ expanding mutation scope — was closed on 2026-08-03; what it found is in
 
 ## Conditional, not scheduled
 
-- Widening mutation scope beyond `src/lib/ai-contract.ts`, once the older
-  contracts have payload fixtures of their own. Roughly three fifths of the
-  remaining survivors sit in validators for contracts `1.0`–`4.0` that no
-  current fixture exercises, so a second mutation target would be measured
+- Widening mutation scope to a subject beyond the AI-contract validator, once
+  the older contracts have payload fixtures of their own. Roughly three fifths
+  of the remaining survivors sit in validators for contracts `1.0`–`4.0` that
+  no current fixture exercises, so a new mutation target would be measured
   against the same blind spot. The pilot stays opt-in and non-blocking.
+  Following a rule out of the validator — as `src/lib/scoring-bands.ts` was
+  followed on 2026-08-05 — is not this item: it keeps one subject whole rather
+  than adding a second.
 
 - The long-term identity model, when a second manager per school, multi-tenant
   hosting or real respondents is actually requested. One manager per deployment

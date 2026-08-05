@@ -28,7 +28,7 @@ privacy, auth, persistence, contracts или deployment.
 | Изменённая область | Обязательный минимум |
 | --- | --- |
 | Только Markdown, instructions или skills | Frontmatter/links, `git diff --check`, релевантная structural validation |
-| Mutation config или tests для `src/lib/ai-contract.ts` | Stryker dry run; полный mutation run, если задача меняет mutation evidence или просит оценить test strength |
+| Mutation config или tests для мутируемых файлов (`src/lib/ai-contract.ts`, `src/lib/scoring-bands.ts`) | Stryker dry run; полный mutation run, если задача меняет mutation evidence или просит оценить test strength |
 | `src/components`, page TSX, CSS | Targeted tests, `npm run lint`, `npm run build`; browser smoke для user-visible flow |
 | `src/app/api`, services, hooks, utilities | Ближайшие API/unit tests, затем `npm test` и `npm run build` |
 | Repositories или server guards | Repository/API regression tests, `npm test`, `npm run lint`, `npm run build` |
@@ -60,12 +60,20 @@ privacy, auth, persistence, contracts или deployment.
 
 ### Mutation testing
 
-- Текущий mutation scope — opt-in pilot только для
-  `src/lib/ai-contract.ts`; конфигурация находится в `stryker.config.mjs`.
+- Текущий mutation scope — opt-in pilot для `src/lib/ai-contract.ts` и
+  `src/lib/scoring-bands.ts`, куда переехало правило валидатора «score и status
+  обязаны сходиться»; конфигурация находится в `stryker.config.mjs`.
+- Если продуктовое правило уезжает из мутируемого файла в новый модуль, веди
+  `mutate` за ним в том же изменении. Рефакторинг не должен молча выносить
+  правило из измерения.
 - `tap.testFiles` должен содержать каждый test-файл, предметом которого является
-  мутируемый файл. Пропущенный файл не занижает score честно: он показывает как
-  survivor мутант, который реальный тест убил бы. Так до 2026-08-03 правило
-  Hebrew-only выглядело непокрытым при существующем `hebrew-only-corpus.test.ts`.
+  мутируемый файл, включая тесты вне `src/lib/__tests__`. Пропущенный файл не
+  занижает score честно: он показывает как survivor мутант, который реальный
+  тест убил бы. Так до 2026-08-03 правило Hebrew-only выглядело непокрытым при
+  существующем `hebrew-only-corpus.test.ts`. Список дрейфует по мере появления
+  новых тестов, поэтому выводи его заново через
+  `grep -rl 'validateStoneMapResult\|isHebrewOnlyUserText' src`, а не доверяй
+  текущему.
 - Проверяй wiring без полного прогона через
   `npm run test:mutation:ai-contract -- --dryRunOnly`.
 - Полный `npm run test:mutation:ai-contract` запускай, когда изменён сам

@@ -1,12 +1,25 @@
 const config = {
   testRunner: 'tap',
-  mutate: ['src/lib/ai-contract.ts'],
+  /**
+   * The pilot's subject is the AI-contract validator. `scoring-bands.ts` is
+   * here because one of the validator's own rules moved into it — `8e1906e`
+   * took `statusForScore` out of `ai-contract.ts` so Core and Python could
+   * read one manifest — and a refactor should not quietly remove a rule from
+   * measurement. Every stone's score must agree with its status, and that
+   * agreement is now decided here.
+   *
+   * This is not the widening `ROADMAP.md` holds behind the legacy-fixture
+   * precondition. That one asks for a second subject; this one keeps the
+   * first subject whole.
+   */
+  mutate: ['src/lib/ai-contract.ts', 'src/lib/scoring-bands.ts'],
   tap: {
     /**
-     * Every test file whose subject is the mutated validator — that is, every
-     * one that calls `validateStoneMapResult` or `isHebrewOnlyUserText`
-     * directly. A file left out here does not lower the score honestly, it
-     * reports mutants as survivors that a real test would have killed.
+     * Every test file whose subject is a mutated file — that is, every one
+     * that calls `validateStoneMapResult`, `isHebrewOnlyUserText`,
+     * `statusForScore` or `loadScoringBands` directly. A file left out here
+     * does not lower the score honestly, it reports mutants as survivors that
+     * a real test would have killed.
      *
      * The corpus files were missing until 2026-08-03, which made the Hebrew-only
      * rule look untested: six mutants that delete or invert it survived while
@@ -33,6 +46,10 @@ const config = {
       // accepted and the privacy-locked outcome, so it kills mutants no file
       // in `src/lib/__tests__` reaches.
       'src/lib/services/__tests__/contract-3-staging-dryrun.test.ts',
+      // The bands' own tests: the manifest loader's refusals, which no
+      // contract test reaches, and the band boundaries every stone is
+      // validated against.
+      'src/lib/__tests__/scoring-bands.test.ts',
     ],
     nodeArgs: ['--import', 'tsx'],
     forceBail: true,
