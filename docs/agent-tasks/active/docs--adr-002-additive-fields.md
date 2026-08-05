@@ -5,8 +5,10 @@
 - Branch: `docs/adr-002-additive-fields`
 - Base branch: `main`
 - Base commit: `55d1eea`
-- Current HEAD: `55d1eea` (nothing committed yet)
-- Status: in progress
+- Current HEAD: `eff1c85`; two commits on top of `55d1eea`, worktree clean apart
+  from the pre-existing `.idea/shalomut-map-demo.iml` and `next-env.d.ts`, which
+  stay unstaged. Nothing staged, nothing untracked.
+- Status: complete, waiting on the owner's push
 - Last updated: 2026-08-05
 - Last agent/tool: Claude Code
 
