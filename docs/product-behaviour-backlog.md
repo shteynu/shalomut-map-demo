@@ -243,11 +243,30 @@ becomes choosable again. `PROJECT_CONTEXT.md` ADR-015 records the reasoning.
 Goals name a dimension and repeat copy that already cleared the privacy gate;
 nothing about a respondent reaches them.
 
+Done 2026-08-05: a school reads its goals in one place. `מעקב יעדים` (`/goals`)
+lists every goal of every round the school has run — open ones first, finished
+ones after — each naming its dimension, the round it was chosen in, and whether
+that round is archived. The dimension links back to the recommendations of that
+round rather than of whichever round the manager last looked at.
+
+This became a gap rather than a convenience when the archive turned read-only.
+An archived round's goals are deliberately still editable — finishing what a
+measurement started is the school's work, not part of the measurement — and that
+exception needed somewhere to happen: the round it belongs to now sits behind a
+disclosure.
+
+The status is written through the same per-round endpoint the dimension screen
+uses, so a goal has one write path and the screens cannot tell two stories about
+what a status change means. The repository read takes round ids rather than an
+organization id, keeping the rule that a goal is never reachable without naming
+its round.
+
 Remaining:
 - Whether an action plan of steps, an owner or a due date is wanted is a
   separate decision, deliberately not taken here.
-- Goals are per round and per dimension. Reading a school's goals across rounds,
-  or beside the delta of the dimension they belong to, is not built.
+- Goals still sit beside no numbers. Reading a goal next to the delta of the
+  dimension it belongs to is not built, and it is a different question from
+  where the goals are listed.
 
 Why it matters:
 - The product principle is "from picture to action"; tracked goals are the likely next step beyond visual diagnosis.

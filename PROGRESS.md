@@ -78,6 +78,10 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 - Setup and builder say when their work last reached the database, and say so
   again as "not saved yet" the moment the manager edits. The time is the one the
   save endpoint reports, so it is evidence of a completed write.
+- The school reads its goals in one place: `מעקב יעדים` lists every goal of every
+  round, open ones first, each naming its dimension and the round it came from.
+  A goal from an archived round says so and can still be moved, which is the
+  point — the archive freezes the measurement, not the work that followed it.
 - A round can be filed away. Archiving takes it out of the everyday switcher and
   leaves it behind a disclosure, keeping its URL, its dashboard, its analysis and
   its place in the comparison history — and an archived round is read-only:
