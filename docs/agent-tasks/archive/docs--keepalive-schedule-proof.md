@@ -6,7 +6,7 @@
 - Base branch: `main`
 - Base commit: `3590aae`
 - Current HEAD: `3590aae`
-- Status: checked, and the proof is still owed — the schedule did not fire
+- Status: closed — the schedule never fired, and the mechanism was replaced
 - Last updated: 2026-08-05
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -81,11 +81,10 @@ plainly that a manual run proves the step works, not that the schedule fires.
 
 ## Remaining
 
-- Re-read the run list in a later session. If the schedule has fired by then,
-  the keep-alive is proven and this task closes. If it still has not, `*/10` is
-  not doing the job and the choice is the owner's: the paid Render instance
-  type, which needs no workflow at all, or a pinger that is not GitHub's
-  best-effort scheduler.
+- Nothing. The window was reopened twice more the same day and read at 15:33Z
+  and 16:05Z: still no `schedule` run, 104 minutes and roughly ten cron windows
+  after the workflow reached `main`. Owner decision — an external pinger. That
+  work is `chore/external-keepalive-pinger`.
 
 ## Changed files
 
@@ -159,7 +158,4 @@ Deployed: Vercel Core and Render Python. Local worktree
 
 ## Next concrete step
 
-In a later session run `gh run list --workflow=render-keepalive.yml` once. A
-`schedule` run in the list closes this task and the handoff's open proof; an
-empty list hours later is the evidence that the cron does not fire here, and the
-question then goes to the owner as stated under `Remaining`.
+None. Continued in `chore/external-keepalive-pinger`.

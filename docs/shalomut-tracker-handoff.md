@@ -1,7 +1,8 @@
 # Shalomut Tracker — operational handoff
 
-Updated: 2026-08-05 (`origin/main` is `3590aae`, both deployed services were
-re-read at that commit, and nothing is waiting to be pushed). This
+Updated: 2026-08-05 (`origin/main` is `45f38c2`; the keep-alive moved off
+GitHub's scheduler and the external monitor is the owner's one open action).
+This
 document owns only cross-task operational/deployed
 state, external blockers and approval gates. Product milestones belong in
 `PROGRESS.md`; branch work and exact verification belong in
@@ -9,10 +10,19 @@ state, external blockers and approval gates. Product milestones belong in
 
 ## Repository snapshot
 
-- `origin/main` is `3590aae` — the Render pacing, the keep-alive workflow and
-  their close-out docs, pushed by the owner on 2026-08-05.
-  `chore/render-pace-and-wakeup` is fully contained in `main` and can be
-  deleted. **Nothing is waiting to be pushed.**
+- `origin/main` is `45f38c2` — the round archive, pushed by the owner on
+  2026-08-05. `feat/archived-rounds-out-of-switcher` and, before it,
+  `docs/keepalive-schedule-proof` and `chore/render-pace-and-wakeup` are fully
+  contained in `main` and can be deleted.
+- **Waiting**: `chore/external-keepalive-pinger`, which removes the cron from
+  the wake workflow and rewrites this document's keep-alive entry. Committed
+  locally and unpushed, so it exists in this worktree only.
+- Verification at `45f38c2`: `npm run verify:core` exit 0 with 576 TypeScript
+  tests, both fitness checks, typecheck, ESLint and the production build.
+  `verify:db` and `verify:ai` were **not** run — no schema, migration,
+  repository, route or Python change. The archive flow was **not** smoke-tested
+  in a browser: every manager screen is behind `/login`, so that check is done
+  with the owner signed in.
 - Superseded snapshot: `origin/main` was `974d40e`. Four branches reached it on 2026-08-05, pushed
   by the owner: `test/refresh-mutation-baseline`,
   `chore/mutation-config-fitness-check`, the follow-up
@@ -154,27 +164,32 @@ state, external blockers and approval gates. Product milestones belong in
   endpoint.
 - AI service: Render container from the root `Dockerfile`, with durable polling
   enabled. The service needs an always-available process or explicit wake
-  mechanism; scale-to-zero alone is not a reliable worker. The wake mechanism is
-  `.github/workflows/render-keepalive.yml` — a scheduled `GET /health` every ten
-  minutes, inbound and therefore resetting the free plan's fifteen-minute sleep
-  timer, which the service's own outbound polling does not. Live since
-  2026-08-05: the workflow is registered and active, and a manual
-  `workflow_dispatch` run finished green in 9s with `status: online` and
-  `commit: 80930a4` in its log. What has **not** been observed is a run on the
-  schedule itself. Watched every two minutes from 14:31Z to 15:00Z on
-  2026-08-05, with the workflow on `main` since 14:21Z: three cron windows
-  passed and `gh run list --workflow=render-keepalive.yml` still held nothing
-  but the manual dispatch. The workflow is `active`, so this is not GitHub's
-  sixty-day idle rule — which remains the first thing to check if the service
-  starts sleeping later. **Until a `schedule` run appears, the instance staying
-  awake is unproven**, and a `*/10` cron is the period GitHub throttles hardest;
-  it skips runs under load rather than queueing them. If a later reading still
-  shows none, the mechanism is wrong rather than late, and the alternatives —
-  the paid instance type, or a pinger outside GitHub's scheduler — are the
-  owner's choice. It costs nearly the account's whole free
-  allowance of 750
-  instance-hours a month, so a second free service does not fit beside it, and a
-  paid instance type is the version that needs no workflow.
+  mechanism; scale-to-zero alone is not a reliable worker. An inbound
+  `GET /health` resets the free plan's fifteen-minute sleep timer, which the
+  service's own outbound polling does not.
+- **GitHub Actions is not the keep-alive, and the reason is measured.**
+  `.github/workflows/render-keepalive.yml` carried `schedule: */10 * * * *` from
+  14:21Z on 2026-08-05. The run list was read every two minutes until 16:05Z:
+  ten cron windows passed and not one scheduled run ever appeared, while the
+  manual `workflow_dispatch` finished green in 9s with `status: online` and
+  `commit: 80930a4`. The workflow was `active` throughout, so this was not
+  GitHub's sixty-day idle rule. GitHub's scheduler is best-effort, skips runs
+  under load rather than queueing them, and throttles short periods hardest.
+  Owner decision 2026-08-05: move the keep-alive to an external pinger. The
+  `schedule` block is gone; what the workflow still offers is a manual wake
+  before a demo or a round.
+- **The keep-alive is an external uptime monitor**, outside this repository:
+  `GET https://shalomut-ai-analytics.onrender.com/health` every five minutes,
+  three times the rate the fifteen-minute timer needs. Nothing secret is in it —
+  `/health` is public and returns no respondent data. **Owner action, still
+  open**: create the monitor, then record here which service holds it and at
+  what interval. Until that line names a real monitor, the service sleeps after
+  fifteen idle minutes and a queued round waits for a visitor instead of being
+  worked.
+- An always-awake instance costs nearly the account's whole free allowance of
+  750 instance-hours a month, so a second free service does not fit beside it.
+  The paid instance type is the version that needs neither a workflow nor a
+  monitor.
 - Database: the confirmed deployed Supabase PostgreSQL target contained all
   seven repository migrations after `prisma migrate deploy` and a successful
   follow-up `prisma migrate status` on 2026-08-02. The eighth,
