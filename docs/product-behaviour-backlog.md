@@ -66,7 +66,7 @@ tracked as numbered items below.
 
 ## Remaining Product Behaviour Work
 
-### 1. Draft Persistence And Recovery (last-saved timestamp done and persisted 2026-08-04)
+### 1. Draft Persistence And Recovery (completed 2026-08-05)
 
 Current state: setup and survey-builder edits persist through the Data Layer into the current organization/round. The 24 canonical questions are protected from disabling or reassignment.
 
@@ -90,11 +90,38 @@ render the same words. A round last written before the column existed has no
 honest value and shows none: `created_at` is when the row appeared, not when its
 questionnaire was last edited.
 
-Remaining proposal:
-- Add explicit draft/version history if editors need recovery beyond the latest persisted definition.
+Done 2026-08-05, and this closes the item: recovery now reaches past the latest
+persisted definition. Every save that actually changes the questionnaire keeps
+a copy of it in `survey_definition_versions`, and the builder lists those copies
+newest first with the time each was saved and how many of its questions were
+active. A version can be loaded back into the editor, which is where the manager
+reviews it and presses save.
+
+Four decisions shaped it, recorded as `PROJECT_CONTEXT.md` ADR-019:
+- Restoring is an ordinary save, not a second write path. Loading a version only
+  fills the editor; the existing `PUT` still validates it, still refuses to
+  replace the questionnaire of a round that has answers, and still applies the
+  activation rule. A restore is therefore itself a version, so going back is
+  reversible and the edit that was undone stays in the history rather than being
+  erased.
+- A save that changes nothing records nothing. Pressing save twice on the same
+  questionnaire would otherwise fill the list with entries that differ only by
+  their timestamp; the comparison covers the questions and the copy the
+  respondent reads, not just the question set.
+- The history is capped at twenty versions per round. Old enough to be recovery,
+  short enough that the table cannot grow without limit from a single busy
+  afternoon.
+- Resetting a round's data leaves the history alone. Reset clears answers and
+  analysis; the questionnaire is what the manager wrote, not what respondents
+  produced. The versions die with the round instead, through the cascade.
+
+A version holds a questionnaire and nothing else. No answer, no count and no
+respondent trace reaches the table.
 
 Why it matters:
 - Principals will expect setup and survey edits to survive accidental refreshes.
+- A bulk edit — hiding twelve questions in one click — is exactly the mistake
+  that a last-saved timestamp cannot undo.
 - Demo reviewers need clarity about whether "save" is a product promise or a prototype signal.
 
 ### 2. Save, Copy, And Clipboard Failure States (completed 2026-08-04)

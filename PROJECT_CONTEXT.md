@@ -407,6 +407,38 @@ closed first. The action confirms before it acts, because `archived` is terminal
 — which is also why closing is disabled on an archived round rather than
 answering `409` from the route.
 
+### ADR-019: Restoring a questionnaire version is an ordinary save
+
+Backlog §1, 2026-08-05. Every save that changes a round's questionnaire copies
+it into `survey_definition_versions`; the builder lists those copies and can
+load one back into the editor.
+
+Loading is where it stops. There is no restore endpoint, and deliberately so:
+the questionnaire `PUT` already validates the definition, already refuses to
+replace the questions of a round that has answers, and already activates a
+draft whose questionnaire became complete. A restore route would have to repeat
+all three, and the copy it repeated would be the one that drifts. So a version
+travels back through the same save the manager would have performed by hand —
+which also makes the restore reversible, because it is itself a version, and
+leaves the edit that was undone in the history instead of erasing it.
+
+A save that changes nothing records nothing. `isSameSurveyDefinition` compares
+the question snapshot and the copy the respondent reads — title, audience,
+estimate, threshold, intro and anonymity text — so a second press of save does
+not add an entry that differs only by its timestamp.
+
+The definition is copied whole rather than stored as a diff against the round.
+A version has to be readable years after the questionnaire moved on, and a diff
+would depend on a chain of intermediate states the retention cap is allowed to
+delete. Twenty versions per round is that cap: recovery, not an archive. The
+prune deletes by id after ordering, never by a timestamp cutoff, because two
+saves can share a millisecond and a cutoff would take the row it meant to keep.
+
+Resetting a round leaves the history alone — reset clears what respondents
+produced, and a questionnaire is what the manager wrote. The versions die with
+the round instead, through the cascade. Nothing about a respondent is in the
+table: it holds questionnaires.
+
 ## Environments
 
 The project supports exactly two environments:
