@@ -1,7 +1,7 @@
 # Shalomut Tracker — operational handoff
 
-Updated: 2026-08-05 (`origin/main` is `45f38c2`; the keep-alive moved off
-GitHub's scheduler and the external monitor is the owner's one open action).
+Updated: 2026-08-05 (`origin/main` is `5616e66`; a migration is waiting on an
+unpushed branch and the deployed database has not seen it yet).
 This
 document owns only cross-task operational/deployed
 state, external blockers and approval gates. Product milestones belong in
@@ -10,19 +10,27 @@ state, external blockers and approval gates. Product milestones belong in
 
 ## Repository snapshot
 
-- `origin/main` is `45f38c2` — the round archive, pushed by the owner on
-  2026-08-05. `feat/archived-rounds-out-of-switcher` and, before it,
-  `docs/keepalive-schedule-proof` and `chore/render-pace-and-wakeup` are fully
-  contained in `main` and can be deleted.
-- **Waiting**: `chore/external-keepalive-pinger`, which removes the cron from
-  the wake workflow and rewrites this document's keep-alive entry. Committed
-  locally and unpushed, so it exists in this worktree only.
-- Verification at `45f38c2`: `npm run verify:core` exit 0 with 576 TypeScript
-  tests, both fitness checks, typecheck, ESLint and the production build.
-  `verify:db` and `verify:ai` were **not** run — no schema, migration,
-  repository, route or Python change. The archive flow was **not** smoke-tested
-  in a browser: every manager screen is behind `/login`, so that check is done
-  with the owner signed in.
+- `origin/main` is `5616e66` — backlog §7, the fixtures out of the runtime
+  barrel, pushed by the owner on 2026-08-05. It carries `45f38c2` (the round
+  archive) and `chore/external-keepalive-pinger` before it; every branch up to
+  `chore/fixtures-out-of-runtime` is fully contained in `main` and can be
+  deleted, and their task files are in `docs/agent-tasks/archive/`.
+- **Waiting**: `feat/survey-definition-history`, four commits closing backlog
+  §1 — the questionnaire version history. Committed locally and unpushed, so it
+  exists in this worktree only.
+- **Migration pending on the deployed database**:
+  `20260805170000_add_survey_definition_versions` exists only on that branch and
+  has been applied only to the disposable local test database. The deployed
+  database takes it when the branch reaches `main` and the deploy runs. Until
+  then the deployed build is unaffected — it has no code that reads the table.
+- Verification on that branch: `npm run verify:core` exit 0 with 589 TypeScript
+  tests, and `npm run verify:db` 25 tests, 25 pass, against local PostgreSQL on
+  `127.0.0.1:5433`. `verify:ai` was **not** run — no Python change. The builder
+  history panel was **not** smoke-tested in a browser: every manager screen is
+  behind `/login`, so that check is done with the owner signed in.
+- Superseded snapshot: `origin/main` was `45f38c2` — the round archive.
+  Verification there: `verify:core` exit 0 with 576 tests; `verify:db` and
+  `verify:ai` not run, and the archive flow not smoke-tested in a browser.
 - Superseded snapshot: `origin/main` was `974d40e`. Four branches reached it on 2026-08-05, pushed
   by the owner: `test/refresh-mutation-baseline`,
   `chore/mutation-config-fitness-check`, the follow-up

@@ -78,6 +78,10 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 - Setup and builder say when their work last reached the database, and say so
   again as "not saved yet" the moment the manager edits. The time is the one the
   save endpoint reports, so it is evidence of a completed write.
+- The questionnaire has a history: every save that changes it keeps a copy, the
+  builder lists the last twenty newest first, and an earlier one can be loaded
+  back into the editor. Restoring is the ordinary save, so it is validated like
+  any other, is itself reversible, and leaves the undone edit in the list.
 - The map shows the change against the previous measured round — per stone and
   overall — naming the round it compared with and skipping any round that never
   reached its privacy threshold.
