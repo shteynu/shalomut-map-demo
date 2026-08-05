@@ -81,6 +81,26 @@ test("a manifest that is not three ordered bands is refused", () => {
   );
 });
 
+test("a band that is not an object is refused before its bounds are read", () => {
+  // The only branch of the loader no test reached. It matters because the
+  // manifest is read by Python as well: a band that is `null` in one runtime
+  // and a crash in the other is the cross-runtime disagreement this file
+  // exists to prevent.
+  for (const notABand of [null, [], "green"]) {
+    assert.throws(
+      () =>
+        loadScoringBands(
+          manifestWith([
+            notABand as unknown as Record<string, unknown>,
+            { status: "yellow", min: 50, max: 74 },
+            { status: "red", min: 0, max: 49 },
+          ]),
+        ),
+      /Scoring band 0 must be an object/,
+    );
+  }
+});
+
 test("a band with non-integer or inverted bounds is refused", () => {
   assert.throws(
     () =>
