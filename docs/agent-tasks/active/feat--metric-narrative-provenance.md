@@ -5,7 +5,7 @@
 - Branch: `feat/metric-narrative-provenance`
 - Base branch: `docs/adr-002-additive-fields`, itself based on `main` (`55d1eea`)
 - Base commit: `70fb40c`
-- Current HEAD: see `Git state` below
+- Current HEAD: `8ab17f2` (`64bc838`, `55e249c`, `8ab17f2` on top of `70fb40c`)
 - Status: complete, waiting on the owner's push
 - Last updated: 2026-08-05
 - Last agent/tool: Claude Code (Opus 5)
