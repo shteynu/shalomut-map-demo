@@ -138,8 +138,8 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
   metrics screen says when its sentences were derived even if the interpretation
   above them was the model's.
 - `ai-analytics-service/evals/` measures whether generated Hebrew is any good —
-  eight synthetic rounds and five deterministic graders. It has not yet scored
-  real provider output; see the handoff for the quota blocker.
+  eight synthetic rounds and five deterministic graders. It scored real
+  provider output for the first time on 2026-08-05, once a paid key existed.
 
 ### Architecture and verification
 
@@ -192,9 +192,10 @@ environment separation being infrastructure rather than product behavior.
 
 ### AI analytics
 
-One open, recorded in the handoff: the eval corpus has never scored real
-provider output. It needs a key with paid quota; the free tier allows 20
-requests a day against a run that needs roughly 140.
+Closed 2026-08-05: the eval corpus scored real provider output for the first
+time, on a paid key and on the models `render.yaml` deploys. The prompts now
+have a baseline; the one weak grader is `no_overreach`, and whether
+`summary_grounding` counts what it claims to count is an open question.
 
 Closed 2026-08-05: the two amendments `6.0` took on 2026-08-04 no longer sit
 against ADR-002. Owner decision — a published contract may gain an **optional

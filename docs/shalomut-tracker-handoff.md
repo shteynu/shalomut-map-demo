@@ -271,15 +271,15 @@ state, external blockers and approval gates. Product milestones belong in
 - Explicit bounded approval is required before changing secrets, credentials,
   authentication configuration or deployment aliases.
 - No open migration decision remains in the repository record.
-- **The offline eval corpus has never scored real provider output.** The
-  configured Gemini key is free tier —
-  `GenerateRequestsPerDayPerProjectPerModel-FreeTier`, 20 requests per day per
-  model — and a full corpus run needs roughly 140. The owner's decision on
-  2026-08-04 is to wait for a key with paid quota rather than spread the run
-  across days. Until then `ai-analytics-service/evals/` is a tool with no
-  baseline; run it with
-  `.venv/bin/python -m evals.run_corpus --out DIR` and check provenance before
-  reading any report, per `evals/README.md`.
+- **Closed 2026-08-05, no longer a blocker.** The eval corpus has scored real
+  provider output. The owner installed a paid Gemini key, and a full run on
+  `gemini-3.5-flash-lite` produced `outcome: "llm"` on 55 of 56 stones with no
+  `429` in the log. The quota argument for the free tier no longer applies.
+  What the first report says lives in
+  `docs/agent-tasks/active/test--eval-corpus-baseline.md`; the open question it
+  raised is whether the `summary_grounding` grader counts what it claims to
+  count. Still run the provenance check before reading any report, per
+  `evals/README.md`.
 - **Settled 2026-08-05, no longer a gate.** The two amendments published
   contract `6.0` took on 2026-08-04 — `supportsPartialMaps` and
   `generationProvenance.unavailableReason` — stood against ADR-002's rule that

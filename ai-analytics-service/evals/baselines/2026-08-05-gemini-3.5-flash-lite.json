@@ -1,0 +1,637 @@
+{
+  "cases": [
+    {
+      "caseId": "contradictory",
+      "challenge": "The work feels meaningful while management support is the worst score on the map. Both have to survive into the summary; averaging them into one mood is the failure.",
+      "graders": [
+        {
+          "findings": [],
+          "measured": {
+            "maxSimilarity": 0.2143,
+            "meanSimilarity": 0.1004,
+            "pairs": 28
+          },
+          "name": "distinctness",
+          "score": 0.8996
+        },
+        {
+          "findings": [
+            "meaning: the narrative shares no content word with the dimension's own questions",
+            "professional-competence: the narrative shares no content word with the dimension's own questions"
+          ],
+          "measured": {
+            "meanShare": 0.1308,
+            "perDimension": {
+              "balance": 0.25,
+              "certainty": 0.2,
+              "management-support": 0.2143,
+              "meaning": 0.0,
+              "organizational-climate": 0.0909,
+              "professional-competence": 0.0,
+              "self-expression": 0.2,
+              "social-resource": 0.0909
+            }
+          },
+          "name": "evidence_specificity",
+          "score": 0.6538
+        },
+        {
+          "findings": [
+            "summary: clinical term “שחיקה”",
+            "management-support.metric: clinical term “שחיקה”",
+            "organizational-climate.narrative: asserted cause “גורמים ל”",
+            "organizational-climate.narrative: asserted cause “נובעת מ”",
+            "self-expression.metric: asserted cause “גורמים ל”"
+          ],
+          "measured": {
+            "assertedCauses": 3,
+            "clinicalTerms": 2,
+            "textsChecked": 65
+          },
+          "name": "no_overreach",
+          "score": 0.0
+        },
+        {
+          "findings": [],
+          "measured": {
+            "misfiled": 0,
+            "recommendations": 40,
+            "repeatedTitles": 0
+          },
+          "name": "recommendation_fit",
+          "score": 1.0
+        },
+        {
+          "findings": [],
+          "measured": {
+            "actualStatusCounts": {
+              "green": 2,
+              "red": 2,
+              "yellow": 4
+            },
+            "claims": 0,
+            "unsupported": 0
+          },
+          "name": "summary_grounding",
+          "score": 1.0
+        }
+      ],
+      "isLocked": false,
+      "meanScore": 0.7107,
+      "status": "success"
+    },
+    {
+      "caseId": "dynamic-questionnaire",
+      "challenge": "Not the default questionnaire: dimensions carry one or three questions and the ids are the round's own. Metrics must follow the snapshot rather than the template.",
+      "graders": [
+        {
+          "findings": [],
+          "measured": {
+            "maxSimilarity": 0.2,
+            "meanSimilarity": 0.1198,
+            "pairs": 28
+          },
+          "name": "distinctness",
+          "score": 0.8802
+        },
+        {
+          "findings": [
+            "professional-competence: the narrative shares no content word with the dimension's own questions"
+          ],
+          "measured": {
+            "meanShare": 0.2046,
+            "perDimension": {
+              "balance": 0.2857,
+              "certainty": 0.2,
+              "management-support": 0.0714,
+              "meaning": 0.125,
+              "organizational-climate": 0.1818,
+              "professional-competence": 0.0,
+              "self-expression": 0.5,
+              "social-resource": 0.2727
+            }
+          },
+          "name": "evidence_specificity",
+          "score": 1.0
+        },
+        {
+          "findings": [
+            "balance.narrative: clinical term “שחיקה”",
+            "organizational-climate.narrative: asserted cause “נובעת מ”",
+            "self-expression.metric: asserted cause “גורמים ל”",
+            "social-resource.metric: asserted cause “גורמים ל”"
+          ],
+          "measured": {
+            "assertedCauses": 3,
+            "clinicalTerms": 1,
+            "textsChecked": 63
+          },
+          "name": "no_overreach",
+          "score": 0.3
+        },
+        {
+          "findings": [],
+          "measured": {
+            "misfiled": 0,
+            "recommendations": 40,
+            "repeatedTitles": 0
+          },
+          "name": "recommendation_fit",
+          "score": 1.0
+        },
+        {
+          "findings": [
+            "summary claims 20 green dimensions; the evidence has 1"
+          ],
+          "measured": {
+            "actualStatusCounts": {
+              "green": 1,
+              "red": 1,
+              "yellow": 6
+            },
+            "claims": 1,
+            "unsupported": 1
+          },
+          "name": "summary_grounding",
+          "score": 0.0
+        }
+      ],
+      "isLocked": false,
+      "meanScore": 0.636,
+      "status": "success"
+    },
+    {
+      "caseId": "locked-below-threshold",
+      "challenge": "One respondent short of the threshold. There is nothing to interpret and no detail may appear; the only correct output is the locked one.",
+      "graders": [
+        {
+          "findings": [],
+          "measured": {
+            "pairs": 0
+          },
+          "name": "distinctness",
+          "score": 1.0
+        },
+        {
+          "findings": [],
+          "measured": {
+            "dimensions": 0
+          },
+          "name": "evidence_specificity",
+          "score": 1.0
+        },
+        {
+          "findings": [],
+          "measured": {
+            "assertedCauses": 0,
+            "clinicalTerms": 0,
+            "textsChecked": 1
+          },
+          "name": "no_overreach",
+          "score": 1.0
+        },
+        {
+          "findings": [],
+          "measured": {
+            "recommendations": 0
+          },
+          "name": "recommendation_fit",
+          "score": 1.0
+        },
+        {
+          "findings": [],
+          "measured": {
+            "actualStatusCounts": {
+              "green": 0,
+              "red": 0,
+              "yellow": 8
+            },
+            "claims": 0,
+            "unsupported": 0
+          },
+          "name": "summary_grounding",
+          "score": 1.0
+        }
+      ],
+      "isLocked": true,
+      "meanScore": 1.0,
+      "status": "locked_error"
+    },
+    {
+      "caseId": "mixed-middle",
+      "challenge": "Ordinary middle ground, and the twin of `polarized`. Same averages, agreed answers. A summary that reads only averages will say the same thing about both, which is the failure.",
+      "graders": [
+        {
+          "findings": [],
+          "measured": {
+            "maxSimilarity": 0.1895,
+            "meanSimilarity": 0.1066,
+            "pairs": 28
+          },
+          "name": "distinctness",
+          "score": 0.8934
+        },
+        {
+          "findings": [
+            "certainty: the narrative shares no content word with the dimension's own questions",
+            "management-support: the narrative shares no content word with the dimension's own questions"
+          ],
+          "measured": {
+            "meanShare": 0.1735,
+            "perDimension": {
+              "balance": 0.3333,
+              "certainty": 0.0,
+              "management-support": 0.0,
+              "meaning": 0.25,
+              "organizational-climate": 0.3636,
+              "professional-competence": 0.25,
+              "self-expression": 0.1,
+              "social-resource": 0.0909
+            }
+          },
+          "name": "evidence_specificity",
+          "score": 0.8674
+        },
+        {
+          "findings": [
+            "summary: clinical term “שחיקה”",
+            "balance.narrative: clinical term “שחיקה”",
+            "balance.intervention: clinical term “שחיקה”",
+            "meaning.metric: clinical term “שחיקה”"
+          ],
+          "measured": {
+            "assertedCauses": 0,
+            "clinicalTerms": 4,
+            "textsChecked": 65
+          },
+          "name": "no_overreach",
+          "score": 0.0
+        },
+        {
+          "findings": [],
+          "measured": {
+            "misfiled": 0,
+            "recommendations": 40,
+            "repeatedTitles": 0
+          },
+          "name": "recommendation_fit",
+          "score": 1.0
+        },
+        {
+          "findings": [
+            "summary claims 2 green dimensions; the evidence has 0",
+            "summary claims 2 red dimensions; the evidence has 0"
+          ],
+          "measured": {
+            "actualStatusCounts": {
+              "green": 0,
+              "red": 0,
+              "yellow": 8
+            },
+            "claims": 2,
+            "unsupported": 2
+          },
+          "name": "summary_grounding",
+          "score": 0.0
+        }
+      ],
+      "isLocked": false,
+      "meanScore": 0.5521,
+      "status": "success"
+    },
+    {
+      "caseId": "polarized",
+      "challenge": "Same averages as `mixed-middle`, but the staff is split: half answer well, half answer badly, almost nobody in between. An analysis that calls this a moderate middle has missed the round.",
+      "graders": [
+        {
+          "findings": [],
+          "measured": {
+            "maxSimilarity": 0.1528,
+            "meanSimilarity": 0.1021,
+            "pairs": 28
+          },
+          "name": "distinctness",
+          "score": 0.8979
+        },
+        {
+          "findings": [
+            "social-resource: the narrative shares no content word with the dimension's own questions"
+          ],
+          "measured": {
+            "meanShare": 0.1786,
+            "perDimension": {
+              "balance": 0.1667,
+              "certainty": 0.3,
+              "management-support": 0.0714,
+              "meaning": 0.25,
+              "organizational-climate": 0.0909,
+              "professional-competence": 0.25,
+              "self-expression": 0.3,
+              "social-resource": 0.0
+            }
+          },
+          "name": "evidence_specificity",
+          "score": 0.8931
+        },
+        {
+          "findings": [
+            "balance.intervention: clinical term “שחיקה”",
+            "meaning.narrative: clinical term “שחיקה”",
+            "meaning.intervention: clinical term “שחיקה”",
+            "professional-competence.narrative: asserted cause “עקב”"
+          ],
+          "measured": {
+            "assertedCauses": 1,
+            "clinicalTerms": 3,
+            "textsChecked": 65
+          },
+          "name": "no_overreach",
+          "score": 0.0
+        },
+        {
+          "findings": [],
+          "measured": {
+            "misfiled": 0,
+            "recommendations": 40,
+            "repeatedTitles": 0
+          },
+          "name": "recommendation_fit",
+          "score": 1.0
+        },
+        {
+          "findings": [
+            "summary claims 10 green dimensions; the evidence has 0",
+            "summary claims 10 red dimensions; the evidence has 0"
+          ],
+          "measured": {
+            "actualStatusCounts": {
+              "green": 0,
+              "red": 0,
+              "yellow": 8
+            },
+            "claims": 2,
+            "unsupported": 2
+          },
+          "name": "summary_grounding",
+          "score": 0.0
+        }
+      ],
+      "isLocked": false,
+      "meanScore": 0.5582,
+      "status": "success"
+    },
+    {
+      "caseId": "uniformly-healthy",
+      "challenge": "Nothing needs fixing. The summary must not invent a problem to have something to say, and must not congratulate its way into claims the answers do not support.",
+      "graders": [
+        {
+          "findings": [],
+          "measured": {
+            "maxSimilarity": 0.1704,
+            "meanSimilarity": 0.1141,
+            "pairs": 28
+          },
+          "name": "distinctness",
+          "score": 0.8859
+        },
+        {
+          "findings": [
+            "certainty: the narrative shares no content word with the dimension's own questions"
+          ],
+          "measured": {
+            "meanShare": 0.1911,
+            "perDimension": {
+              "balance": 0.0833,
+              "certainty": 0.0,
+              "management-support": 0.1429,
+              "meaning": 0.25,
+              "organizational-climate": 0.6364,
+              "professional-competence": 0.125,
+              "self-expression": 0.2,
+              "social-resource": 0.0909
+            }
+          },
+          "name": "evidence_specificity",
+          "score": 0.9553
+        },
+        {
+          "findings": [
+            "organizational-climate.narrative: asserted cause “נובעת מ”"
+          ],
+          "measured": {
+            "assertedCauses": 1,
+            "clinicalTerms": 0,
+            "textsChecked": 65
+          },
+          "name": "no_overreach",
+          "score": 0.88
+        },
+        {
+          "findings": [],
+          "measured": {
+            "misfiled": 0,
+            "recommendations": 40,
+            "repeatedTitles": 0
+          },
+          "name": "recommendation_fit",
+          "score": 1.0
+        },
+        {
+          "findings": [
+            "summary claims 18 green dimensions; the evidence has 8",
+            "summary claims 2 yellow dimensions; the evidence has 0"
+          ],
+          "measured": {
+            "actualStatusCounts": {
+              "green": 8,
+              "red": 0,
+              "yellow": 0
+            },
+            "claims": 2,
+            "unsupported": 2
+          },
+          "name": "summary_grounding",
+          "score": 0.0
+        }
+      ],
+      "isLocked": false,
+      "meanScore": 0.7442,
+      "status": "success"
+    },
+    {
+      "caseId": "uniformly-weak",
+      "challenge": "Everything is low. The summary has to stay specific and non-diagnostic instead of sliding into clinical language about the staff.",
+      "graders": [
+        {
+          "findings": [],
+          "measured": {
+            "maxSimilarity": 0.1534,
+            "meanSimilarity": 0.1097,
+            "pairs": 28
+          },
+          "name": "distinctness",
+          "score": 0.8903
+        },
+        {
+          "findings": [
+            "certainty: the narrative shares no content word with the dimension's own questions",
+            "professional-competence: the narrative shares no content word with the dimension's own questions"
+          ],
+          "measured": {
+            "meanShare": 0.1795,
+            "perDimension": {
+              "balance": 0.0833,
+              "certainty": 0.0,
+              "management-support": 0.2143,
+              "meaning": 0.375,
+              "organizational-climate": 0.2727,
+              "professional-competence": 0.0,
+              "self-expression": 0.4,
+              "social-resource": 0.0909
+            }
+          },
+          "name": "evidence_specificity",
+          "score": 0.8976
+        },
+        {
+          "findings": [
+            "balance.narrative: clinical term “שחיקה”",
+            "balance.metric: clinical term “שחיקה”",
+            "meaning.narrative: clinical term “שחיקה”",
+            "professional-competence.narrative: asserted cause “נובעת מ”",
+            "professional-competence.intervention: clinical term “שחיקה”",
+            "social-resource.intervention: clinical term “שחיקה”"
+          ],
+          "measured": {
+            "assertedCauses": 1,
+            "clinicalTerms": 5,
+            "textsChecked": 65
+          },
+          "name": "no_overreach",
+          "score": 0.0
+        },
+        {
+          "findings": [],
+          "measured": {
+            "misfiled": 0,
+            "recommendations": 40,
+            "repeatedTitles": 0
+          },
+          "name": "recommendation_fit",
+          "score": 1.0
+        },
+        {
+          "findings": [],
+          "measured": {
+            "actualStatusCounts": {
+              "green": 0,
+              "red": 8,
+              "yellow": 0
+            },
+            "claims": 1,
+            "unsupported": 0
+          },
+          "name": "summary_grounding",
+          "score": 1.0
+        }
+      ],
+      "isLocked": false,
+      "meanScore": 0.7576,
+      "status": "success"
+    },
+    {
+      "caseId": "workload-pressure",
+      "challenge": "One dimension carries the round and the background explains why. Recommendations that ignore the staffing context are generic; a summary that treats the context as a cause has overreached.",
+      "graders": [
+        {
+          "findings": [],
+          "measured": {
+            "maxSimilarity": 0.2222,
+            "meanSimilarity": 0.1243,
+            "pairs": 28
+          },
+          "name": "distinctness",
+          "score": 0.8757
+        },
+        {
+          "findings": [
+            "professional-competence: the narrative shares no content word with the dimension's own questions"
+          ],
+          "measured": {
+            "meanShare": 0.2182,
+            "perDimension": {
+              "balance": 0.1667,
+              "certainty": 0.1,
+              "management-support": 0.1429,
+              "meaning": 0.5,
+              "organizational-climate": 0.4545,
+              "professional-competence": 0.0,
+              "self-expression": 0.2,
+              "social-resource": 0.1818
+            }
+          },
+          "name": "evidence_specificity",
+          "score": 1.0
+        },
+        {
+          "findings": [
+            "summary: clinical term “שחיקה”",
+            "balance.metric: clinical term “שחיקה”",
+            "management-support.intervention: clinical term “שחיקה”",
+            "meaning.narrative: clinical term “שחיקה”",
+            "organizational-climate.intervention: clinical term “שחיקה”",
+            "social-resource.metric: clinical term “שחיקה”"
+          ],
+          "measured": {
+            "assertedCauses": 0,
+            "clinicalTerms": 6,
+            "textsChecked": 65
+          },
+          "name": "no_overreach",
+          "score": 0.0
+        },
+        {
+          "findings": [],
+          "measured": {
+            "misfiled": 0,
+            "recommendations": 40,
+            "repeatedTitles": 0
+          },
+          "name": "recommendation_fit",
+          "score": 1.0
+        },
+        {
+          "findings": [
+            "summary claims 14 yellow dimensions; the evidence has 7",
+            "summary claims 4 green dimensions; the evidence has 0",
+            "summary claims 16 red dimensions; the evidence has 1",
+            "summary claims 4 yellow dimensions; the evidence has 7"
+          ],
+          "measured": {
+            "actualStatusCounts": {
+              "green": 0,
+              "red": 1,
+              "yellow": 7
+            },
+            "claims": 4,
+            "unsupported": 4
+          },
+          "name": "summary_grounding",
+          "score": 0.0
+        }
+      ],
+      "isLocked": false,
+      "meanScore": 0.5751,
+      "status": "success"
+    }
+  ],
+  "findings": 51,
+  "graderMeans": {
+    "distinctness": 0.9029,
+    "evidence_specificity": 0.9084,
+    "no_overreach": 0.2725,
+    "recommendation_fit": 1.0,
+    "summary_grounding": 0.375
+  },
+  "meanScore": 0.6917
+}

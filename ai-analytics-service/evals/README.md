@@ -97,6 +97,17 @@ for path in sorted(glob.glob("/tmp/eval-payloads/*.json")):
 EOF
 ```
 
+## Baselines
+
+`baselines/` keeps reports that were actually produced from a provider, named
+by the date and the model that wrote them. The report carries no timestamp, so
+two of them diff cleanly — that is the whole point of keeping one.
+
+`2026-08-05-gemini-3.5-flash-lite.json` is the first. It is a full run on the
+models `render.yaml` deploys, with `outcome: "llm"` on 55 of 56 stones. Read it
+next to `docs/agent-tasks/active/test--eval-corpus-baseline.md`, which records
+what the two low graders turned out to mean.
+
 ## What is not automated
 
 The graders and the corpus are covered by `tests/test_evals.py` and run in
