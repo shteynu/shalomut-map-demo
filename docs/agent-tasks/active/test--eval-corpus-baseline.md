@@ -5,8 +5,8 @@
 - Branch: `test/eval-corpus-baseline`
 - Base branch: `docs/archive-mutation-tasks`
 - Base commit: `d18b7fd`
-- Current HEAD: `d18b7fd`
-- Status: in progress
+- Current HEAD: `5c728ce`
+- Status: done, awaiting an owner decision on the grader
 - Last updated: 2026-08-05
 - Last agent/tool: Claude Code (Opus 5)
 
