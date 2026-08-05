@@ -186,6 +186,10 @@ export function toDashboardStone(stone: AnyStoneDetail): DashboardStone {
     // of the partial map.
     interpretationUnavailable:
       stone.generationProvenance?.outcome === 'unavailable',
+    interpretationUnavailableReason:
+      stone.generationProvenance?.outcome === 'unavailable'
+        ? stone.generationProvenance.unavailableReason
+        : undefined,
     // Contract 6.0 has no `unavailable` for a dimension: the structured
     // summary falls back at every status rather than failing the round, so
     // without this flag a red dimension the provider never answered reads
@@ -214,6 +218,10 @@ export function toDashboardInsights(
     if (stone) stones[dimensionId] = toDashboardStone(stone);
   }
 
+  const gaps = AI_ANALYTICS_DIMENSION_IDS.filter(
+    (dimensionId) => stones[dimensionId]?.interpretationUnavailable,
+  );
+
   return {
     roundId: result.roundId,
     overallSummary: result.overallPsychologicalSummary?.trim() ?? '',
@@ -224,8 +232,22 @@ export function toDashboardInsights(
     // requires the two to agree; deriving it here means the banner and the
     // dimension screen cannot disagree even if a payload ever slipped through
     // saying otherwise.
-    dimensionsWithoutInterpretation: AI_ANALYTICS_DIMENSION_IDS.filter(
-      (dimensionId) => stones[dimensionId]?.interpretationUnavailable,
-    ),
+    dimensionsWithoutInterpretation: gaps,
+    gapsByReason: {
+      provider_unavailable: gaps.filter(
+        (dimensionId) =>
+          stones[dimensionId]?.interpretationUnavailableReason ===
+          'provider_unavailable',
+      ),
+      validation_rejected: gaps.filter(
+        (dimensionId) =>
+          stones[dimensionId]?.interpretationUnavailableReason ===
+          'validation_rejected',
+      ),
+      unstated: gaps.filter(
+        (dimensionId) =>
+          stones[dimensionId]?.interpretationUnavailableReason === undefined,
+      ),
+    },
   };
 }

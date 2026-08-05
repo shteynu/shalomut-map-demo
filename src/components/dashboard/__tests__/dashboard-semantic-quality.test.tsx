@@ -24,6 +24,11 @@ function createReadyResult(summary: string): DashboardInsightsDto {
     overallSummary: summary,
     stones: {},
     dimensionsWithoutInterpretation: [],
+    gapsByReason: {
+      provider_unavailable: [],
+      validation_rejected: [],
+      unstated: [],
+    },
   };
 }
 

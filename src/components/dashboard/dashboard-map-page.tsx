@@ -181,9 +181,7 @@ function DashboardMapReady({
           {/* Beside the summary, not above the map: the gap is a fact about
               this analysis, and the sidebar is where the analysis is read. */}
           {state.status === "ready" ? (
-            <DashboardPartialMapNotice
-              dimensionIds={state.value.dimensionsWithoutInterpretation}
-            />
+            <DashboardPartialMapNotice gaps={state.value.gapsByReason} />
           ) : null}
 
           <button type="button" className="primary-button" onClick={() => window.print()}>

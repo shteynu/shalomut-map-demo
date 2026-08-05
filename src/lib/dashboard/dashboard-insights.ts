@@ -38,6 +38,15 @@ export interface DashboardRecommendation {
   body: string;
 }
 
+/**
+ * The two ways a dimension ends up with no words, which are not the same news:
+ * one is a service that did not answer and probably will, the other is copy
+ * this product wrote, refused and threw away rather than show.
+ */
+export type InterpretationGapReason =
+  | 'provider_unavailable'
+  | 'validation_rejected';
+
 export interface DashboardStone {
   dimensionId: WellbeingDimensionId;
   score: number;
@@ -50,6 +59,12 @@ export interface DashboardStone {
    * words on the screen.
    */
   interpretationUnavailable: boolean;
+  /**
+   * Why, when the round said. Absent on rounds analysed before the service
+   * recorded a reason, and the screens fall back to saying only that the
+   * interpretation is missing rather than guessing which cause it was.
+   */
+  interpretationUnavailableReason?: InterpretationGapReason;
   /**
    * True when this dimension's paragraphs were written by the service from the
    * aggregates rather than by the model. The copy is real and says nothing the
@@ -73,6 +88,16 @@ export interface DashboardInsightsDto {
    * missing would otherwise read the map as complete.
    */
   dimensionsWithoutInterpretation: WellbeingDimensionId[];
+  /**
+   * The same gaps grouped by cause, so the map can say why without the caller
+   * walking the stones. A dimension whose round recorded no reason lands in
+   * `unstated`.
+   */
+  gapsByReason: {
+    provider_unavailable: WellbeingDimensionId[];
+    validation_rejected: WellbeingDimensionId[];
+    unstated: WellbeingDimensionId[];
+  };
 }
 
 export function getDashboardStone(

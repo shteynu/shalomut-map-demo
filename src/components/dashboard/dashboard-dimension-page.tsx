@@ -7,6 +7,7 @@ import { getDimensionSurface } from "@/lib/dashboard/dimension-presentation";
 import {
   getDashboardStone,
   type DashboardStone,
+  type InterpretationGapReason,
 } from "@/lib/dashboard/dashboard-insights";
 import { getDimensionActionPresentation } from "@/lib/ai-insights-view-model";
 import { useAiInsights } from "@/lib/hooks/use-ai-insights";
@@ -85,6 +86,36 @@ export function DashboardDimensionPage({
   );
 }
 
+const INTACT = "הציון, פירוט השאלות וההמלצות של הממד הזה מלאים";
+
+/**
+ * What to tell a manager looking at a dimension with no words.
+ *
+ * The two causes lead to different next moves, which is the whole reason the
+ * reason travels: a service that did not answer is worth retrying in a minute,
+ * and copy this service refused is worth retrying for a different wording — or
+ * not at all, if it keeps being refused. A round from before the service
+ * recorded a cause gets the sentence that claims neither.
+ */
+function gapCopy(reason: InterpretationGapReason | undefined): string {
+  if (reason === "provider_unavailable") {
+    return (
+      `שירות הניתוח לא השיב עבור הממד הזה בסבב האחרון. ${INTACT}, ` +
+      "ואפשר להפעיל ניתוח מחדש בעוד מספר דקות."
+    );
+  }
+  if (reason === "validation_rejected") {
+    return (
+      "הניתוח המילולי שנוצר לממד הזה לא עמד בבדיקות האיכות של המערכת ולכן " +
+      `לא הוצג. ${INTACT}, ואפשר להפעיל ניתוח מחדש כדי לקבל ניסוח אחר.`
+    );
+  }
+  return (
+    `הניתוח המילולי לממד הזה לא נוצר בסבב האחרון. ${INTACT}, ואפשר להפעיל ` +
+    "ניתוח מחדש כדי לנסות שוב."
+  );
+}
+
 /**
  * The screen once the analysis is in hand. Split from the state machine above
  * so the DTO path can be rendered and asserted without a fetch.
@@ -127,8 +158,7 @@ export function DashboardDimensionDetail({
         <div ref={blobRefs?.contentRef as any} className="dashboard-single-blob-copy">
           {stone.interpretationUnavailable ? (
             <p role="status">
-              הניתוח המילולי לממד הזה לא נוצר בסבב האחרון. הציון, פירוט השאלות
-              וההמלצות מלאים, ואפשר להפעיל ניתוח מחדש כדי לנסות שוב.
+              {gapCopy(stone.interpretationUnavailableReason)}
             </p>
           ) : (
             <>

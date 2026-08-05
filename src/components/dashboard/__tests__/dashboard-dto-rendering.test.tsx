@@ -67,6 +67,37 @@ test("a dimension the provider never interpreted says so instead of showing noth
 
   assert.match(html, /הניתוח המילולי לממד הזה לא נוצר בסבב האחרון/);
   assert.match(html, /role="status"/);
+  // A round from before the service recorded a cause claims neither of them.
+  assert.doesNotMatch(html, /שירות הניתוח לא השיב/);
+  assert.doesNotMatch(html, /בדיקות האיכות/);
+});
+
+test("the dimension screen says which cause left it without words", () => {
+  const silent = renderDetail(
+    stone({
+      summary: [],
+      interpretationUnavailable: true,
+      interpretationUnavailableReason: "provider_unavailable",
+    }),
+  );
+  const refused = renderDetail(
+    stone({
+      summary: [],
+      interpretationUnavailable: true,
+      interpretationUnavailableReason: "validation_rejected",
+    }),
+  );
+
+  assert.match(silent, /שירות הניתוח לא השיב עבור הממד הזה/);
+  assert.match(silent, /בעוד מספר דקות/);
+
+  assert.match(refused, /לא עמד בבדיקות האיכות/);
+  assert.match(refused, /ניסוח אחר/);
+
+  // Both still say the rest of the dimension is intact, because it is.
+  for (const html of [silent, refused]) {
+    assert.match(html, /ההמלצות של הממד הזה מלאים/);
+  }
 });
 
 test("copy the service wrote itself is shown, and labelled as not the model's", () => {

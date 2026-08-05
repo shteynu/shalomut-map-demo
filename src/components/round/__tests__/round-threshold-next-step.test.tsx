@@ -10,6 +10,11 @@ const readyResult: DashboardInsightsDto = {
   overallSummary: "סיכום ארגוני מוכן.",
   stones: {},
   dimensionsWithoutInterpretation: [],
+  gapsByReason: {
+    provider_unavailable: [],
+    validation_rejected: [],
+    unstated: [],
+  },
 };
 
 const lockedResult: DashboardInsightsDto = {
@@ -17,6 +22,11 @@ const lockedResult: DashboardInsightsDto = {
   overallSummary: "",
   stones: {},
   dimensionsWithoutInterpretation: [],
+  gapsByReason: {
+    provider_unavailable: [],
+    validation_rejected: [],
+    unstated: [],
+  },
 };
 
 function renderState(
