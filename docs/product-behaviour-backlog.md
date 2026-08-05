@@ -247,10 +247,29 @@ runtime records. Manager routes use persisted organization/current-round data,
 explicit empty onboarding states, real share codes and real round IDs. Demo
 records are not a production fallback.
 
-Remaining proposal:
-- Keep only stone geometry and other non-record visual metadata in the mock
-  layer.
-- Keep scoring thresholds configurable and avoid hard-coding status assumptions in view components.
+Done 2026-08-05, and this closes the item. Both halves of the proposal held
+already — stone geometry and labels live in
+`src/lib/dashboard/dimension-presentation.ts`, and no view component carries a
+score threshold; the bands come from `contracts/scoring-bands.json` through one
+shared module. What did not hold was where the fixtures sat.
+
+`DEMO_ORGANIZATION` and `DEMO_ROUND` — a school with an active round and the
+share code `SHALOM-DEMO` — were exported from `src/lib/repositories/index.ts`,
+the barrel every route handler imports its adapters from. Only tests used them,
+but nothing held that line: a ready-made school was one import away from any
+runtime module, which is the exact shape this item warns about. They moved to
+`src/lib/repositories/__fixtures__/demo-records.ts`.
+
+The rule is now enforced rather than promised. `npm run lint:fixtures`
+(`scripts/check-runtime-fixtures.mjs`, part of `verify:core` and therefore of
+CI) fails in both directions: when a non-test module imports anything under
+`__fixtures__`, including through a dynamic import, and when the repository
+barrel starts defining a `DEMO_` constant again. Both failures were provoked
+deliberately before the check was trusted.
+
+The last word "mock" left the product code with it: the CSS class
+`dashboard-mock-page`, carried by four screens that render PostgreSQL, is now
+`dashboard-page`.
 
 Why it matters:
 - A zeroed mock screen can look correct while still not reflecting PostgreSQL.
