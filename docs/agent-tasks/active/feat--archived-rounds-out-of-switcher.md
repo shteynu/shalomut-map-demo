@@ -5,7 +5,7 @@
 - Branch: `feat/archived-rounds-out-of-switcher`
 - Base branch: `main`
 - Base commit: `c612c26`
-- Current HEAD: `c612c26` plus this slice
+- Current HEAD: `5a8a3c9` plus the archive action
 - Status: implemented and verified; the push is the owner's
 - Last updated: 2026-08-05
 - Last agent/tool: Claude Code (Opus 5)
@@ -17,9 +17,10 @@ archived rounds belong in the dashboard round switcher.
 
 ## User-visible outcome
 
-The switcher offers the school's rounds without the archived ones. An archived
-round a manager opened by URL still appears, as the selected entry, marked
-`בארכיון`.
+A manager can file a closed round away with `העברה לארכיון`. The switcher then
+offers the school's rounds without it, and it stays reachable behind
+`הצגת הארכיון (N)`. An archived round the manager is looking at appears in the
+everyday list, marked `בארכיון`.
 
 ## Context
 
@@ -31,23 +32,26 @@ archives a round: the only path is `PATCH /api/rounds/{roundId}` with
 
 ## Scope
 
-- `toDashboardRoundOptions` filters archived rounds, keeping the selected one.
-- Tests for the three cases that follow from it.
-- ADR-018 and the backlog entry.
+- `toDashboardRoundOptions` returns two groups: everyday rounds and the archive.
+- The switcher renders the archive behind a `details` disclosure.
+- `RoundControls` gains the archive action, offered only once a round is closed.
+- Tests for both, ADR-018 and the backlog entry.
 
 ## Non-goals
 
-- No archive action in the UI. Reaching the state stays an API-only path.
+- The archive is not read-only. Refreshing the analysis and resetting the data
+  still work on an archived round; only closing is disabled, and only because
+  the route would answer `409`.
 - No change to `orderRoundsForManager`, to round comparison, or to which round
   a manager lands on by default.
 
 ## Acceptance criteria
 
-- An archived round is not offered as a choice.
-- An archived round that is the selected round is shown, with its status in
-  words.
-- A school whose only other round is archived gets no switcher, because one
-  round is not a choice.
+- A closed round can be archived from its own screen; a running one cannot.
+- An archived round is not offered among the everyday choices but is reachable
+  through the disclosure, which starts closed.
+- An archived round that is the selected round is shown in the everyday list,
+  with its status in words.
 
 ## Relevant repository instructions
 
@@ -57,7 +61,9 @@ archives a round: the only path is `PATCH /api/rounds/{roundId}` with
 ## Relevant architecture and contracts
 
 `PROJECT_CONTEXT.md` ADR-018 (new), ADR-014 (one active round at a time). No
-contract, schema, migration or API change; the filter is presentation only.
+contract, schema, migration or route change: the action calls the existing
+`PATCH /api/rounds/{roundId}`, whose `archived` target and transition rules
+already existed, and everything else is presentation.
 
 ## Decisions made
 
@@ -66,6 +72,14 @@ contract, schema, migration or API change; the filter is presentation only.
   and its place in the comparison history.
 - The selected round is exempt from the filter. A switcher naming every round
   except the one on screen would misstate where the manager is.
+- Owner correction 2026-08-05: hiding without a way back was not the intent.
+  The archive must be reachable from the switcher, and archiving must be an act
+  the manager performs — otherwise a round only ever becomes `closed` and the
+  filter never fires.
+- Archiving is offered only after a round is closed. Archiving a live round
+  would take its share link out of the list while staff were still answering.
+- The route's refusal text is English prose, so the screen shows its own Hebrew
+  sentence rather than passing the API's wording through.
 - Comparison is untouched: `comparableRoundsBefore` still accepts archived
   rounds, because a round that measured a real semester stays evidence after it
   is filed away.
@@ -76,9 +90,13 @@ contract, schema, migration or API change; the filter is presentation only.
 
 ## Completed
 
-- `src/lib/dashboard/round-options.ts`: `belongsInSwitcher` filter with the
-  reason in a comment.
-- Three tests in `src/components/dashboard/__tests__/dashboard-round-switcher.test.tsx`.
+- `src/lib/dashboard/round-options.ts` returns `{ current, archived }`.
+- The switcher renders the archive behind `details`, with its own quiet style in
+  `globals.css`; `dashboard-map-page.tsx` carries the new prop type.
+- `RoundControls`: the archive action, its confirmation, its note, and closing
+  disabled on an archived round.
+- Eight switcher tests and five new tests in
+  `src/components/round/__tests__/round-archive-action.test.tsx`.
 - `PROJECT_CONTEXT.md` ADR-018 and `docs/product-behaviour-backlog.md` §10.
 
 ## In progress
@@ -92,7 +110,12 @@ contract, schema, migration or API change; the filter is presentation only.
 ## Changed files
 
 - `src/lib/dashboard/round-options.ts`
+- `src/components/dashboard/dashboard-round-switcher.tsx`
+- `src/components/dashboard/dashboard-map-page.tsx`
+- `src/components/round/round-controls.tsx`
+- `src/app/globals.css`
 - `src/components/dashboard/__tests__/dashboard-round-switcher.test.tsx`
+- `src/components/round/__tests__/round-archive-action.test.tsx` (new)
 - `PROJECT_CONTEXT.md`
 - `docs/product-behaviour-backlog.md`
 - `docs/agent-tasks/active/feat--archived-rounds-out-of-switcher.md` (new)
@@ -101,11 +124,11 @@ contract, schema, migration or API change; the filter is presentation only.
 
 ### Passed
 
-- `npx tsx --test src/components/dashboard/__tests__/dashboard-round-switcher.test.tsx`
-  — 6 tests, 0 failures, including the three new ones.
-- `npm run verify:core` — exit code 0: 569 TypeScript tests, the literals,
-  composition-root and mutation-config fitness checks, `typecheck`, ESLint and
-  the production build.
+- `npx tsx --test` on both component test files — 8 and 5 tests, 0 failures.
+- `npm run verify:core` — exit code 0 twice, at 569 tests for the filter alone
+  and at 576 with the archive action: the literals, composition-root and
+  mutation-config fitness checks, `typecheck`, ESLint and the production build
+  each time.
 
 ### Failed
 
@@ -115,11 +138,13 @@ contract, schema, migration or API change; the filter is presentation only.
 
 - `verify:db` and `verify:ai`: no schema, migration, repository, route or Python
   change in the diff.
-- **Browser smoke: not run.** No screen archives a round, so seeing this in a
-  browser means creating an archived round through `PATCH /api/rounds/{roundId}`
-  against the local database and signing in as the manager — to observe a pure
-  function whose output is already asserted as server-rendered markup, on a page
-  whose own code did not change. Recorded as a gap rather than closed cheaply.
+- **Browser smoke: not run.** The flow is now reachable end to end — close a
+  round, archive it, open the disclosure — but every manager screen is behind
+  `/login`, and the manager password is a credential the agent does not read or
+  type. This is the same boundary as the deployed functional check: it is done
+  with the owner signed in. Worth doing for this slice, because the archive
+  disclosure and the confirmation dialog are the two parts markup assertions
+  cover least.
 
 ### Environment
 
@@ -127,8 +152,10 @@ Local.
 
 ### Residual risk
 
-- The filter is exercised through server-rendered markup rather than in a
-  browser against a real archived round, because no screen can archive one.
+- Everything is exercised through server-rendered markup. What no test here
+  covers: that the `PATCH` actually lands from the button, that `confirm`
+  reads well in Hebrew RTL, and that the disclosure looks right inside the map
+  sidebar.
 
 ## Failed approaches
 
@@ -136,9 +163,8 @@ Local.
 
 ## Known risks
 
-- The behaviour is defined for a state the product cannot currently enter. It
-  becomes observable only when the archive action is built or an archived round
-  is created through the API.
+- An archived round can still be reset or re-analysed. The archive is a place
+  the round is filed in, not a lock, and the backlog says so.
 
 ## Approval gates
 

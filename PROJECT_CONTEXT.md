@@ -389,16 +389,23 @@ switcher then listed archived rounds last rather than hiding them, so the only
 thing archiving did was reorder a list. Either the state means "not part of the
 everyday view" or it means nothing; this is the first reading.
 
+Out of the list is not out of reach. `toDashboardRoundOptions` returns two
+groups, and the switcher renders the archive behind a `details` disclosure —
+`הצגת הארכיון (N)` — so returning to an old semester never requires having kept
+its URL. `details` rather than a toggle for the same reason the rounds are links
+rather than a select: it must work without JavaScript.
+
 The round on screen is the exception, and it has to be: a manager who followed
 a link to an archived round would otherwise read a switcher naming every round
-except the one they are looking at. So `toDashboardRoundOptions` drops archived
-rounds unless the archived round is the selected one, and it stays there with
-its status in words — `בארכיון` — rather than silently.
+except the one they are looking at. Such a round stays in the everyday group,
+marked `בארכיון`, rather than hiding inside the disclosure.
 
-What this deliberately does not add is a way to archive. No screen offers the
-action today; the only path is `PATCH /api/rounds/{roundId}` with
-`status: "archived"`. Giving the manager the action is a separate slice, and it
-is worth doing only once a school has enough rounds for the list to be long.
+Archiving is an act, not a state a round drifts into. The round screen offers
+`העברה לארכיון`, and only for a round that has already stopped running: a live
+round leaving the list would take its share link with it, so a running round is
+closed first. The action confirms before it acts, because `archived` is terminal
+— which is also why closing is disabled on an archived round rather than
+answering `409` from the route.
 
 ## Environments
 

@@ -361,19 +361,28 @@ Remaining:
   dimension delta Core computes. Question-level comparison waits with it. This
   is what `PROGRESS.md` used to call comparative multi-round analytics; it is a
   deliberate hold, not an open task.
-Done 2026-08-05: archived rounds are out of the switcher. Owner decision,
-recorded as `PROJECT_CONTEXT.md` ADR-018 — archiving a round means taking it out
-of the everyday list and nothing else, so the round keeps its URL, its dashboard
-and its place in the comparison history. The round on screen is the exception:
-an archived round a manager opened stays in the list, marked `בארכיון`, because
-a switcher that named every round except the current one would be lying about
-where the manager is.
+Done 2026-08-05: the archive became a real place. Owner decision, recorded as
+`PROJECT_CONTEXT.md` ADR-018 — archiving a round means taking it out of the
+everyday list and nothing else, so the round keeps its URL, its dashboard, its
+analysis and its place in the comparison history.
+
+Three parts, and they only make sense together:
+- The round screen offers `העברה לארכיון`, and only for a round that has stopped
+  running. A live round leaving the list would take its share link with it, so a
+  running round is closed first. It confirms before acting, because `archived`
+  has no transition out.
+- The switcher lists the rounds without the archived ones.
+- The archived ones sit behind `הצגת הארכיון (N)`, a `details` disclosure that
+  opens without JavaScript, so an old semester is always two clicks away rather
+  than a URL a manager had to keep. An archived round the manager is actually
+  looking at stays in the everyday list, marked `בארכיון`, because a switcher
+  naming every round except the current one would be lying about where they are.
 
 Remaining:
-- Nothing offers the archive action. The status is reachable only through
-  `PATCH /api/rounds/{roundId}`, so a manager cannot archive a round from any
-  screen. Worth building once a school has enough rounds for the list to be
-  long; until then the behaviour is defined and unreachable.
+- Nothing stops other actions on an archived round: refreshing the analysis and
+  resetting the data still work. Only closing is disabled, and that is because
+  the route would answer `409`, not because the archive is read-only. Whether
+  the archive should be read-only is a separate decision.
 
 Done 2026-08-04: the single-active-round rule is durable in the database. The
 partial unique index `survey_rounds_one_active_per_organization` on
