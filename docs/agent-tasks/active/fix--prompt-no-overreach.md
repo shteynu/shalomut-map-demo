@@ -5,7 +5,7 @@
 - Branch: `fix/prompt-no-overreach`
 - Base branch: `test/eval-corpus-baseline`
 - Base commit: `fd36fe0`
-- Current HEAD: (заполняется после коммита)
+- Current HEAD: `63af87d`
 - Status: done; остаётся решение владельца по остаточной причинности
 - Last updated: 2026-08-05
 - Last agent/tool: Claude Code (Opus 5)
