@@ -284,8 +284,14 @@ state, external blockers and approval gates. Product milestones belong in
   the first. Four asserted causes survive, and closing them means a runtime
   refusal rather than a prompt line — an owner decision, not a blocker. Still
   run the provenance check before reading any report, per `evals/README.md`.
-- Two branches are finished and unpushed, in order: `test/eval-corpus-baseline`
-  and `fix/prompt-no-overreach` on top of it. Pushing is the owner's action.
+- Four branches were built on 2026-08-05 and land as one fast-forward, in this
+  order: `test/eval-corpus-baseline`, `fix/prompt-no-overreach`,
+  `feat/retry-carries-a-critique`, `feat/adaptation-retry-critique`. The last
+  one contains the other three; pushing is the owner's action.
+- `fix/refuse-asserted-causes` is deliberately **not** in that chain. It refused
+  asserted causes at runtime, which worked and cost about half the map's
+  model-written prose, and eight of its eleven refusals were caveats about the
+  sample. Its record is archived; the code stays on the branch.
 - **Settled 2026-08-05, no longer a gate.** The two amendments published
   contract `6.0` took on 2026-08-04 — `supportsPartialMaps` and
   `generationProvenance.unavailableReason` — stood against ADR-002's rule that
