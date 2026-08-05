@@ -152,7 +152,14 @@ state, external blockers and approval gates. Product milestones belong in
   endpoint.
 - AI service: Render container from the root `Dockerfile`, with durable polling
   enabled. The service needs an always-available process or explicit wake
-  mechanism; scale-to-zero alone is not a reliable worker.
+  mechanism; scale-to-zero alone is not a reliable worker. The wake mechanism is
+  `.github/workflows/render-keepalive.yml` — a scheduled `GET /health` every ten
+  minutes, inbound and therefore resetting the free plan's fifteen-minute sleep
+  timer, which the service's own outbound polling does not. Committed on
+  `chore/render-pace-and-wakeup`; until that branch is pushed the instance still
+  sleeps. It costs nearly the account's whole free allowance of 750
+  instance-hours a month, so a second free service does not fit beside it, and a
+  paid instance type is the version that needs no workflow.
 - Database: the confirmed deployed Supabase PostgreSQL target contained all
   seven repository migrations after `prisma migrate deploy` and a successful
   follow-up `prisma migrate status` on 2026-08-02. The eighth,
@@ -274,9 +281,14 @@ state, external blockers and approval gates. Product milestones belong in
 - **Closed 2026-08-05, no longer a blocker.** The eval corpus has scored real
   provider output. The owner installed a paid Gemini key, and a full run on
   `gemini-3.5-flash-lite` produced `outcome: "llm"` on 55 of 56 stones with no
-  `429` in the log. The quota argument for the free tier no longer applies.
+  `429` in the log. The quota argument for the free tier no longer applies —
+  which is why `render.yaml` now paces the fast model at `60` and the heavy one
+  at `30`, the rates those runs actually sustained, instead of the `14` and `4`
+  the free tier dictated. That change rides `chore/render-pace-and-wakeup` and
+  reaches the service only when the branch is pushed, and it assumes the
+  dashboard's `GEMINI_API_KEY` is the billed key, which no agent can read.
   What the first report says lives in
-  `docs/agent-tasks/active/test--eval-corpus-baseline.md`. The open question it
+  `docs/agent-tasks/archive/test--eval-corpus-baseline.md`. The open question it
   raised — whether `summary_grounding` counts what it claims to count — was
   answered no and fixed the same day; the baseline is the corrected scoring of
   the same payloads. `no_overreach`, the one weak grader, was then worked on in
