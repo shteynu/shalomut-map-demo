@@ -13,6 +13,19 @@ const config = {
    * first subject whole.
    */
   mutate: ['src/lib/ai-contract.ts', 'src/lib/scoring-bands.ts'],
+  /**
+   * Stryker copies the project into a sandbox before it runs anything, and
+   * `ai-analytics-service/.venv` is not something it can copy. On Linux a
+   * virtual environment contains `lib64`, a symlink to a directory, and the
+   * copy fails with `EISDIR` before the first test runs. macOS venvs have no
+   * `lib64`, so this failed only in CI — on the first run of the dry-run step
+   * added to catch exactly this kind of thing.
+   *
+   * The Python service's own sources stay in the sandbox: they are small, and
+   * the TypeScript tests that read the shared corpus should keep finding what
+   * they expect next to them. Only the environment is excluded.
+   */
+  ignorePatterns: ['**/.venv'],
   tap: {
     /**
      * Every test file whose subject is a mutated file — that is, every one
