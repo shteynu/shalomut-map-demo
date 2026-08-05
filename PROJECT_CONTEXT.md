@@ -42,6 +42,35 @@ sources live under `contracts/`; cross-version policy lives in
 `contracts/capabilities.json`, and current produced/supported status lives in
 `docs/ai-contract-version-matrix.md`.
 
+Retaining released semantics does not mean a published version can never gain a
+field. Owner decision 2026-08-05: an **optional additive field** may be added to
+a published contract, and only that. Every one of these must hold.
+
+- The field is optional in the manifest, and its absence means exactly what the
+  version meant before it existed. A round analysed earlier stays valid and
+  keeps its old reading.
+- No existing field changes its type, its meaning or whether it is required, and
+  nothing is removed.
+- A consumer written before the field keeps working unchanged. Validation on
+  both sides checks the shape of the fields it knows and does not enumerate
+  keys, so an unknown field is ignored rather than rejected — this is the
+  property the rule rests on, and a validator that ever starts refusing unknown
+  keys ends it.
+- The addition is recorded in the version's manifest, in
+  `docs/ai-contract-version-matrix.md` and in the ADR that owns the behaviour.
+- The sequence stays consumer-first. Ignoring a field is not the same as acting
+  on it, so whoever must read the field accepts it before the other side emits
+  it.
+
+Anything else — a changed meaning, a narrowed type, a new required field, a
+removal, or a new shape a consumer must understand to render a round correctly —
+is a new version with a new manifest, not an amendment.
+
+Two amendments to `6.0` on 2026-08-04 were made before this clause existed and
+are the reason it does: `supportsPartialMaps` and
+`generationProvenance.unavailableReason`. Both meet every condition above, and
+ADR-007 owns their behaviour.
+
 Core currently can produce `3.0`–`6.0`. An unset
 `AI_ANALYTICS_CONTRACT_VERSION` resolves to rollback-safe `5.0`; the deployed
 environment explicitly selects `6.0`. Unknown values fail closed. A new

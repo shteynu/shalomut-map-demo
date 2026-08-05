@@ -1,6 +1,6 @@
 # AI analytics contract version matrix
 
-Updated: 2026-08-04.
+Updated: 2026-08-05.
 
 ## Runtime status
 
@@ -32,10 +32,30 @@ are still required, so the gap is the three paragraphs about the dimension and
 nothing else. What produces one is repair exhaustion, not a silent provider —
 on `6.0` a silent provider still falls back (ADR-007).
 
+Also since 2026-08-04, a stone reported as a gap may name its cause in
+`generationProvenance.unavailableReason`: `provider_unavailable` when the
+service did not answer, `validation_rejected` when this service wrote the copy
+and then refused it. The field is optional, is only accepted beside
+`outcome: "unavailable"`, and rounds analysed before it existed carry none.
+
 The consumer-first rollout is complete. Deployed Python and Core source includes
 `97f0641`; Python health reports V6 support, Core permits V6 production, and
 Production explicitly selects `6.0`. The unset default remains `5.0`, which is
 also the configuration rollback value.
+
+## Amending a published version
+
+`supportsPartialMaps` and `generationProvenance.unavailableReason` were added to
+`6.0` after it was published. That is allowed, and only in the narrow form
+ADR-002 describes since 2026-08-05: an optional field whose absence means what
+the version already meant, no existing field touched, a consumer written before
+it still working, and the consumer still accepting before the producer emits.
+Everything wider — a changed meaning, a new required field, a removal, a shape a
+consumer must understand to render a round — is a new version, and the sequence
+in the next section applies instead.
+
+Record an amendment in three places or it is not one: the version's manifest
+under `contracts/`, this document, and the ADR that owns the behaviour.
 
 ## Adding a real next version
 
