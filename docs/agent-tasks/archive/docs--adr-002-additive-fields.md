@@ -5,10 +5,8 @@
 - Branch: `docs/adr-002-additive-fields`
 - Base branch: `main`
 - Base commit: `55d1eea`
-- Current HEAD: `eff1c85`; two commits on top of `55d1eea`, worktree clean apart
-  from the pre-existing `.idea/shalomut-map-demo.iml` and `next-env.d.ts`, which
-  stay unstaged. Nothing staged, nothing untracked.
-- Status: complete, waiting on the owner's push
+- Current HEAD: merged into `main`; landed as `26fb8c3`, `eff1c85`, `70fb40c`
+- Status: landed on `main` on 2026-08-05, pushed by the owner
 - Last updated: 2026-08-05
 - Last agent/tool: Claude Code
 
@@ -162,8 +160,5 @@ None open on this branch.
 
 ## Next concrete step
 
-Push the branch to `main`; the agent cannot push in this environment:
-
-```bash
-git push origin docs/adr-002-additive-fields:main
-```
+None. Landed and closed. The clause's first use is
+`feat--metric-narrative-provenance.md`.

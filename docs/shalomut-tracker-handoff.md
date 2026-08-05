@@ -1,8 +1,8 @@
 # Shalomut Tracker — operational handoff
 
 Updated: 2026-08-05 (the ADR-002 amendment rule settled and first used, for
-metric-narrative provenance; `origin/main` is `55d1eea` and two branches are
-waiting to reach it). This
+metric-narrative provenance; `origin/main` is `67048b5` and both services are
+deployed from it). This
 document owns only cross-task operational/deployed
 state, external blockers and approval gates. Product milestones belong in
 `PROGRESS.md`; branch work and exact verification belong in
@@ -10,8 +10,23 @@ state, external blockers and approval gates. Product milestones belong in
 
 ## Repository snapshot
 
-- `origin/main` is `55d1eea` and published — `260e84e` plus its docs close-out.
-  Five AI-harness slices reached it
+- `origin/main` is `67048b5`. Two branches reached it on 2026-08-05, pushed by
+  the owner: `docs/adr-002-additive-fields` (the ADR-002 amendment clause) and
+  `feat/metric-narrative-provenance` on top of it (the clause's first use). Both
+  are fully contained in `main` and can be deleted; their task files are in
+  `docs/agent-tasks/archive/`.
+- Verification at that tip on 2026-08-05: `npm run verify:core` exit 0 with 565
+  TypeScript tests, and `npm run verify:ai` exit 0 with 446 Python tests.
+  `verify:db` was **not** run — neither branch touched a schema, a migration or
+  a repository.
+- Observable wire change, additive: `generationProvenance.metricInsightsOutcome`
+  on contract `6.0`. Documented in `docs/openapi.yaml` along with
+  `unavailableReason` and the `unavailable` outcome, which the partial-map work
+  had put on the wire without documenting; `public/openapi.json` was
+  regenerated.
+- No branch is waiting to reach `main`.
+- Earlier the same day `origin/main` was `55d1eea` — `260e84e` plus its docs
+  close-out. Five AI-harness slices reached it
   on 2026-08-04, each as a fast-forward the owner pushed themselves:
   `feat/offline-eval-corpus`, `fix/label-deterministic-fallback`,
   `feat/v6-partial-maps`, `feat/partial-map-banner` and `feat/gap-reason`. All
@@ -100,14 +115,9 @@ state, external blockers and approval gates. Product milestones belong in
   `PATCH`/`DELETE /api/rounds/{roundId}/goals/{goalId}`, documented in
   `docs/openapi.yaml`. `POST /api/rounds/{roundId}/reset` now also deletes the
   round's goals and records `deletedGoalCount` in its audit entry.
-- **Two branches are waiting to reach `main`,** both from 2026-08-05 and in
-  order: `docs/adr-002-additive-fields` (the amendment clause, docs only) and
-  `feat/metric-narrative-provenance` on top of it (the first field added under
-  the clause). The second contains the first, so pushing it alone lands both.
-  The agent cannot push here; the owner does it.
-- The repository record does not claim that this final refactoring stack has
-  been deployed. Verify deployment source/health before relying on it at the
-  deployed endpoint.
+- Deployment was confirmed at this tip on 2026-08-05; the evidence is under
+  `Next operational check` below. Everything above it that reads as undeployed
+  is an older snapshot kept for history.
 
 ## Deployed state
 
@@ -264,13 +274,28 @@ Before the next deployment-sensitive task, compare `origin/main` with deployed
 Core and Python source/health, then record only fresh read-only evidence in the
 new branch task file.
 
-**Not re-checked after the five AI-harness slices.** `origin/main` moved from
-`233f905` to `260e84e` on 2026-08-04 and nobody read the deployment afterwards.
-The integration builds every push, so the expectation is that deployed Core is
-current — but that is an expectation, not evidence, and the Python service was
-not read either. Confirm both before the next deployment-sensitive task.
+**Both services were read on 2026-08-05 and both are on the tip**, which closes
+the check that had stood open since `233f905`. Read-only, nothing changed:
 
-The last actual reading, now superseded, was: **deployed Core is not behind
+- **Python (Render):** `GET https://shalomut-ai-analytics.onrender.com/health`
+  answers `commit: 67048b5` — the current `origin/main` — with
+  `supportedContractVersions` `1.0`–`6.0`, `env: production`,
+  `privacyThreshold: 10` and `jobPollingEnabled: true`. The service auto-builds
+  from `main`; no manual redeploy was needed or is pending.
+- **Core (Vercel):** the Production alias `shalomut-map-demo.vercel.app` holds
+  `dpl_3Zbn5Zj4Gkn57o8GaKFe3ha3yLqT`, `READY`/`PROMOTED`, built from `main` at
+  `67048b5`. Read from the projects API in the owner's own signed-in Chrome; no
+  secret value was displayed or needed, and nothing was clicked.
+
+So the contract amendment of 2026-08-05 is live on both sides. What that is
+**not** evidence of: no round has produced `metricInsightsOutcome` against a
+real provider yet. Deployed code, not deployed behaviour.
+
+`GET /api/health` on Core is behind the login redirect, so the deployed
+producer/supported versions cannot be read anonymously. Reading them means
+signing in, which is the owner's action — see the functional check below.
+
+The last actual reading before this, now superseded, was: **deployed Core is not behind
 `main`**, checked read-only on 2026-08-04 after the tracked-goals push: the GitHub integration builds every push to `main`, and
 the deployment holding `shalomut-map-demo.vercel.app` is
 `dpl_HFYRvMxBp6uq5LvrvkRkCxEhRfgT`, ready, built from `main` at `233f905` — the

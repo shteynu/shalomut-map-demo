@@ -5,8 +5,9 @@
 - Branch: `feat/metric-narrative-provenance`
 - Base branch: `docs/adr-002-additive-fields`, itself based on `main` (`55d1eea`)
 - Base commit: `70fb40c`
-- Current HEAD: `8ab17f2` (`64bc838`, `55e249c`, `8ab17f2` on top of `70fb40c`)
-- Status: complete, waiting on the owner's push
+- Current HEAD: merged into `main`; landed as `64bc838`, `55e249c`, `8ab17f2`,
+  `67048b5`
+- Status: landed on `main` on 2026-08-05, pushed by the owner, and deployed
 - Last updated: 2026-08-05
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -188,16 +189,19 @@ None.
 
 ## Git state
 
-Three commits on top of `70fb40c`. Nothing staged, nothing untracked beyond this
-file's own commit; the two pre-existing modified files stay unstaged. Both this
-branch and `docs/adr-002-additive-fields` are local only — this handoff is
-visible in this worktree and nowhere else until a push.
+Merged. `origin/main` is `67048b5`, which carries this branch and the
+`docs/adr-002-additive-fields` branch it sat on. Both can be deleted.
+
+## Deployment
+
+Confirmed read-only on 2026-08-05, after the push: the Render service reports
+`commit: 67048b5` at `/health` with `1.0`–`6.0` supported, and the Vercel
+Production alias holds `dpl_3Zbn5Zj4Gkn57o8GaKFe3ha3yLqT`, READY and PROMOTED,
+built from `main` at `67048b5`. Both runtimes are on the tip.
+
+No round has exercised the new field against a real provider yet, so nothing
+here is evidence about what the model writes — only about which code is running.
 
 ## Next concrete step
 
-Push both branches in order; the agent cannot push in this environment. This
-branch contains the other, so one push lands both:
-
-```bash
-git push origin feat/metric-narrative-provenance:main
-```
+None. Landed, deployed and closed.

@@ -1,12 +1,18 @@
 # Shalomut Map — product progress
 
-Updated: 2026-08-04. This file is a concise product-level milestone record, not
+Updated: 2026-08-05. This file is a concise product-level milestone record, not
 a session log. Branch evidence lives in `docs/agent-tasks/archive/`; current
 deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 
 ## Current state
 
-- `origin/main` is `26f4c37`: the 2026-08-02 refactoring stack, the Dashboard
+- `origin/main` is `67048b5`, and both services are deployed from it, checked
+  read-only on 2026-08-05. Its two newest slices: published contracts may now
+  gain an optional additive field under a stated rule (ADR-002), and the first
+  one added under it — a stone says who wrote its metric narratives, separately
+  from who wrote its overview.
+- Earlier snapshots of this pointer, kept for the shape of the history:
+  `origin/main` was `26f4c37`: the 2026-08-02 refactoring stack, the Dashboard
   DTO slice, seven manager-facing slices merged on 2026-08-03/04 — shared
   scoring bands, round selection, round creation, the map comparison, map
   keyboard and reduced-motion support, clipboard failure states and the builder
@@ -14,7 +20,7 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
   "last saved" line, and the builder's keyboard accelerators.
 - `origin/main` moved to `233f905` with the tracked-goals slice, which closed
   the last open item in the product-behaviour backlog.
-- `origin/main` is now `260e84e`. Five slices on 2026-08-04 hardened the AI
+- `origin/main` was then `260e84e`. Five slices on 2026-08-04 hardened the AI
   analytics harness: the automatic analysis path re-arms after a round whose
   responses moved under it, a lost callback is retried, an offline eval corpus
   can measure whether generated Hebrew is any good, a round the provider never
@@ -127,6 +133,10 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
   stated gap rather than costing the round: `5.0` and `6.0` both declare
   partial maps, the map names the gaps, and each gap says whether the provider
   went silent or the copy was refused.
+- The metric narratives carry that disclosure too, separately from the overview:
+  the two are written by different calls and fall back independently, so the
+  metrics screen says when its sentences were derived even if the interpretation
+  above them was the model's.
 - `ai-analytics-service/evals/` measures whether generated Hebrew is any good —
   eight synthetic rounds and five deterministic graders. It has not yet scored
   real provider output; see the handoff for the quota blocker.
