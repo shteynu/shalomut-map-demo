@@ -1,7 +1,7 @@
 # Shalomut Tracker — operational handoff
 
-Updated: 2026-08-04 (five slices merged, deployed and migrated; the persisted
-save time needed a second attempt at the deployed migration). This
+Updated: 2026-08-04 (five AI-harness slices merged on top of the earlier five;
+`origin/main` is `260e84e`). This
 document owns only cross-task operational/deployed
 state, external blockers and approval gates. Product milestones belong in
 `PROGRESS.md`; branch work and exact verification belong in
@@ -9,7 +9,17 @@ state, external blockers and approval gates. Product milestones belong in
 
 ## Repository snapshot
 
-- `origin/main` is `26f4c37` and published. Seven slices reached it on
+- `origin/main` is `260e84e` and published. Five AI-harness slices reached it
+  on 2026-08-04, each as a fast-forward the owner pushed themselves:
+  `feat/offline-eval-corpus`, `fix/label-deterministic-fallback`,
+  `feat/v6-partial-maps`, `feat/partial-map-banner` and `feat/gap-reason`. All
+  five branches are fully contained in `main` and can be deleted; their task
+  files are in `docs/agent-tasks/archive/`.
+- Verification at that tip on 2026-08-04: `npm run verify:core` exit 0 with 561
+  TypeScript tests, and `npm run verify:ai` exit 0 with 439 Python tests.
+  `verify:db` was **not** run across these five slices — none touched a schema,
+  a migration or a repository.
+- Earlier snapshot, superseded: `origin/main` was `26f4c37` and published. Seven slices reached it on
   2026-08-03/04, each as a fast-forward the owner pushed themselves — the agent
   cannot push in this environment, so every branch was handed over as a command:
   shared scoring bands, round selection on the dashboard, round creation with
@@ -211,6 +221,21 @@ state, external blockers and approval gates. Product milestones belong in
 - Explicit bounded approval is required before changing secrets, credentials,
   authentication configuration or deployment aliases.
 - No open migration decision remains in the repository record.
+- **The offline eval corpus has never scored real provider output.** The
+  configured Gemini key is free tier —
+  `GenerateRequestsPerDayPerProjectPerModel-FreeTier`, 20 requests per day per
+  model — and a full corpus run needs roughly 140. The owner's decision on
+  2026-08-04 is to wait for a key with paid quota rather than spread the run
+  across days. Until then `ai-analytics-service/evals/` is a tool with no
+  baseline; run it with
+  `.venv/bin/python -m evals.run_corpus --out DIR` and check provenance before
+  reading any report, per `evals/README.md`.
+- **Two amendments to published contract `6.0` landed on 2026-08-04**, against
+  ADR-002's rule that released semantics do not change: `supportsPartialMaps`
+  and `generationProvenance.unavailableReason`. Both were deliberate and both
+  are recorded in ADR-007. Open owner decision: give ADR-002 an explicit
+  "additive optional fields are allowed" clause, or open `7.0`. Worth settling
+  before a third amendment.
 
 ## Next operational check
 
@@ -218,8 +243,14 @@ Before the next deployment-sensitive task, compare `origin/main` with deployed
 Core and Python source/health, then record only fresh read-only evidence in the
 new branch task file.
 
-**Deployed Core is not behind `main`.** Checked read-only on 2026-08-04 after
-the tracked-goals push: the GitHub integration builds every push to `main`, and
+**Not re-checked after the five AI-harness slices.** `origin/main` moved from
+`233f905` to `260e84e` on 2026-08-04 and nobody read the deployment afterwards.
+The integration builds every push, so the expectation is that deployed Core is
+current — but that is an expectation, not evidence, and the Python service was
+not read either. Confirm both before the next deployment-sensitive task.
+
+The last actual reading, now superseded, was: **deployed Core is not behind
+`main`**, checked read-only on 2026-08-04 after the tracked-goals push: the GitHub integration builds every push to `main`, and
 the deployment holding `shalomut-map-demo.vercel.app` is
 `dpl_HFYRvMxBp6uq5LvrvkRkCxEhRfgT`, ready, built from `main` at `233f905` — the
 current tip. Everything merged today is live, and no manual redeploy is ever

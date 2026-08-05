@@ -5,8 +5,8 @@
 - Branch: `feat/partial-map-banner`
 - Base branch: `main`
 - Base commit: `0a1b529`
-- Current HEAD: this branch's commits
-- Status: implemented and verified; the push is the owner's
+- Current HEAD: merged into `main`; `origin/main` is `260e84e`
+- Status: landed on `main` as 673b85b, ffd61e8, eec0bd0
 - Last updated: 2026-08-04
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -186,4 +186,5 @@ sentence.
 
 ## Next concrete step
 
-Hand the push to the owner: `git push origin feat/partial-map-banner:main`.
+None. This task is closed; the branch is fully contained in `main`.
+

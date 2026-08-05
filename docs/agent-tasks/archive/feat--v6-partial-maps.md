@@ -5,8 +5,8 @@
 - Branch: `feat/v6-partial-maps`
 - Base branch: `main`
 - Base commit: `11d3c8b`
-- Current HEAD: this branch's commits
-- Status: implemented and verified; the push is the owner's
+- Current HEAD: merged into `main`; `origin/main` is `260e84e`
+- Status: landed on `main` as 20da38f, 8b75754, 0e0f150, 0a1b529
 - Last updated: 2026-08-04
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -208,4 +208,5 @@ Two, neither blocking:
 
 ## Next concrete step
 
-Hand the push to the owner: `git push origin feat/v6-partial-maps:main`.
+None. This task is closed; the branch is fully contained in `main`.
+

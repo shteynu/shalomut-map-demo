@@ -5,8 +5,8 @@
 - Branch: `fix/label-deterministic-fallback`
 - Base branch: `main`
 - Base commit: `680bd43`
-- Current HEAD: this branch's commits
-- Status: implemented and verified; the push is the owner's
+- Current HEAD: merged into `main`; `origin/main` is `260e84e`
+- Status: landed on `main` as 3869570, a64ce12, 11d3c8b
 - Last updated: 2026-08-04
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -211,5 +211,5 @@ but the capability looks lost rather than retired.
 
 ## Next concrete step
 
-Hand the push to the owner:
-`git push origin fix/label-deterministic-fallback:main`.
+None. This task is closed; the branch is fully contained in `main`.
+

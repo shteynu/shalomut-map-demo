@@ -14,6 +14,13 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
   "last saved" line, and the builder's keyboard accelerators.
 - `origin/main` moved to `233f905` with the tracked-goals slice, which closed
   the last open item in the product-behaviour backlog.
+- `origin/main` is now `260e84e`. Five slices on 2026-08-04 hardened the AI
+  analytics harness: the automatic analysis path re-arms after a round whose
+  responses moved under it, a lost callback is retried, an offline eval corpus
+  can measure whether generated Hebrew is any good, a round the provider never
+  answered is distinguishable from one it did, and a dimension the analysis
+  could not write is reported as a stated gap with its cause instead of
+  costing the manager the whole round.
 - The setup screen and the survey builder now open with the round's stored save
   time, so "when did this last save?" survives a reload. It needs the tenth
   migration on the deployed database — see the handoff.
@@ -110,6 +117,19 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
   five recommendations per stone while retaining numeric callback evidence.
 - Provider failure is visible. Safety repair is selective and Python validates
   its own outgoing payload before callback.
+- The automatic path re-arms a round invalidated by late responses, up to three
+  runs, and counts the retries; a callback whose delivery fails transiently is
+  retried, while a verdict Core has already refused is not.
+- On `6.0` a silent provider produces aggregate-derived copy rather than
+  failing the round, and the dimension screen says in Hebrew that no model
+  wrote it. Every accepted map reports how much of itself the service wrote.
+- A dimension whose copy the repair budget could not save is reported as a
+  stated gap rather than costing the round: `5.0` and `6.0` both declare
+  partial maps, the map names the gaps, and each gap says whether the provider
+  went silent or the copy was refused.
+- `ai-analytics-service/evals/` measures whether generated Hebrew is any good —
+  eight synthetic rounds and five deterministic graders. It has not yet scored
+  real provider output; see the handoff for the quota blocker.
 
 ### Architecture and verification
 
@@ -151,6 +171,22 @@ on 2026-08-03. Its opening section records the four points where the shipped
 product deliberately differs from that document: the single three-colour answer
 scale, deferred viewer/admin roles, the privacy-threshold floor of ten, and
 environment separation being infrastructure rather than product behavior.
+
+### AI analytics
+
+Two open, both recorded in the handoff:
+
+- The eval corpus has never scored real provider output. It needs a key with
+  paid quota; the free tier allows 20 requests a day against a run that needs
+  roughly 140.
+- Contract `6.0` was amended twice on 2026-08-04, against ADR-002's rule that
+  released semantics do not change. Either ADR-002 gains an explicit clause for
+  additive optional fields, or `7.0` is overdue.
+
+Known and deliberately not closed: on `6.0` each metric narrative has its own
+generation outcome and the wire contract carries only the dimension summary's,
+so a stone can show model-written paragraphs beside fallback metric narratives
+with no label. Closing it is a contract change.
 
 ### Architecture
 

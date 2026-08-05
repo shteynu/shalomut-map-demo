@@ -5,8 +5,8 @@
 - Branch: `feat/offline-eval-corpus`
 - Base branch: `main`
 - Base commit: `005ca01`
-- Current HEAD: `33b624b` plus this docs commit
-- Status: tool complete and pushable; the provider run itself is blocked on quota
+- Current HEAD: merged into `main`; `origin/main` is `260e84e`
+- Status: landed on `main` as 40834e7, 9d4aa46, 33b624b, 680bd43
 - Last updated: 2026-08-04
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -255,5 +255,5 @@ alias is touched, and no provider is called.
 
 ## Next concrete step
 
-Hand the push to the owner: `git push origin feat/offline-eval-corpus:main`,
-then decide question 1 above before spending any more provider quota.
+None. This task is closed; the branch is fully contained in `main`.
+
