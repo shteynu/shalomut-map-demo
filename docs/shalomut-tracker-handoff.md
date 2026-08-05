@@ -1,7 +1,7 @@
 # Shalomut Tracker — operational handoff
 
-Updated: 2026-08-05 (`origin/main` is `143d460`; a migration is on `main` and
-the deployed database takes it on the next deploy).
+Updated: 2026-08-05 (`origin/main` is `763e38f`; no migration is pending and no
+branch is waiting).
 This
 document owns only cross-task operational/deployed
 state, external blockers and approval gates. Product milestones belong in
@@ -10,160 +10,38 @@ state, external blockers and approval gates. Product milestones belong in
 
 ## Repository snapshot
 
-- `origin/main` is `143d460` — backlog §1, the questionnaire version history,
-  pushed by the owner on 2026-08-05. It carries `5616e66` (backlog §7) and
-  `45f38c2` (the round archive) before it; every branch up to
-  `feat/survey-definition-history` is fully contained in `main` and can be
-  deleted, and their task files are in `docs/agent-tasks/archive/`.
+- `origin/main` is `763e38f` — the school-wide goals screen, pushed by the owner
+  on 2026-08-05. It carries `3c551a5` (the read-only archive) and `143d460`
+  (backlog §1, the questionnaire version history) before it; every branch up to
+  `feat/goals-across-rounds` is fully contained in `main` and can be deleted,
+  and their task files are in `docs/agent-tasks/archive/`.
 - Nothing is waiting. No branch holds unpushed work the product needs; the one
   unmerged branch, `fix/refuse-asserted-causes`, is a decided **no** and is
   described below.
-- **No migration is pending on the deployed database.**
-  `20260805170000_add_survey_definition_versions` was applied to the
-  deployed database on 2026-08-05, immediately after the push — the build
-  command runs `prisma generate`, never `prisma migrate deploy`, so this is a
-  hand step every schema change still needs. Details and the read-back are in
-  the database section below.
-- Verification at `143d460`: `npm run verify:core` exit 0 with 589 TypeScript
-  tests, and `npm run verify:db` 25 tests, 25 pass, against local PostgreSQL on
-  `127.0.0.1:5433`. `verify:ai` was **not** run — no Python change. The builder
-  history panel was **not** smoke-tested in a browser: every manager screen is
-  behind `/login`, so that check is done with the owner signed in.
+- **No migration is pending on the deployed database.** The eleventh,
+  `20260805170000_add_survey_definition_versions`, was applied on 2026-08-05
+  immediately after the push that carried its code — the build command runs
+  `prisma generate`, never `prisma migrate deploy`, so this is a hand step every
+  schema change still needs. Details and the read-back are in the database
+  section below. Nothing after it changed a schema.
+- Verification at `763e38f`: `npm run verify:core` exit 0 with 606 TypeScript
+  tests, and `npm run verify:db` 26 tests, 26 pass, against local PostgreSQL on
+  `127.0.0.1:5433`. `verify:ai` was **not** run since 2026-08-05 morning — the
+  three slices that day changed no Python. No manager screen was smoke-tested in
+  a browser: every one is behind `/login`, so that check is done with the owner
+  signed in.
+- Python (Render) answers `commit: 763e38f` and Core still answers `307` to
+  `/login` anonymously, both read at 18:0x on 2026-08-05.
 - Superseded snapshot: `origin/main` was `45f38c2` — the round archive.
   Verification there: `verify:core` exit 0 with 576 tests; `verify:db` and
   `verify:ai` not run, and the archive flow not smoke-tested in a browser.
-- Superseded snapshot: `origin/main` was `974d40e`. Four branches reached it on 2026-08-05, pushed
-  by the owner: `test/refresh-mutation-baseline`,
-  `chore/mutation-config-fitness-check`, the follow-up
-  `fix/mutation-sandbox-venv` and `docs/archive-mutation-tasks`. All are fully
-  contained in `main` and can be deleted; their task files are in
-  `docs/agent-tasks/archive/`. The one commit that was waiting there — this
-  document's own close-out on `docs/archive-mutation-tasks` — has since reached
-  `main`.
-- CI is green at `974d40e` (run `30997583455`) and was green at `4773800`
-  (run `30997233881`, which passed every step including the new `--dryRunOnly`
-  step that starts Stryker). The run before that,
-  `30996895975`, failed on that same step and left `main` red for seven
-  minutes — a Linux-only `EISDIR` on `ai-analytics-service/.venv/lib64`, which
-  is what `fix/mutation-sandbox-venv` closed.
-- Verification on those branches: `npm run verify:core` exit 0 twice, three
-  full `npm run test:mutation:ai-contract` runs exit 0. `verify:db` and
-  `verify:ai` were **not** run — no schema, migration, repository, route or
-  Python change in the diff.
-- Deployed state was **not** checked this session. Vercel auto-deploys pushes
-  to `main`, so the alias has almost certainly moved with these thirteen
-  commits, but nobody looked.
-- Superseded snapshot: `origin/main` was `c63736e` — `67048b5` plus that
-  document close-out,
-  which carries the deployment evidence below and the two archived task files.
-  The code tip is `67048b5`. Two branches reached it on 2026-08-05, pushed by
-  the owner: `docs/adr-002-additive-fields` (the ADR-002 amendment clause) and
-  `feat/metric-narrative-provenance` on top of it (the clause's first use). Both
-  are fully contained in `main` and can be deleted; their task files are in
-  `docs/agent-tasks/archive/`.
-- Verification at that tip on 2026-08-05: `npm run verify:core` exit 0 with 565
-  TypeScript tests, and `npm run verify:ai` exit 0 with 446 Python tests.
-  `verify:db` was **not** run — neither branch touched a schema, a migration or
-  a repository.
-- Observable wire change, additive: `generationProvenance.metricInsightsOutcome`
-  on contract `6.0`. Documented in `docs/openapi.yaml` along with
-  `unavailableReason` and the `unavailable` outcome, which the partial-map work
-  had put on the wire without documenting; `public/openapi.json` was
-  regenerated.
-- No branch was waiting at that point.
-- Earlier the same day `origin/main` was `55d1eea` — `260e84e` plus its docs
-  close-out. Five AI-harness slices reached it
-  on 2026-08-04, each as a fast-forward the owner pushed themselves:
-  `feat/offline-eval-corpus`, `fix/label-deterministic-fallback`,
-  `feat/v6-partial-maps`, `feat/partial-map-banner` and `feat/gap-reason`. All
-  five branches are fully contained in `main` and can be deleted; their task
-  files are in `docs/agent-tasks/archive/`.
-- Verification at that tip on 2026-08-04: `npm run verify:core` exit 0 with 561
-  TypeScript tests, and `npm run verify:ai` exit 0 with 439 Python tests.
-  `verify:db` was **not** run across these five slices — none touched a schema,
-  a migration or a repository.
-- Earlier snapshot, superseded: `origin/main` was `26f4c37` and published. Seven slices reached it on
-  2026-08-03/04, each as a fast-forward the owner pushed themselves — the agent
-  cannot push in this environment, so every branch was handed over as a command:
-  shared scoring bands, round selection on the dashboard, round creation with
-  the one-active-round rule, the round comparison on the map, map keyboard and
-  reduced-motion support, honest clipboard failure states, and the builder's
-  search/bulk/reorder work. Their branches (`feat/shared-scoring-bands`,
-  `feat/round-history-selection`, `feat/round-creation`,
-  `feat/round-comparison`, `feat/map-accessibility`,
-  `feat/copy-failure-states`, `feat/builder-efficiency`) are fully contained in
-  `main` and can be deleted.
-- Checkpoint evidence at `6d574b7`: `npm run verify:core` passed with 481
-  TypeScript tests. `verify:db` and `verify:ai` were **not** run across these
-  seven slices — none of them touched a schema, a migration, a contract version
-  or the Python service.
-- That gap is closed. On 2026-08-04 the full `npm run verify` passed with exit
-  code 0 on `feat/one-active-round-index`: 481 TypeScript tests, both fitness
-  checks, typecheck, ESLint, production build; 12 PostgreSQL tests; 375 Python
-  tests.
-- Three slices reached `main` on 2026-08-04 as `26f4c37`, pushed by the owner:
-  the partial unique index behind the single-active-round rule
-  (`feat/one-active-round-index`), the "last saved" line on setup and builder
-  (`feat/last-saved-timestamp`), and the builder's keyboard accelerators
-  (`feat/builder-keyboard-accelerators`). All three branches are fully contained
-  in `main` and can be deleted; their task files are in
-  `docs/agent-tasks/archive/`.
-- `npm run verify` passed at the tip of each of those three branches on
-  2026-08-04 — 481, 488 and 498 TypeScript tests as the slices added theirs,
-  each run with 12 PostgreSQL tests, 375 Python tests, both fitness checks,
-  typecheck, ESLint and the production build. The count at `main` is 498.
-- Observable API change, additive: `PUT /api/manager/setup` and
-  `PUT /api/rounds/{roundId}/survey-definition` now return `savedAt`. Both are
-  documented in `docs/openapi.yaml`; the survey-definition `200` body had no
-  documented schema before.
-- Earlier snapshot, superseded: `origin/main` was `87027a5` after
-  `feat/respondent-draft-and-consent`, which the owner pushed on 2026-08-03.
-- **The local `main` is behind `origin/main` and cannot be updated from this
-  checkout.** It is checked out in the worktree
-  `shalomut-map-demo-contract-v6-core-consumer`. Fetch and fast-forward it
-  there before branching from local `main`.
-- The 2026-08-02 refactoring stack is merged and published: AI-insights
-  repository, thin callback route, canonical Core input, canonical Python
-  output, analytics-runner ports and `TextGenerator`.
-- Two slices reached `main` on 2026-08-03 by fast-forward, not by merge commit:
-  the OpenAPI single source (`7d60b59`, `ae19d0f`) and the single-manager
-  identity decision (`3939555`, `d588b97`). Their branches
-  `refactor/openapi-single-source` and `docs/single-manager-identity-decision`
-  are published and now fully contained in `main`; they can be deleted.
-- Checkpoint evidence at `63f668e`, the last code commit before the docs tail
-  (2026-08-03): `npm run verify` passed with a real exit code 0 —
-  `verify:core` with 429 TypeScript tests,
-  both fitness checks, typecheck, ESLint and production build; `verify:db` with
-  7 PostgreSQL integration tests; `verify:ai` with 368 Python tests. The
-  respondent flow was additionally smoke-tested in a browser; the evidence is
-  in `docs/agent-tasks/archive/feat--respondent-draft-and-consent.md`.
-- The submit endpoint now answers a duplicate attempt with `409` and a typed
-  `code`, not `400` with prose. This is an observable API change; the only
-  known consumer is the questionnaire itself.
-- Earlier checkpoint at `main` = `d588b97` (2026-08-03): the full
-  `npm run verify` gate passed — `verify:core` with 359 TypeScript tests, both
-  fitness checks, typecheck, ESLint and production build; `verify:db` with 7
-  PostgreSQL integration tests; `verify:ai` with 368 Python tests. These are
-  the same three commands the CI `validate` job runs on a push to `main`.
-- `test/classify-surviving-mutants` reached `main` as `8f9c29d` and can be
-  deleted.
-- `feat/respondent-draft-and-consent` reached `main` as `87027a5`, carrying
-  respondent consent, draft recovery, the submit `409` contract and this
-  snapshot. It is fully contained in `main` and can be deleted.
-- `origin/main` moved to `233f905` on 2026-08-04 with the tracked-goals slice
-  (backlog §5, `PROJECT_CONTEXT.md` ADR-015), pushed by the owner.
-  `feat/round-goals` is fully contained in `main` and can be deleted; its task
-  file is in `docs/agent-tasks/archive/`.
-- `npm run verify` passed at that tip on 2026-08-04 with exit code 0: 529
-  TypeScript tests, 18 PostgreSQL tests, 375 Python tests, both fitness checks,
-  typecheck, ESLint and the production build.
-- Observable API change, additive: `GET`/`POST /api/rounds/{roundId}/goals` and
-  `PATCH`/`DELETE /api/rounds/{roundId}/goals/{goalId}`, documented in
-  `docs/openapi.yaml`. `POST /api/rounds/{roundId}/reset` now also deletes the
-  round's goals and records `deletedGoalCount` in its audit entry.
-- Deployment was confirmed at this tip on 2026-08-05; the evidence is under
-  `Next operational check` below. Everything above it that reads as undeployed
-  is an older snapshot kept for history.
+- Older snapshots of this pointer were trimmed on 2026-08-05. They had grown
+  into a session log of every push since 2026-08-02, which is what Git and the
+  archived task files already hold, and this document is supposed to say what
+  is true now. `git log --oneline main` and `docs/agent-tasks/archive/` carry
+  the same history with the commits attached. Everything the trimmed entries
+  recorded as an approval gate, a deployed fact or an external blocker is
+  preserved in the sections below rather than in that chain.
 
 ## Deployed state
 
@@ -387,49 +265,25 @@ Before the next deployment-sensitive task, compare `origin/main` with deployed
 Core and Python source/health, then record only fresh read-only evidence in the
 new branch task file.
 
-**Both services were re-read at 17:10Z on 2026-08-05 and both are on `143d460`,
+**Both services were re-read at 18:16Z on 2026-08-05 and both are on `763e38f`,
 the current `origin/main`.** Read-only, nothing changed:
 
-- **Python (Render):** `/health` answers `status: online`, `commit: 143d460`,
+- **Python (Render):** `/health` answers `status: online`, `commit: 763e38f`,
   `env: production`, `privacyThreshold: 10`, `supportedContractVersions`
   `1.0`–`6.0`, `jobPollingEnabled: true`.
-- **Core (Vercel):** the Production alias holds
-  `dpl_5MowixM3hzcAeK7Jw7hRvPtyCWYU`, `READY`/`PROMOTED`, built from `main` at
-  `143d460` — built 17:08:05Z, ready 17:08:44Z. Read from the projects API in
-  the owner's own signed-in Chrome; every environment variable in that payload
-  carries an empty `value`, so no secret was displayed, and nothing was clicked.
-  Anonymously, `/` still answers `307` to `/login`, as it should.
-- The questionnaire history is deployed code **and** deployed schema: the
-  migration was applied by hand immediately after the push, because the build
-  command runs `prisma generate` and not `prisma migrate deploy`.
+- **Core (Vercel):** the production deployment is
+  `dpl_2FNoMKQFGRrzyDsTWdQbCCcT9BAK`, `READY`/`PROMOTED`, built from `main` at
+  `763e38f` — built 18:14:31Z, ready 18:15:10Z, alias assigned. Read from the
+  deployments API in the owner's own signed-in Chrome; nothing was clicked and
+  no secret was displayed. Anonymously, `/` still answers `307` to `/login`, as
+  it should.
+- The schema matches: the only migration these three slices needed was applied
+  by hand on 2026-08-05, and nothing after it changed a schema.
 
-The reading before it, now superseded, was at 14:31Z on `3590aae`:
-
-- **Python (Render):** `/health` answers `status: online`, `commit: 3590aae`,
-  `env: production`, `privacyThreshold: 10`, `supportedContractVersions`
-  `1.0`–`6.0`, `jobPollingEnabled: true`.
-- **Core (Vercel):** the Production alias holds
-  `dpl_3uaHSHXGvzZde94GiJxYeDaBGVgs`, `READY`/`PROMOTED`, built from `main` at
-  `3590aae` — built 14:29:38Z, ready 14:30:17Z. Read from the projects API in
-  the owner's own signed-in Chrome; every environment variable in that payload
-  carries an empty `value`, so no secret was displayed, and nothing was clicked.
-  Anonymously, `/` still answers `307` to `/login`, as it should.
-
-The earlier reading the same day, now superseded, was:
-
-- **Python (Render):** `GET https://shalomut-ai-analytics.onrender.com/health`
-  answers `commit: 65b2885` — the current `origin/main`, re-read after the
-  prompt/transport chain landed — with `supportedContractVersions` `1.0`–`6.0`,
-  `env: production`, `privacyThreshold: 10` and `jobPollingEnabled: true`. The
-  Render service `shalomut-ai-analytics` (`srv-d9i8vhnavr4c73ad298g`) shows that
-  commit as an **Auto-Deploy** that finished in 37.1s at 17:05 GMT+3 on
-  2026-08-05, so the grounded-language prompt rules are what the deployed
-  service now sends. No manual redeploy was needed or is pending; earlier the
-  same day it answered `67048b5`.
-- **Core (Vercel):** the Production alias `shalomut-map-demo.vercel.app` holds
-  `dpl_3Zbn5Zj4Gkn57o8GaKFe3ha3yLqT`, `READY`/`PROMOTED`, built from `main` at
-  `67048b5`. Read from the projects API in the owner's own signed-in Chrome; no
-  secret value was displayed or needed, and nothing was clicked.
+Earlier readings the same day — `143d460` at 17:10Z, `3590aae` at 14:31Z,
+`65b2885` and `67048b5` before them — were trimmed on 2026-08-05 along with the
+snapshot chain above. Each said the same thing about a commit that is no longer
+deployed, and Git holds the commits themselves.
 
 So the contract amendment of 2026-08-05 is live on both sides. What that is
 **not** evidence of: no round has produced `metricInsightsOutcome` against a
@@ -438,21 +292,6 @@ real provider yet. Deployed code, not deployed behaviour.
 `GET /api/health` on Core is behind the login redirect, so the deployed
 producer/supported versions cannot be read anonymously. Reading them means
 signing in, which is the owner's action — see the functional check below.
-
-The last actual reading before this, now superseded, was: **deployed Core is not behind
-`main`**, checked read-only on 2026-08-04 after the tracked-goals push: the GitHub integration builds every push to `main`, and
-the deployment holding `shalomut-map-demo.vercel.app` is
-`dpl_HFYRvMxBp6uq5LvrvkRkCxEhRfgT`, ready, built from `main` at `233f905` — the
-current tip. Everything merged today is live, and no manual redeploy is ever
-pending. Earlier snapshots of this document claimed a ten-slice lag; that was
-written before those deployments finished and is superseded. Later the same day
-the alias moved on with the persisted save time and its close-out docs; the
-Production deployment was built from `f883035`.
-
-What the deployed endpoint therefore already does: activating a round closes
-whichever round that school was running (`PROJECT_CONTEXT.md` ADR-014), and the
-deployed database now refuses a second active round rather than trusting the
-service to close the first.
 
 **The functional half of this check is done, 2026-08-04.** It had stood open
 because every manager route redirects to `/login`. The owner signed in
@@ -476,9 +315,10 @@ What was exercised on `shalomut-map-demo.vercel.app`, signed in:
 This is behaviour, not deployment metadata. What still needs the owner is the
 sign-in itself, so plan a deployed functional check as something done together.
 
-The Core composition root and the Dashboard presentation DTO, which closed
-stage 4 of the refactoring plan and the presentation half of stage 5, are merged
-and deployed with everything else on `main`.
+That check is a day old and already behind: it predates the questionnaire
+version history, the read-only archive and the school-wide goals screen, none of
+which any human has opened in a browser. They are covered by rendering and route
+tests, which is not the same claim.
 
 The long-term identity model is no longer the next architecture slice. Owner
 decision 2026-08-03: one manager per deployment is the requested product shape,

@@ -6,43 +6,27 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 
 ## Current state
 
-- `origin/main` is `c63736e`; the code tip is `67048b5`, and both services are
-  deployed from it, checked read-only on 2026-08-05. Its two newest slices:
-  published contracts may now gain an optional additive field under a stated
-  rule (ADR-002), and the first one added under it — a stone says who wrote its
-  metric narratives, separately from who wrote its overview.
-- Earlier snapshots of this pointer, kept for the shape of the history:
-  `origin/main` was `26f4c37`: the 2026-08-02 refactoring stack, the Dashboard
-  DTO slice, seven manager-facing slices merged on 2026-08-03/04 — shared
-  scoring bands, round selection, round creation, the map comparison, map
-  keyboard and reduced-motion support, clipboard failure states and the builder
-  list work — and three more on 2026-08-04: the single-active-round index, the
-  "last saved" line, and the builder's keyboard accelerators.
-- `origin/main` moved to `233f905` with the tracked-goals slice, which closed
-  the last open item in the product-behaviour backlog.
-- `origin/main` was then `260e84e`. Five slices on 2026-08-04 hardened the AI
-  analytics harness: the automatic analysis path re-arms after a round whose
-  responses moved under it, a lost callback is retried, an offline eval corpus
-  can measure whether generated Hebrew is any good, a round the provider never
-  answered is distinguishable from one it did, and a dimension the analysis
-  could not write is reported as a stated gap with its cause instead of
-  costing the manager the whole round.
-- The setup screen and the survey builder now open with the round's stored save
-  time, so "when did this last save?" survives a reload. It needs the tenth
-  migration on the deployed database — see the handoff.
+- `origin/main` is `763e38f`. The product-behaviour backlog is closed except for
+  its two requirement-gated items; `ROADMAP.md` has no open product outcome.
+- The last three slices, all on 2026-08-05: the questionnaire keeps a version
+  history a manager can restore from, an archived round became genuinely
+  read-only rather than merely hidden, and a school reads its goals in one place
+  across every round it has run.
 - Contract `6.0` is deployed end to end and the deployed Core explicitly
-  produces it. The unset configuration default remains rollback-safe `5.0`.
-- The six latest architecture slices are in `main`: separate AI-insights
-  repository, thin callback route, canonical Core analytics input, canonical
-  Python analysis output, application runner ports and `TextGenerator`.
-- The checkpoint at `26f4c37` passed the full `npm run verify`: 498 TypeScript
-  tests, 12 PostgreSQL tests and 375 Python tests, with both fitness checks,
-  typecheck, ESLint and the production build. The tracked-goals branch passed
-  the same gate at its tip, `233f905`, with 529, 18 and 375. Counts are
-  checkpoint evidence, not evergreen expectations.
-- All nine repository migrations are applied to the confirmed deployed database
-  and to the local test database; the ninth, `round_goals`, landed on
-  2026-08-04.
+  produces it. The unset configuration default remains rollback-safe `5.0`. A
+  published version may gain an optional additive field under ADR-002's stated
+  rule; a changed meaning still needs a new version.
+- Eleven repository migrations, the newest being `survey_definition_versions`,
+  are applied to both the deployed database and the local test database. The
+  build command runs `prisma generate` and never `prisma migrate deploy`, so
+  every schema change is a hand step — `docs/shalomut-tracker-handoff.md` owns
+  the current deployed reading and the evidence for it.
+- Verification is a checkpoint fact, not an evergreen expectation. At `763e38f`:
+  606 TypeScript tests and 26 PostgreSQL tests. The Python suite last ran at
+  465 tests, before the TypeScript-only work of 2026-08-05.
+- No manager screen has been smoke-tested in a browser. Every one of them is
+  behind `/login`, so that check belongs to the owner's own session, and the
+  screens are covered by rendering and route tests instead.
 - There are no real respondents or production data. The deployed Vercel alias
   remains an operational staging endpoint for the design stage.
 
@@ -195,8 +179,14 @@ owner, a due date or a plan of steps.
 
 Cross-round work is **closed for now**: per-round reading and second-round
 creation landed on 2026-08-03, the deterministic dimension-level delta and the
-partial unique index behind the single-active-round rule on 2026-08-04, and the
-owner decided on 2026-08-04 that AI analysis across rounds is not wanted yet.
+partial unique index behind the single-active-round rule on 2026-08-04, the
+read-only archive and the school-wide goals screen on 2026-08-05, and the owner
+decided on 2026-08-04 that AI analysis across rounds is not wanted yet.
+
+`ROADMAP.md` was reconciled on 2026-08-05: all five of its "next product
+outcomes" had shipped or been decided, so the section listed work an agent could
+have started again. It now records each as shipped and names what is gated
+rather than queued.
 
 The backlog was reconciled with the owner's development requirements document
 on 2026-08-03. Its opening section records the four points where the shipped
