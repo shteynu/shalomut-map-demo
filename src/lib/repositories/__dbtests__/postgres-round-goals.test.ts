@@ -169,3 +169,24 @@ test('deleting the round takes its goals with it', async () => {
 
   assert.deepStrictEqual(await goalRepo.findByRoundId(roundId), []);
 });
+
+test('the school-wide read returns the named rounds and nothing else', async () => {
+  // What the goals screen asks for. The round ids come from the manager
+  // context, so the query must honour the list rather than widen it.
+  await goalRepo.create(roundId, RECOMMENDATION);
+
+  const secondRoundId = await createRound();
+  await goalRepo.create(secondRoundId, RECOMMENDATION);
+
+  const unrelatedRoundId = await createRound();
+  await goalRepo.create(unrelatedRoundId, RECOMMENDATION);
+
+  const goals = await goalRepo.findByRoundIds([roundId, secondRoundId]);
+
+  assert.deepStrictEqual(
+    [...new Set(goals.map((goal) => goal.roundId))].sort(),
+    [roundId, secondRoundId].sort(),
+  );
+  assert.strictEqual(goals.length, 2);
+  assert.deepStrictEqual(await goalRepo.findByRoundIds([]), []);
+});

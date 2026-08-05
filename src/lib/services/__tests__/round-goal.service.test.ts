@@ -190,3 +190,29 @@ test('dropping a goal frees the recommendation to be chosen again', async () => 
   );
   assert.strictEqual(again.outcome, 'created');
 });
+
+test('goals can be read across several rounds at once, and only those rounds', async () => {
+  // What the school-wide goals screen asks for. It passes the round ids the
+  // manager context already resolved, so a round belonging to another school is
+  // simply not among them — and a repository that ignored the list would hand
+  // back goals the caller never authorized.
+  await RoundGoalService.createGoal(ROUND_ID, RECOMMENDATION, goalRepo);
+  await RoundGoalService.createGoal(
+    OTHER_ROUND_ID,
+    { ...RECOMMENDATION, title: 'שעת צוות קבועה' },
+    goalRepo,
+  );
+  await RoundGoalService.createGoal(
+    'round-of-another-school',
+    { ...RECOMMENDATION, title: 'לא שייך' },
+    goalRepo,
+  );
+
+  const goals = await goalRepo.findByRoundIds([ROUND_ID, OTHER_ROUND_ID]);
+
+  assert.deepStrictEqual(
+    goals.map((goal) => goal.title).sort(),
+    ['יום ללא ישיבות', 'שעת צוות קבועה'],
+  );
+  assert.deepStrictEqual(await goalRepo.findByRoundIds([]), []);
+});

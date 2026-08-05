@@ -27,6 +27,20 @@ export async function loadManagerContext(roundId?: string) {
 }
 
 /**
+ * The goals of every round this school has run.
+ *
+ * One extra read, and only the goals screen asks for it. The rounds come from
+ * the context, which resolved them inside the manager's own organization, so a
+ * goal is still never reached without naming a round the manager owns.
+ */
+export async function loadSchoolGoals(context: ManagerContext) {
+  if (context.rounds.length === 0) return [];
+
+  const { roundGoalRepo } = resolveCoreRepositories();
+  return roundGoalRepo.findByRoundIds(context.rounds.map((round) => round.id));
+}
+
+/**
  * How many earlier rounds are read before giving up on a comparison. A school
  * that abandoned three rounds in a row is not waiting for a fourth lookup, and
  * this keeps one dashboard render from turning into a walk of the whole history.

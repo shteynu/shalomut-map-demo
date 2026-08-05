@@ -117,6 +117,15 @@ export interface IRoundGoalRepository {
     input: CreateRoundGoalInput,
   ): Promise<CreateRoundGoalResult>;
   findByRoundId(roundId: string): Promise<RoundGoal[]>;
+  /**
+   * Every goal of the named rounds, for the one screen that reads a school's
+   * work rather than one round's.
+   *
+   * It takes round ids rather than an organization id on purpose: the caller
+   * has already resolved which rounds belong to the manager's school, and this
+   * keeps the rule above — a goal is never reachable without naming its round.
+   */
+  findByRoundIds(roundIds: string[]): Promise<RoundGoal[]>;
   updateStatus(
     roundId: string,
     goalId: string,

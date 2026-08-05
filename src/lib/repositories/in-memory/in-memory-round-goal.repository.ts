@@ -58,6 +58,15 @@ export class InMemoryRoundGoalRepository implements IRoundGoalRepository {
       .map(clone);
   }
 
+  public async findByRoundIds(roundIds: string[]): Promise<RoundGoal[]> {
+    const wanted = new Set(roundIds);
+
+    return [...this.goals.values()]
+      .filter((goal) => wanted.has(goal.roundId))
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+      .map(clone);
+  }
+
   public async updateStatus(
     roundId: string,
     goalId: string,

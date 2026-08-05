@@ -90,6 +90,19 @@ export class PrismaRoundGoalRepository implements IRoundGoalRepository {
     return rows.map(toDomain);
   }
 
+  public async findByRoundIds(roundIds: string[]): Promise<RoundGoal[]> {
+    // An empty list is a school with no rounds, not "every goal there is".
+    // `in: []` matches nothing in PostgreSQL, but the query is pointless, and
+    // the intent is worth being explicit about.
+    if (roundIds.length === 0) return [];
+
+    const rows = await this.delegate.findMany({
+      where: { roundId: { in: roundIds } },
+      orderBy: { createdAt: 'asc' },
+    });
+    return rows.map(toDomain);
+  }
+
   public async updateStatus(
     roundId: string,
     goalId: string,
