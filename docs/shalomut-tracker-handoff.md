@@ -1,8 +1,7 @@
 # Shalomut Tracker — operational handoff
 
-Updated: 2026-08-05 (the mutation pilot's baseline refreshed and its
-configuration put under a fitness check; `origin/main` is `974d40e` and only
-this document's own close-out is waiting). This
+Updated: 2026-08-05 (`origin/main` is `3590aae`, both deployed services were
+re-read at that commit, and nothing is waiting to be pushed). This
 document owns only cross-task operational/deployed
 state, external blockers and approval gates. Product milestones belong in
 `PROGRESS.md`; branch work and exact verification belong in
@@ -10,15 +9,18 @@ state, external blockers and approval gates. Product milestones belong in
 
 ## Repository snapshot
 
-- `origin/main` is `974d40e`. Four branches reached it on 2026-08-05, pushed
+- `origin/main` is `3590aae` — the Render pacing, the keep-alive workflow and
+  their close-out docs, pushed by the owner on 2026-08-05.
+  `chore/render-pace-and-wakeup` is fully contained in `main` and can be
+  deleted. **Nothing is waiting to be pushed.**
+- Superseded snapshot: `origin/main` was `974d40e`. Four branches reached it on 2026-08-05, pushed
   by the owner: `test/refresh-mutation-baseline`,
   `chore/mutation-config-fitness-check`, the follow-up
   `fix/mutation-sandbox-venv` and `docs/archive-mutation-tasks`. All are fully
   contained in `main` and can be deleted; their task files are in
-  `docs/agent-tasks/archive/`.
-- **Waiting**: one commit on `docs/archive-mutation-tasks`, this document's own
-  close-out. Committed locally and unpushed, so it exists in this worktree
-  only.
+  `docs/agent-tasks/archive/`. The one commit that was waiting there — this
+  document's own close-out on `docs/archive-mutation-tasks` — has since reached
+  `main`.
 - CI is green at `974d40e` (run `30997583455`) and was green at `4773800`
   (run `30997233881`, which passed every step including the new `--dryRunOnly`
   step that starts Stryker). The run before that,
@@ -158,12 +160,18 @@ state, external blockers and approval gates. Product milestones belong in
   timer, which the service's own outbound polling does not. Live since
   2026-08-05: the workflow is registered and active, and a manual
   `workflow_dispatch` run finished green in 9s with `status: online` and
-  `commit: 80930a4` in its log. What has **not** been observed yet is a run on
-  the schedule itself — `gh run list --workflow=render-keepalive.yml` showed
-  only the manual one twenty minutes after the push. A first scheduled firing is
-  the remaining proof that the instance stops sleeping; GitHub also disables
-  schedules in a repository idle for sixty days, so that is the first thing to
-  check if it starts sleeping again. It costs nearly the account's whole free
+  `commit: 80930a4` in its log. What has **not** been observed is a run on the
+  schedule itself. Watched every two minutes from 14:31Z to 15:00Z on
+  2026-08-05, with the workflow on `main` since 14:21Z: three cron windows
+  passed and `gh run list --workflow=render-keepalive.yml` still held nothing
+  but the manual dispatch. The workflow is `active`, so this is not GitHub's
+  sixty-day idle rule — which remains the first thing to check if the service
+  starts sleeping later. **Until a `schedule` run appears, the instance staying
+  awake is unproven**, and a `*/10` cron is the period GitHub throttles hardest;
+  it skips runs under load rather than queueing them. If a later reading still
+  shows none, the mechanism is wrong rather than late, and the alternatives —
+  the paid instance type, or a pinger outside GitHub's scheduler — are the
+  owner's choice. It costs nearly the account's whole free
   allowance of 750
   instance-hours a month, so a second free service does not fit beside it, and a
   paid instance type is the version that needs no workflow.
@@ -331,8 +339,20 @@ Before the next deployment-sensitive task, compare `origin/main` with deployed
 Core and Python source/health, then record only fresh read-only evidence in the
 new branch task file.
 
-**Both services were read on 2026-08-05 and both are on the tip**, which closes
-the check that had stood open since `233f905`. Read-only, nothing changed:
+**Both services were re-read at 14:31Z on 2026-08-05 and both are on `3590aae`,
+the current `origin/main`.** Read-only, nothing changed:
+
+- **Python (Render):** `/health` answers `status: online`, `commit: 3590aae`,
+  `env: production`, `privacyThreshold: 10`, `supportedContractVersions`
+  `1.0`–`6.0`, `jobPollingEnabled: true`.
+- **Core (Vercel):** the Production alias holds
+  `dpl_3uaHSHXGvzZde94GiJxYeDaBGVgs`, `READY`/`PROMOTED`, built from `main` at
+  `3590aae` — built 14:29:38Z, ready 14:30:17Z. Read from the projects API in
+  the owner's own signed-in Chrome; every environment variable in that payload
+  carries an empty `value`, so no secret was displayed, and nothing was clicked.
+  Anonymously, `/` still answers `307` to `/login`, as it should.
+
+The earlier reading the same day, now superseded, was:
 
 - **Python (Render):** `GET https://shalomut-ai-analytics.onrender.com/health`
   answers `commit: 65b2885` — the current `origin/main`, re-read after the
