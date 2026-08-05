@@ -155,10 +155,15 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 - The Dashboard renders `DashboardInsightsDto` instead of the AI wire payload,
   and `src/lib/demo-data.ts` is gone along with the fixture analysis it held.
 - StrykerJS provides an opt-in, non-blocking mutation pilot for
-  `src/lib/ai-contract.ts`. It is not repository-wide coverage or a CI gate.
-  Its survivors were classified on 2026-08-03, which turned into one refusal
-  test per contract rule that had only ever been tested from the accepting
-  side; the pilot's score moved 60.00% to 69.34%.
+  `src/lib/ai-contract.ts` and `src/lib/scoring-bands.ts`, which holds the
+  score-to-status rule the validator used to hold. It is not repository-wide
+  coverage or a CI gate. Its survivors were classified on 2026-08-03, which
+  turned into one refusal test per contract rule that had only ever been
+  tested from the accepting side; the pilot's score moved 60.00% to 69.34%.
+  The baseline was refreshed on 2026-08-05 after three months of drift in
+  which the runner lost track of two test files and of the moved rule:
+  871 killed, 275 survived, 67 uncovered and 42 runtime errors over 1255
+  mutants, 71.81% total.
 - The OpenAPI specification has one editable source, `docs/openapi.yaml`;
   `public/openapi.json` is generated from it and checked as a whole document.
 
