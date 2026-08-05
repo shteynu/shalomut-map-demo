@@ -174,19 +174,23 @@ environment separation being infrastructure rather than product behavior.
 
 ### AI analytics
 
-Two open, both recorded in the handoff:
+One open, recorded in the handoff: the eval corpus has never scored real
+provider output. It needs a key with paid quota; the free tier allows 20
+requests a day against a run that needs roughly 140.
 
-- The eval corpus has never scored real provider output. It needs a key with
-  paid quota; the free tier allows 20 requests a day against a run that needs
-  roughly 140.
-- Contract `6.0` was amended twice on 2026-08-04, against ADR-002's rule that
-  released semantics do not change. Either ADR-002 gains an explicit clause for
-  additive optional fields, or `7.0` is overdue.
+Closed 2026-08-05: the two amendments `6.0` took on 2026-08-04 no longer sit
+against ADR-002. Owner decision — a published contract may gain an **optional
+additive** field and nothing else, under conditions ADR-002 now states, so
+`supportsPartialMaps` and `generationProvenance.unavailableReason` are legal
+rather than tolerated. A changed meaning, a new required field or a removal
+still needs a new version.
 
 Known and deliberately not closed: on `6.0` each metric narrative has its own
 generation outcome and the wire contract carries only the dimension summary's,
 so a stone can show model-written paragraphs beside fallback metric narratives
-with no label. Closing it is a contract change.
+with no label. The new clause is what makes closing it cheap — carrying a
+per-narrative outcome is an optional additive field, so it can amend `6.0`
+consumer-first rather than wait for `7.0`.
 
 ### Architecture
 

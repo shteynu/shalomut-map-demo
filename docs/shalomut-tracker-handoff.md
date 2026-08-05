@@ -1,7 +1,7 @@
 # Shalomut Tracker — operational handoff
 
-Updated: 2026-08-04 (five AI-harness slices merged on top of the earlier five;
-`origin/main` is `260e84e`). This
+Updated: 2026-08-05 (the ADR-002 amendment rule settled; `origin/main` is
+`55d1eea`). This
 document owns only cross-task operational/deployed
 state, external blockers and approval gates. Product milestones belong in
 `PROGRESS.md`; branch work and exact verification belong in
@@ -9,7 +9,8 @@ state, external blockers and approval gates. Product milestones belong in
 
 ## Repository snapshot
 
-- `origin/main` is `260e84e` and published. Five AI-harness slices reached it
+- `origin/main` is `55d1eea` and published — `260e84e` plus its docs close-out.
+  Five AI-harness slices reached it
   on 2026-08-04, each as a fast-forward the owner pushed themselves:
   `feat/offline-eval-corpus`, `fix/label-deterministic-fallback`,
   `feat/v6-partial-maps`, `feat/partial-map-banner` and `feat/gap-reason`. All
@@ -230,12 +231,18 @@ state, external blockers and approval gates. Product milestones belong in
   baseline; run it with
   `.venv/bin/python -m evals.run_corpus --out DIR` and check provenance before
   reading any report, per `evals/README.md`.
-- **Two amendments to published contract `6.0` landed on 2026-08-04**, against
-  ADR-002's rule that released semantics do not change: `supportsPartialMaps`
-  and `generationProvenance.unavailableReason`. Both were deliberate and both
-  are recorded in ADR-007. Open owner decision: give ADR-002 an explicit
-  "additive optional fields are allowed" clause, or open `7.0`. Worth settling
-  before a third amendment.
+- **Settled 2026-08-05, no longer a gate.** The two amendments published
+  contract `6.0` took on 2026-08-04 — `supportsPartialMaps` and
+  `generationProvenance.unavailableReason` — stood against ADR-002's rule that
+  released semantics do not change. Owner decision: ADR-002 gains the explicit
+  clause rather than `7.0` being opened. A published contract may gain an
+  optional additive field and nothing else, on five conditions ADR-002 now
+  states, of which the load-bearing two are that absence keeps the version's
+  previous meaning and that the consumer accepts before the producer emits.
+  Both amendments meet them. The rule rests on validation that checks known
+  fields without enumerating keys, so a validator that ever starts rejecting
+  unknown keys revokes it. `docs/ai-contract-version-matrix.md` carries the
+  operational form under "Amending a published version".
 
 ## Next operational check
 
