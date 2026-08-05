@@ -1,8 +1,8 @@
 # Shalomut Tracker — operational handoff
 
-Updated: 2026-08-05 (the ADR-002 amendment rule settled and first used, for
-metric-narrative provenance; `origin/main` is `67048b5` and both services are
-deployed from it). This
+Updated: 2026-08-05 (the mutation pilot's baseline refreshed and its
+configuration put under a fitness check; `origin/main` is `974d40e` and only
+this document's own close-out is waiting). This
 document owns only cross-task operational/deployed
 state, external blockers and approval gates. Product milestones belong in
 `PROGRESS.md`; branch work and exact verification belong in
@@ -10,7 +10,30 @@ state, external blockers and approval gates. Product milestones belong in
 
 ## Repository snapshot
 
-- `origin/main` is `c63736e` — `67048b5` plus this document's own close-out,
+- `origin/main` is `974d40e`. Four branches reached it on 2026-08-05, pushed
+  by the owner: `test/refresh-mutation-baseline`,
+  `chore/mutation-config-fitness-check`, the follow-up
+  `fix/mutation-sandbox-venv` and `docs/archive-mutation-tasks`. All are fully
+  contained in `main` and can be deleted; their task files are in
+  `docs/agent-tasks/archive/`.
+- **Waiting**: one commit on `docs/archive-mutation-tasks`, this document's own
+  close-out. Committed locally and unpushed, so it exists in this worktree
+  only.
+- CI is green at `974d40e` (run `30997583455`) and was green at `4773800`
+  (run `30997233881`, which passed every step including the new `--dryRunOnly`
+  step that starts Stryker). The run before that,
+  `30996895975`, failed on that same step and left `main` red for seven
+  minutes — a Linux-only `EISDIR` on `ai-analytics-service/.venv/lib64`, which
+  is what `fix/mutation-sandbox-venv` closed.
+- Verification on those branches: `npm run verify:core` exit 0 twice, three
+  full `npm run test:mutation:ai-contract` runs exit 0. `verify:db` and
+  `verify:ai` were **not** run — no schema, migration, repository, route or
+  Python change in the diff.
+- Deployed state was **not** checked this session. Vercel auto-deploys pushes
+  to `main`, so the alias has almost certainly moved with these thirteen
+  commits, but nobody looked.
+- Superseded snapshot: `origin/main` was `c63736e` — `67048b5` plus that
+  document close-out,
   which carries the deployment evidence below and the two archived task files.
   The code tip is `67048b5`. Two branches reached it on 2026-08-05, pushed by
   the owner: `docs/adr-002-additive-fields` (the ADR-002 amendment clause) and
@@ -26,7 +49,7 @@ state, external blockers and approval gates. Product milestones belong in
   `unavailableReason` and the `unavailable` outcome, which the partial-map work
   had put on the wire without documenting; `public/openapi.json` was
   regenerated.
-- No branch is waiting to reach `main`.
+- No branch was waiting at that point.
 - Earlier the same day `origin/main` was `55d1eea` — `260e84e` plus its docs
   close-out. Five AI-harness slices reached it
   on 2026-08-04, each as a fast-forward the owner pushed themselves:
