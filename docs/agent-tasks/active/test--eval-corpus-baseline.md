@@ -5,7 +5,7 @@
 - Branch: `test/eval-corpus-baseline`
 - Base branch: `docs/archive-mutation-tasks`
 - Base commit: `d18b7fd`
-- Current HEAD: `28018d2` плюс незакоммиченная правка грейдера
+- Current HEAD: `6df077f`
 - Status: done; остаётся только пуш ветки владельцем
 - Last updated: 2026-08-05
 - Last agent/tool: Claude Code (Opus 5)
