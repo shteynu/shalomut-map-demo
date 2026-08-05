@@ -376,6 +376,30 @@ through the retries so the budget stays inside the lease, and Core's
 record would be the right shape only once something outside the worker needed
 to read the attempt history.
 
+### ADR-018: Archiving a round takes it out of the list, and nothing else
+
+Owner decision 2026-08-05, backlog §10. The round switcher offers the school's
+rounds; an archived round is not one of them. It keeps everything else — its
+URL, its dashboard, its stored analysis, and its place in the comparison
+history that a later round measures itself against.
+
+The status existed with no behaviour attached to it. `RoundService`
+allowed `draft`/`active`/`closed` → `archived` as a terminal transition, and the
+switcher then listed archived rounds last rather than hiding them, so the only
+thing archiving did was reorder a list. Either the state means "not part of the
+everyday view" or it means nothing; this is the first reading.
+
+The round on screen is the exception, and it has to be: a manager who followed
+a link to an archived round would otherwise read a switcher naming every round
+except the one they are looking at. So `toDashboardRoundOptions` drops archived
+rounds unless the archived round is the selected one, and it stays there with
+its status in words — `בארכיון` — rather than silently.
+
+What this deliberately does not add is a way to archive. No screen offers the
+action today; the only path is `PATCH /api/rounds/{roundId}` with
+`status: "archived"`. Giving the manager the action is a separate slice, and it
+is worth doing only once a school has enough rounds for the list to be long.
+
 ## Environments
 
 The project supports exactly two environments:

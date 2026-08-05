@@ -361,8 +361,19 @@ Remaining:
   dimension delta Core computes. Question-level comparison waits with it. This
   is what `PROGRESS.md` used to call comparative multi-round analytics; it is a
   deliberate hold, not an open task.
-- Decide whether archived rounds belong in the switcher; today they are listed
-  last rather than hidden.
+Done 2026-08-05: archived rounds are out of the switcher. Owner decision,
+recorded as `PROJECT_CONTEXT.md` ADR-018 — archiving a round means taking it out
+of the everyday list and nothing else, so the round keeps its URL, its dashboard
+and its place in the comparison history. The round on screen is the exception:
+an archived round a manager opened stays in the list, marked `בארכיון`, because
+a switcher that named every round except the current one would be lying about
+where the manager is.
+
+Remaining:
+- Nothing offers the archive action. The status is reachable only through
+  `PATCH /api/rounds/{roundId}`, so a manager cannot archive a round from any
+  screen. Worth building once a school has enough rounds for the list to be
+  long; until then the behaviour is defined and unreachable.
 
 Done 2026-08-04: the single-active-round rule is durable in the database. The
 partial unique index `survey_rounds_one_active_per_organization` on
