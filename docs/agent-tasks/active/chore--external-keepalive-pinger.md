@@ -6,7 +6,7 @@
 - Base branch: `main`
 - Base commit: `45f38c2`
 - Current HEAD: `45f38c2` plus this slice
-- Status: repository half done; the monitor itself is the owner's action
+- Status: done — the workflow's cron is gone and the monitor exists
 - Last updated: 2026-08-05
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -40,15 +40,16 @@ Owner decision 2026-08-05: an external pinger, not the paid Render instance.
 
 ## Non-goals
 
-- Creating the monitor. That needs an account on an external service, which is
-  the owner's to create; an agent does not sign up or hold credentials.
+- Creating an account. The owner already had one and was signed in; the monitor
+  was created in their own browser, with the settings confirmed before saving.
+  An agent does not sign up or hold credentials.
 - Changing the Render plan or `render.yaml`.
 
 ## Acceptance criteria
 
 - No document or workflow claims a scheduled keep-alive.
-- The handoff names the external monitor as an open owner action, with the
-  interval and the URL it needs.
+- The handoff names the monitor that actually exists — service, type, URL and
+  interval — so a later reader can check it rather than assume it.
 
 ## Relevant repository instructions
 
@@ -62,14 +63,17 @@ Owner decision 2026-08-05: an external pinger, not the paid Render instance.
   reachable from outside the owner's network.
 - Five minutes for the monitor, not ten: three times the rate the fifteen-minute
   sleep timer needs, so a skipped check does not cost the service its uptime.
+- Keyword type rather than plain HTTP, which the free plan turned out to allow:
+  it fails unless the body contains `"status":"online"`, so a `200` from an edge
+  in front of an unhealthy container does not read as alive.
 - `/health` is the target. It is public, returns no respondent data, and its
   body already carries the deployed commit — so the monitor doubles as a
   deployment reading.
 
 ## Assumptions
 
-- The free tier of a standard uptime service allows a five-minute interval.
-  UptimeRobot and cron-job.org both do at the time of writing; the owner picks.
+- None left. UptimeRobot's free plan gave both the five-minute interval and the
+  keyword type, which was read off the form rather than assumed.
 
 ## Completed
 
@@ -80,6 +84,7 @@ Owner decision 2026-08-05: an external pinger, not the paid Render instance.
   repository snapshot moved to `45f38c2`.
 - `docs/agent-tasks/archive/`: `docs--keepalive-schedule-proof.md` closed out,
   `feat--archived-rounds-out-of-switcher.md` archived.
+- The monitor itself, in the owner's UptimeRobot account.
 
 ## In progress
 
@@ -87,11 +92,9 @@ Owner decision 2026-08-05: an external pinger, not the paid Render instance.
 
 ## Remaining
 
-- **Owner action.** Create the monitor: `GET
-  https://shalomut-ai-analytics.onrender.com/health`, every five minutes,
-  alerting on a non-200 or on a body without `"status":"online"`. Then record
-  in the handoff which service holds it, so the next agent can check it exists
-  rather than assume it.
+- Nothing in this task. Worth a look in a later session: whether the monitor is
+  still `Up` after a day, which is the first real evidence that Render stops
+  sleeping rather than that the checks are being made.
 
 ## Changed files
 
@@ -110,6 +113,9 @@ Owner decision 2026-08-05: an external pinger, not the paid Render instance.
   `workflow_dispatch` of 14:23:40Z. That is the finding this slice rests on.
 - `gh api repos/:owner/:repo/actions/workflows` reported the workflow `active`,
   ruling out the sixty-day idle rule.
+- The monitor was created and then read back in the dashboard: `KW`, `5 min`,
+  state `Up`, 100% uptime at its first checks. Because it is a keyword monitor,
+  `Up` is itself the evidence that `/health` answered with `"status":"online"`.
 
 ### Failed
 
@@ -119,7 +125,9 @@ Owner decision 2026-08-05: an external pinger, not the paid Render instance.
 
 - No test suite was run: the diff is one workflow file and documentation, with
   no TypeScript, Python, schema or route change.
-- The monitor cannot be verified because it does not exist yet.
+- Whether the monitor keeps the instance awake over hours is **not** verified.
+  Two minutes of `Up` proves the check runs, not that the sleep timer never
+  wins.
 
 ### Environment
 
@@ -127,10 +135,9 @@ Deployed reads and GitHub API; no local suite involved.
 
 ### Residual risk
 
-- **The service currently has no keep-alive at all.** The cron never worked, and
-  the replacement is not built. Until the monitor exists, the instance sleeps
-  after fifteen idle minutes and a queued round waits for a visitor. This is a
-  regression only in what the documents claim, not in what the service did.
+- The monitor is a dependency nobody in the repository can see or test. The
+  handoff names it so the next agent checks it first if the service starts
+  sleeping again.
 
 ## Failed approaches
 
@@ -150,10 +157,8 @@ Deployed reads and GitHub API; no local suite involved.
 
 ## Questions requiring an owner decision
 
-- Which uptime service holds the monitor. Needed only so the handoff can name
-  it.
+- None. UptimeRobot holds it, and the handoff says so.
 
 ## Next concrete step
 
-Hand the push over: `git push origin chore/external-keepalive-pinger:main`, and
-create the monitor described under `Remaining`.
+Hand the push over: `git push origin chore/external-keepalive-pinger:main`.

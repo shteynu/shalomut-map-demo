@@ -178,14 +178,21 @@ state, external blockers and approval gates. Product milestones belong in
   Owner decision 2026-08-05: move the keep-alive to an external pinger. The
   `schedule` block is gone; what the workflow still offers is a manual wake
   before a demo or a round.
-- **The keep-alive is an external uptime monitor**, outside this repository:
-  `GET https://shalomut-ai-analytics.onrender.com/health` every five minutes,
-  three times the rate the fifteen-minute timer needs. Nothing secret is in it —
-  `/health` is public and returns no respondent data. **Owner action, still
-  open**: create the monitor, then record here which service holds it and at
-  what interval. Until that line names a real monitor, the service sleeps after
-  fifteen idle minutes and a queued round waits for a visitor instead of being
-  worked.
+- **The keep-alive is an external uptime monitor, and it exists.** UptimeRobot,
+  free plan, in the owner's own account: monitor `Shalomut AI analytics —
+  keep-alive /health`, keyword type, `GET
+  https://shalomut-ai-analytics.onrender.com/health` every five minutes — three
+  times the rate the fifteen-minute sleep timer needs, so a skipped check costs
+  nothing. Created 2026-08-05 in the owner's signed-in browser, with the owner
+  confirming the settings before it was saved. It reported `Up` with 100%
+  uptime at its first checks.
+- Keyword rather than plain HTTP: it fails unless the body contains
+  `"status":"online"`, so a `200` from an edge in front of an unhealthy
+  container does not read as alive. Alerts go to the account e-mail, with no
+  delay and no repeat. Nothing secret is involved — `/health` is public and
+  returns no respondent data.
+- If the service starts sleeping again, that monitor is the first thing to
+  check, before anything in this repository.
 - An always-awake instance costs nearly the account's whole free allowance of
   750 instance-hours a month, so a second free service does not fit beside it.
   The paid instance type is the version that needs neither a workflow nor a
