@@ -8,6 +8,7 @@ export * from './in-memory/in-memory-ai-insights.repository';
 export * from './in-memory/in-memory-round-goal.repository';
 export * from './in-memory/in-memory-round.repository';
 export * from './in-memory/in-memory-survey.repository';
+export * from './in-memory/in-memory-survey-definition-version.repository';
 export * from './prisma/prisma-client';
 export * from './prisma/prisma-organization.repository';
 export * from './prisma/prisma-ai-analysis-run.repository';
@@ -15,6 +16,7 @@ export * from './prisma/prisma-ai-insights.repository';
 export * from './prisma/prisma-round-goal.repository';
 export * from './prisma/prisma-round.repository';
 export * from './prisma/prisma-survey.repository';
+export * from './prisma/prisma-survey-definition-version.repository';
 
 // Test fixtures used to live here. They now sit in
 // `__fixtures__/demo-records.ts`, because this barrel is what route handlers

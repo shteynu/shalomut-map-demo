@@ -95,6 +95,10 @@ run(
       repositoryRoot,
       'src/lib/repositories/__dbtests__/postgres-round-goals.test.ts',
     ),
+    path.join(
+      repositoryRoot,
+      'src/lib/repositories/__dbtests__/postgres-survey-definition-versions.test.ts',
+    ),
   ],
   'PostgreSQL suite',
 );

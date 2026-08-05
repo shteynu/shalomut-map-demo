@@ -1,5 +1,6 @@
 import {
   Organization,
+  SurveyDefinition,
   QuestionAnswerRecord,
   RoundStatus,
   SurveyResponseRecord,
@@ -13,6 +14,7 @@ import type {
   EnqueueAiAnalysisRunResult,
   FinishAiAnalysisRunResult,
 } from '../types/ai-analysis-run';
+import type { SurveyDefinitionVersion } from '../types/survey-definition-version';
 import type {
   CreateRoundGoalInput,
   CreateRoundGoalResult,
@@ -125,6 +127,48 @@ export interface IRoundGoalRepository {
   /** Returns how many were removed, which the reset audit entry records. */
   deleteByRoundId(roundId: string): Promise<number>;
 }
+
+/**
+ * How many versions of one round's questionnaire are kept.
+ *
+ * Twenty is a working session's worth of saves, which is the span a manager can
+ * still recognise entries in. The limit exists because the history is a safety
+ * net rather than an archive: an unbounded log of a document that is rewritten
+ * on every save grows without anyone ever reading the far end of it.
+ */
+export const DEFINITION_VERSION_RETENTION = 20;
+
+/**
+ * The questionnaire's history for one round. Round-scoped throughout, for the
+ * same reason the goal repository is: authorization happens per round, so a
+ * version reachable by id alone would cross a school boundary the route
+ * already checked.
+ */
+export interface ISurveyDefinitionVersionRepository {
+  /**
+   * Write one version. The caller decides whether the definition changed —
+   * a repository that silently skipped an unchanged save would hide a defect
+   * in the caller rather than fix one.
+   */
+  record(
+    roundId: string,
+    definition: SurveyDefinition,
+    savedAt?: Date,
+  ): Promise<SurveyDefinitionVersion>;
+  /** Newest first. The first entry is the questionnaire as it stands now. */
+  findByRoundId(roundId: string): Promise<SurveyDefinitionVersion[]>;
+  findById(
+    roundId: string,
+    versionId: string,
+  ): Promise<SurveyDefinitionVersion | null>;
+}
+
+/*
+ * There is no delete here. A round's history dies with the round, through the
+ * migration's cascade, and round reset deliberately keeps it: reset returns the
+ * round to draft for re-editing, which is exactly when a manager is most likely
+ * to want the questionnaire they had an hour ago.
+ */
 
 export interface ISurveyRepository {
   saveResponse(response: SurveyResponseRecord): Promise<SurveyResponseRecord>;

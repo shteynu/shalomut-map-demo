@@ -4,12 +4,14 @@ import {
   InMemoryOrganizationRepository,
   InMemoryRoundGoalRepository,
   InMemoryRoundRepository,
+  InMemorySurveyDefinitionVersionRepository,
   InMemorySurveyRepository,
   PrismaAiAnalysisRunRepository,
   PrismaAiInsightsRepository,
   PrismaOrganizationRepository,
   PrismaRoundGoalRepository,
   PrismaRoundRepository,
+  PrismaSurveyDefinitionVersionRepository,
   PrismaSurveyRepository,
 } from '@/lib/repositories';
 import type {
@@ -18,6 +20,7 @@ import type {
   IOrganizationRepository,
   IRoundGoalRepository,
   IRoundRepository,
+  ISurveyDefinitionVersionRepository,
   ISurveyRepository,
 } from '@/lib/repositories/interfaces';
 import {
@@ -43,9 +46,10 @@ export interface CoreRepositories {
   roundGoalRepo: IRoundGoalRepository;
   roundRepo: IRoundRepository;
   surveyRepo: ISurveyRepository;
+  surveyDefinitionVersionRepo: ISurveyDefinitionVersionRepository;
 }
 
-/** The durable wiring: one Prisma client, six repositories over it. */
+/** The durable wiring: one Prisma client, seven repositories over it. */
 export function createPersistentRepositories(
   prisma: MinimalPrismaClient,
 ): CoreRepositories {
@@ -56,6 +60,7 @@ export function createPersistentRepositories(
     roundGoalRepo: new PrismaRoundGoalRepository(prisma),
     roundRepo: new PrismaRoundRepository(prisma),
     surveyRepo: new PrismaSurveyRepository(prisma),
+    surveyDefinitionVersionRepo: new PrismaSurveyDefinitionVersionRepository(prisma),
   };
 }
 
@@ -75,6 +80,7 @@ export function createEphemeralRepositories(): CoreRepositories {
     roundGoalRepo: new InMemoryRoundGoalRepository(),
     roundRepo,
     surveyRepo: new InMemorySurveyRepository([]),
+    surveyDefinitionVersionRepo: new InMemorySurveyDefinitionVersionRepository(),
   };
 }
 
@@ -136,6 +142,10 @@ export function overrideCoreRepositories(
   }
   if (repositories.surveyRepo) {
     ephemeralRepositories.surveyRepo = repositories.surveyRepo;
+  }
+  if (repositories.surveyDefinitionVersionRepo) {
+    ephemeralRepositories.surveyDefinitionVersionRepo =
+      repositories.surveyDefinitionVersionRepo;
   }
 }
 

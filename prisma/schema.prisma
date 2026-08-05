@@ -41,9 +41,10 @@ model SurveyRound {
   aiInsightsUpdatedAt DateTime?        @map("ai_insights_updated_at")
 
   organization     Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  responses        SurveyResponse[]
-  aiAnalysisRuns   AiAnalysisRun[]
-  goals            RoundGoal[]
+  responses           SurveyResponse[]
+  aiAnalysisRuns      AiAnalysisRun[]
+  goals               RoundGoal[]
+  definitionVersions  SurveyDefinitionVersion[]
 
   // A school runs one round at a time, enforced by the partial unique index
   // `survey_rounds_one_active_per_organization` on `(organization_id) where
@@ -81,6 +82,19 @@ model RoundGoal {
   @@unique([roundId, dimensionId, title])
   @@index([roundId, createdAt])
   @@map("round_goals")
+}
+
+model SurveyDefinitionVersion {
+  id         String   @id @default(uuid())
+  roundId    String   @map("round_id")
+  definition Json
+  savedAt    DateTime @default(now()) @map("saved_at")
+
+  round SurveyRound @relation(fields: [roundId], references: [id], onDelete: Cascade)
+
+  // The list is read per round, newest first, and pruning reads the same order.
+  @@index([roundId, savedAt])
+  @@map("survey_definition_versions")
 }
 
 model AiAnalysisRun {
