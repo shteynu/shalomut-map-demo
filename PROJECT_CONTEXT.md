@@ -139,6 +139,14 @@ refused recommendation, a refusal with no dimension attached, and eight failed
 dimensions all still fail the round whole — the last because a map with nothing
 written is a failed round wearing a map's shape.
 
+A gap states its cause in `generationProvenance.unavailableReason`:
+`provider_unavailable` for a service that did not answer, `validation_rejected`
+for copy this service wrote and then refused. The field is optional because
+rounds analysed before it existed carry none, and it is rejected on any outcome
+other than `unavailable` — a stone may not claim its interpretation is both
+written and missing. The two causes lead to different advice on screen, which
+is the only reason the distinction travels.
+
 ### ADR-008: Explicit application and repository boundaries
 
 Python application services depend on the ports `AnalyticsSource`,

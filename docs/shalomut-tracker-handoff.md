@@ -179,8 +179,12 @@ state, external blockers and approval gates. Product milestones belong in
   capability, so `5.0` behaves the same way.
 - Since 2026-08-04 the map sidebar carries a notice naming the dimensions a
   round has no interpretation for, so a partial map is visible without opening
-  the dimension that is missing. It does not say whether the cause was provider
-  silence or copy that failed validation; both reach the same sentence.
+  the dimension that is missing. It also says which cause left each dimension
+  without words: the gap carries `generationProvenance.unavailableReason`, and
+  the notice and the dimension screen give different advice for the two — retry
+  in a few minutes for a silent provider, retry for a different wording when
+  this service refused its own copy. Rounds analysed before 2026-08-04 carry no
+  reason and get a sentence that claims neither.
 - The metric narratives are not covered by that disclosure. Each has its own
   outcome inside Python and the wire contract carries only the dimension's
   summary provenance, so closing that gap needs a contract change.
