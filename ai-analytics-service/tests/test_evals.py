@@ -155,6 +155,25 @@ def test_counting_answers_is_not_read_as_counting_dimensions():
     assert result.score == 1.0
 
 
+def test_a_number_does_not_reach_the_noun_of_the_next_clause():
+    """The run of 2026-08-05, after the prompts were tightened.
+
+    "(score 28, with 18 red answers and 2 yellow) and the certainty dimension"
+    put `ממד` two words after the 2 — across a closing bracket, in the next
+    clause — and the grader read it as a claim that two dimensions are yellow.
+    """
+    payload = stone_map(
+        CONTRADICTORY,
+        summary=(
+            "ובראשם ממד העורף המקצועי (ציון 28, עם 18 תשובות אדומות "
+            "ו-2 צהובות) וממד הוודאות."
+        ),
+    )
+    result = grade_summary_grounding(payload, CONTRADICTORY)
+    assert result.measured["claims"] == 0
+    assert result.score == 1.0
+
+
 def test_counting_answers_in_words_is_not_read_as_dimensions_either():
     payload = stone_map(HEALTHY, summary="שלוש תשובות ירוקות עלו בשאלה הזאת.")
     result = grade_summary_grounding(payload, HEALTHY)

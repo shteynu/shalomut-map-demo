@@ -116,6 +116,11 @@ _DIMENSION_NOUN_PATTERN = re.compile(
 )
 
 
+# Where one claim stops and the next begins. Brackets and dashes count: a
+# parenthesis closes a clause as firmly as a comma does.
+_CLAUSE_BOUNDARY = re.compile(r"[,;:.!?()\[\]\n–—]+")
+
+
 def _names_dimensions(words: Sequence[str]) -> bool:
     return any(_DIMENSION_NOUN_PATTERN.search(word) for word in words)
 
@@ -207,42 +212,46 @@ def grade_summary_grounding(
     """
     summary = str(payload.get("overallPsychologicalSummary") or "")
     actual = _actual_status_counts(case)
-    words = _words(summary)
     findings: List[str] = []
     claims: List[Dict[str, Any]] = []
 
-    for index, word in enumerate(words):
-        count = HEBREW_CARDINALS.get(word)
-        if count is None:
-            continue
-        # The status word can trail the counted noun: "שלושה ממדים ירוקים".
-        window = words[index + 1 : index + 4]
-        if not _names_dimensions(window):
-            continue
-        for status, markers in STATUS_WORDS_HEBREW.items():
-            if not any(marker in window for marker in markers):
-                continue
-            claims.append({"claimed": count, "status": status, "actual": actual[status]})
-            if count != actual[status]:
-                findings.append(
-                    f"summary claims {count} {status} dimensions; "
-                    f"the evidence has {actual[status]}"
-                )
+    def record(count: int, status: str) -> None:
+        claims.append({"claimed": count, "status": status, "actual": actual[status]})
+        if count != actual[status]:
+            findings.append(
+                f"summary claims {count} {status} dimensions; "
+                f"the evidence has {actual[status]}"
+            )
 
-    # Digits are as much a claim as words, and easier to get wrong.
-    for match in re.finditer(r"(\d+)\s+(\S+)\s*(\S*)", summary):
-        count = int(match.group(1))
-        tail = f"{match.group(2)} {match.group(3)}"
-        if not _names_dimensions(_words(tail)):
-            continue
-        for status, markers in STATUS_WORDS_HEBREW.items():
-            if any(marker in tail for marker in markers):
-                claims.append({"claimed": count, "status": status, "actual": actual[status]})
-                if count != actual[status]:
-                    findings.append(
-                        f"summary claims {count} {status} dimensions; "
-                        f"the evidence has {actual[status]}"
-                    )
+    # A claim lives inside one clause. Read across a comma or a bracket and the
+    # noun of the next clause lands in the window of this one's number: the run
+    # of 2026-08-05 wrote "(score 28, with 18 red answers and 2 yellow) and the
+    # certainty dimension", which scored as a claim that two dimensions are
+    # yellow. The counted noun has to be the one the number is next to.
+    for clause in _CLAUSE_BOUNDARY.split(summary):
+        words = _words(clause)
+
+        for index, word in enumerate(words):
+            count = HEBREW_CARDINALS.get(word)
+            if count is None:
+                continue
+            # The status word can trail the counted noun: "שלושה ממדים ירוקים".
+            window = words[index + 1 : index + 4]
+            if not _names_dimensions(window):
+                continue
+            for status, markers in STATUS_WORDS_HEBREW.items():
+                if any(marker in window for marker in markers):
+                    record(count, status)
+
+        # Digits are as much a claim as words, and easier to get wrong.
+        for match in re.finditer(r"(\d+)\s+(\S+)\s*(\S*)", clause):
+            count = int(match.group(1))
+            tail = f"{match.group(2)} {match.group(3)}"
+            if not _names_dimensions(_words(tail)):
+                continue
+            for status, markers in STATUS_WORDS_HEBREW.items():
+                if any(marker in tail for marker in markers):
+                    record(count, status)
 
     # No countable claim is not a failure: a summary may legitimately describe
     # the round without counting it. It scores as unmeasured, which is 1.0 for
