@@ -425,6 +425,11 @@ async def test_v6_reports_a_dimension_it_could_not_write_as_a_stated_gap(
     gap = payload["stones"]["balance"]
     assert gap["summary"] == []
     assert gap["generationProvenance"]["outcome"] == "unavailable"
+    # Not the provider's fault, and the screens say so: something was written
+    # for this dimension and this service refused it.
+    assert (
+        gap["generationProvenance"]["unavailableReason"] == "validation_rejected"
+    )
     # The gap is the overview and nothing else: the score, the reading of each
     # question and the recommendations are all still there.
     assert gap["score"] > 0

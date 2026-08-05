@@ -88,6 +88,9 @@ def _refusal_for_stone(
     provenance = stone.get("generationProvenance")
     outcome = provenance.get("outcome") if isinstance(provenance, dict) else None
 
+    if not has_valid_unavailable_reason(provenance):
+        return "unavailable_reason_invalid"
+
     if caps.usesStructuredDimensionSummary:
         # A declared gap has no overview; `_refusal_for_gaps` below is what
         # checks it was declared. The metric narratives are still required —
@@ -119,6 +122,23 @@ def _refusal_for_stone(
     if not is_complete_hebrew_copy(interpretation, contract_version):
         return "interpretation_sentence_count"
     return None
+
+
+def has_valid_unavailable_reason(provenance: Any) -> bool:
+    """A reason belongs to an absence and to nothing else.
+
+    Absent is always allowed: rounds analysed before the field existed carry
+    no reason, and refusing them would refuse this product's own history.
+    """
+    if not isinstance(provenance, dict):
+        return False
+    reason = provenance.get("unavailableReason")
+    if reason is None:
+        return True
+    return (
+        provenance.get("outcome") == "unavailable"
+        and reason in {"provider_unavailable", "validation_rejected"}
+    )
 
 
 def _refusal_for_gaps(payload: Dict[str, Any]) -> Optional[str]:

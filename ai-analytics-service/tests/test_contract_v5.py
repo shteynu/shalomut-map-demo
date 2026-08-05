@@ -1034,6 +1034,13 @@ async def test_the_payload_declares_the_gap_once(monkeypatch, answering_llm):
         stone = payload["stones"][dimension_id]
         assert stone["psychologicalInterpretation"] == ""
         assert stone["generationProvenance"]["outcome"] == "unavailable"
+        # Which of the two causes it was. A provider that did not answer and
+        # copy this service refused reach the same absence, and the screens
+        # tell a manager to do different things about them.
+        assert (
+            stone["generationProvenance"]["unavailableReason"]
+            == "provider_unavailable"
+        )
         # The score, the metrics and the recommendations of a stone with no
         # interpretation are all real: only the paragraph is missing.
         assert stone["metrics"]

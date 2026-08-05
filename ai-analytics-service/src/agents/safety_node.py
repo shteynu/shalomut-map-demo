@@ -11,6 +11,7 @@ from src.agents.safety_report import SafetyViolation, violation
 from src.agents.state import AnalyticsState
 from src.schemas.contract_registry import get_capabilities
 from src.schemas.mcp_types import status_for_score
+from src.schemas.stone_map_validation import has_valid_unavailable_reason
 from src.services import hebrew_validation
 
 
@@ -247,6 +248,7 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
                     != round_data.get("surveyDefinitionHash")
                 )
                 or (outcome == "llm" and attempts < 1)
+                or not has_valid_unavailable_reason(provenance)
                 or (
                     capabilities.supportsScoreDistribution
                     and {

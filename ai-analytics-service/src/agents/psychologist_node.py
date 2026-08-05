@@ -228,6 +228,12 @@ async def agent_psychologist_node(
             "retryCount": max(0, attempts - 1),
             "sourceQuestionIds": source_question_ids,
         }
+        if outcome == "unavailable":
+            # The only cause that reaches here. Copy refused by the safety
+            # loop becomes a gap much later, in the graph, and labels itself.
+            generation_provenance[dim_id]["unavailableReason"] = (
+                "provider_unavailable"
+            )
         if get_capabilities(eff_version).supportsDynamicQuestions:
             generation_provenance[dim_id]["surveyDefinitionHash"] = (
                 round_data.get("surveyDefinitionHash")

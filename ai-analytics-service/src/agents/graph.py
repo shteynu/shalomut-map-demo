@@ -222,6 +222,10 @@ def _degrade_to_partial_map(state: AnalyticsState) -> Optional[AnalyticsState]:
         texts[dim_id] = ""
         if dim_id in provenance:
             provenance[dim_id]["outcome"] = "unavailable"
+            # Not the provider's fault: something was written and this service
+            # refused it. The screens say different things about the two, so
+            # the difference has to survive the trip.
+            provenance[dim_id]["unavailableReason"] = "validation_rejected"
 
     interpretations["dimension_summaries"] = summaries
     interpretations["dimension_interpretations"] = texts
