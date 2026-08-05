@@ -7,6 +7,7 @@ export * from "./dashboard-home-link";
 export * from "./dashboard-map-interactive";
 export * from "./dashboard-map-locked";
 export * from "./dashboard-map-page";
+export * from "./dashboard-partial-map-notice";
 export * from "./dashboard-metrics-page";
 export * from "./dashboard-recommendations-page";
 export * from "./dimension-identity-chip";

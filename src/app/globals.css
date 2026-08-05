@@ -2459,6 +2459,38 @@ textarea {
   line-height: 1.65;
 }
 
+/* Shares the shape of the privacy note beside it — same padding, same icon
+   column — because both are standing facts about this round rather than
+   things that went wrong. Yellow, not the privacy note's sky, so two notices
+   in one sidebar stay distinguishable at a glance. */
+.map-partial-notice {
+  display: flex;
+  gap: 0.7rem;
+  align-items: flex-start;
+  padding: 1rem 1.2rem;
+  background: var(--pastel-yellow);
+  border-radius: var(--radius-header);
+  color: var(--ink);
+}
+
+.map-partial-notice svg {
+  flex: none;
+  margin-top: 0.15rem;
+  color: var(--navy);
+}
+
+.map-partial-notice h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+  line-height: 1.3;
+}
+
+.map-partial-notice p {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.65;
+}
+
 .dashboard-map-stage {
   position: relative;
   width: 100%;

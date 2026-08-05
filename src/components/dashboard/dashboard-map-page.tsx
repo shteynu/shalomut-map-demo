@@ -17,6 +17,7 @@ import { DashboardMapInteractive } from "./dashboard-map-interactive";
 import { DashboardHeading } from "./dashboard-heading";
 import { DashboardHomeLink } from "./dashboard-home-link";
 import { DashboardMapLocked } from "./dashboard-map-locked";
+import { DashboardPartialMapNotice } from "./dashboard-partial-map-notice";
 import { DashboardRoundSwitcher } from "./dashboard-round-switcher";
 
 type DashboardMapPageProps = {
@@ -176,6 +177,14 @@ function DashboardMapReady({
             onRetry={reload}
             roundId={roundId}
           />
+
+          {/* Beside the summary, not above the map: the gap is a fact about
+              this analysis, and the sidebar is where the analysis is read. */}
+          {state.status === "ready" ? (
+            <DashboardPartialMapNotice
+              dimensionIds={state.value.dimensionsWithoutInterpretation}
+            />
+          ) : null}
 
           <button type="button" className="primary-button" onClick={() => window.print()}>
             <Download size={18} aria-hidden="true" />
