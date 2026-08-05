@@ -1,4 +1,4 @@
-name: "Keep the Render AI service awake"
+name: "Wake the Render AI service"
 
 # The AI analytics service runs on Render's free plan, which sleeps an instance
 # after fifteen minutes without inbound traffic. Sleep is not only a cold start:
@@ -7,23 +7,26 @@ name: "Keep the Render AI service awake"
 # worked. Its own outbound polling does not count as traffic — only a request
 # arriving from outside does, which is what this workflow sends.
 #
-# Ten minutes, not fifteen: GitHub's scheduler is best-effort and routinely runs
-# a cron several minutes late, so a fifteen-minute period would drift past the
-# window it is meant to stay inside.
+# This workflow used to carry `schedule: */10 * * * *` and be the keep-alive
+# itself. It is not, and the reason is measured rather than assumed: on
+# 2026-08-05 the workflow sat on `main` from 14:21Z and the run list was read
+# every two minutes until 16:05Z. Ten cron windows passed and not one scheduled
+# run ever appeared, while `workflow_dispatch` finished green in 9s. GitHub's
+# scheduler is best-effort, skips runs under load rather than queueing them, and
+# throttles short periods like `*/10` hardest. A keep-alive that may silently
+# never fire is worse than none: it reads as covered.
 #
-# What this costs: the free plan grants 750 instance-hours a month across the
-# account and a month is about 730, so an always-awake service spends nearly all
-# of them and leaves no room for a second free service. The alternative is the
-# paid instance type, which is the owner's decision and not something a workflow
-# can make. Actions minutes are free here because the repository is public.
+# The keep-alive is therefore an external uptime monitor hitting the same
+# `/health` every five minutes. It lives outside this repository — see
+# `docs/shalomut-tracker-handoff.md` for which service holds it. The paid Render
+# instance type is the version that needs neither.
 #
-# GitHub disables scheduled workflows in a repository with no activity for sixty
-# days. If the service starts sleeping again, check that this schedule is still
-# enabled before looking anywhere else.
+# What is left here is the manual wake: one dispatch before a demo or a round,
+# when the instance may have been asleep and the first request would otherwise
+# pay the cold start. It is also the cheapest way to prove `/health` is
+# reachable from outside the owner's own network.
 
 on:
-  schedule:
-    - cron: '*/10 * * * *'
   workflow_dispatch:
 
 concurrency:
