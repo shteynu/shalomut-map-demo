@@ -177,6 +177,10 @@ state, external blockers and approval gates. Product milestones belong in
   spent and every refusal left is one dimension's own copy, that dimension is
   reported as a stated gap instead of the round failing whole. Gated on the
   capability, so `5.0` behaves the same way.
+- Since 2026-08-04 the map sidebar carries a notice naming the dimensions a
+  round has no interpretation for, so a partial map is visible without opening
+  the dimension that is missing. It does not say whether the cause was provider
+  silence or copy that failed validation; both reach the same sentence.
 - The metric narratives are not covered by that disclosure. Each has its own
   outcome inside Python and the wire contract carries only the dimension's
   summary provenance, so closing that gap needs a contract change.
