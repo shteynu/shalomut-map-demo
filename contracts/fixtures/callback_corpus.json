@@ -2387,7 +2387,7 @@
     {
       "id": "accepted-6.0-partial",
       "contractVersion": "6.0",
-      "note": "A 6.0 map with one stated gap. The overview is absent; the metric narratives and recommendations of that dimension are not, because a gap covers the three paragraphs about a dimension and nothing else.",
+      "note": "A 6.0 map with one stated gap. The overview is absent; the metric narratives and recommendations of that dimension are not, because a gap covers the three paragraphs about a dimension and nothing else. Its gap states a cause, which is what the screens word differently.",
       "payload": {
         "contractVersion": "6.0",
         "roundId": "round-callback-corpus",
@@ -2810,7 +2810,8 @@
               "surveyDefinitionHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
               "backgroundContextIncluded": true,
               "distributionIncluded": true,
-              "crossDimensionContextIncluded": true
+              "crossDimensionContextIncluded": true,
+              "unavailableReason": "validation_rejected"
             }
           },
           "management-support": {
@@ -3413,6 +3414,28 @@
           "dimensionsWithoutInterpretation": [
             "meaning"
           ]
+        }
+      }
+    },
+    {
+      "id": "refused-6.0-unavailable-reason-invented",
+      "from": "6.0",
+      "rule": "unavailable_reason_invalid",
+      "note": "A cause outside the two the contract names.",
+      "mutation": {
+        "set": {
+          "stones.balance.generationProvenance.unavailableReason": "because"
+        }
+      }
+    },
+    {
+      "id": "refused-6.0-unavailable-reason-on-written-copy",
+      "from": "6.0",
+      "rule": "unavailable_reason_invalid",
+      "note": "A reason beside an outcome that says copy was written: the stone would be claiming its interpretation is both present and missing.",
+      "mutation": {
+        "set": {
+          "stones.balance.generationProvenance.unavailableReason": "provider_unavailable"
         }
       }
     }
