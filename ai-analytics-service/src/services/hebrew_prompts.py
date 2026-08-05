@@ -75,6 +75,58 @@ def repair_section(repair_critique: Optional[str]) -> str:
         return ""
     return f"\nתיקון לניסיון הקודם: {repair_critique}"
 
+# One line per refusal label, for the attempt that follows the refusal.
+#
+# The labels come from the batch validators, which already tell five failures
+# apart for the log. Until now the retry did not get to hear any of them: the
+# same request went out again, and on the corpus of 2026-08-05, 30 of 280
+# recommendations ended as catalog copy.
+#
+# Each line says what to do, not what went wrong. "The previous answer was
+# refused" tells a model nothing it can act on; "quote at least one of the
+# numbers above, in digits, inside the summary line" does.
+_BATCH_RETRY_CRITIQUES: Dict[str, str] = {
+    "entry_shape": (
+        "התשובה הקודמת לא שמרה על המבנה שנדרש. החזר/י בדיוק את מספר הפריטים "
+        "שנתבקשו, באותו סדר, ובכל פריט בדיוק את השדות ואת מספר השלבים שנדרשו."
+    ),
+    "identity": (
+        "בתשובה הקודמת שונו המזהים של ההמלצות או סדרן. שמור/י את מזהה כל "
+        "המלצה בדיוק כפי שהתקבל, ובאותו סדר."
+    ),
+    "not_hebrew": (
+        "בתשובה הקודמת הופיעו אותיות שאינן עבריות. כתוב/י הכול בעברית בלבד, "
+        "בלי אותיות לטיניות או ערביות, גם לא בתוך מילה."
+    ),
+    "visible_number": (
+        "בתקציר הקודם הופיעו ספרות או סימן אחוז, ובשדה הזה הם אסורים. "
+        "תאר/י את המשמעות במילים בלבד."
+    ),
+    "narrative_length": (
+        "אורך התקציר הקודם לא היה בטווח שנדרש. כתוב/י תקציר בין שלוש מאות "
+        "וחמישים לארבע מאות וחמישים תווים — לא קצר יותר ולא ארוך יותר."
+    ),
+    "no_number": (
+        "התקציר הקודם לא ציטט אף מספר מן הנתונים שלמעלה. שבץ/י בתקציר עצמו "
+        "לפחות מספר אחד מהם בספרות, למשל 41, ולא במילים."
+    ),
+    "status_inconsistent": (
+        "הניסוח הקודם סתר את המצב שצוין לממד. שמור/י על עקביות מלאה איתו, "
+        "וכשמזכירים קבוצת צבע כתוב/י באותו משפט את מספר התשובות שלה בספרות."
+    ),
+}
+
+
+def batch_retry_critique(label: str) -> Optional[str]:
+    """What to tell the next attempt about a refused batch.
+
+    ``None`` for a label with no advice worth giving — a truncated answer or a
+    provider error is not something the model chose, and filling the prompt
+    with advice about it would cost the next attempt context for nothing.
+    """
+    return _BATCH_RETRY_CRITIQUES.get(label or "")
+
+
 def question_text(aggregate: Dict[str, Any]) -> str:
     dynamic_text = aggregate.get("questionText")
     if isinstance(dynamic_text, str):
@@ -449,6 +501,7 @@ def v6_intervention_batch_prompt(
     status: str,
     question_aggregates: list[Dict[str, Any]],
     background_context: Optional[Dict[str, Any]] = None,
+    repair_critique: Optional[str] = None,
 ) -> str:
     """Adapt five catalog objects in one identity-preserving JSON response."""
     return (
@@ -463,6 +516,7 @@ def v6_intervention_batch_prompt(
         "ספרות או אחוזים, והחזר/י actionable_steps באותו מספר ובאותו סדר "
         "רעיוני. אל תמציא/י סיבות, אבחנות, אנשים או נתונים חדשים. "
         + GROUNDED_LANGUAGE_RULES
+        + repair_section(repair_critique)
     )
 
 

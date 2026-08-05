@@ -316,6 +316,81 @@ def parse_v6_intervention_batch(
     return parsed
 
 
+def v6_intervention_batch_refusal(
+    text: Optional[str],
+    *,
+    interventions: list[Dict[str, Any]],
+    status: str,
+) -> "AdaptationRefusal":
+    """Which gate turns a V6 batch away, walking what `parse` walks.
+
+    `parse_v6_intervention_batch` answers yes or no, which is all the transport
+    needs and nothing a retry can use: five different failures arrive as one
+    `None`. This names them, so the next attempt can be told which one it hit.
+
+    It reports rather than decides — the parse above stays the verdict. If the
+    two ever drift, the cost is a misleading critique and not a wrong answer.
+    """
+    if not text:
+        return AdaptationRefusal("entry_shape", "empty")
+    try:
+        candidate = json.loads(text)
+    except (TypeError, json.JSONDecodeError):
+        return AdaptationRefusal("entry_shape", "not_json")
+    if not isinstance(candidate, list):
+        return AdaptationRefusal("entry_shape", "not_a_list")
+    if len(candidate) != len(interventions):
+        return AdaptationRefusal(
+            "entry_shape",
+            f"entries={len(candidate)}/{len(interventions)}",
+        )
+
+    for index, (expected, item) in enumerate(
+        zip(interventions, candidate),
+        start=1,
+    ):
+        if not isinstance(item, dict):
+            return AdaptationRefusal("entry_shape", f"block={index} not_object")
+        if item.get("id") != expected.get("id"):
+            return AdaptationRefusal("identity", f"block={index}")
+        summary = item.get("summary")
+        steps = item.get("actionable_steps")
+        expected_steps = expected.get("actionable_steps", [])
+        if not isinstance(summary, str) or not isinstance(steps, list):
+            return AdaptationRefusal("entry_shape", f"block={index} field_type")
+        if len(steps) != len(expected_steps) or not all(
+            isinstance(step, str) for step in steps
+        ):
+            return AdaptationRefusal(
+                "entry_shape",
+                f"block={index} steps={len(steps)}/{len(expected_steps)}",
+            )
+
+        normalized_summary = sanitize_model_text(summary)
+        normalized_steps = [sanitize_model_text(step) for step in steps]
+        parts = [normalized_summary, *normalized_steps]
+        if not all(is_hebrew_only_copy(part) for part in parts):
+            foreign = _foreign_code_points(parts)
+            return AdaptationRefusal(
+                "not_hebrew",
+                f"block={index} chars={foreign or 'none'}",
+            )
+        if _VISIBLE_NUMBER_PATTERN.search(normalized_summary):
+            return AdaptationRefusal("visible_number", f"block={index}")
+        if not is_v6_qualitative_narrative(normalized_summary):
+            return AdaptationRefusal(
+                "narrative_length",
+                f"block={index} chars={len(normalized_summary)}",
+            )
+        if not is_status_consistent(" ".join(parts), status):
+            return AdaptationRefusal(
+                "status_inconsistent",
+                f"block={index} "
+                + _status_inconsistency_detail(" ".join(parts), status, None),
+            )
+    return AdaptationRefusal()
+
+
 def is_complete_hebrew_copy(text: str, contract_version: str = AI_ANALYTICS_CONTRACT_VERSION) -> bool:
     """True when the copy is Hebrew, complete, and within the version's budget.
 

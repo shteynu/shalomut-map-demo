@@ -667,6 +667,7 @@ class LLMProviderService:
                     status=status,
                     question_aggregates=aggregates,
                     background_context=background_context,
+                    repair_critique=retry_critique,
                 ),
                 system_prompt=(
                     "את/ה פסיכולוג/ית ארגוני/ת המתאים/ה המלצות לבית ספר. "
@@ -681,6 +682,17 @@ class LLMProviderService:
                         status=status,
                     )
                     is not None
+                ),
+                critique_for=lambda candidate, finish_reason: (
+                    hebrew_prompts.batch_retry_critique(
+                        hebrew_validation.v6_intervention_batch_refusal(
+                            candidate,
+                            interventions=entries,
+                            status=status,
+                        ).label,
+                    )
+                    if finish_reason == "stop"
+                    else None
                 ),
             )
             parsed_v6 = hebrew_validation.parse_v6_intervention_batch(
@@ -737,6 +749,12 @@ class LLMProviderService:
                     status=status,
                     distribution_counts=distribution_counts,
                 )
+            ),
+            # `is_acceptable` ran first on this candidate and left its verdict
+            # in `refusal`, so the critique reads the label rather than judging
+            # the batch a second time.
+            critique_for=lambda _candidate, _finish_reason: (
+                hebrew_prompts.batch_retry_critique(refusal[0].label)
             ),
         )
 

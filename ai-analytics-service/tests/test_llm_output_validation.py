@@ -184,6 +184,121 @@ def test_a_spelled_out_count_beside_a_foreign_colour_is_refused():
     )
 
 
+# --- what a refused batch is told --------------------------------------------
+
+V6_ENTRIES = [
+    {
+        "id": "kb-bala-y-01",
+        "dimensionId": "balance",
+        "status": "yellow",
+        "title": "חלוקת משימות",
+        "summary": "חלוקה מחדש של משימות בין חברי הצוות.",
+        "actionable_steps": ["מיפוי משימות", "שיחה עם הצוות"],
+    },
+]
+
+
+def _v6_batch(summary: str, *, entry_id: str = "kb-bala-y-01", steps=None):
+    return json.dumps(
+        [
+            {
+                "id": entry_id,
+                "summary": summary,
+                "actionable_steps": (
+                    ["מיפוי משימות", "שיחה עם הצוות"] if steps is None else steps
+                ),
+            },
+        ],
+        ensure_ascii=False,
+    )
+
+
+GOOD_V6_SUMMARY = (
+    "ההמלצה מתאימה לממד האיזון משום שהיא מתרגמת את האות המצרפי לפעולה "
+    "ארגונית מוגדרת, בלי לייחס סיבה לאדם מסוים ובלי לחשוף תשובות אישיות. "
+    "היא נשענת על התמונה המצרפית של השאלות שנכללו בסבב ומציעה צעד שאפשר "
+    "לזהות בשגרה השבועית של הצוות. כדאי לקבוע אחראי, מסגרת זמן ונקודת "
+    "בדיקה מוסכמת, ולאסוף משוב כללי שמאפשר ללמוד אם השינוי מורגש בקרב "
+    "הצוות לאורך זמן."
+)
+
+
+@pytest.mark.parametrize(
+    "label,candidate",
+    [
+        ("entry_shape", "לא JSON כלל"),
+        ("entry_shape", json.dumps([], ensure_ascii=False)),
+        ("identity", _v6_batch(GOOD_V6_SUMMARY, entry_id="kb-other-99")),
+        ("not_hebrew", _v6_batch(GOOD_V6_SUMMARY.replace("ההמלצה", "The rec"))),
+        ("visible_number", _v6_batch(GOOD_V6_SUMMARY.replace("ההמלצה", "41"))),
+        ("narrative_length", _v6_batch("קצר מדי.")),
+    ],
+)
+def test_a_refused_v6_batch_says_which_gate_closed(label, candidate):
+    """Five failures used to arrive as one None, which a retry cannot act on."""
+    refusal = hebrew_validation.v6_intervention_batch_refusal(
+        candidate,
+        interventions=V6_ENTRIES,
+        status="yellow",
+    )
+
+    assert refusal.label == label, refusal
+
+
+def test_an_acceptable_v6_batch_refuses_nothing():
+    refusal = hebrew_validation.v6_intervention_batch_refusal(
+        _v6_batch(GOOD_V6_SUMMARY),
+        interventions=V6_ENTRIES,
+        status="yellow",
+    )
+
+    assert not refusal
+    assert hebrew_validation.parse_v6_intervention_batch(
+        _v6_batch(GOOD_V6_SUMMARY),
+        interventions=V6_ENTRIES,
+        status="yellow",
+    ) is not None
+
+
+def test_every_refusal_label_has_a_line_that_says_what_to_do():
+    """A critique naming the failure without naming the fix is not a critique."""
+    for label in (
+        "entry_shape",
+        "identity",
+        "not_hebrew",
+        "visible_number",
+        "narrative_length",
+        "no_number",
+        "status_inconsistent",
+    ):
+        line = hebrew_prompts.batch_retry_critique(label)
+        assert line, label
+        assert not _LATIN_PATTERN.search(line), label
+
+    # A truncated answer or a provider error is not something to advise about.
+    assert hebrew_prompts.batch_retry_critique("finish_length") is None
+    assert hebrew_prompts.batch_retry_critique("") is None
+
+
+def test_the_v6_batch_prompt_carries_the_critique_it_is_given():
+    plain = hebrew_prompts.v6_intervention_batch_prompt(
+        interventions=V6_ENTRIES,
+        dim_hebrew="איזון",
+        status="yellow",
+        question_aggregates=AGGREGATES,
+    )
+    repaired = hebrew_prompts.v6_intervention_batch_prompt(
+        interventions=V6_ENTRIES,
+        dim_hebrew="איזון",
+        status="yellow",
+        question_aggregates=AGGREGATES,
+        repair_critique=hebrew_prompts.batch_retry_critique("no_number"),
+    )
+
+    assert repaired.startswith(plain)
+    assert "לפחות מספר אחד" in repaired
+
+
 # --- the prompts themselves --------------------------------------------------
 
 def _interpretation_prompt(contract_version: str) -> str:
