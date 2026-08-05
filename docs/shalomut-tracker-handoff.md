@@ -18,12 +18,12 @@ state, external blockers and approval gates. Product milestones belong in
 - Nothing is waiting. No branch holds unpushed work the product needs; the one
   unmerged branch, `fix/refuse-asserted-causes`, is a decided **no** and is
   described below.
-- **Migration pending on the deployed database**:
-  `20260805170000_add_survey_definition_versions` is on `main` and has run only
-  against the disposable local test database. Vercel applies it on the deploy
-  that follows this push. A Prisma client generated before it raises a named
-  error from the repository rather than a `TypeError` inside a route, so a
-  half-applied deploy says what is wrong.
+- **No migration is pending on the deployed database.**
+  `20260805170000_add_survey_definition_versions` was applied to the
+  deployed database on 2026-08-05, immediately after the push — the build
+  command runs `prisma generate`, never `prisma migrate deploy`, so this is a
+  hand step every schema change still needs. Details and the read-back are in
+  the database section below.
 - Verification at `143d460`: `npm run verify:core` exit 0 with 589 TypeScript
   tests, and `npm run verify:db` 25 tests, 25 pass, against local PostgreSQL on
   `127.0.0.1:5433`. `verify:ai` was **not** run — no Python change. The builder
@@ -226,7 +226,15 @@ state, external blockers and approval gates. Product milestones belong in
   `survey_rounds.updated_at` that carries the manager screens' save time across
   a reload. The deployed round has `updated_at NULL`, so its setup screen shows
   no save time until someone saves once — the documented behaviour for a round
-  written before the column existed. No migration is pending.
+  written before the column existed.
+- The eleventh migration, `20260805170000_add_survey_definition_versions`, was
+  applied to the deployed database on 2026-08-05, right after the push that
+  carried the code: `prisma migrate status` reports eleven migrations and a
+  schema that is up to date. A read-back confirms `survey_definition_versions`
+  with `id`, `round_id`, `definition jsonb` and `saved_at`, its
+  `(round_id, saved_at)` index, and a foreign key to `survey_rounds` with
+  `ON DELETE CASCADE`. The table holds no rows: the deployed round has not been
+  saved since. No migration is pending.
 - **`npm run db:migrate:deploy` targets the local database, not the deployed
   one.** It reads `.env`, which points at local PostgreSQL on purpose. The
   deployed database is reached by passing `DIRECT_URL` from
@@ -379,8 +387,23 @@ Before the next deployment-sensitive task, compare `origin/main` with deployed
 Core and Python source/health, then record only fresh read-only evidence in the
 new branch task file.
 
-**Both services were re-read at 14:31Z on 2026-08-05 and both are on `3590aae`,
+**Both services were re-read at 17:10Z on 2026-08-05 and both are on `143d460`,
 the current `origin/main`.** Read-only, nothing changed:
+
+- **Python (Render):** `/health` answers `status: online`, `commit: 143d460`,
+  `env: production`, `privacyThreshold: 10`, `supportedContractVersions`
+  `1.0`–`6.0`, `jobPollingEnabled: true`.
+- **Core (Vercel):** the Production alias holds
+  `dpl_5MowixM3hzcAeK7Jw7hRvPtyCWYU`, `READY`/`PROMOTED`, built from `main` at
+  `143d460` — built 17:08:05Z, ready 17:08:44Z. Read from the projects API in
+  the owner's own signed-in Chrome; every environment variable in that payload
+  carries an empty `value`, so no secret was displayed, and nothing was clicked.
+  Anonymously, `/` still answers `307` to `/login`, as it should.
+- The questionnaire history is deployed code **and** deployed schema: the
+  migration was applied by hand immediately after the push, because the build
+  command runs `prisma generate` and not `prisma migrate deploy`.
+
+The reading before it, now superseded, was at 14:31Z on `3590aae`:
 
 - **Python (Render):** `/health` answers `status: online`, `commit: 3590aae`,
   `env: production`, `privacyThreshold: 10`, `supportedContractVersions`
