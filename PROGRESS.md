@@ -163,7 +163,10 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
   The baseline was refreshed on 2026-08-05 after three months of drift in
   which the runner lost track of two test files and of the moved rule:
   871 killed, 275 survived, 67 uncovered and 42 runtime errors over 1255
-  mutants, 71.81% total.
+  mutants, 71.81% total. Two checks now keep the measurement honest without
+  gating on it: `npm run lint:mutation-config` re-derives the test list from
+  the repository inside `verify:core`, and CI starts the runner with a dry
+  run on every pull request.
 - The OpenAPI specification has one editable source, `docs/openapi.yaml`;
   `public/openapi.json` is generated from it and checked as a whole document.
 

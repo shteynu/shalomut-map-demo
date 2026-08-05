@@ -58,6 +58,17 @@ expanding mutation scope — was closed on 2026-08-03; what it found is in
   followed on 2026-08-05 — is not this item: it keeps one subject whole rather
   than adding a second.
 
+- A mutation score threshold in CI stays closed rather than conditional, and
+  is recorded here so it is not reopened by habit. The score is not stable
+  under changes that leave test strength alone: on 2026-08-05 it moved down
+  when `statusForScore` changed file and up when two test files rejoined the
+  runner's list, and 42 of the bands' mutants are excluded from it entirely
+  because they crash module initialization. A threshold would fail honest work
+  and pass the refactor that removed a rule from measurement. What CI does
+  enforce is that the runner starts (`--dryRunOnly`) and that the test list
+  matches the repository (`npm run lint:mutation-config`) — both facts about
+  the instrument, not about the number it produces.
+
 - The long-term identity model, when a second manager per school, multi-tenant
   hosting or real respondents is actually requested. One manager per deployment
   is the current product shape and a deliberate decision, not unfinished work;

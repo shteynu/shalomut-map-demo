@@ -70,15 +70,20 @@ privacy, auth, persistence, contracts или deployment.
   мутируемый файл, включая тесты вне `src/lib/__tests__`. Пропущенный файл не
   занижает score честно: он показывает как survivor мутант, который реальный
   тест убил бы. Так до 2026-08-03 правило Hebrew-only выглядело непокрытым при
-  существующем `hebrew-only-corpus.test.ts`. Список дрейфует по мере появления
-  новых тестов, поэтому выводи его заново через
-  `grep -rl 'validateStoneMapResult\|isHebrewOnlyUserText' src`, а не доверяй
-  текущему.
+  существующем `hebrew-only-corpus.test.ts`.
+- Список больше не ведётся вручную: `npm run lint:mutation-config` выводит его
+  заново из репозитория и падает в обе стороны — на пропущенном файле и на
+  оставшемся в списке файле, который больше ничего не вызывает. Проверка входит
+  в `verify:core`, поэтому CI выполняет её на каждом pull request. Не правь
+  `tap.testFiles`, не прогнав её.
 - Проверяй wiring без полного прогона через
-  `npm run test:mutation:ai-contract -- --dryRunOnly`.
+  `npm run test:mutation:ai-contract -- --dryRunOnly`. То же самое CI выполняет
+  отдельным шагом после `npm run verify`.
 - Полный `npm run test:mutation:ai-contract` запускай, когда изменён сам
   validator, mutation config/набор тестов либо пользователь просит доказать
-  силу тестов. Он не входит в `npm run verify` и не является blocking CI gate.
+  силу тестов. Он не входит в `npm run verify` и не является blocking CI gate:
+  score двигают перенос функции между файлами и появление test-файла в списке,
+  то есть изменения, не относящиеся к силе тестов.
 - Не обещай repository-wide mutation coverage. Разделяй killed, survived,
   no-coverage и runtime-error mutants; HTML/JSON reports под
   `reports/mutation/` являются локальным ignored evidence.
