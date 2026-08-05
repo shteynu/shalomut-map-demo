@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CheckCircle2, Clipboard, Loader2, Lock, Map, RotateCcw, Sparkles } from "lucide-react";
+import { Archive, CheckCircle2, Clipboard, Loader2, Lock, Map, RotateCcw, Sparkles } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useRef, useState } from "react";
 import { CopyLinkStatus } from "@/components/ui/copy-link-status";
@@ -29,6 +29,8 @@ export function RoundControls({
 }: RoundControlsProps) {
   const [closed, setClosed] = useState(status === "closed");
   const [closing, setClosing] = useState(false);
+  const [archived, setArchived] = useState(status === "archived");
+  const [archiving, setArchiving] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisNote, setAnalysisNote] = useState<string | null>(null);
@@ -73,6 +75,44 @@ export function RoundControls({
 
     setClosed(true);
     setClosing(false);
+  }
+
+  /**
+   * Filing a round away. Offered only once the round has stopped running,
+   * because a live round leaving the list would take its share link with it,
+   * and terminal — `archived` has no transition out — so it asks first.
+   */
+  async function archiveRound() {
+    if (
+      !confirm(
+        "להעביר את הסבב לארכיון? הסבב יישאר זמין לצפייה דרך הארכיון, אך לא יופיע ברשימת הסבבים.",
+      )
+    ) {
+      return;
+    }
+
+    setArchiving(true);
+    setCloseError(null);
+
+    const response = await fetch(
+      `/api/rounds/${encodeURIComponent(roundId)}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "archived" }),
+      },
+    ).catch(() => null);
+
+    if (!response?.ok) {
+      // The route answers a refused transition in English prose. Managers get
+      // our own sentence; the API's wording is for the log, not the screen.
+      setCloseError("לא ניתן היה להעביר את הסבב לארכיון.");
+      setArchiving(false);
+      return;
+    }
+
+    setArchived(true);
+    setArchiving(false);
   }
 
   async function refreshAnalysis() {
@@ -206,7 +246,9 @@ export function RoundControls({
           <button
             className="secondary-button"
             type="button"
-            disabled={closed || closing}
+            /* An archived round has no transition out, so closing it would
+               only earn a 409. */
+            disabled={closed || closing || archived}
             data-round-id={roundId}
             onClick={closeRound}
           >
@@ -217,16 +259,40 @@ export function RoundControls({
             )}
             {closing ? "סוגר..." : "סגירת סבב אבחון ידנית"}
           </button>
+          {closed && !archived ? (
+            <button
+              className="secondary-button"
+              type="button"
+              disabled={archiving}
+              data-round-id={roundId}
+              onClick={archiveRound}
+              title="הוצאת הסבב מרשימת הסבבים, בלי למחוק אותו"
+            >
+              {archiving ? (
+                <Loader2 size={18} className="animate-spin" aria-hidden="true" />
+              ) : (
+                <Archive size={18} aria-hidden="true" />
+              )}
+              {archiving ? "מעביר לארכיון..." : "העברה לארכיון"}
+            </button>
+          ) : null}
           <Link className="primary-button" href={openDashboardAction.href}>
             <Map size={18} aria-hidden="true" />
             {openDashboardAction.label}
           </Link>
         </div>
 
-        {closed ? (
+        {closed && !archived ? (
           <div className="closed-note">
             <CheckCircle2 size={18} aria-hidden="true" />
             סבב האבחון מסומן כסגור. הדשבורד זמין לצפייה.
+          </div>
+        ) : null}
+        {archived ? (
+          <div className="closed-note">
+            <Archive size={18} aria-hidden="true" />
+            הסבב הועבר לארכיון. הוא יצא מרשימת הסבבים ונשאר זמין דרך הארכיון
+            שבתחתית הרשימה, עם כל הנתונים והניתוח שלו.
           </div>
         ) : null}
         {analysisNote ? (
