@@ -218,5 +218,14 @@ export function toDashboardInsights(
     roundId: result.roundId,
     overallSummary: result.overallPsychologicalSummary?.trim() ?? '',
     stones,
+    // Derived from the stones rather than read from
+    // `dimensionsWithoutInterpretation`, which carries the same answer. The
+    // payload's list is a convenience for a reader and the contract already
+    // requires the two to agree; deriving it here means the banner and the
+    // dimension screen cannot disagree even if a payload ever slipped through
+    // saying otherwise.
+    dimensionsWithoutInterpretation: AI_ANALYTICS_DIMENSION_IDS.filter(
+      (dimensionId) => stones[dimensionId]?.interpretationUnavailable,
+    ),
   };
 }

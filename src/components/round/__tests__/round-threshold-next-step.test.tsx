@@ -9,12 +9,14 @@ const readyResult: DashboardInsightsDto = {
   roundId: "round-threshold-state",
   overallSummary: "סיכום ארגוני מוכן.",
   stones: {},
+  dimensionsWithoutInterpretation: [],
 };
 
 const lockedResult: DashboardInsightsDto = {
   roundId: "round-threshold-state",
   overallSummary: "",
   stones: {},
+  dimensionsWithoutInterpretation: [],
 };
 
 function renderState(

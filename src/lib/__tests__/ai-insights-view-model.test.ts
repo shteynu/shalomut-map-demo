@@ -1,7 +1,16 @@
 import assert from 'node:assert';
 import test from 'node:test';
-import type { StoneDetail, StoneDetailV6 } from '../ai-contract';
-import { toDashboardStone } from '../ai-insights-view-model';
+import {
+  AI_ANALYTICS_DIMENSION_IDS,
+  type StoneDetail,
+  type StoneDetailV6,
+  type StoneMapResult,
+} from '../ai-contract';
+import {
+  toDashboardInsights,
+  toDashboardStone,
+} from '../ai-insights-view-model';
+import type { WellbeingDimensionId } from '../shalomut-source';
 
 test('a stone becomes the dashboard shape the screens render', () => {
   const stone: StoneDetail = {
@@ -227,6 +236,79 @@ test('a stone the model wrote is not marked deterministic', () => {
   const result = toDashboardStone(v6Stone());
 
   assert.strictEqual(result.summaryIsDeterministic, false);
+});
+
+test('the insights DTO names the gaps in canonical order', () => {
+  const gapped = (dimensionId: WellbeingDimensionId) =>
+    v6Stone({
+      dimensionId,
+      summary: [],
+      generationProvenance: {
+        outcome: 'unavailable',
+        attempts: 4,
+        retryCount: 3,
+        sourceQuestionIds: [`${dimensionId}-q1`],
+      },
+    });
+
+  const result = toDashboardInsights({
+    contractVersion: '6.0',
+    roundId: 'round-partial',
+    isLocked: false,
+    status: 'success',
+    overallPsychologicalSummary: 'סיכום ארגוני.',
+    stones: {
+      ...Object.fromEntries(
+        AI_ANALYTICS_DIMENSION_IDS.map((dimensionId) => [
+          dimensionId,
+          v6Stone({
+            dimensionId,
+            generationProvenance: {
+              outcome: 'llm',
+              attempts: 1,
+              retryCount: 0,
+              sourceQuestionIds: [`${dimensionId}-q1`],
+            },
+          }),
+        ]),
+      ),
+      balance: gapped('balance'),
+      certainty: gapped('certainty'),
+    } as StoneMapResult['stones'],
+  });
+
+  // Canonical order, not the order the stones happened to be walked in: the
+  // banner names them in the same order the map does.
+  assert.deepStrictEqual(result.dimensionsWithoutInterpretation, [
+    'balance',
+    'certainty',
+  ]);
+});
+
+test('a whole map names no gaps at all', () => {
+  const result = toDashboardInsights({
+    contractVersion: '6.0',
+    roundId: 'round-whole',
+    isLocked: false,
+    status: 'success',
+    overallPsychologicalSummary: 'סיכום ארגוני.',
+    stones: Object.fromEntries(
+      AI_ANALYTICS_DIMENSION_IDS.map((dimensionId) => [
+        dimensionId,
+        v6Stone({
+          dimensionId,
+          generationProvenance: {
+            outcome: 'llm',
+            attempts: 1,
+            retryCount: 0,
+            sourceQuestionIds: [`${dimensionId}-q1`],
+          },
+        }),
+      ]),
+    ) as StoneMapResult['stones'],
+  });
+
+  assert.deepStrictEqual(result.dimensionsWithoutInterpretation, []);
 });
 
 test('a V6 gap reaches the screen as missing, not as three empty paragraphs', () => {

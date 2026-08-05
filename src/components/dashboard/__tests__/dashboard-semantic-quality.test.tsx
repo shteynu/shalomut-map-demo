@@ -23,6 +23,7 @@ function createReadyResult(summary: string): DashboardInsightsDto {
     roundId: "round-dashboard-summary",
     overallSummary: summary,
     stones: {},
+    dimensionsWithoutInterpretation: [],
   };
 }
 

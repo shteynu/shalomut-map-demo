@@ -67,6 +67,12 @@ export interface DashboardInsightsDto {
   /** Empty when the round carries no organization-level summary. */
   overallSummary: string;
   stones: Partial<Record<WellbeingDimensionId, DashboardStone>>;
+  /**
+   * The dimensions this round has no interpretation for, in canonical order.
+   * Empty for a whole map. A manager who never opens the one dimension that is
+   * missing would otherwise read the map as complete.
+   */
+  dimensionsWithoutInterpretation: WellbeingDimensionId[];
 }
 
 export function getDashboardStone(
