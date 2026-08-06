@@ -5,9 +5,8 @@
 - Branch: `feat/round-context-across-screens`
 - Base branch: `main`
 - Base commit: `ddd6be3`
-- Current HEAD: `6d00328`, three commits ahead of `origin/main`
-- Status: implemented and verified at test level; the browser walk and the push
-  are the owner's
+- Current HEAD: `c67471c` plus this file, five commits ahead of `origin/main`
+- Status: implemented, walked and verified; the push is the owner's
 - Last updated: 2026-08-06
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -92,13 +91,14 @@ the switcher — it was only unreachable from anywhere but the map.
 
 ## Completed
 
-All of the scope, in three commits on this branch:
+All of the scope, in four commits on this branch:
 
 - `485ce9a` the switcher moves out of the dashboard and takes a route builder,
   so each screen links to itself with another round.
 - `1ee6e12` the switcher renders on home, `/round` and `/survey`; the header
   and the home action cards carry the round.
 - `6d00328` a superseded round is read on `/round`.
+- `c67471c` the two defects the walk found (below).
 
 ## In progress
 
@@ -106,7 +106,7 @@ Nothing.
 
 ## Remaining
 
-The signed-in browser walk, which needs credentials the agent does not enter.
+Nothing on this branch.
 
 ## Changed files
 
@@ -121,33 +121,53 @@ The signed-in browser walk, which needs credentials the agent does not enter.
 - `src/app/page.tsx`, `src/app/round/page.tsx`, `src/app/survey/page.tsx`,
   `src/app/dashboard/page.tsx`, `src/components/survey/survey-builder.tsx`,
   `src/components/round/round-controls.tsx`, `src/app/globals.css`.
+- `src/components/round/round-threshold-next-step.tsx`: the map link takes a
+  round.
 - Tests: `src/components/round/__tests__/superseded-round-controls.test.tsx`
-  (new), `round-switcher.test.tsx`, `src/lib/__tests__/navigation.test.ts`.
+  (new), `round-switcher.test.tsx`, `round-threshold-next-step.test.tsx`,
+  `src/lib/__tests__/navigation.test.ts`.
 - `PROGRESS.md`, this file.
 
 ## Verification evidence
 
 ### Passed
 
-- `npm run verify:core` — exit 0. 619 tests, 619 pass; lint clean; build clean,
-  and `/login` is still prerendered as static, which is what the Suspense
-  boundary around the header's round read is there to protect.
-- Local database read read-only through the composition root: the school has
-  four rounds — one active and three closed — so the reported scenario exists
-  locally and the switcher has something to switch between.
+- `npm run verify:core` — exit 0 at `c67471c`. 620 tests, 620 pass; lint clean;
+  build clean, and `/login` is still prerendered as static, which is what the
+  Suspense boundary around the header's round read is there to protect.
+- Signed-in browser walk, local dev server, the owner signed in. The school has
+  four rounds — one active and three closed:
+  - Home, `/round` and `/survey` each render the switcher; selecting a round
+    stays on that screen and the URL carries `?round=`.
+  - The header moves the round between home, `/round`, `/survey` and the map;
+    `setup` and `goals` stay bare, as intended.
+  - `/round` for a superseded round: no reset, no re-analysis, archiving still
+    offered, and the note explains why. The active round keeps both buttons —
+    the regression check for "read-only means superseded, not closed".
+  - The builder for a superseded round remounts on the switch: `סבב סתיו 2026`
+    reads 0 questions and a disabled save, not the 24 questions of the round the
+    manager came from.
+  - Console clean after the fixes; before them it carried the duplicate-key
+    error that exposed the second defect.
 
 ### Failed
 
-None.
+Three defects found by the walk, all fixed in `c67471c` and re-verified:
+
+1. Stale client state across a round switch. Client navigation reuses a
+   component, and `RoundControls` and `SurveyBuilder` seed state from the round
+   they mounted with. Both are now keyed by the round.
+2. The first fix used the bare round id as the key on two siblings, and React
+   rendered both rounds' controls at once. The keys are now prefixed.
+3. `RoundThresholdNextStep`'s map link was the bare dashboard route.
 
 ### Blocked or not run
 
-- The signed-in browser walk. Every manager screen is behind the login form,
-  and the agent does not enter passwords. The dev server ran and served
-  `/login`; nothing past it was opened. This is the same boundary the
-  2026-08-05 handoff recorded for the three newest manager screens.
 - `verify:db` and `verify:ai` — no schema, repository, contract or Python
   change in this diff.
+- The archive disclosure was not walked: the local school has no archived
+  round. It is covered by `round-switcher.test.tsx` and unchanged by this
+  branch beyond the class rename.
 
 ### Environment
 
@@ -155,20 +175,19 @@ Local.
 
 ### Residual risk
 
-The rendering evidence is component-level: the switcher, the header hrefs and
-the superseded controls are proved by tests, not by a walk. What a walk would
-add is layout — the switcher sits in three new places, and only the map's
-placement has ever been seen.
+Low. What the walk did not cover is the archive disclosure in its new
+placements, and the deployed environment, which nothing here reads.
 
 ## Failed approaches
 
-None.
+- Keying both round-scoped components with the round id alone. They are
+  siblings, so the duplicate key made React render both rounds at once — worse
+  than the stale state it was fixing. Prefixed keys.
 
 ## Known risks
 
-- `align="start"` on the three new placements is unreviewed by eye. It follows
-  the RTL flow of each page rather than the map's centred column, which is the
-  right default, but nobody has looked at it.
+None outstanding. `align="start"` on the three new placements was reviewed by
+eye during the walk and reads with the RTL flow of each page.
 
 ## Approval gates
 
@@ -181,8 +200,4 @@ None open on this branch.
 
 ## Next concrete step
 
-The owner signs in on the local dev server so the walk can run — home, `/round`
-and `/survey`, switching to `סבב סתיו 2026` and back, checking that the header
-keeps the round and that the tracking screen of a superseded round offers no
-reset and no re-analysis. Then the push:
-`git push origin feat/round-context-across-screens:main`.
+The owner pushes: `git push origin feat/round-context-across-screens:main`.
