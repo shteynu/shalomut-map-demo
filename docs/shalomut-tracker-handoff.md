@@ -1,20 +1,19 @@
 # Shalomut Tracker — operational handoff
 
-Updated: 2026-08-05, session close (`origin/main` is `4b0a4bd`; nothing is
-pending, nothing is waiting, and what is left is decisions rather than work).
-This
-document owns only cross-task operational/deployed
-state, external blockers and approval gates. Product milestones belong in
+Updated: 2026-08-06 (`origin/main` is `9983184`, deployed and read; nothing is
+pending and nothing is waiting). This document owns only cross-task
+operational/deployed state, external blockers and approval gates. Product milestones belong in
 `PROGRESS.md`; branch work and exact verification belong in
 `docs/agent-tasks/{active,archive}/`; older snapshots remain available in Git.
 
 ## Repository snapshot
 
-- `origin/main` is `b0c9848` — `feat/round-context-across-screens`, pushed by
-  the owner on 2026-08-06. The round a manager is reading now follows them
-  across home, tracking, the builder and the map, and a round the school has
-  moved past is read rather than worked on. Before it, `main` was `ddd6be3`,
-  the 2026-08-05 session close.
+- `origin/main` is `9983184` — `feat/round-context-across-screens`, pushed by
+  the owner on 2026-08-06 in three goes (`b0c9848`, `54ee05c`, `9983184`). The
+  round a manager is reading now follows them across home, tracking, the
+  builder and the map, chosen from one select; a round the school has moved
+  past is read rather than worked on. Before it, `main` was `ddd6be3`, the
+  2026-08-05 session close.
 - Five branches reached `main` on 2026-08-05, each as a fast-forward the owner
   pushed themselves: `feat/survey-definition-history` (backlog §1),
   `feat/archived-rounds-read-only` (§10), `feat/goals-across-rounds` (§5), plus
@@ -30,7 +29,7 @@ state, external blockers and approval gates. Product milestones belong in
   `prisma generate`, never `prisma migrate deploy`, so this is a hand step every
   schema change still needs. Details and the read-back are in the database
   section below. Nothing after it changed a schema.
-- Verification at `b0c9848`, the current head: `npm run verify:core` exit 0
+- Verification at `9983184`, the current head: `npm run verify:core` exit 0
   with 620 TypeScript tests. `verify:db` and `verify:ai` were **not** run for
   it — nothing since 2026-08-05 morning changed a schema, a repository, a
   contract or Python. The last `verify:db` reading is 26 tests, 26 pass at
@@ -42,7 +41,7 @@ state, external blockers and approval gates. Product milestones belong in
   duplicate React key that rendered two rounds' controls at once, and a link
   that dropped the round. All are fixed in `c67471c`. A signed-in walk remains
   the check that a rendering test cannot stand in for.
-- Deployment of `b0c9848` was read on 2026-08-06 and is `Ready`; see the
+- Deployment of `9983184` was read on 2026-08-06 and is `Ready`; see the
   deployed-state section.
 - Superseded snapshot: `origin/main` was `45f38c2` — the round archive.
   Verification there: `verify:core` exit 0 with 576 tests; `verify:db` and
@@ -319,11 +318,12 @@ Before the next deployment-sensitive task, compare `origin/main` with deployed
 Core and Python source/health, then record only fresh read-only evidence in the
 new branch task file.
 
-**Core was re-read on 2026-08-06 and is on `b0c9848`, the current
+**Core was re-read on 2026-08-06 and is on `9983184`, the current
 `origin/main`.** Read-only, nothing changed:
 
-- **Core (Vercel):** the newest deployment is `b0c9848` on `main`, environment
-  `Production`, status `Ready`, built in 40s about a minute after the push.
+- **Core (Vercel):** the newest deployment is `9983184` on `main`, environment
+  `Production`, status `Ready`, built in 39s about a minute after the push, and
+  carrying the current production badge.
   Read from the project's deployments list in the owner's own signed-in
   Chrome; nothing was clicked and no secret was displayed. Anonymously, `/`
   still answers `307` to `/login`, as it should. Signed in, the deployed home

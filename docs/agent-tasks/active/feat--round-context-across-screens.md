@@ -5,9 +5,9 @@
 - Branch: `feat/round-context-across-screens`
 - Base branch: `main`
 - Base commit: `ddd6be3`
-- Current HEAD: `54ee05c` plus this slice, seven commits ahead of `origin/main`
-  (`b0c9848` and everything before it are already on `origin/main`)
-- Status: implemented, walked and verified; the push is the owner's
+- Current HEAD: `9983184`, which is `origin/main`
+- Status: done. Implemented, walked, pushed and deployed; the deployment was
+  read and is `Ready`
 - Last updated: 2026-08-06
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -223,6 +223,9 @@ None open on this branch.
 
 ## Next concrete step
 
-The owner pushes: `git push origin feat/round-context-across-screens:main`.
-`b0c9848` and earlier are already on `main` and deployed; this pushes the
-walk fixes, the handoff update and the select.
+Nothing on this branch. It is on `main` and deployed at `9983184`. Archive this
+file when the next task opens.
+
+The nearest useful thing the switcher has left undone: the deployed school has
+one round, so nobody has ever seen the switcher there. Whoever opens a second
+deployed round should look at it once.
