@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Archive, CheckCircle2, Clipboard, Loader2, Lock, Map, RotateCcw, Sparkles } from "lucide-react";
+import { Archive, CheckCircle2, Clipboard, History, Loader2, Lock, Map, RotateCcw, Sparkles } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useRef, useState } from "react";
 import { CopyLinkStatus } from "@/components/ui/copy-link-status";
@@ -17,6 +17,12 @@ type RoundControlsProps = {
   expectedResponses: number;
   minimumResponses: number;
   status: "draft" | "active" | "closed" | "archived";
+  /**
+   * Whether the school has moved on to a later round. A superseded round is
+   * read: the school has already acted on what it said, so nothing here
+   * rewrites its answers or its analysis.
+   */
+  isSuperseded?: boolean;
 };
 
 export function RoundControls({
@@ -26,6 +32,7 @@ export function RoundControls({
   expectedResponses,
   minimumResponses,
   status,
+  isSuperseded = false,
 }: RoundControlsProps) {
   const [closed, setClosed] = useState(status === "closed");
   const [closing, setClosing] = useState(false);
@@ -38,7 +45,14 @@ export function RoundControls({
   const shareUrl = useShareUrl(shareCode);
   const { status: copyStatus, copy } = useClipboard();
   const shareInputRef = useRef<HTMLInputElement | null>(null);
-  const openDashboardAction = getNavigationAction("openDashboard");
+  const openDashboardAction = getNavigationAction("openDashboard", roundId);
+  /**
+   * Both of the actions below rewrite what a round measured. An archived round
+   * refuses them at the route with 409, and a superseded one is a measurement
+   * the school has already answered, so neither is offered a button that
+   * should not be pressed.
+   */
+  const readOnly = archived || isSuperseded;
 
   /**
    * Copy the link, and when the browser refuses, select it so the manual copy
@@ -210,10 +224,7 @@ export function RoundControls({
         />
 
         <div className="round-actions">
-          {/* An archived round is read-only. Both of these rewrite what it
-              measured, and the routes answer them with 409, so the screen does
-              not offer them at all rather than offering a button that fails. */}
-          {archived ? null : (
+          {readOnly ? null : (
             <>
               <button
                 id="refresh-round-analysis"
@@ -289,10 +300,18 @@ export function RoundControls({
           </Link>
         </div>
 
-        {closed && !archived ? (
+        {closed && !archived && !isSuperseded ? (
           <div className="closed-note">
             <CheckCircle2 size={18} aria-hidden="true" />
             סבב האבחון מסומן כסגור. הדשבורד זמין לצפייה.
+          </div>
+        ) : null}
+        {isSuperseded && !archived ? (
+          <div className="closed-note">
+            <History size={18} aria-hidden="true" />
+            זהו סבב קודם. בית הספר עבר לסבב חדש יותר, ולכן הסבב הזה פתוח לקריאה
+            בלבד: הנתונים והניתוח שלו נשמרים כפי שהיו, בלי איפוס ובלי ניתוח
+            מחדש. היעדים שנבחרו בו ממשיכים להתעדכן כרגיל.
           </div>
         ) : null}
         {archived ? (

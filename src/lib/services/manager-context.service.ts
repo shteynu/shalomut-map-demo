@@ -69,6 +69,21 @@ export function orderRoundsForManager(rounds: SurveyRound[]): SurveyRound[] {
   });
 }
 
+/**
+ * Whether the round on screen is still the one the school is working on.
+ *
+ * `rounds` is ordered for the manager, so the first entry is the round they
+ * would have landed on without asking for one. Anything else is a round the
+ * school has moved past, and a superseded round is read: its answers are not
+ * reset and its analysis is not re-run, because the school has already acted
+ * on what it said.
+ */
+export function isSelectedRoundCurrent(context: ManagerContext): boolean {
+  return Boolean(
+    context.selectedRound && context.rounds[0]?.id === context.selectedRound.id,
+  );
+}
+
 export class ManagerContextService {
   public static async load(
     orgRepo: IOrganizationRepository,
