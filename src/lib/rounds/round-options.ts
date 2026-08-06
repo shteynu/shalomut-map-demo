@@ -2,13 +2,13 @@ import { dashboardMapRoute } from "../navigation";
 import type { RoundStatus, SurveyRound } from "../types/backend";
 
 /**
- * What the dashboard needs to offer the school's rounds, and nothing more.
+ * What a screen needs to offer the school's rounds, and nothing more.
  *
  * The rounds themselves carry share codes, thresholds and questionnaire
  * snapshots; a switcher needs a label and a link, so only those cross into the
  * client component.
  */
-export type DashboardRoundOption = {
+export type RoundSwitcherOption = {
   id: string;
   title: string;
   statusLabel: string;
@@ -20,9 +20,9 @@ export type DashboardRoundOption = {
  * The school's rounds in two groups (ADR-018): the ones a manager works with,
  * and the archive they filed away and can still open.
  */
-export type DashboardRoundOptions = {
-  current: DashboardRoundOption[];
-  archived: DashboardRoundOption[];
+export type RoundSwitcherOptions = {
+  current: RoundSwitcherOption[];
+  archived: RoundSwitcherOption[];
 };
 
 export const roundStatusLabels: Record<RoundStatus, string> = {
@@ -31,6 +31,13 @@ export const roundStatusLabels: Record<RoundStatus, string> = {
   closed: "סגור",
   archived: "בארכיון",
 };
+
+/**
+ * Where selecting a round takes the manager. Each screen passes its own route
+ * builder so switching rounds stays on the screen the manager is reading: a
+ * switch that always landed on the map would be a navigation nobody asked for.
+ */
+export type RoundSwitcherRoute = (roundId: string) => string;
 
 /**
  * Archiving a round takes it out of the everyday list; it does not take it
@@ -42,17 +49,18 @@ export const roundStatusLabels: Record<RoundStatus, string> = {
  * every round except the one they are looking at. It stays in the everyday
  * list, marked `בארכיון`, so the current position is announced.
  */
-export function toDashboardRoundOptions(
+export function toRoundSwitcherOptions(
   rounds: SurveyRound[],
   selectedRoundId: string,
-): DashboardRoundOptions {
+  toRoute: RoundSwitcherRoute = dashboardMapRoute,
+): RoundSwitcherOptions {
   const options = rounds.map((round) => ({
     round,
     option: {
       id: round.id,
       title: round.title,
       statusLabel: roundStatusLabels[round.status],
-      href: dashboardMapRoute(round.id),
+      href: toRoute(round.id),
       isSelected: round.id === selectedRoundId,
     },
   }));

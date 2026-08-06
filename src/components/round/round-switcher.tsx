@@ -1,11 +1,16 @@
 import Link from "next/link";
 import type {
-  DashboardRoundOption,
-  DashboardRoundOptions,
-} from "@/lib/dashboard/round-options";
+  RoundSwitcherOption,
+  RoundSwitcherOptions,
+} from "@/lib/rounds/round-options";
 
-type DashboardRoundSwitcherProps = {
-  options: DashboardRoundOptions;
+type RoundSwitcherProps = {
+  options: RoundSwitcherOptions;
+  /**
+   * The map centres its sidebar column; the ordinary manager screens read from
+   * the start of the line like everything else on them.
+   */
+  align?: "start" | "center";
 };
 
 /**
@@ -15,8 +20,11 @@ type DashboardRoundSwitcherProps = {
  * without JavaScript, and each round keeps a URL a manager can return to. The
  * selected round stays in the list as a non-link so the current position is
  * announced rather than only coloured.
+ *
+ * Every manager screen that shows one round's numbers renders this, so opening
+ * a new round never puts the previous one out of reach.
  */
-export function DashboardRoundSwitcher({ options }: DashboardRoundSwitcherProps) {
+export function RoundSwitcher({ options, align = "start" }: RoundSwitcherProps) {
   const { current, archived } = options;
 
   if (current.length + archived.length < 2) {
@@ -24,7 +32,10 @@ export function DashboardRoundSwitcher({ options }: DashboardRoundSwitcherProps)
   }
 
   return (
-    <nav className="dashboard-round-switcher" aria-label="בחירת סבב אבחון">
+    <nav
+      className={`round-switcher round-switcher-${align}`}
+      aria-label="בחירת סבב אבחון"
+    >
       <ul>
         {current.map((option) => (
           <RoundOptionItem key={option.id} option={option} />
@@ -36,7 +47,7 @@ export function DashboardRoundSwitcher({ options }: DashboardRoundSwitcherProps)
          * `details` rather than a toggle: the archive has to open without
          * JavaScript, for the same reason the rounds are links.
          */
-        <details className="dashboard-round-archive">
+        <details className="round-switcher-archive">
           <summary>הצגת הארכיון ({archived.length})</summary>
           <ul>
             {archived.map((option) => (
@@ -49,20 +60,20 @@ export function DashboardRoundSwitcher({ options }: DashboardRoundSwitcherProps)
   );
 }
 
-function RoundOptionItem({ option }: { option: DashboardRoundOption }) {
+function RoundOptionItem({ option }: { option: RoundSwitcherOption }) {
   return (
     <li>
       {option.isSelected ? (
-        <span className="dashboard-round-option is-selected" aria-current="page">
+        <span className="round-switcher-option is-selected" aria-current="page">
           <strong>{option.title}</strong>
-          <span className="dashboard-round-option-status">
+          <span className="round-switcher-option-status">
             {option.statusLabel}
           </span>
         </span>
       ) : (
-        <Link className="dashboard-round-option" href={option.href}>
+        <Link className="round-switcher-option" href={option.href}>
           <strong>{option.title}</strong>
-          <span className="dashboard-round-option-status">
+          <span className="round-switcher-option-status">
             {option.statusLabel}
           </span>
         </Link>

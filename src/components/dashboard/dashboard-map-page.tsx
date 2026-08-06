@@ -8,7 +8,7 @@ import {
   formatDelta,
   type RoundComparison,
 } from "@/lib/dashboard/round-comparison";
-import type { DashboardRoundOptions } from "@/lib/dashboard/round-options";
+import type { RoundSwitcherOptions } from "@/lib/rounds/round-options";
 import type { AiInsightsUiState } from "@/lib/hooks/use-ai-insights";
 import { useAiInsights } from "@/lib/hooks/use-ai-insights";
 import type { WellbeingDimensionId, WellbeingStatus } from "@/lib/shalomut-source";
@@ -18,7 +18,7 @@ import { DashboardHeading } from "./dashboard-heading";
 import { DashboardHomeLink } from "./dashboard-home-link";
 import { DashboardMapLocked } from "./dashboard-map-locked";
 import { DashboardPartialMapNotice } from "./dashboard-partial-map-notice";
-import { DashboardRoundSwitcher } from "./dashboard-round-switcher";
+import { RoundSwitcher } from "@/components/round/round-switcher";
 
 type DashboardMapPageProps = {
   roundId: string;
@@ -31,7 +31,7 @@ type DashboardMapPageProps = {
     WellbeingDimensionId,
     { averageScore: number; computedStatus: WellbeingStatus }
   >;
-  roundOptions: DashboardRoundOptions;
+  roundOptions: RoundSwitcherOptions;
   /** The previous round's numbers, when there is a comparable one. */
   comparison: RoundComparison | null;
 };
@@ -58,7 +58,7 @@ export function DashboardMapPage({
           roundTitle={roundTitle}
         />
         {/* A locked round is exactly when a manager wants the other rounds. */}
-        <DashboardRoundSwitcher options={roundOptions} />
+        <RoundSwitcher options={roundOptions} align="center" />
         <DashboardMapLocked
           responseCount={responseCount}
           minimumResponses={minimumResponses}
@@ -144,7 +144,7 @@ function DashboardMapReady({
             {organizationName}, {roundTitle}
           </p>
 
-          <DashboardRoundSwitcher options={roundOptions} />
+          <RoundSwitcher options={roundOptions} align="center" />
 
           <div className="score-ring-card">
             <div className="score-ring-value">
