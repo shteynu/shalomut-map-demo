@@ -1,7 +1,7 @@
 import { ManagerOnboarding } from "@/components/manager";
 import { DashboardMapPage } from "@/components/dashboard";
 import { toRoundSwitcherOptions } from "@/lib/rounds/round-options";
-import { dashboardMapRoute, readRoundParam } from "@/lib/navigation";
+import { readRoundParam, roundSwitcherAction } from "@/lib/navigation";
 import {
   loadManagerContext,
   loadRoundComparison,
@@ -58,8 +58,8 @@ export default async function DashboardPage({
       roundOptions={toRoundSwitcherOptions(
         context.rounds,
         selectedRound.id,
-        dashboardMapRoute,
       )}
+      roundSwitcherAction={roundSwitcherAction("dashboard")}
     />
   );
 }

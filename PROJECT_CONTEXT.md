@@ -389,16 +389,25 @@ switcher then listed archived rounds last rather than hiding them, so the only
 thing archiving did was reorder a list. Either the state means "not part of the
 everyday view" or it means nothing; this is the first reading.
 
-Out of the list is not out of reach. `toDashboardRoundOptions` returns two
-groups, and the switcher renders the archive behind a `details` disclosure —
-`הצגת הארכיון (N)` — so returning to an old semester never requires having kept
-its URL. `details` rather than a toggle for the same reason the rounds are links
-rather than a select: it must work without JavaScript.
+Out of the list is not out of reach. `toRoundSwitcherOptions` returns two
+groups, and the switcher renders the archive as its own group — `ארכיון (N)` —
+so returning to an old semester never requires having kept its URL.
+
+The switcher was a row of links, one chip per round, and became a single
+select on 2026-08-06 (owner request): the list of rounds only grows, a school
+runs two to four a year and never deletes one, and twenty chips are a wall.
+What did not change is that it must work without JavaScript — the constraint
+that made the rounds links in the first place. The select sits in a `GET` form
+whose action is the current screen and whose parameter is the same `round`
+every screen already reads, so a submission produces exactly the URL a link
+would have. With JavaScript the choice submits on change; without it, a submit
+button inside `noscript` is the way through. Each round still keeps a URL a
+manager can return to.
 
 The round on screen is the exception, and it has to be: a manager who followed
 a link to an archived round would otherwise read a switcher naming every round
 except the one they are looking at. Such a round stays in the everyday group,
-marked `בארכיון`, rather than hiding inside the disclosure.
+marked `בארכיון`, rather than inside the archive group.
 
 Archiving is an act, not a state a round drifts into. The round screen offers
 `העברה לארכיון`, and only for a round that has already stopped running: a live

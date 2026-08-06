@@ -8,8 +8,8 @@ import { calculatePercentage } from "@/lib/utils/math";
 import {
   getNavigationAction,
   homeActionRouteIds,
-  homeRoute,
   readRoundParam,
+  roundSwitcherAction,
   routeHrefForRound,
   routeMetadata,
 } from "@/lib/navigation";
@@ -78,8 +78,8 @@ export default async function HomePage({
         options={toRoundSwitcherOptions(
           context.rounds,
           selectedRound.id,
-          homeRoute,
         )}
+        action={roundSwitcherAction("home")}
       />
 
       <section className="home-stat-grid" aria-label="מדדי סבב אבחון">

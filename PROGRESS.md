@@ -50,9 +50,9 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
   so they work on a Hebrew layout, listed on screen, and deliberately absent
   from deletion.
 - Every manager screen reads any round the school owns — home, tracking, the
-  builder and the map — chosen from one switcher that stays on the screen it is
-  used from, with each round read through its own snapshot, threshold and
-  analysis. The header carries the round between those screens, so opening a new
+  builder and the map — chosen from one select that stays on the screen it is
+  used from and holds its size as the history grows, with each round read
+  through its own snapshot, threshold and analysis. The header carries the round between those screens, so opening a new
   round no longer puts the previous one out of reach. Setup is deliberately
   outside it: it configures the round the school is working on. A round the
   school has moved past is read — no reset and no re-analysis — while a closed

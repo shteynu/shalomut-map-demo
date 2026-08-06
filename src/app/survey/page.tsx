@@ -1,7 +1,7 @@
 import { ManagerOnboarding } from "@/components/manager";
 import { RoundSwitcher } from "@/components/round";
 import { SurveyBuilder } from "@/components/survey";
-import { readRoundParam, surveyBuilderRoute } from "@/lib/navigation";
+import { readRoundParam, roundSwitcherAction } from "@/lib/navigation";
 import { toRoundSwitcherOptions } from "@/lib/rounds/round-options";
 import { loadManagerContext } from "@/lib/server/manager-context";
 import { createEmptyDraftSurveyDefinition } from "@/lib/survey-definition";
@@ -48,8 +48,8 @@ export default async function SurveyPage({
           options={toRoundSwitcherOptions(
             context.rounds,
             context.selectedRound.id,
-            surveyBuilderRoute,
           )}
+          action={roundSwitcherAction("surveyBuilder")}
         />
       }
       // An archived round is read-only, and its questionnaire route answers

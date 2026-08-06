@@ -1,18 +1,18 @@
-import { dashboardMapRoute } from "../navigation";
 import type { RoundStatus, SurveyRound } from "../types/backend";
 
 /**
  * What a screen needs to offer the school's rounds, and nothing more.
  *
  * The rounds themselves carry share codes, thresholds and questionnaire
- * snapshots; a switcher needs a label and a link, so only those cross into the
- * client component.
+ * snapshots; a switcher needs a label and an id, so only those cross into the
+ * client component. Where choosing a round leads is the form's action, which
+ * is the screen's own path, so it is one value for the whole list rather than
+ * one per round.
  */
 export type RoundSwitcherOption = {
   id: string;
   title: string;
   statusLabel: string;
-  href: string;
   isSelected: boolean;
 };
 
@@ -33,15 +33,8 @@ export const roundStatusLabels: Record<RoundStatus, string> = {
 };
 
 /**
- * Where selecting a round takes the manager. Each screen passes its own route
- * builder so switching rounds stays on the screen the manager is reading: a
- * switch that always landed on the map would be a navigation nobody asked for.
- */
-export type RoundSwitcherRoute = (roundId: string) => string;
-
-/**
  * Archiving a round takes it out of the everyday list; it does not take it
- * away. The archived rounds stay behind a disclosure the manager can open, so
+ * away. The archived rounds stay in the switcher as their own group, so
  * returning to an old semester never requires having kept its URL.
  *
  * The round on screen is the exception, and it has to be: a manager who
@@ -52,7 +45,6 @@ export type RoundSwitcherRoute = (roundId: string) => string;
 export function toRoundSwitcherOptions(
   rounds: SurveyRound[],
   selectedRoundId: string,
-  toRoute: RoundSwitcherRoute = dashboardMapRoute,
 ): RoundSwitcherOptions {
   const options = rounds.map((round) => ({
     round,
@@ -60,7 +52,6 @@ export function toRoundSwitcherOptions(
       id: round.id,
       title: round.title,
       statusLabel: roundStatusLabels[round.status],
-      href: toRoute(round.id),
       isSelected: round.id === selectedRoundId,
     },
   }));

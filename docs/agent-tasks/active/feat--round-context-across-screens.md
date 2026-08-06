@@ -5,7 +5,8 @@
 - Branch: `feat/round-context-across-screens`
 - Base branch: `main`
 - Base commit: `ddd6be3`
-- Current HEAD: `c67471c` plus this file, five commits ahead of `origin/main`
+- Current HEAD: `54ee05c` plus this slice, seven commits ahead of `origin/main`
+  (`b0c9848` and everything before it are already on `origin/main`)
 - Status: implemented, walked and verified; the push is the owner's
 - Last updated: 2026-08-06
 - Last agent/tool: Claude Code (Opus 5)
@@ -44,7 +45,7 @@ the switcher — it was only unreachable from anywhere but the map.
 - The round switcher becomes a manager-wide component rather than a dashboard
   one, and each screen links to itself with the other round.
 - The switcher renders on the home screen, `/round` and `/survey`, beside the
-  map that already had it.
+  map that already had it, and is one select rather than a row of chips.
 - The header nav carries the selected round to the round-scoped screens.
 - A superseded round — one that is no longer the school's current round — is
   read-only on `/round`: no reset, no re-analysis.
@@ -84,6 +85,15 @@ the switcher — it was only unreachable from anywhere but the map.
 - **Archiving stays available on a superseded round.** Filing a round away does
   not rewrite what it measured, and a superseded round is exactly the one a
   manager wants to file.
+- **The switcher is a select, and still works without JavaScript** (owner
+  request, 2026-08-06). Chips read well at three rounds and become a wall at
+  twenty. The select sits in a `GET` form whose action is the current screen,
+  so the no-JS path produces the same URL the chips linked to; the submit
+  button lives in `noscript`, which needs no state to stay in step with
+  whether scripting is on. ADR-018 is amended rather than contradicted: what
+  it required was no-JS operation, not links.
+- **The per-round `href` left the options.** Once the form's action carries the
+  screen, a link per round was a second way to say the same thing.
 
 ## Assumptions
 
@@ -98,7 +108,8 @@ All of the scope, in four commits on this branch:
 - `1ee6e12` the switcher renders on home, `/round` and `/survey`; the header
   and the home action cards carry the round.
 - `6d00328` a superseded round is read on `/round`.
-- `c67471c` the two defects the walk found (below).
+- `c67471c` the three defects the walk found (below).
+- The switcher becomes a select, in this slice.
 
 ## In progress
 
@@ -123,6 +134,9 @@ Nothing on this branch.
   `src/components/round/round-controls.tsx`, `src/app/globals.css`.
 - `src/components/round/round-threshold-next-step.tsx`: the map link takes a
   round.
+- `src/components/round/round-switcher.tsx` and `src/lib/rounds/round-options.ts`
+  again, for the select; `roundSwitcherAction` in `src/lib/navigation.ts`;
+  `PROJECT_CONTEXT.md` ADR-018 amended.
 - Tests: `src/components/round/__tests__/superseded-round-controls.test.tsx`
   (new), `round-switcher.test.tsx`, `round-threshold-next-step.test.tsx`,
   `src/lib/__tests__/navigation.test.ts`.
@@ -132,7 +146,8 @@ Nothing on this branch.
 
 ### Passed
 
-- `npm run verify:core` — exit 0 at `c67471c`. 620 tests, 620 pass; lint clean;
+- `npm run verify:core` — exit 0 with the select in place. 620 tests, 620 pass;
+  lint clean;
   build clean, and `/login` is still prerendered as static, which is what the
   Suspense boundary around the header's round read is there to protect.
 - Signed-in browser walk, local dev server, the owner signed in. The school has
@@ -149,6 +164,9 @@ Nothing on this branch.
     manager came from.
   - Console clean after the fixes; before them it carried the duplicate-key
     error that exposed the second defect.
+  - The select was walked on `/round` after the switch to it: choosing another
+    round navigates on change, the screen arrives as that round, and the
+    console stays clean.
 
 ### Failed
 
@@ -165,9 +183,12 @@ Three defects found by the walk, all fixed in `c67471c` and re-verified:
 
 - `verify:db` and `verify:ai` — no schema, repository, contract or Python
   change in this diff.
-- The archive disclosure was not walked: the local school has no archived
-  round. It is covered by `round-switcher.test.tsx` and unchanged by this
-  branch beyond the class rename.
+- The archive group was not walked: the local school has no archived round.
+  Producing one means archiving a local round through a native `confirm()`,
+  which froze the tab from the automation side, and a native `optgroup` is not
+  worth mutating the owner's data for. It is covered by
+  `round-switcher.test.tsx`. Nothing was archived — the attempt was checked
+  against the database and all four rounds are unchanged.
 
 ### Environment
 
@@ -175,8 +196,10 @@ Local.
 
 ### Residual risk
 
-Low. What the walk did not cover is the archive disclosure in its new
-placements, and the deployed environment, which nothing here reads.
+Low. What the walk did not cover is the archive group and the no-JS path —
+both are asserted in the rendered markup rather than exercised in a browser
+with scripting off. The deployed environment carries one round, so its switcher
+does not render at all.
 
 ## Failed approaches
 
@@ -201,3 +224,5 @@ None open on this branch.
 ## Next concrete step
 
 The owner pushes: `git push origin feat/round-context-across-screens:main`.
+`b0c9848` and earlier are already on `main` and deployed; this pushes the
+walk fixes, the handoff update and the select.

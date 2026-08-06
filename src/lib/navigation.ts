@@ -343,6 +343,17 @@ export function mainNavItemsForRound(roundId?: string): MainNavItem[] {
   }));
 }
 
+/**
+ * Where a screen's round-switcher form submits when there is no JavaScript:
+ * the screen itself. `trailingSlash` is on, so the action carries the slash
+ * rather than earning a redirect on every switch.
+ */
+export function roundSwitcherAction(id: AppRouteId): string {
+  const path = routeMetadata[id].href;
+
+  return path.endsWith("/") ? path : `${path}/`;
+}
+
 export function respondentSurveyRoute(shareCode: string) {
   return `${routes.respondentSurvey}/${encodeURIComponent(shareCode)}`;
 }

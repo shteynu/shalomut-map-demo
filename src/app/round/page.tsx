@@ -5,7 +5,7 @@ import {
   RoundSwitcher,
   RoundThresholdNextStep,
 } from "@/components/round";
-import { readRoundParam, roundTrackingRoute } from "@/lib/navigation";
+import { readRoundParam, roundSwitcherAction } from "@/lib/navigation";
 import { toRoundSwitcherOptions } from "@/lib/rounds/round-options";
 import { loadManagerContext } from "@/lib/server/manager-context";
 import { isSelectedRoundCurrent } from "@/lib/services";
@@ -47,8 +47,8 @@ export default async function RoundPage({
         options={toRoundSwitcherOptions(
           context.rounds,
           selectedRound.id,
-          roundTrackingRoute,
         )}
+        action={roundSwitcherAction("round")}
       />
 
       <section className="metric-grid" aria-label="נתוני סבב אבחון">

@@ -2,7 +2,7 @@ import assert from "node:assert";
 import test from "node:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import { toRoundSwitcherOptions } from "@/lib/rounds/round-options";
-import { roundTrackingRoute, surveyBuilderRoute } from "@/lib/navigation";
+import { roundSwitcherAction } from "@/lib/navigation";
 import type { SurveyRound } from "@/lib/types/backend";
 import { RoundSwitcher } from "../round-switcher";
 
@@ -30,29 +30,62 @@ const rounds = [
 
 const withArchive = [...rounds, round("round-0", "סבב ניסיון", "archived")];
 
-test("each round links to its own dashboard and the selected one is announced", () => {
-  const html = renderToStaticMarkup(
+function renderSwitcher(
+  list: SurveyRound[],
+  selectedId: string,
+  action = roundSwitcherAction("round"),
+) {
+  return renderToStaticMarkup(
     <RoundSwitcher
-      options={toRoundSwitcherOptions(rounds, "round-2")}
+      options={toRoundSwitcherOptions(list, selectedId)}
+      action={action}
     />,
   );
+}
 
-  assert.match(html, /href="\/dashboard\?round=round-1"/);
-  assert.doesNotMatch(html, /href="\/dashboard\?round=round-2"/);
-  assert.match(html, /aria-current="page"/);
+test("the rounds are one select, and the selected one is the value", () => {
+  const html = renderSwitcher(rounds, "round-2");
+
+  assert.match(html, /<select[^>]*name="round"/);
+  assert.match(html, /<option[^>]*value="round-1"/);
+  assert.match(html, /<option[^>]*value="round-2"[^>]*selected/);
   assert.match(html, /סבב שני/);
   assert.match(html, /סבב ראשון/);
 });
 
-test("the status of each round is a word, not only the border", () => {
-  const html = renderToStaticMarkup(
-    <RoundSwitcher
-      options={toRoundSwitcherOptions(rounds, "round-1")}
-    />,
+test("switching rounds works without JavaScript", () => {
+  // The form is a plain GET back to the screen the manager is reading, with
+  // the same parameter every screen already reads, so a no-JS submission
+  // produces exactly the URL a link would have.
+  const html = renderSwitcher(rounds, "round-2");
+
+  assert.match(html, /<form[^>]*method="get"/);
+  assert.match(html, /<form[^>]*action="\/round\/"/);
+  assert.match(html, /<button[^>]*type="submit"/);
+});
+
+test("the form posts back to the screen it is on", () => {
+  const html = renderSwitcher(
+    rounds,
+    "round-2",
+    roundSwitcherAction("surveyBuilder"),
   );
+
+  assert.match(html, /action="\/survey\/"/);
+});
+
+test("the status of each round is a word, not only a position in the list", () => {
+  const html = renderSwitcher(rounds, "round-1");
 
   assert.match(html, /פעיל/);
   assert.match(html, /סגור/);
+});
+
+test("the select is labelled", () => {
+  const html = renderSwitcher(rounds, "round-2");
+
+  assert.match(html, /<label[^>]*for="round-switcher-select"/);
+  assert.match(html, /id="round-switcher-select"/);
 });
 
 test("an archived round is not one of the everyday choices", () => {
@@ -64,81 +97,33 @@ test("an archived round is not one of the everyday choices", () => {
   );
 });
 
-test("the archive is reachable without knowing the round's URL", () => {
-  const html = renderToStaticMarkup(
-    <RoundSwitcher
-      options={toRoundSwitcherOptions(withArchive, "round-2")}
-    />,
-  );
+test("the archive is a group in the same list, reachable without its URL", () => {
+  const html = renderSwitcher(withArchive, "round-2");
 
-  assert.match(html, /<details/);
-  assert.match(html, /הצגת הארכיון \(1\)/);
-  assert.match(html, /href="\/dashboard\?round=round-0"/);
+  assert.match(html, /<optgroup[^>]*label="ארכיון \(1\)"/);
+  assert.match(html, /value="round-0"/);
   assert.match(html, /סבב ניסיון/);
-});
-
-test("the archive stays closed until a manager asks for it", () => {
-  const html = renderToStaticMarkup(
-    <RoundSwitcher
-      options={toRoundSwitcherOptions(withArchive, "round-2")}
-    />,
-  );
-
-  assert.doesNotMatch(html, /<details open/);
 });
 
 test("the archived round a manager is looking at stays in the everyday list", () => {
   const options = toRoundSwitcherOptions(withArchive, "round-0");
-  const html = renderToStaticMarkup(<RoundSwitcher options={options} />);
+  const html = renderSwitcher(withArchive, "round-0");
 
   assert.deepStrictEqual(options.archived, []);
-  assert.match(html, /סבב ניסיון/);
+  assert.match(html, /<option[^>]*value="round-0"[^>]*selected/);
   assert.match(html, /בארכיון/);
-  assert.match(html, /aria-current="page"/);
-  assert.doesNotMatch(html, /<details/);
+  assert.doesNotMatch(html, /<optgroup/);
 });
 
 test("a school whose only other round is archived still gets the switcher", () => {
-  const html = renderToStaticMarkup(
-    <RoundSwitcher
-      options={toRoundSwitcherOptions(
-        [rounds[0], round("round-0", "סבב ניסיון", "archived")],
-        "round-2",
-      )}
-    />,
+  const html = renderSwitcher(
+    [rounds[0], round("round-0", "סבב ניסיון", "archived")],
+    "round-2",
   );
 
-  assert.match(html, /הצגת הארכיון \(1\)/);
+  assert.match(html, /<optgroup[^>]*label="ארכיון \(1\)"/);
 });
 
 test("a school with one round gets no switcher at all", () => {
-  const html = renderToStaticMarkup(
-    <RoundSwitcher
-      options={toRoundSwitcherOptions([rounds[0]], "round-2")}
-    />,
-  );
-
-  assert.strictEqual(html, "");
-});
-
-test("switching rounds stays on the screen the manager is reading", () => {
-  const html = renderToStaticMarkup(
-    <RoundSwitcher
-      options={toRoundSwitcherOptions(rounds, "round-2", roundTrackingRoute)}
-    />,
-  );
-
-  assert.match(html, /href="\/round\?round=round-1"/);
-  assert.doesNotMatch(html, /\/dashboard/);
-});
-
-test("the archive follows the same screen as the everyday rounds", () => {
-  const html = renderToStaticMarkup(
-    <RoundSwitcher
-      options={toRoundSwitcherOptions(withArchive, "round-2", surveyBuilderRoute)}
-    />,
-  );
-
-  assert.match(html, /href="\/survey\?round=round-1"/);
-  assert.match(html, /href="\/survey\?round=round-0"/);
+  assert.strictEqual(renderSwitcher([rounds[0]], "round-2"), "");
 });

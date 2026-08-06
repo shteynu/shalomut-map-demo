@@ -2309,89 +2309,56 @@ textarea {
 }
 
 .round-switcher {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
   margin: 1.1rem 0 0;
 }
 
 .round-switcher-center {
-  margin-inline: auto;
-}
-
-.round-switcher ul {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.round-switcher-center ul {
   justify-content: center;
 }
 
-/* The archive opens with `details`, so it works without JavaScript and stays
-   closed until a manager asks for it. It is quieter than the rounds above it
-   because it is a way in, not one of the choices. */
-.round-switcher-archive {
-  margin-top: 0.6rem;
-}
-
-.round-switcher-center .round-switcher-archive {
-  text-align: center;
-}
-
-.round-switcher-archive summary {
-  display: inline-block;
-  min-height: 2.5rem;
-  padding: 0.6rem 0.5rem;
-  color: var(--accent-dark);
+.round-switcher label {
+  color: var(--muted);
   font-size: 0.9rem;
+}
+
+/* A select rather than a row of chips: the list of rounds only grows, and a
+   school never deletes one. `appearance: none` so the pill matches the rest of
+   the stone language, with the caret drawn in the padding it reserves. */
+.round-switcher select {
+  appearance: none;
+  min-height: 2.5rem;
+  max-width: min(100%, 22rem);
+  padding: 0.5rem 0.95rem;
+  padding-inline-start: 2.1rem;
+  border: 1.5px solid rgba(159, 101, 0, 0.35);
+  border-radius: 999px;
+  background-color: rgba(255, 250, 240, 0.85);
+  background-image: linear-gradient(45deg, transparent 50%, var(--accent-dark) 50%),
+    linear-gradient(135deg, var(--accent-dark) 50%, transparent 50%);
+  background-position:
+    left 1.05rem top 55%,
+    left 0.75rem top 55%;
+  background-size: 0.3rem 0.3rem;
+  background-repeat: no-repeat;
+  color: var(--accent-dark);
+  font: inherit;
+  font-size: 0.95rem;
   cursor: pointer;
 }
 
-.round-switcher-archive summary:hover {
-  text-decoration: underline;
+.round-switcher select:hover {
+  background-color: rgba(255, 250, 240, 1);
 }
 
-.round-switcher-archive ul {
-  margin-top: 0.35rem;
+.round-switcher select:focus-visible {
+  outline: 2px solid var(--accent-dark);
+  outline-offset: 2px;
 }
 
-.round-switcher-option {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.45rem;
-  min-height: 2.5rem;
-  padding: 0.5rem 0.95rem;
-  border: 1.5px solid rgba(159, 101, 0, 0.35);
-  border-radius: 999px;
-  background: rgba(255, 250, 240, 0.7);
-  color: var(--accent-dark);
-  font-size: 0.95rem;
-  text-decoration: none;
-  transition:
-    transform 150ms ease,
-    background-color 150ms ease;
-}
-
-.round-switcher-option:hover {
-  transform: translateY(-1px);
-  background: rgba(255, 250, 240, 0.95);
-}
-
-/* The selected round is named by aria-current and by its own status word, so
-   the heavier border is reinforcement rather than the only signal. */
-.round-switcher-option.is-selected {
-  border-color: var(--accent-dark);
-  border-width: 2.5px;
-  background: rgba(255, 250, 240, 0.95);
-  cursor: default;
-}
-
-.round-switcher-option-status {
-  color: var(--muted);
-  font-size: 0.85rem;
-}
 
 /* Change against the previous round. The sign is part of the text and the
    direction is spelled out in Hebrew nearby, so colour is a third channel and
@@ -2430,16 +2397,6 @@ textarea {
   margin-inline-start: 0.4rem;
   font-size: 0.9rem;
   font-weight: 800;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .round-switcher-option {
-    transition: none;
-  }
-
-  .round-switcher-option:hover {
-    transform: none;
-  }
 }
 
 .dashboard-dimension-chip {

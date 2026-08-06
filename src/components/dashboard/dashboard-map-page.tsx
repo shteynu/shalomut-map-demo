@@ -32,6 +32,7 @@ type DashboardMapPageProps = {
     { averageScore: number; computedStatus: WellbeingStatus }
   >;
   roundOptions: RoundSwitcherOptions;
+  roundSwitcherAction: string;
   /** The previous round's numbers, when there is a comparable one. */
   comparison: RoundComparison | null;
 };
@@ -45,6 +46,7 @@ export function DashboardMapPage({
   overallScore,
   dimensionScores,
   roundOptions,
+  roundSwitcherAction,
   comparison,
 }: DashboardMapPageProps) {
   const isLocked = responseCount < minimumResponses;
@@ -58,7 +60,11 @@ export function DashboardMapPage({
           roundTitle={roundTitle}
         />
         {/* A locked round is exactly when a manager wants the other rounds. */}
-        <RoundSwitcher options={roundOptions} align="center" />
+        <RoundSwitcher
+          options={roundOptions}
+          action={roundSwitcherAction}
+          align="center"
+        />
         <DashboardMapLocked
           responseCount={responseCount}
           minimumResponses={minimumResponses}
@@ -76,6 +82,7 @@ export function DashboardMapPage({
       overallScore={overallScore}
       dimensionScores={dimensionScores}
       roundOptions={roundOptions}
+      roundSwitcherAction={roundSwitcherAction}
       comparison={comparison}
     />
   );
@@ -128,6 +135,7 @@ function DashboardMapReady({
   overallScore,
   dimensionScores,
   roundOptions,
+  roundSwitcherAction,
   comparison,
 }: Omit<DashboardMapPageProps, "responseCount">) {
   const { state, reload } = useAiInsights(roundId);
@@ -144,7 +152,11 @@ function DashboardMapReady({
             {organizationName}, {roundTitle}
           </p>
 
-          <RoundSwitcher options={roundOptions} align="center" />
+          <RoundSwitcher
+            options={roundOptions}
+            action={roundSwitcherAction}
+            align="center"
+          />
 
           <div className="score-ring-card">
             <div className="score-ring-value">
