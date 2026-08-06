@@ -117,3 +117,16 @@ test("round controls expose the recovery target named by the next-step link", ()
   assert.match(html, /id="refresh-round-analysis"/);
   assert.match(html, />רענון ניתוח</);
 });
+
+test("the map link opens the round the band is about, not the newest one", () => {
+  const html = renderToStaticMarkup(
+    <RoundThresholdNextStepContent
+      state={{ status: "ready", value: readyResult }}
+      responseCount={10}
+      minimumResponses={10}
+      roundId="round-previous"
+    />,
+  );
+
+  assert.match(html, /href="\/dashboard\?round=round-previous"/);
+});

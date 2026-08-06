@@ -68,7 +68,19 @@ export default async function RoundPage({
         />
       </section>
 
+      {/*
+        Keyed by the round. Both of these copy the round into state — whether
+        it is closed, what the analysis is doing — and switching rounds is a
+        client navigation, which reuses a component rather than remounting it.
+        Without the key an earlier round would be read through the state of the
+        one the manager came from.
+
+        The two keys are prefixed because they are siblings: the round id alone
+        appeared twice in one parent, and React answered by rendering both
+        rounds' controls at once.
+      */}
       <RoundControls
+        key={`controls-${selectedRound.id}`}
         roundId={selectedRound.id}
         shareCode={selectedRound.shareCode}
         responseCount={responseCount}
@@ -79,6 +91,7 @@ export default async function RoundPage({
       />
 
       <RoundThresholdNextStep
+        key={`next-step-${selectedRound.id}`}
         roundId={selectedRound.id}
         responseCount={responseCount}
         minimumResponses={selectedRound.privacyThreshold}

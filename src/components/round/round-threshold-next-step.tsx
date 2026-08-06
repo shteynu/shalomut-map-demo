@@ -21,6 +21,11 @@ type RoundThresholdNextStepContentProps = {
   state: RoundThresholdNextStepState;
   responseCount: number;
   minimumResponses: number;
+  /**
+   * The round this band is about. The map link carries it, or the manager
+   * reading an earlier round would be sent to the map of the newest one.
+   */
+  roundId?: string;
 };
 
 type NextStepCopy = {
@@ -29,8 +34,6 @@ type NextStepCopy = {
   icon: ReactNode;
   action?: "dashboard" | "refresh";
 };
-
-const openDashboardAction = getNavigationAction("openDashboard");
 
 function getNextStepCopy({
   state,
@@ -118,6 +121,7 @@ export function RoundThresholdNextStepContent(
   props: RoundThresholdNextStepContentProps,
 ) {
   const copy = getNextStepCopy(props);
+  const openDashboardAction = getNavigationAction("openDashboard", props.roundId);
 
   return (
     <section
@@ -159,6 +163,7 @@ function ThresholdReachedNextStep({
       state={state}
       responseCount={responseCount}
       minimumResponses={minimumResponses}
+      roundId={roundId}
     />
   );
 }
@@ -178,6 +183,7 @@ export function RoundThresholdNextStep({
         state={{ status: "below-threshold" }}
         responseCount={responseCount}
         minimumResponses={minimumResponses}
+        roundId={roundId}
       />
     );
   }

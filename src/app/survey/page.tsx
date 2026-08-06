@@ -23,7 +23,14 @@ export default async function SurveyPage({
   }
 
   return (
+    /*
+      Keyed by the round, and here it matters most: the builder holds the whole
+      questionnaire in state, seeded once from the round it mounted with.
+      Switching rounds is a client navigation, so without the key the manager
+      would read the previous round's questions under this round's title.
+    */
     <SurveyBuilder
+      key={context.selectedRound.id}
       organizationName={context.organization.name}
       roundId={context.selectedRound.id}
       roundTitle={context.selectedRound.title}
