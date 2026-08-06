@@ -10,13 +10,17 @@ state, external blockers and approval gates. Product milestones belong in
 
 ## Repository snapshot
 
-- `origin/main` is `4b0a4bd` — the documentation reconciliation, pushed by the
-  owner on 2026-08-05. Five branches reached `main` that day, each as a
-  fast-forward the owner pushed themselves: `feat/survey-definition-history`
-  (backlog §1), `feat/archived-rounds-read-only` (§10),
-  `feat/goals-across-rounds` (§5), plus `docs/close-causal-refusal-decision` and
-  `docs/roadmap-reconciliation`. All are fully contained in `main` and can be
-  deleted; their task files are in `docs/agent-tasks/archive/`.
+- `origin/main` is `b0c9848` — `feat/round-context-across-screens`, pushed by
+  the owner on 2026-08-06. The round a manager is reading now follows them
+  across home, tracking, the builder and the map, and a round the school has
+  moved past is read rather than worked on. Before it, `main` was `ddd6be3`,
+  the 2026-08-05 session close.
+- Five branches reached `main` on 2026-08-05, each as a fast-forward the owner
+  pushed themselves: `feat/survey-definition-history` (backlog §1),
+  `feat/archived-rounds-read-only` (§10), `feat/goals-across-rounds` (§5), plus
+  `docs/close-causal-refusal-decision` and `docs/roadmap-reconciliation`. All
+  are fully contained in `main` and can be deleted; their task files are in
+  `docs/agent-tasks/archive/`.
 - Nothing is waiting. No branch holds unpushed work the product needs; the one
   unmerged branch, `fix/refuse-asserted-causes`, is a decided **no** and is
   described below.
@@ -26,15 +30,20 @@ state, external blockers and approval gates. Product milestones belong in
   `prisma generate`, never `prisma migrate deploy`, so this is a hand step every
   schema change still needs. Details and the read-back are in the database
   section below. Nothing after it changed a schema.
-- Verification at `763e38f`, the last commit that changed code: `npm run
-  verify:core` exit 0 with 606 TypeScript tests, and `npm run verify:db` 26
-  tests, 26 pass, against local PostgreSQL on `127.0.0.1:5433`. `verify:core`
-  was run again at `4b0a4bd` and still exits 0 with 606. `verify:ai` was **not**
-  run after 2026-08-05 morning — nothing that day changed Python. No manager
-  screen was smoke-tested in a browser: every one is behind `/login`, so that
-  check is done with the owner signed in.
-- Deployment of `4b0a4bd` itself was **not** read. The reading below is of
-  `763e38f`, and the two commits after it are documentation only.
+- Verification at `b0c9848`, the current head: `npm run verify:core` exit 0
+  with 620 TypeScript tests. `verify:db` and `verify:ai` were **not** run for
+  it — nothing since 2026-08-05 morning changed a schema, a repository, a
+  contract or Python. The last `verify:db` reading is 26 tests, 26 pass at
+  `763e38f`, against local PostgreSQL on `127.0.0.1:5433`.
+- **The manager screens have now been walked in a browser**, on 2026-08-06,
+  with the owner signed in on the local dev server. This closes the gap the
+  2026-08-05 entry recorded. It was worth doing: the walk found three defects
+  that the test suite did not — stale client state across a round switch, a
+  duplicate React key that rendered two rounds' controls at once, and a link
+  that dropped the round. All are fixed in `c67471c`. A signed-in walk remains
+  the check that a rendering test cannot stand in for.
+- Deployment of `b0c9848` was read on 2026-08-06 and is `Ready`; see the
+  deployed-state section.
 - Superseded snapshot: `origin/main` was `45f38c2` — the round archive.
   Verification there: `verify:core` exit 0 with 576 tests; `verify:db` and
   `verify:ai` not run, and the archive flow not smoke-tested in a browser.
@@ -310,18 +319,23 @@ Before the next deployment-sensitive task, compare `origin/main` with deployed
 Core and Python source/health, then record only fresh read-only evidence in the
 new branch task file.
 
-**Both services were re-read at 18:16Z on 2026-08-05 and both are on `763e38f`,
-the current `origin/main`.** Read-only, nothing changed:
+**Core was re-read on 2026-08-06 and is on `b0c9848`, the current
+`origin/main`.** Read-only, nothing changed:
 
-- **Python (Render):** `/health` answers `status: online`, `commit: 763e38f`,
-  `env: production`, `privacyThreshold: 10`, `supportedContractVersions`
-  `1.0`–`6.0`, `jobPollingEnabled: true`.
-- **Core (Vercel):** the production deployment is
-  `dpl_2FNoMKQFGRrzyDsTWdQbCCcT9BAK`, `READY`/`PROMOTED`, built from `main` at
-  `763e38f` — built 18:14:31Z, ready 18:15:10Z, alias assigned. Read from the
-  deployments API in the owner's own signed-in Chrome; nothing was clicked and
-  no secret was displayed. Anonymously, `/` still answers `307` to `/login`, as
-  it should.
+- **Core (Vercel):** the newest deployment is `b0c9848` on `main`, environment
+  `Production`, status `Ready`, built in 40s about a minute after the push.
+  Read from the project's deployments list in the owner's own signed-in
+  Chrome; nothing was clicked and no secret was displayed. Anonymously, `/`
+  still answers `307` to `/login`, as it should. Signed in, the deployed home
+  and tracking screens serve the new code: the round-scoped links carry
+  `?round=`, `setup` and `goals` stay bare, and the console is clean. The
+  switcher does not render there, which is correct — the deployed school has
+  one round, and the switcher appears from two.
+- **Python (Render):** last read at 18:16Z on 2026-08-05, on `763e38f`.
+  `/health` answered `status: online`, `commit: 763e38f`, `env: production`,
+  `privacyThreshold: 10`, `supportedContractVersions` `1.0`–`6.0`,
+  `jobPollingEnabled: true`. Not re-read on 2026-08-06 and not expected to
+  move: nothing since has changed Python.
 - The schema matches: the only migration these three slices needed was applied
   by hand on 2026-08-05, and nothing after it changed a schema.
 
