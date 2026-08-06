@@ -1,15 +1,17 @@
 # Shalomut Tracker — operational handoff
 
-Updated: 2026-08-06 (`origin/main` is `9983184`, deployed and read; nothing is
-pending and nothing is waiting). This document owns only cross-task
-operational/deployed state, external blockers and approval gates. Product milestones belong in
-`PROGRESS.md`; branch work and exact verification belong in
+Updated: 2026-08-06, session close (`origin/main` is `bc00512`; the last commit
+that changed code is `9983184`, which is deployed and was read). This document
+owns only cross-task operational/deployed state, external blockers and approval
+gates. Product milestones belong in `PROGRESS.md`; branch work and exact
+verification belong in
 `docs/agent-tasks/{active,archive}/`; older snapshots remain available in Git.
 
 ## Repository snapshot
 
-- `origin/main` is `9983184` — `feat/round-context-across-screens`, pushed by
-  the owner on 2026-08-06 in three goes (`b0c9848`, `54ee05c`, `9983184`). The
+- `origin/main` is `bc00512`, and the last commit that changed code is
+  `9983184` — `feat/round-context-across-screens`, pushed by the owner on
+  2026-08-06 in four goes (`b0c9848`, `54ee05c`, `9983184`, `bc00512`). The
   round a manager is reading now follows them across home, tracking, the
   builder and the map, chosen from one select; a round the school has moved
   past is read rather than worked on. Before it, `main` was `ddd6be3`, the
@@ -29,9 +31,10 @@ operational/deployed state, external blockers and approval gates. Product milest
   `prisma generate`, never `prisma migrate deploy`, so this is a hand step every
   schema change still needs. Details and the read-back are in the database
   section below. Nothing after it changed a schema.
-- Verification at `9983184`, the current head: `npm run verify:core` exit 0
-  with 620 TypeScript tests. `verify:db` and `verify:ai` were **not** run for
-  it — nothing since 2026-08-05 morning changed a schema, a repository, a
+- Verification at `9983184`, the last commit that changed code: `npm run
+  verify:core` exit 0 with 620 TypeScript tests. The commits after it are
+  documentation, which no check reads. `verify:db` and `verify:ai` were **not**
+  run — nothing since 2026-08-05 morning changed a schema, a repository, a
   contract or Python. The last `verify:db` reading is 26 tests, 26 pass at
   `763e38f`, against local PostgreSQL on `127.0.0.1:5433`.
 - **The manager screens have now been walked in a browser**, on 2026-08-06,
@@ -272,8 +275,9 @@ operational/deployed state, external blockers and approval gates. Product milest
 
 ## What is open, and what it waits on
 
-Recorded at the 2026-08-05 session close. Nothing here is unfinished work; each
-item waits on a decision, a request or the owner's own hands.
+Recorded at the 2026-08-05 session close and refreshed on 2026-08-06. Nothing
+here is unfinished work; each item waits on a decision, a request or the
+owner's own hands.
 
 **Waits on an owner decision**
 
@@ -297,16 +301,24 @@ item waits on a decision, a request or the owner's own hands.
 
 **Waits on the owner's hands**
 
-- A signed-in walk of the three newest screens on the deployed endpoint: the
-  builder's version history, an archived round's read-only round screen, and
-  `מעקב יעדים`. Every manager route redirects to `/login`, and the agent never
-  sees or types the manager password. The last signed-in check was 2026-08-04
-  and predates all three.
+- Signing in, whenever a manager screen needs looking at. The agent never sees
+  or types the manager password, so every walk starts with the owner signing
+  in — and it has to be in a browser the agent can drive. On 2026-08-06 the
+  first attempt was lost because the sign-in happened in a window that was not
+  connected; the connected Chrome is the one to use. The preview pane is a
+  separate browser with its own cookies.
+- A signed-in walk on the **deployed** endpoint of the screens only ever walked
+  locally: the builder's version history, an archived round's read-only round
+  screen, and `מעקב יעדים`. The 2026-08-06 walk covered the round context on
+  the local server, not these.
 - Rotating the four design-stage credentials before the first real respondents.
   Listed above as an accepted deferred gate; it is still open.
 
 **Worth a look, cheap**
 
+- The deployed school has one round, so nobody has ever seen the round switcher
+  on the deployed endpoint — it renders from two rounds up. Whoever opens a
+  second deployed round should look at it once.
 - The UptimeRobot keep-alive was created on 2026-08-05 and reported `Up` at its
   first checks. Two minutes of `Up` is not evidence that the Render instance
   stays awake across a quiet night. Whoever opens the next session should read
