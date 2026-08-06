@@ -49,9 +49,14 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 - Keyboard accelerators for the per-question actions, read from the physical key
   so they work on a Hebrew layout, listed on screen, and deliberately absent
   from deletion.
-- The dashboard reads any round the school owns, chosen from a switcher and
-  carried through every dashboard link, with each round read through its own
-  snapshot, threshold and analysis. The home screen stays on the active round.
+- Every manager screen reads any round the school owns — home, tracking, the
+  builder and the map — chosen from one switcher that stays on the screen it is
+  used from, with each round read through its own snapshot, threshold and
+  analysis. The header carries the round between those screens, so opening a new
+  round no longer puts the previous one out of reach. Setup is deliberately
+  outside it: it configures the round the school is working on. A round the
+  school has moved past is read — no reset and no re-analysis — while a closed
+  round that is still the newest one keeps both.
 - A school can open a second round from `/setup?round=new`, keeping its own
   details and starting an empty measurement period. A school runs one round at
   a time: a round going live closes the previous one and the builder names it,
