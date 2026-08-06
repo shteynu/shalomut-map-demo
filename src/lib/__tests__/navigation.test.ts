@@ -18,6 +18,7 @@ import {
   isMainNavItemActive,
   isPathWithin,
   mainNavItems,
+  mainNavItemsForRound,
   respondentSurveyRoute,
   routes,
   shouldHideGlobalHeader,
@@ -166,4 +167,40 @@ test("a round that does not exist yet is asked for by name, not by id", () => {
   assert.strictEqual(isNewRoundParam(readRoundParam({ round: " new " })), true);
   assert.strictEqual(isNewRoundParam(readRoundParam({ round: "round-7" })), false);
   assert.strictEqual(isNewRoundParam(readRoundParam({})), false);
+});
+
+test("the header carries the round to the screens that show one round's numbers", () => {
+  const items = mainNavItemsForRound("round-7");
+  const hrefById = Object.fromEntries(items.map((item) => [item.id, item.href]));
+
+  assert.strictEqual(hrefById.home, "/?round=round-7");
+  assert.strictEqual(hrefById.round, "/round?round=round-7");
+  assert.strictEqual(hrefById.surveyBuilder, "/survey?round=round-7");
+  assert.strictEqual(hrefById.dashboard, "/dashboard?round=round-7");
+});
+
+test("setup and goals stay outside the round context", () => {
+  const hrefById = Object.fromEntries(
+    mainNavItemsForRound("round-7").map((item) => [item.id, item.href]),
+  );
+
+  // Setup configures the round the school is working on rather than displaying
+  // a past one, and goals belong to the school across rounds (ADR-018).
+  assert.strictEqual(hrefById.setup, "/setup");
+  assert.strictEqual(hrefById.goals, "/goals");
+});
+
+test("without a round the header is the plain navigation", () => {
+  assert.deepStrictEqual(mainNavItemsForRound(), mainNavItems);
+  assert.deepStrictEqual(mainNavItemsForRound(""), mainNavItems);
+});
+
+test("a navigation action opens the round the manager is reading", () => {
+  assert.strictEqual(
+    getNavigationAction("openDashboard", "round-7").href,
+    "/dashboard?round=round-7",
+  );
+  assert.strictEqual(getNavigationAction("openDashboard").href, "/dashboard");
+  // Setup is not about a past round, so it ignores one.
+  assert.strictEqual(getNavigationAction("startSetup", "round-7").href, "/setup");
 });

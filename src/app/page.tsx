@@ -2,9 +2,18 @@ import Link from "next/link";
 import { ArrowLeft, ClipboardList, LockKeyhole, Map, Send, Settings2, Target, TrendingUp, TriangleAlert, Users } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { ManagerOnboarding } from "@/components/manager";
+import { RoundSwitcher } from "@/components/round";
 import { ActionCard, PrivacyTooltip, StatStone } from "@/components/ui";
 import { calculatePercentage } from "@/lib/utils/math";
-import { getNavigationAction, homeActionRouteIds, routeMetadata } from "@/lib/navigation";
+import {
+  getNavigationAction,
+  homeActionRouteIds,
+  homeRoute,
+  readRoundParam,
+  routeHrefForRound,
+  routeMetadata,
+} from "@/lib/navigation";
+import { toRoundSwitcherOptions } from "@/lib/rounds/round-options";
 import { loadManagerContext } from "@/lib/server/manager-context";
 import type { WellbeingStatus } from "@/lib/shalomut-source";
 
@@ -16,8 +25,12 @@ const actionIcons: Record<(typeof homeActionRouteIds)[number], LucideIcon> = {
   goals: Target,
 };
 
-export default async function HomePage() {
-  const context = await loadManagerContext();
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ round?: string | string[] }>;
+}) {
+  const context = await loadManagerContext(readRoundParam(await searchParams));
 
   if (!context.organization || !context.selectedRound) {
     return (
@@ -31,7 +44,7 @@ export default async function HomePage() {
   const { organization, selectedRound, responseCount, analytics } = context;
   const responsePercent = calculatePercentage(responseCount, organization.totalStaffCount);
   const startSetupAction = getNavigationAction("startSetup");
-  const openDashboardAction = getNavigationAction("openDashboard");
+  const openDashboardAction = getNavigationAction("openDashboard", selectedRound.id);
   const getStatusCount = (status: WellbeingStatus) =>
     analytics && !analytics.isLocked
       ? Object.values(analytics.dimensionScores).filter(
@@ -58,6 +71,16 @@ export default async function HomePage() {
           </Link>
         </div>
       </section>
+
+      {/* The school's rounds, so the screen a manager lands on is also the way
+          back to the round before this one. */}
+      <RoundSwitcher
+        options={toRoundSwitcherOptions(
+          context.rounds,
+          selectedRound.id,
+          homeRoute,
+        )}
+      />
 
       <section className="home-stat-grid" aria-label="מדדי סבב אבחון">
         <StatStone
@@ -104,8 +127,8 @@ export default async function HomePage() {
           const Icon = actionIcons[routeId];
           return (
             <ActionCard
-              key={action.href}
-              href={action.href}
+              key={action.id}
+              href={routeHrefForRound(routeId, selectedRound.id)}
               title={action.actionTitle}
               body={action.actionBody ?? action.navLabel}
               icon={<Icon size={26} />}

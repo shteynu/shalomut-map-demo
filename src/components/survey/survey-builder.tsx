@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { CheckCircle2, Eye, Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { PageIntro } from "@/components/ui/page-intro";
 import { PrivacyTooltip } from "@/components/ui/privacy-tooltip";
 import { SaveStatus, parseSavedAt } from "@/components/ui/save-status";
@@ -93,6 +94,12 @@ type SurveyBuilderProps = {
    */
   lastSavedAt?: string;
   isFrozen?: boolean;
+  /**
+   * The school's other rounds, rendered by the page. The builder is a client
+   * component and the rounds are a server read, so they arrive as markup
+   * rather than as a list this component would have to fetch.
+   */
+  roundSwitcher?: ReactNode;
 };
 
 export function SurveyBuilder({
@@ -103,6 +110,7 @@ export function SurveyBuilder({
   initialDefinition,
   lastSavedAt,
   isFrozen = false,
+  roundSwitcher,
 }: SurveyBuilderProps) {
   const [title, setTitle] = useState(initialDefinition.title);
   const audience = initialDefinition.audience;
@@ -532,6 +540,8 @@ export function SurveyBuilder({
           </>
         }
       />
+
+      {roundSwitcher}
 
       {/* Directly under the save button, where the manager is already looking
           when they wonder whether the last click landed. */}

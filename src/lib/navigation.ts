@@ -160,12 +160,15 @@ const navigationActionDefinitions: Record<NavigationActionId, { target: AppRoute
   backToMap: { target: "dashboard", label: navigationLabels.backToMap },
 };
 
-export function getNavigationAction(id: NavigationActionId): NavigationAction {
+export function getNavigationAction(
+  id: NavigationActionId,
+  roundId?: string,
+): NavigationAction {
   const action = navigationActionDefinitions[id];
 
   return {
     id,
-    href: routeMetadata[action.target].href,
+    href: routeHrefForRound(action.target, roundId),
     label: action.label,
     target: action.target,
   };
@@ -249,6 +252,10 @@ function withRound(path: string, roundId?: string) {
   return `${path}?${DASHBOARD_ROUND_PARAM}=${encodeURIComponent(roundId)}`;
 }
 
+export function homeRoute(roundId?: string) {
+  return withRound(routes.home, roundId);
+}
+
 export function dashboardMapRoute(roundId?: string) {
   return withRound(routes.dashboard, roundId);
 }
@@ -289,6 +296,51 @@ export function dashboardDimensionRecommendationsRoute(
     `${routes.dashboard}/${dimensionId}/recommendations`,
     roundId,
   );
+}
+
+/**
+ * The screens that are about one round, and how each one names it.
+ *
+ * A manager reading last semester's round has to be able to move between the
+ * screens without losing it. Everything reachable from the header that shows a
+ * round's own numbers is here; `setup` is not, because it configures the round
+ * the school is working on rather than displaying a past one, and `goals` is
+ * not, because goals belong to the school across rounds (ADR-018).
+ */
+const roundScopedRoutes: Partial<
+  Record<AppRouteId, (roundId?: string) => string>
+> = {
+  home: homeRoute,
+  round: roundTrackingRoute,
+  surveyBuilder: surveyBuilderRoute,
+  dashboard: dashboardMapRoute,
+};
+
+/**
+ * Where a route leads for a manager reading a particular round. Routes that
+ * are not about one round ignore the round, so a caller can pass it
+ * everywhere without deciding which screens care.
+ */
+export function routeHrefForRound(id: AppRouteId, roundId?: string): string {
+  const toRoute = roundScopedRoutes[id];
+
+  return toRoute ? toRoute(roundId) : routeMetadata[id].href;
+}
+
+/**
+ * The main navigation, told which round the manager is reading. Without a
+ * round it is the plain navigation, which is what a manager on the school's
+ * current round gets: the parameter would only repeat the default.
+ */
+export function mainNavItemsForRound(roundId?: string): MainNavItem[] {
+  if (!roundId) {
+    return mainNavItems;
+  }
+
+  return mainNavItems.map((item) => ({
+    ...item,
+    href: routeHrefForRound(item.id, roundId),
+  }));
 }
 
 export function respondentSurveyRoute(shareCode: string) {

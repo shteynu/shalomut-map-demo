@@ -1,8 +1,14 @@
 import { ManagerOnboarding } from "@/components/manager";
 import { MetricCard, PageIntro } from "@/components/ui";
-import { RoundControls, RoundThresholdNextStep } from "@/components/round";
-import { readRoundParam } from "@/lib/navigation";
+import {
+  RoundControls,
+  RoundSwitcher,
+  RoundThresholdNextStep,
+} from "@/components/round";
+import { readRoundParam, roundTrackingRoute } from "@/lib/navigation";
+import { toRoundSwitcherOptions } from "@/lib/rounds/round-options";
 import { loadManagerContext } from "@/lib/server/manager-context";
+import { isSelectedRoundCurrent } from "@/lib/services";
 import { MINIMUM_PRIVACY_THRESHOLD } from "@/lib/survey-definition";
 
 const dateFormatter = new Intl.DateTimeFormat("he-IL", {
@@ -37,6 +43,14 @@ export default async function RoundPage({
         description="מסך המעקב מציג כמות תשובות בלבד. אין בו רשימת משיבים, שמות, מיילים או פרטים מזהים."
       />
 
+      <RoundSwitcher
+        options={toRoundSwitcherOptions(
+          context.rounds,
+          selectedRound.id,
+          roundTrackingRoute,
+        )}
+      />
+
       <section className="metric-grid" aria-label="נתוני סבב אבחון">
         <MetricCard className="stone-variant-navy" value={dateFormatter.format(selectedRound.startDate)} label="פתיחה" helper="מועד הפצת הלינק" />
         <MetricCard className="stone-variant-green" value={selectedRound.endDate ? dateFormatter.format(selectedRound.endDate) : "לא נקבע"} label="סגירה" helper="סיום איסוף מתוכנן" />
@@ -61,6 +75,7 @@ export default async function RoundPage({
         expectedResponses={organization.totalStaffCount}
         minimumResponses={selectedRound.privacyThreshold}
         status={selectedRound.status}
+        isSuperseded={!isSelectedRoundCurrent(context)}
       />
 
       <RoundThresholdNextStep
