@@ -5,7 +5,7 @@
 - Branch: test/v6-contract-refusals
 - Base branch: test/v5-contract-refusals (not yet on `main`)
 - Base commit: b24d6ae
-- Current HEAD: see `Remaining`
+- Current HEAD: 75c6e63
 - Status: complete and verified, committed locally, unpushed
 - Last updated: 2026-08-07
 - Last agent/tool: Claude Code (Opus 5)
