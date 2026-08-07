@@ -1,8 +1,8 @@
 # Shalomut Tracker — operational handoff
 
-Updated: 2026-08-07, fourth session close (`origin/main` is `641e65b` and **its
-CI run failed**; three commits that fix it are committed locally and unpushed —
-see the snapshot below). This document
+Updated: 2026-08-07, fourth session (`origin/main` is `46fcde7` and **red**;
+one commit that fixes it is committed locally and unpushed — see the snapshot
+below). This document
 owns only cross-task operational/deployed state, external blockers and approval
 gates. Product milestones belong in `PROGRESS.md`; branch work and exact
 verification belong in
@@ -22,14 +22,13 @@ verification belong in
   own Edge isolate rather than Next's Node sandbox, so it may never have
   tripped — nothing here tested the deployed endpoint, and settling it takes a
   signed-in browser.
-- **`main` is red.** Run 31191748609 on `641e65b` failed at the new browser
-  smoke step: `npm run db:seed:local` imported `getRepositories`, an export the
-  composition root replaced long ago, so the seed had been dying at its first
-  line — invisible until something re-seeded. The fix is committed locally on
-  `test/browser-smoke` (`a3ed58a`) together with two documentation commits, and
-  landing them is `git push origin test/browser-smoke:main`. Nothing product-
-  facing is affected: the failure is in a CI step, and the deployed application
-  is untouched by all of it.
+- **`main` is red**, and has been through three runs of the new smoke step,
+  each for a different reason. `31191748609`: `npm run db:seed:local` called
+  `getRepositories`, an export the composition root had replaced, so the seed
+  had been dying at its first line — invisible until something re-seeded.
+  `31195236422` and `31205427782`: the middleware could not verify a session on
+  Node 20, described above. Both are fixed on `test/browser-smoke`; landing them
+  is `git push origin test/browser-smoke:main`.
 - `origin/main` is `641e65b`. The last commit that changed **product** code is
   `36fe4ce` — `feat/multi-school-scope`, pushed by the owner on 2026-08-07:
   the system holds more than one school, `/setup` is where one is chosen and
@@ -54,7 +53,8 @@ verification belong in
   production server with credentials it invents, signs a manager in, reads the
   round's share link, opens it as a respondent and looks at the dashboard. CI
   runs it after `npm run verify`, seeding the disposable service database
-  first. No secret is configured for it and none should be. It replaces the
+  first. The job declares one throwaway `SESSION_SECRET` so the build and the
+  server share it; none of the repository's real secrets are read. It replaces the
   manual browser walk as a regression check — not as a substitute for walking
   new screens.
 - **Two gates were considered and declined on 2026-08-07**, so they are not
@@ -73,10 +73,9 @@ verification belong in
   `docs/close-causal-refusal-decision` and `docs/roadmap-reconciliation`. All
   are fully contained in `main` and can be deleted; their task files are in
   `docs/agent-tasks/archive/`.
-- **Three commits are waiting on a push**, all on `test/browser-smoke`:
-  `a3ed58a` (the seed fix that turns CI green again), `445b380` and `2a0b4d4`
-  (the task file and `PROGRESS.md`). `docs/agent-tasks/active/` holds that one
-  task file and nothing else. The last product branch, `feat/multi-school-scope`,
+- **One commit is waiting on a push**: `26209f3` on `test/browser-smoke`, the
+  session-verification fix, its regression test and the documentation of both.
+  `docs/agent-tasks/active/` holds that one task file and nothing else. The last product branch, `feat/multi-school-scope`,
   landed on 2026-08-07, is fully contained in `main` and was walked in the
   owner's signed-in browser before the push; its task file is archived.
 - The one unmerged branch, `fix/refuse-asserted-causes`, is a decided **no**
@@ -88,10 +87,11 @@ verification belong in
   schema change still needs. Details and the read-back are in the database
   section below. Nothing after it changed a schema.
 - Verification at the `test/browser-smoke` tip: `npm run verify:core` exit 0
-  with 733 TypeScript tests, all five fitness checks, typecheck, ESLint and the
+  with 736 TypeScript tests, all five fitness checks, typecheck, ESLint and the
   production build, plus `npm run test:e2e` 4/4 against the local development
-  database. CI's own smoke step has still never completed — its one run is the
-  failure above. The last full mutation run was at `ae73259` — nothing after
+  database and a Node 20 container reproduction that answers 200 on a protected
+  page where it answered 307 before the fix. CI's own smoke step has still never
+  completed — its three runs are the failures above. The last full mutation run was at `ae73259` — nothing after
   it touched a mutated module or the runner's test list — and was exit 0 (1155
   killed, 52 survived, 6 uncovered, 42 runtime errors, 95.22%). `verify:db` and
   `verify:ai` were **not** run — nothing since 2026-08-05 morning changed a
