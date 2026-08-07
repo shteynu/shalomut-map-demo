@@ -99,8 +99,9 @@ Three dead ends shaped the design, and each is recorded in
 
 ## Remaining
 
-- The CI smoke is still red and its cause is unknown. The diagnostic is
-  committed but useless until a run prints it.
+- The CI smoke has never passed. The fix is committed and unproven: it rests on
+  the two runtimes resolving one job-level value the same way, which is exactly
+  what this runner has not been doing. The next run decides it.
 
 ## Changed files
 
@@ -142,7 +143,15 @@ modified in the worktree and are left alone.
   `mcr.microsoft.com/playwright:v1.62.1-noble` on Linux with a fresh install,
   a fresh migrate and seed and a fresh build. Both pass 4/4, so the difference
   is the runner, not the code path. The middleware now says why it rejected a
-  cookie, and the next CI run is what reads it.
+  cookie, and run 31198593161 printed it:
+  `[auth] a manager session cookie was rejected — the token did not verify`.
+  So the middleware built its verifier and disagreed with the route that signed
+  the token. The edge bundle folds `NODE_ENV === "production"` to a constant,
+  so a missing secret there would have thrown and said so instead — that
+  runtime held a secret, and a different one. Which value each runtime resolved
+  is not visible from outside, so the log now names the source (configured or
+  built-in) without naming the secret, and the job declares one `SESSION_SECRET`
+  in front of every process so the disagreement cannot recur.
 
 - **The CI step failed on its first run** (`641e65b`, run 31191748609), and
   found a bug older than this task: `npm run db:seed:local` imported
@@ -194,11 +203,10 @@ machines and two operating systems.
 ## Next concrete step
 
 Hand the push to the owner: `git push origin test/browser-smoke:main`, then
-read the `[WebServer]` lines of the smoke step. One of two sentences will be
-there: `session verification is unavailable in this runtime: …` means the edge
-middleware cannot see `SESSION_SECRET` and the fix is to give the CI step its
-own value at the job level; `the token did not verify` means the middleware
-holds a different secret than the login route, and the fix is to stop the two
-runtimes disagreeing. If neither line appears, the cookie never reached the
-middleware and the trace in the `playwright-report` artifact is the next
-thing to read.
+read the smoke step. Green means the job-level `SESSION_SECRET` closed it. If
+the `[auth]` line returns, it now ends in `verifying with the configured
+secret` or `verifying with the built-in secret` — `built-in` means the
+middleware still cannot see the variable that every other process in the job
+has, and the next move is to stop asking two runtimes to agree about env at
+all: sign and verify through one explicitly-passed value rather than through
+`process.env` in two places.

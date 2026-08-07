@@ -46,6 +46,27 @@ jobs:
       # DATABASE_URL: nothing in the build may reach a real database.
       TEST_DATABASE_URL: postgresql://shalomut:shalomut@127.0.0.1:5433/shalomut_test
 
+      # The browser smoke's session secret, and the reason it sits on the job
+      # rather than on the smoke step: the application answers a request from
+      # two runtimes — a route handler issues the session, the middleware
+      # verifies it — and on this runner they did not resolve SESSION_SECRET
+      # the same way. The login route signed with the value Playwright started
+      # the server with, the middleware verified with a different one, and
+      # every protected page redirected to /login as though the password had
+      # been wrong. Declared here, one value stands in front of every process
+      # in the job, the build included, so the two runtimes cannot disagree.
+      #
+      # It is not a secret and must never become one: it authenticates a
+      # browser against a server this job starts and throws away, and it is the
+      # same default `playwright.config.ts` uses when nothing is set. Nothing
+      # in this repository's real configuration is read here.
+      #
+      # The password and organization id stay on `playwright.config.ts`, where
+      # only the server it starts sees them. Declaring MANAGER_ADMIN_PASSWORD
+      # for the whole job changes the password the suite's own auth tests
+      # expect, and three of them fail.
+      SESSION_SECRET: smoke-run-session-secret-not-a-real-secret
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -105,8 +126,10 @@ jobs:
       # finished emptying it.
       #
       # The sign-in credentials come from `playwright.config.ts`, which starts
-      # the server itself with values it invents. No secret is configured for
-      # this job, and none should be.
+      # the server itself with values it invents — except the session secret,
+      # which the job declares above so that the build and the server share it.
+      # None of the repository's real secrets are read by this job, and none
+      # should be.
       - name: Install the smoke browser
         run: npx playwright install --with-deps chromium
 

@@ -24,6 +24,20 @@ function getSessionSecret(): string {
   return secret || DEFAULT_SECRET;
 }
 
+/**
+ * Which secret this runtime signs and verifies with — never the secret itself.
+ *
+ * A Next.js application runs the middleware and the route handlers in two
+ * different runtimes, and each one resolves `process.env` its own way. When
+ * they disagree, one of them issues tokens the other refuses, and every symptom
+ * points at the login screen instead. Naming the source is what separates
+ * "this browser holds a stale token" from "these two runtimes are not reading
+ * the same configuration".
+ */
+export function describeSessionSecretSource(): "configured" | "built-in" {
+  return process.env.SESSION_SECRET?.trim() ? "configured" : "built-in";
+}
+
 async function getCryptoKey(secret: string): Promise<CryptoKey> {
   const encoder = new TextEncoder();
   const keyData = encoder.encode(secret);

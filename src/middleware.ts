@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { describeSessionSecretSource } from "@/lib/auth/jwt-session-provider";
 import { NEW_SCHOOL_PARAM, SETUP_SCHOOL_PARAM } from "@/lib/navigation";
 import {
   isMachineAuthenticatedRoute,
@@ -48,7 +49,8 @@ function reportRejectedSession() {
   const reason = failure
     ? `session verification is unavailable in this runtime: ${failure}`
     : "the token did not verify: it is expired, forged, or was signed with a " +
-      "different SESSION_SECRET than this runtime holds";
+      "different SESSION_SECRET than this runtime holds. This runtime is " +
+      `verifying with the ${describeSessionSecretSource()} secret`;
 
   if (reason === lastReportedRejection) return;
   lastReportedRejection = reason;
