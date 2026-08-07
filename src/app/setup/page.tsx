@@ -93,6 +93,16 @@ export default async function SetupPage({
       {switcher}
 
       <SetupForm
+        /*
+         * What the form is about, so that moving to another school — or to one
+         * that does not exist yet — builds a new form rather than reusing this
+         * one. Without it the state React keeps across a client-side navigation
+         * comes along: an empty new-school form would open reporting the moment
+         * the previous school was last saved.
+         */
+        key={`${isNewSchool ? "new" : (context.organization?.id ?? "none")}:${
+          isNewRound ? "new" : (round?.id ?? "none")
+        }`}
         isNewRound={isNewRound}
         isNewSchool={isNewSchool}
         canOpenNewRound={Boolean(

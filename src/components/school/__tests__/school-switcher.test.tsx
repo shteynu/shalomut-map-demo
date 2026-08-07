@@ -52,7 +52,7 @@ test("choosing a school submits to the setup screen, with or without scripting",
   const html = renderSwitcher(twoSchools, "org-1");
 
   assert.match(html, /<form[^>]*action="\/setup"[^>]*method="get"/);
-  assert.match(html, /<noscript>.*<button[^>]*type="submit"/s);
+  assert.match(html, /<noscript>[\s\S]*<button[^>]*type="submit"/);
 });
 
 test("the school being opened is offered only while it is being opened", () => {
