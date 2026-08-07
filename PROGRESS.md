@@ -27,9 +27,10 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 - Verification is a checkpoint fact, not an evergreen expectation. At `763e38f`:
   606 TypeScript tests and 26 PostgreSQL tests. The Python suite last ran at
   465 tests, before the TypeScript-only work of 2026-08-05.
-- No manager screen has been smoke-tested in a browser. Every one of them is
-  behind `/login`, so that check belongs to the owner's own session, and the
-  screens are covered by rendering and route tests instead.
+- The manager screens were walked in a signed-in browser on 2026-08-06, and
+  since 2026-08-07 one path through them runs automatically in CI — sign in,
+  round tracking, the share link, the dashboard. Anything beyond that path is
+  still the owner's own session to walk.
 - There are no real respondents or production data. The deployed Vercel alias
   remains an operational staging endpoint for the design stage.
 
@@ -165,6 +166,12 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 - CI runs TypeScript tests/types/lint/build, PostgreSQL integration tests and
   the full Python suite through `npm run verify`; CodeQL covers TypeScript and
   Python.
+- One browser path is automated: `npm run test:e2e` signs a manager in, reads
+  the round's share link, opens it as a respondent and looks at the dashboard.
+  It runs in CI after `npm run verify`, against a seeded disposable database
+  and a server the run starts with credentials it invents, so no secret is
+  configured for it. It answers "is the app standing?" and replaces the manual
+  browser walk that used to be repeated once per session.
 - The Dashboard renders `DashboardInsightsDto` instead of the AI wire payload,
   and `src/lib/demo-data.ts` is gone along with the fixture analysis it held.
 - StrykerJS provides an opt-in, non-blocking mutation pilot for
