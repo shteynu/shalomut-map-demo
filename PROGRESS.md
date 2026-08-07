@@ -57,6 +57,13 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
   outside it: it configures the round the school is working on. A round the
   school has moved past is read — no reset and no re-analysis — while a closed
   round that is still the newest one keeps both.
+- The system holds more than one school, and `/setup` is where one is chosen:
+  a select that appears only when there is a second school, and a school opened
+  from the same screen together with its first round. Every other screen — the
+  map, the goals, the builder, round tracking — is read inside the chosen
+  school, which is remembered between screens; `MANAGER_ORGANIZATION_ID` is now
+  the school a session lands on rather than the only one it can reach.
+  Authentication is untouched: one manager, no memberships (ADR-020).
 - A school can open a second round from `/setup?round=new`, keeping its own
   details and starting an empty measurement period. A school runs one round at
   a time: a round going live closes the previous one and the builder names it,

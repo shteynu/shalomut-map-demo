@@ -208,13 +208,18 @@ on a durable audit table.
 
 Manager UI/API uses application-level session authentication. Unauthenticated
 pages redirect to `/login`; APIs return `401`. Middleware removes client scope
-headers and supplies the server-owned `MANAGER_ORGANIZATION_ID`; routes verify
-round ownership and hide foreign resources as `404`.
+headers and supplies the server-owned school scope; routes verify round
+ownership and hide foreign resources as `404`.
+
+Since ADR-020 that scope is the school the manager chose, and
+`MANAGER_ORGANIZATION_ID` is the one they land on when they have chosen none.
+The header is still server-owned: a client cannot set it, and a chosen school is
+honoured only after it is matched against the schools that exist.
 
 Deployed login fails closed when `SESSION_SECRET`,
 `MANAGER_ADMIN_PASSWORD` or `MANAGER_ORGANIZATION_ID` is missing. This is a
-single-organization design-stage gate, not the final multi-tenant identity
-model. Respondent routes and machine endpoints use separate boundaries.
+design-stage gate, not the final multi-tenant identity model. Respondent routes
+and machine endpoints use separate boundaries.
 
 ### ADR-010: The Python service is a container and polling needs uptime
 
@@ -255,9 +260,10 @@ outside that list could drift unobserved. Now `npm run openapi:check`, which
 There is no persistent identity, and that is deliberate rather than unfinished.
 The signed-in manager is not a database record: it is constructed in
 `src/lib/auth/manager-auth-service.ts` from `MANAGER_ADMIN_PASSWORD`, and
-`MANAGER_ORGANIZATION_ID` binds the session to one organization. Roles,
-memberships, permissions and an audit-log interface exist as types and
-in-memory services and are not persisted.
+`MANAGER_ORGANIZATION_ID` names the organization that session starts in — since
+ADR-020 the manager can move to another school, and the value is the default
+rather than a binding. Roles, memberships, permissions and an audit-log
+interface exist as types and in-memory services and are not persisted.
 
 Owner decision 2026-08-03: a second manager per school is not a requirement, so
 the long-term identity model is requirement-gated future work, tracked in
@@ -473,6 +479,40 @@ Resetting a round leaves the history alone — reset clears what respondents
 produced, and a questionnaire is what the manager wrote. The versions die with
 the round instead, through the cascade. Nothing about a respondent is in the
 table: it holds questionnaires.
+
+### ADR-020: The school is chosen, and the choice is not a permission
+
+Owner decision 2026-08-07. The system holds more than one school, and the
+manager chooses which one every screen is about. The data layer was already
+school-scoped — rounds, analytics, goals and questionnaires are all read inside
+one organization, and a round from another school reads as `404` — so what this
+adds is the choice, not the isolation.
+
+The choice is deliberately outside authentication. There is one manager
+(ADR-013), so a school is a place to work rather than a thing to be granted:
+`MANAGER_ORGANIZATION_ID` names where a session starts, and the chosen school,
+remembered in the `shalomut_school` cookie, is where it continues. Middleware
+turns that into the same server-owned scope header the session used to supply,
+so every route below it is unchanged. When memberships become real, this is the
+layer that starts consulting them; nothing above it has to move.
+
+A chosen school is checked against the schools that exist before anything is
+read with it. A cookie outlives the school it names, and an id taken on trust
+would empty every manager screen with nothing on them saying why. An unknown id
+is therefore no choice at all: one school is read, and several ask to be chosen
+again.
+
+The switcher is on the setup screen alone, and only when there is more than one
+school to switch between. A round is chosen per screen and travels in the URL,
+because a manager reads one round on the map while another is running. A school
+is not read that way — everything is inside one — so the control belongs where
+schools are configured, and the other screens carry no school in their links.
+
+Adding a school says so explicitly (`createOrganization`). An absent
+organization id cannot carry that meaning: the setup route scopes an unnamed
+organization to the school the request is already in, which is what saves an
+ordinary edit, so a school opened by omission would have been a rename of the
+one before it.
 
 ## Environments
 
