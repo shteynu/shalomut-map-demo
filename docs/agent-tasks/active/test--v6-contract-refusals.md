@@ -3,9 +3,11 @@
 ## Metadata
 
 - Branch: test/v6-contract-refusals
-- Base branch: test/v5-contract-refusals (not yet on `main`)
+- Base branch: test/v5-contract-refusals, which reached `main` as `b24d6ae`
+  while this slice was in progress
 - Base commit: b24d6ae
-- Current HEAD: 75c6e63
+- Current HEAD: the branch tip; the last code commit is eeb8711 and the two
+  after it are documentation
 - Status: complete and verified, committed locally, unpushed
 - Last updated: 2026-08-07
 - Last agent/tool: Claude Code (Opus 5)
@@ -97,8 +99,9 @@ All met:
 
 ## Remaining
 
-- Owner action only. Three branches are stacked locally; this one contains all
-  three slices: `git push origin test/v6-contract-refusals:main`.
+- Owner action only. The first two slices reached `main` while this one was in
+  progress (`origin/main` is at `b24d6ae`), so this branch is three commits
+  ahead: `git push origin test/v6-contract-refusals:main`.
 
 ## Changed files
 
