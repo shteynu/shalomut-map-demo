@@ -5,8 +5,8 @@
 - Branch: test/legacy-contract-refusals
 - Base branch: main
 - Base commit: a7b6c13
-- Current HEAD: a7b6c13 (work uncommitted at the time of writing)
-- Status: implementation complete and verified, uncommitted
+- Current HEAD: f48e616
+- Status: complete and verified, committed locally, unpushed
 - Last updated: 2026-08-07
 - Last agent/tool: Claude Code (Opus 5)
 
