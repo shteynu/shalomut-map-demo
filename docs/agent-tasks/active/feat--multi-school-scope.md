@@ -5,8 +5,8 @@
 - Branch: feat/multi-school-scope
 - Base branch: main
 - Base commit: b2f8a33
-- Current HEAD: 36f40c5
-- Status: implemented, awaiting a signed-in browser walk
+- Current HEAD: a0f5306
+- Status: implemented and walked in a signed-in browser; unpushed
 - Last updated: 2026-08-07
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -89,13 +89,19 @@ at login, so a second organization in the database was unreachable.
 - Documentation: ADR-020, amendments to ADR-009 and ADR-013, `PROGRESS.md`,
   `docs/openapi.yaml` plus the regenerated `public/openapi.json`.
 
+- The walk found one defect and commit `a0f5306` fixes it: the setup form kept
+  its client state across the client-side navigation into another school, so an
+  empty new-school form reported the previous school's save time. The form is
+  now keyed by the school and round it is about.
+
 ## In progress
 
-- Signed-in browser walk of the two-school flow.
+- Nothing.
 
 ## Remaining
 
-- Nothing in code that is known to be missing.
+- Nothing in code that is known to be missing. The branch is unpushed; landing
+  it is `git push origin feat/multi-school-scope:main`, which is the owner's.
 
 ## Changed files
 
@@ -127,11 +133,18 @@ Pre-existing and untouched: `.idea/shalomut-map-demo.iml`, `next-env.d.ts`.
 
 - None.
 
+- Browser walk, local, owner's signed-in Chrome session, 2026-08-07: one school
+  showed no switcher; `הוספת בית ספר` opened an empty form with the switcher
+  offering the way back; saving created `בית ספר רימון — ירושלים` with its first
+  round and moved the screen into it (`/setup?school=<uuid>`); `/round` showed
+  the new round's dates and `/goals` the new school with no goals; the switcher
+  then listed both schools and switching back moved `/setup`, `/goals` and the
+  map to `בית ספר בדיקה מקומי`, whose round switcher offered only its own
+  rounds. The local database now holds two schools (4 rounds and 1).
+- Re-walk after `a0f5306`: the new-school form no longer reports a save time.
+
 ### Blocked or not run
 
-- Browser walk of the two-school flow: every manager screen is behind `/login`
-  and the agent does not enter credentials. The local stack is up
-  (`npm run local`, core on `:3000`) and the local database holds one school.
 - `verify:db` and the Python suite: nothing in this diff touches the schema,
   repositories or the AI service.
 
@@ -150,7 +163,6 @@ None. No secrets, credentials or deployment aliases are touched.
 
 ## Next concrete step
 
-With the owner signed in at `http://localhost:3000` in the connected Chrome,
-walk `/setup`: confirm no switcher with one school, add a second school, confirm
-the switcher then appears, switch back and forth, and confirm the map, the goals
-and the builder follow the chosen school.
+Push the branch onto `main` (`git push origin feat/multi-school-scope:main`),
+which the owner performs; Vercel deploys from that push. Nothing in the code is
+waiting on it.
