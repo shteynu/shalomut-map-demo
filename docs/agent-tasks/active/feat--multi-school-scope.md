@@ -5,8 +5,8 @@
 - Branch: feat/multi-school-scope
 - Base branch: main
 - Base commit: b2f8a33
-- Current HEAD: a0f5306
-- Status: implemented and walked in a signed-in browser; unpushed
+- Current HEAD: 36fe4ce
+- Status: complete, walked in a signed-in browser, unpushed
 - Last updated: 2026-08-07
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -89,6 +89,16 @@ at login, so a second organization in the database was unreachable.
 - Documentation: ADR-020, amendments to ADR-009 and ADR-013, `PROGRESS.md`,
   `docs/openapi.yaml` plus the regenerated `public/openapi.json`.
 
+- Isolation audit and tests (commit `36fe4ce`), asked for after the walk: the
+  two boundaries were read through every path and hold — a round is reached only
+  inside its school (context list plus `authorizeManagerRound` on all eleven
+  round routes), and an analysis is written, stored, served and validated per
+  round (round-owned column, `run_round_mismatch`/`round_mismatch` on the
+  callback, round-keyed fetch, `roundId` re-checked on the client). Two coverage
+  gaps were closed: aggregates are the selected round's rather than the school's,
+  and a stored analysis is served only under its own round. `/api/mcp` remains
+  deliberately school-agnostic behind `MCP_SHARED_SECRET` and still answers for
+  one named round.
 - The walk found one defect and commit `a0f5306` fixes it: the setup form kept
   its client state across the client-side navigation into another school, so an
   empty new-school form reported the previous school's save time. The form is
@@ -105,29 +115,40 @@ at login, so a second organization in the database was unreachable.
 
 ## Changed files
 
-Committed: `src/lib/navigation.ts`, `src/middleware.ts`,
+Everything this task produced is committed on the branch, seven commits from
+base `b2f8a33` to `36fe4ce`: `src/lib/navigation.ts`, `src/middleware.ts`,
 `src/lib/server/manager-scope.ts`, `src/lib/services/manager-scope.service.ts`,
 `src/lib/schools/school-options.ts`, `src/components/school/*`,
 `src/app/setup/page.tsx`, `src/components/round/setup-form.tsx`,
 `src/app/api/manager/setup/route.ts`, `src/app/globals.css`,
 `src/lib/server/manager-context.ts`, `docs/openapi.yaml`,
-`public/openapi.json`, and the four test files.
+`public/openapi.json`, `PROGRESS.md`, `PROJECT_CONTEXT.md`, this file, and six
+test files.
 
-Unstaged: `PROGRESS.md`, `PROJECT_CONTEXT.md`, this task file.
-Pre-existing and untouched: `.idea/shalomut-map-demo.iml`, `next-env.d.ts`.
+Nothing is staged or untracked. The only unstaged files are
+`.idea/shalomut-map-demo.iml` and `next-env.d.ts`, both dirty before this task
+started and untouched by it.
+
+Visibility: the work is committed on `feat/multi-school-scope` and **not
+pushed**. Another worktree on this machine can consume it from the branch;
+another checkout or machine cannot until it is pushed.
 
 ## Verification evidence
 
 ### Passed
 
-- `npm test` — 643 TypeScript tests, 0 failures (was 620 before this task).
+- `npm test` — 646 TypeScript tests, 0 failures (was 620 before this task), most
+  recently at HEAD `36fe4ce`.
 - `npm run typecheck`, `npm run lint`, `npm run lint:composition`,
   `npm run build`.
 - `npm run openapi:generate` and `src/app/api/__tests__/openapi.test.ts`.
 - New tests: middleware school scope (5), scope service (7), school options (4),
-  school switcher rendering (5), and two setup-route cases — a second school is
+  school switcher rendering (5), two setup-route cases — a second school is
   created beside the scoped one without renaming it, and a request that does not
-  ask for a school still saves the scoped one.
+  ask for a school still saves the scoped one — and three isolation cases: the
+  aggregates follow the selected round, another school's answers stay out of
+  this school's numbers, and the AI insights route serves a round its own
+  analysis while hiding another school's.
 
 ### Failed
 

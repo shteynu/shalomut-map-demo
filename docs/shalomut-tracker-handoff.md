@@ -1,7 +1,8 @@
 # Shalomut Tracker — operational handoff
 
-Updated: 2026-08-06, session close (`origin/main` is `bc00512`; the last commit
-that changed code is `9983184`, which is deployed and was read). This document
+Updated: 2026-08-07, session close (`origin/main` is still `bc00512` and the
+deployed commit is still `9983184`; one branch now holds finished work that has
+not been pushed — see the snapshot below). This document
 owns only cross-task operational/deployed state, external blockers and approval
 gates. Product milestones belong in `PROGRESS.md`; branch work and exact
 verification belong in
@@ -22,9 +23,17 @@ verification belong in
   `docs/close-causal-refusal-decision` and `docs/roadmap-reconciliation`. All
   are fully contained in `main` and can be deleted; their task files are in
   `docs/agent-tasks/archive/`.
-- Nothing is waiting. No branch holds unpushed work the product needs; the one
-  unmerged branch, `fix/refuse-asserted-causes`, is a decided **no** and is
-  described below.
+- **One branch is waiting on a push.** `feat/multi-school-scope` is finished at
+  `36fe4ce`, seven commits on top of `b2f8a33`: the system holds more than one
+  school, and `/setup` is where one is chosen and added, with every other screen
+  read inside the chosen school. Local checks pass (646 TypeScript tests,
+  typecheck, lint, build, OpenAPI) and it was walked in the owner's signed-in
+  browser. It is committed and unpushed, so nothing outside this machine can see
+  it; landing it is `git push origin feat/multi-school-scope:main`, and Vercel
+  deploys from that push. `docs/agent-tasks/active/feat--multi-school-scope.md`
+  has the detail.
+- The other unmerged branch, `fix/refuse-asserted-causes`, is a decided **no**
+  and is described below.
 - **No migration is pending on the deployed database.** The eleventh,
   `20260805170000_add_survey_definition_versions`, was applied on 2026-08-05
   immediately after the push that carried its code — the build command runs
@@ -43,7 +52,13 @@ verification belong in
   that the test suite did not — stale client state across a round switch, a
   duplicate React key that rendered two rounds' controls at once, and a link
   that dropped the round. All are fixed in `c67471c`. A signed-in walk remains
-  the check that a rendering test cannot stand in for.
+  the check that a rendering test cannot stand in for — the 2026-08-07 walk of
+  the school switcher found another one the suite had missed, the setup form
+  keeping its save state across a switch (`a0f5306`).
+- The local development database now holds the same one school it held before
+  2026-08-07: a second school was created through the UI during that walk and
+  deleted afterwards at the owner's request. The deployed database was not
+  touched.
 - Deployment of `9983184` was read on 2026-08-06 and is `Ready`; see the
   deployed-state section.
 - Superseded snapshot: `origin/main` was `45f38c2` — the round archive.
@@ -301,6 +316,12 @@ owner's own hands.
 
 **Waits on the owner's hands**
 
+- Pushing `feat/multi-school-scope` (`git push origin
+  feat/multi-school-scope:main`). It is finished and verified locally; nothing
+  in the code waits on it. After the push, the deployed database will hold one
+  school and therefore show no school switcher — which is the correct
+  one-school behaviour, not a failed deployment. A second deployed school is
+  created from `/setup` with `הוספת בית ספר`.
 - Signing in, whenever a manager screen needs looking at. The agent never sees
   or types the manager password, so every walk starts with the owner signing
   in — and it has to be in a browser the agent can drive. On 2026-08-06 the
