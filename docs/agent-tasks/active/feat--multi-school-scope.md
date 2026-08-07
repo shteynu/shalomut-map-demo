@@ -140,8 +140,13 @@ Pre-existing and untouched: `.idea/shalomut-map-demo.iml`, `next-env.d.ts`.
   the new round's dates and `/goals` the new school with no goals; the switcher
   then listed both schools and switching back moved `/setup`, `/goals` and the
   map to `בית ספר בדיקה מקומי`, whose round switcher offered only its own
-  rounds. The local database now holds two schools (4 rounds and 1).
+  rounds.
 - Re-walk after `a0f5306`: the new-school form no longer reports a save time.
+- The test school was then deleted from the local database at the owner's
+  request, which walked the stale-cookie path for real: with the cookie still
+  naming the deleted school, `/setup` and `/goals` came back on the surviving
+  one, with no switcher and no dead end. Local persistence is back to one
+  school with four rounds.
 
 ### Blocked or not run
 
