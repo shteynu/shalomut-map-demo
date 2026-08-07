@@ -19,6 +19,7 @@
     "lint:contract-refusals": "node --test scripts/check-contract-refusal-suites.test.mjs && node scripts/check-contract-refusal-suites.mjs",
     "test": "node scripts/run-tests.mjs",
     "test:mutation:ai-contract": "stryker run",
+    "test:e2e": "npm run build && playwright test",
     "verify:core": "npm run lint:literals && npm run lint:composition && npm run lint:fixtures && npm run lint:mutation-config && npm run lint:contract-refusals && npm run typecheck && npm test && npm run lint && npm run build",
     "verify:db": "node scripts/verify-db.mjs",
     "verify:ai": "node scripts/verify-ai.mjs",
@@ -38,6 +39,7 @@
     "react-dom": "19.2.7"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@prisma/client": "^7.9.0",
     "@stryker-mutator/core": "9.6.1",
     "@stryker-mutator/tap-runner": "9.6.1",
