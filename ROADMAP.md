@@ -71,14 +71,18 @@ expanding mutation scope — was closed on 2026-08-03; what it found is in
 
 ## Conditional, not scheduled
 
-- Widening mutation scope to a subject beyond the AI-contract validator, once
-  the older contracts have payload fixtures of their own. Roughly three fifths
-  of the remaining survivors sit in validators for contracts `1.0`–`4.0` that
-  no current fixture exercises, so a new mutation target would be measured
-  against the same blind spot. The pilot stays opt-in and non-blocking.
-  Following a rule out of the validator — as `src/lib/scoring-bands.ts` was
-  followed on 2026-08-05 — is not this item: it keeps one subject whole rather
-  than adding a second.
+- Widening mutation scope to a subject beyond the AI-contract validator. The
+  precondition this item carried — that the older contracts had no payload
+  fixtures of their own, so a new target would be measured against the same
+  blind spot — was met on 2026-08-07: `1.0`–`3.0` now have valid payloads and a
+  refusal test per rule, and their validators hold single-digit survivor counts
+  instead of roughly three fifths of the total. What remains unmeasured is the
+  same shape one version up, in the `4.0`/`5.0` stone and provenance rules, so
+  giving those their refusing half is the cheaper next slice than a second
+  subject. The pilot stays opt-in and non-blocking either way. Following a rule
+  out of the validator — as `src/lib/scoring-bands.ts` was followed on
+  2026-08-05 — is not this item: it keeps one subject whole rather than adding
+  a second.
 
 - A mutation score threshold in CI stays closed rather than conditional, and
   is recorded here so it is not reopened by habit. The score is not stable

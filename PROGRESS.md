@@ -176,7 +176,10 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
   The baseline was refreshed on 2026-08-05 after three months of drift in
   which the runner lost track of two test files and of the moved rule:
   871 killed, 275 survived, 67 uncovered and 42 runtime errors over 1255
-  mutants, 71.81% total. Two checks now keep the measurement honest without
+  mutants, 71.81% total. On 2026-08-07 the same refusal treatment reached the
+  closed contracts `1.0`–`3.0`, whose validators had only ever been tested from
+  the accepting side: 1093 killed, 101 survived, 19 uncovered and the same 42
+  runtime errors, 90.11% total. Two checks keep the measurement honest without
   gating on it: `npm run lint:mutation-config` re-derives the test list from
   the repository inside `verify:core`, and CI starts the runner with a dry
   run on every pull request.
@@ -254,9 +257,10 @@ the sentences are.
 
 ### Architecture
 
-Nothing open. Mutant classification closed on 2026-08-03; widening mutation
-scope is now conditional on giving contracts `1.0`–`4.0` payload fixtures, and
-`ROADMAP.md` records why.
+Nothing open. Mutant classification closed on 2026-08-03, and on 2026-08-07 the
+contracts `1.0`–`3.0` got the refusing half of their tests, which is what the
+classification had called a missing-fixture problem. Widening mutation scope to
+a second subject stays conditional, and `ROADMAP.md` records why.
 
 The long-term identity model left this list on 2026-08-03: one manager per
 deployment is the requested product shape, so it is requirement-gated future
