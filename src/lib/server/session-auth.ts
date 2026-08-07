@@ -6,6 +6,7 @@ import type { ISessionProvider } from "@/lib/auth/domain-contract";
 export const SESSION_COOKIE_NAME = "shalomut_session";
 
 let cachedDefaultProvider: ISessionProvider | null | undefined;
+let cachedDefaultProviderFailure: string | null = null;
 
 function getDefaultProvider(): ISessionProvider | null {
   if (cachedDefaultProvider !== undefined) {
@@ -13,10 +14,29 @@ function getDefaultProvider(): ISessionProvider | null {
   }
   try {
     cachedDefaultProvider = new JwtSessionProvider();
-  } catch {
+    cachedDefaultProviderFailure = null;
+  } catch (error) {
     cachedDefaultProvider = null;
+    cachedDefaultProviderFailure =
+      error instanceof Error ? error.message : String(error);
   }
   return cachedDefaultProvider;
+}
+
+/**
+ * Why the default provider could not be built, or `null` when it could.
+ *
+ * An unconfigured runtime and a forged token are indistinguishable from the
+ * outside: both end as a redirect to `/login`, which reads as "wrong password"
+ * and sends the reader looking at the login screen. The deployed runtime has
+ * already lost a day to exactly that — the middleware was failing on a missing
+ * `SESSION_SECRET` and said nothing (`docs/manager-feedback-plan-2026-07-26.md`).
+ * Reported here, never in a response, so the answer stays in the server's log
+ * where it belongs.
+ */
+export function describeSessionProviderFailure(): string | null {
+  getDefaultProvider();
+  return cachedDefaultProviderFailure;
 }
 
 export function extractSessionToken(request: NextRequest): string | null {

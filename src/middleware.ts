@@ -9,7 +9,11 @@ import {
   MANAGER_SCHOOL_COOKIE,
   createScopedManagerHeaders,
 } from "@/lib/server/manager-scope";
-import { resolveManagerSession } from "@/lib/server/session-auth";
+import {
+  SESSION_COOKIE_NAME,
+  describeSessionProviderFailure,
+  resolveManagerSession,
+} from "@/lib/server/session-auth";
 
 /**
  * The school this request is about: the one just chosen, else the one chosen
@@ -30,6 +34,25 @@ function readChosenSchool(request: NextRequest) {
 
   const remembered = request.cookies.get(MANAGER_SCHOOL_COOKIE)?.value?.trim();
   return remembered ? { id: remembered, isNewChoice: false } : null;
+}
+
+/**
+ * One line per distinct reason, not one per request: a browser holding a
+ * rejected cookie retries on every navigation, and a log that repeats itself
+ * is a log nobody reads.
+ */
+let lastReportedRejection: string | undefined;
+
+function reportRejectedSession() {
+  const failure = describeSessionProviderFailure();
+  const reason = failure
+    ? `session verification is unavailable in this runtime: ${failure}`
+    : "the token did not verify: it is expired, forged, or was signed with a " +
+      "different SESSION_SECRET than this runtime holds";
+
+  if (reason === lastReportedRejection) return;
+  lastReportedRejection = reason;
+  console.warn(`[auth] a manager session cookie was rejected — ${reason}`);
 }
 
 /**
@@ -81,6 +104,15 @@ export async function middleware(request: NextRequest) {
     }
 
     return response;
+  }
+
+  // A cookie that was presented and did not survive verification is worth one
+  // line in the log: the browser is holding a session the server will not
+  // accept, and the redirect that follows looks identical to never having
+  // signed in. The reason names the runtime's own configuration when that is
+  // what failed, and nothing about the token itself.
+  if (request.cookies.get(SESSION_COOKIE_NAME)) {
+    reportRejectedSession();
   }
 
   // 2. Unauthenticated Manager Surfaces:

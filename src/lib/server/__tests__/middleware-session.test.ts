@@ -147,3 +147,49 @@ test("middleware and respondent routes stay functional when SESSION_SECRET is mi
     }
   }
 });
+
+test("middleware says why a presented session cookie was rejected, once per reason", async () => {
+  const warnings: string[] = [];
+  const originalWarn = console.warn;
+  console.warn = (message: unknown) => {
+    warnings.push(String(message));
+  };
+
+  try {
+    const request = () =>
+      new NextRequest("http://localhost:3000/dashboard", {
+        headers: { cookie: "shalomut_session=not.a.token" },
+      });
+
+    const response = await middleware(request());
+    assert.strictEqual(response.status, 307);
+    assert.strictEqual(warnings.length, 1);
+    assert.match(warnings[0], /session cookie was rejected/u);
+    assert.match(warnings[0], /SESSION_SECRET/u);
+
+    // The same browser retries on every navigation. One line is a diagnosis;
+    // one line per request is noise that buries it.
+    await middleware(request());
+    assert.strictEqual(warnings.length, 1);
+  } finally {
+    console.warn = originalWarn;
+  }
+});
+
+test("a request without a session cookie stays silent", async () => {
+  const warnings: string[] = [];
+  const originalWarn = console.warn;
+  console.warn = (message: unknown) => {
+    warnings.push(String(message));
+  };
+
+  try {
+    const response = await middleware(
+      new NextRequest("http://localhost:3000/dashboard"),
+    );
+    assert.strictEqual(response.status, 307);
+    assert.deepStrictEqual(warnings, []);
+  } finally {
+    console.warn = originalWarn;
+  }
+});

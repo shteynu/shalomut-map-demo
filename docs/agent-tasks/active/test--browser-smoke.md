@@ -6,7 +6,7 @@
 - Base branch: main
 - Base commit: d83cc10
 - Current HEAD: the branch tip
-- Status: complete and verified, committed locally, unpushed
+- Status: green locally, red in CI and under diagnosis; committed locally, unpushed
 - Last updated: 2026-08-07
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -99,8 +99,8 @@ Three dead ends shaped the design, and each is recorded in
 
 ## Remaining
 
-- Owner action only: the seed fix and this file are unpushed. `git push origin
-  test/browser-smoke:main`, then read the run.
+- The CI smoke is still red and its cause is unknown. The diagnostic is
+  committed but useless until a run prints it.
 
 ## Changed files
 
@@ -131,6 +131,19 @@ modified in the worktree and are left alone.
 
 ### Failed, then fixed
 
+- **The CI step failed a second time, on `044c5b2` (run 31195236422), and is
+  not yet diagnosed.** The seed fix worked — the step migrated, seeded and
+  started the server — and then three of the four cases failed: sign-in returns
+  200 and sets `shalomut_session`, the browser sends that cookie back, and the
+  middleware redirects to `/login` anyway. The token in the CI trace verifies
+  against the smoke secret, so the route signed it correctly; the middleware
+  rejected it. Two reproductions could not make it happen: the same run on
+  macOS without any `.env` file, and the same run inside
+  `mcr.microsoft.com/playwright:v1.62.1-noble` on Linux with a fresh install,
+  a fresh migrate and seed and a fresh build. Both pass 4/4, so the difference
+  is the runner, not the code path. The middleware now says why it rejected a
+  cookie, and the next CI run is what reads it.
+
 - **The CI step failed on its first run** (`641e65b`, run 31191748609), and
   found a bug older than this task: `npm run db:seed:local` imported
   `getRepositories`, an export the composition root replaced, so the seed had
@@ -155,8 +168,10 @@ is correct. It also depends on the environment holding a round: with an empty
 database the share-link case would fail rather than skip, which is the right
 noise in CI and possibly the wrong noise on a fresh machine.
 
-The CI step's second run is still unproven — the first one is what found the
-seed bug, and the fix has only been exercised locally.
+The CI step has now run twice and failed twice, each time for a different
+reason. The first found a real bug. The second is not understood, and until it
+is, the smoke proves nothing in CI — only locally, where it passes on two
+machines and two operating systems.
 
 ## Failed approaches
 
@@ -179,5 +194,11 @@ seed bug, and the fix has only been exercised locally.
 ## Next concrete step
 
 Hand the push to the owner: `git push origin test/browser-smoke:main`, then
-read that CI run — it is the first one to exercise the seed fix, and the smoke
-step has still never completed in CI.
+read the `[WebServer]` lines of the smoke step. One of two sentences will be
+there: `session verification is unavailable in this runtime: …` means the edge
+middleware cannot see `SESSION_SECRET` and the fix is to give the CI step its
+own value at the job level; `the token did not verify` means the middleware
+holds a different secret than the login route, and the fix is to stop the two
+runtimes disagreeing. If neither line appears, the cookie never reached the
+middleware and the trace in the `playwright-report` artifact is the next
+thing to read.
