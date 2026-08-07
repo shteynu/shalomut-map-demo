@@ -1,8 +1,8 @@
 # Shalomut Tracker — operational handoff
 
-Updated: 2026-08-07, session close (`origin/main` is still `bc00512` and the
-deployed commit is still `9983184`; one branch now holds finished work that has
-not been pushed — see the snapshot below). This document
+Updated: 2026-08-07, second session close (`origin/main` is `ae73259`; nothing
+is waiting on a push, and the deployed commit was not read back this session —
+see the snapshot below). This document
 owns only cross-task operational/deployed state, external blockers and approval
 gates. Product milestones belong in `PROGRESS.md`; branch work and exact
 verification belong in
@@ -10,29 +10,34 @@ verification belong in
 
 ## Repository snapshot
 
-- `origin/main` is `bc00512`, and the last commit that changed code is
-  `9983184` — `feat/round-context-across-screens`, pushed by the owner on
-  2026-08-06 in four goes (`b0c9848`, `54ee05c`, `9983184`, `bc00512`). The
-  round a manager is reading now follows them across home, tracking, the
-  builder and the map, chosen from one select; a round the school has moved
-  past is read rather than worked on. Before it, `main` was `ddd6be3`, the
-  2026-08-05 session close.
+- `origin/main` is `ae73259`. The last commit that changed **product** code is
+  `36fe4ce` — `feat/multi-school-scope`, pushed by the owner on 2026-08-07:
+  the system holds more than one school, `/setup` is where one is chosen and
+  added, and every other screen reads inside the chosen school. Everything
+  after it is test-side or documentation, so the deployed behaviour is that
+  commit's. Before it, `main` was `bc00512`, itself the tail of
+  `feat/round-context-across-screens` (`9983184`).
+- **Three test-only branches landed on 2026-08-07**, pushed by the owner in two
+  goes: `test/legacy-contract-refusals`, `test/v5-contract-refusals` and
+  `test/v6-contract-refusals`. Together they gave contracts `1.0`–`3.0`, `5.0`
+  and `6.0` the refusing half of their tests; the mutation pilot moved 71.81%
+  to 95.22%. No runtime file changed. Their task files are in
+  `docs/agent-tasks/archive/`.
+- **The deployed commit was not read back this session.** Vercel deploys from
+  every push to `main`, so the endpoint should be serving `ae73259`, but
+  nothing here verified it — and since 2026-08-07 the pushes carried no runtime
+  change, so a stale deployment would look identical either way.
 - Five branches reached `main` on 2026-08-05, each as a fast-forward the owner
   pushed themselves: `feat/survey-definition-history` (backlog §1),
   `feat/archived-rounds-read-only` (§10), `feat/goals-across-rounds` (§5), plus
   `docs/close-causal-refusal-decision` and `docs/roadmap-reconciliation`. All
   are fully contained in `main` and can be deleted; their task files are in
   `docs/agent-tasks/archive/`.
-- **One branch is waiting on a push.** `feat/multi-school-scope` is finished at
-  `36fe4ce`, seven commits on top of `b2f8a33`: the system holds more than one
-  school, and `/setup` is where one is chosen and added, with every other screen
-  read inside the chosen school. Local checks pass (646 TypeScript tests,
-  typecheck, lint, build, OpenAPI) and it was walked in the owner's signed-in
-  browser. It is committed and unpushed, so nothing outside this machine can see
-  it; landing it is `git push origin feat/multi-school-scope:main`, and Vercel
-  deploys from that push. `docs/agent-tasks/active/feat--multi-school-scope.md`
-  has the detail.
-- The other unmerged branch, `fix/refuse-asserted-causes`, is a decided **no**
+- **Nothing is waiting on a push.** `feat/multi-school-scope` landed on
+  2026-08-07 and is fully contained in `main`; it was walked in the owner's
+  signed-in browser before the push. Its task file is in
+  `docs/agent-tasks/archive/`, and `docs/agent-tasks/active/` is empty.
+- The one unmerged branch, `fix/refuse-asserted-causes`, is a decided **no**
   and is described below.
 - **No migration is pending on the deployed database.** The eleventh,
   `20260805170000_add_survey_definition_versions`, was applied on 2026-08-05
@@ -40,11 +45,12 @@ verification belong in
   `prisma generate`, never `prisma migrate deploy`, so this is a hand step every
   schema change still needs. Details and the read-back are in the database
   section below. Nothing after it changed a schema.
-- Verification at `9983184`, the last commit that changed code: `npm run
-  verify:core` exit 0 with 620 TypeScript tests. The commits after it are
-  documentation, which no check reads. `verify:db` and `verify:ai` were **not**
-  run — nothing since 2026-08-05 morning changed a schema, a repository, a
-  contract or Python. The last `verify:db` reading is 26 tests, 26 pass at
+- Verification at `ae73259`, the current tip: `npm run verify:core` exit 0 with
+  733 TypeScript tests, both fitness checks, typecheck, ESLint and the
+  production build, plus `npm run test:mutation:ai-contract` exit 0 (1155
+  killed, 52 survived, 6 uncovered, 42 runtime errors, 95.22%). `verify:db` and
+  `verify:ai` were **not** run — nothing since 2026-08-05 morning changed a
+  schema, a repository, a contract or Python. The last `verify:db` reading is 26 tests, 26 pass at
   `763e38f`, against local PostgreSQL on `127.0.0.1:5433`.
 - **The manager screens have now been walked in a browser**, on 2026-08-06,
   with the owner signed in on the local dev server. This closes the gap the
