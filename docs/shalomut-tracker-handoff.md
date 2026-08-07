@@ -1,7 +1,7 @@
 # Shalomut Tracker — operational handoff
 
-Updated: 2026-08-07, third session close (`origin/main` is `b93fd53`; nothing
-is waiting on a push, and the deployed commit was not read back this session —
+Updated: 2026-08-07, fourth session close (`origin/main` is `641e65b` and **its
+CI run failed**; three commits that fix it are committed locally and unpushed —
 see the snapshot below). This document
 owns only cross-task operational/deployed state, external blockers and approval
 gates. Product milestones belong in `PROGRESS.md`; branch work and exact
@@ -10,7 +10,15 @@ verification belong in
 
 ## Repository snapshot
 
-- `origin/main` is `b93fd53`. The last commit that changed **product** code is
+- **`main` is red.** Run 31191748609 on `641e65b` failed at the new browser
+  smoke step: `npm run db:seed:local` imported `getRepositories`, an export the
+  composition root replaced long ago, so the seed had been dying at its first
+  line — invisible until something re-seeded. The fix is committed locally on
+  `test/browser-smoke` (`a3ed58a`) together with two documentation commits, and
+  landing them is `git push origin test/browser-smoke:main`. Nothing product-
+  facing is affected: the failure is in a CI step, and the deployed application
+  is untouched by all of it.
+- `origin/main` is `641e65b`. The last commit that changed **product** code is
   `36fe4ce` — `feat/multi-school-scope`, pushed by the owner on 2026-08-07:
   the system holds more than one school, `/setup` is where one is chosen and
   added, and every other screen reads inside the chosen school. Everything
@@ -30,6 +38,13 @@ verification belong in
   `validateStoneMapResult` branches on — `4.0` shares `3.0`'s path and needs no
   suite — and reads that flag list out of `ai-contract.ts` so it cannot go
   stale. It proves a suite exists, not that it is complete.
+- **A browser smoke landed on 2026-08-07.** `npm run test:e2e` starts its own
+  production server with credentials it invents, signs a manager in, reads the
+  round's share link, opens it as a respondent and looks at the dashboard. CI
+  runs it after `npm run verify`, seeding the disposable service database
+  first. No secret is configured for it and none should be. It replaces the
+  manual browser walk as a regression check — not as a substitute for walking
+  new screens.
 - **Two gates were considered and declined on 2026-08-07**, so they are not
   reopened by habit: a mutation-score threshold (the score moves for reasons
   unrelated to test strength) and a line-coverage threshold (it would have been
@@ -46,10 +61,12 @@ verification belong in
   `docs/close-causal-refusal-decision` and `docs/roadmap-reconciliation`. All
   are fully contained in `main` and can be deleted; their task files are in
   `docs/agent-tasks/archive/`.
-- **Nothing is waiting on a push.** `feat/multi-school-scope` landed on
-  2026-08-07 and is fully contained in `main`; it was walked in the owner's
-  signed-in browser before the push. Its task file is in
-  `docs/agent-tasks/archive/`, and `docs/agent-tasks/active/` is empty.
+- **Three commits are waiting on a push**, all on `test/browser-smoke`:
+  `a3ed58a` (the seed fix that turns CI green again), `445b380` and `2a0b4d4`
+  (the task file and `PROGRESS.md`). `docs/agent-tasks/active/` holds that one
+  task file and nothing else. The last product branch, `feat/multi-school-scope`,
+  landed on 2026-08-07, is fully contained in `main` and was walked in the
+  owner's signed-in browser before the push; its task file is archived.
 - The one unmerged branch, `fix/refuse-asserted-causes`, is a decided **no**
   and is described below.
 - **No migration is pending on the deployed database.** The eleventh,
@@ -58,9 +75,11 @@ verification belong in
   `prisma generate`, never `prisma migrate deploy`, so this is a hand step every
   schema change still needs. Details and the read-back are in the database
   section below. Nothing after it changed a schema.
-- Verification at `b93fd53`, the current tip: `npm run verify:core` exit 0 with
-  733 TypeScript tests, all five fitness checks, typecheck, ESLint and the
-  production build. The last full mutation run was at `ae73259` — nothing after
+- Verification at the `test/browser-smoke` tip: `npm run verify:core` exit 0
+  with 733 TypeScript tests, all five fitness checks, typecheck, ESLint and the
+  production build, plus `npm run test:e2e` 4/4 against the local development
+  database. CI's own smoke step has still never completed — its one run is the
+  failure above. The last full mutation run was at `ae73259` — nothing after
   it touched a mutated module or the runner's test list — and was exit 0 (1155
   killed, 52 survived, 6 uncovered, 42 runtime errors, 95.22%). `verify:db` and
   `verify:ai` were **not** run — nothing since 2026-08-05 morning changed a
