@@ -369,3 +369,189 @@ test('a dynamic payload must carry a well-formed survey definition hash', () => 
     assert.match(error, /valid surveyDefinitionHash/);
   }
 });
+
+/**
+ * Everything below closes the gaps the 2026-08-07 mutation runs found in this
+ * suite, after `1.0`–`3.0` and `5.0` got refusal suites of their own.
+ *
+ * Most are rules that were tested from one side only, and a few are rules a
+ * shorter payload could not reach: a stone with one metric and five distinct
+ * recommendations cannot tell `every` from `some`, so the cases that need a
+ * second metric or a sixth recommendation build them here.
+ */
+
+function stoneWithTwoMetrics(payload: ReturnType<typeof createValidV6Payload>) {
+  const stone = firstStone(payload);
+  const second = {
+    ...stone.metrics[0],
+    questionId: `${stone.metrics[0].questionId}-second`,
+  };
+  stone.metrics = [stone.metrics[0], second];
+  stone.generationProvenance.sourceQuestionIds = [
+    stone.metrics[0].questionId,
+    second.questionId,
+  ];
+  return stone;
+}
+
+test('a stone must carry the canonical Hebrew name of its dimension', () => {
+  const error = refusal(
+    payloadWith((payload) => {
+      firstStone(payload).dimensionNameHebrew = 'שם אחר';
+    }),
+  );
+  assert.match(error, /does not match AI analytics contract/);
+});
+
+test('every metric of a stone is validated, not just one of them', () => {
+  const error = refusal(
+    payloadWith((payload) => {
+      const stone = stoneWithTwoMetrics(payload);
+      stone.metrics[1].insightText = 'טקסט קצר מדי.';
+    }),
+  );
+  assert.match(error, /does not match AI analytics contract/);
+});
+
+test('a stone with no metrics is refused even when its provenance agrees', () => {
+  const error = refusal(
+    payloadWith((payload) => {
+      const stone = firstStone(payload);
+      stone.metrics = [];
+      stone.generationProvenance.sourceQuestionIds = [];
+    }),
+  );
+  assert.match(error, /does not match AI analytics contract/);
+});
+
+test('a sixth recommendation is refused even when five of them are distinct', () => {
+  const error = refusal(
+    payloadWith((payload) => {
+      const stone = firstStone(payload);
+      stone.recommendedInterventions = [
+        ...stone.recommendedInterventions,
+        { ...stone.recommendedInterventions[0] },
+      ];
+    }),
+  );
+  assert.match(error, /does not match AI analytics contract/);
+});
+
+test('every recommendation of a stone is validated, not just one of them', () => {
+  const error = refusal(
+    payloadWith((payload) => {
+      firstStone(payload).recommendedInterventions[3].status = 'red';
+    }),
+  );
+  assert.match(error, /does not match AI analytics contract/);
+});
+
+test('a recommendation summary must be the long narrative, not one sentence', () => {
+  const error = refusal(
+    payloadWith((payload) => {
+      firstStone(payload).recommendedInterventions[2].summary =
+        'המהלך המוצע מחזק שגרה משותפת וברורה בצוות.';
+    }),
+  );
+  assert.match(error, /does not match AI analytics contract/);
+});
+
+test('a qualitative narrative runs from three hundred to five hundred characters', () => {
+  const hebrew = (length: number) => `${'א'.repeat(length - 1)}.`;
+
+  for (const length of [300, 500]) {
+    const payload = createValidV6Payload(ROUND_ID);
+    firstStone(payload).metrics[0].insightText = hebrew(length);
+    assert.strictEqual(
+      validateStoneMapResult(payload, ROUND_ID).ok,
+      true,
+      `a narrative of ${length} characters was refused`,
+    );
+  }
+
+  for (const length of [299, 501]) {
+    const error = refusal(
+      payloadWith((payload) => {
+        firstStone(payload).metrics[0].insightText = hebrew(length);
+      }),
+    );
+    assert.match(
+      error,
+      /does not match AI analytics contract/,
+      `a narrative of ${length} characters was accepted`,
+    );
+  }
+
+  const padded = createValidV6Payload(ROUND_ID);
+  firstStone(padded).metrics[0].insightText = `  ${hebrew(500)}  `;
+  assert.strictEqual(
+    validateStoneMapResult(padded, ROUND_ID).ok,
+    true,
+    'surrounding whitespace was counted toward the length',
+  );
+});
+
+test('every paragraph of an overview must be a string of Hebrew prose', () => {
+  const notAString = refusal(
+    payloadWith((payload) => {
+      firstStone(payload).summary[1] = 42;
+    }),
+  );
+  assert.match(notAString, /does not match AI analytics contract/);
+
+  const withNumbers = refusal(
+    payloadWith((payload) => {
+      firstStone(payload).summary[1] =
+        'שישים אחוז מן המשיבים דיווחו על תחושה יציבה, ובמספרים זה 60.';
+    }),
+  );
+  assert.match(withNumbers, /does not match AI analytics contract/);
+
+  const withLatin = refusal(
+    payloadWith((payload) => {
+      firstStone(payload).summary[1] =
+        'התשובות מצביעות על בסיס יציב, כפי שמראה הדוח של OECD.';
+    }),
+  );
+  assert.match(withLatin, /does not match AI analytics contract/);
+});
+
+test('every paragraph of an overview must end where its last sentence ends', () => {
+  const unterminated = refusal(
+    payloadWith((payload) => {
+      firstStone(payload).summary[2] =
+        'התשובות מצביעות על בסיס יציב. ואפשר להמשיך משם';
+    }),
+  );
+  assert.match(unterminated, /does not match AI analytics contract/);
+
+  const padded = createValidV6Payload(ROUND_ID);
+  firstStone(padded).summary[2] = `${firstStone(padded).summary[2]}   `;
+  assert.strictEqual(
+    validateStoneMapResult(padded, ROUND_ID).ok,
+    true,
+    'a paragraph was refused for trailing whitespace after its full stop',
+  );
+});
+
+test('processedAt must be a string, not something that merely parses as a date', () => {
+  const error = refusal(
+    payloadWith((payload) => {
+      (payload as Record<string, unknown>).processedAt = [
+        '2026-08-02T08:00:00.000Z',
+      ];
+    }),
+  );
+  assert.match(error, /metadata is invalid/);
+});
+
+test('the eight dimensions are compared one by one, not counted', () => {
+  const error = refusal(
+    payloadWith((payload) => {
+      const stones = payload.stones as Record<string, unknown>;
+      stones['balance-2'] = stones.balance;
+      delete stones.balance;
+    }),
+  );
+  assert.match(error, /canonical dimensions/);
+});
