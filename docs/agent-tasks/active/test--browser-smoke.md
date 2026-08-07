@@ -99,9 +99,8 @@ Three dead ends shaped the design, and each is recorded in
 
 ## Remaining
 
-- Owner action only: `git push origin test/browser-smoke:main`.
-- The CI step has never run. It is written from the workflow's existing shape
-  and the local run, and the first push is what proves it.
+- Owner action only: the seed fix and this file are unpushed. `git push origin
+  test/browser-smoke:main`, then read the run.
 
 ## Changed files
 
@@ -117,6 +116,11 @@ modified in the worktree and are left alone.
 - `npm run test:e2e` — 4/4 in about 8 seconds, after a clean `npm run build`.
 - `npm run verify:core` — exit 0: 733 TypeScript tests, all five fitness
   checks, typecheck (which covers `e2e/` and the config), ESLint and the build.
+  Run again after the seed fix, same result.
+- `npm run db:seed:local` — reaches the database and creates rows. Against the
+  already-seeded development database it then stops on the share-code unique
+  constraint, which is the seed's own non-idempotence and not new: CI seeds an
+  empty database, so the step is unaffected.
 
 ### Failed
 
@@ -125,11 +129,18 @@ modified in the worktree and are left alone.
   server conflict, the unconfigured production auth, the 308 trailing-slash
   redirect being read as a refused login, and the per-process random password.
 
+### Failed, then fixed
+
+- **The CI step failed on its first run** (`641e65b`, run 31191748609), and
+  found a bug older than this task: `npm run db:seed:local` imported
+  `getRepositories`, an export the composition root replaced, so the seed had
+  been dying at its first line — invisible because a seeded database stays
+  seeded and nobody re-seeds. `scripts/seed-local.ts` now calls
+  `resolveCoreRepositories`, which is the entrypoint seam a script is supposed
+  to use, and `npm run lint:composition` agrees.
+
 ### Blocked or not run
 
-- **The CI step itself.** Nothing here can run GitHub Actions; the first push
-  is the proof. The likely failure modes are the browser install step and the
-  seed against the service database.
 - `verify:db`, `verify:ai`, the Python suite and the mutation run — not run:
   no runtime file, schema, contract or mutated module changed.
 
@@ -143,6 +154,9 @@ The smoke asserts that screens render and the flow connects, not that any rule
 is correct. It also depends on the environment holding a round: with an empty
 database the share-link case would fail rather than skip, which is the right
 noise in CI and possibly the wrong noise on a fresh machine.
+
+The CI step's second run is still unproven — the first one is what found the
+seed bug, and the fix has only been exercised locally.
 
 ## Failed approaches
 
@@ -165,4 +179,5 @@ noise in CI and possibly the wrong noise on a fresh machine.
 ## Next concrete step
 
 Hand the push to the owner: `git push origin test/browser-smoke:main`, then
-read the first CI run — the smoke step has never executed there.
+read that CI run — it is the first one to exercise the seed fix, and the smoke
+step has still never completed in CI.
