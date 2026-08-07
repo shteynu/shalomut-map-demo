@@ -1,6 +1,6 @@
 # Shalomut Tracker — operational handoff
 
-Updated: 2026-08-07, second session close (`origin/main` is `ae73259`; nothing
+Updated: 2026-08-07, third session close (`origin/main` is `b93fd53`; nothing
 is waiting on a push, and the deployed commit was not read back this session —
 see the snapshot below). This document
 owns only cross-task operational/deployed state, external blockers and approval
@@ -10,7 +10,7 @@ verification belong in
 
 ## Repository snapshot
 
-- `origin/main` is `ae73259`. The last commit that changed **product** code is
+- `origin/main` is `b93fd53`. The last commit that changed **product** code is
   `36fe4ce` — `feat/multi-school-scope`, pushed by the owner on 2026-08-07:
   the system holds more than one school, `/setup` is where one is chosen and
   added, and every other screen reads inside the chosen school. Everything
@@ -23,6 +23,19 @@ verification belong in
   and `6.0` the refusing half of their tests; the mutation pilot moved 71.81%
   to 95.22%. No runtime file changed. Their task files are in
   `docs/agent-tasks/archive/`.
+- **`chore/contract-refusal-suite-check` landed the same day.** `npm run
+  lint:contract-refusals` runs inside `verify:core`, so CI fails when a
+  contract version reaches a stone validator that no `*-refusals.test.ts`
+  exercises. It groups versions by the capability flags
+  `validateStoneMapResult` branches on — `4.0` shares `3.0`'s path and needs no
+  suite — and reads that flag list out of `ai-contract.ts` so it cannot go
+  stale. It proves a suite exists, not that it is complete.
+- **Two gates were considered and declined on 2026-08-07**, so they are not
+  reopened by habit: a mutation-score threshold (the score moves for reasons
+  unrelated to test strength) and a line-coverage threshold (it would have been
+  green throughout the period when ~90 validator rules could be deleted
+  silently — those lines executed, they were simply never asserted against).
+  A nightly full mutation run was also declined as a number nobody would read.
 - **The deployed commit was not read back this session.** Vercel deploys from
   every push to `main`, so the endpoint should be serving `ae73259`, but
   nothing here verified it — and since 2026-08-07 the pushes carried no runtime
@@ -45,9 +58,10 @@ verification belong in
   `prisma generate`, never `prisma migrate deploy`, so this is a hand step every
   schema change still needs. Details and the read-back are in the database
   section below. Nothing after it changed a schema.
-- Verification at `ae73259`, the current tip: `npm run verify:core` exit 0 with
-  733 TypeScript tests, both fitness checks, typecheck, ESLint and the
-  production build, plus `npm run test:mutation:ai-contract` exit 0 (1155
+- Verification at `b93fd53`, the current tip: `npm run verify:core` exit 0 with
+  733 TypeScript tests, all five fitness checks, typecheck, ESLint and the
+  production build. The last full mutation run was at `ae73259` — nothing after
+  it touched a mutated module or the runner's test list — and was exit 0 (1155
   killed, 52 survived, 6 uncovered, 42 runtime errors, 95.22%). `verify:db` and
   `verify:ai` were **not** run — nothing since 2026-08-05 morning changed a
   schema, a repository, a contract or Python. The last `verify:db` reading is 26 tests, 26 pass at
