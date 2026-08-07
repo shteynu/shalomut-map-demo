@@ -150,6 +150,15 @@ privacy, auth, persistence, contracts или deployment.
 - RTL reading order, keyboard access, responsive layout и reduced motion для UI
   changes.
 
+Один путь из этого списка автоматизирован: `npm run test:e2e` собирает проект и
+прогоняет `e2e/smoke.spec.ts` — вход менеджера, экран сбора, ссылка для
+респондента и дашборд. Playwright сам поднимает сервер на порту 3100 и сам
+выдаёт ему `SESSION_SECRET`, `MANAGER_ADMIN_PASSWORD` и
+`MANAGER_ORGANIZATION_ID`, поэтому реальные секреты не нужны ни локально, ни в
+CI. Нужна база с раундом: локально это dev-база, в CI шаг сам применяет
+миграции и сид. Smoke отвечает на вопрос «приложение стоит?», а не «правила
+верны» — остальные проверки не заменяет.
+
 Для local UI используй `playwright` или `playwright-interactive`, если они
 доступны. Для deployed environment используй read-only smoke по умолчанию. Не
 создавай данные, не вызывай webhook и не меняй alias без разрешения,

@@ -93,6 +93,39 @@ jobs:
       - name: Check that the mutation runner still starts
         run: npm run test:mutation:ai-contract -- --dryRunOnly
 
+      # Everything above this line is verified without a browser, and cannot
+      # see the half of the product that only exists once a page renders: a
+      # server component that throws, a reading order that flipped, a share
+      # link the manager screen stopped showing. One path covers it — sign in,
+      # read the link, open it as a respondent, look at the map.
+      #
+      # It needs a database with a round in it, which is why DATABASE_URL
+      # appears here and nowhere else: the build above must never reach one.
+      # This is the disposable service database, seeded after `verify:db` has
+      # finished emptying it.
+      #
+      # The sign-in credentials come from `playwright.config.ts`, which starts
+      # the server itself with values it invents. No secret is configured for
+      # this job, and none should be.
+      - name: Install the smoke browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Smoke the manager and respondent flow in a browser
+        env:
+          DATABASE_URL: postgresql://shalomut:shalomut@127.0.0.1:5433/shalomut_test
+        run: |
+          npm run db:migrate:deploy
+          npm run db:seed:local
+          npx playwright test
+
+      - name: Keep the smoke's report when it fails
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
   deploy-prod-manual:
     name: Deploy to Production (Manual)
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.target_env == 'production'
