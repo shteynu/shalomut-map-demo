@@ -179,8 +179,11 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
   mutants, 71.81% total. On 2026-08-07 the same refusal treatment reached the
   contracts that had only ever been tested from the accepting side — first
   `1.0`–`3.0`, then `5.0` with its echoed distribution, adaptation outcome and
-  partial map: 1140 killed, 67 survived, 6 uncovered and the same 42 runtime
-  errors, 93.98% total. Two checks keep the measurement honest without
+  partial map, then the `6.0` rules its one-metric fixture could not reach:
+  1155 killed, 52 survived, 6 uncovered and the same 42 runtime errors, 95.22%
+  total. Of what survives, nine are the sentence-segmentation helpers left
+  alive by decision and five are error-message prose. Two checks keep the
+  measurement honest without
   gating on it: `npm run lint:mutation-config` re-derives the test list from
   the repository inside `verify:core`, and CI starts the runner with a dry
   run on every pull request.
@@ -259,10 +262,10 @@ the sentences are.
 ### Architecture
 
 Nothing open. Mutant classification closed on 2026-08-03, and on 2026-08-07 the
-contracts `1.0`–`3.0` and `5.0` got the refusing half of their tests — what the
-classification had called a missing-fixture problem. `4.0` needed no slice: it
-validates through the `3.0` path. Widening mutation scope to a second subject
-stays conditional, and `ROADMAP.md` records why.
+contracts `1.0`–`3.0`, `5.0` and finally `6.0` got the refusing half of their
+tests — what the classification had called a missing-fixture problem. `4.0`
+needed no slice: it validates through the `3.0` path. Widening mutation scope
+to a second subject stays conditional, and `ROADMAP.md` records why.
 
 The long-term identity model left this list on 2026-08-03: one manager per
 deployment is the requested product shape, so it is requirement-gated future
