@@ -15,7 +15,7 @@
  * school on a real dashboard.
  */
 import 'dotenv/config';
-import { getRepositories } from '@/lib/repositories';
+import { resolveCoreRepositories } from '@/lib/composition-root';
 import { createCanonicalSurveyDefinition } from '@/lib/survey-definition';
 import { resolveManagerOrganizationId } from '@/lib/auth/manager-auth-service';
 import type { AnswerValue, SurveyResponseRecord } from '@/lib/types/backend';
@@ -70,7 +70,11 @@ function requireLocalDatabase(): string {
 
 async function main() {
   const host = requireLocalDatabase();
-  const { orgRepo, roundRepo, surveyRepo } = getRepositories();
+  // `resolveCoreRepositories` is the entrypoint seam; a script is an
+  // entrypoint. This used to call `getRepositories`, which the composition
+  // root replaced — the seed had been failing at its first line ever since,
+  // unnoticed until CI ran it.
+  const { orgRepo, roundRepo, surveyRepo } = resolveCoreRepositories();
 
   if (process.argv.includes('--reset')) {
     const { execSync } = require('node:child_process');
