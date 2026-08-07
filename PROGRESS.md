@@ -182,11 +182,14 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
   partial map, then the `6.0` rules its one-metric fixture could not reach:
   1155 killed, 52 survived, 6 uncovered and the same 42 runtime errors, 95.22%
   total. Of what survives, nine are the sentence-segmentation helpers left
-  alive by decision and five are error-message prose. Two checks keep the
-  measurement honest without
-  gating on it: `npm run lint:mutation-config` re-derives the test list from
-  the repository inside `verify:core`, and CI starts the runner with a dry
-  run on every pull request.
+  alive by decision and five are error-message prose. Three checks hold the
+  result without gating on the number: `npm run lint:mutation-config`
+  re-derives the runner's test list from the repository, CI starts the runner
+  with a dry run on every pull request, and `npm run lint:contract-refusals`
+  fails when a contract version reaches a stone validator that no refusal
+  suite exercises — so the next version cannot ship with accepting tests only.
+  The first two are about the instrument, the third about the tests; none is a
+  score threshold, and `ROADMAP.md` records why there is none.
 - The OpenAPI specification has one editable source, `docs/openapi.yaml`;
   `public/openapi.json` is generated from it and checked as a whole document.
 
