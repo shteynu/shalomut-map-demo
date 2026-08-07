@@ -54,6 +54,10 @@ const config = {
       'src/lib/__tests__/hebrew-only-corpus.test.ts',
       'src/lib/__tests__/callback-corpus-parity.test.ts',
       'src/lib/__tests__/ai-contract-payload-refusals.test.ts',
+      // The same negative half for the closed contracts `1.0`–`3.0`, whose
+      // validators the payload corpus only ever entered from the accepting
+      // side.
+      'src/lib/__tests__/ai-contract-legacy-refusals.test.ts',
       // A validator test does not have to live beside the validator. This one
       // walks a 3.0 payload through the staging dry run and asserts both the
       // accepted and the privacy-locked outcome, so it kills mutants no file
