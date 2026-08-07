@@ -76,10 +76,14 @@ expanding mutation scope — was closed on 2026-08-03; what it found is in
   fixtures of their own, so a new target would be measured against the same
   blind spot — was met on 2026-08-07: `1.0`–`3.0` now have valid payloads and a
   refusal test per rule, and their validators hold single-digit survivor counts
-  instead of roughly three fifths of the total. What remains unmeasured is the
-  same shape one version up, in the `4.0`/`5.0` stone and provenance rules, so
-  giving those their refusing half is the cheaper next slice than a second
-  subject. The pilot stays opt-in and non-blocking either way. Following a rule
+  instead of roughly three fifths of the total. `5.0` followed the same day and
+  `4.0` needed nothing of its own, since it validates through the `3.0` path.
+  What remains unmeasured is `6.0`'s narrative shape, which is deliberate: the
+  paragraph and sentence helpers were classified on 2026-08-03 as
+  implementation detail that pinning would freeze. So a second subject is now
+  the honest next question rather than a measurement against a blind spot —
+  still conditional, and still nothing that has been asked for.
+  The pilot stays opt-in and non-blocking either way. Following a rule
   out of the validator — as `src/lib/scoring-bands.ts` was followed on
   2026-08-05 — is not this item: it keeps one subject whole rather than adding
   a second.
