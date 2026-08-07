@@ -27,6 +27,20 @@ export async function loadManagerContext(roundId?: string) {
 }
 
 /**
+ * Every school the system has.
+ *
+ * One extra read, and only the setup screen asks for it: it is the one screen
+ * that can change which school the manager is in, so it is the only one that
+ * needs the list. The other screens are already scoped to the chosen school and
+ * would pay for a query they never render.
+ */
+export async function loadSchools() {
+  await connection();
+  const { orgRepo } = resolveCoreRepositories();
+  return orgRepo.findAll();
+}
+
+/**
  * The goals of every round this school has run.
  *
  * One extra read, and only the goals screen asks for it. The rounds come from

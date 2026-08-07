@@ -1961,6 +1961,11 @@
           "round"
         ],
         "properties": {
+          "createOrganization": {
+            "type": "boolean",
+            "default": false,
+            "description": "Opens a school the system does not have yet, together with its first round, instead of saving the school this request is scoped to. An absent organization id cannot say this on its own, because an unnamed organization is scoped to the current school — which is what saves an ordinary edit. When true, any organization or round id in the payload is ignored: both records are new."
+          },
           "organization": {
             "type": "object",
             "required": [

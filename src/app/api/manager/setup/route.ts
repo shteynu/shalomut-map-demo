@@ -39,6 +39,18 @@ function parseDate(value: unknown) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
+/**
+ * Whether the request is opening a school rather than saving the one it is in.
+ *
+ * An absent organization id cannot carry this on its own: the handler scopes an
+ * unnamed organization to the school the request is already in, which is what
+ * makes an ordinary edit work. Adding a school therefore says so explicitly,
+ * and a request that does not say it can never create one by omission.
+ */
+function createsOrganization(value: unknown): boolean {
+  return isRecord(value) && value.createOrganization === true;
+}
+
 function parsePayload(value: unknown): ManagerSetupInput | null {
   if (
     !isRecord(value) ||
@@ -140,7 +152,8 @@ export async function PUT(request: Request) {
     const unavailable = getDurableWriteGuardResponse();
     if (unavailable) return unavailable;
 
-    const input = parsePayload(await request.json());
+    const body = await request.json();
+    const input = parsePayload(body);
     if (!input) {
       return NextResponse.json(
         { error: "Invalid manager setup payload." },
@@ -149,6 +162,28 @@ export async function PUT(request: Request) {
     }
 
     const { orgRepo, roundRepo } = resolveCoreRepositories();
+
+    if (createsOrganization(body)) {
+      // A school being opened is outside every existing school, so there is no
+      // scope to resolve and none to check against: ids arriving with it would
+      // only name records belonging to somebody else's school, and are dropped
+      // rather than trusted. The round is the new school's first one.
+      const created = await ManagerSetupService.save(
+        {
+          organization: { ...input.organization, id: undefined },
+          round: { ...input.round, id: undefined },
+        },
+        orgRepo,
+        roundRepo,
+      );
+
+      return NextResponse.json({
+        success: true,
+        savedAt: created.round.updatedAt?.toISOString(),
+        ...created,
+      });
+    }
+
     const organizationId = await ManagerScopeService.resolveOrganizationId(
       orgRepo,
       getManagerOrganizationId(request),

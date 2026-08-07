@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarPlus, Check, ChevronLeft, ClipboardPen, Lightbulb, Loader2, ShieldCheck, Users } from "lucide-react";
+import { Building2, CalendarPlus, Check, ChevronLeft, ClipboardPen, Lightbulb, Loader2, ShieldCheck, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 import { PrivacyThresholdNotice } from "@/components/ui/privacy-threshold-notice";
@@ -11,6 +11,8 @@ import { AUDIENCE_OPTIONS, DEFAULT_AUDIENCE } from "@/lib/audience";
 import {
   getNavigationAction,
   newRoundSetupRoute,
+  newSchoolSetupRoute,
+  schoolSetupRoute,
   surveyBuilderRoute,
 } from "@/lib/navigation";
 import {
@@ -21,8 +23,15 @@ import {
 type SetupFormProps = {
   /** Opening a round the school does not have yet rather than editing one. */
   isNewRound?: boolean;
+  /**
+   * Opening a school the system does not have yet. The form is the same one,
+   * because a school arrives with its first round and both are filled in here.
+   */
+  isNewSchool?: boolean;
   /** Whether offering a second round makes sense: a school with a round. */
   canOpenNewRound?: boolean;
+  /** Whether offering a second school makes sense: a school already saved. */
+  canOpenNewSchool?: boolean;
   organization: {
     id: string;
     name: string;
@@ -54,7 +63,9 @@ const gradeLabels = ["א", "ב", "ג", "ד", "ה", "ו", "ז", "ח", "ט", "י",
 
 export function SetupForm({
   isNewRound = false,
+  isNewSchool = false,
   canOpenNewRound = false,
+  canOpenNewSchool = false,
   organization,
   round,
 }: SetupFormProps) {
@@ -79,7 +90,7 @@ export function SetupForm({
   // to name it. Without the id the builder would open the running round and
   // the manager would edit the wrong questionnaire.
   const builderHref =
-    isNewRound && savedRoundId
+    (isNewRound || isNewSchool) && savedRoundId
       ? surveyBuilderRoute(savedRoundId)
       : distributeSurveyAction.href;
 
@@ -101,8 +112,14 @@ export function SetupForm({
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        // A missing organization id is not enough to mean "a new school": the
+        // server scopes an unnamed organization to the school the request is
+        // already in, which is what saves an edit of the current school. The
+        // intent has to be said out loud, or opening a second school would
+        // overwrite the first one.
+        createOrganization: isNewSchool,
         organization: {
-          id: organization?.id,
+          id: isNewSchool ? undefined : organization?.id,
           name: formData.get("organizationName"),
           city: formData.get("city"),
           schoolType: formData.get("schoolType"),
@@ -143,6 +160,7 @@ export function SetupForm({
     }
 
     const payload = (await response.json().catch(() => null)) as {
+      organization?: { id?: string };
       round?: { id?: string };
       savedAt?: string;
     } | null;
@@ -152,6 +170,17 @@ export function SetupForm({
     setHasUnsavedChanges(false);
     setSaved(true);
     setSaving(false);
+
+    const createdSchoolId = isNewSchool ? payload?.organization?.id : null;
+    if (createdSchoolId) {
+      // The school exists now, and nothing on this screen — or on the map, the
+      // goals or the builder — is about it until the request says so. Naming it
+      // in the URL is what moves the manager into the school they just opened,
+      // rather than leaving them editing the one they came from.
+      router.push(schoolSetupRoute(createdSchoolId));
+      return;
+    }
+
     router.refresh();
   }
 
@@ -360,9 +389,11 @@ export function SetupForm({
           )}
           {saving
             ? "שומר..."
-            : isNewRound
-              ? "פתיחת הסבב החדש"
-              : "שמירת סבב אבחון"}
+            : isNewSchool
+              ? "שמירת בית הספר החדש"
+              : isNewRound
+                ? "פתיחת הסבב החדש"
+                : "שמירת סבב אבחון"}
         </button>
         {saved ? (
           <Link className="secondary-button" href={builderHref}>
@@ -376,15 +407,28 @@ export function SetupForm({
             פתיחת סבב חדש
           </Link>
         ) : null}
+        {/*
+          Adding a school is offered here rather than in the switcher: with one
+          school there is no switcher to offer it from, and that is exactly when
+          a second school is added for the first time.
+        */}
+        {!isNewSchool && canOpenNewSchool && !saved ? (
+          <Link className="secondary-button" href={newSchoolSetupRoute()}>
+            <Building2 size={18} aria-hidden="true" />
+            הוספת בית ספר
+          </Link>
+        ) : null}
       </div>
 
       <SaveStatus savedAt={savedAt} hasUnsavedChanges={hasUnsavedChanges} />
 
       {saved && !hasUnsavedChanges ? (
         <p className="success-note">
-          {isNewRound
-            ? "הסבב החדש נפתח כטיוטה. הוא יעלה לאוויר במקום הסבב הנוכחי רק לאחר שהשאלון שלו יכסה את שמונת הממדים."
-            : "סבב האבחון נשמר והלינק האנונימי מוכן להפצה."}
+          {isNewSchool
+            ? "בית הספר נשמר עם סבב האבחון הראשון שלו, וכל המסכים יוצגו עבורו מעכשיו."
+            : isNewRound
+              ? "הסבב החדש נפתח כטיוטה. הוא יעלה לאוויר במקום הסבב הנוכחי רק לאחר שהשאלון שלו יכסה את שמונת הממדים."
+              : "סבב האבחון נשמר והלינק האנונימי מוכן להפצה."}
         </p>
       ) : null}
       {errorMessage ? (

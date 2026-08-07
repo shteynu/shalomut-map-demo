@@ -2308,7 +2308,12 @@ textarea {
   line-height: 1.2;
 }
 
-.round-switcher {
+/* The school switcher is the round switcher's twin — same question, one level
+   up — so it wears the same pill rather than a second dialect of the same
+   control. It carries its own margin: it sits above the setup form, between the
+   page intro and the first card, rather than under a heading. */
+.round-switcher,
+.school-switcher {
   display: flex;
   align-items: center;
   gap: 0.6rem;
@@ -2316,11 +2321,16 @@ textarea {
   margin: 1.1rem 0 0;
 }
 
+.school-switcher {
+  margin: 0 0 1.2rem;
+}
+
 .round-switcher-center {
   justify-content: center;
 }
 
-.round-switcher label {
+.round-switcher label,
+.school-switcher label {
   color: var(--muted);
   font-size: 0.9rem;
 }
@@ -2328,7 +2338,8 @@ textarea {
 /* A select rather than a row of chips: the list of rounds only grows, and a
    school never deletes one. `appearance: none` so the pill matches the rest of
    the stone language, with the caret drawn in the padding it reserves. */
-.round-switcher select {
+.round-switcher select,
+.school-switcher select {
   appearance: none;
   min-height: 2.5rem;
   max-width: min(100%, 22rem);
@@ -2350,11 +2361,13 @@ textarea {
   cursor: pointer;
 }
 
-.round-switcher select:hover {
+.round-switcher select:hover,
+.school-switcher select:hover {
   background-color: rgba(255, 250, 240, 1);
 }
 
-.round-switcher select:focus-visible {
+.round-switcher select:focus-visible,
+.school-switcher select:focus-visible {
   outline: 2px solid var(--accent-dark);
   outline-offset: 2px;
 }

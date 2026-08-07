@@ -365,6 +365,116 @@ test('API Route PUT /api/manager/setup creates the configured scoped organizatio
   }
 });
 
+test('API Route PUT /api/manager/setup opens a second school beside the scoped one', async () => {
+  const orgRepo = new InMemoryOrganizationRepository([DEMO_ORGANIZATION]);
+  overrideCoreRepositories({
+    aiAnalysisRunRepo: new InMemoryAiAnalysisRunRepository(),
+    orgRepo,
+    roundRepo: new InMemoryRoundRepository([DEMO_ROUND]),
+    surveyRepo: new InMemorySurveyRepository(),
+  });
+
+  try {
+    const request = new Request('http://localhost/api/manager/setup', {
+      method: 'PUT',
+      headers: {
+        'x-shalomut-manager-organization-id': DEMO_ORGANIZATION.id,
+      },
+      body: JSON.stringify({
+        createOrganization: true,
+        organization: {
+          name: 'בית ספר שני',
+          city: 'ירושלים',
+          schoolType: 'תיכון',
+          totalStaffCount: 45,
+        },
+        round: {
+          title: 'סבב ראשון',
+          privacyThreshold: 10,
+          startDate: '2026-09-01',
+          endDate: '',
+          backgroundContext: {
+            notes: '',
+            audience: 'all-staff',
+            sicknessDaysThisQuarter: 0,
+            newStaffMembers: 0,
+            studentCount: 300,
+            socioEconomicIndex: 5,
+            classesPerGrade: { א: 2 },
+          },
+        },
+      }),
+    });
+
+    const response = await saveManagerSetup(request);
+    assert.strictEqual(response.status, 200);
+
+    const payload = await response.json();
+    assert.notStrictEqual(payload.organization.id, DEMO_ORGANIZATION.id);
+    assert.strictEqual(payload.organization.name, 'בית ספר שני');
+    assert.strictEqual(payload.round.organizationId, payload.organization.id);
+
+    // The school the request was scoped to is untouched: adding a school beside
+    // it must never be a rename of it.
+    const scopedSchool = await orgRepo.findById(DEMO_ORGANIZATION.id);
+    assert.strictEqual(scopedSchool?.name, DEMO_ORGANIZATION.name);
+    assert.strictEqual((await orgRepo.findAll()).length, 2);
+  } finally {
+    useDemoRepositories();
+  }
+});
+
+test('API Route PUT /api/manager/setup still saves the scoped school when no school is being opened', async () => {
+  const orgRepo = new InMemoryOrganizationRepository([DEMO_ORGANIZATION]);
+  overrideCoreRepositories({
+    aiAnalysisRunRepo: new InMemoryAiAnalysisRunRepository(),
+    orgRepo,
+    roundRepo: new InMemoryRoundRepository([DEMO_ROUND]),
+    surveyRepo: new InMemorySurveyRepository(),
+  });
+
+  try {
+    const request = new Request('http://localhost/api/manager/setup', {
+      method: 'PUT',
+      headers: {
+        'x-shalomut-manager-organization-id': DEMO_ORGANIZATION.id,
+      },
+      body: JSON.stringify({
+        organization: {
+          name: 'בית ספר בשם מעודכן',
+          city: 'חיפה',
+          schoolType: 'יסודי',
+          totalStaffCount: 31,
+        },
+        round: {
+          title: 'סבב מעודכן',
+          privacyThreshold: 10,
+          startDate: '2026-09-01',
+          endDate: '',
+          backgroundContext: {
+            notes: '',
+            audience: 'all-staff',
+            sicknessDaysThisQuarter: 0,
+            newStaffMembers: 0,
+            studentCount: 300,
+            socioEconomicIndex: 5,
+            classesPerGrade: { א: 2 },
+          },
+        },
+      }),
+    });
+
+    const response = await saveManagerSetup(request);
+    assert.strictEqual(response.status, 200);
+
+    const payload = await response.json();
+    assert.strictEqual(payload.organization.id, DEMO_ORGANIZATION.id);
+    assert.strictEqual((await orgRepo.findAll()).length, 1);
+  } finally {
+    useDemoRepositories();
+  }
+});
+
 test('API Route PUT /api/manager/setup fails closed on a deployment without a database', async () => {
   const previousVercelEnvironment = process.env.VERCEL_ENV;
   process.env.VERCEL_ENV = 'preview';
