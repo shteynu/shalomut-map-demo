@@ -1,6 +1,7 @@
 import assert from 'node:assert';
 import test, { after, before } from 'node:test';
 import { GET as getRoundAnalytics } from '../rounds/[roundId]/analytics/route';
+import { GET as getAiInsights } from '../rounds/[roundId]/ai-insights/route';
 import { PATCH as updateRound } from '../rounds/[roundId]/route';
 import { POST as resetRound } from '../rounds/[roundId]/reset/route';
 import {
@@ -272,6 +273,75 @@ test('API Route analytics hides a round owned by another organization', async ()
     );
 
     assert.strictEqual(response.status, 404);
+  } finally {
+    useDemoRepositories();
+  }
+});
+
+test('API Route ai-insights serves one round its own analysis and hides another school\'s', async () => {
+  const otherOrganization = {
+    ...DEMO_ORGANIZATION,
+    id: 'org_other_school',
+    name: 'בית ספר אחר',
+    createdAt: new Date('2026-07-25T00:00:00.000Z'),
+  };
+  const otherRound = {
+    ...DEMO_ROUND,
+    id: 'round_other_school',
+    organizationId: otherOrganization.id,
+    shareCode: 'SHALOM-OTHER-AI',
+  };
+  const ownRound = { ...DEMO_ROUND, id: 'round_own_school' };
+
+  const roundRepo = new InMemoryRoundRepository([ownRound, otherRound]);
+  const aiInsightsRepo = new InMemoryAiInsightsRepository(roundRepo);
+  await aiInsightsRepo.save(ownRound.id, {
+    contractVersion: '5.0',
+    roundId: ownRound.id,
+    status: 'success',
+  });
+  await aiInsightsRepo.save(otherRound.id, {
+    contractVersion: '5.0',
+    roundId: otherRound.id,
+    status: 'success',
+  });
+
+  overrideCoreRepositories({
+    aiAnalysisRunRepo: new InMemoryAiAnalysisRunRepository(),
+    aiInsightsRepo,
+    orgRepo: new InMemoryOrganizationRepository([
+      DEMO_ORGANIZATION,
+      otherOrganization,
+    ]),
+    roundRepo,
+    surveyRepo: new InMemorySurveyRepository(),
+  });
+
+  try {
+    const scopedHeaders = {
+      'x-shalomut-manager-organization-id': DEMO_ORGANIZATION.id,
+    };
+
+    const own = await getAiInsights(
+      new Request(`http://localhost/api/rounds/${ownRound.id}/ai-insights`, {
+        headers: scopedHeaders,
+      }),
+      { params: Promise.resolve({ roundId: ownRound.id }) },
+    );
+
+    assert.strictEqual(own.status, 200);
+    // The analysis a screen reads names the round it is about, so a result
+    // stored for one round can never be served under another.
+    assert.strictEqual((await own.json()).roundId, ownRound.id);
+
+    const foreign = await getAiInsights(
+      new Request(`http://localhost/api/rounds/${otherRound.id}/ai-insights`, {
+        headers: scopedHeaders,
+      }),
+      { params: Promise.resolve({ roundId: otherRound.id }) },
+    );
+
+    assert.strictEqual(foreign.status, 404);
   } finally {
     useDemoRepositories();
   }

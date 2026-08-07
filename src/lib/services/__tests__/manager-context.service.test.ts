@@ -225,3 +225,59 @@ test("a round belonging to another school is unknown, not readable", async () =>
     [ownRound.id],
   );
 });
+
+function response(id: string, roundId: string): SurveyResponseRecord {
+  return {
+    id,
+    roundId,
+    answers: [],
+    submittedAt: new Date("2026-07-21T00:00:00.000Z"),
+  };
+}
+
+test("the numbers are the selected round's, not those of the round beside it", async () => {
+  const activeRound = round("active", "active", "2026-07-20T00:00:00.000Z");
+  const earlierRound = round("earlier", "closed", "2026-03-01T00:00:00.000Z");
+
+  const context = await ManagerContextService.load(
+    new InMemoryOrganizationRepository([organization]),
+    new InMemoryRoundRepository([activeRound, earlierRound]),
+    new InMemorySurveyRepository([
+      response("response-1", activeRound.id),
+      response("response-2", activeRound.id),
+      response("response-3", earlierRound.id),
+    ]),
+    organization.id,
+    earlierRound.id,
+  );
+
+  assert.strictEqual(context.selectedRound?.id, earlierRound.id);
+  assert.strictEqual(context.responseCount, 1);
+  assert.strictEqual(context.analytics?.roundId, earlierRound.id);
+  assert.strictEqual(context.analytics?.totalResponses, 1);
+});
+
+test("another school's answers are not in this school's numbers", async () => {
+  const ownRound = round("own", "active", "2026-07-20T00:00:00.000Z");
+  const foreignRound = round(
+    "foreign",
+    "active",
+    "2026-07-20T00:00:00.000Z",
+    otherOrganization.id,
+  );
+
+  const context = await ManagerContextService.load(
+    new InMemoryOrganizationRepository([organization, otherOrganization]),
+    new InMemoryRoundRepository([ownRound, foreignRound]),
+    new InMemorySurveyRepository([
+      response("response-1", foreignRound.id),
+      response("response-2", foreignRound.id),
+    ]),
+    organization.id,
+  );
+
+  assert.strictEqual(context.selectedRound?.id, ownRound.id);
+  assert.strictEqual(context.responseCount, 0);
+  assert.strictEqual(context.analytics?.roundId, ownRound.id);
+  assert.strictEqual(context.analytics?.totalResponses, 0);
+});
