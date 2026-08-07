@@ -30,7 +30,13 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 - The manager screens were walked in a signed-in browser on 2026-08-06, and
   since 2026-08-07 one path through them runs automatically in CI — sign in,
   round tracking, the share link, the dashboard. Anything beyond that path is
-  still the owner's own session to walk.
+  still the owner's own session to walk. That path earned itself on the first
+  day: it found a session bug no test could reach — the middleware verifies a
+  JWT in a sandbox with its own realm, and on Node 20 the signature it was
+  handed failed an `instanceof` check inside SubtleCrypto, so every manager
+  session was issued correctly and then refused, which reads as a wrong
+  password. Whether the deployed endpoint was affected is untested; Vercel runs
+  middleware in a different isolate.
 - There are no real respondents or production data. The deployed Vercel alias
   remains an operational staging endpoint for the design stage.
 

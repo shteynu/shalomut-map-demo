@@ -6,7 +6,7 @@
 - Base branch: main
 - Base commit: d83cc10
 - Current HEAD: the branch tip
-- Status: green locally, red in CI and under diagnosis; committed locally, unpushed
+- Status: complete; green in CI at `0524542` (run 31207956670), 4/4
 - Last updated: 2026-08-07
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -99,8 +99,9 @@ Three dead ends shaped the design, and each is recorded in
 
 ## Remaining
 
-- The CI smoke has never passed. The fix for the cause it found is committed
-  and proven on Node 20 locally, but no CI run has exercised it.
+- Nothing on this branch. One question it opened is outside it and recorded in
+  `docs/shalomut-tracker-handoff.md`: whether deployed sign-in was affected by
+  the same cross-realm bug.
 
 ## Changed files
 
@@ -113,6 +114,8 @@ modified in the worktree and are left alone.
 
 ### Passed
 
+- **CI run 31207956670 at `0524542`: the smoke step green, 4/4 in 8.5s.** The
+  first passing run, and the point of the whole task.
 - `npm run test:e2e` — 4/4 in about 8 seconds, after a clean `npm run build`.
 - `npm run verify:core` — exit 0: 733 TypeScript tests, all five fitness
   checks, typecheck (which covers `e2e/` and the config), ESLint and the build.
@@ -217,12 +220,7 @@ same cross-realm bug. Nothing here tested the deployed endpoint.
 
 ## Next concrete step
 
-Hand the push to the owner: `git push origin test/browser-smoke:main`, then
-read the smoke step — it should be green, and it is the first run that
-exercises a middleware that can verify a session on Node 20.
-
-Then answer the question this opened and nobody has answered: whether deployed
-sign-in was broken by the same line. Vercel runs the middleware in its own
-Edge isolate, not in Next's Node sandbox, so it may never have tripped — but
-that is a guess, and the way to settle it is to sign in on the deployed
-endpoint, which needs the owner's browser.
+None on this branch — it is done and green in CI. The one thing it left for
+someone: sign in on the deployed endpoint and confirm the cross-realm bug never
+reached it. That needs the owner's signed-in browser, and it is recorded in
+`docs/shalomut-tracker-handoff.md`.
