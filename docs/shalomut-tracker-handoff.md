@@ -10,6 +10,18 @@ verification belong in
 
 ## Repository snapshot
 
+- **The browser smoke found a session bug the whole suite was blind to.** The
+  middleware verified JWTs by passing `signatureBytes.buffer` to
+  `crypto.subtle.verify`; it runs in a sandbox with its own realm, so that
+  ArrayBuffer failed an `instanceof` check inside SubtleCrypto and the call
+  threw before reading a signature — on Node 20, which CI pins, and not on the
+  Node 22/24 used locally. Route handlers, outside that sandbox, kept issuing
+  valid sessions, so a manager could sign in and every protected page still
+  bounced to `/login`. Fixed by passing the typed array. **Open question for the
+  owner:** whether deployed sign-in was affected. Vercel runs middleware in its
+  own Edge isolate rather than Next's Node sandbox, so it may never have
+  tripped — nothing here tested the deployed endpoint, and settling it takes a
+  signed-in browser.
 - **`main` is red.** Run 31191748609 on `641e65b` failed at the new browser
   smoke step: `npm run db:seed:local` imported `getRepositories`, an export the
   composition root replaced long ago, so the seed had been dying at its first

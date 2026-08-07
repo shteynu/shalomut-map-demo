@@ -62,7 +62,13 @@ function base64UrlEncode(buffer: ArrayBuffer | Uint8Array): string {
     .replace(/=+$/, "");
 }
 
-function base64UrlDecode(str: string): Uint8Array {
+/**
+ * The `<ArrayBuffer>` is load-bearing for the caller, not decoration: without
+ * it the bytes widen to `ArrayBufferLike`, which `BufferSource` does not
+ * accept, and the only way back is the `.buffer` that broke verification in
+ * the middleware's realm.
+ */
+function base64UrlDecode(str: string): Uint8Array<ArrayBuffer> {
   let base64 = str.replace(/-/g, "+").replace(/_/g, "/");
   while (base64.length % 4 !== 0) {
     base64 += "=";
@@ -159,10 +165,20 @@ export class JwtSessionProvider implements ISessionProvider {
       );
       const signatureBytes = base64UrlDecode(encodedSignature);
 
+      // The bytes, not `signatureBytes.buffer`. The middleware runs in a
+      // sandbox with its own realm, so an ArrayBuffer created there fails the
+      // `instanceof ArrayBuffer` check inside SubtleCrypto and the call throws
+      // before it ever looks at a signature — on Node 20, where CI runs, while
+      // newer Node happens not to trip on it. A typed array is detected by
+      // `ArrayBuffer.isView`, which does not care which realm made it.
+      //
+      // Every manager session was refused by the middleware and accepted by
+      // the route handlers, so the product looked exactly like a wrong
+      // password. Only the browser smoke could see it.
       const isValid = await crypto.subtle.verify(
         "HMAC",
         key,
-        signatureBytes.buffer as ArrayBuffer,
+        signatureBytes,
         dataToVerify,
       );
 
@@ -198,7 +214,17 @@ export class JwtSessionProvider implements ISessionProvider {
         issuedAt: new Date(payload.iat * 1000),
         expiresAt: new Date(payload.exp * 1000),
       };
-    } catch {
+    } catch (error) {
+      // A malformed token is refused above, by the shape checks and the
+      // signature, and reaching here means the verification itself broke —
+      // which is a fact about this runtime, not about the caller. Swallowing
+      // it is what let a cross-realm ArrayBuffer refuse every session for
+      // three CI runs while reading as a wrong password.
+      console.warn(
+        `[auth] session verification failed to run: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
       return null;
     }
   }

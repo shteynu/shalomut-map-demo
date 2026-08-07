@@ -99,9 +99,8 @@ Three dead ends shaped the design, and each is recorded in
 
 ## Remaining
 
-- The CI smoke has never passed. The fix is committed and unproven: it rests on
-  the two runtimes resolving one job-level value the same way, which is exactly
-  what this runner has not been doing. The next run decides it.
+- The CI smoke has never passed. The fix for the cause it found is committed
+  and proven on Node 20 locally, but no CI run has exercised it.
 
 ## Changed files
 
@@ -132,8 +131,20 @@ modified in the worktree and are left alone.
 
 ### Failed, then fixed
 
-- **The CI step failed a second time, on `044c5b2` (run 31195236422), and is
-  not yet diagnosed.** The seed fix worked — the step migrated, seeded and
+- **The CI step failed three times, and the third failure named a real product
+  bug.** `crypto.subtle.verify` was handed `signatureBytes.buffer`, and the
+  middleware runs in a sandbox with its own realm, so that ArrayBuffer failed
+  the `instanceof ArrayBuffer` check inside SubtleCrypto and the call threw
+  before it looked at a signature — on Node 20, which is what CI pins, while
+  the Node 22 and 24 this was developed on do not trip on it. The route
+  handlers, which run outside that sandbox, kept issuing perfectly valid
+  sessions. So every manager session was refused by the middleware and accepted
+  by the API, and the product looked exactly like a wrong password. The fix
+  passes the typed array, which `ArrayBuffer.isView` recognises whoever
+  allocated it. Reproduced and then disproved in a Node 20 container: the
+  protected page answered 307 before the change and 200 after.
+
+- **The CI step failed a second time, on `044c5b2` (run 31195236422).** The seed fix worked — the step migrated, seeded and
   started the server — and then three of the four cases failed: sign-in returns
   200 and sets `shalomut_session`, the browser sends that cookie back, and the
   middleware redirects to `/login` anyway. The token in the CI trace verifies
@@ -177,10 +188,14 @@ is correct. It also depends on the environment holding a round: with an empty
 database the share-link case would fail rather than skip, which is the right
 noise in CI and possibly the wrong noise on a fresh machine.
 
-The CI step has now run twice and failed twice, each time for a different
-reason. The first found a real bug. The second is not understood, and until it
-is, the smoke proves nothing in CI — only locally, where it passes on two
-machines and two operating systems.
+The CI step has run three times and failed three times, each time for a
+different reason, and two of those were real bugs the rest of the suite could
+not see. That is the argument for the smoke, and also the measure of what it
+still cannot promise: it says the application stands, not that any rule is
+correct.
+
+Unverified and worth verifying: whether deployed sign-in was affected by the
+same cross-realm bug. Nothing here tested the deployed endpoint.
 
 ## Failed approaches
 
@@ -203,10 +218,11 @@ machines and two operating systems.
 ## Next concrete step
 
 Hand the push to the owner: `git push origin test/browser-smoke:main`, then
-read the smoke step. Green means the job-level `SESSION_SECRET` closed it. If
-the `[auth]` line returns, it now ends in `verifying with the configured
-secret` or `verifying with the built-in secret` — `built-in` means the
-middleware still cannot see the variable that every other process in the job
-has, and the next move is to stop asking two runtimes to agree about env at
-all: sign and verify through one explicitly-passed value rather than through
-`process.env` in two places.
+read the smoke step — it should be green, and it is the first run that
+exercises a middleware that can verify a session on Node 20.
+
+Then answer the question this opened and nobody has answered: whether deployed
+sign-in was broken by the same line. Vercel runs the middleware in its own
+Edge isolate, not in Next's Node sandbox, so it may never have tripped — but
+that is a guess, and the way to settle it is to sign in on the deployed
+endpoint, which needs the owner's browser.

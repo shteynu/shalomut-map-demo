@@ -163,18 +163,25 @@ test("middleware says why a presented session cookie was rejected, once per reas
 
     const response = await middleware(request());
     assert.strictEqual(response.status, 307);
-    assert.strictEqual(warnings.length, 1);
-    assert.match(warnings[0], /session cookie was rejected/u);
-    assert.match(warnings[0], /SESSION_SECRET/u);
+
+    // A token this malformed also makes the decoder throw, and that failure
+    // reports itself separately; the line under test is the middleware's.
+    const rejections = () =>
+      warnings.filter((line) => line.includes("session cookie was rejected"));
+    assert.strictEqual(rejections().length, 1);
+    assert.match(rejections()[0], /SESSION_SECRET/u);
     // Which secret this runtime used is the whole diagnosis when two runtimes
     // disagree, and it is reported without ever naming the secret.
-    assert.match(warnings[0], /verifying with the (configured|built-in) secret/u);
-    assert.doesNotMatch(warnings[0], /shalomut-map-dev-session-secret/u);
+    assert.match(
+      rejections()[0],
+      /verifying with the (configured|built-in) secret/u,
+    );
+    assert.doesNotMatch(rejections()[0], /shalomut-map-dev-session-secret/u);
 
     // The same browser retries on every navigation. One line is a diagnosis;
     // one line per request is noise that buries it.
     await middleware(request());
-    assert.strictEqual(warnings.length, 1);
+    assert.strictEqual(rejections().length, 1);
   } finally {
     console.warn = originalWarn;
   }
