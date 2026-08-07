@@ -1,11 +1,36 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { NEW_SCHOOL_PARAM, SETUP_SCHOOL_PARAM } from "@/lib/navigation";
 import {
   isMachineAuthenticatedRoute,
   isRespondentRoute,
 } from "@/lib/server/basic-auth";
-import { createScopedManagerHeaders } from "@/lib/server/manager-scope";
+import {
+  MANAGER_SCHOOL_COOKIE,
+  createScopedManagerHeaders,
+} from "@/lib/server/manager-scope";
 import { resolveManagerSession } from "@/lib/server/session-auth";
+
+/**
+ * The school this request is about: the one just chosen, else the one chosen
+ * before, else none — and then the caller falls back to the session's school.
+ *
+ * `?school=new` is a request for a school that does not exist yet, so it is not
+ * a scope. The screen keeps reading the current school while the manager fills
+ * in the new one.
+ */
+function readChosenSchool(request: NextRequest) {
+  const requested = request.nextUrl.searchParams
+    .get(SETUP_SCHOOL_PARAM)
+    ?.trim();
+
+  if (requested && requested !== NEW_SCHOOL_PARAM) {
+    return { id: requested, isNewChoice: true };
+  }
+
+  const remembered = request.cookies.get(MANAGER_SCHOOL_COOKIE)?.value?.trim();
+  return remembered ? { id: remembered, isNewChoice: false } : null;
+}
 
 /**
  * Manager surfaces require authentication (App-level session cookie or Basic Auth fallback).
@@ -35,11 +60,27 @@ export async function middleware(request: NextRequest) {
   // 1. Primary Auth Gate: Application-level Manager Session (Cookie or Bearer Token)
   const managerSession = await resolveManagerSession(request);
   if (managerSession) {
+    // The session names the school a manager lands on; the chosen school, when
+    // there is one, is what they are reading now. The session value stays the
+    // default rather than the pin, which is what makes a second school
+    // reachable at all without touching authentication.
+    const chosenSchool = readChosenSchool(request);
     const headers = createScopedManagerHeaders(
       request.headers,
-      managerSession.activeOrganizationId,
+      chosenSchool?.id ?? managerSession.activeOrganizationId,
     );
-    return NextResponse.next({ request: { headers } });
+    const response = NextResponse.next({ request: { headers } });
+
+    if (chosenSchool?.isNewChoice) {
+      response.cookies.set(MANAGER_SCHOOL_COOKIE, chosenSchool.id, {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+      });
+    }
+
+    return response;
   }
 
   // 2. Unauthenticated Manager Surfaces:

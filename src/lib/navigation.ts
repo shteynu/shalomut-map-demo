@@ -244,6 +244,55 @@ export function isNewRoundParam(value: string | undefined): boolean {
   return value === NEW_ROUND_PARAM;
 }
 
+/**
+ * Which school the manager is working in, carried in the URL of the one screen
+ * that can change it.
+ *
+ * A round is chosen per screen, so its parameter travels on every link. A
+ * school is chosen once and everything is read inside it, so the parameter
+ * appears only where the choice is made and the choice itself is remembered in
+ * a cookie. That is what lets the map, the goals and the builder stay in the
+ * chosen school without carrying a school in every href.
+ */
+export const SETUP_SCHOOL_PARAM = "school";
+
+/**
+ * The value that asks the setup screen for a school that does not exist yet.
+ * It shares the `school` parameter for the same reason `new` shares `round`,
+ * and cannot collide with an id: organization ids are uuids.
+ */
+export const NEW_SCHOOL_PARAM = "new";
+
+/**
+ * Read the school out of the setup screen's search params. As with the round,
+ * a repeated parameter is not a link this app produces, so the first value
+ * wins rather than the request being refused.
+ */
+export function readSchoolParam(searchParams: {
+  school?: string | string[];
+}): string | undefined {
+  const value = Array.isArray(searchParams.school)
+    ? searchParams.school[0]
+    : searchParams.school;
+
+  return value?.trim() || undefined;
+}
+
+/** Whether the screen was asked for a school that does not exist yet. */
+export function isNewSchoolParam(value: string | undefined): boolean {
+  return value === NEW_SCHOOL_PARAM;
+}
+
+/** The setup screen, scoped to one school. */
+export function schoolSetupRoute(schoolId: string) {
+  return `${routes.setup}?${SETUP_SCHOOL_PARAM}=${encodeURIComponent(schoolId)}`;
+}
+
+/** The setup screen, asked for a school the system does not have yet. */
+export function newSchoolSetupRoute() {
+  return schoolSetupRoute(NEW_SCHOOL_PARAM);
+}
+
 function withRound(path: string, roundId?: string) {
   if (!roundId) {
     return path;

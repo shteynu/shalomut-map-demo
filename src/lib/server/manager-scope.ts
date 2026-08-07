@@ -11,6 +11,19 @@ import {
 export const MANAGER_ORGANIZATION_HEADER =
   "x-shalomut-manager-organization-id";
 
+/**
+ * The school the manager last chose.
+ *
+ * The choice is made on one screen and has to hold on every other one, and the
+ * other screens carry no school in their URLs — a map link, a goal link and a
+ * builder link are all about a round. A cookie is what survives those hops. It
+ * is a preference rather than a permission: the value is checked against the
+ * schools that actually exist before anything is read with it, and this
+ * deployment has one manager, so a wrong value is a wrong screen and never
+ * someone else's data.
+ */
+export const MANAGER_SCHOOL_COOKIE = "shalomut_school";
+
 export function getManagerOrganizationId(request: Pick<Request, "headers">) {
   return (
     request.headers.get(MANAGER_ORGANIZATION_HEADER)?.trim() || undefined
