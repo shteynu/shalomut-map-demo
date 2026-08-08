@@ -544,6 +544,56 @@ button:disabled {
   line-height: 1.7;
 }
 
+/* The sign-in screen. It is headerless — the manager has no navigation to use
+   yet — so it carries the brand mark itself and centres a single panel rather
+   than opening with a page intro like every screen behind it.
+
+   Everything inside is the product's ordinary form furniture: `label` and
+   `input` are the global ones, the panel is `.form-panel`, the button is the
+   `.stone-page` pill, and a refused sign-in uses `.survey-submit-error`. Until
+   2026-08-08 this screen was written in Tailwind utilities instead —
+   `text-slate-*`, `bg-white`, `amber-700`, `rounded-2xl` — which put the first
+   screen a manager ever sees outside the design system, and its placeholder at
+   2.6:1. */
+.login-page {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+}
+
+.login-shell {
+  display: grid;
+  justify-items: center;
+  gap: 1rem;
+  width: min(28rem, 100%);
+  text-align: center;
+}
+
+.login-shell h1 {
+  margin: 0;
+  font-size: clamp(1.7rem, 3vw, 2.2rem);
+}
+
+.login-intro {
+  margin: 0;
+  color: var(--muted);
+}
+
+.login-panel {
+  gap: 1.1rem;
+  width: 100%;
+  text-align: right;
+}
+
+.login-panel form {
+  display: grid;
+  gap: 1rem;
+}
+
+.login-panel .primary-button {
+  width: 100%;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -570,6 +620,17 @@ select {
   font: inherit;
 }
 
+/* Placeholder text is text, and the framework default is not readable: it
+   composites to #9b9b9b, which is 2.8:1 on the field. The muted tier is the
+   product's own answer for secondary copy and clears AA here. Two fields in
+   the product carry a placeholder — the sign-in email and the builder's
+   search — and both were below the line until 2026-08-08. */
+input::placeholder,
+textarea::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
+
 textarea {
   resize: vertical;
 }
@@ -588,7 +649,11 @@ textarea {
 
 .survey-submit-error {
   margin: 0;
-  border: 1px solid var(--danger-surface);
+  /* `--danger-surface` is what `design.md` calls this colour; the stylesheet
+     calls it `--red-strong`, and this declaration used the doc's name. An
+     undefined custom property makes the whole shorthand invalid, so every
+     error note in the product has been borderless since it was written. */
+  border: 1px solid var(--red-strong);
   border-radius: var(--radius-control);
   background: var(--surface);
   color: var(--danger-ink);
@@ -683,7 +748,10 @@ textarea {
 .survey-builder-shortcut-note kbd {
   display: inline-block;
   min-width: 1.5em;
-  border: 1px solid var(--border);
+  /* `--border` is not a token in this stylesheet — the divider colour is
+     `--line`. Undefined, the shorthand was dropped and the key cap lost both
+     its outline and the thicker bottom edge that draws it as a key. */
+  border: 1px solid var(--line);
   border-bottom-width: 2px;
   border-radius: var(--radius-control);
   background: var(--surface);

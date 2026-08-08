@@ -3,7 +3,7 @@
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { AlertCircle, Loader2, Lock, LogIn, Mail, Shield } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import {
   LOGIN_NEXT_PARAM,
   navigationLabels,
@@ -70,88 +70,63 @@ function LoginForm() {
   };
 
   return (
-    <div className="bg-[#fffdf6] border border-[#eadaaf] shadow-xl rounded-2xl p-6 md:p-8 space-y-6">
-      {error && (
-        <div
-          role="alert"
-          aria-live="polite"
-          className="flex items-start gap-3 p-4 rounded-xl bg-red-50 border border-red-200 text-red-900 text-sm"
-        >
-          <AlertCircle size={18} className="text-red-600 shrink-0 mt-0.5" />
-          <div className="font-medium">{error}</div>
-        </div>
-      )}
+    <div className="form-panel login-panel">
+      {/* `role="alert"` alone. It already implies an assertive live region, and
+          the `aria-live="polite"` that used to sit beside it contradicted the
+          role rather than softening it. */}
+      {error ? (
+        <p className="survey-submit-error" role="alert">
+          {error}
+        </p>
+      ) : null}
 
-      <form onSubmit={handleSubmit} className="space-y-5">
-        {/* Email Field */}
-        <div className="space-y-1.5">
-          <label
-            htmlFor="login-email"
-            className="block text-xs font-semibold text-slate-700"
-          >
-            כתובת דוא&quot;ל
-          </label>
-          <div className="relative">
-            <input
-              id="login-email"
-              type="email"
-              required
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@shalomut.edu.il"
-              className="w-full pr-10 pl-4 py-2.5 rounded-xl border border-[#d6c49c] bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-600/50 focus:border-amber-600 text-sm transition-all"
-              dir="ltr"
-            />
-            <Mail
-              size={17}
-              className="absolute right-3 top-3 text-slate-400 pointer-events-none"
-            />
-          </div>
-        </div>
+      <form onSubmit={handleSubmit}>
+        {/* The label wraps its input, which is how every other form in the
+            product is written — the global `label` rule is a grid, so the text
+            sits above the field with no layout of its own. The explicit `id`
+            and `htmlFor` stay: they cost nothing and survive a future refactor
+            that separates the two. */}
+        <label htmlFor="login-email">
+          כתובת דוא&quot;ל
+          <input
+            id="login-email"
+            type="email"
+            required
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="admin@shalomut.edu.il"
+            dir="ltr"
+          />
+        </label>
 
-        {/* Password Field */}
-        <div className="space-y-1.5">
-          <label
-            htmlFor="login-password"
-            className="block text-xs font-semibold text-slate-700"
-          >
-            סיסמה
-          </label>
-          <div className="relative">
-            <input
-              id="login-password"
-              type="password"
-              required
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full pr-10 pl-4 py-2.5 rounded-xl border border-[#d6c49c] bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-600/50 focus:border-amber-600 text-sm transition-all"
-              dir="ltr"
-            />
-            <Lock
-              size={17}
-              className="absolute right-3 top-3 text-slate-400 pointer-events-none"
-            />
-          </div>
-        </div>
+        <label htmlFor="login-password">
+          סיסמה
+          <input
+            id="login-password"
+            type="password"
+            required
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            dir="ltr"
+          />
+        </label>
 
-        {/* Submit Button */}
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-amber-700 hover:bg-amber-800 text-white font-semibold text-sm shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-amber-600 focus:ring-offset-2 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-        >
+        <button className="primary-button" type="submit" disabled={loading}>
           {loading ? (
             <>
               <Loader2 size={18} className="animate-spin" aria-hidden="true" />
-              <span>מתחבר...</span>
+              מתחבר...
             </>
           ) : (
             <>
-              <LogIn size={18} />
-              <span>התחברות למערכת</span>
+              התחברות למערכת
+              {/* Forward is leftward in Hebrew, and every other primary button
+                  in the product says so with this arrow. The `LogIn` icon that
+                  used to sit here points right — into a door drawn for a
+                  left-to-right reader. */}
+              <ArrowLeft size={18} aria-hidden="true" />
             </>
           )}
         </button>
@@ -162,49 +137,33 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div
-      dir="rtl"
-      className="min-h-screen flex flex-col justify-center items-center px-4 py-12 bg-[#fbf4dd] text-slate-900 selection:bg-amber-200"
-    >
-      <div className="w-full max-w-md space-y-6">
-        {/* Brand Header */}
-        <div className="text-center space-y-2">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-3 px-4 py-2 rounded-2xl bg-[#f5e9c9] border border-[#e2d0a0] text-slate-800 shadow-sm hover:bg-[#efe0b8] transition-colors"
-          >
-            <span className="w-9 h-9 rounded-xl bg-amber-700 text-white font-bold text-lg flex items-center justify-center shadow-inner">
-              מ
-            </span>
-            <div className="text-right">
-              <span className="block font-bold text-lg leading-tight text-slate-900">
-                {navigationLabels.productName}
-              </span>
-              <span className="block text-xs text-slate-600">
-                {navigationLabels.productSubtitle}
-              </span>
-            </div>
-          </Link>
+    <div className="page stone-page login-page">
+      <section className="login-shell">
+        <Link className="brand-mark" href="/">
+          <span className="brand-symbol" aria-hidden="true">
+            מ
+          </span>
+          <span>
+            <strong>{navigationLabels.productName}</strong>
+            <small>{navigationLabels.productSubtitle}</small>
+          </span>
+        </Link>
 
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 pt-2">
-            התחברות מנהלים
-          </h1>
-          <p className="text-sm text-slate-600">
-            הזן את פרטי הגישה של בית הספר לכניסה למערכת
-          </p>
-        </div>
+        <h1>התחברות מנהלים</h1>
+        <p className="login-intro">
+          הזן את פרטי הגישה של בית הספר לכניסה למערכת
+        </p>
 
-        {/* Login Card inside Suspense */}
         <Suspense
           fallback={
-            <div className="bg-[#fffdf6] border border-[#eadaaf] shadow-xl rounded-2xl p-8 text-center text-slate-500 text-sm">
-              טוען טופס התחברות...
+            <div className="form-panel login-panel">
+              <p className="quiet-note">טוען טופס התחברות...</p>
             </div>
           }
         >
           <LoginForm />
         </Suspense>
-      </div>
+      </section>
     </div>
   );
 }
