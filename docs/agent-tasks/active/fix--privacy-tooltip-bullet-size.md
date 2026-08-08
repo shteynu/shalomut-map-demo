@@ -5,7 +5,8 @@
 - Branch: `fix/privacy-tooltip-bullet-size`
 - Base branch: `docs/archive-frontend-audit-tasks`
 - Base commit: `610e24f` (itself one commit ahead of `origin/main` at `6c232a8`)
-- Current HEAD: `610e24f` (working tree ahead, see Git state)
+- Current HEAD: `5413b56`. This task's own commits are `5ffdd91` (the rule),
+  `fffb364` (this file) and `5413b56` (the tracker note).
 - Status: implementation complete, verified locally; not verified on the
   deployed endpoint, which still serves the bug
 - Last updated: 2026-08-08
@@ -189,5 +190,6 @@ becomes a seventh test.
 ## Next concrete step
 
 Owner runs `git push origin fix/privacy-tooltip-bullet-size:main`, which also
-carries the tracker commit below it. Then the tooltip on `/` is re-checked in
-the signed-in browser.
+carries the archive and tracker commits below it. Then the tooltip on `/` is
+re-checked in the signed-in browser — that check is the one piece of evidence
+this file is still missing.

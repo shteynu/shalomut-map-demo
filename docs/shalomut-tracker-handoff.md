@@ -5,10 +5,15 @@ product changes are the sign-in transition fix `8d4af8d`, confirmed on the
 deployed endpoint by the owner, and the frontend UI/UX audit — seven branches
 pushed as one stack, of which the only thing a manager sees is the new skip
 link; everything else is proved inert by a computed-style fingerprint, or is
-documentation. `docs/agent-tasks/active/` is empty. The only thing waiting on a
-push is the commit carrying this paragraph, on
-`docs/archive-frontend-audit-tasks`; everything it describes is already in
-`main`.
+documentation.
+
+Waiting on a push: `fix/privacy-tooltip-bullet-size`, three commits on top of
+`6c232a8`. Two of them are this paragraph and the tracker note below it; the
+third is a real fix. Walking the deployed product in the owner's signed-in
+browser found the privacy tooltip's bullet lead-ins rendering at 46.4px on the
+home screen — a bug that shipped with the component, that the audit's own
+refactor of that component did not catch, and that the deployed endpoint still
+serves. Its task file is the only thing in `docs/agent-tasks/active/`.
 
 This document owns only cross-task operational/deployed state, external
 blockers and approval gates. Product milestones belong in `PROGRESS.md`; branch
@@ -179,9 +184,17 @@ older snapshots remain available in Git.
   deployment is that commit rather than a near miss. It carries `.skip-link`,
   the six `.privacy-tooltip-*` rules and `--z-skip-link`. `/login/` serves the
   rewritten `login-shell` markup and `/answer/NOT-A-REAL-CODE/` serves
-  «הקישור אינו פעיל». Not checked on the endpoint: the skip link in a live
-  manager DOM, which is behind the sign-in; it was verified locally against the
-  same production build.
+  «הקישור אינו פעיל».
+- **The manager screens were then walked in the owner's signed-in Chrome,
+  2026-08-08**, which is what the public probes could not reach. Confirmed on
+  the endpoint: the skip link is the first Tab stop, draws the navy ring at
+  `z-index` 100 over the sticky header and lands focus on `#main-content`
+  ringless; `.site-header` still lays out flex/centre/space-between/16px with
+  its four Tailwind utilities gone; the builder's search draws
+  `rgb(45,48,126) solid 3px` at 3px offset on `/`; and all eight map stones
+  carry the same `--plus-top`/`--plus-left` they had before the geometry moved
+  into `DimensionPresentation`. The walk also found the tooltip bug named at
+  the top of this file.
 - AI service: Render container from the root `Dockerfile`, with durable polling
   enabled. The service needs an always-available process or explicit wake
   mechanism; scale-to-zero alone is not a reliable worker. An inbound
