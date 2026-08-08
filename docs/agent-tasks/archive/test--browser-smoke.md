@@ -99,9 +99,9 @@ Three dead ends shaped the design, and each is recorded in
 
 ## Remaining
 
-- Nothing on this branch. One question it opened is outside it and recorded in
-  `docs/shalomut-tracker-handoff.md`: whether deployed sign-in was affected by
-  the same cross-realm bug.
+- Nothing. The question this task opened — whether deployed sign-in was
+  affected — was answered the same day on the pre-fix deployment: it was not.
+  See `docs/shalomut-tracker-handoff.md`.
 
 ## Changed files
 
@@ -197,8 +197,10 @@ not see. That is the argument for the smoke, and also the measure of what it
 still cannot promise: it says the application stands, not that any rule is
 correct.
 
-Unverified and worth verifying: whether deployed sign-in was affected by the
-same cross-realm bug. Nothing here tested the deployed endpoint.
+The deployed endpoint was checked and was never affected: signed in on
+deployment `515kx96zg` (`46fcde7`, the commit before the fix), `/round/`
+answered 200 without a redirect. Vercel's Edge isolate does not trip the
+cross-realm check; only a middleware running under Node 20 does.
 
 ## Failed approaches
 
@@ -220,7 +222,5 @@ same cross-realm bug. Nothing here tested the deployed endpoint.
 
 ## Next concrete step
 
-None on this branch — it is done and green in CI. The one thing it left for
-someone: sign in on the deployed endpoint and confirm the cross-realm bug never
-reached it. That needs the owner's signed-in browser, and it is recorded in
-`docs/shalomut-tracker-handoff.md`.
+None. The task is done, green in CI, and the deployed endpoint was confirmed
+unaffected by the bug it found.

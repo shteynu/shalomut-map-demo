@@ -1,8 +1,8 @@
 # Shalomut Tracker — operational handoff
 
-Updated: 2026-08-07, fourth session close (`origin/main` is `0524542` and
-**green** — the browser smoke passes in CI; one documentation commit is
-unpushed). This document
+Updated: 2026-08-07, fourth session close (`origin/main` is `807eccc` and
+**green** — the browser smoke passes in CI, and the deployment serving that
+commit was read back; one documentation commit is unpushed). This document
 owns only cross-task operational/deployed state, external blockers and approval
 gates. Product milestones belong in `PROGRESS.md`; branch work and exact
 verification belong in
@@ -17,11 +17,15 @@ verification belong in
   threw before reading a signature — on Node 20, which CI pins, and not on the
   Node 22/24 used locally. Route handlers, outside that sandbox, kept issuing
   valid sessions, so a manager could sign in and every protected page still
-  bounced to `/login`. Fixed by passing the typed array. **Open question for the
-  owner:** whether deployed sign-in was affected. Vercel runs middleware in its
-  own Edge isolate rather than Next's Node sandbox, so it may never have
-  tripped — nothing here tested the deployed endpoint, and settling it takes a
-  signed-in browser.
+  bounced to `/login`. Fixed by passing the typed array. **The deployed endpoint was never
+  affected**, and this was checked rather than assumed: on 2026-08-07 the owner
+  signed in on deployment `515kx96zg`, which serves `46fcde7` — the commit
+  immediately before the fix — and there `/api/auth/me` answered
+  `authenticated: true`, `/round/` answered 200 without a redirect, and the
+  manager screen rendered. Vercel runs middleware in its own Edge isolate
+  rather than Next's Node sandbox, so the cross-realm check never tripped
+  there. The bug reached only runtimes where the middleware executes under
+  Node 20: CI, and `next start` on Node 20 if this is ever self-hosted.
 - **`main` is green.** Run 31207956670 at `0524542` is the first full pass,
   smoke step included, 4/4. It took three red runs to get there and each named
   a different real defect: `31191748609` — `npm run db:seed:local` called
@@ -29,12 +33,12 @@ verification belong in
   had been dying at its first line, invisible until something re-seeded;
   `31195236422` and `31205427782` — the middleware could not verify a session
   on Node 20, described above.
-- `origin/main` is `641e65b`. The last commit that changed **product** code is
-  `36fe4ce` — `feat/multi-school-scope`, pushed by the owner on 2026-08-07:
-  the system holds more than one school, `/setup` is where one is chosen and
-  added, and every other screen reads inside the chosen school. Everything
-  after it is test-side or documentation, so the deployed behaviour is that
-  commit's. Before it, `main` was `bc00512`, itself the tail of
+- `origin/main` is `807eccc`. The last commit that changed **product** code is
+  `26209f3`, the session-verification fix above. Before it,
+  the product-visible tip was `36fe4ce` — `feat/multi-school-scope`, pushed by
+  the owner on 2026-08-07: the system holds more than one school, `/setup` is
+  where one is chosen and added, and every other screen reads inside the chosen
+  school. Before it, `main` was `bc00512`, itself the tail of
   `feat/round-context-across-screens` (`9983184`).
 - **Three test-only branches landed on 2026-08-07**, pushed by the owner in two
   goes: `test/legacy-contract-refusals`, `test/v5-contract-refusals` and
@@ -63,18 +67,18 @@ verification belong in
   green throughout the period when ~90 validator rules could be deleted
   silently — those lines executed, they were simply never asserted against).
   A nightly full mutation run was also declined as a number nobody would read.
-- **The deployed commit was not read back this session.** Vercel deploys from
-  every push to `main`, so the endpoint should be serving `ae73259`, but
-  nothing here verified it — and since 2026-08-07 the pushes carried no runtime
-  change, so a stale deployment would look identical either way.
+- **The deployed commit was read back on 2026-08-07**, in the Vercel dashboard:
+  Production is `807eccc`, `Ready`, and the deployments list shows every push to
+  `main` that day building on its own. Sign-in and the round screen were walked
+  there in the owner's signed-in browser and both work.
 - Five branches reached `main` on 2026-08-05, each as a fast-forward the owner
   pushed themselves: `feat/survey-definition-history` (backlog §1),
   `feat/archived-rounds-read-only` (§10), `feat/goals-across-rounds` (§5), plus
   `docs/close-causal-refusal-decision` and `docs/roadmap-reconciliation`. All
   are fully contained in `main` and can be deleted; their task files are in
   `docs/agent-tasks/archive/`.
-- **One documentation commit is waiting on a push**, closing the browser-smoke
-  task. `docs/agent-tasks/active/` is empty; the task file is in
+- **One documentation commit is waiting on a push** (`ccb7a88`), recording the
+  deployed check above. `docs/agent-tasks/active/` is empty; the task file is in
   `docs/agent-tasks/archive/`. The last product branch, `feat/multi-school-scope`,
   landed on 2026-08-07, is fully contained in `main` and was walked in the
   owner's signed-in browser before the push; its task file is archived.
