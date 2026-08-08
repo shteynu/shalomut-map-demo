@@ -124,6 +124,7 @@ export const navigationLabels = {
   productName: "מפת השלומות",
   productSubtitle: "אבחון שלומות ארגונית",
   homeAria: "מפת השלומות - דף הבית",
+  skipToContent: "דילוג לתוכן הראשי",
   backToMain: "חזרה למסך הראשי",
   backToMap: "חזרה למפת השלומות",
   highlightedMetrics: "נתונים בולטים",

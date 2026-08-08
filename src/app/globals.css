@@ -57,6 +57,8 @@
   --z-floating: 30;
   --z-popover: 80;
   --z-tooltip: 90;
+  /* Above everything: a skip link no one can see is a skip link no one has. */
+  --z-skip-link: 100;
   /* Pastel stone palette (one hue per wellbeing dimension).
      All pass WCAG AA with ink text (>=9:1) */
   --pastel-yellow: #fef1c7;
@@ -182,6 +184,33 @@ button:disabled {
 :focus-visible {
   outline: 3px solid var(--navy);
   outline-offset: 3px;
+}
+
+/* The first tab stop on every manager screen. Off-screen until focused, and
+   then an ordinary accent pill sitting above the sticky header. */
+.skip-link {
+  position: fixed;
+  top: 0.75rem;
+  inset-inline-start: -100vw;
+  z-index: var(--z-skip-link);
+  padding: 0.6rem 1.4rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--ink);
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: var(--shadow-raised);
+}
+
+.skip-link:focus-visible {
+  inset-inline-start: 1rem;
+}
+
+/* The skip link's target. It takes focus programmatically, so it must not draw
+   the ring an interactive control would. */
+main:focus,
+main:focus-visible {
+  outline: none;
 }
 
 .site-header {
@@ -4666,6 +4695,7 @@ label .custom-tooltip-wrapper:hover .custom-tooltip-icon {
   display: block;
   margin-bottom: 0.4rem;
 }
+
 
 
 .custom-tooltip-content::before {

@@ -26,7 +26,12 @@ export default function RootLayout({
     <html lang="he" dir="rtl" className={notoSansHebrew.variable}>
       <body>
         <HeaderGate />
-        <main>{children}</main>
+        {/* `tabIndex={-1}` so the skip link can actually land focus here;
+            without it the browser moves the scroll position and leaves focus
+            behind in the navigation. */}
+        <main id="main-content" tabIndex={-1}>
+          {children}
+        </main>
       </body>
     </html>
   );
