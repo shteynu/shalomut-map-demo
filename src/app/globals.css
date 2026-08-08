@@ -4733,6 +4733,15 @@ label .custom-tooltip-wrapper:hover .custom-tooltip-icon {
   margin-bottom: 0.3rem;
 }
 
+/* The lead-in of each bullet. `.custom-tooltip-content strong` already says
+   0.88rem, but at one class and one element it ties with `.stat-stone strong`
+   — a 2.9rem number, defined later — and loses on source order, so on the home
+   screen these three words rendered at 46.4px and pushed the text out of the
+   panel. Two classes and an element settle it. */
+.custom-tooltip-content .privacy-tooltip-reasons strong {
+  font-size: 0.88rem;
+}
+
 .custom-tooltip-content .privacy-tooltip-note {
   display: block;
   margin-top: 0.8rem;
