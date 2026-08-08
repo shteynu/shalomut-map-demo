@@ -114,6 +114,12 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
   and a retry after a lost response completes instead of recording twice.
 - Application-level manager session, server-owned organization scope and
   fail-closed deployed authentication configuration.
+- The sign-in screen is inside the design system. It was the one screen written
+  in raw Tailwind utilities — `text-slate-*`, `bg-white`, `amber-700`,
+  `rounded-2xl`, and `tracking-tight` on Hebrew — with a 2.6:1 placeholder and
+  its own focus ring competing with the product's. It now uses the same
+  `label`, `input`, `.form-panel`, pill button and error note as every other
+  form, and the brand mark the header already draws.
 - A wrong address or a thrown segment now answers in Hebrew, right-to-left and
   inside the design system, where the App Router's own English default used to
   show. The respondent screens are written separately from the manager ones: a
