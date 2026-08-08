@@ -114,6 +114,13 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
   and a retry after a lost response completes instead of recording twice.
 - Application-level manager session, server-owned organization scope and
   fail-closed deployed authentication configuration.
+- A wrong address or a thrown segment now answers in Hebrew, right-to-left and
+  inside the design system, where the App Router's own English default used to
+  show. The respondent screens are written separately from the manager ones: a
+  dead share link says the link is not active and offers no route into the
+  manager app, and a failure mid-questionnaire says nothing was sent and offers
+  a retry. No boundary prints the error message, which in a development build
+  carries whatever the throw site put in it.
 
 ### Privacy and analytics
 
