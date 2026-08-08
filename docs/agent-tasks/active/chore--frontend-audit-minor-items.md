@@ -105,7 +105,9 @@ Nothing.
 
 ## Remaining
 
-The map-stone load jump, as an owner decision rather than as work.
+Nothing. The map-stone load jump was raised as an owner decision and closed as
+one: on 2026-08-08 the owner chose not to add a blocking inline script, so the
+stones keep assembling twice and the code stays as it was.
 
 ## Changed files
 
@@ -203,10 +205,12 @@ None.
 
 ## Questions requiring an owner decision
 
-1. **The map-stone load jump.** Closing it means putting the saved offsets on
-   the stones before React runs: a blocking inline script in the layout, or
-   writing the layout to a cookie so the server can render it. Both are real
-   architecture for a cosmetic half-second on one screen. Worth doing?
+1. **Answered 2026-08-08 — the map-stone load jump stays.** Closing it would
+   mean putting the saved offsets on the stones before React runs: a blocking
+   inline script in the layout, or writing the layout to a cookie so the server
+   can render it. The owner declined both; not worth the architecture for a
+   cosmetic half-second on one screen. Recorded in the component comment too,
+   so it is not re-proposed.
 2. Still open from earlier branches: whether the 200-instead-of-404 status
    deserves its own task, and whether to keep the restored error-note border.
 3. The `impeccable` design hook flags `rgba(87, 79, 58, 0.2)` in the new

@@ -100,8 +100,9 @@ export function DashboardMapInteractive({
    * measured on the local build, and it is noise — 35 frames at the default
    * position before, 32-36 after. The jump is hydration latency, not the frame
    * this effect waits for. Closing it means putting the offsets on the stones
-   * before React runs at all: a blocking inline script, or a cookie the server
-   * can read. That is a product decision, not a cleanup.
+   * before React runs at all — a blocking inline script, or a cookie the
+   * server can read — and the owner decided on 2026-08-08 not to buy that for
+   * a cosmetic half-second on one screen. This stays as it is.
    *
    * The frame is also what keeps `react-hooks/set-state-in-effect` satisfied,
    * so it is not free to remove either.
