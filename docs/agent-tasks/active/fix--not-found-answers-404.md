@@ -8,7 +8,7 @@
 - Base commit: `0291ce7`
 - Current HEAD: `0291ce7` (working tree clean apart from two pre-existing
   unrelated files)
-- Status: diagnosed, not started
+- Status: cause identified and proved; the fix is an owner decision
 - Last updated: 2026-08-08
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -71,19 +71,58 @@ All were restored afterwards; the worktree is clean.
    statically prerendered route (`○`) and with `export const dynamic =
    "force-dynamic"` (`ƒ`).
 
-That leaves the framework itself: Next.js 16.2.9 on this configuration serves
-`notFound()` with a 200. Which means the fix is probably not "call it
-differently" but one of the options below.
+### The cause: `loading.tsx`
+
+Found on 2026-08-08 after the list above, and then proved by removing files and
+re-measuring rather than by reading about it.
+
+A `loading.tsx` in a segment wraps everything below it in a Suspense boundary.
+A Suspense boundary makes the response stream. A streamed response sends its
+status line with the first byte, long before the page body runs — so by the
+time `notFound()` is called the response is already committed as 200, and
+nothing downstream can change it. A route the router cannot match never gets
+that far: it is decided before rendering, which is why `/no-such-page` is the
+one path that answers 404.
+
+This repository has **nine** `loading.tsx` files, and one of them is
+`src/app/loading.tsx` — the root. It wraps every route in the product.
+
+The proof, three builds:
+
+| Build | `/no-such-page` | `/dashboard/not-a-dimension` | `/dashboard/not-a-dimension/metrics` | `/answer/NOT-A-CODE` |
+| --- | --- | --- | --- | --- |
+| As shipped | 404 | 200 | 200 | 200 |
+| Root + `dashboard/` + `[dimension]/` + `[shareCode]/` loading removed | 404 | **404** | 200 | **404** |
+| Only the root loading put back | 404 | 200 | 200 | 200 |
+
+Row two is the mechanism: exactly the routes whose `loading.tsx` was removed
+started answering 404, and `metrics` stayed at 200 because it has a
+`loading.tsx` of its own that was left in place. Row three is the cost: the
+root file alone is enough to hold every route at 200.
+
+Real pages were 200 in all three builds, as they should be.
+
+This is documented Next.js behaviour rather than a bug in 16.2.9, so an upgrade
+will not deliver it. The web is full of the same report going back to Next 13.
 
 ## Scope
 
-To be decided by whoever picks this up. The candidates:
+The fix is not a line of code, it is a trade. To make a `notFound()` answer
+404, its route must not be inside a Suspense boundary that opens before the
+check runs. That means:
 
-- Confirm against Next.js: is this a known issue in 16.2.9, fixed in a later
-  patch? Check the changelog and the issue tracker before writing any code.
-  An upgrade that fixes it is worth more than a workaround.
-- If it is not fixed upstream, the options are to set the status explicitly
-  where the product controls the response, or to accept it and document it.
+- Deleting `src/app/loading.tsx`, and the `loading.tsx` of every segment on the
+  way to a `notFound()` — at minimum `dashboard/`, `dashboard/[dimension]/`,
+  `dashboard/[dimension]/metrics/`, `dashboard/[dimension]/recommendations/`
+  and `answer/[shareCode]/`. That is five of the nine, plus the root.
+- Putting the skeleton back **inside** each page, in a `<Suspense fallback>`
+  placed after the validation that can call `notFound()`. The page then
+  validates first, streams second.
+
+What that costs: today every screen in the product shows a route-level skeleton
+the instant a navigation starts, with no work from the page. Moving to in-page
+Suspense means each of those pages owns its own loading state, and any page
+that forgets one shows nothing until its data arrives.
 
 ## Non-goals
 
@@ -114,7 +153,7 @@ fix here.
 
 ## Decisions made
 
-None yet. The diagnosis above is fact; the fix is open.
+None yet. The diagnosis above is fact; the trade is the owner's.
 
 ## Assumptions
 
@@ -123,7 +162,9 @@ build.
 
 ## Completed
 
-Nothing but the diagnosis.
+The diagnosis, to the point where the cause is proved and the cost of the fix
+is known. No product code changed; everything moved during the experiments was
+put back and the tree rebuilt and re-tested.
 
 ## In progress
 
@@ -141,12 +182,13 @@ None.
 
 ### Passed
 
-Nothing to verify yet. The measurements in Context were taken with a throwaway
-Playwright spec that signed in, visited each path with `waitUntil:
-'domcontentloaded'`, and printed `response.status()` alongside the rendered
-`h1`. The spec was deleted; reproducing it is a five-minute job and is the
-first thing the next agent should do, because the fix has to be measured the
-same way.
+- The three-build table in Context. Each row is a real production build,
+  measured by a throwaway Playwright spec that signed in, visited each path
+  with `waitUntil: 'domcontentloaded'`, and printed `response.status()`
+  alongside the rendered `h1`. The spec was deleted; rebuilding it is a
+  five-minute job and the fix has to be measured the same way.
+- After restoring every moved file: `npm run build` clean, `npx playwright
+  test` 6/6, `git status` showing only the two pre-existing unrelated files.
 
 ### Failed
 
@@ -154,7 +196,9 @@ None.
 
 ### Blocked or not run
 
-Everything.
+The fix itself, pending the decision below. `verify:core` was not re-run after
+the restore: the restore returned the files to their committed contents and the
+build and e2e both pass.
 
 ### Environment
 
@@ -174,9 +218,14 @@ diagnosis, not attempts at a fix.
 
 ## Known risks
 
-The most likely honest outcome is "upstream behaviour, wait for the upgrade".
-If so, this task ends by documenting that in `PROJECT_CONTEXT.md` rather than
-by shipping a workaround — say so plainly instead of forcing a change.
+- Moving a skeleton from `loading.tsx` into a page's own `<Suspense>` is not a
+  like-for-like swap. A route-level `loading.tsx` also shows during client-side
+  navigation, before the server is even asked. An in-page boundary does not.
+  Whoever does this must check the navigation feel, not only the status code.
+- Six of the nine `loading.tsx` files would go. The remaining three
+  (`setup/`, `survey/`, `round/`) have no `notFound()` below them and can stay,
+  which leaves the product with two different loading patterns. That is worse
+  documentation debt than it sounds.
 
 ## Approval gates
 
@@ -184,13 +233,24 @@ None.
 
 ## Questions requiring an owner decision
 
-If it turns out that the only way to fix this is a workaround with real cost —
-middleware that re-issues the response, or a per-route status shim — is a
-correct status worth that, on a product with no crawlers and no monitoring yet?
-Ask before building it.
+**Is a correct 404 worth giving up route-level loading skeletons?**
+
+Nothing else buys it. The status is locked by streaming, streaming is caused by
+`loading.tsx`, and the root file alone holds every route at 200. There is no
+setting, no upgrade and no call-it-differently.
+
+What is actually at stake: today no crawler indexes this product, no monitor
+counts 4xx, and the only public URL affected is a dead share link — which shows
+a respondent the right screen either way. Against that, six `loading.tsx` files
+would be rewritten as in-page Suspense on screens whose loading behaviour is
+currently free and consistent.
+
+A reasonable third answer is "not now": record it in `PROJECT_CONTEXT.md` as a
+known consequence of the loading pattern, and revisit when something machine-
+readable actually starts reading these responses.
 
 ## Next concrete step
 
-Read the Next.js 16.2.x changelog and issue tracker for `notFound()` returning
-200. That single answer decides whether this is an upgrade, a workaround, or a
-documented limitation.
+Owner answers the question above. Nothing should be built before that — every
+version of this fix costs the loading skeletons, so there is no small first
+step to take on spec.
