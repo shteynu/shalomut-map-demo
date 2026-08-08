@@ -5,8 +5,9 @@
 - Branch: `fix/privacy-tooltip-bullet-size`
 - Base branch: `docs/archive-frontend-audit-tasks`
 - Base commit: `610e24f` (itself one commit ahead of `origin/main` at `6c232a8`)
-- Current HEAD: `5413b56`. This task's own commits are `5ffdd91` (the rule),
-  `fffb364` (this file) and `5413b56` (the tracker note).
+- Current HEAD: the branch tip. This task's own commits are `5ffdd91` (the
+  rule) and `fffb364` (this file), plus one tracker note on top of them — its
+  hash is deliberately not written here, because a commit cannot name itself.
 - Status: implementation complete, verified locally; not verified on the
   deployed endpoint, which still serves the bug
 - Last updated: 2026-08-08
