@@ -59,19 +59,19 @@ export function PrivacyTooltip({
       </button>
       <span id={tooltipId} className="custom-tooltip-content" role="tooltip">
         <strong>סף פרטיות (סף מינימום להצגת תוצאות)</strong>
-        <span style={{ display: "block", marginTop: "0.4rem", marginBottom: "0.8rem", fontSize: "0.88rem", lineHeight: 1.45 }}>
+        <span className="privacy-tooltip-lede">
           זהו מספר המשיבים המינימלי הנדרש כדי לפתוח את מפת השלומות והתוצאות לצפייה (בסבב הנוכחי: {minimumResponses} אנשי צוות).
         </span>
-        <strong style={{ fontSize: "0.88rem", display: "block", marginBottom: "0.35rem" }}>למה זה חשוב?</strong>
-        <ul style={{ margin: 0, paddingInlineStart: "1.1rem", fontSize: "0.84rem", lineHeight: 1.5, listStyleType: "disc" }}>
-          <li style={{ marginBottom: "0.3rem" }}><strong>הגנה על אנונימיות</strong>: מניעת אפשרות לזהות משיב בודד לפי תשובותיו או הערותיו.</li>
-          <li style={{ marginBottom: "0.3rem" }}><strong>שיקוף משוב כנה</strong>: הצוות מרגיש בטוח לתת ביקורת בונה כשהתוצאות מצרפיות בלבד.</li>
-          <li style={{ marginBottom: "0.3rem" }}><strong>מהימנות הנתונים</strong>: קבלת תמונת מצב אובייקטיבית ומקצועית המייצגת את כלל בית הספר.</li>
+        <strong className="privacy-tooltip-heading">למה זה חשוב?</strong>
+        <ul className="privacy-tooltip-reasons">
+          <li><strong>הגנה על אנונימיות</strong>: מניעת אפשרות לזהות משיב בודד לפי תשובותיו או הערותיו.</li>
+          <li><strong>שיקוף משוב כנה</strong>: הצוות מרגיש בטוח לתת ביקורת בונה כשהתוצאות מצרפיות בלבד.</li>
+          <li><strong>מהימנות הנתונים</strong>: קבלת תמונת מצב אובייקטיבית ומקצועית המייצגת את כלל בית הספר.</li>
         </ul>
-        <span style={{ display: "block", marginTop: "0.8rem", fontSize: "0.8rem", opacity: 0.85, borderTop: "1px dashed rgba(87, 79, 58, 0.2)", paddingTop: "0.5rem", lineHeight: 1.4 }}>
+        <span className="privacy-tooltip-note">
           כל עוד לא התקבלו מספיק תשובות, המפה תישאר נעולה ויוצג רק מספר המשיבים הכללי.
         </span>
-        <span style={{ display: "block", marginTop: "0.5rem", fontSize: "0.8rem", lineHeight: 1.4 }}>
+        <span className="privacy-tooltip-threshold">
           <PrivacyThresholdNotice minimumResponses={minimumResponses} />
         </span>
       </span>

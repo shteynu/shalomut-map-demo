@@ -4696,6 +4696,59 @@ label .custom-tooltip-wrapper:hover .custom-tooltip-icon {
   margin-bottom: 0.4rem;
 }
 
+/* The privacy explanation's own body. These lived as inline styles on every
+   element of `privacy-tooltip.tsx`, which put them beyond the reach of the
+   stylesheet — including its own mobile bottom-sheet.
+ *
+ * Every selector here is scoped to `.custom-tooltip-content` on purpose. The
+ * tooltip is planted inside other components, and some of them style bare
+ * elements: `.stat-stone strong` is a 2.9rem number and `.stat-stone span` is
+ * 1.05rem, both defined later in this file, so an unscoped `.privacy-tooltip-*`
+ * class would lose to them and the explanation would render at headline size
+ * on the home screen. The inline styles used to win that fight by being
+ * inline; two classes win it by being two classes. */
+.custom-tooltip-content .privacy-tooltip-lede {
+  display: block;
+  margin-top: 0.4rem;
+  margin-bottom: 0.8rem;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.custom-tooltip-content .privacy-tooltip-heading {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.88rem;
+}
+
+.custom-tooltip-content .privacy-tooltip-reasons {
+  margin: 0;
+  padding-inline-start: 1.1rem;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  list-style-type: disc;
+}
+
+.custom-tooltip-content .privacy-tooltip-reasons li {
+  margin-bottom: 0.3rem;
+}
+
+.custom-tooltip-content .privacy-tooltip-note {
+  display: block;
+  margin-top: 0.8rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed rgba(87, 79, 58, 0.2);
+  font-size: 0.8rem;
+  line-height: 1.4;
+  opacity: 0.85;
+}
+
+.custom-tooltip-content .privacy-tooltip-threshold {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
 
 
 .custom-tooltip-content::before {
