@@ -13,12 +13,15 @@ shipped with the component and the audit's own refactor of that component walked
 past it. It is now fixed, pushed and confirmed on the endpoint — details in the
 deployed-state section — and `docs/agent-tasks/active/` is empty again.
 
-Waiting on a push: `test/privacy-tooltip-size-guard`, one commit on top of
-`fa370c5`. The owner decided the check that caught the tooltip should stand, so
-it is now the seventh end-to-end test — it enumerates every text node in the
-open tooltip and fails if any exceeds 17px. `npx playwright test e2e/` is 7/7,
-and the test was proved to fail on exactly the three 46.4px lead-ins with the
-fix removed. Its task file is the only thing in `docs/agent-tasks/active/`.
+The check that caught the tooltip now stands as the seventh end-to-end test
+(`4fc3a26`): it enumerates every text node in the open tooltip and fails if any
+exceeds 17px. `npx playwright test e2e/` is 7/7 locally, CI is green at that
+commit with its browser smoke step included, and the test was proved to fail on
+exactly the three 46.4px lead-ins with the fix removed.
+
+Waiting on a push: one documentation commit on `test/privacy-tooltip-size-guard`
+that archives that task file and writes this paragraph. No code in it, and
+`docs/agent-tasks/active/` is empty again.
 
 This document owns only cross-task operational/deployed state, external
 blockers and approval gates. Product milestones belong in `PROGRESS.md`; branch

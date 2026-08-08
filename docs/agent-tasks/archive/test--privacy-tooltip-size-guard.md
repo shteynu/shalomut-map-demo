@@ -5,8 +5,9 @@
 - Branch: `test/privacy-tooltip-size-guard`
 - Base branch: `main`
 - Base commit: `fa370c5`
-- Current HEAD: the branch tip; this file and the test are one commit.
-- Status: implementation complete, verified locally, not yet pushed.
+- Current HEAD: `4fc3a26`, which is also `origin/main`. The test, this file and
+  the tracker note are that one commit.
+- Status: closed — pushed to `main` on 2026-08-08 and green in CI.
 - Last updated: 2026-08-08
 - Last agent/tool: Claude Opus 5, Claude Code
 
@@ -99,6 +100,9 @@ Nothing.
   rebuilt.
 - `npm run verify:core` exit 0 — 739 TypeScript tests, 0 fail, all five fitness
   checks, typecheck, ESLint and the production build.
+- **CI green at `4fc3a26`**, both workflows: `Build & Validate` with its
+  `Smoke the manager and respondent flow in a browser` step passing — so the
+  seventh test runs on a clean machine, not only on this one — and CodeQL.
 
 ### Failed
 
@@ -111,8 +115,8 @@ Nothing.
 - `verify:db`, `verify:ai`, the Python suite and the mutation run. The diff is
   one Playwright test: no schema, repository, contract, Python or mutated
   module is in it.
-- Not run in CI yet, and not observable on the deployed endpoint — a test does
-  not deploy.
+- Not observable on the deployed endpoint — a test does not deploy. Nothing
+  about the deployed application changed.
 
 ### Environment
 
@@ -141,5 +145,4 @@ None. The question this task existed to answer was answered: yes.
 
 ## Next concrete step
 
-Owner runs `git push origin test/privacy-tooltip-size-guard:main`. Then this
-file is archived.
+None. The test is in `main`, green in CI, and this file is archived.
