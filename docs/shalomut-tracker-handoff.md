@@ -1,19 +1,25 @@
 # Shalomut Tracker — operational handoff
 
-Updated: 2026-08-08, session close (`origin/main` is `6c232a8`). The session's
+Updated: 2026-08-08, session close (`origin/main` is `57dda52`). The session's
 product changes are the sign-in transition fix `8d4af8d`, confirmed on the
-deployed endpoint by the owner, and the frontend UI/UX audit — seven branches
+deployed endpoint by the owner; the frontend UI/UX audit — seven branches
 pushed as one stack, of which the only thing a manager sees is the new skip
-link; everything else is proved inert by a computed-style fingerprint, or is
-documentation.
+link, everything else proved inert by a computed-style fingerprint or
+documentation; and the privacy tooltip fix `5ffdd91`.
 
-Waiting on a push: `fix/privacy-tooltip-bullet-size`, three commits on top of
-`6c232a8`. Two of them are this paragraph and the tracker note below it; the
-third is a real fix. Walking the deployed product in the owner's signed-in
-browser found the privacy tooltip's bullet lead-ins rendering at 46.4px on the
-home screen — a bug that shipped with the component, that the audit's own
-refactor of that component did not catch, and that the deployed endpoint still
-serves. Its task file is the only thing in `docs/agent-tasks/active/`.
+The tooltip bug was found by walking the deployed product in the owner's
+signed-in browser: the bullet lead-ins rendered at 46.4px on the home screen. It
+shipped with the component and the audit's own refactor of that component walked
+past it. It is now fixed, pushed and confirmed on the endpoint — details in the
+deployed-state section — and `docs/agent-tasks/active/` is empty again.
+
+Waiting on a push: one documentation commit on `fix/privacy-tooltip-bullet-size`
+that archives that task file and writes this paragraph. No code in it.
+
+Open, and only the owner can decide it: whether the throwaway check that caught
+the tooltip — enumerate every text node in the open tooltip, fail if any exceeds
+17px — becomes a permanent seventh e2e test. It was written, proved to fail
+without the fix, and then discarded.
 
 This document owns only cross-task operational/deployed state, external
 blockers and approval gates. Product milestones belong in `PROGRESS.md`; branch
@@ -195,6 +201,15 @@ older snapshots remain available in Git.
   carry the same `--plus-top`/`--plus-left` they had before the geometry moved
   into `DimensionPresentation`. The walk also found the tooltip bug named at
   the top of this file.
+- **The tooltip fix is deployed and confirmed, 2026-08-08.** The chunk rolled
+  over to `1jqn_40hp-si6.css`, 103 928 bytes, byte-identical to a local build of
+  `57dda52` (`cmp` clean), carrying
+  `privacy-tooltip-reasons strong{font-size:.88rem}`. With the tooltip open on
+  `/` in the owner's signed-in Chrome: the three bullet lead-ins measure 14.08px
+  where they measured 46.4px, no text node in the panel exceeds 17px, the panel
+  is 371x386 fully inside the viewport and not scrolling, and `.stat-stone >
+  strong` is still 46.4px — the stone's own number was not quieted along with
+  the tooltip.
 - AI service: Render container from the root `Dockerfile`, with durable polling
   enabled. The service needs an always-available process or explicit wake
   mechanism; scale-to-zero alone is not a reliable worker. An inbound

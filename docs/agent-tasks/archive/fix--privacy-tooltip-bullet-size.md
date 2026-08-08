@@ -5,11 +5,11 @@
 - Branch: `fix/privacy-tooltip-bullet-size`
 - Base branch: `docs/archive-frontend-audit-tasks`
 - Base commit: `610e24f` (itself one commit ahead of `origin/main` at `6c232a8`)
-- Current HEAD: the branch tip. This task's own commits are `5ffdd91` (the
-  rule) and `fffb364` (this file), plus one tracker note on top of them — its
-  hash is deliberately not written here, because a commit cannot name itself.
-- Status: implementation complete, verified locally; not verified on the
-  deployed endpoint, which still serves the bug
+- Current HEAD: `57dda52`, which is also `origin/main`. This task's own commits
+  are `5ffdd91` (the rule), `fffb364` and `57dda52` (this file) and `d1395bd`
+  (the tracker note).
+- Status: closed — pushed to `main` on 2026-08-08 and confirmed on the deployed
+  endpoint
 - Last updated: 2026-08-08
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -112,7 +112,7 @@ Nothing.
 
 ## Remaining
 
-Verification on the deployed endpoint, which needs the push and the redeploy.
+Nothing.
 
 ## Changed files
 
@@ -138,6 +138,18 @@ Pre-existing and unrelated, left alone: `.idea/shalomut-map-demo.iml`,
 - `npm run verify:core` — exit 0, 739 tests pass, lint clean.
 - `npx playwright test` — all 6 e2e pass.
 - `npm run build` clean.
+- **Confirmed on the deployed endpoint, 2026-08-08**, in the owner's signed-in
+  Chrome, after the push and the redeploy. The served chunk
+  `1jqn_40hp-si6.css` is byte-identical to the local build (103 928 bytes,
+  `cmp` clean) and contains `privacy-tooltip-reasons strong{font-size:.88rem}`.
+  With the tooltip open on `/`: all three bullet lead-ins measure 14.08px where
+  they measured 46.4px, none of the 11 text nodes exceeds 17px, the panel is
+  371x386 fully inside the viewport with `scrollHeight == clientHeight`, and
+  `.stat-stone > strong` is still 46.4px — the stone's own number was not
+  quieted along with the tooltip. A screenshot shows the bullets reading as
+  sentences.
+  - The first probe caught the previous bundle still being served; the check
+    was repeated once the new chunk went live.
 
 ### Failed
 
@@ -145,9 +157,6 @@ None.
 
 ### Blocked or not run
 
-- **Not verified on the deployed endpoint.** It serves `6c232a8`, which still
-  has the bug. This is the one check that is outstanding and it needs the owner
-  to push first.
 - The computed-style fingerprint was not re-run. It would pass vacuously: the
   tooltip is `display: none` when closed, so the harness never sees the element
   this branch changes.
@@ -190,7 +199,6 @@ becomes a seventh test.
 
 ## Next concrete step
 
-Owner runs `git push origin fix/privacy-tooltip-bullet-size:main`, which also
-carries the archive and tracker commits below it. Then the tooltip on `/` is
-re-checked in the signed-in browser — that check is the one piece of evidence
-this file is still missing.
+None. The work is in `main`, confirmed on the endpoint, and this file is
+archived. The one question it leaves behind — whether the tooltip check becomes
+a standing test — is carried in `docs/shalomut-tracker-handoff.md`.
