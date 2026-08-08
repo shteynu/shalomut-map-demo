@@ -1,6 +1,6 @@
 # Shalomut Tracker — operational handoff
 
-Updated: 2026-08-08, session close (`origin/main` is `57dda52`). The session's
+Updated: 2026-08-08, session close (`origin/main` is `7434ed5`). The session's
 product changes are the sign-in transition fix `8d4af8d`, confirmed on the
 deployed endpoint by the owner; the frontend UI/UX audit — seven branches
 pushed as one stack, of which the only thing a manager sees is the new skip
@@ -19,9 +19,9 @@ exceeds 17px. `npx playwright test e2e/` is 7/7 locally, CI is green at that
 commit with its browser smoke step included, and the test was proved to fail on
 exactly the three 46.4px lead-ins with the fix removed.
 
-Waiting on a push: one documentation commit on `test/privacy-tooltip-size-guard`
-that archives that task file and writes this paragraph. No code in it, and
-`docs/agent-tasks/active/` is empty again.
+Nothing is waiting on a push except the documentation commit that carries this
+sentence, and `docs/agent-tasks/active/` is empty: every task this session
+opened is closed and archived.
 
 This document owns only cross-task operational/deployed state, external
 blockers and approval gates. Product milestones belong in `PROGRESS.md`; branch
