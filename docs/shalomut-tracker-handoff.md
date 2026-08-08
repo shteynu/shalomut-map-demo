@@ -1,10 +1,10 @@
 # Shalomut Tracker — operational handoff
 
-Updated: 2026-08-07, fourth session close (`origin/main` is `807eccc` and
-**green** — the browser smoke passes in CI, and the deployment serving that
-commit was read back; one documentation commit is unpushed). This document
-owns only cross-task operational/deployed state, external blockers and approval
-gates. Product milestones belong in `PROGRESS.md`; branch work and exact
+Updated: 2026-08-08 (`origin/main` is `a968dcd` and **green** — the browser
+smoke passes in CI, and the deployment serving that commit was read back).
+Nothing is waiting to be pushed and `docs/agent-tasks/active/` is empty. This
+document owns only cross-task operational/deployed state, external blockers and
+approval gates. Product milestones belong in `PROGRESS.md`; branch work and exact
 verification belong in
 `docs/agent-tasks/{active,archive}/`; older snapshots remain available in Git.
 
@@ -33,7 +33,7 @@ verification belong in
   had been dying at its first line, invisible until something re-seeded;
   `31195236422` and `31205427782` — the middleware could not verify a session
   on Node 20, described above.
-- `origin/main` is `807eccc`. The last commit that changed **product** code is
+- `origin/main` is `a968dcd`. The last commit that changed **product** code is
   `26209f3`, the session-verification fix above. Before it,
   the product-visible tip was `36fe4ce` — `feat/multi-school-scope`, pushed by
   the owner on 2026-08-07: the system holds more than one school, `/setup` is
@@ -77,8 +77,9 @@ verification belong in
   `docs/close-causal-refusal-decision` and `docs/roadmap-reconciliation`. All
   are fully contained in `main` and can be deleted; their task files are in
   `docs/agent-tasks/archive/`.
-- **One documentation commit is waiting on a push** (`ccb7a88`), recording the
-  deployed check above. `docs/agent-tasks/active/` is empty; the task file is in
+- **Nothing is waiting on a push.** The documentation commit recording the
+  deployed check above is `a968dcd`, and it is `origin/main`.
+  `docs/agent-tasks/active/` is empty; the task file is in
   `docs/agent-tasks/archive/`. The last product branch, `feat/multi-school-scope`,
   landed on 2026-08-07, is fully contained in `main` and was walked in the
   owner's signed-in browser before the push; its task file is archived.
@@ -162,6 +163,18 @@ verification belong in
   container does not read as alive. Alerts go to the account e-mail, with no
   delay and no repeat. Nothing secret is involved — `/health` is public and
   returns no respondent data.
+- **The instance was awake on 2026-08-08, three days later.** Anonymous
+  `GET /health` answered `200` in **0.43s** with `status: online`,
+  `env: production`, `privacyThreshold: 10`, `supportedContractVersions`
+  `1.0`–`6.0`, `jobPollingEnabled: true`. Sub-second is the load-bearing part:
+  a cold free instance spends tens of seconds starting, so this container had
+  not been allowed to sleep. That is one reading of the effect, not the
+  monitor's own history.
+- **The monitor's uptime figure has still not been read back.** The attempt on
+  2026-08-08 reached `dashboard.uptimerobot.com` in the connected Chrome and was
+  redirected to the login form; that account is signed out there, and signing in
+  is the owner's action. So what is proven is that the service stays awake, not
+  what percentage the monitor recorded or whether any check ever failed.
 - If the service starts sleeping again, that monitor is the first thing to
   check, before anything in this repository.
 - An always-awake instance costs nearly the account's whole free allowance of
@@ -371,12 +384,9 @@ owner's own hands.
 
 **Waits on the owner's hands**
 
-- Pushing `feat/multi-school-scope` (`git push origin
-  feat/multi-school-scope:main`). It is finished and verified locally; nothing
-  in the code waits on it. After the push, the deployed database will hold one
-  school and therefore show no school switcher — which is the correct
-  one-school behaviour, not a failed deployment. A second deployed school is
-  created from `/setup` with `הוספת בית ספר`.
+- Reading the UptimeRobot monitor's own uptime, which needs a signed-in
+  session the agent cannot create. `/health` proves the container is awake;
+  the monitor's history is what would say whether any check has ever failed.
 - Signing in, whenever a manager screen needs looking at. The agent never sees
   or types the manager password, so every walk starts with the owner signing
   in — and it has to be in a browser the agent can drive. On 2026-08-06 the
@@ -395,10 +405,11 @@ owner's own hands.
 - The deployed school has one round, so nobody has ever seen the round switcher
   on the deployed endpoint — it renders from two rounds up. Whoever opens a
   second deployed round should look at it once.
-- The UptimeRobot keep-alive was created on 2026-08-05 and reported `Up` at its
-  first checks. Two minutes of `Up` is not evidence that the Render instance
-  stays awake across a quiet night. Whoever opens the next session should read
-  the monitor's uptime before anything in this repository.
+- The doubt this list carried since 2026-08-05 — that two minutes of `Up` says
+  nothing about a quiet night — is **answered for the effect**: on 2026-08-08
+  the instance answered `/health` in 0.43s without a cold start, three days on.
+  What remains unread is the monitor's own uptime figure, moved above to the
+  items that wait on the owner's hands.
 
 ## Next operational check
 
@@ -406,8 +417,12 @@ Before the next deployment-sensitive task, compare `origin/main` with deployed
 Core and Python source/health, then record only fresh read-only evidence in the
 new branch task file.
 
-**Core was re-read on 2026-08-06 and is on `9983184`, the current
-`origin/main`.** Read-only, nothing changed:
+**Core was last read in the Vercel dashboard on 2026-08-07 and was `807eccc`,
+`Ready`.** `origin/main` has moved one documentation commit past it, to
+`a968dcd`, and Vercel builds every push to `main` on its own, so the deployment
+is expected to be `a968dcd` — expected, not read. The detail below is the
+2026-08-06 reading of `9983184` and is kept for what it exercised, not as the
+current deployed commit:
 
 - **Core (Vercel):** the newest deployment is `9983184` on `main`, environment
   `Production`, status `Ready`, built in 39s about a minute after the push, and
@@ -419,11 +434,13 @@ new branch task file.
   `?round=`, `setup` and `goals` stay bare, and the console is clean. The
   switcher does not render there, which is correct — the deployed school has
   one round, and the switcher appears from two.
-- **Python (Render):** last read at 18:16Z on 2026-08-05, on `763e38f`.
-  `/health` answered `status: online`, `commit: 763e38f`, `env: production`,
-  `privacyThreshold: 10`, `supportedContractVersions` `1.0`–`6.0`,
-  `jobPollingEnabled: true`. Not re-read on 2026-08-06 and not expected to
-  move: nothing since has changed Python.
+- **Python (Render): re-read on 2026-08-08 and on `a968dcd`**, the current
+  `origin/main`. `/health` answered `status: online`, `commit: a968dcd`,
+  `env: production`, `privacyThreshold: 10`, `supportedContractVersions`
+  `1.0`–`6.0`, `jobPollingEnabled: true`. The service rebuilds on every push to
+  `main`, so it reports the repository tip even when the commit — as here —
+  changed only documentation. The previous reading was `763e38f` on 2026-08-05;
+  no Python source changed in between.
 - The schema matches: the only migration these three slices needed was applied
   by hand on 2026-08-05, and nothing after it changed a schema.
 
