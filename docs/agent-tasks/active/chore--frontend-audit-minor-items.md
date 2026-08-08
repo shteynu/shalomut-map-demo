@@ -211,8 +211,9 @@ None.
    can render it. The owner declined both; not worth the architecture for a
    cosmetic half-second on one screen. Recorded in the component comment too,
    so it is not re-proposed.
-2. Still open from earlier branches: whether the 200-instead-of-404 status
-   deserves its own task, and whether to keep the restored error-note border.
+2. **Answered 2026-08-08 — both.** The 200-instead-of-404 status became
+   `fix/not-found-answers-404` and closed as ADR-021; the restored error-note
+   border is kept.
 3. The `impeccable` design hook flags `rgba(87, 79, 58, 0.2)` in the new
    `.privacy-tooltip-note` rule as outside the palette. It is not new — it is
    the dashed border that was already in the inline style, moved verbatim. Left

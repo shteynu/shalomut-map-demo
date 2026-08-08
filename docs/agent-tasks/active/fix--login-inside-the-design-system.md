@@ -165,9 +165,8 @@ None.
   `.survey-submit-error` in the product — six existing screens — and the outline
   on the builder's keyboard-shortcut key caps. Both were always in the
   stylesheet and both were dropped as invalid. This is the one visible change
-  this branch makes outside `/login`; it is a restoration, but it is visible,
-  and it is easy to revert on its own if the owner would rather keep the
-  borderless look.
+  this branch makes outside `/login`; it is a restoration, but it is visible.
+  Kept, by owner decision on 2026-08-08.
 - The in-field icons are gone. Deliberate, recorded above, and reversible.
 
 ## Approval gates
@@ -176,7 +175,13 @@ None. The authentication call, its payload and its configuration are untouched.
 
 ## Questions requiring an owner decision
 
-- Keep the restored error-note border, or revert to borderless?
+None open.
+
+- ~~Keep the restored error-note border, or revert to borderless?~~ Kept, owner
+  decision 2026-08-08. The borderless look was never designed — it was the
+  stylesheet asking for `var(--danger-surface)`, a custom property that has
+  never existed, and an undefined `var()` drops the whole declaration. The
+  border the rule always intended is now the border on screen.
 
 ## Next concrete step
 

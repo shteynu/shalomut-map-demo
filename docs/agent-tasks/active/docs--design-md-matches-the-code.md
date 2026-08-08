@@ -170,9 +170,9 @@ None.
 
 ## Questions requiring an owner decision
 
-None. Two questions from earlier branches in this stack are still open: whether
-the 200-instead-of-404 status deserves its own task, and whether to keep the
-restored error-note border.
+None. The two that were open here were answered on 2026-08-08: the
+200-instead-of-404 status became `fix/not-found-answers-404` and closed as
+ADR-021, and the restored error-note border is kept.
 
 ## Next concrete step
 

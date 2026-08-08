@@ -169,12 +169,10 @@ None.
 
 ## Questions requiring an owner decision
 
-None new. Three from earlier in this stack are still open: whether the
-200-instead-of-404 status deserves its own task, whether to keep the restored
-error-note border, and whether to continue with the audit's minor items
-(skip-link, header class duplication, the inline styles in
-`privacy-tooltip.tsx`, the hardcoded `getPlusPosition`, the map-stone load
-jump).
+None. All three that were open here have since been answered on later
+branches: the 200-instead-of-404 status became its own task and closed as
+ADR-021, the restored error-note border is kept, and the audit's minor items
+were done on `chore/frontend-audit-minor-items`.
 
 ## Next concrete step
 
