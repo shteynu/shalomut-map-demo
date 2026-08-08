@@ -170,11 +170,23 @@ verification belong in
   a cold free instance spends tens of seconds starting, so this container had
   not been allowed to sleep. That is one reading of the effect, not the
   monitor's own history.
-- **The monitor's uptime figure has still not been read back.** The attempt on
-  2026-08-08 reached `dashboard.uptimerobot.com` in the connected Chrome and was
-  redirected to the login form; that account is signed out there, and signing in
-  is the owner's action. So what is proven is that the service stays awake, not
-  what percentage the monitor recorded or whether any check ever failed.
+- **The monitor's own history was read on 2026-08-08**, in the owner's
+  signed-in Chrome (monitor `803671546`): `Up`, last check 54s before the
+  reading, every 5m, **99.869% over both 7 and 30 days — one incident, 5m 5s
+  down**. The last 24 hours are 100% with 0 incidents, which is why that figure
+  alone would have been misleading; the incident is older than that window.
+  Response time over the preceding hour: 174ms average, 167–180ms, all warm.
+- **The one incident: 2026-08-07, 05:01:22 GMT+3, root cause `Connection
+  Timeout`, duration 5m 5s, resolved.** That is exactly one check interval, so
+  a single check failed and the next succeeded. From outside, two causes look
+  identical here and the monitor cannot tell them apart: a transient network
+  timeout, or the container having slept and the ping itself paying for the
+  cold start. The second reading is plausible — 05:01 local is the quiet part
+  of the night — and it would mean the keep-alive recovers a sleep within one
+  interval rather than always preventing one. Either way the cost is bounded:
+  one five-minute window in three days, and no analysis job runs at that hour
+  yet. Do not upgrade this to a known sleep; it is one timeout with two
+  explanations.
 - If the service starts sleeping again, that monitor is the first thing to
   check, before anything in this repository.
 - An always-awake instance costs nearly the account's whole free allowance of
@@ -384,9 +396,8 @@ owner's own hands.
 
 **Waits on the owner's hands**
 
-- Reading the UptimeRobot monitor's own uptime, which needs a signed-in
-  session the agent cannot create. `/health` proves the container is awake;
-  the monitor's history is what would say whether any check has ever failed.
+- Signing in, whenever the UptimeRobot dashboard needs reading. Done on
+  2026-08-08; the figures are in the keep-alive section above.
 - Signing in, whenever a manager screen needs looking at. The agent never sees
   or types the manager password, so every walk starts with the owner signing
   in — and it has to be in a browser the agent can drive. On 2026-08-06 the
@@ -406,10 +417,10 @@ owner's own hands.
   on the deployed endpoint — it renders from two rounds up. Whoever opens a
   second deployed round should look at it once.
 - The doubt this list carried since 2026-08-05 — that two minutes of `Up` says
-  nothing about a quiet night — is **answered for the effect**: on 2026-08-08
-  the instance answered `/health` in 0.43s without a cold start, three days on.
-  What remains unread is the monitor's own uptime figure, moved above to the
-  items that wait on the owner's hands.
+  nothing about a quiet night — is **answered, and the answer is 99.869% with
+  one 5m 5s timeout at 05:01 on 2026-08-07**. Both readings are in the
+  keep-alive section. Nothing here is left to look at; the next thing that would
+  add information is whether a second night passes without an incident.
 
 ## Next operational check
 
