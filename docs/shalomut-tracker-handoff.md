@@ -1,15 +1,33 @@
 # Shalomut Tracker — operational handoff
 
-Updated: 2026-08-08 (`origin/main` is `a968dcd` and **green** — the browser
-smoke passes in CI, and the deployment serving that commit was read back).
-Nothing is waiting to be pushed and `docs/agent-tasks/active/` is empty. This
-document owns only cross-task operational/deployed state, external blockers and
-approval gates. Product milestones belong in `PROGRESS.md`; branch work and exact
+Updated: 2026-08-08 (`origin/main` is `8d4af8d` — the sign-in transition fix,
+confirmed on the deployed endpoint by the owner). Nothing is waiting to be
+pushed and `docs/agent-tasks/active/` is empty. This document owns only
+cross-task operational/deployed state, external blockers and approval gates. Product milestones belong in `PROGRESS.md`; branch work and exact
 verification belong in
 `docs/agent-tasks/{active,archive}/`; older snapshots remain available in Git.
 
 ## Repository snapshot
 
+- **A workaround inside the browser smoke was hiding a real defect, and it is
+  fixed.** `8d4af8d`: the first sign-in of a browser session never left
+  `/login`. The login screen's brand `<Link href="/">` prefetches the home page
+  while the manager is still signed out, the middleware answers that prefetch
+  with a redirect back to `/login`, and the client router caches it — so once
+  the cookie was set, `router.push("/")` was served from that cache, reached no
+  server and landed where it already was. The form does not clear its loading
+  state on the success path, by design, so it spun on "מתחבר..." with no way
+  out. Reloading `/login` was the owner's own workaround and explains the rest
+  of the report: with a cookie present the prefetch returns the real home
+  screen. Fixed by a document navigation on sign-in and, mirrored, on sign-out.
+  `?next=` is filtered to a same-origin path in the same commit — it was an
+  open redirect through `router.push` already, and a real navigation raised the
+  cost of leaving it. **The lesson is the one worth carrying:** `signIn` in
+  `e2e/smoke.spec.ts` navigates to the destination itself rather than waiting
+  for the form's transition, with a comment attributing the flake to the
+  router. That attribution was wrong, and the workaround stood between the
+  suite and this bug. A test that steps around a product behaviour stops
+  testing it.
 - **The browser smoke found a session bug the whole suite was blind to.** The
   middleware verified JWTs by passing `signatureBytes.buffer` to
   `crypto.subtle.verify`; it runs in a sandbox with its own realm, so that
@@ -33,8 +51,9 @@ verification belong in
   had been dying at its first line, invisible until something re-seeded;
   `31195236422` and `31205427782` — the middleware could not verify a session
   on Node 20, described above.
-- `origin/main` is `a968dcd`. The last commit that changed **product** code is
-  `26209f3`, the session-verification fix above. Before it,
+- `origin/main` is `8d4af8d`, which is also the last commit that changed
+  **product** code — the sign-in transition fix above. Before it the
+  product-visible tip was `26209f3`, the session-verification fix. Before it,
   the product-visible tip was `36fe4ce` — `feat/multi-school-scope`, pushed by
   the owner on 2026-08-07: the system holds more than one school, `/setup` is
   where one is chosen and added, and every other screen reads inside the chosen
@@ -91,7 +110,14 @@ verification belong in
   `prisma generate`, never `prisma migrate deploy`, so this is a hand step every
   schema change still needs. Details and the read-back are in the database
   section below. Nothing after it changed a schema.
-- Verification at the `test/browser-smoke` tip: `npm run verify:core` exit 0
+- Verification at `8d4af8d`: `npm run verify:core` exit 0 with 739 TypeScript
+  tests, all five fitness checks, typecheck, ESLint and the production build,
+  plus `npx playwright test e2e/` 6/6 against the local development database.
+  `verify:db`, `verify:ai`, the Python suite and the mutation run were **not**
+  run: no schema, repository, contract, Python or mutated module is in that
+  diff. CI at `8d4af8d` was not read back. The deployed confirmation is the
+  owner's own first sign-in, which entered immediately.
+- Verification at the earlier `test/browser-smoke` tip: `npm run verify:core` exit 0
   with 736 TypeScript tests, all five fitness checks, typecheck, ESLint and the
   production build, plus `npm run test:e2e` 4/4 against the local development
   database and a Node 20 container reproduction that answers 200 on a protected

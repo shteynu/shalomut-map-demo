@@ -5,8 +5,8 @@
 - Branch: `fix/login-transition-stall`
 - Base branch: `main`
 - Base commit: `3ff449f`
-- Current HEAD: see `git log -1`
-- Status: implemented and verified locally; not pushed
+- Current HEAD: `8d4af8d`, which is also `origin/main`
+- Status: closed — landed and confirmed on the deployed endpoint
 - Last updated: 2026-08-08
 - Last agent/tool: Claude Opus 5 (Claude Code)
 
@@ -98,8 +98,7 @@ Nothing.
 
 ## Remaining
 
-Push, then confirm on the deployed endpoint with a signed-in first attempt in a
-fresh browser profile.
+Nothing. Pushed as `8d4af8d` and confirmed on the deployed endpoint.
 
 ## Changed files
 
@@ -143,6 +142,11 @@ Evidence, from the reproduction run before the fix:
   for the destination.
 - `npx tsx --test src/app/api/auth/__tests__/auth-routes.test.ts` — 4/4.
 - `npx tsx --test src/lib/__tests__/navigation.test.ts` — 20/20.
+- **Deployed, 2026-08-08: the owner signed in and the first attempt entered
+  immediately.** Reported by the owner after `8d4af8d` reached `main`; this is
+  their observation of the product, not an agent reading. It is the check that
+  matters most here, because the defect was in a client-side cache and the
+  local reproduction ran against `next start` rather than Vercel's edge.
 - Contrast check on the `impeccable` hook's `gray-on-color` finding in
   `login/page.tsx`: slate-600 on the brand surface `#f5e9c9` is 6.27:1 and on
   the page background `#fbf4dd` is 6.89:1. Both clear WCAG AA. Pre-existing and
@@ -157,8 +161,7 @@ None.
 - `verify:db`, `verify:ai` and the Python suite — no schema, repository,
   contract or Python file is in the diff.
 - The full mutation run — no mutated module is in the diff.
-- The deployed endpoint — the fix is unpushed, and confirming it there needs the
-  owner's own sign-in in a fresh browser profile.
+- CI at `8d4af8d` — not read back. The same suite passed locally at this tree.
 
 ### Environment
 
@@ -199,6 +202,7 @@ None.
 
 ## Next concrete step
 
-Push `git push origin fix/login-transition-stall:main`, then sign in on the
-deployed endpoint in a **fresh** browser profile — the first attempt is the one
-that used to hang — and record the result here.
+None — the task is closed. The one thing left for whoever picks up the theme
+rather than the task: `e2e/smoke.spec.ts`'s `signIn` helper still navigates to
+the destination itself, a workaround that is now unnecessary and that hid this
+defect for as long as it stood. Removing it is a test change, not this fix.
