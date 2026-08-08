@@ -1,12 +1,14 @@
 # Shalomut Tracker — operational handoff
 
-Updated: 2026-08-08, session close (`origin/main` is `213e59b`). The session's
+Updated: 2026-08-08, session close (`origin/main` is `6c232a8`). The session's
 product changes are the sign-in transition fix `8d4af8d`, confirmed on the
 deployed endpoint by the owner, and the frontend UI/UX audit — seven branches
 pushed as one stack, of which the only thing a manager sees is the new skip
 link; everything else is proved inert by a computed-style fingerprint, or is
-documentation. Nothing is waiting to be pushed and `docs/agent-tasks/active/`
-is empty.
+documentation. `docs/agent-tasks/active/` is empty. The only thing waiting on a
+push is the commit carrying this paragraph, on
+`docs/archive-frontend-audit-tasks`; everything it describes is already in
+`main`.
 
 This document owns only cross-task operational/deployed state, external
 blockers and approval gates. Product milestones belong in `PROGRESS.md`; branch
@@ -171,6 +173,15 @@ older snapshots remain available in Git.
 - Core endpoint: `https://shalomut-map-demo.vercel.app/`. Vercel names the
   target Production; for the product it is the design-stage operational staging
   endpoint.
+- **The frontend audit is deployed and checked on the endpoint, 2026-08-08.**
+  The served stylesheet chunk is `2go2uobe7cagm.css` — the same content-hashed
+  name and the same 103 855 bytes a local build produces from `213e59b`, so the
+  deployment is that commit rather than a near miss. It carries `.skip-link`,
+  the six `.privacy-tooltip-*` rules and `--z-skip-link`. `/login/` serves the
+  rewritten `login-shell` markup and `/answer/NOT-A-REAL-CODE/` serves
+  «הקישור אינו פעיל». Not checked on the endpoint: the skip link in a live
+  manager DOM, which is behind the sign-in; it was verified locally against the
+  same production build.
 - AI service: Render container from the root `Dockerfile`, with durable polling
   enabled. The service needs an always-available process or explicit wake
   mechanism; scale-to-zero alone is not a reliable worker. An inbound
