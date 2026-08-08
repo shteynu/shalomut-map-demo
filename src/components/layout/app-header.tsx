@@ -27,7 +27,10 @@ const navIcons: Record<MainNavItemId, LucideIcon> = {
 
 export function AppHeader() {
   return (
-    <header className="site-header flex items-center justify-between gap-4">
+    // `.site-header` already lays this out: flex, centred, space-between, 1rem
+    // gap. The utilities that used to be here restated all four and lost to it
+    // anyway, since Tailwind's utilities are layered and the stylesheet is not.
+    <header className="site-header">
       <div className="flex items-center gap-6">
         {/*
          * The round the manager is reading lives in the URL, and reading it
