@@ -138,6 +138,7 @@ token is renamed in the stylesheet, rename it here in the same change.
 - Teal surfaces that carry text use `teal-surface` (#29b6dd) with ink (4.9:1); the brand `teal` (#05a4cd) with ink is only 4.0:1 and stays non-text.
 - Placeholder text is text. The stylesheet sets `::placeholder` to `{colors.muted}` globally, because both browser and framework defaults land near 2.6–2.8:1 on the field. Never restate a placeholder colour locally.
 - Focus is a 3px `{colors.navy}` outline at 3px offset, from a single global `:focus-visible` rule. A control that hides it — because its own chrome sits elsewhere, as the builder's search pill does — must draw the same outline on whatever element *is* the field. Do not replace it with a coloured border, a ring of another colour, or `:focus` styling that also fires on a pointer click.
+- Every screen with the main navigation opens with a skip link (component 11). A new screen inherits it from the header gate; nothing needs to add one, and nothing may place a focusable element ahead of it.
 
 ---
 
@@ -294,6 +295,9 @@ The one headerless manager screen. It centres a single `.form-panel` under the h
 
 ### 10. Failure Screens (`error.tsx`, `not-found.tsx`, `global-error.tsx`)
 A wrong address or a thrown segment is answered in Hebrew, inside the system, never by the framework's default page. Manager screens reuse the onboarding panel and offer a way back; respondent screens are written separately, offer no route into the manager app, and say what was and was not sent. No failure screen prints `error.message` — in a development build it carries whatever the throw site put there. `app/error.tsx` shows `error.digest` instead, wrapped in `dir="ltr"` so an RTL context does not reorder the identifier.
+
+### 11. Skip Link (`.skip-link`)
+The first tab stop on every screen that has the six-item navigation, and only on those — the respondent screens hide the header, so their content is already the first thing a keyboard reaches. It is an ordinary accent pill in every respect except position: `inset-inline-start: -100vw` until `:focus-visible` brings it to `1rem`, above the sticky header on `--z-skip-link`. Its target is `<main id="main-content" tabIndex={-1}>`, which suppresses its own focus ring — focus lands there programmatically and a ring around the whole page would read as an error.
 
 ---
 

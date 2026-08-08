@@ -127,6 +127,9 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
   manager app, and a failure mid-questionnaire says nothing was sent and offers
   a retry. No boundary prints the error message, which in a development build
   carries whatever the throw site put in it.
+- A keyboard reaches the content without walking the navigation first: every
+  manager screen opens with a skip link, and the respondent screens, which have
+  no navigation to skip, deliberately have none.
 
 ### Privacy and analytics
 
