@@ -1,9 +1,11 @@
 # Shalomut Tracker — operational handoff
 
-Updated: 2026-08-08 (`origin/main` is `8d4af8d` — the sign-in transition fix,
-confirmed on the deployed endpoint by the owner). Nothing is waiting to be
-pushed and `docs/agent-tasks/active/` is empty. This document owns only
-cross-task operational/deployed state, external blockers and approval gates. Product milestones belong in `PROGRESS.md`; branch work and exact
+Updated: 2026-08-08, session close (`origin/main` is `6e06ff7`). The session's
+product change is the sign-in transition fix `8d4af8d`, confirmed on the
+deployed endpoint by the owner; everything after it is tests and documentation.
+Nothing is waiting to be pushed and `docs/agent-tasks/active/` is empty. This
+document owns only cross-task operational/deployed state, external blockers and
+approval gates. Product milestones belong in `PROGRESS.md`; branch work and exact
 verification belong in
 `docs/agent-tasks/{active,archive}/`; older snapshots remain available in Git.
 
@@ -31,9 +33,8 @@ verification belong in
   prefetched while signed out, which is `/`; the smoke signs in towards
   `/round` and `/dashboard` and was never affected. What the workaround did
   hide was a wrong diagnosis — its comment blamed the router for a flake — and
-  that is the part worth carrying. The workaround is gone as of
-  `test/smoke-waits-for-the-form`, which buys coverage of the `?next=`
-  deep-link path rather than of this bug.
+  that is the part worth carrying. The workaround is gone as of `1c2da29`,
+  which buys coverage of the `?next=` deep-link path rather than of this bug.
 - **The browser smoke found a session bug the whole suite was blind to.** The
   middleware verified JWTs by passing `signatureBytes.buffer` to
   `crypto.subtle.verify`; it runs in a sandbox with its own realm, so that
@@ -57,8 +58,8 @@ verification belong in
   had been dying at its first line, invisible until something re-seeded;
   `31195236422` and `31205427782` — the middleware could not verify a session
   on Node 20, described above.
-- `origin/main` is `8d4af8d`, which is also the last commit that changed
-  **product** code — the sign-in transition fix above. Before it the
+- `origin/main` is `6e06ff7`. The last commit that changed **product** code is
+  `8d4af8d`, the sign-in transition fix above. Before it the
   product-visible tip was `26209f3`, the session-verification fix. Before it,
   the product-visible tip was `36fe4ce` — `feat/multi-school-scope`, pushed by
   the owner on 2026-08-07: the system holds more than one school, `/setup` is

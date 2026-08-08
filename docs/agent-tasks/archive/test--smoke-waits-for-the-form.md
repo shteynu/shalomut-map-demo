@@ -5,8 +5,8 @@
 - Branch: `test/smoke-waits-for-the-form`
 - Base branch: `main`
 - Base commit: `b29ce91`
-- Current HEAD: see `git log -1`
-- Status: implemented and verified locally; not pushed
+- Current HEAD: `6e06ff7`, which is also `origin/main`
+- Status: closed — both commits are in `main`
 - Last updated: 2026-08-08
 - Last agent/tool: Claude Opus 5 (Claude Code)
 
@@ -62,7 +62,7 @@ Nothing.
 
 ## Remaining
 
-Push.
+Nothing. Pushed as `1c2da29` and `6e06ff7`.
 
 ## Changed files
 
@@ -142,4 +142,4 @@ None.
 
 ## Next concrete step
 
-Push `git push origin test/smoke-waits-for-the-form:main`.
+None — the task is closed.
