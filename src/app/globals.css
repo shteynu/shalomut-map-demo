@@ -1588,10 +1588,23 @@ textarea {
   font: inherit;
 }
 
+/* The input has no chrome of its own — the pill around it is the field — so an
+   outline drawn on the input would sit inside a border it does not own. It is
+   moved to the wrapper below, not removed: until 2026-08-08 it was only
+   removed, and a keyboard user reached the one text field in the builder with
+   nothing but a faint border tint to say so. */
 .survey-builder-search input:focus {
   outline: none;
 }
 
+/* `:has(… :focus-visible)` rather than `:focus-within`, so a pointer click does
+   not draw a keyboard ring. Same outline the rest of the product uses. */
+.survey-builder-search:has(input:focus-visible) {
+  outline: 3px solid var(--navy);
+  outline-offset: 3px;
+}
+
+/* The field is active whichever way it was reached. */
 .survey-builder-search:focus-within {
   border-color: var(--accent-dark);
 }
