@@ -36,6 +36,15 @@ export type DimensionPresentation = {
     rotate: number;
     radius: string;
   };
+  /**
+   * Where the hover "+" sits inside the concept stone. Each stone is a
+   * different organic shape, so the mark is placed per dimension rather than
+   * by one rule; the numbers were tuned by eye against the shapes above.
+   */
+  plusPosition: {
+    top: string;
+    left: string;
+  };
   conceptColor: string;
 };
 
@@ -54,6 +63,7 @@ export const dimensionPresentations: DimensionPresentation[] = [
       rotate: 0,
       radius: "44% 56% 52% 48% / 48% 38% 62% 52%",
     },
+    plusPosition: { top: "1.4rem", left: "2.0rem" },
     conceptColor: "#24bf10",
   },
   {
@@ -70,6 +80,7 @@ export const dimensionPresentations: DimensionPresentation[] = [
       rotate: 7,
       radius: "42% 58% 40% 60% / 47% 38% 62% 53%",
     },
+    plusPosition: { top: "1.2rem", left: "2.8rem" },
     conceptColor: "#24bf10",
   },
   {
@@ -86,6 +97,7 @@ export const dimensionPresentations: DimensionPresentation[] = [
       rotate: 0,
       radius: "36% 64% 40% 60% / 44% 34% 66% 56%",
     },
+    plusPosition: { top: "1.8rem", left: "2.4rem" },
     conceptColor: "#e49902",
   },
   {
@@ -102,6 +114,7 @@ export const dimensionPresentations: DimensionPresentation[] = [
       rotate: 0,
       radius: "40% 60% 37% 63% / 44% 40% 60% 56%",
     },
+    plusPosition: { top: "1.5rem", left: "2.9rem" },
     conceptColor: "#cf2c4e",
   },
   {
@@ -118,6 +131,7 @@ export const dimensionPresentations: DimensionPresentation[] = [
       rotate: 4,
       radius: "39% 61% 41% 59% / 48% 36% 64% 52%",
     },
+    plusPosition: { top: "1.3rem", left: "3.6rem" },
     conceptColor: "#e49902",
   },
   {
@@ -134,6 +148,7 @@ export const dimensionPresentations: DimensionPresentation[] = [
       rotate: -3,
       radius: "45% 55% 42% 58% / 36% 46% 54% 64%",
     },
+    plusPosition: { top: "1.7rem", left: "2.1rem" },
     conceptColor: "#e49902",
   },
   {
@@ -150,6 +165,7 @@ export const dimensionPresentations: DimensionPresentation[] = [
       rotate: 0,
       radius: "42% 58% 38% 62% / 49% 39% 61% 51%",
     },
+    plusPosition: { top: "1.2rem", left: "3.3rem" },
     conceptColor: "#24bf10",
   },
   {
@@ -166,6 +182,7 @@ export const dimensionPresentations: DimensionPresentation[] = [
       rotate: 0,
       radius: "44% 56% 40% 60% / 44% 34% 66% 56%",
     },
+    plusPosition: { top: "1.6rem", left: "2.7rem" },
     conceptColor: "#24bf10",
   },
 ];

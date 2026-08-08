@@ -59,29 +59,6 @@ function isValidOffsetMap(value: unknown): value is StoneOffsetMap {
   });
 }
 
-function getPlusPosition(dimensionId: string) {
-  switch (dimensionId) {
-    case "self-expression": // קול אישי
-      return { top: "1.4rem", left: "2.0rem" };
-    case "professional-competence": // מומחיות בטוחה
-      return { top: "1.2rem", left: "2.8rem" };
-    case "social-resource": // משאב חברתי
-      return { top: "1.8rem", left: "2.4rem" };
-    case "balance": // איזון
-      return { top: "1.5rem", left: "2.9rem" };
-    case "management-support": // עורף מקצועי
-      return { top: "1.3rem", left: "3.6rem" };
-    case "certainty": // ודאות
-      return { top: "1.7rem", left: "2.1rem" };
-    case "organizational-climate": // אקלים ארגוני
-      return { top: "1.2rem", left: "3.3rem" };
-    case "meaning": // משמעות
-      return { top: "1.6rem", left: "2.7rem" };
-    default:
-      return { top: "1.4rem", left: "2.0rem" };
-  }
-}
-
 type DashboardMapInteractiveProps = {
   dimensionScores: Record<
     WellbeingDimensionId,
@@ -114,6 +91,21 @@ export function DashboardMapInteractive({
     offsetsRef.current = offsets;
   }, [offsets]);
 
+  /**
+   * Restoring a dragged layout, one frame after hydration.
+   *
+   * The server renders every stone at its resting position, so a manager who
+   * has moved the map sees it assemble twice. The obvious cure is a layout
+   * effect, so the offsets land inside the hydration commit; it was tried and
+   * measured on the local build, and it is noise — 35 frames at the default
+   * position before, 32-36 after. The jump is hydration latency, not the frame
+   * this effect waits for. Closing it means putting the offsets on the stones
+   * before React runs at all: a blocking inline script, or a cookie the server
+   * can read. That is a product decision, not a cleanup.
+   *
+   * The frame is also what keeps `react-hooks/set-state-in-effect` satisfied,
+   * so it is not free to remove either.
+   */
   useEffect(() => {
     if (typeof window === "undefined") {
       return;
@@ -400,8 +392,8 @@ export function DashboardMapInteractive({
                 "--blob-counter-rotate": `${dimension.conceptPosition.rotate * -1}deg`,
                 "--drag-x": `${dragX}px`,
                 "--drag-y": `${dragY}px`,
-                "--plus-top": getPlusPosition(dimension.id).top,
-                "--plus-left": getPlusPosition(dimension.id).left,
+                "--plus-top": dimension.plusPosition.top,
+                "--plus-left": dimension.plusPosition.left,
                 top: dimension.conceptPosition.top,
                 right: dimension.conceptPosition.right,
                 width: dimension.conceptPosition.width,
