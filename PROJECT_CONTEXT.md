@@ -514,6 +514,44 @@ organization to the school the request is already in, which is what saves an
 ordinary edit, so a school opened by omission would have been a rename of the
 one before it.
 
+### ADR-021: Route-level loading screens, and therefore a 200 on `notFound()`
+
+Owner decision 2026-08-08. Every screen the product renders through
+`notFound()` answers HTTP 200 while saying the thing was not found. This is
+known, measured, and deliberately left as it is.
+
+The cause is not the failure screens and not a framework bug. A `loading.tsx`
+wraps its segment in a Suspense boundary; a Suspense boundary makes the
+response stream; a streamed response sends its status line with the first byte,
+before the page body runs. By the time `notFound()` is called the response is
+already committed as 200. A route the router cannot match never reaches a
+render, which is why `/no-such-page` is the one path that answers 404.
+
+Proved by removing files and rebuilding. With `src/app/loading.tsx`,
+`dashboard/loading.tsx`, `dashboard/[dimension]/loading.tsx` and
+`answer/[shareCode]/loading.tsx` gone, exactly those routes answered 404, while
+`dashboard/[dimension]/metrics` stayed at 200 because its own `loading.tsx` was
+still in place. Putting back the root file alone returned every route to 200.
+Real pages answered 200 throughout.
+
+So a correct status is available at exactly one price: six of the nine
+`loading.tsx` files deleted and their skeletons rewritten as in-page
+`<Suspense>` placed after the validation that can call `notFound()`. There is
+no setting and no upgrade — this is documented App Router behaviour, reported
+against Next since 13.
+
+The price is not worth paying yet. Route-level loading is free, consistent, and
+shows during client-side navigation before the server is asked, which an
+in-page boundary cannot do. Against that, nothing machine-readable reads these
+responses: no crawler indexes the product, no monitor counts 4xx, and the one
+public URL affected — a dead share link — shows a respondent the right screen
+either way.
+
+Revisit when something starts reading the status rather than the page: search
+indexing, uptime monitoring, or a client that branches on `response.ok`. The
+diagnosis and the measurements live in
+`docs/agent-tasks/active/fix--not-found-answers-404.md`.
+
 ## Environments
 
 The project supports exactly two environments:

@@ -8,15 +8,21 @@
 - Base commit: `0291ce7`
 - Current HEAD: `0291ce7` (working tree clean apart from two pre-existing
   unrelated files)
-- Status: cause identified and proved; the fix is an owner decision
+- Status: closed as decided — the cause is proved and the owner chose not
+  to buy the fix. Landed as ADR-021 in `PROJECT_CONTEXT.md`.
 - Last updated: 2026-08-08
 - Last agent/tool: Claude Code (Opus 5)
 
 ## Objective
 
 Every screen this product renders through `notFound()` answers HTTP 200. The
-page is right, the status line contradicts it. Make the status agree with the
-screen.
+page is right, the status line contradicts it. Find out why, and decide whether
+to make the status agree with the screen.
+
+Answered on 2026-08-08: the cause is `loading.tsx`, the fix costs the product's
+route-level loading skeletons, and the owner chose not to pay that yet. The
+behaviour is now recorded as ADR-021 in `PROJECT_CONTEXT.md`, which is the
+living home for it; this file keeps the measurements behind that decision.
 
 ## User-visible outcome
 
@@ -153,7 +159,12 @@ fix here.
 
 ## Decisions made
 
-None yet. The diagnosis above is fact; the trade is the owner's.
+- **Not now.** Owner decision, 2026-08-08. The status stays 200 and the
+  route-level loading skeletons stay. The reasoning is in ADR-021 and is not
+  duplicated here.
+- **The record lives in `PROJECT_CONTEXT.md`, not in this file.** A branch task
+  file is not somewhere a future reader looks before writing a page; an ADR is.
+  This file keeps the measurements the ADR rests on.
 
 ## Assumptions
 
@@ -172,11 +183,15 @@ Nothing.
 
 ## Remaining
 
-All of it.
+Nothing. Revisit only when something machine-readable starts reading these
+responses — search indexing, uptime monitoring, or a client that branches on
+`response.ok`.
 
 ## Changed files
 
-None.
+- `PROJECT_CONTEXT.md` — ADR-021.
+
+No product code. Every file moved during the experiments was put back.
 
 ## Verification evidence
 
@@ -196,7 +211,7 @@ None.
 
 ### Blocked or not run
 
-The fix itself, pending the decision below. `verify:core` was not re-run after
+The fix itself, declined rather than blocked. `verify:core` was not re-run after
 the restore: the restore returned the files to their committed contents and the
 build and e2e both pass.
 
@@ -233,7 +248,9 @@ None.
 
 ## Questions requiring an owner decision
 
-**Is a correct 404 worth giving up route-level loading skeletons?**
+None open. The one below was asked and answered "not now" on 2026-08-08.
+
+**Was a correct 404 worth giving up route-level loading skeletons?**
 
 Nothing else buys it. The status is locked by streaming, streaming is caused by
 `loading.tsx`, and the root file alone holds every route at 200. There is no
@@ -245,12 +262,11 @@ a respondent the right screen either way. Against that, six `loading.tsx` files
 would be rewritten as in-page Suspense on screens whose loading behaviour is
 currently free and consistent.
 
-A reasonable third answer is "not now": record it in `PROJECT_CONTEXT.md` as a
-known consequence of the loading pattern, and revisit when something machine-
-readable actually starts reading these responses.
+The answer was "not now": recorded in `PROJECT_CONTEXT.md` as ADR-021, a known
+consequence of the loading pattern, to be revisited when something
+machine-readable actually starts reading these responses.
 
 ## Next concrete step
 
-Owner answers the question above. Nothing should be built before that — every
-version of this fix costs the loading skeletons, so there is no small first
-step to take on spec.
+Nothing on this branch but the push. It carries one documentation change,
+ADR-021, and this record behind it.
