@@ -4,11 +4,12 @@
 
 - Branch: `chore/frontend-audit-minor-items`
 - Base branch: `chore/stone-page-cascade-cleanup` (a stack on top of `main` at
-  `0cff722`; none of the six branches is pushed)
+  `0cff722`; the whole stack landed on `main` as one push on 2026-08-08)
 - Base commit: `c2760e2`
-- Current HEAD: `c2760e2` (working tree ahead, see Git state)
-- Status: four of five items complete and verified; the fifth is measured and
-  handed back as an owner decision
+- Current HEAD: `213e59b`, which is also `origin/main`. This task's own
+  commits are `70a6bb9`, `8b7263a`, `28931ff`, `bae546a`, `622b28b` and `0291ce7`.
+- Status: closed — pushed to `main` on 2026-08-08 and live on the
+  deployed endpoint.
 - Last updated: 2026-08-08
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -221,5 +222,4 @@ None.
 
 ## Next concrete step
 
-Owner runs `git push origin chore/frontend-audit-minor-items:main`. This is now
-the tip of a six-branch stack, so that single push delivers the whole audit.
+None. The work is in `main` and this file is archived.

@@ -550,7 +550,7 @@ either way.
 Revisit when something starts reading the status rather than the page: search
 indexing, uptime monitoring, or a client that branches on `response.ok`. The
 diagnosis and the measurements live in
-`docs/agent-tasks/active/fix--not-found-answers-404.md`.
+`docs/agent-tasks/archive/fix--not-found-answers-404.md`.
 
 ## Environments
 

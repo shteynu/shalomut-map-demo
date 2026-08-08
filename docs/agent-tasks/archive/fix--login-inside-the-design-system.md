@@ -6,8 +6,10 @@
 - Base branch: `fix/error-and-not-found-screens` (itself based on `main` at
   `0cff722`; that branch is not pushed, so this one carries both items)
 - Base commit: `3d7fcde`
-- Current HEAD: `3d7fcde` (working tree ahead, see Git state)
-- Status: implementation complete, verified locally, not committed
+- Current HEAD: `213e59b`, which is also `origin/main`. This task's own
+  commits are `e561893` and `6c434bb`.
+- Status: closed — pushed to `main` on 2026-08-08 and live on the
+  deployed endpoint.
 - Last updated: 2026-08-08
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -106,7 +108,7 @@ Nothing.
 
 ## Remaining
 
-Nothing in scope. Commit and push are the owner's to run.
+Nothing. Committed and pushed to `main` on 2026-08-08.
 
 ## Changed files
 
@@ -185,6 +187,4 @@ None open.
 
 ## Next concrete step
 
-Owner runs `git push origin fix/login-inside-the-design-system:main`. This
-branch sits on top of `fix/error-and-not-found-screens`, so that one push
-delivers both audit items and the earlier branch needs no push of its own.
+None. The work is in `main` and this file is archived.

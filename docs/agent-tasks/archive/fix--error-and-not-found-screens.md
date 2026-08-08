@@ -5,8 +5,10 @@
 - Branch: `fix/error-and-not-found-screens`
 - Base branch: `main`
 - Base commit: `0cff722`
-- Current HEAD: `0cff722` (working tree ahead, see Git state)
-- Status: implementation complete, verified locally, not committed
+- Current HEAD: `213e59b`, which is also `origin/main`. This task's own
+  commits are `28f8c6e` and `3d7fcde`.
+- Status: closed — pushed to `main` on 2026-08-08 and live on the
+  deployed endpoint.
 - Last updated: 2026-08-08
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -35,6 +37,13 @@ utilities, a 2.6:1 placeholder, `tracking-tight` on Hebrew), the search input in
 the builder dropping its focus outline, the self-overriding `.stone-page`
 compact layer in `globals.css` (40 duplicated selectors, 30 `!important`), and
 four places where `design.md` no longer describes the code.
+
+The "40 duplicated selectors" above is the audit's original figure and it is
+wrong — a grep artifact. Parsing the stylesheet properly gave 10 duplicated
+groups and 57 shadowed `.stone-page` selectors; see
+`docs/agent-tasks/archive/chore--frontend-audit-minor-items.md` and
+`chore--stone-page-cascade-cleanup.md`. The sentence stays as written because
+it is what the branch was planned against.
 
 ## Scope
 
@@ -107,7 +116,7 @@ Nothing.
 
 ## Remaining
 
-Nothing in scope. Commit and push are the owner's to run.
+Nothing. Committed and pushed to `main` on 2026-08-08.
 
 ## Changed files
 
@@ -163,7 +172,10 @@ None.
   screen's, which did render.
 - `npm run verify:db` and `npm run verify:ai` were not run: no persistence,
   API, contract or AI code is touched by this diff.
-- Deployed verification not run.
+- Deployed verification was not run on this branch. It happened later, after
+  the whole stack was pushed on 2026-08-08:
+  `https://shalomut-map-demo.vercel.app/answer/NOT-A-REAL-CODE/` serves
+  «הקישור אינו פעיל», and it answers 200 exactly as ADR-021 describes.
 
 ### Environment
 
@@ -198,8 +210,9 @@ diff; the e2e suite confirms that.
   tested on 2026-08-08 and is wrong: a route whose entire body is `notFound()`,
   with no params and no `await`, also answers 200. The middleware, the custom
   root `not-found.tsx`, `trailingSlash`, and static-versus-dynamic rendering
-  were each eliminated the same way. It now owns a task of its own:
-  `docs/agent-tasks/active/fix--not-found-answers-404.md`.
+  were each eliminated the same way. The cause is `loading.tsx`, the decision
+  is ADR-021 in `PROJECT_CONTEXT.md`, and the measurements are in
+  `docs/agent-tasks/archive/fix--not-found-answers-404.md`.
 
 ## Approval gates
 
@@ -213,5 +226,4 @@ or deployment aliases.
 
 ## Next concrete step
 
-Owner runs `git push origin fix/error-and-not-found-screens:main` after
-reviewing the commit; pushes are the owner's action in this repository.
+None. The work is in `main` and this file is archived.

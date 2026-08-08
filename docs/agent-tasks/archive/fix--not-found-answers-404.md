@@ -4,12 +4,12 @@
 
 - Branch: `fix/not-found-answers-404`
 - Base branch: `chore/frontend-audit-minor-items` (a stack on top of `main` at
-  `0cff722`; none of the seven branches is pushed)
+  `0cff722`; the whole stack landed on `main` as one push on 2026-08-08)
 - Base commit: `0291ce7`
-- Current HEAD: `0291ce7` (working tree clean apart from two pre-existing
-  unrelated files)
-- Status: closed as decided — the cause is proved and the owner chose not
-  to buy the fix. Landed as ADR-021 in `PROJECT_CONTEXT.md`.
+- Current HEAD: `213e59b`, which is also `origin/main`. This task's own
+  commits are `4bfee51`, `c3b5c55`, `d5a4af1` and `213e59b`.
+- Status: closed — pushed to `main` on 2026-08-08 and live on the
+  deployed endpoint.
 - Last updated: 2026-08-08
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -268,5 +268,4 @@ machine-readable actually starts reading these responses.
 
 ## Next concrete step
 
-Nothing on this branch but the push. It carries one documentation change,
-ADR-021, and this record behind it.
+None. The work is in `main` and this file is archived.

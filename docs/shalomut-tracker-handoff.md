@@ -1,13 +1,17 @@
 # Shalomut Tracker — operational handoff
 
-Updated: 2026-08-08, session close (`origin/main` is `6e06ff7`). The session's
-product change is the sign-in transition fix `8d4af8d`, confirmed on the
-deployed endpoint by the owner; everything after it is tests and documentation.
-Nothing is waiting to be pushed and `docs/agent-tasks/active/` is empty. This
-document owns only cross-task operational/deployed state, external blockers and
-approval gates. Product milestones belong in `PROGRESS.md`; branch work and exact
-verification belong in
-`docs/agent-tasks/{active,archive}/`; older snapshots remain available in Git.
+Updated: 2026-08-08, session close (`origin/main` is `213e59b`). The session's
+product changes are the sign-in transition fix `8d4af8d`, confirmed on the
+deployed endpoint by the owner, and the frontend UI/UX audit — seven branches
+pushed as one stack, of which the only thing a manager sees is the new skip
+link; everything else is proved inert by a computed-style fingerprint, or is
+documentation. Nothing is waiting to be pushed and `docs/agent-tasks/active/`
+is empty.
+
+This document owns only cross-task operational/deployed state, external
+blockers and approval gates. Product milestones belong in `PROGRESS.md`; branch
+work and exact verification belong in `docs/agent-tasks/{active,archive}/`;
+older snapshots remain available in Git.
 
 ## Repository snapshot
 

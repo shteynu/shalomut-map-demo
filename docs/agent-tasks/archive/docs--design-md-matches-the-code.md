@@ -4,10 +4,12 @@
 
 - Branch: `docs/design-md-matches-the-code`
 - Base branch: `fix/builder-search-focus-ring` (a stack on top of `main` at
-  `0cff722`; none of the four branches is pushed)
+  `0cff722`; the whole stack landed on `main` as one push on 2026-08-08)
 - Base commit: `6a9b947`
-- Current HEAD: `6a9b947` (working tree ahead, see Git state)
-- Status: implementation complete, verified locally, not committed
+- Current HEAD: `213e59b`, which is also `origin/main`. This task's own
+  commits are `4f83491`.
+- Status: closed — pushed to `main` on 2026-08-08 and live on the
+  deployed endpoint.
 - Last updated: 2026-08-08
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -176,6 +178,4 @@ ADR-021, and the restored error-note border is kept.
 
 ## Next concrete step
 
-Owner runs `git push origin docs/design-md-matches-the-code:main`. This is the
-tip of a four-branch stack, so that single push delivers audit items 1, 2, 3
-and 5; none of the earlier branches needs a push of its own.
+None. The work is in `main` and this file is archived.

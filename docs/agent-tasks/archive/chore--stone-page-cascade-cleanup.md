@@ -4,10 +4,12 @@
 
 - Branch: `chore/stone-page-cascade-cleanup`
 - Base branch: `docs/design-md-matches-the-code` (a stack on top of `main` at
-  `0cff722`; none of the five branches is pushed)
+  `0cff722`; the whole stack landed on `main` as one push on 2026-08-08)
 - Base commit: `4f83491`
-- Current HEAD: `4f83491` (working tree ahead, see Git state)
-- Status: implementation complete, verified locally, not committed
+- Current HEAD: `213e59b`, which is also `origin/main`. This task's own
+  commits are `7185418` and `c2760e2`.
+- Status: closed — pushed to `main` on 2026-08-08 and live on the
+  deployed endpoint.
 - Last updated: 2026-08-08
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -176,6 +178,4 @@ were done on `chore/frontend-audit-minor-items`.
 
 ## Next concrete step
 
-Owner runs `git push origin chore/stone-page-cascade-cleanup:main`. This is now
-the tip of a five-branch stack, so that single push delivers audit items 1, 2,
-3, 4 and 5; none of the earlier branches needs a push of its own.
+None. The work is in `main` and this file is archived.

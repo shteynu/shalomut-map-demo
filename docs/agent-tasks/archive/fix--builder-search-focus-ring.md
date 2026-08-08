@@ -4,10 +4,12 @@
 
 - Branch: `fix/builder-search-focus-ring`
 - Base branch: `fix/login-inside-the-design-system` (a stack on top of `main` at
-  `0cff722`; none of the three branches is pushed)
+  `0cff722`; the whole stack landed on `main` as one push on 2026-08-08)
 - Base commit: `6c434bb`
-- Current HEAD: `6c434bb` (working tree ahead, see Git state)
-- Status: implementation complete, verified locally, not committed
+- Current HEAD: `213e59b`, which is also `origin/main`. This task's own
+  commits are `6a9b947`.
+- Status: closed — pushed to `main` on 2026-08-08 and live on the
+  deployed endpoint.
 - Last updated: 2026-08-08
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -147,5 +149,4 @@ None.
 
 ## Next concrete step
 
-Continue with item 5 of the audit — reconciling `design.md` with the code — on
-its own branch on top of this one.
+None. The work is in `main` and this file is archived.

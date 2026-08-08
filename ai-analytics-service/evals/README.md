@@ -105,7 +105,7 @@ two of them diff cleanly — that is the whole point of keeping one.
 
 `2026-08-05-gemini-3.5-flash-lite.json` is the first. It is a full run on the
 models `render.yaml` deploys, with `outcome: "llm"` on 55 of 56 stones. Read it
-next to `docs/agent-tasks/active/test--eval-corpus-baseline.md`, which records
+next to `docs/agent-tasks/archive/test--eval-corpus-baseline.md`, which records
 what the low grader turned out to mean.
 
 `2026-08-05-gemini-3.5-flash-lite-language-rules.json` is the same corpus on
