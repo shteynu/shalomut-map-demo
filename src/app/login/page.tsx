@@ -1,15 +1,18 @@
 "use client";
 
 import { Suspense, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { AlertCircle, Loader2, Lock, LogIn, Mail, Shield } from "lucide-react";
-import { navigationLabels } from "@/lib/navigation";
+import {
+  LOGIN_NEXT_PARAM,
+  navigationLabels,
+  resolveLoginRedirect,
+} from "@/lib/navigation";
 
 function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
-  const nextPath = searchParams?.get("next") || "/";
+  const nextPath = resolveLoginRedirect(searchParams?.get(LOGIN_NEXT_PARAM));
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -44,8 +47,22 @@ function LoginForm() {
         return;
       }
 
-      router.push(nextPath);
-      router.refresh();
+      // A full document load, not `router.push` — and the difference is the
+      // whole bug this replaced. The brand link above prefetches `/` while
+      // the manager is still signed out, so the client router caches what the
+      // middleware answers then: a redirect back to this very screen. After
+      // the cookie is set, `router.push("/")` is served from that cache, does
+      // not reach the server, and lands where it already is. Nothing tells the
+      // form, so it spins on "מתחבר..." forever. Reloading `/login` was the
+      // manager's own workaround: with the cookie present the prefetch then
+      // returns the real home screen and the push works, which is why the
+      // second attempt always felt instant.
+      //
+      // A hard navigation cannot consult that cache. It also re-renders the
+      // root layout against the new session, which is what the `router.refresh()`
+      // here was reaching for, and it drops this component before the spinner
+      // needs clearing.
+      window.location.assign(nextPath);
     } catch {
       setError("אירעה שגיאה ברשת בעת ניסיון ההתחברות. אנא נסה שנית.");
       setLoading(false);

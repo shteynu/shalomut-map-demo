@@ -468,3 +468,29 @@ export function getDashboardRecommendationsActions(
     },
   ];
 }
+
+/**
+ * The parameter `middleware.ts` uses to remember where an unauthenticated
+ * request was heading, so the login screen can send the manager back there.
+ */
+export const LOGIN_NEXT_PARAM = "next";
+
+/**
+ * Where to land after signing in — but only ever inside this application.
+ *
+ * The value arrives from the query string, so it is attacker-controlled even
+ * though the middleware only ever writes a pathname into it. Anything that is
+ * not a plain same-origin path becomes the home screen: an absolute URL
+ * (`https://elsewhere/`), a scheme-relative one (`//elsewhere`), and the
+ * backslash form browsers also normalise to a host (`/\elsewhere`). Without
+ * this, `/login?next=https://elsewhere/` is an open redirect that borrows this
+ * product's login screen to launder the destination.
+ */
+export function resolveLoginRedirect(next: string | null | undefined) {
+  const candidate = next?.trim();
+
+  if (!candidate || !candidate.startsWith("/")) return routes.home;
+  if (candidate.startsWith("//") || candidate.startsWith("/\\")) return routes.home;
+
+  return candidate;
+}

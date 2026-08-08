@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { Loader2, LogOut, ShieldCheck, User } from "lucide-react";
+import { routes } from "@/lib/navigation";
 
 export interface ManagerSessionData {
   managerId: string;
@@ -13,7 +13,6 @@ export interface ManagerSessionData {
 }
 
 export function ManagerUserBar() {
-  const router = useRouter();
   const [session, setSession] = useState<ManagerSessionData | null>(null);
   const [loading, setLoading] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -43,8 +42,11 @@ export function ManagerUserBar() {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
       setSession(null);
-      router.push("/login");
-      router.refresh();
+      // A hard navigation for the same reason signing in needs one, mirrored:
+      // the client router is holding every manager screen this session
+      // rendered, and `router.push` would leave that cache intact for the Back
+      // button to serve after the cookie is gone. A document load discards it.
+      window.location.assign(routes.login);
     } catch {
       setIsLoggingOut(false);
     }

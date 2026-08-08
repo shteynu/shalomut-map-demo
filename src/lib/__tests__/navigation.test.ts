@@ -3,6 +3,7 @@ import { test } from "node:test";
 import {
   isNewRoundParam,
   newRoundSetupRoute,
+  resolveLoginRedirect,
   roundTrackingRoute,
   setupRoute,
   surveyBuilderRoute,
@@ -203,4 +204,25 @@ test("a navigation action opens the round the manager is reading", () => {
   assert.strictEqual(getNavigationAction("openDashboard").href, "/dashboard");
   // Setup is not about a past round, so it ignores one.
   assert.strictEqual(getNavigationAction("startSetup", "round-7").href, "/setup");
+});
+
+test("the login redirect keeps an in-application destination", () => {
+  assert.strictEqual(resolveLoginRedirect("/round"), "/round");
+  assert.strictEqual(resolveLoginRedirect("/dashboard?round=round-7"), "/dashboard?round=round-7");
+});
+
+test("the login redirect refuses a destination outside this application", () => {
+  // The middleware only ever writes a pathname here, but the value reaches the
+  // form through the query string, so the form cannot assume that. Each of
+  // these is a host a browser would navigate to.
+  assert.strictEqual(resolveLoginRedirect("https://example.com/"), "/");
+  assert.strictEqual(resolveLoginRedirect("//example.com"), "/");
+  assert.strictEqual(resolveLoginRedirect("/\\example.com"), "/");
+  assert.strictEqual(resolveLoginRedirect("javascript:alert(1)"), "/");
+});
+
+test("the login redirect falls back to home when there is nothing to honour", () => {
+  assert.strictEqual(resolveLoginRedirect(null), "/");
+  assert.strictEqual(resolveLoginRedirect(undefined), "/");
+  assert.strictEqual(resolveLoginRedirect("   "), "/");
 });
