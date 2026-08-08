@@ -9,11 +9,11 @@ colors:
   accent-dark: "#9f6500"
   teal: "#05a4cd"
   navy: "#2d307e"
-  success: "#24bf10"
-  warning: "#e49902"
-  danger: "#e43e5d"
-  danger-surface: "#cf2c4e"
-  on-danger: "#ffffff"
+  green: "#24bf10"
+  yellow: "#e49902"
+  red: "#e43e5d"
+  red-strong: "#cf2c4e"
+  on-red: "#ffffff"
   pastel-ink: "#504936"
   success-ink: "#1e7b17"
   warning-ink: "#8a5800"
@@ -23,6 +23,7 @@ colors:
   surface-strong: "#fff5d6"
   surface-panel: "rgba(255, 250, 240, 0.88)"
   surface-panel-strong: "rgba(255, 250, 240, 0.96)"
+  surface-success-panel: "color-mix(in srgb, var(--pastel-green) 34%, var(--surface-panel) 66%)"
   muted: "#6f674f"
   line: "#e6d9b7"
   border-soft: "rgba(56, 56, 56, 0.1)"
@@ -98,6 +99,16 @@ This design system is implemented in a **Next.js** web application with **Tailwi
 
 Colors are selected to balance high visual appeal with professional school dashboard expectations. They use a warm baseline rather than cold blue/gray tones.
 
+**Every token above is named exactly as its CSS custom property in
+`src/app/globals.css`.** It was not always so: this document used to call the
+status colours `success`, `warning`, `danger`, `danger-surface` and `on-danger`
+while the stylesheet called them `--green`, `--yellow`, `--red`, `--red-strong`
+and `--on-red`. On 2026-08-08 a rule was found reading `var(--danger-surface)`,
+a property that has never existed — an undefined custom property invalidates
+the whole shorthand, so every error note in the product had silently rendered
+without its border. Two vocabularies for one palette is how that happens. If a
+token is renamed in the stylesheet, rename it here in the same change.
+
 | Token | CSS Variable | Hex Code | Purpose / Usage |
 | :--- | :--- | :--- | :--- |
 | `cream` | `--cream` | `#fbf4dd` | Global body background color. Warm, eye-friendly, paper-like. |
@@ -110,18 +121,23 @@ Colors are selected to balance high visual appeal with professional school dashb
 | `surface-strong`| `--surface-strong`| `#fff5d6`| Highlighted alert cards, banner bands, or focused form blocks. |
 | `surface-panel` | `--surface-panel` | `rgba(255, 250, 240, 0.88)` | Standard product panels where the task should stay quiet. |
 | `surface-panel-strong` | `--surface-panel-strong` | `rgba(255, 250, 240, 0.96)` | Compact rows and repeated editable items. |
-| `muted` | `--muted` | `#383838` | Secondary text, helper labels, captions, and descriptions. |
+| `muted` | `--muted` | `#6f674f` | Secondary text, helper labels, captions, descriptions, and input placeholders. A distinct tier from `ink`, at 5.1:1 on cream, so secondary copy reads as secondary. |
 | `line` | `--line` | `#e6d9b7` | Subtle borders, section dividers, and grid lines. |
 | `border-soft` | `--border-soft` | `rgba(56, 56, 56, 0.1)` | Product-panel border that pairs with low elevation. |
-| `success` | `--green` | `#24bf10` | Green stone status (Score 75+): "הכל טוב" (Everything is fine). |
-| `warning` | `--yellow` | `#e49902` | Yellow stone status (Score 50-74): "מצב סביר" (Fair / Needs attention). |
-| `danger` | `--red` | `#e43e5d` | Red stone status (Score <50): "נדרש טיפול מיידי" (Requires immediate action). |
+| `green` | `--green` | `#24bf10` | Green stone status (Score 75+): "הכל טוב" (Everything is fine). |
+| `yellow` | `--yellow` | `#e49902` | Yellow stone status (Score 50-74): "מצב סביר" (Fair / Needs attention). |
+| `red` | `--red` | `#e43e5d` | Red stone status (Score <50): "נדרש טיפול מיידי" (Requires immediate action). |
+| `red-strong` | `--red-strong` | `#cf2c4e` | Any red surface that carries text, and the error-note border. |
+| `on-red` | `--on-red` | `#ffffff` | The only text colour used on `red-strong`. |
+| `teal-surface` | `--teal-surface` | `#29b6dd` | Any teal surface that carries text. |
 
 ### Accessibility Guidance
 - Always pair text written in `{colors.ink}` with backgrounds in `{colors.cream}` or `{colors.surface}` to achieve a WCAG AA contrast ratio of over 7:1.
-- Saturated status colors `success` (#24bf10) and `warning` (#e49902) must be paired with `{colors.ink}` text (measured 4.7:1 and 4.9:1). White text fails WCAG AA on them.
-- The bright `danger` (#e43e5d) passes AA with **neither** ink (2.85:1) nor white (4.1:1). Any red surface that carries text uses `danger-surface` (#cf2c4e) with `on-danger` white text (5.1:1). Bright `danger` is reserved for non-text accents (dots, borders).
+- Saturated status colors `green` (#24bf10) and `yellow` (#e49902) must be paired with `{colors.ink}` text (measured 4.7:1 and 4.9:1). White text fails WCAG AA on them.
+- The bright `red` (#e43e5d) passes AA with **neither** ink (2.85:1) nor white (4.1:1). Any red surface that carries text uses `red-strong` (#cf2c4e) with `on-red` white text (5.1:1). Bright `red` is reserved for non-text accents (dots, borders).
 - Teal surfaces that carry text use `teal-surface` (#29b6dd) with ink (4.9:1); the brand `teal` (#05a4cd) with ink is only 4.0:1 and stays non-text.
+- Placeholder text is text. The stylesheet sets `::placeholder` to `{colors.muted}` globally, because both browser and framework defaults land near 2.6–2.8:1 on the field. Never restate a placeholder colour locally.
+- Focus is a 3px `{colors.navy}` outline at 3px offset, from a single global `:focus-visible` rule. A control that hides it — because its own chrome sits elsewhere, as the builder's search pill does — must draw the same outline on whatever element *is* the field. Do not replace it with a coloured border, a ring of another colour, or `:focus` styling that also fires on a pointer click.
 
 ---
 
@@ -135,8 +151,10 @@ The font scale is tailored for Hebrew letters, which have a blockier, wider form
 
 ### Type scale
 
-* **Hero H1:** `clamp(2.4rem, 6vw, 5.2rem)` | weight: `800` | line-height: `1.08`
+* **Hero H1:** `clamp(1.8rem, 3.2vw, 2.5rem)` | weight: `800` | line-height: `1.12` | max-width: `40ch`
   * *Usage:* Screen intros, page headers.
+  * The base rule at `.page-intro h1` reads `clamp(2.4rem, 6vw, 5.2rem)`, and this document described that value until 2026-08-08. It is not what most screens render: the compact `.stone-page` layer overrides the size, the line-height and the width, and every screen but one carries that class.
+  * **The survey builder is the exception, and it is a bug, not a choice.** `survey-builder.tsx` opens with `page survey-builder-stone-page` and no `stone-page`, so the override never matches it. Measured at a 1440px viewport on 2026-08-08: `/`, `/setup` and `/round` render the title at **40px** across **40ch**; `/survey` renders it at **83.2px** across **11ch** — more than twice the size, on the densest screen in the product. Fixing it belongs with the `.stone-page` untangling, because adding the class alone pulls in the whole compact layer at once.
 * **Section H2:** `clamp(1.4rem, 3vw, 1.8rem)` | weight: `800` | line-height: `1.12`
   * *Usage:* Card headers, main layout sub-headings.
 * **Component H3:** `clamp(1rem, 1.5vw, 1.15rem)` | weight: `800` | line-height: `1.12`
@@ -145,6 +163,20 @@ The font scale is tailored for Hebrew letters, which have a blockier, wider form
   * *Usage:* Long paragraphs, summaries, descriptions.
 * **Eyebrows / Kickers:** `0.78rem` | weight: `800` | line-height: `1.0` | color: `{colors.accent-dark}`
   * *Usage:* Small categorizing labels above main titles. Never uppercase and never letter-spaced — both are dead styles in Hebrew.
+
+#### Known debt: the scale is not enforced
+
+These five tiers are the intent, not a description of the stylesheet. As of
+2026-08-08 `globals.css` carries **67 distinct `font-size` values across 130
+declarations** — sixteen different `clamp()` heads and roughly two dozen
+one-off `rem` values that belong to no tier. Most arrived with the compact
+`.stone-page` layer, which re-states sizes it has already set elsewhere in the
+file.
+
+Do not read the count as permission. New work picks a tier; a size that fits no
+tier is a signal that either the tier list or the component is wrong, and both
+are worth a minute of thought. Closing the gap is part of untangling the
+`.stone-page` override layer, not a separate cleanup.
 
 ---
 
@@ -159,6 +191,26 @@ Layout structures support responsive viewport sizes and adapt dynamically using 
 4. **Workflow Grid:** 4-column flow grid for steps, using `{colors.surface}` background cards with hover micro-animations (`transform: translateY(-2px)`).
 5. **Form Grid:** 2-column input fields for demographic entries (sickness days, socio-economic index, number of students).
 
+### Breakpoints
+
+The stylesheet is mobile-adaptive rather than mobile-first: it is written for
+the desktop layout and narrows it with `max-width` queries. There is no token
+list, and the values in use are these:
+
+| Query | What it governs |
+| :--- | :--- |
+| `980px` | The dashboard map (dragging turns off entirely below it), the map page's sidebar-and-stage split, and the header. |
+| `768px` / `760px` | The header again, and the dashboard heading. |
+| `640px` | The goals panel. |
+| `620px` | Flattens the pebble rotation, which overflows a 375px viewport by about a pixel. |
+| `600px` | The setup grades grid, and the privacy tooltip becoming a bottom sheet. |
+| `430px` | The brand symbol. |
+
+Two of these are known debt rather than design. `768px` and `760px` are eight
+pixels apart and both adjust `.site-header`, which is therefore rewritten at
+three widths; `640px`, `620px` and `600px` are three values doing one job.
+Prefer an existing width over a new one, and prefer the larger of a near-pair.
+
 ---
 
 # Shapes
@@ -166,7 +218,8 @@ Layout structures support responsive viewport sizes and adapt dynamically using 
 The signature element of the design system is the **asymmetric rounded shapes**, giving panels and cards an organic look.
 
 ### Border-Radius Rules
-- **Controls:** Buttons, inputs, compact rows, and editable survey rows use `--radius-control` (`8px`) or `--radius-panel` (`14px`). These product surfaces should feel familiar and efficient.
+- **Buttons are pills.** `.primary-button`, `.secondary-button`, `.ghost-button` and `.icon-button` are `999px` with a `3rem` minimum height, and the primary is filled with `{colors.accent}` over ink text. This is set under `.stone-page`, which every screen in the product carries, so it is the button — the 8px ink-filled base rule underneath it does not render anywhere. This document described the base rule until 2026-08-08.
+- **Other controls:** Inputs, compact rows, and editable survey rows use `--radius-control` (`8px`) or `--radius-panel` (`14px`). These product surfaces should feel familiar and efficient.
 - **Product Panels:** Admin panels use `--radius-panel-organic` (`18px 24px 16px 22px / 22px 16px 20px 18px`) when they need the Shalomut tone without becoming stones.
 - **Headers / Feature Panels:** Large feature panels and headers may use the stronger header radius:
   ```css
@@ -236,6 +289,12 @@ template/AI suggestions open in the editor and never bypass manager review.
 ### 8. Dashboard Detail Suite
 Dimension detail, metrics, and recommendations stay fullscreen and no-header. Metrics display a label chip plus primary/secondary visual emphasis. Recommendations use priority chips ("יעד ראשון", "יעד 2"...) so principals can identify the next action without relying on shape or color alone.
 
+### 9. Sign-in Screen (`.login-*`)
+The one headerless manager screen. It centres a single `.form-panel` under the header's own `.brand-mark`, and everything inside it is ordinary product furniture: the global `label` grid with the input nested in it, the pill primary button, and `.survey-submit-error` for a refused attempt. It carries no in-field icons — no other field in the product has one. Until 2026-08-08 this screen was written in raw Tailwind utilities and is the reason the "Don't" list below names them.
+
+### 10. Failure Screens (`error.tsx`, `not-found.tsx`, `global-error.tsx`)
+A wrong address or a thrown segment is answered in Hebrew, inside the system, never by the framework's default page. Manager screens reuse the onboarding panel and offer a way back; respondent screens are written separately, offer no route into the manager app, and say what was and was not sent. No failure screen prints `error.message` — in a development build it carries whatever the throw site put there. `app/error.tsx` shows `error.digest` instead, wrapped in `dir="ltr"` so an RTL context does not reorder the identifier.
+
 ---
 
 # Do's and Don'ts
@@ -246,9 +305,10 @@ Dimension detail, metrics, and recommendations stay fullscreen and no-header. Me
 - **Do** reserve extreme organic radii for stones/blobs and use the quieter panel/control radii for forms, rows, and repeated admin items.
 - **Do** use semantic z-index tokens for sticky headers, floating map controls, popovers, and tooltips.
 - **Do** enforce privacy thresholds. When building views that display data, verify if the response count is below the minimum threshold before displaying results.
+- **Do** name a token here exactly as the CSS custom property is named. An undefined `var()` does not fall back — it invalidates the declaration and the style silently disappears.
 
 ### Don't:
-- **Don't** use standard Tailwind CSS gray-scales (such as `bg-gray-100`, `text-gray-900`). Always map to `{colors.cream}`, `{colors.surface}`, `{colors.muted}`, or `{colors.ink}`.
+- **Don't** use standard Tailwind CSS gray-scales (such as `bg-gray-100`, `text-gray-900`). Always map to `{colors.cream}`, `{colors.surface}`, `{colors.muted}`, or `{colors.ink}`. The one screen outside this rule is `/api-docs`, a developer-facing OpenAPI viewer that is deliberately English and `dir="ltr"`; it is not part of the product surface and is not a precedent.
 - **Don't** align components strictly to clean rectangular grids on the wellbeing dashboard. The wellbeing map must look scattered, organic, and hand-placed.
 - **Don't** use animations with heavy spring metrics. Keep transitions smooth and subtle (`transition: transform 150ms ease`).
 - **Don't** pair soft 1px borders with wide decorative shadows on standard product panels.

@@ -649,10 +649,13 @@ textarea {
 
 .survey-submit-error {
   margin: 0;
-  /* `--danger-surface` is what `design.md` calls this colour; the stylesheet
-     calls it `--red-strong`, and this declaration used the doc's name. An
-     undefined custom property makes the whole shorthand invalid, so every
-     error note in the product has been borderless since it was written. */
+  /* This declaration used to read `var(--danger-surface)` — the name
+     `design.md` gave this colour while the stylesheet called it
+     `--red-strong`. An undefined custom property makes the whole shorthand
+     invalid, so every error note in the product was borderless from the day it
+     was written. `docs/agent-tasks/archive/feat--copy-failure-states.md` had
+     already spotted it and left it. The two vocabularies were merged into one
+     in `design.md` on 2026-08-08 so it cannot recur. */
   border: 1px solid var(--red-strong);
   border-radius: var(--radius-control);
   background: var(--surface);
