@@ -190,14 +190,16 @@ diff; the e2e suite confirms that.
   explicit `notFound()` call — the three dimension routes and
   `/answer/[shareCode]` — returns 200 while rendering the correct screen. The
   same holds for the error boundaries, which answer 200 rather than 500. The
-  likely cause is that these pages await a dynamic API (`params`, and
-  `connection()` inside `loadManagerContext`) before the call, which commits the
-  response before the status can be set; reordering around `loadManagerContext`
-  did not change it, so the remaining candidate is `await params` itself.
   Consequence is limited to machine readers — monitoring, crawlers, any client
   checking `response.ok`. `/answer/[shareCode]` is the one public URL affected.
-  Fixing it means changing when these pages commit to dynamic rendering, which
-  is a rendering-architecture change and deliberately outside this branch.
+
+  This branch guessed the cause was awaiting a dynamic API — `params`, or
+  `connection()` inside `loadManagerContext` — before the call. That guess was
+  tested on 2026-08-08 and is wrong: a route whose entire body is `notFound()`,
+  with no params and no `await`, also answers 200. The middleware, the custom
+  root `not-found.tsx`, `trailingSlash`, and static-versus-dynamic rendering
+  were each eliminated the same way. It now owns a task of its own:
+  `docs/agent-tasks/active/fix--not-found-answers-404.md`.
 
 ## Approval gates
 
