@@ -22,12 +22,18 @@ verification belong in
   screen. Fixed by a document navigation on sign-in and, mirrored, on sign-out.
   `?next=` is filtered to a same-origin path in the same commit — it was an
   open redirect through `router.push` already, and a real navigation raised the
-  cost of leaving it. **The lesson is the one worth carrying:** `signIn` in
-  `e2e/smoke.spec.ts` navigates to the destination itself rather than waiting
-  for the form's transition, with a comment attributing the flake to the
-  router. That attribution was wrong, and the workaround stood between the
-  suite and this bug. A test that steps around a product behaviour stops
-  testing it.
+  cost of leaving it. The regression is `e2e/login-transition.spec.ts`.
+- **Correction, same day.** The entry above first claimed that the workaround
+  in `e2e/smoke.spec.ts` — `signIn` navigating to the destination itself rather
+  than waiting for the form — had hidden this bug. Checked afterwards by
+  removing the workaround and running it against the pre-fix code: it still
+  passed. The defect needed a destination the login screen had already
+  prefetched while signed out, which is `/`; the smoke signs in towards
+  `/round` and `/dashboard` and was never affected. What the workaround did
+  hide was a wrong diagnosis — its comment blamed the router for a flake — and
+  that is the part worth carrying. The workaround is gone as of
+  `test/smoke-waits-for-the-form`, which buys coverage of the `?next=`
+  deep-link path rather than of this bug.
 - **The browser smoke found a session bug the whole suite was blind to.** The
   middleware verified JWTs by passing `signatureBytes.buffer` to
   `crypto.subtle.verify`; it runs in a sandbox with its own realm, so that
