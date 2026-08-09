@@ -2507,12 +2507,28 @@ textarea {
 /* The sign belongs on the left of the number even inside Hebrew text, so the
    delta is isolated as its own left-to-right run. Without this the bidi
    algorithm moves the plus to the other side and "+3" reads as "3+". */
+/* The change since the previous round, as a small pill.
+
+   The pill is not decoration. On the map this sits beside a 2rem percentage,
+   and as bare text the two ran together: `90%` with `+17` next to it read as
+   `+1790%`. Its own bed is what makes it a separate thing to read.
+
+   It is also what carries the contrast. At 0.9rem/800 this is not large text,
+   so it needs 4.5:1, and the greens were the ones that missed: `--success-ink`
+   on the green stone is 4.25:1 and `--muted` is 4.45:1. On `--surface` every
+   ink here clears 5.1:1, and the pill puts each of them on it wherever the
+   chip lands — the green stone, the pink one, the sidebar. */
 .round-delta {
   direction: ltr;
   unicode-bidi: isolate;
   font-variant-numeric: tabular-nums;
   font-weight: 800;
   white-space: nowrap;
+  display: inline-block;
+  padding: 0.08em 0.42em;
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  vertical-align: middle;
 }
 
 .round-delta-up {

@@ -107,9 +107,23 @@ export function describeDelta(delta: number): string {
   return "ללא שינוי";
 }
 
-/** The signed number as it appears on screen: `+4`, `-3`, `0`. */
+/**
+ * The signed number as it appears on screen: `+4`, `-3`, `±0`.
+ *
+ * A round that did not move used to read as a bare `0`, which on the map sits
+ * beside a large percentage — `90%` with a `0` next to it is a number, not a
+ * change. Every other value carries a sign, so the unchanged one carries `±`
+ * and is read the same way.
+ *
+ * It is not omitted, because a dimension that held its ground is something the
+ * manager measured. Leaving it out would make "no change" look like "not
+ * compared".
+ */
 export function formatDelta(delta: number): string {
-  return delta > 0 ? `+${delta}` : String(delta);
+  if (delta > 0) return `+${delta}`;
+  if (delta < 0) return String(delta);
+
+  return "±0";
 }
 
 /**

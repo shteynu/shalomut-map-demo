@@ -148,8 +148,17 @@ test("a delta reads as a direction in words, not only a sign", () => {
 test("the printed delta keeps its sign", () => {
   assert.strictEqual(formatDelta(4), "+4");
   assert.strictEqual(formatDelta(-3), "-3");
-  assert.strictEqual(formatDelta(0), "0");
   assert.strictEqual(deltaDirection(4), "up");
   assert.strictEqual(deltaDirection(-3), "down");
   assert.strictEqual(deltaDirection(0), "flat");
+});
+
+test("a dimension that did not move still reads as a change of nothing", () => {
+  // On the map this sits beside a large percentage. A bare `0` there is part of
+  // a number rather than a change, which is what `±` fixes: every delta on the
+  // screen now carries a sign.
+  assert.strictEqual(formatDelta(0), "±0");
+  assert.match(formatDelta(0), /^[+\-±]/u);
+  assert.match(formatDelta(4), /^[+\-±]/u);
+  assert.match(formatDelta(-3), /^[+\-±]/u);
 });
