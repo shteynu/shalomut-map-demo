@@ -56,6 +56,12 @@ or deployment snapshots:
   — dated read-only study of where the AI pipeline lacks scientific evidence and
   which extension points exist. **Not for implementation**: material for a
   product discussion, with unranked alternatives and open owner decisions;
+- [`evidence-card-prototype-2026-08-09.md`](evidence-card-prototype-2026-08-09.md)
+  — companion to that study: what one unit of research evidence would look like
+  and what it costs to produce, measured by running probes against the shipped
+  validators, statistics and eval corpus. **Not for implementation**: the card
+  format is a probe, not a specification, and the scripts were deliberately kept
+  outside the repository;
 - [`ai-service-incidental-findings-2026-08-09.md`](ai-service-incidental-findings-2026-08-09.md)
   — defects and drift found during that study, deferred by owner decision on
   2026-08-09; a record, not a queue;

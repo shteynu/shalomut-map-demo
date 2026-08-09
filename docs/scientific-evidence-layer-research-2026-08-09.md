@@ -20,6 +20,12 @@ separate, deferred list in
 so that a decision about a new capability is never entangled with a decision to
 repair the existing one.
 
+A later probe, also not for implementation, asks what one unit of evidence would
+look like and what it costs to produce:
+[`evidence-card-prototype-2026-08-09.md`](evidence-card-prototype-2026-08-09.md).
+It confirms alternative A in section 4, demonstrates the cross-dimension payoff
+rather than arguing it, and adds three open decisions to section 5.
+
 Method: twelve parallel read-only investigations over `ai-analytics-service/`,
 `contracts/`, `src/`, `prisma/` and `docs/`, followed by a completeness pass and
 an adversarial pass that re-opened the load-bearing claims and executed the
