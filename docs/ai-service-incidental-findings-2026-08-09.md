@@ -4,14 +4,14 @@ Seven defects and pieces of drift found while reading the pipeline for
 [`scientific-evidence-layer-research-2026-08-09.md`](scientific-evidence-layer-research-2026-08-09.md).
 None of them was introduced by that work and none was fixed by it.
 
-**Status: deferred by owner decision on 2026-08-09, except item 1, which the
-owner unparked the same day and which is now fixed.** This file is a record, not
-a queue. Nothing remaining here is scheduled; each item states what is wrong,
-what it costs today, and what a fix would have to touch, so that whoever picks
-one up does not have to re-derive it.
+**Status: deferred by owner decision on 2026-08-09, except items 1 and 2, which
+the owner unparked the same day and which are now fixed.** This file is a
+record, not a queue. Nothing remaining here is scheduled; each item states what
+is wrong, what it costs today, and what a fix would have to touch, so that
+whoever picks one up does not have to re-derive it.
 
-Verified against `14c2269`; item 1 has been fixed since, as its heading says.
-Line references drift as the code moves — re-check before acting.
+Verified against `14c2269`; items 1 and 2 have been fixed since, as their
+headings say. Line references drift as the code moves — re-check before acting.
 
 ---
 
@@ -45,10 +45,15 @@ existing coverage lives.
 
 ## 2. `stone_map_validation.py`'s docstring says the opposite of the truth
 
-The module docstring states that nothing in the pipeline calls the outgoing gate
+**Fixed on 2026-08-09** on branch `docs/outgoing-gate-docstring`. The docstring
+now says the pipeline asks the gate, where it asks it, and what a refusal does
+to the round. What follows is the finding as written.
+
+The module docstring stated that nothing in the pipeline calls the outgoing gate
 yet and that wiring it in "belongs to its own slice"
 ([stone_map_validation.py:1-18](../ai-analytics-service/src/schemas/stone_map_validation.py#L1)).
-It has been live for some time: `graph.py:136` calls `outgoing_refusal` inside
+It had been live since `2acf62a` (2026-08-02): `graph.py:136` calls
+`outgoing_refusal` inside
 the loop, and the gate can trigger a targeted replay or fail the round with
 `outgoing_<rule>` ([graph.py:129-166](../ai-analytics-service/src/agents/graph.py#L129)).
 

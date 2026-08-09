@@ -6,11 +6,17 @@ boundary: a payload it refuses ends the run as `contract_validation_failed`,
 after every model call of the round has already been paid for and with no
 retry left, because the safety loop finished long before.
 
-Nothing in the pipeline calls this yet — the callback path is unchanged, and
-wiring it in is a behaviour change that belongs to its own slice. What it does
-today is give the shared callback corpus a judge on this side, so the two
-runtimes can be held to the same verdict case by case instead of only Core
-having an opinion.
+The pipeline asks it. `graph.py` runs `outgoing_refusal` on the assembled
+payload as soon as `format_stone_map_output_node` has built it, still inside
+the safety loop: a refusal that names a target replays that part while the
+repair budget lasts, and one that does not — or one that outlives the budget —
+ends the round as `outgoing_<rule>` rather than travelling to the callback to be
+refused there. So a rule added here is a rule the round is held to, not only a
+description of one.
+
+It also gives the shared callback corpus a judge on this side, which is what it
+was written for: the two runtimes are held to the same verdict case by case
+instead of only Core having an opinion.
 
 This is deliberately not a second contract. Every rule below reads the shared
 capability manifest and reuses the predicates the pipeline already validates
