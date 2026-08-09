@@ -1,11 +1,17 @@
 # Shalomut Tracker — operational handoff
 
-Updated: 2026-08-09 (`origin/main` is `90a507c`). Every finding of the
+Updated: 2026-08-09 (`origin/main` is `a788a0c`). Every finding of the
 2026-08-09 deployed end-to-end smoke is fixed, pushed and confirmed on the
 endpoint — the seven items and their evidence are in the deployed-state section,
-and each has its own branch task file in `docs/agent-tasks/active/`. Two of the
-seven changed data on the deployed database and the owner approved that first;
-what changed is recorded below.
+and each task file is now in `docs/agent-tasks/archive/`. Two of the seven
+changed data on the deployed database and the owner approved that first; what
+changed is recorded below.
+
+The throwaway data those walks left behind has since been removed: the E2E
+school and its three rounds are off the deployed database, deleted by name
+rather than by emptying it. `docs/agent-tasks/active/` holds only
+`research--scientific-evidence-layer.md`, which is waiting on owner decisions
+and not on an agent.
 
 The paragraphs that follow describe the 2026-08-08 session and are kept as they
 were written (`origin/main` was `7434ed5` then). The session's

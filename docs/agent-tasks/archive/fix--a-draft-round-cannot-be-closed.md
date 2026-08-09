@@ -6,7 +6,7 @@
 - Base branch: `fix/draft-round-is-not-a-previous-round`
 - Base commit: `d4255c7`
 - Current HEAD: see `git log -1`
-- Status: complete, awaiting push
+- Status: landed on `origin/main` as `805d7dd`, archived 2026-08-09
 - Last updated: 2026-08-09
 - Last agent/tool: Claude Code (Opus 5)
 

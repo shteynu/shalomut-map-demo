@@ -6,7 +6,7 @@
 - Base branch: `main`
 - Base commit: `16df031`
 - Current HEAD: see `git log -1`
-- Status: complete, awaiting push
+- Status: landed on `origin/main` as `d4255c7`, archived 2026-08-09
 - Last updated: 2026-08-09
 - Last agent/tool: Claude Code (Opus 5)
 

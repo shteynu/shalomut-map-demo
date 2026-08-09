@@ -6,7 +6,7 @@
 - Base branch: `fix/a-draft-round-cannot-be-closed`
 - Base commit: `805d7dd`
 - Current HEAD: see `git log -1`
-- Status: complete, awaiting push
+- Status: landed on `origin/main` as `d6fc66f`, archived 2026-08-09
 - Last updated: 2026-08-09
 - Last agent/tool: Claude Code (Opus 5)
 

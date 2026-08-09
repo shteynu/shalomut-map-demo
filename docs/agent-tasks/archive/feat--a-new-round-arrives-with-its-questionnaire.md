@@ -6,7 +6,7 @@
 - Base branch: `fix/a-wrong-school-link-can-be-opened`
 - Base commit: `c650fe3`
 - Current HEAD: see `git log -1`
-- Status: complete, awaiting push
+- Status: landed on `origin/main` as `3b19adb`, archived 2026-08-09
 - Last updated: 2026-08-09
 - Last agent/tool: Claude Code (Opus 5)
 

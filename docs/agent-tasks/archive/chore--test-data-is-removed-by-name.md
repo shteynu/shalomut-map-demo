@@ -6,7 +6,7 @@
 - Base branch: `docs/deployed-verification-2026-08-09`
 - Base commit: `0bc3e86`
 - Current HEAD: see `git log -1`
-- Status: complete — the tool is proven and the E2E school is off the endpoint
+- Status: landed on `origin/main` as `a788a0c`, archived 2026-08-09
 - Last updated: 2026-08-09
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -62,10 +62,11 @@ the unlocked analytics and the round-over-round deltas — deleting it leaves
   versions, AI runs, responses and answers with it. Rounds are deleted before
   schools only so that a round belonging to a school on the same command line is
   not reported as having vanished on its own.
-- **The scope is left to the owner.** All three deployed schools carry
-  test-looking names, so "clean the test data" has two honest readings and the
-  deletion is irreversible. The unambiguous half is handed over as one command;
-  the round in `טסט` as a separate one, with what it costs.
+- **The scope was the owner's to set.** All three deployed schools carry
+  test-looking names, so "clean the test data" had two honest readings and the
+  deletion is irreversible. The unambiguous half was handed over as one command
+  and the round in `טסט` as a separate one, with what it costs; the owner chose
+  the E2E school only.
 
 ## Non-goals
 
@@ -111,6 +112,10 @@ the unlocked analytics and the round-over-round deltas — deleting it leaves
 - No environment default pointed at the deleted school:
   `MANAGER_ORGANIZATION_ID` is `34d05e66` in `.env`, `.env.deployed.local` and
   `.env.staging.local`.
+- **After the push, the endpoint was walked again.** Both surviving schools
+  load, and `טסט`'s map still renders its comparison: nine delta chips, each on
+  `--surface` (`rgb(255, 250, 240)`) with an 8px radius, two of them `±0` in
+  `--muted`. Deleting a school took nothing else with it.
 
 ### Not run, and why
 
@@ -135,9 +140,8 @@ afterwards. Not fixed in this task; recorded so it is not rediscovered.
 
 - The script trusts the ids it is given. It names each target before deleting,
   which is the whole defence — the dry run is meant to be read, not skipped.
-- The enumeration above is a reading from 2026-08-09. If rounds are created
-  between now and the deletion, the dry-run output is the authority, not this
-  table.
+- The enumeration above is the reading that preceded the deletion. It is
+  history now; a later run's dry-run output is the authority, not this table.
 
 ## Approval gates
 
@@ -148,4 +152,7 @@ round-over-round deltas, and it sits in one of the manager's own schools.
 
 ## Next concrete step
 
-Push this branch: `git push origin chore/test-data-is-removed-by-name:main`.
+None. The branch is on `origin/main` and the deletion is done. If the
+scope-required dead end recorded above is ever taken up, it is its own task:
+`loadSchoolChoices` already exists and would need the `scope-required` state
+added beside `round-not-found`.

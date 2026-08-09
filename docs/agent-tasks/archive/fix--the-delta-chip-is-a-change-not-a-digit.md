@@ -6,7 +6,7 @@
 - Base branch: `feat/a-new-round-arrives-with-its-questionnaire`
 - Base commit: `3b19adb`
 - Current HEAD: see `git log -1`
-- Status: complete, awaiting push
+- Status: landed on `origin/main` as `90a507c`, archived 2026-08-09
 - Last updated: 2026-08-09
 - Last agent/tool: Claude Code (Opus 5)
 

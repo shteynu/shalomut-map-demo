@@ -6,7 +6,7 @@
 - Base branch: `fix/builder-switcher-reads-the-save`
 - Base commit: `d6fc66f`
 - Current HEAD: see `git log -1`
-- Status: complete, awaiting push
+- Status: landed on `origin/main` as `c650fe3`, archived 2026-08-09
 - Last updated: 2026-08-09
 - Last agent/tool: Claude Code (Opus 5)
 
