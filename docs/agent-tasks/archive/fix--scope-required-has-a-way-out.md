@@ -112,8 +112,7 @@ onboarding button, so the manager arrived at a screen with nothing to press.
 
 ## Remaining
 
-- Nothing. The one thing never checked on the deployed endpoint is the state
-  itself; Vercel builds every push to `main`, so the code is expected there.
+- Nothing. The state was walked on the deployed endpoint after the push.
 
 ## Changed files
 
@@ -160,7 +159,26 @@ Pre-existing unrelated modifications left untouched and unstaged:
   - `/goals/?school=<invented>` — the one caller that passed no list before this
     change — also offers the switcher, and choosing the second school reopened
     `מעקב יעדים` inside `בית ספר שני לבדיקת מעבר`.
-- The walk's fixture school (`1e9f8ab1`, `בית ספר שני לבדיקת מעבר`, no rounds)
+- **Walked on the deployed endpoint too, 2026-08-09**, in the owner's signed-in
+  Chrome, after the push. `https://shalomut-map-demo.vercel.app/` with
+  `?school=00000000-0000-0000-0000-000000000000&round=00000000-0000-4000-8000-000000000000`
+  renders `בחירת בית ספר` with both deployed schools —
+  `טסט — טסט` and `טסט מקס — כפר סבא` — the disabled `בחרו בית ספר` row
+  selected, `value` empty, the form carrying no `action` and holding the round
+  as a hidden field, and no other link or button in the panel. Choosing `טסט`
+  reopened `/` inside that school; the invented round is not there, so it landed
+  on `הסבב המבוקש לא נמצא` with its own switcher already showing `טסט — טסט`
+  and `חזרה למפת הסבב הפעיל`. A bare `/` afterwards rendered
+  `טסט, סבב בדיקה E2E 2`, so the cookie was replaced and the owner's session was
+  left where they had it. Nothing was written to the deployed database: the only
+  state this walk changes is the browser's own cookie.
+- Method note for the next deployed walk: reading the DOM with the Chrome
+  javascript tool returned a **stale document** for these tabs — one `<main>`
+  still holding the loading fallback while the page had long since rendered —
+  and that briefly read as a deployed hang on every manager screen. It was a
+  measurement artifact, not product state; the screenshots disagreed and the
+  screenshots were right. Trust a screenshot over a scripted DOM read here.
+- The local walk's fixture school (`1e9f8ab1`, `בית ספר שני לבדיקת מעבר`, no rounds)
   was created for it and deleted afterwards with `db:clear:targeted`. The local
   database is back to one school, 4 rounds, 24 responses and 576 answers, and
   the browser's cookie was returned to that school before the deletion.
@@ -175,7 +193,6 @@ Pre-existing unrelated modifications left untouched and unstaged:
   repository, contract or Python file is in this diff.
 - Playwright: not run. The state needs a second school, which the smoke does not
   set up.
-- The deployed endpoint: not walked, because the fix is not pushed there yet.
 - The native `select` menu: not driven. macOS opens an OS-level popup that
   synthetic key events do not reach, so the choice was made by dispatching the
   `change` event the component listens for. Everything from `onChange` onwards —

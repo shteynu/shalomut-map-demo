@@ -3,9 +3,10 @@
 Updated: 2026-08-09 (`origin/main` is `1b49e86`). The last thing to land is the
 scope dead end a manager could reach with no action on the screen at all: a
 request naming no school the system has now offers the schools it could not
-choose between. It was walked in the owner's signed-in Chrome on the local
-server before the push, and the deployed endpoint has not been walked for it.
-Its evidence is in `docs/agent-tasks/archive/fix--scope-required-has-a-way-out.md`.
+choose between. It was walked in the owner's signed-in Chrome twice — on the
+local server before the push and on the deployed endpoint after it — and both
+walks are recorded in
+`docs/agent-tasks/archive/fix--scope-required-has-a-way-out.md`.
 
 Every finding of the
 2026-08-09 deployed end-to-end smoke is fixed, pushed and confirmed on the
@@ -250,11 +251,14 @@ older snapshots remain available in Git.
   (`origin/main` is `1b49e86`): the state now offers the schools it could not
   choose between, and choosing one reopens the screen the manager was on and
   replaces the stale cookie. Walked in the owner's signed-in Chrome on the local
-  server, 2026-08-09 — the chain from this state through `round-not-found` and
-  back to a school's own home screen was exercised end to end; the evidence is
-  in the branch task file. A deleted school turns out not to be needed to reach
-  it: the middleware writes `?school=` to the cookie without checking the school
-  exists, so any unknown id produces the same state.
+  server and then **on the deployed endpoint after the push**, 2026-08-09 — the
+  chain from this state through `round-not-found` and back to a school's own home
+  screen was exercised end to end in both places; the evidence is in the archived
+  task file. A deleted school turns out not to be needed to reach it: the
+  middleware writes `?school=` to the cookie without checking the school exists,
+  so any unknown id produces the same state. The deployed walk wrote nothing to
+  the database — the only state it changes is the browser's own cookie, which was
+  returned to `טסט` at the end.
 - Supported product environments remain local and deployed only.
 - Core endpoint: `https://shalomut-map-demo.vercel.app/`. Vercel names the
   target Production; for the product it is the design-stage operational staging
