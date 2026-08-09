@@ -239,7 +239,11 @@ older snapshots remain available in Git.
   `shalomut_school` cookie names a deleted school lands on
   `נדרש שיוך לבית ספר` with no school switcher — the same shape finding #6
   fixed for `round-not-found`. Only reachable when a school is deleted under an
-  open session.
+  open session. **Fixed on `fix/scope-required-has-a-way-out`**, which is
+  waiting to be pushed: the state now offers the schools it could not choose
+  between, and choosing one reopens the screen the manager was on. Verified by
+  rendering tests and `verify:core`; not yet walked in a browser, which needs
+  the owner's sign-in.
 - Supported product environments remain local and deployed only.
 - Core endpoint: `https://shalomut-map-demo.vercel.app/`. Vercel names the
   target Production; for the product it is the design-stage operational staging
@@ -270,14 +274,15 @@ older snapshots remain available in Git.
   is 371x386 fully inside the viewport and not scrolling, and `.stat-stone >
   strong` is still 46.4px — the stone's own number was not quieted along with
   the tooltip.
-- **The seven incidental AI-service findings of 2026-08-09 are all fixed and on
-  `main` (`5188bfa`), and the deployed Python service does not have them yet.**
-  Six of the seven are inside `ai-analytics-service`, so they take effect only
-  after the Render container is rebuilt from `main`; Vercel picks up the Core
-  side by itself. Nothing here is urgent — the fixes are correctness and
-  observability, not an outage — but a deployed round analysed before that
-  rebuild still shows the old behaviour, including the flat
-  `provider_unavailable`.
+- **The seven incidental AI-service findings of 2026-08-09 are all fixed, on
+  `main` (`5188bfa`) and now deployed.** Six of the seven are inside
+  `ai-analytics-service` and needed the Render container rebuilt from `main`.
+  That has happened: anonymous `GET /health` on 2026-08-09 answered
+  `commit: 2e80b6a`, which is `origin/main` itself, `status: online`,
+  `env: production`, `supportedContractVersions` `1.0`–`6.0`,
+  `jobPollingEnabled: true`. Render rebuilds on every push to `main` by itself,
+  so this needed no hand step. Deployed code, not deployed behaviour: no round
+  has been analysed there since.
 
 - AI service: Render container from the root `Dockerfile`, with durable polling
   enabled. The service needs an always-available process or explicit wake
