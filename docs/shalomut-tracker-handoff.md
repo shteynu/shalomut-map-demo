@@ -1,6 +1,14 @@
 # Shalomut Tracker — operational handoff
 
-Updated: 2026-08-08, session close (`origin/main` is `7434ed5`). The session's
+Updated: 2026-08-09 (`origin/main` is `90a507c`). Every finding of the
+2026-08-09 deployed end-to-end smoke is fixed, pushed and confirmed on the
+endpoint — the seven items and their evidence are in the deployed-state section,
+and each has its own branch task file in `docs/agent-tasks/active/`. Two of the
+seven changed data on the deployed database and the owner approved that first;
+what changed is recorded below.
+
+The paragraphs that follow describe the 2026-08-08 session and are kept as they
+were written (`origin/main` was `7434ed5` then). The session's
 product changes are the sign-in transition fix `8d4af8d`, confirmed on the
 deployed endpoint by the owner; the frontend UI/UX audit — seven branches
 pushed as one stack, of which the only thing a manager sees is the new skip
@@ -182,6 +190,41 @@ older snapshots remain available in Git.
 
 ## Deployed state
 
+- **The 2026-08-09 smoke's seven findings are deployed and confirmed on the
+  endpoint, 2026-08-09**, in the owner's signed-in Chrome. `origin/main` is
+  `90a507c`; the served stylesheet carries the new `.round-delta` pill and
+  `.manager-onboarding-schools`, so the deployment is that stack rather than a
+  near miss. What was checked, in the product rather than in the build:
+  - a draft round (`סבב שני E2E`) shows no `זהו סבב קודם` banner, keeps
+    `איפוס נתונים` and `רענון ניתוח`, and its close button is disabled with the
+    title `סגירה ידנית אפשרית רק לסבב שאוסף תשובות`;
+  - `/setup/?round=new` renders six navigation links and a brand link, none
+    carrying `round=new`;
+  - a link to another school's round shows the dead end *with* a school
+    switcher, and choosing that school lands on
+    `/round/?school=…&round=…` — the round the link was for, in its own school;
+  - on `טסט`'s map every delta chip sits on `--surface` at 5.17–6.87:1,
+    including two real `±0` chips at 5.41:1 — the `0`-beside-`52%` case the
+    finding named;
+  - a round opened from the setup screen arrives with 24 questions as a draft,
+    while `סבב שני E2E`, created before the change, still has 0 — the two sit in
+    the same school as a before and after;
+  - the round that was collecting (`סבב ראשון E2E`) was still `פעיל` after that
+    round was opened;
+  - saving the questionnaire flipped the builder's switcher from
+    `סבב ראשון E2E — פעיל` / `סבב שלישי E2E — טיוטה` to
+    `סבב שלישי E2E — פעיל` / `סבב ראשון E2E — סגור` with no reload.
+- **What that verification changed on the deployed database**, with the owner's
+  approval, all inside `בית ספר בדיקת E2E` (`ff5625a8`): a round
+  `סבב שלישי E2E` (`b19be646`) was created and is now the school's active round,
+  and `סבב ראשון E2E` (`f1cc7f0a`) was closed by that activation, as one active
+  round per school requires. No other school was written to; switching schools
+  during the walk only moved the browser's own cookie, which was returned to
+  `ff5625a8`.
+- Still undecided: whether the E2E test school, its rounds and the 30 synthetic
+  responses stay on the deployed database or are cleared. `סבב שני E2E`
+  (`2d0b109e`) is a questionnaire-less draft from before the seeding change and
+  is the one row that no longer represents anything the product can now produce.
 - Supported product environments remain local and deployed only.
 - Core endpoint: `https://shalomut-map-demo.vercel.app/`. Vercel names the
   target Production; for the product it is the design-stage operational staging
