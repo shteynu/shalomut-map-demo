@@ -81,7 +81,8 @@ services:
       #
       # Sixty since 2026-08-05, and the number is measured rather than read off
       # a tier table. The owner attached a billed Gemini key that day, and seven
-      # eval-corpus runs went through this same fast model at sixty a minute —
+      # eval-corpus runs went through the fast model at sixty a minute —
+      # `gemini-3.5-flash-lite` then, `gemini-3.5-flash` since 2026-08-09 —
       # roughly 140 provider requests each — without one quota failure. The
       # fourteen this replaces was the free tier's fifteen minus the boundary
       # send, and it is what made a round take four seconds per request for no
@@ -95,14 +96,23 @@ services:
       # move this number back.
       - key: LLM_MAX_REQUESTS_PER_MINUTE
         value: "60"
-      # Free tier for this model, read in AI Studio 2026-07-29: 15 RPM and
-      # 1000 RPD, against 5 and 20 for gemini-3.5-flash. Limits are counted per
-      # model, so this is a different budget rather than a bigger share of the
-      # same one. That is the shape the pace above still follows on a billed
-      # key, where both numbers are far higher. Its Hebrew was checked on this
-      # project's own 5.0 prompts the same day.
+      # `gemini-3.5-flash`, and the reason is its Hebrew rather than its size.
+      # Until 2026-08-09 this was `gemini-3.5-flash-lite`, chosen for its free
+      # tier — 15 RPM and 1000 RPD against 5 and 20 for flash, counted per model
+      # so a different budget rather than a bigger share of one. Then a full
+      # round was run through the real pipeline on both, same prompts, same
+      # data: lite spliced Arabic letters into Hebrew words — `מתורجם`,
+      # `בمשימות`, `לبחון` — in fourteen of its answers, the Hebrew-only gate
+      # refused every one of them, and a dimension ended on the deterministic
+      # sentence. `gemini-3.5-flash` produced zero refusals on the same round
+      # and wrote all eight stones on the first attempt.
+      #
+      # This is now the same model as `LLM_MODEL_HEAVY`, so the two paces below
+      # spend one per-model budget rather than two. On the billed key that is
+      # not the binding limit; on a free key it would be, and the honest fix
+      # there is a smaller pace, not a return to a model that cannot spell.
       - key: LLM_MODEL_FAST
-        value: "gemini-3.5-flash-lite"
+        value: "gemini-3.5-flash"
       # Left on the dashboard, and left on gemini-3.5-flash. It is reached only
       # when the safety validator rejects part of a round, and a replay now
       # sends it only the parts that were rejected — so it needs its own pace

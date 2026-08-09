@@ -226,6 +226,56 @@ def parse_v6_structured_summary(
     return tuple(paragraphs)  # type: ignore[return-value]
 
 
+def v6_structured_summary_refusal(
+    text: Optional[str],
+    *,
+    status: str,
+) -> "AdaptationRefusal":
+    """Which gate turns a V6 structured summary away, walking what `parse` walks.
+
+    Same division of labour as `v6_intervention_batch_refusal`: the parse above
+    stays the verdict, this only names the gate so the next attempt can be told
+    which one it hit. Without it the retry re-sent an identical prompt, and
+    `gemini-3.5-flash-lite` — measured on 2026-08-09 — answered with the same
+    Arabic letters spliced into Hebrew words it had just been refused for.
+    """
+    if not text:
+        return AdaptationRefusal("entry_shape", "empty")
+    try:
+        candidate = json.loads(text)
+    except (TypeError, json.JSONDecodeError):
+        return AdaptationRefusal("entry_shape", "not_json")
+    if not isinstance(candidate, list):
+        return AdaptationRefusal("entry_shape", "not_a_list")
+    if len(candidate) != 3:
+        return AdaptationRefusal("entry_shape", f"entries={len(candidate)}/3")
+
+    paragraphs = []
+    for index, value in enumerate(candidate, start=1):
+        if not isinstance(value, str):
+            return AdaptationRefusal("entry_shape", f"block={index} field_type")
+        paragraph = sanitize_model_text(value)
+        if not is_hebrew_only_copy(paragraph):
+            foreign = _foreign_code_points([paragraph])
+            return AdaptationRefusal(
+                "not_hebrew",
+                f"block={index} chars={foreign or 'none'}",
+            )
+        if _VISIBLE_NUMBER_PATTERN.search(paragraph):
+            return AdaptationRefusal("visible_number", f"block={index}")
+        if not paragraph.rstrip(_TRAILING_CLOSERS).rstrip().endswith(
+            (".", "!", "?", "؟"),
+        ):
+            return AdaptationRefusal("entry_shape", f"block={index} unterminated")
+        if not is_status_consistent(paragraph, status):
+            return AdaptationRefusal("status_inconsistent", f"block={index}")
+        paragraphs.append(paragraph)
+
+    if len(set(paragraphs)) != 3:
+        return AdaptationRefusal("entry_shape", "repeated_paragraph")
+    return AdaptationRefusal()
+
+
 def parse_v6_metric_insights(
     text: Optional[str],
     *,
@@ -314,6 +364,65 @@ def parse_v6_intervention_batch(
             return None
         parsed.append((normalized_summary, normalized_steps))
     return parsed
+
+
+def v6_metric_insights_refusal(
+    text: Optional[str],
+    *,
+    expected_question_ids: list[str],
+    status: str,
+) -> "AdaptationRefusal":
+    """Which gate turns a V6 metric batch away, walking what `parse` walks.
+
+    `parse_v6_metric_insights` folds four different failures into one `None`,
+    and a retry that is told nothing repeats whichever one it hit.
+    """
+    if not text:
+        return AdaptationRefusal("entry_shape", "empty")
+    try:
+        candidate = json.loads(text)
+    except (TypeError, json.JSONDecodeError):
+        return AdaptationRefusal("entry_shape", "not_json")
+    if not isinstance(candidate, list):
+        return AdaptationRefusal("entry_shape", "not_a_list")
+    if len(candidate) != len(expected_question_ids):
+        return AdaptationRefusal(
+            "entry_shape",
+            f"entries={len(candidate)}/{len(expected_question_ids)}",
+        )
+
+    seen: set[str] = set()
+    for index, item in enumerate(candidate, start=1):
+        if not isinstance(item, dict):
+            return AdaptationRefusal("entry_shape", f"block={index} not_object")
+        question_id = item.get("questionId")
+        insight = item.get("insightText")
+        if not isinstance(question_id, str) or not isinstance(insight, str):
+            return AdaptationRefusal("entry_shape", f"block={index} field_type")
+        if question_id in seen:
+            return AdaptationRefusal("identity", f"block={index} duplicate")
+        seen.add(question_id)
+
+        normalized = sanitize_model_text(insight)
+        if not is_hebrew_only_copy(normalized):
+            foreign = _foreign_code_points([normalized])
+            return AdaptationRefusal(
+                "not_hebrew",
+                f"block={index} chars={foreign or 'none'}",
+            )
+        if _VISIBLE_NUMBER_PATTERN.search(normalized):
+            return AdaptationRefusal("visible_number", f"block={index}")
+        if not is_v6_qualitative_narrative(normalized):
+            return AdaptationRefusal(
+                "narrative_length",
+                f"block={index} chars={len(normalized)}",
+            )
+        if not is_status_consistent(normalized, status):
+            return AdaptationRefusal("status_inconsistent", f"block={index}")
+
+    if seen != set(expected_question_ids):
+        return AdaptationRefusal("identity", "question_ids")
+    return AdaptationRefusal()
 
 
 def v6_intervention_batch_refusal(

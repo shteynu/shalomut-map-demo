@@ -978,3 +978,91 @@ def test_a_refused_batch_names_its_gate_and_its_dimension(monkeypatch, caplog):
     assert "dimension=balance" in line
     # The answer was in the process and did not follow the refusal into the log.
     assert "העומס" not in line
+
+
+# The V6 summary and metric nodes refused without saying why until 2026-08-09,
+# so their retry re-sent an identical prompt. Measured that day on a real round:
+# `gemini-3.5-flash-lite` splices Arabic letters into Hebrew words, the
+# Hebrew-only gate refused fourteen answers, and one dimension ended on the
+# deterministic sentence. With the critique below the same model recovered every
+# dimension. These pin the two walkers to the parsers they mirror.
+
+GOOD_V6_NARRATIVE = (
+    "בשאלה זו מסתמנת תמונה מצרפית מעורבת, שבה חלק מאנשי הצוות מתארים "
+    "התנהלות שגרתית ונוחה ואחרים מדווחים על קושי מתמשך הדורש תשומת לב "
+    "ארגונית. הפער בין הקבוצות מצביע על חוויה שאינה אחידה בתוך הצוות, "
+    "ולכן כדאי לברר יחד באילו מצבים הקושי מופיע ומה מסייע להתמודד איתו "
+    "בשגרה השבועית, בלי לייחס סיבה לאדם מסוים."
+)
+
+
+def _metric_batch(insight: str, question_id: str = "q1") -> str:
+    return json.dumps(
+        [{"questionId": question_id, "insightText": insight}],
+        ensure_ascii=False,
+    )
+
+
+def _summary_batch(paragraph: str) -> str:
+    return json.dumps(
+        [paragraph, paragraph.replace("תמונה", "תמונת מצב"), paragraph + " כן."],
+        ensure_ascii=False,
+    )
+
+
+@pytest.mark.parametrize(
+    "answer,expected_label",
+    [
+        (_metric_batch(GOOD_V6_NARRATIVE), ""),
+        # An Arabic jeem inside a Hebrew word — what the lite model actually
+        # produced, and what a manager would have read as a broken word.
+        (
+            _metric_batch(GOOD_V6_NARRATIVE.replace("מצרפית", "מצرפית")),
+            "not_hebrew",
+        ),
+        (_metric_batch("קצר מדי."), "narrative_length"),
+        (_metric_batch(GOOD_V6_NARRATIVE.replace("חלק", "12 אחוז")), "visible_number"),
+        ("[]", "entry_shape"),
+        ("not json at all", "entry_shape"),
+    ],
+)
+def test_the_metric_refusal_names_the_gate_that_closed(answer, expected_label):
+    refusal = hebrew_validation.v6_metric_insights_refusal(
+        answer,
+        expected_question_ids=["q1"],
+        status="yellow",
+    )
+    assert refusal.label == expected_label
+
+    # The walker reports; the parser decides. They must never disagree.
+    parsed = hebrew_validation.parse_v6_metric_insights(
+        answer,
+        expected_question_ids=["q1"],
+        status="yellow",
+    )
+    assert bool(refusal) == (parsed is None)
+    if refusal:
+        assert hebrew_prompts.batch_retry_critique(refusal.label)
+
+
+@pytest.mark.parametrize(
+    "answer,expected_label",
+    [
+        (_summary_batch(GOOD_V6_NARRATIVE), ""),
+        (_summary_batch(GOOD_V6_NARRATIVE.replace("מצרפית", "מצرפית")), "not_hebrew"),
+        (
+            _summary_batch(GOOD_V6_NARRATIVE.replace("חלק", "12 אחוז")),
+            "visible_number",
+        ),
+        (json.dumps([GOOD_V6_NARRATIVE], ensure_ascii=False), "entry_shape"),
+        ("not json at all", "entry_shape"),
+    ],
+)
+def test_the_summary_refusal_names_the_gate_that_closed(answer, expected_label):
+    refusal = hebrew_validation.v6_structured_summary_refusal(answer, status="yellow")
+    assert refusal.label == expected_label
+
+    parsed = hebrew_validation.parse_v6_structured_summary(answer, status="yellow")
+    assert bool(refusal) == (parsed is None)
+    if refusal:
+        assert hebrew_prompts.batch_retry_critique(refusal.label)

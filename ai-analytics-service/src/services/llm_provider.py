@@ -425,6 +425,16 @@ class LLMProviderService:
                 )
                 is not None
             ),
+            critique_for=lambda candidate, finish_reason: (
+                hebrew_prompts.batch_retry_critique(
+                    hebrew_validation.v6_structured_summary_refusal(
+                        candidate,
+                        status=status,
+                    ).label,
+                )
+                if finish_reason == "stop"
+                else None
+            ),
         )
         parsed = hebrew_validation.parse_v6_structured_summary(
             text,
@@ -487,6 +497,17 @@ class LLMProviderService:
                     status=status,
                 )
                 is not None
+            ),
+            critique_for=lambda candidate, finish_reason: (
+                hebrew_prompts.batch_retry_critique(
+                    hebrew_validation.v6_metric_insights_refusal(
+                        candidate,
+                        expected_question_ids=expected_ids,
+                        status=status,
+                    ).label,
+                )
+                if finish_reason == "stop"
+                else None
             ),
         )
         parsed = hebrew_validation.parse_v6_metric_insights(
