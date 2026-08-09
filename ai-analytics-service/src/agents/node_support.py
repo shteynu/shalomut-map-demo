@@ -87,14 +87,50 @@ def _effective_contract_version(round_data: Dict[str, Any]) -> str:
 
 def _background_context_for_prompt(
     round_data: Dict[str, Any],
-    state: AnalyticsState,
 ) -> Optional[Dict[str, Any]]:
-    """Return school context only for contracts that declare the capability."""
+    """Return the round's school background context, and nothing else.
+
+    This used to read `round_data["backgroundContext"] or state["org_context"]`.
+    The second is the organization's identity, not the school's context, and
+    the runner never leaves it empty — it always puts an `organizationId` in
+    it. So from `4.0`, where the capability gate above first lets anything
+    through, the `or` never fell through, and two things followed from that.
+
+    A round whose school had filled in nothing still recorded
+    `backgroundContextIncluded`, which the service README defines as context
+    that *reaches the prompt*. Every deployed round on `4.0` and later reported
+    `true`, so the flag could not tell a school that answered from one that did
+    not.
+
+    And on `6.0` the bare UUID reached the model. That is the one version where
+    it could: `4.0` and `5.0` render the seven fields they know and silently
+    ignore the rest, while the three `6.0` prompts JSON-dump this object whole.
+    So the prompt half of the defect is `6.0`-only and the provenance half is
+    not, which is why the test for it renders a prompt rather than reading a
+    flag.
+
+    Reading only `backgroundContext` fixes both at the root. It is the field
+    the contract declares — `4.0` and `5.0` list its seven permitted keys —
+    while `organizationContext`, the source `org_context` is built from, has no
+    schema at all and Core's own MCP contract test asserts the payload never
+    carries it. A local mock does send undeclared fields there; they now stop
+    at the boundary instead of reaching a prompt that no manifest describes,
+    which is the behaviour deployed rounds already had.
+
+    Filtering the old fallback rather than removing it was tried and is worse:
+    the only available measure is the seven-key line builder, which `6.0` does
+    not use, so it would have erased fields that reach a `6.0` prompt today and
+    let an org-level context override a round-level one that reported zeros.
+
+    Nothing reads `org_context` after this. It stays in the state because the
+    runner is tested on putting the organization's identity there; whether a
+    record nobody reads should survive is a separate question from this one.
+    """
     contract_version = _effective_contract_version(round_data)
     if not get_capabilities(contract_version).supportsBackgroundContext:
         return None
 
-    return round_data.get("backgroundContext") or state.get("org_context")
+    return round_data.get("backgroundContext") or None
 
 
 def _question_aggregates_for_dimension(

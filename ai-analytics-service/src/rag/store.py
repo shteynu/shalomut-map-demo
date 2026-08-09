@@ -29,13 +29,24 @@ _DIFFERENTIATED_TOPICS = frozenset(
 
 
 class LocalInterventionVectorStore:
-    def __init__(
-        self,
-        kb_path: str = "data/interventions_kb.json",
-        chroma_dir: str = "./chroma_db",
-    ):
+    """The intervention catalogue, filtered and ranked in memory.
+
+    There is no vector and no index behind the name. The file is a list of
+    dictionaries, the pool is a linear filter over it, and the score below is
+    three ordinary terms: a topic match through the closed Hebrew lexicon in
+    `topics.py`, a polarization term computed from the round's answer
+    distribution, and a flat bonus for a catalogue tag that matches the
+    school's background — that last one being the largest weight in the file.
+
+    The name is what the class was going to be, and it kept a `chroma_dir` it
+    never read to prove it, which is how a reader learns to distrust the names
+    around it. The setting is gone. The name stays because renaming it reaches
+    four test modules and the `rag` package around it, and would say nothing
+    this docstring does not.
+    """
+
+    def __init__(self, kb_path: str = "data/interventions_kb.json"):
         self.kb_path = kb_path
-        self.chroma_dir = chroma_dir
         self.raw_data: List[Dict[str, Any]] = []
         self._load_raw_kb()
 

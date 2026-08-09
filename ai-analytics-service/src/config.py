@@ -174,8 +174,9 @@ class Settings:
         # provider's day, and lite's 1000 requests a day ended that. Green now
         # gets the same paragraph the other seven get, and the deterministic
         # sentence only where the answer never came — see
-        # `generate_interpretation_result`. Set it true to buy back up to five
-        # requests a round at the cost of a formula in place of a strength.
+        # `generate_psychological_interpretation_result`. Set it true to buy
+        # back up to five requests a round at the cost of a formula in place of
+        # a strength.
         self.only_llm_for_problematic: bool = os.getenv("ONLY_LLM_FOR_PROBLEMATIC", "false").lower() == "true"
         # Transient provider failures are retried inside the worker thread.
         # The defaults bound how long one dimension may hold a provider slot;
@@ -266,9 +267,6 @@ class Settings:
             float(os.getenv("LLM_MAX_REQUESTS_PER_MINUTE_HEAVY", "5")),
         )
 
-        # Reserved persistence setting for a future vector-backed catalog.
-        self.chroma_persist_dir: str = os.getenv("CHROMA_PERSIST_DIR", "./chroma_db")
-        
         # Privacy Constraint.
         # Ten respondents is the product requirement, in Core and here alike,
         # and the threshold always arrives on the payload as

@@ -77,8 +77,12 @@ model RoundGoal {
 
   // One recommendation becomes one goal. The service checks before inserting,
   // which a double-tapped button passes twice; only the database can refuse
-  // atomically. The title is the recommendation's identity — the payload
-  // carries no id of its own.
+  // atomically. The title is the recommendation's identity here, and not
+  // because the payload lacks one: it carries an `id`, which `ai-contract.ts`
+  // requires and this database stores inside the analysis result. The screen
+  // is where it is lost — `toDashboardRecommendations` reduces every
+  // recommendation to a title and a body, so the title is the only handle the
+  // goal request has by the time a manager presses the button.
   @@unique([roundId, dimensionId, title])
   @@index([roundId, createdAt])
   @@map("round_goals")

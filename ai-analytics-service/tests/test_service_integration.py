@@ -512,7 +512,7 @@ class TestShalomutAIService(unittest.TestCase):
                 "backgroundContext": background_context,
             }
             self.assertIsNone(
-                _background_context_for_prompt(round_data, state),
+                _background_context_for_prompt(round_data),
                 f"contract {version} must not receive the school context",
             )
 
@@ -522,7 +522,7 @@ class TestShalomutAIService(unittest.TestCase):
                 "backgroundContext": background_context,
             }
             self.assertEqual(
-                _background_context_for_prompt(round_data, state),
+                _background_context_for_prompt(round_data),
                 background_context,
                 f"contract {version} must receive the school context",
             )

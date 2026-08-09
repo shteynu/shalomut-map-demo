@@ -35,7 +35,6 @@ __pycache__/
 *.pyc
 *.egg-info/
 .venv/
-chroma_db/
 
 # playwright: the browser smoke's local output, never its source
 /test-results/
