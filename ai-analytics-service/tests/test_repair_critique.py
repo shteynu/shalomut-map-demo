@@ -14,6 +14,7 @@ from src.agents.graph import analytics_graph
 from src.agents.node_support import _repair_critique
 from src.agents.safety_report import critique, violation
 from src.services import hebrew_prompts
+from src.services.llm_provider import llm_provider_service
 
 from tests.test_contract_v5 import build_state, build_v5_round_data
 from tests.test_replay_targets import _install
@@ -21,6 +22,47 @@ from tests.test_replay_targets import _install
 
 def _critiques_for(pairs, dimension_id):
     return [value for dim_id, value in pairs if dim_id == dimension_id]
+
+
+def _adaptation_prompt(monkeypatch, *, contract_version, repair_critique):
+    """The adaptation prompt this contract version would really have sent.
+
+    The node's keyword argument is not the thing under test — every version
+    receives it. What differs is whether the branch that builds the prompt
+    still carries it, so the assertion has to read the rendered prompt.
+    """
+    captured = {}
+
+    def capture(*, build_prompt, **_kwargs):
+        # The first in-call attempt: no transport critique yet, so whatever
+        # reaches the prompt here came from the replay.
+        captured["prompt"] = build_prompt()
+        return (None, 1, "captured")
+
+    monkeypatch.setattr(
+        llm_provider_service,
+        "_complete_with_retries",
+        capture,
+    )
+    llm_provider_service.adapt_interventions_result(
+        interventions=[
+            {
+                "id": "kb-bala-y-01",
+                "dimensionId": "balance",
+                "status": "yellow",
+                "title": "חלונות מוגנים לעבודה ממוקדת",
+                "summary": "מהלך מעשי לצמצום עומס בשבוע העבודה.",
+                "actionable_steps": ["לקבוע חלון מוגן", "לבדוק את ההשפעה"],
+            },
+        ],
+        dim_hebrew="איזון",
+        score=60.0,
+        status="yellow",
+        question_aggregates=[],
+        contract_version=contract_version,
+        repair_critique=repair_critique,
+    )
+    return captured["prompt"]
 
 
 def test_a_first_attempt_carries_no_critique():
@@ -185,6 +227,46 @@ async def test_a_replayed_adaptation_is_told_what_was_wrong(monkeypatch):
     assert all(
         value is None for _, value in calls.interpretation_critiques
     )
+
+
+@pytest.mark.parametrize("contract_version", ["5.0", "6.0"])
+def test_a_replayed_adaptation_carries_the_critique_into_its_prompt(
+    monkeypatch,
+    contract_version,
+):
+    """Every version that adapts must put the replay's critique in the prompt.
+
+    `test_a_replayed_adaptation_is_told_what_was_wrong` stops one step short of
+    this: it stubs the generator, so it sees the keyword argument the node
+    passes and not what the prompt builder does with it. `6.0` took that
+    argument and dropped it — the branch built its prompt from the transport's
+    own retry critique alone — so a dimension the validator refused was asked
+    again on the heavy model with no idea what had been wrong. Both branches
+    are parameterised here because one of them silently stopped obeying a rule
+    the other kept.
+    """
+    correction = critique(
+        [violation("intervention_invalid", "recommendation", "balance")],
+        "recommendation",
+        "balance",
+    )
+    assert correction is not None
+
+    plain = _adaptation_prompt(
+        monkeypatch,
+        contract_version=contract_version,
+        repair_critique=None,
+    )
+    repaired = _adaptation_prompt(
+        monkeypatch,
+        contract_version=contract_version,
+        repair_critique=correction,
+    )
+
+    assert correction in repaired
+    # Same placement rule as every other prompt: the correction is appended
+    # after the rules it qualifies, so a first attempt pays nothing for it.
+    assert repaired.startswith(plain)
 
 
 @pytest.mark.asyncio

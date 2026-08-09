@@ -1,4 +1,4 @@
-# Scientific Evidence Layer — research only
+# Scientific Evidence Layer — research, plus one defect fixed
 
 ## Metadata
 
@@ -6,8 +6,9 @@
 - Base branch: `main`
 - Base commit: `14c2269`
 - Current HEAD: `14c2269` (before this task's commit)
-- Status: research delivered plus a recommendation added on owner request;
-  no implementation started, no owner decision taken
+- Status: research delivered, recommendation added on owner request, and one
+  of the six recorded defects fixed on owner request; the evidence layer
+  itself is not started and no owner decision on it is taken
 - Last updated: 2026-08-09
 - Last agent/tool: Claude Code (Opus 5), 14-agent research workflow
 
@@ -20,8 +21,9 @@ that no winning option be picked.
 
 ## User-visible outcome
 
-None. This task changes no product behaviour. It adds one dated research
-document and its index entry.
+None on screen. The code fix changes one runtime behaviour that a manager
+never sees: on 6.0, a recommendation replay now tells the heavy model what the
+safety validator refused, instead of asking for the same answer again.
 
 ## Context
 
@@ -34,11 +36,20 @@ repository.
 
 - `docs/scientific-evidence-layer-research-2026-08-09.md` — the deliverable.
 - `docs/README.md` — one index line under "Historical plans and evidence".
+- `ai-analytics-service/src/services/llm_provider.py` — the lost
+  `repair_critique` on the 6.0 adaptation branch, fixed on owner request.
+- `ai-analytics-service/tests/test_repair_critique.py` — the test that catches
+  it, parameterised over 5.0 and 6.0.
+
+The code fix rides this branch because the session designates one branch and
+forbids pushing to another without permission. It is otherwise an independent
+change and would normally have had its own branch and task file.
 
 ## Non-goals
 
-- Any code change in `ai-analytics-service/` or `src/`.
-- Changing `interventions_kb.json`, the ranking, the contract or any test.
+- Building any part of a Scientific Evidence Layer.
+- Changing `interventions_kb.json`, the ranking or the contract.
+- Fixing the other five defects in section 7 of the document.
 - Taking the owner's decision. The document's "Заключение" recommends against
   building the layer now and names two cheaper alternatives, but the four
   questions in section 6 remain the owner's.
@@ -81,8 +92,12 @@ repository.
 
 - The user wants a decision-ready study, not a decision. Stated explicitly in
   the request ("без преждевременного выбора победителя").
-- Findings recorded in section 7 of the document are reported, not fixed; each
-  would be its own task on its own branch.
+- Section 7 findings are reported, not fixed — except defect 1, which the
+  owner asked for explicitly after reading the study.
+- The fix is behaviour-preserving for a first pass: `_joined_critique` returns
+  `None` when both critiques are absent, and `repair_section(None)` is `""`, so
+  a non-replay prompt is byte-identical to what it was. Pinned by the new
+  test's `repaired.startswith(plain)` assertion.
 
 ## Completed
 
@@ -95,6 +110,12 @@ repository.
 - "Заключение" section added on owner request: recommends not building the
   layer now, and names three cheaper actions instead (render the existing
   `source`; stamp the catalogue revision; fix the section 7 defects).
+- Section 7 defect 1 fixed on owner request: the 6.0 adaptation branch now
+  builds its prompt with `_joined_critique(repair_critique, retry_critique)`,
+  like the other six prompt sites. Proven by a test that reads the rendered
+  prompt rather than the node's keyword argument, which is why the existing
+  end-to-end critique test never caught it (it stubs the generator, and it
+  runs on 5.0).
 
 ## In progress
 
@@ -105,21 +126,36 @@ None.
 Nothing in scope. Follow-on work, if the owner wants it, is one of:
 
 - a decision on the four questions in section 6 of the document;
-- separate branches for the six defects in section 7.
+- separate branches for the remaining five defects in section 7.
 
 ## Changed files
 
-- `docs/scientific-evidence-layer-research-2026-08-09.md` (new)
+- `docs/scientific-evidence-layer-research-2026-08-09.md` (new; section 7
+  item 1 and the conclusion's third bullet later marked as fixed)
 - `docs/README.md` (one index entry)
 - `docs/agent-tasks/active/claude--scientific-evidence-layer-4beyxi.md` (this file, new)
+- `ai-analytics-service/src/services/llm_provider.py` (one call site, `:670`)
+- `ai-analytics-service/tests/test_repair_critique.py` (one helper, one test)
 
 ## Verification evidence
 
 ### Passed
 
-Read-only verification, appropriate to a documentation-only diff. Each of the
-following was confirmed by this agent directly, independently of the research
-agents:
+**Code fix.** Per the verification matrix, an `ai-analytics-service` change
+takes the full Python suite:
+
+- `.venv/bin/python -m pytest` from `ai-analytics-service` — **465 passed**,
+  1 warning, exit 0. The `.venv` did not exist in this container and was created
+  per `docs/local-environment.md` (`python3 -m venv .venv`,
+  `pip install -e ".[dev]"`).
+- Defect reproduced before the fix: with `src/services/llm_provider.py` stashed
+  to its pre-fix state, the new test failed on `6.0`
+  (`assert correction in repaired`) and passed on `5.0` — 1 failed, 11 passed.
+  That is the parameterisation earning its place: the two branches disagreed.
+- After the fix both parameters pass.
+
+**Research document.** Read-only. Each of the following was confirmed by this
+agent directly, independently of the research agents:
 
 - Pipeline order and node responsibilities — `graph.py:68-166`.
 - Ranking formula, weights, tie-break — `rag/store.py:9-11,248-296`.
@@ -160,21 +196,29 @@ None.
 
 ### Blocked or not run
 
-- No test suite run. The diff is three Markdown files and touches no code,
-  configuration, schema or contract; `shalomut-verification` scales checks to
-  the risk of the actual diff, and there is no runtime behaviour to prove.
-- No prototype built, so no cost or latency figure in the document is measured;
-  all are arithmetic over the call sites.
+- TypeScript suite (`npm test`), `npm run typecheck`, `npm run build`,
+  `npm run lint` — not run. No `.ts`/`.tsx` file, no contract manifest, no
+  `contracts/capabilities.json` and no OpenAPI source is in the diff, and the
+  payload shape is unchanged: the fix alters one Hebrew prompt string on a
+  replay path only. The matrix routes this diff to the Python suite alone.
+- No provider and no deployed environment contacted, so the repaired prompt has
+  not been observed against a real model — only against the rendered string.
+- No prototype of any evidence layer built, so no cost or latency figure in the
+  document is measured; all are arithmetic over the call sites.
 
 ### Environment
 
-Remote container, read-only inspection of the working tree. No database, no
-deployment and no provider was contacted.
+`test` — an isolated local Python venv inside the remote container. No
+database, no deployment and no provider was contacted.
 
 ### Residual risk
 
+- The fix widens what a 6.0 replay prompt carries. Both critiques are short
+  fixed Hebrew lines, and `max_tokens` bounds the answer rather than the
+  prompt, so truncation risk is not materially changed — but this is reasoned,
+  not measured against a live provider.
 - The document's line citations are pinned to HEAD `14c2269` and will drift as
-  the files change.
+  the files change; `llm_provider.py:670` has already moved.
 - The claim "a fabricated Hebrew scientific statement passes every validator"
   was demonstrated on one synthetic paragraph against the real validators. It
   proves the hole exists; it does not measure how often a model would fall into
@@ -182,10 +226,16 @@ deployment and no provider was contacted.
 
 ## Failed approaches
 
-None. One correction applied during the work: several research agents' line
-citations in the `store.py` / `intervention_nodes.py` region were drifted by
-1–7 lines; the adversarial pass caught them and the deliverable uses re-derived
-citations.
+None. Two corrections applied during the work:
+
+- several research agents' line citations in the `store.py` /
+  `intervention_nodes.py` region were drifted by 1–7 lines; the adversarial
+  pass caught them and the deliverable uses re-derived citations;
+- the first shape considered for the regression test was an end-to-end replay
+  on 6.0, in the style of `test_a_replayed_adaptation_is_told_what_was_wrong`.
+  It would not have caught the defect: that test stubs the generator, so it
+  observes the node's keyword argument, and the loss happens one layer deeper.
+  The test had to read the rendered prompt instead.
 
 ## Known risks
 
@@ -215,8 +265,7 @@ attribution is sufficient.
 ## Next concrete step
 
 Owner reads the "Заключение" section and either accepts it or names a curator.
-If accepted, the first piece of work is not on this branch and not this layer:
-it is question 4 of section 6 — decide whether framework-clause attribution is
-enough — because a "yes" closes the subject entirely and a "no" makes rendering
-the existing `source` the cheapest next slice. No code work should start on
-this branch.
+If accepted, the next slice is question 4 of section 6 — decide whether
+framework-clause attribution is enough — because a "yes" closes the subject
+entirely and a "no" makes rendering the existing `source` the cheapest next
+piece of work. That slice belongs on its own branch, not this one.
