@@ -19,9 +19,9 @@ type ManagerOnboardingProps = {
   surface?: "page" | "dashboard";
   state?: ManagerOnboardingState;
   /**
-   * The schools a manager can move to from the dead end below, and the round to
-   * carry with them. Null on every other state, and on a system with one school
-   * there is nothing to offer.
+   * The schools a manager can move to from the two dead ends below, and the
+   * round to carry with them. Null on every other state, and on a system with
+   * one school there is nothing to offer.
    */
   schoolChoices?: SchoolChoices | null;
 };
@@ -35,6 +35,11 @@ export function ManagerOnboarding({
   const scopeRequired = state === "scope-required";
   const roundNotFound = state === "round-not-found";
   const needsOrganization = !organizationName;
+  // Whether this screen can offer a way out at all. The dead ends below are the
+  // only states that ask for the list, and one school is not a choice.
+  const canChooseSchool = Boolean(
+    schoolChoices && hasSchoolChoice(schoolChoices.options),
+  );
 
   // A link naming a round this school does not have. Showing another round's
   // numbers under it would misreport, so the screen says so and offers the
@@ -73,7 +78,7 @@ export function ManagerOnboarding({
             nothing when there is only one school, because then there is nothing
             to have come from.
           */}
-          {schoolChoices && hasSchoolChoice(schoolChoices.options) ? (
+          {canChooseSchool && schoolChoices ? (
             <div className="manager-onboarding-schools">
               <p>
                 אם הקישור הגיע מבית ספר אחר, בחרו אותו כאן והמערכת תבקש ממנו את
@@ -95,12 +100,22 @@ export function ManagerOnboarding({
     );
   }
 
-  const title = scopeRequired
+  // The request named no school the system has — usually a remembered choice
+  // whose school was deleted since. With several schools left, choosing one is
+  // the whole fix, so the screen offers it rather than reading as a permissions
+  // problem the manager has to report to somebody.
+  const scopeRequiredWithChoice = scopeRequired && canChooseSchool;
+
+  const title = scopeRequiredWithChoice
+    ? "בחירת בית ספר"
+    : scopeRequired
     ? "נדרש שיוך לבית ספר"
     : needsOrganization
     ? "מתחילים בהגדרת בית הספר"
     : "פותחים סבב אבחון ראשון";
-  const description = scopeRequired
+  const description = scopeRequiredWithChoice
+    ? "המסך שביקשתם אינו משויך לבית ספר. ייתכן שבית הספר שנבחר קודם נמחק. בחרו בית ספר מהרשימה וכל המסכים יוצגו עבורו."
+    : scopeRequired
     ? "הגישה הניהולית אינה משויכת לבית ספר. המערכת לא תבחר בית ספר אוטומטית כאשר קיימים כמה בתי ספר."
     : needsOrganization
     ? "המערכת עדיין ריקה. הזינו את פרטי בית הספר ופתחו סבב אבחון — רק לאחר השמירה ייווצרו נתונים."
@@ -143,13 +158,30 @@ export function ManagerOnboarding({
                 : "אין עדיין סבב פעיל"}
           </h2>
           <p>
-            {scopeRequired
+            {scopeRequiredWithChoice
+              ? "כדי לא להציג נתונים של בית ספר אחר, המערכת אינה בוחרת בית ספר בעצמה כאשר קיימים כמה."
+              : scopeRequired
               ? "יש לשייך את פרטי הגישה הניהוליים לבית ספר לפני הצגת נתונים. פנו למנהל המערכת."
               : needsOrganization
               ? "לא מוצגים נתוני דוגמה ולא נוצרים נתונים אוטומטית. ההגדרה הראשונה נשמרת במאגר הנתונים."
               : "מפת השלומות, המעקב וקישור המשיבים ייפתחו לאחר יצירת הסבב."}
           </p>
         </div>
+        {/*
+          The way out of a request with no school. It is the same control the
+          setup screen offers for the same state, put where the manager already
+          is: every screen here reads inside a school, so the choice reopens the
+          screen the link was for rather than sending them somewhere else first.
+        */}
+        {scopeRequiredWithChoice && schoolChoices ? (
+          <div className="manager-onboarding-schools">
+            <SchoolSwitcher
+              options={schoolChoices.options}
+              roundId={schoolChoices.roundId}
+              action={null}
+            />
+          </div>
+        ) : null}
         {!scopeRequired ? (
           <Link className="primary-button" href={routes.setup}>
             {needsOrganization ? "הגדרת בית הספר" : "פתיחת סבב אבחון"}

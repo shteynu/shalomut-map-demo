@@ -2,7 +2,11 @@ import { ManagerOnboarding } from "@/components/manager";
 import { PageIntro } from "@/components/ui";
 import { SchoolGoalsBoard } from "@/components/goals/school-goals-board";
 import { buildSchoolGoalsView } from "@/lib/goals/school-goals";
-import { loadManagerContext, loadSchoolGoals } from "@/lib/server/manager-context";
+import {
+  loadManagerContext,
+  loadSchoolChoices,
+  loadSchoolGoals,
+} from "@/lib/server/manager-context";
 
 /**
  * The school's goals, across every round it has run.
@@ -16,7 +20,10 @@ export default async function GoalsPage() {
 
   if (!context.organization) {
     return (
-      <ManagerOnboarding state={context.state} />
+      <ManagerOnboarding
+        state={context.state}
+        schoolChoices={await loadSchoolChoices(context)}
+      />
     );
   }
 

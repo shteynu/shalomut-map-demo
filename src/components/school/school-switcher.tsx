@@ -60,6 +60,11 @@ export function SchoolSwitcher({
   }
 
   const selected = options.find((option) => option.isSelected);
+  // A request that names no school at all — the remembered one was deleted —
+  // has nothing to show as current. Without a row of its own the browser would
+  // display the first school as if it were the chosen one, and picking it would
+  // fire no change and go nowhere.
+  const needsPlaceholder = !selected && !isNewSchool;
 
   return (
     // `null` becomes no attribute, and a `GET` form with no action submits to
@@ -79,6 +84,12 @@ export function SchoolSwitcher({
         */}
         {isNewSchool ? (
           <option value={NEW_SCHOOL_PARAM}>בית ספר חדש</option>
+        ) : null}
+
+        {needsPlaceholder ? (
+          <option value="" disabled>
+            בחרו בית ספר
+          </option>
         ) : null}
 
         {options.map((option) => (

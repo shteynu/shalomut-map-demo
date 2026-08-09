@@ -45,23 +45,30 @@ export async function loadSchools() {
 }
 
 /**
- * The schools to offer a manager who followed a link into a round this school
- * does not have, and nothing on any other screen.
+ * The two states a manager cannot leave without naming a school, and nothing on
+ * any other screen.
  *
  * A school is chosen once and remembered, so the switcher lives on the setup
- * screen alone — except here, where the manager is holding a link they cannot
- * open and the school is the thing that is wrong about it. The list is read
- * only in that state, so every other screen still pays nothing for it.
+ * screen alone — except here. `round-not-found` is a link the manager cannot
+ * open and the school is the thing that is wrong about it. `scope-required` is
+ * the request having no school at all: the remembered one was deleted, or the
+ * session names a school that is gone, and with several schools left the system
+ * refuses to pick one. Both are answered by the same list.
  *
  * Which school the round actually belongs to is not looked up and not shown.
  * The manager's scope is a boundary, and naming another school's round would
  * cross it to answer a question the switcher already lets them answer.
  */
+const statesNeedingASchool: ReadonlySet<ManagerContext["state"]> = new Set([
+  "round-not-found",
+  "scope-required",
+]);
+
 export async function loadSchoolChoices(
   context: ManagerContext,
   requestedRoundId?: string,
 ): Promise<SchoolChoices | null> {
-  if (context.state !== "round-not-found") return null;
+  if (!statesNeedingASchool.has(context.state)) return null;
 
   return {
     options: toSchoolSwitcherOptions(
