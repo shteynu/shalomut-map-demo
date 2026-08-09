@@ -13,14 +13,61 @@ import pytest
 from src.agents.graph import analytics_graph
 from src.agents.node_support import _repair_critique
 from src.agents.safety_report import critique, violation
+from src.contracts import AI_ANALYTICS_V6_CONTRACT_VERSION
 from src.services import hebrew_prompts
+from src.services.llm_provider import llm_provider_service
 
 from tests.test_contract_v5 import build_state, build_v5_round_data
 from tests.test_replay_targets import _install
 
+# What the safety validator says about the payload of the previous attempt, and
+# what the transport says about the answer it just refused. They come from
+# different places and both have to reach the prompt.
+REPLAY_CRITIQUE = "כתוב/י מחדש בעברית בלבד."
+TRANSPORT_CRITIQUE = "שמור/י על מספר הצעדים."
+
 
 def _critiques_for(pairs, dimension_id):
     return [value for dim_id, value in pairs if dim_id == dimension_id]
+
+
+def _v6_adaptation_prompts(monkeypatch, *, repair_critique):
+    """Both prompts the 6.0 adaptation batch would send, first and retry.
+
+    The stub answers with nothing acceptable, so the call ends on the catalog
+    fallback; what the test is after is the prompt text, which the transport
+    builds and would otherwise keep to itself.
+    """
+    prompts = []
+
+    def capture(*, build_prompt, **_kwargs):
+        prompts.append(build_prompt())
+        prompts.append(build_prompt(TRANSPORT_CRITIQUE))
+        return None, 1, "invalid_semantic_output"
+
+    # Patched on the instance, as the neighbouring v6 tests do: a class-level
+    # patch is shadowed by the instance attribute those tests leave behind.
+    monkeypatch.setattr(
+        llm_provider_service,
+        "_complete_with_retries",
+        capture,
+    )
+    llm_provider_service.adapt_interventions_result(
+        interventions=[
+            {
+                "id": "meaning-1",
+                "dimensionId": "meaning",
+                "summary": "טקסט קטלוגי קיים.",
+                "actionable_steps": ["צעד אחד", "צעד שני"],
+            },
+        ],
+        dim_hebrew="משמעות",
+        score=55.0,
+        status="yellow",
+        contract_version=AI_ANALYTICS_V6_CONTRACT_VERSION,
+        repair_critique=repair_critique,
+    )
+    return prompts
 
 
 def test_a_first_attempt_carries_no_critique():
@@ -185,6 +232,49 @@ async def test_a_replayed_adaptation_is_told_what_was_wrong(monkeypatch):
     assert all(
         value is None for _, value in calls.interpretation_critiques
     )
+
+
+def test_a_replayed_6_0_adaptation_is_told_what_was_wrong(monkeypatch):
+    """The 6.0 batch carries the validator's critique, as the older path does.
+
+    The structured branch used to pass the transport's own per-attempt critique
+    and drop the one the safety validator computed, so a replay escalated to the
+    heavy tier and asked a question indistinguishable from the one that had just
+    been refused.
+    """
+    first, retry = _v6_adaptation_prompts(
+        monkeypatch,
+        repair_critique=REPLAY_CRITIQUE,
+    )
+
+    assert REPLAY_CRITIQUE in first
+    assert REPLAY_CRITIQUE in retry
+    # The transport's verdict is about a later attempt than the validator's, so
+    # a retry inside a replay states both rather than choosing one.
+    assert TRANSPORT_CRITIQUE in retry
+    assert TRANSPORT_CRITIQUE not in first
+
+
+def test_a_first_6_0_adaptation_pays_nothing_for_the_repair_path(monkeypatch):
+    """No refusal yet means the prompt is the one it has always been."""
+    first, retry = _v6_adaptation_prompts(monkeypatch, repair_critique=None)
+
+    assert first == hebrew_prompts.v6_intervention_batch_prompt(
+        interventions=[
+            {
+                "id": "meaning-1",
+                "dimensionId": "meaning",
+                "summary": "טקסט קטלוגי קיים.",
+                "actionable_steps": ["צעד אחד", "צעד שני"],
+            },
+        ],
+        dim_hebrew="משמעות",
+        status="yellow",
+        question_aggregates=[],
+        background_context=None,
+        repair_critique=None,
+    )
+    assert TRANSPORT_CRITIQUE in retry
 
 
 @pytest.mark.asyncio

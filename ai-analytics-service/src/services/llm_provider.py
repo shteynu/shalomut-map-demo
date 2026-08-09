@@ -667,7 +667,10 @@ class LLMProviderService:
                     status=status,
                     question_aggregates=aggregates,
                     background_context=background_context,
-                    repair_critique=retry_critique,
+                    repair_critique=_joined_critique(
+                        repair_critique,
+                        retry_critique,
+                    ),
                 ),
                 system_prompt=(
                     "את/ה פסיכולוג/ית ארגוני/ת המתאים/ה המלצות לבית ספר. "
