@@ -54,6 +54,21 @@ services:
         sync: false
       - key: AI_JOB_POLLING_ENABLED
         value: "true"
+      # The ceiling on one dimension's answer, and it was the default — 2048 in
+      # `config.py` — until 2026-08-09, when a local run of the real pipeline
+      # over a 24-question round showed what that costs: every call came back
+      # `finish_reason=length`, the JSON stopped mid-object, and all eight
+      # stones fell to `deterministic_fallback`. The round still reported
+      # success, which is why this could sit unnoticed — nothing fails, the map
+      # just quietly stops being written by the model.
+      #
+      # Measured on that round: 2048 loses all eight stones, 4096 still
+      # truncates twelve calls and loses one, 8192 returns eight `llm` stones on
+      # the first attempt. Declared here rather than left to the dashboard for
+      # the same reason as the pacing above — a limit nobody can read is a limit
+      # nobody can check.
+      - key: MAX_TOKENS_PER_DIMENSION
+        value: "8192"
       - key: VERCEL_PROTECTION_BYPASS
         sync: false
       - key: GEMINI_API_KEY
