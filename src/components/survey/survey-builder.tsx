@@ -4,13 +4,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, Eye, Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import type { ReactNode } from "react";
+import { RoundSwitcher } from "@/components/round/round-switcher";
 import { PageIntro } from "@/components/ui/page-intro";
 import { PrivacyTooltip } from "@/components/ui/privacy-tooltip";
 import { SaveStatus, parseSavedAt } from "@/components/ui/save-status";
 import { useClipboard } from "@/lib/hooks/use-clipboard";
 import { dimensionPresentations } from "@/lib/dashboard/dimension-presentation";
 import { getNavigationAction } from "@/lib/navigation";
+import type { RoundSwitcherOptions } from "@/lib/rounds/round-options";
 import { useShareUrl } from "@/lib/use-share-url";
 import type { SurveyDefinition } from "@/lib/types/backend";
 import { surveyInstrument } from "@/lib/shalomut-source";
@@ -96,11 +97,16 @@ type SurveyBuilderProps = {
   lastSavedAt?: string;
   isFrozen?: boolean;
   /**
-   * The school's other rounds, rendered by the page. The builder is a client
-   * component and the rounds are a server read, so they arrive as markup
-   * rather than as a list this component would have to fetch.
+   * The school's other rounds. The builder is a client component and the rounds
+   * are a server read, so the page hands over the list it already loaded rather
+   * than this component fetching one. It arrives as data, not as markup: an
+   * element built on the server and passed through a prop crosses the boundary
+   * unkeyed, which React reports as a missing `key` in this component's
+   * children.
    */
-  roundSwitcher?: ReactNode;
+  roundOptions?: RoundSwitcherOptions;
+  /** Where the switcher's form posts — this screen's own path. */
+  roundSwitcherAction?: string;
 };
 
 export function SurveyBuilder({
@@ -111,7 +117,8 @@ export function SurveyBuilder({
   initialDefinition,
   lastSavedAt,
   isFrozen = false,
-  roundSwitcher,
+  roundOptions,
+  roundSwitcherAction,
 }: SurveyBuilderProps) {
   const [title, setTitle] = useState(initialDefinition.title);
   const audience = initialDefinition.audience;
@@ -558,7 +565,9 @@ export function SurveyBuilder({
         }
       />
 
-      {roundSwitcher}
+      {roundOptions && roundSwitcherAction ? (
+        <RoundSwitcher options={roundOptions} action={roundSwitcherAction} />
+      ) : null}
 
       {/* Directly under the save button, where the manager is already looking
           when they wonder whether the last click landed. */}

@@ -1,5 +1,4 @@
 import { ManagerOnboarding } from "@/components/manager";
-import { RoundSwitcher } from "@/components/round";
 import { SurveyBuilder } from "@/components/survey";
 import { readRoundParam, roundSwitcherAction } from "@/lib/navigation";
 import { toRoundSwitcherOptions } from "@/lib/rounds/round-options";
@@ -48,15 +47,11 @@ export default async function SurveyPage({
         )
       }
       lastSavedAt={context.selectedRound.updatedAt?.toISOString()}
-      roundSwitcher={
-        <RoundSwitcher
-          options={toRoundSwitcherOptions(
-            context.rounds,
-            context.selectedRound.id,
-          )}
-          action={roundSwitcherAction("surveyBuilder")}
-        />
-      }
+      roundOptions={toRoundSwitcherOptions(
+        context.rounds,
+        context.selectedRound.id,
+      )}
+      roundSwitcherAction={roundSwitcherAction("surveyBuilder")}
       // An archived round is read-only, and its questionnaire route answers
       // 409. A draft can be archived without ever taking an answer, so the
       // response count does not cover this on its own.
