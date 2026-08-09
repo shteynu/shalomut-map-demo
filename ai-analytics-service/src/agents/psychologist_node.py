@@ -95,7 +95,7 @@ async def agent_psychologist_node(
             round_data,
             dim_id,
         )
-        background_context = _background_context_for_prompt(round_data, state)
+        background_context = _background_context_for_prompt(round_data)
         dim_ids.append(dim_id)
         if get_capabilities(eff_version).usesStructuredDimensionSummary:
             generations.append(
@@ -240,14 +240,14 @@ async def agent_psychologist_node(
             )
         if get_capabilities(eff_version).supportsBackgroundContext:
             generation_provenance[dim_id]["backgroundContextIncluded"] = bool(
-                _background_context_for_prompt(round_data, state),
+                _background_context_for_prompt(round_data),
             )
         if get_capabilities(eff_version).supportsScoreDistribution:
             generation_provenance[dim_id].update(
                 _v5_prompt_inclusions(round_data, dim_id, dim_scores),
             )
 
-    background_context = _background_context_for_prompt(round_data, state)
+    background_context = _background_context_for_prompt(round_data)
     metric_insights = dict(previous_metric_insights)
     if structured:
         metric_targets = []

@@ -4,13 +4,13 @@ Seven defects and pieces of drift found while reading the pipeline for
 [`scientific-evidence-layer-research-2026-08-09.md`](scientific-evidence-layer-research-2026-08-09.md).
 None of them was introduced by that work and none was fixed by it.
 
-**Status: deferred by owner decision on 2026-08-09, except items 1 and 2, which
-the owner unparked the same day and which are now fixed.** This file is a
+**Status: deferred by owner decision on 2026-08-09, except items 1, 2 and 3,
+which the owner unparked the same day and which are now fixed.** This file is a
 record, not a queue. Nothing remaining here is scheduled; each item states what
 is wrong, what it costs today, and what a fix would have to touch, so that
 whoever picks one up does not have to re-derive it.
 
-Verified against `14c2269`; items 1 and 2 have been fixed since, as their
+Verified against `14c2269`; items 1, 2 and 3 have been fixed since, as their
 headings say. Line references drift as the code moves — re-check before acting.
 
 ---
@@ -63,7 +63,14 @@ before the callback and puts a new rule in the wrong place.
 
 ## 3. `backgroundContextIncluded` is effectively always true on 4.0+
 
-`_background_context_for_prompt` falls back to `state["org_context"]`
+**Fixed on 2026-08-09** on branch `fix/background-context-provenance`. The
+fallback to `org_context` is gone, so the flag now reports whether Core sent a
+`RoundBackgroundContext`, which is what the 4.0 manifest says it means. The
+function no longer takes the state at all, and `test_contract_v5.py` holds the
+runner's own starting state to a `False`. What follows is the finding as
+written.
+
+`_background_context_for_prompt` fell back to `state["org_context"]`
 ([node_support.py:88-97](../ai-analytics-service/src/agents/node_support.py#L88)),
 and the runner always seeds `org_context` with `{"organizationId": <uuid>}`
 because Core always sends it

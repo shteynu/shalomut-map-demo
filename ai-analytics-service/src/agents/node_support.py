@@ -87,14 +87,24 @@ def _effective_contract_version(round_data: Dict[str, Any]) -> str:
 
 def _background_context_for_prompt(
     round_data: Dict[str, Any],
-    state: AnalyticsState,
 ) -> Optional[Dict[str, Any]]:
-    """Return school context only for contracts that declare the capability."""
+    """Return school context only for contracts that declare the capability.
+
+    The state's `org_context` is not a second source of it, which is why this
+    no longer takes the state at all. The runner seeds that key with
+    `{"organizationId": <uuid>}` on every round, because Core always sends it,
+    so falling back to it made every round look as though a school had written
+    something: `backgroundContextIncluded` read `True` on every 4.0+ round,
+    while the manifest defines that flag as the inclusion of
+    `RoundBackgroundContext`. The id never reached a reader — the interpretation
+    prompt renders only the named background fields — so what the fallback
+    bought was a provenance flag that could not say no.
+    """
     contract_version = _effective_contract_version(round_data)
     if not get_capabilities(contract_version).supportsBackgroundContext:
         return None
 
-    return round_data.get("backgroundContext") or state.get("org_context")
+    return round_data.get("backgroundContext") or None
 
 
 def _question_aggregates_for_dimension(

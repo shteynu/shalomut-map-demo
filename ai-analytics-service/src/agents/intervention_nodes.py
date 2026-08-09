@@ -24,7 +24,7 @@ def agent_rag_intervention_node(state: AnalyticsState) -> AnalyticsState:
     """Select status-scoped catalog interventions for each dimension."""
     round_data = state.get("round_data", {})
     dim_scores = round_data.get("dimensionScores", {})
-    bg_context = _background_context_for_prompt(round_data, state)
+    bg_context = _background_context_for_prompt(round_data)
     plan = _replay_plan(state)
     previous_recommendations = state.get("recommendations", {})
     recommendations = {}
@@ -87,7 +87,7 @@ async def agent_adaptation_node(
         return state
 
     dim_scores = round_data.get("dimensionScores", {})
-    background_context = _background_context_for_prompt(round_data, state)
+    background_context = _background_context_for_prompt(round_data)
     retry_tier = "heavy" if state.get("retry_count", 0) > 0 else "fast"
     plan = _replay_plan(state)
     recommendations = state.get("recommendations", {})

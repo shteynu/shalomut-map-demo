@@ -128,6 +128,27 @@ async def test_v5_provenance_reports_a_missing_school_context(answering_llm):
         assert provenance["backgroundContextIncluded"] is False, dimension_id
 
 
+@pytest.mark.asyncio
+async def test_the_organization_id_is_not_a_school_context(answering_llm):
+    """The state every real round starts from must not flip the flag.
+
+    `AnalyticsRunner` seeds `org_context` with the organization id on every
+    round, because Core always sends it. While the prompt fell back to that
+    key, `backgroundContextIncluded` read `True` on every 4.0+ round — the flag
+    said "the school told us something" about rounds where no school had.
+    """
+    state = {
+        **build_state(build_v5_round_data()),
+        "org_context": {"organizationId": "11111111-1111-1111-1111-111111111111"},
+    }
+
+    result = await agent_psychologist_node(state)
+
+    for dimension_id in AI_ANALYTICS_DIMENSION_IDS:
+        provenance = result["generation_provenance"][dimension_id]
+        assert provenance["backgroundContextIncluded"] is False, dimension_id
+
+
 class TestContractV5(unittest.TestCase):
     def test_version_constants(self):
         self.assertEqual(AI_ANALYTICS_V5_CONTRACT_VERSION, "5.0")
