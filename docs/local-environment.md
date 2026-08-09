@@ -109,8 +109,9 @@ alongside the AI service — but nothing in the daily loop needs that.
 - **`ai-analytics-service/.env` does not configure the service.** The service
   loads no env file at all; `npm run local` hands it its configuration from the
   repository-root `.env`. Editing `ai-analytics-service/.env` changes nothing
-  about a running service — only the two standalone prompt experiments
-  (`test_prompt.py`, `test_raw_answers.py`) read it, through `load_dotenv`.
+  about a running service — only the two standalone prompt experiments in
+  `ai-analytics-service/experiments/` read it, through `load_dotenv`, and only
+  when run from the service root.
 - **`.env.staging.local` points at the deployed database.** It survives from
   the staging era and holds the deployed Supabase URL plus a provider key.
   Nothing loads it any more — `scripts/inspect-ai-provenance.ts` used to read

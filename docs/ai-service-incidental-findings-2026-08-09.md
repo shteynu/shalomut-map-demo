@@ -4,13 +4,13 @@ Seven defects and pieces of drift found while reading the pipeline for
 [`scientific-evidence-layer-research-2026-08-09.md`](scientific-evidence-layer-research-2026-08-09.md).
 None of them was introduced by that work and none was fixed by it.
 
-**Status: deferred by owner decision on 2026-08-09, except items 1–5, which the
+**Status: deferred by owner decision on 2026-08-09, except items 1–6, which the
 owner unparked the same day and which are now fixed.** This file is a record,
 not a queue. Nothing remaining here is scheduled; each item states what is
 wrong, what it costs today, and what a fix would have to touch, so that whoever
 picks one up does not have to re-derive it.
 
-Verified against `14c2269`; items 1–5 have been fixed since, as their headings
+Verified against `14c2269`; items 1–6 have been fixed since, as their headings
 say. Line references drift as the code moves — re-check before acting.
 
 ---
@@ -123,7 +123,12 @@ over this service — so the mismatch is invisible today.
 
 ## 6. A stray root file breaks `pytest` when it is pointed at the service
 
-`ai-analytics-service/test_prompt.py` errors on import, so
+**Fixed on 2026-08-09** on branch `chore/experiment-scripts-out-of-pytest-path`.
+Both prompt experiments moved to `ai-analytics-service/experiments/` under
+names pytest does not collect, with a README saying what they are and that they
+spend provider quota. What follows is the finding as written.
+
+`ai-analytics-service/test_prompt.py` errored on import, so
 `python -m pytest ai-analytics-service --collect-only` reports "463 tests
 collected, 1 error". The configured run is unaffected because
 `pyproject.toml` sets `testpaths = ["tests"]`
