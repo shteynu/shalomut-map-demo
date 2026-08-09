@@ -212,14 +212,33 @@ older snapshots remain available in Git.
   is 371x386 fully inside the viewport and not scrolling, and `.stat-stone >
   strong` is still 46.4px — the stone's own number was not quieted along with
   the tooltip.
-- **The seven incidental AI-service findings of 2026-08-09 are all fixed and on
-  `main` (`5188bfa`), and the deployed Python service does not have them yet.**
-  Six of the seven are inside `ai-analytics-service`, so they take effect only
-  after the Render container is rebuilt from `main`; Vercel picks up the Core
-  side by itself. Nothing here is urgent — the fixes are correctness and
-  observability, not an outage — but a deployed round analysed before that
-  rebuild still shows the old behaviour, including the flat
-  `provider_unavailable`.
+- **The seven incidental AI-service findings of 2026-08-09 are fixed, on `main`,
+  and now deployed.** The entry above this one said the Render container did not
+  have them yet; that was true when written and is no longer. Read back on
+  2026-08-09 during the end-to-end smoke: `/health` answers `commit: 16df031`,
+  which is `origin/main`, so the container rebuilt itself from the tip as it
+  does on every push.
+
+- **The deployed endpoint was walked end to end on 2026-08-09**, in the owner's
+  signed-in Chrome: a school created, rounds opened in it and in the existing
+  school, questionnaires built, respondents answered, and the AI analysing each
+  round. It works, and it produced six defects. They are written up in
+  `docs/deployed-e2e-smoke-findings-2026-08-09.md`; the plan and the evidence are
+  in `docs/agent-tasks/active/test--deployed-e2e-smoke-2026-08-09.md`. The two
+  worth carrying here because they mislead rather than merely annoy: a newly
+  opened **draft** round is announced as "a previous round… read-only", and the
+  `?round=new` sentinel leaks into the header links so ordinary navigation lands
+  on "the requested round was not found — it may have been deleted". Both are
+  Core-side and neither blocks a demo, but both tell the manager something that
+  is not true.
+
+- **The deployed database now holds three schools and five rounds.** Before this
+  session it held `טסט` (round `1`) and `טסט מקס`; the smoke added
+  `בית ספר בדיקת E2E` with two rounds, a second round in `טסט`, and 30 synthetic
+  responses across the three new analysable rounds. `טסט`'s round `1` is now
+  `closed`, which is the one-active-round rule working rather than damage. The
+  data is disposable and can go whenever the owner wants it gone; it is recorded
+  here only so nobody reads it as real.
 
 - AI service: Render container from the root `Dockerfile`, with durable polling
   enabled. The service needs an always-available process or explicit wake
@@ -510,9 +529,11 @@ owner's own hands.
 
 **Worth a look, cheap**
 
-- The deployed school has one round, so nobody has ever seen the round switcher
-  on the deployed endpoint — it renders from two rounds up. Whoever opens a
-  second deployed round should look at it once.
+- **Done 2026-08-09.** The round switcher had never rendered on the deployed
+  endpoint because the deployed school had one round. The end-to-end smoke
+  opened a second one and looked at it: it renders, and switching carries each
+  round's own dates, counts, share code and analysis. What that walk found is in
+  the findings document named above.
 - The doubt this list carried since 2026-08-05 — that two minutes of `Up` says
   nothing about a quiet night — is **answered, and the answer is 99.869% with
   one 5m 5s timeout at 05:01 on 2026-08-07**. Both readings are in the
