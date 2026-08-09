@@ -86,9 +86,10 @@ export function SetupForm({
   );
   const router = useRouter();
   const distributeSurveyAction = getNavigationAction("distributeSurvey");
-  // A new round is a draft with no questionnaire yet, so its builder link has
-  // to name it. Without the id the builder would open the running round and
-  // the manager would edit the wrong questionnaire.
+  // A new round is a draft while the round the school is collecting on is still
+  // the active one, so its builder link has to name it. Without the id the
+  // builder would open the running round and the manager would edit the wrong
+  // questionnaire.
   const builderHref =
     (isNewRound || isNewSchool) && savedRoundId
       ? surveyBuilderRoute(savedRoundId)
@@ -424,10 +425,16 @@ export function SetupForm({
 
       {saved && !hasUnsavedChanges ? (
         <p className="success-note">
+          {/*
+            The round now opens with the standard questionnaire, so the sentence
+            that sent the manager off to make one cover the eight dimensions is
+            no longer the next step. What is left to do is read it and save it,
+            and saving is what puts the round live.
+          */}
           {isNewSchool
-            ? "בית הספר נשמר עם סבב האבחון הראשון שלו, וכל המסכים יוצגו עבורו מעכשיו."
+            ? "בית הספר נשמר עם סבב האבחון הראשון שלו, וכל המסכים יוצגו עבורו מעכשיו. הסבב נפתח כטיוטה עם שאלון השלומות המלא — עברו עליו במסך בניית השאלון, ושמירה שם תעלה אותו לאוויר."
             : isNewRound
-              ? "הסבב החדש נפתח כטיוטה. הוא יעלה לאוויר במקום הסבב הנוכחי רק לאחר שהשאלון שלו יכסה את שמונת הממדים."
+              ? "הסבב החדש נפתח כטיוטה עם שאלון השלומות המלא. עברו עליו במסך בניית השאלון — שמירה שם תעלה אותו לאוויר במקום הסבב הנוכחי."
               : "סבב האבחון נשמר והלינק האנונימי מוכן להפצה."}
         </p>
       ) : null}
