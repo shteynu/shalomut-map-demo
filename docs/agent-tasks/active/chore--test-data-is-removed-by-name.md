@@ -6,7 +6,7 @@
 - Base branch: `docs/deployed-verification-2026-08-09`
 - Base commit: `0bc3e86`
 - Current HEAD: see `git log -1`
-- Status: tool complete and proven; the deployed deletion is the owner's to run
+- Status: complete — the tool is proven and the E2E school is off the endpoint
 - Last updated: 2026-08-09
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -96,19 +96,40 @@ the unlocked analytics and the round-over-round deltas — deleting it leaves
   - Re-running the same command reported both ids absent, deleted 0 and 0, and
     left the counts unchanged.
 - No arguments exits with a message rather than doing anything.
+- **Run against the deployed database on the owner's instruction**, with
+  `DATABASE_URL` read from `.env.deployed.local`. The script printed
+  `aws-1-ap-northeast-2.pooler.supabase.com`, which is how the target was
+  confirmed before anything was written. `dotenv/config` does not override an
+  environment variable that is already set, so the repository `.env` did not
+  pull the run back to the local container.
+  - Dry run: `בית ספר בדיקת E2E (3 rounds)`.
+  - `--confirm`: 1 school deleted. Remaining `{ organizations: 2, rounds: 3,
+    responses: 20, answers: 510 }` — the two manager schools, their three
+    rounds and the 20 responses that were there before the walks.
+  - Read back through the signed-in browser: the setup school list is now
+    `טסט` and `טסט מקס`, and the E2E school is gone from it.
+- No environment default pointed at the deleted school:
+  `MANAGER_ORGANIZATION_ID` is `34d05e66` in `.env`, `.env.deployed.local` and
+  `.env.staging.local`.
 
 ### Not run, and why
 
-- The deployed deletion. `DATABASE_URL` for the deployed database is not held
-  here and database writes on it are the owner's action.
 - `npm run verify:core`, the e2e suite and the Python suite: this diff is one
   operational script and a package script, and touches no application code,
   schema, contract or UI.
 
 ### Environment
 
-local for the proof; the deployed database is the intended target of the
-handed-over command.
+local for the proof, deployed for the deletion.
+
+## Observed while verifying
+
+A session whose `shalomut_school` cookie names a school that no longer exists
+lands on `נדרש שיוך לבית ספר` with no way out — no school switcher, the same
+dead end that finding #6 fixed for `round-not-found`. It is reachable only when
+a school is deleted out from under an open session, which is why it did not come
+up in the smoke. The browser session used here was put back on `טסט`
+afterwards. Not fixed in this task; recorded so it is not rediscovered.
 
 ## Residual risk
 
@@ -120,11 +141,11 @@ handed-over command.
 
 ## Approval gates
 
-The deletion itself. Two commands are handed over; which of them runs is the
-owner's decision.
+The deletion was the owner's call and was given for the E2E school only. The
+round `9c78768b` (סבב בדיקה E2E 2) inside `טסט` was deliberately left alone: it
+is named like a test round but carries the unlocked analytics and the
+round-over-round deltas, and it sits in one of the manager's own schools.
 
 ## Next concrete step
 
-Push this branch (`git push origin chore/test-data-is-removed-by-name:main`),
-then run the dry run against the deployed `DATABASE_URL`, read what it names,
-and re-run with `--confirm`.
+Push this branch: `git push origin chore/test-data-is-removed-by-name:main`.

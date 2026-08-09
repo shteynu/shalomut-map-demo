@@ -221,10 +221,19 @@ older snapshots remain available in Git.
   round per school requires. No other school was written to; switching schools
   during the walk only moved the browser's own cookie, which was returned to
   `ff5625a8`.
-- Still undecided: whether the E2E test school, its rounds and the 30 synthetic
-  responses stay on the deployed database or are cleared. `סבב שני E2E`
-  (`2d0b109e`) is a questionnaire-less draft from before the seeding change and
-  is the one row that no longer represents anything the product can now produce.
+- **That school is now off the deployed database**, on the owner's instruction,
+  2026-08-09. `בית ספר בדיקת E2E` (`ff5625a8`) and its three rounds were deleted
+  with `scripts/clear-test-data.ts`, which removes named ids rather than
+  emptying tables the way `db:clear` does. What remains is the two manager
+  schools, their three rounds, 20 responses and 510 answers — the state that
+  predates the walks. `סבב בדיקה E2E 2` (`9c78768b`) was left in place on
+  purpose: it is named like a test round but holds the unlocked analytics and
+  the round-over-round deltas inside `טסט`.
+- Known dead end, found while verifying that deletion: a session whose
+  `shalomut_school` cookie names a deleted school lands on
+  `נדרש שיוך לבית ספר` with no school switcher — the same shape finding #6
+  fixed for `round-not-found`. Only reachable when a school is deleted under an
+  open session.
 - Supported product environments remain local and deployed only.
 - Core endpoint: `https://shalomut-map-demo.vercel.app/`. Vercel names the
   target Production; for the product it is the design-stage operational staging
