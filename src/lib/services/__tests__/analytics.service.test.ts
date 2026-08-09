@@ -123,17 +123,24 @@ test('SurveyService accepts an omitted optional dynamic question but still requi
   assert.strictEqual(requiredOmitted.result.success, false);
 });
 
-test('RoundService starts a round without a questionnaire as an empty draft', () => {
+test('RoundService gives a round with no questionnaire the standard one, as a draft', () => {
   const round = RoundService.createRound({
     organizationId: 'org_123',
     title: 'Round 1 2026',
   });
 
   assert.strictEqual(round.organizationId, 'org_123');
-  // Nothing is pre-filled, so the round cannot be distributed until the manager
-  // builds a questionnaire that covers all eight dimensions.
+  // The questions are there to be read and edited rather than built from
+  // nothing. Until 2026-08-09 this was an empty draft, and a manager who opened
+  // a new round found an empty builder.
+  assert.strictEqual(
+    round.surveyDefinition?.questions.length,
+    surveyInstrument.questions.length,
+  );
+  // Complete, and still a draft: nobody has read it, and a round born active
+  // would close the round the school is still collecting answers on. Saving the
+  // questionnaire in the builder is what puts it live.
   assert.strictEqual(round.status, 'draft');
-  assert.strictEqual(round.surveyDefinition?.questions.length, 0);
   assert.strictEqual(round.privacyThreshold, DEFAULT_PRIVACY_THRESHOLD);
   // Ten respondents is the product requirement, so it is also where a round
   // the manager never configured starts.

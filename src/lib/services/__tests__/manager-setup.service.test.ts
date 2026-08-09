@@ -5,6 +5,7 @@ import {
   InMemoryRoundRepository,
 } from "@/lib/repositories";
 import { ManagerSetupService } from "@/lib/services/manager-setup.service";
+import { surveyInstrument } from "@/lib/shalomut-source";
 
 function setupInput() {
   return {
@@ -31,7 +32,7 @@ function setupInput() {
   };
 }
 
-test("ManagerSetupService creates an organization and an empty draft survey round", async () => {
+test("ManagerSetupService creates an organization and a draft round with the standard questionnaire", async () => {
   const orgRepo = new InMemoryOrganizationRepository();
   const roundRepo = new InMemoryRoundRepository();
 
@@ -43,9 +44,15 @@ test("ManagerSetupService creates an organization and an empty draft survey roun
 
   assert.strictEqual((await orgRepo.findAll()).length, 1);
   assert.strictEqual(result.round.organizationId, result.organization.id);
-  // Setup no longer pre-fills the canonical template: the manager builds the
-  // questionnaire in the builder, and only then can the round go live.
-  assert.strictEqual(result.round.surveyDefinition?.questions.length, 0);
+  // The round opens with the standard questionnaire rather than an empty one,
+  // so the manager reads and edits it instead of building from nothing.
+  assert.strictEqual(
+    result.round.surveyDefinition?.questions.length,
+    surveyInstrument.questions.length,
+  );
+  // Still a draft. This screen did not choose the questionnaire — it was
+  // seeded — and a round that went live here would close the round the school
+  // is still collecting on, before anyone had read a single question.
   assert.strictEqual(result.round.status, "draft");
 });
 

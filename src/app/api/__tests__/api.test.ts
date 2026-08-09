@@ -382,8 +382,13 @@ test('API Route PUT /api/manager/setup persists the first organization and round
     assert.strictEqual(response.status, 200);
     const payload = await response.json();
     assert.strictEqual(payload.success, true);
-    // Setup persists an empty draft; the questionnaire is authored afterwards.
-    assert.strictEqual(payload.round.surveyDefinition.questions.length, 0);
+    // Setup persists the standard questionnaire, and persists it as a draft:
+    // the manager reads and edits it, and saving it in the builder is what puts
+    // the round live.
+    assert.strictEqual(
+      payload.round.surveyDefinition.questions.length,
+      surveyInstrument.questions.length,
+    );
     assert.strictEqual(payload.round.status, 'draft');
   } finally {
     useDemoRepositories();

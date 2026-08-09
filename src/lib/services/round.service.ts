@@ -5,9 +5,10 @@ import {
   RoundStatus,
   SurveyRound,
 } from '../types/backend';
+import { resolveAudienceLabel } from '../audience';
 import {
   DEFAULT_PRIVACY_THRESHOLD,
-  createEmptyDraftSurveyDefinition,
+  createCanonicalSurveyDefinition,
   isActivatableSurveyDefinition,
   parseSurveyDefinition,
 } from '../survey-definition';
@@ -30,15 +31,25 @@ export class RoundService {
       input.privacyThreshold ??
       input.surveyDefinition?.minimumResponses ??
       DEFAULT_PRIVACY_THRESHOLD;
+    // A caller who did not bring a questionnaire gets the standard one, so a
+    // new round opens with something to read instead of an empty builder. Until
+    // 2026-08-09 it was seeded empty, and "a questionnaire is generated for the
+    // new round" was not true of any creation path.
     const definitionCandidate = input.surveyDefinition
       ? {
           ...input.surveyDefinition,
           minimumResponses: privacyThreshold,
         }
-      : createEmptyDraftSurveyDefinition(input.title, privacyThreshold);
-    // A round may start from an empty questionnaire, so the structural parse is
-    // permissive here. Activation stays gated on the full eight-dimension
-    // coverage below.
+      : {
+          ...createCanonicalSurveyDefinition(input.title, privacyThreshold),
+          // The audience belongs to the round, and the questionnaire shows it
+          // to respondents. Taking it from here is what keeps the two screens
+          // from disagreeing about who was asked.
+          audience: resolveAudienceLabel(input.backgroundContext?.audience),
+        };
+    // A caller may still bring an unfinished questionnaire, so the structural
+    // parse is permissive here. Activation stays gated on the full
+    // eight-dimension coverage below.
     const parsedDefinition = parseSurveyDefinition(definitionCandidate, {
       allowIncomplete: true,
     });
@@ -50,9 +61,19 @@ export class RoundService {
       id: roundId,
       organizationId: input.organizationId,
       title: input.title,
-      status: isActivatableSurveyDefinition(parsedDefinition.value)
-        ? 'active'
-        : 'draft',
+      /*
+       * Born active only when the caller brought the questionnaire it should
+       * run. A seeded one is complete enough to activate, but nobody has read
+       * it yet — and a round that is born active takes the school's collection
+       * with it, closing the round still gathering answers. So the standard
+       * questionnaire arrives as a draft, and saving it in the builder is what
+       * puts it live.
+       */
+      status:
+        input.surveyDefinition &&
+        isActivatableSurveyDefinition(parsedDefinition.value)
+          ? 'active'
+          : 'draft',
       shareCode: this.generateShareCode(),
       privacyThreshold,
       startDate: input.startDate ?? new Date(),

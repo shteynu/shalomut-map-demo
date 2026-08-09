@@ -5,7 +5,6 @@ import type {
 import { resolveAudienceLabel } from "@/lib/audience";
 import {
   createCanonicalSurveyDefinition,
-  createEmptyDraftSurveyDefinition,
 } from "@/lib/survey-definition";
 import type {
   Organization,
@@ -106,18 +105,13 @@ export class ManagerSetupService {
           privacyThreshold: input.round.privacyThreshold,
           startDate: input.round.startDate,
           endDate: input.round.endDate,
+          // No questionnaire is passed on purpose. `createRound` seeds the
+          // standard one and keeps the round a draft, so the manager opens the
+          // builder with the questions already there and saving is what puts
+          // the round live in place of the one still running. Passing a
+          // complete questionnaire here would mean this screen had chosen it,
+          // and the round would go live before anyone had read it.
           backgroundContext: input.round.backgroundContext,
-          // A new round starts as an empty draft: the manager builds the
-          // questionnaire (or loads the template) before it can go live.
-          surveyDefinition: {
-            ...createEmptyDraftSurveyDefinition(
-              input.round.title,
-              input.round.privacyThreshold,
-            ),
-            audience: resolveAudienceLabel(
-              input.round.backgroundContext.audience,
-            ),
-          },
         },
         roundRepo,
       );
