@@ -1,4 +1,5 @@
 import { Keyboard, Loader2, Lock, Plus, RotateCcw, Search, Sparkles, Trash2 } from "lucide-react";
+import { Fragment } from "react";
 import type { RefObject } from "react";
 import { dimensionPresentations } from "@/lib/dashboard/dimension-presentation";
 import { SurveyQuestionCard } from "./survey-question-card";
@@ -285,17 +286,23 @@ export function SurveyBuilderQuestions({
           <Keyboard size={16} aria-hidden="true" />
           <span>
             קיצורי מקלדת בשאלה שהסמן נמצא בה:{" "}
+            {/* The separator's space belongs between the chords, not inside
+                one. Held inside a `nowrap` chord it is not a break
+                opportunity, so all seven chords were one unbreakable run —
+                668px of it — and the panel clips what does not fit. */}
             {QUESTION_SHORTCUTS.map((shortcut, index) => (
-              <span key={shortcut.label} className="shortcut-chord">
-                {shortcut.keys}
-                {` ${shortcut.label}`}
-                {index < QUESTION_SHORTCUTS.length - 1 ? ", " : ". "}
-              </span>
+              <Fragment key={shortcut.label}>
+                <span className="shortcut-chord">
+                  {shortcut.keys}
+                  {` ${shortcut.label}`}
+                  {index < QUESTION_SHORTCUTS.length - 1 ? "," : "."}
+                </span>{" "}
+              </Fragment>
             ))}
             בכל המסך:{" "}
             <span className="shortcut-chord">
-              <kbd>/</kbd> חיפוש,{" "}
-            </span>
+              <kbd>/</kbd> חיפוש,
+            </span>{" "}
             <span className="shortcut-chord">
               <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>S</kbd> שמירה.
             </span>{" "}

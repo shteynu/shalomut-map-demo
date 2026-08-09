@@ -1316,6 +1316,14 @@ textarea {
 
 .survey-builder-panel {
   display: grid;
+  /* `minmax(0, 1fr)` rather than the implicit `auto` track. An `auto` track is
+     floored by its widest child's min-content, so one unbreakable string —
+     the shortcut legend was 692px of it against a 640px panel — stretched the
+     single column past the panel and every row in it, question cards
+     included, slid out under the neighbouring column and was clipped by the
+     `overflow: hidden` these panels need for their decorative blobs. Capped,
+     a child that cannot fit overflows alone. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.9rem;
   padding: 1rem;
 }
