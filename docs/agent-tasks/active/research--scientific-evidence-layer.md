@@ -5,10 +5,11 @@
 - Branch: research/scientific-evidence-layer
 - Base branch: main
 - Base commit: 14c2269
-- Current HEAD: the second of two commits on this branch, which adds the
-  evidence-card prototype write-up (`git log -2`). Not pushed.
-- Status: research and prototype write-up complete and committed, not pushed;
-  awaiting the owner's push and then the owner's decisions.
+- Current HEAD: `ce8ce8a`, the second of two commits on this branch. Both are
+  on `origin/main` — the owner pushed them on 2026-08-09 with
+  `git push origin research/scientific-evidence-layer:main`.
+- Status: research and prototype write-up complete, committed and pushed to
+  `main`. Nothing remains for an agent; the task waits on owner decisions.
 - Last updated: 2026-08-09
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -128,8 +129,9 @@ Committed in the two commits on this branch:
 - `docs/agent-tasks/active/research--scientific-evidence-layer.md` (this file).
 - `docs/evidence-card-prototype-2026-08-09.md` (added in the second commit).
 
-Nothing on this branch is pushed. Both commits touch `docs/` only — verified
-with `git diff --name-only origin/main...HEAD`.
+Both commits are on `origin/main` and touch `docs/` only — verified before the
+push with `git diff --name-only origin/main...HEAD`, which returned no path
+outside `docs/`. No code, contract, schema or configuration file changed.
 
 Pre-existing unrelated modifications left untouched and unstaged:
 `.idea/shalomut-map-demo.iml`, `next-env.d.ts`.
@@ -215,12 +217,6 @@ the question has an addressee and costs no engineering to ask.
 
 ## Next concrete step
 
-The owner runs the push to main (the command is blocked for the agent):
-
-```
-git push origin research/scientific-evidence-layer:main
-```
-
-After that, wait for the owner's answers to decisions 1–3 in
+Wait for the owner's answers to decisions 1–3 in
 `docs/scientific-evidence-layer-research-2026-08-09.md` section 5. Do not open
 an implementation task before those answers exist.
