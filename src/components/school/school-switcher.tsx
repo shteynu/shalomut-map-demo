@@ -1,12 +1,33 @@
 "use client";
 
-import { NEW_SCHOOL_PARAM, SETUP_SCHOOL_PARAM, routes } from "@/lib/navigation";
-import type { SchoolSwitcherOption } from "@/lib/schools/school-options";
+import {
+  DASHBOARD_ROUND_PARAM,
+  NEW_SCHOOL_PARAM,
+  SETUP_SCHOOL_PARAM,
+  routes,
+} from "@/lib/navigation";
+import {
+  hasSchoolChoice,
+  type SchoolSwitcherOption,
+} from "@/lib/schools/school-options";
 
 type SchoolSwitcherProps = {
   options: SchoolSwitcherOption[];
   /** Whether the screen is opening a school the system does not have yet. */
   isNewSchool?: boolean;
+  /**
+   * Where the choice is submitted. The setup screen by default, because that is
+   * where a school is normally chosen. `null` renders no action, which submits
+   * to the current URL — what the dead end for a link into another school
+   * wants, so the manager stays on the screen the link was for.
+   */
+  action?: string | null;
+  /**
+   * A round to carry through the switch, for the screen that has one and could
+   * not find it. Choosing a school then asks that school for the same round,
+   * which is what the link was about.
+   */
+  roundId?: string;
 };
 
 /**
@@ -31,15 +52,19 @@ type SchoolSwitcherProps = {
 export function SchoolSwitcher({
   options,
   isNewSchool = false,
+  action = routes.setup,
+  roundId,
 }: SchoolSwitcherProps) {
-  if (options.length < 2 && !(isNewSchool && options.length > 0)) {
+  if (!hasSchoolChoice(options) && !(isNewSchool && options.length > 0)) {
     return null;
   }
 
   const selected = options.find((option) => option.isSelected);
 
   return (
-    <form className="school-switcher" method="get" action={routes.setup}>
+    // `null` becomes no attribute, and a `GET` form with no action submits to
+    // the URL it is on.
+    <form className="school-switcher" method="get" action={action ?? undefined}>
       <label htmlFor="school-switcher-select">בית ספר</label>
       <select
         id="school-switcher-select"
@@ -62,6 +87,14 @@ export function SchoolSwitcher({
           </option>
         ))}
       </select>
+
+      {/*
+        A `GET` form replaces the query string rather than adding to it, so a
+        round that has to survive the switch travels as a field of the form.
+      */}
+      {roundId ? (
+        <input type="hidden" name={DASHBOARD_ROUND_PARAM} value={roundId} />
+      ) : null}
 
       {/*
         The way through when the change handler above cannot run. `noscript`

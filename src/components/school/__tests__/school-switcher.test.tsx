@@ -68,3 +68,37 @@ test("opening a second school keeps the way back to the first one", () => {
 
   assert.match(html, /<option[^>]*value="org-1"/);
 });
+
+/**
+ * The dead end for a link into a round the current school does not have is the
+ * one screen outside setup that offers this switcher, and it wants the choice
+ * to land back where the manager already is rather than on the setup screen.
+ */
+function renderRetrySwitcher(roundId?: string) {
+  return renderToStaticMarkup(
+    <SchoolSwitcher
+      options={toSchoolSwitcherOptions(twoSchools, "org-1")}
+      action={null}
+      roundId={roundId}
+    />,
+  );
+}
+
+test("a switcher given no action submits to the screen it is on", () => {
+  const html = renderRetrySwitcher();
+
+  // No action at all, rather than a path: the same markup is rendered by the
+  // map, the tracking screen and the builder, and each wants its own URL.
+  assert.doesNotMatch(html, /<form[^>]*action=/);
+  assert.match(html, /<form[^>]*method="get"/);
+});
+
+test("the round survives the switch, because a GET form replaces the query", () => {
+  const html = renderRetrySwitcher("round-7");
+
+  assert.match(html, /<input[^>]*type="hidden"[^>]*name="round"[^>]*value="round-7"/);
+});
+
+test("a switcher with no round to carry adds no empty parameter", () => {
+  assert.doesNotMatch(renderRetrySwitcher(), /type="hidden"/);
+});

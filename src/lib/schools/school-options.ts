@@ -16,6 +16,27 @@ export type SchoolSwitcherOption = {
 };
 
 /**
+ * Whether there is a choice to offer at all.
+ *
+ * One school is the school the manager is already in, so a switcher over it
+ * could only name where they are. Both the switcher and the screens that
+ * introduce it ask this, so that a screen never announces a control that then
+ * renders nothing.
+ */
+export function hasSchoolChoice(options: SchoolSwitcherOption[]): boolean {
+  return options.length > 1;
+}
+
+/**
+ * The way out of a link into a round the current school does not have: the
+ * schools to choose from, and the round to ask the chosen one for.
+ */
+export type SchoolChoices = {
+  options: SchoolSwitcherOption[];
+  roundId?: string;
+};
+
+/**
  * The schools, in the order a manager reads them: by name, so the list stays
  * where they last saw it as schools are added, rather than by creation time,
  * which reorders the whole list every time one is opened.
