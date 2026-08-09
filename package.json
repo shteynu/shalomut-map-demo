@@ -25,6 +25,7 @@
     "verify:ai": "node scripts/verify-ai.mjs",
     "verify": "npm run verify:core && npm run verify:db && npm run verify:ai",
     "db:clear": "npx tsx scripts/clear-db.ts",
+    "db:clear:targeted": "npx tsx scripts/clear-test-data.ts",
     "db:seed:local": "npx tsx scripts/seed-local.ts",
     "db:migrate:dev": "npx prisma migrate dev",
     "db:migrate:deploy": "npx prisma migrate deploy",
