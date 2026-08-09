@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { CheckCircle2, Eye, Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
@@ -163,6 +164,7 @@ export function SurveyBuilder({
     };
   }
   const { status: copyStatus, copy } = useClipboard();
+  const router = useRouter();
   const shareUrl = useShareUrl(shareCode);
   const shareInputRef = useRef<HTMLInputElement | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
@@ -437,6 +439,21 @@ export function SurveyBuilder({
     setSaving(false);
     setLoadedVersionAt(null);
     setHistoryToken((token) => token + 1);
+
+    /*
+     * This save is what starts the round, and starting a round closes the one
+     * that was running. The round switcher beside this form was rendered on the
+     * server before any of that happened, so without this it goes on offering
+     * the round it just closed as `פעיל` and this one as `טיוטה` — the exact
+     * opposite of what the school now has. A reload corrected it, which is not
+     * a thing a manager should have to know.
+     *
+     * A refresh and not a remount: the key on this component has not changed,
+     * so the questionnaire in state, the save confirmation and the note about
+     * which round was closed all survive, and only the server-rendered parts
+     * are rebuilt.
+     */
+    router.refresh();
   }
 
   /**
