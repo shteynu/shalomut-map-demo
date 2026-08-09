@@ -1,4 +1,5 @@
 import { IRoundRepository } from '../repositories/interfaces';
+import { isRoundTransitionAllowed } from '../rounds/round-status';
 import {
   CreateRoundInput,
   RoundStatus,
@@ -155,13 +156,6 @@ export class RoundService {
     current: RoundStatus,
     target: RoundStatus
   ): boolean {
-    const transitions: Record<RoundStatus, RoundStatus[]> = {
-      draft: ['active', 'archived'],
-      active: ['closed', 'archived'],
-      closed: ['active', 'archived'],
-      archived: [],
-    };
-
-    return transitions[current]?.includes(target) ?? false;
+    return isRoundTransitionAllowed(current, target);
   }
 }
