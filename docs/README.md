@@ -52,6 +52,13 @@ or deployment snapshots:
 
 - `*-plan*.md`, `completion-plan-*`, `manager-feedback-plan-*`,
   `provider-quota-plan-*` and `e2-step3-contract-version-rollout.md`;
+- [`scientific-evidence-layer-research-2026-08-09.md`](scientific-evidence-layer-research-2026-08-09.md)
+  — dated read-only study of where the AI pipeline lacks scientific evidence and
+  which extension points exist. **Not for implementation**: material for a
+  product discussion, with unranked alternatives and open owner decisions;
+- [`ai-service-incidental-findings-2026-08-09.md`](ai-service-incidental-findings-2026-08-09.md)
+  — defects and drift found during that study, deferred by owner decision on
+  2026-08-09; a record, not a queue;
 - `wellbeing-refactoring-plan-v4-review.md` (its section 6 is the final audit of
   the merged refactoring stack; remaining work is summarized in `ROADMAP.md`);
 - `redesign-change-log.md`;
