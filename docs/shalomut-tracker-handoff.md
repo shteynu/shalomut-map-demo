@@ -551,13 +551,19 @@ owner's own hands.
 
 **Waits on an owner decision**
 
-- Whether a tracked goal ever gains an owner, a due date or a plan of steps.
-  `docs/product-behaviour-backlog.md` §5 has held this open deliberately since
-  2026-08-04: the three-state goal was built as the smallest thing that makes
-  "tracked" true, and anything more is a product choice rather than a gap.
-- Whether a goal should be read beside the delta of the dimension it belongs to.
-  The goals screen names the dimension and the round; it shows no numbers, and
-  putting a score next to a goal is a different question from where goals live.
+- **Both goal questions are closed, 2026-08-09, both as "no".** A tracked goal
+  gains no owner, no due date and no plan of steps — the three-state goal stays
+  the whole of it, because the fields would make this task management rather
+  than measurement, and a form is easy to add later and hard to withdraw. And no
+  number is shown beside a goal: a dimension's delta is not the goal's result,
+  so putting one there would assert through layout the causal link the AI copy
+  is already forbidden to assert. The reasoning is in
+  `docs/product-behaviour-backlog.md` §5; neither is unfinished work.
+- The twelve decisions in
+  `docs/scientific-evidence-layer-research-2026-08-09.md` section 5, of which
+  1–3 select between three different projects, plus the undocumented bridge
+  between the eight dimensions and any published framework — a question for the
+  named research adviser rather than for engineering.
 
 **Waits on being requested**
 

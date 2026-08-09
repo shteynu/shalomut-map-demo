@@ -1,9 +1,10 @@
 # Product Behaviour Backlog
 
-Updated: 2026-08-05
+Updated: 2026-08-09
 Status: every numbered item below is closed except the two that wait on being
 requested — §8, a second manager per school, and §11, repeat-measurement
-reminders. Reconciled against the owner's
+reminders. §5's two open questions were closed by owner decision on 2026-08-09,
+both as "no"; see the item itself. Reconciled against the owner's
 development requirements document ("פיתוח פלטפורמת מפת שלומות — MVP + הכנה
 לשלב הבא", Google Docs)
 
@@ -262,12 +263,27 @@ what a status change means. The repository read takes round ids rather than an
 organization id, keeping the rule that a goal is never reachable without naming
 its round.
 
-Remaining:
-- Whether an action plan of steps, an owner or a due date is wanted is a
-  separate decision, deliberately not taken here.
-- Goals still sit beside no numbers. Reading a goal next to the delta of the
-  dimension it belongs to is not built, and it is a different question from
-  where the goals are listed.
+Remaining: nothing. Both questions this item held open were answered on
+2026-08-09, and both answers are "no".
+
+Owner decision 2026-08-09 — **a goal gains no owner, no due date and no plan of
+steps.** The three-state goal stays the whole of it. Adding the fields would
+turn this into task management, which is a different product from measurement;
+a school that already tracks tasks elsewhere would get a second, worse tracker,
+and the form would land on exactly the manager who is trying one goal for the
+first time. Fields can be added later if real use asks for them; a form managers
+have grown used to cannot be taken away. Revisit only on evidence from real
+schools, not on principle.
+
+Owner decision 2026-08-09 — **no number is shown beside a goal.** The delta of a
+dimension is not the result of the goal: many things move a dimension and the
+goal is one of them, so placing "+7%" next to a goal would assert a causal link
+the data cannot support. The product already refuses that claim in AI copy
+(2026-08-05, `no_overreach`); making it through layout instead would be the same
+overreach by another route. If a number is ever wanted here, it has to read as
+context for the dimension and say so — never as the goal's outcome.
+
+Do not reopen either question as unfinished work. They are closed decisions.
 
 Why it matters:
 - The product principle is "from picture to action"; tracked goals are the likely next step beyond visual diagnosis.

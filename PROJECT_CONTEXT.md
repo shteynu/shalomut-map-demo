@@ -308,6 +308,14 @@ Owner decision 2026-08-04, backlog §5, in its minimal form: a manager can mark 
 recommendation as a goal, move it through selected → in progress → done, and
 stop tracking it. There is no owner, no due date and no plan of steps.
 
+Owner decision 2026-08-09 makes that the settled shape rather than a first
+step: the fields stay out, because they would turn measurement into task
+management and would land a form on the manager trying a single goal for the
+first time. The same day closed the companion question — no number is shown
+beside a goal, since a dimension's delta is not the goal's result and placing
+one there would assert through layout the causal link the AI copy is forbidden
+to assert. Both are revisited only on evidence from real schools.
+
 A recommendation belongs to an analysis run and is rewritten wholesale by the
 next one. A goal belongs to the school, so `round_goals` stores the title and
 body as they read at the moment of the decision. A goal the current analysis no
