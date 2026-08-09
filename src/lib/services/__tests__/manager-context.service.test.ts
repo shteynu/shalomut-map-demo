@@ -7,6 +7,7 @@ import {
 } from "@/lib/repositories";
 import {
   ManagerContextService,
+  isSelectedRoundSuperseded,
   selectActiveRound,
 } from "@/lib/services/manager-context.service";
 import type {
@@ -280,4 +281,81 @@ test("another school's answers are not in this school's numbers", async () => {
   assert.strictEqual(context.responseCount, 0);
   assert.strictEqual(context.analytics?.roundId, ownRound.id);
   assert.strictEqual(context.analytics?.totalResponses, 0);
+});
+
+/**
+ * A superseded round is one the school has moved past. The screen says so and
+ * takes away the controls that would rewrite what the round measured, so the
+ * question of which rounds are superseded is the question of which rounds a
+ * manager can still work on.
+ */
+async function contextFor(rounds: SurveyRound[], requestedRoundId?: string) {
+  return ManagerContextService.load(
+    new InMemoryOrganizationRepository([organization]),
+    new InMemoryRoundRepository(rounds),
+    new InMemorySurveyRepository(),
+    organization.id,
+    requestedRoundId,
+  );
+}
+
+test("a draft the manager just opened is not a round the school has moved past", async () => {
+  // The bug this test exists for: opening a round while another one is still
+  // collecting creates a draft, drafts sort behind the active round, and the
+  // screen read that position as "superseded". The manager was told the school
+  // had moved past a round they had opened a minute earlier, and lost the
+  // controls for preparing it.
+  const active = round("active", "active", "2026-07-01T00:00:00.000Z");
+  const draft = round("draft", "draft", "2026-07-20T00:00:00.000Z");
+
+  const context = await contextFor([active, draft], draft.id);
+
+  assert.strictEqual(context.selectedRound?.id, draft.id);
+  assert.notStrictEqual(context.rounds[0]?.id, draft.id);
+  assert.strictEqual(isSelectedRoundSuperseded(context), false);
+});
+
+test("the round a school moved past is superseded", async () => {
+  const active = round("active", "active", "2026-07-20T00:00:00.000Z");
+  const previous = round("previous", "closed", "2026-07-01T00:00:00.000Z");
+
+  const context = await contextFor([active, previous], previous.id);
+
+  assert.strictEqual(isSelectedRoundSuperseded(context), true);
+});
+
+test("an archived round is superseded too", async () => {
+  const active = round("active", "active", "2026-07-20T00:00:00.000Z");
+  const filed = round("filed", "archived", "2026-07-01T00:00:00.000Z");
+
+  assert.strictEqual(
+    isSelectedRoundSuperseded(await contextFor([active, filed], filed.id)),
+    true,
+  );
+});
+
+test("the round the school is working on is never superseded", async () => {
+  const active = round("active", "active", "2026-07-20T00:00:00.000Z");
+  const previous = round("previous", "closed", "2026-07-01T00:00:00.000Z");
+
+  assert.strictEqual(
+    isSelectedRoundSuperseded(await contextFor([active, previous], active.id)),
+    false,
+  );
+});
+
+test("a closed round is not superseded while it is the newest one", async () => {
+  // A school that closed its round and has not opened the next one is still
+  // reading that round, and closing then refreshing the analysis is how a round
+  // ends.
+  const onlyRound = round("only", "closed", "2026-07-20T00:00:00.000Z");
+
+  assert.strictEqual(
+    isSelectedRoundSuperseded(await contextFor([onlyRound], onlyRound.id)),
+    false,
+  );
+});
+
+test("a school with no round has nothing to supersede", async () => {
+  assert.strictEqual(isSelectedRoundSuperseded(await contextFor([])), false);
 });

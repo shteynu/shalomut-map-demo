@@ -8,7 +8,7 @@ import {
 import { readRoundParam, roundSwitcherAction } from "@/lib/navigation";
 import { toRoundSwitcherOptions } from "@/lib/rounds/round-options";
 import { loadManagerContext } from "@/lib/server/manager-context";
-import { isSelectedRoundCurrent } from "@/lib/services";
+import { isSelectedRoundSuperseded } from "@/lib/services";
 import { MINIMUM_PRIVACY_THRESHOLD } from "@/lib/survey-definition";
 
 const dateFormatter = new Intl.DateTimeFormat("he-IL", {
@@ -87,7 +87,7 @@ export default async function RoundPage({
         expectedResponses={organization.totalStaffCount}
         minimumResponses={selectedRound.privacyThreshold}
         status={selectedRound.status}
-        isSuperseded={!isSelectedRoundCurrent(context)}
+        isSuperseded={isSelectedRoundSuperseded(context)}
       />
 
       <RoundThresholdNextStep

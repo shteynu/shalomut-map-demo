@@ -69,18 +69,35 @@ export function orderRoundsForManager(rounds: SurveyRound[]): SurveyRound[] {
   });
 }
 
+const supersedableStatuses: ReadonlySet<SurveyRound["status"]> = new Set([
+  "closed",
+  "archived",
+]);
+
 /**
- * Whether the round on screen is still the one the school is working on.
+ * Whether the school has moved *past* the round on screen.
  *
- * `rounds` is ordered for the manager, so the first entry is the round they
- * would have landed on without asking for one. Anything else is a round the
- * school has moved past, and a superseded round is read: its answers are not
- * reset and its analysis is not re-run, because the school has already acted
- * on what it said.
+ * A superseded round is read rather than worked on: its answers are not reset
+ * and its analysis is not re-run, because the school has already acted on what
+ * it said.
+ *
+ * Two conditions, and the second is the one that was missing. Not being the
+ * round the manager would have landed on is necessary — `rounds` is ordered for
+ * them, so the first entry is that round — but it is not sufficient, because
+ * that order puts `active` ahead of `draft`. A round the manager opened a
+ * minute ago is a draft while its questionnaire is built, so it sorted behind
+ * the round still running and was announced to its own author as a round the
+ * school had moved past, with the controls for preparing it taken away. A draft
+ * is ahead of the school, not behind it. Only a round whose own status says the
+ * school is finished with it can be superseded.
  */
-export function isSelectedRoundCurrent(context: ManagerContext): boolean {
-  return Boolean(
-    context.selectedRound && context.rounds[0]?.id === context.selectedRound.id,
+export function isSelectedRoundSuperseded(context: ManagerContext): boolean {
+  const { selectedRound } = context;
+  if (!selectedRound) return false;
+
+  return (
+    context.rounds[0]?.id !== selectedRound.id &&
+    supersedableStatuses.has(selectedRound.status)
   );
 }
 
