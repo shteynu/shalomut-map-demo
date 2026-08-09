@@ -1,6 +1,6 @@
 # Shalomut Tracker — operational handoff
 
-Updated: 2026-08-09 (`origin/main` is `1b49e86`). The last thing to land is the
+Updated: 2026-08-09 (`origin/main` is `13abf7c`). The last thing to land is the
 scope dead end a manager could reach with no action on the screen at all: a
 request naming no school the system has now offers the schools it could not
 choose between. It was walked in the owner's signed-in Chrome twice — on the
