@@ -1,7 +1,13 @@
 # Shalomut Tracker — operational handoff
 
-Updated: 2026-08-09 (`origin/main` is `13abf7c`). The last thing to land is the
-scope dead end a manager could reach with no action on the screen at all: a
+Updated: 2026-08-09 (`origin/main` is `3c27de3`). The last thing to land is a
+decision rather than a change: backlog §5's two open goal questions are both
+answered "no" — a goal gains no owner, due date or plan of steps, and no number
+is shown beside it. Recorded in the backlog item, in ADR-015 and in the open
+list below; no runtime file changed.
+
+Before it, the last product change was the scope dead end a manager could reach
+with no action on the screen at all: a
 request naming no school the system has now offers the schools it could not
 choose between. It was walked in the owner's signed-in Chrome twice — on the
 local server before the push and on the deployed endpoint after it — and both
