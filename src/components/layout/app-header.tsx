@@ -10,6 +10,7 @@ import {
   isMainNavItemActive,
   mainNavItemsForRound,
   navigationLabels,
+  navigationRoundId,
   routes,
   type MainNavItem,
   type MainNavItemId,
@@ -50,9 +51,13 @@ export function AppHeader() {
 }
 
 function RoundAwareHeaderNavigation() {
-  const roundId = useSearchParams()?.get(DASHBOARD_ROUND_PARAM) ?? undefined;
+  // `navigationRoundId` is what keeps `round=new` out of these links; it says
+  // why there rather than here, next to the parameter it is about.
+  const roundId = navigationRoundId(
+    useSearchParams()?.get(DASHBOARD_ROUND_PARAM) ?? undefined,
+  );
 
-  return <HeaderNavigation roundId={roundId || undefined} />;
+  return <HeaderNavigation roundId={roundId} />;
 }
 
 function HeaderNavigation({ roundId }: { roundId: string | undefined }) {

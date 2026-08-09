@@ -20,6 +20,7 @@ import {
   isPathWithin,
   mainNavItems,
   mainNavItemsForRound,
+  navigationRoundId,
   respondentSurveyRoute,
   routes,
   shouldHideGlobalHeader,
@@ -225,4 +226,32 @@ test("the login redirect falls back to home when there is nothing to honour", ()
   assert.strictEqual(resolveLoginRedirect(null), "/");
   assert.strictEqual(resolveLoginRedirect(undefined), "/");
   assert.strictEqual(resolveLoginRedirect("   "), "/");
+});
+
+test("the header's round is the one in the URL, once it is a round", () => {
+  assert.strictEqual(navigationRoundId("round-7"), "round-7");
+  assert.strictEqual(navigationRoundId("  round-7  "), "round-7");
+});
+
+test("`round=new` is not a round the screen-wide links may carry", () => {
+  // The setup screen uses `new` to say a round is being opened. Every other
+  // screen looks the value up as an id, finds nothing and tells the manager the
+  // round may have been deleted — while they are in the middle of creating it.
+  assert.strictEqual(navigationRoundId("new"), undefined);
+  assert.strictEqual(navigationRoundId(undefined), undefined);
+  assert.strictEqual(navigationRoundId("   "), undefined);
+});
+
+test("opening a new round leaves the header pointing at the current round", () => {
+  const hrefById = Object.fromEntries(
+    mainNavItemsForRound(navigationRoundId("new")).map((item) => [
+      item.id,
+      item.href,
+    ]),
+  );
+
+  assert.strictEqual(hrefById.home, "/");
+  assert.strictEqual(hrefById.round, "/round");
+  assert.strictEqual(hrefById.surveyBuilder, "/survey");
+  assert.strictEqual(hrefById.dashboard, "/dashboard");
 });

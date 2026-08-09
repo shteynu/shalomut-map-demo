@@ -246,6 +246,29 @@ export function isNewRoundParam(value: string | undefined): boolean {
 }
 
 /**
+ * The round that screen-wide links should carry, given whatever `?round=`
+ * holds on the screen they are rendered on.
+ *
+ * `new` is not one of them. It is the setup screen saying a round is being
+ * opened, and the setup screen is the only reader that understands it. Passed
+ * on to the links in the header it became a round id every other screen looked
+ * up and failed to find, so a manager filling in a new round who touched the
+ * menu was told the round did not exist and might have been deleted. Nothing
+ * had been deleted — the round did not exist yet, which is what the screen they
+ * came from is for.
+ *
+ * Absent here means "no round named", which is what every route helper already
+ * treats as the school's current round.
+ */
+export function navigationRoundId(
+  value: string | undefined,
+): string | undefined {
+  const trimmed = value?.trim();
+
+  return !trimmed || isNewRoundParam(trimmed) ? undefined : trimmed;
+}
+
+/**
  * Which school the manager is working in, carried in the URL of the one screen
  * that can change it.
  *
