@@ -6,8 +6,8 @@
 - Base branch: `chore/experiment-scripts-out-of-pytest-path` (the last of a
   six-branch chain on top of `main` at `79a6d39`; none of them pushed)
 - Base commit: `edf64ed`
-- Current HEAD: the commit that carries this file
-- Status: complete on this branch, not yet on `main`
+- Current HEAD: `5188bfa`
+- Status: landed on `main` as 5188bfa; `origin/main` is `5188bfa`
 - Last updated: 2026-08-09
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -92,7 +92,7 @@ None.
 
 ## Remaining
 
-- Push onto `main`. This branch carries all seven items.
+None. The owner pushed the chain on 2026-08-09.
 
 ## Changed files
 
@@ -153,5 +153,4 @@ None.
 
 ## Next concrete step
 
-Hand the push to the owner: `git push origin
-docs/source-of-truth-staff-count-path:main`, which lands all seven items.
+None. The chain landed on `main` on 2026-08-09 and this file is closed.

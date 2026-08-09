@@ -6,8 +6,8 @@
 - Base branch: `fix/v6-adaptation-repair-critique` (which is based on `main` at
   `79a6d39` and is itself unpushed)
 - Base commit: `edf7db5`
-- Current HEAD: the commit that carries this file
-- Status: complete on this branch, not yet on `main`
+- Current HEAD: `e385b09`
+- Status: landed on `main` as e385b09; `origin/main` is `5188bfa`
 - Last updated: 2026-08-09
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -81,9 +81,7 @@ None.
 
 ## Remaining
 
-- Push onto `main`. This branch contains the two commits of
-  `fix/v6-adaptation-repair-critique`, so pushing it lands both items; pushing
-  that branch first is equally fine.
+None. The owner pushed the chain on 2026-08-09.
 
 ## Changed files
 
@@ -139,5 +137,4 @@ None.
 
 ## Next concrete step
 
-Hand the push to the owner: `git push origin
-docs/outgoing-gate-docstring:main`, which lands items 1 and 2 together.
+None. The chain landed on `main` on 2026-08-09 and this file is closed.

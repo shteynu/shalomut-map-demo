@@ -7,8 +7,8 @@
   `fix/v6-adaptation-repair-critique`, based on `main` at `79a6d39`; neither is
   pushed)
 - Base commit: `e385b09`
-- Current HEAD: the commit that carries this file
-- Status: complete on this branch, not yet on `main`
+- Current HEAD: `93de052`
+- Status: landed on `main` as 93de052; `origin/main` is `5188bfa`
 - Last updated: 2026-08-09
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -101,8 +101,7 @@ None.
 
 ## Remaining
 
-- Push onto `main`. This branch contains items 1, 2 and 3; pushing it lands all
-  three.
+None. The owner pushed the chain on 2026-08-09.
 
 ## Changed files
 
@@ -165,5 +164,4 @@ None.
 
 ## Next concrete step
 
-Hand the push to the owner: `git push origin
-fix/background-context-provenance:main`, which lands items 1, 2 and 3 together.
+None. The chain landed on `main` on 2026-08-09 and this file is closed.

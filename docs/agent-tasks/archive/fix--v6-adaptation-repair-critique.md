@@ -5,8 +5,8 @@
 - Branch: `fix/v6-adaptation-repair-critique`
 - Base branch: `main`
 - Base commit: `79a6d39`
-- Current HEAD: the docs commit that carries this file, one commit after `019963c`
-- Status: complete on this branch, not yet on `main`
+- Current HEAD: `edf7db5`
+- Status: landed on `main` as 019963c, edf7db5; `origin/main` is `5188bfa`
 - Last updated: 2026-08-09
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -88,9 +88,7 @@ None.
 
 ## Remaining
 
-- Push the branch onto `main` (`git push origin
-  fix/v6-adaptation-repair-critique:main`) — an owner action in this
-  environment.
+None. The owner pushed the chain on 2026-08-09.
 
 ## Changed files
 
@@ -155,6 +153,4 @@ None.
 
 ## Next concrete step
 
-Hand the push to the owner: `git push origin
-fix/v6-adaptation-repair-critique:main`. Until then the work is visible only in
-this worktree's branch.
+None. The chain landed on `main` on 2026-08-09 and this file is closed.

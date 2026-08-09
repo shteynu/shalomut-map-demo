@@ -9,8 +9,8 @@
   `fix/v6-adaptation-repair-critique`, based on `main` at `79a6d39`; none of
   them pushed)
 - Base commit: `aa5bead`
-- Current HEAD: the commit that carries this file
-- Status: complete on this branch, not yet on `main`
+- Current HEAD: `edf64ed`
+- Status: landed on `main` as edf64ed; `origin/main` is `5188bfa`
 - Last updated: 2026-08-09
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -94,7 +94,7 @@ None.
 
 ## Remaining
 
-- Push onto `main`. This branch carries items 1–6.
+None. The owner pushed the chain on 2026-08-09.
 
 ## Changed files
 
@@ -156,5 +156,4 @@ None.
 
 ## Next concrete step
 
-Hand the push to the owner: `git push origin
-chore/experiment-scripts-out-of-pytest-path:main`, which lands items 1–6.
+None. The chain landed on `main` on 2026-08-09 and this file is closed.

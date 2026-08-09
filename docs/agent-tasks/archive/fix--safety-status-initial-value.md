@@ -8,8 +8,8 @@
   `fix/v6-adaptation-repair-critique`, based on `main` at `79a6d39`; none of
   them pushed)
 - Base commit: `fe938df`
-- Current HEAD: the commit that carries this file
-- Status: complete on this branch, not yet on `main`
+- Current HEAD: `aa5bead`
+- Status: landed on `main` as aa5bead; `origin/main` is `5188bfa`
 - Last updated: 2026-08-09
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -98,7 +98,7 @@ None.
 
 ## Remaining
 
-- Push onto `main`. This branch carries items 1–5.
+None. The owner pushed the chain on 2026-08-09.
 
 ## Changed files
 
@@ -158,5 +158,4 @@ None.
 
 ## Next concrete step
 
-Hand the push to the owner: `git push origin
-fix/safety-status-initial-value:main`, which lands items 1–5.
+None. The chain landed on `main` on 2026-08-09 and this file is closed.

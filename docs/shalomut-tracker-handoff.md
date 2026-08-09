@@ -212,6 +212,15 @@ older snapshots remain available in Git.
   is 371x386 fully inside the viewport and not scrolling, and `.stat-stone >
   strong` is still 46.4px — the stone's own number was not quieted along with
   the tooltip.
+- **The seven incidental AI-service findings of 2026-08-09 are all fixed and on
+  `main` (`5188bfa`), and the deployed Python service does not have them yet.**
+  Six of the seven are inside `ai-analytics-service`, so they take effect only
+  after the Render container is rebuilt from `main`; Vercel picks up the Core
+  side by itself. Nothing here is urgent — the fixes are correctness and
+  observability, not an outage — but a deployed round analysed before that
+  rebuild still shows the old behaviour, including the flat
+  `provider_unavailable`.
+
 - AI service: Render container from the root `Dockerfile`, with durable polling
   enabled. The service needs an always-available process or explicit wake
   mechanism; scale-to-zero alone is not a reliable worker. An inbound
@@ -339,6 +348,16 @@ older snapshots remain available in Git.
   the evidence for whether to build the immutable input snapshot**, which is
   Phase 1 of the AI harness improvement plan the owner is holding outside the
   repository.
+
+- Since 2026-08-09 a round that fails because the provider was unavailable
+  reports why. `failureReason` keeps `provider_unavailable` as its prefix and
+  appends the reason the run learned — `provider_unavailable_missing_api_key`,
+  `provider_unavailable_http_429`, `provider_unavailable_retry_budget_exhausted`
+  — and Core stores that string as the run's `failureCode` and as the label on
+  its operational metric. **A dashboard or query that matched the old single
+  value must group by prefix.** Re-arming is unaffected: only Core's own
+  `round_validation_failed` re-arms. No contract bump was involved; the field is
+  additive and Core does not declare it.
 
 - On contract `6.0` a silent provider does not fail a dimension: the structured
   summary and the metric narratives fall back to aggregate-derived copy and the

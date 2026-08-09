@@ -7,8 +7,8 @@
   `docs/outgoing-gate-docstring` and `fix/v6-adaptation-repair-critique`, based
   on `main` at `79a6d39`; none of them pushed)
 - Base commit: `93de052`
-- Current HEAD: the commit that carries this file
-- Status: complete on this branch, not yet on `main`
+- Current HEAD: `fe938df`
+- Status: landed on `main` as fe938df; `origin/main` is `5188bfa`
 - Last updated: 2026-08-09
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -106,7 +106,7 @@ None.
 
 ## Remaining
 
-- Push onto `main`. This branch carries items 1, 2, 3 and 4.
+None. The owner pushed the chain on 2026-08-09.
 
 ## Changed files
 
@@ -175,5 +175,4 @@ None.
 
 ## Next concrete step
 
-Hand the push to the owner: `git push origin
-feat/provider-failure-reason-reaches-core:main`, which lands items 1–4.
+None. The chain landed on `main` on 2026-08-09 and this file is closed.
