@@ -238,12 +238,15 @@ older snapshots remain available in Git.
 - Known dead end, found while verifying that deletion: a session whose
   `shalomut_school` cookie names a deleted school lands on
   `נדרש שיוך לבית ספר` with no school switcher — the same shape finding #6
-  fixed for `round-not-found`. Only reachable when a school is deleted under an
-  open session. **Fixed on `fix/scope-required-has-a-way-out`**, which is
-  waiting to be pushed: the state now offers the schools it could not choose
-  between, and choosing one reopens the screen the manager was on. Verified by
-  rendering tests and `verify:core`; not yet walked in a browser, which needs
-  the owner's sign-in.
+  fixed for `round-not-found`. **Fixed on `fix/scope-required-has-a-way-out`**,
+  which is waiting to be pushed: the state now offers the schools it could not
+  choose between, and choosing one reopens the screen the manager was on and
+  replaces the stale cookie. Walked in the owner's signed-in Chrome on the local
+  server, 2026-08-09 — the chain from this state through `round-not-found` and
+  back to a school's own home screen was exercised end to end; the evidence is
+  in the branch task file. A deleted school turns out not to be needed to reach
+  it: the middleware writes `?school=` to the cookie without checking the school
+  exists, so any unknown id produces the same state.
 - Supported product environments remain local and deployed only.
 - Core endpoint: `https://shalomut-map-demo.vercel.app/`. Vercel names the
   target Production; for the product it is the design-stage operational staging

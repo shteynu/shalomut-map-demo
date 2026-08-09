@@ -7,8 +7,9 @@
 - Base commit: 2e80b6a (`origin/main` at session start)
 - Current HEAD: see the commit on this branch; the worktree is otherwise as
   described under `Changed files`.
-- Status: code and rendering tests complete and verified locally. A signed-in
-  browser walk of the state has not run and needs the owner.
+- Status: complete and walked. The state was reached in the owner's signed-in
+  Chrome against the local development server and left through the new switcher.
+  Waiting only on a push.
 - Last updated: 2026-08-09
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -111,8 +112,7 @@ onboarding button, so the manager arrived at a screen with nothing to press.
 
 ## Remaining
 
-- A signed-in walk of the state, which needs the owner. Reproducing it takes two
-  schools and a `shalomut_school` cookie naming a third that was deleted.
+- The push. Nothing else.
 
 ## Changed files
 
@@ -134,6 +134,35 @@ Pre-existing unrelated modifications left untouched and unstaged:
   stashing both component files and running the suite: 774 pass, 4 fail — the
   switcher, the placeholder row, the carried round and the changed copy. The
   other two are the no-choice guards and correctly pass either way.
+- **Walked in the owner's signed-in Chrome, 2026-08-09**, against the local
+  development server on `next dev`, with the local database on `127.0.0.1`
+  holding two schools. The state does not need a deleted school to reach:
+  the middleware writes `?school=` to the cookie without checking that the
+  school exists (`middleware.ts:32,99`), so
+  `/?school=00000000-0000-0000-0000-000000000000&round=<invented>` is the same
+  request a deleted school produces. What was confirmed in the product:
+  - the screen renders `בחירת בית ספר` with both schools in the select, and
+    `פנו למנהל המערכת` is gone;
+  - `main` holds **no** link or button besides the switcher — which is what the
+    dead end was: before this change that count was zero;
+  - the select shows the disabled `בחרו בית ספר` row at `selectedIndex` 0 with
+    `value === ""`, so neither school is displayed as the current one;
+  - the form carries no `action` and holds
+    `round=1b2c3d4e-dead-4beef-9999-000000000000` as a hidden field;
+  - choosing the first school navigated to
+    `/?school=34d05e66…&round=1b2c3d4e…` — the same screen, inside that school —
+    and, the invented round not existing there, landed on `round-not-found`,
+    which offered its own switcher and `חזרה למפת הסבב הפעיל`. The two dead ends
+    chain as intended;
+  - the cookie was replaced by that choice: a bare `/` afterwards rendered
+    `בית ספר בדיקה מקומי, סבב חורף 2027` rather than the state again;
+  - `/goals/?school=<invented>` — the one caller that passed no list before this
+    change — also offers the switcher, and choosing the second school reopened
+    `מעקב יעדים` inside `בית ספר שני לבדיקת מעבר`.
+- The walk's fixture school (`1e9f8ab1`, `בית ספר שני לבדיקת מעבר`, no rounds)
+  was created for it and deleted afterwards with `db:clear:targeted`. The local
+  database is back to one school, 4 rounds, 24 responses and 576 answers, and
+  the browser's cookie was returned to that school before the deletion.
 
 ### Failed
 
@@ -143,10 +172,14 @@ Pre-existing unrelated modifications left untouched and unstaged:
 
 - `verify:db`, `verify:ai`, the Python suite and the mutation run: no schema,
   repository, contract or Python file is in this diff.
-- Playwright: not run. The state needs a deleted school under an open session,
-  which the smoke does not set up.
-- A browser walk, local or deployed: not run. Every manager screen is behind
-  `/login` and the agent never sees or types the manager password.
+- Playwright: not run. The state needs a second school, which the smoke does not
+  set up.
+- The deployed endpoint: not walked, because the fix is not pushed there yet.
+- The native `select` menu: not driven. macOS opens an OS-level popup that
+  synthetic key events do not reach, so the choice was made by dispatching the
+  `change` event the component listens for. Everything from `onChange` onwards —
+  `requestSubmit`, the GET navigation, the middleware, the cookie — is real; the
+  OS menu above it is browser behaviour and was not exercised.
 
 ### Environment
 
@@ -154,9 +187,10 @@ Pre-existing unrelated modifications left untouched and unstaged:
 
 ### Residual risk
 
-- The placeholder row is markup-verified, not walked. The `change`-fires-on-pick
-  behaviour it exists for is a browser behaviour a `renderToStaticMarkup` test
-  cannot execute.
+- The placeholder is confirmed to render and to leave `value` empty in a real
+  browser, but the behaviour it exists for — that picking the first school fires
+  `change` at all — sits inside the OS menu the walk could not open. A keyboard
+  or screen-reader user reaches it by a path nothing here has exercised.
 
 ## Failed approaches
 
@@ -177,7 +211,5 @@ Pre-existing unrelated modifications left untouched and unstaged:
 
 ## Next concrete step
 
-Walk the state in the owner's signed-in browser: with two schools present, set
-`shalomut_school` to an id that does not exist, open `/` and confirm the screen
-offers the switcher, that picking a school reopens the same screen inside it,
-and that the cookie was replaced.
+Push the branch — `git push origin fix/scope-required-has-a-way-out:main` — and
+archive this file. Nothing else on it is open.
