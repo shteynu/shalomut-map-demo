@@ -583,6 +583,23 @@ main:focus-visible {
   line-height: 1.7;
 }
 
+/* The one place a school switcher stands outside the setup screen: a link into
+   a round this school does not have. It sits between the explanation and the
+   way back to the active round, so it is separated from both — and it needs the
+   panel's stacking context like the text does, or the panel's own decoration
+   covers it. */
+.manager-onboarding-schools {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 0.5rem;
+  margin: 0.35rem 0 0.25rem;
+}
+
+.manager-onboarding-schools .school-switcher {
+  margin: 0;
+}
+
 /* The sign-in screen. It is headerless — the manager has no navigation to use
    yet — so it carries the brand mark itself and centres a single panel rather
    than opening with a page intro like every screen behind it.

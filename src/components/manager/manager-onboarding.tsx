@@ -5,20 +5,32 @@ import {
   ClipboardList,
   ShieldAlert,
 } from "lucide-react";
+import { SchoolSwitcher } from "@/components/school";
 import { PageIntro } from "@/components/ui";
 import { routes } from "@/lib/navigation";
+import {
+  hasSchoolChoice,
+  type SchoolChoices,
+} from "@/lib/schools/school-options";
 import type { ManagerOnboardingState } from "@/lib/services";
 
 type ManagerOnboardingProps = {
   organizationName?: string;
   surface?: "page" | "dashboard";
   state?: ManagerOnboardingState;
+  /**
+   * The schools a manager can move to from the dead end below, and the round to
+   * carry with them. Null on every other state, and on a system with one school
+   * there is nothing to offer.
+   */
+  schoolChoices?: SchoolChoices | null;
 };
 
 export function ManagerOnboarding({
   organizationName,
   surface = "page",
   state,
+  schoolChoices,
 }: ManagerOnboardingProps) {
   const scopeRequired = state === "scope-required";
   const roundNotFound = state === "round-not-found";
@@ -53,6 +65,27 @@ export function ManagerOnboarding({
               סבב חלופי בעצמה. אפשר לחזור למפה של הסבב הפעיל ולבחור סבב מהרשימה.
             </p>
           </div>
+          {/*
+            The one screen where a school switcher belongs outside the setup
+            screen. A link that names a round this school does not have is
+            usually a link from another school, and until now the only way out
+            led back to the school the manager was already in. It renders
+            nothing when there is only one school, because then there is nothing
+            to have come from.
+          */}
+          {schoolChoices && hasSchoolChoice(schoolChoices.options) ? (
+            <div className="manager-onboarding-schools">
+              <p>
+                אם הקישור הגיע מבית ספר אחר, בחרו אותו כאן והמערכת תבקש ממנו את
+                אותו הסבב.
+              </p>
+              <SchoolSwitcher
+                options={schoolChoices.options}
+                roundId={schoolChoices.roundId}
+                action={null}
+              />
+            </div>
+          ) : null}
           <Link className="primary-button" href={routes.dashboard}>
             חזרה למפת הסבב הפעיל
             <ArrowLeft size={18} aria-hidden="true" />

@@ -7,7 +7,10 @@ import {
 } from "@/components/round";
 import { readRoundParam, roundSwitcherAction } from "@/lib/navigation";
 import { toRoundSwitcherOptions } from "@/lib/rounds/round-options";
-import { loadManagerContext } from "@/lib/server/manager-context";
+import {
+  loadManagerContext,
+  loadSchoolChoices,
+} from "@/lib/server/manager-context";
 import { isSelectedRoundSuperseded } from "@/lib/services";
 import { MINIMUM_PRIVACY_THRESHOLD } from "@/lib/survey-definition";
 
@@ -22,13 +25,15 @@ export default async function RoundPage({
 }: {
   searchParams: Promise<{ round?: string | string[] }>;
 }) {
-  const context = await loadManagerContext(readRoundParam(await searchParams));
+  const requestedRound = readRoundParam(await searchParams);
+  const context = await loadManagerContext(requestedRound);
 
   if (!context.organization || !context.selectedRound) {
     return (
       <ManagerOnboarding
         organizationName={context.organization?.name}
         state={context.state}
+        schoolChoices={await loadSchoolChoices(context, requestedRound)}
       />
     );
   }

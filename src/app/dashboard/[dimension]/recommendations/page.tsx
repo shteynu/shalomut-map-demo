@@ -6,7 +6,10 @@ import {
   getDimensionStaticParams,
 } from "@/lib/dashboard/dimension-presentation";
 import { readRoundParam } from "@/lib/navigation";
-import { loadManagerContext } from "@/lib/server/manager-context";
+import {
+  loadManagerContext,
+  loadSchoolChoices,
+} from "@/lib/server/manager-context";
 
 export const dynamicParams = false;
 
@@ -23,7 +26,8 @@ export default async function DimensionRecommendationsPage({
 }) {
   const { dimension } = await params;
   const entry = getDimensionPresentation(dimension);
-  const context = await loadManagerContext(readRoundParam(await searchParams));
+  const requestedRound = readRoundParam(await searchParams);
+  const context = await loadManagerContext(requestedRound);
 
   if (!entry) {
     notFound();
@@ -35,6 +39,7 @@ export default async function DimensionRecommendationsPage({
         organizationName={context.organization?.name}
         surface="dashboard"
         state={context.state}
+        schoolChoices={await loadSchoolChoices(context, requestedRound)}
       />
     );
   }

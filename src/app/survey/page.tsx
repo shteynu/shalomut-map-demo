@@ -3,7 +3,10 @@ import { RoundSwitcher } from "@/components/round";
 import { SurveyBuilder } from "@/components/survey";
 import { readRoundParam, roundSwitcherAction } from "@/lib/navigation";
 import { toRoundSwitcherOptions } from "@/lib/rounds/round-options";
-import { loadManagerContext } from "@/lib/server/manager-context";
+import {
+  loadManagerContext,
+  loadSchoolChoices,
+} from "@/lib/server/manager-context";
 import { createEmptyDraftSurveyDefinition } from "@/lib/survey-definition";
 
 export default async function SurveyPage({
@@ -11,13 +14,15 @@ export default async function SurveyPage({
 }: {
   searchParams: Promise<{ round?: string | string[] }>;
 }) {
-  const context = await loadManagerContext(readRoundParam(await searchParams));
+  const requestedRound = readRoundParam(await searchParams);
+  const context = await loadManagerContext(requestedRound);
 
   if (!context.organization || !context.selectedRound) {
     return (
       <ManagerOnboarding
         organizationName={context.organization?.name}
         state={context.state}
+        schoolChoices={await loadSchoolChoices(context, requestedRound)}
       />
     );
   }

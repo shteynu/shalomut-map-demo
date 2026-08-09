@@ -14,7 +14,10 @@ import {
   routeMetadata,
 } from "@/lib/navigation";
 import { toRoundSwitcherOptions } from "@/lib/rounds/round-options";
-import { loadManagerContext } from "@/lib/server/manager-context";
+import {
+  loadManagerContext,
+  loadSchoolChoices,
+} from "@/lib/server/manager-context";
 import type { WellbeingStatus } from "@/lib/shalomut-source";
 
 const actionIcons: Record<(typeof homeActionRouteIds)[number], LucideIcon> = {
@@ -30,13 +33,15 @@ export default async function HomePage({
 }: {
   searchParams: Promise<{ round?: string | string[] }>;
 }) {
-  const context = await loadManagerContext(readRoundParam(await searchParams));
+  const requestedRound = readRoundParam(await searchParams);
+  const context = await loadManagerContext(requestedRound);
 
   if (!context.organization || !context.selectedRound) {
     return (
       <ManagerOnboarding
         organizationName={context.organization?.name}
         state={context.state}
+        schoolChoices={await loadSchoolChoices(context, requestedRound)}
       />
     );
   }

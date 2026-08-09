@@ -5,6 +5,7 @@ import { readRoundParam, roundSwitcherAction } from "@/lib/navigation";
 import {
   loadManagerContext,
   loadRoundComparison,
+  loadSchoolChoices,
 } from "@/lib/server/manager-context";
 import { surveyInstrument } from "@/lib/shalomut-source";
 
@@ -13,9 +14,8 @@ export default async function DashboardPage({
 }: {
   searchParams: Promise<{ round?: string | string[] }>;
 }) {
-  const context = await loadManagerContext(
-    readRoundParam(await searchParams),
-  );
+  const requestedRound = readRoundParam(await searchParams);
+  const context = await loadManagerContext(requestedRound);
 
   if (
     !context.organization ||
@@ -27,6 +27,7 @@ export default async function DashboardPage({
         organizationName={context.organization?.name}
         surface="dashboard"
         state={context.state}
+        schoolChoices={await loadSchoolChoices(context, requestedRound)}
       />
     );
   }

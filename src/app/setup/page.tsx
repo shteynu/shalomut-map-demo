@@ -57,6 +57,9 @@ export default async function SetupPage({
       <ManagerOnboarding
         organizationName={context.organization?.name}
         state={context.state}
+        // This screen already read every school for its own switcher, so the
+        // dead end is given that list rather than asking for it again.
+        schoolChoices={{ options: schoolOptions, roundId: requestedRound }}
       />
     );
   }

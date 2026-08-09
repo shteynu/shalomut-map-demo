@@ -9,6 +9,10 @@ import {
 import { AnalyticsService, ManagerContextService } from "@/lib/services";
 import type { ManagerContext } from "@/lib/services";
 import { MANAGER_ORGANIZATION_HEADER } from "@/lib/server/manager-scope";
+import {
+  toSchoolSwitcherOptions,
+  type SchoolChoices,
+} from "@/lib/schools/school-options";
 
 export async function loadManagerContext(roundId?: string) {
   await connection();
@@ -38,6 +42,34 @@ export async function loadSchools() {
   await connection();
   const { orgRepo } = resolveCoreRepositories();
   return orgRepo.findAll();
+}
+
+/**
+ * The schools to offer a manager who followed a link into a round this school
+ * does not have, and nothing on any other screen.
+ *
+ * A school is chosen once and remembered, so the switcher lives on the setup
+ * screen alone — except here, where the manager is holding a link they cannot
+ * open and the school is the thing that is wrong about it. The list is read
+ * only in that state, so every other screen still pays nothing for it.
+ *
+ * Which school the round actually belongs to is not looked up and not shown.
+ * The manager's scope is a boundary, and naming another school's round would
+ * cross it to answer a question the switcher already lets them answer.
+ */
+export async function loadSchoolChoices(
+  context: ManagerContext,
+  requestedRoundId?: string,
+): Promise<SchoolChoices | null> {
+  if (context.state !== "round-not-found") return null;
+
+  return {
+    options: toSchoolSwitcherOptions(
+      await loadSchools(),
+      context.organization?.id,
+    ),
+    roundId: requestedRoundId,
+  };
 }
 
 /**
