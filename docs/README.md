@@ -63,8 +63,9 @@ or deployment snapshots:
   format is a probe, not a specification, and the scripts were deliberately kept
   outside the repository;
 - [`ai-service-incidental-findings-2026-08-09.md`](ai-service-incidental-findings-2026-08-09.md)
-  — defects and drift found during that study, deferred by owner decision on
-  2026-08-09; a record, not a queue;
+  — defects and drift found during that study. Deferred by owner decision on
+  2026-08-09, then all seven fixed the same day; the file records what each one
+  was and which branch closed it;
 - `wellbeing-refactoring-plan-v4-review.md` (its section 6 is the final audit of
   the merged refactoring stack; remaining work is summarized in `ROADMAP.md`);
 - `redesign-change-log.md`;

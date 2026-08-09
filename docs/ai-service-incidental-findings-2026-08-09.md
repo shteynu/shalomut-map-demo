@@ -1,17 +1,14 @@
-# AI service — incidental findings, 2026-08-09 (deferred)
+# AI service — incidental findings, 2026-08-09 (all closed)
 
 Seven defects and pieces of drift found while reading the pipeline for
 [`scientific-evidence-layer-research-2026-08-09.md`](scientific-evidence-layer-research-2026-08-09.md).
 None of them was introduced by that work and none was fixed by it.
 
-**Status: deferred by owner decision on 2026-08-09, except items 1–6, which the
-owner unparked the same day and which are now fixed.** This file is a record,
-not a queue. Nothing remaining here is scheduled; each item states what is
-wrong, what it costs today, and what a fix would have to touch, so that whoever
-picks one up does not have to re-derive it.
-
-Verified against `14c2269`; items 1–6 have been fixed since, as their headings
-say. Line references drift as the code moves — re-check before acting.
+**Status: deferred by owner decision on 2026-08-09, then unparked and fixed the
+same day, one item at a time.** Every heading below records the branch that
+closed it. The findings are kept as they were written, because they are the
+reasoning each change was made from — which also means their line references
+are pre-fix and no longer match the code.
 
 ---
 
@@ -138,7 +135,12 @@ reason unrelated to their change.
 
 ## 7. `docs/source-of-truth.md` documents a field that does not exist
 
-Line 88 lists `backgroundContext.totalStaffCount`. `RoundBackgroundContext` has
+**Fixed on 2026-08-09** on branch `docs/source-of-truth-staff-count-path`. The
+row names `Organization.totalStaffCount`, says where it is edited and says that
+it never crosses the MCP boundary — which is the part a later plan would
+otherwise get wrong. What follows is the finding as written.
+
+Line 88 listed `backgroundContext.totalStaffCount`. `RoundBackgroundContext` has
 seven fields and that is not one of them
 ([backend.ts:16-24](../src/lib/types/backend.ts#L16)); `totalStaffCount` lives on
 `Organization` ([backend.ts:12](../src/lib/types/backend.ts#L12)) and never

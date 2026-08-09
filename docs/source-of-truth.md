@@ -85,7 +85,7 @@ Which screen owns which value, so the same fact is never edited in two places:
 | `backgroundContext.audience` | Setup screen (`/setup`) | Stored as a code (`all-staff`, `teachers`, `administration`). |
 | `surveyDefinition.audience` | Derived | Mirrors the setup selection through `resolveAudienceLabel`; read-only in the builder. |
 | `privacyThreshold` / `surveyDefinition.minimumResponses` | Setup screen, editable in the builder | Same number in both places; the builder writes it back on save. |
-| `backgroundContext.totalStaffCount` | Organization record | Drives the expected-response counter on `/round`. |
+| `Organization.totalStaffCount` | Organization record, edited on the setup screen | Drives the expected-response counter on `/round` and the home-page ratio. It is not part of `backgroundContext` and does not cross the MCP boundary, so the AI never sees it. |
 | Remaining `backgroundContext` fields | Setup screen | Reach the AI prompt on contracts `4.0`, `5.0` and `6.0`, and never for a locked round. |
 | `surveyDefinition.questions` | Survey builder | Frozen after the first accepted response. |
 
