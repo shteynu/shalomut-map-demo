@@ -4,22 +4,16 @@ import sys
 from typing import Any, Dict
 
 from src.agents.graph import analytics_graph
-from src.agents.state import AnalyticsState
+from src.agents.state import AnalyticsState, build_initial_state
 from src.schemas.mcp_types import RoundAnalyticsResult
 
 
 async def run_pipeline(round_data: Dict[str, Any]) -> Dict[str, Any]:
     analytics = RoundAnalyticsResult.from_dict(round_data)
-    initial_state: AnalyticsState = {
-        "round_data": analytics.model_dump(),
-        "org_context": analytics.organizationContext or {},
-        "interpretations": {},
-        "recommendations": {},
-        "safety_status": "pending",
-        "safety_feedback": None,
-        "retry_count": 0,
-        "final_payload": {},
-    }
+    initial_state: AnalyticsState = build_initial_state(
+        round_data=analytics.model_dump(),
+        org_context=analytics.organizationContext or {},
+    )
     final_state = await analytics_graph.ainvoke(initial_state)
     return final_state.get("final_payload", {})
 

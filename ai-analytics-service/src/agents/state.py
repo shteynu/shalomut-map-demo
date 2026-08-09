@@ -3,6 +3,21 @@ from typing import Any, Dict, List, Literal, NotRequired, TypedDict
 from src.agents.safety_report import SafetyViolation
 
 
+# Every value `safety_status` takes, including the one a round starts on.
+# `pending` was missing here while both entrypoints wrote it, which nothing
+# caught: no type checker runs over this service, so the state contract is
+# only as true as the tests that read it. `test_agent_state_contract.py` reads
+# this alias and the assignments in `src/`, and fails when they disagree.
+SafetyStatus = Literal[
+    "pending",
+    "pass_privacy",
+    "pass",
+    "fail",
+    "privacy_locked",
+    "provider_unavailable",
+]
+
+
 class DimensionScoreState(TypedDict):
     averageScore: float
     computedStatus: Literal["green", "yellow", "red"]
@@ -83,13 +98,7 @@ class AnalyticsState(TypedDict, total=False):
     interpretations: InterpretationState
     generation_provenance: Dict[str, GenerationProvenanceState]
     recommendations: Dict[str, List[InterventionState]]
-    safety_status: Literal[
-        "pass_privacy",
-        "pass",
-        "fail",
-        "privacy_locked",
-        "provider_unavailable",
-    ]
+    safety_status: SafetyStatus
     safety_feedback: str | None
     # The same refusals as `safety_feedback`, coded so the replay can turn them
     # into a critique for the prompt instead of only logging a sentence.
@@ -100,3 +109,26 @@ class AnalyticsState(TypedDict, total=False):
     retry_recommendation_dimensions: List[str]
     retry_overall_summary: bool
     final_payload: Dict[str, Any]
+
+
+def build_initial_state(
+    *,
+    round_data: Dict[str, Any],
+    org_context: Dict[str, Any],
+) -> AnalyticsState:
+    """The state a round starts on, written once instead of at each entrypoint.
+
+    `AnalyticsRunner` and `pipeline_cli` used to spell the same eight keys out
+    separately, which is how one of them could drift without the other and how
+    `safety_status` came to start on a value its own type did not list.
+    """
+    return {
+        "round_data": round_data,
+        "org_context": org_context,
+        "interpretations": {},
+        "recommendations": {},
+        "safety_status": "pending",
+        "safety_feedback": None,
+        "retry_count": 0,
+        "final_payload": {},
+    }

@@ -6,7 +6,7 @@ from src.agents.graph import (
     analytics_graph,
     build_failure_payload,
 )
-from src.agents.state import AnalyticsState
+from src.agents.state import AnalyticsState, build_initial_state
 from src.application.ports import AnalyticsSource, ResultSink, StoneMapPipeline
 from src.mcp_client.client import mcp_client_manager
 from src.services.result_sink import HttpResultSink
@@ -70,16 +70,14 @@ class AnalyticsRunnerService:
                 **org_context,
                 "organizationId": round_analytics.organizationId,
             }
-        initial_state: AnalyticsState = {
-            "round_data": round_analytics.model_dump() if hasattr(round_analytics, "model_dump") else round_analytics.to_dict(),
-            "org_context": org_context,
-            "interpretations": {},
-            "recommendations": {},
-            "safety_status": "pending",
-            "safety_feedback": None,
-            "retry_count": 0,
-            "final_payload": {}
-        }
+        initial_state: AnalyticsState = build_initial_state(
+            round_data=(
+                round_analytics.model_dump()
+                if hasattr(round_analytics, "model_dump")
+                else round_analytics.to_dict()
+            ),
+            org_context=org_context,
+        )
 
         callback_identity = (
             {"run_id": run_id, "lease_token": lease_token}

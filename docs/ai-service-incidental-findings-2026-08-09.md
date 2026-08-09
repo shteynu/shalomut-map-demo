@@ -4,13 +4,13 @@ Seven defects and pieces of drift found while reading the pipeline for
 [`scientific-evidence-layer-research-2026-08-09.md`](scientific-evidence-layer-research-2026-08-09.md).
 None of them was introduced by that work and none was fixed by it.
 
-**Status: deferred by owner decision on 2026-08-09, except items 1–4, which the
+**Status: deferred by owner decision on 2026-08-09, except items 1–5, which the
 owner unparked the same day and which are now fixed.** This file is a record,
 not a queue. Nothing remaining here is scheduled; each item states what is
 wrong, what it costs today, and what a fix would have to touch, so that whoever
 picks one up does not have to re-derive it.
 
-Verified against `14c2269`; items 1–4 have been fixed since, as their headings
+Verified against `14c2269`; items 1–5 have been fixed since, as their headings
 say. Line references drift as the code moves — re-check before acting.
 
 ---
@@ -106,7 +106,14 @@ and go dead without a single test failing.
 
 ## 5. `safety_status` is initialised to a value its own type does not allow
 
-`AnalyticsState` declares five `Literal` values for `safety_status`
+**Fixed on 2026-08-09** on branch `fix/safety-status-initial-value`. `pending`
+is a declared value now, the eight-key construction lives in one
+`build_initial_state`, and `test_agent_state_contract.py` reads every
+`safety_status` assignment out of `src/` and holds it to the declared alias —
+which is the closest thing to a type checker this service has. What follows is
+the finding as written.
+
+`AnalyticsState` declared five `Literal` values for `safety_status`
 ([state.py:86-92](../ai-analytics-service/src/agents/state.py#L86)); the initial
 state sets `"pending"`
 ([analytics_runner.py:80](../ai-analytics-service/src/services/analytics_runner.py#L80)),
