@@ -4,17 +4,24 @@ Seven defects and pieces of drift found while reading the pipeline for
 [`scientific-evidence-layer-research-2026-08-09.md`](scientific-evidence-layer-research-2026-08-09.md).
 None of them was introduced by that work and none was fixed by it.
 
-**Status: deferred by owner decision on 2026-08-09.** This file is a record, not
-a queue. Nothing here is scheduled; each item states what is wrong, what it
-costs today, and what a fix would have to touch, so that whoever picks one up
-does not have to re-derive it.
+**Status: deferred by owner decision on 2026-08-09, except item 1, which the
+owner unparked the same day and which is now fixed.** This file is a record, not
+a queue. Nothing remaining here is scheduled; each item states what is wrong,
+what it costs today, and what a fix would have to touch, so that whoever picks
+one up does not have to re-derive it.
 
-Verified against `14c2269`. Line references drift as the code moves — re-check
-before acting.
+Verified against `14c2269`; item 1 has been fixed since, as its heading says.
+Line references drift as the code moves — re-check before acting.
 
 ---
 
 ## 1. A 6.0 recommendation replay is told nothing about why it was refused
+
+**Fixed on 2026-08-09 in `019963c`** (branch `fix/v6-adaptation-repair-critique`).
+The 6.0 branch now joins both critiques through `_joined_critique`, as the
+pre-6.0 branch always did, and `tests/test_repair_critique.py` reads the prompt
+the provider builds rather than stubbing the call whole. What follows is the
+finding as written; the line references are pre-fix.
 
 **Severity: real defect, costs money on every 6.0 repair.**
 
