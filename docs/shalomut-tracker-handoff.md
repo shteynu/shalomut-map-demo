@@ -1,6 +1,28 @@
 # Shalomut Tracker — operational handoff
 
-Updated: 2026-08-09 (`origin/main` is `3c27de3`). The last thing to land is a
+Updated: 2026-08-09 (`origin/main` is `8986bd3`). Three fixes landed after the
+decision below, all pushed by the owner: the builder's round switcher now
+crosses the server/client boundary as data rather than as markup (`0f13481`,
+which removes a React key warning on every load of that screen), `render.yaml`
+gained a `buildFilter` so only the AI service's own paths rebuild it
+(`7949d8a`), and the builder's keyboard legend can wrap (`8986bd3`, which is
+what had been dragging that panel's whole contents out of view). Both screen
+fixes were walked on the local server only — measured at 1728px and 1180px,
+console clean — and not on the endpoint: with the deployed database empty there
+is no round to open the builder on. Vercel has the code; nobody has looked at
+it there.
+
+**Both databases were emptied on request and only the local one was reseeded.**
+The deployed Supabase database holds no organization, round, response or answer
+— 2 organizations, 3 rounds, 20 responses, 510 answers and 2 AI runs were
+deleted on 2026-08-09; the schema and its migrations are untouched. The local
+container was emptied the same way and then reseeded with
+`npm run db:seed:local`, so it holds one school and one closed round of twelve
+responses. Deployed screens now serve the onboarding state, which was confirmed
+in the browser; anything below that describes deployed *data* is a record of
+what was there, not of what is there.
+
+Before that, the last thing to land was a
 decision rather than a change: backlog §5's two open goal questions are both
 answered "no" — a goal gains no owner, due date or plan of steps, and no number
 is shown beside it. Recorded in the backlog item, in ADR-015 and in the open
@@ -378,6 +400,11 @@ older snapshots remain available in Git.
   deployment: **`/health`'s `commit` is no longer the tip of `main`**, it is the
   last commit that touched those paths. A newer tip is not evidence of a missing
   deploy any more; compare against the last Python-affecting commit instead.
+- **The filter was proven the same day, by the first push that fell outside
+  it.** `8986bd3` touches only `src/`, and afterwards `/health` still answered
+  `commit: 7949d8a` — no rebuild, no 502 window, no alert. That is the check to
+  repeat if the filter is ever suspected of being ignored: push something
+  outside its paths and read `/health`.
 - An always-awake instance costs nearly the account's whole free allowance of
   750 instance-hours a month, so a second free service does not fit beside it.
   The paid instance type is the version that needs neither a workflow nor a
@@ -390,7 +417,9 @@ older snapshots remain available in Git.
   read-back confirms `survey_rounds_one_active_per_organization` exists as a
   partial unique index on `(organization_id) WHERE status = 'active'`. No school
   held two active rounds when it was created, so the migration's cleanup step
-  changed no row. The deployed database holds one round, and it is active.
+  changed no row. The deployed database held one active round when this was
+  read; it holds no rows at all since the clearing of 2026-08-09 described at
+  the top. The index itself is part of the schema and survived it.
 - The ninth migration, `20260804170000_add_round_goals`, was applied there on
   2026-08-04: `prisma migrate status` reports nine migrations and a schema that
   is up to date, and a read-back confirms `round_goals` with its unique key on
@@ -618,9 +647,11 @@ owner's own hands.
 
 **Worth a look, cheap**
 
-- The deployed school has one round, so nobody has ever seen the round switcher
-  on the deployed endpoint — it renders from two rounds up. Whoever opens a
-  second deployed round should look at it once.
+- Nobody has ever seen the round switcher on the deployed endpoint — it renders
+  from two rounds up, and the deployed database now holds none at all. Whoever
+  creates a second deployed round should look at it once. It was walked locally
+  on 2026-08-09 against two rounds, after the switcher moved to props: it
+  renders, and choosing a round rebuilds the builder for it.
 - The doubt this list carried since 2026-08-05 — that two minutes of `Up` says
   nothing about a quiet night — is **answered, and the answer is 99.869% with
   one 5m 5s timeout at 05:01 on 2026-08-07**. Both readings are in the
