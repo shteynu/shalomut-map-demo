@@ -6,7 +6,8 @@
 - Base branch: `main`
 - Base commit: `14c2269`
 - Current HEAD: `14c2269` (before this task's commit)
-- Status: research delivered; no implementation started, no decision taken
+- Status: research delivered plus a recommendation added on owner request;
+  no implementation started, no owner decision taken
 - Last updated: 2026-08-09
 - Last agent/tool: Claude Code (Opus 5), 14-agent research workflow
 
@@ -37,9 +38,10 @@ repository.
 ## Non-goals
 
 - Any code change in `ai-analytics-service/` or `src/`.
-- Choosing an architecture. Section 6 of the document lists the four owner
-  decisions that must precede a choice.
 - Changing `interventions_kb.json`, the ranking, the contract or any test.
+- Taking the owner's decision. The document's "Заключение" recommends against
+  building the layer now and names two cheaper alternatives, but the four
+  questions in section 6 remain the owner's.
 
 ## Acceptance criteria
 
@@ -48,7 +50,8 @@ repository.
 - Four conclusion groups delivered: current state, evidence gap, existing
   extension points, 2–3 alternatives with trade-offs.
 - All 30 areas of the user's plan answered.
-- No option recommended.
+- Sections 1–7 recommend no option. The later "Заключение" section does, and
+  is labelled as a judgement added on request rather than a code finding.
 
 ## Relevant repository instructions
 
@@ -89,6 +92,9 @@ repository.
   the deliverable (see Verification evidence).
 - `docs/scientific-evidence-layer-research-2026-08-09.md` written.
 - `docs/README.md` index line added.
+- "Заключение" section added on owner request: recommends not building the
+  layer now, and names three cheaper actions instead (render the existing
+  `source`; stamp the catalogue revision; fix the section 7 defects).
 
 ## In progress
 
@@ -183,8 +189,12 @@ citations.
 
 ## Known risks
 
-- Sections 4 and 6 deliberately leave the choice open. If a later agent reads
-  this file as a mandate to implement one option, that would exceed the task.
+- Sections 4 and 6 deliberately leave the choice open; only the "Заключение"
+  section takes a side, and it is a judgement, not a finding. If a later agent
+  reads either as a mandate to start building, that would exceed the task.
+- The recommendation rests on two claims that could change without the code
+  changing: that no curator is committed, and that no manager has asked for
+  attribution. Both are stated as the trigger to revisit.
 - Section 7 lists six real defects found in passing. They are recorded, not
   fixed, and none has a branch yet.
 
@@ -204,8 +214,9 @@ attribution is sufficient.
 
 ## Next concrete step
 
-Owner answers question 1 of section 6 ("who curates the evidence?"). Every
-option in section 4 rests on a named human authoring roughly 144 bindings, and
-if the answer is "an agent", the study's own conclusion is that building
-nothing is the better outcome. No further code work should start before that
-answer exists.
+Owner reads the "Заключение" section and either accepts it or names a curator.
+If accepted, the first piece of work is not on this branch and not this layer:
+it is question 4 of section 6 — decide whether framework-clause attribution is
+enough — because a "yes" closes the subject entirely and a "no" makes rendering
+the existing `source` the cheapest next slice. No code work should start on
+this branch.
