@@ -1,6 +1,13 @@
 # Shalomut Tracker — operational handoff
 
-Updated: 2026-08-09 (`origin/main` is `a788a0c`). Every finding of the
+Updated: 2026-08-09 (`origin/main` is `1b49e86`). The last thing to land is the
+scope dead end a manager could reach with no action on the screen at all: a
+request naming no school the system has now offers the schools it could not
+choose between. It was walked in the owner's signed-in Chrome on the local
+server before the push, and the deployed endpoint has not been walked for it.
+Its evidence is in `docs/agent-tasks/archive/fix--scope-required-has-a-way-out.md`.
+
+Every finding of the
 2026-08-09 deployed end-to-end smoke is fixed, pushed and confirmed on the
 endpoint — the seven items and their evidence are in the deployed-state section,
 and each task file is now in `docs/agent-tasks/archive/`. Two of the seven
@@ -9,9 +16,9 @@ changed is recorded below.
 
 The throwaway data those walks left behind has since been removed: the E2E
 school and its three rounds are off the deployed database, deleted by name
-rather than by emptying it. `docs/agent-tasks/active/` holds only
+rather than by emptying it. `docs/agent-tasks/active/` again holds only
 `research--scientific-evidence-layer.md`, which is waiting on owner decisions
-and not on an agent.
+and not on an agent. Nothing is waiting on a push.
 
 The paragraphs that follow describe the 2026-08-08 session and are kept as they
 were written (`origin/main` was `7434ed5` then). The session's
@@ -238,8 +245,9 @@ older snapshots remain available in Git.
 - Known dead end, found while verifying that deletion: a session whose
   `shalomut_school` cookie names a deleted school lands on
   `נדרש שיוך לבית ספר` with no school switcher — the same shape finding #6
-  fixed for `round-not-found`. **Fixed on `fix/scope-required-has-a-way-out`**,
-  which is waiting to be pushed: the state now offers the schools it could not
+  fixed for `round-not-found`. **Fixed and on `main`** as
+  `fix/scope-required-has-a-way-out`, pushed by the owner on 2026-08-09
+  (`origin/main` is `1b49e86`): the state now offers the schools it could not
   choose between, and choosing one reopens the screen the manager was on and
   replaces the stale cookie. Walked in the owner's signed-in Chrome on the local
   server, 2026-08-09 — the chain from this state through `round-not-found` and

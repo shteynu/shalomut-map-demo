@@ -7,9 +7,9 @@
 - Base commit: 2e80b6a (`origin/main` at session start)
 - Current HEAD: see the commit on this branch; the worktree is otherwise as
   described under `Changed files`.
-- Status: complete and walked. The state was reached in the owner's signed-in
-  Chrome against the local development server and left through the new switcher.
-  Waiting only on a push.
+- Status: closed. The state was reached in the owner's signed-in Chrome against
+  the local development server and left through the new switcher. The owner
+  pushed the three commits on 2026-08-09; `origin/main` is `1b49e86`.
 - Last updated: 2026-08-09
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -112,7 +112,8 @@ onboarding button, so the manager arrived at a screen with nothing to press.
 
 ## Remaining
 
-- The push. Nothing else.
+- Nothing. The one thing never checked on the deployed endpoint is the state
+  itself; Vercel builds every push to `main`, so the code is expected there.
 
 ## Changed files
 
@@ -211,5 +212,4 @@ Pre-existing unrelated modifications left untouched and unstaged:
 
 ## Next concrete step
 
-Push the branch — `git push origin fix/scope-required-has-a-way-out:main` — and
-archive this file. Nothing else on it is open.
+None. This file is archived.
