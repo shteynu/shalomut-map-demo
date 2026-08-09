@@ -8,6 +8,7 @@ import { CopyLinkStatus } from "@/components/ui/copy-link-status";
 import { useClipboard } from "@/lib/hooks/use-clipboard";
 import { calculatePercentage } from "@/lib/utils/math";
 import { getNavigationAction } from "@/lib/navigation";
+import { isRoundTransitionAllowed } from "@/lib/rounds/round-status";
 import { useShareUrl } from "@/lib/use-share-url";
 
 type RoundControlsProps = {
@@ -24,6 +25,29 @@ type RoundControlsProps = {
    */
   isSuperseded?: boolean;
 };
+
+/**
+ * What the manager reads when closing a round did not work.
+ *
+ * The route answers a refused transition in English prose — `Transition from
+ * 'draft' to 'closed' is not allowed.` — which used to be printed straight into
+ * this Hebrew screen. The API's wording is for the log; the screen says what
+ * happened and what to do about it, in the language it is written in.
+ *
+ * A `409` is now a race rather than a dead button: the round changed status
+ * since this page was rendered, so the answer is to look at it again.
+ */
+export function closeFailureMessage(status: number | undefined): string {
+  if (status === 409) {
+    return "מצב הסבב השתנה מאז טעינת הדף, ולכן לא ניתן לסגור אותו כעת. רעננו את הדף כדי לראות את מצבו העדכני.";
+  }
+
+  if (status === 503) {
+    return "שירות הנתונים אינו זמין כרגע, ולכן הסבב לא נסגר. נסו שוב מאוחר יותר.";
+  }
+
+  return "לא ניתן היה לסגור את הסבב.";
+}
 
 export function RoundControls({
   roundId,
@@ -53,6 +77,14 @@ export function RoundControls({
    * should not be pressed.
    */
   const readOnly = archived || isSuperseded;
+  /**
+   * Closing is for a round that is collecting answers. A draft has not started
+   * — it opens or it is filed away, and there is nothing yet to close — and an
+   * archived round is finished with. The route refuses both with a 409, so the
+   * screen asks the same rule it does rather than keeping its own list of the
+   * statuses that happen to work.
+   */
+  const closable = isRoundTransitionAllowed(status, "closed");
 
   /**
    * Copy the link, and when the browser refuses, select it so the manual copy
@@ -79,10 +111,7 @@ export function RoundControls({
     ).catch(() => null);
 
     if (!response?.ok) {
-      const payload = response
-        ? ((await response.json().catch(() => null)) as { error?: string } | null)
-        : null;
-      setCloseError(payload?.error ?? "לא ניתן היה לסגור את הסבב.");
+      setCloseError(closeFailureMessage(response?.status));
       setClosing(false);
       return;
     }
@@ -264,11 +293,14 @@ export function RoundControls({
           <button
             className="secondary-button"
             type="button"
-            /* An archived round has no transition out, so closing it would
-               only earn a 409. */
-            disabled={closed || closing || archived}
+            disabled={closed || closing || !closable}
             data-round-id={roundId}
             onClick={closeRound}
+            title={
+              closable
+                ? "סימון הסבב כסגור ועצירת איסוף התשובות"
+                : "סגירה ידנית אפשרית רק לסבב שאוסף תשובות"
+            }
           >
             {closing ? (
               <Loader2 size={18} className="animate-spin" aria-hidden="true" />
