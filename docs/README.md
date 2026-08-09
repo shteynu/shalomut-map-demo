@@ -55,6 +55,9 @@ or deployment snapshots:
 - `wellbeing-refactoring-plan-v4-review.md` (its section 6 is the final audit of
   the merged refactoring stack; remaining work is summarized in `ROADMAP.md`);
 - `redesign-change-log.md`;
+- [`scientific-evidence-layer-research-2026-08-09.md`](scientific-evidence-layer-research-2026-08-09.md)
+  — dated code study of where the AI decision pipeline lacks scientific
+  evidence, with three architectural alternatives and no decision taken;
 - [`archive/documentation-snapshots/`](archive/documentation-snapshots/) —
   explicitly labelled pre-compaction copies of substantially rewritten living
   documents;
