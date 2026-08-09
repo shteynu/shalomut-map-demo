@@ -4,14 +4,14 @@ Seven defects and pieces of drift found while reading the pipeline for
 [`scientific-evidence-layer-research-2026-08-09.md`](scientific-evidence-layer-research-2026-08-09.md).
 None of them was introduced by that work and none was fixed by it.
 
-**Status: deferred by owner decision on 2026-08-09, except items 1, 2 and 3,
-which the owner unparked the same day and which are now fixed.** This file is a
-record, not a queue. Nothing remaining here is scheduled; each item states what
-is wrong, what it costs today, and what a fix would have to touch, so that
-whoever picks one up does not have to re-derive it.
+**Status: deferred by owner decision on 2026-08-09, except items 1–4, which the
+owner unparked the same day and which are now fixed.** This file is a record,
+not a queue. Nothing remaining here is scheduled; each item states what is
+wrong, what it costs today, and what a fix would have to touch, so that whoever
+picks one up does not have to re-derive it.
 
-Verified against `14c2269`; items 1, 2 and 3 have been fixed since, as their
-headings say. Line references drift as the code moves — re-check before acting.
+Verified against `14c2269`; items 1–4 have been fixed since, as their headings
+say. Line references drift as the code moves — re-check before acting.
 
 ---
 
@@ -85,6 +85,13 @@ flag means "we had something" rather than "the school gave us context", and any
 later work that reads it as the latter reads noise.
 
 ## 4. `provider_failure_reason` is written and never consumed
+
+**Fixed on 2026-08-09** on branch `feat/provider-failure-reason-reaches-core`,
+by the owner's decision to carry the reason out rather than delete the key. The
+failure payload's `failureReason` is now `provider_unavailable` followed by the
+reason when the run learned one, so Core stores it as the run's `failureCode`
+and labels its operational metric with it. What follows is the finding as
+written.
 
 Declared at [state.py:97](../ai-analytics-service/src/agents/state.py#L97),
 written at

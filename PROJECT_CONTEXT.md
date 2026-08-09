@@ -134,8 +134,10 @@ compatibility field while `AiAnalysisRun.result` is the durable read source.
 ### ADR-007: Provider failure is visible, not disguised
 
 Missing keys, quota exhaustion, timeouts and output rejected after bounded
-attempts fail the round as `provider_unavailable`; raw provider errors are not
-rendered to managers.
+attempts fail the round as `provider_unavailable`, followed by the reason the
+run learned when it has one (`provider_unavailable_missing_api_key`,
+`provider_unavailable_http_429`); raw provider errors are not rendered to
+managers.
 
 Up to contract 5.0, yellow and red have no deterministic copy at all: a
 two-sentence interpretation of a problem would have to say something the

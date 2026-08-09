@@ -328,9 +328,13 @@ backoff is `0.5s`, capped at `2s`, with up to `0.25s` jitter.
 
 When the bounded attempts are exhausted the round fails. There is no substitute
 copy: a dimension the model never wrote makes the whole round come back as
-`status: "validation_failed"` with `failureReason: "provider_unavailable"` and a
-Hebrew message telling the manager the analysis service is unavailable right
-now. The answers are untouched, so re-running the round is the whole remedy.
+`status: "validation_failed"` with a `failureReason` that starts
+`provider_unavailable` and, when the run knows one, carries the reason after it
+— `provider_unavailable_missing_api_key`, `provider_unavailable_http_429`,
+`provider_unavailable_retry_budget_exhausted`. Core stores that string as the
+run's `failureCode`, so the operational answer is not the same for all of them.
+The manager reads none of it: the Hebrew message says the analysis service is
+unavailable right now. The answers are untouched, so re-running the round is the whole remedy.
 Reporting a provider outage as a finished analysis was the alternative, and a
 school cannot act on advice it has no way of knowing was invented.
 

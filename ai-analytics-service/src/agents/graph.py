@@ -1,4 +1,5 @@
 import logging
+import re
 from typing import Any, Dict, Optional
 from src.agents.state import AnalyticsState
 from src.agents.nodes import (
@@ -36,6 +37,36 @@ PROVIDER_UNAVAILABLE_MESSAGE_HEBREW = (
 VALIDATION_FAILED_MESSAGE_HEBREW = (
     "לא ניתן להפיק ניתוח מאומת מן הנתונים המצרפיים."
 )
+
+
+PROVIDER_UNAVAILABLE_FAILURE_REASON = "provider_unavailable"
+_MAX_FAILURE_DETAIL_LENGTH = 40
+
+
+def _provider_failure_code(state: AnalyticsState) -> str:
+    """`provider_unavailable`, said as precisely as the run can say it.
+
+    The transport knows whether the key was missing, the provider answered 429,
+    the retry budget ran out or the copy never passed validation, and the
+    psychologist node puts that in `provider_failure_reason`. Core stores this
+    string as the run's `failureCode` and labels its operational metric with
+    it, so the difference between "we are misconfigured" and "the provider is
+    rate-limiting us" is the difference between two different Tuesdays.
+
+    The prefix stays, so anything grouping by the category still groups. The
+    detail is normalised because some reasons are exception class names and one
+    is `http_<status>`: a metric label is a bad place for arbitrary text. The
+    charset and the length cap are Core's own `isValidFailureCode` — lowercase,
+    digits and underscores, at most 64 characters.
+    """
+    detail = str(state.get("provider_failure_reason") or "").strip().lower()
+    slug = re.sub(r"[^a-z0-9]+", "_", detail).strip("_")
+    if not slug:
+        return PROVIDER_UNAVAILABLE_FAILURE_REASON
+    return (
+        f"{PROVIDER_UNAVAILABLE_FAILURE_REASON}_"
+        f"{slug[:_MAX_FAILURE_DETAIL_LENGTH]}"
+    )
 
 
 def build_failure_payload(
@@ -87,7 +118,7 @@ class AnalyticsGraphEngine:
                     **current_state,
                     "final_payload": build_failure_payload(
                         current_state.get("round_data", {}),
-                        failure_reason="provider_unavailable",
+                        failure_reason=_provider_failure_code(current_state),
                         error_message=PROVIDER_UNAVAILABLE_MESSAGE_HEBREW,
                     ),
                 }

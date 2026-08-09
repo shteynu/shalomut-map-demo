@@ -2,7 +2,7 @@ import threading
 import time
 
 import pytest
-from src.agents.graph import analytics_graph
+from src.agents.graph import _provider_failure_code, analytics_graph
 from src.agents.nodes import agent_psychologist_node
 from src.agents.state import AnalyticsState
 from src.config import settings
@@ -157,7 +157,10 @@ async def test_a_round_the_provider_never_answered_is_not_a_round(monkeypatch):
     payload = final_state["final_payload"]
 
     assert payload["status"] == "validation_failed"
-    assert payload["failureReason"] == "provider_unavailable"
+    # The category, plus the one thing an operator can act on: this round did
+    # not fail because a provider was slow, it failed because nothing was
+    # configured. Core stores the string as the run's `failureCode`.
+    assert payload["failureReason"] == "provider_unavailable_missing_api_key"
     assert payload["isLocked"] is False
     assert payload["contractVersion"] == AI_ANALYTICS_CONTRACT_VERSION
     assert "stones" not in payload
@@ -259,3 +262,30 @@ async def test_the_concurrency_bound_is_the_configured_one(monkeypatch):
     """
     peak = await _peak_concurrency(monkeypatch, 5)
     assert 2 < peak <= 5
+
+
+def test_a_failure_code_says_no_more_than_the_run_knows():
+    """A reason the run never learned leaves the category alone.
+
+    The state key is written on every provider failure the pipeline handles,
+    but nothing forbids an empty one, and an empty detail must not turn into a
+    trailing underscore that a metric would then group separately.
+    """
+    assert _provider_failure_code({}) == "provider_unavailable"
+    assert (
+        _provider_failure_code({"provider_failure_reason": ""})
+        == "provider_unavailable"
+    )
+    # Some reasons are exception class names, which is not a metric label.
+    assert (
+        _provider_failure_code({"provider_failure_reason": "TimeoutError"})
+        == "provider_unavailable_timeouterror"
+    )
+    assert (
+        _provider_failure_code({"provider_failure_reason": "http_429"})
+        == "provider_unavailable_http_429"
+    )
+    long_reason = _provider_failure_code(
+        {"provider_failure_reason": "x" * 200},
+    )
+    assert len(long_reason) <= len("provider_unavailable_") + 40

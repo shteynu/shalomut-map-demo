@@ -171,6 +171,11 @@ test('a failure a fresh input cannot fix is not retried', async () => {
     'contract_validation_failed',
     'analysis_validation_failed',
     'lease_exhausted',
+    // The analytics service now says why the provider was unavailable, so the
+    // code Core stores varies per run. Only `round_validation_failed` re-arms,
+    // and that is Core's own code — a more specific provider code must not
+    // become retryable by being unrecognised.
+    'provider_unavailable_missing_api_key',
   ]) {
     const roundId = `round-rearm-7-${failureCode}`;
     const { enqueue, aiAnalysisRunRepo } = harness(roundId);
