@@ -301,8 +301,9 @@ older snapshots remain available in Git.
   That has happened: anonymous `GET /health` on 2026-08-09 answered
   `commit: 2e80b6a`, which is `origin/main` itself, `status: online`,
   `env: production`, `supportedContractVersions` `1.0`–`6.0`,
-  `jobPollingEnabled: true`. Render rebuilds on every push to `main` by itself,
-  so this needed no hand step. Deployed code, not deployed behaviour: no round
+  `jobPollingEnabled: true`. Render rebuilt on every push to `main` by itself,
+  so this needed no hand step. Since the `buildFilter` of 2026-08-09 that is
+  true only of pushes that touch the service's own paths. Deployed code, not deployed behaviour: no round
   has been analysed there since.
 
 - AI service: Render container from the root `Dockerfile`, with durable polling
@@ -360,6 +361,23 @@ older snapshots remain available in Git.
   explanations.
 - If the service starts sleeping again, that monitor is the first thing to
   check, before anything in this repository.
+- **The monitor's first real alert was a deploy, not a sleep — 2026-08-09,
+  20:27:28 GMT+3, `502 Bad Gateway`, four US regions, ongoing for minutes.** A
+  docs-only push (`6d03ea7`) at 20:08 had rebuilt this service, and a free
+  instance has no zero-downtime swap: the old container stops before the new one
+  answers. At 20:35 anonymous `GET /health` answered `200` — 22.6s on the first
+  request and 0.21s on the third, the new container's cold start — reporting
+  `commit: 6d03ea7`, `status: online`, `env: production`, `privacyThreshold: 10`,
+  `supportedContractVersions` `1.0`–`6.0`, `jobPollingEnabled: true`. Read the
+  alert as the deploy it was: the keep-alive was working, and the outage was a
+  push.
+- **`render.yaml` now carries a `buildFilter`, so Core-only and docs-only pushes
+  no longer rebuild this service.** Its paths are `ai-analytics-service/**`,
+  `contracts/**`, `Dockerfile` and `render.yaml` — `.dockerignore`'s allowlist
+  plus the blueprint itself. One consequence to keep in mind when reading a
+  deployment: **`/health`'s `commit` is no longer the tip of `main`**, it is the
+  last commit that touched those paths. A newer tip is not evidence of a missing
+  deploy any more; compare against the last Python-affecting commit instead.
 - An always-awake instance costs nearly the account's whole free allowance of
   750 instance-hours a month, so a second free service does not fit beside it.
   The paid instance type is the version that needs neither a workflow nor a
@@ -635,10 +653,12 @@ current deployed commit:
 - **Python (Render): re-read on 2026-08-08 and on `a968dcd`**, the current
   `origin/main`. `/health` answered `status: online`, `commit: a968dcd`,
   `env: production`, `privacyThreshold: 10`, `supportedContractVersions`
-  `1.0`–`6.0`, `jobPollingEnabled: true`. The service rebuilds on every push to
-  `main`, so it reports the repository tip even when the commit — as here —
-  changed only documentation. The previous reading was `763e38f` on 2026-08-05;
-  no Python source changed in between.
+  `1.0`–`6.0`, `jobPollingEnabled: true`. The service rebuilt on every push to
+  `main` when this was read, so it reported the repository tip even when the
+  commit — as here — changed only documentation. That stopped being true on
+  2026-08-09, when `render.yaml` gained a `buildFilter`; see the keep-alive
+  section above before reading a `commit` against the tip. The previous reading
+  was `763e38f` on 2026-08-05; no Python source changed in between.
 - The schema matches: the only migration these three slices needed was applied
   by hand on 2026-08-05, and nothing after it changed a schema.
 

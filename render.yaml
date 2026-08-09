@@ -5,7 +5,12 @@
 # from Core's `/api/ai-analysis-runs/claim`, so a sleeping instance is not a
 # slow instance, it is one that claims nothing until something knocks. Its
 # own polling is outbound and does not count as traffic.
-# `.github/workflows/render-keepalive.yml` does the knocking every ten minutes.
+#
+# The knocking is an external uptime monitor in the owner's UptimeRobot account
+# — keyword `GET /health` every five minutes — and not this repository. The cron
+# in `.github/workflows/render-keepalive.yml` was removed on 2026-08-05 because
+# GitHub's scheduler skipped ten consecutive windows; what the workflow still
+# offers is a manual wake. `docs/shalomut-tracker-handoff.md` names the monitor.
 services:
   - type: web
     name: shalomut-ai-analytics
@@ -15,6 +20,22 @@ services:
     dockerfilePath: ./Dockerfile
     dockerContext: .
     healthCheckPath: /health
+    # Which pushes to `main` are this service's business. The build context is
+    # the whole repository, but `.dockerignore` lets only three things into the
+    # image, and these paths are that list plus this file — an env var here is
+    # a reason to redeploy even when no code moved.
+    #
+    # Without it every push rebuilt this service, Core-only and docs-only pushes
+    # included. A free instance has no zero-downtime swap: the old container
+    # stops before the new one answers, so each of those rebuilds spent a few
+    # minutes returning 502 and woke the uptime monitor. The 502 window at
+    # 20:27 GMT+3 on 2026-08-09 came from a docs push nineteen minutes earlier.
+    buildFilter:
+      paths:
+        - ai-analytics-service/**
+        - contracts/**
+        - Dockerfile
+        - render.yaml
     envVars:
       - key: ENV
         value: production
