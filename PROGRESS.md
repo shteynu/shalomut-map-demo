@@ -198,6 +198,13 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 
 ### Privacy and analytics
 
+- The browser is told what it may do: a CSP with `frame-ancestors 'none'` so a
+  manager's one-click destructive buttons cannot be framed, alongside
+  `nosniff`, `Referrer-Policy`, `Permissions-Policy` and HSTS. Sign-in attempts
+  and submissions are rate limited per client address, counted under a salted
+  hash that expires in five minutes and is never joined to a response; two
+  Upstash variables move that counter into shared Redis, which is what makes it
+  hold on serverless.
 - Ten is the default and minimum privacy threshold; managers can only raise it.
 - Total and per-question privacy gates prevent partial unlocked analysis.
 - Core owns deterministic aggregates, statuses and callback evidence checks.

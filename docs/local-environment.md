@@ -120,6 +120,13 @@ alongside the AI service — but nothing in the daily loop needs that.
 - **`db:clear` and `db:seed:local` follow `DATABASE_URL`.** The seed script
   refuses anything but a loopback host. `db:clear` does not — it prints the
   host it is about to empty, so read that line.
+- **Rate limiting does nothing locally, on purpose.** It keys on the client
+  address, and a locally served build reports every request as loopback —
+  which it treats as "no client to limit". To exercise it, send
+  `x-forwarded-for: 203.0.113.1` and the eleventh sign-in inside five minutes
+  answers `429`. Setting `UPSTASH_REDIS_REST_URL` and
+  `UPSTASH_REDIS_REST_TOKEN` moves the counters from instance memory into
+  Redis; nothing else changes.
 - **The seeded round is `active`, so `/answer/SHALOM-LOCAL` answers.** It used
   to be seeded `closed`, which made the respondent route serve the dead-link
   screen and left every walk of the questionnaire starting with a hand-written

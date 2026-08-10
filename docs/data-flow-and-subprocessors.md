@@ -83,6 +83,28 @@ loads Swagger UI from the CDN at runtime; the exception covers that route
 only, and `e2e/security-headers.spec.ts` fails if it leaks into the policy the
 manager screens get.
 
+## The one place an address is counted
+
+Since 2026-08-10 sign-in attempts and survey submissions are rate limited per
+client address, and that is the only feature in the product that treats an
+address as anything at all. It is worth being exact, because the consent screen
+makes a promise about this.
+
+The address is never stored. What is stored is a salted SHA-256 of
+`policy:address:secret`, truncated, with a counter behind it and a five-minute
+expiry — so the record is "something was counted here recently", not "who".
+An unsalted hash would be no protection at all, since the whole IPv4 space can
+be hashed in minutes; the salt (`RATE_LIMIT_KEY_SALT`, or `SESSION_SECRET`)
+makes the key meaningless outside this deployment. The counter is never joined
+to a response, and nothing reads it back except the limiter.
+
+Where it lives depends on configuration. With no Upstash credentials it is a
+map in the running instance's memory, gone when that instance is recycled.
+With `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` set it is a key in
+Upstash Redis — **a fourth processor**, holding those hashes and nothing else,
+and it belongs in any subprocessor list from the moment it is switched on. It
+is not switched on today.
+
 ## What is not covered here
 
 - **Retention.** There is none. No schema column expresses it, and deletion
@@ -110,3 +132,5 @@ manager screens get.
    the model.
 4. `next.config.ts` and `e2e/security-headers.spec.ts` — the headers above and
    the test that keeps them from quietly disappearing.
+5. `src/lib/server/rate-limit.ts` — the only code that touches a client
+   address, and the only thing that would add a fourth processor.

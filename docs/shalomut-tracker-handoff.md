@@ -16,10 +16,13 @@ production build on port 3210, because the dev server on port 3000 was serving
 stale CSS for part of that session; a layout that looks broken there is worth
 re-checking on a fresh build before it is called a defect.
 
-**Three branches wait on a push. They are a linear stack and must land in this
-order: `test/respondent-path-e2e`, then `fix/questionnaire-speaks-to-everyone`,
-then `feat/security-headers`.** Each is a fast-forward of the one before, so
-pushing them out of order will be refused rather than silently wrong.
+**Those three branches landed on 2026-08-10.** They were a linear stack, so
+pushing the tip carried all three at once and the earlier two were then
+rejected as non-fast-forwards — which read like a failure and was not: `main`
+is `230ee44` and contains every commit of all three. `feat/rate-limiting`
+branches from that and waits on a push of its own.
+
+What each of them was:
 
 `test/respondent-path-e2e` closes Tier 0 item 4;
 `fix/questionnaire-speaks-to-everyone` closes item 3 — the
@@ -53,12 +56,28 @@ because Next serves inline RSC scripts and the nonce alternative would make
 `/login` dynamic, and the deployed endpoint has not been checked — first thing
 after the push is `curl -I` on the alias.
 
-**Tier 0 item 2 is the last one open in the code**: no incoming rate limiting
-anywhere, checked against the source on 2026-08-10 — the only match in `src/`
-is the outgoing pace to the provider, so `POST /api/auth/login` and the
-respondent's submission are unthrottled. It needs an owner decision first,
-because in-process counters do not survive serverless and a real limiter means
-an external store.
+`feat/rate-limiting` closes item 2, the last of the four, and is the one branch
+still waiting on a push. Sign-in is limited to ten attempts per address per
+five minutes — counted before the password is read, so the refusal cannot be
+used as an oracle — and the respondent submission to sixty, deliberately loose
+because a staffroom answers from one school address and refusing them would be
+worse than the abuse it prevents. Addresses are never stored: the key is a
+salted hash that expires with the window.
+
+**Upstash is prepared, not switched on.** Setting `UPSTASH_REDIS_REST_URL` and
+`UPSTASH_REDIS_REST_TOKEN` moves the counters from instance memory into shared
+Redis, which is what makes the limit hold on serverless; the REST API is called
+directly, so there is no dependency to install and no code change to make. Two
+things follow if it is switched on: Upstash becomes a fourth processor and
+belongs in any subprocessor list, and its code path will be executing for the
+first time — a wrong URL or token shows up as `Rate limit store unavailable` in
+the logs, and the limiter fails open.
+
+**All four Tier 0 code items are then closed.** What is left of the readiness
+list is outside the repository and the owner's: rotating the four exposed
+credentials, the legal artifacts (privacy notice, subprocessor list, retention,
+deletion route), the availability monitor on Core, and the `שימוש הוגן`
+wording from axis 7.
 
 `20260810101610_add_survey_attempts` is applied to the deployed database; twelve
 migrations, all applied. The deployed AI service still reports `9c46355`, which
