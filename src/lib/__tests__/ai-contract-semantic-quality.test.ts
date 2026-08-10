@@ -4,9 +4,28 @@ import {
   AI_ANALYTICS_CONTRACT_VERSION,
   AI_ANALYTICS_DIMENSION_IDS,
   AI_ANALYTICS_DIMENSION_NAMES_HEBREW,
+  AI_ANALYTICS_QUESTIONS,
   validateStoneMapResult,
 } from '../ai-contract';
-import { surveyInstrument } from '../shalomut-source';
+
+/**
+ * The questions a `2.0` payload is about are the contract's own, not whatever
+ * the default template asks today.
+ *
+ * This used to read `surveyInstrument`, which was the same list until the
+ * questionnaire's wording was made to address both genders and
+ * `contracts/ai-analytics-v2.json` — a published contract — deliberately kept
+ * the feminine sentences it shipped with. A `2.0` stone's metric labels are
+ * validated against the manifest, so building the payload from the live
+ * template was testing a payload no `2.0` round can produce: the rounds that
+ * speak `2.0` asked the `2.0` questions, and no new round is produced below
+ * `3.0`.
+ */
+function questionsOf(dimensionId: string) {
+  return AI_ANALYTICS_QUESTIONS.filter(
+    (question) => question.dimensionId === dimensionId,
+  );
+}
 
 function createSemanticallyValidPayload() {
   return {
@@ -19,10 +38,8 @@ function createSemanticallyValidPayload() {
       'הסיכום מציג את דפוסי המענה המצרפיים. הנתונים נשמרים מעל סף הפרטיות בלבד.',
     stones: Object.fromEntries(
       AI_ANALYTICS_DIMENSION_IDS.map((dimensionId) => {
-        const dimension = surveyInstrument.dimensions.find(
-          (candidate) => candidate.id === dimensionId,
-        );
-        assert.ok(dimension);
+        const questions = questionsOf(dimensionId);
+        assert.ok(questions.length > 0);
 
         return [
           dimensionId,
@@ -35,9 +52,9 @@ function createSemanticallyValidPayload() {
             psychologicalInterpretation:
               'ממוצעי השאלות מצביעים על מצב הדורש תשומת לב. הפירוט נשען על נתונים מצרפיים בלבד.',
             recommendedInterventions: [],
-            metrics: dimension.questions.map((question) => ({
+            metrics: questions.map((question) => ({
               questionId: question.id,
-              label: question.text,
+              label: question.textHebrew,
               value: '60 מתוך 100',
               averageScore: 60,
               responseCount: 12,
@@ -46,9 +63,7 @@ function createSemanticallyValidPayload() {
               outcome: 'llm',
               attempts: 1,
               retryCount: 0,
-              sourceQuestionIds: dimension.questions.map(
-                (question) => question.id,
-              ),
+              sourceQuestionIds: questions.map((question) => question.id),
             },
           },
         ];
