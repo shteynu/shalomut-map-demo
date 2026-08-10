@@ -1,6 +1,8 @@
 # Shalomut Tracker — operational handoff
 
-Updated: 2026-08-10, end of session. `origin/main` is `568fbcb`.
+Updated: 2026-08-10, end of session. `origin/main` is `6faa8f4`, the
+documentation commit that carries these paragraphs; the last commit that
+changed product code is `568fbcb`.
 
 **All four Tier 0 code items are closed, on `main` and deployed.** The four
 branches landed as one linear stack — `test/respondent-path-e2e` (`0506169`,
