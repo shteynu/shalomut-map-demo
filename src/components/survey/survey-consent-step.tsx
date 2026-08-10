@@ -1,4 +1,11 @@
-import { ChevronLeft, EyeOff, HandHeart, Users } from "lucide-react";
+import {
+  ChevronLeft,
+  EyeOff,
+  HandHeart,
+  Server,
+  Sparkles,
+  Users,
+} from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 /**
@@ -32,15 +39,35 @@ type SurveyConsentStepProps = {
  * forget them. What the system actually guarantees is enforced elsewhere —
  * aggregate-only reporting above the privacy threshold, no identifying fields
  * collected — so it is stated here in words that no editor can change.
+ *
+ * Each line is a claim about the whole system and not only about this
+ * repository, which is why the second and fourth exist. The first promise used
+ * to end "...כתובת IP או כל פרט מזהה אחר", and of the application code that was
+ * exactly true: nothing here reads an address, and no analytics package is
+ * installed. It was not true of the stack the code runs on. Every request
+ * terminates at a hosting edge that logs client addresses, as every hosting
+ * edge does, and a promise that holds for the code but not for the deployment
+ * is the kind a teacher would rightly feel betrayed by. So the address is now
+ * described rather than denied. `docs/data-flow-and-subprocessors.md` is the
+ * long form of these five sentences, and it is what to check when one of them
+ * stops being true.
  */
 const PROMISES: readonly { icon: LucideIcon; text: string }[] = [
   {
     icon: EyeOff,
-    text: "לא נאספים שם, כתובת מייל, כתובת IP או כל פרט מזהה אחר.",
+    text: "לא נאספים שם, כתובת מייל או פרט מזהה אחר. התשובות נשמרות בלי דבר שמקשר אותן לאדם מסוים.",
+  },
+  {
+    icon: Server,
+    text: "כמו בכל אתר, כתובת ה־IP מגיעה לשרתים שמארחים את השאלון ונרשמת ביומני התשתית שלהם. היא לא נשמרת יחד עם התשובות, ואיש בבית הספר לא רואה אותה.",
   },
   {
     icon: Users,
     text: "ההנהלה רואה תמונה מצרפית בלבד, ורק אחרי שנאספו מספיק מענים. תשובה בודדת לא מוצגת לאיש.",
+  },
+  {
+    icon: Sparkles,
+    text: "הניתוח נכתב בעזרת מודל שפה של ספק חיצוני. נשלחים אליו ממוצעים ברמת השאלה בלבד, לעולם לא תשובה של אדם מסוים.",
   },
   {
     icon: HandHeart,

@@ -20,6 +20,7 @@ These files must stay aligned with `main`:
 | [`ai-contract-version-matrix.md`](ai-contract-version-matrix.md) | Contract capabilities, produced/supported versions and rollout rule |
 | [`ai-analytics-handoff.md`](ai-analytics-handoff.md) | Current cross-service AI architecture and boundaries |
 | [`shalomut-tracker-handoff.md`](shalomut-tracker-handoff.md) | Current deployed/operational state, external blockers and approval gates |
+| [`data-flow-and-subprocessors.md`](data-flow-and-subprocessors.md) | Who receives respondent data, what crosses each boundary and where it is hosted; the factual basis every future legal document rests on |
 | [`../ai-analytics-service/README.md`](../ai-analytics-service/README.md) | Python service runtime, configuration and verification |
 | [`../AGENTS.md`](../AGENTS.md) and [`.agents/skills/`](../.agents/skills/) | Canonical repository instructions for coding agents |
 
