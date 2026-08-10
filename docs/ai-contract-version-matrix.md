@@ -43,6 +43,12 @@ The consumer-first rollout is complete. Deployed Python and Core source includes
 Production explicitly selects `6.0`. The unset default remains `5.0`, which is
 also the configuration rollback value.
 
+The local stack selects `6.0` too, since 2026-08-09. It had been pinned to `5.0`
+in `.env.local` — which overrides `.env` in both `scripts/local-stack.mjs` and
+Next.js — so a local run exercised a lighter contract than the deployment
+produces, and did so silently. The stack banner prints the version it resolved;
+that line is the check after any env change.
+
 Since 2026-08-05 a stone also says who wrote its metric narratives, in
 `generationProvenance.metricInsightsOutcome`: `llm` or `deterministic_fallback`,
 one value for all of the dimension's narratives, and never `unavailable`. It is

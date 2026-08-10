@@ -176,6 +176,16 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 - `ai-analytics-service/evals/` measures whether generated Hebrew is any good —
   eight synthetic rounds and five deterministic graders. It scored real
   provider output for the first time on 2026-08-05, once a paid key existed.
+- **The map is written by the model again, and on 2026-08-09 it had stopped
+  being.** Two settings nobody had chosen did it: the answer ceiling was the
+  service default of 2048, which truncated every dimension, and the fast model
+  was `gemini-3.5-flash-lite`, which splices Arabic letters into Hebrew words —
+  so the Hebrew-only gate refused what survived the ceiling. Every stone came
+  out of the deterministic fallback while the round still reported success. The
+  ceiling and the model are now declared in `render.yaml` and `.env.example`,
+  the V6 summary and metric nodes tell a refused answer which gate it hit
+  instead of re-sending the same prompt, and a real round through the real
+  chain returns eight model-written stones on the first attempt.
 
 ### Architecture and verification
 

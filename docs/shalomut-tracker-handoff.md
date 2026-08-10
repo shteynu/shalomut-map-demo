@@ -1,6 +1,35 @@
 # Shalomut Tracker — operational handoff
 
-Updated: 2026-08-09 (`origin/main` is `8986bd3`). Three fixes landed after the
+Updated: 2026-08-09 (`origin/main` is `9c46355`, and the deployed AI service
+reports that commit). **The AI analysis had stopped being written by the model,
+and the two settings behind it are now declared rather than defaulted.**
+`MAX_TOKENS_PER_DIMENSION` was unset everywhere, so both halves ran on the
+service default of 2048 and every dimension came back `finish_reason=length`;
+it is `8192` now, in `render.yaml` and `.env.example` (`aefec31`). With the
+ceiling raised, the deployed fast model `gemini-3.5-flash-lite` turned out to
+splice Arabic letters into Hebrew words — `מתורجם`, `בمשימות`, `לبחון` — which
+the Hebrew-only gate refused, fourteen answers of twenty-one; the fast tier is
+`gemini-3.5-flash` now, which produced zero refusals on the same round, and the
+V6 summary and metric nodes finally tell a refused answer which gate it hit
+instead of re-sending the same prompt (`9c46355`, 480 Python tests).
+
+**Proven end to end on the local stack after those changes**: the analysis was
+started from the round screen, `succeeded` on attempt 1 in about three minutes,
+contract `6.0`, **eight stones of eight with `llm` provenance and no validator
+refusal**. All 305 Hebrew strings of the stored result were scanned: no Arabic
+and no Cyrillic. The only Latin left is in `recommendedInterventions[].source`,
+which cites standards like `ISO 45003` and comes from the catalog, not the
+model. Nothing equivalent has run on the deployed endpoint — its database is
+empty, so there is no round there to analyse.
+
+**A local-environment trap worth knowing**: `.env.local` overrides `.env`, in
+`scripts/local-stack.mjs` and in Next.js both, and it pinned
+`AI_ANALYTICS_CONTRACT_VERSION=5.0`. A local run was therefore exercising a
+lighter contract than the deployment produces, silently. It is `6.0` there now.
+The stack banner prints the version it resolved, which is the only reason this
+was caught — read that line after changing any env file.
+
+Before that, three fixes landed after the
 decision below, all pushed by the owner: the builder's round switcher now
 crosses the server/client boundary as data rather than as markup (`0f13481`,
 which removes a React key warning on every load of that screen), `render.yaml`
@@ -557,6 +586,11 @@ older snapshots remain available in Git.
   managed, and its dashboard now reads `60` and `30`. It assumes the dashboard's
   `GEMINI_API_KEY` is the billed key, which no agent can read — the one thing
   about this pace still taken on trust.
+  The model in that run is no longer the fast tier: on 2026-08-09 a real round
+  through the real chain caught `gemini-3.5-flash-lite` splicing Arabic letters
+  into Hebrew words, which these eight synthetic rounds had not. Read the
+  55-of-56 as true of that corpus on that day, not as a verdict on the model —
+  the pace it justified is unaffected, and the header above has the rest.
   What the first report says lives in
   `docs/agent-tasks/archive/test--eval-corpus-baseline.md`. The open question it
   raised — whether `summary_grounding` counts what it claims to count — was
