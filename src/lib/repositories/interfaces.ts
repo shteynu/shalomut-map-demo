@@ -3,6 +3,8 @@ import {
   SurveyDefinition,
   QuestionAnswerRecord,
   RoundStatus,
+  SurveyAttemptClientStage,
+  SurveyAttemptRecord,
   SurveyResponseRecord,
   SurveyRound,
   UpdateOrganizationInput,
@@ -178,6 +180,45 @@ export interface ISurveyDefinitionVersionRepository {
  * round to draft for re-editing, which is exactly when a manager is most likely
  * to want the questionnaire they had an hour ago.
  */
+
+/**
+ * Filling sessions, including the ones that never became a response.
+ *
+ * Round-scoped like the goal and version repositories: authorization happens
+ * per round, and a row reachable by token hash alone would cross a school
+ * boundary the caller already checked.
+ */
+export interface ISurveyAttemptRepository {
+  /**
+   * Record progress for one filling session, creating the row on first sight.
+   *
+   * Monotonic by contract: a stage that arrives out of order — a reload
+   * reporting `opened` after the session already consented, a stale beacon
+   * carrying an earlier question index — must never move a row backwards. The
+   * respondent client is unauthenticated and fires these without waiting for a
+   * reply, so out-of-order delivery is the normal case rather than the odd one.
+   */
+  record(input: {
+    roundId: string;
+    anonymousTokenHash: string;
+    stage: SurveyAttemptClientStage;
+    lastQuestionReached?: number;
+    at?: Date;
+  }): Promise<SurveyAttemptRecord>;
+  /**
+   * Mark a session finished. Called by the submit route from a stored response,
+   * never by the respondent's client. Returns null when no attempt row exists —
+   * a submission from a session that opened before this table did, which is
+   * counted from the responses rather than invented here.
+   */
+  markCompleted(
+    roundId: string,
+    anonymousTokenHash: string,
+    at?: Date,
+  ): Promise<SurveyAttemptRecord | null>;
+  findByRoundId(roundId: string): Promise<SurveyAttemptRecord[]>;
+  deleteByRoundId(roundId: string): Promise<void>;
+}
 
 export interface ISurveyRepository {
   saveResponse(response: SurveyResponseRecord): Promise<SurveyResponseRecord>;

@@ -4,4 +4,5 @@ export * from './manager-scope.service';
 export * from './manager-setup.service';
 export * from './round-goal.service';
 export * from './round.service';
+export * from './survey-funnel.service';
 export * from './survey.service';

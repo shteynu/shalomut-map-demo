@@ -87,6 +87,61 @@ export interface SurveyResponseRecord {
   submittedAt: Date;
 }
 
+/**
+ * The stages one filling session can report, in the order they can happen.
+ *
+ * `completed` is deliberately absent from what a client may send: it is written
+ * by the submit route from a stored response, so an attempt cannot claim to
+ * have finished without answers behind it.
+ */
+export const SURVEY_ATTEMPT_CLIENT_STAGES = ["opened", "consented", "progress"] as const;
+export type SurveyAttemptClientStage =
+  (typeof SURVEY_ATTEMPT_CLIENT_STAGES)[number];
+
+export interface SurveyAttemptRecord {
+  id: string;
+  roundId: string;
+  anonymousTokenHash: string;
+  openedAt: Date;
+  consentAcceptedAt?: Date;
+  /** Zero-based index of the furthest question reached. */
+  lastQuestionReached?: number;
+  completedAt?: Date;
+}
+
+/**
+ * What happened to the people who received the link.
+ *
+ * Counts of filling sessions, never of people and never of answers: a teacher
+ * who opens the link on a phone and again on a laptop is two sessions, and the
+ * product cannot tell — which is why every number here is described to the
+ * manager as a session rather than as a colleague.
+ */
+export interface RoundResponseFunnel {
+  /** Sessions that loaded the questionnaire at all. */
+  opened: number;
+  /** Sessions that read the consent screen and accepted it. */
+  consented: number;
+  /** Sessions that submitted. Counted from responses, not from a client claim. */
+  completed: number;
+  /** Accepted consent and never submitted. */
+  abandoned: number;
+  /**
+   * Zero-based question index where abandoned sessions stopped, at the median.
+   * Undefined when nothing has been abandoned past the consent screen — the
+   * honest answer to "where do we lose them" is then "we do not know yet".
+   */
+  medianAbandonedAtQuestion?: number;
+  /**
+   * Responses with no session behind them — submitted before this instrument
+   * existed, or from a session whose opening beacon never arrived. The screen
+   * says so rather than quietly showing a funnel that does not add up.
+   */
+  completedWithoutAttempt: number;
+  lastOpenedAt?: Date;
+  lastCompletedAt?: Date;
+}
+
 export interface RoundDimensionScore {
   dimensionId: WellbeingDimensionId;
   averageScore: number;

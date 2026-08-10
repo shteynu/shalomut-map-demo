@@ -5580,3 +5580,88 @@ label .custom-tooltip-wrapper:hover .custom-tooltip-icon {
     scroll-behavior: auto !important;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Round funnel — what happened to the people who received the link.
+
+   Deliberately quieter than the metric stones above it on the same screen: the
+   response count is the number a manager acts on, and this panel explains it.
+   Numbers stay ink on surface rather than taking a status colour, because a
+   funnel has no green and red — a low completion rate is information, not a
+   verdict on the school.
+   --------------------------------------------------------------------------- */
+
+.round-funnel {
+  margin-top: 1rem;
+  padding: 1.2rem 1.4rem;
+  border: 1px solid rgba(56, 56, 56, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 250, 240, 0.78);
+  box-shadow: var(--shadow);
+}
+
+.round-funnel-head h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.25rem;
+}
+
+.round-funnel-head p,
+.round-funnel-empty,
+.round-funnel-note {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.round-funnel-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.9rem;
+  margin: 1.1rem 0 0.9rem;
+  padding: 0;
+  list-style: none;
+}
+
+.round-funnel-step {
+  display: grid;
+  justify-items: start;
+  gap: 0.2rem;
+  padding: 0.9rem 1rem;
+  border-radius: var(--radius-header);
+  background: var(--surface);
+  border: 1px solid rgba(56, 56, 56, 0.1);
+}
+
+.round-funnel-icon {
+  display: inline-flex;
+  margin-bottom: 0.25rem;
+  color: var(--navy);
+}
+
+.round-funnel-step > strong {
+  color: var(--navy);
+  font-size: 1.9rem;
+  line-height: 1;
+}
+
+.round-funnel-label {
+  font-weight: 700;
+}
+
+.round-funnel-helper,
+.round-funnel-timestamp {
+  /* 7:1+ on --surface; the counts above carry the meaning, and these qualify it */
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.round-funnel-timestamp {
+  margin-top: 0.4rem;
+}
+
+@media (max-width: 860px) {
+  .round-funnel-steps {
+    grid-template-columns: 1fr;
+  }
+}

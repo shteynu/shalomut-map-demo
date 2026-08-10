@@ -20,6 +20,7 @@ export async function POST(
       orgRepo,
       roundGoalRepo,
       roundRepo,
+      surveyAttemptRepo,
       surveyRepo,
     } = resolveCoreRepositories();
 
@@ -43,6 +44,12 @@ export async function POST(
 
     // Delete all survey responses associated with this round
     await surveyRepo.deleteByRoundId(roundId);
+
+    // The funnel describes how those responses were arrived at, so it goes with
+    // them. A reset that kept the openings would show a school twelve sessions
+    // and zero answers and call it a collection problem, when what happened is
+    // that a manager erased the collection.
+    await surveyAttemptRepo.deleteByRoundId(roundId);
 
     // A persisted analysis describes responses that no longer exist.
     await aiInsightsRepo.deleteByRoundId(roundId);

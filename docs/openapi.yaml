@@ -307,6 +307,56 @@ paths:
         "500":
           description: Failed to fetch survey
 
+  /api/survey/{shareCode}/attempt:
+    post:
+      tags: [Survey]
+      summary: Report where one filling session got to
+      description: >-
+        Records that a questionnaire was opened, that consent was accepted, or
+        how far the questions were answered, so a round can tell a teacher who
+        never received the link from one who opened it and left. Counts filling
+        sessions, never people: it carries the same per-attempt token hash the
+        submission carries and no other identifier.
+
+
+        Answers 204 to everything, including a share code that does not exist
+        and a round that is not collecting — this endpoint must not become a way
+        to discover share codes. Completion is not a stage a client may report;
+        it is written by the submit route from a stored response.
+      parameters:
+        - name: shareCode
+          in: path
+          required: true
+          schema:
+            type: string
+            example: SHALOM-7K2M9QT4
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [anonymousTokenHash, stage]
+              properties:
+                anonymousTokenHash:
+                  type: string
+                  pattern: '^[0-9a-f]{64}$'
+                  description: SHA-256 of the attempt token, computed in the browser.
+                stage:
+                  type: string
+                  enum: [opened, consented, progress]
+                lastQuestionReached:
+                  type: integer
+                  minimum: 0
+                  description: >-
+                    Zero-based index of the furthest question reached. Only read
+                    for the `progress` stage, and never moved backwards.
+      responses:
+        "204":
+          description: >-
+            Accepted, ignored, or refused. The client neither waits for this nor
+            distinguishes between them.
+
   /api/survey/{shareCode}/submit:
     post:
       tags: [Survey]

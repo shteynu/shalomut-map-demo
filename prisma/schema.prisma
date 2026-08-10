@@ -42,6 +42,7 @@ model SurveyRound {
 
   organization     Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   responses           SurveyResponse[]
+  attempts            SurveyAttempt[]
   aiAnalysisRuns      AiAnalysisRun[]
   goals               RoundGoal[]
   definitionVersions  SurveyDefinitionVersion[]
@@ -140,6 +141,42 @@ model SurveyResponse {
   @@unique([roundId, anonymousTokenHash])
   @@index([roundId, submittedAt])
   @@map("survey_responses")
+}
+
+/**
+ * One filling session's progress through the questionnaire.
+ *
+ * Until this table existed, `SurveyResponse` was the only respondent-side row
+ * and it was written solely on a successful submit — so a teacher who opened
+ * the link and left was byte-for-byte identical to one who never received it.
+ * Those are two failures with opposite fixes, and response rate is the number
+ * that decides whether a school ever sees anything at all.
+ *
+ * It holds no more identity than `SurveyResponse` does: the same hash of the
+ * same per-attempt token, which lives in the respondent's own sessionStorage,
+ * is reset between people at a shared computer, and is not a device or a
+ * person. No IP, no user agent, no timing beyond the round's own clock. What it
+ * adds over the response row is the attempts that never became one.
+ */
+model SurveyAttempt {
+  id                  String      @id @default(uuid())
+  roundId             String      @map("round_id")
+  anonymousTokenHash  String      @map("anonymous_token_hash")
+  openedAt            DateTime    @default(now()) @map("opened_at")
+  consentAcceptedAt   DateTime?   @map("consent_accepted_at")
+  // Zero-based index of the furthest question the respondent reached, which is
+  // where the drop-off sits. Null until they accept and see the first one.
+  lastQuestionReached Int?        @map("last_question_reached")
+  completedAt         DateTime?   @map("completed_at")
+  updatedAt           DateTime    @updatedAt @map("updated_at")
+
+  round               SurveyRound @relation(fields: [roundId], references: [id], onDelete: Cascade)
+
+  // One filling session, one row. The endpoint is public and unauthenticated,
+  // so the upsert key is what keeps a reload from reading as a second teacher.
+  @@unique([roundId, anonymousTokenHash])
+  @@index([roundId, openedAt])
+  @@map("survey_attempts")
 }
 
 model QuestionAnswer {

@@ -114,6 +114,14 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
   domain object — which carried the school's background context and the
   manager's own notes to anyone holding a share code — and the share code is ten
   characters from a cryptographic source rather than four from `Math.random()`.
+- **A round can say what happened to its link.** Sessions that opened the
+  questionnaire, accepted the consent and stopped partway were invisible until
+  now — the only row written was the one a submitted response created — so a low
+  count could not be told apart from a link nobody received. The round screen
+  reports openings, consents and completions, counts sessions rather than people
+  and says so, and hides where sessions stopped until at least three of them
+  stopped. Nothing new is recorded about a respondent: the same per-attempt token
+  hash the response already carries, and no address, device or cookie.
 - A blocked clipboard is reported as a blocked clipboard: the share link is
   selected, the note names Ctrl+C/Cmd+C and stays until the next attempt.
 - Anonymous respondent flow with stable attempt tokens and database-enforced

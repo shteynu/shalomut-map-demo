@@ -32,6 +32,9 @@ async function clearDatabase() {
     const answersDeleted = await prisma.questionAnswer.deleteMany({});
     console.log(` - Deleted ${answersDeleted.count} question answers`);
 
+    const attemptsDeleted = await prisma.surveyAttempt.deleteMany({});
+    console.log(` - Deleted ${attemptsDeleted.count} survey attempts`);
+
     const responsesDeleted = await prisma.surveyResponse.deleteMany({});
     console.log(` - Deleted ${responsesDeleted.count} survey responses`);
 
@@ -45,6 +48,7 @@ async function clearDatabase() {
       organizations: await prisma.organization.count(),
       rounds: await prisma.surveyRound.count(),
       responses: await prisma.surveyResponse.count(),
+      attempts: await prisma.surveyAttempt.count(),
       answers: await prisma.questionAnswer.count(),
     };
 

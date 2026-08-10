@@ -2,6 +2,7 @@ import { ManagerOnboarding } from "@/components/manager";
 import { MetricCard, PageIntro } from "@/components/ui";
 import {
   RoundControls,
+  RoundFunnel,
   RoundSwitcher,
   RoundThresholdNextStep,
 } from "@/components/round";
@@ -9,6 +10,7 @@ import { readRoundParam, roundSwitcherAction } from "@/lib/navigation";
 import { toRoundSwitcherOptions } from "@/lib/rounds/round-options";
 import {
   loadManagerContext,
+  loadRoundFunnel,
   loadSchoolChoices,
 } from "@/lib/server/manager-context";
 import { isSelectedRoundSuperseded } from "@/lib/services";
@@ -39,6 +41,7 @@ export default async function RoundPage({
   }
 
   const { organization, selectedRound, responseCount } = context;
+  const funnel = await loadRoundFunnel(selectedRound.id);
 
   return (
     <div className="page stone-page">
@@ -94,6 +97,8 @@ export default async function RoundPage({
         status={selectedRound.status}
         isSuperseded={isSelectedRoundSuperseded(context)}
       />
+
+      <RoundFunnel funnel={funnel} expectedResponses={organization.totalStaffCount} />
 
       <RoundThresholdNextStep
         key={`next-step-${selectedRound.id}`}

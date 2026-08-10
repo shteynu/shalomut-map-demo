@@ -17,6 +17,7 @@ import {
   hashAnonymousToken,
   type SurveyAttemptTokenSource,
 } from "@/lib/survey-attempt-token";
+import { createSurveyAttemptBeacon } from "@/lib/survey-attempt-beacon";
 import {
   clearSurveyDraft,
   createSurveyDraft,
@@ -175,6 +176,69 @@ export function SurveyFlow({
     if (stored.draft) attemptToken.restore(stored.draft.attemptToken);
   }, [attemptToken, stored.draft]);
 
+  /*
+   * The funnel side of the same token.
+   *
+   * Until this existed a teacher who opened the link and left was, in the
+   * database, identical to one who never received it — the response row is
+   * written on submit and nowhere else. So the round now hears three things it
+   * could not hear before: the questionnaire was opened, the consent was
+   * accepted, and how far the questions got. It is the same per-attempt token
+   * the submission carries, hashed the same way, so the funnel knows exactly
+   * what the response already knew and nothing more.
+   *
+   * The hash is held rather than computed per beacon because the beacon that
+   * matters most fires from `pagehide`, where there is no time left to await a
+   * digest.
+   */
+  const [attemptTokenHash, setAttemptTokenHash] = useState<string | null>(null);
+  // A plain holder rather than a ref: the beacon reads the hash from a callback
+  // that fires long after render, and it must not force the beacon to be
+  // rebuilt — and therefore forget what it already reported — when the hash
+  // finally arrives.
+  const attemptTokenHashHolder = useMemo<{ current: string | null }>(
+    () => ({ current: null }),
+    [],
+  );
+
+  const beacon = useMemo(
+    () =>
+      createSurveyAttemptBeacon({
+        shareCode,
+        tokenHash: () => attemptTokenHashHolder.current,
+      }),
+    [attemptTokenHashHolder, shareCode],
+  );
+
+  useEffect(() => {
+    if (!seeded) return;
+
+    let current = true;
+    hashAnonymousToken(attemptToken.current())
+      .then((hash) => {
+        if (!current) return;
+        attemptTokenHashHolder.current = hash;
+        setAttemptTokenHash(hash);
+      })
+      .catch(() => {
+        // A browser without SubtleCrypto submits without a dedupe hash today
+        // and simply goes uncounted in the funnel. Neither is worth a screen.
+      });
+
+    return () => {
+      current = false;
+    };
+  }, [attemptToken, attemptTokenHashHolder, seeded, phase]);
+
+  useEffect(() => {
+    if (!seeded || !attemptTokenHash) return;
+
+    beacon.opened();
+    // A restored draft means this session already consented, in an earlier page
+    // load whose beacon may never have been sent.
+    if (consentAcceptedAt) beacon.consented();
+  }, [attemptTokenHash, beacon, consentAcceptedAt, seeded]);
+
   const persistDraft = useCallback(() => {
     const storage = getSurveyDraftStorage();
     if (!storage) return;
@@ -232,10 +296,25 @@ export function SurveyFlow({
   useEffect(() => {
     if (!seeded || phase !== "questions") return;
 
+    /*
+     * The progress beacon rides the draft flush rather than firing per answer.
+     * Twenty-four questions would otherwise be twenty-four requests on a
+     * teacher's mobile data to learn something only the last one says, and the
+     * moment worth recording is exactly this one: the page is going away, and
+     * where it went away is the drop-off. The cost is a session killed without
+     * `pagehide` — it stays counted as consented with no question index, which
+     * reads as "we know they started and not where they stopped" rather than as
+     * a wrong number.
+     */
     const flush = () => {
-      if (document.visibilityState === "hidden") persistDraft();
+      if (document.visibilityState !== "hidden") return;
+      persistDraft();
+      beacon.progress(currentIndex);
     };
-    const flushNow = () => persistDraft();
+    const flushNow = () => {
+      persistDraft();
+      beacon.progress(currentIndex);
+    };
 
     window.addEventListener("pagehide", flushNow);
     document.addEventListener("visibilitychange", flush);
@@ -244,7 +323,7 @@ export function SurveyFlow({
       window.removeEventListener("pagehide", flushNow);
       document.removeEventListener("visibilitychange", flush);
     };
-  }, [persistDraft, phase, seeded]);
+  }, [beacon, currentIndex, persistDraft, phase, seeded]);
 
   /**
    * Moves the reading position into the questionnaire after an accept.
@@ -265,6 +344,7 @@ export function SurveyFlow({
     focusOnEnter.current = true;
     setConsentAcceptedAt(new Date().toISOString());
     setPhase("questions");
+    beacon.consented();
   };
 
   const selectAnswer = (value: AnswerValue) => {

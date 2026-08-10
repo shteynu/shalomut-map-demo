@@ -6,6 +6,7 @@ import {
   InMemoryRoundRepository,
   InMemorySurveyDefinitionVersionRepository,
   InMemorySurveyRepository,
+  InMemorySurveyAttemptRepository,
   PrismaAiAnalysisRunRepository,
   PrismaAiInsightsRepository,
   PrismaOrganizationRepository,
@@ -13,6 +14,7 @@ import {
   PrismaRoundRepository,
   PrismaSurveyDefinitionVersionRepository,
   PrismaSurveyRepository,
+  PrismaSurveyAttemptRepository,
 } from '@/lib/repositories';
 import type {
   IAiAnalysisRunRepository,
@@ -21,6 +23,7 @@ import type {
   IRoundGoalRepository,
   IRoundRepository,
   ISurveyDefinitionVersionRepository,
+  ISurveyAttemptRepository,
   ISurveyRepository,
 } from '@/lib/repositories/interfaces';
 import {
@@ -46,10 +49,11 @@ export interface CoreRepositories {
   roundGoalRepo: IRoundGoalRepository;
   roundRepo: IRoundRepository;
   surveyRepo: ISurveyRepository;
+  surveyAttemptRepo: ISurveyAttemptRepository;
   surveyDefinitionVersionRepo: ISurveyDefinitionVersionRepository;
 }
 
-/** The durable wiring: one Prisma client, seven repositories over it. */
+/** The durable wiring: one Prisma client, eight repositories over it. */
 export function createPersistentRepositories(
   prisma: MinimalPrismaClient,
 ): CoreRepositories {
@@ -60,6 +64,7 @@ export function createPersistentRepositories(
     roundGoalRepo: new PrismaRoundGoalRepository(prisma),
     roundRepo: new PrismaRoundRepository(prisma),
     surveyRepo: new PrismaSurveyRepository(prisma),
+    surveyAttemptRepo: new PrismaSurveyAttemptRepository(prisma),
     surveyDefinitionVersionRepo: new PrismaSurveyDefinitionVersionRepository(prisma),
   };
 }
@@ -80,6 +85,7 @@ export function createEphemeralRepositories(): CoreRepositories {
     roundGoalRepo: new InMemoryRoundGoalRepository(),
     roundRepo,
     surveyRepo: new InMemorySurveyRepository([]),
+    surveyAttemptRepo: new InMemorySurveyAttemptRepository(),
     surveyDefinitionVersionRepo: new InMemorySurveyDefinitionVersionRepository(),
   };
 }
@@ -142,6 +148,17 @@ export function overrideCoreRepositories(
   }
   if (repositories.surveyRepo) {
     ephemeralRepositories.surveyRepo = repositories.surveyRepo;
+    // The funnel counts completions out of the response store, so a replaced
+    // response store gets a matching attempt store unless the caller brought
+    // its own — otherwise a test's submissions and its openings would be
+    // describing two different rounds.
+    if (!repositories.surveyAttemptRepo) {
+      ephemeralRepositories.surveyAttemptRepo =
+        new InMemorySurveyAttemptRepository();
+    }
+  }
+  if (repositories.surveyAttemptRepo) {
+    ephemeralRepositories.surveyAttemptRepo = repositories.surveyAttemptRepo;
   }
   if (repositories.surveyDefinitionVersionRepo) {
     ephemeralRepositories.surveyDefinitionVersionRepo =

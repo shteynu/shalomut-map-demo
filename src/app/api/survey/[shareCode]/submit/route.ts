@@ -43,8 +43,13 @@ export async function POST(
       anonymousTokenHash?: string;
     };
 
-    const { aiAnalysisRunRepo, aiInsightsRepo, roundRepo, surveyRepo } =
-      resolveCoreRepositories();
+    const {
+      aiAnalysisRunRepo,
+      aiInsightsRepo,
+      roundRepo,
+      surveyAttemptRepo,
+      surveyRepo,
+    } = resolveCoreRepositories();
     const round = await RoundService.getRoundByShareCode(shareCode, roundRepo);
 
     if (!round) {
@@ -87,6 +92,24 @@ export async function POST(
       return result.code
         ? refuse(result.code, error)
         : NextResponse.json({ error }, { status: 400 });
+    }
+
+    /*
+     * The funnel's completion is written here rather than by the client,
+     * because a response is the durable fact and a beacon is not. It follows
+     * the response so a failure to close the funnel row can never cost the
+     * answers themselves — the manager would read one abandoned session that
+     * was not abandoned, which is a wrong number rather than a lost one.
+     */
+    if (anonymousTokenHash) {
+      try {
+        await surveyAttemptRepo.markCompleted(round.id, anonymousTokenHash);
+      } catch (error) {
+        console.error(
+          'Marking the survey attempt complete failed:',
+          error instanceof Error ? error.message : 'unknown error',
+        );
+      }
     }
 
     // Enqueue before returning so a process restart cannot lose the threshold

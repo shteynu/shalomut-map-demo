@@ -6,7 +6,11 @@ import {
   toRoundComparison,
   type RoundComparison,
 } from "@/lib/dashboard/round-comparison";
-import { AnalyticsService, ManagerContextService } from "@/lib/services";
+import {
+  AnalyticsService,
+  ManagerContextService,
+  SurveyFunnelService,
+} from "@/lib/services";
 import type { ManagerContext } from "@/lib/services";
 import { MANAGER_ORGANIZATION_HEADER } from "@/lib/server/manager-scope";
 import {
@@ -77,6 +81,25 @@ export async function loadSchoolChoices(
     ),
     roundId: requestedRoundId,
   };
+}
+
+/**
+ * What happened to the people who received one round's link.
+ *
+ * One extra read, and only the round screen asks for it — the same reason the
+ * school list and the goals are loaded separately rather than folded into
+ * `ManagerContextService.load`. Every other manager screen would pay for a
+ * query it never renders, on a database that is not in the same continent as
+ * its users.
+ */
+export async function loadRoundFunnel(roundId: string) {
+  const { surveyAttemptRepo, surveyRepo } = resolveCoreRepositories();
+
+  return SurveyFunnelService.getRoundFunnel(
+    roundId,
+    surveyAttemptRepo,
+    surveyRepo,
+  );
 }
 
 /**

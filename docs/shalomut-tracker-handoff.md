@@ -576,6 +576,14 @@ older snapshots remain available in Git.
 - Explicit bounded approval is required before changing secrets, credentials,
   authentication configuration or deployment aliases.
 - No open migration decision remains in the repository record.
+- **One migration is waiting on the deployed database.**
+  `20260810101610_add_survey_attempts`, on branch `feat/respondent-funnel`,
+  creates `survey_attempts`. The deploy build runs `prisma generate` and never
+  `migrate deploy`, so pushing that branch without applying the migration leaves
+  the beacon endpoint failing silently — it swallows its own errors so a
+  respondent never sees one — and the round screen's new funnel panel reading
+  zero for every stage. Apply it before or immediately after the push. Nothing
+  else on the branch depends on it.
 - **Closed 2026-08-05, no longer a blocker.** The eval corpus has scored real
   provider output. The owner installed a paid Gemini key, and a full run on
   `gemini-3.5-flash-lite` produced `outcome: "llm"` on 55 of 56 stones with no
