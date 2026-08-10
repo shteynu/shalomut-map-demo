@@ -14,6 +14,10 @@ import {
   deltaDirection,
   describeDelta,
   formatDelta,
+  isNearBandEdge,
+  // Aliased: the prop of the same name is this component's resolution for
+  // deltas, and the function computes a different one, from a single round.
+  minimumReadableDelta as resolutionForCount,
 } from "@/lib/dashboard/round-comparison";
 import { isNudgeKey, nextNudgeOffset } from "@/lib/dashboard/map-nudge";
 import { dashboardDimensionRoute } from "@/lib/navigation";
@@ -71,12 +75,24 @@ type DashboardMapInteractiveProps = {
    * has no comparable round yet.
    */
   dimensionDeltas: Record<WellbeingDimensionId, number> | null;
+  /**
+   * The resolution the two rounds share. A delta below it is announced as
+   * unreadable rather than as a change — see `minimumReadableDelta`.
+   */
+  minimumReadableDelta: number;
+  /**
+   * How many people answered this round. Needed on its own because a band edge
+   * is a fact about one round, and a first round has no comparison at all.
+   */
+  responseCount: number;
 };
 
 export function DashboardMapInteractive({
   dimensionScores,
   roundId,
   dimensionDeltas,
+  minimumReadableDelta,
+  responseCount,
 }: DashboardMapInteractiveProps) {
   const stageRef = useRef<HTMLElement | null>(null);
   const stoneRefs = useRef<Record<string, HTMLAnchorElement | null>>({});
@@ -380,6 +396,26 @@ export function DashboardMapInteractive({
         const displayStatusLabel =
           status === "green" ? "חוזקה לשימור" : statusLabels[status];
         const delta = dimensionDeltas?.[dimension.id as WellbeingDimensionId];
+        /*
+         * A colour this round could have chosen either way.
+         *
+         * The status is a hard switch — the intervention catalogue is filtered
+         * by it before anything is ranked — so 74 and 75 hand a principal two
+         * different screens. This asks whether one respondent's width covers
+         * the distance to the edge, using this round's own count rather than
+         * the comparison's, because the question is about the score and not
+         * about the change.
+         *
+         * It reaches the accessible name and not the stone's face. At ten
+         * respondents the width is ten points and every stone in a mid-range
+         * school qualifies, so a marker on each one would be wallpaper; the
+         * sidebar says how many there are, once, and this keeps the fact
+         * attached to the individual stone for anyone reading it aloud.
+         */
+        const nearBandEdge = isNearBandEdge(
+          score,
+          resolutionForCount(responseCount, responseCount),
+        );
 
         return (
           <Link
@@ -409,7 +445,11 @@ export function DashboardMapInteractive({
             data-dimension={dimension.id}
             data-stone-index={String(index + 1).padStart(2, "0")}
             aria-label={`${dimension.conceptLabel}: ${dimension.subtitle}. ציון ${score}, ${displayStatusLabel}${
-              delta === undefined ? "" : `, ${describeDelta(delta)} מהסבב הקודם`
+              nearBandEdge ? ", קרוב לגבול הקטגוריה" : ""
+            }${
+              delta === undefined
+                ? ""
+                : `, ${describeDelta(delta, minimumReadableDelta)} מהסבב הקודם`
             }`}
             draggable={false}
             onPointerDown={handlePointerDown(dimension.id)}
@@ -429,10 +469,13 @@ export function DashboardMapInteractive({
                 {score}%
                 {delta === undefined ? null : (
                   <span
-                    className={`round-delta round-delta-${deltaDirection(delta)}`}
+                    className={`round-delta round-delta-${deltaDirection(
+                      delta,
+                      minimumReadableDelta,
+                    )}`}
                     aria-hidden="true"
                   >
-                    {formatDelta(delta)}
+                    {formatDelta(delta, minimumReadableDelta)}
                   </span>
                 )}
               </span>

@@ -104,6 +104,15 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 - Map stones move with the arrow keys as well as the pointer, reset returns
   focus to the map and announces itself, and stone motion is instant under
   `prefers-reduced-motion`.
+- **A three-point rise is no longer stated as a fact.** Deltas between rounds
+  were printed as changes with no sample size beside them, while a school of ten
+  respondents cannot resolve them: one teacher answering differently moves any
+  score by ten points. The comparison now carries its own resolution — one
+  respondent's width — and anything under it reads as `≈` and "too small to read
+  at this sample size" instead of a number, with both rounds' respondent counts
+  always shown. The same width says when a stone's colour is a coin toss: the
+  band edges are a hard switch that decides which recommendations a principal
+  gets.
 - **The consent screen says what the deployment can keep.** It used to promise
   that no IP address is collected. That was true of the code — nothing in `src/`
   reads one, no analytics package is installed, no column could hold one — and

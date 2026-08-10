@@ -6,6 +6,9 @@ import {
   deltaDirection,
   describeDelta,
   formatDelta,
+  isDeltaReadable,
+  isNearBandEdge,
+  minimumReadableDelta,
   type RoundComparison,
 } from "@/lib/dashboard/round-comparison";
 import type { RoundSwitcherOptions } from "@/lib/rounds/round-options";
@@ -84,6 +87,7 @@ export function DashboardMapPage({
       roundOptions={roundOptions}
       roundSwitcherAction={roundSwitcherAction}
       comparison={comparison}
+      responseCount={responseCount}
     />
   );
 }
@@ -137,8 +141,22 @@ function DashboardMapReady({
   roundOptions,
   roundSwitcherAction,
   comparison,
-}: Omit<DashboardMapPageProps, "responseCount">) {
+  responseCount,
+}: DashboardMapPageProps) {
   const { state, reload } = useAiInsights(roundId);
+
+  /*
+   * How many colours this round could have chosen either way.
+   *
+   * Said once, as a count, rather than marked on each stone: with ten
+   * respondents one person is worth ten points, so in a school scoring in the
+   * forties and fifties every stone sits near the 50 edge, and eight identical
+   * warnings tell a principal less than one sentence does.
+   */
+  const scoreResolution = minimumReadableDelta(responseCount, responseCount);
+  const dimensionsNearEdge = Object.values(dimensionScores).filter((entry) =>
+    isNearBandEdge(entry.averageScore, scoreResolution),
+  ).length;
 
   return (
     <div className="dashboard-page stone-page dashboard-map-screen">
@@ -168,14 +186,49 @@ function DashboardMapReady({
           </div>
 
           {comparison ? (
-            <p className="map-sidebar-comparison">
-              <span
-                className={`round-delta round-delta-${deltaDirection(comparison.overallDelta)}`}
-                aria-hidden="true"
-              >
-                {formatDelta(comparison.overallDelta)}
-              </span>{" "}
-              {describeDelta(comparison.overallDelta)} בהשוואה ל{comparison.previousRoundTitle}.
+            <div className="map-sidebar-comparison">
+              <p>
+                <span
+                  className={`round-delta round-delta-${deltaDirection(
+                    comparison.overallDelta,
+                    comparison.minimumReadableDelta,
+                  )}`}
+                  aria-hidden="true"
+                >
+                  {formatDelta(
+                    comparison.overallDelta,
+                    comparison.minimumReadableDelta,
+                  )}
+                </span>{" "}
+                {describeDelta(
+                  comparison.overallDelta,
+                  comparison.minimumReadableDelta,
+                )}{" "}
+                בהשוואה ל{comparison.previousRoundTitle}.
+              </p>
+              {/* The two counts are the reason the sentence above is worded the
+                  way it is, so they are never separated from it. */}
+              <p className="quiet-note">
+                {comparison.currentResponseCount} משיבים בסבב הזה,{" "}
+                {comparison.previousResponseCount} בקודם.{" "}
+                {isDeltaReadable(
+                  comparison.overallDelta,
+                  comparison.minimumReadableDelta,
+                )
+                  ? null
+                  : `בגודל מדגם כזה משיב אחד יכול להזיז את הציון עד ${comparison.minimumReadableDelta} נקודות, ולכן שינוי קטן מזה אינו נקרא כשינוי.`}
+              </p>
+            </div>
+          ) : null}
+
+          {dimensionsNearEdge > 0 ? (
+            <p className="map-sidebar-band-note">
+              {dimensionsNearEdge === Object.keys(dimensionScores).length
+                ? "כל הממדים"
+                : `${dimensionsNearEdge} ממדים`}{" "}
+              נמצאים במרחק של פחות מ־{scoreResolution} נקודות מגבול הקטגוריה, וזה
+              בדיוק המרחק שמשיב אחד יכול להזיז ב־{responseCount} משיבים. הצבע שם
+              הוא הערכה, לא הכרעה.
             </p>
           ) : null}
 
@@ -224,6 +277,10 @@ function DashboardMapReady({
             dimensionScores={dimensionScores}
             roundId={roundId}
             dimensionDeltas={comparison?.dimensionDeltas ?? null}
+            minimumReadableDelta={
+              comparison?.minimumReadableDelta ?? Number.POSITIVE_INFINITY
+            }
+            responseCount={responseCount}
           />
         </div>
       </div>

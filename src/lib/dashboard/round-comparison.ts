@@ -1,6 +1,11 @@
 import type { SurveyRound } from "@/lib/types/backend";
 import type { CanonicalRoundAnalytics } from "@/lib/types/canonical-analytics";
-import { surveyInstrument, type WellbeingDimensionId } from "@/lib/shalomut-source";
+import {
+  responseScale,
+  surveyInstrument,
+  type WellbeingDimensionId,
+} from "@/lib/shalomut-source";
+import { SCORING_BANDS } from "@/lib/scoring-bands";
 
 /**
  * What changed between the round on screen and the one the school measured
@@ -16,7 +21,85 @@ export interface RoundComparison {
   previousRoundTitle: string;
   overallDelta: number;
   dimensionDeltas: Record<WellbeingDimensionId, number>;
+  /** How many people answered each round. Never shown as one without the other. */
+  currentResponseCount: number;
+  previousResponseCount: number;
+  /**
+   * The smallest movement this pair of rounds can distinguish from one person
+   * changing their mind. See `minimumReadableDelta`.
+   */
+  minimumReadableDelta: number;
 }
+
+/**
+ * The full width of the answer scale: the most one answer can differ from
+ * another. Read off the instrument rather than written as `100`, because the
+ * scale is methodology and a third colour would change it.
+ */
+const SCALE_RANGE =
+  Math.max(...responseScale.map((option) => option.score)) -
+  Math.min(...responseScale.map((option) => option.score));
+
+/**
+ * The smallest delta worth printing as a number, in score points.
+ *
+ * Both the overall score and each dimension score are means over respondents,
+ * so one respondent carries `1/n` of the result. If that person answers at the
+ * top of the scale in one round and at the bottom in the next — or simply is a
+ * different person, since the rounds are anonymous and the staff room changes —
+ * the score moves by `SCALE_RANGE / n` with nothing having happened to the
+ * school. Anything smaller than that is inside the width of one human being.
+ *
+ * The smaller round governs: it is the one with the coarser resolution, and a
+ * comparison is only as readable as its weaker half.
+ *
+ * This is deliberately not a significance test. It computes an upper bound on a
+ * single respondent's influence, which is arithmetic the data supports, rather
+ * than a confidence interval, which would need assumptions this instrument has
+ * not earned. It is therefore optimistic: the real detectable change is larger.
+ * It exists to stop the product printing "עלייה של 3 נקודות" as a fact when one
+ * teacher could have produced it.
+ */
+export function minimumReadableDelta(
+  currentResponseCount: number,
+  previousResponseCount: number,
+): number {
+  const smaller = Math.min(currentResponseCount, previousResponseCount);
+  if (!Number.isFinite(smaller) || smaller <= 0) {
+    return Number.POSITIVE_INFINITY;
+  }
+
+  return Math.ceil(SCALE_RANGE / smaller);
+}
+
+/** Whether a delta says more about the school than about one respondent. */
+export function isDeltaReadable(delta: number, minimum: number): boolean {
+  return Math.abs(delta) >= minimum;
+}
+
+/**
+ * Whether the score sits close enough to a band edge that the colour is a
+ * coin toss at this sample size.
+ *
+ * The bands are a hard switch: the intervention catalogue is filtered by status
+ * before it is ranked, so 74 and 75 hand a principal two different products —
+ * things to fix, or a strength to preserve. The same `minimum` that governs a
+ * delta governs this, because it is the same question asked once instead of
+ * twice: could one respondent have put it on the other side?
+ */
+export function isNearBandEdge(score: number, minimum: number): boolean {
+  if (!Number.isFinite(minimum)) return true;
+
+  return SCORE_BAND_EDGES.some((edge) => Math.abs(score - edge) < minimum);
+}
+
+/**
+ * Where one colour becomes the next: the lower bound of every band except the
+ * lowest, which has no edge above nothing.
+ */
+const SCORE_BAND_EDGES: number[] = SCORING_BANDS.map((band) => band.min).filter(
+  (min) => min > 0,
+);
 
 const comparableStatuses: ReadonlySet<SurveyRound["status"]> = new Set([
   "active",
@@ -94,44 +177,57 @@ export function toRoundComparison(
     previousRoundTitle: previousRound.title,
     overallDelta: Math.round(averageScore(current) - averageScore(previous)),
     dimensionDeltas,
+    currentResponseCount: current.totalResponses,
+    previousResponseCount: previous.totalResponses,
+    minimumReadableDelta: minimumReadableDelta(
+      current.totalResponses,
+      previous.totalResponses,
+    ),
   };
 }
 
 /**
  * How a delta reads in Hebrew. Direction is spelled out rather than left to an
  * arrow or a colour, so the change survives a screen reader and a printed page.
+ *
+ * The minimum is required rather than optional: this sentence used to state a
+ * three-point rise as a fact about a school, and an argument a caller can
+ * forget to pass is the same defect with a longer name.
  */
-export function describeDelta(delta: number): string {
+export function describeDelta(delta: number, minimum: number): string {
+  if (!isDeltaReadable(delta, minimum)) {
+    return "שינוי קטן מכדי לקרוא בגודל המדגם הזה";
+  }
   if (delta > 0) return `עלייה של ${delta} נקודות`;
-  if (delta < 0) return `ירידה של ${Math.abs(delta)} נקודות`;
-  return "ללא שינוי";
+  return `ירידה של ${Math.abs(delta)} נקודות`;
 }
 
 /**
- * The signed number as it appears on screen: `+4`, `-3`, `±0`.
+ * The signed number as it appears on screen: `+4`, `-3`, `≈`.
  *
- * A round that did not move used to read as a bare `0`, which on the map sits
- * beside a large percentage — `90%` with a `0` next to it is a number, not a
- * change. Every other value carries a sign, so the unchanged one carries `±`
- * and is read the same way.
- *
- * It is not omitted, because a dimension that held its ground is something the
- * manager measured. Leaving it out would make "no change" look like "not
- * compared".
+ * `≈` covers both of the cases that are not a stated change: a movement smaller
+ * than the resolution, and no movement at all. They used to be different — an
+ * exact zero printed as `±0` so that "measured and unchanged" could not be read
+ * as "not compared" — and the resolution makes them the same claim, because a
+ * zero at ten respondents is no more certain than a three. What still separates
+ * "compared" from "not compared" is whether this appears at all: no comparison
+ * renders no chip.
  */
-export function formatDelta(delta: number): string {
+export function formatDelta(delta: number, minimum: number): string {
+  if (!isDeltaReadable(delta, minimum)) return "≈";
   if (delta > 0) return `+${delta}`;
-  if (delta < 0) return String(delta);
 
-  return "±0";
+  return String(delta);
 }
 
 /**
  * The class suffix a delta is styled with. Styling is a second channel here —
  * the sign and the Hebrew wording carry the direction on their own.
  */
-export function deltaDirection(delta: number): "up" | "down" | "flat" {
-  if (delta > 0) return "up";
-  if (delta < 0) return "down";
-  return "flat";
+export function deltaDirection(
+  delta: number,
+  minimum: number,
+): "up" | "down" | "flat" {
+  if (!isDeltaReadable(delta, minimum)) return "flat";
+  return delta > 0 ? "up" : "down";
 }

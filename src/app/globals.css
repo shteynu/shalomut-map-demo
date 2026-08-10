@@ -2558,6 +2558,26 @@ textarea {
   line-height: 1.5;
 }
 
+.map-sidebar-comparison p {
+  margin: 0;
+}
+
+/* The two response counts, and the reason a delta may be unreadable. Quieter
+   than the sentence above them, because they qualify it rather than compete. */
+.map-sidebar-comparison .quiet-note {
+  margin-block-start: 0.35rem;
+  font-size: 0.85rem;
+}
+
+/* How many colours one respondent could have chosen differently. Sits with the
+   comparison rather than with the map: it qualifies every stone at once. */
+.map-sidebar-band-note {
+  margin: 0.75rem 0 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
 .dashboard-map-blob-score .round-delta {
   margin-inline-start: 0.4rem;
   font-size: 0.9rem;
