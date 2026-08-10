@@ -104,6 +104,12 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 - Map stones move with the arrow keys as well as the pointer, reset returns
   focus to the map and announces itself, and stone motion is instant under
   `prefers-reduced-motion`.
+- **A round that could never be shown is refused.** A school whose staff is
+  smaller than its own privacy threshold can never unlock a result, so every
+  teacher who answered would have handed something to their principal in
+  exchange for nothing. Setup now answers 422 and names the two numbers that
+  disagree, and writes no school. This is the provable half of the question; how
+  small a staff room is too small to measure *safely* stays open.
 - **A three-point rise is no longer stated as a fact.** Deltas between rounds
   were printed as changes with no sample size beside them, while a school of ten
   respondents cannot resolve them: one teacher answering differently moves any

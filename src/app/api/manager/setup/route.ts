@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { describeStaffFloorRefusal } from "@/lib/rounds/staff-floor";
 import { resolveCoreRepositories } from "@/lib/composition-root";
 import {
   ManagerScopeService,
@@ -159,6 +160,21 @@ export async function PUT(request: Request) {
         { error: "Invalid manager setup payload." },
         { status: 400 },
       );
+    }
+
+    /*
+     * The one round the product refuses to run. See `staff-floor.ts`: a staff
+     * smaller than its own privacy threshold produces a measurement that can
+     * never be shown, and every teacher who answered it gave something away for
+     * nothing. Checked here rather than only in the parser because the manager
+     * has to be told which two numbers disagree.
+     */
+    const refusal = describeStaffFloorRefusal(
+      input.organization.totalStaffCount,
+      input.round.privacyThreshold,
+    );
+    if (refusal) {
+      return NextResponse.json({ error: refusal.message }, { status: 422 });
     }
 
     const { orgRepo, roundRepo } = resolveCoreRepositories();
