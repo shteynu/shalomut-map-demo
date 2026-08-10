@@ -4,8 +4,16 @@
  * The deployed environment starts empty and fills up from real use. The local
  * one has no respondents, so every manual test would stop at the privacy lock:
  * ten answers are needed on the round and on every analysed question before the
- * dashboard unlocks. This writes an organization, one closed round and twelve
+ * dashboard unlocks. This writes an organization, one active round and twelve
  * responses through the same repositories the application uses.
+ *
+ * The round is `active` rather than `closed`, and that is not cosmetic: the
+ * respondent route serves `notFound()` for a round in any other status, so
+ * while this seeded `closed` there was no share link in either environment
+ * that opened the questionnaire — not for a manual walk, and not for the
+ * browser smoke, which asserted an RTL heading and got the dead-link screen's.
+ * Twelve responses still sit on it, so the dashboard unlocks exactly as
+ * before; what changed is that the link now leads somewhere.
  *
  *   npx tsx scripts/seed-local.ts          add the round
  *   npx tsx scripts/seed-local.ts --reset  clear the database first
@@ -106,7 +114,7 @@ async function main() {
     id: roundId,
     organizationId,
     title: definition.title,
-    status: 'closed',
+    status: 'active',
     shareCode: SHARE_CODE,
     privacyThreshold: 10,
     startDate: SEEDED_AT,
@@ -136,11 +144,12 @@ async function main() {
     [
       `Seeded ${host}:`,
       `  organization ${organizationId}`,
-      `  round        ${roundId} (${SHARE_CODE}, closed, threshold 10)`,
+      `  round        ${roundId} (${SHARE_CODE}, active, threshold 10)`,
       `  responses    ${RESPONSE_COUNT} × ${questions.length} answers`,
       '',
       'The round is above the privacy threshold, so the dashboard unlocks and',
-      'the AI analysis can be triggered from the round screen.',
+      'the AI analysis can be triggered from the round screen. It is active, so',
+      `/answer/${SHARE_CODE} opens the questionnaire and accepts answers.`,
     ].join('\n'),
   );
 }

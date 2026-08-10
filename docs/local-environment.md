@@ -16,7 +16,7 @@ fails closed on the same misconfiguration the deployment fails on.
 npm install
 cd ai-analytics-service && python3 -m venv .venv && .venv/bin/python -m pip install -e . && cd ..
 npm run local                             # brings the database up on its own
-npm run db:seed:local                     # one round with twelve responses
+npm run db:seed:local                     # one active round with twelve responses
 ```
 
 `.env` holds both halves' configuration; `.env.example` documents every key.
@@ -120,6 +120,11 @@ alongside the AI service — but nothing in the daily loop needs that.
 - **`db:clear` and `db:seed:local` follow `DATABASE_URL`.** The seed script
   refuses anything but a loopback host. `db:clear` does not — it prints the
   host it is about to empty, so read that line.
+- **The seeded round is `active`, so `/answer/SHALOM-LOCAL` answers.** It used
+  to be seeded `closed`, which made the respondent route serve the dead-link
+  screen and left every walk of the questionnaire starting with a hand-written
+  status flip — the archived task files are full of them. The twelve responses
+  are unchanged, so the dashboard still unlocks.
 - **Gemini free-tier quota.** One round is roughly 33 provider calls and `429`
   arrives after a handful. A local round that ends in `deterministic_fallback`
   everywhere is usually the quota, not the code: check the AI service log for
