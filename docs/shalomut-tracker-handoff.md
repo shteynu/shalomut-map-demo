@@ -16,8 +16,17 @@ production build on port 3210, because the dev server on port 3000 was serving
 stale CSS for part of that session; a layout that looks broken there is worth
 re-checking on a fresh build before it is called a defect.
 
-**One branch waits on a push:** `test/respondent-path-e2e` (`41bcd3b`), which
-closes Tier 0 item 4. It also fixes the reason that item was invisible — the
+**Two branches wait on a push, and they must land in this order.**
+`test/respondent-path-e2e` closes Tier 0 item 4;
+`fix/questionnaire-speaks-to-everyone` branches off it and closes item 3 — the
+questionnaire's sixteen feminine-only sentences now address both genders in the
+slash form the file already used for `המנהל/ת מעריכ/ה`. The published `2.0`
+contract deliberately keeps the wording it shipped, so the default template and
+`contracts/ai-analytics-v2.json` now differ on purpose; a canary test fails if
+anyone "fixes" the manifest. Item 3 is the one that could not have been
+repaired after a school started answering.
+
+The first of the two also fixes the reason item 4 was invisible — the
 seed wrote its round `closed`, so the one share link the project hands out led
 to the dead-link screen, and the smoke test that claimed to open the
 questionnaire had been passing against it. Verified by falsification: with the
@@ -28,15 +37,12 @@ rest of the suite passes.
 which waits on owner decisions. Axis 6 has nothing left in it; axis 7's second
 half still waits on the owner's wording, not on engineering.
 
-**Tier 0 items 1–3 are open in the code**, checked against the source on
+**Tier 0 items 1 and 2 are open in the code**, checked against the source on
 2026-08-10 rather than against a document: no security headers anywhere
-(`next.config.ts` has no `headers()`, there is no `vercel.json`), no incoming
-rate limiting anywhere (the only match in `src/` is the outgoing pace to the
-provider), and the questionnaire's feminine-only wording — sixteen places in
-`src/lib/shalomut-source.ts`, including all three scale anchors, with the same
-text also in `contracts/` and the Python service's corpus and tests. Item 3 is
-the only one of the four that cannot be repaired after a school starts
-answering.
+(`next.config.ts` has no `headers()`, there is no `vercel.json`) and no
+incoming rate limiting anywhere — the only match in `src/` is the outgoing pace
+to the provider, so `POST /api/auth/login` and the respondent's submission are
+unthrottled. Items 3 and 4 are done and waiting on the pushes above.
 
 `20260810101610_add_survey_attempts` is applied to the deployed database; twelve
 migrations, all applied. The deployed AI service still reports `9c46355`, which

@@ -58,6 +58,11 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 - Persisted organization onboarding, round setup and share-code distribution.
 - Dynamic round-scoped questionnaire snapshots with the original 24 questions
   as the default/legacy template.
+- The default template addresses both genders (`מרגיש/ה`, `יכול/ה`). The source
+  material is feminine throughout, which made non-response by the men on a
+  staff a likely and undetectable bias; rounds already collecting keep the
+  wording their staff started with, and `contracts/ai-analytics-v2.json` keeps
+  the sentences it published.
 - Builder editing, enable/required controls, duplication, dimension coverage,
   template suggestions and AI-generated suggestions. An AI suggestion names
   its source and must be edited by a manager before it can be added.
