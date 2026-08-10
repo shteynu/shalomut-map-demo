@@ -1,0 +1,101 @@
+/**
+ * The other half of the digest a manager reads off the error screen.
+ *
+ * `src/app/error.tsx` deliberately prints no message — in a development build
+ * that string carries whatever the throw site put in it, which can be query
+ * text or row contents — and offers the digest instead, so support can find the
+ * same failure in the log. Until this file existed there was no such log entry
+ * to find: the framework's own line goes wherever the runtime sends it, in a
+ * shape nothing can search by digest, and the product had no error tracking of
+ * any kind.
+ *
+ * So one structured line per failed request, in the same shape as
+ * `ai-operational-metrics.ts`: a marker key first, so a future sink can select
+ * both families with one filter and neither has to be reformatted when one
+ * arrives.
+ *
+ * Deliberately no third party and no dependency. Wiring Sentry or an equivalent
+ * means replacing the sink below and nothing else — which is the point of it
+ * being a sink.
+ */
+
+export interface RequestErrorRecord {
+  observability: 'shalomut_request_error';
+  /** The identifier the manager can read off the screen. */
+  digest?: string;
+  name: string;
+  message: string;
+  stack?: string;
+  path?: string;
+  method?: string;
+  /** `render` or `route`, and which router — what Next.js knows about the throw. */
+  routerKind?: string;
+  routeType?: string;
+  routePath?: string;
+}
+
+type RequestErrorSink = (record: RequestErrorRecord) => void;
+
+const defaultSink: RequestErrorSink = (record) => {
+  console.error(JSON.stringify(record));
+};
+
+let sink: RequestErrorSink = defaultSink;
+
+export function setRequestErrorSinkForTests(next: RequestErrorSink | null) {
+  sink = next ?? defaultSink;
+}
+
+/**
+ * What Next.js hands `onRequestError`, narrowed to what this file reads. The
+ * framework's own types are not importable from a plain module, and pinning the
+ * shape here keeps the instrumentation file to one line of logic.
+ */
+export interface RequestErrorContext {
+  path?: string;
+  method?: string;
+  routerKind?: string;
+  routeType?: string;
+  routePath?: string;
+}
+
+/**
+ * Builds the record without emitting it, which is what makes this testable:
+ * everything interesting is the flattening of an unknown throw into fields, and
+ * an unknown throw is exactly what a route handler produces.
+ */
+export function describeRequestError(
+  error: unknown,
+  context: RequestErrorContext = {},
+): RequestErrorRecord {
+  const isError = error instanceof Error;
+  // Next.js attaches `digest` to the error object rather than to a type, so it
+  // is read off the value and not asserted onto it.
+  const digest = (error as { digest?: unknown } | null)?.digest;
+
+  return {
+    observability: 'shalomut_request_error',
+    // The only field that ties this line to what the manager is looking at.
+    digest: typeof digest === 'string' ? digest : undefined,
+    name: isError ? error.name : typeof error,
+    // A thrown string, a rejected object, `undefined` — a route handler can
+    // produce any of them, and a report that only understands `Error` goes
+    // blank exactly when something unusual happened.
+    message: isError ? error.message : String(error),
+    stack: isError ? error.stack : undefined,
+    path: context.path,
+    method: context.method,
+    routerKind: context.routerKind,
+    routeType: context.routeType,
+    routePath: context.routePath,
+  };
+}
+
+export function reportRequestError(
+  error: unknown,
+  context: RequestErrorContext = {},
+): RequestErrorRecord {
+  const record = describeRequestError(error, context);
+  sink(record);
+  return record;
+}

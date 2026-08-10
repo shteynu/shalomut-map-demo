@@ -25,6 +25,23 @@ export function isRespondentRoute(pathname: string) {
   );
 }
 
+/**
+ * The one route an uptime monitor is allowed to reach.
+ *
+ * `/api/health` was written to be read by nobody in particular — it echoes no
+ * variable value and reports no database, provider or credential state — and it
+ * still sat behind the manager gate, which meant the only thing watching this
+ * product was nothing at all. A monitor cannot hold a session, and a monitor
+ * that has to would be a second place to keep a credential.
+ *
+ * GET only. The endpoint has no other method, and a classifier that says
+ * otherwise would be an open door the day one is added.
+ */
+export function isPublicOperationalRoute(pathname: string, method: string) {
+  if (method !== "GET" && method !== "HEAD") return false;
+  return pathname === "/api/health" || pathname === "/api/health/";
+}
+
 const AI_INSIGHTS_PATH = /^\/api\/rounds\/[^/]+\/ai-insights\/?$/;
 const AI_ANALYSIS_RUN_WORKER_PATH =
   /^\/api\/ai-analysis-runs\/(?:claim|[^/]+\/(?:heartbeat|fail))\/?$/;

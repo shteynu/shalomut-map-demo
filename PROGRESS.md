@@ -104,6 +104,22 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 - Map stones move with the arrow keys as well as the pointer, reset returns
   focus to the map and announces itself, and stone motion is instant under
   `prefers-reduced-motion`.
+- **The consent screen says what the deployment can keep.** It used to promise
+  that no IP address is collected. That was true of the code — nothing in `src/`
+  reads one, no analytics package is installed, no column could hold one — and
+  false of the product, because every request lands on a hosting edge that logs
+  addresses. The address is now described instead: where it goes, that it is not
+  stored beside the answers, and that nobody at the school sees it. A new
+  promise discloses the third-party language model and what reaches it, which is
+  question-level averages and never one person's answer.
+  `docs/data-flow-and-subprocessors.md` is the long form.
+- **The product is reachable by a monitor, and a failure leaves a trace.** There
+  was no error tracking of any kind: a manager's 500 left a digest on their own
+  screen and nothing anywhere else, and `/api/health` sat behind the manager gate,
+  so nothing could watch the product at all. Health is now readable anonymously —
+  by GET and HEAD only — and every uncaught server error writes one structured
+  line carrying that same digest, in the shape the operational metrics already
+  use.
 - **A phone and a desktop ask the same question again.** The mobile rule hid the
   scale anchors — the sentences saying what green, yellow and red mean — so a
   teacher on a phone chose between three coloured pills with their definitions

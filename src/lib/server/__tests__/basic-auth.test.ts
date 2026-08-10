@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   isMachineAuthenticatedRoute,
+  isPublicOperationalRoute,
   isRespondentRoute,
 } from "../basic-auth";
 
@@ -69,4 +70,31 @@ test("reading AI insights stays behind the manager gate", () => {
     isMachineAuthenticatedRoute("/api/rounds/round-1/trigger-ai", "POST"),
     false,
   );
+});
+
+test("an uptime monitor reaches the health endpoint, and only by reading", () => {
+  assert.strictEqual(isPublicOperationalRoute("/api/health", "GET"), true);
+  assert.strictEqual(isPublicOperationalRoute("/api/health/", "GET"), true);
+  assert.strictEqual(isPublicOperationalRoute("/api/health", "HEAD"), true);
+
+  // A monitor never writes, and the endpoint has no other method today. The
+  // day one is added it must be decided on, not inherited.
+  assert.strictEqual(isPublicOperationalRoute("/api/health", "POST"), false);
+  assert.strictEqual(isPublicOperationalRoute("/api/health", "DELETE"), false);
+});
+
+test("nothing else is opened by the operational bypass", () => {
+  for (const pathname of [
+    "/api/healthz",
+    "/api/health/detail",
+    "/api/rounds",
+    "/api/mcp",
+    "/",
+  ]) {
+    assert.strictEqual(
+      isPublicOperationalRoute(pathname, "GET"),
+      false,
+      `expected ${pathname} to stay behind the manager gate`,
+    );
+  }
 });

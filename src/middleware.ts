@@ -4,6 +4,7 @@ import { describeSessionSecretSource } from "@/lib/auth/jwt-session-provider";
 import { NEW_SCHOOL_PARAM, SETUP_SCHOOL_PARAM } from "@/lib/navigation";
 import {
   isMachineAuthenticatedRoute,
+  isPublicOperationalRoute,
   isRespondentRoute,
 } from "@/lib/server/basic-auth";
 import {
@@ -75,6 +76,7 @@ export async function middleware(request: NextRequest) {
   const bypassesManagerScope =
     isRespondentRoute(pathname) ||
     isMachineAuthenticatedRoute(pathname, method) ||
+    isPublicOperationalRoute(pathname, method) ||
     isPublicAuthRoute;
 
   if (bypassesManagerScope) {
