@@ -213,6 +213,11 @@ control.
   there are no real respondents and no fourth processor to declare. It is
   recorded as a pre-pilot gate in `docs/shalomut-tracker-handoff.md` rather
   than left to memory. No code changes when it is switched on.
+- **Superseded the same day; this file is kept as written.** The pre-pilot gate
+  is no longer Upstash but a generated `MANAGER_ADMIN_PASSWORD`, because a
+  shared counter only changes the outcome against a password worth guessing.
+  The living source is `docs/shalomut-tracker-handoff.md`; do not read the
+  paragraph above as current.
 
 ## Next concrete step
 

@@ -106,13 +106,37 @@ because a staffroom answers from one school address and refusing them would be
 worse than the abuse it prevents. Addresses are never stored: the key is a
 salted hash that expires with the window.
 
-**Upstash is prepared and stays off until the pilot — owner decision,
-2026-08-10.** The in-memory counters are what runs until then, and on
-serverless that means the effective ceiling is the limit times however many
-instances are warm: a speed bump against guessing, not a wall. That is an
-accepted state while there are no real respondents, and it is listed under the
-pre-pilot gates below so it is switched on deliberately rather than
-remembered.
+**Upstash is prepared, stays off, and is no longer a pre-pilot gate — owner
+decision, 2026-08-10, revised the same day.** The first decision was to switch
+it on before the pilot. It was reconsidered and the gate was replaced by a
+generated manager password, for a reason worth keeping:
+
+The in-memory counters are per-instance, so on serverless the effective ceiling
+is the limit times however many instances are warm — and the number of warm
+instances is set by the attacker's own parallelism, not by how few real users
+the product has. Twenty concurrent instances is roughly 200 attempts per five
+minutes, about 57 000 a day. **But that number only decides anything against a
+guessable password.** Against `admin123` it is fatal with or without Upstash;
+against `openssl rand -hex 32` it is nothing, and no shared counter is needed.
+Rate limiting rescues a weak password; it does not make one safe, and it is not
+what a strong one needs.
+
+So the gate that actually protects a school's answers is the password, and it
+now sits under the pre-pilot list in place of Upstash. **Nothing in the code
+enforces this**: `ManagerAuthenticationService` requires the variable to be
+non-empty and would accept `123`
+(`src/lib/auth/manager-auth-service.ts`). That is why it is written down here
+and in `.env.example` rather than left to judgement.
+
+What the in-memory limiter still buys, and why it stays: it stops a script
+hammering either endpoint from one address, it makes the refusal visible in the
+logs, and it costs nothing. What is given up by not enabling Upstash: a counter
+that holds across instances, which matters against a distributed attempt on a
+password worth attempting. If the password is generated, there is no such
+password.
+
+Upstash remains two environment variables away, its code path is verified (see
+below), and nothing needs rewriting to turn it on later.
 
 Switching it on is two environment variables — `UPSTASH_REDIS_REST_URL` and
 `UPSTASH_REDIS_REST_TOKEN` — and nothing else: the REST API is called directly,
@@ -155,18 +179,12 @@ remains correct: nothing since has touched `ai-analytics-service/`, and its
 
 **Due before the first pilot school, not before merge:**
 
-- Switch on Upstash for rate limiting (two environment variables, decided
-  2026-08-10). Until then the counters are per-instance and the sign-in limit
-  is a speed bump rather than a wall. **This is the owner's own hands, not an
-  agent's**: it needs an Upstash account created and two credentials stored in
-  the Vercel project, and no agent creates accounts or handles credential
-  values here. The repository side is finished and verified — see the Upstash
-  paragraphs above. The steps are: create a Redis database in Upstash, copy its
-  REST URL and REST token, add them to the Vercel project as
-  `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`, redeploy so the
-  running functions pick them up, then read the logs of the first sign-in for
-  `Rate limit store unavailable`. Nothing else changes, and nothing needs to be
-  pasted into a repository file.
+- **Generate `MANAGER_ADMIN_PASSWORD` during the credential rotation —
+  `openssl rand -hex 32` — and do not choose one by hand.** This replaced the
+  Upstash gate on 2026-08-10; see below for why the swap is honest rather than
+  a downgrade. The rotation was already due before the first real respondent,
+  so this adds no step, only a shape. The owner's own hands: no agent sees or
+  types this value.
 - Rotate the four exposed credentials. The strategy document already states
   this as due before the first real respondent rather than after.
 
