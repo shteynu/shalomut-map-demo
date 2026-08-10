@@ -128,13 +128,41 @@ export const sourceMaterials: SourceMaterial[] = [
   },
 ];
 
+/**
+ * Everything a respondent reads — the three scale anchors below and the
+ * questions after them — addresses one person, and in Hebrew that means
+ * choosing a gender or refusing to.
+ *
+ * It used to choose. The Google Form and the דרכא deck this instrument comes
+ * from are written throughout in the feminine, which is a defensible thing for
+ * a staffroom that is mostly women and an indefensible thing to hand a man and
+ * call anonymous. His most likely answer to a questionnaire that is not
+ * addressed to him is no answer at all, and non-response that concentrates in
+ * one group is not noise: it is a bias that lands in the numbers, in the map
+ * drawn from them and in the advice a school acts on. Unlike a layout defect
+ * it cannot be repaired afterwards, because the answers that were never given
+ * cannot be collected later.
+ *
+ * So the slash form — `מרגיש/ה`, `יכול/ה`, `בטוח/ה` — which the source itself
+ * already used for `המנהל/ת מעריכ/ה`. It is the ordinary Israeli convention
+ * for addressing a reader whose gender is unknown, and unknown is exactly what
+ * an anonymous questionnaire keeps.
+ *
+ * Two things this deliberately does not do. It does not touch
+ * `contracts/ai-analytics-v2.json`, which carries the same 24 sentences in the
+ * feminine and is a published, immutable contract — the text there is what
+ * `1.0`/`2.0` payloads are validated against, and rewriting a shipped contract
+ * to match new copy is how a consumer breaks. And it does not reach rounds
+ * that already exist: a round analyses the questionnaire snapshot persisted on
+ * it, so a school mid-collection keeps the wording its staff started with.
+ */
 export const responseScale: SurveyResponseOption[] = [
   {
     value: "green",
     title: "ירוק",
     text: "ההיגד משקף באופן מלא את מצבי הנוכחי.",
     description:
-      "ההיגד הזה משקף באופן מלא את מצבי הנוכחי. אני מרגישה נוחות ורוגע כשאני חושבת על ההיבט הזה בעבודתי. כרגע אינני רואה צורך לשנות או לשפר משהו מהותי בנושא הזה.",
+      "ההיגד הזה משקף באופן מלא את מצבי הנוכחי. אני מרגיש/ה נוחות ורוגע כשאני חושב/ת על ההיבט הזה בעבודתי. כרגע אינני רואה צורך לשנות או לשפר משהו מהותי בנושא הזה.",
     score: 100,
   },
   {
@@ -142,7 +170,7 @@ export const responseScale: SurveyResponseOption[] = [
     title: "צהוב",
     text: "המצב סביר, אך יש נקודות שכדאי לתת להן תשומת לב.",
     description:
-      "ההיגד הזה משקף רק חלקית את מצבי הנוכחי. באופן כללי המצב סביר, אבל יש נקודות שמטרידות אותי או שהייתי רוצה לראות בהן שיפור. אני מרגישה שכדאי לתת להיבט הזה יותר תשומת לב ולבצע בו שינוי מסוים.",
+      "ההיגד הזה משקף רק חלקית את מצבי הנוכחי. באופן כללי המצב סביר, אבל יש נקודות שמטרידות אותי או שהייתי רוצה לראות בהן שיפור. אני מרגיש/ה שכדאי לתת להיבט הזה יותר תשומת לב ולבצע בו שינוי מסוים.",
     score: 60,
   },
   {
@@ -150,7 +178,7 @@ export const responseScale: SurveyResponseOption[] = [
     title: "אדום",
     text: "ההיבט הזה יוצר מתח או חוסר נוחות ודורש פעולה.",
     description:
-      "ההיגד הזה אינו משקף כלל את מצבי הנוכחי. כשאני חושבת על ההיבט הזה, אני מרגישה מתח, דאגה, עייפות או חוסר נוחות ממשיים. ברור לי שכאן דרושים שינוי ופעולה קונקרטית, ועדיף בזמן הקרוב.",
+      "ההיגד הזה אינו משקף כלל את מצבי הנוכחי. כשאני חושב/ת על ההיבט הזה, אני מרגיש/ה מתח, דאגה, עייפות או חוסר נוחות ממשיים. ברור לי שכאן דרושים שינוי ופעולה קונקרטית, ועדיף בזמן הקרוב.",
     score: 0,
   },
 ];
@@ -190,9 +218,9 @@ const surveyDimensions: SurveyDimension[] = [
     subtitle: "אפשרות לביטוי עצמי",
     sourceLabel: "ביטוי עצמי",
     questions: [
-      question("self-expression-1", "self-expression", "אני יכולה להביע בחופשיות את הרעיונות והמחשבות שלי בעבודה."),
-      question("self-expression-2", "self-expression", "אני מרגישה ששומעים אותי ומתחשבים בדעתי."),
-      question("self-expression-3", "self-expression", "אני מרגישה שאני עצמי בעבודה, ושאין לי צורך להעמיד פנים."),
+      question("self-expression-1", "self-expression", "אני יכול/ה להביע בחופשיות את הרעיונות והמחשבות שלי בעבודה."),
+      question("self-expression-2", "self-expression", "אני מרגיש/ה ששומעים אותי ומתחשבים בדעתי."),
+      question("self-expression-3", "self-expression", "אני מרגיש/ה שאני עצמי בעבודה, ושאין לי צורך להעמיד פנים."),
     ],
   },
   {
@@ -205,10 +233,10 @@ const surveyDimensions: SurveyDimension[] = [
       question(
         "professional-competence-1",
         "professional-competence",
-        "אני מקבלת באופן קבוע חיזוק לכך שהמאמצים והכישורים שלי בעלי ערך.",
+        "אני מקבל/ת באופן קבוע חיזוק לכך שהמאמצים והכישורים שלי בעלי ערך.",
       ),
-      question("professional-competence-2", "professional-competence", "אני בטוחה במומחיות המקצועית שלי וביכולות שלי."),
-      question("professional-competence-3", "professional-competence", "אני מרגישה כשירה מספיק כדי להתמודד עם המשימות שעולות."),
+      question("professional-competence-2", "professional-competence", "אני בטוח/ה במומחיות המקצועית שלי וביכולות שלי."),
+      question("professional-competence-3", "professional-competence", "אני מרגיש/ה כשיר/ה מספיק כדי להתמודד עם המשימות שעולות."),
     ],
   },
   {
@@ -221,7 +249,7 @@ const surveyDimensions: SurveyDimension[] = [
       question(
         "social-resource-1",
         "social-resource",
-        "יש לי לפחות אדם אחד בעבודה שאני סומכת עליו/עליה ושאני יכולה לדבר איתו/איתה בפתיחות.",
+        "יש לי לפחות אדם אחד בעבודה שאני סומך/ת עליו/עליה ושאני יכול/ה לדבר איתו/איתה בפתיחות.",
       ),
       question("social-resource-2", "social-resource", "בצוות קיימים כבוד הדדי ותמיכה."),
       question("social-resource-3", "social-resource", "התקשורת עם הקולגות נותנת לי אנרגיה ורגשות חיוביים."),
@@ -234,9 +262,9 @@ const surveyDimensions: SurveyDimension[] = [
     subtitle: "היחס בין היקף המשימות לבין הזמן לביצוען",
     sourceLabel: "איזון: היחס בין היקף המשימות לבין הזמן לביצוען",
     questions: [
-      question("balance-1", "balance", "אני מצליחה לבצע את משימות העבודה בזמן שנקבע."),
+      question("balance-1", "balance", "אני מצליח/ה לבצע את משימות העבודה בזמן שנקבע."),
       question("balance-2", "balance", "יש לי מספיק זמן למנוחה ולהתאוששות אחרי העבודה."),
-      question("balance-3", "balance", "אני מרגישה שהעומס בעבודה מתאים לי והוא בהישג יד/בר־ביצוע עבורי."),
+      question("balance-3", "balance", "אני מרגיש/ה שהעומס בעבודה מתאים לי והוא בהישג יד/בר־ביצוע עבורי."),
     ],
   },
   {
@@ -246,8 +274,8 @@ const surveyDimensions: SurveyDimension[] = [
     subtitle: "תמיכה מהנהלה",
     sourceLabel: "עורף מקצועי: תמיכת הנהלה",
     questions: [
-      question("management-support-1", "management-support", "אני מקבלת באופן קבוע תמיכה ומשוב מההנהלה."),
-      question("management-support-2", "management-support", "אני יכולה לפנות למנהל/ת לעזרה בלי חשש."),
+      question("management-support-1", "management-support", "אני מקבל/ת באופן קבוע תמיכה ומשוב מההנהלה."),
+      question("management-support-2", "management-support", "אני יכול/ה לפנות למנהל/ת לעזרה בלי חשש."),
       question("management-support-3", "management-support", "המנהל/ת מעריכ/ה את המאמצים שלי ומביע/ה זאת באופן גלוי."),
     ],
   },
@@ -258,7 +286,7 @@ const surveyDimensions: SurveyDimension[] = [
     subtitle: "ודאות בסביבת עבודה",
     sourceLabel: "ודאות",
     questions: [
-      question("certainty-1", "certainty", "אני מבינה מה מצפה לי בעבודה מחר ובזמן הקרוב."),
+      question("certainty-1", "certainty", "אני מבין/ה מה מצפה לי בעבודה מחר ובזמן הקרוב."),
       question("certainty-2", "certainty", "בעבודה יש מינימום שינויים בלתי צפויים ולא מתוכננים."),
       question("certainty-3", "certainty", "המשימות והאחריות שלי מוגדרות בבירור ואינן משתנות ללא התראה מראש."),
     ],
@@ -288,7 +316,7 @@ const surveyDimensions: SurveyDimension[] = [
     questions: [
       question("meaning-1", "meaning", "אני רואה תועלת ברורה עבור אנשים אחרים בעבודה שלי."),
       question("meaning-2", "meaning", "ברור לי למה אני עושה את מה שאני עושה."),
-      question("meaning-3", "meaning", "אני מרגישה שלעבודה שלי יש משמעות והיא חשובה לי באופן אישי."),
+      question("meaning-3", "meaning", "אני מרגיש/ה שלעבודה שלי יש משמעות והיא חשובה לי באופן אישי."),
     ],
   },
 ];
