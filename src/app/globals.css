@@ -2949,21 +2949,47 @@ textarea {
 /* The mark that a dimension's answers split between the two ends. It sits on a
    pastel stone of any hue, so it carries its own light surface rather than
    trusting the one behind it, and states the fact in words — the score beside
-   it is unchanged, and a colour alone could be read as changing it. */
+   it is unchanged, and a colour alone could be read as changing it.
+
+   On the score's own line, which is the only room the stone has. Two other
+   placements were measured on the local build and both failed: a fourth row in
+   the centred stack overlapped the score by 7px, because a 152px stone is
+   already full at icon, caption and score; and appending it to the status line
+   wrapped that line in two on five of eight stones, which then climbed back
+   into the score. The score is a short number in a wide box, so the fact fits
+   beside it — measured intact on all eight stones with a delta chip present,
+   which is the widest this row ever gets. The narrower horizontal padding
+   below is what buys the last few pixels on the smallest stone. */
+.dashboard-map-blob.has-division .dashboard-map-blob-score {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.35rem;
+  flex-wrap: nowrap;
+}
+
+.dashboard-map-blob.has-division .dashboard-map-blob-copy {
+  padding-inline: 1.1rem;
+  /* The score's line box was measured 3px into the status row's on the
+     narrowest stone — no ink touched, but a longer status label or a larger
+     browser font would close that. This lifts the stack clear of it. */
+  padding-bottom: 2.3rem;
+}
+
 .dashboard-map-blob-division {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  margin-top: 0.15rem;
-  padding: 0.16rem 0.5rem;
-  border: 1px solid var(--border-soft);
-  border-radius: 999px;
-  background: rgba(255, 250, 240, 0.72);
+  gap: 0.25rem;
   color: var(--pastel-ink);
-  font-size: 0.76rem;
+  font-size: 0.72rem;
   font-weight: 700;
-  line-height: 1.3;
   white-space: nowrap;
+}
+
+.dashboard-map-blob-division::before {
+  content: "·";
+  margin-inline-end: 0.25rem;
+  opacity: 0.65;
 }
 
 .dashboard-map-blob-status {
@@ -3534,6 +3560,7 @@ textarea {
 
   .dashboard-map-blob-plus,
   .dashboard-map-blob-copy,
+  .dashboard-map-blob-division,
   .dashboard-map-blob-status,
   .dashboard-map-blob::after {
     transform: none;
@@ -3615,6 +3642,7 @@ textarea {
   .dashboard-map-blob-copy {
     padding: 1rem 1.2rem 2.1rem;
   }
+
 
   .dashboard-map-blob-copy strong {
     font-size: 1.55rem;

@@ -6,7 +6,7 @@
 - Base branch: `main`
 - Base commit: `d0121e7`
 - Current HEAD: (this branch's commit, see `Changed files`)
-- Status: implemented and tested; browser walk waiting on an owner sign-in
+- Status: implemented, tested and walked in the browser; ready to land
 - Last updated: 2026-08-10
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -57,7 +57,7 @@ dashboard sidebar says so, beside the delta: *"השאלון השתנה בין ה
 
 ## Remaining
 
-- The browser walk (below).
+- Nothing.
 
 ## Changed files
 
@@ -74,29 +74,31 @@ dashboard sidebar says so, beside the delta: *"השאלון השתנה בין ה
 - `npx tsx --test src/lib/dashboard/__tests__/round-comparison.test.ts` — 16/16.
 - `npx tsx --test src/components/dashboard/__tests__/dashboard-round-comparison.test.tsx`
   — 4/4.
-- `npm test` — 832 pass, 0 fail.
+- `npm test` — 844 pass, 0 fail.
 - `npm run typecheck` — clean.
 - `npm run lint` — clean.
 - `npm run build` — succeeded.
 
 Environment: local.
 
+- **Browser walk, signed in, against a production build served on port 3210.**
+  The local database holds the pair this needs: `round_local_1786442621191`
+  ("סבב שני, שאלון מנוסח מחדש", 12 responses, one question reworded so the hash
+  differs), one day after `round_local_1786356221191`. On that round the sidebar
+  renders all three paragraphs together — the delta, the two respondent counts
+  with the resolution sentence, and "השאלון השתנה בין הסבבים…" — and no console
+  errors. The comparison on the other seeded round, which shares its hash, shows
+  the first two paragraphs and not the third.
+
 ### Blocked or not run
 
-- **The browser walk.** The local database now holds the pair this needs: a
-  scratch script seeded a second closed round, `round_local_1786442621191`
-  ("סבב שני, שאלון מנוסח מחדש", 12 responses, one question reworded so the hash
-  differs), one day after the seeded `round_local_1786356221191`. The script was
-  deleted; the rounds are in the local database. `/dashboard` is behind the
-  manager session and an agent does not enter passwords, so the walk needs the
-  owner to sign in at `http://localhost:3000/login` first.
+- Nothing. The deployed endpoint has no round to render, as the handoff records.
 
 ### Residual risk
 
 - Low. The flag is a string comparison on a field both runtimes already refuse
-  on mismatch; the rendered paragraph is covered by a render test. What no test
-  covers is how the third paragraph sits in the real sidebar at real widths —
-  that is exactly what the walk above is for.
+  on mismatch, the rendered paragraph is covered by a render test, and the
+  sidebar was read on screen.
 
 ## Approval gates
 
@@ -108,7 +110,6 @@ None for this slice.
 
 ## Next concrete step
 
-Sign in at `http://localhost:3000/login`, open the dashboard on
-`סבב שני, שאלון מנוסח מחדש`, and confirm the comparison block shows the delta,
-both respondent counts and the questionnaire note together, at desktop and phone
-widths. Then the branch is ready to land.
+Land this branch first — `feat/a-split-staff-room-is-visible` is stacked on it:
+`git push origin fix/comparison-reads-the-questionnaire:main` (the owner runs
+the push).

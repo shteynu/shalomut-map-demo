@@ -46,3 +46,38 @@ test("several divided dimensions are counted and each one detailed", () => {
   assert.match(html, /30% אדום מול 50% ירוק/u);
   assert.match(html, /35% אדום מול 40% ירוק/u);
 });
+
+test("a round divided about everything counts the rest instead of listing it", () => {
+  // The shape a test round with near-random answers actually produced: all
+  // eight dimensions split. Naming eight is the wallpaper this notice exists
+  // to avoid.
+  const html = render([
+    { dimensionId: "self-expression", greenPercent: 47, redPercent: 37 },
+    { dimensionId: "professional-competence", greenPercent: 37, redPercent: 47 },
+    { dimensionId: "social-resource", greenPercent: 43, redPercent: 40 },
+    { dimensionId: "balance", greenPercent: 43, redPercent: 43 },
+    { dimensionId: "management-support", greenPercent: 40, redPercent: 43 },
+    { dimensionId: "certainty", greenPercent: 37, redPercent: 57 },
+    { dimensionId: "organizational-climate", greenPercent: 47, redPercent: 40 },
+    { dimensionId: "meaning", greenPercent: 47, redPercent: 47 },
+  ]);
+
+  assert.match(html, /ב־8 ממדים/u);
+  assert.match(html, /ועוד 5 ממדים/u);
+  // The three widest are the ones named: balance and meaning are even splits,
+  // then social-resource at 40.
+  assert.match(html, /איזון/u);
+  assert.match(html, /משמעות/u);
+  assert.doesNotMatch(html, /ודאות/u);
+});
+
+test("one unnamed dimension is counted in the singular", () => {
+  const html = render([
+    { dimensionId: "balance", greenPercent: 50, redPercent: 50 },
+    { dimensionId: "meaning", greenPercent: 45, redPercent: 45 },
+    { dimensionId: "certainty", greenPercent: 40, redPercent: 40 },
+    { dimensionId: "self-expression", greenPercent: 25, redPercent: 25 },
+  ]);
+
+  assert.match(html, /ועוד ממד אחד/u);
+});

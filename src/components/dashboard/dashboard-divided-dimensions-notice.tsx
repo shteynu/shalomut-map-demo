@@ -30,6 +30,26 @@ function nameOf(division: DimensionDivision): string {
  * split room would change what the AI service validates a status against, and
  * that is a contract question rather than a display one.
  */
+/**
+ * How many divisions can be named before the sentence stops being read.
+ *
+ * Three was chosen against a real round rather than in the abstract: a test
+ * school whose answers are close to random had all eight dimensions split, and
+ * naming eight turned the note into the wallpaper this component exists to
+ * avoid. Above three, the widest splits are named and the rest are counted —
+ * a room divided about everything is a fact about the round, not about a
+ * dimension.
+ */
+const NAMED_LIMIT = 3;
+
+/** The wider split first: the larger the smaller end, the more divided. */
+function byWidth(left: DimensionDivision, right: DimensionDivision): number {
+  return (
+    Math.min(right.greenPercent, right.redPercent) -
+    Math.min(left.greenPercent, left.redPercent)
+  );
+}
+
 export function DashboardDividedDimensionsNotice({
   divisions,
 }: {
@@ -37,7 +57,10 @@ export function DashboardDividedDimensionsNotice({
 }) {
   if (divisions.length === 0) return null;
 
-  const detail = divisions
+  const named = [...divisions].sort(byWidth).slice(0, NAMED_LIMIT);
+  const unnamed = divisions.length - named.length;
+
+  const detail = named
     .map(
       (division) =>
         `${nameOf(division)} — ${division.redPercent}% אדום מול ${division.greenPercent}% ירוק`,
@@ -56,8 +79,14 @@ export function DashboardDividedDimensionsNotice({
           {divisions.length === 1
             ? "בממד אחד התשובות מפוצלות בין שני קצות הסולם"
             : `ב־${divisions.length} ממדים התשובות מפוצלות בין שני קצות הסולם`}
-          : {detail}. הציון הממוצע לא מראה את הפיצול הזה, וכדאי לקרוא את הממדים
-          האלה לפי פירוט השאלות ולא לפי הציון בלבד.
+          : {detail}
+          {unnamed > 0
+            ? unnamed === 1
+              ? ", ועוד ממד אחד"
+              : `, ועוד ${unnamed} ממדים`
+            : null}
+          . הציון הממוצע לא מראה את הפיצול הזה, וכדאי לקרוא את הממדים האלה לפי
+          פירוט השאלות ולא לפי הציון בלבד.
         </p>
       </div>
     </section>

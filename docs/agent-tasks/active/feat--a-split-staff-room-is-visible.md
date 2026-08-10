@@ -8,7 +8,7 @@
   `index.ts` exports `DashboardRoundComparison`, so land that one first)
 - Base commit: `37960c4`
 - Current HEAD: this branch's commit
-- Status: implemented and tested; browser walk waiting on an owner sign-in
+- Status: implemented, tested and walked in the browser; ready to land
 - Last updated: 2026-08-10
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -68,17 +68,35 @@ contract version.
 - **On the stone as well as in the sidebar**, for the same reason, and in words
   rather than by colour alone.
 
+## What the browser walk changed
+
+The walk found two real defects that no test could have caught, both now fixed
+in this branch.
+
+1. **The mark had nowhere to live on the stone.** It was first drawn as a
+   fourth row in the stone's centred stack, which overlapped the score by 7px:
+   a stone is 152px tall and icon, caption and score already fill it. Appending
+   it to the status line instead wrapped that line onto two rows on five of
+   eight stones, which then climbed back into the score. It now sits beside the
+   score — a short number in a wide box — which was measured intact on all eight
+   stones with a delta chip present, the widest that row ever gets.
+2. **Naming every divided dimension was the wallpaper this notice exists to
+   avoid.** A test round whose answers are near random has all eight dimensions
+   split, and the note listed all eight. It now names the three widest splits
+   and counts the rest. The "true of few" premise the design rests on is true of
+   a real school and not of every round, and the copy had to survive both.
+
 ## Completed
 
 - `dividedDimensions(questionAggregates)`, returning both shares per divided
   dimension in the instrument's order.
 - `DashboardDividedDimensionsNotice` in the sidebar.
 - The stone mark and its accessible name.
-- Six unit tests on the rule, four render tests on the notice.
+- Six unit tests on the rule, six render tests on the notice.
 
 ## Remaining
 
-- The browser walk (below).
+- Nothing.
 
 ## Changed files
 
@@ -98,31 +116,37 @@ contract version.
 
 - `npx tsx --test src/lib/dashboard/__tests__/dimension-division.test.ts` — 6/6.
 - `npx tsx --test src/components/dashboard/__tests__/dashboard-divided-dimensions-notice.test.tsx`
-  — 4/4.
-- `npm test` — 842 pass, 0 fail.
+  — 6/6.
+- `npm test` — 844 pass, 0 fail.
 - `npm run typecheck` — clean.
 - `npm run lint` — clean.
 - `npm run build` — succeeded.
 
 Environment: local.
 
+- **Browser walk, signed in, against a production build served on port 3210.**
+  The owner signed in on `localhost:3000`; the session cookie is not scoped by
+  port, so a `next start` on 3210 served the same session. This was necessary
+  rather than incidental: the dev server on 3000 belongs to another session and
+  was serving a CSS chunk one edit behind for most of the walk, which is worth
+  remembering — a layout that looks broken there may only be stale.
+- Round `1` (active, n=10, all eight dimensions divided): every stone renders
+  `דעות חלוקות · <score>` on a single line, clear of the caption above and the
+  status below — measured, minimum gap 2px, and confirmed by screenshot at
+  1440px and at 390px. Sidebar note names the three widest and counts five more.
+- Round `סבב שני, שאלון מנוסח מחדש` (closed, n=12, no dimension divided): no
+  mark on any stone and no sidebar note, which is the negative case.
+- No console errors on either round.
+
 ### Blocked or not run
 
-- **The browser walk.** `/dashboard` is behind the manager session and an agent
-  does not enter passwords, so it needs the owner to sign in at
-  `http://localhost:3000/login` first. The local seed already produces a divided
-  dimension: `organizational-climate` alternates green and red by respondent, so
-  it lands at 50/50, while every other dimension stays one-sided.
-- **How the stone mark behaves at phone widths in particular.** The mark is a
-  fourth line inside `.dashboard-map-blob-copy`, which is a fixed-height stone;
-  nothing in the test suite renders it at a real width. This is the main thing
-  the walk is for.
+- Nothing. The deployed endpoint has no round to render, as the handoff records.
 
 ### Residual risk
 
-- Medium on layout, low on logic. The rule is pure and covered; what no test
-  covers is a stone that has an icon, a caption, a score, a delta chip and now a
-  fourth line, on the narrowest phone.
+- Low. The rule is pure and covered by tests; the layout is measured on the
+  widest case the row can reach (score, delta chip and mark together) at two
+  widths.
 
 ## Approval gates
 
@@ -135,7 +159,6 @@ answered on 2026-08-10: it does not.
 
 ## Next concrete step
 
-Sign in at `http://localhost:3000/login` and open the dashboard on the seeded
-round; confirm the `דעות חלוקות` mark sits on the `אקלים ארגוני` stone without
-crowding the score or the status line, at desktop and at 375px, and that the
-sidebar note names that dimension with both shares.
+Land `fix/comparison-reads-the-questionnaire` first, then this branch:
+`git push origin feat/a-split-staff-room-is-visible:main` (the owner runs the
+push).

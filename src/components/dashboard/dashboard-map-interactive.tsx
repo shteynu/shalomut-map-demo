@@ -441,7 +441,7 @@ export function DashboardMapInteractive({
             key={dimension.id}
             ref={registerStoneRef(dimension.id)}
             href={dashboardDimensionRoute(dimension.id, roundId)}
-            className={`dashboard-map-blob${draggingId === dimension.id ? " is-dragging" : ""}`}
+            className={`dashboard-map-blob${draggingId === dimension.id ? " is-dragging" : ""}${division ? " has-division" : ""}`}
             style={
               {
                 "--blob-rotate": `${dimension.conceptPosition.rotate}deg`,
@@ -501,13 +501,13 @@ export function DashboardMapInteractive({
                     {formatDelta(delta, minimumReadableDelta)}
                   </span>
                 )}
+                {division ? (
+                  <span className="dashboard-map-blob-division" aria-hidden="true">
+                    <Users size={13} strokeWidth={2.25} />
+                    דעות חלוקות
+                  </span>
+                ) : null}
               </span>
-              {division ? (
-                <span className="dashboard-map-blob-division" aria-hidden="true">
-                  <Users size={13} strokeWidth={2.25} />
-                  דעות חלוקות
-                </span>
-              ) : null}
             </span>
             <span className="dashboard-map-blob-status">
               <span className={`status-dot status-${status}`} aria-hidden="true" />
