@@ -8,6 +8,17 @@ commit that changed product code is `903139f`**, the rate limiter, and
 `git log --oneline main -- src/ next.config.ts scripts/ playwright.config.ts`
 is how to re-read it.
 
+**Session closed 2026-08-10. Nothing is waiting on a push**, and
+`docs/agent-tasks/active/` holds only `research--scientific-evidence-layer.md`,
+which waits on owner decisions rather than on an agent. The one branch that
+exists and is deliberately not on `main` is
+`fix/manager-password-must-be-strong` — withdrawn work, described below, local
+to one worktree. Verification on the tree that is on `main`: `npm test` 856
+pass 0 fail, `npm run typecheck` and `npm run lint` clean. The browser suite's
+last run was 18 passed, on the same product tree with the withdrawn commit on
+top; nothing in that commit is reachable from a browser, but the number is
+recorded as what it is rather than as a run of `main`.
+
 **All four Tier 0 code items are closed, on `main` and deployed.** The four
 branches landed as one linear stack — `test/respondent-path-e2e` (`0506169`,
 item 4), `fix/questionnaire-speaks-to-everyone` (`5cf826e`, item 3),
