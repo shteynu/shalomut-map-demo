@@ -22,26 +22,15 @@ import { expect, test, type Page } from '@playwright/test';
  * the run leaves the database as it found it.
  */
 
-import { SMOKE_PASSWORD } from '../playwright.config';
+import { PASSWORD, submitLogin } from './manager-session';
 
-const EMAIL = process.env.SMOKE_EMAIL ?? 'admin@shalomut.edu.il';
-
+/**
+ * Its own landing rule, on purpose: `/setup?round=new` is the destination
+ * here, and the shared `signIn` waits for a bare pathname. This one only needs
+ * to be off the login screen.
+ */
 async function signIn(page: Page, destination: string) {
-  await page.goto(`/login?${new URLSearchParams({ next: destination })}`, {
-    waitUntil: 'networkidle',
-  });
-  await page.getByLabel('כתובת דוא"ל').fill(EMAIL);
-  await page.getByLabel('סיסמה').fill(SMOKE_PASSWORD);
-
-  const [response] = await Promise.all([
-    page.waitForResponse(
-      (candidate) =>
-        candidate.url().includes('/api/auth/login') &&
-        (candidate.status() < 300 || candidate.status() >= 400),
-      { timeout: 30_000 },
-    ),
-    page.getByRole('button', { name: /התחבר|כניסה/u }).click(),
-  ]);
+  const response = await submitLogin(page, PASSWORD, destination);
 
   expect(
     response.ok(),

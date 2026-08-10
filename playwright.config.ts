@@ -74,6 +74,28 @@ export default defineConfig({
   },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    /*
+     * The respondent path, again, on a phone.
+     *
+     * Only that file. The manager screens are a desk product — a school opens
+     * the map and the builder on a laptop — and running their specs at 393px
+     * would spend minutes proving something nobody has asked the product to
+     * do. The questionnaire is the opposite: it is a link in a staffroom
+     * message, opened on the way home, and until this project existed no phone
+     * had ever rendered it in CI. The one defect already found there, scale
+     * anchors at `display: none`, was found by hand.
+     *
+     * Pixel 5 rather than an iPhone because its `defaultBrowserType` is
+     * chromium, which CI already installs. WebKit would be the more honest
+     * choice for an Israeli staffroom and it costs another browser download in
+     * every run; the viewport and the touch input are what catch layout, and
+     * that much is free.
+     */
+    {
+      name: 'mobile-chrome',
+      use: { ...devices['Pixel 5'] },
+      testMatch: /respondent-answers\.spec\.ts/u,
+    },
   ],
   webServer: {
     // `npm run test:e2e` builds first; this serves what the build produced.
