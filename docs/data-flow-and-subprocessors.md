@@ -59,6 +59,30 @@ that reaches the model prompt. Respondents are told the model receives
 question-level averages; they are not told what a manager may have written about
 their school, because the product cannot know what that says.
 
+## What the browser is told
+
+Since 2026-08-10 every response carries security headers, set in
+`next.config.ts` — there is no `vercel.json`. `frame-ancestors 'none'` and
+`X-Frame-Options: DENY` are the load-bearing pair: the manager screens close
+rounds and reset analyses in one click, and without them any page could frame
+those buttons under its own. Alongside them: `default-src 'self'` with no
+foreign origin, `form-action 'self'` so a stolen session cannot be posted
+elsewhere, `base-uri 'self'`, `object-src 'none'`, `nosniff`,
+`strict-origin-when-cross-origin` (which keeps a round's share code out of the
+`Referer` of anything a respondent clicks through to), a `Permissions-Policy`
+that switches camera, microphone, geolocation, payment and USB off, and HSTS
+for two years without `preload`.
+
+Two honest limits. The policy allows `'unsafe-inline'` for scripts, because
+Next serves its RSC payload as inline script tags and the alternative — a
+per-request nonce — makes every page dynamic, including the statically
+rendered `/login`; so the policy stops a foreign script, not an injected one,
+which is a thin risk in a product that renders no user-authored HTML.
+And `/api-docs` has its own header allowing `unpkg.com`, because that screen
+loads Swagger UI from the CDN at runtime; the exception covers that route
+only, and `e2e/security-headers.spec.ts` fails if it leaks into the policy the
+manager screens get.
+
 ## What is not covered here
 
 - **Retention.** There is none. No schema column expresses it, and deletion
@@ -84,3 +108,5 @@ their school, because the product cannot know what that says.
    promise that outruns the deployment.
 3. `src/lib/analytics-encoder.ts` — the only place that decides what leaves for
    the model.
+4. `next.config.ts` and `e2e/security-headers.spec.ts` — the headers above and
+   the test that keeps them from quietly disappearing.
