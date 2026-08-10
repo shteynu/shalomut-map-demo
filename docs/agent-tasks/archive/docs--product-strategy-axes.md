@@ -5,10 +5,9 @@
 - Branch: `docs/product-strategy-axes`
 - Base branch: `main`
 - Base commit: `50fac0f`
-- Current HEAD: `50fac0f` at the time of writing; the documentation commit on
-  this branch is the only change.
-- Status: analysis complete and written up. Waits on owner decisions, not on an
-  agent.
+- Landed as: `b42b509` on `main`, 2026-08-10.
+- Status: closed. The document is in `docs/`, and the seven owner decisions it
+  raises are tracked in `docs/shalomut-tracker-handoff.md`, not here.
 - Last updated: 2026-08-10
 - Last agent/tool: Claude Code (Opus 5)
 

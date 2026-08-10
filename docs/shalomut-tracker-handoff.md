@@ -1,7 +1,14 @@
 # Shalomut Tracker — operational handoff
 
-Updated: 2026-08-09 (`origin/main` is `9c46355`, and the deployed AI service
-reports that commit). **The AI analysis had stopped being written by the model,
+Updated: 2026-08-10. `origin/main` is `bf02dd1`: three branches landed that day
+— the product-strategy sweep, the four Tier 0 respondent-path fixes, and the
+respondent funnel — and the funnel's migration is applied on the deployed
+database. Nothing is waiting on a push. The deployed AI service still reports
+`9c46355`; nothing since has touched `ai-analytics-service/`, and its
+`buildFilter` is why.
+
+The paragraphs below were written on 2026-08-09 and describe that session.
+**The AI analysis had stopped being written by the model,
 and the two settings behind it are now declared rather than defaulted.**
 `MAX_TOKENS_PER_DIMENSION` was unset everywhere, so both halves ran on the
 service default of 2048 and every dimension came back `finish_reason=length`;
@@ -576,14 +583,16 @@ older snapshots remain available in Git.
 - Explicit bounded approval is required before changing secrets, credentials,
   authentication configuration or deployment aliases.
 - No open migration decision remains in the repository record.
-- **One migration is waiting on the deployed database.**
-  `20260810101610_add_survey_attempts`, on branch `feat/respondent-funnel`,
-  creates `survey_attempts`. The deploy build runs `prisma generate` and never
-  `migrate deploy`, so pushing that branch without applying the migration leaves
-  the beacon endpoint failing silently — it swallows its own errors so a
-  respondent never sees one — and the round screen's new funnel panel reading
-  zero for every stage. Apply it before or immediately after the push. Nothing
-  else on the branch depends on it.
+- **Closed 2026-08-10, no longer waiting.** `20260810101610_add_survey_attempts`
+  creates `survey_attempts` and was applied to the deployed database on
+  2026-08-10, right after `bf02dd1` landed on `main`; `prisma migrate status`
+  against that host then reported all twelve migrations applied. Worth keeping
+  as the pattern rather than as an open item: the deploy build runs
+  `prisma generate` and never `migrate deploy`, so every future migration has to
+  be applied by hand or the code ships against a schema that lacks it. Here that
+  would have been silent — the beacon endpoint swallows its own errors by design,
+  so a respondent would have seen nothing and the funnel panel would have read
+  zero for every stage.
 - **Closed 2026-08-05, no longer a blocker.** The eval corpus has scored real
   provider output. The owner installed a paid Gemini key, and a full run on
   `gemini-3.5-flash-lite` produced `outcome: "llm"` on 55 of 56 stones with no

@@ -5,9 +5,10 @@
 - Branch: `feat/respondent-funnel`
 - Base branch: `fix/respondent-path-pilot-ready`
 - Base commit: `2961027`
-- Current HEAD: `2961027` plus one commit on this branch.
-- Status: complete and verified locally. Waits on a push and on one migration
-  against the deployed database.
+- Landed as: `bf02dd1` on `main`, 2026-08-10 (rebased onto `3df1a13`; the
+  pre-rebase commit was `b8a0a1e`).
+- Status: closed. The migration was applied to the deployed database the same
+  day.
 - Last updated: 2026-08-10
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -140,14 +141,24 @@ itself and is the honest limit of an anonymous link.
 
 ## Approval gates
 
-- `git push origin feat/respondent-funnel` is the owner's to run, after the two
-  branches ahead of it.
-- The deployed database needs `20260810101610_add_survey_attempts` applied by
-  hand. The build runs `prisma generate`, never `migrate deploy`, so a deploy
-  without it leaves the attempt endpoint failing silently — it swallows its own
-  errors by design — and the panel reading zero.
+Both are closed.
 
-## Next concrete step
+- The push was the owner's, on 2026-08-10. The two branches ahead of it had to
+  be rebased first: `main` had moved to `b42b509` while all three still grew
+  from `50fac0f`, so the second and third pushes were refused as non-fast-forward
+  until they were replayed onto it. Rebasing produced no conflict — the strategy
+  commit touched four documentation files, and only
+  `docs/shalomut-tracker-handoff.md` overlapped, in a different section.
+- `20260810101610_add_survey_attempts` was applied to the deployed database the
+  same day, with `DIRECT_URL` from `.env.deployed.local`. `prisma migrate status`
+  against that host then reported all twelve applied.
 
-Push, in order: `docs/product-strategy-axes`, `fix/respondent-path-pilot-ready`,
-`feat/respondent-funnel`. Then apply the migration to the deployed database.
+## Outcome
+
+Landed as `bf02dd1`. Verified after the rebase by diffing the pushed tree
+against the pre-rebase commit: the only difference is the strategy commit's own
+four files, so nothing in this slice drifted while it was replayed.
+
+Not yet observed on the deployed endpoint: its database holds no round, so
+there is no link for anyone to open and no funnel to read. The first deployed
+round is what will show whether the beacons survive a real network.

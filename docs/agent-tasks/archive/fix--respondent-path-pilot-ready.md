@@ -5,8 +5,9 @@
 - Branch: `fix/respondent-path-pilot-ready`
 - Base branch: `main`
 - Base commit: `50fac0f`
-- Current HEAD: `50fac0f` plus one commit on this branch.
-- Status: complete and verified locally. Waits on a push.
+- Landed as: `3df1a13` on `main`, 2026-08-10 (rebased onto `b42b509`; the
+  pre-rebase commit was `2961027`).
+- Status: closed.
 - Last updated: 2026-08-10
 - Last agent/tool: Claude Code (Opus 5)
 
