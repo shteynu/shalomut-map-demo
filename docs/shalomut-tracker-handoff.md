@@ -1,11 +1,34 @@
 # Shalomut Tracker — operational handoff
 
-Updated: 2026-08-10. `origin/main` is `bf02dd1`: three branches landed that day
-— the product-strategy sweep, the four Tier 0 respondent-path fixes, and the
-respondent funnel — and the funnel's migration is applied on the deployed
-database. Nothing is waiting on a push. The deployed AI service still reports
-`9c46355`; nothing since has touched `ai-analytics-service/`, and its
+Updated: 2026-08-10, end of session. `origin/main` is `e14e3ac`. Seven branches
+landed that day, in this order: the product-strategy sweep (`b42b509`), the four
+Tier 0 respondent-path fixes (`3df1a13`), the respondent funnel (`bf02dd1`), a
+documentation close (`743c362`), the consent screen's truth (`93e3baa`),
+observability (`e1ef1e1`), delta honesty (`c30a5fc`) and the staff-size refusal
+(`e14e3ac`). Nothing is waiting on a push and `docs/agent-tasks/active/` holds
+only `research--scientific-evidence-layer.md`, which waits on owner decisions.
+
+`20260810101610_add_survey_attempts` is applied to the deployed database; twelve
+migrations, all applied. The deployed AI service still reports `9c46355`, which
+remains correct: nothing since has touched `ai-analytics-service/`, and its
 `buildFilter` is why.
+
+**Three things this repository cannot do, all now the owner's:**
+
+1. Create an uptime monitor against `/api/health` on the deployed Core endpoint.
+   The route was opened anonymously for exactly this and nothing walks through
+   it yet.
+2. Decide where the structured observability lines land — a log sink or an error
+   tracker — and with which alert. The first alert worth having is on the
+   deterministic-fallback ratio.
+3. Answer the open questions of `docs/product-strategy-axes-2026-08-10.md`
+   axis 1 (the Chief Scientist directive, Amendment 13) and axis 7 (the fair-use
+   commitment, and how small a staff room is too small to measure safely). Both
+   are wording and legal judgement, not engineering.
+
+Nothing from this session was observed on the deployed endpoint: its database
+holds no round, so there is no link to open, no funnel to read and no comparison
+to render. The first deployed round is what will exercise all three.
 
 The paragraphs below were written on 2026-08-09 and describe that session.
 **The AI analysis had stopped being written by the model,

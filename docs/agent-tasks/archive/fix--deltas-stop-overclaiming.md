@@ -6,7 +6,8 @@
 - Base branch: `main`
 - Base commit: `e1ef1e1`
 - Current HEAD: `e1ef1e1` plus one commit on this branch.
-- Status: complete and verified locally. Waits on a push.
+- Landed as: `c30a5fc` on `main`, 2026-08-10.
+- Status: closed.
 - Last updated: 2026-08-10
 - Last agent/tool: Claude Code (Opus 5)
 

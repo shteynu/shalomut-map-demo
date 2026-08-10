@@ -6,8 +6,8 @@
 - Base branch: `fix/consent-tells-the-truth`
 - Base commit: `93e3baa`
 - Current HEAD: `93e3baa` plus one commit on this branch.
-- Status: complete and verified locally. Waits on a push and on two owner
-  actions that live in dashboards, not in this repository.
+- Landed as: `e1ef1e1` on `main`, 2026-08-10.
+- Status: closed.
 - Last updated: 2026-08-10
 - Last agent/tool: Claude Code (Opus 5)
 

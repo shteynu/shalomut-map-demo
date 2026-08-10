@@ -1,12 +1,14 @@
 # Shalomut Map — product progress
 
-Updated: 2026-08-05. This file is a concise product-level milestone record, not
+Updated: 2026-08-10. This file is a concise product-level milestone record, not
 a session log. Branch evidence lives in `docs/agent-tasks/archive/`; current
 deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 
 ## Current state
 
-- `origin/main` is `4b0a4bd`. The product-behaviour backlog is closed except for
+- `origin/main` is `e14e3ac`. Eight branches landed on 2026-08-10; the state
+  they left is in `docs/shalomut-tracker-handoff.md`.
+- Previously recorded: `origin/main` was `4b0a4bd`. The product-behaviour backlog is closed except for
   its two requirement-gated items; `ROADMAP.md` has no open product outcome, and
   `docs/shalomut-tracker-handoff.md` lists under "What is open, and what it
   waits on" the four things that remain — two owner decisions, two requests, and
@@ -24,8 +26,9 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
   build command runs `prisma generate` and never `prisma migrate deploy`, so
   every schema change is a hand step — `docs/shalomut-tracker-handoff.md` owns
   the current deployed reading and the evidence for it.
-- Verification is a checkpoint fact, not an evergreen expectation. At `763e38f`:
-  606 TypeScript tests and 26 PostgreSQL tests. The Python suite last ran at
+- Verification is a checkpoint fact, not an evergreen expectation. At `e14e3ac`:
+  826 TypeScript tests, 32 PostgreSQL tests and 11 Playwright tests. Earlier, at
+  `763e38f`: 606 TypeScript tests and 26 PostgreSQL tests. The Python suite last ran at
   465 tests, before the TypeScript-only work of 2026-08-05.
 - The manager screens were walked in a signed-in browser on 2026-08-06, and
   since 2026-08-07 one path through them runs automatically in CI — sign in,
