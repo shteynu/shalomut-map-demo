@@ -116,12 +116,31 @@ remembered.
 
 Switching it on is two environment variables — `UPSTASH_REDIS_REST_URL` and
 `UPSTASH_REDIS_REST_TOKEN` — and nothing else: the REST API is called directly,
-so there is no dependency to install and no code change to make. Two things
-follow when it happens. Upstash becomes a fourth processor and belongs in any
-subprocessor list. And its code path will be executing for the first time — a
-wrong URL or token shows up as `Rate limit store unavailable` in the logs, and
-the limiter fails open, so the check is the logs on the first request rather
-than a screen going wrong.
+so there is no dependency to install and no code change to make. One thing
+follows when it happens: Upstash becomes a fourth processor and belongs in any
+subprocessor list.
+
+**The Upstash code path is no longer unexecuted, 2026-08-10.** It was run
+locally against a stub speaking the same REST pipeline API — no account, no
+credentials, no network. What it establishes: the store POSTs to `/pipeline`
+with `[["INCR", key], ["EXPIRE", key, "300", "NX"]]` and a bearer token; all
+twelve sign-ins reach the store rather than any local cache, so the counter is
+genuinely shared; the tenth is allowed and the eleventh refused with
+`retryAfter: 300`; `EXPIRE` carries `NX`, so the stub's second call leaves the
+window where it was and a burst cannot push the reset away; the key is
+`shalomut:rl:manager-login:<32 hex>` with the address nowhere in it, and the two
+policies key separately. Fail-open was exercised in both of its shapes — a
+rejected token (`Upstash answered 401`) and an unreachable host (`fetch
+failed`) — and each logged `Rate limit store unavailable; request allowed` and
+let the request through. So a wrong credential costs the limiter, never the
+manager's access.
+
+What that does **not** establish is Upstash itself: the stub is this
+repository's reading of the REST contract, not the vendor's server. The first
+real execution is still the first deployed request after the variables are set,
+and the check at that moment is the logs — `Rate limit store unavailable` there
+means the URL or the token is wrong, and nothing on any screen will look
+broken, because it fails open by design.
 
 What is left of the readiness
 list is outside the repository and the owner's: rotating the four exposed
@@ -138,7 +157,16 @@ remains correct: nothing since has touched `ai-analytics-service/`, and its
 
 - Switch on Upstash for rate limiting (two environment variables, decided
   2026-08-10). Until then the counters are per-instance and the sign-in limit
-  is a speed bump rather than a wall.
+  is a speed bump rather than a wall. **This is the owner's own hands, not an
+  agent's**: it needs an Upstash account created and two credentials stored in
+  the Vercel project, and no agent creates accounts or handles credential
+  values here. The repository side is finished and verified — see the Upstash
+  paragraphs above. The steps are: create a Redis database in Upstash, copy its
+  REST URL and REST token, add them to the Vercel project as
+  `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`, redeploy so the
+  running functions pick them up, then read the logs of the first sign-in for
+  `Rate limit store unavailable`. Nothing else changes, and nothing needs to be
+  pasted into a repository file.
 - Rotate the four exposed credentials. The strategy document already states
   this as due before the first real respondent rather than after.
 
