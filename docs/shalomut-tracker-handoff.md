@@ -123,10 +123,26 @@ what a strong one needs.
 
 So the gate that actually protects a school's answers is the password, and it
 now sits under the pre-pilot list in place of Upstash. **Nothing in the code
-enforces this**: `ManagerAuthenticationService` requires the variable to be
-non-empty and would accept `123`
+enforces this, by decision**: `ManagerAuthenticationService` requires the
+variable to be non-empty and would accept `123`
 (`src/lib/auth/manager-auth-service.ts`). That is why it is written down here
 and in `.env.example` rather than left to judgement.
+
+**The enforcement was built and then withdrawn the same day, 2026-08-10 — owner
+decision, and it waits on a second manager.** The rule refused a deployed
+runtime a password under sixteen characters, with fewer than eight distinct
+ones, or a well-known value, answering `UNCONFIGURED` and naming the rule in the
+server log only. It was verified in both directions over HTTP against a
+production build and never pushed. The reason it waits: with one operator who
+sets the variable once, the requirement is that person's habit, and a rule that
+can lock them out of their own deployment costs more than it protects. When
+passwords start being chosen by people who have not read `.env.example`,
+enforcement earns its keep — so it is recorded as part of
+`docs/product-behaviour-backlog.md` §8 rather than as a loose idea. The code
+sits unpushed on the local branch `fix/manager-password-must-be-strong`, which
+means **this worktree only**: it is not on any remote and another checkout
+cannot see it. If that branch is ever lost, the backlog entry is the record and
+the work is a couple of hours.
 
 What the in-memory limiter still buys, and why it stays: it stops a script
 hammering either endpoint from one address, it makes the refusal visible in the

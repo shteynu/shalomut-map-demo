@@ -351,11 +351,30 @@ Owner decision 2026-08-03: a second manager is not a requirement today, so this
 stays a future feature rather than an open architecture task. Recorded here so
 the trigger is explicit rather than assumed.
 
+Owner decision 2026-08-10: **enforcing password strength in code also waits for
+this trigger.** It was written and then withdrawn before it was pushed — a
+deployed runtime would have answered `503 UNCONFIGURED` on a password under
+sixteen characters, with fewer than eight distinct ones, or on a well-known
+value, logging the rule to the server and nothing to the caller. It was
+verified locally, both directions, over HTTP against a production build. The
+reason for withdrawing it is that it solves a problem the current shape does not
+have: with one operator who sets the variable once, the requirement is one
+person's habit, and a rule that can lock that person out of their own
+deployment costs more than it protects. With more than one manager, passwords
+start being chosen by people who never read `.env.example`, and enforcement
+starts earning its keep. Until then the requirement stays advisory, stated in
+`.env.example` beside the variable and as a pre-pilot gate in
+`docs/shalomut-tracker-handoff.md`.
+
 Proposal, when a second manager is actually requested:
 - Persist `Manager`, `OrganizationMembership` and audit events, or delegate
   authentication to an identity provider and keep membership in Core either way.
 - Store a real credential with a memory-hard KDF, or store none at all under an
   identity provider.
+- Enforce credential strength at the point a password is set, which is where it
+  belongs once there is such a point — a rule at sign-in time is a blunt
+  substitute for one at registration time, and it exists only because today the
+  password arrives as an environment variable.
 - Add invitation, revocation and password recovery, each with Hebrew RTL
   screens, or accept the provider's hosted screens only after checking their RTL
   behaviour by hand.
