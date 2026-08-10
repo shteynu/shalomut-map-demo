@@ -2728,6 +2728,36 @@ textarea {
   line-height: 1.65;
 }
 
+/* A room that does not agree with itself. Lavender rather than the warning
+   yellow of the notice above: a split is a shape in the data, not a fault. */
+.map-divided-notice {
+  display: flex;
+  gap: 0.7rem;
+  align-items: flex-start;
+  padding: 1rem 1.2rem;
+  background: var(--pastel-lavender);
+  border-radius: var(--radius-header);
+  color: var(--ink);
+}
+
+.map-divided-notice svg {
+  flex: none;
+  margin-top: 0.15rem;
+  color: var(--navy);
+}
+
+.map-divided-notice h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+  line-height: 1.3;
+}
+
+.map-divided-notice p {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.65;
+}
+
 .dashboard-map-stage {
   position: relative;
   width: 100%;
@@ -2914,6 +2944,26 @@ textarea {
   font-size: clamp(1.6rem, 2vw, 2rem);
   font-weight: 900;
   line-height: 1;
+}
+
+/* The mark that a dimension's answers split between the two ends. It sits on a
+   pastel stone of any hue, so it carries its own light surface rather than
+   trusting the one behind it, and states the fact in words — the score beside
+   it is unchanged, and a colour alone could be read as changing it. */
+.dashboard-map-blob-division {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.15rem;
+  padding: 0.16rem 0.5rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  background: rgba(255, 250, 240, 0.72);
+  color: var(--pastel-ink);
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1.3;
+  white-space: nowrap;
 }
 
 .dashboard-map-blob-status {

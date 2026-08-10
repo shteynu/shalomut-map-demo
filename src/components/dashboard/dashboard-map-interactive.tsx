@@ -2,7 +2,7 @@
 
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import Link from "next/link";
-import { Plus, Undo2 } from "lucide-react";
+import { Plus, Undo2, Users } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DimensionIcon } from "@/components/ui/dimension-icon";
 import {
@@ -19,6 +19,7 @@ import {
   // deltas, and the function computes a different one, from a single round.
   minimumReadableDelta as resolutionForCount,
 } from "@/lib/dashboard/round-comparison";
+import type { DimensionDivision } from "@/lib/dashboard/dimension-division";
 import { isNudgeKey, nextNudgeOffset } from "@/lib/dashboard/map-nudge";
 import { dashboardDimensionRoute } from "@/lib/navigation";
 import type { WellbeingDimensionId, WellbeingStatus } from "@/lib/shalomut-source";
@@ -85,6 +86,12 @@ type DashboardMapInteractiveProps = {
    * is a fact about one round, and a first round has no comparison at all.
    */
   responseCount: number;
+  /**
+   * The dimensions whose answers split between the two ends of the scale. Few
+   * stones carry it, which is why — unlike the band-edge fact below — it is
+   * worth a mark on the stone and not only a sentence in the sidebar.
+   */
+  divisions: DimensionDivision[];
 };
 
 export function DashboardMapInteractive({
@@ -93,6 +100,7 @@ export function DashboardMapInteractive({
   dimensionDeltas,
   minimumReadableDelta,
   responseCount,
+  divisions,
 }: DashboardMapInteractiveProps) {
   const stageRef = useRef<HTMLElement | null>(null);
   const stoneRefs = useRef<Record<string, HTMLAnchorElement | null>>({});
@@ -416,6 +424,17 @@ export function DashboardMapInteractive({
           score,
           resolutionForCount(responseCount, responseCount),
         );
+        /*
+         * A room that does not agree with itself.
+         *
+         * This one does reach the stone's face. A band edge is a fact about the
+         * sample and is true of most stones at once; a division is true of few,
+         * and the whole content is which ones. The score beside it is
+         * untouched — the mark is a second fact, not a correction.
+         */
+        const division = divisions.find(
+          (entry) => entry.dimensionId === dimension.id,
+        );
 
         return (
           <Link
@@ -446,6 +465,10 @@ export function DashboardMapInteractive({
             data-stone-index={String(index + 1).padStart(2, "0")}
             aria-label={`${dimension.conceptLabel}: ${dimension.subtitle}. ציון ${score}, ${displayStatusLabel}${
               nearBandEdge ? ", קרוב לגבול הקטגוריה" : ""
+            }${
+              division
+                ? `, דעות חלוקות: ${division.redPercent}% אדום מול ${division.greenPercent}% ירוק`
+                : ""
             }${
               delta === undefined
                 ? ""
@@ -479,6 +502,12 @@ export function DashboardMapInteractive({
                   </span>
                 )}
               </span>
+              {division ? (
+                <span className="dashboard-map-blob-division" aria-hidden="true">
+                  <Users size={13} strokeWidth={2.25} />
+                  דעות חלוקות
+                </span>
+              ) : null}
             </span>
             <span className="dashboard-map-blob-status">
               <span className={`status-dot status-${status}`} aria-hidden="true" />

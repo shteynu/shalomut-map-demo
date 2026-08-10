@@ -2,6 +2,7 @@
 
 import { Download, Info, MousePointer2, Move } from "lucide-react";
 import { ScoreRing } from "@/components/ui/score-ring";
+import type { DimensionDivision } from "@/lib/dashboard/dimension-division";
 import {
   isNearBandEdge,
   minimumReadableDelta,
@@ -16,6 +17,7 @@ import { DashboardMapInteractive } from "./dashboard-map-interactive";
 import { DashboardHeading } from "./dashboard-heading";
 import { DashboardHomeLink } from "./dashboard-home-link";
 import { DashboardMapLocked } from "./dashboard-map-locked";
+import { DashboardDividedDimensionsNotice } from "./dashboard-divided-dimensions-notice";
 import { DashboardPartialMapNotice } from "./dashboard-partial-map-notice";
 import { DashboardRoundComparison } from "./dashboard-round-comparison";
 import { RoundSwitcher } from "@/components/round/round-switcher";
@@ -35,6 +37,8 @@ type DashboardMapPageProps = {
   roundSwitcherAction: string;
   /** The previous round's numbers, when there is a comparable one. */
   comparison: RoundComparison | null;
+  /** Dimensions whose answers split between the two ends of the scale. */
+  divisions: DimensionDivision[];
 };
 
 export function DashboardMapPage({
@@ -48,6 +52,7 @@ export function DashboardMapPage({
   roundOptions,
   roundSwitcherAction,
   comparison,
+  divisions,
 }: DashboardMapPageProps) {
   const isLocked = responseCount < minimumResponses;
 
@@ -84,6 +89,7 @@ export function DashboardMapPage({
       roundOptions={roundOptions}
       roundSwitcherAction={roundSwitcherAction}
       comparison={comparison}
+      divisions={divisions}
       responseCount={responseCount}
     />
   );
@@ -138,6 +144,7 @@ function DashboardMapReady({
   roundOptions,
   roundSwitcherAction,
   comparison,
+  divisions,
   responseCount,
 }: DashboardMapPageProps) {
   const { state, reload } = useAiInsights(roundId);
@@ -185,6 +192,8 @@ function DashboardMapReady({
           {comparison ? (
             <DashboardRoundComparison comparison={comparison} />
           ) : null}
+
+          <DashboardDividedDimensionsNotice divisions={divisions} />
 
           {dimensionsNearEdge > 0 ? (
             <p className="map-sidebar-band-note">
@@ -242,6 +251,7 @@ function DashboardMapReady({
             dimensionScores={dimensionScores}
             roundId={roundId}
             dimensionDeltas={comparison?.dimensionDeltas ?? null}
+            divisions={divisions}
             minimumReadableDelta={
               comparison?.minimumReadableDelta ?? Number.POSITIVE_INFINITY
             }

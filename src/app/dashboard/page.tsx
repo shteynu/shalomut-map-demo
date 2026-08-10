@@ -1,5 +1,6 @@
 import { ManagerOnboarding } from "@/components/manager";
 import { DashboardMapPage } from "@/components/dashboard";
+import { dividedDimensions } from "@/lib/dashboard/dimension-division";
 import { toRoundSwitcherOptions } from "@/lib/rounds/round-options";
 import { readRoundParam, roundSwitcherAction } from "@/lib/navigation";
 import {
@@ -50,6 +51,7 @@ export default async function DashboardPage({
     <DashboardMapPage
       roundId={selectedRound.id}
       comparison={comparison}
+      divisions={dividedDimensions(analytics.questionAggregates)}
       organizationName={organization.name}
       roundTitle={selectedRound.title}
       responseCount={context.responseCount}
