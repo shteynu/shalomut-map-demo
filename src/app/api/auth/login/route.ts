@@ -3,9 +3,25 @@ import type { NextRequest } from "next/server";
 import { JwtSessionProvider } from "@/lib/auth/jwt-session-provider";
 import { ManagerAuthenticationService } from "@/lib/auth/manager-auth-service";
 import { SESSION_COOKIE_NAME } from "@/lib/server/session-auth";
+import { getRateLimitResponse, RATE_LIMITS } from "@/lib/server/rate-limit";
 
 export async function POST(request: NextRequest) {
   try {
+    /*
+     * Before the password is even read. One deployment has one manager account
+     * (ADR-020), so an attacker's entire search space is that account's
+     * password and nothing here was counting the guesses.
+     *
+     * The refusal is deliberately indistinguishable between a right and a
+     * wrong password: it is a 429 either way, so the limit cannot be used to
+     * confirm a guess that arrived one request too late.
+     */
+    const limited = await getRateLimitResponse(
+      request.headers,
+      RATE_LIMITS.managerLogin,
+    );
+    if (limited) return limited;
+
     const body = await request.json().catch(() => ({}));
     const { email, password } = body || {};
 

@@ -6,6 +6,7 @@ import {
   SURVEY_SUBMISSION_ERROR_STATUS,
 } from '@/lib/services';
 import { getDurableWriteGuardResponse } from '@/lib/server/durable-write-guard';
+import { getRateLimitResponse, RATE_LIMITS } from '@/lib/server/rate-limit';
 import { enqueueAiAnalyticsAfterResponse } from '@/lib/server/trigger-ai-analytics';
 import {
   QuestionAnswerInput,
@@ -35,6 +36,19 @@ export async function POST(
   try {
     const unavailable = getDurableWriteGuardResponse();
     if (unavailable) return unavailable;
+
+    /*
+     * The only unauthenticated write in the product, so it is the one a script
+     * can point at. The number is loose on purpose — a whole staffroom answers
+     * from one school address, and refusing them would be a worse failure than
+     * the one being prevented. `RATE_LIMITS.surveySubmission` carries the
+     * reasoning.
+     */
+    const limited = await getRateLimitResponse(
+      request.headers,
+      RATE_LIMITS.surveySubmission,
+    );
+    if (limited) return limited;
 
     const { shareCode } = await params;
     const body = await request.json();
