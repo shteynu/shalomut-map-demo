@@ -1,25 +1,25 @@
 # Shalomut Tracker — operational handoff
 
-Updated: 2026-08-10, end of session. `origin/main` is `e14e3ac`. Seven branches
+Updated: 2026-08-10, end of session. `origin/main` is `8be73a6`. Seven branches
 landed that day, in this order: the product-strategy sweep (`b42b509`), the four
 Tier 0 respondent-path fixes (`3df1a13`), the respondent funnel (`bf02dd1`), a
 documentation close (`743c362`), the consent screen's truth (`93e3baa`),
 observability (`e1ef1e1`), delta honesty (`c30a5fc`) and the staff-size refusal
 (`e14e3ac`).
 
-**Two branches now wait on a push, in this order** — the second is stacked on
-the first and closes the last of strategy axis 6:
+**Strategy axis 6 closed the same day**, in two more pushes:
+`fix/comparison-reads-the-questionnaire` (`37960c4`) — a comparison between two
+different questionnaires says so — and `feat/a-split-staff-room-is-visible`
+(`301c329`, `8b08aaf`) — the map marks the dimensions whose answers split
+between the two ends of the scale. Both were walked signed-in against a
+production build on port 3210, because the dev server on port 3000 was serving
+stale CSS for part of that session; a layout that looks broken there is worth
+re-checking on a fresh build before it is called a defect.
 
-1. `fix/comparison-reads-the-questionnaire` (`37960c4`) — a round comparison
-   between two different questionnaires says so.
-2. `feat/a-split-staff-room-is-visible` (`301c329`, `8b08aaf`) — the map marks
-   the dimensions whose answers split between the two ends of the scale.
-
-Both were walked signed-in against a production build on port 3210, because the
-dev server on port 3000 was serving stale CSS. Axis 6 has nothing left in it;
-axis 7's second half still waits on the owner's wording, not on engineering.
-Besides those two, `docs/agent-tasks/active/` holds only
-`research--scientific-evidence-layer.md`, which waits on owner decisions.
+Nothing waits on a push. `docs/agent-tasks/active/` holds only
+`research--scientific-evidence-layer.md`, which waits on owner decisions. Axis 6
+has nothing left in it; axis 7's second half still waits on the owner's wording,
+not on engineering.
 
 `20260810101610_add_survey_attempts` is applied to the deployed database; twelve
 migrations, all applied. The deployed AI service still reports `9c46355`, which

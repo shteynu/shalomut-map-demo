@@ -6,7 +6,7 @@
 - Base branch: `main`
 - Base commit: `d0121e7`
 - Current HEAD: (this branch's commit, see `Changed files`)
-- Status: implemented, tested and walked in the browser; ready to land
+- Status: landed on `main` 2026-08-10; archived
 - Last updated: 2026-08-10
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -110,6 +110,4 @@ None for this slice.
 
 ## Next concrete step
 
-Land this branch first — `feat/a-split-staff-room-is-visible` is stacked on it:
-`git push origin fix/comparison-reads-the-questionnaire:main` (the owner runs
-the push).
+None. `37960c4` is on `origin/main`.

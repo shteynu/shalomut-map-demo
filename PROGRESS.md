@@ -6,8 +6,16 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 
 ## Current state
 
-- `origin/main` is `e14e3ac`. Eight branches landed on 2026-08-10; the state
-  they left is in `docs/shalomut-tracker-handoff.md`.
+- `origin/main` is `8be73a6`. Ten branches landed on 2026-08-10; the state they
+  left is in `docs/shalomut-tracker-handoff.md`.
+- **The dashboard says how much of its own number to believe.** A delta smaller
+  than one respondent's width is no longer stated as a change, a score near a
+  band edge says so, a comparison between two different questionnaires admits
+  it, and a dimension whose answers split between the two ends of the scale is
+  marked on the map instead of hiding behind its mean. That closes axis 6 of
+  `docs/product-strategy-axes-2026-08-10.md`. Scores, colours and statuses were
+  deliberately left untouched: these are facts beside the number, not
+  corrections of it.
 - Previously recorded: `origin/main` was `4b0a4bd`. The product-behaviour backlog is closed except for
   its two requirement-gated items; `ROADMAP.md` has no open product outcome, and
   `docs/shalomut-tracker-handoff.md` lists under "What is open, and what it
@@ -26,8 +34,8 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
   build command runs `prisma generate` and never `prisma migrate deploy`, so
   every schema change is a hand step — `docs/shalomut-tracker-handoff.md` owns
   the current deployed reading and the evidence for it.
-- Verification is a checkpoint fact, not an evergreen expectation. At `e14e3ac`:
-  826 TypeScript tests, 32 PostgreSQL tests and 11 Playwright tests. Earlier, at
+- Verification is a checkpoint fact, not an evergreen expectation. At `8be73a6`:
+  844 TypeScript tests. At `e14e3ac`: 826 TypeScript tests, 32 PostgreSQL tests and 11 Playwright tests. Earlier, at
   `763e38f`: 606 TypeScript tests and 26 PostgreSQL tests. The Python suite last ran at
   465 tests, before the TypeScript-only work of 2026-08-05.
 - The manager screens were walked in a signed-in browser on 2026-08-06, and

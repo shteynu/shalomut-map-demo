@@ -8,7 +8,7 @@
   `index.ts` exports `DashboardRoundComparison`, so land that one first)
 - Base commit: `37960c4`
 - Current HEAD: this branch's commit
-- Status: implemented, tested and walked in the browser; ready to land
+- Status: landed on `main` 2026-08-10; archived
 - Last updated: 2026-08-10
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -159,6 +159,4 @@ answered on 2026-08-10: it does not.
 
 ## Next concrete step
 
-Land `fix/comparison-reads-the-questionnaire` first, then this branch:
-`git push origin feat/a-split-staff-room-is-visible:main` (the owner runs the
-push).
+None. `301c329` and `8b08aaf` are on `origin/main`.
