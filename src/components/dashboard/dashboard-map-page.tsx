@@ -3,10 +3,6 @@
 import { Download, Info, MousePointer2, Move } from "lucide-react";
 import { ScoreRing } from "@/components/ui/score-ring";
 import {
-  deltaDirection,
-  describeDelta,
-  formatDelta,
-  isDeltaReadable,
   isNearBandEdge,
   minimumReadableDelta,
   type RoundComparison,
@@ -21,6 +17,7 @@ import { DashboardHeading } from "./dashboard-heading";
 import { DashboardHomeLink } from "./dashboard-home-link";
 import { DashboardMapLocked } from "./dashboard-map-locked";
 import { DashboardPartialMapNotice } from "./dashboard-partial-map-notice";
+import { DashboardRoundComparison } from "./dashboard-round-comparison";
 import { RoundSwitcher } from "@/components/round/round-switcher";
 
 type DashboardMapPageProps = {
@@ -186,39 +183,7 @@ function DashboardMapReady({
           </div>
 
           {comparison ? (
-            <div className="map-sidebar-comparison">
-              <p>
-                <span
-                  className={`round-delta round-delta-${deltaDirection(
-                    comparison.overallDelta,
-                    comparison.minimumReadableDelta,
-                  )}`}
-                  aria-hidden="true"
-                >
-                  {formatDelta(
-                    comparison.overallDelta,
-                    comparison.minimumReadableDelta,
-                  )}
-                </span>{" "}
-                {describeDelta(
-                  comparison.overallDelta,
-                  comparison.minimumReadableDelta,
-                )}{" "}
-                בהשוואה ל{comparison.previousRoundTitle}.
-              </p>
-              {/* The two counts are the reason the sentence above is worded the
-                  way it is, so they are never separated from it. */}
-              <p className="quiet-note">
-                {comparison.currentResponseCount} משיבים בסבב הזה,{" "}
-                {comparison.previousResponseCount} בקודם.{" "}
-                {isDeltaReadable(
-                  comparison.overallDelta,
-                  comparison.minimumReadableDelta,
-                )
-                  ? null
-                  : `בגודל מדגם כזה משיב אחד יכול להזיז את הציון עד ${comparison.minimumReadableDelta} נקודות, ולכן שינוי קטן מזה אינו נקרא כשינוי.`}
-              </p>
-            </div>
+            <DashboardRoundComparison comparison={comparison} />
           ) : null}
 
           {dimensionsNearEdge > 0 ? (

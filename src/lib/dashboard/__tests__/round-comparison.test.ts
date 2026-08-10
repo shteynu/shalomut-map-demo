@@ -217,6 +217,30 @@ test("the comparison carries both counts and its own resolution", () => {
   assert.strictEqual(comparison.minimumReadableDelta, 10);
 });
 
+test("two rounds that asked the same questions compare like for like", () => {
+  const comparison = toRoundComparison(
+    analytics("autumn", 70),
+    round("spring", "closed", "2026-02-01"),
+    analytics("spring", 64),
+  );
+
+  assert.strictEqual(comparison?.questionnaireChanged, false);
+});
+
+test("a rewritten questionnaire is carried into the comparison, not hidden", () => {
+  // The delta survives — dimensions are the stable taxonomy across rounds —
+  // but it stops being indistinguishable from a like-for-like one.
+  const comparison = toRoundComparison(
+    analytics("autumn", 70, { surveyDefinitionHash: "sha256:rewritten" }),
+    round("spring", "closed", "2026-02-01"),
+    analytics("spring", 64, { surveyDefinitionHash: "sha256:original" }),
+  );
+
+  assert.ok(comparison);
+  assert.strictEqual(comparison.questionnaireChanged, true);
+  assert.strictEqual(comparison.overallDelta, 6);
+});
+
 test("a score at the edge of a band is flagged as one", () => {
   const minimum = minimumReadableDelta(10, 10);
 

@@ -29,6 +29,21 @@ export interface RoundComparison {
    * changing their mind. See `minimumReadableDelta`.
    */
   minimumReadableDelta: number;
+  /**
+   * Whether the two rounds asked different questions.
+   *
+   * `surveyDefinitionHash` is computed on both runtimes and refused on mismatch
+   * everywhere else in the system, and the comparison was the one place that
+   * never read it: a school that rewrote half its questionnaire got its delta
+   * rendered exactly like a school that changed nothing.
+   *
+   * It does not cancel the comparison. Dimensions are the stable taxonomy
+   * across rounds by design (ADR-004), so the delta remains the honest
+   * dimension-level statement it always was — but the reader has to be told
+   * that part of the movement can belong to the wording rather than to the
+   * school, and only this flag can tell them.
+   */
+  questionnaireChanged: boolean;
 }
 
 /**
@@ -183,6 +198,8 @@ export function toRoundComparison(
       current.totalResponses,
       previous.totalResponses,
     ),
+    questionnaireChanged:
+      current.surveyDefinitionHash !== previous.surveyDefinitionHash,
   };
 }
 
