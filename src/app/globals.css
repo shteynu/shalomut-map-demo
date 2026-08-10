@@ -5372,17 +5372,29 @@ label .custom-tooltip-wrapper:hover .custom-tooltip-icon {
     grid-template-columns: 1fr;
   }
 
+  /*
+   * The span is the scale anchor — the sentence that says what green, yellow
+   * and red actually mean. Hiding it on a phone left three coloured pills with
+   * their definitions removed, and stripped them from the accessibility tree
+   * as well, so a phone and a desktop were not answering the same instrument
+   * while their answers pooled into one dimension score. The anchor wraps onto
+   * its own line instead of disappearing.
+   */
   .answer-stone {
     min-height: 0;
     flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
     justify-content: flex-start;
+    column-gap: 0.6rem;
+    row-gap: 0.3rem;
     text-align: start;
     border-radius: var(--radius-header);
     padding-inline-end: 2.6rem;
   }
 
   .answer-stone span {
-    display: none;
+    flex-basis: 100%;
   }
 
   .survey-focus-nav {

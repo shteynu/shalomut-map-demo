@@ -15,11 +15,59 @@ import {
 
 export class RoundService {
   /**
+   * The share code is the only thing standing between a stranger and a school's
+   * questionnaire, so it is guessing-resistant rather than merely unique.
+   *
+   * It used to be four characters of `Math.random().toString(36)` — about 1.7
+   * million values from a generator with no cryptographic claim, and
+   * `substring(2, 6)` could return fewer than four characters when the random
+   * value was short. Anyone could walk the space.
+   *
+   * The alphabet omits `0/O` and `1/I/L`, because this code is read off a slide
+   * in a staff meeting and typed by hand. Its length divides 256 exactly, so
+   * the byte-to-character mapping below is uniform rather than modulo-biased.
+   */
+  private static readonly SHARE_CODE_ALPHABET =
+    "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+  private static readonly SHARE_CODE_LENGTH = 10;
+  private static readonly SHARE_CODE_ATTEMPTS = 5;
+
+  /**
    * Generate human-readable share code for survey distribution
    */
   public static generateShareCode(): string {
-    const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
-    return `SHALOM-${randomSuffix}`;
+    const alphabet = this.SHARE_CODE_ALPHABET;
+    const bytes = new Uint8Array(this.SHARE_CODE_LENGTH);
+    crypto.getRandomValues(bytes);
+
+    let suffix = "";
+    for (const byte of bytes) {
+      suffix += alphabet[byte % alphabet.length];
+    }
+
+    return `SHALOM-${suffix}`;
+  }
+
+  /**
+   * A share code that no round in the repository already holds.
+   *
+   * The old four-character code was generated once and written straight at a
+   * unique index, so a collision surfaced as a failed round creation the
+   * manager could do nothing about. Collisions are now vanishingly unlikely,
+   * which is exactly why a bounded retry is cheap: it never runs.
+   */
+  private static async generateUnusedShareCode(
+    roundRepo: IRoundRepository,
+  ): Promise<string> {
+    for (let attempt = 0; attempt < this.SHARE_CODE_ATTEMPTS; attempt += 1) {
+      const candidate = this.generateShareCode();
+      const taken = await roundRepo.findByShareCode(candidate);
+      if (!taken) return candidate;
+    }
+
+    throw new Error(
+      "Could not generate an unused survey share code; this indicates a broken random source rather than exhausted codes",
+    );
   }
 
   /**
@@ -91,7 +139,13 @@ export class RoundService {
     input: CreateRoundInput,
     roundRepo: IRoundRepository
   ): Promise<SurveyRound> {
-    const round = this.createRound(input);
+    // The code is replaced rather than generated inside `createRound`, which
+    // stays synchronous: only the persisting path can ask the repository
+    // whether a candidate is already taken.
+    const round = {
+      ...this.createRound(input),
+      shareCode: await this.generateUnusedShareCode(roundRepo),
+    };
 
     // A round created with a complete questionnaire is born active, which makes
     // it the school's running round the moment it exists — so the round it

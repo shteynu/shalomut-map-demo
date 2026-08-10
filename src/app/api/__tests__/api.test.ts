@@ -145,6 +145,105 @@ test('API Route GET /api/survey/[shareCode] returns survey metadata for valid co
   assert.strictEqual(data.instrument.questions.length, 24);
 });
 
+/**
+ * This route is the one endpoint that answers an unauthenticated caller holding
+ * nothing but a share code, and until 2026-08-10 it returned the whole round
+ * domain object. That object carries `backgroundContext` — sickness days, staff
+ * turnover, the socio-economic index and the manager's free-text notes about
+ * the school — plus the organization id and the internal round id. None of it
+ * is rendered by a respondent screen.
+ *
+ * The test asserts the shape of the whole body rather than the absence of one
+ * field, because the leak arrived by returning an object rather than by adding
+ * a field, and the next one would arrive the same way.
+ */
+test('GET /api/survey/[shareCode] tells an anonymous caller nothing about the school', async () => {
+  const roundWithContext = {
+    ...DEMO_ROUND,
+    shareCode: 'SHALOM-CONTEXTLEAK',
+    status: 'active' as const,
+    backgroundContext: {
+      audience: 'כלל צוות ההוראה',
+      sicknessDaysThisQuarter: 41,
+      newStaffMembers: 3,
+      studentCount: 480,
+      socioEconomicIndex: 7,
+      classesPerGrade: { 'ז': 4, 'ח': 3 },
+      notes: 'המורה יעל בחופשת מחלה ממושכת, והמתח בחדר המורים גבוה',
+    },
+  };
+  overrideCoreRepositories({
+    orgRepo: new InMemoryOrganizationRepository([DEMO_ORGANIZATION]),
+    roundRepo: new InMemoryRoundRepository([roundWithContext]),
+    surveyRepo: new InMemorySurveyRepository(),
+  });
+
+  try {
+    const res = await getSurveyMeta(
+      new Request('http://localhost/api/survey/SHALOM-CONTEXTLEAK'),
+      { params: Promise.resolve({ shareCode: 'SHALOM-CONTEXTLEAK' }) },
+    );
+    assert.strictEqual(res.status, 200);
+
+    const body = await res.json();
+    assert.deepStrictEqual(Object.keys(body.round).sort(), [
+      'privacyThreshold',
+      'shareCode',
+      'status',
+      'title',
+    ]);
+
+    // Belt and braces: nothing anywhere in the serialized body, at any depth.
+    const serialized = JSON.stringify(body);
+    for (const secret of [
+      'backgroundContext',
+      'sicknessDaysThisQuarter',
+      'socioEconomicIndex',
+      'organizationId',
+      'יעל',
+      roundWithContext.organizationId,
+      roundWithContext.id,
+    ]) {
+      assert.ok(
+        !serialized.includes(secret),
+        `respondent payload must not carry ${secret}`,
+      );
+    }
+  } finally {
+    useDemoRepositories();
+  }
+});
+
+test('a share code for a round that is not collecting does not name the round', async () => {
+  const closedRound = {
+    ...DEMO_ROUND,
+    shareCode: 'SHALOM-CLOSEDONE',
+    status: 'closed' as const,
+    title: 'סבב אביב — בית ספר יסודי הדקל',
+  };
+  overrideCoreRepositories({
+    orgRepo: new InMemoryOrganizationRepository([DEMO_ORGANIZATION]),
+    roundRepo: new InMemoryRoundRepository([closedRound]),
+    surveyRepo: new InMemorySurveyRepository(),
+  });
+
+  try {
+    const res = await getSurveyMeta(
+      new Request('http://localhost/api/survey/SHALOM-CLOSEDONE'),
+      { params: Promise.resolve({ shareCode: 'SHALOM-CLOSEDONE' }) },
+    );
+
+    assert.strictEqual(res.status, 400);
+    const body = await res.json();
+    // The status is what a client can act on; the school's own wording turned
+    // a scan of share codes into a list of school names.
+    assert.ok(body.error.includes('closed'));
+    assert.ok(!body.error.includes('הדקל'));
+  } finally {
+    useDemoRepositories();
+  }
+});
+
 test('API Route POST /api/survey/[shareCode]/submit processes responses', async () => {
   const params = Promise.resolve({ shareCode: 'SHALOM-DEMO' });
   const req = new Request('http://localhost/api/survey/SHALOM-DEMO/submit', {

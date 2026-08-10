@@ -437,7 +437,7 @@
                   "type": "object",
                   "properties": {
                     "round": {
-                      "$ref": "#/components/schemas/SurveyRound"
+                      "$ref": "#/components/schemas/PublicSurveyRound"
                     },
                     "instrument": {
                       "type": "object",
@@ -2101,6 +2101,35 @@
             }
           }
         }
+      },
+      "PublicSurveyRound": {
+        "type": "object",
+        "description": "The round as an unauthenticated respondent may see it. Deliberately not SurveyRound: that object carries the organization id, the internal round id and backgroundContext, none of which a respondent screen renders.",
+        "properties": {
+          "shareCode": {
+            "type": "string",
+            "example": "SHALOM-7K2M9QT4"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active"
+            ]
+          },
+          "privacyThreshold": {
+            "type": "integer",
+            "minimum": 10
+          }
+        },
+        "required": [
+          "shareCode",
+          "title",
+          "status",
+          "privacyThreshold"
+        ]
       },
       "SurveyRound": {
         "type": "object",

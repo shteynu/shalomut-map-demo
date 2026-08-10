@@ -257,6 +257,26 @@ export function createEmptyDraftSurveyDefinition(
   };
 }
 
+/**
+ * Ten seconds an item. The three scale anchors are the same three sentences on
+ * every question, so they are read once and recognised thereafter, and the
+ * answer is a single tap that advances by itself.
+ */
+const SECONDS_PER_QUESTION = 10;
+
+/**
+ * How long the questionnaire takes, derived from the only thing that governs
+ * it: how many questions it has.
+ *
+ * This was a hardcoded 15, and it is the last thing a respondent reads before
+ * deciding whether to start — «24 שאלות, כ־15 דקות» for twenty-four single-tap
+ * items. A teacher glancing at the link between lessons decides on that one
+ * integer, and it was several times too high.
+ */
+export function estimateMinutesForQuestions(questionCount: number): number {
+  return Math.max(1, Math.ceil((questionCount * SECONDS_PER_QUESTION) / 60));
+}
+
 export function createCanonicalSurveyDefinition(
   title: string,
   minimumResponses: number,
@@ -264,7 +284,9 @@ export function createCanonicalSurveyDefinition(
   return {
     title,
     audience: "כלל צוות ההוראה",
-    estimatedMinutes: 15,
+    estimatedMinutes: estimateMinutesForQuestions(
+      surveyInstrument.questions.length,
+    ),
     minimumResponses,
     introText:
       "השאלון נשלח כקישור אנונימי לצוות. התוצאות מוצגות רק ברמה מצרפית אחרי הגעה לסף פרטיות.",

@@ -104,6 +104,16 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 - Map stones move with the arrow keys as well as the pointer, reset returns
   focus to the map and announces itself, and stone motion is instant under
   `prefers-reduced-motion`.
+- **A phone and a desktop ask the same question again.** The mobile rule hid the
+  scale anchors — the sentences saying what green, yellow and red mean — so a
+  teacher on a phone chose between three coloured pills with their definitions
+  removed, and the two devices' answers pooled into one dimension score. The
+  anchor wraps onto its own line instead. In the same slice: the completion
+  estimate follows the question count rather than a hardcoded fifteen minutes,
+  the public survey endpoint returns four whitelisted fields instead of the round
+  domain object — which carried the school's background context and the
+  manager's own notes to anyone holding a share code — and the share code is ten
+  characters from a cryptographic source rather than four from `Math.random()`.
 - A blocked clipboard is reported as a blocked clipboard: the share link is
   selected, the note names Ctrl+C/Cmd+C and stays until the next attempt.
 - Anonymous respondent flow with stable attempt tokens and database-enforced
