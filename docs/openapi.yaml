@@ -417,6 +417,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SurveySubmissionError'
+        "429":
+          description: >-
+            Too many submissions from one address inside the window
+            (RATE_LIMITED). The limit is deliberately loose, because a whole
+            staffroom answers from one school network; `Retry-After` carries
+            the seconds until the window resets.
+          headers:
+            Retry-After:
+              description: Seconds until the window resets.
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  code:
+                    type: string
+                    enum: [RATE_LIMITED]
         "500":
           description: Internal server error
         "503":
