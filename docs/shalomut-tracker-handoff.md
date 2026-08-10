@@ -64,14 +64,22 @@ because a staffroom answers from one school address and refusing them would be
 worse than the abuse it prevents. Addresses are never stored: the key is a
 salted hash that expires with the window.
 
-**Upstash is prepared, not switched on.** Setting `UPSTASH_REDIS_REST_URL` and
-`UPSTASH_REDIS_REST_TOKEN` moves the counters from instance memory into shared
-Redis, which is what makes the limit hold on serverless; the REST API is called
-directly, so there is no dependency to install and no code change to make. Two
-things follow if it is switched on: Upstash becomes a fourth processor and
-belongs in any subprocessor list, and its code path will be executing for the
-first time — a wrong URL or token shows up as `Rate limit store unavailable` in
-the logs, and the limiter fails open.
+**Upstash is prepared and stays off until the pilot — owner decision,
+2026-08-10.** The in-memory counters are what runs until then, and on
+serverless that means the effective ceiling is the limit times however many
+instances are warm: a speed bump against guessing, not a wall. That is an
+accepted state while there are no real respondents, and it is listed under the
+pre-pilot gates below so it is switched on deliberately rather than
+remembered.
+
+Switching it on is two environment variables — `UPSTASH_REDIS_REST_URL` and
+`UPSTASH_REDIS_REST_TOKEN` — and nothing else: the REST API is called directly,
+so there is no dependency to install and no code change to make. Two things
+follow when it happens. Upstash becomes a fourth processor and belongs in any
+subprocessor list. And its code path will be executing for the first time — a
+wrong URL or token shows up as `Rate limit store unavailable` in the logs, and
+the limiter fails open, so the check is the logs on the first request rather
+than a screen going wrong.
 
 **All four Tier 0 code items are then closed.** What is left of the readiness
 list is outside the repository and the owner's: rotating the four exposed
@@ -83,6 +91,14 @@ wording from axis 7.
 migrations, all applied. The deployed AI service still reports `9c46355`, which
 remains correct: nothing since has touched `ai-analytics-service/`, and its
 `buildFilter` is why.
+
+**Due before the first pilot school, not before merge:**
+
+- Switch on Upstash for rate limiting (two environment variables, decided
+  2026-08-10). Until then the counters are per-instance and the sign-in limit
+  is a speed bump rather than a wall.
+- Rotate the four exposed credentials. The strategy document already states
+  this as due before the first real respondent rather than after.
 
 **Three things this repository cannot do, all now the owner's:**
 

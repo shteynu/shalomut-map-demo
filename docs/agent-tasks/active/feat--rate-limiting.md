@@ -191,10 +191,12 @@ control.
 
 ## Questions requiring an owner decision
 
-- Switch Upstash on, or leave the in-memory speed bump until there are real
-  respondents? Nothing in the code changes either way; it is a question of
-  whether a fourth processor is worth adding before a pilot, and it belongs in
-  the subprocessor list the moment it is.
+- **Answered 2026-08-10: in-memory stays, Upstash goes on before the pilot.**
+  So the accepted state until then is a per-instance counter — a speed bump
+  against password guessing rather than a wall — which is the right trade while
+  there are no real respondents and no fourth processor to declare. It is
+  recorded as a pre-pilot gate in `docs/shalomut-tracker-handoff.md` rather
+  than left to memory. No code changes when it is switched on.
 
 ## Next concrete step
 
