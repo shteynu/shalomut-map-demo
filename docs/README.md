@@ -62,6 +62,13 @@ or deployment snapshots:
   validators, statistics and eval corpus. **Not for implementation**: the card
   format is a probe, not a specification, and the scripts were deliberately kept
   outside the repository;
+- [`product-strategy-axes-2026-08-10.md`](product-strategy-axes-2026-08-10.md) —
+  dated 360° sweep of the product as a product, a system and a business, ranked
+  against the owner's stated goal of a first pilot in a real school.
+  **Not for implementation**: an agenda of analysis axes with seven open owner
+  decisions, not a task queue. Code-level claims are labelled `[verified]` and
+  checked in this repository; market, legal and psychometric claims are labelled
+  `[researched]` and are unconfirmed leads;
 - [`ai-service-incidental-findings-2026-08-09.md`](ai-service-incidental-findings-2026-08-09.md)
   — defects and drift found during that study. Deferred by owner decision on
   2026-08-09, then all seven fixed the same day; the file records what each one

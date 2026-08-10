@@ -646,6 +646,12 @@ owner's own hands.
   so putting one there would assert through layout the causal link the AI copy
   is already forbidden to assert. The reasoning is in
   `docs/product-behaviour-backlog.md` §5; neither is unfinished work.
+- **Seven decisions from the 2026-08-10 strategy sweep**, in
+  `docs/product-strategy-axes-2026-08-10.md`. The two that gate the most other
+  work: whether a pilot school can be named with a date, and whether the
+  three-colour *answer scale* may become 5–6 points with the map kept as a
+  derived presentation band. The same document restates the credential rotation
+  below as due before the first real respondent rather than after it.
 - The twelve decisions in
   `docs/scientific-evidence-layer-research-2026-08-09.md` section 5, of which
   1–3 select between three different projects, plus the undocumented bridge
