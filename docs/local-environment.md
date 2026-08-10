@@ -173,6 +173,14 @@ alongside the AI service — but nothing in the daily loop needs that.
 
   CI never meets this, because nothing there sets the variable and both sides
   fall back to the same default.
+- **A weak `MANAGER_ADMIN_PASSWORD` stops a deployed runtime, not a local
+  one.** Locally the default `admin123` still signs you in, and that is
+  deliberate. But `next build && next start` *is* a deployed runtime as far as
+  the code is concerned, so a production build started with a short password
+  answers `503 UNCONFIGURED` on every sign-in and the log says which rule broke.
+  If a local production run suddenly refuses a password that used to work, that
+  is this and not a session bug. The floor is 16 characters, 8 distinct, and
+  not a well-known value; `openssl rand -hex 32` clears it.
 - **Rate limiting does nothing locally, on purpose.** It keys on the client
   address, and a locally served build reports every request as loopback —
   which it treats as "no client to limit". To exercise it, send

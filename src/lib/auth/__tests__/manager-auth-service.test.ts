@@ -3,6 +3,7 @@ import test from "node:test";
 import { InMemoryManagerRepository } from "../domain-contract";
 import {
   ManagerAuthenticationService,
+  managerPasswordWeakness,
   resolveManagerOrganizationId,
 } from "../manager-auth-service";
 
@@ -346,6 +347,102 @@ test("ManagerAuthenticationService: scopes the deployed session to the configure
           "be9f184a-dee8-4d72-9805-c0f4e45f6d40",
         );
       }
+    },
+  );
+});
+
+/*
+ * The password strength gate.
+ *
+ * One manager account per deployment means the password is the whole search
+ * space, so these rules are the control rather than a formality. They apply on
+ * a deployed runtime only: local development keeps `admin123`, which is the
+ * point of having a local runtime.
+ */
+
+test("managerPasswordWeakness: accepts what .env.example tells the operator to generate", () => {
+  // `openssl rand -hex 32` — 64 characters, sixteen distinct.
+  assert.strictEqual(
+    managerPasswordWeakness(
+      "9f2c4b7e1a08d365fe4c2b9a70d1e83f5c6a4b2d8e0f1937a5c4b6d2e8f0a1c3",
+    ),
+    null,
+  );
+  // A long, varied passphrase is not what the docs suggest, but it is not weak.
+  assert.strictEqual(
+    managerPasswordWeakness("correct-horse-battery-staple-47"),
+    null,
+  );
+});
+
+test("managerPasswordWeakness: names why a password is unusable", () => {
+  assert.strictEqual(managerPasswordWeakness("admin123"), "well-known");
+  assert.strictEqual(managerPasswordWeakness("ADMIN123"), "well-known");
+  assert.strictEqual(managerPasswordWeakness("123"), "too-short");
+  // Fifteen characters: one short of the floor, and the floor is exclusive.
+  assert.strictEqual(managerPasswordWeakness("aB3$xY9!qW2#zR7"), "too-short");
+  assert.strictEqual(managerPasswordWeakness("aB3$xY9!qW2#zR7t"), null);
+  // Long enough, and still barely a password.
+  assert.strictEqual(
+    managerPasswordWeakness("abababababababababab"),
+    "too-few-distinct-characters",
+  );
+  // Surrounding whitespace is not strength; the runtime trims it too.
+  assert.strictEqual(managerPasswordWeakness("   admin123   "), "well-known");
+});
+
+test("ManagerAuthenticationService: a weak password leaves a deployed runtime unconfigured", async () => {
+  for (const weak of ["admin123", "short", "aaaaaaaaaaaaaaaaaaaa"]) {
+    await withEnv(
+      {
+        NODE_ENV: "production",
+        VERCEL_ENV: "production",
+        SESSION_SECRET: "test-secret-12345678901234567890",
+        MANAGER_ADMIN_PASSWORD: weak,
+        MANAGER_ORGANIZATION_ID: "be9f184a-dee8-4d72-9805-c0f4e45f6d40",
+      },
+      async () => {
+        assert.strictEqual(
+          ManagerAuthenticationService.isUnconfigured(),
+          true,
+          `${weak} must not run a deployment`,
+        );
+
+        // And the refusal must not tell the caller which rule it broke: the
+        // message is the same one a missing variable produces.
+        const result =
+          await ManagerAuthenticationService.authenticateCredentials(
+            "admin@shalomut.edu.il",
+            weak,
+          );
+
+        assert.strictEqual(result.ok, false);
+        if (!result.ok) {
+          assert.strictEqual(result.reason, "UNCONFIGURED");
+          assert.ok(!result.message.includes(weak));
+          assert.ok(!/short|distinct|weak|חלש/u.test(result.message));
+        }
+      },
+    );
+  }
+});
+
+test("ManagerAuthenticationService: local development is untouched by the gate", async () => {
+  await withEnv(
+    {
+      NODE_ENV: "development",
+      VERCEL_ENV: undefined,
+      MANAGER_ADMIN_PASSWORD: undefined,
+    },
+    async () => {
+      assert.strictEqual(ManagerAuthenticationService.isUnconfigured(), false);
+
+      const result = await ManagerAuthenticationService.authenticateCredentials(
+        "admin@shalomut.edu.il",
+        "admin123",
+      );
+
+      assert.strictEqual(result.ok, true);
     },
   );
 });

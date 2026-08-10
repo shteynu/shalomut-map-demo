@@ -58,6 +58,78 @@ export function resolveManagerOrganizationId(
   return isDeployedRuntime(environment) ? null : LOCAL_DEV_ORGANIZATION_ID;
 }
 
+/**
+ * Why a deployed runtime refuses to run on a weak manager password.
+ *
+ * There is one manager account per deployment (ADR-020), so an attacker's
+ * entire search space is this one password, and the sign-in URL is public. Rate
+ * limiting slows guessing down — and on serverless the counters are
+ * per-instance, so the real ceiling is the limit times however many instances
+ * the attacker's own parallelism warms. That arithmetic only matters against a
+ * password worth guessing: a generated one is unreachable at any of those
+ * rates, and a chosen one falls at all of them. So the password is the control,
+ * and this is the only place that can insist on it.
+ *
+ * `MANAGER_ADMIN_PASSWORD` was previously required to be non-empty and nothing
+ * more; `123` was accepted. The requirement lived in `.env.example` and in the
+ * tracker, which is to say it depended on someone reading a document.
+ *
+ * The rules are deliberately crude. Length is the only property that survives
+ * every guess about how the value was produced, and the other two exist to stop
+ * a long value that is not actually varied. `openssl rand -hex 32` — what
+ * `.env.example` tells the operator to run — passes with room: 64 characters
+ * and sixteen distinct ones.
+ */
+const MINIMUM_PASSWORD_LENGTH = 16;
+const MINIMUM_DISTINCT_CHARACTERS = 8;
+
+/**
+ * Not a dictionary, and not pretending to be one. It holds the values this
+ * repository itself has published — the local default and the seeded
+ * accounts — because those are the ones that reach a deployment by being
+ * copied out of a README, plus a few that any list would be strange to omit.
+ * A serious guess list is what length is for.
+ */
+const WELL_KNOWN_PASSWORDS = new Set([
+  "admin123",
+  "manager123",
+  "suspended123",
+  "password",
+  "password123",
+  "changeme",
+  "letmein",
+  "123456",
+  "12345678",
+  "qwerty",
+  "shalomut",
+]);
+
+export type ManagerPasswordWeakness =
+  | "well-known"
+  | "too-short"
+  | "too-few-distinct-characters";
+
+/**
+ * The reason this password may not run a deployment, or `null` when it may.
+ *
+ * Exported so the failure can be named in a log and asserted in a test. It is
+ * never returned to a caller: an anonymous request that learns *which* rule the
+ * configuration broke has learned something about the password.
+ */
+export function managerPasswordWeakness(
+  password: string,
+): ManagerPasswordWeakness | null {
+  const value = password.trim();
+
+  if (WELL_KNOWN_PASSWORDS.has(value.toLowerCase())) return "well-known";
+  if (value.length < MINIMUM_PASSWORD_LENGTH) return "too-short";
+  if (new Set(value).size < MINIMUM_DISTINCT_CHARACTERS) {
+    return "too-few-distinct-characters";
+  }
+
+  return null;
+}
+
 const DEFAULT_ADMIN_USER: Manager = {
   id: "mgr-admin-001",
   email: process.env.MANAGER_ADMIN_EMAIL || "admin@shalomut.edu.il",
@@ -136,12 +208,43 @@ export class ManagerAuthenticationService {
     if (!isDeployedRuntime()) return false;
 
     const hasSecret = Boolean(process.env.SESSION_SECRET?.trim());
-    const hasAdminPassword = Boolean(
-      process.env.MANAGER_ADMIN_PASSWORD?.trim(),
-    );
+    const adminPassword = process.env.MANAGER_ADMIN_PASSWORD?.trim() ?? "";
     const hasOrganizationId = Boolean(resolveManagerOrganizationId());
 
-    return !hasSecret || !hasAdminPassword || !hasOrganizationId;
+    return (
+      !hasSecret ||
+      !adminPassword ||
+      this.hasUnusablePassword(adminPassword) ||
+      !hasOrganizationId
+    );
+  }
+
+  /**
+   * A weak password is a misconfiguration, and it is treated as one: the
+   * deployment answers `UNCONFIGURED` exactly as it does with no password at
+   * all, rather than starting and hoping.
+   *
+   * This fails closed on purpose. The alternative considered was a warning —
+   * run anyway, log a complaint — which is the shape of a check that nobody
+   * reads until the incident. A refusal is visible in one sign-in attempt, and
+   * the fix is one environment variable.
+   *
+   * The reason is written to the server log and to nowhere else. The caller
+   * gets the generic message the missing-variable case already returns, for the
+   * same reason `/api/health` reports no credential state: telling an anonymous
+   * request which rule the password broke tells it where to push.
+   */
+  private static hasUnusablePassword(password: string): boolean {
+    const weakness = managerPasswordWeakness(password);
+    if (!weakness) return false;
+
+    console.error(
+      `MANAGER_ADMIN_PASSWORD is unusable on a deployed runtime (${weakness}); ` +
+        "manager sign-in answers UNCONFIGURED until it is replaced. " +
+        "Generate one with `openssl rand -hex 32`.",
+    );
+
+    return true;
   }
 
   private static async defaultAccounts(): Promise<StoredAccount[]> {
