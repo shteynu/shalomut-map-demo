@@ -16,9 +16,13 @@ production build on port 3210, because the dev server on port 3000 was serving
 stale CSS for part of that session; a layout that looks broken there is worth
 re-checking on a fresh build before it is called a defect.
 
-**Two branches wait on a push, and they must land in this order.**
+**Three branches wait on a push. They are a linear stack and must land in this
+order: `test/respondent-path-e2e`, then `fix/questionnaire-speaks-to-everyone`,
+then `feat/security-headers`.** Each is a fast-forward of the one before, so
+pushing them out of order will be refused rather than silently wrong.
+
 `test/respondent-path-e2e` closes Tier 0 item 4;
-`fix/questionnaire-speaks-to-everyone` branches off it and closes item 3 — the
+`fix/questionnaire-speaks-to-everyone` closes item 3 — the
 questionnaire's sixteen feminine-only sentences now address both genders in the
 slash form the file already used for `המנהל/ת מעריכ/ה`. The published `2.0`
 contract deliberately keeps the wording it shipped, so the default template and
@@ -37,12 +41,24 @@ rest of the suite passes.
 which waits on owner decisions. Axis 6 has nothing left in it; axis 7's second
 half still waits on the owner's wording, not on engineering.
 
-**Tier 0 items 1 and 2 are open in the code**, checked against the source on
-2026-08-10 rather than against a document: no security headers anywhere
-(`next.config.ts` has no `headers()`, there is no `vercel.json`) and no
-incoming rate limiting anywhere — the only match in `src/` is the outgoing pace
-to the provider, so `POST /api/auth/login` and the respondent's submission are
-unthrottled. Items 3 and 4 are done and waiting on the pushes above.
+`feat/security-headers` closes item 1: the application sent none, and now every
+response carries a CSP with `frame-ancestors 'none'`, plus `nosniff`,
+`Referrer-Policy`, `X-Frame-Options`, a `Permissions-Policy` and HSTS without
+`preload`. `/api-docs` has its own header for unpkg and a test that keeps that
+exception off the manager screens. Enforced rather than report-only, after
+every screen was walked in a browser with a violation listener attached and
+came back clean. Two limits are written into the config and
+`docs/data-flow-and-subprocessors.md`: `script-src` keeps `'unsafe-inline'`
+because Next serves inline RSC scripts and the nonce alternative would make
+`/login` dynamic, and the deployed endpoint has not been checked — first thing
+after the push is `curl -I` on the alias.
+
+**Tier 0 item 2 is the last one open in the code**: no incoming rate limiting
+anywhere, checked against the source on 2026-08-10 — the only match in `src/`
+is the outgoing pace to the provider, so `POST /api/auth/login` and the
+respondent's submission are unthrottled. It needs an owner decision first,
+because in-process counters do not survive serverless and a real limiter means
+an external store.
 
 `20260810101610_add_survey_attempts` is applied to the deployed database; twelve
 migrations, all applied. The deployed AI service still reports `9c46355`, which

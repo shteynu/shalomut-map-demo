@@ -3,8 +3,11 @@
 ## Metadata
 
 - Branch: `feat/security-headers`
-- Base branch: `test/respondent-path-e2e` (**not** `main` — see Decisions)
-- Base commit: `0506169`
+- Base branch: `fix/questionnaire-speaks-to-everyone` (**not** `main` — see
+  Decisions). Written first against `test/respondent-path-e2e` and rebased on
+  top of the wording branch afterwards, so the three land as fast-forwards in
+  one order instead of colliding in `docs/shalomut-tracker-handoff.md`.
+- Base commit: `5cf826e`
 - Current HEAD: see `git log -1`
 - Status: implementation complete, verified locally, waiting on a push
 - Last updated: 2026-08-10
@@ -76,8 +79,12 @@ signed-in manager click them.
   replaces the earlier one's CSP outright, which silently undid the exception.
 - **HSTS without `preload`.** Preload is a one-way door on a domain that is
   still an operational staging alias.
-- **Branched off `test/respondent-path-e2e`.** That branch carries the
-  respondent walk, which is what proves the policy does not break hydration.
+- **Stacked, not parallel.** The branch was written against
+  `test/respondent-path-e2e` — the respondent walk is what proves the policy
+  does not break hydration — and then rebased onto
+  `fix/questionnaire-speaks-to-everyone`. Two branches off the same parent both
+  editing `docs/shalomut-tracker-handoff.md` would have made the second push a
+  non-fast-forward, so the stack is linear: item 4, then item 3, then item 1.
 
 ## Assumptions
 
