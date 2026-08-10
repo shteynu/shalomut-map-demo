@@ -6,7 +6,8 @@
 - Base branch: `main`
 - Base commit: `8f24cf3`
 - Current HEAD: see `git log -1` (commits listed under Completed)
-- Status: implementation complete, verified locally, waiting on a push
+- Landed on `main` as `0506169`; contained in `origin/main` `568fbcb`
+- Status: **closed** — landed, deployed, archived
 - Last updated: 2026-08-10
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -130,9 +131,8 @@ Nothing.
 
 ## Remaining
 
-- Push the branch and land it (`git push origin test/respondent-path-e2e:main`
-  is the owner's action here).
-- Tier 0 items 1–3 are untouched and still open.
+Nothing. Landed on `main` on 2026-08-10 and deployed; Tier 0 items 1–3 were
+closed the same day in the three branches stacked on top of this one.
 
 ## Changed files
 
@@ -143,7 +143,7 @@ Nothing.
 - `e2e/smoke.spec.ts`
 - `e2e/new-round-navigation.spec.ts`
 - `docs/local-environment.md`
-- `docs/agent-tasks/active/test--respondent-path-e2e.md` (this file)
+- `docs/agent-tasks/archive/test--respondent-path-e2e.md` (this file)
 
 ## Verification evidence
 
@@ -174,6 +174,13 @@ None outstanding.
   `npm run test:e2e` builds first, so the production build is covered; no
   `src/` runtime code changed, so the unit suite has nothing new to say.
 - WebKit/iOS: not run, see Non-goals.
+- **The deployed endpoint, and there is nothing there to check.** This branch
+  changes a test, a seed and a Playwright project; none of the three runs on
+  Vercel. Its deployed evidence is containment — `0506169` is an ancestor of
+  `origin/main` `568fbcb`, which Vercel shows `Ready` under the Production
+  alias — and nothing more is claimable.
+- CI has not been read back at `568fbcb`. The suite passed locally on both
+  projects; the GitHub Actions run for the push was not opened.
 
 ### Environment
 
@@ -207,13 +214,9 @@ None. No secrets, credentials, aliases or deployed state were touched.
 
 ## Questions requiring an owner decision
 
-None for this task. Tier 0 items 1–3 remain, and item 3 (questionnaire wording
-in the feminine) carries the only irreversible deadline: it cannot be fixed
-after a school starts answering.
+None. Tier 0 items 1–3 were closed after this one, in that stack.
 
 ## Next concrete step
 
-Push `test/respondent-path-e2e` to `main` and start Tier 0 item 3 — the
-feminine-only wording in `src/lib/shalomut-source.ts` and the same text in
-`contracts/ai-analytics-v2.json`, `contracts/fixtures/callback_corpus.json`
-and the Python service's corpus and tests.
+None — this task is closed. What is left of the readiness list is outside the
+repository and is tracked in `docs/shalomut-tracker-handoff.md`.

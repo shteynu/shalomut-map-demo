@@ -9,7 +9,8 @@
   one order instead of colliding in `docs/shalomut-tracker-handoff.md`.
 - Base commit: `5cf826e`
 - Current HEAD: see `git log -1`
-- Status: implementation complete, verified locally, waiting on a push
+- Landed on `main` as `230ee44`; contained in `origin/main` `568fbcb`
+- Status: **closed** — landed, deployed, confirmed on the endpoint, archived
 - Last updated: 2026-08-10
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -88,8 +89,9 @@ signed-in manager click them.
 
 ## Assumptions
 
-- The deployed host adds no headers of its own that would conflict. Not checked
-  against the deployment — see Blocked.
+- ~~The deployed host adds no headers of its own that would conflict.~~
+  Checked on 2026-08-10 after the push: it does not. See the deployed reading
+  under Verification evidence.
 
 ## Completed
 
@@ -108,15 +110,15 @@ Nothing.
 
 ## Remaining
 
-- Push, after `test/respondent-path-e2e`.
-- Tier 0 item 2 (incoming rate limiting) is the last one open.
+Nothing. Landed on `main` on 2026-08-10, deployed, and read back on the
+endpoint. Item 2 was closed the same day.
 
 ## Changed files
 
 - `next.config.ts`
 - `e2e/security-headers.spec.ts` (new)
 - `docs/data-flow-and-subprocessors.md`
-- `docs/agent-tasks/active/feat--security-headers.md` (this file)
+- `docs/agent-tasks/archive/feat--security-headers.md` (this file)
 
 ## Verification evidence
 
@@ -143,6 +145,16 @@ Nothing.
 - `npm test` — 844 pass. `npm run typecheck`, `npm run lint` — clean.
 - Development mode: the dev server serves `'unsafe-eval'` and `ws: wss:`, and
   the browser logs `[HMR] connected` with no CSP refusals.
+- **On the deployed endpoint, 2026-08-10 after the push**, anonymously with
+  `curl -I` against `https://shalomut-map-demo.vercel.app`: `/`, `/login/`,
+  `/api-docs/` and `/answer/NOT-A-REAL-CODE/` each carry **exactly one**
+  `Content-Security-Policy`, and all four carry `X-Content-Type-Options`,
+  `Referrer-Policy`, `X-Frame-Options: DENY`, `Permissions-Policy` and
+  `Strict-Transport-Security: max-age=63072000; includeSubDomains`. `/` carries
+  `frame-ancestors 'none'`. Only `/api-docs/` carries `https://unpkg.com`, in
+  `script-src` and `style-src` — the exception survived the platform and did not
+  leak. So the assumption above holds: Vercel adds nothing that conflicts, and
+  the policy the build makes is the policy the browser gets.
 
 ### Failed
 
@@ -150,10 +162,13 @@ None outstanding.
 
 ### Blocked or not run
 
-- The deployed endpoint. Headers were not checked there, and cannot be until
-  the branch is pushed and Vercel redeploys. First thing to check after the
-  push: `curl -I` the deployed alias for one CSP header and `frame-ancestors`.
 - A real cross-origin framing attempt. The policy is asserted, not attacked.
+- The deployed `/api-docs/` screen has still never been seen rendering. Its
+  header is right; whether Swagger UI draws under it there was not checked, and
+  the route is behind the manager gate so it needs a signed-in walk.
+- No signed-in walk of the deployed manager screens under the enforced policy.
+  The violation-listener walk was local. A CSP refusal that only the deployed
+  origin produces would not have been caught.
 
 ### Environment
 
@@ -165,8 +180,8 @@ credentials invented for the run, and by Playwright's own server on 3100.
 - `'unsafe-inline'` in `script-src`, discussed above and commented in the
   config. An injected string still runs; what it cannot do is call home,
   reframe, or repoint a form.
-- `/api-docs` runs a CDN script under its own looser policy. Unreachable from
-  this sandbox, so the screen was never seen rendering — only its script tag
+- `/api-docs` runs a CDN script under its own looser policy. The screen was
+  never seen rendering, locally or deployed — only its script tag, its header
   and the absence of a refusal were checked.
 - HSTS for two years is a commitment to keep serving HTTPS on that host. Vercel
   does; a future custom domain must too.
@@ -194,8 +209,6 @@ None.
 
 ## Next concrete step
 
-Push `test/respondent-path-e2e`, then this branch; `curl -I` the deployed alias
-to confirm the headers survived the platform. Then Tier 0 item 2 — incoming
-rate limiting on `POST /api/auth/login` and the respondent submission, which
-needs an owner decision about Upstash or an equivalent, because in-process
-counters do not survive serverless.
+None — this task is closed. The one thing worth doing when a manager next signs
+in on the deployed endpoint is opening `/api-docs/` there, which is the only
+screen whose rendering under this policy has never been watched anywhere.

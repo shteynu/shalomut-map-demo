@@ -6,7 +6,8 @@
 - Base branch: `main`
 - Base commit: `230ee44`
 - Current HEAD: see `git log -1`
-- Status: implementation complete, verified locally, waiting on a push
+- Landed on `main` as `568fbcb`, which is `origin/main`
+- Status: **closed** — landed, deployed, archived
 - Last updated: 2026-08-10
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -107,7 +108,8 @@ Nothing.
 
 ## Remaining
 
-- Push. Optionally provision Upstash — see Questions.
+Nothing in this task. Upstash is a pre-pilot gate and is the owner's — see
+Questions and `docs/shalomut-tracker-handoff.md`.
 
 ## Changed files
 
@@ -120,7 +122,7 @@ Nothing.
 - `docs/openapi.yaml`, `public/openapi.json`
 - `.env.example`, `docs/local-environment.md`,
   `docs/data-flow-and-subprocessors.md`, `PROGRESS.md`
-- `docs/agent-tasks/active/feat--rate-limiting.md` (this file)
+- `docs/agent-tasks/archive/feat--rate-limiting.md` (this file)
 
 ## Verification evidence
 
@@ -150,7 +152,21 @@ Nothing.
   is never selected. Its first real execution will be the first request after
   the variables are set — check for `Rate limit store unavailable` in the logs
   at that moment, which is what a wrong URL or token looks like.
-- The deployed endpoint: not checked, same as the headers branch.
+- **The deployed limiter has never refused anything, and deliberately so.**
+  What is established is that the code is there: `568fbcb` is `origin/main`, and
+  the Vercel deployments list read on 2026-08-10 shows that commit `Ready` under
+  the Production alias, built in 40s. Proving the behaviour means eleven failed
+  sign-ins against the endpoint, which would lock the originating address —
+  including the owner's — out for five minutes. Not run without the owner
+  asking, and it should not be run from an address anyone needs.
+- **A first attempt to read the deployed artifact was invalid, and the record
+  is kept because the mistake is repeatable.** The check was
+  `curl -sL .../openapi.json | grep -c RATE_LIMITED`, which returned 0 across a
+  dozen polls and looked like a build that had not landed. `/openapi.json` is
+  behind the manager gate: it answers `307` to `/login?next=%2Fopenapi.json`,
+  `-L` followed it, and the grep was reading the login page — 10 901 bytes where
+  the file is 121 801. Any anonymous probe of a gated path has this shape. Use
+  `-I` and read the status, or drop `-L`.
 - Behaviour under real concurrency: the in-memory store is not atomic across
   simultaneous requests in one instance. `INCR` is atomic, so Upstash does not
   share this.
@@ -200,7 +216,8 @@ control.
 
 ## Next concrete step
 
-Push `feat/rate-limiting` to `main`. All four Tier 0 code items are then
-closed; what remains of the readiness list is outside the repository —
-credential rotation, the legal artifacts, the availability monitor, and the
-`שימוש הוגן` wording.
+None — this task is closed, and with it all four Tier 0 code items. What
+remains of the readiness list is outside the repository and is the owner's:
+switching Upstash on before the pilot, rotating the four exposed credentials,
+the legal artifacts, the availability monitor on Core, and the `שימוש הוגן`
+wording. All five are carried in `docs/shalomut-tracker-handoff.md`.

@@ -1,6 +1,45 @@
 # Shalomut Tracker — operational handoff
 
-Updated: 2026-08-10, end of session. `origin/main` is `8be73a6`. Seven branches
+Updated: 2026-08-10, end of session. `origin/main` is `568fbcb`.
+
+**All four Tier 0 code items are closed, on `main` and deployed.** The four
+branches landed as one linear stack — `test/respondent-path-e2e` (`0506169`,
+item 4), `fix/questionnaire-speaks-to-everyone` (`5cf826e`, item 3),
+`feat/security-headers` (`230ee44`, item 1) and `feat/rate-limiting`
+(`568fbcb`, item 2) — and all four task files are now in
+`docs/agent-tasks/archive/`. `docs/agent-tasks/active/` holds only
+`research--scientific-evidence-layer.md`, which waits on owner decisions.
+Nothing is waiting on a push.
+
+**What "deployed" means for each of them, because it is not the same claim
+four times.** The Vercel deployments list was read on 2026-08-10 in the owner's
+signed-in Chrome: `568fbcb` on `main` is `Ready`, built in 40s, carrying the
+Production badge, with every earlier push of the stack `Ready` below it and no
+failed or queued build anywhere in the list.
+
+- **Item 1 is confirmed in the product**, anonymously with `curl -I` on the
+  alias: `/`, `/login/`, `/api-docs/` and `/answer/NOT-A-REAL-CODE/` each carry
+  exactly one `Content-Security-Policy` plus the five companion headers, `/`
+  carries `frame-ancestors 'none'`, and only `/api-docs/` carries
+  `https://unpkg.com`. Vercel adds nothing that conflicts. Not checked there:
+  a signed-in walk under the enforced policy, and whether `/api-docs/` actually
+  draws.
+- **Items 2, 3 and 4 are deployed as code and nothing more.** Item 2's limiter
+  has never refused a deployed request — proving it means eleven failed sign-ins
+  and a five-minute lockout of the originating address, so it waits on the
+  owner asking and on an address nobody needs. Item 3's slash wording cannot be
+  read there while the deployed database holds no round, so there is no share
+  link to open. Item 4 is a test, a seed and a Playwright project; none of them
+  runs on Vercel at all.
+
+**One probe to distrust.** `curl -sL .../openapi.json | grep RATE_LIMITED`
+returned nothing for a dozen polls and read as a build that had not landed. It
+had: `/openapi.json` is behind the manager gate, answers `307` to
+`/login?next=%2Fopenapi.json`, and `-L` made the grep read the login page.
+Every gated path anonymously probed has this shape — read the status with `-I`
+rather than the body with `-L`.
+
+Seven branches
 landed that day, in this order: the product-strategy sweep (`b42b509`), the four
 Tier 0 respondent-path fixes (`3df1a13`), the respondent funnel (`bf02dd1`), a
 documentation close (`743c362`), the consent screen's truth (`93e3baa`),
@@ -16,11 +55,10 @@ production build on port 3210, because the dev server on port 3000 was serving
 stale CSS for part of that session; a layout that looks broken there is worth
 re-checking on a fresh build before it is called a defect.
 
-**Those three branches landed on 2026-08-10.** They were a linear stack, so
-pushing the tip carried all three at once and the earlier two were then
-rejected as non-fast-forwards — which read like a failure and was not: `main`
-is `230ee44` and contains every commit of all three. `feat/rate-limiting`
-branches from that and waits on a push of its own.
+**The stack landed on 2026-08-10.** Because it was linear, pushing the tip
+carried the branches below it at once and the earlier ones were then rejected as
+non-fast-forwards — which read like a failure and was not: `main` is `568fbcb`
+and contains every commit of all four.
 
 What each of them was:
 
@@ -40,9 +78,8 @@ questionnaire had been passing against it. Verified by falsification: with the
 round closed again, the new spec and the tightened smoke assertion fail and the
 rest of the suite passes.
 
-`docs/agent-tasks/active/` also holds `research--scientific-evidence-layer.md`,
-which waits on owner decisions. Axis 6 has nothing left in it; axis 7's second
-half still waits on the owner's wording, not on engineering.
+Axis 6 has nothing left in it; axis 7's second half still waits on the owner's
+wording, not on engineering.
 
 `feat/security-headers` closes item 1: the application sent none, and now every
 response carries a CSP with `frame-ancestors 'none'`, plus `nosniff`,
@@ -50,14 +87,13 @@ response carries a CSP with `frame-ancestors 'none'`, plus `nosniff`,
 `preload`. `/api-docs` has its own header for unpkg and a test that keeps that
 exception off the manager screens. Enforced rather than report-only, after
 every screen was walked in a browser with a violation listener attached and
-came back clean. Two limits are written into the config and
+came back clean. One limit is written into the config and
 `docs/data-flow-and-subprocessors.md`: `script-src` keeps `'unsafe-inline'`
 because Next serves inline RSC scripts and the nonce alternative would make
-`/login` dynamic, and the deployed endpoint has not been checked — first thing
-after the push is `curl -I` on the alias.
+`/login` dynamic. The endpoint reading is at the top of this file.
 
-`feat/rate-limiting` closes item 2, the last of the four, and is the one branch
-still waiting on a push. Sign-in is limited to ten attempts per address per
+`feat/rate-limiting` closes item 2, the last of the four. Sign-in is limited to
+ten attempts per address per
 five minutes — counted before the password is read, so the refusal cannot be
 used as an oracle — and the respondent submission to sixty, deliberately loose
 because a staffroom answers from one school address and refusing them would be
@@ -81,7 +117,7 @@ wrong URL or token shows up as `Rate limit store unavailable` in the logs, and
 the limiter fails open, so the check is the logs on the first request rather
 than a screen going wrong.
 
-**All four Tier 0 code items are then closed.** What is left of the readiness
+What is left of the readiness
 list is outside the repository and the owner's: rotating the four exposed
 credentials, the legal artifacts (privacy notice, subprocessor list, retention,
 deletion route), the availability monitor on Core, and the `שימוש הוגן`
@@ -831,12 +867,13 @@ Before the next deployment-sensitive task, compare `origin/main` with deployed
 Core and Python source/health, then record only fresh read-only evidence in the
 new branch task file.
 
-**Core was last read in the Vercel dashboard on 2026-08-07 and was `807eccc`,
-`Ready`.** `origin/main` has moved one documentation commit past it, to
-`a968dcd`, and Vercel builds every push to `main` on its own, so the deployment
-is expected to be `a968dcd` — expected, not read. The detail below is the
-2026-08-06 reading of `9983184` and is kept for what it exercised, not as the
-current deployed commit:
+**Core was last read in the Vercel dashboard on 2026-08-10 and is `568fbcb`,
+`Ready`, Production, built in 40s.** That is `origin/main` itself, so the
+deployment is the tip rather than a near miss, and every push of that day's
+stack shows `Ready` in the list with nothing failed or queued. The header of
+this file says what that does and does not prove for each of the four items.
+The detail below is the 2026-08-06 reading of `9983184` and is kept for what it
+exercised, not as the current deployed commit:
 
 - **Core (Vercel):** the newest deployment is `9983184` on `main`, environment
   `Production`, status `Ready`, built in 39s about a minute after the push, and

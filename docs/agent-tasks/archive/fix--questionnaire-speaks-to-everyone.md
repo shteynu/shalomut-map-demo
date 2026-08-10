@@ -6,7 +6,8 @@
 - Base branch: `test/respondent-path-e2e` (**not** `main` — see Decisions)
 - Base commit: `0506169`
 - Current HEAD: see `git log -1`
-- Status: implementation complete, verified locally, waiting on a push
+- Landed on `main` as `5cf826e`; contained in `origin/main` `568fbcb`
+- Status: **closed** — landed, deployed, archived
 - Last updated: 2026-08-10
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -118,8 +119,8 @@ Nothing.
 
 ## Remaining
 
-- Push, after `test/respondent-path-e2e`.
-- Tier 0 items 1 (security headers) and 2 (rate limiting) remain open.
+Nothing. Landed on `main` on 2026-08-10 and deployed. Items 1 and 2 were closed
+the same day.
 
 ## Changed files
 
@@ -127,7 +128,7 @@ Nothing.
 - `src/lib/__tests__/ai-contract.test.ts`
 - `src/lib/__tests__/ai-contract-semantic-quality.test.ts`
 - `PROGRESS.md`
-- `docs/agent-tasks/active/fix--questionnaire-speaks-to-everyone.md` (this file)
+- `docs/agent-tasks/archive/fix--questionnaire-speaks-to-everyone.md` (this file)
 
 ## Verification evidence
 
@@ -155,9 +156,14 @@ None outstanding.
 
 ### Blocked or not run
 
-- Deployed environment: not touched and not inspected. The deployed database
-  may hold rounds whose snapshots carry the old wording; that is correct and
-  intended, but it was not verified there.
+- **The deployed wording has not been read, and cannot be yet.** The code is in
+  the deployed build — `5cf826e` is an ancestor of `origin/main` `568fbcb`,
+  which Vercel shows `Ready` under the Production alias — but the deployed
+  database holds no round, so there is no share link to open and no served
+  questionnaire to grep. The first deployed round is what will show the slash
+  form there; until then this item's deployed evidence is containment only.
+- The deployed database may hold rounds whose snapshots carry the old wording;
+  that is correct and intended, but it was not verified there.
 - `npm run test:mutation:ai-contract`: not run. The mutated files are
   unchanged; `ai-contract.test.ts` is in `tap.testFiles` and its assertions
   changed shape, so the score may move without test strength moving.
@@ -197,7 +203,7 @@ None passed through. No secrets, credentials, aliases or deployed state.
 
 ## Next concrete step
 
-Push `test/respondent-path-e2e` first, then this branch, then start Tier 0
-item 1 — security headers in `next.config.ts`, beginning with
-`Content-Security-Policy-Report-Only` so a wrong policy cannot silently break
-the manager screens.
+None — this task is closed. The one thing still open belongs to the owner and
+is carried in `docs/shalomut-tracker-handoff.md`: whether the slash form is the
+wording a school should see. Changing it is sixteen strings in one file, and it
+must happen before a school starts answering, not after.
