@@ -926,7 +926,8 @@ owner's own hands.
   on the deployed endpoint, and all four render and behave as documented. The
   deployed database was empty, so the walk built a school, two rounds, twelve
   responses and one real analysis run to have anything to look at; that test
-  data is still there and is worth clearing. What the walk also found:
+  data was deleted the same day with `scripts/clear-test-data.ts` and the
+  database is empty again. What the walk also found:
   **`/dashboard` never requests `/api/rounds/{id}/ai-insights` and never leaves
   its loading spinner**, so a manager whose analysis failed cannot reach the
   retry card, while the same panel on a dimension's recommendations screen

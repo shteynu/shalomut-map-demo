@@ -186,12 +186,13 @@ less often than a script does.
 
 ### Residual risk
 
-- The deployed database is no longer empty: it holds `בית ספר אורנים`, an
-  archived round with 12 responses, two questionnaire versions, stored AI
-  insights and one tracked goal, plus a draft round `סבב ב׳ — ספטמבר 2026`.
-  This is test data in the shape of a school. Clear it before it is mistaken
-  for real use — `npm run db:clear` against the deployed URL is the owner's
-  command.
+- **Cleared, 2026-08-11.** The walk's data is gone:
+  `npx tsx scripts/clear-test-data.ts --school=<id> --confirm` against the
+  deployed URL removed `בית ספר אורנים` and, by cascade, both rounds with their
+  responses, answers, attempts, questionnaire versions, AI runs, stored
+  insights and the tracked goal. Every one of those tables now counts zero, so
+  the deployed database is back to the empty state this walk found it in.
+  Nothing is left that could be mistaken for a real school.
 
 ## Approval gates
 
