@@ -5,8 +5,8 @@
 - Branch: `feat/setup-warns-when-the-staff-is-smaller-than-the-threshold`
 - Base branch: `main`
 - Base commit: `a6728fc`
-- Current HEAD: see the branch tip; the work is one commit on top of `a6728fc`
-- Status: implementation complete, verified locally, waiting on the owner's push
+- Current HEAD: `18c74b3`, which is also `origin/main`
+- Status: done and landed on `main`
 - Last updated: 2026-08-11
 - Last agent/tool: Claude Opus 5, Claude Code
 
@@ -84,8 +84,7 @@ Nothing.
 
 ## Remaining
 
-The push. `git push origin feat/setup-warns-when-the-staff-is-smaller-than-the-threshold:main`
-is the owner's command.
+Nothing.
 
 ## Changed files
 
@@ -151,5 +150,5 @@ remains the owner's, and this change does not pre-empt it.
 
 ## Next concrete step
 
-Owner pushes the branch onto `main`:
-`git push origin feat/setup-warns-when-the-staff-is-smaller-than-the-threshold:main`.
+None. The owner pushed `18c74b3` onto `main` on 2026-08-11, which carried the
+walk branch's `a6728fc` with it, and this file was archived.
