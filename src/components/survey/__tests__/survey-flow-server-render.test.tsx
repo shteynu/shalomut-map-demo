@@ -40,7 +40,6 @@ function render() {
       surveyTitle="סבב אבחון"
       introText="כמה שאלות קצרות."
       anonymityText="התשובות אנונימיות."
-      estimatedMinutes={7}
       questions={questions}
     />,
   );
@@ -73,8 +72,11 @@ test("SurveyFlow states the promises the code owns, not only the manager's text"
 test("SurveyFlow tells the respondent the size of what they are agreeing to", () => {
   const markup = render();
 
+  // Both numbers come from the same list, so the sentence cannot promise the
+  // minutes of a questionnaire this respondent is not being given: two
+  // single-tap questions are a minute, not the stored estimate of a longer one.
   assert.ok(markup.includes("2 שאלות"));
-  assert.ok(markup.includes("7 דקות"));
+  assert.ok(markup.includes("כ־1 דקות"));
 });
 
 test("SurveyFlow server render claims nothing was restored", () => {

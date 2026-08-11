@@ -7,8 +7,11 @@ type SettingsPanelProps = {
   setTitle: (value: string) => void;
   /** Derived from the setup screen; shown read-only so it cannot drift. */
   audience: string;
+  /**
+   * Derived from the questions themselves; shown read-only because a typed
+   * number stops following the questionnaire the moment either changes.
+   */
   estimatedMinutes: number;
-  setEstimatedMinutes: (value: number) => void;
   minimumResponses: number;
   setMinimumResponses: (value: number) => void;
   introText: string;
@@ -22,7 +25,6 @@ export function SurveyBuilderSettings({
   setTitle,
   audience,
   estimatedMinutes,
-  setEstimatedMinutes,
   minimumResponses,
   setMinimumResponses,
   introText,
@@ -56,9 +58,9 @@ export function SurveyBuilderSettings({
           זמן מילוי משוער
           <input
             type="number"
-            min="1"
             value={estimatedMinutes}
-            onChange={(event) => setEstimatedMinutes(Number(event.target.value) || 0)}
+            readOnly
+            aria-describedby="builder-minutes-note"
           />
         </label>
         <label>
@@ -75,6 +77,11 @@ export function SurveyBuilderSettings({
       <p id="builder-audience-note" className="quiet-note">
         קהל היעד נקבע במסך הגדרת סבב האבחון ומוצג כאן לצפייה בלבד, כדי ששני
         המסכים לא יציגו קהל יעד שונה.
+      </p>
+
+      <p id="builder-minutes-note" className="quiet-note">
+        זמן המילוי מחושב ממספר השאלות הפעילות ומתעדכן איתן, כך שהמספר שהמורים
+        רואים לפני שהם מתחילים תמיד מתאר את השאלון הזה.
       </p>
 
       <PrivacyThresholdNotice minimumResponses={minimumResponses} />

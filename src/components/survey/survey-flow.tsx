@@ -11,6 +11,7 @@ import {
 } from "react";
 import { calculatePercentage } from "@/lib/utils/math";
 import { responseScale } from "@/lib/shalomut-source";
+import { estimateMinutesForQuestions } from "@/lib/survey-definition";
 import { SurveyConsentStep } from "./survey-consent-step";
 import {
   createAttemptTokenSource,
@@ -55,7 +56,6 @@ type SurveyFlowProps = {
   surveyTitle: string;
   introText: string;
   anonymityText: string;
-  estimatedMinutes: number;
   questions: SurveyDefinitionQuestion[];
 };
 
@@ -70,7 +70,6 @@ export function SurveyFlow({
   surveyTitle,
   introText,
   anonymityText,
-  estimatedMinutes,
   questions,
 }: SurveyFlowProps) {
   const [answers, setAnswers] = useState<Record<string, AnswerValue>>({});
@@ -94,6 +93,14 @@ export function SurveyFlow({
   );
   const surveyQuestions = questions;
   const total = surveyQuestions.length;
+  /*
+   * Computed here rather than read from the stored definition, because the
+   * consent screen prints both numbers in one sentence — "N שאלות, כ־M דקות" —
+   * and a definition whose questions were trimmed after the estimate was
+   * written makes that sentence disagree with itself. The questions in hand are
+   * the ones this respondent will be asked.
+   */
+  const estimatedMinutes = estimateMinutesForQuestions(total);
   const answeredCount = Object.keys(answers).length;
   const canSubmit = answeredCount === total;
   const isReviewStep = currentIndex === total;

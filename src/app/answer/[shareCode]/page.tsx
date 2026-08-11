@@ -28,7 +28,6 @@ export default async function SharedSurveyPage({
       surveyTitle={definition.title}
       introText={definition.introText}
       anonymityText={definition.anonymityText}
-      estimatedMinutes={definition.estimatedMinutes}
       questions={definition.questions.filter((question) => question.enabled)}
     />
   );

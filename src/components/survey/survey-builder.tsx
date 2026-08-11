@@ -15,6 +15,7 @@ import type { RoundSwitcherOptions } from "@/lib/rounds/round-options";
 import { useShareUrl } from "@/lib/use-share-url";
 import type { SurveyDefinition } from "@/lib/types/backend";
 import { surveyInstrument } from "@/lib/shalomut-source";
+import { estimateMinutesForQuestions } from "@/lib/survey-definition";
 import {
   moveQuestionWithinView,
   setEnabledForKeys,
@@ -122,9 +123,6 @@ export function SurveyBuilder({
 }: SurveyBuilderProps) {
   const [title, setTitle] = useState(initialDefinition.title);
   const audience = initialDefinition.audience;
-  const [estimatedMinutes, setEstimatedMinutes] = useState(
-    initialDefinition.estimatedMinutes,
-  );
   const [minimumResponses, setMinimumResponses] = useState(
     initialDefinition.minimumResponses,
   );
@@ -201,6 +199,15 @@ export function SurveyBuilder({
   const [suggestionNote, setSuggestionNote] = useState<string | null>(null);
 
   const enabledQuestions = questions.filter((question) => question.enabled);
+  /*
+   * The last thing a teacher reads before deciding whether to start, and the
+   * only screen where this product asks for their time. It used to be a number
+   * a manager typed once: enable eight questions out of twenty-four and the
+   * link still promised the twenty-four-question minutes. Derived here instead,
+   * from the questions that will actually be asked, so the promise cannot
+   * outlive the questionnaire it was made about.
+   */
+  const estimatedMinutes = estimateMinutesForQuestions(enabledQuestions.length);
   const requiredQuestions = enabledQuestions.filter((question) => question.required);
   const activeDimensions = new Set(enabledQuestions.map((question) => question.dimensionId)).size;
   const visibleQuestions = visibleQuestionsFor(
@@ -475,7 +482,8 @@ export function SurveyBuilder({
     // Audience is not editable in the builder, so a version cannot carry a
     // different one; restoring it would only be able to reintroduce a value
     // this screen never offered.
-    setEstimatedMinutes(definition.estimatedMinutes);
+    // The estimate is not restored: it follows the questions this version
+    // brings with it, which are set below.
     setMinimumResponses(definition.minimumResponses);
     setIntroText(definition.introText);
     setAnonymityText(definition.anonymityText);
@@ -638,7 +646,6 @@ export function SurveyBuilder({
             setTitle={edited(setTitle)}
             audience={audience}
             estimatedMinutes={estimatedMinutes}
-            setEstimatedMinutes={edited(setEstimatedMinutes)}
             minimumResponses={minimumResponses}
             setMinimumResponses={edited(setMinimumResponses)}
             introText={introText}
