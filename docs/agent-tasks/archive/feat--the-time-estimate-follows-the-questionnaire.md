@@ -5,8 +5,8 @@
 - Branch: `feat/the-time-estimate-follows-the-questionnaire`
 - Base branch: `main`
 - Base commit: `55e64ca`
-- Current HEAD: one commit on top of `55e64ca`
-- Status: implementation complete, verified locally, waiting on the owner's push
+- Current HEAD: `9d61916`, which is also `origin/main`
+- Status: done and landed on `main`
 - Last updated: 2026-08-11
 - Last agent/tool: Claude Opus 5, Claude Code
 
@@ -89,8 +89,7 @@ Nothing.
 
 ## Remaining
 
-The push. `git push origin feat/the-time-estimate-follows-the-questionnaire:main`
-is the owner's command.
+Nothing.
 
 ## Changed files
 
@@ -164,5 +163,5 @@ None.
 
 ## Next concrete step
 
-Owner pushes the branch onto `main`:
-`git push origin feat/the-time-estimate-follows-the-questionnaire:main`.
+None. The owner pushed `9d61916` onto `main` on 2026-08-11 and this file was
+archived.
