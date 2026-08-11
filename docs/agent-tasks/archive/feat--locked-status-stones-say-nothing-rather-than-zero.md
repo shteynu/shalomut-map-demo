@@ -5,8 +5,8 @@
 - Branch: `feat/locked-status-stones-say-nothing-rather-than-zero`
 - Base branch: `main`
 - Base commit: `61cbd22`
-- Current HEAD: one commit on top of `61cbd22`
-- Status: implementation complete, verified locally, waiting on the owner's push
+- Current HEAD: `7368148`, which is also `origin/main`
+- Status: done and landed on `main`
 - Last updated: 2026-08-11
 - Last agent/tool: Claude Opus 5, Claude Code
 
@@ -90,8 +90,7 @@ Nothing.
 
 ## Remaining
 
-The push. `git push origin feat/locked-status-stones-say-nothing-rather-than-zero:main`
-is the owner's command.
+Nothing.
 
 ## Changed files
 
@@ -163,5 +162,5 @@ None.
 
 ## Next concrete step
 
-Owner pushes the branch onto `main`:
-`git push origin feat/locked-status-stones-say-nothing-rather-than-zero:main`.
+None. The owner pushed `7368148` onto `main` on 2026-08-11 and this file was
+archived.
