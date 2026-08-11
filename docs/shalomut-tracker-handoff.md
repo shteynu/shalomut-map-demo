@@ -920,20 +920,27 @@ owner's own hands.
   first attempt was lost because the sign-in happened in a window that was not
   connected; the connected Chrome is the one to use. The preview pane is a
   separate browser with its own cookies.
-- A signed-in walk on the **deployed** endpoint of the screens only ever walked
-  locally: the builder's version history, an archived round's read-only round
-  screen, and `מעקב יעדים`. The 2026-08-06 walk covered the round context on
-  the local server, not these.
+- **Done 2026-08-11, and it found something.** The three screens only ever
+  walked locally — the builder's version history, an archived round's read-only
+  round screen and `מעקב יעדים` — plus the round switcher were walked signed in
+  on the deployed endpoint, and all four render and behave as documented. The
+  deployed database was empty, so the walk built a school, two rounds, twelve
+  responses and one real analysis run to have anything to look at; that test
+  data is still there and is worth clearing. What the walk also found:
+  **`/dashboard` never requests `/api/rounds/{id}/ai-insights` and never leaves
+  its loading spinner**, so a manager whose analysis failed cannot reach the
+  retry card, while the same panel on a dimension's recommendations screen
+  fetches and renders fine. Whether a local production build does the same is
+  unchecked. Details and evidence:
+  `docs/agent-tasks/active/test--deployed-signed-in-walk-2026-08-11.md`.
 - Rotating the four design-stage credentials before the first real respondents.
   Listed above as an accepted deferred gate; it is still open.
 
 **Worth a look, cheap**
 
-- Nobody has ever seen the round switcher on the deployed endpoint — it renders
-  from two rounds up, and the deployed database now holds none at all. Whoever
-  creates a second deployed round should look at it once. It was walked locally
-  on 2026-08-09 against two rounds, after the switcher moved to props: it
-  renders, and choosing a round rebuilds the builder for it.
+- **Seen 2026-08-11.** The round switcher renders on the deployed endpoint with
+  two rounds, labels each with its status, and choosing one rebuilds the screen
+  for it. Nothing left to look at here.
 - The doubt this list carried since 2026-08-05 — that two minutes of `Up` says
   nothing about a quiet night — is **answered, and the answer is 99.869% with
   one 5m 5s timeout at 05:01 on 2026-08-07**. Both readings are in the
