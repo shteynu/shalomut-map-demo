@@ -5,8 +5,8 @@
 - Branch: `feat/the-end-date-stops-claiming-to-close-the-round`
 - Base branch: `main`
 - Base commit: `3e08530`
-- Current HEAD: one commit on top of `3e08530`
-- Status: implementation complete, verified locally, waiting on the owner's push
+- Current HEAD: `187f14e`, which is also `origin/main`
+- Status: done and landed on `main`
 - Last updated: 2026-08-11
 - Last agent/tool: Claude Opus 5, Claude Code
 
@@ -85,8 +85,7 @@ Nothing.
 
 ## Remaining
 
-The push. `git push origin feat/the-end-date-stops-claiming-to-close-the-round:main`
-is the owner's command.
+Nothing.
 
 ## Changed files
 
@@ -157,5 +156,5 @@ task only stopped the screen from implying it already does.
 
 ## Next concrete step
 
-Owner pushes the branch onto `main`:
-`git push origin feat/the-end-date-stops-claiming-to-close-the-round:main`.
+None. The owner pushed `187f14e` onto `main` on 2026-08-11 and this file was
+archived.
