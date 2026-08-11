@@ -927,13 +927,13 @@ owner's own hands.
   deployed database was empty, so the walk built a school, two rounds, twelve
   responses and one real analysis run to have anything to look at; that test
   data was deleted the same day with `scripts/clear-test-data.ts` and the
-  database is empty again. What the walk also found:
-  **`/dashboard` never requests `/api/rounds/{id}/ai-insights` and never leaves
-  its loading spinner**, so a manager whose analysis failed cannot reach the
-  retry card, while the same panel on a dimension's recommendations screen
-  fetches and renders fine. **A local production build pointed at the same
-  database serves that same round's insights correctly**, so the fault is in
-  the deployment rather than in the source. Details and evidence:
+  database is empty again. The walk also spent an hour on a `/dashboard/` whose
+  AI panel never left its loading spinner, and **that did not survive a
+  reproduction attempt**: on a rebuilt round the deployed dashboard served all
+  four analysis states correctly — run in flight, run failed with its retry
+  card, builder-saved questionnaire, insights stored. Recorded as a transient
+  fault, not a defect, and the reading that fits it is a request that never
+  completed rather than one that never fired. Details and evidence:
   `docs/agent-tasks/active/test--deployed-signed-in-walk-2026-08-11.md`.
 - Rotating the four design-stage credentials before the first real respondents.
   Listed above as an accepted deferred gate; it is still open.

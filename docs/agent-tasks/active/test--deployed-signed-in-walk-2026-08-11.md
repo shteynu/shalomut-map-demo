@@ -6,7 +6,8 @@
 - Base branch: `main`
 - Base commit: `2e1c753`
 - Current HEAD: `2e1c753`
-- Status: walk complete, one defect found and not fixed
+- Status: complete. Four screens walked; the defect it appeared to find did not
+  survive a reproduction attempt and is recorded as transient
 - Last updated: 2026-08-11
 - Last agent/tool: Claude Code (Opus 5), connected Chrome
 
@@ -81,10 +82,13 @@ Seen in passing, also for the first time deployed:
 - The near-band-edge honesty note, and the map unlocked at 12 responses against
   a threshold of 10 with all eight dimensions.
 
-## The defect this walk found
+## The dashboard spinner: what was seen, and what it turned out to be
 
-**The dashboard's AI panel never leaves its loading state, so the AI output —
-the product's actual deliverable — is unreachable from `/dashboard`.**
+**Read the correction at the end of this section before quoting anything in
+it.** The observation was real and is recorded as it was made; the conclusion
+first drawn from it was too strong and does not survive a second attempt.
+
+What was seen, between roughly 09:29Z and 10:00Z on 2026-08-11:
 
 - On a fresh load of `/dashboard/`, `performance.getEntriesByType('resource')`
   contains **no** request to `/api/rounds/{id}/ai-insights`, and the panel keeps
@@ -93,10 +97,6 @@ the product's actual deliverable — is unreachable from `/dashboard`.**
 - The endpoint itself is fine. Called by hand from the same page it answered
   `404` in 931 ms with `run.state: "failed"` while the run had failed, and `200`
   with stones once the analysis had succeeded.
-- So the documented failure card — `שירות הניתוח אינו זמין כרגע` with the
-  `הפעלת ניתוח מחדש` button in `dashboard-ai-insights-state.tsx` — is
-  unreachable in the deployed build. A manager whose analysis failed sees a
-  spinner, not a retry.
 - The same panel on `/dashboard/{dimension}/recommendations/` **does** fetch,
   in about four seconds, and renders the model-written recommendations. So this
   is not the whole dashboard route group.
@@ -106,31 +106,49 @@ the product's actual deliverable — is unreachable from `/dashboard`.**
   stone and on a stone's `+`), which points at the map screen's client subtree
   rather than at the insights hook alone. Not proven.
 
-**A local production build does not reproduce it, so this is environmental.**
-Checked 2026-08-11 on `npm run build` + `npx next start -p 3210`, with
-`DATABASE_URL` pointed at the deployed database so the round, its responses and
-its stored insights were the very same ones. Opening
-`/dashboard/?round=<that round>` there: the request fires — `308` on
-`/ai-insights` then `200` on `/ai-insights/` — and the panel leaves the spinner
-and renders `סיכום ארגוני` with the model's Hebrew.
+**A local production build did not reproduce it.** Checked on `npm run build` +
+`npx next start -p 3210` with `DATABASE_URL` pointed at the deployed database,
+so the round, its responses and its stored insights were the very same ones.
+The request fired — `308` on `/ai-insights` then `200` on `/ai-insights/` — and
+the panel rendered `סיכום ארגוני`.
 
-How it was driven, because it matters that no real credential was involved: a
-throwaway Playwright script signed in with the same fixture password and
-session secret `playwright.config.ts` starts its own smoke server with. The
-agent never saw or typed the manager password, on either environment.
+How both controls were driven, because it matters that no real credential was
+involved: a throwaway Playwright script signed in with the same fixture
+password and session secret `playwright.config.ts` starts its own smoke server
+with. The agent never saw or typed the manager password, on either environment.
 
-What this does and does not settle. Same source, same data, same round: local
-serves it, the deployment does not. What is **not** identical is the build
-artifact — the local one is this machine's, the deployed one is Vercel's — so
-"environmental" here means the deployment, not necessarily the platform's
-runtime. The obvious next suspects are the deployed bundle for that route and
-whether its document stream ever closes; the deployed `/dashboard/` document
-request was observed sitting at `pending` in the network log while everything
-else on the page had finished.
+### The correction: it does not reproduce on the deployment either
 
-Re-checking anything on the deployed endpoint now needs another sign-in: the
-session expired at the end of this session and every manager route answers
-`307` to `/login` again.
+Later the same day, on a rebuilt school and round, the deployed dashboard was
+put back into every state it had hung in, and it worked in all four:
+
+| State of the round | Then | On re-check |
+| --- | --- | --- |
+| Run in flight | spinner forever | `הניתוח בעבודה`, request in 1.0–2.0 s |
+| Run failed | spinner forever | the `שירות הניתוח אינו זמין כרגע` card, with its retry button |
+| Round carrying a builder-saved questionnaire | spinner forever | same, works |
+| Insights stored | spinner forever | `סיכום ארגוני` with the model's Hebrew, request in 1.9 s |
+
+The document was not hanging either: five consecutive `GET /dashboard/` all
+answered `200` in about 1.5 s, and `loadEventEnd` landed at 2.8 s.
+
+So **the earlier conclusion was wrong in one specific way**: the failure card is
+not unreachable in the deployed build. It was reached, deliberately, on the
+second attempt. What stands is the observation itself — a spinner that lasted
+more than twenty minutes across several reloads and two tabs, with no
+`ai-insights` entry in resource timing.
+
+The reading that fits every measurement: **a request that never completes
+leaves no resource-timing entry at all**. The network panel did show a
+`pending` entry at the time. So what was seen was not a request that never
+fired but a response that never arrived — a transient fault in the deployed
+runtime or in the browser's connection to it, not a property of the code. Two
+hypotheses were tested and refuted on the way to that: an unclosed document
+stream, and a round carrying a builder-saved `surveyDefinition`.
+
+Not established: what actually stalled. Manual `fetch` calls to the same URL
+answered normally throughout the hang, which a stuck connection would allow but
+does not prove.
 
 ## The AI run, and why the first one failed
 
@@ -163,8 +181,9 @@ less often than a script does.
 
 - All four walks above, signed in on `shalomut-map-demo.vercel.app`, with
   screenshots taken at each step.
-- The local production build serving the same round's insights correctly —
-  the control that makes the dashboard defect deployment-specific.
+- The local production build serving the same round's insights correctly.
+- The deployed dashboard serving all four of its analysis states correctly on a
+  rebuilt round, which is what retires the defect.
 - Twelve responses submitted through the deployed public API returned `200`.
 - The goal's `בתהליך` state persisted across a full reload.
 
@@ -178,7 +197,9 @@ less often than a script does.
   and the tracker handoff.
 - The `העברה לארכיון` button's own click path — blocked by the native
   `confirm()`.
-- Why the deployed build behaves differently. Only that it does.
+- What stalled the dashboard's insights request during the first hour. The
+  four states it hung in were each re-entered and each behaved correctly, so
+  there is nothing left to reproduce against.
 
 ### Environment
 
@@ -186,6 +207,11 @@ less often than a script does.
 
 ### Residual risk
 
+- The reproduction attempt rebuilt a throwaway school and two rounds on the
+  deployed endpoint and deleted them again the same way; the database is empty
+  and every table counts zero. Three AI runs were spent on it — two automatic
+  failures and one manual success — which is the cost of turning the claim
+  over.
 - **Cleared, 2026-08-11.** The walk's data is gone:
   `npx tsx scripts/clear-test-data.ts --school=<id> --confirm` against the
   deployed URL removed `בית ספר אורנים` and, by cascade, both rounds with their
@@ -201,7 +227,8 @@ less often than a script does.
 
 ## Next concrete step
 
-Read the deployed `/dashboard/` document response itself, signed in, and find
-out whether its stream ever closes — that is the one observation that would
-explain a hydrated-looking page whose client effects never run. Everything
-cheaper has been done.
+Nothing. The four screens are walked, the spinner is chased as far as evidence
+allows, and the deployed database is empty again. If the spinner returns, the
+thing to capture before reloading is the network entry itself — whether the
+`ai-insights` request is absent or `pending` is the whole question, and a
+reload destroys the answer.
