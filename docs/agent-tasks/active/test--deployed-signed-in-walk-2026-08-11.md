@@ -106,10 +106,31 @@ the product's actual deliverable — is unreachable from `/dashboard`.**
   stone and on a stone's `+`), which points at the map screen's client subtree
   rather than at the insights hook alone. Not proven.
 
-**Not determined: whether a local production build behaves the same.** That is
-the check that separates a code defect from something environmental, and it
-needs the owner to sign in on a local port. Until it runs, do not describe this
-as either.
+**A local production build does not reproduce it, so this is environmental.**
+Checked 2026-08-11 on `npm run build` + `npx next start -p 3210`, with
+`DATABASE_URL` pointed at the deployed database so the round, its responses and
+its stored insights were the very same ones. Opening
+`/dashboard/?round=<that round>` there: the request fires — `308` on
+`/ai-insights` then `200` on `/ai-insights/` — and the panel leaves the spinner
+and renders `סיכום ארגוני` with the model's Hebrew.
+
+How it was driven, because it matters that no real credential was involved: a
+throwaway Playwright script signed in with the same fixture password and
+session secret `playwright.config.ts` starts its own smoke server with. The
+agent never saw or typed the manager password, on either environment.
+
+What this does and does not settle. Same source, same data, same round: local
+serves it, the deployment does not. What is **not** identical is the build
+artifact — the local one is this machine's, the deployed one is Vercel's — so
+"environmental" here means the deployment, not necessarily the platform's
+runtime. The obvious next suspects are the deployed bundle for that route and
+whether its document stream ever closes; the deployed `/dashboard/` document
+request was observed sitting at `pending` in the network log while everything
+else on the page had finished.
+
+Re-checking anything on the deployed endpoint now needs another sign-in: the
+session expired at the end of this session and every manager route answers
+`307` to `/login` again.
 
 ## The AI run, and why the first one failed
 
@@ -142,6 +163,8 @@ less often than a script does.
 
 - All four walks above, signed in on `shalomut-map-demo.vercel.app`, with
   screenshots taken at each step.
+- The local production build serving the same round's insights correctly —
+  the control that makes the dashboard defect deployment-specific.
 - Twelve responses submitted through the deployed public API returned `200`.
 - The goal's `בתהליך` state persisted across a full reload.
 
@@ -151,10 +174,11 @@ less often than a script does.
 
 ### Blocked or not run
 
-- No local suite ran; nothing in the repository changed except this file.
+- No local test suite ran; nothing in the repository changed except this file
+  and the tracker handoff.
 - The `העברה לארכיון` button's own click path — blocked by the native
   `confirm()`.
-- Whether a local production build reproduces the dashboard defect.
+- Why the deployed build behaves differently. Only that it does.
 
 ### Environment
 
@@ -176,7 +200,7 @@ less often than a script does.
 
 ## Next concrete step
 
-Decide whether to chase the dashboard defect. The first check is a local
-production build (`npm run build && next start -p 3210`) with the owner signed
-in, opening `/dashboard` on a round that has stored insights: if the panel
-fetches there, the cause is environmental; if it hangs, it is in the code.
+Read the deployed `/dashboard/` document response itself, signed in, and find
+out whether its stream ever closes — that is the one observation that would
+explain a hydrated-looking page whose client effects never run. Everything
+cheaper has been done.

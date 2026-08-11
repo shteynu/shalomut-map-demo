@@ -930,8 +930,9 @@ owner's own hands.
   **`/dashboard` never requests `/api/rounds/{id}/ai-insights` and never leaves
   its loading spinner**, so a manager whose analysis failed cannot reach the
   retry card, while the same panel on a dimension's recommendations screen
-  fetches and renders fine. Whether a local production build does the same is
-  unchecked. Details and evidence:
+  fetches and renders fine. **A local production build pointed at the same
+  database serves that same round's insights correctly**, so the fault is in
+  the deployment rather than in the source. Details and evidence:
   `docs/agent-tasks/active/test--deployed-signed-in-walk-2026-08-11.md`.
 - Rotating the four design-stage credentials before the first real respondents.
   Listed above as an accepted deferred gate; it is still open.
