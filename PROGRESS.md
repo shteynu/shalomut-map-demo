@@ -1,13 +1,24 @@
 # Shalomut Map — product progress
 
-Updated: 2026-08-10. This file is a concise product-level milestone record, not
+Updated: 2026-08-11. This file is a concise product-level milestone record, not
 a session log. Branch evidence lives in `docs/agent-tasks/archive/`; current
 deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 
 ## Current state
 
-- `origin/main` is `8be73a6`. Ten branches landed on 2026-08-10; the state they
-  left is in `docs/shalomut-tracker-handoff.md`.
+- `origin/main` is `187f14e` plus its archive commit. Six branches landed on
+  2026-08-11 and ten on 2026-08-10; the state they left is in
+  `docs/shalomut-tracker-handoff.md`.
+- **The screens stopped saying things the system does not do.** A locked round
+  shows `—` and the threshold it is waiting for rather than `0` problem areas,
+  so an empty round no longer reads as a perfect school. A recommendation names
+  the ISO 45003 clause or OECD TALIS guideline behind it. The minutes a
+  questionnaire asks for are computed from the questions it asks, on the
+  builder and on the consent screen alike. The round's end date is labelled a
+  plan and says when it has passed while answers are still arriving, because it
+  closes nothing. And the setup screen warns while the staff count is being
+  typed that a staff smaller than its own privacy threshold can never unlock —
+  the rule the API already enforced, said early enough to act on.
 - **The dashboard says how much of its own number to believe.** A delta smaller
   than one respondent's width is no longer stated as a change, a score near a
   band edge says so, a comparison between two different questionnaires admits
@@ -308,7 +319,16 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 
 ### Product
 
-Nothing open. The last product decision in the backlog — whether recommendations
+Nothing open that an agent can start. The cheap-wins list of
+`docs/product-strategy-axes-2026-08-10.md` was closed as engineering work on
+2026-08-11: its two survivors are whether the provider key is on a paid billing
+account, which only the owner can read, and rewriting the questions and anchors
+in the inclusive convention, which is methodology and waits with the
+answer-scale decision. Of the larger axes, error tracking (axis 5) needs an
+account and a DSN the owner creates, and the score's blindness to a split staff
+room (axis 6) is a measurement decision rather than a defect to fix.
+
+The last product decision in the backlog — whether recommendations
 become tracked goals — was taken on 2026-08-04 and shipped in its minimal form
 (§5). What §5 deliberately leaves undecided is whether a goal ever gains an
 owner, a due date or a plan of steps.

@@ -1,16 +1,42 @@
 # Shalomut Tracker — operational handoff
 
-Updated: 2026-08-10, end of session. The tip of `main` is the documentation
+Updated: 2026-08-11, end of session. The tip of `main` is the documentation
 commit carrying these paragraphs — deliberately not written as a hash, because
 twice in a row a commit set that number and then became the tip itself, naming
 the commit before it. The load-bearing pointer is the other one: **the last
-commit that changed product code is `903139f`**, the rate limiter, and
+commit that changed product code is `187f14e`**, the end-date wording, and
 `git log --oneline main -- src/ next.config.ts scripts/ playwright.config.ts`
 is how to re-read it.
 
-**Session closed 2026-08-10. Nothing is waiting on a push**, and
+**Session closed 2026-08-11. Nothing is waiting on a push**, and
 `docs/agent-tasks/active/` holds only `research--scientific-evidence-layer.md`,
-which waits on owner decisions rather than on an agent. The one branch that
+which waits on owner decisions rather than on an agent.
+
+**2026-08-11 landed six commits of product code, all of the same kind: screens
+that stopped claiming what the system does not do.** In order —
+`18c74b3` the setup screen warns while the staff count is being typed that a
+staff smaller than its own privacy threshold can never unlock (the API had
+refused this since `staff-floor.ts`, but only after save); `7368148` the home
+screen's status stones show `—` and the round's own threshold instead of `0`
+while analytics are locked, so an empty round stops reading as a perfect
+school; `257bb2f` a recommendation names the ISO 45003 clause or OECD TALIS
+guideline it came from, a field the contract has carried since `1.0` and no
+screen showed; `9d61916` the time a questionnaire asks for is computed from the
+questions it asks, on both the builder and the consent screen; `187f14e` the
+round's end date is labelled `סיום מתוכנן` and says when it has passed on a
+round still collecting, because it closes nothing. Verification on this tree:
+`npm test` 878 pass 0 fail, `npm run typecheck`, `npm run lint` and
+`npm run build` clean, each change walked in a local production build. Every
+task file is in `docs/agent-tasks/archive/`.
+
+**The cheap-wins list of `docs/product-strategy-axes-2026-08-10.md` is closed
+as engineering work.** Items 3–8 and 12 were already done when that list was
+drafted or landed the same day; 2, 9, 10 and 11 landed on 2026-08-11. What
+remains is item 1 — whether `GEMINI_API_KEY` is on a paid billing account,
+which only the owner can read — and item 13, rewriting the questions and
+anchors in the inclusive convention, which is methodology and belongs with the
+answer-scale decision. Do not read the numbered list in that dated document as
+a to-do; it is a snapshot of 2026-08-10. The one branch that
 exists and is deliberately not on `main` is
 `fix/manager-password-must-be-strong` — withdrawn work, described below, local
 to one worktree. Verification on the tree that is on `main`: `npm test` 856
@@ -934,7 +960,8 @@ owner's own hands.
   card, builder-saved questionnaire, insights stored. Recorded as a transient
   fault, not a defect, and the reading that fits it is a request that never
   completed rather than one that never fired. Details and evidence:
-  `docs/agent-tasks/active/test--deployed-signed-in-walk-2026-08-11.md`.
+  `docs/agent-tasks/archive/test--deployed-signed-in-walk-2026-08-11.md`,
+  archived on 2026-08-11 when the branch landed.
 - Rotating the four design-stage credentials before the first real respondents.
   Listed above as an accepted deferred gate; it is still open.
 
@@ -955,10 +982,16 @@ Before the next deployment-sensitive task, compare `origin/main` with deployed
 Core and Python source/health, then record only fresh read-only evidence in the
 new branch task file.
 
-**Core was last read in the Vercel dashboard on 2026-08-10 and is `568fbcb`,
-`Ready`, Production, built in 40s.** That is `origin/main` itself, so the
-deployment is the tip rather than a near miss, and every push of that day's
-stack shows `Ready` in the list with nothing failed or queued. The header of
+**Core was last read in the Vercel dashboard on 2026-08-10 and was `568fbcb`,
+`Ready`, Production, built in 40s** — `origin/main` at that moment. **That
+reading is now behind the repository:** 2026-08-11 pushed six product commits
+and their task-file archives, and `origin/main` has moved. Vercel builds every
+push to `main`, so the deployed build is expected to be the tip, but the
+deployments list was not re-read on 2026-08-11 — that needs the owner's
+signed-in Chrome, and nothing this session depended on it. Anonymously on
+2026-08-11, `https://shalomut-map-demo.vercel.app/api/health/` answered
+`status: ok` with producer `6.0`; none of the day's changes is reachable from a
+public page, so that is a liveness reading and not a content one. The header of
 this file says what that does and does not prove for each of the four items.
 The detail below is the 2026-08-06 reading of `9983184` and is kept for what it
 exercised, not as the current deployed commit:
@@ -994,9 +1027,11 @@ So the contract amendment of 2026-08-05 is live on both sides. What that is
 **not** evidence of: no round has produced `metricInsightsOutcome` against a
 real provider yet. Deployed code, not deployed behaviour.
 
-`GET /api/health` on Core is behind the login redirect, so the deployed
-producer/supported versions cannot be read anonymously. Reading them means
-signing in, which is the owner's action — see the functional check below.
+`GET /api/health` on Core **is public now** — cheap-win item 7 put it in the
+middleware bypass — so the deployed producer and supported versions can be read
+without signing in, and were on 2026-08-11. The sentence this paragraph used to
+carry, that reading them meant an owner sign-in, stopped being true when that
+landed.
 
 **The functional half of this check is done, 2026-08-04.** It had stood open
 because every manager route redirects to `/login`. The owner signed in
