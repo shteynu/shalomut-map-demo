@@ -3,7 +3,11 @@
 import Link from "next/link";
 import { Building2, CalendarPlus, Check, ChevronLeft, ClipboardPen, Lightbulb, Loader2, ShieldCheck, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useId, useState } from "react";
+import {
+  StaffFloorWarning,
+  staffFloorWarningText,
+} from "@/components/round/staff-floor-warning";
 import { PrivacyThresholdNotice } from "@/components/ui/privacy-threshold-notice";
 import { PrivacyTooltip } from "@/components/ui/privacy-tooltip";
 import { SaveStatus, parseSavedAt } from "@/components/ui/save-status";
@@ -83,6 +87,17 @@ export function SetupForm({
   const [savedRoundId, setSavedRoundId] = useState<string | null>(null);
   const [minimumResponses, setMinimumResponses] = useState(
     round?.privacyThreshold ?? DEFAULT_PRIVACY_THRESHOLD,
+  );
+  // Controlled unlike its neighbours, because the round the server refuses —
+  // a staff smaller than its own privacy threshold — is worth saying while the
+  // manager is still typing rather than only after they press save.
+  const [totalStaffCount, setTotalStaffCount] = useState(
+    organization?.totalStaffCount ? String(organization.totalStaffCount) : "",
+  );
+  const staffFloorWarningId = useId();
+  const staffFloorWarning = staffFloorWarningText(
+    Number(totalStaffCount),
+    minimumResponses,
   );
   const router = useRouter();
   const distributeSurveyAction = getNavigationAction("distributeSurvey");
@@ -262,8 +277,15 @@ export function SetupForm({
               name="totalStaffCount"
               type="number"
               min="1"
-              defaultValue={organization?.totalStaffCount || ""}
+              value={totalStaffCount}
+              onChange={(event) => setTotalStaffCount(event.target.value)}
+              aria-describedby={staffFloorWarning ? staffFloorWarningId : undefined}
               required
+            />
+            <StaffFloorWarning
+              id={staffFloorWarningId}
+              totalStaffCount={Number(totalStaffCount)}
+              privacyThreshold={minimumResponses}
             />
           </label>
           <label>
