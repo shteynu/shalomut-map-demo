@@ -236,10 +236,20 @@ export function SetupForm({
             <input name="startDate" type="date" defaultValue={round?.startDate ?? ""} required />
           </label>
           <label>
-            תאריך סגירה
-            <input name="endDate" type="date" defaultValue={round?.endDate ?? ""} />
+            תאריך סיום מתוכנן
+            <input
+              name="endDate"
+              type="date"
+              defaultValue={round?.endDate ?? ""}
+              aria-describedby="setup-end-date-note"
+            />
           </label>
         </div>
+        <p id="setup-end-date-note" className="quiet-note">
+          תאריך היעד נרשם ומוצג במסך המעקב, ואינו סוגר את הסבב: הסגירה נעשית
+          ידנית ממסך המעקב, כדי שאיש צוות שממלא את השאלון לא ייעצר באמצע.
+        </p>
+
         <label>
           הערת רקע למנהלת
           <textarea

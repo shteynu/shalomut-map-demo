@@ -7,6 +7,7 @@ import {
   RoundThresholdNextStep,
 } from "@/components/round";
 import { readRoundParam, roundSwitcherAction } from "@/lib/navigation";
+import { describePlannedEnd } from "@/lib/rounds/planned-end";
 import { toRoundSwitcherOptions } from "@/lib/rounds/round-options";
 import {
   loadManagerContext,
@@ -42,6 +43,14 @@ export default async function RoundPage({
 
   const { organization, selectedRound, responseCount } = context;
   const funnel = await loadRoundFunnel(selectedRound.id);
+  // The date closes nothing, so the card is careful about what it claims. See
+  // `planned-end.ts`: this used to be labelled `סגירה` over a date that had
+  // passed while the questionnaire was still accepting answers.
+  const plannedEnd = describePlannedEnd(
+    selectedRound.endDate ?? null,
+    selectedRound.status,
+    new Date(),
+  );
 
   return (
     <div className="page stone-page">
@@ -61,7 +70,16 @@ export default async function RoundPage({
 
       <section className="metric-grid" aria-label="נתוני סבב אבחון">
         <MetricCard className="stone-variant-navy" value={dateFormatter.format(selectedRound.startDate)} label="פתיחה" helper="מועד הפצת הלינק" />
-        <MetricCard className="stone-variant-green" value={selectedRound.endDate ? dateFormatter.format(selectedRound.endDate) : "לא נקבע"} label="סגירה" helper="סיום איסוף מתוכנן" />
+        <MetricCard
+          className="stone-variant-green"
+          value={
+            selectedRound.endDate
+              ? dateFormatter.format(selectedRound.endDate)
+              : "לא נקבע"
+          }
+          label={plannedEnd.label}
+          helper={plannedEnd.helper}
+        />
         <MetricCard className="stone-variant-orange" value={`${responseCount}`} label="תשובות" helper="מספר מצרפי בלבד" />
         <MetricCard
           className="stone-variant-teal"
