@@ -4,6 +4,7 @@ import type { LucideIcon } from "lucide-react";
 import { ManagerOnboarding } from "@/components/manager";
 import { RoundSwitcher } from "@/components/round";
 import { ActionCard, PrivacyTooltip, StatStone } from "@/components/ui";
+import { describeStatusStone } from "@/lib/dashboard/status-stone-value";
 import { calculatePercentage } from "@/lib/utils/math";
 import {
   getNavigationAction,
@@ -50,12 +51,25 @@ export default async function HomePage({
   const responsePercent = calculatePercentage(responseCount, organization.totalStaffCount);
   const startSetupAction = getNavigationAction("startSetup");
   const openDashboardAction = getNavigationAction("openDashboard", selectedRound.id);
+  // `null` rather than `0` while the map is locked: zero problem areas is a
+  // claim about the school, and a round nobody has answered yet has not made
+  // it. `describeStatusStone` turns the absence into what the stone shows.
   const getStatusCount = (status: WellbeingStatus) =>
     analytics && !analytics.isLocked
       ? Object.values(analytics.dimensionScores).filter(
           (dimension) => dimension.computedStatus === status,
         ).length
-      : 0;
+      : null;
+  const treatmentStone = describeStatusStone(
+    getStatusCount("red"),
+    selectedRound.privacyThreshold,
+    "אבנים הדורשות התייחסות במפה",
+  );
+  const strengthStone = describeStatusStone(
+    getStatusCount("green"),
+    selectedRound.privacyThreshold,
+    "אבנים במצב טוב במפה",
+  );
 
   return (
     <div className="page stone-page home-page">
@@ -107,18 +121,20 @@ export default async function HomePage({
           corner={<PrivacyTooltip minimumResponses={selectedRound.privacyThreshold} />}
         />
         <StatStone
-          value={`${getStatusCount("red")}`}
+          value={treatmentStone.value}
+          screenReaderValue={treatmentStone.screenReaderValue}
           label="מוקדי טיפול"
-          helper="אבנים הדורשות התייחסות במפה"
+          helper={treatmentStone.helper}
           shape={3}
           tint="var(--pastel-pink)"
           rotate={-4}
           corner={<TriangleAlert size={22} aria-hidden="true" />}
         />
         <StatStone
-          value={`${getStatusCount("green")}`}
+          value={strengthStone.value}
+          screenReaderValue={strengthStone.screenReaderValue}
           label="חוזקות לשימור"
-          helper="אבנים במצב טוב במפה"
+          helper={strengthStone.helper}
           shape={4}
           tint="var(--pastel-green)"
           rotate={1}
