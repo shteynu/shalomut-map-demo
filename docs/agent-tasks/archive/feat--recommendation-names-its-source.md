@@ -5,8 +5,8 @@
 - Branch: `feat/recommendation-names-its-source`
 - Base branch: `main`
 - Base commit: `e624101`
-- Current HEAD: one commit on top of `e624101`
-- Status: implementation complete, verified locally, waiting on the owner's push
+- Current HEAD: `257bb2f`, which is also `origin/main`
+- Status: done and landed on `main`
 - Last updated: 2026-08-11
 - Last agent/tool: Claude Opus 5, Claude Code
 
@@ -91,8 +91,7 @@ Nothing.
 
 ## Remaining
 
-The push. `git push origin feat/recommendation-names-its-source:main` is the
-owner's command.
+Nothing.
 
 ## Changed files
 
@@ -170,5 +169,5 @@ Whether a recommendation whose wording was rewritten by the model
 
 ## Next concrete step
 
-Owner pushes the branch onto `main`:
-`git push origin feat/recommendation-names-its-source:main`.
+None. The owner pushed `257bb2f` onto `main` on 2026-08-11 and this file was
+archived.
