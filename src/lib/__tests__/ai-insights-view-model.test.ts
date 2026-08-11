@@ -39,6 +39,45 @@ test('a stone becomes the dashboard shape the screens render', () => {
   assert.deepStrictEqual(result.summary, ['נדרש שינוי בעומס העבודה.']);
   assert.strictEqual(result.metrics[0].value, '40.0');
   assert.match(result.recommendations[0].body, /שני חלונות/);
+  assert.strictEqual(result.recommendations[0].source, 'OECD');
+});
+
+test('a recommendation keeps the source the payload gave it', () => {
+  const cited = 'ISO 45003:2021, סעיף 6.1.2.1 — עומס וקצב עבודה';
+  const stone: StoneDetail = {
+    dimensionId: 'balance',
+    dimensionNameHebrew: 'איזון',
+    status: 'red',
+    score: 40,
+    psychologicalInterpretation: 'נדרש שינוי בעומס העבודה.',
+    metrics: [],
+    recommendedInterventions: [
+      {
+        id: 'balance-1',
+        dimensionId: 'balance',
+        source: `  ${cited}  `,
+        title: 'חלונות זמן מוגנים',
+        summary: 'להגן על זמן הכנה.',
+        actionable_steps: [],
+      },
+      {
+        id: 'balance-2',
+        dimensionId: 'balance',
+        source: '   ',
+        title: 'ישיבה קצרה',
+        summary: 'לקצר את הישיבה השבועית.',
+        actionable_steps: [],
+      },
+    ],
+  };
+
+  const [withSource, withoutSource] = toDashboardStone(stone).recommendations;
+
+  // Trimmed, because the screen prints it verbatim after a colon.
+  assert.strictEqual(withSource.source, cited);
+  // Whitespace is not an attribution, and the screen must show nothing rather
+  // than an empty citation line.
+  assert.strictEqual(withoutSource.source, '');
 });
 
 test('Contract V6 maps three summary paragraphs and qualitative metrics', () => {

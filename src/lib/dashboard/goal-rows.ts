@@ -6,6 +6,13 @@ export interface GoalRow {
   key: string;
   title: string;
   body: string;
+  /**
+   * What the current analysis cites for this advice. Empty for a goal the
+   * analysis no longer recommends: the goal copied the title and the body when
+   * it was chosen, never the attribution, so claiming one here would be this
+   * screen inventing it.
+   */
+  source: string;
   /** Present once this recommendation is tracked. */
   goal?: RoundGoalView;
   /**
@@ -43,6 +50,7 @@ export function buildGoalRows(
       key: goal?.id ?? recommendation.title,
       title: recommendation.title,
       body: recommendation.body,
+      source: recommendation.source,
       goal,
       fromEarlierAnalysis: false,
     };
@@ -58,6 +66,7 @@ export function buildGoalRows(
       key: goal.id,
       title: goal.title,
       body: goal.body,
+      source: '',
       goal,
       fromEarlierAnalysis: true,
     });

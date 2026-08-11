@@ -36,6 +36,13 @@ export interface DashboardMetric {
 export interface DashboardRecommendation {
   title: string;
   body: string;
+  /**
+   * The catalog entry this advice came from — an ISO 45003 clause, an OECD
+   * TALIS guideline — as the AI payload names it. Empty when the payload
+   * carried none, which is the only case a screen may show nothing rather than
+   * an attribution.
+   */
+  source: string;
 }
 
 /**

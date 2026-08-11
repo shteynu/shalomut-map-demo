@@ -164,6 +164,10 @@ function toDashboardRecommendations(
       return {
         title: intervention.title,
         body: `${intervention.summary}${actionText}`,
+        // Carried rather than rendered here: the screen decides how to show an
+        // attribution, and dropping it at this seam is what made the advice
+        // look like it came from nowhere.
+        source: intervention.source.trim(),
       };
     });
 }

@@ -5,8 +5,12 @@ import { buildGoalRows } from '../goal-rows';
 import type { RoundGoalView } from '../../round-goals-client';
 
 const RECOMMENDATIONS = [
-  { title: 'יום ללא ישיבות', body: 'לקבוע יום קבוע בשבוע.' },
-  { title: 'שעת צוות קבועה', body: 'לשריין שעה שבועית.' },
+  {
+    title: 'יום ללא ישיבות',
+    body: 'לקבוע יום קבוע בשבוע.',
+    source: 'ISO 45003:2021, סעיף 6.1.2.1 — עומס וקצב עבודה',
+  },
+  { title: 'שעת צוות קבועה', body: 'לשריין שעה שבועית.', source: '' },
 ];
 
 function goal(overrides: Partial<RoundGoalView> = {}): RoundGoalView {
@@ -75,4 +79,25 @@ test('the current recommendations keep their order and lead the list', () => {
     rows.map((row) => row.title),
     ['יום ללא ישיבות', 'שעת צוות קבועה', 'ישן'],
   );
+});
+
+test('a row carries the attribution of the recommendation it came from', () => {
+  const rows = buildGoalRows(RECOMMENDATIONS, [], 'balance');
+
+  assert.match(rows[0].source, /ISO 45003/u);
+  // A payload that named no source must not acquire one on the way here.
+  assert.strictEqual(rows[1].source, '');
+});
+
+test('a goal the analysis no longer recommends claims no source', () => {
+  const rows = buildGoalRows(
+    RECOMMENDATIONS,
+    [goal({ id: 'goal-old', title: 'מפגש חודשי עם ההנהלה' })],
+    'balance',
+  );
+
+  // The goal copied the title and the body when it was chosen, never the
+  // attribution; inventing one here would be this screen citing itself.
+  assert.strictEqual(rows[2].fromEarlierAnalysis, true);
+  assert.strictEqual(rows[2].source, '');
 });

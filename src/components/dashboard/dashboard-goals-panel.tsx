@@ -1,6 +1,6 @@
 "use client";
 
-import { Flag, History, Loader2, Target, Trash2 } from "lucide-react";
+import { BookMarked, Flag, History, Loader2, Target, Trash2 } from "lucide-react";
 import { buildGoalRows, type GoalRow } from "@/lib/dashboard/goal-rows";
 import type { DashboardRecommendation } from "@/lib/dashboard/dashboard-insights";
 import { useRoundGoals } from "@/lib/hooks/use-round-goals";
@@ -125,6 +125,17 @@ export function DashboardGoalsPanel({
                   >
                     <div className="dashboard-goal-text">
                       <h3>{row.title}</h3>
+                      {row.source ? (
+                        // The one place the manager can check whether the
+                        // advice came from somewhere. The blobs above carry the
+                        // same recommendations, but their text is auto-fitted
+                        // to the shape and a citation inside one would shrink
+                        // the advice to make room for its footnote.
+                        <p className="quiet-note dashboard-goal-provenance">
+                          <BookMarked size={14} aria-hidden="true" />
+                          מבוסס על: {row.source}
+                        </p>
+                      ) : null}
                       {row.fromEarlierAnalysis ? (
                         <p className="quiet-note dashboard-goal-provenance">
                           <History size={14} aria-hidden="true" />
