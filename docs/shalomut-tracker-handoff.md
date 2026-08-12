@@ -478,6 +478,17 @@ older snapshots remain available in Git.
   the two run in parallel and this one reports first. `verify:db`, `verify:ai`
   and the browser smoke stay in the deploy workflow, which remains the gate a
   deployment waits on.
+- **The build no longer downloads its own typeface.** 2026-08-12. Noto Sans
+  Hebrew is committed at `src/app/fonts/noto-sans-hebrew-variable.woff2` and
+  loaded through `next/font/local`; `npm run lint:fonts` in `verify:core` fails
+  on `next/font/google`, on a Google font host in code or CSS, and on a
+  `next/font/local` source that is not on disk. The reason is operational rather
+  than aesthetic: `Core verification` `31582875968` went red on `main` at
+  `e9020f8` because Google served a stale stylesheet and all five `.woff2` files
+  404ed, while the same commit built cleanly in `deploy-vercel.yml` at the same
+  minute. A re-run went green in one try. Treat any future
+  `@vercel/turbopack-next/internal/font/google/font` failure as a signal that
+  this was reverted, because nothing else can produce it now.
 - **Two gates were considered and declined on 2026-08-07**, so they are not
   reopened by habit: a mutation-score threshold (the score moves for reasons
   unrelated to test strength) and a line-coverage threshold (it would have been

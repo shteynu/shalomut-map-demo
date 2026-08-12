@@ -48,6 +48,7 @@ privacy, auth, persistence, contracts или deployment.
 | Только Markdown, instructions или skills | Frontmatter/links, `git diff --check`, релевантная structural validation; для `AGENTS.md`, клиентских адаптеров и `.agents/skills/**` — `npm run lint:skills` |
 | Мутируемые файлы (`src/lib/ai-contract.ts`, `src/lib/scoring-bands.ts`), их tests или mutation config | `npm run lint:mutation-config`, Stryker dry run; полный mutation run, если задача меняет mutation evidence или просит оценить test strength. Детали — [references/mutation-testing.md](references/mutation-testing.md) |
 | `src/components`, page TSX, CSS | Targeted tests, `npm run lint`, `npm run build`; browser smoke для user-visible flow |
+| Шрифты: `src/app/fonts/**`, `next/font` или font stack в `globals.css` | `npm run lint:fonts`, `npm run build` и browser smoke с `document.fonts` — сравни `.next/static/media/*.woff2` с файлом в репозитории и убедись, что ни один resource entry не уходит на Google |
 | `src/app/api`, services, hooks, utilities | Ближайшие API/unit tests, затем `npm test` и `npm run build` |
 | Repositories или server guards | Repository/API regression tests, `npm test`, `npm run lint`, `npm run build` |
 | `prisma/schema.prisma` или migrations | `npx prisma validate`, `npx prisma generate`, repository tests; status/migration только по правилам ниже |
@@ -80,6 +81,14 @@ privacy, auth, persistence, contracts или deployment.
 - Проверяй lint через `npm run lint`.
 - Проверяй production compilation и App Router boundaries через
   `npm run build`.
+- `npm run lint:fonts`, входящий в `verify:core`, не даёт шрифту вернуться в
+  сеть: gate падает на `next/font/google`, на Google font host в коде или CSS и
+  на `next/font/local` источнике, которого нет на диске. Правило не
+  декоративное: до 2026-08-12 `next build` качал пять `.woff2` с
+  `fonts.gstatic.com`, и 12 августа раннеру достался устаревший stylesheet — все
+  пять ответили 404, Turbopack записал это как warning и уронил build
+  сообщением, в котором нет ни слова про шрифт или сеть. Тот же коммит собрался
+  в соседней job, так что gate был не красным, а случайным.
 
 ### Mutation testing
 
