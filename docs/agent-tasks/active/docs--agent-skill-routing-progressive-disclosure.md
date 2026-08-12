@@ -5,8 +5,8 @@
 - Branch: docs/agent-skill-routing-progressive-disclosure
 - Base branch: main
 - Base commit: 42e93ce
-- Current HEAD: 42e93ce; the work is complete and unstaged, no commit yet
-- Status: implementation complete, verified, awaiting commit
+- Current HEAD: `23e7932`, one commit on this branch, not pushed
+- Status: complete and committed; waits only on the owner’s push
 - Last updated: 2026-08-12
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -130,7 +130,7 @@ All five met; see Verification evidence.
 
 ## Remaining
 
-- Commit. Push is the owner's action.
+- Nothing. Push is the owner’s action.
 
 ## Changed files
 
@@ -150,8 +150,8 @@ Removed outside Git: the empty, untracked, gitignored directory
 Pre-existing unrelated modifications, left untouched and unstaged:
 `.idea/shalomut-map-demo.iml`, `next-env.d.ts`.
 
-Everything is unstaged. The handoff boundary is this worktree only until a
-commit exists.
+Everything is committed in `23e7932`. Another worktree can consume it now; another
+checkout or machine only after the branch is pushed.
 
 ## Verification evidence
 
@@ -243,5 +243,5 @@ commit exists.
 
 ## Next concrete step
 
-Commit the change; the owner pushes with
+The owner pushes with
 `git push origin docs/agent-skill-routing-progressive-disclosure:main`.
