@@ -4,11 +4,21 @@
 
 - Branch: `chore/python-from-the-service-venv`
 - Base branch: `main`
-- Base commit: `164c9ef`
-- Current HEAD: `aae58b3`
-- Status: implementation complete, verified, committed on the branch; not
-  pushed. Visible to another worktree that checks out this branch; not visible
-  to another machine until it is pushed.
+- Base commit: `e75bbb6` (was `164c9ef`; see the rebase note below)
+- Current HEAD: the tip of `chore/python-from-the-service-venv`. The last
+  functional commit is `36f2bff` (the workflow); everything after it is this
+  record.
+- Status: the interpreter fix and the lint gate are **on `main`** — the owner
+  pushed the first nine commits of this branch while it was still open. What
+  remains unpushed is the CI workflow and the documentation for it: three
+  commits, rebased onto `e75bbb6`. Visible to another worktree that checks out
+  this branch; not visible to another machine until it is pushed.
+- Rebase: `chore/skill-lint-discovers-entrypoints` landed on `main` in the
+  meantime, so the remaining three commits were rebased from `164c9ef` onto
+  `e75bbb6`. No conflicts — that branch touched `AGENTS.md`,
+  `scripts/check-agent-skills*` and two archived task files, none of which
+  these commits go near. `verify:core` was re-run on the rebased tree and the
+  upgraded skills check passes with it: 28 tests, "4 declared entrypoints".
 - Last updated: 2026-08-12
 - Last agent/tool: Claude Opus 5 (Claude Code), worktree
   `.claude/worktrees/objective-aryabhata-af898c`
@@ -52,8 +62,10 @@ macOS-3.9-only.
 `.venv/bin/python`. The rule existed; the test harness and two other callers did
 not follow it.
 
-Spun off from `docs/agent-tasks/active/docs--agent-skill-routing-progressive-disclosure.md`,
-which recorded the failure and explicitly left it unfixed.
+Spun off from `docs/agent-tasks/archive/docs--agent-skill-routing-progressive-disclosure.md`,
+which recorded the failure and explicitly left it unfixed. It was archived while
+this branch was in flight; the correction above belongs here rather than in that
+closed record.
 
 ## Scope
 
@@ -324,7 +336,10 @@ database write is involved.
 
 ## Next concrete step
 
-Land the branch. Push is an owner action:
-`git push origin chore/python-from-the-service-venv:main`. Nothing else is
-outstanding — `npm run verify:core` passes end to end on this branch, and the
-open items above are decisions, not work.
+Push the three remaining commits, which now fast-forward `main` from `e75bbb6`.
+Push is an owner action:
+`git push origin chore/python-from-the-service-venv:main`. Then watch the first
+`Core verification` run — it is the one thing on this branch that local
+rehearsal cannot finish proving. Everything else is done: `verify:core` passes
+end to end on the rebased tree, and the open items above are decisions, not
+work.
