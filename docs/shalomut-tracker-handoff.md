@@ -458,6 +458,15 @@ older snapshots remain available in Git.
   command needs the `[dev]` extra — `pip install -e ".[dev]"` — because plain
   `-e .` installs no pytest and the documentation said otherwise until this
   branch.
+- **Actions are on current majors, and Dependabot keeps them there.** Landed
+  2026-08-12. Every `uses:` moved off the Node 20 action runtime —
+  `checkout`/`setup-node`/`setup-python`/`upload-artifact` to `v7`,
+  `codeql-action` to `v4` — and all three edited workflows are green with the
+  deprecation annotation gone. `.github/dependabot.yml` now opens one grouped
+  `ci:`-prefixed pull request a month for the `github-actions` ecosystem only,
+  so a bump arriving as a PR is expected, not a stray. Both CI gates run on it
+  before merge: `deploy-vercel.yml` on `pull_request`, `verify-core.yml` on the
+  pushed branch. `npm` and `pip` are deliberately not covered.
 - **`.github/workflows/verify-core.yml` runs `npm run verify:core` on every
   push, on every branch.** Until 2026-08-12 the only verification job was the
   one inside `deploy-vercel.yml`, which triggers on `main` and on pull requests

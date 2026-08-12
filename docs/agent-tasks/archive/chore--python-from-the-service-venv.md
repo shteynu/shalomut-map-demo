@@ -4,15 +4,11 @@
 
 - Branch: `chore/python-from-the-service-venv`
 - Base branch: `main`
-- Base commit: `e75bbb6` (rebased there from `164c9ef` mid-task, no conflicts,
-  after `chore/skill-lint-discovers-entrypoints` landed)
-- Current HEAD: the tip of the branch. The last functional commit is the CI
-  workflow; everything after it is this record.
-- Status: **complete, and all of the engineering is on `main`** at `2b88877` —
-  resolver, lint gate and CI workflow, with `Core verification` green on a real
-  runner. One commit is unpushed: `839626c`, the operational-handoff entry,
-  plus this update. Unpushed state is visible only in this worktree and to a
-  worktree that checks out this branch; not to another machine.
+- Base commit: `164c9ef`, rebased mid-task onto `e75bbb6` when
+  `chore/skill-lint-discovers-entrypoints` landed first
+- Landed on `main` as `219d36a`…`b3a505c`, fourteen commits across three pushes,
+  interleaved with that other branch rather than contiguous
+- Status: landed and archived. `Core verification` green on a real runner.
 - Last updated: 2026-08-12
 - Last agent/tool: Claude Opus 5 (Claude Code), worktree
   `.claude/worktrees/objective-aryabhata-af898c`

@@ -5,10 +5,9 @@
 - Branch: `chore/actions-on-a-supported-runtime`
 - Base branch: `main`
 - Base commit: `2b88877`
-- Current HEAD: the tip of the branch.
-- Status: **the action bump is on `main` at `22832cf` and green on all three
-  edited workflows.** Unpushed: `.github/dependabot.yml` and this update — two
-  commits. The earlier branch's documentation commits landed in the same push.
+- Landed on `main` as `bb71c00..e9020f8`, five commits
+- Status: landed and archived. All three edited workflows green on real runners,
+  with the Node 20 annotation gone.
 - Last updated: 2026-08-12
 - Last agent/tool: Claude Opus 5 (Claude Code), worktree
   `.claude/worktrees/objective-aryabhata-af898c`
@@ -124,9 +123,9 @@ None.
 
 ## Remaining
 
-Read the repository's Dependabot settings after the push — that is where an
-invalid configuration file is reported. The workflow half is already confirmed
-green on runners.
+One thing, and it is a read rather than work: the repository's Dependabot
+settings, which is where an invalid configuration file is reported. Nothing
+local can validate one, and the first monthly request is the real proof.
 
 ## Changed files
 
@@ -216,8 +215,7 @@ None. No secrets, credentials, deployment alias or database write involved.
 
 ## Next concrete step
 
-Push the two remaining commits, then check the repository's Dependabot settings
-for a configuration error. Push is an owner action:
-`git push origin chore/actions-on-a-supported-runtime:main`. After it, both this
-file and `docs/agent-tasks/active/chore--python-from-the-service-venv.md` move
-to `docs/agent-tasks/archive/`.
+None — the task is landed and archived. The one open read is in Remaining:
+confirm in the repository's Dependabot settings that the configuration parsed,
+and expect the first grouped pull request within a month. Its companion task is
+`docs/agent-tasks/archive/chore--python-from-the-service-venv.md`.
