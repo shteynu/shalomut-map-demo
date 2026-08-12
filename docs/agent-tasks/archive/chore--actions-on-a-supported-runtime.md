@@ -187,9 +187,15 @@ Added: `.github/dependabot.yml`, this file.
 
 ### Residual risk
 
-- `actions/upload-artifact@v7` is still unexercised. It runs only when the
-  browser smoke fails, so the green `validate` job did not reach it; v7's own
-  change there is an opt-in `archive` input this repository does not set.
+- ~~`actions/upload-artifact@v7` is still unexercised.~~ Closed 2026-08-12 by
+  running it: `chore/prove-upload-artifact` failed the smoke on purpose and the
+  workflow was dispatched against that branch
+  (`workflow_dispatch`, `target_env=staging`, run `31588584933`). The
+  `if: failure()` step fired, uploaded 23 files as `playwright-report`
+  (1 001 287 B, seven-day expiry as configured), and the downloaded report opens
+  with 19 tests, 18 passed, the deliberate failure carrying its screenshot
+  (1280×720 PNG) and two trace archives. The branch was throwaway and is
+  deleted.
 - Dependabot is unproven until GitHub parses the file and the first monthly
   request appears.
 

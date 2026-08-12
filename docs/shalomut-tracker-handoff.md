@@ -466,7 +466,12 @@ older snapshots remain available in Git.
   `ci:`-prefixed pull request a month for the `github-actions` ecosystem only,
   so a bump arriving as a PR is expected, not a stray. Both CI gates run on it
   before merge: `deploy-vercel.yml` on `pull_request`, `verify-core.yml` on the
-  pushed branch. `npm` and `pip` are deliberately not covered.
+  pushed branch. `npm` and `pip` are deliberately not covered. The one line no
+  green run could reach — `upload-artifact@v7` behind `if: failure()` — was
+  exercised on purpose on 2026-08-12 and works: run `31588584933` uploaded a
+  1 MB `playwright-report` that opens with the screenshot and traces intact.
+  Dependabot itself is still unproven until the first monthly pull request
+  arrives.
 - **`.github/workflows/verify-core.yml` runs `npm run verify:core` on every
   push, on every branch.** Until 2026-08-12 the only verification job was the
   one inside `deploy-vercel.yml`, which triggers on `main` and on pull requests
