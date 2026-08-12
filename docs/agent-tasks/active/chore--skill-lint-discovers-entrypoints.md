@@ -5,7 +5,9 @@
 - Branch: chore/skill-lint-discovers-entrypoints
 - Base branch: main
 - Base commit: `b4fea18`
-- Current HEAD: `9e2ca5f`, two commits on this branch, not pushed
+- Current HEAD: `6997ea5`, three commits on this branch, not pushed. This line
+  was written in a fourth commit, which is the only way it can name a commit a
+  reader can check out; that commit changes nothing but this line.
 - Status: complete, verified and committed; waits only on the owner's push
 - Last updated: 2026-08-12
 - Last agent/tool: Claude Code (Opus 5)
