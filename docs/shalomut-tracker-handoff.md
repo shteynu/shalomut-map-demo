@@ -443,6 +443,21 @@ older snapshots remain available in Git.
   server share it; none of the repository's real secrets are read. It replaces the
   manual browser walk as a regression check — not as a substitute for walking
   new screens.
+- **`npm test` now needs `ai-analytics-service/.venv`, and every worktree needs
+  its own.** Landed 2026-08-12 with `chore/python-from-the-service-venv`. The
+  cross-service test used to spawn a bare `python3`; on macOS that is the 3.9
+  from the Command Line Tools, below the service's `requires-python`, so three
+  tests failed with an ImportError from inside the service and `verify:core`
+  could not finish. Every Node-side caller now resolves the interpreter through
+  `scripts/ai-service-python.mjs`, which names the missing virtualenv and
+  `docs/local-environment.md` instead of falling through to PATH, and
+  `npm run lint:interpreter` — in `verify:core` — fails on a `python3` spawned
+  by name anywhere in `scripts/`, `src/`, `e2e/`, `package.json` or
+  `.github/workflows/`. Two consequences for anyone starting fresh: `.venv/` is
+  gitignored, so a new worktree has none until it makes one, and the setup
+  command needs the `[dev]` extra — `pip install -e ".[dev]"` — because plain
+  `-e .` installs no pytest and the documentation said otherwise until this
+  branch.
 - **`.github/workflows/verify-core.yml` runs `npm run verify:core` on every
   push, on every branch.** Until 2026-08-12 the only verification job was the
   one inside `deploy-vercel.yml`, which triggers on `main` and on pull requests

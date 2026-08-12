@@ -160,7 +160,8 @@ changes; the diff is test/tooling wiring plus documentation.
   `pip install -e ".[dev]"` in `docs/local-environment.md`,
   `ai-analytics-service/README.md`, `scripts/local-stack.mjs` and the new error
   message.
-- `scripts/check-python-interpreter.mjs` + `.test.mjs` — new, and
+- `scripts/check-python-interpreter.mjs` and
+  `scripts/check-python-interpreter.test.mjs` — new, and
   `npm run lint:interpreter` in `verify:core`. Fails on `python3` in command
   position across `scripts/`, `src/`, `e2e/`, `package.json` and
   `.github/workflows/`; allows `python3 -m venv`. Three rules earn their keep:
@@ -188,7 +189,8 @@ changes; the diff is test/tooling wiring plus documentation.
   project before"; `[dev]` in the one-time setup.
 - `ai-analytics-service/README.md` — why a system `python3` cannot load this
   service at all on macOS; the boundary test names
-  `tests/stub_pipeline_cli.py`, which is what it actually runs (the text said
+  `ai-analytics-service/tests/stub_pipeline_cli.py`, which is what it actually
+  runs (the text said
   `python3 -m src.pipeline_cli`); the `[dev]` extra and what omitting it costs.
 
 ## In progress
@@ -210,7 +212,8 @@ Modified: `package.json`, `src/app/api/__tests__/ai-e2e.test.ts`,
 
 Added: `scripts/ai-service-python.mjs`, `scripts/ai-service-python.d.mts`,
 `scripts/check-version-literals-python.mjs`,
-`scripts/check-python-interpreter.mjs` and its `.test.mjs`,
+`scripts/check-python-interpreter.mjs`,
+`scripts/check-python-interpreter.test.mjs`,
 `.github/workflows/verify-core.yml`, this file.
 
 ## Verification evidence
