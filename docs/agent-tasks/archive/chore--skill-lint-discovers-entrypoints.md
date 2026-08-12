@@ -5,10 +5,8 @@
 - Branch: chore/skill-lint-discovers-entrypoints
 - Base branch: main
 - Base commit: `9d0bd1e`
-- Current HEAD: `d19c20c`, four commits on this branch, not pushed. A fifth
-  commit carries this line, which is the only way it can name a commit a reader
-  can check out; that commit changes nothing else.
-- Status: complete, verified and committed; waits only on the owner's push
+- Landed on `main` as `e0726d5..eac9e8c`, five commits
+- Status: landed and archived
 - Last updated: 2026-08-12
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -179,5 +177,4 @@ tree, not only before it.
 
 ## Next concrete step
 
-The owner pushes with
-`git push origin chore/skill-lint-discovers-entrypoints:main`.
+None. Pushed by the owner on 2026-08-12; `origin/main` is `eac9e8c`.
