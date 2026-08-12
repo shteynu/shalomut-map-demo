@@ -10,7 +10,7 @@
     "typecheck": "prisma generate && next typegen && tsc --noEmit",
     "start": "next start",
     "lint": "eslint",
-    "lint:literals": "node --test scripts/check-version-literals.test.mjs && node scripts/check-version-literals.mjs && python3 ai-analytics-service/scripts/check_version_literals.py",
+    "lint:literals": "node --test scripts/check-version-literals.test.mjs && node scripts/check-version-literals.mjs && node scripts/check-version-literals-python.mjs",
     "openapi:generate": "node scripts/generate-openapi.mjs",
     "openapi:check": "node scripts/generate-openapi.mjs --check",
     "lint:composition": "node --test scripts/check-composition-root.test.mjs && node scripts/check-composition-root.mjs",

@@ -1,7 +1,10 @@
 import assert from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import path from 'node:path';
 import test from 'node:test';
+import {
+  aiServiceRoot,
+  requireAiServicePython,
+} from '../../../../scripts/ai-service-python.mjs';
 import { POST as mcpHandler } from '../mcp/route';
 import {
   GET as getInsightsHandler,
@@ -26,9 +29,6 @@ import type {
   SurveyDefinitionQuestion,
   SurveyResponseRecord,
 } from '@/lib/types/backend';
-
-const repositoryRoot = process.cwd();
-const aiServiceRoot = path.join(repositoryRoot, 'ai-analytics-service');
 
 type DynamicRoundFixture = {
   roundId: string;
@@ -178,11 +178,20 @@ function runPythonPipeline(analytics: unknown) {
   // this test proves is the boundary — Core's aggregates in, a Stone Map Core
   // accepts back — and without a provider the round would now correctly fail
   // before ever reaching that assertion.
-  const python = spawnSync('python3', ['-m', 'tests.stub_pipeline_cli'], {
-    cwd: aiServiceRoot,
-    input: JSON.stringify(analytics),
-    encoding: 'utf8',
-  });
+  //
+  // The interpreter is the service's own virtualenv, never a `python3` from
+  // PATH; see `scripts/ai-service-python.mjs` for why the difference is not
+  // cosmetic. Resolving it here rather than at import time keeps the missing
+  // environment reported against the tests that actually need Python.
+  const python = spawnSync(
+    requireAiServicePython('The cross-service boundary test'),
+    ['-m', 'tests.stub_pipeline_cli'],
+    {
+      cwd: aiServiceRoot,
+      input: JSON.stringify(analytics),
+      encoding: 'utf8',
+    },
+  );
   assert.strictEqual(python.status, 0, python.stderr);
   return JSON.parse(python.stdout);
 }

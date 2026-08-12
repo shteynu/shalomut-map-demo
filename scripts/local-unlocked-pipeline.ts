@@ -14,7 +14,10 @@
  * which proves everything except the provider call itself.
  */
 import { spawnSync } from "node:child_process";
-import path from "node:path";
+import {
+  aiServiceRoot,
+  requireAiServicePython,
+} from "./ai-service-python.mjs";
 import { POST as mcpHandler } from "@/app/api/mcp/route";
 import {
   InMemoryOrganizationRepository,
@@ -146,11 +149,15 @@ async function main() {
     throw new Error("The fixture came back locked; nothing to send to the model.");
   }
 
-  const python = spawnSync("python3", ["-m", "src.pipeline_cli"], {
-    cwd: path.join(process.cwd(), "ai-analytics-service"),
-    input: JSON.stringify(analytics),
-    encoding: "utf8",
-  });
+  const python = spawnSync(
+    requireAiServicePython("The local pipeline run"),
+    ["-m", "src.pipeline_cli"],
+    {
+      cwd: aiServiceRoot,
+      input: JSON.stringify(analytics),
+      encoding: "utf8",
+    },
+  );
 
   if (python.status !== 0) {
     throw new Error(`Python pipeline exited ${python.status}: ${python.stderr}`);
