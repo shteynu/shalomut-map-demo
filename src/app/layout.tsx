@@ -1,15 +1,42 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { Noto_Sans_Hebrew } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { HeaderGate } from "@/components/layout/header-gate";
 
-const notoSansHebrew = Noto_Sans_Hebrew({
-  subsets: ["hebrew", "latin"],
-  weight: ["400", "700", "800"],
+/**
+ * The typeface ships in the repository instead of being fetched while the
+ * application is built.
+ *
+ * `next/font/google` downloads the stylesheet and every `.woff2` during
+ * `next build`, which makes the build exactly as reliable as
+ * `fonts.gstatic.com`. On 2026-08-12 that was not reliable enough: a runner was
+ * handed a stylesheet still pointing at files Google had already replaced, all
+ * five returned 404, and Turbopack demoted the failed download to a warning
+ * before failing the build with `Module not found: Can't resolve
+ * '@vercel/turbopack-next/internal/font/google/font'` — a message naming
+ * neither the font nor the network. The same commit built cleanly in the
+ * job running beside it, which is how a red build became a coin toss.
+ *
+ * `fonts/README.md` records where the file came from and how to replace it.
+ * It carries every codepoint the five subset files did, so nothing about what
+ * renders changes. One file replaces five because those five exist only to
+ * split the face by `unicode-range`, and `next/font/local` has no way to say
+ * that — the cost is 59 KB fetched once and cached immutably, against 32 KB
+ * this product was fetching anyway to show Hebrew and digits together.
+ *
+ * `weight: "100 900"` is the file's own `wght` axis, so this is wider than the
+ * three static weights it replaces rather than narrower. `adjustFontFallback`
+ * names the same Arial that `globals.css` falls back to, so the swap that
+ * `display: "swap"` allows happens between two faces of similar metrics.
+ */
+const notoSansHebrew = localFont({
+  src: "./fonts/noto-sans-hebrew-variable.woff2",
+  weight: "100 900",
   variable: "--font-noto-hebrew",
   display: "swap",
   preload: false,
+  adjustFontFallback: "Arial",
 });
 
 export const metadata: Metadata = {

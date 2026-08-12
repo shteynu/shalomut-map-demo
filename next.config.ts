@@ -46,8 +46,9 @@ function contentSecurityPolicy(): string {
     // injected style tags, and the `style={{ ... }}` props the survey and map
     // components use for geometry a class cannot know in advance.
     "style-src 'self' 'unsafe-inline'",
-    // `next/font` self-hosts Noto Sans Hebrew at build time, so no font origin
-    // is needed here — if a font ever fails to load, that is the line to read.
+    // Noto Sans Hebrew is committed to the repository and served from this
+    // origin by `next/font/local`, so no font host belongs here — and if one
+    // ever seems to, `npm run lint:fonts` will have failed first.
     "font-src 'self' data:",
     "img-src 'self' data: blob:",
     `connect-src 'self'${isDevelopment ? " ws: wss:" : ""}`,
