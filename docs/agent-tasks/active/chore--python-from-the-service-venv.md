@@ -5,8 +5,10 @@
 - Branch: `chore/python-from-the-service-venv`
 - Base branch: `main`
 - Base commit: `164c9ef`
-- Current HEAD: `164c9ef` (nothing committed yet)
-- Status: implementation complete, verified, uncommitted
+- Current HEAD: `2c999fe`
+- Status: implementation complete, verified, committed on the branch; not
+  pushed. Visible to another worktree that checks out this branch; not visible
+  to another machine until it is pushed.
 - Last updated: 2026-08-12
 - Last agent/tool: Claude Opus 5 (Claude Code), worktree
   `.claude/worktrees/objective-aryabhata-af898c`
