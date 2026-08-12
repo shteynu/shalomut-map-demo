@@ -18,7 +18,8 @@
 
 Move every GitHub Action this repository uses onto a runtime GitHub still
 supports, so the deprecation annotation on every run goes away before the forced
-migration does it for us.
+migration does it for us — and leave something behind that keeps them there,
+because the annotation was visible for months before anybody read it.
 
 ## User-visible outcome
 
@@ -39,19 +40,23 @@ than doing it there.
 ## Scope
 
 - Every `uses:` in `.github/workflows/`, across all four workflows.
+- `.github/dependabot.yml`, so they do not fall behind again.
 
 ## Non-goals
 
 - Pinning actions to commit SHAs. The repository pins major tags; changing that
   convention is a separate security decision.
-- Adding Dependabot for `github-actions`. It would stop this recurring and is
-  the natural follow-up, but it is a new moving part nobody asked for.
+- Dependabot for the `npm` and `pip` ecosystems. Those pull requests change
+  what the product is built from rather than what builds it, and the npm one
+  would be a flood; a separate decision.
 - The job-level `node-version: 20`. That is the Node the project builds under,
   unrelated to the action runtime, and changing it would change what CI proves.
 
 ## Acceptance criteria
 
 - No action left on a major that targets the Node 20 runtime.
+- A Dependabot configuration that is actually valid — an unknown key makes the
+  whole file invalid and Dependabot then simply does not run.
 - Every referenced tag exists, and every input we pass is still valid in the new
   major.
 - All four workflows still parse.
@@ -80,6 +85,16 @@ None. CI configuration only.
   inputs anywhere.
 - **`codeql-action` goes to v4, not v7.** Its majors are its own; v4 is the
   current one, actively released (4.37.6, 04 Aug 2026).
+- **Dependabot monthly, grouped into one pull request.** These versions move
+  together — the Node 20 bump touched four actions at once — so one grouped
+  request means the runner floor gets checked once instead of four times.
+  Monthly rather than weekly because actions do not move fast and a quiet gate
+  is one that still gets read. `commit-message.prefix: "ci"` so a merged update
+  reads like every other CI change in the log.
+- **Only long-established Dependabot keys used.** An unrecognised key
+  invalidates the whole file and Dependabot stops silently, which is the same
+  failure mode as having no configuration — worse, because it looks configured.
+  Tempting newer options were left out rather than guessed at.
 - **Runner floor is met.** `setup-python@v6` and `upload-artifact@v6` require
   Actions Runner ≥ 2.327.1. Every job here is `runs-on: ubuntu-latest`; there
   are no self-hosted runners to update.
@@ -101,20 +116,25 @@ Twelve references across four workflows:
 - `github/codeql-action/init` and `/analyze` v3 → v4
 - `render-keepalive.yml` needed nothing — it has no `uses:` at all.
 
+And `.github/dependabot.yml`: `github-actions` only, monthly, all patterns
+grouped into a single pull request, at most two open, `ci` commit prefix.
+
 ## In progress
 
 None.
 
 ## Remaining
 
-Watch the first run of each workflow after the push. Nothing else.
+Two things to read after the push, neither of them work: the first run of each
+edited workflow, and the repository's Dependabot settings, which is where an
+invalid configuration file would be reported.
 
 ## Changed files
 
 Modified: `.github/workflows/codeql.yml`, `.github/workflows/deploy-vercel.yml`,
 `.github/workflows/verify-core.yml`.
 
-Added: this file.
+Added: `.github/dependabot.yml`, this file.
 
 ## Verification evidence
 
@@ -131,6 +151,16 @@ Added: this file.
 - `grep` confirms no `uses:` left on a Node 20 major.
 - `npm run verify:core` — exit 0, including `lint:interpreter`, which scans
   `.github/workflows/` and therefore reads the edited files.
+- `.github/dependabot.yml` parses, and every key in it was checked against the
+  documented schema — no unknown keys, which is the failure that would make
+  Dependabot ignore the file.
+- Dependabot's own pull requests will be verified rather than merged blind, and
+  the wiring for that was read rather than assumed: `deploy-vercel.yml` triggers
+  on `pull_request: branches: ["main"]`, so its `validate` job runs on them, and
+  `verify-core.yml` triggers on `push`, so the branch Dependabot pushes gets that
+  too. Neither needs a secret — the only `secrets.*` references sit in
+  `deploy-prod-manual`, which is `workflow_dispatch`-gated — so Dependabot's
+  restricted token blocks nothing.
 - `git diff --check` — exit 0.
 
 ### Failed
@@ -142,6 +172,10 @@ Added: this file.
 - The workflows themselves on a runner. Nothing local can execute a GitHub
   Action; only a push proves the new majors resolve and behave. This is the
   whole residual risk of the change.
+- Whether GitHub accepts the Dependabot file. There is no public endpoint that
+  validates one; GitHub reports configuration errors in the repository's
+  Dependabot settings after the push, and the first monthly run is the real
+  proof.
 
 ### Environment
 
@@ -163,8 +197,10 @@ None.
 
 ## Known risks
 
-- Nothing keeps these current. Without Dependabot the next deprecation arrives
-  the same way this one did: as an annotation somebody happens to read.
+- A monthly grouped pull request only helps if it gets merged. An ignored
+  Dependabot request is the same state as no Dependabot, with more noise.
+- Dependabot follows tags, so a grouped request may carry a `.0` release that is
+  hours old. Both CI gates run on it before merge, which is the mitigation.
 
 ## Approval gates
 
@@ -172,9 +208,8 @@ None. No secrets, credentials, deployment alias or database write involved.
 
 ## Questions requiring an owner decision
 
-- Add `.github/dependabot.yml` for the `github-actions` ecosystem? It would
-  replace "somebody notices an annotation" with a monthly PR. Deliberately not
-  done here — see Non-goals.
+- None outstanding. The Dependabot question this task opened was answered by
+  the owner and is implemented.
 
 ## Next concrete step
 
