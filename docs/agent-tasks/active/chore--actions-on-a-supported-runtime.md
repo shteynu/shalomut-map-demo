@@ -6,10 +6,9 @@
 - Base branch: `main`
 - Base commit: `2b88877`
 - Current HEAD: the tip of the branch.
-- Status: implemented and statically verified, not yet observed on a runner.
-  Stacked on the two unpushed documentation commits of
-  `chore/python-from-the-service-venv` (`839626c`, `b3a505c`), which this branch
-  carries. Pushing this branch lands both.
+- Status: **the action bump is on `main` at `22832cf` and green on all three
+  edited workflows.** Unpushed: `.github/dependabot.yml` and this update — two
+  commits. The earlier branch's documentation commits landed in the same push.
 - Last updated: 2026-08-12
 - Last agent/tool: Claude Opus 5 (Claude Code), worktree
   `.claude/worktrees/objective-aryabhata-af898c`
@@ -125,9 +124,9 @@ None.
 
 ## Remaining
 
-Two things to read after the push, neither of them work: the first run of each
-edited workflow, and the repository's Dependabot settings, which is where an
-invalid configuration file would be reported.
+Read the repository's Dependabot settings after the push — that is where an
+invalid configuration file is reported. The workflow half is already confirmed
+green on runners.
 
 ## Changed files
 
@@ -162,6 +161,14 @@ Added: `.github/dependabot.yml`, this file.
   `deploy-prod-manual`, which is `workflow_dispatch`-gated — so Dependabot's
   restricted token blocks nothing.
 - `git diff --check` — exit 0.
+- **All three edited workflows green on real runners** at `22832cf`, the commit
+  carrying the bump: `Core verification` (run `31582488293`, 1m54s),
+  `CodeQL Security Analysis` on `codeql-action@v4` (`31582488284`, 1m33s) and
+  `Vercel Deployment & Pipeline Checks` (`31582488268`, `Build & Validate`
+  3m45s) — the last being the one that carries seven of the twelve references.
+  **And the annotation is gone:** the run has no `ANNOTATIONS` block at all,
+  where the previous run on `2b88877` carried the Node 20 deprecation notice.
+  That is the acceptance criterion, observed rather than inferred.
 
 ### Failed
 
@@ -169,9 +176,6 @@ Added: `.github/dependabot.yml`, this file.
 
 ### Blocked or not run
 
-- The workflows themselves on a runner. Nothing local can execute a GitHub
-  Action; only a push proves the new majors resolve and behave. This is the
-  whole residual risk of the change.
 - Whether GitHub accepts the Dependabot file. There is no public endpoint that
   validates one; GitHub reports configuration errors in the repository's
   Dependabot settings after the push, and the first monthly run is the real
@@ -184,12 +188,11 @@ Added: `.github/dependabot.yml`, this file.
 
 ### Residual risk
 
-- **This edits the workflow a deployment waits on.** `deploy-vercel.yml` carries
-  seven of the twelve references, including the Playwright artifact upload,
-  which only runs on failure and is therefore the least exercised line in the
-  diff. If a bump misbehaves, it shows up as a red `validate` job on `main`
-  rather than as a bad deployment — the deploy job `needs: validate` — but the
-  first run after the push should be read rather than assumed.
+- `actions/upload-artifact@v7` is still unexercised. It runs only when the
+  browser smoke fails, so the green `validate` job did not reach it; v7's own
+  change there is an opt-in `archive` input this repository does not set.
+- Dependabot is unproven until GitHub parses the file and the first monthly
+  request appears.
 
 ## Failed approaches
 
@@ -213,11 +216,8 @@ None. No secrets, credentials, deployment alias or database write involved.
 
 ## Next concrete step
 
-Push, then read the first run of each of the three edited workflows:
-`Core verification`, `Vercel Deployment & Pipeline Checks` and
-`CodeQL Security Analysis`. Push is an owner action:
-`git push origin chore/actions-on-a-supported-runtime:main`. That push also
-lands the two documentation commits of `chore/python-from-the-service-venv`;
-after it, both this file and
-`docs/agent-tasks/active/chore--python-from-the-service-venv.md` move to
-`docs/agent-tasks/archive/`.
+Push the two remaining commits, then check the repository's Dependabot settings
+for a configuration error. Push is an owner action:
+`git push origin chore/actions-on-a-supported-runtime:main`. After it, both this
+file and `docs/agent-tasks/active/chore--python-from-the-service-venv.md` move
+to `docs/agent-tasks/archive/`.
