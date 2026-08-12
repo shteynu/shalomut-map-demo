@@ -111,7 +111,16 @@ privacy, auth, persistence, contracts или deployment.
   интерпретатор из `.venv`, а не `python3`: зависимости стоят только в venv, а
   оболочка агента не сохраняет `source .venv/bin/activate` между вызовами, так
   что `python3 -m pytest` отвечает `No module named pytest`. Если `.venv` нет,
-  создай его по `docs/local-environment.md`.
+  создай его по `docs/local-environment.md` — с extra `[dev]`, иначе pytest в
+  venv не появится.
+- То же правило для Node-вызовов проверяет `npm run lint:interpreter`, входящий
+  в `verify:core`. Интерпретатор резолвит `scripts/ai-service-python.mjs`; gate
+  падает на `python3` в позиции команды в `scripts/`, `src/`, `e2e/`,
+  `package.json` и `.github/workflows/`. Разрешён только `python3 -m venv`.
+  Правило не декоративное: `npm test` поднимает реальный Python pipeline, и до
+  2026-08-12 он брал `python3` из PATH — на macOS это 3.9, который не проходит
+  `requires-python = ">=3.11"` и роняет три cross-service теста ImportError'ом
+  из середины сервиса, а вместе с ними и весь `verify:core`.
 - `run_tests.py` — только совместимость: он делегирует в ту же команду. Не
   ссылайся на него как на отдельное evidence.
 - После contract, MCP, webhook или callback changes запускай соответствующие
