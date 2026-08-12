@@ -6,7 +6,7 @@
 - Base branch: main
 - Base commit: 42e93ce
 - Current HEAD: `23e7932`, one commit on this branch, not pushed
-- Status: complete and committed; waits only on the owner’s push
+- Status: landed on `main` and archived
 - Last updated: 2026-08-12
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -236,12 +236,13 @@ checkout or machine only after the branch is pushed.
 
 ## Questions requiring an owner decision
 
-- Should `lint:skills` also check for undeclared client entrypoints
-  (`.cursorrules`, `AGENT.md`, `.github/instructions/**`)? It would close the
-  `CLIENT_ADAPTERS` gap, at the cost of false positives on any new root
-  Markdown file.
+- ~~Should `lint:skills` also check for undeclared client entrypoints
+  (`.cursorrules`, `AGENT.md`, `.github/instructions/**`)?~~ Answered yes by the
+  owner on 2026-08-12 and implemented on branch
+  `chore/skill-lint-discovers-entrypoints`. The feared false positives did not
+  materialise: detection is shaped, not extension-wide, so an ordinary root
+  Markdown file is never picked up.
 
 ## Next concrete step
 
-The owner pushes with
-`git push origin docs/agent-skill-routing-progressive-disclosure:main`.
+None. Landed on `main` as `23e7932` and `164c9ef`.
