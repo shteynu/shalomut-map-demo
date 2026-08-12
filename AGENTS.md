@@ -46,8 +46,13 @@ so when a condition is ambiguous, open the section.
   outside `.agents/skills/`, that every `references/` file is linked from its own
   skill and every link resolves, that each skill's frontmatter name matches its
   directory, that each section is classified by the skill's reading map, and that
-  the four declared client adapters still route here. It cannot judge whether an
-  adapter's prose contradicts what it points at — that stays a review question.
+  the four declared client adapters still route here. It also sweeps the
+  repository for entrypoint files nobody declared — a root `.<client>rules`,
+  Markdown under `.<client>/rules/`, `AGENT.md`, `.github/instructions/**` and
+  the like — and fails on any that names neither `AGENTS.md` nor
+  `.agents/skills/`, because that is a second set of rules no one compared
+  against the first. It cannot judge whether an adapter's prose contradicts what
+  it points at — that stays a review question.
 
 ## Repository-wide safety gates
 

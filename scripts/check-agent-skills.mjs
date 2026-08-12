@@ -32,10 +32,12 @@ import { fileURLToPath } from 'node:url';
  *    `SKILL.md`, not a stray `references/` file, and not an empty directory
  *    named after a canonical skill, which is that fork one file from being
  *    live. Two copies both claim to be canonical and drift without a diff.
- * 6. Every declared client adapter still routes to the canonical location, so a
- *    new client entrypoint cannot quietly grow its own instructions. This one
- *    is a presence check: it cannot tell whether an adapter's prose contradicts
- *    what it points at, and `AGENTS.md` says so rather than claiming more.
+ * 6. Every client entrypoint routes to the canonical location, so a new client
+ *    cannot quietly grow its own instructions. The four declared adapters must
+ *    exist; anything else that is shaped like an entrypoint must route if it is
+ *    present. This is a presence check: it cannot tell whether an adapter's
+ *    prose contradicts what it points at, and `AGENTS.md` says so rather than
+ *    claiming more.
  */
 const SKILLS_ROOT = '.agents/skills';
 const ROUTING_FILE = 'AGENTS.md';
@@ -48,13 +50,42 @@ const FORBIDDEN_SKILL_ROOTS = [
   'skills',
 ];
 
-/** Files that route an agent to the canonical set. Each must name it. */
-const CLIENT_ADAPTERS = [
+/** Declared adapters: each must exist and must route to the canonical set. */
+const REQUIRED_ADAPTERS = [
   'CLAUDE.md',
   'GEMINI.md',
   '.github/copilot-instructions.md',
   'docs/agent-tasks/README.md',
 ];
+
+/**
+ * Entrypoints this repository has not adopted, by the fixed filename their
+ * client reads. Optional — but the moment one appears it is instructions an
+ * agent will follow, so it has to route here like the declared four.
+ */
+const KNOWN_ENTRYPOINT_FILES = [
+  'AGENT.md',
+  'CONVENTIONS.md',
+  '.junie/guidelines.md',
+  '.idx/airules.md',
+];
+
+/** Directories whose Markdown files a client loads as instructions. */
+const KNOWN_ENTRYPOINT_DIRS = ['.github/instructions', '.clinerules'];
+
+/**
+ * The shapes, for clients nobody here has heard of yet. A curated list of
+ * product names is a list that is wrong the week after it is written, so these
+ * two patterns carry the general case: a root dotfile ending in `rules`
+ * (`.cursorrules`, `.windsurfrules`), and Markdown under `.<client>/rules/`
+ * (`.cursor/rules/`, `.amazonq/rules/`, `.roo/rules/`). No ordinary project
+ * file has either shape, so the false-positive cost is close to zero and the
+ * failure it prevents — a second set of instructions nobody compared against
+ * this one — is not.
+ */
+const ROOT_RULES_FILE = /^\.[a-z0-9._-]*rules$/;
+const INSTRUCTION_EXTENSIONS = ['.md', '.mdc'];
+const NEVER_SCAN = new Set(['.git', '.agents', 'node_modules']);
 
 const FRONTMATTER = /^---\r?\n([\s\S]*?)\r?\n---/;
 const MARKDOWN_LINK = /\[[^\]]*\]\(([^)\s]+)\)/g;
@@ -216,12 +247,58 @@ export function checkRouting(routingSource, skillNames) {
   return errors;
 }
 
-export function checkAdapter(file, source) {
+export function checkAdapter(file, source, declared = true) {
   if (source.includes(SKILLS_ROOT) || source.includes(ROUTING_FILE)) return [];
   return [
     `${file}: names neither \`${ROUTING_FILE}\` nor \`${SKILLS_ROOT}\`. ` +
-      'A client entrypoint that routes nowhere grows its own instructions.',
+      (declared
+        ? 'A client entrypoint that routes nowhere grows its own instructions.'
+        : 'This repository never declared it, and a client is reading it as ' +
+          'instructions. Point it at the canonical set or delete it — a second ' +
+          'set of rules nobody compared against the first is the whole failure.'),
   ];
+}
+
+/**
+ * Everything that is shaped like a client entrypoint, declared or not.
+ *
+ * Only `<root>/.<client>/rules/` is descended into, never the whole dot
+ * directory: `.gemini/worktrees/` and `.claude/worktrees/` hold entire
+ * checkouts of this repository, and walking them would both cost seconds and
+ * report another worktree's files as this one's.
+ */
+export function discoverEntrypoints(listDir, exists) {
+  const found = new Set();
+
+  for (const file of KNOWN_ENTRYPOINT_FILES) {
+    if (exists(file)) found.add(file);
+  }
+
+  const collectFrom = (dir) => {
+    if (!exists(dir)) return;
+    for (const entry of listDir(dir)) {
+      const full = `${dir}/${entry.name}`;
+      if (entry.isDirectory) {
+        collectFrom(full);
+      } else if (INSTRUCTION_EXTENSIONS.some((ext) => entry.name.endsWith(ext))) {
+        found.add(full);
+      }
+    }
+  };
+
+  for (const dir of KNOWN_ENTRYPOINT_DIRS) collectFrom(dir);
+
+  for (const entry of listDir('.')) {
+    if (NEVER_SCAN.has(entry.name)) continue;
+    if (!entry.isDirectory && ROOT_RULES_FILE.test(entry.name)) {
+      found.add(entry.name);
+    }
+    if (entry.isDirectory && entry.name.startsWith('.')) {
+      collectFrom(`${entry.name}/rules`);
+    }
+  }
+
+  return [...found].filter((file) => !REQUIRED_ADAPTERS.includes(file)).sort();
 }
 
 function readTree(dir, files = {}) {
@@ -271,12 +348,19 @@ function main() {
     ...checkRouting(fs.readFileSync(ROUTING_FILE, 'utf-8'), skillNames),
   );
 
-  for (const adapter of CLIENT_ADAPTERS) {
+  for (const adapter of REQUIRED_ADAPTERS) {
     if (!fs.existsSync(adapter)) {
       errors.push(`${adapter}: missing. It is a declared client entrypoint.`);
       continue;
     }
     errors.push(...checkAdapter(adapter, fs.readFileSync(adapter, 'utf-8')));
+  }
+
+  const discovered = discoverEntrypoints(listEntries, (p) => fs.existsSync(p));
+  for (const entrypoint of discovered) {
+    errors.push(
+      ...checkAdapter(entrypoint, fs.readFileSync(entrypoint, 'utf-8'), false),
+    );
   }
 
   errors.push(
@@ -295,7 +379,11 @@ function main() {
   }
   console.log(
     `Agent skills check passed: ${skillNames.length} canonical skills, ` +
-      'one set for every client.',
+      `${REQUIRED_ADAPTERS.length} declared entrypoints` +
+      (discovered.length > 0
+        ? ` and ${discovered.length} discovered (${discovered.join(', ')})`
+        : '') +
+      ', one set for every client.',
   );
 }
 

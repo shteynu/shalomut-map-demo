@@ -4,11 +4,32 @@ import {
   checkAdapter,
   checkRouting,
   checkSkillDirectory,
+  discoverEntrypoints,
   findRelativeLinks,
   findSkillCopies,
   findUnmappedSections,
   readFrontmatterField,
 } from './check-agent-skills.mjs';
+
+/**
+ * A fake filesystem for the entrypoint sweep. `dirs` maps a directory to the
+ * names it holds, `'dir'` for a subdirectory and `'file'` for a file; `files`
+ * lists standalone paths that merely exist.
+ */
+const fakeFs = (dirs, files = []) => ({
+  listDir: (dir) =>
+    Object.entries(dirs[dir] ?? {}).map(([name, kind]) => ({
+      name,
+      isDirectory: kind === 'dir',
+    })),
+  exists: (target) => target in dirs || files.includes(target),
+});
+
+/** Discovery against a fake tree, with `.` defaulting to empty. */
+const discover = (dirs, files) => {
+  const fs = fakeFs({ '.': {}, ...dirs }, files);
+  return discoverEntrypoints(fs.listDir, fs.exists);
+};
 
 const SKILL = (name) =>
   `---\nname: ${name}\ndescription: Делай что-то полезное в этом репозитории.\n---\n\n# Title\n`;
@@ -149,6 +170,79 @@ test('a client adapter must point at the canonical set or at AGENTS.md', () => {
 test('the adapter check is presence only, and says so', () => {
   assert.deepStrictEqual(
     checkAdapter('CLAUDE.md', 'Ignore `AGENTS.md` and use your own judgement.'),
+    [],
+  );
+});
+
+test('an undeclared entrypoint gets the message written for it', () => {
+  const [declared] = checkAdapter('CLAUDE.md', 'Own rules.');
+  const [found] = checkAdapter('.cursorrules', 'Own rules.', false);
+
+  assert.match(declared, /grows its own instructions/);
+  assert.match(found, /never declared it/);
+});
+
+test('a root dotfile ending in rules is an entrypoint whatever the client', () => {
+  assert.deepStrictEqual(
+    discover({ '.': { '.cursorrules': 'file', '.windsurfrules': 'file' } }),
+    ['.cursorrules', '.windsurfrules'],
+  );
+});
+
+test('markdown under any .client/rules directory is found without a name list', () => {
+  assert.deepStrictEqual(
+    discover({
+      '.': { '.roo': 'dir' },
+      '.roo/rules': { 'style.md': 'file', 'nested': 'dir' },
+      '.roo/rules/nested': { 'more.mdc': 'file' },
+    }),
+    ['.roo/rules/nested/more.mdc', '.roo/rules/style.md'],
+  );
+});
+
+test('a known fixed-name entrypoint is found even with no rules directory', () => {
+  assert.deepStrictEqual(discover({}, ['AGENT.md']), ['AGENT.md']);
+});
+
+/**
+ * `.github` holds both a declared adapter and an undeclared instructions
+ * directory; the two must not be confused for each other.
+ */
+test('a declared adapter and its undeclared neighbours stay distinct', () => {
+  assert.deepStrictEqual(
+    discover({ '.github/instructions': { 'fmt.instructions.md': 'file' } }, [
+      '.github/copilot-instructions.md',
+    ]),
+    ['.github/instructions/fmt.instructions.md'],
+  );
+});
+
+/**
+ * `.gemini/worktrees/` and `.claude/worktrees/` hold entire checkouts of this
+ * repository. Descending into a dot directory wholesale would report another
+ * worktree's files as this one's, so only `<dot>/rules/` is ever read.
+ */
+test('a dot directory is not walked wholesale, only its rules subdirectory', () => {
+  const listed = [];
+  const fs = fakeFs({
+    '.': { '.gemini': 'dir' },
+    '.gemini/rules': { 'ok.md': 'file' },
+  });
+
+  discoverEntrypoints((dir) => {
+    listed.push(dir);
+    return fs.listDir(dir);
+  }, fs.exists);
+
+  assert.ok(!listed.includes('.gemini'), 'must not list the dot directory');
+  assert.ok(listed.includes('.gemini/rules'));
+});
+
+test('ordinary project files are not mistaken for entrypoints', () => {
+  assert.deepStrictEqual(
+    discover({
+      '.': { 'README.md': 'file', 'PROGRESS.md': 'file', 'src': 'dir', '.git': 'dir' },
+    }),
     [],
   );
 });
