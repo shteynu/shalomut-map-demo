@@ -29,13 +29,19 @@ import { HeaderGate } from "@/components/layout/header-gate";
  * three static weights it replaces rather than narrower. `adjustFontFallback`
  * names the same Arial that `globals.css` falls back to, so the swap that
  * `display: "swap"` allows happens between two faces of similar metrics.
+ *
+ * It is preloaded because there is now exactly one file and every screen in a
+ * Hebrew product uses it. That was not true of the five subsets it replaced:
+ * preloading those meant requesting the Cyrillic and Greek stubs on every page,
+ * for scripts this typeface has no glyphs for, so `preload: false` was the
+ * right answer to a question that no longer exists.
  */
 const notoSansHebrew = localFont({
   src: "./fonts/noto-sans-hebrew-variable.woff2",
   weight: "100 900",
   variable: "--font-noto-hebrew",
   display: "swap",
-  preload: false,
+  preload: true,
   adjustFontFallback: "Arial",
 });
 

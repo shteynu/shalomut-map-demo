@@ -6,8 +6,9 @@
 - Base branch: `main`
 - Base commit: `2bee97b`
 - Current HEAD: the documentation commit carrying this file, whose parent is
-  `2f21039`. A file cannot name its own commit hash, so read it from Git.
-- Status: implemented, verified locally, committed and not pushed
+  `2f21039` — read it from Git; a file cannot name its own hash. The first three
+  commits are on `main` as of 2026-08-12.
+- Status: landed, with the preload follow-up committed and not pushed
 - Last updated: 2026-08-12
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -47,9 +48,9 @@ coin toss teaches people to re-run red builds without reading them.
 
 ## Non-goals
 
-- Changing `preload: false`. Now that there is one always-used local file,
-  preloading it would remove the FOUT that `display: "swap"` permits — a real
-  improvement, and a behaviour change nobody asked for. Left as is.
+- Changing `preload: false` was held back from the first three commits as a
+  visible change nobody had asked for. The owner then asked for it, so it is in
+  this branch's fourth commit rather than out of scope.
 - Touching the font stack in `globals.css`. It needed no edit, which is the
   point of keeping the `--font-noto-hebrew` variable name.
 - Any other `next/font/google` caller. There were none.
@@ -164,6 +165,13 @@ worktree can consume it now that commits exist; another machine cannot.
   `notoSansHebrew, "notoSansHebrew Fallback", Arial, system-ui, sans-serif`; the
   only font resource fetched is from `localhost`. Screenshot shows Hebrew and
   the Latin `admin@shalomut.edu.il` in one face with visible weight contrast.
+- Preload, same page after the follow-up commit: the document carries
+  `<link rel="preload" as="font" type="font/woff2" crossorigin="anonymous">` for
+  the one file, and its resource entry now has `initiatorType: "link"` starting
+  at 22 ms instead of being discovered through the stylesheet. Still exactly one
+  font request, still local. `npm run build`, `npm run lint:fonts`,
+  `npm run typecheck` and `npm run lint` all exit 0; the rest of `verify:core`
+  was not re-run for a one-boolean change.
 - Negative proof: the gate run against the real pre-change `src/app/layout.tsx`
   (`git show origin/main:src/app/layout.tsx`) reports `layout.tsx:3` — the exact
   line that shipped.
@@ -213,10 +221,9 @@ touched.
 
 ## Questions requiring an owner decision
 
-Whether to set `preload: true` now that one local file is always used. It would
-remove the swap flash; it is a visible change, so it is not made here.
+None. The one that stood — whether to preload — the owner answered yes on
+2026-08-12.
 
 ## Next concrete step
 
-Commit the diff above as one change and push it:
-`git push origin fix/self-hosted-hebrew-font:main`.
+Push the preload commit: `git push origin fix/self-hosted-hebrew-font:main`.
