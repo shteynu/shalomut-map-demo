@@ -6,20 +6,48 @@ agent guidance. Do not prefer user-local or ignored copies of the same skills.
 
 ## Required skill routing
 
-- For every task that changes or reviews Shalomut product behavior, code,
-  tests, UI, methodology, API, persistence, AI integration or documentation,
-  read `.agents/skills/shalomut-map/SKILL.md` fully before substantial work.
-- When the user asks to start, continue or resume work, report project status,
-  choose next steps, save progress, close a session or prepare a handoff, read
-  `.agents/skills/shalomut-tracker/SKILL.md` fully.
-- When the user asks to verify, test, prove a fix, check readiness or review
-  evidence, or before claiming a substantive change is complete, read
-  `.agents/skills/shalomut-verification/SKILL.md` fully.
-- When multiple skills apply, use `shalomut-tracker` first to establish state,
+Match the task to a skill, open that skill, and follow the reading map in its
+own `Как читать этот скилл` section. Every skill states there which of its
+sections are always in force and which are opened only when a named condition
+holds. That map — not this file — decides how much of a skill a task needs, so
+that a client with automatic discovery and a client reading the file directly
+end up applying the same rules.
+
+- Changing or reviewing Shalomut product behavior, code, tests, UI, methodology,
+  API, persistence, AI integration or documentation →
+  `.agents/skills/shalomut-map/SKILL.md`.
+- Starting, continuing or resuming work, reporting status, choosing next steps,
+  saving progress, closing a session or preparing a handoff →
+  `.agents/skills/shalomut-tracker/SKILL.md`.
+- Verifying, testing, proving a fix, checking readiness, reviewing evidence, or
+  about to claim a substantive change is complete →
+  `.agents/skills/shalomut-verification/SKILL.md`.
+- When several match, use `shalomut-tracker` first to establish state,
   `shalomut-map` for implementation and `shalomut-verification` for evidence.
-- If the current agent does not implement automatic Agent Skills discovery,
-  open the matching `SKILL.md` files directly and follow them as repository
-  instructions.
+
+Read the always-in-force part before substantial work and open the rest when its
+condition actually holds. Loading a section is cheap and skipping a rule is not,
+so when a condition is ambiguous, open the section.
+
+### One canonical set for every agent
+
+- `.agents/skills/` is the only source of skills for this repository. It is the
+  native skills directory for some clients and a direct-read path for others;
+  both are correct, and both read the same files.
+- If the active client does not discover skills automatically, open the
+  `SKILL.md` files named above directly and follow them as repository
+  instructions. Discovery changes how a file is found, never what it says.
+- Do not create a client-local copy of a skill — `.claude/skills/`,
+  `.gemini/skills/` or otherwise. A copy is a fork that drifts silently, and
+  both copies then claim to be canonical.
+- A skill's `references/` files are part of that skill. Add them beside their
+  `SKILL.md`, never in a client-specific location.
+- `npm run lint:skills` checks what a reader cannot: that no skill copy sits
+  outside `.agents/skills/`, that every `references/` file is linked from its own
+  skill and every link resolves, that each skill's frontmatter name matches its
+  directory, that each section is classified by the skill's reading map, and that
+  the four declared client adapters still route here. It cannot judge whether an
+  adapter's prose contradicts what it points at — that stays a review question.
 
 ## Repository-wide safety gates
 

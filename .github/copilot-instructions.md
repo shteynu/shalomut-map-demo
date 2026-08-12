@@ -11,4 +11,5 @@ The canonical Agent Skills are:
   and readiness checks.
 
 Read the applicable skill before substantial work even when the active Copilot
-client does not expose automatic Agent Skills discovery.
+client does not expose automatic Agent Skills discovery. `AGENTS.md` owns the
+rule for how much of a skill to read; do not restate it here.

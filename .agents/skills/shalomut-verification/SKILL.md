@@ -5,6 +5,19 @@ description: Проверяй изменения и runtime-поведение �
 
 # Shalomut Verification
 
+## Как читать этот скилл
+
+Всегда в силе: `Назначение` — пропорциональность риску; `Preflight` — без него
+нельзя определить строки матрицы; `Матрица выбора` — обязательный минимум по
+затронутой области; `Обработка результатов` и `Формат evidence` — что считается
+пройденной проверкой и как о ней отчитаться.
+
+По условию, после того как матрица выбрала строки: `Команды проекта` — подраздел
+под каждую выбранную строку, а не весь раздел; `Browser и runtime scenarios` —
+diff меняет user-visible flow;
+[references/mutation-testing.md](references/mutation-testing.md) — сработала
+строка про mutation config или мутируемые файлы либо нужно доказать силу тестов.
+
 ## Назначение
 
 Выбирай минимальный набор проверок, который доказывает изменённое поведение, а
@@ -22,26 +35,36 @@ privacy, auth, persistence, contracts или deployment.
 5. Зафиксируй контекст evidence: local, test или deployed. `test` обозначает
    изолированную проверку, а не третье продуктовое окружение. Не
    смешивай evidence из разных environments без явного обозначения.
+6. Против deployed по умолчанию действует read-only smoke: не создавай данные,
+   не вызывай webhook и не меняй alias без разрешения, соответствующего
+   environment. Правило стоит здесь, а не среди сценариев, потому что проверка
+   callback или AI boundary тоже уходит в deployed, не будучи user-visible flow.
+7. `npm run dev` запускает runtime, но сам по себе не является evidence.
 
 ## Матрица выбора
 
 | Изменённая область | Обязательный минимум |
 | --- | --- |
-| Только Markdown, instructions или skills | Frontmatter/links, `git diff --check`, релевантная structural validation |
-| Mutation config или tests для мутируемых файлов (`src/lib/ai-contract.ts`, `src/lib/scoring-bands.ts`) | Stryker dry run; полный mutation run, если задача меняет mutation evidence или просит оценить test strength |
+| Только Markdown, instructions или skills | Frontmatter/links, `git diff --check`, релевантная structural validation; для `AGENTS.md`, клиентских адаптеров и `.agents/skills/**` — `npm run lint:skills` |
+| Мутируемые файлы (`src/lib/ai-contract.ts`, `src/lib/scoring-bands.ts`), их tests или mutation config | `npm run lint:mutation-config`, Stryker dry run; полный mutation run, если задача меняет mutation evidence или просит оценить test strength. Детали — [references/mutation-testing.md](references/mutation-testing.md) |
 | `src/components`, page TSX, CSS | Targeted tests, `npm run lint`, `npm run build`; browser smoke для user-visible flow |
 | `src/app/api`, services, hooks, utilities | Ближайшие API/unit tests, затем `npm test` и `npm run build` |
 | Repositories или server guards | Repository/API regression tests, `npm test`, `npm run lint`, `npm run build` |
 | `prisma/schema.prisma` или migrations | `npx prisma validate`, `npx prisma generate`, repository tests; status/migration только по правилам ниже |
 | Survey source, scoring или privacy | Survey-definition/math/API tests, `npm test`, respondent и locked/ready browser states |
 | `docs/openapi.yaml` или API contract | `npm run openapi:generate`, OpenAPI integrity tests, сверка route/schema changes с реальными handlers |
-| Versioned AI manifest, `contracts/capabilities.json` или AI TypeScript | Contract/registry/client/view-model tests, `npm test`, Python tests и local boundary E2E |
+| Versioned AI manifest, `contracts/capabilities.json` или AI TypeScript | `npm run lint:contract-refusals` — новая версия обязана получить suite отрицательных тестов; contract/registry/client/view-model tests, `npm test`, Python tests и local boundary E2E |
 | `ai-analytics-service` | `.venv/bin/python -m pytest` из `ai-analytics-service` — полный набор, включая contract suites |
 | Auth, secrets или authorization | Unauthorized/missing-secret/organization-isolation tests и security-focused diff review |
 | Deploy, env или runtime config | Полный local suite, deployed source/build/health/status/logs и безопасный read-only browser smoke |
 
 Если diff затрагивает несколько строк таблицы, объедини проверки и устрани
 дубликаты.
+
+Одна проверка не привязана к строке: `npm run typecheck` — обязательный минимум
+для любого изменения `.ts`/`.tsx`. `npm run build` типизирует только граф
+приложения и не видит ошибки в `__tests__`, а `npm run lint` типы не проверяет
+вообще, поэтому ни одна строка выше его не заменяет.
 
 ## Команды проекта
 
@@ -60,45 +83,16 @@ privacy, auth, persistence, contracts или deployment.
 
 ### Mutation testing
 
-- Текущий mutation scope — opt-in pilot для `src/lib/ai-contract.ts` и
-  `src/lib/scoring-bands.ts`, куда переехало правило валидатора «score и status
-  обязаны сходиться»; конфигурация находится в `stryker.config.mjs`.
-- Если продуктовое правило уезжает из мутируемого файла в новый модуль, веди
-  `mutate` за ним в том же изменении. Рефакторинг не должен молча выносить
-  правило из измерения.
-- `tap.testFiles` должен содержать каждый test-файл, предметом которого является
-  мутируемый файл, включая тесты вне `src/lib/__tests__`. Пропущенный файл не
-  занижает score честно: он показывает как survivor мутант, который реальный
-  тест убил бы. Так до 2026-08-03 правило Hebrew-only выглядело непокрытым при
-  существующем `hebrew-only-corpus.test.ts`.
-- Список больше не ведётся вручную: `npm run lint:mutation-config` выводит его
-  заново из репозитория и падает в обе стороны — на пропущенном файле и на
-  оставшемся в списке файле, который больше ничего не вызывает. Проверка входит
-  в `verify:core`, поэтому CI выполняет её на каждом pull request. Не правь
-  `tap.testFiles`, не прогнав её.
-- Новая версия контракта обязана получить suite отрицательных тестов.
-  `npm run lint:contract-refusals` группирует версии из
-  `contracts/capabilities.json` по тем capability-флагам, на которых
-  `validateStoneMapResult` выбирает валидатор камня, и падает, если какой-то
-  путь валидации не упомянут ни в одном `*-refusals.test.ts`. Версия, которая
-  идёт по уже покрытому пути, своего suite не требует: так `4.0` проходит через
-  валидатор `3.0`. Набор флагов выводится из самого `ai-contract.ts`, поэтому
-  ветвление по новому флагу тоже роняет проверку. Проверка входит в
-  `verify:core`. Она доказывает существование suite, а не его полноту: силу
-  тестов по-прежнему показывает только полный mutation run.
-- Проверяй wiring без полного прогона через
-  `npm run test:mutation:ai-contract -- --dryRunOnly`. То же самое CI выполняет
-  отдельным шагом после `npm run verify`.
-- Полный `npm run test:mutation:ai-contract` запускай, когда изменён сам
-  validator, mutation config/набор тестов либо пользователь просит доказать
-  силу тестов. Он не входит в `npm run verify` и не является blocking CI gate:
-  score двигают перенос функции между файлами и появление test-файла в списке,
-  то есть изменения, не относящиеся к силе тестов.
-- Не обещай repository-wide mutation coverage. Разделяй killed, survived,
-  no-coverage и runtime-error mutants; HTML/JSON reports под
-  `reports/mutation/` являются локальным ignored evidence.
+Правила, команды и история этого слоя вынесены в
+[references/mutation-testing.md](references/mutation-testing.md). Открывай файл,
+когда сработала строка матрицы про mutation config или мутируемые файлы, либо
+когда пользователь просит доказать силу тестов.
 
-`npm run dev` запускает runtime, но сам по себе не является evidence.
+Обе связанные проверки уже названы в матрице, потому что входят в `verify:core`
+и роняют CI: `npm run lint:mutation-config` выводит `tap.testFiles` заново из
+репозитория, а `npm run lint:contract-refusals` требует, чтобы каждый путь
+валидации камня был упомянут в каком-нибудь `*-refusals.test.ts`. Не правь
+`stryker.config.mjs` и не добавляй версию контракта, не прогнав их.
 
 ### Prisma и persistence
 
@@ -160,9 +154,7 @@ CI. Нужна база с раундом: локально это dev-база,
 верны» — остальные проверки не заменяет.
 
 Для local UI используй `playwright` или `playwright-interactive`, если они
-доступны. Для deployed environment используй read-only smoke по умолчанию. Не
-создавай данные, не вызывай webhook и не меняй alias без разрешения,
-соответствующего environment.
+доступны. Для deployed environment действует read-only правило из `Preflight`.
 
 ## Обработка результатов
 

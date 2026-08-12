@@ -5,6 +5,17 @@ description: Работай с продуктом и кодом Shalomut Map в 
 
 # Shalomut Map
 
+## Как читать этот скилл
+
+Всегда в силе: `Назначение` — что этот скилл делает и куда уходит остальное;
+`Канонические границы` — инварианты продукта, нарушение любого ломает privacy,
+контракт или таксономию; `Безопасность изменений` — approval gates и границы
+окружений.
+
+По условию: `Старт работы` — начало или возобновление реализации; `Product и UI`
+— diff трогает экраны, копию, стили, доступность или presentation-модули
+`src/lib/dashboard/*`; `Проверка` — до утверждения о готовности.
+
 ## Назначение
 
 Используй этот скилл для предметной и продуктовой реализации. Для продолжения
@@ -17,17 +28,31 @@ description: Работай с продуктом и кодом Shalomut Map в 
 определить task-файл текущей ветки, scope и `Next concrete step`.
 
 1. Определи корень репозитория через `git rev-parse --show-toplevel`.
-2. Прочитай `docs/source-of-truth.md`, `docs/README.md` и релевантный код.
-3. Загрузи дополнительный контекст по типу задачи:
+2. Начинай с task-файла ветки и релевантного кода: они точнее прозы. Открывай
+   `docs/README.md`, чтобы понять статус документа, только когда собираешься на
+   него опереться или его править, а `docs/source-of-truth.md` — когда задача
+   трогает опрос, методологию или происхождение канонических данных.
+3. Загружай по типу задачи только нужные разделы, а не документ целиком:
    - UI/UX: `PRODUCT.md` и `design.md`;
-   - runtime, API и persistence: `PROJECT_CONTEXT.md` и
-     `docs/shalomut-tracker-handoff.md`;
+   - runtime, API и persistence: разделы `PROJECT_CONTEXT.md` с устойчивым
+     архитектурным решением по затронутой границе;
+     `docs/shalomut-tracker-handoff.md` — при deployment, миграциях, смене
+     environment configuration или alias, а также когда работа зависит от
+     внешнего состояния. Условие названо классом задачи, а не «трогает ли она
+     blocker»: существует ли blocker, из diff не видно, это как раз то, что
+     документ и сообщает;
    - AI analytics: `docs/ai-contract-version-matrix.md`,
-     `contracts/capabilities.json`, релевантный versioned manifest,
-     `docs/ai-analytics-handoff.md` и `ai-analytics-service/README.md`;
+     `contracts/capabilities.json`, релевантный versioned manifest и
+     `ai-analytics-service/README.md`; `docs/ai-analytics-handoff.md` даёт
+     cross-service overview, а archived rollout details не являются current
+     state;
    - survey methodology: `src/lib/shalomut-source.ts`.
 4. Проверь существующие компоненты, тесты и patterns до добавления новых
    abstractions.
+
+Сначала найди нужный раздел по заголовкам или поиском — то же правило, что в
+`../shalomut-tracker/SKILL.md`. Читай глобальный документ целиком, только когда
+задача требует всего содержимого, например при аудите самого документа.
 
 ## Канонические границы
 
@@ -85,6 +110,10 @@ description: Работай с продуктом и кодом Shalomut Map в 
   entrypoints — route handler, загрузчик контекста server components, script или
   тест. Всё, что ниже этой границы, получает репозитории параметром; проверяет
   это `npm run lint:composition`.
+- Держи API-описание в единственном редактируемом источнике `docs/openapi.yaml`.
+  `public/openapi.json` генерируемый: ручная правка — это drift, а не изменение.
+  Правило стоит здесь, а не в `Проверка`, потому что решает, какой файл вообще
+  можно открыть на редактирование.
 
 ## Product и UI
 
@@ -119,7 +148,7 @@ description: Работай с продуктом и кодом Shalomut Map в 
 - Перед утверждением о готовности прочитай и соблюдай
   `../shalomut-verification/SKILL.md`.
 - После изменения survey source проверяй respondent и dashboard flows.
-- После изменения API правь только `docs/openapi.yaml`, затем запускай
-  `npm run openapi:generate` и коммить обновлённый `public/openapi.json`.
-  Не редактируй JSON вручную: он генерируемый.
+- После изменения API запускай `npm run openapi:generate` и коммить обновлённый
+  `public/openapi.json`. Какой из двух файлов редактируемый — в
+  `Канонические границы`.
 - Сообщай только о проверках, которые действительно были выполнены.
