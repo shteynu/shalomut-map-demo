@@ -443,6 +443,17 @@ older snapshots remain available in Git.
   server share it; none of the repository's real secrets are read. It replaces the
   manual browser walk as a regression check — not as a substitute for walking
   new screens.
+- **`.github/workflows/verify-core.yml` runs `npm run verify:core` on every
+  push, on every branch.** Until 2026-08-12 the only verification job was the
+  one inside `deploy-vercel.yml`, which triggers on `main` and on pull requests
+  to it, so a branch or an agent worktree was unverified until it landed. The
+  new job carries no Postgres service, no browsers and no seed — `verify:core`
+  needs none of them — and it installs `ai-analytics-service/.venv` with the
+  exact command `docs/local-environment.md` gives, so a green run also proves
+  the documented setup. On `main` it overlaps `deploy-vercel.yml` deliberately:
+  the two run in parallel and this one reports first. `verify:db`, `verify:ai`
+  and the browser smoke stay in the deploy workflow, which remains the gate a
+  deployment waits on.
 - **Two gates were considered and declined on 2026-08-07**, so they are not
   reopened by habit: a mutation-score threshold (the score moves for reasons
   unrelated to test strength) and a line-coverage threshold (it would have been

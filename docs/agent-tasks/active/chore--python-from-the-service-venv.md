@@ -5,7 +5,7 @@
 - Branch: `chore/python-from-the-service-venv`
 - Base branch: `main`
 - Base commit: `164c9ef`
-- Current HEAD: `1fe10d1`, plus this file’s own commit
+- Current HEAD: `9d0bd1e`, plus the CI workflow commit that follows it
 - Status: implementation complete, verified, committed on the branch; not
   pushed. Visible to another worktree that checks out this branch; not visible
   to another machine until it is pushed.
@@ -35,8 +35,18 @@ Command Line Tools), which is below the `requires-python = ">=3.11"` the service
 declares, so `ai-analytics-service/src/agents/state.py:1` raises `ImportError:
 cannot import name 'NotRequired' from 'typing'` and all three cross-service
 tests fail. Because `verify:core` chains `npm test`, the whole core gate could
-not finish locally; no workflow in `.github/workflows/` runs `npm test`, so CI
-did not catch it either.
+not finish locally.
+
+**A claim inherited from the spun-off task is false and is corrected here.** It
+said no workflow runs `npm test`. `deploy-vercel.yml` runs `npm run verify` on
+every push and pull request to `main`, and `verify` chains `verify:core` chains
+`npm test`; the earlier claim came from grepping for `npm test` literally. CI
+has been green throughout, and could not have caught this in any case: the
+runner's `python3` is 3.11 from `setup-python`, new enough for
+`typing.NotRequired`, and the stub CLI imports nothing outside the standard
+library — verified by running it under a clean 3.14 with no service
+dependencies installed, where it reaches contract validation. The trap was
+macOS-3.9-only.
 
 `scripts/verify-ai.mjs` and `scripts/local-stack.mjs` already resolved
 `.venv/bin/python`. The rule existed; the test harness and two other callers did
@@ -57,10 +67,9 @@ which recorded the failure and explicitly left it unfixed.
 
 ## Non-goals
 
-- Adding a CI workflow that runs `npm test`. Real gap, separate decision — the
-  suite now needs a Python virtualenv in the runner, which is a CI design
-  question, not a fix to this trap.
 - Anything about the deployed AI service.
+- Changing `deploy-vercel.yml`. It remains the gate a deployment waits on, and
+  the new core job runs beside it rather than carving work out of it.
 - Migrating `scripts/local-stack.mjs` onto the resolver. It spells
   `path.join(aiServiceRoot, ".venv", "bin", "python")` itself, which is correct
   and passes the gate; folding it in would be tidier and is not this task.
@@ -149,6 +158,17 @@ changes; the diff is test/tooling wiring plus documentation.
   interpreter; and the gate's own fixtures excluded by exact filename, not by a
   `*.test.mjs` pattern. It also fails if the resolver is deleted or gutted,
   which is the direction the first rule cannot see.
+- `.github/workflows/verify-core.yml` — new. `npm run verify:core` on every
+  push to any branch, plus `workflow_dispatch`, with a per-ref concurrency group
+  so only the newest push holds a runner. Node 20 and Python 3.11, matching
+  `deploy-vercel.yml` and the `python:3.11-slim` in `Dockerfile`. No Postgres
+  service, no browsers, no seed, no `DATABASE_URL` — `verify:core` needs none of
+  them. It builds the virtualenv with the exact command in
+  `docs/local-environment.md`, so a green run also proves the documented setup.
+  The overlap with `deploy-vercel.yml` on `main` is deliberate: parallel jobs,
+  and this one reports first.
+- `docs/shalomut-tracker-handoff.md` — the new workflow, what it does not carry
+  and why it overlaps the deploy job.
 - `.agents/skills/shalomut-verification/SKILL.md` — the `Python и AI boundary`
   section now names the Node-side gate beside the pytest rule it enforces, and
   the `[dev]` extra.
@@ -165,9 +185,8 @@ None.
 
 ## Remaining
 
-None in scope. One thing deliberately left, recorded under Non-goals and Known
-risks: no CI workflow runs `npm test`, so the gate that would now catch this
-class of regression only runs when somebody runs it.
+Nothing, beyond watching `verify-core.yml`'s first run on a real runner. It is
+the one piece of this branch that local rehearsal cannot finish proving.
 
 ## Changed files
 
@@ -175,11 +194,12 @@ Modified: `package.json`, `src/app/api/__tests__/ai-e2e.test.ts`,
 `scripts/verify-ai.mjs`, `scripts/local-unlocked-pipeline.ts`,
 `scripts/local-stack.mjs`, `docs/local-environment.md`,
 `.agents/skills/shalomut-verification/SKILL.md`,
-`ai-analytics-service/README.md`.
+`docs/shalomut-tracker-handoff.md`, `ai-analytics-service/README.md`.
 
 Added: `scripts/ai-service-python.mjs`, `scripts/ai-service-python.d.mts`,
 `scripts/check-version-literals-python.mjs`,
-`scripts/check-python-interpreter.mjs` and its `.test.mjs`, this file.
+`scripts/check-python-interpreter.mjs` and its `.test.mjs`,
+`.github/workflows/verify-core.yml`, this file.
 
 ## Verification evidence
 
@@ -220,6 +240,14 @@ than a machine that happened to be configured well.
   `docs/local-environment.md`. The virtualenv was restored afterwards.
 - `node --check` on all three `scripts/*.mjs` — exit 0.
 - `git diff --check` — exit 0.
+- `verify-core.yml` rehearsed locally as a job body, from a tree with the
+  virtualenv deleted and `node_modules` rebuilt: `npm ci` exit 0 (614
+  packages), then the workflow's verbatim
+  `python3 -m venv .venv && .venv/bin/python -m pip install -e ".[dev]"` exit 0,
+  then `npm run verify:core` exit 0. The YAML parses under `js-yaml` with the
+  expected name, triggers, concurrency group and six steps, and
+  `npm run lint:interpreter` — which scans `.github/workflows/` — passes on it.
+  Not the same as a runner: see Known risks.
 
 ### Failed
 
@@ -263,11 +291,17 @@ of the change was built out, rather than after.
 
 ## Known risks
 
-- `.github/workflows/` still contains only `codeql.yml`, `deploy-vercel.yml` and
-  `render-keepalive.yml`. Nothing runs `npm test` or `verify:core` on push, so
-  `lint:interpreter` catches a regression only when somebody runs it locally.
-  The gate reduces the blast radius of this trap; it does not close the CI hole
-  that let it live.
+- `verify-core.yml` has never executed on a runner. Its job body was rehearsed
+  locally step by step from a clean tree — `npm ci`, the venv command,
+  `npm run verify:core`, all exit 0 — and the YAML parses, but the GitHub
+  runner itself is unverified until the branch is pushed. Watch the first run.
+  The likeliest difference is Python: CI pins 3.11, the rehearsal used the
+  3.14 available on this machine.
+- CI would not have caught the trap this branch fixes, and the new workflow
+  would not have either. Both runners install a `python3` new enough for
+  `typing.NotRequired`. What protects against a recurrence is
+  `lint:interpreter`, which now runs in both jobs — a macOS-only failure caught
+  by a rule rather than by a machine that happens to reproduce it.
 - `lint:interpreter` reads source with regular expressions, not a parser. It
   reports command position inside string literals after blanking comments, so a
   `//` inside a string could truncate a line and hide a spawn behind it. The
@@ -281,9 +315,12 @@ database write is involved.
 
 ## Questions requiring an owner decision
 
-- Should a workflow run `npm run verify:core` on push? It would have caught this
-  on the day it appeared. It needs the Python virtualenv in the runner, so it is
-  a real, if small, CI design decision rather than an obvious yes.
+- Is the overlap on `main` worth its minutes? `verify-core.yml` and
+  `deploy-vercel.yml` both run `verify:core` there, in parallel, for a faster
+  first signal. The alternative is to make the deploy workflow's `validate` job
+  `needs:` this one and drop `verify:core` from its `npm run verify` — cleaner,
+  but it restructures the workflow a deployment waits on. Left as it is because
+  that restructuring was not asked for.
 
 ## Next concrete step
 
