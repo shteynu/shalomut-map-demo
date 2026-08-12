@@ -5,7 +5,7 @@
 - Branch: `chore/python-from-the-service-venv`
 - Base branch: `main`
 - Base commit: `164c9ef`
-- Current HEAD: `2c999fe`
+- Current HEAD: `e6c6496`
 - Status: implementation complete, verified, committed on the branch; not
   pushed. Visible to another worktree that checks out this branch; not visible
   to another machine until it is pushed.
@@ -183,6 +183,10 @@ than a machine that happened to be configured well.
 - `npm run lint:composition`, `lint:fixtures`, `lint:skills`,
   `lint:mutation-config`, `lint:contract-refusals` — all exit 0.
 - `npm run verify:ai` — 480 passed, exit 0, after `pip install -e ".[dev]"`.
+- `npm run build` — exit 0, 42 static pages.
+- **`npm run verify:core` as a single chain — exit 0.** This is the thing the
+  task existed to restore, and it now completes with `python3` resolving to
+  3.9.6.
 - Negative path, taken rather than assumed: with `.venv` renamed away,
   `npm run verify:ai` and all three cross-service tests fail with the message
   naming `ai-analytics-service/.venv/bin/python`, the creation command and
@@ -192,14 +196,16 @@ than a machine that happened to be configured well.
 
 ### Failed
 
-- `npm run build` — exit 1, and therefore `npm run verify:core` as one chain.
-  Turbopack cannot infer the workspace root inside a nested agent worktree:
-  "We couldn't find the Next.js package (next/package.json) from the project
-  directory: …/objective-aryabhata-af898c/src/app". Confirmed pre-existing and
-  environmental, not caused by this diff: `git stash push -u` and a baseline
-  build produced the identical error. This worktree has no `node_modules` of its
-  own and resolves upward to the parent checkout. Every other `verify:core` step
-  ran individually and passed.
+- None outstanding. `npm run build` failed at first with exit 1 — Turbopack
+  cannot infer the workspace root inside a nested agent worktree that has no
+  `node_modules` of its own and resolves upward: "We couldn't find the Next.js
+  package (next/package.json) from the project directory:
+  …/objective-aryabhata-af898c/src/app". That was environmental, not this diff:
+  a `git stash push -u` baseline build produced the identical error. Symlinking
+  `node_modules` did not help ("points out of the filesystem root"); a real
+  `npm install` in the worktree did, and the build and the whole `verify:core`
+  chain then passed. `next build` rewrites `next-env.d.ts` to the production
+  route types; that churn was reverted rather than committed.
 
 ### Blocked or not run
 
@@ -218,10 +224,6 @@ than a machine that happened to be configured well.
 
 ### Residual risk
 
-- `npm run build` is unverified on this branch. The diff touches no file in the
-  Next.js app graph — one `__tests__` file, four scripts, `package.json`
-  scripts and Markdown — and `npm run typecheck`, which does include
-  `__tests__`, passes. It should be re-run in the parent checkout before merge.
 - The suite now hard-requires the virtualenv. That is the intended trade — a
   clear stop beats three confusing failures — but any environment that ran
   `npm test` without one, including a future CI job, now fails until it creates
@@ -255,8 +257,7 @@ database write is involved.
 
 ## Next concrete step
 
-Commit the diff on `chore/python-from-the-service-venv`, then re-run
-`npm run build` in the parent checkout
-(`/Users/maxim.berenshtein/WebstormProjects/shalomut-map-demo`) to close the one
-gap in `verify:core` that this worktree cannot verify. Push is an owner action:
-`git push origin chore/python-from-the-service-venv:main`.
+Land the branch. Push is an owner action:
+`git push origin chore/python-from-the-service-venv:main`. Nothing else is
+outstanding — `npm run verify:core` passes end to end on this branch, and the
+open items above are decisions, not work.
