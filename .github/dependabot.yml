@@ -1,0 +1,36 @@
+# Keep the workflows' actions current without anyone having to read an
+# annotation.
+#
+# The Node 20 deprecation reached this repository as a warning printed on every
+# run for months, and was noticed only because someone happened to read a log.
+# A monthly pull request replaces that with something that arrives whether or
+# not anybody is looking.
+#
+# `github-actions` only, deliberately. The npm and pip ecosystems here would
+# produce a different kind of pull request — one that changes what the product
+# is built from rather than what builds it — and that is a separate decision.
+version: 2
+
+updates:
+  - package-ecosystem: "github-actions"
+    # For this ecosystem "/" means `.github/workflows/`, not the repository
+    # root as it does elsewhere.
+    directory: "/"
+    schedule:
+      interval: "monthly"
+
+    # One pull request for the whole set rather than five. These versions move
+    # together — the Node 20 bump touched four actions at once — and reviewing
+    # them together is how the runner floor gets checked once instead of four
+    # times.
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+    open-pull-requests-limit: 2
+
+    # Matches the repository's conventional-commit style, so a merged update
+    # reads like every other CI change in the log.
+    commit-message:
+      prefix: "ci"
