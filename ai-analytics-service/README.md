@@ -168,8 +168,12 @@ Python 3.11 or newer is required.
 cd ai-analytics-service
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install -e .
+python -m pip install -e ".[dev]"
 ```
+
+The `[dev]` extra is what puts `pytest` in the virtualenv. A plain
+`pip install -e .` runs the service but answers `No module named pytest` to
+every verification command.
 
 Export the required variables in your shell. Use
 [`./.env.example`](./.env.example) as the list of supported settings. For a
@@ -468,8 +472,12 @@ and the end-to-end graph — through the project virtualenv:
 so a green run there proved nothing about the contract suites.
 
 From the repository root, `npm run verify:ai` invokes the same virtualenv
-command. A system `python3` is not canonical evidence because it may not have
-the project's dev dependencies installed.
+command. A system `python3` is not canonical evidence, and on macOS it is not
+even an interpreter this service can load: the Command Line Tools ship 3.9,
+below the `requires-python = ">=3.11"` in `pyproject.toml`, so
+`src/agents/state.py` fails on `typing.NotRequired` before any test runs. A new
+enough system interpreter still lacks the dev dependencies, which are installed
+only into the virtualenv.
 
 Tests answer whether the service is correct. `evals/` is a separate question —
 whether the generated Hebrew is any good — and answers it with deterministic,
@@ -484,6 +492,9 @@ npm test
 ```
 
 That test passes analytics from the Next.js MCP route into
-`python3 -m src.pipeline_cli`, sends the resulting Stone Map through the
-Next.js callback route, and reads it back from persistence. The CLI is a test
-harness and does not replace the FastAPI webhook in deployment.
+`tests/stub_pipeline_cli.py`, sends the resulting Stone Map through the Next.js
+callback route, and reads it back from persistence. The CLI is a test harness
+and does not replace the FastAPI webhook in deployment. It runs under this
+service's `.venv/bin/python` too — `scripts/ai-service-python.mjs` resolves the
+interpreter for every caller on the Node side, so `npm test` needs the
+virtualenv to exist and says so plainly when it does not.

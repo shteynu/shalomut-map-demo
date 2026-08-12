@@ -245,7 +245,7 @@ async function preflight() {
   if (!existsSync(venvPython)) {
     problems.push(
       `no virtualenv at ${venvPython} — create it once: ` +
-        `cd ai-analytics-service && python3 -m venv .venv && .venv/bin/python -m pip install -e .`,
+        `cd ai-analytics-service && python3 -m venv .venv && .venv/bin/python -m pip install -e ".[dev]"`,
     );
   }
 

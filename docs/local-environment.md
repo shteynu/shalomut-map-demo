@@ -14,7 +14,7 @@ fails closed on the same misconfiguration the deployment fails on.
 
 ```bash
 npm install
-cd ai-analytics-service && python3 -m venv .venv && .venv/bin/python -m pip install -e . && cd ..
+cd ai-analytics-service && python3 -m venv .venv && .venv/bin/python -m pip install -e ".[dev]" && cd ..
 npm run local                             # brings the database up on its own
 npm run db:seed:local                     # one active round with twelve responses
 ```
@@ -132,6 +132,17 @@ alongside the AI service — but nothing in the daily loop needs that.
   screen and left every walk of the questionnaire starting with a hand-written
   status flip — the archived task files are full of them. The twelve responses
   are unchanged, so the dashboard still unlocks.
+- **The virtualenv is not optional, and `npm test` is one of the things that
+  needs it.** `src/app/api/__tests__/ai-e2e.test.ts` drives the real Python
+  pipeline, so a checkout without `ai-analytics-service/.venv` cannot run the
+  Core suite — and therefore cannot finish `npm run verify:core`, which chains
+  it. Until 2026-08-12 that test spawned a bare `python3` instead: on macOS
+  that is usually the 3.9 from the Command Line Tools, which cannot import
+  `typing.NotRequired`, so the missing environment arrived as three cross-
+  service failures with an ImportError from inside the service. Every Node-side
+  caller now resolves the interpreter through `scripts/ai-service-python.mjs`
+  and names the missing virtualenv instead. Git worktrees each need their own —
+  `.venv/` is ignored, so a new worktree starts without one.
 - **Gemini free-tier quota.** One round is roughly 33 provider calls and `429`
   arrives after a handful. A local round that ends in `deterministic_fallback`
   everywhere is usually the quota, not the code: check the AI service log for
