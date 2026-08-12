@@ -5,8 +5,8 @@
 - Branch: chore/skill-lint-discovers-entrypoints
 - Base branch: main
 - Base commit: `b4fea18`
-- Current HEAD: `b4fea18`; work is uncommitted at the time of writing
-- Status: implementation complete, verification in progress
+- Current HEAD: `9e2ca5f`, two commits on this branch, not pushed
+- Status: complete, verified and committed; waits only on the owner's push
 - Last updated: 2026-08-12
 - Last agent/tool: Claude Code (Opus 5)
 
