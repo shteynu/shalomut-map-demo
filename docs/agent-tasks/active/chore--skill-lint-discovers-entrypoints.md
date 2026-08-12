@@ -4,10 +4,10 @@
 
 - Branch: chore/skill-lint-discovers-entrypoints
 - Base branch: main
-- Base commit: `b4fea18`
-- Current HEAD: `6997ea5`, three commits on this branch, not pushed. This line
-  was written in a fourth commit, which is the only way it can name a commit a
-  reader can check out; that commit changes nothing but this line.
+- Base commit: `9d0bd1e`
+- Current HEAD: `d19c20c`, four commits on this branch, not pushed. A fifth
+  commit carries this line, which is the only way it can name a commit a reader
+  can check out; that commit changes nothing else.
 - Status: complete, verified and committed; waits only on the owner's push
 - Last updated: 2026-08-12
 - Last agent/tool: Claude Code (Opus 5)
@@ -116,7 +116,12 @@ Pre-existing unrelated modifications, left untouched and unstaged:
 `.idea/shalomut-map-demo.iml`, `next-env.d.ts`.
 
 The branch was fast-forwarded from `164c9ef` to `b4fea18` before this work was
-verified, so it carries the landed interpreter fix. No files overlapped.
+verified, so it carries the landed interpreter fix. It was then rebased onto
+`9d0bd1e` after a first push attempt was rejected: another session had landed
+`lint:interpreter` in the meantime. Both moves were conflict-free — that session
+touched `package.json` and the interpreter scripts, this one touches `AGENTS.md`
+and the skills lint. `verify:core` was re-run after the rebase, on the merged
+tree, not only before it.
 
 ## Verification evidence
 
