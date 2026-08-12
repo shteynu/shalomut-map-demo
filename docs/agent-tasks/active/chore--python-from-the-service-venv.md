@@ -5,7 +5,7 @@
 - Branch: `chore/python-from-the-service-venv`
 - Base branch: `main`
 - Base commit: `164c9ef`
-- Current HEAD: `9d0bd1e`, plus the CI workflow commit that follows it
+- Current HEAD: `aae58b3`
 - Status: implementation complete, verified, committed on the branch; not
   pushed. Visible to another worktree that checks out this branch; not visible
   to another machine until it is pushed.
