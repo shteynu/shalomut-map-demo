@@ -5,7 +5,7 @@
 - Branch: `chore/python-from-the-service-venv`
 - Base branch: `main`
 - Base commit: `164c9ef`
-- Current HEAD: `e668b76`
+- Current HEAD: `1fe10d1`, plus this file’s own commit
 - Status: implementation complete, verified, committed on the branch; not
   pushed. Visible to another worktree that checks out this branch; not visible
   to another machine until it is pushed.
@@ -51,6 +51,8 @@ which recorded the failure and explicitly left it unfixed.
   uses.
 - Four call sites moved onto it: the cross-service test, `verify-ai.mjs`, the
   `lint:literals` Python half, and `scripts/local-unlocked-pipeline.ts`.
+- A fitness gate, `npm run lint:interpreter`, so the rule survives the next
+  person who reaches for `spawnSync('python3', …)`.
 - Documentation that disagreed with the code.
 
 ## Non-goals
@@ -58,10 +60,10 @@ which recorded the failure and explicitly left it unfixed.
 - Adding a CI workflow that runs `npm test`. Real gap, separate decision — the
   suite now needs a Python virtualenv in the runner, which is a CI design
   question, not a fix to this trap.
-- A lint script that forbids new hardcoded `python3`. A grep guard would need an
-  allowlist for the venv-creation commands, which legitimately use the system
-  interpreter.
 - Anything about the deployed AI service.
+- Migrating `scripts/local-stack.mjs` onto the resolver. It spells
+  `path.join(aiServiceRoot, ".venv", "bin", "python")` itself, which is correct
+  and passes the gate; folding it in would be tidier and is not this task.
 
 ## Acceptance criteria
 
@@ -70,6 +72,9 @@ which recorded the failure and explicitly left it unfixed.
   `ai-analytics-service/.venv/bin/python` and `docs/local-environment.md`. Met.
 - No non-comment `python3` left in code or `package.json` except the two
   venv-creation commands, which must use the system interpreter. Met.
+- A gate that fails on the pre-fix tree and passes on this one, without failing
+  on prose about `python3` or on the correct `.venv/bin/python`. Met — both
+  directions run, not reasoned about.
 
 ## Relevant repository instructions
 
@@ -134,6 +139,19 @@ changes; the diff is test/tooling wiring plus documentation.
   `pip install -e ".[dev]"` in `docs/local-environment.md`,
   `ai-analytics-service/README.md`, `scripts/local-stack.mjs` and the new error
   message.
+- `scripts/check-python-interpreter.mjs` + `.test.mjs` — new, and
+  `npm run lint:interpreter` in `verify:core`. Fails on `python3` in command
+  position across `scripts/`, `src/`, `e2e/`, `package.json` and
+  `.github/workflows/`; allows `python3 -m venv`. Three rules earn their keep:
+  command position rather than any mention, so the resolver's own explanatory
+  error message does not fail the gate; a lone `'python'` only where a spawn
+  reads it as argv[0], because it is also the last path segment of the correct
+  interpreter; and the gate's own fixtures excluded by exact filename, not by a
+  `*.test.mjs` pattern. It also fails if the resolver is deleted or gutted,
+  which is the direction the first rule cannot see.
+- `.agents/skills/shalomut-verification/SKILL.md` — the `Python и AI boundary`
+  section now names the Node-side gate beside the pytest rule it enforces, and
+  the `[dev]` extra.
 - `docs/local-environment.md` — new bullet under "Things that have bitten this
   project before"; `[dev]` in the one-time setup.
 - `ai-analytics-service/README.md` — why a system `python3` cannot load this
@@ -147,19 +165,21 @@ None.
 
 ## Remaining
 
-None in scope. Two things deliberately left, both recorded under Non-goals and
-Known risks: no CI workflow runs `npm test`, and nothing mechanically prevents a
-new hardcoded `python3`.
+None in scope. One thing deliberately left, recorded under Non-goals and Known
+risks: no CI workflow runs `npm test`, so the gate that would now catch this
+class of regression only runs when somebody runs it.
 
 ## Changed files
 
 Modified: `package.json`, `src/app/api/__tests__/ai-e2e.test.ts`,
 `scripts/verify-ai.mjs`, `scripts/local-unlocked-pipeline.ts`,
 `scripts/local-stack.mjs`, `docs/local-environment.md`,
+`.agents/skills/shalomut-verification/SKILL.md`,
 `ai-analytics-service/README.md`.
 
 Added: `scripts/ai-service-python.mjs`, `scripts/ai-service-python.d.mts`,
-`scripts/check-version-literals-python.mjs`, this file.
+`scripts/check-version-literals-python.mjs`,
+`scripts/check-python-interpreter.mjs` and its `.test.mjs`, this file.
 
 ## Verification evidence
 
@@ -180,6 +200,13 @@ than a machine that happened to be configured well.
 - `npm run lint` — exit 0.
 - `npm run lint:literals` — 5 unit tests, "Architecture fitness check passed",
   Python half green through the resolver, exit 0.
+- `npm run lint:interpreter` — 14 unit tests, repository check passed, exit 0.
+  Negative proof taken, not assumed: with the three pre-fix call sites restored
+  from `164ce9f` into the worktree, the gate exits 1 and names
+  `src/app/api/__tests__/ai-e2e.test.ts:181`,
+  `scripts/local-unlocked-pipeline.ts:149` and the `lint:literals` script —
+  exactly the set this branch repaired, at the reported line numbers. The
+  worktree was restored from HEAD afterwards.
 - `npm run lint:composition`, `lint:fixtures`, `lint:skills`,
   `lint:mutation-config`, `lint:contract-refusals` — all exit 0.
 - `npm run verify:ai` — 480 passed, exit 0, after `pip install -e ".[dev]"`.
@@ -236,13 +263,16 @@ of the change was built out, rather than after.
 
 ## Known risks
 
-- Nothing mechanically stops a new `spawnSync('python3', …)`. The repository has
-  the habit of a `scripts/check-*.mjs` gate for exactly this, and one could be
-  added; it would need an allowlist for `python3 -m venv`, which is the correct
-  use of the system interpreter.
 - `.github/workflows/` still contains only `codeql.yml`, `deploy-vercel.yml` and
-  `render-keepalive.yml`. Nothing runs `npm test` on push, so this trap and its
-  successors remain local-only findings.
+  `render-keepalive.yml`. Nothing runs `npm test` or `verify:core` on push, so
+  `lint:interpreter` catches a regression only when somebody runs it locally.
+  The gate reduces the blast radius of this trap; it does not close the CI hole
+  that let it live.
+- `lint:interpreter` reads source with regular expressions, not a parser. It
+  reports command position inside string literals after blanking comments, so a
+  `//` inside a string could truncate a line and hide a spawn behind it. The
+  failure mode is a miss, never a false alarm — chosen deliberately, because a
+  fitness gate that cries wolf gets deleted.
 
 ## Approval gates
 
