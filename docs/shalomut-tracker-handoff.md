@@ -488,7 +488,10 @@ older snapshots remain available in Git.
   404ed, while the same commit built cleanly in `deploy-vercel.yml` at the same
   minute. A re-run went green in one try. Treat any future
   `@vercel/turbopack-next/internal/font/google/font` failure as a signal that
-  this was reverted, because nothing else can produce it now.
+  this was reverted, because nothing else can produce it now. On `main` as
+  `61900c6`…`790f4c9`; the deployment serves the committed file byte for byte
+  under an immutable cache, and preloads it, so a font request leaving for
+  Google would now be a regression visible in the document head.
 - **Two gates were considered and declined on 2026-08-07**, so they are not
   reopened by habit: a mutation-score threshold (the score moves for reasons
   unrelated to test strength) and a line-coverage threshold (it would have been

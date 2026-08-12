@@ -5,12 +5,12 @@
 - Branch: `fix/self-hosted-hebrew-font`
 - Base branch: `main`
 - Base commit: `2bee97b`
-- Current HEAD: the documentation commit carrying this file, whose parent is
-  `2f21039` — read it from Git; a file cannot name its own hash. The first three
-  commits are on `main` as of 2026-08-12.
-- Status: landed, with the preload follow-up committed and not pushed
+- Landed on `main` as `61900c6`…`790f4c9`, four commits across two pushes
+- Status: landed and archived. All three workflows green on `790f4c9`, and the
+  deployment serves the file this repository holds.
 - Last updated: 2026-08-12
-- Last agent/tool: Claude Code (Opus 5)
+- Last agent/tool: Claude Opus 5 (Claude Code), worktree
+  `.claude/worktrees/objective-aryabhata-af898c`
 
 ## Objective
 
@@ -129,21 +129,18 @@ Nothing in scope. Commit and push are the owner's.
 
 ## Changed files
 
-Three commits on `fix/self-hosted-hebrew-font`, fast-forwarding from `2bee97b`:
+Four commits on `fix/self-hosted-hebrew-font`, fast-forwarding from `2bee97b`:
 
 - `61900c6` — the font file, `src/app/fonts/README.md`, `src/app/layout.tsx`,
   the `next.config.ts` CSP comment.
 - `2f21039` — `scripts/check-local-fonts.mjs`, its 10 tests, `package.json`.
-- the third, tip commit — this file, `docs/shalomut-tracker-handoff.md`,
+- `8930050` — this file, `docs/shalomut-tracker-handoff.md`,
   `.agents/skills/shalomut-verification/SKILL.md`.
+- `790f4c9` — `preload: true`, after the owner answered the one open question.
 
-Nothing staged, unstaged or untracked; confirmed with `git status --short` and
-`git ls-files -o --exclude-standard`. `next-env.d.ts` was reverted rather than
-committed: `next build` rewrites its route-types path and `next dev` rewrites it
-back, so it is generated noise either way.
-
-Visibility: the branch exists only in this worktree until it is pushed. Another
-worktree can consume it now that commits exist; another machine cannot.
+`next-env.d.ts` was reverted rather than committed: `next build` rewrites its
+route-types path and `next dev` rewrites it back, so it is generated noise
+either way.
 
 ## Verification evidence
 
@@ -172,6 +169,16 @@ worktree can consume it now that commits exist; another machine cannot.
   font request, still local. `npm run build`, `npm run lint:fonts`,
   `npm run typecheck` and `npm run lint` all exit 0; the rest of `verify:core`
   was not re-run for a one-boolean change.
+- CI on `790f4c9`: `Core verification` `31586469809` (1m55s),
+  `Vercel Deployment & Pipeline Checks` `31586469812` (3m54s) and CodeQL
+  `31586469838` (1m48s) all green — the first runs of this repository's build
+  that could not have depended on Google.
+- Deployed, `shalomut-map-demo.vercel.app/login`: the document carries the
+  preload link for `noto_sans_hebrew_variable-s.p.*.woff2`, names no Google host
+  at all, and the served file is byte-identical to the committed one — SHA-256
+  `ad6faab9…f966af8`, 58 744 B, `cache-control: public,max-age=31536000,immutable`.
+  In the browser the single font request comes from the `link`, not the
+  stylesheet.
 - Negative proof: the gate run against the real pre-change `src/app/layout.tsx`
   (`git show origin/main:src/app/layout.tsx`) reports `layout.tsx:3` — the exact
   line that shipped.
@@ -226,4 +233,6 @@ None. The one that stood — whether to preload — the owner answered yes on
 
 ## Next concrete step
 
-Push the preload commit: `git push origin fix/self-hosted-hebrew-font:main`.
+None. The task is closed; the branch is on `main` and this file is archived.
+Anything further belongs to a new task — the nearest candidate is the
+`upload-artifact@v7` step under `Known risks`, which is not this task's.
