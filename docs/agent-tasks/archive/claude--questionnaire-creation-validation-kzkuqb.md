@@ -5,9 +5,11 @@
 - Branch: `claude/questionnaire-creation-validation-kzkuqb`
 - Base branch: `main`
 - Base commit: `9815e3b`
-- Current HEAD: see `git log -1` on this branch
-- Status: implementation complete, verified locally, awaiting review
-- Last updated: 2026-08-13 (round-title follow-up)
+- Current HEAD: `45e1340`, which is also `origin/main`. The branch is two
+  commits: `1d391e3` (dialogs, manual question, tooltip, save bar,
+  double-creation fix) and `45e1340` (the round's one name).
+- Status: closed — fast-forwarded into `main` on 2026-08-13 and green in CI.
+- Last updated: 2026-08-13 (closed after CI)
 - Last agent/tool: Claude Code (claude-opus-5)
 
 ## Objective
@@ -148,6 +150,16 @@ Modified: `setup-form.tsx`, `round-controls.tsx`, `survey-builder.tsx`,
 
 ### Passed
 
+- CI on `main` at `45e1340`, all three workflows green: **Core verification**
+  (`success`), **CodeQL Security Analysis** (`success`) and **Vercel Deployment
+  & Pipeline Checks** (`success`, run #345). Core verification is the one that
+  settles the gap below: it runs the whole `verify:core` with the Python
+  virtualenv its own step creates, so the three AI cross-service tests that
+  could not run in the authoring container passed there.
+  The Vercel run's `Build & Validate` job also ran the Playwright smoke against
+  a built app. Its second job, `Deploy to Production (Manual)`, was **skipped** —
+  it is gated on `workflow_dispatch` with `target_env: production`, so this
+  green proves the pipeline, not a deployment. Nothing was deployed by the push.
 - `npm run typecheck` — clean.
 - `npm run lint` — clean.
 - `npm run build` — production build succeeded.
@@ -231,6 +243,11 @@ full-modal rebuild, and no deletion.
 
 ## Next concrete step
 
-Review the diff and try the flows in the running app — in particular opening a
-round for a school that already has one, and the same two screens on a phone
-viewport, which the smoke did not cover.
+None — this task is closed and archived. Two things were deliberately left for
+whoever picks up the area next, and neither blocks anything:
+
+- The create dialogs and the sticky save bar have mobile CSS that no browser
+  has exercised; the smokes ran at 1280 wide only.
+- `Deploy to Production (Manual)` has not been run for `45e1340`, so the
+  deployed environment is still on `9815e3b`. Deploying is a manual
+  `workflow_dispatch` and was not part of this task.
