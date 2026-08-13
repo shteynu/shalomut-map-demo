@@ -1,16 +1,52 @@
 # Shalomut Tracker — operational handoff
 
-Updated: 2026-08-11, end of session. The tip of `main` is the documentation
+Updated: 2026-08-13, end of session. The tip of `main` is the documentation
 commit carrying these paragraphs — deliberately not written as a hash, because
 twice in a row a commit set that number and then became the tip itself, naming
 the commit before it. The load-bearing pointer is the other one: **the last
-commit that changed product code is `187f14e`**, the end-date wording, and
+commit that changed product code is `45e1340`**, the round's one name, and
 `git log --oneline main -- src/ next.config.ts scripts/ playwright.config.ts`
 is how to re-read it.
 
-**Session closed 2026-08-11. Nothing is waiting on a push**, and
+**Session closed 2026-08-13. Nothing is waiting on a push**, and
 `docs/agent-tasks/active/` holds only `research--scientific-evidence-layer.md`,
 which waits on owner decisions rather than on an agent.
+
+**2026-08-13 landed two commits of product code on the manager's own screens.**
+`1d391e3` turned opening a school and opening a round into dialogs that state
+what the save will do, gave the questionnaire builder a question the manager
+writes themselves, took the second-attempt button off the respondent thank-you
+screen, stopped the privacy tooltip being painted over by the panels below it,
+pinned the setup screen's save button and save state to the bottom of the
+viewport, replaced every `window.confirm` in the manager screens, and fixed a
+defect where saving a new round twice opened two rounds. `45e1340` fixed the
+second silent one: a round's name is edited on two screens, both wrote the
+round's own column, only the builder wrote the copy inside the questionnaire
+snapshot — so a rename on the setup screen was reverted by the next
+questionnaire save, with nothing on screen to say so. The mirror now runs both
+ways, as it already did for the privacy threshold.
+
+**Both were fast-forwarded into `main` at the owner's request, not merged
+through a pull request.** Verification on this tree: all three CI workflows
+green on `45e1340` — Core verification, CodeQL, and Vercel Deployment &
+Pipeline Checks (run #345). Core verification is the one that matters here,
+because it runs `verify:core` whole with a Python virtualenv its own step
+builds: the three AI cross-service tests that cannot run in a container without
+`ai-analytics-service/.venv` are green on a runner that has one. Locally:
+`npm test` 904 pass 3 fail — those same three, for the missing venv —
+`npm run typecheck`, `npm run lint` and `npm run build` clean, plus two
+Playwright smokes written for this work (19/19 and 8/8) driven against
+`next start` on a Postgres started inside the container and stopped afterwards.
+
+**Nothing about the deployed environment was established on 2026-08-13.** The
+Vercel workflow's `Deploy to Production (Manual)` job is gated on
+`workflow_dispatch` with `target_env: production` and was skipped, so Actions
+deployed nothing; Vercel's own Git integration is expected to have built the
+push regardless, as this file records below, but that was not read. The
+endpoint is not reachable from the authoring container at all — `curl` to
+`https://shalomut-map-demo.vercel.app/api/health/` fails to connect — so even
+the anonymous liveness reading of 2026-08-11 could not be repeated. Treat the
+deployed revision as unknown until someone reads it.
 
 **2026-08-11 landed six commits of product code, all of the same kind: screens
 that stopped claiming what the system does not do.** In order —
@@ -1038,8 +1074,11 @@ new branch task file.
 
 **Core was last read in the Vercel dashboard on 2026-08-10 and was `568fbcb`,
 `Ready`, Production, built in 40s** — `origin/main` at that moment. **That
-reading is now behind the repository:** 2026-08-11 pushed six product commits
-and their task-file archives, and `origin/main` has moved. Vercel builds every
+reading is now two sessions behind the repository:** 2026-08-11 pushed six
+product commits and their task-file archives, 2026-08-13 pushed two more and
+theirs, and `origin/main` has moved twice. The 2026-08-13 session could not
+even repeat the anonymous health reading: outbound requests to the deployment
+fail to connect from that container. Vercel builds every
 push to `main`, so the deployed build is expected to be the tip, but the
 deployments list was not re-read on 2026-08-11 — that needs the owner's
 signed-in Chrome, and nothing this session depended on it. Anonymously on

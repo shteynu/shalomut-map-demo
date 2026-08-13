@@ -1,14 +1,34 @@
 # Shalomut Map — product progress
 
-Updated: 2026-08-11. This file is a concise product-level milestone record, not
+Updated: 2026-08-13. This file is a concise product-level milestone record, not
 a session log. Branch evidence lives in `docs/agent-tasks/archive/`; current
 deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 
 ## Current state
 
-- `origin/main` is `187f14e` plus its archive commit. Six branches landed on
+- `origin/main` is `45e1340` plus its archive commits. Six branches landed on
   2026-08-11 and ten on 2026-08-10; the state they left is in
   `docs/shalomut-tracker-handoff.md`.
+- **Opening a school or a round is a decision the screen states, not a form to
+  survive.** Both were the same forty-field setup screen, told apart by the
+  wording of one button below the fold; each is now a dialog that says what the
+  save will do — for a round, that it opens as a draft, that a round has exactly
+  one questionnaire, and that the running round keeps collecting until the new
+  questionnaire is saved — and asks only for the fields that differ. Each field
+  it refuses says why, under that field. Editing a round stays a screen, with
+  the save button and the save state pinned to the bottom of the viewport
+  instead of forty fields down. Every irreversible action left `window.confirm`
+  for a Hebrew dialog that describes what it will do. The builder also gained
+  the one thing it could not do: a question written by the manager, rather than
+  taken from the template, the model, or a duplicate of another question.
+- **Two defects behind that confusion, both silent.** Opening a round left the
+  URL reading `round=new`, so a manager who fixed a typo and saved again opened
+  a second draft of the same quarter. And a round's name is edited on two
+  screens: both wrote the round, only the builder wrote the copy inside the
+  questionnaire snapshot, so renaming on the setup screen was posted back over
+  by the next questionnaire save — no refusal, no message, the name simply came
+  undone. The name is now mirrored in both directions, as the privacy threshold
+  already was, and both screens say it is one string.
 - **The screens stopped saying things the system does not do.** A locked round
   shows `—` and the threshold it is waiting for rather than `0` problem areas,
   so an empty round no longer reads as a perfect school. A recommendation names

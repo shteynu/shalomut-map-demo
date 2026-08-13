@@ -158,8 +158,14 @@ Modified: `setup-form.tsx`, `round-controls.tsx`, `survey-builder.tsx`,
   could not run in the authoring container passed there.
   The Vercel run's `Build & Validate` job also ran the Playwright smoke against
   a built app. Its second job, `Deploy to Production (Manual)`, was **skipped** —
-  it is gated on `workflow_dispatch` with `target_env: production`, so this
-  green proves the pipeline, not a deployment. Nothing was deployed by the push.
+  it is gated on `workflow_dispatch` with `target_env: production` — so this
+  workflow deployed nothing. That is not the same as saying the change is
+  undeployed: Vercel's own Git integration builds every push to `main`
+  independently of Actions, as the operational handoff records. Which revision
+  is actually serving was **not** established in this session — the deployment
+  is unreachable from the authoring container (`curl` to the public endpoint
+  fails to connect) and the Vercel dashboard needs the owner's signed-in
+  browser.
 - `npm run typecheck` — clean.
 - `npm run lint` — clean.
 - `npm run build` — production build succeeded.
@@ -248,6 +254,7 @@ whoever picks up the area next, and neither blocks anything:
 
 - The create dialogs and the sticky save bar have mobile CSS that no browser
   has exercised; the smokes ran at 1280 wide only.
-- `Deploy to Production (Manual)` has not been run for `45e1340`, so the
-  deployed environment is still on `9815e3b`. Deploying is a manual
-  `workflow_dispatch` and was not part of this task.
+- The deployed revision was not confirmed. Vercel is expected to have built
+  the push on its own, but nothing in this session read it, so a signed-in
+  look at the deployments list — or the owner's own walk of the new dialogs on
+  the endpoint — is what would close it.
