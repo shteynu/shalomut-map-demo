@@ -85,6 +85,13 @@ export class ManagerSetupService {
         surveyDefinition: existingRound.surveyDefinition
           ? {
               ...existingRound.surveyDefinition,
+              // A round has one name, and two screens edit it: `תקופת מדידה`
+              // here and `שם השאלון` in the builder. Both already wrote the
+              // round's own column, but this copy was left behind — so the
+              // builder went on showing the pre-rename name and its next save
+              // posted that name back over the new one. The rename was never
+              // refused; it just came undone, with nothing on screen to say so.
+              title: input.round.title,
               minimumResponses: input.round.privacyThreshold,
               // Audience is owned by this screen; the questionnaire copy just
               // mirrors it so both screens can never disagree.

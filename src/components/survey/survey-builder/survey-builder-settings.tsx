@@ -47,8 +47,12 @@ export function SurveyBuilderSettings({
 
       <div className="builder-form-grid">
         <label>
-          שם השאלון
-          <input value={title} onChange={(event) => setTitle(event.target.value)} />
+          שם הסבב והשאלון
+          <input
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+            aria-describedby="builder-title-note"
+          />
         </label>
         <label>
           קהל יעד
@@ -73,6 +77,17 @@ export function SurveyBuilderSettings({
           />
         </label>
       </div>
+
+      {/* The same string the setup screen calls `תקופת מדידה`. It used to be
+          labelled as the questionnaire's own name, which read as a second name
+          a manager could set independently — and renaming the round elsewhere
+          then looked like it had not saved. */}
+      <p id="builder-title-note" className="quiet-note">
+        זהו שם אחד: הוא מופיע כשם הסבב בבחירת הסבב ובמסך הגדרת סבב האבחון (תחת
+        {" "}
+        <strong>תקופת מדידה</strong>) וגם ככותרת שהמשיבים רואים. שינוי כאן משנה
+        אותו בכל המסכים, וניתן לשנות אותו גם משם.
+      </p>
 
       <p id="builder-audience-note" className="quiet-note">
         קהל היעד נקבע במסך הגדרת סבב האבחון ומוצג כאן לצפייה בלבד, כדי ששני

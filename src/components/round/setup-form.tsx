@@ -264,8 +264,13 @@ export function SetupForm({
             <input name="schoolType" defaultValue={organization?.schoolType ?? ""} required />
           </label>
           <label>
-            תקופת מדידה
-            <input name="title" defaultValue={round?.title ?? ""} required />
+            תקופת מדידה (שם הסבב)
+            <input
+              name="title"
+              defaultValue={round?.title ?? ""}
+              aria-describedby="setup-title-note"
+              required
+            />
           </label>
           <label>
             תאריך פתיחה
@@ -281,6 +286,15 @@ export function SetupForm({
             />
           </label>
         </div>
+        {/* The other end of the same name. It is editable in the builder too,
+            which is fine — the threshold below already is — but only once both
+            screens say it is the same string. */}
+        <p id="setup-title-note" className="quiet-note">
+          שם הסבב מופיע בבחירת הסבב, בכותרת שהמשיבים רואים ובמסך בניית השאלון
+          (תחת <strong>שם הסבב והשאלון</strong>). אפשר לשנות אותו כאן או שם —
+          זהו אותו שם.
+        </p>
+
         <p id="setup-end-date-note" className="quiet-note">
           תאריך היעד נרשם ומוצג במסך המעקב, ואינו סוגר את הסבב: הסגירה נעשית
           ידנית ממסך המעקב, כדי שאיש צוות שממלא את השאלון לא ייעצר באמצע.

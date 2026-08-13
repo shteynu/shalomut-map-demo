@@ -7,7 +7,7 @@
 - Base commit: `9815e3b`
 - Current HEAD: see `git log -1` on this branch
 - Status: implementation complete, verified locally, awaiting review
-- Last updated: 2026-08-13
+- Last updated: 2026-08-13 (round-title follow-up)
 - Last agent/tool: Claude Code (claude-opus-5)
 
 ## Objective
@@ -16,7 +16,9 @@ Four user-reported problems in the manager flows: no way to write a question by
 hand, a second-attempt button on the respondent thank-you screen, a privacy
 tooltip that could not be read where it opened, and a create/edit boundary
 between schools and rounds that nobody could tell apart — including a real
-double-creation defect when opening a round.
+double-creation defect when opening a round. A fifth followed: the round's name
+is edited on two screens and a rename on one of them was silently undone by the
+other.
 
 ## User-visible outcome
 
@@ -33,6 +35,10 @@ double-creation defect when opening a round.
 - `window.confirm` is gone from the manager screens: archive, reset, clear
   questionnaire, load template and delete question ask in Hebrew dialogs that
   say what will happen.
+- Renaming a round on the setup screen sticks. It used to leave the copy inside
+  the questionnaire snapshot behind, so the builder kept showing the old name
+  and its next save posted that name back over the new one — silently. Both
+  screens now write both halves, and both say the name is one string.
 
 ## Context
 
@@ -43,7 +49,8 @@ dialogs — think about it"), answered by the user in-session.
 ## Scope
 
 `src/components/{round,school,survey,ui}`, `src/lib/manager`,
-`src/lib/rounds/grade-labels.ts`, `src/app/globals.css`, and tests.
+`src/lib/rounds/grade-labels.ts`, `src/lib/services/manager-setup.service.ts`,
+`src/app/globals.css`, and tests.
 
 ## Non-goals
 
@@ -60,6 +67,8 @@ dialogs — think about it"), answered by the user in-session.
 - An open tooltip is not painted over by later page content.
 - Saving a new round twice edits it rather than opening two rounds.
 - Creating a school or a round states its own validation per field.
+- A round renamed on either screen keeps that name on the other one, and a
+  questionnaire save never reverts it.
 
 ## Relevant repository instructions
 
@@ -92,6 +101,13 @@ build, browser smoke; plus `npm run typecheck` for any `.ts`/`.tsx`).
 - **One `ModalDialog`.** The question editor's backdrop, focus trap, Escape
   handling and focus restore were extracted rather than copied four times;
   `QuestionEditDialog` was ported onto it.
+- **The round title stays editable on both screens**, kept in step in both
+  directions — the treatment `privacyThreshold` already had. The alternative,
+  one owner and a read-only mirror (what `audience` does), would have made the
+  version history label every version with the current name and removed an
+  editor the user did not ask to lose. The labels now name the same thing:
+  `תקופת מדידה (שם הסבב)` and `שם הסבב והשאלון`, each with a note pointing at
+  the other screen.
 - One rule is new and has no server counterpart: an end date before the start
   date is refused in the create dialogs. The API accepts it; this is UI
   guidance, not a contract change.
@@ -104,7 +120,7 @@ build, browser smoke; plus `npm run typecheck` for any `.ts`/`.tsx`).
 
 ## Completed
 
-All four reported items, plus the double-creation defect found while reading
+All five reported items, plus the double-creation defect found while reading
 the flow.
 
 ## In progress
@@ -113,9 +129,7 @@ None.
 
 ## Remaining
 
-None in scope. Worth a later look, not done here: the round title is editable
-in two places (setup screen `תקופת מדידה`, builder `שם השאלון`) and both write
-the same column, which is a second thing a manager can be surprised by.
+None.
 
 ## Changed files
 
@@ -123,11 +137,12 @@ New: `src/components/ui/{modal-dialog,confirm-dialog,field-issue}.tsx`,
 `src/components/round/new-round-dialog.tsx`,
 `src/components/school/new-school-dialog.tsx`,
 `src/lib/manager/{setup-draft,setup-request}.ts`,
-`src/lib/rounds/grade-labels.ts`, three test files.
+`src/lib/rounds/grade-labels.ts`, four test files.
 
 Modified: `setup-form.tsx`, `round-controls.tsx`, `survey-builder.tsx`,
-`survey-builder-questions.tsx`, `question-edit-dialog.tsx`, `survey-flow.tsx`,
-`globals.css`, three barrel files.
+`survey-builder-questions.tsx`, `survey-builder-settings.tsx`,
+`question-edit-dialog.tsx`, `survey-flow.tsx`,
+`manager-setup.service.ts`, `globals.css`, three barrel files.
 
 ## Verification evidence
 
@@ -136,7 +151,7 @@ Modified: `setup-form.tsx`, `round-controls.tsx`, `survey-builder.tsx`,
 - `npm run typecheck` — clean.
 - `npm run lint` — clean.
 - `npm run build` — production build succeeded.
-- `npm test` — 900/903. The three failures are the AI cross-service boundary
+- `npm test` — 904/907. The three failures are the AI cross-service boundary
   tests, which refuse to run without `ai-analytics-service/.venv`; that
   interpreter does not exist in this container and the diff touches no Python,
   contract or AI code.
@@ -145,6 +160,9 @@ Modified: `setup-form.tsx`, `round-controls.tsx`, `survey-builder.tsx`,
 - `npx tsx --test src/lib/__tests__/setup-draft.test.ts` — 9/9.
 - `npx tsx --test src/components/survey/__tests__/manual-question.test.tsx` — 6/6.
 - `npx tsx --test src/components/round/__tests__/manager-create-dialogs.test.tsx` — 10/10.
+- `npx tsx --test src/app/api/__tests__/round-title-single-value.test.ts` — 4/4.
+  Written first against the unfixed code, where two of the four failed with the
+  pre-rename title, so the test is known to catch the defect it describes.
 - Browser smoke, Chromium against `next start` on a local Postgres seeded with
   `db:seed:local`, 20/20 assertions: sticky save bar in the viewport from the
   top of the form; new-round dialog opens without navigating and states the
@@ -156,6 +174,12 @@ Modified: `setup-form.tsx`, `round-controls.tsx`, `survey-builder.tsx`,
   confirmed directly in `survey_rounds`); the open tooltip is the topmost
   element at its own bottom edge; the respondent screen has no second-attempt
   button.
+- Second browser smoke for the rename, 8/8: the setup screen states the period
+  is the round's name; a rename there reaches the builder's field, its heading
+  and the round switcher; saving the questionnaire afterwards leaves the rename
+  standing; renaming in the builder still renames the round everywhere; and the
+  respondent screen carries the same name. Run on a round opened for the
+  purpose, because the seeded round's twelve answers freeze its questionnaire.
 
 ### Failed
 
