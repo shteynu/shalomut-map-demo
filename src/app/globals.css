@@ -393,6 +393,15 @@ main:focus-visible {
   color: white;
 }
 
+/* The confirm button of a destructive dialog. `--red-strong` is the one red
+   this palette clears 4.5:1 against white with (5.1:1, noted at the top of the
+   file), and the button still carries its own verb — the colour repeats the
+   warning, it does not carry it. */
+.primary-button-danger {
+  background: var(--red-strong);
+  color: var(--on-red);
+}
+
 .secondary-button,
 .ghost-button {
   padding: 0.75rem 1rem;
@@ -442,6 +451,10 @@ main:focus-visible {
 }
 
 .metric-card {
+  /* Positioned so the `z-index` these cards are given while they hold an open
+     tooltip has something to apply to. `.stone-page .metric-card` already said
+     it; the plain card did not, and there the rule was inert. */
+  position: relative;
   display: grid;
   gap: 0.25rem;
   min-height: 8rem;
@@ -1848,7 +1861,7 @@ textarea {
 
 /* Question editor dialog. Same paper surfaces and organic radii as the rest of
    the builder, so the overlay reads as part of the product. */
-.question-dialog-backdrop {
+.modal-dialog-backdrop {
   position: fixed;
   inset: 0;
   z-index: 60;
@@ -1858,7 +1871,7 @@ textarea {
   padding: 1rem;
 }
 
-.question-dialog-panel {
+.modal-dialog-panel {
   width: min(34rem, 100%);
   max-height: min(90vh, 46rem);
   overflow-y: auto;
@@ -1869,7 +1882,12 @@ textarea {
   padding: 1.35rem;
 }
 
-.question-dialog-header {
+/* A question, not a form: narrow enough that the sentence is one thought. */
+.modal-dialog-panel-narrow {
+  width: min(27rem, 100%);
+}
+
+.modal-dialog-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1879,15 +1897,92 @@ textarea {
   margin-bottom: 0.9rem;
 }
 
-.question-dialog-header h2 {
+.modal-dialog-header h2 {
   margin: 0;
   font-size: 1.2rem;
 }
 
-.question-dialog-form {
+/* What the dialog is for, above the first field. It is the sentence the shared
+   setup screen could only carry in the wording of a button below the fold. */
+.modal-dialog-description {
+  margin: 0 0 0.9rem;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.modal-dialog-form {
   display: grid;
   gap: 0.9rem;
   margin-top: 0.9rem;
+}
+
+.modal-dialog-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 0.9rem;
+}
+
+.modal-dialog-fieldset {
+  display: grid;
+  gap: 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  padding: 0.9rem 1rem 1.1rem;
+  margin: 0;
+}
+
+.modal-dialog-fieldset legend {
+  padding-inline: 0.4rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.modal-dialog-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.6rem;
+  border-top: 1px solid var(--line);
+  padding-top: 0.9rem;
+  margin-top: 0.3rem;
+}
+
+/* The reason one field is refused, under that field. Never colour alone: the
+   sentence is the message and the icon-free text is what a screen reader gets
+   through `aria-describedby`. */
+.modal-dialog-field-issue {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--danger-ink);
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.confirm-dialog-body {
+  display: grid;
+  gap: 0.65rem;
+  line-height: 1.6;
+}
+
+.confirm-dialog-body p {
+  margin: 0;
+}
+
+.confirm-dialog-warning {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 800;
+}
+
+/* The wording about to be discarded, quoted so the answer is about a question
+   the manager can recognise rather than about "this question". */
+.confirm-dialog-quote {
+  border-inline-start: 3px solid var(--line);
+  padding-inline-start: 0.75rem;
+  color: var(--muted);
 }
 
 .question-dialog-toggles {
@@ -1934,15 +2029,6 @@ textarea {
   font-size: 0.85rem;
 }
 
-.question-dialog-footer {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 0.6rem;
-  border-top: 1px solid var(--line);
-  padding-top: 0.9rem;
-}
-
 /* Where a suggested item came from, said before the manager reads the wording:
    the label is the point of the flow, not decoration on it. */
 .question-dialog-suggestion-note {
@@ -1970,7 +2056,7 @@ textarea {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .question-dialog-panel {
+  .modal-dialog-panel {
     transition: none;
   }
 }
@@ -4743,8 +4829,34 @@ textarea {
   vertical-align: middle;
 }
 
-.custom-tooltip-wrapper:hover {
+/* The wrapper is the tooltip's stacking anchor, and the explanation is 22rem
+   of text hanging below it, over whatever the page puts next. Raising it on
+   `:hover` alone was enough for a mouse and for nothing else: opened by click
+   or by keyboard the pointer is elsewhere, the wrapper drops back to `auto`,
+   and the panels further down the page — positioned, and later in the document
+   — paint straight over the lower two thirds of the explanation. Every state
+   that shows the tooltip raises it. */
+.custom-tooltip-wrapper:hover,
+.custom-tooltip-wrapper:focus-within,
+.custom-tooltip-wrapper.is-open {
   z-index: var(--z-tooltip);
+}
+
+/* The explanation opens 135% below the trigger, and the gap between the two
+   used to be dead ground: the pointer left the wrapper on its way down, hover
+   ended, and the tooltip closed under the cursor before it could be read. The
+   bridge is that gap, made part of the wrapper. It exists only while the
+   tooltip is open, so it never sits over the page otherwise. */
+.custom-tooltip-wrapper:hover::after,
+.custom-tooltip-wrapper:focus-within::after,
+.custom-tooltip-wrapper.is-open::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  width: 4rem;
+  height: 0.75rem;
+  transform: translateX(-50%);
 }
 
 .custom-tooltip-trigger {
@@ -4761,8 +4873,13 @@ textarea {
   cursor: help;
 }
 
-/* Ensure hovered metric cards containing tooltips stack above sibling page elements */
-.metric-card:hover {
+/* Ensure metric cards containing tooltips stack above sibling page elements.
+   Same reason as the wrapper above: a stone whose tooltip is open by click or
+   by keyboard is not a stone under the pointer, so hover cannot be the only
+   condition that lifts it. */
+.metric-card:hover,
+.metric-card:focus-within,
+.metric-card:has(.custom-tooltip-wrapper.is-open) {
   z-index: var(--z-popover);
 }
 
@@ -5194,6 +5311,65 @@ label .custom-tooltip-wrapper:hover .custom-tooltip-icon {
 
 .stone-page .setup-form::before {
   content: none;
+}
+
+/* Opening a round or a school: a decision of its own, kept out of the save bar
+   so the two are never pressed for each other. */
+.setup-form-create-actions {
+  justify-content: flex-start;
+}
+
+/* The save bar.
+ *
+ * The button that keeps the manager's work used to be the last thing on a
+ * forty-field screen, with the line saying whether anything was unsaved below
+ * it again — so on any laptop the answer to "did that save?" and the way to
+ * make it save were both off-screen. Sticky to the bottom of the viewport, it
+ * is on screen for as long as the form is, and the state travels with it. */
+.setup-form-save-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: var(--z-sticky);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: var(--surface-panel-strong);
+  box-shadow: var(--shadow-raised);
+  padding: 0.85rem 1.1rem;
+  /* Behind a translucent panel the page scrolling past would otherwise read
+     straight through the bar. */
+  backdrop-filter: blur(6px);
+}
+
+.setup-form-save-bar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-inline-start: auto;
+}
+
+@media (max-width: 600px) {
+  .setup-form-save-bar {
+    /* Stacked, and the button still full width: a sticky bar that eats a third
+       of a phone screen is worse than the scroll it saves. */
+    justify-content: stretch;
+    padding: 0.75rem 0.85rem;
+  }
+
+  .setup-form-save-bar-actions {
+    width: 100%;
+    margin-inline-start: 0;
+  }
+
+  .setup-form-save-bar-actions .primary-button {
+    flex: 1;
+    justify-content: center;
+  }
 }
 
 .form-section-card {

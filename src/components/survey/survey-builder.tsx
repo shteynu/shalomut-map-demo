@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { CheckCircle2, Eye, Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { RoundSwitcher } from "@/components/round/round-switcher";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { PageIntro } from "@/components/ui/page-intro";
 import { PrivacyTooltip } from "@/components/ui/privacy-tooltip";
 import { SaveStatus, parseSavedAt } from "@/components/ui/save-status";
@@ -190,13 +191,35 @@ export function SurveyBuilder({
   );
   const [searchTerm, setSearchTerm] = useState("");
   const [editingQuestion, setEditingQuestion] = useState<BuilderQuestion | null>(null);
-  const [pendingSuggestion, setPendingSuggestion] = useState<{
+  /**
+   * A question that is being written but has not joined the questionnaire yet.
+   * It arrives either from a suggestion — which carries its source and the
+   * wording it was offered with, so the dialog can require a rewrite — or from
+   * the manager pressing "add a question", which carries neither: wording they
+   * typed themselves needs no attribution and no edit requirement.
+   */
+  const [pendingQuestion, setPendingQuestion] = useState<{
     draft: BuilderQuestion;
-    source: QuestionSuggestionSource;
-    suggestedText: string;
+    suggestion?: {
+      source: QuestionSuggestionSource;
+      suggestedText: string;
+    };
   } | null>(null);
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [suggestionNote, setSuggestionNote] = useState<string | null>(null);
+  /**
+   * The change that is waiting to be confirmed, if any. All three of these
+   * discard wording somebody wrote, and all three used to ask through
+   * `window.confirm`; `deleteQuestion` names the question it is about, so the
+   * dialog can quote it rather than asking about "this question" while the
+   * browser's own box hides the list behind it.
+   */
+  const [pendingRemoval, setPendingRemoval] = useState<
+    | { kind: "clear" }
+    | { kind: "loadTemplate" }
+    | { kind: "deleteQuestion"; draftKey: string; text: string }
+    | null
+  >(null);
 
   const enabledQuestions = questions.filter((question) => question.enabled);
   /*
@@ -293,29 +316,19 @@ export function SurveyBuilder({
   }
 
   function deleteQuestion(draftKey: string) {
-    if (typeof window !== "undefined" && !window.confirm("האם למחוק שאלה זו מהשאלון?")) {
-      return;
-    }
     markEdited();
     setQuestions((current) => current.filter((q) => q.draftKey !== draftKey));
+    setPendingRemoval(null);
   }
 
   function clearQuestionnaire() {
-    if (typeof window !== "undefined" && !window.confirm("האם למחוק את כל השאלות ולהתחיל מטיוטה ריקה?")) {
-      return;
-    }
     markEdited();
     setQuestions([]);
+    setPendingRemoval(null);
   }
 
   function loadDefaultTemplate() {
-    if (
-      questions.length > 0 &&
-      typeof window !== "undefined" &&
-      !window.confirm("טעינת התבנית תחליף את השאלות הקיימות. האם להמשיך?")
-    ) {
-      return;
-    }
+    setPendingRemoval(null);
     const defaultQuestions: BuilderQuestion[] = surveyInstrument.questions.map((q, idx) => ({
       id: q.id,
       dimensionId: q.dimensionId,
@@ -336,14 +349,41 @@ export function SurveyBuilder({
    * the questionnaire is the manager's, and a school reads it as theirs.
    */
   function openSuggestion(suggestion: QuestionSuggestion) {
-    markEdited();
     setEditingQuestion(null);
-    setPendingSuggestion({
+    setPendingQuestion({
       draft: buildSuggestedQuestion(suggestion),
-      source: suggestion.source,
-      suggestedText: suggestion.text,
+      suggestion: {
+        source: suggestion.source,
+        suggestedText: suggestion.text,
+      },
     });
     setSelectedDimensionId(suggestion.dimensionId);
+  }
+
+  /**
+   * A question the manager writes themselves. Everything the questionnaire can
+   * hold used to arrive from somewhere else — the template, the model, or a
+   * duplicate of a question already in the list — so writing one from scratch
+   * meant duplicating an unrelated question and overwriting every field of it.
+   * The draft opens in the same dialog every other question is edited in, and
+   * joins the list only when it is saved, so cancelling leaves nothing behind.
+   */
+  function addQuestionManually() {
+    setSuggestionNote(null);
+    setEditingQuestion(null);
+    setPendingQuestion({
+      draft: {
+        text: "",
+        // The tab the manager is standing in, or — on "all questions" — the
+        // dimension that is still keeping the questionnaire from going live.
+        dimensionId: targetDimensionId,
+        required: true,
+        enabled: true,
+        answerMode: "סקאלת צבעים",
+        draftKey: createDraftId("manual"),
+        id: createDraftId("custom"),
+      },
+    });
   }
 
   function suggestFromTemplate() {
@@ -390,11 +430,11 @@ export function SurveyBuilder({
     draftKey: string,
     updater: (question: BuilderQuestion) => BuilderQuestion,
   ) {
-    if (pendingSuggestion && pendingSuggestion.draft.draftKey === draftKey) {
-      const edited = updater(pendingSuggestion.draft);
+    if (pendingQuestion && pendingQuestion.draft.draftKey === draftKey) {
+      const edited = updater(pendingQuestion.draft);
       markEdited();
       setQuestions((current) => [...current, edited]);
-      setPendingSuggestion(null);
+      setPendingQuestion(null);
       return;
     }
 
@@ -667,7 +707,15 @@ export function SurveyBuilder({
             onUpdateQuestion={updateQuestion}
             onDuplicateQuestion={duplicateQuestion}
             onEditQuestion={(q) => setEditingQuestion(q)}
-            onDeleteQuestion={deleteQuestion}
+            onDeleteQuestion={(draftKey) => {
+              const question = questions.find((q) => q.draftKey === draftKey);
+              setPendingRemoval({
+                kind: "deleteQuestion",
+                draftKey,
+                text: question?.text ?? "",
+              });
+            }}
+            onAddQuestion={addQuestionManually}
             onSuggestFromTemplate={suggestFromTemplate}
             onSuggestWithAi={suggestWithAi}
             isSuggesting={isSuggesting}
@@ -677,8 +725,14 @@ export function SurveyBuilder({
                 (dimension) => dimension.id === targetDimensionId,
               )?.conceptLabel ?? targetDimensionId
             }
-            onClearQuestionnaire={clearQuestionnaire}
-            onLoadTemplate={loadDefaultTemplate}
+            onClearQuestionnaire={() => setPendingRemoval({ kind: "clear" })}
+            /* An empty draft has nothing to overwrite, so it is loaded straight
+               away; anything else replaces work and is asked about first. */
+            onLoadTemplate={() =>
+              questions.length === 0
+                ? loadDefaultTemplate()
+                : setPendingRemoval({ kind: "loadTemplate" })
+            }
             isFrozen={isFrozen}
           />
         </div>
@@ -707,26 +761,67 @@ export function SurveyBuilder({
       </div>
 
       <QuestionEditDialog
-        isOpen={Boolean(editingQuestion ?? pendingSuggestion)}
-        question={editingQuestion ?? pendingSuggestion?.draft ?? null}
+        isOpen={Boolean(editingQuestion ?? pendingQuestion)}
+        question={editingQuestion ?? pendingQuestion?.draft ?? null}
         questionIndex={
           editingQuestion
             ? questions.findIndex((q) => q.draftKey === editingQuestion.draftKey) + 1
             : 0
         }
+        isNew={Boolean(pendingQuestion) && !editingQuestion}
         suggestion={
-          pendingSuggestion && !editingQuestion
-            ? {
-                source: pendingSuggestion.source,
-                suggestedText: pendingSuggestion.suggestedText,
-              }
+          pendingQuestion && !editingQuestion
+            ? pendingQuestion.suggestion
             : undefined
         }
         onClose={() => {
           setEditingQuestion(null);
-          setPendingSuggestion(null);
+          setPendingQuestion(null);
         }}
         onSave={commitFromDialog}
+      />
+
+      <ConfirmDialog
+        isOpen={pendingRemoval?.kind === "deleteQuestion"}
+        title="מחיקת שאלה מהשאלון"
+        body={
+          <>
+            <p>השאלה תוסר מהטיוטה. אפשר גם להסתיר אותה במקום למחוק — שאלה מוסתרת נשמרת בשאלון ואינה נשלחת למשיבים.</p>
+            {pendingRemoval?.kind === "deleteQuestion" && pendingRemoval.text ? (
+              <p className="confirm-dialog-quote">
+                {`"${pendingRemoval.text}"`}
+              </p>
+            ) : null}
+          </>
+        }
+        confirmLabel="מחיקת השאלה"
+        isDestructive
+        onConfirm={() => {
+          if (pendingRemoval?.kind === "deleteQuestion") {
+            deleteQuestion(pendingRemoval.draftKey);
+          }
+        }}
+        onCancel={() => setPendingRemoval(null)}
+      />
+
+      <ConfirmDialog
+        isOpen={pendingRemoval?.kind === "clear"}
+        title="ניקוי השאלון"
+        body={`כל ${questions.length} השאלות יוסרו והשאלון יחזור לטיוטה ריקה. השאלון שנשמר אחרון נשאר בהיסטוריית הגרסאות, וניתן לטעון אותו משם.`}
+        confirmLabel="מחיקת כל השאלות"
+        isDestructive
+        onConfirm={clearQuestionnaire}
+        onCancel={() => setPendingRemoval(null)}
+      />
+
+      <ConfirmDialog
+        isOpen={pendingRemoval?.kind === "loadTemplate"}
+        title="טעינת תבנית השאלון"
+        body={`תבנית ${surveyInstrument.questions.length} השאלות תחליף את ${questions.length} השאלות שבטיוטה, כולל ניסוחים שנערכו. השאלון שנשמר אחרון נשאר בהיסטוריית הגרסאות.`}
+        confirmLabel="טעינת התבנית"
+        isDestructive
+        onConfirm={loadDefaultTemplate}
+        onCancel={() => setPendingRemoval(null)}
       />
     </div>
   );

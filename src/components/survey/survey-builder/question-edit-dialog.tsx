@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Check, Eye, Sparkles, X } from "lucide-react";
+import { useRef, useState } from "react";
+import { Check, Eye, Sparkles } from "lucide-react";
+import { ModalDialog } from "@/components/ui/modal-dialog";
 import { dimensionPresentations } from "@/lib/dashboard/dimension-presentation";
 import type { QuestionSuggestionSource } from "./question-suggestions";
 import type { BuilderQuestion } from "./types";
@@ -12,6 +13,14 @@ type QuestionEditDialogProps = {
   questionIndex: number;
   onClose: () => void;
   onSave: (draftKey: string, updater: (q: BuilderQuestion) => BuilderQuestion) => void;
+  /**
+   * Set when the dialog holds a question that is not in the questionnaire yet,
+   * so the heading and the submit button say "adding" rather than "editing".
+   * A suggestion is one such draft; a question the manager writes from scratch
+   * is the other, and it carries no source label and no edit requirement,
+   * because its wording is already theirs.
+   */
+  isNew?: boolean;
   /**
    * Set when the dialog holds a suggested item that has not joined the
    * questionnaire yet. The text it arrived with is kept so the dialog can
@@ -36,6 +45,7 @@ export function QuestionEditDialog({
   questionIndex,
   onClose,
   onSave,
+  isNew = false,
   suggestion,
 }: QuestionEditDialogProps) {
   const [prevQuestionKey, setPrevQuestionKey] = useState<string | null>(null);
@@ -60,67 +70,10 @@ export function QuestionEditDialog({
     }
   }
 
+  // The wording is what this dialog is for, so it takes focus rather than the
+  // first field in document order. The overlay, the focus trap, Escape and the
+  // focus restore all live in `ModalDialog`.
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const previousActiveElement = useRef<HTMLElement | null>(null);
-  const dialogRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!isOpen) return;
-
-    previousActiveElement.current = document.activeElement as HTMLElement | null;
-
-    const timer = setTimeout(() => {
-      textareaRef.current?.focus();
-    }, 50);
-
-    const focusableSelector = [
-      "a[href]",
-      "button:not([disabled])",
-      "input:not([disabled])",
-      "select:not([disabled])",
-      "textarea:not([disabled])",
-      '[tabindex]:not([tabindex="-1"])',
-    ].join(",");
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        onClose();
-        return;
-      }
-
-      if (event.key !== "Tab") return;
-
-      // Keyboard focus stays inside the dialog while it is open, so Tab cannot
-      // walk into the page behind the overlay.
-      const focusable = Array.from(
-        dialogRef.current?.querySelectorAll<HTMLElement>(focusableSelector) ?? [],
-      ).filter((element) => element.offsetParent !== null);
-
-      if (focusable.length === 0) return;
-
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      const active = document.activeElement;
-
-      if (event.shiftKey && (active === first || !dialogRef.current?.contains(active))) {
-        event.preventDefault();
-        last.focus();
-        return;
-      }
-
-      if (!event.shiftKey && active === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener("keydown", handleKeyDown);
-      previousActiveElement.current?.focus();
-    };
-  }, [isOpen, onClose]);
 
   if (!isOpen || !question) return null;
 
@@ -162,33 +115,19 @@ export function QuestionEditDialog({
   const selectedDimension = dimensionPresentations.find((d) => d.id === dimensionId);
 
   return (
-    <div
-      className="question-dialog-backdrop"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="edit-dialog-title"
-      ref={dialogRef}
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
+    <ModalDialog
+      isOpen={isOpen}
+      title={
+        suggestion
+          ? "עריכת הצעה לשאלה"
+          : isNew
+            ? "הוספת שאלה חדשה"
+            : `עריכת שאלה ${questionIndex > 0 ? questionIndex : "(ללא מספר)"}`
+      }
+      onClose={onClose}
+      initialFocusRef={textareaRef}
     >
-      <div className="question-dialog-panel" dir="rtl">
-        <div className="question-dialog-header">
-          <h2 id="edit-dialog-title">
-            {suggestion
-              ? "עריכת הצעה לשאלה"
-              : `עריכת שאלה ${questionIndex > 0 ? questionIndex : "(ללא מספר)"}`}
-          </h2>
-          <button
-            type="button"
-            className="icon-button"
-            onClick={onClose}
-            aria-label="סגירה"
-          >
-            <X size={20} aria-hidden="true" />
-          </button>
-        </div>
-
+      <>
         {suggestion ? (
           <p className="question-dialog-suggestion-note" role="status">
             <Sparkles size={16} aria-hidden="true" />
@@ -206,7 +145,7 @@ export function QuestionEditDialog({
           </p>
         ) : null}
 
-        <form onSubmit={handleSubmit} className="question-dialog-form">
+        <form onSubmit={handleSubmit} className="modal-dialog-form">
           <label>
             נוסח השאלה המדויק
             <textarea
@@ -297,7 +236,7 @@ export function QuestionEditDialog({
             ) : null}
           </div>
 
-          <div className="question-dialog-footer">
+          <div className="modal-dialog-footer">
             {isUneditedSuggestion ? (
               <p
                 className="quiet-note question-dialog-edit-required"
@@ -320,11 +259,11 @@ export function QuestionEditDialog({
               }
             >
               <Check size={16} aria-hidden="true" />
-              {suggestion ? "הוספה לשאלון" : "שמירה"}
+              {suggestion || isNew ? "הוספה לשאלון" : "שמירה"}
             </button>
           </div>
         </form>
-      </div>
-    </div>
+      </>
+    </ModalDialog>
   );
 }

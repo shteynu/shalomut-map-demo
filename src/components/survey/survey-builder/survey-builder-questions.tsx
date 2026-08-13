@@ -1,4 +1,4 @@
-import { Keyboard, Loader2, Lock, Plus, RotateCcw, Search, Sparkles, Trash2 } from "lucide-react";
+import { BookMarked, Keyboard, Loader2, Lock, Plus, RotateCcw, Search, Sparkles, Trash2 } from "lucide-react";
 import { Fragment } from "react";
 import type { RefObject } from "react";
 import { dimensionPresentations } from "@/lib/dashboard/dimension-presentation";
@@ -74,6 +74,8 @@ type QuestionsPanelProps = {
   onDuplicateQuestion: (id: string) => void;
   onEditQuestion?: (question: BuilderQuestion) => void;
   onDeleteQuestion?: (id: string) => void;
+  /** Open an empty question in the edit dialog. */
+  onAddQuestion?: () => void;
   onSuggestFromTemplate: () => void;
   onSuggestWithAi: () => void;
   isSuggesting?: boolean;
@@ -98,6 +100,7 @@ export function SurveyBuilderQuestions({
   onDuplicateQuestion,
   onEditQuestion,
   onDeleteQuestion,
+  onAddQuestion,
   onSuggestFromTemplate,
   onSuggestWithAi,
   isSuggesting = false,
@@ -128,6 +131,21 @@ export function SurveyBuilderQuestions({
           <h2>שאלות לעריכה</h2>
         </div>
         <div className="survey-builder-heading-actions">
+          {/* First, and the only filled button in this row: writing a question
+              is what this panel is for, and every other button here offers
+              somebody else's wording. */}
+          {onAddQuestion ? (
+            <button
+              className="primary-button"
+              type="button"
+              onClick={onAddQuestion}
+              disabled={isFrozen}
+              title="כתיבת שאלה חדשה בניסוח שלכם"
+            >
+              <Plus size={18} aria-hidden="true" />
+              הוספת שאלה
+            </button>
+          ) : null}
           {onLoadTemplate ? (
             <button
               className="secondary-button"
@@ -159,7 +177,7 @@ export function SurveyBuilderQuestions({
             disabled={isFrozen}
             title={`היגד מתבנית השאלון המקורית ב${suggestionDimensionLabel}`}
           >
-            <Plus size={18} aria-hidden="true" />
+            <BookMarked size={18} aria-hidden="true" />
             הצעה מהתבנית
           </button>
           {/* Secondary on purpose: the page's primary action is saving the
@@ -317,11 +335,24 @@ export function SurveyBuilderQuestions({
           <p className="quiet-note">
             ניתן להוסיף שאלה חדשה, להשתמש בשאלה ממאגר הדוגמאות, או לטעון את התבנית המלאה.
           </p>
+          {/* The sentence above named three ways out and the panel offered one
+              of them. Writing a question is the first one it names. */}
+          {onAddQuestion ? (
+            <button
+              type="button"
+              onClick={onAddQuestion}
+              className="primary-button"
+              disabled={isFrozen}
+            >
+              <Plus size={16} aria-hidden="true" />
+              הוספת שאלה חדשה
+            </button>
+          ) : null}
           {onLoadTemplate ? (
             <button
               type="button"
               onClick={onLoadTemplate}
-              className="primary-button"
+              className="secondary-button"
               disabled={isFrozen}
             >
               <RotateCcw size={16} aria-hidden="true" />

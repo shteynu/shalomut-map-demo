@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { Building2, CalendarPlus, Check, ChevronLeft, ClipboardPen, Lightbulb, Loader2, ShieldCheck, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { type FormEvent, useId, useState } from "react";
+import { type FormEvent, type MouseEvent, useId, useState } from "react";
+import { NewRoundDialog } from "@/components/round/new-round-dialog";
+import { NewSchoolDialog } from "@/components/school/new-school-dialog";
 import {
   StaffFloorWarning,
   staffFloorWarningText,
@@ -19,6 +21,7 @@ import {
   schoolSetupRoute,
   surveyBuilderRoute,
 } from "@/lib/navigation";
+import { GRADE_LABELS } from "@/lib/rounds/grade-labels";
 import {
   DEFAULT_PRIVACY_THRESHOLD,
   MINIMUM_PRIVACY_THRESHOLD,
@@ -63,7 +66,23 @@ type SetupFormProps = {
   } | null;
 };
 
-const gradeLabels = ["א", "ב", "ג", "ד", "ה", "ו", "ז", "ח", "ט", "י", "יא", "יב"];
+const gradeLabels = GRADE_LABELS;
+
+/**
+ * A link that opens a dialog when it can, and navigates when it cannot.
+ *
+ * Creating a school or a round is a dialog now, but the screens behind those
+ * URLs still work and are still the way through without JavaScript — and a
+ * modifier-click is a request for a new tab, not for a dialog in this one.
+ */
+function openInDialog(
+  event: MouseEvent<HTMLAnchorElement>,
+  open: () => void,
+) {
+  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+  event.preventDefault();
+  open();
+}
 
 export function SetupForm({
   isNewRound = false,
@@ -85,6 +104,13 @@ export function SetupForm({
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [savedRoundId, setSavedRoundId] = useState<string | null>(null);
+  // Set once this screen has actually opened the school it is filling in, for
+  // the same reason as `savedRoundId` below: the navigation away happens after
+  // the response, so a second submit in the meantime must edit the school that
+  // now exists rather than open another one under the same name.
+  const [savedOrganizationId, setSavedOrganizationId] = useState<string | null>(
+    null,
+  );
   const [minimumResponses, setMinimumResponses] = useState(
     round?.privacyThreshold ?? DEFAULT_PRIVACY_THRESHOLD,
   );
@@ -94,6 +120,8 @@ export function SetupForm({
   const [totalStaffCount, setTotalStaffCount] = useState(
     organization?.totalStaffCount ? String(organization.totalStaffCount) : "",
   );
+  const [isNewRoundDialogOpen, setNewRoundDialogOpen] = useState(false);
+  const [isNewSchoolDialogOpen, setNewSchoolDialogOpen] = useState(false);
   const staffFloorWarningId = useId();
   const staffFloorWarning = staffFloorWarningText(
     Number(totalStaffCount),
@@ -133,9 +161,11 @@ export function SetupForm({
         // already in, which is what saves an edit of the current school. The
         // intent has to be said out loud, or opening a second school would
         // overwrite the first one.
-        createOrganization: isNewSchool,
+        createOrganization: isNewSchool && !savedOrganizationId,
         organization: {
-          id: isNewSchool ? undefined : organization?.id,
+          id: isNewSchool
+            ? (savedOrganizationId ?? undefined)
+            : organization?.id,
           name: formData.get("organizationName"),
           city: formData.get("city"),
           schoolType: formData.get("schoolType"),
@@ -143,8 +173,12 @@ export function SetupForm({
         },
         round: {
           // No id is what tells the server this is a new round rather than an
-          // edit of the running one.
-          id: isNewRound ? undefined : round?.id,
+          // edit of the running one — and once this screen has opened one, the
+          // id it came back with is what keeps the next save an edit of it. The
+          // URL still reads `round=new` after the round exists, so without this
+          // a manager who fixed a typo and pressed save again opened a second
+          // round, and the school ended up with two drafts of the same quarter.
+          id: isNewRound ? (savedRoundId ?? undefined) : round?.id,
           title: formData.get("title"),
           startDate: formData.get("startDate"),
           endDate: formData.get("endDate"),
@@ -182,6 +216,7 @@ export function SetupForm({
     } | null;
 
     setSavedRoundId(payload?.round?.id ?? null);
+    setSavedOrganizationId(payload?.organization?.id ?? null);
     setSavedAt(parseSavedAt(payload?.savedAt));
     setHasUnsavedChanges(false);
     setSaved(true);
@@ -201,6 +236,7 @@ export function SetupForm({
   }
 
   return (
+    <>
     <form
       className="form-panel setup-form"
       onSubmit={handleSubmit}
@@ -413,47 +449,81 @@ export function SetupForm({
         </p>
       </aside>
 
-      <div className="form-actions">
-        <button className="primary-button" type="submit" disabled={saving}>
-          {saving ? (
-            <Loader2 size={18} className="animate-spin" aria-hidden="true" />
-          ) : (
-            <Check size={18} aria-hidden="true" />
-          )}
-          {saving
-            ? "שומר..."
-            : isNewSchool
-              ? "שמירת בית הספר החדש"
-              : isNewRound
-                ? "פתיחת הסבב החדש"
-                : "שמירת סבב אבחון"}
-        </button>
-        {saved ? (
-          <Link className="secondary-button" href={builderHref}>
-            {distributeSurveyAction.label}
-            <ChevronLeft size={18} aria-hidden="true" />
-          </Link>
-        ) : null}
-        {!isNewRound && canOpenNewRound && !saved ? (
-          <Link className="secondary-button" href={newRoundSetupRoute()}>
-            <CalendarPlus size={18} aria-hidden="true" />
-            פתיחת סבב חדש
-          </Link>
-        ) : null}
-        {/*
-          Adding a school is offered here rather than in the switcher: with one
-          school there is no switcher to offer it from, and that is exactly when
-          a second school is added for the first time.
-        */}
-        {!isNewSchool && canOpenNewSchool && !saved ? (
-          <Link className="secondary-button" href={newSchoolSetupRoute()}>
-            <Building2 size={18} aria-hidden="true" />
-            הוספת בית ספר
-          </Link>
-        ) : null}
-      </div>
+      {/*
+        Opening a school or a round is a separate decision from saving this one,
+        so it sits in its own row and never in the save bar. Each is a link to
+        the screen that still does the job without JavaScript, upgraded to a
+        dialog when there is any: the dialog asks for the four or five fields
+        that actually differ and says what the save will do, which the shared
+        forty-field screen could only do in the wording of one button.
+      */}
+      {!saved && (canOpenNewRound || canOpenNewSchool) ? (
+        <div className="form-actions setup-form-create-actions">
+          {!isNewRound && canOpenNewRound ? (
+            <a
+              className="secondary-button"
+              href={newRoundSetupRoute()}
+              onClick={(event) =>
+                openInDialog(event, () => setNewRoundDialogOpen(true))
+              }
+            >
+              <CalendarPlus size={18} aria-hidden="true" />
+              פתיחת סבב חדש
+            </a>
+          ) : null}
+          {/*
+            Adding a school is offered here rather than in the switcher: with one
+            school there is no switcher to offer it from, and that is exactly when
+            a second school is added for the first time.
+          */}
+          {!isNewSchool && canOpenNewSchool ? (
+            <a
+              className="secondary-button"
+              href={newSchoolSetupRoute()}
+              onClick={(event) =>
+                openInDialog(event, () => setNewSchoolDialogOpen(true))
+              }
+            >
+              <Building2 size={18} aria-hidden="true" />
+              הוספת בית ספר
+            </a>
+          ) : null}
+        </div>
+      ) : null}
 
-      <SaveStatus savedAt={savedAt} hasUnsavedChanges={hasUnsavedChanges} />
+      {/*
+        The save button used to sit at the end of forty fields, below the fold on
+        every laptop, and the line saying whether anything was unsaved sat below
+        it again. A manager who changed the round's name and looked for a way to
+        keep it found neither. Both stay on screen now for as long as the form
+        is on screen, and they stay together: the state and the button that
+        changes it are one thing to read.
+      */}
+      <div className="setup-form-save-bar">
+        <SaveStatus savedAt={savedAt} hasUnsavedChanges={hasUnsavedChanges} />
+        <div className="setup-form-save-bar-actions">
+          {saved ? (
+            <Link className="secondary-button" href={builderHref}>
+              {distributeSurveyAction.label}
+              <ChevronLeft size={18} aria-hidden="true" />
+            </Link>
+          ) : null}
+          <button className="primary-button" type="submit" disabled={saving}>
+            {saving ? (
+              <Loader2 size={18} className="animate-spin" aria-hidden="true" />
+            ) : (
+              <Check size={18} aria-hidden="true" />
+            )}
+            {saving
+              ? "שומר..."
+              : isNewSchool
+                ? "שמירת בית הספר החדש"
+                : isNewRound
+                  ? "פתיחת הסבב החדש"
+                  : "שמירת סבב אבחון"}
+          </button>
+        </div>
+      </div>
 
       {saved && !hasUnsavedChanges ? (
         <p className="success-note">
@@ -476,5 +546,49 @@ export function SetupForm({
         </p>
       ) : null}
     </form>
+
+    {/*
+      Outside the form on purpose: a dialog holds a form of its own, and a form
+      inside a form is not a thing HTML has — the browser drops the inner one
+      and its fields end up submitting this screen's round.
+    */}
+    {organization && !isNewSchool && !isNewRound ? (
+      <NewRoundDialog
+        isOpen={isNewRoundDialogOpen}
+        onClose={() => setNewRoundDialogOpen(false)}
+        organization={organization}
+        onCreated={(newRoundId) => {
+          // The round exists as a draft and does nothing until its
+          // questionnaire is saved, so the builder for that round — named by
+          // id, because the school's active round is still the old one — is
+          // where the work continues.
+          if (newRoundId) router.push(surveyBuilderRoute(newRoundId));
+          else router.refresh();
+        }}
+        previousRound={
+          round
+            ? {
+                privacyThreshold: round.privacyThreshold,
+                backgroundContext: round.backgroundContext,
+              }
+            : null
+        }
+      />
+    ) : null}
+
+    {!isNewSchool ? (
+      <NewSchoolDialog
+        isOpen={isNewSchoolDialogOpen}
+        onClose={() => setNewSchoolDialogOpen(false)}
+        onCreated={(newSchoolId) => {
+          // No screen is about the new school until the request says so, so
+          // naming it in the URL is what moves the manager into it rather than
+          // leaving them editing the one they came from.
+          if (newSchoolId) router.push(schoolSetupRoute(newSchoolId));
+          else router.refresh();
+        }}
+      />
+    ) : null}
+    </>
   );
 }

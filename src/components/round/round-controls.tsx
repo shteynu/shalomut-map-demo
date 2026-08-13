@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Archive, CheckCircle2, Clipboard, History, Loader2, Lock, Map, RotateCcw, Sparkles } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useRef, useState } from "react";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CopyLinkStatus } from "@/components/ui/copy-link-status";
 import { useClipboard } from "@/lib/hooks/use-clipboard";
 import { calculatePercentage } from "@/lib/utils/math";
@@ -66,6 +67,14 @@ export function RoundControls({
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisNote, setAnalysisNote] = useState<string | null>(null);
   const [closeError, setCloseError] = useState<string | null>(null);
+  /**
+   * Which irreversible action is waiting to be confirmed, if any. One piece of
+   * state rather than one flag per action: exactly one of these dialogs can be
+   * open, and two booleans can disagree about that.
+   */
+  const [pendingAction, setPendingAction] = useState<
+    "archive" | "reset" | null
+  >(null);
   const shareUrl = useShareUrl(shareCode);
   const { status: copyStatus, copy } = useClipboard();
   const shareInputRef = useRef<HTMLInputElement | null>(null);
@@ -126,14 +135,7 @@ export function RoundControls({
    * and terminal — `archived` has no transition out — so it asks first.
    */
   async function archiveRound() {
-    if (
-      !confirm(
-        "להעביר את הסבב לארכיון? הסבב יישאר זמין לצפייה דרך הארכיון, אך לא יופיע ברשימת הסבבים.",
-      )
-    ) {
-      return;
-    }
-
+    setPendingAction(null);
     setArchiving(true);
     setCloseError(null);
 
@@ -195,9 +197,7 @@ export function RoundControls({
   }
 
   async function resetRound() {
-    if (!confirm("האם למחוק את כל התשובות ולהחזיר את השאלון למצב עריכה?")) {
-      return;
-    }
+    setPendingAction(null);
     setResetting(true);
     setCloseError(null);
 
@@ -278,7 +278,7 @@ export function RoundControls({
                 className="secondary-button"
                 type="button"
                 disabled={resetting}
-                onClick={resetRound}
+                onClick={() => setPendingAction("reset")}
                 title="מחיקת תשובות והחזרה לעריכת שאלון"
               >
                 {resetting ? (
@@ -315,7 +315,7 @@ export function RoundControls({
               type="button"
               disabled={archiving}
               data-round-id={roundId}
-              onClick={archiveRound}
+              onClick={() => setPendingAction("archive")}
               title="הוצאת הסבב מרשימת הסבבים, בלי למחוק אותו"
             >
               {archiving ? (
@@ -365,6 +365,44 @@ export function RoundControls({
           </p>
         ) : null}
       </div>
+
+      {/*
+        Both of these used to ask through `window.confirm`: one English-chrome
+        sentence, in the browser's own reading direction, with two buttons named
+        by the browser rather than by what they do. The question is the same;
+        the dialog is the product's.
+      */}
+      <ConfirmDialog
+        isOpen={pendingAction === "archive"}
+        title="העברת הסבב לארכיון"
+        body="הסבב יצא מרשימת הסבבים ויישאר זמין לקריאה דרך הארכיון, עם כל הנתונים והניתוח שלו. אין דרך חזרה מארכיון לסבב פעיל."
+        confirmLabel="העברה לארכיון"
+        isDestructive
+        isBusy={archiving}
+        onConfirm={archiveRound}
+        onCancel={() => setPendingAction(null)}
+      />
+
+      <ConfirmDialog
+        isOpen={pendingAction === "reset"}
+        title="איפוס נתוני הסבב"
+        body={
+          <>
+            <p>
+              כל התשובות שהתקבלו בסבב הזה יימחקו, והשאלון יחזור למצב עריכה.
+              התשובות אנונימיות ואינן ניתנות לשחזור לאחר המחיקה.
+            </p>
+            <p>
+              עד כה התקבלו <strong>{responseCount}</strong> תשובות.
+            </p>
+          </>
+        }
+        confirmLabel="מחיקת התשובות ואיפוס"
+        isDestructive
+        isBusy={resetting}
+        onConfirm={resetRound}
+        onCancel={() => setPendingAction(null)}
+      />
     </section>
   );
 }

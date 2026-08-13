@@ -418,23 +418,6 @@ export function SurveyFlow({
     }
   };
 
-  /** Starts a separate anonymous attempt on the same device, with its own token. */
-  const startAnotherResponse = () => {
-    // The next person at this computer must inherit nothing: not the token,
-    // which would make the round refuse their answers as a duplicate, not the
-    // draft, which would show them what the previous person answered, and not
-    // the consent, which was somebody else's to give.
-    dropDraft();
-    attemptToken.reset();
-    setConsentAcceptedAt("");
-    setAnswers({});
-    setCurrentIndex(0);
-    setSubmitError(null);
-    setSubmitting(false);
-    setPhase("consent");
-    setRestoredDraft(false);
-  };
-
   if (phase === "consent") {
     return (
       <SurveyConsentStep
@@ -479,18 +462,15 @@ export function SurveyFlow({
           <ShieldCheck size={42} aria-hidden="true" />
           <h1>תודה, התשובות נקלטו</h1>
           <p>{anonymityText}</p>
+          {/*
+            A second attempt is not offered here. The button existed for a
+            shared staffroom computer, but the screen cannot tell the next
+            person from the one who just answered, so the same teacher could
+            take the round again from their own device and the aggregate would
+            count them twice. Someone else at the same computer opens the link
+            again, which starts a clean attempt with its own token.
+          */}
           <p className="quiet-note">אפשר לסגור את החלון. תודה על המענה.</p>
-          <button
-            className="secondary-button"
-            type="button"
-            onClick={startAnotherResponse}
-          >
-            <RefreshCw size={18} aria-hidden="true" />
-            מילוי שאלון נוסף
-          </button>
-          <p className="quiet-note">
-            מיועד למחשב משותף: כל מילוי נשמר כתשובה אנונימית נפרדת.
-          </p>
         </div>
       </section>
     );
