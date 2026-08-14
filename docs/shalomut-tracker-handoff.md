@@ -26,6 +26,23 @@ parses, which is why nothing had noticed.
 Phases 1, 2 and 4 are done. **Phases 3 and 5 remain blocked on the
 methodologist's mapping table**, and phase 6 is the swap itself.
 
+**Four branches wait on a push, as one linear stack on `origin/main`** — ten
+commits, nothing behind, nothing diverged: the plan branch
+`claude/default-research-instrument-plan` (`eeb8a82`), then
+`claude/answer-model-for-research-instrument` (`4e71bd8`),
+`claude/k-anonymity-for-demographics` (`a2a42df`), and
+`claude/builder-for-background-questions` (`e43dcf5`). The exact push command is
+in the last of their task files. Until that push lands, **none of this is
+visible outside this worktree**, and every claim elsewhere in this file about a
+24-question default, a three-colour answer scale or contract `6.0` still
+describes the running product — because none of these four branches changes what
+a respondent answers or what the deployment serves.
+
+One thing phase 1 leaves for the owner beyond the push:
+`scripts/backfill-round-definitions.ts` has run against the local database and
+not the deployed one. Nothing depends on it yet; removing the
+`surveyInstrument.questions` fallback, in a later phase, does.
+
 **2026-08-14, later the same day, built the first two phases of it.** Phase 1
 (`claude/answer-model-for-research-instrument`) made a question carry its own
 scale and polarity, split questions into analytic and background, and made

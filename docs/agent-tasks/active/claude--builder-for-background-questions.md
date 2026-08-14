@@ -231,9 +231,29 @@ unchanged, so no round can stop rendering because of it.
 
 ## Approval gates
 
-- `git push` is an owner action. Three branches are now waiting, in order:
-  `claude/answer-model-for-research-instrument`,
-  `claude/k-anonymity-for-demographics`, and this one.
+- `git push` is an owner action. **Four** branches are waiting, and they are one
+  linear stack on top of `origin/main` — ten commits, no divergence, nothing
+  behind:
+
+  ```
+  origin/main
+   └─ claude/default-research-instrument-plan          eeb8a82  (the plan)
+       └─ claude/answer-model-for-research-instrument  4e71bd8  (phase 1)
+           └─ claude/k-anonymity-for-demographics      a2a42df  (phase 2)
+               └─ claude/builder-for-background-questions e43dcf5 (phase 4)
+  ```
+
+  One command pushes all four refs:
+
+  ```
+  git push origin claude/default-research-instrument-plan \
+    claude/answer-model-for-research-instrument \
+    claude/k-anonymity-for-demographics \
+    claude/builder-for-background-questions
+  ```
+
+  Pushing only the tip would carry all ten commits but leave the other three
+  refs absent, and each of their task files names its own branch.
 
 ## Questions requiring an owner decision
 
@@ -242,6 +262,15 @@ unchanged, so no round can stop rendering because of it.
 
 ## Next concrete step
 
-Owner: push the three branches in order, then supply the mapping table. With
-phases 1, 2 and 4 done, the mapping is the only thing standing between here and
-the rest of the plan.
+Owner: run the four-branch push above, then supply the methodologist's
+item-to-dimension mapping. With phases 1, 2 and 4 done, that table is the only
+thing standing between here and the rest of the plan.
+
+For the next agent, once the mapping exists: **phase 3, the respondent
+experience.** The answer model, the privacy rule and the builder can all express
+the research instrument now; nothing a respondent sees can. `SurveyFlow` renders
+one three-colour scale and knows nothing about a Likert step count, a
+demographic choice, a numeric field or an allocation grid that has to total 100.
+Start at `src/components/survey/survey-flow.tsx` and
+`src/lib/services/survey.service.ts`, whose `validateAnswerValue` and
+`validateAllocationTotals` already define what the screen has to collect.
