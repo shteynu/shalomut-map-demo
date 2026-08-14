@@ -3,9 +3,21 @@ import {
   type WellbeingDimensionId,
 } from "@/lib/shalomut-source";
 import { MINIMUM_PRIVACY_THRESHOLD } from "@/lib/survey-definition";
-import type { SurveyDefinitionQuestion } from "@/lib/types/backend";
+import type {
+  AnalyticSurveyQuestion,
+  SurveyDefinitionQuestion,
+} from "@/lib/types/backend";
 
-export type BuilderQuestion = SurveyDefinitionQuestion & {
+/**
+ * The builder edits analytic questions only.
+ *
+ * Narrowed deliberately rather than widened to the union: a manager cannot yet
+ * add a demographic question or an allocation grid, and typing the builder as
+ * if they could would compile every screen against fields none of them render.
+ * When the builder learns the other kind, this becomes the union and the
+ * compiler names the screens that have to change.
+ */
+export type BuilderQuestion = AnalyticSurveyQuestion & {
   draftKey: string;
 };
 
@@ -102,10 +114,13 @@ export function toSurveyDefinitionQuestion(
   return {
     id: question.id,
     text: question.text,
+    kind: "analytic",
     dimensionId: question.dimensionId,
+    scaleId: question.scaleId,
+    polarity: question.polarity,
     required: question.required,
     enabled: question.enabled,
-    answerMode: question.answerMode,
+    ...(question.sectionId ? { sectionId: question.sectionId } : {}),
   };
 }
 

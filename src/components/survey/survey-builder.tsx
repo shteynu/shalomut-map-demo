@@ -14,7 +14,7 @@ import { dimensionPresentations } from "@/lib/dashboard/dimension-presentation";
 import { getNavigationAction } from "@/lib/navigation";
 import type { RoundSwitcherOptions } from "@/lib/rounds/round-options";
 import { useShareUrl } from "@/lib/use-share-url";
-import type { SurveyDefinition } from "@/lib/types/backend";
+import { isAnalyticQuestion, type SurveyDefinition } from "@/lib/types/backend";
 import { surveyInstrument } from "@/lib/shalomut-source";
 import { estimateMinutesForQuestions } from "@/lib/survey-definition";
 import {
@@ -57,10 +57,12 @@ function buildSuggestedQuestion(
 ): BuilderQuestion {
   return {
     text: suggestion.text,
+    kind: "analytic",
     dimensionId: suggestion.dimensionId,
+    scaleId: "wellbeing-colour",
+    polarity: "positive",
     required: true,
     enabled: true,
-    answerMode: "סקאלת צבעים",
     draftKey: createDraftId("suggestion"),
     id: createDraftId(suggestion.source === "ai" ? "ai" : "template"),
   };
@@ -132,10 +134,16 @@ export function SurveyBuilder({
     initialDefinition.anonymityText,
   );
   const [questions, setQuestions] = useState<BuilderQuestion[]>(
-    initialDefinition.questions.map((question, index) => ({
-      ...question,
-      draftKey: `initial-${index}-${question.id}`,
-    })),
+    // Background questions are filtered rather than rendered: the builder has
+    // no control that edits one yet, and showing a demographic question in a
+    // list whose every control assumes a dimension would let a manager delete
+    // it by accident on the next save.
+    initialDefinition.questions
+      .filter(isAnalyticQuestion)
+      .map((question, index) => ({
+        ...question,
+        draftKey: `initial-${index}-${question.id}`,
+      })),
   );
   const [saved, setSaved] = useState(false);
   const [closedRoundTitles, setClosedRoundTitles] = useState<string[]>([]);
@@ -331,11 +339,13 @@ export function SurveyBuilder({
     setPendingRemoval(null);
     const defaultQuestions: BuilderQuestion[] = surveyInstrument.questions.map((q, idx) => ({
       id: q.id,
+      kind: "analytic",
       dimensionId: q.dimensionId,
+      scaleId: "wellbeing-colour",
+      polarity: "positive",
       text: q.text,
       required: q.required,
       enabled: true,
-      answerMode: "סקאלת צבעים",
       draftKey: createDraftId(`default-${idx}`),
     }));
     markEdited();
@@ -374,12 +384,14 @@ export function SurveyBuilder({
     setPendingQuestion({
       draft: {
         text: "",
+        kind: "analytic",
         // The tab the manager is standing in, or — on "all questions" — the
         // dimension that is still keeping the questionnaire from going live.
         dimensionId: targetDimensionId,
+        scaleId: "wellbeing-colour",
+        polarity: "positive",
         required: true,
         enabled: true,
-        answerMode: "סקאלת צבעים",
         draftKey: createDraftId("manual"),
         id: createDraftId("custom"),
       },
@@ -528,10 +540,12 @@ export function SurveyBuilder({
     setIntroText(definition.introText);
     setAnonymityText(definition.anonymityText);
     setQuestions(
-      definition.questions.map((question, index) => ({
-        ...question,
-        draftKey: createDraftId(`version-${index}`),
-      })),
+      definition.questions
+        .filter(isAnalyticQuestion)
+        .map((question, index) => ({
+          ...question,
+          draftKey: createDraftId(`version-${index}`),
+        })),
     );
     setLoadedVersionAt(savedAt);
   }

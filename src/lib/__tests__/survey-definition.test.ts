@@ -11,6 +11,10 @@ import {
 } from "@/lib/survey-definition";
 import { createSurveyDefinitionHash } from "@/lib/survey-definition-hash";
 import { surveyInstrument } from "@/lib/shalomut-source";
+import {
+  isAnalyticQuestion,
+  type SurveyDefinitionQuestion,
+} from "../types/backend";
 
 function createDynamicDefinition() {
   const definition = createCanonicalSurveyDefinition("סבב מותאם", 10);
@@ -20,7 +24,9 @@ function createDynamicDefinition() {
     text: `שאלת שלומות מותאמת ${index + 1}`,
     required: true,
     enabled: true,
-    answerMode: "סקאלת צבעים",
+    kind: "analytic" as const,
+    scaleId: "wellbeing-colour" as const,
+    polarity: "positive" as const,
   }));
   return definition;
 }
@@ -65,7 +71,11 @@ test("parseSurveyDefinition accepts a unique dynamic questionnaire that covers a
   if (result.ok) {
     assert.strictEqual(result.value.questions.length, 8);
     assert.deepStrictEqual(
-      new Set(result.value.questions.map((question) => question.dimensionId)),
+      new Set(
+        result.value.questions
+          .filter(isAnalyticQuestion)
+          .map((question) => question.dimensionId),
+      ),
       new Set(surveyInstrument.dimensions.map((dimension) => dimension.id)),
     );
   }
@@ -86,7 +96,7 @@ test("parseSurveyDefinition rejects duplicate stable question IDs", () => {
 test("parseSurveyDefinition rejects activation without all eight dimensions", () => {
   const definition = createDynamicDefinition();
   definition.questions = definition.questions.filter(
-    (question) => question.dimensionId !== "meaning",
+    (question) => !isAnalyticQuestion(question) || question.dimensionId !== "meaning",
   );
 
   const result = parseSurveyDefinition(definition);
@@ -130,17 +140,28 @@ test("createSurveyDefinitionHash ignores disabled questions outside the AI-visib
 });
 
 test("createSurveyDefinitionHash matches the shared UTF-8 compact JSON test vector", () => {
-  const questions = [
+  // The expected digest is unchanged by the answer-model work on purpose: the
+  // contract fixes this projection at questionId/dimensionId/questionText, and
+  // the fields added around them must not enter it.
+  const questions: SurveyDefinitionQuestion[] = [
     {
       id: "😀",
-      dimensionId: "balance" as const,
+      kind: "analytic",
+      dimensionId: "balance",
+      scaleId: "wellbeing-colour",
+      polarity: "positive",
       text: "שאלה",
+      required: true,
       enabled: true,
     },
     {
       id: "a",
-      dimensionId: "meaning" as const,
+      kind: "analytic",
+      dimensionId: "meaning",
+      scaleId: "likert-7-frequency",
+      polarity: "negative",
       text: "  טקסט מדויק  ",
+      required: false,
       enabled: true,
     },
   ];

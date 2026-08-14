@@ -26,9 +26,10 @@ import {
 import type {
   AnswerValue,
   SurveyDefinition,
-  SurveyDefinitionQuestion,
+  AnalyticSurveyQuestion,
   SurveyResponseRecord,
 } from '@/lib/types/backend';
+import { isAnalyticQuestion } from '@/lib/types/backend';
 
 type DynamicRoundFixture = {
   roundId: string;
@@ -38,7 +39,7 @@ type DynamicRoundFixture = {
 
 function definitionFromQuestions(
   title: string,
-  questions: SurveyDefinitionQuestion[],
+  questions: AnalyticSurveyQuestion[],
 ): SurveyDefinition {
   return {
     title,
@@ -53,16 +54,18 @@ function definitionFromQuestions(
 
 function question(
   id: string,
-  dimensionId: SurveyDefinitionQuestion['dimensionId'],
+  dimensionId: AnalyticSurveyQuestion['dimensionId'],
   text: string,
-): SurveyDefinitionQuestion {
+): AnalyticSurveyQuestion {
   return {
     id,
     dimensionId,
     text,
     required: true,
     enabled: true,
-    answerMode: 'סקאלת צבעים',
+    kind: "analytic" as const,
+    scaleId: "wellbeing-colour" as const,
+    polarity: "positive" as const,
   };
 }
 
@@ -119,7 +122,7 @@ const dynamicFixtures: DynamicRoundFixture[] = [
 
 function createResponses(
   roundId: string,
-  questions: SurveyDefinitionQuestion[],
+  questions: AnalyticSurveyQuestion[],
   count: number,
   omitFromFirstResponse?: string,
 ): SurveyResponseRecord[] {
@@ -272,7 +275,7 @@ test('two dynamic questionnaires cross Core MCP -> Python -> callback with exact
     for (const fixture of dynamicFixtures) {
       const enabledQuestions = fixture.definition.questions.filter(
         (candidate) => candidate.enabled,
-      );
+      ).filter(isAnalyticQuestion);
       configureFixture(
         fixture,
         createResponses(fixture.roundId, enabledQuestions, 10),
@@ -388,7 +391,8 @@ test('two dynamic questionnaires cross Core MCP -> Python -> callback with exact
 
       for (const dimension of surveyInstrument.dimensions) {
         const expectedQuestions = enabledQuestions.filter(
-          (candidate) => candidate.dimensionId === dimension.id,
+          (candidate) =>
+            isAnalyticQuestion(candidate) && candidate.dimensionId === dimension.id,
         );
         const stone = persisted.stones[dimension.id];
         assert.strictEqual(stone.metrics.length, expectedQuestions.length);
@@ -434,7 +438,7 @@ test('a 5.0 round carries its distributions to Python and back under Core verifi
   };
   const enabledQuestions = fixture.definition.questions.filter(
     (candidate) => candidate.enabled,
-  );
+  ).filter(isAnalyticQuestion);
 
   try {
     // A split staff rather than a uniform one: the buckets have to differ from
@@ -644,7 +648,7 @@ test('one below-threshold dynamic question locks the whole cross-service pipelin
   const fixture = dynamicFixtures[1];
   const enabledQuestions = fixture.definition.questions.filter(
     (candidate) => candidate.enabled,
-  );
+  ).filter(isAnalyticQuestion);
   const belowThresholdQuestion = enabledQuestions.at(-1)!;
   configureFixture(
     fixture,

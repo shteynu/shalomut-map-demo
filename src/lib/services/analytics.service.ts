@@ -27,6 +27,7 @@ import {
   RoundDimensionScore,
   SurveyResponseRecord,
   SurveyRound,
+  isAnalyticQuestion,
 } from '../types/backend';
 import {
   CanonicalQuestionAggregate,
@@ -72,13 +73,16 @@ export { getProducedAnalyticsContractVersion };
  * score fallback covers a stored row whose value is not one of the three, and
  * it reads the response scale that produced the score in the first place.
  */
-function bucketForAnswer(answer: QuestionAnswerRecord): WellbeingStatus {
-  const chosen = responseScale.find((option) => option.value === answer.value);
+function bucketForAnswer(value: string, score: number): WellbeingStatus {
+  const chosen = responseScale.find((option) => option.value === value);
   if (chosen) return chosen.value;
 
+  // A Likert answer has no colour of its own, so it falls to the nearest band
+  // by score — which is also what a stored colour row with an unknown value
+  // did before. The distribution stays a report of what people picked whenever
+  // they picked a colour, and a nearest reading only when they did not.
   return responseScale.reduce((closest, option) =>
-    Math.abs(option.score - answer.score) <
-    Math.abs(closest.score - answer.score)
+    Math.abs(option.score - score) < Math.abs(closest.score - score)
       ? option
       : closest,
   ).value;
@@ -124,6 +128,10 @@ export class AnalyticsService {
       for (const answer of response.answers) {
         const scores = scoresByQuestion.get(answer.questionId);
         if (!scores || answeredQuestionIds.has(answer.questionId)) continue;
+        // The legacy path knows only the canonical 24, which are analytic and
+        // therefore always scored. An unscored answer here is a background one
+        // that does not belong to this exchange at all.
+        if (answer.score === undefined) continue;
 
         scores.push(answer.score);
         answeredQuestionIds.add(answer.questionId);
@@ -234,13 +242,20 @@ export class AnalyticsService {
       throw new Error(`Invalid round survey definition: ${parsedDefinition.error}`);
     }
 
-    const enabledQuestions = parsedDefinition.value.questions.filter(
-      (question) => question.enabled,
-    );
+    // Analytic only, everywhere below. A background question is answered and
+    // stored like any other, and it belongs on no stone: letting one reach the
+    // aggregates would put a demographic answer into a dimension average, and
+    // letting one reach the lock check would make an optional question about
+    // commute time able to lock a school's whole result.
+    const enabledQuestions = parsedDefinition.value.questions
+      .filter((question) => question.enabled)
+      .filter(isAnalyticQuestion);
     const isUnfinishedQuestionnaire = !isActivatableSurveyDefinition(
       parsedDefinition.value,
     );
-    const surveyDefinitionHash = createSurveyDefinitionHash(enabledQuestions);
+    const surveyDefinitionHash = createSurveyDefinitionHash(
+      parsedDefinition.value.questions,
+    );
     const scopedResponses = responses.filter(
       (response) => response.roundId === round.id,
     );
@@ -267,20 +282,22 @@ export class AnalyticsService {
 
       for (const answer of response.answers) {
         const question = questionsById.get(answer.questionId);
+        const score = answer.score;
         if (
           !question ||
           answeredQuestionIds.has(answer.questionId) ||
           answer.dimensionId !== question.dimensionId ||
-          !Number.isFinite(answer.score) ||
-          answer.score < 0 ||
-          answer.score > 100
+          score === undefined ||
+          !Number.isFinite(score) ||
+          score < 0 ||
+          score > 100
         ) {
           continue;
         }
 
-        scoresByQuestion.get(answer.questionId)!.push(answer.score);
+        scoresByQuestion.get(answer.questionId)!.push(score);
         const dist = distributionsByQuestion.get(answer.questionId)!;
-        dist[bucketForAnswer(answer)]++;
+        dist[bucketForAnswer(answer.value, score)]++;
         answeredQuestionIds.add(answer.questionId);
       }
     }

@@ -14,7 +14,7 @@ import type {
   DynamicQuestionAggregate,
   RoundDimensionScore,
   SurveyDefinition,
-  SurveyDefinitionQuestion,
+  AnalyticSurveyQuestion,
   SurveyResponseRecord,
   SurveyRound,
 } from '../../types/backend';
@@ -50,7 +50,7 @@ after(() => {
 });
 
 function createCustomSurveyDefinition(
-  questions: SurveyDefinitionQuestion[],
+  questions: AnalyticSurveyQuestion[],
 ): SurveyDefinition {
   return {
     title: 'שאלון מותאם אישית להרצה ניסיונית',
@@ -100,7 +100,7 @@ const ANSWER_ROTATION: AnswerValue[] = [
 
 function createMockResponses(
   roundId: string,
-  questions: SurveyDefinitionQuestion[],
+  questions: AnalyticSurveyQuestion[],
   count: number,
   omitAnswersForQuestionId?: string,
 ): SurveyResponseRecord[] {
@@ -133,14 +133,16 @@ test('Workstream A Dry-Run: Scenario A1 (Unlocked disposable round with custom q
   const orgId = 'org_staging_dryrun_a1';
 
   // 8 custom questions covering all 8 canonical dimensions with non-standard IDs and custom text
-  const customQuestions: SurveyDefinitionQuestion[] = ALL_DIMENSION_IDS.map(
+  const customQuestions: AnalyticSurveyQuestion[] = ALL_DIMENSION_IDS.map(
     (dimensionId, index) => ({
       id: `custom-q${index + 1}-${dimensionId}`,
       dimensionId,
       text: `שאלה מותאמת סבב ${index + 1} בממד ${AI_ANALYTICS_DIMENSION_NAMES_HEBREW[dimensionId]}`,
       required: true,
       enabled: true,
-      answerMode: 'סקאלת צבעים',
+      kind: "analytic" as const,
+      scaleId: "wellbeing-colour" as const,
+      polarity: "positive" as const,
     }),
   );
 
@@ -278,14 +280,16 @@ test('Workstream A Dry-Run: Scenario A2.1 (Privacy locked round with < 10 total 
   const roundId = 'round_staging_dryrun_a2_locked_count';
   const orgId = 'org_staging_dryrun_a2';
 
-  const customQuestions: SurveyDefinitionQuestion[] = ALL_DIMENSION_IDS.map(
+  const customQuestions: AnalyticSurveyQuestion[] = ALL_DIMENSION_IDS.map(
     (dimensionId, index) => ({
       id: `custom-q${index + 1}-${dimensionId}`,
       dimensionId,
       text: `שאלה מותאמת ${index + 1}`,
       required: true,
       enabled: true,
-      answerMode: 'סקאלת צבעים',
+      kind: "analytic" as const,
+      scaleId: "wellbeing-colour" as const,
+      polarity: "positive" as const,
     }),
   );
 
@@ -333,14 +337,16 @@ test('Workstream A Dry-Run: Scenario A2.2 (Privacy locked round with 1 question 
   const roundId = 'round_staging_dryrun_a2_locked_question';
   const orgId = 'org_staging_dryrun_a2';
 
-  const customQuestions: SurveyDefinitionQuestion[] = ALL_DIMENSION_IDS.map(
+  const customQuestions: AnalyticSurveyQuestion[] = ALL_DIMENSION_IDS.map(
     (dimensionId, index) => ({
       id: `custom-q${index + 1}-${dimensionId}`,
       dimensionId,
       text: `שאלה מותאמת ${index + 1}`,
       required: true,
       enabled: true,
-      answerMode: 'סקאלת צבעים',
+      kind: "analytic" as const,
+      scaleId: "wellbeing-colour" as const,
+      polarity: "positive" as const,
     }),
   );
 
@@ -378,14 +384,16 @@ test('Workstream A Dry-Run: Contract 5.0 calculates scoreDistribution per questi
   try {
     const roundId = 'round-v5-test';
     const orgId = 'org-v5-test';
-    const customQuestions: SurveyDefinitionQuestion[] = ALL_DIMENSION_IDS.map(
+    const customQuestions: AnalyticSurveyQuestion[] = ALL_DIMENSION_IDS.map(
       (dimensionId, index) => ({
         id: `q-${index + 1}`,
         dimensionId,
         text: `שאלה מותאמת למימד ${dimensionId}`,
         required: true,
         enabled: true,
-        answerMode: 'סקאלת צבעים',
+        kind: "analytic" as const,
+        scaleId: "wellbeing-colour" as const,
+        polarity: "positive" as const,
       }),
     );
     const surveyDefinition = createCustomSurveyDefinition(customQuestions);

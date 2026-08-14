@@ -83,17 +83,19 @@ export function surveyDraftStorageKey(shareCode: string): string {
  * not just a set of answers.
  */
 export function questionnaireFingerprint(
-  questions: readonly Pick<
-    SurveyDefinitionQuestion,
-    'id' | 'dimensionId' | 'text' | 'answerMode'
-  >[],
+  questions: readonly SurveyDefinitionQuestion[],
 ): string {
+  // How a question is answered is part of its identity here, as the old
+  // `answerMode` label was: a saved draft holding `green` must not be restored
+  // into the same question after it moved to a seven-point scale.
   const serialized = JSON.stringify(
-    questions.map(({ id, dimensionId, text, answerMode }) => [
-      id,
-      dimensionId,
-      text,
-      answerMode,
+    questions.map((question) => [
+      question.id,
+      question.kind === 'analytic' ? question.dimensionId : null,
+      question.text,
+      question.kind === 'analytic'
+        ? `${question.scaleId}:${question.polarity}`
+        : question.answerMode,
     ]),
   );
 

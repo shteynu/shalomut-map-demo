@@ -12,16 +12,18 @@ import {
   type SurveyDraftExpectation,
   type SurveyDraftV1,
 } from '../survey-draft-storage';
-import type { SurveyDefinitionQuestion } from '../types/backend';
+import type { AnalyticSurveyQuestion } from '../types/backend';
 
-const questions: SurveyDefinitionQuestion[] = [
+const questions: AnalyticSurveyQuestion[] = [
   {
     id: 'q1',
     dimensionId: 'self-expression',
     text: 'האם את/ה מרגיש/ה בנוח להביע דעה?',
     required: true,
     enabled: true,
-    answerMode: 'traffic-light',
+    kind: "analytic" as const,
+    scaleId: "wellbeing-colour" as const,
+    polarity: "positive" as const,
   },
   {
     id: 'q2',
@@ -29,7 +31,9 @@ const questions: SurveyDefinitionQuestion[] = [
     text: 'האם את/ה מרגיש/ה שייכ/ת לצוות?',
     required: true,
     enabled: true,
-    answerMode: 'traffic-light',
+    kind: "analytic" as const,
+    scaleId: "wellbeing-colour" as const,
+    polarity: "positive" as const,
   },
 ];
 
@@ -99,7 +103,7 @@ describe('questionnaire fingerprint', () => {
   });
 
   it('changes when a question moves to another dimension', () => {
-    const moved: SurveyDefinitionQuestion[] = [
+    const moved: AnalyticSurveyQuestion[] = [
       { ...questions[0], dimensionId: 'balance' },
       questions[1],
     ];

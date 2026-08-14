@@ -5,7 +5,11 @@ import {
   parseSurveyDefinition,
 } from '@/lib/survey-definition';
 import { createSurveyDefinitionHash } from '@/lib/survey-definition-hash';
-import type { RoundAnalyticsV3Result, SurveyRound } from '@/lib/types/backend';
+import {
+  isAnalyticQuestion,
+  type RoundAnalyticsV3Result,
+  type SurveyRound,
+} from '@/lib/types/backend';
 
 /**
  * Core's own opinion about a Stone Map the AI service sent back: schema
@@ -36,10 +40,13 @@ export function verifyAiResultAgainstRound(
     return 'The persisted round questionnaire is invalid.';
   }
 
-  const enabledQuestions = parsedDefinition.value.questions.filter(
-    (question) => question.enabled,
-  );
-  const expectedHash = createSurveyDefinitionHash(enabledQuestions);
+  // The hash is over the whole definition and excludes background questions
+  // itself; the metric check below compares only the analytic ones, which are
+  // the only questions an AI result may carry.
+  const enabledQuestions = parsedDefinition.value.questions
+    .filter((question) => question.enabled)
+    .filter(isAnalyticQuestion);
+  const expectedHash = createSurveyDefinitionHash(parsedDefinition.value.questions);
   if (
     result.surveyDefinitionHash !== expectedHash ||
     result.surveyDefinitionHash !== analytics.surveyDefinitionHash

@@ -21,7 +21,9 @@ const questions: SurveyDefinitionQuestion[] = [
     text: "האם את/ה מרגיש/ה בנוח להביע דעה?",
     required: true,
     enabled: true,
-    answerMode: "traffic-light",
+    kind: "analytic" as const,
+    scaleId: "wellbeing-colour" as const,
+    polarity: "positive" as const,
   },
   {
     id: "q2",
@@ -29,7 +31,9 @@ const questions: SurveyDefinitionQuestion[] = [
     text: "האם נשאר לך זמן להתאוששות?",
     required: true,
     enabled: true,
-    answerMode: "traffic-light",
+    kind: "analytic" as const,
+    scaleId: "wellbeing-colour" as const,
+    polarity: "positive" as const,
   },
 ];
 

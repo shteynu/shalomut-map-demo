@@ -97,7 +97,10 @@ test('SurveyService accepts an omitted optional dynamic question but still requi
   const expectedQuestions = surveyInstrument.dimensions.map(
     (dimension, index) => ({
       id: `dynamic-${dimension.id}-${index + 1}`,
+      kind: 'analytic' as const,
       dimensionId: dimension.id,
+      scaleId: 'wellbeing-colour' as const,
+      polarity: 'positive' as const,
       required: index !== surveyInstrument.dimensions.length - 1,
     }),
   );
@@ -178,7 +181,9 @@ test('RoundService keeps a questionnaire without all eight dimensions in draft',
       questions: questions.map((question) => ({
         ...question,
         enabled: true,
-        answerMode: 'סקאלת צבעים',
+        kind: "analytic" as const,
+        scaleId: "wellbeing-colour" as const,
+        polarity: "positive" as const,
       })),
     },
   });
@@ -221,7 +226,9 @@ test('AnalyticsService keeps a partially built questionnaire locked even with re
       questions: questions.map((question) => ({
         ...question,
         enabled: true,
-        answerMode: 'סקאלת צבעים' as const,
+        kind: 'analytic' as const,
+        scaleId: 'wellbeing-colour' as const,
+        polarity: 'positive' as const,
       })),
     },
   });

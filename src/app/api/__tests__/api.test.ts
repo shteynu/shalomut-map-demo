@@ -24,7 +24,10 @@ import { InMemoryAuditLogRepository } from '@/lib/auth/domain-contract';
 import { setAuditLogRepositoryForTests } from '@/lib/server/manager-audit';
 import { surveyInstrument } from '@/lib/shalomut-source';
 import { createCanonicalSurveyDefinition } from '@/lib/survey-definition';
-import { QuestionAnswerInput } from '@/lib/types/backend';
+import {
+  isAnalyticQuestion,
+  type QuestionAnswerInput,
+} from '@/lib/types/backend';
 import { DEMO_ORGANIZATION, DEMO_ROUND } from '@/lib/repositories/__fixtures__/demo-records';
 
 let previousDatabaseUrl: string | undefined;
@@ -705,7 +708,9 @@ test('Dynamic survey API preserves exact questions and freezes the snapshot afte
     text: `שאלת API מדויקת ${index + 1}`,
     required: true,
     enabled: true,
-    answerMode: 'סקאלת צבעים',
+    kind: "analytic" as const,
+    scaleId: "wellbeing-colour" as const,
+    polarity: "positive" as const,
   }));
 
   try {
@@ -735,11 +740,13 @@ test('Dynamic survey API preserves exact questions and freezes the snapshot afte
       new Request('http://localhost/api/survey/SHALOM-DEMO/submit', {
         method: 'POST',
         body: JSON.stringify({
-          answers: definition.questions.map((question) => ({
-            questionId: question.id,
-            dimensionId: question.dimensionId,
-            value: 'green',
-          })),
+          answers: definition.questions
+            .filter(isAnalyticQuestion)
+            .map((question) => ({
+              questionId: question.id,
+              dimensionId: question.dimensionId,
+              value: 'green',
+            })),
         }),
       }),
       { params: Promise.resolve({ shareCode: 'SHALOM-DEMO' }) },
@@ -765,7 +772,7 @@ test('Dynamic survey API preserves exact questions and freezes the snapshot afte
 test('Round status API rejects activation when persisted questions do not cover all eight dimensions', async () => {
   const invalidDefinition = createCanonicalSurveyDefinition('Invalid', 10);
   invalidDefinition.questions = invalidDefinition.questions.filter(
-    (question) => question.dimensionId !== 'meaning',
+    (question) => !isAnalyticQuestion(question) || question.dimensionId !== 'meaning',
   );
   const draftRound = {
     ...DEMO_ROUND,
@@ -868,7 +875,7 @@ test('Saving a complete questionnaire activates a draft round, an incomplete one
     const partial = await save({
       ...canonical,
       questions: canonical.questions.filter(
-        (question) => question.dimensionId !== 'meaning',
+        (question) => !isAnalyticQuestion(question) || question.dimensionId !== 'meaning',
       ),
     });
     assert.strictEqual(partial.status, 200);

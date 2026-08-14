@@ -6,7 +6,7 @@ import { surveyInstrument } from '../../shalomut-source';
 import type {
   AnswerValue,
   SurveyDefinition,
-  SurveyDefinitionQuestion,
+  AnalyticSurveyQuestion,
   SurveyResponseRecord,
   SurveyRound,
 } from '../../types/backend';
@@ -49,7 +49,7 @@ function createResponses(roundId: string, count: number): SurveyResponseRecord[]
 }
 
 function createDefinition(
-  questions: SurveyDefinitionQuestion[],
+  questions: AnalyticSurveyQuestion[],
 ): SurveyDefinition {
   return {
     title: 'שאלון סבבי',
@@ -82,7 +82,7 @@ function createRound(
 
 function createDefinitionResponses(
   roundId: string,
-  questions: SurveyDefinitionQuestion[],
+  questions: AnalyticSurveyQuestion[],
   count = 10,
 ): SurveyResponseRecord[] {
   return Array.from({ length: count }, (_, responseIndex) => ({
@@ -222,14 +222,16 @@ test('AnalyticsService fails closed when any canonical question has fewer answer
 
 test('AnalyticsService uses the exact persisted questionnaire for a round with eight custom question IDs', async () => {
   const roundId = 'round_dynamic_eight';
-  const questions: SurveyDefinitionQuestion[] = surveyInstrument.dimensions.map(
+  const questions: AnalyticSurveyQuestion[] = surveyInstrument.dimensions.map(
     (dimension, index) => ({
       id: `custom-${dimension.id}-${index + 1}`,
       dimensionId: dimension.id,
       text: `שאלה מותאמת לסבב ${index + 1}`,
       required: true,
       enabled: true,
-      answerMode: 'סקאלת צבעים',
+      kind: "analytic" as const,
+      scaleId: "wellbeing-colour" as const,
+      polarity: "positive" as const,
     }),
   );
   const definition = createDefinition(questions);
@@ -275,14 +277,16 @@ test('AnalyticsService preserves revised persisted text and includes a supplemen
     'בסבב הזה אני מצליחה לבטא רעיונות בחופשיות ובביטחון.';
   const supplementalText =
     'יש לי זמן קבוע להתאוששות במהלך שבוע העבודה.';
-  const questions: SurveyDefinitionQuestion[] = [
+  const questions: AnalyticSurveyQuestion[] = [
     ...surveyInstrument.questions.map((question, index) => ({
       id: question.id,
       dimensionId: question.dimensionId,
       text: index === 0 ? revisedText : question.text,
       required: true,
       enabled: true,
-      answerMode: 'סקאלת צבעים',
+      kind: "analytic" as const,
+      scaleId: "wellbeing-colour" as const,
+      polarity: "positive" as const,
     })),
     {
       id: 'balance-round-specific-recovery',
@@ -290,7 +294,9 @@ test('AnalyticsService preserves revised persisted text and includes a supplemen
       text: supplementalText,
       required: true,
       enabled: true,
-      answerMode: 'סקאלת צבעים',
+      kind: "analytic" as const,
+      scaleId: "wellbeing-colour" as const,
+      polarity: "positive" as const,
     },
   ];
   const definition = createDefinition(questions);
@@ -329,14 +335,16 @@ test('AnalyticsService preserves revised persisted text and includes a supplemen
 
 test('AnalyticsService locks all dynamic details when one enabled question is below threshold', async () => {
   const roundId = 'round_dynamic_partial_privacy';
-  const questions: SurveyDefinitionQuestion[] = surveyInstrument.dimensions.map(
+  const questions: AnalyticSurveyQuestion[] = surveyInstrument.dimensions.map(
     (dimension, index) => ({
       id: `privacy-${dimension.id}-${index + 1}`,
       dimensionId: dimension.id,
       text: `שאלת פרטיות ${index + 1}`,
       required: true,
       enabled: true,
-      answerMode: 'סקאלת צבעים',
+      kind: "analytic" as const,
+      scaleId: "wellbeing-colour" as const,
+      polarity: "positive" as const,
     }),
   );
   const responses = createDefinitionResponses(roundId, questions);
@@ -365,17 +373,19 @@ test('AnalyticsService locks all dynamic details when one enabled question is be
 
 test('AnalyticsService excludes disabled questions from dynamic aggregates and hash', async () => {
   const roundId = 'round_dynamic_disabled';
-  const enabledQuestions: SurveyDefinitionQuestion[] = surveyInstrument.dimensions.map(
+  const enabledQuestions: AnalyticSurveyQuestion[] = surveyInstrument.dimensions.map(
     (dimension, index) => ({
       id: `enabled-${dimension.id}-${index + 1}`,
       dimensionId: dimension.id,
       text: `שאלה פעילה ${index + 1}`,
       required: true,
       enabled: true,
-      answerMode: 'סקאלת צבעים',
+      kind: "analytic" as const,
+      scaleId: "wellbeing-colour" as const,
+      polarity: "positive" as const,
     }),
   );
-  const disabledQuestion: SurveyDefinitionQuestion = {
+  const disabledQuestion: AnalyticSurveyQuestion = {
     ...enabledQuestions[0],
     id: 'disabled-supplemental',
     text: 'שאלה לא פעילה',

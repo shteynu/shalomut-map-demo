@@ -119,7 +119,9 @@ function createBuilderQuestions(): BuilderQuestion[] {
     dimensionId: dimension.id,
     required: true,
     enabled: true,
-    answerMode: "סקאלת צבעים",
+    kind: "analytic" as const,
+    scaleId: "wellbeing-colour" as const,
+    polarity: "positive" as const,
   }));
 }
 
@@ -180,7 +182,9 @@ test("survey question card exposes editable stable ID, exact text, and dimension
     dimensionId: "balance",
     required: true,
     enabled: true,
-    answerMode: "סקאלת צבעים",
+    kind: "analytic" as const,
+    scaleId: "wellbeing-colour" as const,
+    polarity: "positive" as const,
   };
   const html = renderToStaticMarkup(
     <SurveyQuestionCard
@@ -209,7 +213,9 @@ test("builder serialization keeps the exact persisted question text and removes 
     dimensionId: "meaning",
     required: true,
     enabled: true,
-    answerMode: "סקאלת צבעים",
+    kind: "analytic" as const,
+    scaleId: "wellbeing-colour" as const,
+    polarity: "positive" as const,
   };
 
   assert.deepStrictEqual(toSurveyDefinitionQuestion(question), {
@@ -218,6 +224,8 @@ test("builder serialization keeps the exact persisted question text and removes 
     dimensionId: "meaning",
     required: true,
     enabled: true,
-    answerMode: "סקאלת צבעים",
+    kind: "analytic" as const,
+    scaleId: "wellbeing-colour" as const,
+    polarity: "positive" as const,
   });
 });

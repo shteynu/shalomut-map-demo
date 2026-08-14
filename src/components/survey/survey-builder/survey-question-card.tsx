@@ -1,6 +1,7 @@
 import type { CSSProperties, KeyboardEvent } from "react";
 import { ChevronDown, ChevronUp, ClipboardList, Clock3, Copy, Edit3, Eye, ShieldCheck, Trash2 } from "lucide-react";
 import { dimensionPresentations } from "@/lib/dashboard/dimension-presentation";
+import { getAnswerScale } from "@/lib/survey/answer-scales";
 import { questionAcceleratorFor } from "./keyboard-accelerators";
 import type { BuilderQuestion } from "./types";
 
@@ -271,7 +272,7 @@ export function SurveyQuestionCard({
         </span>
         <span className="status-badge status-yellow">
           <Clock3 size={15} aria-hidden="true" />
-          {question.answerMode}
+          {getAnswerScale(question.scaleId).label}
         </span>
       </div>
     </article>

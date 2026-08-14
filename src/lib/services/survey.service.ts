@@ -1,13 +1,16 @@
 import { DuplicateResponseError } from '../repositories/errors';
 import { ISurveyRepository } from '../repositories/interfaces';
 import { responseScale, surveyInstrument } from '../shalomut-source';
+import { isValueOnScale, scoreForAnswer } from '../survey/answer-scales';
 import {
+  AnalyticSurveyQuestion,
   AnswerValue,
+  BackgroundSurveyQuestion,
+  QuestionAnswerInput,
   QuestionAnswerRecord,
   SubmitSurveyResult,
   SurveyResponseInput,
   SurveyResponseRecord,
-  SurveyDefinitionQuestion,
   SurveySubmissionErrorCode,
 } from '../types/backend';
 import { recordDuplicateSubmissionConflict } from '../server/ai-operational-metrics';
@@ -40,9 +43,137 @@ export const SURVEY_SUBMISSION_ERROR_STATUS: Record<
   ALREADY_SUBMITTED: 409,
 };
 
+/**
+ * What the service needs to know about a question to check an answer against
+ * it. A `Pick` over the union rather than the whole question, so a caller can
+ * pass the round's snapshot without the surrounding copy.
+ */
+export type ExpectedQuestion =
+  | Pick<AnalyticSurveyQuestion, 'id' | 'kind' | 'dimensionId' | 'required' | 'scaleId' | 'polarity'>
+  | Pick<BackgroundSurveyQuestion, 'id' | 'kind' | 'required' | 'answerMode' | 'options' | 'allocationGroupId'>;
+
+function canonicalExpectedQuestions(): ExpectedQuestion[] {
+  return surveyInstrument.questions.map((question) => ({
+    id: question.id,
+    kind: 'analytic' as const,
+    dimensionId: question.dimensionId,
+    required: question.required,
+    scaleId: 'wellbeing-colour' as const,
+    polarity: 'positive' as const,
+  }));
+}
+
+/** A whole number from 0 to 100, which is what an allocation row may hold. */
+function parseAllocationEntry(value: string): number | undefined {
+  if (!/^\d{1,3}$/.test(value)) return undefined;
+  const parsed = Number(value);
+  return parsed <= 100 ? parsed : undefined;
+}
+
+function validateAnswerValue(
+  question: ExpectedQuestion,
+  value: string,
+): string | undefined {
+  if (question.kind === 'analytic') {
+    return isValueOnScale(question.scaleId, value)
+      ? undefined
+      : `Invalid answer value '${value}' for question ${question.id}`;
+  }
+
+  if (question.answerMode === 'single-choice') {
+    const allowed = question.options ?? [];
+    return allowed.some((option) => option.value === value)
+      ? undefined
+      : `Invalid answer value '${value}' for question ${question.id}`;
+  }
+
+  if (question.answerMode === 'allocation-100') {
+    return parseAllocationEntry(value) === undefined
+      ? `Invalid answer value '${value}' for question ${question.id}`
+      : undefined;
+  }
+
+  // `number`: a plain non-negative amount. Bounded only by being a number,
+  // because the questions that use it — average daily hours — have no ceiling
+  // this layer can defend without inventing one.
+  return /^\d+(\.\d+)?$/.test(value)
+    ? undefined
+    : `Invalid answer value '${value}' for question ${question.id}`;
+}
+
+/**
+ * Each allocation grid the submission touched must total exactly 100.
+ *
+ * Checked here rather than only in the browser because the endpoint is public:
+ * the respondent screen refuses a total that is not 100, and nothing stops a
+ * request that skipped that screen. A grid nobody answered is not checked —
+ * skipping an optional grid is allowed, answering half of it is not.
+ */
+function validateAllocationTotals(
+  expectedQuestions: ExpectedQuestion[],
+  answers: QuestionAnswerInput[],
+): string | undefined {
+  const groups = new Map<string, { expected: Set<string>; total: number; answered: number }>();
+
+  for (const question of expectedQuestions) {
+    if (question.kind !== 'background') continue;
+    if (question.answerMode !== 'allocation-100') continue;
+    const groupId = question.allocationGroupId!;
+    const group = groups.get(groupId) ?? {
+      expected: new Set<string>(),
+      total: 0,
+      answered: 0,
+    };
+    group.expected.add(question.id);
+    groups.set(groupId, group);
+  }
+
+  if (groups.size === 0) return undefined;
+
+  for (const answer of answers) {
+    for (const group of groups.values()) {
+      if (!group.expected.has(answer.questionId)) continue;
+      const entry = parseAllocationEntry(answer.value);
+      if (entry === undefined) continue;
+      group.total += entry;
+      group.answered += 1;
+    }
+  }
+
+  for (const [groupId, group] of groups) {
+    if (group.answered === 0) continue;
+    if (group.answered !== group.expected.size) {
+      return `Allocation grid '${groupId}' must be answered in full.`;
+    }
+    if (group.total !== 100) {
+      return `Allocation grid '${groupId}' must total 100, not ${group.total}.`;
+    }
+  }
+
+  return undefined;
+}
+
+/**
+ * The score one answer contributes, or `undefined` when the question is
+ * background and contributes to no dimension.
+ */
+export function scoreForQuestionAnswer(
+  question: ExpectedQuestion,
+  value: string,
+): number | undefined {
+  if (question.kind !== 'analytic') return undefined;
+  return scoreForAnswer(question.scaleId, value, question.polarity);
+}
+
 export class SurveyService {
   /**
-   * Convert categorical answer ('green' | 'yellow' | 'red') to numerical score (100 | 60 | 0)
+   * Convert a colour answer to its score.
+   *
+   * Kept because the legacy `2.0` exchange and every round persisted before
+   * the research instrument speak these three values, and because a caller
+   * holding only a colour has no question to ask about a scale. New code
+   * scores through `scoreForQuestionAnswer`, which knows the scale and the
+   * polarity of the question being answered.
    */
   public static valueToScore(value: AnswerValue): 100 | 60 | 0 {
     const scale = responseScale.find((s) => s.value === value);
@@ -51,14 +182,14 @@ export class SurveyService {
   }
 
   /**
-   * Validate that all 24 questions of the canonical questionnaire are answered
+   * Validate a submission against the exact questions the round asks.
+   *
+   * The default is the canonical template, which is what a round with no
+   * persisted snapshot is still read against.
    */
   public static validateInput(
     input: SurveyResponseInput,
-    expectedQuestions: Pick<
-      SurveyDefinitionQuestion,
-      'id' | 'dimensionId' | 'required'
-    >[] = surveyInstrument.questions,
+    expectedQuestions: ExpectedQuestion[] = canonicalExpectedQuestions(),
   ): {
     valid: boolean;
     error?: string;
@@ -88,33 +219,47 @@ export class SurveyService {
       };
     }
 
-    const validValues: AnswerValue[] = ['green', 'yellow', 'red'];
     const expectedById = new Map(
-      expectedQuestions.map((question) => [question.id, question.dimensionId]),
+      expectedQuestions.map((question) => [question.id, question]),
     );
     const seenQuestionIds = new Set<string>();
 
     for (const answer of input.answers) {
-      if (!validValues.includes(answer.value)) {
-        return {
-          valid: false,
-          error: `Invalid answer value '${answer.value}' for question ${answer.questionId}`,
-        };
-      }
-
-      const expectedDimensionId = expectedById.get(answer.questionId);
-      if (
-        !expectedDimensionId ||
-        expectedDimensionId !== answer.dimensionId ||
-        seenQuestionIds.has(answer.questionId)
-      ) {
+      const question = expectedById.get(answer.questionId);
+      if (!question || seenQuestionIds.has(answer.questionId)) {
         return {
           valid: false,
           error: `Question '${answer.questionId}' is missing, duplicated, or assigned to the wrong dimension.`,
         };
       }
 
+      // The dimension travels with the answer and is checked against the
+      // round's own question rather than trusted, so a client cannot move an
+      // answer onto a different stone. A background question has none, and
+      // claiming one is the same kind of lie.
+      const expectedDimensionId =
+        question.kind === 'analytic' ? question.dimensionId : undefined;
+      if (expectedDimensionId !== answer.dimensionId) {
+        return {
+          valid: false,
+          error: `Question '${answer.questionId}' is missing, duplicated, or assigned to the wrong dimension.`,
+        };
+      }
+
+      const valueError = validateAnswerValue(question, answer.value);
+      if (valueError) {
+        return { valid: false, error: valueError };
+      }
+
       seenQuestionIds.add(answer.questionId);
+    }
+
+    const allocationError = validateAllocationTotals(
+      expectedQuestions,
+      input.answers,
+    );
+    if (allocationError) {
+      return { valid: false, error: allocationError };
     }
 
     const missingRequiredQuestion = requiredQuestions.find(
@@ -135,10 +280,7 @@ export class SurveyService {
    */
   public static processSubmission(
     input: SurveyResponseInput,
-    expectedQuestions: Pick<
-      SurveyDefinitionQuestion,
-      'id' | 'dimensionId' | 'required'
-    >[] = surveyInstrument.questions,
+    expectedQuestions: ExpectedQuestion[] = canonicalExpectedQuestions(),
   ): { result: SubmitSurveyResult; record?: SurveyResponseRecord } {
     const validation = this.validateInput(input, expectedQuestions);
     if (!validation.valid) {
@@ -153,11 +295,16 @@ export class SurveyService {
 
     const responseId = crypto.randomUUID();
 
+    const questionById = new Map(
+      expectedQuestions.map((question) => [question.id, question]),
+    );
     const answerRecords: QuestionAnswerRecord[] = input.answers.map(
-      (answer) => ({
-        ...answer,
-        score: this.valueToScore(answer.value),
-      })
+      (answer) => {
+        const question = questionById.get(answer.questionId)!;
+        const score = scoreForQuestionAnswer(question, answer.value);
+
+        return score === undefined ? { ...answer } : { ...answer, score };
+      },
     );
 
     const record: SurveyResponseRecord = {
@@ -183,10 +330,7 @@ export class SurveyService {
   public static async submitAndSaveResponse(
     input: SurveyResponseInput,
     surveyRepo: ISurveyRepository,
-    expectedQuestions: Pick<
-      SurveyDefinitionQuestion,
-      'id' | 'dimensionId' | 'required'
-    >[] = surveyInstrument.questions,
+    expectedQuestions: ExpectedQuestion[] = canonicalExpectedQuestions(),
   ): Promise<SubmitSurveyResult> {
     if (input.anonymousTokenHash) {
       const alreadySubmitted = await surveyRepo.hasTokenSubmitted(

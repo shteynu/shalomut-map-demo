@@ -376,12 +376,16 @@ export function SurveyFlow({
     setSubmitError(null);
 
     const formattedAnswers = Object.entries(answers).map(([questionId, value]) => {
-      const q = surveyQuestions.find((item) => item.id === questionId);
-      return {
-        questionId,
-        dimensionId: q?.dimensionId || "self-expression",
-        value,
-      };
+      const question = surveyQuestions.find((item) => item.id === questionId);
+
+      // No fallback dimension. This used to send `self-expression` for a
+      // question it could not find, which the server refuses anyway — so the
+      // fallback only ever turned "we lost the question" into a message about
+      // the wrong stone. Omitting it says the same thing accurately, and is
+      // what a background answer carries too.
+      return question?.kind === "analytic"
+        ? { questionId, dimensionId: question.dimensionId, value }
+        : { questionId, value };
     });
 
     try {

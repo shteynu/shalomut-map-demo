@@ -1,7 +1,12 @@
 import { surveyInstrument } from "@/lib/shalomut-source";
-import type {
-  SurveyDefinition,
-  SurveyDefinitionQuestion,
+import { isAnswerScaleId } from "@/lib/survey/answer-scales";
+import {
+  isAnalyticQuestion,
+  type AnalyticSurveyQuestion,
+  type BackgroundAnswerMode,
+  type SurveyDefinition,
+  type SurveyDefinitionQuestion,
+  type SurveyQuestionOption,
 } from "@/lib/types/backend";
 
 /**
@@ -48,6 +53,203 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
+}
+
+type QuestionCommon = {
+  id: string;
+  text: string;
+  required: boolean;
+  enabled: boolean;
+  sectionId?: string;
+};
+
+type ParseResult<T> = { ok: true; value: T } | { ok: false; error: string };
+
+const BACKGROUND_ANSWER_MODES: BackgroundAnswerMode[] = [
+  "single-choice",
+  "number",
+  "allocation-100",
+];
+
+function parseOptions(
+  value: unknown,
+): ParseResult<SurveyQuestionOption[]> {
+  if (!Array.isArray(value) || value.length === 0) {
+    return { ok: false, error: "Survey question options must not be empty." };
+  }
+
+  const parsed: SurveyQuestionOption[] = [];
+  const seen = new Set<string>();
+
+  for (const option of value) {
+    if (
+      !isRecord(option) ||
+      !isNonEmptyString(option.value) ||
+      !isNonEmptyString(option.label)
+    ) {
+      return { ok: false, error: "Survey question options must not be empty." };
+    }
+    if (seen.has(option.value)) {
+      return {
+        ok: false,
+        error: "Survey question option values must be unique.",
+      };
+    }
+    seen.add(option.value);
+    parsed.push({ value: option.value, label: option.label });
+  }
+
+  return { ok: true, value: parsed };
+}
+
+/**
+ * Reads one persisted question into its kind.
+ *
+ * **A question with no `kind` is analytic on the colour scale with positive
+ * polarity, and this is the load-bearing line of the whole change.** Every
+ * questionnaire in the database was written before these fields existed. If
+ * they defaulted any other way — or if their absence were refused — a round
+ * mid-collection would either change what its answers mean or stop rendering,
+ * and neither is recoverable from once a staffroom has started answering.
+ *
+ * The old `answerMode` string is deliberately not read back. It was a label
+ * shown on the builder card, hardcoded to `סקאלת צבעים` at all three sites
+ * that produced one and editable at none of them, so nothing a manager typed
+ * is lost by deriving the label from the scale instead.
+ */
+function parseQuestionKind(
+  raw: Record<string, unknown>,
+  common: QuestionCommon,
+  validDimensionIds: Set<string>,
+): ParseResult<SurveyDefinitionQuestion> {
+  const kind = raw.kind === undefined ? "analytic" : raw.kind;
+
+  if (kind === "background") {
+    if (
+      !isNonEmptyString(raw.answerMode) ||
+      !BACKGROUND_ANSWER_MODES.includes(raw.answerMode as BackgroundAnswerMode)
+    ) {
+      return { ok: false, error: "Survey contains an invalid question." };
+    }
+    const answerMode = raw.answerMode as BackgroundAnswerMode;
+
+    if (raw.dimensionId !== undefined) {
+      return {
+        ok: false,
+        error: "A background question cannot carry a wellbeing dimension.",
+      };
+    }
+
+    let options: SurveyQuestionOption[] | undefined;
+    if (answerMode === "single-choice") {
+      const parsedOptions = parseOptions(raw.options);
+      if (!parsedOptions.ok) return parsedOptions;
+      options = parsedOptions.value;
+    } else if (raw.options !== undefined) {
+      const parsedOptions = parseOptions(raw.options);
+      if (!parsedOptions.ok) return parsedOptions;
+      options = parsedOptions.value;
+    }
+
+    if (
+      answerMode === "allocation-100" &&
+      !isNonEmptyString(raw.allocationGroupId)
+    ) {
+      return {
+        ok: false,
+        error: "An allocation question must name the grid it belongs to.",
+      };
+    }
+    if (
+      answerMode !== "allocation-100" &&
+      raw.allocationGroupId !== undefined
+    ) {
+      return {
+        ok: false,
+        error: "Only an allocation question may name a grid.",
+      };
+    }
+
+    return {
+      ok: true,
+      value: {
+        ...common,
+        kind: "background",
+        answerMode,
+        ...(options ? { options } : {}),
+        ...(answerMode === "allocation-100"
+          ? { allocationGroupId: raw.allocationGroupId as string }
+          : {}),
+      },
+    };
+  }
+
+  if (kind !== "analytic") {
+    return { ok: false, error: "Survey contains an invalid question." };
+  }
+
+  if (
+    !isNonEmptyString(raw.dimensionId) ||
+    !validDimensionIds.has(raw.dimensionId)
+  ) {
+    return { ok: false, error: "Survey contains an invalid question." };
+  }
+
+  const scaleId = raw.scaleId === undefined ? "wellbeing-colour" : raw.scaleId;
+  if (!isAnswerScaleId(scaleId)) {
+    return { ok: false, error: "Survey contains an invalid question." };
+  }
+
+  const polarity = raw.polarity === undefined ? "positive" : raw.polarity;
+  if (polarity !== "positive" && polarity !== "negative") {
+    return { ok: false, error: "Survey contains an invalid question." };
+  }
+
+  if (raw.options !== undefined || raw.allocationGroupId !== undefined) {
+    return {
+      ok: false,
+      error: "An analytic question is answered on a scale, not from options.",
+    };
+  }
+
+  return {
+    ok: true,
+    value: {
+      ...common,
+      kind: "analytic",
+      dimensionId: raw.dimensionId as AnalyticSurveyQuestion["dimensionId"],
+      scaleId,
+      polarity,
+    },
+  };
+}
+
+/**
+ * A grid's rows must be present together and must be answerable to 100.
+ *
+ * A group of one is refused rather than tolerated: a single row that has to
+ * total 100 is not a grid, it is a question with exactly one possible answer,
+ * and it almost certainly means the other rows were dropped.
+ */
+function validateAllocationGroups(
+  questions: SurveyDefinitionQuestion[],
+): string | undefined {
+  const sizes = new Map<string, number>();
+
+  for (const question of questions) {
+    if (question.kind !== "background") continue;
+    if (question.answerMode !== "allocation-100") continue;
+    const groupId = question.allocationGroupId!;
+    sizes.set(groupId, (sizes.get(groupId) ?? 0) + 1);
+  }
+
+  for (const [groupId, size] of sizes) {
+    if (size < 2) {
+      return `Allocation grid '${groupId}' needs at least two rows to total 100.`;
+    }
+  }
+
+  return undefined;
 }
 
 export function parseSurveyDefinition(
@@ -121,13 +323,8 @@ export function parseSurveyDefinition(
       !isRecord(question) ||
       !isNonEmptyString(question.id) ||
       !isNonEmptyString(question.text) ||
-      !isNonEmptyString(question.dimensionId) ||
-      !validDimensionIds.has(
-        question.dimensionId as SurveyDefinitionQuestion["dimensionId"],
-      ) ||
       typeof question.required !== "boolean" ||
-      typeof question.enabled !== "boolean" ||
-      !isNonEmptyString(question.answerMode)
+      typeof question.enabled !== "boolean"
     ) {
       return { ok: false, error: "Survey contains an invalid question." };
     }
@@ -137,21 +334,35 @@ export function parseSurveyDefinition(
     }
     seenQuestionIds.add(question.id);
 
-    parsedQuestions.push({
+    if (question.sectionId !== undefined && !isNonEmptyString(question.sectionId)) {
+      return { ok: false, error: "Survey contains an invalid question." };
+    }
+    const sectionId = isNonEmptyString(question.sectionId)
+      ? question.sectionId
+      : undefined;
+
+    const parsed = parseQuestionKind(question, {
       id: question.id,
       text: question.text,
-      dimensionId:
-        question.dimensionId as SurveyDefinitionQuestion["dimensionId"],
       required: question.required,
       enabled: question.enabled,
-      answerMode: question.answerMode,
-    });
+      sectionId,
+    }, validDimensionIds);
+    if (!parsed.ok) return parsed;
+
+    parsedQuestions.push(parsed.value);
+  }
+
+  const allocationError = validateAllocationGroups(parsedQuestions);
+  if (allocationError) {
+    return { ok: false, error: allocationError };
   }
 
   if (!options?.allowIncomplete) {
     const enabledDimensionIds = new Set(
       parsedQuestions
         .filter((question) => question.enabled)
+        .filter(isAnalyticQuestion)
         .map((question) => question.dimensionId),
     );
     for (const dimensionId of validDimensionIds) {
@@ -187,15 +398,41 @@ export function hasSameQuestionSnapshot(
 
   return current.questions.every((question, index) => {
     const candidate = next.questions[index];
-    return (
-      candidate !== undefined &&
-      question.id === candidate.id &&
-      question.text === candidate.text &&
-      question.dimensionId === candidate.dimensionId &&
-      question.required === candidate.required &&
-      question.enabled === candidate.enabled &&
-      question.answerMode === candidate.answerMode
-    );
+    if (candidate === undefined) return false;
+
+    if (
+      question.id !== candidate.id ||
+      question.text !== candidate.text ||
+      question.required !== candidate.required ||
+      question.enabled !== candidate.enabled ||
+      question.kind !== candidate.kind ||
+      question.sectionId !== candidate.sectionId
+    ) {
+      return false;
+    }
+
+    // Compared per kind rather than field by field: how an answer is given is
+    // part of what the question asks, and a question that changed from a
+    // five-point scale to a seven-point one is not the same question even
+    // though its text is unchanged.
+    if (question.kind === "analytic" && candidate.kind === "analytic") {
+      return (
+        question.dimensionId === candidate.dimensionId &&
+        question.scaleId === candidate.scaleId &&
+        question.polarity === candidate.polarity
+      );
+    }
+
+    if (question.kind === "background" && candidate.kind === "background") {
+      return (
+        question.answerMode === candidate.answerMode &&
+        question.allocationGroupId === candidate.allocationGroupId &&
+        JSON.stringify(question.options ?? null) ===
+          JSON.stringify(candidate.options ?? null)
+      );
+    }
+
+    return false;
   });
 }
 
@@ -234,6 +471,7 @@ export function isActivatableSurveyDefinition(
   const enabledDimensionIds = new Set(
     definition.questions
       .filter((question) => question.enabled)
+      .filter(isAnalyticQuestion)
       .map((question) => question.dimensionId),
   );
 
@@ -293,9 +531,14 @@ export function createCanonicalSurveyDefinition(
     anonymityText:
       "לא נאספים שם, כתובת מייל או פרטים מזהים. רק הנהלת בית הספר רואה תמונת מצב מצרפית.",
     questions: surveyInstrument.questions.map((question) => ({
-      ...question,
+      id: question.id,
+      text: question.text,
+      required: question.required,
       enabled: true,
-      answerMode: "סקאלת צבעים",
+      kind: "analytic" as const,
+      dimensionId: question.dimensionId,
+      scaleId: "wellbeing-colour" as const,
+      polarity: "positive" as const,
     })),
   };
 }

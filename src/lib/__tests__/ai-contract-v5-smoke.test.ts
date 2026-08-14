@@ -9,7 +9,7 @@ import { encodeRoundAnalytics } from '../analytics-encoder';
 import { AnalyticsService } from '../services/analytics.service';
 import { createSurveyDefinitionHash } from '../survey-definition-hash';
 import type {
-  SurveyDefinitionQuestion,
+  AnalyticSurveyQuestion,
   SurveyResponseRecord,
   SurveyRound,
 } from '../types/backend';
@@ -29,13 +29,15 @@ const DIMENSION_IDS: WellbeingDimensionId[] = [
 test('Smoke Test 1: Full Contract 5.0 analytical calculation and validation', async () => {
   const roundId = 'smoke-round-5';
   const orgId = 'smoke-org-5';
-  const questions: SurveyDefinitionQuestion[] = DIMENSION_IDS.map((dim, idx) => ({
+  const questions: AnalyticSurveyQuestion[] = DIMENSION_IDS.map((dim, idx) => ({
     id: `q-smoke-${idx + 1}`,
     dimensionId: dim,
     text: `שאלה בסקר לתחום ${AI_ANALYTICS_DIMENSION_NAMES_HEBREW[dim]}`,
     required: true,
     enabled: true,
-    answerMode: 'סקאלת צבעים',
+    kind: "analytic" as const,
+    scaleId: "wellbeing-colour" as const,
+    polarity: "positive" as const,
   }));
 
   const round: SurveyRound = {

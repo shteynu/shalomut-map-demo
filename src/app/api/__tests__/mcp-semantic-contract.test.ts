@@ -11,7 +11,7 @@ import { createCanonicalSurveyDefinition } from '@/lib/survey-definition';
 import { createSurveyDefinitionHash } from '@/lib/survey-definition-hash';
 import { DEFAULT_PRODUCED_ANALYTICS_CONTRACT_VERSION } from '@/lib/ai-contract-version';
 import type {
-  SurveyDefinitionQuestion,
+  AnalyticSurveyQuestion,
   SurveyResponseRecord,
 } from '@/lib/types/backend';
 
@@ -20,14 +20,16 @@ const lockedRoundId = 'round_mcp_semantic_locked';
 let previousDatabaseUrl: string | undefined;
 let previousMcpSecret: string | undefined;
 
-const dynamicQuestions: SurveyDefinitionQuestion[] = surveyInstrument.dimensions.map(
+const dynamicQuestions: AnalyticSurveyQuestion[] = surveyInstrument.dimensions.map(
   (dimension, index) => ({
     id: `mcp-custom-${dimension.id}-${index + 1}`,
     dimensionId: dimension.id,
     text: `שאלת MCP מותאמת ${index + 1}`,
     required: true,
     enabled: true,
-    answerMode: 'סקאלת צבעים',
+    kind: "analytic" as const,
+    scaleId: "wellbeing-colour" as const,
+    polarity: "positive" as const,
   }),
 );
 

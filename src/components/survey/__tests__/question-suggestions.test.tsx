@@ -37,7 +37,9 @@ function draft(text: string): BuilderQuestion {
     dimensionId: "certainty",
     required: true,
     enabled: true,
-    answerMode: "סקאלת צבעים",
+    kind: "analytic" as const,
+    scaleId: "wellbeing-colour" as const,
+    polarity: "positive" as const,
   };
 }
 
