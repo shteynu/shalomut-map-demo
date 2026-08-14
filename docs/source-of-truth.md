@@ -15,6 +15,16 @@ round questionnaires and from demo result data.
 > Production explicitly selects `6.0` after the completed consumer-first
 > rollout.
 
+> **A replacement for the default questionnaire is planned and not built.**
+> Owner decision 2026-08-14: a 126-item research instrument replaces the 24
+> statements as the default template, with mixed-polarity 1–5 and 1–7 scales,
+> demographic items that score nothing and k-anonymous cross-tabulation. Every
+> sentence in this document describes the shipped 24-question default and stays
+> accurate until the phases of
+> [`default-research-instrument-plan-2026-08-14.md`](default-research-instrument-plan-2026-08-14.md)
+> land. Do not read that plan as current behaviour, and do not update this
+> document ahead of the code.
+
 ## Canonical Decisions
 
 - The Google Form is the canonical default/legacy questionnaire source for v1:
@@ -54,6 +64,7 @@ round questionnaires and from demo result data.
 | `מיזם ״מפת שלומות״` (owner-held PDF) | One-page initiative narrative: positioning, AI framing, partners, and founder context. |
 | `שלומות לאירה` (owner-held PDF) | Workshop/storytelling deck: journey metaphor and the 8-dimension map narrative. |
 | `המרחב האנושי דרכא` (owner-held PDF) | Hebrew workshop deck: burnout framing, wellbeing framing, 8 dimensions, scale language, and reflection prompts. |
+| Research instrument (owner-held Google Doc `1W7bQhdo0oyJ-WL73MmrsZB3XJqNDo_lE`) | **Planned, not in use.** Designated replacement for the default template: 16 demographic items, 2 sum-to-100 allocation grids and 108 Likert statements on 1–5 and 1–7 scales. Nothing in the code reads it yet; see the plan linked at the top of this file. |
 
 ## Current Code Map
 

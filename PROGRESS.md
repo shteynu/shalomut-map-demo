@@ -1,6 +1,6 @@
 # Shalomut Map — product progress
 
-Updated: 2026-08-13. This file is a concise product-level milestone record, not
+Updated: 2026-08-14. This file is a concise product-level milestone record, not
 a session log. Branch evidence lives in `docs/agent-tasks/archive/`; current
 deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 
@@ -339,12 +339,23 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 
 ### Product
 
-Nothing open that an agent can start. The cheap-wins list of
+**One thing is open and an agent can start it: replacing the default
+questionnaire with the owner's research instrument** (decision 2026-08-14). 126
+items instead of 24, 1–5 and 1–7 scales with mixed polarity instead of one
+three-colour scale, demographic items that score nothing, and k-anonymous
+cross-tabulation. `docs/default-research-instrument-plan-2026-08-14.md` holds
+the six phases; phase 1 is the answer model and waits on nothing, while phases 3
+and 5 wait on the methodologist's item-to-dimension mapping. Nothing is
+implemented, so every capability recorded above still describes the
+24-question default.
+
+That decision also closes the answer-scale question the two items below were
+waiting with. The cheap-wins list of
 `docs/product-strategy-axes-2026-08-10.md` was closed as engineering work on
 2026-08-11: its two survivors are whether the provider key is on a paid billing
 account, which only the owner can read, and rewriting the questions and anchors
-in the inclusive convention, which is methodology and waits with the
-answer-scale decision. Of the larger axes, error tracking (axis 5) needs an
+in the inclusive convention — methodology that now belongs to the instrument
+replacement rather than to a standing hold. Of the larger axes, error tracking (axis 5) needs an
 account and a DSN the owner creates, and the score's blindness to a split staff
 room (axis 6) is a measurement decision rather than a defect to fix.
 

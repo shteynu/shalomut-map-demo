@@ -45,11 +45,25 @@ is indexed by `contracts/capabilities.json`. OpenAPI has one editable source,
 [`openapi.yaml`](openapi.yaml); `public/openapi.json` is generated from it by
 `npm run openapi:generate` and must never be edited by hand.
 
+## Live plans
+
+A plan belongs here while it is the current task queue, and moves to the
+historical section below once it is delivered or abandoned. This section exists
+because the two states are read differently: a live plan is meant to be acted
+on, and a historical one explicitly is not.
+
+- [`default-research-instrument-plan-2026-08-14.md`](default-research-instrument-plan-2026-08-14.md)
+  — replacing the default 24-question template with the owner's 126-item
+  research instrument. Six phases, three owner decisions taken and five open.
+  **Not yet implemented**: every living document still describes the
+  24-question default, because that is what the code does.
+
 ## Historical plans and evidence
 
 Dated plans and rollout records are evidence of decisions at that time, not a
 current task queue. Do not mechanically update their old commands, test counts
-or deployment snapshots:
+or deployment snapshots. The one plan that *is* a current task queue is listed
+under "Live plans" above:
 
 - `*-plan*.md`, `completion-plan-*`, `manager-feedback-plan-*`,
   `provider-quota-plan-*` and `e2-step3-contract-version-rollout.md`;

@@ -72,6 +72,16 @@ under `contracts/`, this document, and the ADR that owns the behaviour.
 
 ## Adding a real next version
 
+**A `7.0` is planned and not started, as of 2026-08-14.** The instrument
+replacement in `docs/default-research-instrument-plan-2026-08-14.md` cannot be
+carried by an amendment to `6.0`, and the reason is worth stating so nobody
+tries: `scoreDistribution` is `{green, yellow, red}` and required from `5.0`,
+which cannot describe a 1–7 item; and `metricCoverage` — exactly every input
+question aggregate, each with a 300–500 character `insightText` — would mean 108
+narratives per round. Both are changed meanings rather than optional additions,
+so the amendment rule in the section above does not apply and the sequence below
+does. Nothing about `1.0`–`6.0` changes.
+
 The rollout remains consumer-first:
 
 1. Publish a new immutable manifest and capability entry without changing the

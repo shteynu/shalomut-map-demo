@@ -1,9 +1,12 @@
 # Product Behaviour Backlog
 
-Updated: 2026-08-09
-Status: every numbered item below is closed except the two that wait on being
-requested — §8, a second manager per school, and §11, repeat-measurement
-reminders. §5's two open questions were closed by owner decision on 2026-08-09,
+Updated: 2026-08-14
+Status: every numbered item below is closed except §12, which is open and
+decided, and the two that wait on being requested — §8, a second manager per
+school, and §11, repeat-measurement reminders. §12, the research instrument
+replacing the default questionnaire, was decided on 2026-08-14 and supersedes
+the answer-model entry under "Deliberate differences". §5's two open questions
+were closed by owner decision on 2026-08-09,
 both as "no"; see the item itself. Reconciled against the owner's
 development requirements document ("פיתוח פלטפורמת מפת שלומות — MVP + הכנה
 לשלב הבא", Google Docs)
@@ -43,15 +46,28 @@ tracked as numbered items below.
 
 ### Deliberate differences
 
-- **Answer model (§5.1).** The document lists Likert scales, choice questions,
-  open text fields and 100% distribution items. The product uses one
-  three-colour scale (`green`/`yellow`/`red`, scored `100`/`60`/`0`). Owner
-  decision 2026-08-03: this is the intended product simplification, not a gap.
-  The scale carries the whole analytics pipeline — dimension scores, colour
-  categories, per-question distributions and published contracts `1.0`–`6.0` —
-  so the document is out of date on this point and no backlog item follows from
-  it. Open text also carries a privacy cost the colour scale does not: free
-  writing can identify its author inside a small staff room.
+- **Answer model (§5.1). Superseded on 2026-08-14 — this is now a gap with a
+  plan, and §12 below owns it.** The 2026-08-03 decision is preserved here
+  because the reasoning still holds for everything it covered, and because the
+  reversal is a product decision rather than a discovery that the old one was
+  wrong.
+
+  The document lists Likert scales, choice questions, open text fields and 100%
+  distribution items. The product uses one three-colour scale
+  (`green`/`yellow`/`red`, scored `100`/`60`/`0`). Owner decision 2026-08-03:
+  this is the intended product simplification, not a gap. The scale carries the
+  whole analytics pipeline — dimension scores, colour categories, per-question
+  distributions and published contracts `1.0`–`6.0` — so the document is out of
+  date on this point and no backlog item follows from it. Open text also carries
+  a privacy cost the colour scale does not: free writing can identify its author
+  inside a small staff room.
+
+  What changed on 2026-08-14: the owner designated a specific research
+  instrument as the default questionnaire, and it uses three of the four shapes
+  §5.1 named — 1–5 and 1–7 Likert scales, single-choice demographic items, and
+  two sum-to-100 distribution grids. Open text remains out, and the privacy
+  argument above is why. The alignment with §5.1 is a consequence of that
+  instrument, not the motivation for it.
 - **Roles (§3.1, §3.4, §5.6, §7.7).** The document places Owner/Admin and
   read-only Viewer access inside MVP scope. Owner decision 2026-08-03: one
   manager per deployment is the requested shape, so viewer and admin roles are
@@ -536,3 +552,41 @@ Proposal, when this is actually requested:
 Why it matters:
 - Naming the manager as the only reachable party keeps a future reminder
   feature from quietly introducing respondent contact details.
+
+### 12. The Default Questionnaire Becomes A Research Instrument (open, decided 2026-08-14)
+
+Owner decision 2026-08-14: the 24-statement default template is replaced by a
+126-item research instrument held in the owner's Google Docs — 16 demographic
+items, 2 sum-to-100 allocation grids and 108 Likert statements across 13 blocks
+on two scale lengths. This reverses the "Deliberate differences" entry above on
+the answer model and closes the answer-scale question the 2026-08-10 strategy
+sweep left open.
+
+Current state: nothing is implemented. `src/lib/shalomut-source.ts` holds the
+24 questions and one three-colour scale, and `SurveyDefinitionQuestion` has no
+representation for a scale length, an answer polarity, an option set or an item
+that scores nothing.
+
+The plan is `docs/default-research-instrument-plan-2026-08-14.md` and is not
+restated here. What belongs in this backlog is the shape of the behaviour
+change:
+
+- A respondent answers on 1–5 and 1–7 scales instead of three colour stones, in
+  blocks rather than one question per screen.
+- A respondent answers demographic questions the product has never asked, and
+  the manager can read results broken down by group, with cells below the
+  threshold suppressed.
+- A manager's builder edits answer types, option sets and sections rather than
+  a flat list with a free-text answer label.
+
+Why it matters:
+- The three-colour scale is load-bearing in the analytics pipeline and in every
+  published contract, so this is a data-model change that happens to look like
+  new content. Treating it as content is how it becomes a silent regression in
+  how rounds are scored.
+- Two settled decisions constrain it: the eight dimensions stay, and cross-tabs
+  are allowed with suppression rather than forbidden.
+
+Open, and gating: the methodologist's table mapping each of the 108 Likert items
+to one of the eight dimensions, plus which items are reverse-scored. Four more
+open questions are in the plan's §7.

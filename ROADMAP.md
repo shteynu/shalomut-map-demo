@@ -1,6 +1,6 @@
 # Product Roadmap — Shalomut Map (מפת שלומות)
 
-Updated: 2026-08-05. This roadmap summarizes outcomes; detailed session history
+Updated: 2026-08-14. This roadmap summarizes outcomes; detailed session history
 belongs in archived task files and Git.
 
 ## Completed platform foundation
@@ -30,9 +30,23 @@ belongs in archived task files and Git.
 
 ## Next product outcomes
 
-None open. All five outcomes this section listed were delivered or decided
-between 2026-08-02 and 2026-08-05, and the list is recorded here as shipped
-rather than deleted, so nobody rebuilds it from an old copy of this file.
+**One open, as of 2026-08-14: the default questionnaire becomes the owner's
+research instrument.** 126 items instead of 24, mixed-polarity 1–5 and 1–7
+scales instead of one three-colour scale, 18 items that belong to no wellbeing
+dimension, and k-anonymous cross-tabulation by demographic group. It is a data
+model change before it is a content change, and it reaches persistence, the
+respondent screen, the builder and a new AI contract version. The six phases,
+the three settled owner decisions and the five open ones are in
+`docs/default-research-instrument-plan-2026-08-14.md`. Phase 1 does not wait on
+anything; phases 3 and 5 wait on the methodologist's item-to-dimension mapping.
+
+This also takes one of the 2026-08-10 strategy decisions off the open list: the
+three-colour answer scale may become longer, with the map kept as a derived
+presentation band.
+
+The five outcomes this section listed before were delivered or decided between
+2026-08-02 and 2026-08-05, and the list is recorded here as shipped rather than
+deleted, so nobody rebuilds it from an old copy of this file.
 `docs/product-behaviour-backlog.md` is the living record of each; this is the
 summary.
 

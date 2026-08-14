@@ -12,6 +12,19 @@ is how to re-read it.
 `docs/agent-tasks/active/` holds only `research--scientific-evidence-layer.md`,
 which waits on owner decisions rather than on an agent.
 
+**2026-08-14 opened a product outcome and wrote no product code.** Owner
+decision: the default questionnaire becomes a 126-item research instrument —
+mixed-polarity 1–5 and 1–7 scales, 18 items that belong to no wellbeing
+dimension, and k-anonymous cross-tabulation by demographic group. The six phases
+and the five still-open questions are in
+`docs/default-research-instrument-plan-2026-08-14.md`; the branch is
+`claude/default-research-instrument-plan` and its task file is in
+`docs/agent-tasks/active/`. **Nothing is implemented**, so every claim elsewhere
+in this file about a 24-question default, a three-colour answer scale or
+contract `6.0` still describes the running product. One new external blocker
+follows from it and is recorded under approval gates: the methodologist's
+item-to-dimension mapping.
+
 **2026-08-13 landed two commits of product code on the manager's own screens.**
 `1d391e3` turned opening a school and opening a round into dialogs that state
 what the save will do, gave the questionnaire builder a question the manager
@@ -1005,11 +1018,21 @@ owner's own hands.
   is already forbidden to assert. The reasoning is in
   `docs/product-behaviour-backlog.md` §5; neither is unfinished work.
 - **Seven decisions from the 2026-08-10 strategy sweep**, in
-  `docs/product-strategy-axes-2026-08-10.md`. The two that gate the most other
-  work: whether a pilot school can be named with a date, and whether the
-  three-colour *answer scale* may become 5–6 points with the map kept as a
-  derived presentation band. The same document restates the credential rotation
-  below as due before the first real respondent rather than after it.
+  `docs/product-strategy-axes-2026-08-10.md`. One of the two that gated the most
+  other work — whether the three-colour *answer scale* may become 5–6 points
+  with the map kept as a derived presentation band — **was answered yes on
+  2026-08-14**, by the decision to adopt the research instrument; see the entry
+  below. What still gates is whether a pilot school can be named with a date.
+  The same document restates the credential rotation below as due before the
+  first real respondent rather than after it.
+- **The item-to-dimension mapping for the new default instrument, 2026-08-14.**
+  Owner decision that day made a 126-item research questionnaire the default
+  (`docs/default-research-instrument-plan-2026-08-14.md`), and the methodologist
+  owns the table saying which of the eight wellbeing dimensions each of its 108
+  Likert items belongs to, plus which items are reverse-scored. It cannot be
+  derived from the document or the code, and it is the same question as the
+  undocumented dimension-to-framework bridge below. It blocks plan phases 3 and
+  5; phases 1, 2 and 4 can be built and verified without it.
 - The twelve decisions in
   `docs/scientific-evidence-layer-research-2026-08-09.md` section 5, of which
   1–3 select between three different projects, plus the undocumented bridge

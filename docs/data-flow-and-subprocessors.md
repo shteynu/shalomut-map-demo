@@ -107,6 +107,18 @@ is not switched on today.
 
 ## What is not covered here
 
+- **The demographic items of the planned default instrument.** Owner decision
+  2026-08-14 replaces the 24-question default with a 126-item research
+  questionnaire that asks 16 background questions — age band, gender, marital
+  status, children, education, role, managerial role, two tenure bands, FTE,
+  hours, commute, salary band, school type, work mode. In a staffroom of 30–60
+  those combine into a re-identification set, and the threshold this file
+  describes counts responses rather than protecting cross-tabs. The owner chose
+  full cross-tabulation with cell suppression below the threshold, which is a
+  mechanism the product does not have. **Nothing here describes it yet because
+  nothing collects those items yet**; this file is rewritten in phase 2 of
+  `docs/default-research-instrument-plan-2026-08-14.md`, which also decides
+  whether background answers cross the model boundary at all.
 - **Retention.** There is none. No schema column expresses it, and deletion
   exists only as `onDelete: Cascade` from an organization or a round. Nothing
   expires on its own.
