@@ -1,9 +1,11 @@
 import {
   RoundBackgroundContext,
   RoundStatus,
+  SurveyDefinition,
   SurveyRound,
   UpdateRoundInput,
 } from '../../types/backend';
+import { parseSurveyDefinition } from '../../survey-definition';
 import { IRoundRepository } from '../interfaces';
 import { MinimalPrismaClient } from './prisma-client';
 
@@ -42,6 +44,34 @@ function normalizeBackgroundContext(
   };
 }
 
+/**
+ * The stored questionnaire, as the domain type promises it.
+ *
+ * This used to be a `structuredClone` of whatever JSON the column held, typed
+ * as a `SurveyDefinition` on trust. Every consumer that parses was fine; the
+ * builder is the one that reads the type at its word, and a questionnaire
+ * written before `kind` existed reached it with no `kind` on any question — so
+ * every question was neither analytic nor background, and the builder showed
+ * eight empty dimension tabs above twenty-four questions.
+ *
+ * `parseSurveyDefinition` is where the defaults for older shapes already live,
+ * so reading through it is what makes the promise true rather than a second
+ * copy of those rules here. `allowIncomplete` because a draft round is allowed
+ * to hold an unfinished questionnaire — the manager is still writing it.
+ *
+ * A definition that will not parse is returned as it was. Refusing it would
+ * take a round off every manager screen instead of letting them repair it,
+ * which is a worse answer than the one this function exists to fix.
+ */
+function readSurveyDefinition(value: unknown): SurveyDefinition | undefined {
+  if (!isRecord(value)) return undefined;
+
+  const parsed = parseSurveyDefinition(value, { allowIncomplete: true });
+  return parsed.ok
+    ? parsed.value
+    : (structuredClone(value) as unknown as SurveyDefinition);
+}
+
 export class PrismaRoundRepository implements IRoundRepository {
   constructor(private prisma: MinimalPrismaClient) {}
 
@@ -56,12 +86,7 @@ export class PrismaRoundRepository implements IRoundRepository {
       startDate: new Date(record.startDate),
       endDate: record.endDate ? new Date(record.endDate) : undefined,
       backgroundContext: normalizeBackgroundContext(record.backgroundContext),
-      surveyDefinition:
-        record.surveyDefinition &&
-        typeof record.surveyDefinition === 'object' &&
-        !Array.isArray(record.surveyDefinition)
-          ? structuredClone(record.surveyDefinition)
-          : undefined,
+      surveyDefinition: readSurveyDefinition(record.surveyDefinition),
       createdAt: new Date(record.createdAt),
       updatedAt: record.updatedAt ? new Date(record.updatedAt) : undefined,
     };
