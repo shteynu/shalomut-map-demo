@@ -55,11 +55,16 @@ export class PrismaSurveyRepository implements ISurveyRepository {
   constructor(private prisma: MinimalPrismaClient) {}
 
   private mapToDomain(record: any): SurveyResponseRecord {
+    // `null` becomes `undefined` on the way in. The domain type says these two
+    // fields are absent for a background answer, and a `null` wearing that type
+    // is a value: it compares unequal to the `undefined` the question carries,
+    // and arithmetic reads it as zero. Both columns are nullable, so this is
+    // the boundary where the difference has to be settled.
     const answers: QuestionAnswerRecord[] = (record.answers || []).map((ans: any) => ({
       questionId: ans.questionId,
-      dimensionId: ans.dimensionId,
+      ...(ans.dimensionId == null ? {} : { dimensionId: ans.dimensionId }),
       value: ans.value,
-      score: ans.score,
+      ...(ans.score == null ? {} : { score: ans.score }),
     }));
 
     return {

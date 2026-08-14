@@ -1453,14 +1453,29 @@ components:
           type: string
     QuestionAnswerInput:
       type: object
-      required: [questionId, dimensionId, value]
+      required: [questionId, value]
       properties:
         questionId:
           type: string
         dimensionId:
-          $ref: '#/components/schemas/WellbeingDimensionId'
+          allOf:
+            - $ref: '#/components/schemas/WellbeingDimensionId'
+          description: >-
+            Required for a question the round scores, and absent for a
+            background question, which belongs to no dimension. Checked against
+            the round's own questionnaire snapshot rather than trusted, so an
+            answer cannot be moved onto a different stone.
         value:
-          $ref: '#/components/schemas/WellbeingStatus'
+          type: string
+          description: >-
+            What the answering control produced, checked against the scale or
+            option set of that question in the round's snapshot. A colour
+            (`green`/`yellow`/`red`) on the wellbeing-colour scale, a 1-based
+            step (`"4"`) on a Likert scale, a chosen option value, or a whole
+            number for an allocation row. A round whose snapshot uses only the
+            colour scale — which is every round the manager screens can
+            currently produce — accepts exactly the three colours.
+          example: green
     RoundDimensionScore:
       type: object
       required: [dimensionId, averageScore, computedStatus, totalResponses, isLocked, calculatedAt]

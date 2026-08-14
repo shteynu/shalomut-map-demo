@@ -103,6 +103,10 @@ run(
       repositoryRoot,
       'src/lib/repositories/__dbtests__/postgres-survey-attempts.test.ts',
     ),
+    path.join(
+      repositoryRoot,
+      'src/lib/repositories/__dbtests__/postgres-answer-shapes.test.ts',
+    ),
   ],
   'PostgreSQL suite',
 );

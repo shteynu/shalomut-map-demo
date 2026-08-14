@@ -46,7 +46,10 @@ let roundId: string;
 
 const questions = surveyInstrument.questions.map((question) => ({
   id: question.id,
+  kind: 'analytic' as const,
   dimensionId: question.dimensionId,
+  scaleId: 'wellbeing-colour' as const,
+  polarity: 'positive' as const,
   required: true,
 }));
 

@@ -183,9 +183,17 @@ model QuestionAnswer {
   id          String         @id @default(uuid())
   responseId  String         @map("response_id")
   questionId  String         @map("question_id")
-  dimensionId String         @map("dimension_id")
-  value       String         // 'green' | 'yellow' | 'red'
-  score       Int            // 100 | 60 | 0
+  // Null for a background answer, which belongs to no wellbeing dimension.
+  // Every row written before background questions existed carries one.
+  dimensionId String?        @map("dimension_id")
+  // Whatever the question's own scale or option set allows: a colour
+  // ('green'), a Likert step ('4'), a chosen option ('high-school') or an
+  // allocation entry ('25').
+  value       String
+  // 0-100 under positive polarity, complemented for a negative one. Null for a
+  // background answer: it is stored and counted and contributes to no average,
+  // which is not the same as contributing zero.
+  score       Int?
 
   response    SurveyResponse @relation(fields: [responseId], references: [id], onDelete: Cascade)
 
