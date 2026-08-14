@@ -1,16 +1,34 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Check, Eye, Sparkles } from "lucide-react";
+import { Check, Eye, Plus, Sparkles, Trash2 } from "lucide-react";
 import { ModalDialog } from "@/components/ui/modal-dialog";
 import { dimensionPresentations } from "@/lib/dashboard/dimension-presentation";
+import { ANSWER_SCALE_IDS, getAnswerScale } from "@/lib/survey/answer-scales";
+import type {
+  AnswerPolarity,
+  AnswerScaleId,
+} from "@/lib/survey/answer-scales";
+import type {
+  BackgroundAnswerMode,
+  SurveyQuestionKind,
+  SurveyQuestionOption,
+} from "@/lib/types/backend";
 import type { QuestionSuggestionSource } from "./question-suggestions";
-import type { BuilderQuestion } from "./types";
+import {
+  BACKGROUND_ANSWER_MODES,
+  BACKGROUND_ANSWER_MODE_LABELS,
+  POLARITY_LABELS,
+  QUESTION_KIND_LABELS,
+  type BuilderQuestion,
+} from "./types";
 
 type QuestionEditDialogProps = {
   isOpen: boolean;
   question: BuilderQuestion | null;
   questionIndex: number;
+  /** Section names already in use, offered so a manager reuses rather than retypes. */
+  sectionNames?: string[];
   onClose: () => void;
   onSave: (draftKey: string, updater: (q: BuilderQuestion) => BuilderQuestion) => void;
   /**
@@ -39,10 +57,16 @@ const SUGGESTION_LABELS: Record<QuestionSuggestionSource, string> = {
   template: "נוסח מתוך תבנית השאלון המקורית",
 };
 
+const EMPTY_OPTIONS: SurveyQuestionOption[] = [
+  { value: "", label: "" },
+  { value: "", label: "" },
+];
+
 export function QuestionEditDialog({
   isOpen,
   question,
   questionIndex,
+  sectionNames = [],
   onClose,
   onSave,
   isNew = false,
@@ -50,7 +74,14 @@ export function QuestionEditDialog({
 }: QuestionEditDialogProps) {
   const [prevQuestionKey, setPrevQuestionKey] = useState<string | null>(null);
   const [text, setText] = useState("");
+  const [kind, setKind] = useState<SurveyQuestionKind>("analytic");
   const [dimensionId, setDimensionId] = useState("");
+  const [scaleId, setScaleId] = useState<AnswerScaleId>("wellbeing-colour");
+  const [polarity, setPolarity] = useState<AnswerPolarity>("positive");
+  const [answerMode, setAnswerMode] = useState<BackgroundAnswerMode>("single-choice");
+  const [options, setOptions] = useState<SurveyQuestionOption[]>(EMPTY_OPTIONS);
+  const [allocationGroupId, setAllocationGroupId] = useState("");
+  const [sectionId, setSectionId] = useState("");
   const [id, setId] = useState("");
   const [required, setRequired] = useState(true);
   const [enabled, setEnabled] = useState(true);
@@ -62,10 +93,27 @@ export function QuestionEditDialog({
     setPrevQuestionKey(currentKey);
     if (question) {
       setText(question.text);
-      setDimensionId(question.dimensionId);
+      setKind(question.kind);
       setId(question.id);
       setRequired(question.required);
       setEnabled(question.enabled);
+      setSectionId(question.sectionId ?? "");
+      // Each kind's own fields are read from the question when it is that kind
+      // and left at their defaults otherwise, so switching kind inside the
+      // dialog offers a usable starting point rather than an empty one.
+      if (question.kind === "analytic") {
+        setDimensionId(question.dimensionId);
+        setScaleId(question.scaleId);
+        setPolarity(question.polarity);
+      } else {
+        setAnswerMode(question.answerMode);
+        setOptions(
+          question.options && question.options.length > 0
+            ? question.options
+            : EMPTY_OPTIONS,
+        );
+        setAllocationGroupId(question.allocationGroupId ?? "");
+      }
       setValidationError(null);
     }
   }
@@ -84,6 +132,10 @@ export function QuestionEditDialog({
     suggestion && text.trim() === suggestion.suggestedText.trim(),
   );
 
+  const filledOptions = options.filter(
+    (option) => option.value.trim() && option.label.trim(),
+  );
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!text.trim()) {
@@ -94,6 +146,19 @@ export function QuestionEditDialog({
       setValidationError("יש להזין מזהה קבוע לשאלה");
       return;
     }
+    // Refused here rather than at save time. The questionnaire endpoint would
+    // reject the same thing, but by then the manager has left this dialog and
+    // the message names a question they can no longer see.
+    if (kind === "background" && answerMode === "single-choice" && filledOptions.length < 2) {
+      setValidationError(
+        "לשאלת בחירה יחידה נדרשות לפחות שתי אפשרויות תשובה, כל אחת עם ערך ותווית.",
+      );
+      return;
+    }
+    if (kind === "background" && answerMode === "allocation-100" && !allocationGroupId.trim()) {
+      setValidationError("יש לציין לאיזו טבלת חלוקה השורה שייכת.");
+      return;
+    }
     if (isUneditedSuggestion) {
       setValidationError(
         "יש לערוך את נוסח ההצעה לפני הוספתה לשאלון. ההצעה היא טיוטה, והנוסח הסופי באחריות המנהל.",
@@ -101,18 +166,47 @@ export function QuestionEditDialog({
       return;
     }
     setValidationError(null);
-    onSave(question.draftKey, (current) => ({
-      ...current,
+
+    const common = {
       text: text.trim(),
-      dimensionId: dimensionId as BuilderQuestion["dimensionId"],
       id: id.trim(),
       required,
       enabled,
-    }));
+      ...(sectionId.trim() ? { sectionId: sectionId.trim() } : {}),
+    };
+
+    // Rebuilt rather than spread over the previous question: the two kinds hold
+    // different fields, and carrying a dimension onto a background question is
+    // exactly what `parseSurveyDefinition` refuses.
+    onSave(question.draftKey, (current) =>
+      kind === "background"
+        ? {
+            draftKey: current.draftKey,
+            ...common,
+            kind: "background",
+            answerMode,
+            ...(answerMode === "single-choice" ? { options: filledOptions } : {}),
+            ...(answerMode === "allocation-100"
+              ? { allocationGroupId: allocationGroupId.trim() }
+              : {}),
+          }
+        : {
+            draftKey: current.draftKey,
+            ...common,
+            kind: "analytic",
+            dimensionId: dimensionId as Extract<
+              BuilderQuestion,
+              { kind: "analytic" }
+            >["dimensionId"],
+            scaleId,
+            polarity,
+          },
+    );
     onClose();
   };
 
   const selectedDimension = dimensionPresentations.find((d) => d.id === dimensionId);
+  const previewScale = getAnswerScale(scaleId);
 
   return (
     <ModalDialog
@@ -161,20 +255,62 @@ export function QuestionEditDialog({
             />
           </label>
 
+          {/* First of the structural fields, because it decides which of the
+              others exist. */}
+          <label>
+            סוג השאלה
+            <select
+              value={kind}
+              onChange={(e) => {
+                setKind(e.target.value as SurveyQuestionKind);
+                setValidationError(null);
+              }}
+            >
+              {(["analytic", "background"] as const).map((value) => (
+                <option key={value} value={value}>
+                  {QUESTION_KIND_LABELS[value]}
+                </option>
+              ))}
+            </select>
+            <small className="quiet-note">
+              שאלת רקע נשמרת ומוצגת למשיב, אך אינה נכנסת לציון של אף ממד ואינה
+              נשלחת לניתוח הבינה המלאכותית.
+            </small>
+          </label>
+
           <div className="builder-form-grid">
-            <label>
-              ממד שלומות
-              <select
-                value={dimensionId}
-                onChange={(e) => setDimensionId(e.target.value)}
-              >
-                {dimensionPresentations.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.conceptLabel}
-                  </option>
-                ))}
-              </select>
-            </label>
+            {kind === "analytic" ? (
+              <label>
+                ממד שלומות
+                <select
+                  value={dimensionId}
+                  onChange={(e) => setDimensionId(e.target.value)}
+                >
+                  {dimensionPresentations.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.conceptLabel}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : (
+              <label>
+                אופן המענה
+                <select
+                  value={answerMode}
+                  onChange={(e) => {
+                    setAnswerMode(e.target.value as BackgroundAnswerMode);
+                    setValidationError(null);
+                  }}
+                >
+                  {BACKGROUND_ANSWER_MODES.map((mode) => (
+                    <option key={mode} value={mode}>
+                      {BACKGROUND_ANSWER_MODE_LABELS[mode]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
 
             <label>
               מזהה קבוע
@@ -190,6 +326,136 @@ export function QuestionEditDialog({
               />
             </label>
           </div>
+
+          {kind === "analytic" ? (
+            <div className="builder-form-grid">
+              <label>
+                סולם התשובות
+                <select
+                  value={scaleId}
+                  onChange={(e) => setScaleId(e.target.value as AnswerScaleId)}
+                >
+                  {ANSWER_SCALE_IDS.map((value) => (
+                    <option key={value} value={value}>
+                      {getAnswerScale(value).label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                כיוון הניקוד
+                <select
+                  value={polarity}
+                  onChange={(e) => setPolarity(e.target.value as AnswerPolarity)}
+                >
+                  {(["positive", "negative"] as const).map((value) => (
+                    <option key={value} value={value}>
+                      {POLARITY_LABELS[value]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          ) : null}
+
+          {kind === "background" && answerMode === "allocation-100" ? (
+            <label>
+              מזהה טבלת החלוקה
+              <input
+                type="text"
+                dir="ltr"
+                value={allocationGroupId}
+                placeholder="time-allocation"
+                onChange={(e) => {
+                  setAllocationGroupId(e.target.value);
+                  if (validationError) setValidationError(null);
+                }}
+              />
+              <small className="quiet-note">
+                שורות עם אותו מזהה הן טבלה אחת, והמשיב מחלק ביניהן 100 בדיוק.
+              </small>
+            </label>
+          ) : null}
+
+          {kind === "background" && answerMode === "single-choice" ? (
+            <fieldset className="builder-options-editor">
+              <legend>אפשרויות התשובה</legend>
+              {options.map((option, index) => (
+                <div className="builder-form-grid" key={index}>
+                  <label>
+                    ערך נשמר
+                    <input
+                      dir="ltr"
+                      value={option.value}
+                      onChange={(e) =>
+                        setOptions(
+                          options.map((current, position) =>
+                            position === index
+                              ? { ...current, value: e.target.value }
+                              : current,
+                          ),
+                        )
+                      }
+                    />
+                  </label>
+                  <label>
+                    תווית למשיב
+                    <input
+                      value={option.label}
+                      onChange={(e) =>
+                        setOptions(
+                          options.map((current, position) =>
+                            position === index
+                              ? { ...current, label: e.target.value }
+                              : current,
+                          ),
+                        )
+                      }
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    className="ghost-button"
+                    disabled={options.length <= 2}
+                    onClick={() =>
+                      setOptions(options.filter((_, position) => position !== index))
+                    }
+                  >
+                    <Trash2 size={15} aria-hidden="true" />
+                    <span className="visually-hidden">{`מחיקת אפשרות ${index + 1}`}</span>
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                className="ghost-button"
+                onClick={() => setOptions([...options, { value: "", label: "" }])}
+              >
+                <Plus size={15} aria-hidden="true" />
+                הוספת אפשרות
+              </button>
+            </fieldset>
+          ) : null}
+
+          {/* Presentation only: nothing is scored or aggregated by section. The
+              datalist offers the names already in use, because two sections
+              differing by a space would render as two blocks that look the
+              same. */}
+          <label>
+            חלק בשאלון (רשות)
+            <input
+              type="text"
+              list="survey-builder-section-names"
+              value={sectionId}
+              placeholder="למשל: פרטי רקע"
+              onChange={(e) => setSectionId(e.target.value)}
+            />
+            <datalist id="survey-builder-section-names">
+              {sectionNames.map((name) => (
+                <option key={name} value={name} />
+              ))}
+            </datalist>
+          </label>
 
           <div className="question-dialog-toggles">
             <label className="question-dialog-toggle">
@@ -224,13 +490,35 @@ export function QuestionEditDialog({
             {showPreview ? (
               <div className="question-dialog-preview">
                 <div className="question-dialog-preview-meta">
-                  <span>ממד: {selectedDimension?.conceptLabel || dimensionId}</span>
+                  <span>
+                    {kind === "analytic"
+                      ? `ממד: ${selectedDimension?.conceptLabel || dimensionId}`
+                      : "שאלת רקע"}
+                  </span>
                   <span>{required ? "חובה" : "רשות"}</span>
                 </div>
                 <p>{text || "(טרם הוזן נוסח שאלה)"}</p>
+                {/* The anchors the respondent will actually see, read off the
+                    chosen scale. This used to be two hardcoded strings naming a
+                    1–6 scale that no scale in the product has. */}
                 <div className="question-dialog-preview-meta">
-                  <span>לא מסכים כלל (1)</span>
-                  <span>מסכים במידה רבה מאוד (6)</span>
+                  {kind === "analytic" ? (
+                    <>
+                      <span>{previewScale.points[0]?.label}</span>
+                      <span>
+                        {previewScale.points[previewScale.points.length - 1]?.label}
+                      </span>
+                    </>
+                  ) : answerMode === "single-choice" ? (
+                    <span>
+                      {filledOptions.map((option) => option.label).join(" · ") ||
+                        "(טרם הוזנו אפשרויות)"}
+                    </span>
+                  ) : answerMode === "number" ? (
+                    <span>מספר שהמשיב מקליד</span>
+                  ) : (
+                    <span>שורה בטבלה שסכומה 100</span>
+                  )}
                 </div>
               </div>
             ) : null}

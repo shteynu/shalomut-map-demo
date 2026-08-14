@@ -6,11 +6,14 @@ import {
   setEnabledForKeys,
   visibleQuestionsFor,
 } from "../survey-builder/question-list-operations";
-import type { BuilderQuestion } from "../survey-builder/types";
+import type {
+  BuilderAnalyticQuestion,
+  BuilderQuestion,
+} from "../survey-builder/types";
 
 function question(
   draftKey: string,
-  dimensionId: BuilderQuestion["dimensionId"],
+  dimensionId: BuilderAnalyticQuestion["dimensionId"],
   text: string,
   enabled = true,
 ): BuilderQuestion {

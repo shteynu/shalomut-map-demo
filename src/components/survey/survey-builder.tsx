@@ -14,11 +14,12 @@ import { dimensionPresentations } from "@/lib/dashboard/dimension-presentation";
 import { getNavigationAction } from "@/lib/navigation";
 import type { RoundSwitcherOptions } from "@/lib/rounds/round-options";
 import { useShareUrl } from "@/lib/use-share-url";
-import { isAnalyticQuestion, type SurveyDefinition } from "@/lib/types/backend";
+import type { SurveyDefinition } from "@/lib/types/backend";
 import { surveyInstrument } from "@/lib/shalomut-source";
 import { estimateMinutesForQuestions } from "@/lib/survey-definition";
 import {
   moveQuestionWithinView,
+  sectionNamesIn,
   setEnabledForKeys,
   visibleQuestionsFor,
 } from "./survey-builder/question-list-operations";
@@ -40,7 +41,9 @@ import {
 } from "./survey-builder/question-suggestions";
 import {
   getBuilderQuestionnaireValidation,
+  isBuilderAnalyticQuestion,
   localizeSurveyDefinitionSaveError,
+  toBuilderQuestions,
   toSurveyDefinitionQuestion,
   type BuilderQuestion,
 } from "./survey-builder/types";
@@ -134,16 +137,10 @@ export function SurveyBuilder({
     initialDefinition.anonymityText,
   );
   const [questions, setQuestions] = useState<BuilderQuestion[]>(
-    // Background questions are filtered rather than rendered: the builder has
-    // no control that edits one yet, and showing a demographic question in a
-    // list whose every control assumes a dimension would let a manager delete
-    // it by accident on the next save.
-    initialDefinition.questions
-      .filter(isAnalyticQuestion)
-      .map((question, index) => ({
-        ...question,
-        draftKey: `initial-${index}-${question.id}`,
-      })),
+    toBuilderQuestions(
+      initialDefinition.questions,
+      (question, index) => `initial-${index}-${question.id}`,
+    ),
   );
   const [saved, setSaved] = useState(false);
   const [closedRoundTitles, setClosedRoundTitles] = useState<string[]>([]);
@@ -240,7 +237,11 @@ export function SurveyBuilder({
    */
   const estimatedMinutes = estimateMinutesForQuestions(enabledQuestions.length);
   const requiredQuestions = enabledQuestions.filter((question) => question.required);
-  const activeDimensions = new Set(enabledQuestions.map((question) => question.dimensionId)).size;
+  const activeDimensions = new Set(
+    enabledQuestions
+      .filter(isBuilderAnalyticQuestion)
+      .map((question) => question.dimensionId),
+  ).size;
   const visibleQuestions = visibleQuestionsFor(
     questions,
     selectedDimensionId,
@@ -540,12 +541,9 @@ export function SurveyBuilder({
     setIntroText(definition.introText);
     setAnonymityText(definition.anonymityText);
     setQuestions(
-      definition.questions
-        .filter(isAnalyticQuestion)
-        .map((question, index) => ({
-          ...question,
-          draftKey: createDraftId(`version-${index}`),
-        })),
+      toBuilderQuestions(definition.questions, (_question, index) =>
+        createDraftId(`version-${index}`),
+      ),
     );
     setLoadedVersionAt(savedAt);
   }
@@ -782,6 +780,7 @@ export function SurveyBuilder({
             ? questions.findIndex((q) => q.draftKey === editingQuestion.draftKey) + 1
             : 0
         }
+        sectionNames={sectionNamesIn(questions)}
         isNew={Boolean(pendingQuestion) && !editingQuestion}
         suggestion={
           pendingQuestion && !editingQuestion

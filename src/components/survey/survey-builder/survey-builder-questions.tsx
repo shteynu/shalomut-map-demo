@@ -2,8 +2,9 @@ import { BookMarked, Keyboard, Loader2, Lock, Plus, RotateCcw, Search, Sparkles,
 import { Fragment } from "react";
 import type { RefObject } from "react";
 import { dimensionPresentations } from "@/lib/dashboard/dimension-presentation";
+import { groupBySection, UNSECTIONED_KEY } from "./question-list-operations";
 import { SurveyQuestionCard } from "./survey-question-card";
-import type { BuilderQuestion } from "./types";
+import { BACKGROUND_FILTER_ID, type BuilderQuestion } from "./types";
 
 function getDimensionLabel(dimensionId: string) {
   return dimensionPresentations.find((dimension) => dimension.id === dimensionId)?.conceptLabel ?? dimensionId;
@@ -111,7 +112,14 @@ export function SurveyBuilderQuestions({
   isFrozen = false,
 }: QuestionsPanelProps) {
   const selectedDimensionLabel =
-    selectedDimensionId === "all" ? "כל השאלות" : getDimensionLabel(selectedDimensionId);
+    selectedDimensionId === "all"
+      ? "כל השאלות"
+      : selectedDimensionId === BACKGROUND_FILTER_ID
+        ? "שאלות רקע"
+        : getDimensionLabel(selectedDimensionId);
+  const backgroundQuestions = questions.filter(
+    (question) => question.kind === "background",
+  );
 
   // Map active (enabled) questions to sequential 1-based index numbers
   let activeCounter = 0;
@@ -122,6 +130,21 @@ export function SurveyBuilderQuestions({
       activeIndexMap.set(q.draftKey, activeCounter);
     }
   }
+
+  /**
+   * Where each question sits in the list on screen. The move buttons step
+   * within the whole visible list, not within a section, so a question can be
+   * moved out of the block it is in — which is the only way to move one between
+   * sections without a second control for it.
+   */
+  const visibleIndexByKey = new Map(
+    visibleQuestions.map((question, index) => [question.draftKey, index]),
+  );
+  const sections = groupBySection(visibleQuestions);
+  // A questionnaire that names no section is a flat list, and 24 questions read
+  // better as one. The blocks appear when a questionnaire is long enough for
+  // somebody to have named its parts.
+  const showSections = sections.length > 1 || sections[0]?.sectionId !== undefined;
 
   return (
     <section className="survey-builder-panel survey-builder-questions-panel">
@@ -228,7 +251,10 @@ export function SurveyBuilderQuestions({
 
       <div className="survey-builder-dimension-tabs" role="group" aria-label="סינון שאלות לפי ממד שלומות">
         {dimensionPresentations.map((dimension, index) => {
-          const dimensionQuestions = questions.filter((question) => question.dimensionId === dimension.id);
+          const dimensionQuestions = questions.filter(
+            (question) =>
+              question.kind === "analytic" && question.dimensionId === dimension.id,
+          );
           const activeCount = dimensionQuestions.filter((q) => q.enabled).length;
           return (
             <button
@@ -243,6 +269,18 @@ export function SurveyBuilderQuestions({
             </button>
           );
         })}
+        {/* Its own tab, because a background question belongs to none of the
+            eight above and would otherwise be reachable only by clearing the
+            filter — which is how a manager stops knowing it is there. */}
+        <button
+          type="button"
+          className={`survey-builder-dimension-tab${selectedDimensionId === BACKGROUND_FILTER_ID ? " is-active" : ""}`}
+          onClick={() => setSelectedDimensionId(BACKGROUND_FILTER_ID)}
+          aria-pressed={selectedDimensionId === BACKGROUND_FILTER_ID}
+        >
+          <span>שאלות רקע</span>
+          <small>{backgroundQuestions.length}</small>
+        </button>
         <button
           type="button"
           className={`survey-builder-dimension-tab${selectedDimensionId === "all" ? " is-active" : ""}`}
@@ -361,14 +399,14 @@ export function SurveyBuilderQuestions({
           ) : null}
         </div>
       ) : (
-        <div className="survey-builder-question-list">
-          {visibleQuestions.map((question, index) => {
-            const activeIndex = activeIndexMap.get(question.draftKey) ?? 0;
+        (() => {
+          const renderCard = (question: BuilderQuestion) => {
+            const index = visibleIndexByKey.get(question.draftKey) ?? 0;
             return (
               <SurveyQuestionCard
                 key={question.draftKey}
                 question={question}
-                questionIndex={activeIndex}
+                questionIndex={activeIndexMap.get(question.draftKey) ?? 0}
                 onMove={onMoveQuestion}
                 canMoveUp={index > 0}
                 canMoveDown={index < visibleQuestions.length - 1}
@@ -379,8 +417,41 @@ export function SurveyBuilderQuestions({
                 isFrozen={isFrozen}
               />
             );
-          })}
-        </div>
+          };
+
+          if (!showSections) {
+            return (
+              <div className="survey-builder-question-list">
+                {visibleQuestions.map(renderCard)}
+              </div>
+            );
+          }
+
+          /* `details` rather than a button and a piece of state: it collapses
+             without JavaScript, it is what a screen reader already announces as
+             expandable, and the browser's own find-in-page opens it. Open by
+             default, because a manager who filtered to a section did so to read
+             it. */
+          return (
+            <div className="survey-builder-question-sections">
+              {sections.map((section) => (
+                <details
+                  className="survey-builder-question-section"
+                  key={section.sectionId ?? UNSECTIONED_KEY}
+                  open
+                >
+                  <summary>
+                    <span>{section.sectionId ?? "ללא שיוך לחלק"}</span>
+                    <small>{section.questions.length}</small>
+                  </summary>
+                  <div className="survey-builder-question-list">
+                    {section.questions.map(renderCard)}
+                  </div>
+                </details>
+              ))}
+            </div>
+          );
+        })()
       )}
     </section>
   );

@@ -128,7 +128,10 @@ function createBuilderQuestions(): BuilderQuestion[] {
 test("builder validation reports duplicate stable IDs and incomplete dimension coverage in Hebrew", () => {
   const questions = createBuilderQuestions();
   questions[1] = { ...questions[1], id: questions[0].id };
-  questions.find((question) => question.dimensionId === "meaning")!.enabled = false;
+  questions.find(
+    (question) =>
+      question.kind === "analytic" && question.dimensionId === "meaning",
+  )!.enabled = false;
 
   const validation = getBuilderQuestionnaireValidation(questions);
 

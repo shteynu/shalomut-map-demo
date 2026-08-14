@@ -1509,6 +1509,66 @@ textarea {
   gap: 0.65rem;
 }
 
+/* The blocks a long questionnaire is read in. `details` so it collapses with
+   no JavaScript and find-in-page opens it; the summary carries the section name
+   and how many questions the current filter left in it. */
+.survey-builder-question-sections {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 0.85rem;
+}
+
+.survey-builder-question-section {
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-panel);
+  background: rgba(255, 255, 255, 0.42);
+  padding: 0.55rem 0.7rem 0.7rem;
+}
+
+.survey-builder-question-section > summary {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.3rem 0.15rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.survey-builder-question-section > summary small {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.survey-builder-question-section > .survey-builder-question-list {
+  margin-top: 0.6rem;
+}
+
+/* The answer options of a background question. Three columns — stored value,
+   respondent label, and the button that removes the row — so the two halves of
+   an option stay visibly paired. */
+.builder-options-editor {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 0.6rem;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-panel);
+  padding: 0.7rem 0.8rem 0.8rem;
+  background: rgba(255, 255, 255, 0.42);
+}
+
+.builder-options-editor > legend {
+  padding: 0 0.35rem;
+  font-weight: 600;
+}
+
+.builder-options-editor .builder-form-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: end;
+}
+
 .survey-builder-dimension-tabs {
   position: relative;
   z-index: 1;

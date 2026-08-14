@@ -93,15 +93,24 @@ export async function requestAiQuestionSuggestion(
 }
 
 /**
- * Which dimension a suggestion is for when the manager is looking at all of
- * them: the first one the questionnaire does not cover yet, since that is the
- * one blocking activation, and otherwise the first dimension.
+ * Which dimension a suggestion is for when the tab in view names none of them:
+ * the first one the questionnaire does not cover yet, since that is the one
+ * blocking activation, and otherwise the first dimension.
+ *
+ * Two tabs name no dimension — "all", and the background tab. Both fall through
+ * to the same answer, because a suggestion is always an analysed question:
+ * nothing in this product suggests a demographic item, and the screen used to
+ * offer "a suggestion for the `background` dimension", naming a filter id as if
+ * it were one of the eight.
  */
 export function suggestionDimensionId(
   selectedDimensionId: string,
   missingDimensionIds: WellbeingDimensionId[],
 ): WellbeingDimensionId {
-  if (selectedDimensionId !== "all") {
+  const namesADimension = surveyInstrument.dimensions.some(
+    (dimension) => dimension.id === selectedDimensionId,
+  );
+  if (namesADimension) {
     return selectedDimensionId as WellbeingDimensionId;
   }
   return missingDimensionIds[0] ?? surveyInstrument.dimensions[0].id;

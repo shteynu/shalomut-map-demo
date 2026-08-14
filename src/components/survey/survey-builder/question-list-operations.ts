@@ -1,5 +1,5 @@
 import { dimensionPresentations } from "@/lib/dashboard/dimension-presentation";
-import type { BuilderQuestion } from "./types";
+import { BACKGROUND_FILTER_ID, type BuilderQuestion } from "./types";
 
 /**
  * Working a 24-question instrument through one dimension tab at a time is fine
@@ -19,31 +19,109 @@ function dimensionLabel(dimensionId: string): string {
 }
 
 /**
- * Whether a question answers a search. Text and dimension label both count: a
- * manager looking for "איזון" is as likely to mean the dimension as the word.
+ * What a question can be found by, beyond its own wording and id.
+ *
+ * An analytic question answers to its dimension label — a manager looking for
+ * "איזון" is as likely to mean the dimension as the word. A background question
+ * has no dimension, so it answers to the section it was put in instead, which
+ * is the only grouping it has.
  */
+function extraSearchTerms(question: BuilderQuestion): string[] {
+  return [
+    question.kind === "analytic" ? dimensionLabel(question.dimensionId) : "רקע",
+    question.sectionId ?? "",
+  ];
+}
+
 export function matchesSearch(question: BuilderQuestion, term: string): boolean {
   const needle = term.trim().toLocaleLowerCase("he");
   if (!needle) return true;
 
-  return (
-    question.text.toLocaleLowerCase("he").includes(needle) ||
-    dimensionLabel(question.dimensionId).toLocaleLowerCase("he").includes(needle) ||
-    question.id.toLocaleLowerCase("he").includes(needle)
+  return [question.text, question.id, ...extraSearchTerms(question)].some(
+    (candidate) => candidate.toLocaleLowerCase("he").includes(needle),
   );
 }
 
-/** The questions on screen: the dimension tab, then the search box. */
+/**
+ * The questions on screen: the tab, then the search box.
+ *
+ * `BACKGROUND_FILTER_ID` is a tab and not a dimension. Without it a demographic
+ * question would appear under no tab at all, since every other tab asks which
+ * of the eight dimensions a question belongs to and a background question
+ * belongs to none — it would be reachable only by clearing the filter, which is
+ * how a manager loses one without noticing.
+ */
 export function visibleQuestionsFor(
   questions: BuilderQuestion[],
   dimensionId: string,
   searchTerm: string,
 ): BuilderQuestion[] {
-  return questions.filter(
-    (question) =>
-      (dimensionId === "all" || question.dimensionId === dimensionId) &&
-      matchesSearch(question, searchTerm),
-  );
+  return questions.filter((question) => {
+    if (!matchesSearch(question, searchTerm)) return false;
+    if (dimensionId === "all") return true;
+    if (dimensionId === BACKGROUND_FILTER_ID) return question.kind === "background";
+    return question.kind === "analytic" && question.dimensionId === dimensionId;
+  });
+}
+
+/**
+ * The key React needs for the block of questions belonging to no section. A
+ * constant rather than `undefined`, and one no manager can type as a section
+ * name, so it cannot collide with a real one.
+ */
+export const UNSECTIONED_KEY = "__unsectioned__";
+
+export type QuestionSection = {
+  /** Undefined for the block of questions nobody assigned to a section. */
+  sectionId: string | undefined;
+  questions: BuilderQuestion[];
+};
+
+/**
+ * Split the visible list into the blocks a respondent will read it in.
+ *
+ * Order is first appearance, not alphabetical: the questionnaire's own order is
+ * what a respondent gets, and sorting the blocks here would show the manager a
+ * different questionnaire from the one they are building. A section that a
+ * filter has emptied does not appear at all — an empty block is a claim that
+ * the section has no questions, which is a different thing from a filter
+ * hiding them.
+ */
+export function groupBySection(
+  questions: BuilderQuestion[],
+): QuestionSection[] {
+  const sections: QuestionSection[] = [];
+  const byId = new Map<string | undefined, QuestionSection>();
+
+  for (const question of questions) {
+    const sectionId = question.sectionId?.trim() || undefined;
+    let section = byId.get(sectionId);
+
+    if (!section) {
+      section = { sectionId, questions: [] };
+      byId.set(sectionId, section);
+      sections.push(section);
+    }
+
+    section.questions.push(question);
+  }
+
+  return sections;
+}
+
+/**
+ * Every section name already in use, for the datalist the edit dialog offers.
+ * Typing a name that differs by a space would otherwise create a second block
+ * that looks identical to the first.
+ */
+export function sectionNamesIn(questions: BuilderQuestion[]): string[] {
+  return [
+    ...new Set(
+      questions
+        .map((question) => question.sectionId?.trim())
+        .filter((sectionId): sectionId is string => Boolean(sectionId)),
+    ),
+  ].sort((left, right) => left.localeCompare(right, "he"));
 }
 
 /**

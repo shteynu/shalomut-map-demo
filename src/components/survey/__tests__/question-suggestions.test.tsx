@@ -99,6 +99,13 @@ test("a suggestion is aimed at the dimension in hand, or at the one blocking act
     suggestionDimensionId("all", []),
     surveyInstrument.dimensions[0].id,
   );
+  // The background tab names no dimension either, and a suggestion is always
+  // an analysed question. Read as a dimension it put "a suggestion for the
+  // background dimension" on screen.
+  assert.strictEqual(
+    suggestionDimensionId("background", ["meaning"]),
+    "meaning",
+  );
 });
 
 test("a model-written item is labelled AI; anything else is not", async () => {
