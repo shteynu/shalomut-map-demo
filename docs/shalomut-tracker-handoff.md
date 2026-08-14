@@ -12,6 +12,20 @@ is how to re-read it.
 `docs/agent-tasks/active/` holds only `research--scientific-evidence-layer.md`,
 which waits on owner decisions rather than on an agent.
 
+**2026-08-14, later the same day, built the first two phases of it.** Phase 1
+(`claude/answer-model-for-research-instrument`) made a question carry its own
+scale and polarity, split questions into analytic and background, and made
+`question_answers.dimension_id` and `.score` nullable so a demographic answer
+can be stored beside a scored one. Phase 2
+(`claude/k-anonymity-for-demographics`) added `src/lib/privacy/cell-suppression.ts`
+and amended ADR-004 and ADR-005. Both branches are **unpushed** and need
+`git push`; phase 1 also leaves a backfill script that has run against the
+local database and not the deployed one.
+
+Neither phase changes anything a respondent or a manager sees. The default
+questionnaire is still the canonical 24 and the contract is still `6.0`; what
+changed is what the model is *able* to hold.
+
 **2026-08-14 opened a product outcome and wrote no product code.** Owner
 decision: the default questionnaire becomes a 126-item research instrument —
 mixed-polarity 1–5 and 1–7 scales, 18 items that belong to no wellbeing
@@ -1032,7 +1046,8 @@ owner's own hands.
   Likert items belongs to, plus which items are reverse-scored. It cannot be
   derived from the document or the code, and it is the same question as the
   undocumented dimension-to-framework bridge below. It blocks plan phases 3 and
-  5; phases 1, 2 and 4 can be built and verified without it.
+  5; phases 1, 2 and 4 can be built and verified without it, and phases 1 and 2
+  now have been.
 - The twelve decisions in
   `docs/scientific-evidence-layer-research-2026-08-09.md` section 5, of which
   1–3 select between three different projects, plus the undocumented bridge

@@ -83,6 +83,46 @@ loads Swagger UI from the CDN at runtime; the exception covers that route
 only, and `e2e/security-headers.spec.ts` fails if it leaks into the policy the
 manager screens get.
 
+## Demographics
+
+Owner decision 2026-08-14 replaces the 24-question default with a 126-item
+research questionnaire that asks 16 background questions — age band, gender,
+marital status, children, education, role, managerial role, two tenure bands,
+FTE, hours, commute, salary band, school type, work mode. In a staffroom of
+30–60 those combine into a re-identification set well before any one of them
+does alone, and the response threshold described above protects a *total*, not
+a *cell*. "Teachers aged 51–60 in the special-needs track" can be one person
+inside a round of eighty.
+
+The owner chose full cross-tabulation with cell suppression. Since 2026-08-14
+that mechanism exists, in `src/lib/privacy/cell-suppression.ts`:
+
+- No cell below the round's threshold is published.
+- No suppressed cell can be recovered from what is published. Every line the
+  table publishes — each row against its total, each column against its total,
+  and both margins against the grand total — holds either no suppressed entry
+  or at least two, so a blank is never "the total minus everything else". This
+  is the part that is invisible in a rendered table and easy to get wrong, and
+  it is tested by enumerating the tables a reader could still be looking at.
+- A round below its threshold publishes no cell and no margin at all.
+- The grand total stays published, because it is the round's response count and
+  every manager screen already shows it. Hiding it here would be a fiction.
+
+**Background answers do not reach the AI service or Google.** They are
+aggregated, suppressed and displayed inside Core and nowhere else. Nothing in
+an insight needs a salary band, and sending one would make a subprocessor hold
+a demographic profile of a named school for no gain.
+`AnalyticsService` builds no aggregate for a background question, so there is
+nothing for `encodeAnalyticsInput` to encode;
+`src/lib/privacy/__tests__/background-answers-stay-in-core.test.ts` pins it by
+searching the serialised MCP payload for the demographic ids and their Hebrew
+text.
+
+The three columns a demographic answer occupies are the same ones an analytic
+answer does — `question_answers` with a null `dimension_id` and a null `score`.
+Nothing new about a person is stored; what is new is that two stored answers
+can be crossed, which is what the rule above governs.
+
 ## The one place an address is counted
 
 Since 2026-08-10 sign-in attempts and survey submissions are rate limited per
@@ -107,18 +147,11 @@ is not switched on today.
 
 ## What is not covered here
 
-- **The demographic items of the planned default instrument.** Owner decision
-  2026-08-14 replaces the 24-question default with a 126-item research
-  questionnaire that asks 16 background questions — age band, gender, marital
-  status, children, education, role, managerial role, two tenure bands, FTE,
-  hours, commute, salary band, school type, work mode. In a staffroom of 30–60
-  those combine into a re-identification set, and the threshold this file
-  describes counts responses rather than protecting cross-tabs. The owner chose
-  full cross-tabulation with cell suppression below the threshold, which is a
-  mechanism the product does not have. **Nothing here describes it yet because
-  nothing collects those items yet**; this file is rewritten in phase 2 of
-  `docs/default-research-instrument-plan-2026-08-14.md`, which also decides
-  whether background answers cross the model boundary at all.
+- **Where the demographic items will be displayed.** The rule that governs
+  them is decided and built — see *Demographics* below — but no screen shows a
+  cross-tab yet, and no round collects one. When one does, this file gains the
+  reader-facing half: which tables a manager can open and what a suppressed
+  cell looks like on screen.
 - **Retention.** There is none. No schema column expresses it, and deletion
   exists only as `onDelete: Cascade` from an organization or a round. Nothing
   expires on its own.

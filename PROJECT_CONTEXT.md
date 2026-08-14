@@ -112,6 +112,16 @@ Unlocked analysis is all-or-nothing: total responses and every analyzed
 question must meet the configured threshold. A low-count question blocks the
 whole detailed result; it is never silently removed to produce a partial map.
 
+**Amended 2026-08-14.** A questionnaire may also hold *background* questions —
+demographics and allocation grids — which are answered and stored like any
+other but carry no dimension and no score. They are outside every rule in this
+ADR: outside the eight-dimension coverage requirement, outside the aggregates,
+outside the questionnaire identity hash, and outside the all-or-nothing lock.
+The rule stays exactly as written for analyzed questions; it simply never
+counted an optional question about commute time, and reading it as if it did
+would let one skipped demographic item take a school's whole result away.
+Background answers are aggregated and suppressed separately — see ADR-005.
+
 ### ADR-005: Privacy is a product invariant
 
 Ten respondents is both the default and minimum configurable threshold; a
@@ -119,6 +129,25 @@ manager may raise it. Respondent identity, individual answers and detailed
 results below the threshold never cross the manager or AI boundary. Core
 recomputes callback evidence and rejects mismatched scores, statuses, question
 aggregates, counts or questionnaire identity.
+
+**Amended 2026-08-14, for demographics.** The threshold above counts responses,
+which protects a total and says nothing about a *cell*. A cross-tabulation of
+two background questions can isolate one teacher inside a healthy round, so a
+demographic table carries its own rule, in `src/lib/privacy/cell-suppression.ts`:
+
+- No cell below the threshold is published.
+- No suppressed cell is *recoverable* from what is published. Every line the
+  table publishes — each row and its total, each column and its total, and the
+  margins against the grand total — holds either no suppressed entry or at
+  least two, because one blank against a published total is a subtraction, not
+  a blank.
+- The grand total stays published. It is the round's response count, which
+  every manager screen already shows.
+
+And background answers never cross the model boundary at all. The AI service is
+asked for a reading of eight dimension scores; a salary band adds nothing to
+that and would make a subprocessor hold a demographic profile of a named
+school. Demographics are aggregated, suppressed and displayed inside Core.
 
 ### ADR-006: Durable AI execution belongs to Core
 
