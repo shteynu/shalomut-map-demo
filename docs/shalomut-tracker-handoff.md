@@ -12,6 +12,20 @@ is how to re-read it.
 `docs/agent-tasks/active/` holds only `research--scientific-evidence-layer.md`,
 which waits on owner decisions rather than on an agent.
 
+**2026-08-14, phase 4 gave the builder the second kind of question.** Branch
+`claude/builder-for-background-questions`, also **unpushed**. A manager can now
+write a demographic, numeric or allocation question, set an analysed question's
+scale and scoring direction, and read a long questionnaire as collapsible
+sections. It also fixed two defects the browser walk found — the larger one
+outside the builder: `PrismaRoundRepository` handed back the raw JSON column
+typed as a `SurveyDefinition`, so a questionnaire written before `kind` existed
+reached the builder with no `kind` on any question and reported all eight
+dimensions missing above twenty-four questions. Every server-side consumer
+parses, which is why nothing had noticed.
+
+Phases 1, 2 and 4 are done. **Phases 3 and 5 remain blocked on the
+methodologist's mapping table**, and phase 6 is the swap itself.
+
 **2026-08-14, later the same day, built the first two phases of it.** Phase 1
 (`claude/answer-model-for-research-instrument`) made a question carry its own
 scale and polarity, split questions into analytic and background, and made
