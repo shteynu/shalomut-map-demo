@@ -65,13 +65,17 @@ rescaled every number already stored.
 
 ## Exact Git state
 
-- HEAD: `7dfffa0` block layout, `6a22539` the estimate, then this file
+- Commits: `7dfffa0` the block layout, `6a22539` the estimate, `5575177` the
+  seed and documentation, `0b3e0af` the correction below about where the stack
+  actually is.
 - Unstaged and deliberately untouched: `.idea/shalomut-map-demo.iml`, the user's
   own change.
-- On `origin` at `5575177`, read from the remote rather than from a tracking
-  ref. Eighth branch of the stack, and not merged: `origin/main` is `05a23bc`.
-  So the handoff reaches another checkout or machine, and what is owed is the
-  merge, not a push.
+- On `origin`, read from the remote rather than from a tracking ref. Its tip
+  there was `5575177` at the last reading, one documentation commit behind the
+  local tip — the environment syncs branches on its own and the tail can lag by
+  minutes. If `0b3e0af` has not appeared, it is a push the owner can run.
+- Not merged: `origin/main` is `05a23bc` and is an ancestor of this tip, so
+  landing the stack is a fast-forward.
 
 ## Verification that actually ran
 
