@@ -16,8 +16,40 @@ git log --oneline origin/main -- src/ next.config.ts scripts/ playwright.config.
 here, so the local ref goes stale and this command answered `45e1340` — a
 2026-08-13 commit — for a whole session after the stack had landed.
 
-**Session closed 2026-08-15. Nothing is waiting on a push**, `origin/main` is
-the tip of that session, and `docs/agent-tasks/active/` holds only
+**2026-08-15, a later session: the cross-table privacy question is answered and
+built, and a branch is waiting on a push.**
+`privacy/suppression-holds-across-tables` is one commit, `7ba34ac`, on top of
+`b23ae58`. Owner decision that day: of the three answers to "the module defends
+one table and the screen publishes several", take joint suppression rather than
+restricting the screen to one table per round or accepting the limit with a
+note.
+
+What it turned out to be is sharper than the cross-table framing. The old rule —
+no line of a table publishes exactly one blank — was satisfied by two blanks over
+one person and nobody, and `/breakdown` prints each group's dimension averages
+beside its size, so `veteran 40` against a round of 41 stated the forty-first
+respondent's eight scores by subtraction. Reproduced on the unmodified module
+before anything changed. The invariant now carries a second rule as well: the
+blanks on a published line account for nothing at all, or for at least
+`threshold` people. That is the rule that composes across tables without either
+table knowing the other exists, which is what the owner's decision needed.
+
+Verified locally — `verify:core` exit 0 twice with 1113 tests, and four states
+walked signed-in against a production build: the new refusal, the same round's
+role table still reading, the ordinary round unchanged, and the locked round
+keeping its own message. Nothing crosses the AI boundary, no schema changed, and
+the deployed endpoint knows nothing about it. Details in
+`docs/agent-tasks/active/privacy--suppression-holds-across-tables.md`.
+
+Two things it leaves. The rule suppresses strictly more than before, so a small
+school with one dominant category now reads a table that says nothing where it
+used to say something — intended, and worth knowing before it is read as a
+regression. And the branch's first push is what finally answers the question the
+CI session left open below: `Browser smoke` on a *branch* has been inferred from
+its trigger and never read.
+
+The rest of the previous session still stands: `origin/main` is `b23ae58`, and
+`docs/agent-tasks/active/` otherwise holds only
 `research--scientific-evidence-layer.md`, which waits on owner decisions rather
 than on an agent.
 

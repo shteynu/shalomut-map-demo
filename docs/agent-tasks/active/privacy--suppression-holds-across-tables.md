@@ -5,9 +5,11 @@
 - Branch: privacy/suppression-holds-across-tables
 - Base branch: main
 - Base commit: `b23ae58`
-- Current HEAD: `b23ae58` at the time of writing; the work is unstaged. Update
-  this line with the commit hash once the diff is committed.
-- Status: implemented and verified locally; not committed, not pushed.
+- Current HEAD: `7ba34ac` is the commit that changes product code, and a
+  documentation commit sits on top of it. Written this way on purpose — a task
+  file that names its own tip is stale the moment the next documentation commit
+  lands, which this repository has watched happen twice.
+- Status: implemented, verified locally and committed. Not pushed.
 - Last updated: 2026-08-15
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -121,11 +123,13 @@ the limit with a note.
 
 ## Remaining
 
-- Commit the diff, and hand the push over — `git push` is an owner action here.
+- The push. `git push` is an owner action in this environment; the branch is
+  visible in this worktree and, now that a commit exists, to another worktree on
+  the same machine — not to another checkout until it reaches `origin`.
 
 ## Changed files
 
-Unstaged, uncommitted:
+Committed in `7ba34ac`:
 
 - `src/lib/privacy/cell-suppression.ts`
 - `src/lib/privacy/__tests__/cell-suppression.test.ts`
@@ -229,6 +233,8 @@ must recreate it.
 
 ## Next concrete step
 
-Commit the five files above, then hand the push over. Suggested message:
-
-    fix(privacy): a table's blanks are a crowd, not a person
+Push `privacy/suppression-holds-across-tables` and read the three workflows on
+it. This is also the branch that finally answers the question the CI session
+left open: `Browser smoke` triggers on `push` with no branch filter, and no
+branch push has happened since, so its first run on a branch has been inferred
+from the trigger and never read.
