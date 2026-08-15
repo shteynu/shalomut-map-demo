@@ -1,19 +1,19 @@
 # Shalomut Tracker — operational handoff
 
-**2026-08-15, a later session: the lost submit is countable now, and two
-branches are waiting on a push.**
+**2026-08-15, a later session: the lost submit is countable now, and it has
+landed.**
 
-The paragraph below closing the previous session says nothing is waiting on a
-push. It was written inside the very commit that then failed to reach the
-remote — the third time this file has been caught by that shape. Read from the
-remote itself: `refs/heads/main` is `d94b9d5`, and
-`fix/the-first-submit-after-idle` is not on `origin` at all, so its
-session-closing documentation commit `9f617f3` lives in one worktree only.
+`refs/heads/main` is `b8c23e1`, read from the remote itself. The owner pushed
+`feat/a-lost-submit-leaves-a-trace` — `ee564e9`, `f18bfeb` and the
+documentation commit — and it carried `9f617f3` across with it, the previous
+session's closing commit, which had never reached the remote despite that
+commit's own text saying nothing was waiting. Third time this file has been
+caught by that shape; the correction is left above as written rather than
+tidied away. **Nothing is waiting on a push now.**
 
-`feat/a-lost-submit-leaves-a-trace` sits on top of it — `ee564e9` and `f18bfeb`
-— and answers the standing consequence recorded below, that the retry hides the
-symptom and nobody will see the next lost submit. The client now reports, after
-the outcome is already decided, how many attempts the delivery took;
+The branch answers the standing consequence recorded below, that the retry
+hides the symptom and nobody will see the next lost submit. The client reports,
+after the outcome is already decided, how many attempts the delivery took;
 `POST /api/survey/{shareCode}/delivery` turns that into one operational metric
 line, `survey_submission_recovered_by_retry` or
 `survey_submission_lost_after_retries`. Only the anomaly is reported — a
@@ -24,21 +24,44 @@ database lookup on the path of a report about the database being unreachable.
 Verified locally: `verify:core` exit 0 with 1044 tests, `npm run test:e2e` 19
 passed (18 before), the new browser spec falsified by removing the client call,
 and the metric lines read off a production build's own output rather than
-inferred. Nothing is deployed and neither branch is on `origin`. Details in
-`docs/agent-tasks/active/feat--a-lost-submit-leaves-a-trace.md`.
+inferred. Details in
+`docs/agent-tasks/archive/feat--a-lost-submit-leaves-a-trace.md`.
 
 **What this does not do**, and it is the honest half: the counter has never
 counted the real defect. That failure only happens on the deployed endpoint
 after an idle period, and the browser test reproduces its shape, not its cause.
-The first real reading is the first lost submit after this lands. Where these
-lines land afterwards is still the open owner decision recorded further down —
-the product logs structured observability and nothing collects it.
+The first real reading is the first lost submit there. Where these lines land
+afterwards is still the open owner decision recorded further down — the product
+logs structured observability and nothing collects it.
 
-Pushing the branch carries `9f617f3` with it:
+**All four workflows are green on `b8c23e1`** — `Core verification`
+`31890464509`, `Browser smoke` `31890464506`, `Vercel Deployment & Pipeline
+Checks` `31890464458` and `CodeQL Security Analysis` `31890464394`.
 
-```bash
-git push origin feat/a-lost-submit-leaves-a-trace:main
-```
+**The deployment carries it, and for once that is readable anonymously.** A new
+route is a far better deployment probe than this file's CSS-hash trick, which
+cannot separate a server-only change from any other build:
+`POST /api/survey/X/delivery` answers `204` on the endpoint while
+`POST /api/survey/X/no-such-beacon` answers `404`, twice each. The route exists
+there, so the counter is live.
+
+**Three of the lines in the deployed counter are synthetic, and nobody should
+read them as evidence.** Those probes emitted one
+`survey_submission_recovered_by_retry` at `attempts: 2` and two
+`survey_submission_lost_after_retries` at `attempts: 3`, from `curl` and not
+from a respondent. The first genuine reading is the first one after 2026-08-15
+that nobody typed.
+
+**One thing worth recording from the probing itself.** The first
+`POST .../no-such-beacon` returned `000` from `curl` — nothing at all — and the
+two retries answered `404` in under 0.4s. That is the same shape as the defect
+this whole line of work is about, on a route that reaches no database and no
+handler, which fits the cold-path reading rather than the Postgres one. One
+sample, so it is an observation and not a finding.
+
+`docs/agent-tasks/active/` again holds only
+`research--scientific-evidence-layer.md`, which waits on owner decisions and not
+on an agent.
 
 **2026-08-15, closing that session: the lost submit is mitigated, and the
 deployment's geography is now a known and deliberately accepted cost.**

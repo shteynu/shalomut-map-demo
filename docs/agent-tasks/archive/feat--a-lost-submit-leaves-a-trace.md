@@ -5,10 +5,10 @@
 - Branch: feat/a-lost-submit-leaves-a-trace
 - Base branch: fix/the-first-submit-after-idle
 - Base commit: `9f617f3`
-- Current HEAD: `f18bfeb`, the second of two commits on this branch. Neither is
-  on `origin`; the branch is not on the remote at all, asked of the remote
-  itself rather than of a local tracking ref.
-- Status: complete and verified locally. Waits on a push.
+- Current HEAD: `b8c23e1`, the third and last commit of this branch.
+- Status: complete, verified locally and landed. `refs/heads/main` is `b8c23e1`
+  read from the remote itself, so all three commits and `9f617f3` beneath them
+  are on `main`. Nothing waits on a push.
 - Last updated: 2026-08-15
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -242,8 +242,12 @@ boundary.
 
 ## Next concrete step
 
-Push this branch onto `main` — `git push origin
-feat/a-lost-submit-leaves-a-trace:main` — which carries `9f617f3` under it, the
-session-closing documentation commit of `fix/the-first-submit-after-idle` that
-never reached the remote. The agent's `git push` is declined by the permission
-layer here, so this is the owner's own command.
+None on this branch; it is complete and archived. The owner pushed it onto
+`main` the same day, carrying `9f617f3` under it — the session-closing
+documentation commit of `fix/the-first-submit-after-idle` that had never
+reached the remote.
+
+What it leaves for whoever comes next is a reading, not a task: the first
+`survey_submission_recovered_by_retry` line on the deployed endpoint is the
+first time anyone learns whether the lost submit is rare or common. Nothing
+collects those lines yet, so somebody has to go and look.
