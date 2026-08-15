@@ -1,5 +1,45 @@
 # Shalomut Tracker — operational handoff
 
+**2026-08-15, a later session: the lost submit is countable now, and two
+branches are waiting on a push.**
+
+The paragraph below closing the previous session says nothing is waiting on a
+push. It was written inside the very commit that then failed to reach the
+remote — the third time this file has been caught by that shape. Read from the
+remote itself: `refs/heads/main` is `d94b9d5`, and
+`fix/the-first-submit-after-idle` is not on `origin` at all, so its
+session-closing documentation commit `9f617f3` lives in one worktree only.
+
+`feat/a-lost-submit-leaves-a-trace` sits on top of it — `ee564e9` and `f18bfeb`
+— and answers the standing consequence recorded below, that the retry hides the
+symptom and nobody will see the next lost submit. The client now reports, after
+the outcome is already decided, how many attempts the delivery took;
+`POST /api/survey/{shareCode}/delivery` turns that into one operational metric
+line, `survey_submission_recovered_by_retry` or
+`survey_submission_lost_after_retries`. Only the anomaly is reported — a
+submission delivered first time is already counted as a stored response — and
+the route reads no repository, because correlating a round would mean a
+database lookup on the path of a report about the database being unreachable.
+
+Verified locally: `verify:core` exit 0 with 1044 tests, `npm run test:e2e` 19
+passed (18 before), the new browser spec falsified by removing the client call,
+and the metric lines read off a production build's own output rather than
+inferred. Nothing is deployed and neither branch is on `origin`. Details in
+`docs/agent-tasks/active/feat--a-lost-submit-leaves-a-trace.md`.
+
+**What this does not do**, and it is the honest half: the counter has never
+counted the real defect. That failure only happens on the deployed endpoint
+after an idle period, and the browser test reproduces its shape, not its cause.
+The first real reading is the first lost submit after this lands. Where these
+lines land afterwards is still the open owner decision recorded further down —
+the product logs structured observability and nothing collects it.
+
+Pushing the branch carries `9f617f3` with it:
+
+```bash
+git push origin feat/a-lost-submit-leaves-a-trace:main
+```
+
 **2026-08-15, closing that session: the lost submit is mitigated, and the
 deployment's geography is now a known and deliberately accepted cost.**
 
