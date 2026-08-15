@@ -154,13 +154,24 @@ export function BreakdownBoard({
 function BreakdownTable({ breakdown }: { breakdown: BackgroundBreakdown }) {
   const hiddenGroups = breakdown.groups.filter((group) => group.size.suppressed);
 
+  // A table can come out empty for two unlike reasons, and the same sentence
+  // would be wrong about one of them. Either every category really is tiny, or
+  // one of them holds almost the whole staff room — and publishing that one
+  // would state the handful outside it by subtraction, which is what a
+  // `complementary` blank records. Telling a manager that no group is large
+  // enough, when a group of forty is sitting in front of them, reads as a bug.
+  const hidesALargeGroup = breakdown.groups.some(
+    (group) => group.size.suppressed && group.size.reason === "complementary",
+  );
+
   if (breakdown.isFullySuppressed) {
     return (
       <section className="breakdown-locked">
         <EyeOff size={20} aria-hidden="true" />
         <p>
-          אף קבוצה בשאלה הזאת אינה גדולה מספיק כדי להציג אותה בנפרד. אפשר לפלח
-          לפי שאלה עם פחות קטגוריות, או להמתין לתשובות נוספות.
+          {hidesALargeGroup
+            ? "בשאלה הזאת יש קבוצה גדולה מספיק להצגה, אבל מי שנותר מחוצה לה קטן מכדי להישאר אנונימי — והצגת הגדולה הייתה מסגירה אותם בחיסור. לכן הטבלה כולה אינה מוצגת. פילוח לפי שאלה אחרת עשוי להציג יותר."
+            : "אף קבוצה בשאלה הזאת אינה גדולה מספיק כדי להציג אותה בנפרד. אפשר לפלח לפי שאלה עם פחות קטגוריות, או להמתין לתשובות נוספות."}
         </p>
       </section>
     );

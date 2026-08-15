@@ -19,6 +19,7 @@
  *
  *   npx tsx scripts/seed-breakdown-round.ts
  *   npx tsx scripts/seed-breakdown-round.ts --locked
+ *   npx tsx scripts/seed-breakdown-round.ts --lopsided
  *   npx tsx scripts/seed-breakdown-round.ts --respondent
  *
  * `--locked` writes the same questionnaire with four responses instead of
@@ -26,6 +27,11 @@
  * of the screen gets walked: it has a background question to group by and a
  * result that may not be read, which is the one combination the ordinary seed
  * cannot produce.
+ *
+ * `--lopsided` writes forty-one responses with forty of them in one category.
+ * The round is healthy and its dashboard reads; it is the *table* that may not
+ * be published, because what it would leave unpublished is a single person. It
+ * is the one round that separates the two reasons this screen shows nothing.
  *
  * `--respondent` opens the same questionnaire as an *active* round with no
  * responses, which is the only way to walk the questionnaire itself: the
@@ -227,6 +233,24 @@ const LOCKED_COHORTS: typeof COHORTS = [
   { categoryId: 'mid', count: 2, bias: 1 },
 ];
 
+/**
+ * Forty of forty-one in one category, and the forty-first alone in another.
+ *
+ * Two categories come out blank — `new` with its one respondent and `mid` with
+ * nobody — which is enough for the rule that a blank is never alone, and enough
+ * for nothing else: the blanks come to one person. Publishing `veteran 40`
+ * beside a round of forty-one states that person's eight dimension scores by
+ * subtraction, so this round is the one the screen has to refuse whole.
+ *
+ * The round is not locked. It has forty-one responses and its dashboard reads
+ * normally; it is only this table that may not be published, which is the
+ * distinction the screen has to draw.
+ */
+const LOPSIDED_COHORTS: typeof COHORTS = [
+  { categoryId: 'veteran', count: 40, bias: 0 },
+  { categoryId: 'new', count: 1, bias: 2 },
+];
+
 /** The first analytic question of each dimension, in questionnaire order. */
 function onePerDimension(
   questions: readonly SurveyDefinitionQuestion[],
@@ -245,8 +269,15 @@ function onePerDimension(
 async function main() {
   const host = requireLocalDatabase();
   const isLocked = process.argv.includes('--locked');
+  const isLopsided = process.argv.includes('--lopsided');
   const isRespondentWalk = process.argv.includes('--respondent');
-  const cohorts = isRespondentWalk ? [] : isLocked ? LOCKED_COHORTS : COHORTS;
+  const cohorts = isRespondentWalk
+    ? []
+    : isLocked
+      ? LOCKED_COHORTS
+      : isLopsided
+        ? LOPSIDED_COHORTS
+        : COHORTS;
   const { orgRepo, roundRepo, surveyRepo } = resolveCoreRepositories();
   const organizationId = isRespondentWalk
     ? RESPONDENT_ORGANIZATION_ID
@@ -274,7 +305,9 @@ async function main() {
       ? 'סבב מענה עם שאלות רקע'
       : isLocked
         ? 'סבב פילוח נעול'
-        : 'סבב פילוח מקומי',
+        : isLopsided
+          ? 'סבב פילוח עם שארית של אחד'
+          : 'סבב פילוח מקומי',
     10,
   );
   const definition = {
@@ -306,7 +339,7 @@ async function main() {
   // whole point of it is a link somebody opens by hand.
   const shareCode = isRespondentWalk
     ? RESPONDENT_SHARE_CODE
-    : `${SHARE_CODE}${isLocked ? '-LOCKED' : ''}-${SEEDED_AT.getTime()}`;
+    : `${SHARE_CODE}${isLocked ? '-LOCKED' : isLopsided ? '-LOPSIDED' : ''}-${SEEDED_AT.getTime()}`;
 
   // The respondent walk's share code is stable, so a second run finds its own
   // round rather than colliding with it. Re-running is the normal case: the
@@ -381,9 +414,14 @@ async function main() {
           'then an eight-statement block on the 1–5 scale, a three-statement ' +
           'block on the 1–7 one, two single-choice questions, a numeric field ' +
           'and a three-row allocation grid — every widget is on the path.'
-        : 'Open /breakdown and choose this round. `new` has four respondents, ' +
-          'so it must be suppressed — and one more category must go with it, ' +
-          'or the four would be recoverable by subtraction.',
+        : isLopsided
+          ? 'Open /breakdown and choose this round. The tenure table must ' +
+            'publish nothing: blanking `new` and `mid` leaves one person, and ' +
+            '`veteran 40` against a round of 41 would state their scores. The ' +
+            'role table on the same round still reads, which is the point.'
+          : 'Open /breakdown and choose this round. `new` has four ' +
+            'respondents, so it must be suppressed — and one more category ' +
+            'must go with it, or the four would be recoverable by subtraction.',
     ].join('\n'),
   );
 }

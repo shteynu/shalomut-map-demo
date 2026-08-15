@@ -70,6 +70,86 @@ function assertNoLoneSuppression(table: SuppressedCrossTab, label: string): void
   }
 }
 
+/**
+ * The second rule, checked against the truth rather than against the shape:
+ * whatever a line blanks out must be nobody at all or at least `THRESHOLD`
+ * people.
+ *
+ * Only a line whose *sum* is published can be checked, and only that line needs
+ * checking. Subtraction is what makes the blanked addends into a group a reader
+ * can point at — the sum less everything still printed — and with the sum itself
+ * blank there is no subtraction to do and no group to protect.
+ *
+ * The table alone cannot be asked this, because a suppressed entry carries no
+ * count; that is the point of suppressing it. So the real values come in
+ * separately and are looked up by the same ids the table publishes.
+ */
+function assertHiddenPartIsNeverASmallGroup(
+  table: SuppressedCrossTab,
+  truth: (rowId: string, columnId: string) => number,
+  label: string,
+): void {
+  type Valued = readonly [SuppressedEntry, number];
+  const rowTotal = (rowId: string) =>
+    table.columnIds.reduce((sum, columnId) => sum + truth(rowId, columnId), 0);
+  const columnTotal = (columnId: string) =>
+    table.rowIds.reduce((sum, rowId) => sum + truth(rowId, columnId), 0);
+  const wholeTotal: Valued = [
+    { suppressed: false, count: table.grandTotal },
+    table.grandTotal,
+  ];
+
+  const equations: { addends: Valued[]; sum: Valued; what: string }[] = [
+    ...table.rowIds.map((rowId) => ({
+      what: `row ${rowId}`,
+      addends: table.columnIds.map<Valued>((columnId) => [
+        table.cells[rowId][columnId],
+        truth(rowId, columnId),
+      ]),
+      sum: [table.rowTotals[rowId], rowTotal(rowId)] as Valued,
+    })),
+    ...table.columnIds.map((columnId) => ({
+      what: `column ${columnId}`,
+      addends: table.rowIds.map<Valued>((rowId) => [
+        table.cells[rowId][columnId],
+        truth(rowId, columnId),
+      ]),
+      sum: [table.columnTotals[columnId], columnTotal(columnId)] as Valued,
+    })),
+    {
+      what: 'the row totals',
+      addends: table.rowIds.map<Valued>((rowId) => [
+        table.rowTotals[rowId],
+        rowTotal(rowId),
+      ]),
+      sum: wholeTotal,
+    },
+    {
+      what: 'the column totals',
+      addends: table.columnIds.map<Valued>((columnId) => [
+        table.columnTotals[columnId],
+        columnTotal(columnId),
+      ]),
+      sum: wholeTotal,
+    },
+  ];
+
+  for (const { addends, sum, what } of equations) {
+    if (sum[0].suppressed) continue;
+
+    const people = addends
+      .filter(([entry]) => entry.suppressed)
+      .reduce((total, [, count]) => total + count, 0);
+    if (people === 0) continue;
+
+    assert.ok(
+      people >= THRESHOLD,
+      `${label}: ${what} publishes its total and blanks ${people} people out ` +
+        `of it, which states a group smaller than the threshold of ${THRESHOLD}.`,
+    );
+  }
+}
+
 test('a cell below the threshold is not published', () => {
   const table = suppressCrossTab(
     grid({
@@ -204,7 +284,15 @@ test('suppression cannot be undone by combining cells', () => {
   ];
 
   for (const [label, cells] of tables) {
-    assertNoLoneSuppression(suppressCrossTab(cells, THRESHOLD), label);
+    const table = suppressCrossTab(cells, THRESHOLD);
+    assertNoLoneSuppression(table, label);
+    assertHiddenPartIsNeverASmallGroup(
+      table,
+      (rowId, columnId) =>
+        cells.find((cell) => cell.rowId === rowId && cell.columnId === columnId)
+          ?.count ?? 0,
+      label,
+    );
   }
 });
 
@@ -425,4 +513,99 @@ test('a breakdown with nothing small publishes every category', () => {
 
   assert.deepStrictEqual(published(frequency.categories['31-40']), 30);
   assert.deepStrictEqual(published(frequency.categories['41-50']), 25);
+});
+
+/**
+ * The residual — everyone the table does not show — is the group a reader gets
+ * for free, by subtracting the published categories from the round's own
+ * response count. Two blanks are not enough to protect it: two blanks over one
+ * person and nobody are still one person.
+ *
+ * `/breakdown` publishes each group's dimension averages beside its size, so a
+ * residual of one is that respondent's eight answers, recovered by arithmetic
+ * from a screen that never names them.
+ */
+test('a table whose blanks come to one person publishes nothing at all', () => {
+  const frequency = suppressFrequency(
+    { veterans: 54, newcomers: 1, unanswered: 0 },
+    THRESHOLD,
+  );
+
+  assert.strictEqual(frequency.total, 55);
+  assert.strictEqual(frequency.isFullySuppressed, true);
+  assert.strictEqual(
+    published(frequency.categories.veterans),
+    undefined,
+    'publishing 54 of 55 states the fifty-fifth',
+  );
+  assert.strictEqual(
+    frequency.categories.veterans.suppressed &&
+      frequency.categories.veterans.reason,
+    'complementary',
+  );
+});
+
+test('a residual of at least the threshold is left alone', () => {
+  // The line between the test above and this one: 45 published against a total
+  // of 55 hides ten people, and ten is what the threshold asks for.
+  const frequency = suppressFrequency(
+    { veterans: 45, newcomers: 9, unanswered: 1 },
+    THRESHOLD,
+  );
+
+  assert.strictEqual(frequency.isFullySuppressed, false);
+  assert.strictEqual(published(frequency.categories.veterans), 45);
+  assert.strictEqual(frequency.categories.newcomers.suppressed, true);
+  assert.strictEqual(frequency.categories.unanswered.suppressed, true);
+});
+
+/**
+ * The reason this module can be read more than once for one round.
+ *
+ * `/breakdown` offers a table per background question, a query parameter apart,
+ * so a manager reads tenure and role over the same fifty-five people. Neither
+ * table knows the other exists. What makes them safe together is that each one's
+ * residual is a crowd: a reader who lines the two up is intersecting two groups
+ * of at least ten, and inclusion–exclusion bounds that intersection without ever
+ * determining it.
+ */
+test('every table of one round leaves a crowd behind, not a person', () => {
+  const round = 55;
+  const tables = {
+    tenure: { veterans: 40, midCareer: 12, newcomers: 3, unanswered: 0 },
+    role: { teachers: 48, counsellors: 5, admin: 2 },
+    track: { general: 30, special: 21, unanswered: 4 },
+  };
+
+  for (const [label, counts] of Object.entries(tables)) {
+    assert.strictEqual(
+      Object.values(counts).reduce((sum, count) => sum + count, 0),
+      round,
+      `${label}: the fixture must cover the same people as every other table`,
+    );
+
+    const frequency = suppressFrequency(counts, THRESHOLD);
+    const shown = Object.entries(frequency.categories).filter(
+      ([, entry]) => !entry.suppressed,
+    );
+    const residual =
+      round -
+      shown.reduce(
+        (sum, [, entry]) => sum + (entry.suppressed ? 0 : entry.count),
+        0,
+      );
+
+    for (const [categoryId, entry] of shown) {
+      assert.ok(
+        !entry.suppressed && entry.count >= THRESHOLD,
+        `${label}/${categoryId}: a published group is never below the threshold`,
+      );
+    }
+
+    assert.ok(
+      residual === 0 || residual >= THRESHOLD,
+      `${label}: the people this table does not show are a group of ${residual}, ` +
+        'which a reader of the next table can line up against theirs',
+    );
+  }
 });

@@ -164,6 +164,41 @@ test('a group below the threshold publishes neither its size nor any score', () 
   assert.equal(newcomers.dimensionScores, undefined);
 });
 
+/**
+ * The published groups have to leave a crowd behind, not a person.
+ *
+ * Fifty-four veterans out of fifty-five is two blanks — the newcomer and the
+ * empty unanswered category — so the older rule was satisfied and the table was
+ * published. But the blanks come to one person, and this screen prints each
+ * group's dimension averages beside its size: `(55 × round − 54 × veterans)`
+ * is that respondent's own answer, arrived at without ever naming them.
+ *
+ * It is also what makes the round's *other* background questions safe. A reader
+ * who can isolate one person here can carry them to the next table.
+ */
+test('a table whose blanks come to one person publishes no group at all', () => {
+  const breakdown = buildBackgroundBreakdown({
+    definition: DEFINITION,
+    responses: [...cohort('veteran', 54, 100), ...cohort('new', 1, 0, 54)],
+    questionId: TENURE,
+    privacyThreshold: THRESHOLD,
+    isRoundLocked: false,
+  });
+
+  assert.ok(breakdown);
+  assert.equal(breakdown.totalResponses, 55);
+  assert.equal(breakdown.isFullySuppressed, true);
+
+  for (const entry of breakdown.groups) {
+    assert.equal(
+      entry.size.suppressed,
+      true,
+      `${entry.categoryId} is published, and the rest of the round is one person`,
+    );
+    assert.equal(entry.dimensionScores, undefined);
+  }
+});
+
 test('a lone small group takes a second one down with it, so it cannot be subtracted out', () => {
   // 3 newcomers, 20 veterans, 0 unanswered. Only the newcomers are below the
   // threshold — and publishing 20 beside a total of 23 states the 3 outright.

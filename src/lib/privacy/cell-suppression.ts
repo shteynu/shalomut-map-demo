@@ -15,14 +15,44 @@
  *
  * ## The invariant
  *
- * Every published line of the table — each row of cells and its total, each
- * column of cells and its total, the vector of row totals against the grand
- * total, the vector of column totals against the grand total — has **either no
- * suppressed entry or at least two**. One suppressed entry in a line is not
- * hidden; it is stated as "the total minus everything else".
+ * A published line of the table is each row of cells with its total, each column
+ * of cells with its total, the vector of row totals against the grand total, and
+ * the vector of column totals against the grand total. Every one of them
+ * satisfies two rules at once, and it takes both:
  *
- * Two suppressed entries in a line reveal only their sum. Each is known to be
- * below the threshold, so the sum bounds them but does not determine either.
+ * 1. **No line has exactly one suppressed entry.** One blank is not hidden; it
+ *    is stated as "the total minus everything else".
+ * 2. **The blanks on a line together account for nothing at all, or for at least
+ *    `threshold` people.** Two blanks reveal their sum, and a sum is a real
+ *    group: the union of the categories that were blanked. A line that hides
+ *    two cells of one and zero has published the fact that some group of the
+ *    staff room has exactly one member in it.
+ *
+ * Rule 1 alone permits that last table, which is why rule 2 exists. Rule 2 alone
+ * would permit a lone blank of forty, which is determined by subtraction —
+ * harmless as a number, but it would make the shape of the table depend on
+ * whether the blank happened to be large, and rule 1 keeps that uniform.
+ *
+ * ## Why rule 2 is what carries across tables
+ *
+ * A round has more than one background question, and `/breakdown` publishes a
+ * table for each of them over the same people. Nothing in one table's algebra
+ * knows about another's, so the guarantee has to be one that composes without
+ * coordination — and rule 2 is that guarantee, because it is a statement about
+ * *every group a reader can point at*, not about this table's cells.
+ *
+ * Take the residual of a table: everyone not inside a published category. Its
+ * size is the grand total minus the published ones, so a reader always has it,
+ * and `/breakdown` publishes each group's dimension averages beside its size, so
+ * a reader has the residual's scores by subtraction too. Under rule 2 the
+ * residual is either empty or at least `threshold` people. Read two tables and
+ * the two residuals are both groups of at least `threshold`; their intersection
+ * is bounded by inclusion–exclusion but never determined, and no number
+ * published by either table describes it.
+ *
+ * So the claim the product may make is: **no number a reader can compute from
+ * these tables describes a group smaller than the threshold.** That holds for
+ * one table and for all of them together.
  *
  * ## What is deliberately not suppressed
  *
@@ -34,10 +64,11 @@
  *
  * ## What this module is not
  *
- * It is not differential privacy and it makes no claim against an attacker who
- * combines several *different* tables of the same round. It closes the leaks
- * inside one published table, which is the leak this product can actually
- * create.
+ * It is not differential privacy, and it defends arithmetic rather than
+ * knowledge. A principal who already knows that exactly one teacher joined this
+ * year reads a suppressed category and learns nothing from this module that they
+ * did not bring with them. What it guarantees is that the published numbers
+ * themselves never single anyone out.
  */
 
 /** One respondent count at the intersection of two demographic categories. */
@@ -129,7 +160,9 @@ const columnTotalKey = (columnId: string) => `column:${columnId}`;
 const GRAND_TOTAL_KEY = 'grand';
 
 /**
- * Blank every member of every line until no line has exactly one blank.
+ * Blank every member of every line until both rules of the invariant hold on
+ * every line: no line has exactly one blank, and the blanks on a line account
+ * for nothing or for at least `threshold` people.
  *
  * Each pass suppresses at least one more entry and nothing is ever unsuppressed,
  * so with a finite number of entries this terminates. The extra entry chosen is
@@ -141,6 +174,7 @@ const GRAND_TOTAL_KEY = 'grand';
 function closeUnderSubtraction(
   entries: Map<string, WorkingEntry>,
   lines: readonly Line[],
+  threshold: number,
 ): void {
   let changed = true;
 
@@ -153,7 +187,10 @@ function closeUnderSubtraction(
         .filter((entry): entry is WorkingEntry => entry !== undefined);
 
       const hidden = members.filter((entry) => entry.suppressed);
-      if (hidden.length !== 1) continue;
+      if (hidden.length === 0) continue;
+
+      const hiddenTotal = hidden.reduce((sum, entry) => sum + entry.count, 0);
+      if (hidden.length >= 2 && hiddenTotal >= threshold) continue;
 
       const candidates = members
         .filter((entry) => !entry.suppressed && !entry.alwaysPublished)
@@ -291,7 +328,15 @@ export function suppressCrossTab(
     [...columnIds.map(columnTotalKey), GRAND_TOTAL_KEY],
   ];
 
-  closeUnderSubtraction(entries, lines);
+  closeUnderSubtraction(entries, lines, threshold);
+
+  // A table can close to nothing: rule 2 answers a residual of one person by
+  // blanking the group it was subtracted from, and with few enough categories
+  // that is every one of them. Saying so here rather than leaving it to each
+  // caller to notice keeps "this round says nothing" a single fact.
+  const publishesNothing = [...entries.values()].every(
+    (entry) => entry.suppressed || entry.alwaysPublished,
+  );
 
   return {
     rowIds,
@@ -317,7 +362,7 @@ export function suppressCrossTab(
       ]),
     ),
     grandTotal,
-    isFullySuppressed: false,
+    isFullySuppressed: publishesNothing,
   };
 }
 
@@ -325,9 +370,13 @@ export function suppressCrossTab(
  * Suppress a single demographic breakdown — the counts for one background
  * question, with no second variable crossed against them.
  *
- * The same closure rule applies, over the one line the table publishes: the
- * categories and their total. A lone suppressed category is the total minus the
- * rest, so there are never fewer than two.
+ * The same closure applies, over the one line this table publishes: the
+ * categories and their total. Both rules land on that line, and the second is
+ * the one that matters here — the blanked categories are exactly the table's
+ * residual, so "the blanks account for at least `threshold` people" reads
+ * directly as "the people this table does not show are a crowd, not a person".
+ * That is the sentence that stays true when a manager opens the next background
+ * question of the same round.
  */
 export function suppressFrequency(
   counts: Readonly<Record<string, number>>,
@@ -342,9 +391,18 @@ export function suppressFrequency(
     threshold,
   );
 
+  const categories = table.rowTotals;
+
   return {
-    categories: table.rowTotals,
+    categories,
     total: table.grandTotal,
-    isFullySuppressed: table.isFullySuppressed,
+    // Read off the categories rather than inherited from the cross-tab. This
+    // table is built with one dummy column, whose column total is the grand
+    // total and is therefore published even when every category is blank — so
+    // the cross-tab's own answer is "something is published" for a table that
+    // shows a reader nothing.
+    isFullySuppressed:
+      table.isFullySuppressed ||
+      Object.values(categories).every((entry) => entry.suppressed),
   };
 }
