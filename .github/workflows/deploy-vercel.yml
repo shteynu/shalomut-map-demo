@@ -46,27 +46,6 @@ jobs:
       # DATABASE_URL: nothing in the build may reach a real database.
       TEST_DATABASE_URL: postgresql://shalomut:shalomut@127.0.0.1:5433/shalomut_test
 
-      # The browser smoke's session secret, and the reason it sits on the job
-      # rather than on the smoke step: the application answers a request from
-      # two runtimes — a route handler issues the session, the middleware
-      # verifies it — and on this runner they did not resolve SESSION_SECRET
-      # the same way. The login route signed with the value Playwright started
-      # the server with, the middleware verified with a different one, and
-      # every protected page redirected to /login as though the password had
-      # been wrong. Declared here, one value stands in front of every process
-      # in the job, the build included, so the two runtimes cannot disagree.
-      #
-      # It is not a secret and must never become one: it authenticates a
-      # browser against a server this job starts and throws away, and it is the
-      # same default `playwright.config.ts` uses when nothing is set. Nothing
-      # in this repository's real configuration is read here.
-      #
-      # The password and organization id stay on `playwright.config.ts`, where
-      # only the server it starts sees them. Declaring MANAGER_ADMIN_PASSWORD
-      # for the whole job changes the password the suite's own auth tests
-      # expect, and three of them fail.
-      SESSION_SECRET: smoke-run-session-secret-not-a-real-secret
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
@@ -114,40 +93,17 @@ jobs:
       - name: Check that the mutation runner still starts
         run: npm run test:mutation:ai-contract -- --dryRunOnly
 
-      # Everything above this line is verified without a browser, and cannot
-      # see the half of the product that only exists once a page renders: a
-      # server component that throws, a reading order that flipped, a share
-      # link the manager screen stopped showing. One path covers it — sign in,
-      # read the link, open it as a respondent, look at the map.
+      # The browser smoke used to end this job and now lives in
+      # `browser-smoke.yml`, which runs on every branch. It was moved on
+      # 2026-08-15, after a stack that had been green on every branch gate
+      # landed on `main` and only then met Playwright — red, on a stale
+      # assertion. Running it here as well would buy nothing and cost a second
+      # Postgres, a second Chromium and three minutes on every push to `main`.
       #
-      # It needs a database with a round in it, which is why DATABASE_URL
-      # appears here and nowhere else: the build above must never reach one.
-      # This is the disposable service database, seeded after `verify:db` has
-      # finished emptying it.
-      #
-      # The sign-in credentials come from `playwright.config.ts`, which starts
-      # the server itself with values it invents — except the session secret,
-      # which the job declares above so that the build and the server share it.
-      # None of the repository's real secrets are read by this job, and none
-      # should be.
-      - name: Install the smoke browser
-        run: npx playwright install --with-deps chromium
-
-      - name: Smoke the manager and respondent flow in a browser
-        env:
-          DATABASE_URL: postgresql://shalomut:shalomut@127.0.0.1:5433/shalomut_test
-        run: |
-          npm run db:migrate:deploy
-          npm run db:seed:local
-          npx playwright test
-
-      - name: Keep the smoke's report when it fails
-        if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: playwright-report
-          path: playwright-report/
-          retention-days: 7
+      # One consequence, stated rather than left to be discovered: the manual
+      # deployment below waits on `npm run verify` and the mutation dry run, and
+      # no longer on a browser. The smoke's red X arrives on its own workflow,
+      # at the same commit, usually sooner than this job finishes.
 
   deploy-prod-manual:
     name: Deploy to Production (Manual)

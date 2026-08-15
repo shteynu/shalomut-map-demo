@@ -1,0 +1,123 @@
+# The browser smoke, on every branch.
+#
+# It used to be the last step of `deploy-vercel.yml`, which triggers on `main`
+# and on pull requests to it. Landings here are fast-forwards rather than pull
+# requests, so a branch met Playwright for the first time *after* it was on
+# `main` — and on 2026-08-15 that is exactly how it went: an eight-branch stack
+# landed green, and the first run of the smoke against it was red, on the
+# progress line's own wording. The branch had been green all along, on a gate
+# that carries no browser.
+#
+# So the smoke moved here and runs everywhere `verify-core.yml` runs. It is
+# deliberately a separate workflow rather than a step of that one: `verify:core`
+# needs no database and no browsers and is the fastest reporter in the
+# repository, and hanging Postgres and a Chromium install off it would slow the
+# check that fails most often.
+#
+# What it does *not* do is duplicate `verify:core`. It builds and it drives a
+# browser; the lints, types and unit tests are the other workflow's job, and a
+# red X from either is enough to stop.
+name: Browser smoke
+
+on:
+  push:
+  workflow_dispatch:
+
+# A branch under active work gets several pushes a minute, and this one starts
+# a database and a browser. Only the newest push is worth a runner.
+concurrency:
+  group: browser-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: One path through a real browser
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    # The smoke needs a round to open, which needs a database. This is the
+    # disposable service one; nothing here may reach a real database.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: shalomut
+          POSTGRES_PASSWORD: shalomut
+          POSTGRES_DB: shalomut_test
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U shalomut -d shalomut_test"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+
+    env:
+      # On the job rather than on the smoke step, and the reason is a defect
+      # this once produced: the application answers a request from two runtimes
+      # — a route handler issues the session, the middleware verifies it — and
+      # on this runner they did not resolve SESSION_SECRET the same way. The
+      # login route signed with the value Playwright started the server with,
+      # the middleware verified with a different one, and every protected page
+      # redirected to /login as though the password had been wrong. Declared
+      # here, one value stands in front of every process in the job, the build
+      # included, so the two runtimes cannot disagree.
+      #
+      # It is not a secret and must never become one: it authenticates a
+      # browser against a server this job starts and throws away, and it is the
+      # same default `playwright.config.ts` uses when nothing is set. Nothing in
+      # this repository's real configuration is read here.
+      #
+      # The password and organization id stay on `playwright.config.ts`, where
+      # only the server it starts sees them.
+      SESSION_SECRET: smoke-run-session-secret-not-a-real-secret
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install Node.js dependencies
+        run: npm ci
+
+      # No Python and no virtualenv: this workflow runs no test that crosses
+      # into the AI service. `verify-core.yml` owns that one.
+
+      # Built without DATABASE_URL, deliberately and separately from the step
+      # below. `npm run test:e2e` would build inside the smoke step and hand the
+      # build a database connection, which is the one thing every gate here
+      # promises not to do.
+      - name: Build the application
+        run: npm run build
+
+      - name: Install the smoke browser
+        run: npx playwright install --with-deps chromium
+
+      # Everything else in this repository is verified without a browser, and
+      # cannot see the half of the product that only exists once a page renders:
+      # a server component that throws, a reading order that flipped, a share
+      # link the manager screen stopped showing. One path covers it — sign in,
+      # read the link, open it as a respondent, look at the map.
+      #
+      # `playwright.config.ts` starts the server itself, with a password and an
+      # organization id it invents, against the build produced above.
+      - name: Smoke the manager and respondent flow in a browser
+        env:
+          DATABASE_URL: postgresql://shalomut:shalomut@127.0.0.1:5433/shalomut_test
+        run: |
+          npm run db:migrate:deploy
+          npm run db:seed:local
+          npx playwright test
+
+      - name: Keep the smoke's report when it fails
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

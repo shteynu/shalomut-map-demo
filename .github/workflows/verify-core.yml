@@ -2,10 +2,9 @@
 #
 # `deploy-vercel.yml` already runs `npm run verify`, which chains this gate —
 # but only on `main` and on pull requests targeting it, and only behind a
-# Postgres service, a migration, a seed and a browser install. Two things
-# follow. Work on a branch or in an agent worktree is unverified until it
-# lands, and when it does land, the first red X arrives several minutes after
-# the one that mattered.
+# Postgres service and a migration. Two things follow. Work on a branch or in
+# an agent worktree is unverified until it lands, and when it does land, the
+# first red X arrives several minutes after the one that mattered.
 #
 # So this job runs everywhere and carries nothing it does not need: no
 # database service, no browsers, no seeded round. `verify:core` is the half
@@ -13,9 +12,11 @@
 #
 # On `main` that overlaps `deploy-vercel.yml` on purpose. The two run in
 # parallel; this one answers "do the lints, types, tests and build pass?" while
-# the other is still starting Postgres. `verify:db`, `verify:ai` and the
-# browser smoke stay there, where the fixtures they need already exist, and
-# that workflow remains the gate a deployment waits on.
+# the other is still starting Postgres. `verify:db` and `verify:ai` stay there,
+# where the fixtures they need already exist. The browser smoke is a third
+# workflow, `browser-smoke.yml`, which runs on every branch as this one does —
+# it was a step of the deploy workflow until 2026-08-15, and a branch could not
+# reach it.
 name: Core verification
 
 on:

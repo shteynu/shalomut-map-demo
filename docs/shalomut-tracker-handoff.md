@@ -164,12 +164,20 @@ deploys regardless, which is why the endpoint stayed up throughout. Fixed by
 `fix/the-progress-line-counts-steps` (`ca1472d`); all three workflows are green
 on it, with 18 browser tests passed.
 
-**The gap it exposes is open and is a decision, not a defect.** `verify-core.yml`
-runs on every branch and carries no browser; the smoke lives only in
-`deploy-vercel.yml`, which triggers on `main` and on pull requests to it. A
-stack fast-forwarded onto `main` without a pull request therefore meets
-Playwright for the first time *after* it lands. Either the smoke moves to
-every-branch, or landings go through pull requests.
+**The gap it exposed is closed: the smoke runs on every branch.** Owner
+decision, 2026-08-15 — of the two answers, move the smoke rather than route
+landings through pull requests. `.github/workflows/browser-smoke.yml` triggers
+on `push` with no branch filter, exactly as `verify-core.yml` does, and carries
+its own Postgres service, its own build and its own Chromium. The steps left
+`deploy-vercel.yml`, so `main` does not pay for them twice, and that workflow
+keeps `npm run verify` — `verify:db` and `verify:ai` included — and the mutation
+dry run.
+
+One consequence is deliberate and is written into the workflow: the manual
+deployment job no longer waits on a browser. It waits on `npm run verify` and
+the mutation dry run, while the smoke's own red X arrives at the same commit on
+its own workflow. Three workflows now run on every branch — core verification,
+browser smoke and CodeQL.
 
 **2026-08-14, later the same day, built the first two phases of it.** Phase 1
 (`claude/answer-model-for-research-instrument`) made a question carry its own
