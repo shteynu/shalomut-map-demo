@@ -109,9 +109,26 @@ which was confirmed by asking the remote about a branch created minutes earlier
 and never pushed by hand. The dated entries above 2026-08-15 are left as they
 were written; this paragraph is the current reading.
 
-`origin/main` is still `05a23bc`, twenty-four commits behind the tip of that
-stack, and `main` is an ancestor of it — so landing the stack is a
-fast-forward, and merging it is an owner call that has not been made.
+**The stack landed on `main` on 2026-08-15.** `origin/main` was `05a23bc` and is
+`25ee069`, read from the remote: the whole research-instrument stack went across
+as one fast-forward of twenty-six commits, so every branch tip above is now an
+ancestor of `main`. The owner ran the push; the agent's `git push` was declined
+by the permission layer as it always is here.
+
+**What that means and what it does not.** `main` auto-deploys to Vercel, so a
+deployment of this tip should exist — **that has not been verified**, and
+nothing in this file should be read as evidence that the deployed endpoint is
+serving it. Two things are known to be missing on the deployed side and were
+missing before this merge:
+
+- the phase 1 migration making `question_answers.dimension_id` and `.score`
+  nullable has been applied to the local database and **not** to the deployed
+  one, so a deployed round cannot store a background answer until it is;
+- `scripts/backfill-round-definitions.ts` has likewise run locally only.
+
+Neither blocks the existing 24-question rounds, which store a dimension and a
+score on every answer as they always did. Both block a deployed round that uses
+the new instrument.
 Until then, every claim elsewhere in this file about a 24-question default, a
 three-colour answer scale or contract `6.0` still describes the running
 product, because nothing in this stack changes what a respondent answers or

@@ -1,14 +1,16 @@
 # Shalomut Map — product progress
 
-Updated: 2026-08-14. This file is a concise product-level milestone record, not
+Updated: 2026-08-15. This file is a concise product-level milestone record, not
 a session log. Branch evidence lives in `docs/agent-tasks/archive/`; current
 deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 
 ## Current state
 
-- `origin/main` is `45e1340` plus its archive commits. Six branches landed on
-  2026-08-11 and ten on 2026-08-10; the state they left is in
-  `docs/shalomut-tracker-handoff.md`.
+- `origin/main` is `25ee069`. The eight-branch research-instrument stack landed
+  there on 2026-08-15 as one fast-forward of twenty-six commits; before it,
+  `main` was `45e1340` plus its archive commits, after six branches landed on
+  2026-08-11 and ten on 2026-08-10. What is deployed, as opposed to merged, is
+  in `docs/shalomut-tracker-handoff.md`.
 - **Opening a school or a round is a decision the screen states, not a form to
   survive.** Both were the same forty-field setup screen, told apart by the
   wording of one button below the fold; each is now a dialog that says what the
@@ -355,9 +357,10 @@ questions it has.
 
 What is left is phase 5 and the instrument's own content, both of which wait on
 the methodologist's item-to-dimension mapping — the machinery exists and the 126
-items do not. And **none of it is merged**: it is an eight-branch stack, on
-`origin` but not on `main`, so every capability recorded above still describes
-the 24-question default that is actually running.
+items do not. The eight-branch stack **landed on `main` on 2026-08-15** as one
+fast-forward, so the capabilities above are the ones in the repository — but the
+default questionnaire a manager gets is still the canonical 24, because
+replacing it is what the missing mapping would do.
 
 That decision also closes the answer-scale question the two items below were
 waiting with. The cheap-wins list of

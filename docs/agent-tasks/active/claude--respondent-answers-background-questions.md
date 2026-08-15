@@ -5,7 +5,7 @@
 - Branch: `claude/respondent-answers-background-questions`
 - Base branch: `claude/breakdown-by-background-question`
 - Base commit: `20b0ac7`
-- Status: complete, committed, on `origin`, not merged
+- Status: complete, merged to `main` on 2026-08-15
 - Last updated: 2026-08-15
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -78,9 +78,7 @@ sentence for each.
 - Unstaged and deliberately untouched: `.idea/shalomut-map-demo.iml`, which is
   the user's own change and belongs to nobody's task.
 - Untracked: none.
-- On `origin` at `408386f`, read from the remote itself. Seventh branch of the
-  stack; the handoff reaches another checkout or machine. It is not merged —
-  `origin/main` is `05a23bc`.
+- Merged. This tip is an ancestor of `origin/main`, which is `25ee069`.
 
 ## Verification that actually ran
 

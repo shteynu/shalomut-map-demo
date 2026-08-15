@@ -5,7 +5,7 @@
 - Branch: `claude/likert-blocks-for-respondent`
 - Base branch: `claude/respondent-answers-background-questions`
 - Base commit: `408386f`
-- Status: complete, committed, on `origin`, not merged
+- Status: complete, merged to `main` (`25ee069`)
 - Last updated: 2026-08-15
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -70,12 +70,8 @@ rescaled every number already stored.
   actually is.
 - Unstaged and deliberately untouched: `.idea/shalomut-map-demo.iml`, the user's
   own change.
-- On `origin`, read from the remote rather than from a tracking ref. Its tip
-  there was `5575177` at the last reading, one documentation commit behind the
-  local tip — the environment syncs branches on its own and the tail can lag by
-  minutes. If `0b3e0af` has not appeared, it is a push the owner can run.
-- Not merged: `origin/main` is `05a23bc` and is an ancestor of this tip, so
-  landing the stack is a fast-forward.
+- Merged. `origin/main` is `25ee069`, this branch's tip, read from the remote:
+  the whole stack went across as one fast-forward of twenty-six commits.
 
 ## Verification that actually ran
 
@@ -137,6 +133,7 @@ rescaled every number already stored.
 
 ## Next concrete step
 
-Land the stack on `main`. All eight branches are on `origin` and `main` is an
-ancestor of this tip, so it is a fast-forward — and merging is the owner's call,
-not an agent's.
+Confirm what the deployment is serving: read the Vercel deployment's
+`gitSource.sha` against `25ee069`. Nothing in this repository has verified that,
+and the two deployed-side gaps — the phase 1 migration and the backfill script,
+both run locally only — are recorded in `docs/shalomut-tracker-handoff.md`.
