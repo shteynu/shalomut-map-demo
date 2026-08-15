@@ -57,6 +57,16 @@ on, and a historical one explicitly is not.
   research instrument. Six phases, three owner decisions taken and five open.
   **Not yet implemented**: every living document still describes the
   24-question default, because that is what the code does.
+- [`methodologist-questions-2026-08-15-ru.md`](methodologist-questions-2026-08-15-ru.md)
+  and [`methodologist-questions-2026-08-15-he.md`](methodologist-questions-2026-08-15-he.md)
+  — the same five questions in Russian and Hebrew, written to be sent outside
+  the repository. They ask what the eight dimensions rest on, for the
+  item-to-dimension mapping that blocks phases 3, 5 and 6 of the plan above,
+  where the scoring bands belong on a 1–5/1–7 scale, what the two allocation
+  grids are for, and who owns the intervention catalog. **Outgoing, not a
+  specification**: nothing here may be implemented from, because every line of
+  it is a question. Keep the two files in step — an answer that arrives against
+  one version applies to both.
 
 ## Historical plans and evidence
 
