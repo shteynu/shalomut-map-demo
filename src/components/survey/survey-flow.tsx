@@ -37,6 +37,7 @@ import {
   writeSurveyDraft,
 } from "@/lib/survey-draft-storage";
 import { resolveSubmissionOutcome } from "@/lib/survey-submission-outcome";
+import { sendWithRetry } from "@/lib/survey-submission-retry";
 import type { SurveyDefinitionQuestion } from "@/lib/types/backend";
 
 /**
@@ -76,6 +77,10 @@ export function SurveyFlow({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [phase, setPhase] = useState<SurveyPhase>("consent");
   const [submitting, setSubmitting] = useState(false);
+  // Separate from `submitting` because it says something different to the
+  // person: the first attempt did not arrive, and this is the second. One
+  // unchanging spinner through a fourteen-second silence reads as a hang.
+  const [retrying, setRetrying] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [seeded, setSeeded] = useState(false);
   const [restoredDraft, setRestoredDraft] = useState(false);
@@ -421,6 +426,7 @@ export function SurveyFlow({
   const handleSubmit = async () => {
     if (!canSubmit || submitting) return;
     setSubmitting(true);
+    setRetrying(false);
     setSubmitError(null);
 
     // Walked in questionnaire order rather than in the order the answers map
@@ -446,10 +452,14 @@ export function SurveyFlow({
       const anonymousTokenHash = await hashAnonymousToken(
         attemptToken.current(),
       );
-      const res = await fetch(`/api/survey/${encodeURIComponent(shareCode)}/submit`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ answers: formattedAnswers, anonymousTokenHash }),
+      const res = await sendWithRetry({
+        send: () =>
+          fetch(`/api/survey/${encodeURIComponent(shareCode)}/submit`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ answers: formattedAnswers, anonymousTokenHash }),
+          }),
+        onRetry: () => setRetrying(true),
       });
       const payload = res.ok
         ? null
@@ -470,9 +480,13 @@ export function SurveyFlow({
 
       setSubmitError(outcome.message);
       setSubmitting(false);
+      setRetrying(false);
     } catch {
+      // Reached only after every attempt threw, so the wording stays as it was:
+      // by now the connection really is the honest explanation.
       setSubmitError("לא ניתן להתחבר לשרת. בדקו את החיבור ונסו שוב.");
       setSubmitting(false);
+      setRetrying(false);
     }
   };
 
@@ -629,7 +643,7 @@ export function SurveyFlow({
             {submitting ? (
               <>
                 <Loader2 size={18} className="animate-spin" aria-hidden="true" />
-                שולח תשובות...
+                {retrying ? "מנסה שוב..." : "שולח תשובות..."}
               </>
             ) : (
               <>

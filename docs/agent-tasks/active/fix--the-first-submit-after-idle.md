@@ -8,7 +8,8 @@
   because the evidence this task starts from is in that branch's task file.
 - Base commit: `c6d3efa`
 - Current HEAD: `c6d3efa` (no commit on this branch yet)
-- Status: investigating. Cause narrowed but not settled; no fix written.
+- Status: the cause is located outside this repository, and the mitigation is
+  written and tested. Not yet walked in a browser.
 - Last updated: 2026-08-15
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -72,11 +73,19 @@ endpoint: the database there had been empty since 2026-08-09.
 
 ## Decisions made
 
-- Nothing yet.
+- **Mitigate rather than chase.** The cause is upstream of the function and this
+  repository cannot reach it, so the change is to what the respondent
+  experiences. This is deliberately not sold as a cure.
+- **Retry only a thrown send.** Three attempts, 1s and 3s apart. A refusal is
+  the server having spoken, and re-sending it would turn one refusal into three.
+- **No deployment-configuration change.** The region question stays open and
+  separate; the fix does not depend on it.
 
 ## Assumptions
 
-- None load-bearing yet.
+- That the two logged failures are representative of the phenomenon. The idle
+  probe did not reproduce it, so this rests on two observations rather than on a
+  rule anyone has confirmed.
 
 ## Completed
 
@@ -108,33 +117,75 @@ endpoint: the database there had been empty since 2026-08-09.
   refused as a duplicate — so a transparent retry has to read that particular
   refusal as success, or it turns a stored response into an error message.
 
+- **The function logs hold no invocation for either failed request.** Owner read
+  them on 2026-08-15. That settles the direction: the request dies before any
+  code in this repository runs, so neither a killed invocation nor a hanging
+  `pg.Pool` can be it — both would have produced an invocation.
+- **A correction to this file's own earlier reading.** The failing `curl`
+  reported `redirects:0`, so the 308 never came back either. The connection died
+  on the first request to the edge, before the redirect. The trailing-slash
+  hypothesis is not merely unsupported; it is impossible for these two failures.
+- **The "after an idle period" description is weaker than it looked.** A
+  deliberate probe — 15 minutes of no traffic, then one hit on each route —
+  did **not** reproduce anything: `/api/health/` answered its first hit in
+  0.68s (warm 0.26–0.33s), and `/answer/NOPE-COLD/`, which does query the
+  database, answered its first in 2.76s (warm 0.48–0.59s). So a quiet quarter of
+  an hour is not by itself enough. Two caveats keep this from being conclusive:
+  the probe ran against a fresh deployment of `9c32ef2`, which a build and the
+  Vercel workflow may have warmed, and it never submitted anything. What the
+  evidence now supports is **a submit is occasionally lost before it reaches the
+  function** — the branch name is narrower than the phenomenon.
+- **The mitigation is written**: `src/lib/survey-submission-retry.ts` and its
+  use in `survey-flow.tsx`. Three attempts, waits of 1s and 3s, retrying only a
+  *thrown* send. An HTTP answer is the server having spoken and every one of
+  those is already a state `resolveSubmissionOutcome` names.
+- **The worry this file opened with was already answered by the code.**
+  `survey-submission-outcome.ts` reads `ALREADY_SUBMITTED` as a completion, with
+  a comment describing exactly the recovered-attempt case. So a retry cannot
+  turn a stored response into an error, and the client already sends the token
+  that makes the second write refusable.
+- The button now says `מנסה שוב...` on a retry instead of holding one unchanging
+  spinner through a fourteen-second silence.
+
 ## In progress
 
-- Waiting on the deployment's function logs for the two failed requests.
+- Nothing.
 
 ## Remaining
 
-- Read the function logs. They separate "the function was killed" from "the
-  function never started" from "the function ran and the response was lost",
-  and those three have different fixes.
-- Decide the fix with the owner once the cause is known.
-- Reproduce the failure deliberately — seed one round, leave the endpoint idle
-  until the function is cold, submit once — so the fix has something to be
-  measured against. This re-creates throwaway deployed data and the cleanup that
-  goes with it.
+- Walk the retry in a browser against a local production build, with the first
+  send forced to fail, so the `מנסה שוב...` state and the recovery are seen
+  rather than inferred.
+- Decide with the owner whether the deployment's function region is worth
+  pinning. Separate from this fix and not required by it.
 
 ## Changed files
 
-- `docs/agent-tasks/active/fix--the-first-submit-after-idle.md` (this file,
-  untracked).
+Committed in `c4baae9`:
 
-Nothing else. No product code has been touched on this branch.
+- `docs/agent-tasks/active/fix--the-first-submit-after-idle.md` (this file).
+
+Unstaged as of this update:
+
+- `src/lib/survey-submission-retry.ts` (new).
+- `src/lib/__tests__/survey-submission-retry.test.ts` (new).
+- `src/components/survey/survey-flow.tsx` — the import, a `retrying` state, the
+  `sendWithRetry` call and the button's retry wording.
+- this file.
 
 ## Verification evidence
 
 ### Passed
 
 - The reproductions and the ruled-out hypotheses above, all read on 2026-08-15.
+- `npx tsx --test src/lib/__tests__/survey-submission-retry.test.ts` — 7 of 7.
+  One of them is the deployed failure's shape: the first send throws, the second
+  returns, and the caller sees the second.
+- `npm run verify:core` — exit 0, which carries typecheck, ESLint, the fitness
+  checks and the production build.
+- `npm test` — 1033 pass, 0 fail.
+- The idle probe above, which passed as a measurement and failed as a
+  reproduction.
 
 ### Failed
 
@@ -142,10 +193,10 @@ Nothing else. No product code has been touched on this branch.
 
 ### Blocked or not run
 
-- The function logs. They need the owner's Vercel dashboard.
-- The deliberate cold reproduction. Not run: the walk's throwaway data was
-  already deleted, so there is no round to submit to.
-- Everything local. No local check applies to an unchanged tree.
+- A browser walk of the retry. Not run yet; it is the one remaining item.
+- `verify:db`, `verify:ai`, the Python suite and the mutation run. No schema,
+  repository, contract or mutated module is in this diff.
+- A deployed check of the fix. It is not deployed.
 
 ### Environment
 
@@ -154,10 +205,17 @@ Nothing else. No product code has been touched on this branch.
 
 ### Residual risk
 
-- The cause is narrowed, not found. Three readings still fit: a cold start that
-  exceeds the function's budget, a connection that hangs with no timeout to cut
-  it, and a platform-side drop. The 11.2s on a database-free route is the
-  strongest single clue and it points away from Postgres.
+- **The cause is located, not identified.** "Before the function" is where, not
+  what. Nobody knows what makes the edge drop a request, how often it happens,
+  or whether it can drop all three attempts at once — in which case the
+  respondent sees the same message they see today, just later.
+- The retry adds waiting on the worst path. A lost send failed after ~13s in
+  the one measurement there is, so three of them plus the waits could keep a
+  person on `מנסה שוב...` for the better part of a minute before the error
+  arrives. That is a worse wait than today's and a better outcome; if it turns
+  out to be common rather than rare, the policy is the thing to revisit.
+- Nothing here has been walked in a browser, so the retry wording has been read
+  in a diff and not on a screen.
 
 ## Failed approaches
 
@@ -177,12 +235,12 @@ Nothing else. No product code has been touched on this branch.
 
 ## Questions requiring an owner decision
 
-1. The function logs for the two failed requests — only the owner can open them.
-2. Whether the fix may include a `vercel.json`, if the logs point at the region
-   or at the time budget.
+1. **Closed 2026-08-15**: the logs hold no invocation for either failure.
+2. Whether to pin the deployment's function region to match the Seoul database.
+   Open, and independent of this fix.
 
 ## Next concrete step
 
-Ask the owner to open the Vercel deployment's function logs and read what the
-two failed `POST /api/survey/SHALOM-BACKGROUND/submit` invocations recorded —
-in particular whether an invocation exists for them at all.
+Walk the retry against a local production build with the first send forced to
+fail — block the submit request once in the browser's network layer — and read
+the `מנסה שוב...` state and the recovery on screen rather than in a diff.
