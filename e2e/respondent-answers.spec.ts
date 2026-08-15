@@ -32,18 +32,23 @@ import { signIn } from './manager-session';
 const ANSWERS = ['ירוק', 'צהוב', 'אדום'] as const;
 
 /**
- * How many questions this round asks, read off the progress line rather than
+ * How many steps this round walks, read off the progress line rather than
  * assumed to be the canonical 24: a round's questionnaire is its own snapshot,
  * and a test that hard-codes the default template would fail the day a school
  * removes a question — which is a supported thing to do.
+ *
+ * Steps, not questions, since the flow started walking steps: an allocation
+ * grid and a block of Likert statements are each one screen holding many
+ * questions. In the round this file seeds they coincide, every question being
+ * its own step, which is why the loop below can answer one question per step.
  */
-async function readQuestionTotal(page: Page): Promise<number> {
+async function readStepTotal(page: Page): Promise<number> {
   const progress = page.locator('.survey-progress-sticky small');
   await expect(progress).toBeVisible();
   const text = (await progress.textContent()) ?? '';
   const match = /מתוך\s+(\d+)/u.exec(text);
 
-  expect(match, `the progress line did not say how many questions: "${text}"`)
+  expect(match, `the progress line did not say how many steps: "${text}"`)
     .not.toBeNull();
 
   return Number(match![1]);
@@ -89,7 +94,7 @@ test('a respondent answers every question and the round takes the answers', asyn
 
   await accept.click();
 
-  const total = await readQuestionTotal(page);
+  const total = await readStepTotal(page);
   expect(total, 'the round asked no questions').toBeGreaterThan(0);
 
   for (let index = 0; index < total; index++) {
@@ -143,8 +148,8 @@ test('a respondent answers every question and the round takes the answers', asyn
     const remaining = total - index - 1;
     await expect(page.locator('.survey-progress-sticky small')).toHaveText(
       remaining === 0
-        ? new RegExp(`נענו ${total} מתוך ${total}`, 'u')
-        : new RegExp(`שאלה ${index + 2} מתוך ${total}`, 'u'),
+        ? new RegExp(`הושלמו ${total} מתוך ${total}`, 'u')
+        : new RegExp(`שלב ${index + 2} מתוך ${total}`, 'u'),
       { timeout: 10_000 },
     );
   }
