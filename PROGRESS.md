@@ -355,9 +355,9 @@ questions it has.
 
 What is left is phase 5 and the instrument's own content, both of which wait on
 the methodologist's item-to-dimension mapping — the machinery exists and the 126
-items do not. And **none of it is merged**: it is an eight-branch local stack,
-so every capability recorded above still describes the 24-question default that
-is actually running.
+items do not. And **none of it is merged**: it is an eight-branch stack, on
+`origin` but not on `main`, so every capability recorded above still describes
+the 24-question default that is actually running.
 
 That decision also closes the answer-scale question the two items below were
 waiting with. The cheap-wins list of

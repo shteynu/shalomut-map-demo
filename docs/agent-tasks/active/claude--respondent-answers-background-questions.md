@@ -5,7 +5,7 @@
 - Branch: `claude/respondent-answers-background-questions`
 - Base branch: `claude/breakdown-by-background-question`
 - Base commit: `20b0ac7`
-- Status: complete, committed, not pushed
+- Status: complete, committed, on `origin`, not merged
 - Last updated: 2026-08-15
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -78,8 +78,9 @@ sentence for each.
 - Unstaged and deliberately untouched: `.idea/shalomut-map-demo.iml`, which is
   the user's own change and belongs to nobody's task.
 - Untracked: none.
-- Not pushed. This branch is the sixth of a stack that is entirely local; the
-  handoff boundary is this worktree until someone pushes it.
+- On `origin` at `408386f`, read from the remote itself. Seventh branch of the
+  stack; the handoff reaches another checkout or machine. It is not merged —
+  `origin/main` is `05a23bc`.
 
 ## Verification that actually ran
 
@@ -126,15 +127,14 @@ sentence for each.
 
 ## Risks and things left
 
-- The analytic half of phase 3 is untouched: 108 Likert items still render one
-  per screen with their anchors repeated, and the block layout waits on the
-  methodologist's item→dimension mapping.
-- `estimatedMinutes` is still derived from a question count, so a 126-item
-  instrument will quote a number nobody checked against a real sitting.
+- The analytic half of phase 3 and the question-count estimate were both closed
+  later the same day on `claude/likert-blocks-for-respondent`; the two risks this
+  file recorded about them no longer stand.
 - The respondent page overflows horizontally at 375px. Pre-existing, measured on
   `/round/` too, and out of this diff — spawned as its own task.
 
 ## Next concrete step
 
-Push the stack. Six branches sit on this machine and nothing above
-`main` is deployed; `git push` is the owner's to run.
+Superseded: `claude/likert-blocks-for-respondent` builds on this branch and
+carries the current step. Nothing above `main` is deployed, and landing the
+stack is the owner's call.

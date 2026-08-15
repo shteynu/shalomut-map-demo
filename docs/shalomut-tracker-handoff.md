@@ -37,8 +37,7 @@ is now portable to another checkout or machine.
 
 **2026-08-15, later: a sixth branch, and it is the one that puts the privacy
 rule into service.** `claude/breakdown-by-background-question` sits on top of
-the stack and is **unpushed** — three commits, `aa0e2db`, `1aabeb4` and a
-documentation commit. It adds `/breakdown`, a seventh navigation item between
+the stack — three commits, `aa0e2db`, `1aabeb4` and a documentation commit. It adds `/breakdown`, a seventh navigation item between
 the map and the goals: the eight dimension scores split by the categories of one
 background question, with every group below the privacy threshold suppressed and
 a second group taken with it whenever one alone would be recoverable by
@@ -55,7 +54,7 @@ uses it.
 
 **2026-08-15, later still: a seventh branch, and the second of those two open
 things is closed.** `claude/respondent-answers-background-questions` sits on top
-of the sixth and is **unpushed** — two commits, `6be8395` and `f6e4d69`. The
+of the sixth — two commits, `6be8395` and `f6e4d69`. The
 questionnaire screen used to render three colour stones for every question
 whatever its kind; it now walks *steps* rather than questions and picks a widget
 per question, so a respondent meets a single-choice question as a list of its
@@ -71,8 +70,8 @@ from the sixth branch closed, and it is the last thing the breakdown screen was
 waiting on. No schema changed and the deployed endpoint knows nothing about it.
 
 **2026-08-15, an eighth branch: the analytic half of phase 3.**
-`claude/likert-blocks-for-respondent` is **unpushed** — three commits, `7dfffa0`,
-`6a22539` and a documentation commit. A block of statements sharing a section
+`claude/likert-blocks-for-respondent` is three commits — `7dfffa0`, `6a22539`
+and a documentation commit. A block of statements sharing a section
 and a scale is now one screen with its anchors stated once at the top, which is
 the difference between 108 screens and 13. The time estimate stopped being a
 question count and became a cost per step, so the twenty-four that are running
@@ -91,9 +90,28 @@ still outstanding, so the instrument's machinery exists and its content does
 not. The consent, intro and anonymity copy from the source document is also
 still open: that document is not readable from the agent's environment.
 
-**None of it is merged.** `origin/main` is still `05a23bc`, eighteen commits
-behind the tip of that stack, and `main` is an ancestor of it — so landing the
-stack is a fast-forward, and merging it is an owner call that has not been made.
+**All eight branches are on `origin`, and none of them is merged.** Read from
+the remote itself on 2026-08-15, not from local tracking refs:
+`claude/default-research-instrument-plan` `eeb8a82`,
+`claude/answer-model-for-research-instrument` `4e71bd8`,
+`claude/k-anonymity-for-demographics` `a2a42df`,
+`claude/builder-for-background-questions` `8b2e95c`,
+`claude/suppression-file-is-text` `56fb284`,
+`claude/breakdown-by-background-question` `20b0ac7`,
+`claude/respondent-answers-background-questions` `408386f` and
+`claude/likert-blocks-for-respondent` `5575177`. So the work is portable to
+another checkout or machine, and the only thing still owed is the merge.
+
+Three earlier entries in this file called branches of this stack "unpushed" and
+left `git push` as the outstanding action. That was wrong about this
+environment: a branch reaches `origin` here without an agent running `git push`,
+which was confirmed by asking the remote about a branch created minutes earlier
+and never pushed by hand. The dated entries above 2026-08-15 are left as they
+were written; this paragraph is the current reading.
+
+`origin/main` is still `05a23bc`, twenty-four commits behind the tip of that
+stack, and `main` is an ancestor of it — so landing the stack is a
+fast-forward, and merging it is an owner call that has not been made.
 Until then, every claim elsewhere in this file about a 24-question default, a
 three-colour answer scale or contract `6.0` still describes the running
 product, because nothing in this stack changes what a respondent answers or

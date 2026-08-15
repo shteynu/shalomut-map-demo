@@ -5,7 +5,7 @@
 - Branch: `claude/likert-blocks-for-respondent`
 - Base branch: `claude/respondent-answers-background-questions`
 - Base commit: `408386f`
-- Status: complete, committed, not pushed
+- Status: complete, committed, on `origin`, not merged
 - Last updated: 2026-08-15
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -68,7 +68,10 @@ rescaled every number already stored.
 - HEAD: `7dfffa0` block layout, `6a22539` the estimate, then this file
 - Unstaged and deliberately untouched: `.idea/shalomut-map-demo.iml`, the user's
   own change.
-- Not pushed. Eighth branch of a stack that is entirely local.
+- On `origin` at `5575177`, read from the remote rather than from a tracking
+  ref. Eighth branch of the stack, and not merged: `origin/main` is `05a23bc`.
+  So the handoff reaches another checkout or machine, and what is owed is the
+  merge, not a push.
 
 ## Verification that actually ran
 
@@ -130,5 +133,6 @@ rescaled every number already stored.
 
 ## Next concrete step
 
-Push the stack. Eight branches sit on this machine and `origin/main` is still
-`05a23bc`; `git push` is the owner's to run.
+Land the stack on `main`. All eight branches are on `origin` and `main` is an
+ancestor of this tip, so it is a fast-forward — and merging is the owner's call,
+not an agent's.
