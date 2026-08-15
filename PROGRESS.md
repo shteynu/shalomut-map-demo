@@ -6,11 +6,17 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 
 ## Current state
 
-- `origin/main` is `25ee069`. The eight-branch research-instrument stack landed
-  there on 2026-08-15 as one fast-forward of twenty-six commits; before it,
-  `main` was `45e1340` plus its archive commits, after six branches landed on
-  2026-08-11 and ten on 2026-08-10. What is deployed, as opposed to merged, is
-  in `docs/shalomut-tracker-handoff.md`.
+- `origin/main` carries the eight-branch research-instrument stack, which landed
+  on 2026-08-15 as one fast-forward of twenty-six commits, and the smaller
+  commits that closed that session after it. Before the stack, `main` was
+  `45e1340` plus its archive commits, after six branches landed on 2026-08-11
+  and ten on 2026-08-10. What is deployed, as opposed to merged, is in
+  `docs/shalomut-tracker-handoff.md`.
+- **The browser smoke runs on every branch** as of 2026-08-15, in its own
+  `browser-smoke.yml` rather than as the last step of the deploy workflow. It
+  moved because a branch could not reach it: landings are fast-forwards, so a
+  stack met Playwright only after it was on `main`, and one did — green on every
+  branch gate and red on the first run there.
 - **Opening a school or a round is a decision the screen states, not a form to
   survive.** Both were the same forty-field setup screen, told apart by the
   wording of one button below the fold; each is now a dialog that says what the

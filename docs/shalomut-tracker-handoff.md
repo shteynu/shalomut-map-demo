@@ -1,16 +1,25 @@
 # Shalomut Tracker — operational handoff
 
-Updated: 2026-08-13, end of session. The tip of `main` is the documentation
+Updated: 2026-08-15, end of session. The tip of `main` is the documentation
 commit carrying these paragraphs — deliberately not written as a hash, because
 twice in a row a commit set that number and then became the tip itself, naming
 the commit before it. The load-bearing pointer is the other one: **the last
-commit that changed product code is `45e1340`**, the round's one name, and
-`git log --oneline main -- src/ next.config.ts scripts/ playwright.config.ts`
-is how to re-read it.
+commit that changed product code is `6a22539`**, the questionnaire's own time
+estimate, with `5575177` after it touching only a seed script. Re-read both
+with
 
-**Session closed 2026-08-13. Nothing is waiting on a push**, and
-`docs/agent-tasks/active/` holds only `research--scientific-evidence-layer.md`,
-which waits on owner decisions rather than on an agent.
+```bash
+git log --oneline origin/main -- src/ next.config.ts scripts/ playwright.config.ts
+```
+
+`origin/main` rather than `main`: `main` is checked out in another worktree
+here, so the local ref goes stale and this command answered `45e1340` — a
+2026-08-13 commit — for a whole session after the stack had landed.
+
+**Session closed 2026-08-15. Nothing is waiting on a push**, `origin/main` is
+the tip of that session, and `docs/agent-tasks/active/` holds only
+`research--scientific-evidence-layer.md`, which waits on owner decisions rather
+than on an agent.
 
 **2026-08-14, phase 4 gave the builder the second kind of question.** Branch
 `claude/builder-for-background-questions`, also **unpushed**. A manager can now

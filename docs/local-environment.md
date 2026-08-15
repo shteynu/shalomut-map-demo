@@ -120,6 +120,20 @@ alongside the AI service — but nothing in the daily loop needs that.
 - **`db:clear` and `db:seed:local` follow `DATABASE_URL`.** The seed script
   refuses anything but a loopback host. `db:clear` does not — it prints the
   host it is about to empty, so read that line.
+- **The browser smoke needs the round seeded under *its* organization.**
+  `scripts/seed-local.ts` reads `MANAGER_ORGANIZATION_ID` through `.env`, while
+  `playwright.config.ts` starts its own server with the value it invents —
+  `local-dev-organization` unless the variable is exported. If `.env` names a
+  different organization, the seed writes the round into that one and the smoke
+  signs into an empty one: the round screen shows no share link and the walk
+  fails as though the product were broken. Seed for the smoke with the same id:
+
+  ```bash
+  MANAGER_ORGANIZATION_ID=local-dev-organization npx tsx scripts/seed-local.ts --reset
+  ```
+
+  CI never meets this, because nothing there sets the variable and both sides
+  fall back to the same default.
 - **Rate limiting does nothing locally, on purpose.** It keys on the client
   address, and a locally served build reports every request as loopback —
   which it treats as "no client to limit". To exercise it, send
