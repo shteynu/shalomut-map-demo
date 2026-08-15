@@ -70,12 +70,28 @@ question that was skipped absent rather than blank. That is the residual risk
 from the sixth branch closed, and it is the last thing the breakdown screen was
 waiting on. No schema changed and the deployed endpoint knows nothing about it.
 
-What phase 3 still leaves: the *analytic* half. The 108 Likert items render one
-per screen with their anchors repeated instead of once per block, and the block
-layout waits on the methodologist's item→dimension mapping — the same external
-blocker recorded below.
+**2026-08-15, an eighth branch: the analytic half of phase 3.**
+`claude/likert-blocks-for-respondent` is **unpushed** — three commits, `7dfffa0`,
+`6a22539` and a documentation commit. A block of statements sharing a section
+and a scale is now one screen with its anchors stated once at the top, which is
+the difference between 108 screens and 13. The time estimate stopped being a
+question count and became a cost per step, so the twenty-four that are running
+still quote four minutes while the 126-item instrument quotes 23 — inside the
+20–30 the owner read the source document as.
 
-**None of it is merged.** `origin/main` is still `05a23bc`, fifteen commits
+It also produced the first mixed-polarity answer anyone has given by answering:
+the walk's stored response scores `7→0` on a negative-polarity 1–7 block and
+`4→75` on a positive 1–5 one. `verify:core` exit 0, and the block layout was
+walked at 900px, 400px and 320px with no horizontal overflow and a target above
+the WCAG 2.2 AA floor at the narrowest.
+
+**What phase 3 still leaves is not code.** Owner decision 3 — which of the eight
+dimensions each of the 108 items belongs to, and which are reverse-scored — is
+still outstanding, so the instrument's machinery exists and its content does
+not. The consent, intro and anonymity copy from the source document is also
+still open: that document is not readable from the agent's environment.
+
+**None of it is merged.** `origin/main` is still `05a23bc`, eighteen commits
 behind the tip of that stack, and `main` is an ancestor of it — so landing the
 stack is a fast-forward, and merging it is an owner call that has not been made.
 Until then, every claim elsewhere in this file about a 24-question default, a

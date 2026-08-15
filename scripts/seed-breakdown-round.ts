@@ -117,6 +117,54 @@ const LOAD_GRID: SurveyDefinitionQuestion[] = [
   allocationGroupId: 'load',
 }));
 
+/**
+ * Two blocks, because one block proves only that a block renders.
+ *
+ * The second is on the seven-point frequency scale and the shorter of the two,
+ * which is how the source instrument is shaped — `שאלון שחיקה` is fourteen
+ * items on 1–7 while `משאבים בעבודה` is thirty on 1–5. What matters for the
+ * walk is that the legend changes with the block and that a long block scrolls
+ * under its own legend.
+ */
+const RESOURCE_BLOCK: SurveyDefinitionQuestion[] = [
+  'יש לי את הכלים שאני צריך/ה כדי ללמד טוב',
+  'אני מקבל/ת משוב שעוזר לי להשתפר',
+  'הצוות סביבי זמין לעזרה כשצריך',
+  'יש לי השפעה על סדר היום שלי',
+  'ההנהלה מגבה אותי מול קשיים',
+  'אני יודע/ת למי לפנות כשמשהו נתקע',
+  'יש לי זמן להתכונן לשיעורים',
+  'ההכשרות שאני מקבל/ת רלוונטיות לעבודה שלי',
+].map((text, index) => ({
+  id: `block_resource_${index + 1}`,
+  kind: 'analytic',
+  text,
+  required: index < 6,
+  enabled: true,
+  sectionId: 'משאבים בעבודה',
+  dimensionId: index % 2 === 0 ? 'social-resource' : 'self-expression',
+  scaleId: 'likert-5-extent',
+  polarity: 'positive',
+}));
+
+const BURNOUT_BLOCK: SurveyDefinitionQuestion[] = [
+  'אני מרגיש/ה שחוק/ה בסוף יום העבודה',
+  'קשה לי להתנתק מהעבודה בערב',
+  'אני מרגיש/ה שאין לי אנרגיה למשפחה אחרי העבודה',
+].map((text, index) => ({
+  id: `block_burnout_${index + 1}`,
+  kind: 'analytic',
+  text,
+  required: true,
+  enabled: true,
+  sectionId: 'שאלון שחיקה',
+  dimensionId: 'balance',
+  scaleId: 'likert-7-frequency',
+  // A high answer here is bad for `balance`, which is the case the single
+  // colour scale never had.
+  polarity: 'negative',
+}));
+
 const TENURE_QUESTION: SurveyDefinitionQuestion = {
   id: TENURE_QUESTION_ID,
   kind: 'background',
@@ -242,6 +290,7 @@ async function main() {
       ...(isRespondentWalk
         ? onePerDimension(canonical.questions)
         : canonical.questions),
+      ...(isRespondentWalk ? [...RESOURCE_BLOCK, ...BURNOUT_BLOCK] : []),
       TENURE_QUESTION,
       ROLE_QUESTION,
       ...(isRespondentWalk ? [HOURS_QUESTION, ...LOAD_GRID] : []),
@@ -328,9 +377,10 @@ async function main() {
       ),
       '',
       isRespondentWalk
-        ? `Open /answer/${shareCode} and answer it. The questionnaire ends with ` +
-          'a single-choice question, a second one, a numeric field and a ' +
-          'three-row allocation grid, so all four widgets are on the path.'
+        ? `Open /answer/${shareCode} and answer it. Eight colour questions, ` +
+          'then an eight-statement block on the 1–5 scale, a three-statement ' +
+          'block on the 1–7 one, two single-choice questions, a numeric field ' +
+          'and a three-row allocation grid — every widget is on the path.'
         : 'Open /breakdown and choose this round. `new` has four respondents, ' +
           'so it must be suppressed — and one more category must go with it, ' +
           'or the four would be recoverable by subtraction.',
