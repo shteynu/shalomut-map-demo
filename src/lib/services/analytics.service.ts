@@ -1,3 +1,4 @@
+import { readAnalyticAnswers } from '../analytics/analytic-answers';
 import {
   LEGACY_ANALYTICS_CONTRACT_VERSION,
   PRODUCER_CONTRACT_VERSION_ENV,
@@ -278,27 +279,17 @@ export class AnalyticsService {
     );
 
     for (const response of scopedResponses) {
-      const answeredQuestionIds = new Set<string>();
-
-      for (const answer of response.answers) {
-        const question = questionsById.get(answer.questionId);
-        const score = answer.score;
-        if (
-          !question ||
-          answeredQuestionIds.has(answer.questionId) ||
-          answer.dimensionId !== question.dimensionId ||
-          score === undefined ||
-          !Number.isFinite(score) ||
-          score < 0 ||
-          score > 100
-        ) {
-          continue;
-        }
-
+      // Which answers may be scored is decided in one place, because the
+      // per-group breakdown of `../analytics/background-breakdown` is the same
+      // arithmetic over a partition of these same responses and must not
+      // disagree with this aggregate about what counts.
+      for (const { answer, score } of readAnalyticAnswers(
+        response,
+        questionsById,
+      )) {
         scoresByQuestion.get(answer.questionId)!.push(score);
         const dist = distributionsByQuestion.get(answer.questionId)!;
         dist[bucketForAnswer(answer.value, score)]++;
-        answeredQuestionIds.add(answer.questionId);
       }
     }
 
