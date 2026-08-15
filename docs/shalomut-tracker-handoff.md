@@ -1,5 +1,45 @@
 # Shalomut Tracker — operational handoff
 
+**2026-08-15, closing that session: the lost submit is mitigated, and the
+deployment's geography is now a known and deliberately accepted cost.**
+`origin/main` is `9c2dde5`, read from the remote.
+
+The defect is **not fixed at its cause and was never going to be here**: the
+owner read the deployment's function logs and there is **no invocation** for
+either failed request, so it dies before any code in this repository runs. What
+landed is a mitigation — `src/lib/survey-submission-retry.ts`, three attempts
+1s and 3s apart, retrying only a *thrown* send, with the button reading
+`מנסה שוב...` while it waits. It is safe in both directions because
+`ALREADY_SUBMITTED` already resolves to a completion and the client already
+sends the token that makes a second write refusable. Walked in a browser in all
+three outcomes, including the one where every attempt fails: the old message
+returns, the draft survives, and nothing is written.
+
+**The standing consequence, and it is the reason this paragraph is here:** the
+retry hides the symptom. The next time the endpoint loses a submit, nobody will
+see it. If it matters whether this is rare or common, someone has to look for it
+deliberately rather than wait to be told.
+
+**The deployment runs in three places at once.** `X-Vercel-Id` reads
+`fra1::iad1::…`, so functions execute in **Washington**; the database is
+`aws-1-ap-northeast-2`, **Seoul**; `render.yaml:19` puts the AI service in
+**Frankfurt**. The users are in Israel. Measured: **one database query costs
+~180ms** — medians of ten samples, 0.307s for a route touching no repository
+against 0.486s for one making a single lookup, with the same leg to the edge in
+both. A submit makes several in sequence, which is where its ~2s comes from.
+
+**Owner decision, 2026-08-15: change nothing for now.** Recorded with what it
+accepts, in
+`docs/agent-tasks/archive/fix--the-first-submit-after-idle.md`. The one piece
+that is time-sensitive: the deployed database is empty, so moving its region
+today is a new project and a new `DATABASE_URL`. After the first pilot school
+answers, the same decision becomes a migration of real answers. The cheap window
+closes with that school, not with a date.
+
+`docs/agent-tasks/active/` again holds only
+`research--scientific-evidence-layer.md`, which waits on owner decisions and not
+on an agent.
+
 **2026-08-15, a later session: the research-instrument stack has now run on the
 deployed endpoint, and it found one defect.** Branch
 `test/deployed-walk-of-the-research-stack`, one commit `186d13d`. Everything

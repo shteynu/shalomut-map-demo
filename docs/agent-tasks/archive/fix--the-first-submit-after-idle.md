@@ -172,11 +172,10 @@ endpoint: the database there had been empty since 2026-08-09.
 
 ## Remaining
 
-- Decide with the owner whether the deployment's function region is worth
-  pinning. Separate from this fix and not required by it.
-- Watch the deployed endpoint for the failure after this lands. The mitigation
-  hides the symptom, which also means the next occurrence will be silent unless
-  someone is looking for it.
+- Nothing on this branch. The region question was the last open item and is now
+  a recorded decision; the standing note that follows from it — that the
+  mitigation makes the next occurrence silent — lives in
+  `docs/shalomut-tracker-handoff.md`, which owns cross-task operational state.
 
 ## Changed files
 
@@ -260,12 +259,37 @@ Unstaged as of this update:
 ## Questions requiring an owner decision
 
 1. **Closed 2026-08-15**: the logs hold no invocation for either failure.
-2. Whether to pin the deployment's function region to match the Seoul database.
-   Open, and independent of this fix.
+2. **Closed 2026-08-15 — nothing changes for now.** Owner decision, taken with
+   the measurement below in hand. The alternatives offered were moving
+   everything to Frankfurt, pinning the functions to Seoul, and measuring the
+   submit's query count first.
+
+   What the decision is accepting, so nobody has to re-derive it:
+
+   - The deployment runs in **three places at once**. `X-Vercel-Id` reads
+     `fra1::iad1::…`, so the function executes in **Washington**; the database
+     is `aws-1-ap-northeast-2`, **Seoul**; and `render.yaml:19` puts the AI
+     service in **Frankfurt**. The people using it are in Israel, which is none
+     of those.
+   - **One database query costs ~180ms**, which is the Washington–Seoul round
+     trip. Medians of ten samples each: `/api/health/`, which touches no
+     repository, 0.307s; `/answer/<code>/`, which makes one lookup, 0.486s. My
+     own leg to the edge is identical in both, so the difference is the
+     function-to-database leg alone.
+   - A submit makes several of those in sequence, which is where the ~2s warm
+     submit comes from. That figure is an inference from the measurement above
+     and not a count of the queries in the code — the option to count them was
+     offered and declined.
+   - **The window for a cheap move closes with the first pilot school.** The
+     deployed database is empty today, so changing its region is a new project
+     and a new `DATABASE_URL`. Once a school has answered, the same decision is
+     a migration of real respondents' answers.
+
+   None of this is a cause of the defect this branch fixed; the request is lost
+   before the function, wherever the function is.
 
 ## Next concrete step
 
-Hand the branch over for the push. After it lands and Vercel serves it, the open
-question is the region: decide whether to pin the function region to the Seoul
-database, which is the only lead left that could address the cause rather than
-the symptom.
+None on this branch; it is complete and archived. The one thing it leaves for
+whoever comes next is in the handoff: watch the deployed endpoint for the lost
+submit, because the retry now hides it.
