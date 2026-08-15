@@ -4,9 +4,9 @@ Updated: 2026-08-15, end of session. The tip of `main` is the documentation
 commit carrying these paragraphs — deliberately not written as a hash, because
 twice in a row a commit set that number and then became the tip itself, naming
 the commit before it. The load-bearing pointer is the other one: **the last
-commit that changed product code is `6a22539`**, the questionnaire's own time
-estimate, with `5575177` after it touching only a seed script. Re-read both
-with
+commit that changed product code is `7ba34ac`**, the breakdown suppression rule,
+with `beb2200` and `121ae2d` after it touching only documentation and the IDE
+module file. Re-read both with
 
 ```bash
 git log --oneline origin/main -- src/ next.config.ts scripts/ playwright.config.ts
@@ -16,11 +16,23 @@ git log --oneline origin/main -- src/ next.config.ts scripts/ playwright.config.
 here, so the local ref goes stale and this command answered `45e1340` — a
 2026-08-13 commit — for a whole session after the stack had landed.
 
+**Session closed 2026-08-15, later that day. Nothing is waiting on a push**:
+`refs/heads/main` is `121ae2d`, asked of the remote itself rather than of a
+local tracking ref, and it equals the working checkout's HEAD. Everything below
+is portable to another checkout or machine. The worktree is clean, confirmed
+with `git ls-files -o --exclude-standard` as well as `git status`, because the
+untracked cache has hidden a new file here before. Eight workflow runs are
+green across the session's last two commits — all four on `beb2200` and all
+four on `121ae2d`. `docs/agent-tasks/active/` holds only
+`research--scientific-evidence-layer.md`, which waits on owner decisions and not
+on an agent.
+
 **2026-08-15, a later session: the cross-table privacy question is answered,
 built and landed.** `privacy/suppression-holds-across-tables` went across as a
-fast-forward the same day; `origin/main` was `b23ae58` and is `2a8f613`, read
-from the remote. The commit that changes product code is `7ba34ac`, with two
-documentation commits after it. All four workflows are green on `2a8f613`:
+fast-forward the same day; `origin/main` was `b23ae58` and the privacy work
+landed at `2a8f613`, read from the remote. The commit that changes product code
+is `7ba34ac`, with documentation commits after it. All four workflows are green
+on `2a8f613`:
 `Core verification` `31882668272`, `CodeQL Security Analysis` `31882668183`,
 `Browser smoke` `31882668185` and `Vercel Deployment & Pipeline Checks`
 `31882668193`.
@@ -62,7 +74,10 @@ answers and the third does not:
   link carries the full hash
   `2a8f613c11a95b6c73acb0a885c1af267ebb8915`, which is exactly what
   `git ls-remote` returns for `refs/heads/main`. So the endpoint carries
-  `7ba34ac`, the privacy fix.
+  `7ba34ac`, the privacy fix. The dashboard was read while `main` was
+  `2a8f613`; two commits have landed since and Vercel will have redeployed, but
+  neither changes product code, so the reading still holds for everything that
+  matters.
 
 Two notes for whoever reads this next.
 
