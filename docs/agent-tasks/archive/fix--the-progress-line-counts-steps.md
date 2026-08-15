@@ -5,7 +5,7 @@
 - Branch: `fix/the-progress-line-counts-steps`
 - Base branch: `main`
 - Base commit: `a8c8b81`
-- Status: fix written and verified locally; not merged
+- Status: complete, merged to `main` (`ca1472d`), CI green, archived
 - Last updated: 2026-08-15
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -57,14 +57,22 @@ way round.
   worker, and no AI service URL is configured locally — so nothing reached a
   provider.
 
+## CI read back on `main`
+
+The owner pushed; `origin/main` is `ca1472d` and all three workflows are green
+on it — `Vercel Deployment & Pipeline Checks` `31879743853` in 3m25s with
+**18 browser tests passed** and the Python suite 480 passed, `Core verification`
+`31879743866`, `CodeQL Security Analysis` `31879743846`. `Deploy to Production
+(Manual)` was skipped as always: it is gated on `workflow_dispatch`.
+
 ## Risks and things left
 
-- The other seventeen browser tests passed in that same CI run and were not
-  re-run locally.
 - The gap that let this land is still open: a branch's Playwright suite runs
-  only once the branch is on `main`. Worth a decision, not fixed here.
+  only once the branch is on `main`, because `verify-core.yml` carries no
+  browser and `deploy-vercel.yml` triggers on `main` and pull requests to it.
+  A fast-forwarded stack therefore meets the smoke for the first time after it
+  lands. Worth a decision, not fixed here.
 
 ## Next concrete step
 
-Push this branch to `main` — the owner's action — and read
-`Vercel Deployment & Pipeline Checks` back green.
+Nothing on this branch; it is closed and this file is archived.

@@ -153,6 +153,24 @@ contained in `origin/main`, checked branch by branch rather than assumed, so
 `research--scientific-evidence-layer.md`, which waits on owner decisions and not
 on an agent.
 
+**The merge turned the browser smoke red, and `main` is green again at
+`ca1472d`.** `Vercel Deployment & Pipeline Checks` failed twice — on `25ee069`
+and `a8c8b81` — in the Playwright step only: the progress line reads
+`שלב N מתוך M` since the flow started walking steps, and
+`e2e/respondent-answers.spec.ts` still waited for `שאלה N מתוך M`. A stale test,
+no product defect, and no deployment was blocked — `Deploy to Production
+(Manual)` is gated on `workflow_dispatch` and Vercel's own Git integration
+deploys regardless, which is why the endpoint stayed up throughout. Fixed by
+`fix/the-progress-line-counts-steps` (`ca1472d`); all three workflows are green
+on it, with 18 browser tests passed.
+
+**The gap it exposes is open and is a decision, not a defect.** `verify-core.yml`
+runs on every branch and carries no browser; the smoke lives only in
+`deploy-vercel.yml`, which triggers on `main` and on pull requests to it. A
+stack fast-forwarded onto `main` without a pull request therefore meets
+Playwright for the first time *after* it lands. Either the smoke moves to
+every-branch, or landings go through pull requests.
+
 **2026-08-14, later the same day, built the first two phases of it.** Phase 1
 (`claude/answer-model-for-research-instrument`) made a question carry its own
 scale and polarity, split questions into analytic and background, and made
