@@ -19,6 +19,7 @@
  *
  *   npx tsx scripts/seed-breakdown-round.ts
  *   npx tsx scripts/seed-breakdown-round.ts --locked
+ *   npx tsx scripts/seed-breakdown-round.ts --respondent
  *
  * `--locked` writes the same questionnaire with four responses instead of
  * forty-one, which is below the threshold. That round is how the locked state
@@ -26,11 +27,16 @@
  * result that may not be read, which is the one combination the ordinary seed
  * cannot produce.
  *
- * **What this does not prove.** The respondent screen cannot yet ask a
- * background question — that is phase 3 of the research-instrument plan and it
- * is not built. The submit API accepts these answers and this script writes
- * them through the same repository the API uses, so the stored shape is real;
- * what no browser has done yet is produce one by answering.
+ * `--respondent` opens the same questionnaire as an *active* round with no
+ * responses, which is the only way to walk the questionnaire itself: the
+ * respondent route serves `notFound()` for a round in any other status. It goes
+ * into a school of its own, because a school has one active round at a time and
+ * taking that slot from the existing one would close a round nobody asked to
+ * close.
+ *
+ * It carries all three background shapes — single choice, a plain number and an
+ * allocation grid — because the respondent screen now asks them, and a walk that
+ * only meets one widget proves only one widget.
  *
  * Loopback only, for the same reason `seed-local.ts` is: a seeded school on the
  * deployed dashboard would be a fake school on a real screen.
@@ -47,6 +53,7 @@ import {
 } from '@/lib/types/backend';
 
 const SHARE_CODE = 'SHALOM-BREAKDOWN';
+const RESPONDENT_SHARE_CODE = 'SHALOM-BACKGROUND';
 const SEEDED_AT = new Date();
 const TENURE_QUESTION_ID = 'background_tenure';
 const ROLE_QUESTION_ID = 'background_role';
@@ -80,6 +87,35 @@ const ROLE_QUESTION: SurveyDefinitionQuestion = {
     { value: 'subject', label: 'מורה מקצועי/ת' },
   ],
 };
+
+/**
+ * The other two background shapes, so the respondent walk meets all three. They
+ * are only added to the `--respondent` round: the breakdown screen offers
+ * neither a numeric nor an allocation question to group by, so putting them on
+ * the analysis rounds would seed data nothing reads.
+ */
+const HOURS_QUESTION: SurveyDefinitionQuestion = {
+  id: 'background_hours',
+  kind: 'background',
+  text: 'מספר שעות עבודה יומי ממוצע',
+  required: false,
+  enabled: true,
+  answerMode: 'number',
+};
+
+const LOAD_GRID: SurveyDefinitionQuestion[] = [
+  'הוראה בכיתה',
+  'בדיקת מבחנים',
+  'ישיבות צוות',
+].map((text, index) => ({
+  id: `background_load_${index + 1}`,
+  kind: 'background',
+  text,
+  required: false,
+  enabled: true,
+  answerMode: 'allocation-100',
+  allocationGroupId: 'load',
+}));
 
 const TENURE_QUESTION: SurveyDefinitionQuestion = {
   id: TENURE_QUESTION_ID,
@@ -135,52 +171,114 @@ function requireLocalDatabase(): string {
   return host;
 }
 
+const RESPONDENT_ORGANIZATION_ID = 'local-respondent-walk-school';
+
 /** Four responses in two categories: enough to group, too few to publish. */
 const LOCKED_COHORTS: typeof COHORTS = [
   { categoryId: 'veteran', count: 2, bias: 0 },
   { categoryId: 'mid', count: 2, bias: 1 },
 ];
 
+/** The first analytic question of each dimension, in questionnaire order. */
+function onePerDimension(
+  questions: readonly SurveyDefinitionQuestion[],
+): SurveyDefinitionQuestion[] {
+  const taken = new Set<string>();
+
+  return questions.filter((question) => {
+    if (!isAnalyticQuestion(question) || taken.has(question.dimensionId)) {
+      return false;
+    }
+    taken.add(question.dimensionId);
+    return true;
+  });
+}
+
 async function main() {
   const host = requireLocalDatabase();
   const isLocked = process.argv.includes('--locked');
-  const cohorts = isLocked ? LOCKED_COHORTS : COHORTS;
+  const isRespondentWalk = process.argv.includes('--respondent');
+  const cohorts = isRespondentWalk ? [] : isLocked ? LOCKED_COHORTS : COHORTS;
   const { orgRepo, roundRepo, surveyRepo } = resolveCoreRepositories();
-  const organizationId = resolveManagerOrganizationId() ?? 'local-dev-organization';
+  const organizationId = isRespondentWalk
+    ? RESPONDENT_ORGANIZATION_ID
+    : resolveManagerOrganizationId() ?? 'local-dev-organization';
 
   const existing = await orgRepo.findById(organizationId);
-  if (!existing) {
+  if (!existing && !isRespondentWalk) {
     throw new Error(
       `No organization ${organizationId}. Run npx tsx scripts/seed-local.ts first.`,
     );
   }
+  if (!existing && isRespondentWalk) {
+    await orgRepo.create({
+      id: organizationId,
+      name: 'בית ספר להליכת משיבים',
+      city: 'חיפה',
+      schoolType: 'תיכון',
+      totalStaffCount: 20,
+      createdAt: SEEDED_AT,
+    });
+  }
 
   const canonical = createCanonicalSurveyDefinition(
-    isLocked ? 'סבב פילוח נעול' : 'סבב פילוח מקומי',
+    isRespondentWalk
+      ? 'סבב מענה עם שאלות רקע'
+      : isLocked
+        ? 'סבב פילוח נעול'
+        : 'סבב פילוח מקומי',
     10,
   );
   const definition = {
     ...canonical,
-    questions: [...canonical.questions, TENURE_QUESTION, ROLE_QUESTION],
+    questions: [
+      // The respondent walk keeps one analytic question per dimension rather
+      // than all twenty-four. It exists to reach the background widgets, and
+      // sixteen extra colour taps before the first of them is a worse test, not
+      // a fuller one. It cannot go below eight: the submit route parses the
+      // definition with the activation rules, which require every dimension to
+      // be covered, and a shorter questionnaire is refused with
+      // `DEFINITION_INVALID` at the end of the walk.
+      ...(isRespondentWalk
+        ? onePerDimension(canonical.questions)
+        : canonical.questions),
+      TENURE_QUESTION,
+      ROLE_QUESTION,
+      ...(isRespondentWalk ? [HOURS_QUESTION, ...LOAD_GRID] : []),
+    ],
   };
   const analyticQuestions = definition.questions
     .filter((question) => question.enabled)
     .filter(isAnalyticQuestion);
 
-  const roundId = `round_breakdown_${SEEDED_AT.getTime()}`;
-  await roundRepo.create({
-    id: roundId,
-    organizationId,
-    title: definition.title,
-    status: 'closed',
-    // Unique per run: the script is meant to be re-run, and a share code is
-    // unique across the database.
-    shareCode: `${SHARE_CODE}${isLocked ? '-LOCKED' : ''}-${SEEDED_AT.getTime()}`,
-    privacyThreshold: 10,
-    startDate: SEEDED_AT,
-    surveyDefinition: definition,
-    createdAt: SEEDED_AT,
-  });
+  let roundId = `round_breakdown_${SEEDED_AT.getTime()}`;
+  // Unique per run, because the script is meant to be re-run and a share code
+  // is unique across the database. The respondent walk gets a stable one: the
+  // whole point of it is a link somebody opens by hand.
+  const shareCode = isRespondentWalk
+    ? RESPONDENT_SHARE_CODE
+    : `${SHARE_CODE}${isLocked ? '-LOCKED' : ''}-${SEEDED_AT.getTime()}`;
+
+  // The respondent walk's share code is stable, so a second run finds its own
+  // round rather than colliding with it. Re-running is the normal case: the
+  // questionnaire under walk changes while the widgets are being built.
+  const alreadyThere = await roundRepo.findByShareCode(shareCode);
+  if (alreadyThere) {
+    await roundRepo.update(alreadyThere.id, { surveyDefinition: definition });
+    roundId = alreadyThere.id;
+  } else {
+    await roundRepo.create({
+      id: roundId,
+      organizationId,
+      title: definition.title,
+      status: isRespondentWalk ? 'active' : 'closed',
+      shareCode,
+      privacyThreshold: 10,
+      startDate: SEEDED_AT,
+      surveyDefinition: definition,
+      createdAt: SEEDED_AT,
+    });
+  }
 
   let written = 0;
   for (const cohort of cohorts) {
@@ -220,16 +318,22 @@ async function main() {
   console.log(
     [
       `Seeded ${host}:`,
-      `  round     ${roundId} (${SHARE_CODE}, closed, threshold 10)`,
-      `  responses ${written}`,
+      `  organization ${organizationId}`,
+      `  round        ${roundId} (${shareCode}, ` +
+        `${isRespondentWalk ? 'active' : 'closed'}, threshold 10)`,
+      `  responses    ${written}`,
       ...cohorts.map(
         (cohort) =>
           `    ${(cohort.categoryId ?? 'no answer').padEnd(10)} ${cohort.count}`,
       ),
       '',
-      'Open /breakdown and choose this round. `new` has four respondents, so it',
-      'must be suppressed — and one more category must go with it, or the four',
-      'would be recoverable by subtraction.',
+      isRespondentWalk
+        ? `Open /answer/${shareCode} and answer it. The questionnaire ends with ` +
+          'a single-choice question, a second one, a numeric field and a ' +
+          'three-row allocation grid, so all four widgets are on the path.'
+        : 'Open /breakdown and choose this round. `new` has four respondents, ' +
+          'so it must be suppressed — and one more category must go with it, ' +
+          'or the four would be recoverable by subtraction.',
     ].join('\n'),
   );
 }
