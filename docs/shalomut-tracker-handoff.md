@@ -179,6 +179,13 @@ the mutation dry run, while the smoke's own red X arrives at the same commit on
 its own workflow. Three workflows now run on every branch — core verification,
 browser smoke and CodeQL.
 
+Read back at `4ad5977`: four green runs, `Browser smoke` `31880134622` 2m26s
+with 18 tests passed, and the deploy job down to 2m34s with no browser step in
+it, checked step by step. What that does **not** yet show is the smoke on a
+branch: the push went to `main`. The trigger is `on: push` with no filter, the
+same shape `verify-core.yml` has, so the first branch push is what turns the
+inference into a reading.
+
 **2026-08-14, later the same day, built the first two phases of it.** Phase 1
 (`claude/answer-model-for-research-instrument`) made a question carry its own
 scale and polarity, split questions into analytic and background, and made

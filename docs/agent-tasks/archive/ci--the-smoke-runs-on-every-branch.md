@@ -5,7 +5,7 @@
 - Branch: `ci/the-smoke-runs-on-every-branch`
 - Base branch: `main`
 - Base commit: `171e1a4`
-- Status: written, verified as far as a local run can verify it; not merged
+- Status: complete, merged to `main` (`4ad5977`), read back green, archived
 - Last updated: 2026-08-15
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -73,15 +73,25 @@ existed only for it.
 - All five workflow files parse as YAML and expose the jobs they claim
   (`browser-smoke.yml` → `smoke`, `deploy-vercel.yml` → `validate`,
   `deploy-prod-manual`, `verify-core.yml` → `verify-core`).
-- **Not verified, and only a push can verify it**: that the new workflow starts
-  on a branch and goes green on the runner. The local run proves the suite and
-  the build order, not GitHub's own scheduling of a file it has never seen.
+- **Read back on the runner.** The owner pushed to `main` and four workflows ran
+  at `4ad5977`, all green: `Browser smoke` `31880134622` in 2m26s with **18
+  tests passed**, `Vercel Deployment & Pipeline Checks` `31880134585` in 2m37s,
+  `Core verification` `31880134596` in 1m46s, `CodeQL` `31880134601` in 1m45s.
+  The new workflow's steps ran in the order written — checkout, Node, `npm ci`,
+  build, Chromium, smoke — and its report artifact step stayed skipped, as it
+  should on a pass.
+- **The deploy job no longer touches a browser**, checked step by step rather
+  than inferred: job `95001443236` runs verify and the mutation dry run and has
+  no `Install the smoke browser` and no Playwright step. It also came in at
+  2m34s against 3m23s for the same job on the previous commit.
 
 ## Risks and things left
 
-- A workflow file is only exercised once it runs. If the runner disagrees with
-  the local ordering, the failure will be in this workflow rather than in the
-  product.
+- **"Every branch" is still an inference, not a reading.** The push went to
+  `main`, so what the runner has demonstrated is that the file is valid and
+  green there. The trigger is `on: push` with no filter — byte for byte the
+  shape `verify-core.yml` uses, and that one demonstrably runs on branches — so
+  the next branch push is what turns this into evidence.
 - `docs/local-environment.md` and the `shalomut-verification` skill describe the
   smoke by command (`npm run test:e2e`) and not by workflow file, so neither
   needed editing. If either starts naming workflows, this is the entry to
@@ -89,5 +99,6 @@ existed only for it.
 
 ## Next concrete step
 
-Push this branch to `main` — the owner's action — and read the new
-`Browser smoke` workflow back green at that commit.
+Nothing on this branch; it is closed and this file is archived. The one thing
+left to observe costs nothing to observe: the first push of any branch should
+show `Browser smoke` running on it.
