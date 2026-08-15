@@ -1,5 +1,53 @@
 # Shalomut Tracker — operational handoff
 
+**2026-08-15, a later session: the research-instrument stack has now run on the
+deployed endpoint, and it found one defect.** Branch
+`test/deployed-walk-of-the-research-stack`, one commit `186d13d`. Everything
+below about that stack being "deployed as code and nothing more" is superseded
+for the respondent path, the breakdown screen and the builder; it still holds
+for contract `6.0` at runtime, which this walk deliberately did not exercise.
+
+What is now read rather than inferred. A respondent answered all fourteen steps
+there by hand, and the stored answers came back `4→75` and `1→0` on the positive
+1–5 block, `7→0` and `1→100` on the **negative** 1–7 one, with
+`background_tenure`, `background_hours` and three allocation rows carrying
+`dimension_id: null` and `score: null` — so the phase 1 migration is working
+there, not merely applied. The two skipped questions are absent from the
+response rather than stored blank. Signed in, `/breakdown` was read in five
+states, including the two the privacy work exists for: a table that publishes
+with a small group suppressed **and the unanswered column taken with it**, and a
+table refused whole because publishing the large group would state the
+remainder's scores by subtraction. The same round's other background question
+still reads, so the refusal is per table.
+
+**The defect, and it is on the one action the product exists for.** The first
+`POST /api/survey/<code>/submit` after an idle period returns nothing at all —
+`net::ERR_EMPTY_RESPONSE` in the browser, `status:000` after 12.8s from `curl` —
+and the respondent is told `לא ניתן להתחבר לשרת`. Pressing send again works, and
+the failed attempt writes nothing, so nothing is lost or duplicated. Five warm
+requests afterwards answered in 1.8–3.0s. `trailingSlash: true` forcing a 308 on
+this POST was checked and **ruled out**: control POSTs followed the redirect
+correctly and `curl -L` carried the body through it to a 400 in 0.96s. What fits
+is that the request which has to open a database connection is the one that
+dies, and only when it is the first for a while. Nobody has read the
+deployment's own function logs yet; that needs the owner's dashboard and is the
+next step. Details in
+`docs/agent-tasks/active/test--deployed-walk-of-the-research-stack.md`.
+
+**The deployed database is empty again** — 0 organizations, 0 rounds, 0
+responses, 0 answers, 0 AI runs, counted after
+`scripts/clear-test-data.ts --confirm` deleted the throwaway school by id. The
+walk's data existed for about forty minutes and is gone.
+
+`scripts/seed-breakdown-round.ts` now takes `--allow-remote`. The loopback
+default stays; the flag exists for a deployed smoke walk and says so.
+
+`docs/agent-tasks/active/` holds **two** files as of this entry:
+`research--scientific-evidence-layer.md`, which waits on owner decisions, and
+this walk's own file, which is complete and stays active only until the submit
+defect it found has a branch. Every sentence below saying the directory holds
+one file was true when it was written.
+
 Updated: 2026-08-15, end of session. The tip of `main` is the documentation
 commit carrying these paragraphs — deliberately not written as a hash, because
 twice in a row a commit set that number and then became the tip itself, naming
