@@ -15,7 +15,7 @@
  */
 
 import { isAttemptToken } from './survey-attempt-token';
-import type { AnswerValue, SurveyDefinitionQuestion } from './types/backend';
+import type { SurveyDefinitionQuestion } from './types/backend';
 
 export const SURVEY_DRAFT_SCHEMA_VERSION = 1;
 
@@ -32,7 +32,7 @@ export interface SurveyDraftV1 {
   shareCode: string;
   questionnaireFingerprint: string;
   attemptToken: string;
-  answers: Record<string, AnswerValue>;
+  answers: Record<string, string>;
   currentIndex: number;
   consentAcceptedAt: string;
   updatedAt: string;
@@ -52,6 +52,22 @@ export interface SurveyDraftExpectation {
   questionnaireFingerprint: string;
   questionIds: ReadonlySet<string>;
   questionCount: number;
+  /**
+   * Whether a stored value is one this question can hold.
+   *
+   * The check used to be a constant list of the three colours, which is what a
+   * draft could contain when every question was answered on the colour scale.
+   * An answer is now a Likert step, a chosen option id or a typed number, and
+   * which of those is valid depends on the question — so the caller that knows
+   * the questionnaire supplies the rule rather than this module guessing at it.
+   *
+   * It stays a refusal rather than a filter for the same reason the rest of
+   * this file does: an answer that no longer fits the question it belongs to
+   * means the draft and the questionnaire have diverged, and reconstructing
+   * part of it would attribute a respondent's answer to a question they never
+   * read.
+   */
+  isAnswerValid: (questionId: string, value: string) => boolean;
 }
 
 export type SurveyDraftParseResult =
@@ -61,8 +77,6 @@ export type SurveyDraftParseResult =
 export type SurveyDraftWriteResult =
   | { ok: true }
   | { ok: false; reason: 'unavailable' | 'quota' };
-
-const ANSWER_VALUES: readonly AnswerValue[] = ['green', 'yellow', 'red'];
 
 /** One key per share code, so two questionnaires on one tab cannot collide. */
 export function surveyDraftStorageKey(shareCode: string): string {
@@ -182,17 +196,17 @@ export function parseSurveyDraft(
     return { ok: false, reason: 'invalid-answers' };
   }
 
-  const answers: Record<string, AnswerValue> = {};
+  const answers: Record<string, string> = {};
   for (const [questionId, value] of Object.entries(parsed.answers)) {
     if (!expected.questionIds.has(questionId)) {
       return { ok: false, reason: 'invalid-answers' };
     }
 
-    if (!ANSWER_VALUES.includes(value as AnswerValue)) {
+    if (typeof value !== 'string' || !expected.isAnswerValid(questionId, value)) {
       return { ok: false, reason: 'invalid-answers' };
     }
 
-    answers[questionId] = value as AnswerValue;
+    answers[questionId] = value;
   }
 
   if (!Number.isInteger(parsed.currentIndex)) {

@@ -3,6 +3,10 @@ import { ISurveyRepository } from '../repositories/interfaces';
 import { responseScale, surveyInstrument } from '../shalomut-source';
 import { isValueOnScale, scoreForAnswer } from '../survey/answer-scales';
 import {
+  isAnswerValueValid,
+  parseAllocationEntry,
+} from '../survey/answer-validity';
+import {
   AnalyticSurveyQuestion,
   AnswerValue,
   BackgroundSurveyQuestion,
@@ -63,40 +67,18 @@ function canonicalExpectedQuestions(): ExpectedQuestion[] {
   }));
 }
 
-/** A whole number from 0 to 100, which is what an allocation row may hold. */
-function parseAllocationEntry(value: string): number | undefined {
-  if (!/^\d{1,3}$/.test(value)) return undefined;
-  const parsed = Number(value);
-  return parsed <= 100 ? parsed : undefined;
-}
-
+/**
+ * Refuse an answer the question cannot hold, and say which one.
+ *
+ * The rule itself lives in `../survey/answer-validity` because the browser
+ * enforces it too — on the draft it restores and on the widget it draws. This
+ * wrapper is only the message.
+ */
 function validateAnswerValue(
   question: ExpectedQuestion,
   value: string,
 ): string | undefined {
-  if (question.kind === 'analytic') {
-    return isValueOnScale(question.scaleId, value)
-      ? undefined
-      : `Invalid answer value '${value}' for question ${question.id}`;
-  }
-
-  if (question.answerMode === 'single-choice') {
-    const allowed = question.options ?? [];
-    return allowed.some((option) => option.value === value)
-      ? undefined
-      : `Invalid answer value '${value}' for question ${question.id}`;
-  }
-
-  if (question.answerMode === 'allocation-100') {
-    return parseAllocationEntry(value) === undefined
-      ? `Invalid answer value '${value}' for question ${question.id}`
-      : undefined;
-  }
-
-  // `number`: a plain non-negative amount. Bounded only by being a number,
-  // because the questions that use it — average daily hours — have no ceiling
-  // this layer can defend without inventing one.
-  return /^\d+(\.\d+)?$/.test(value)
+  return isAnswerValueValid(question, value)
     ? undefined
     : `Invalid answer value '${value}' for question ${question.id}`;
 }

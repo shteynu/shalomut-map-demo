@@ -12,6 +12,7 @@ import {
   type SurveyDraftExpectation,
   type SurveyDraftV1,
 } from '../survey-draft-storage';
+import { isAnswerValueValid } from '../survey/answer-validity';
 import type { AnalyticSurveyQuestion } from '../types/backend';
 
 const questions: AnalyticSurveyQuestion[] = [
@@ -44,6 +45,13 @@ const expected: SurveyDraftExpectation = {
   questionnaireFingerprint: fingerprint,
   questionIds: new Set(questions.map((question) => question.id)),
   questionCount: questions.length,
+  // The real caller derives this from the questionnaire it is showing; here it
+  // is the same rule, spelled out, so a test of the draft's own policy does not
+  // depend on how the flow happens to build the predicate today.
+  isAnswerValid: (questionId, value) => {
+    const question = questions.find((candidate) => candidate.id === questionId);
+    return question ? isAnswerValueValid(question, value) : false;
+  },
 };
 
 const draft: SurveyDraftV1 = createSurveyDraft(

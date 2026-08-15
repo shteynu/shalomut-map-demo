@@ -5701,6 +5701,163 @@ label .custom-tooltip-wrapper:hover .custom-tooltip-icon {
   margin-top: 1.4rem;
 }
 
+/* The three widgets the colour stones cannot be.
+
+   A five- or seven-point scale, a demographic option list, a number and an
+   allocation grid all read as forms rather than as stones, and they are
+   deliberately quieter than the stones: a respondent is telling us their tenure,
+   not weighing how their week felt. */
+.survey-choice-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.survey-choice {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.75rem 0.95rem;
+  border: 1.5px solid var(--border-soft);
+  border-radius: var(--radius-panel);
+  background: var(--surface-panel);
+  cursor: pointer;
+  line-height: 1.5;
+}
+
+.survey-choice:hover {
+  border-color: rgba(159, 101, 0, 0.4);
+}
+
+/* The ring goes on the row, not on the radio: the radio is 16px in a corner of
+   a full-width target, and a focus ring nobody can locate is not a focus ring.
+   `:focus-within` is what carries it from the input to the row. */
+.survey-choice:focus-within {
+  outline: 3px solid var(--navy);
+  outline-offset: 2px;
+}
+
+.survey-choice.is-selected {
+  border-color: var(--accent-dark);
+  background: var(--surface-panel-strong);
+  font-weight: 700;
+}
+
+.survey-choice input {
+  width: 1.15rem;
+  height: 1.15rem;
+  accent-color: var(--accent-dark);
+  flex: none;
+}
+
+/* The step number of a scale point, beside its anchor. The instrument's own
+   blocks are numbered, and a respondent comparing two items reads the digit
+   faster than the sentence. */
+.survey-choice-ordinal {
+  min-width: 1.6rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  text-align: center;
+}
+
+.survey-choice-label {
+  flex: 1;
+}
+
+.survey-skip-answer {
+  align-self: flex-start;
+  margin-top: 0.2rem;
+}
+
+.survey-optional-note {
+  margin: 0.35rem 0 0;
+  font-weight: 700;
+}
+
+.survey-number-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-top: 1rem;
+}
+
+.survey-number-field input,
+.survey-allocation-row input {
+  min-height: 2.75rem;
+  padding: 0.5rem 0.8rem;
+  border: 1.5px solid var(--border-soft);
+  border-radius: var(--radius-control);
+  background: var(--surface-panel-strong);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+.survey-number-field input {
+  max-width: 9rem;
+}
+
+.survey-number-field input:focus-visible,
+.survey-allocation-row input:focus-visible {
+  outline: 3px solid var(--navy);
+  outline-offset: 2px;
+}
+
+.survey-allocation {
+  margin-top: 1rem;
+}
+
+.survey-allocation-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.survey-allocation-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 5.5rem auto;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.survey-allocation-row input {
+  width: 100%;
+}
+
+/* The running total, stated as the distance from 100. "יש להוסיף 12" is an
+   instruction; "הסכום חייב להיות 100" is a complaint about work already done. */
+.survey-allocation-total {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin: 0.9rem 0 0;
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--radius-panel);
+  background: var(--surface-panel);
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.survey-allocation-total strong {
+  font-size: 1.25rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.survey-allocation-total.is-unbalanced {
+  background: var(--surface-strong);
+  color: var(--warning-ink);
+}
+
+@media (max-width: 620px) {
+  .survey-allocation-row {
+    grid-template-columns: minmax(0, 1fr) 4.5rem auto;
+  }
+}
+
 @media (max-width: 620px) {
   /* Rotated pebbles overflow a 375px viewport by ~1px; flatten on mobile */
   .stat-stone {

@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, Check, ChevronLeft, ChevronRight, Frown, Loader2, Meh, RefreshCw, RotateCcw, ShieldCheck, Smile, type LucideIcon } from "lucide-react";
+import { AlertTriangle, ChevronLeft, ChevronRight, Loader2, RefreshCw, RotateCcw, ShieldCheck } from "lucide-react";
 import {
   useCallback,
   useEffect,
@@ -10,8 +10,16 @@ import {
   useSyncExternalStore,
 } from "react";
 import { calculatePercentage } from "@/lib/utils/math";
-import { responseScale } from "@/lib/shalomut-source";
 import { estimateMinutesForQuestions } from "@/lib/survey-definition";
+import { isAnswerValueValid } from "@/lib/survey/answer-validity";
+import {
+  buildSurveySteps,
+  isStepComplete,
+  questionIndexForStep,
+  questionsInStep,
+  submissionBlocker,
+} from "@/lib/survey/survey-steps";
+import { SurveyAnswerInput } from "./survey-answer-input";
 import { SurveyConsentStep } from "./survey-consent-step";
 import {
   createAttemptTokenSource,
@@ -30,8 +38,6 @@ import {
 } from "@/lib/survey-draft-storage";
 import { resolveSubmissionOutcome } from "@/lib/survey-submission-outcome";
 import type { SurveyDefinitionQuestion } from "@/lib/types/backend";
-
-type AnswerValue = (typeof responseScale)[number]["value"];
 
 /**
  * Long enough that answering quickly does not write on every keystroke-like
@@ -59,12 +65,6 @@ type SurveyFlowProps = {
   questions: SurveyDefinitionQuestion[];
 };
 
-const optionIcons: Record<AnswerValue, LucideIcon> = {
-  green: Smile,
-  yellow: Meh,
-  red: Frown,
-};
-
 export function SurveyFlow({
   shareCode,
   surveyTitle,
@@ -72,7 +72,7 @@ export function SurveyFlow({
   anonymityText,
   questions,
 }: SurveyFlowProps) {
-  const [answers, setAnswers] = useState<Record<string, AnswerValue>>({});
+  const [answers, setAnswers] = useState<Record<string, string>>({});
   const [currentIndex, setCurrentIndex] = useState(0);
   const [phase, setPhase] = useState<SurveyPhase>("consent");
   const [submitting, setSubmitting] = useState(false);
@@ -92,7 +92,15 @@ export function SurveyFlow({
     createAttemptTokenSource,
   );
   const surveyQuestions = questions;
-  const total = surveyQuestions.length;
+  /*
+   * The screen walks steps and the questionnaire stores questions. They used to
+   * be the same thing; an allocation grid is thirteen questions answered on one
+   * screen, so they are not any more. `survey-steps.ts` owns the difference,
+   * and everything here that used to count questions counts steps instead —
+   * except what the funnel is told, which is still a question index.
+   */
+  const steps = useMemo(() => buildSurveySteps(surveyQuestions), [surveyQuestions]);
+  const total = steps.length;
   /*
    * Computed here rather than read from the stored definition, because the
    * consent screen prints both numbers in one sentence — "N שאלות, כ־M דקות" —
@@ -100,11 +108,20 @@ export function SurveyFlow({
    * written makes that sentence disagree with itself. The questions in hand are
    * the ones this respondent will be asked.
    */
-  const estimatedMinutes = estimateMinutesForQuestions(total);
-  const answeredCount = Object.keys(answers).length;
-  const canSubmit = answeredCount === total;
+  const estimatedMinutes = estimateMinutesForQuestions(surveyQuestions.length);
+  /*
+   * Progress counts steps the respondent is done with rather than answers
+   * given, because a background question they chose to skip is a step behind
+   * them. Counting answers would leave the bar short of full on a questionnaire
+   * that is ready to send, which reads as work still to do.
+   */
+  const completedSteps = steps.filter((step) =>
+    isStepComplete(step, answers),
+  ).length;
+  const blocker = submissionBlocker(steps, answers);
+  const canSubmit = blocker === undefined;
   const isReviewStep = currentIndex === total;
-  const question = surveyQuestions[currentIndex];
+  const step = steps[currentIndex];
 
   // The moment consent was given. Empty until it is, which is safe because a
   // draft is only ever written from the `questions` phase.
@@ -115,15 +132,24 @@ export function SurveyFlow({
     [shareCode],
   );
 
-  const draftExpectation = useMemo(
-    () => ({
+  const draftExpectation = useMemo(() => {
+    const byId = new Map(surveyQuestions.map((item) => [item.id, item]));
+
+    return {
       shareCode,
       questionnaireFingerprint: questionnaireFingerprint(surveyQuestions),
-      questionIds: new Set(surveyQuestions.map((item) => item.id)),
-      questionCount: surveyQuestions.length,
-    }),
-    [shareCode, surveyQuestions],
-  );
+      questionIds: new Set(byId.keys()),
+      // The cursor is a step index now, so the clamp has to be told about
+      // steps. Naming it `questionCount` would have kept the draft compiling
+      // while restoring a respondent past the end of a questionnaire whose
+      // grid collapsed thirteen questions into one screen.
+      questionCount: buildSurveySteps(surveyQuestions).length,
+      isAnswerValid: (questionId: string, value: string) => {
+        const question = byId.get(questionId);
+        return question ? isAnswerValueValid(question, value) : false;
+      },
+    };
+  }, [shareCode, surveyQuestions]);
 
   const draftStore = useMemo(
     () => createSurveyDraftStore(storageKey, draftExpectation),
@@ -313,14 +339,20 @@ export function SurveyFlow({
      * reads as "we know they started and not where they stopped" rather than as
      * a wrong number.
      */
+    // The funnel stores a question index and has since before steps existed,
+    // so a step index here would silently rescale every number already in the
+    // database. `questionIndexForStep` is the translation.
+    const reportProgress = () =>
+      beacon.progress(questionIndexForStep(steps, currentIndex, surveyQuestions));
+
     const flush = () => {
       if (document.visibilityState !== "hidden") return;
       persistDraft();
-      beacon.progress(currentIndex);
+      reportProgress();
     };
     const flushNow = () => {
       persistDraft();
-      beacon.progress(currentIndex);
+      reportProgress();
     };
 
     window.addEventListener("pagehide", flushNow);
@@ -330,7 +362,7 @@ export function SurveyFlow({
       window.removeEventListener("pagehide", flushNow);
       document.removeEventListener("visibilitychange", flush);
     };
-  }, [beacon, currentIndex, persistDraft, phase, seeded]);
+  }, [beacon, currentIndex, persistDraft, phase, seeded, steps, surveyQuestions]);
 
   /**
    * Moves the reading position into the questionnaire after an accept.
@@ -354,13 +386,29 @@ export function SurveyFlow({
     beacon.consented();
   };
 
-  const selectAnswer = (value: AnswerValue) => {
-    if (!question) {
-      return;
-    }
+  const setAnswer = (questionId: string, value: string | undefined) => {
+    setAnswers((current) => {
+      if (value === undefined) {
+        // Removed rather than stored empty. An absent key is what "not
+        // answered" means everywhere else — the submit payload, the draft, the
+        // completeness check — and an empty string would be a second way to
+        // say it that only some of them understand.
+        const { [questionId]: _removed, ...rest } = current;
+        return rest;
+      }
 
-    setAnswers((current) => ({ ...current, [question.id]: value }));
+      return { ...current, [questionId]: value };
+    });
+  };
 
+  /**
+   * Moves on shortly after a one-tap answer.
+   *
+   * Only the widgets that finish in one tap ask for this. A number field and an
+   * allocation grid call nothing: advancing mid-digit would take the screen
+   * away from someone typing `10` after they pressed `1`.
+   */
+  const advanceSoon = () => {
     if (advanceTimer.current) {
       clearTimeout(advanceTimer.current);
     }
@@ -375,18 +423,24 @@ export function SurveyFlow({
     setSubmitting(true);
     setSubmitError(null);
 
-    const formattedAnswers = Object.entries(answers).map(([questionId, value]) => {
-      const question = surveyQuestions.find((item) => item.id === questionId);
+    // Walked in questionnaire order rather than in the order the answers map
+    // happens to hold, so a submission reads the way the questionnaire does.
+    // Unanswered questions are absent, which is what an optional question a
+    // respondent declined has to look like.
+    const formattedAnswers = surveyQuestions
+      .filter((item) => answers[item.id] !== undefined)
+      .map((item) => {
+        const value = answers[item.id];
 
-      // No fallback dimension. This used to send `self-expression` for a
-      // question it could not find, which the server refuses anyway — so the
-      // fallback only ever turned "we lost the question" into a message about
-      // the wrong stone. Omitting it says the same thing accurately, and is
-      // what a background answer carries too.
-      return question?.kind === "analytic"
-        ? { questionId, dimensionId: question.dimensionId, value }
-        : { questionId, value };
-    });
+        // No fallback dimension. This used to send `self-expression` for a
+        // question it could not find, which the server refuses anyway — so the
+        // fallback only ever turned "we lost the question" into a message about
+        // the wrong stone. Omitting it says the same thing accurately, and is
+        // what a background answer carries too.
+        return item.kind === "analytic"
+          ? { questionId: item.id, dimensionId: item.dimensionId, value }
+          : { questionId: item.id, value };
+      });
 
     try {
       const anonymousTokenHash = await hashAnonymousToken(
@@ -429,7 +483,7 @@ export function SurveyFlow({
         introText={introText}
         anonymityText={anonymityText}
         estimatedMinutes={estimatedMinutes}
-        questionCount={total}
+        questionCount={surveyQuestions.length}
         onAccept={acceptConsent}
         onDecline={() => setPhase("declined")}
       />
@@ -480,7 +534,25 @@ export function SurveyFlow({
     );
   }
 
-  const progressPercent = calculatePercentage(answeredCount, total);
+  const progressPercent = calculatePercentage(completedSteps, total);
+  const stepQuestions = step ? questionsInStep(step) : [];
+  // Keyed so React remounts the card between steps: the widgets hold no state
+  // of their own, but the heading takes focus on entry and a reused card keeps
+  // the previous step's scroll position under it.
+  const stepKey = step?.kind === "allocation" ? step.groupId : stepQuestions[0]?.id;
+  /*
+   * An allocation group has no prompt of its own in the data model — it is
+   * thirteen questions sharing a constraint, and the constraint is what the
+   * respondent needs told. So the heading states the rule and the rows carry
+   * the activity names. If the instrument ever gives a grid a title, this is
+   * where it goes.
+   */
+  const stepHeading =
+    step?.kind === "allocation"
+      ? "חלוקה באחוזים — הסכום של כל השורות צריך להיות 100"
+      : (stepQuestions[0]?.text ?? "");
+  const isOptionalStep =
+    stepQuestions.length > 0 && stepQuestions.every((item) => !item.required);
 
   return (
     <section className="survey-shell stone-page survey-builder-stone-page survey-focus-shell">
@@ -499,12 +571,18 @@ export function SurveyFlow({
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuetext={
-            isReviewStep ? `כל ${total} השאלות נענו` : `שאלה ${currentIndex + 1} מתוך ${total}`
+            isReviewStep
+              ? `כל ${total} השלבים הושלמו`
+              : `שלב ${currentIndex + 1} מתוך ${total}`
           }
         >
           <span style={{ transform: `scaleX(${progressPercent / 100})` }} />
         </div>
-        <small>{isReviewStep ? `נענו ${answeredCount} מתוך ${total}` : `שאלה ${currentIndex + 1} מתוך ${total}`}</small>
+        <small>
+          {isReviewStep
+            ? `הושלמו ${completedSteps} מתוך ${total}`
+            : `שלב ${currentIndex + 1} מתוך ${total}`}
+        </small>
       </div>
 
       {restoredDraft ? (
@@ -524,11 +602,19 @@ export function SurveyFlow({
 
       {isReviewStep ? (
         <div className="survey-focus-card survey-review-card">
-          <h2>{canSubmit ? "הכל מוכן לשליחה" : "נותרו שאלות ללא מענה"}</h2>
+          <h2>
+            {canSubmit
+              ? "הכל מוכן לשליחה"
+              : blocker === "allocation-total"
+                ? "טבלת החלוקה עדיין לא מסתכמת ב־100"
+                : "נותרו שאלות ללא מענה"}
+          </h2>
           <p>
             {canSubmit
-              ? "עניתם על כל השאלות. אפשר לחזור אחורה ולעדכן תשובה, או לשלוח עכשיו."
-              : `נענו ${answeredCount} מתוך ${total} שאלות. חזרו אחורה כדי להשלים את החסרות.`}
+              ? "אפשר לחזור אחורה ולעדכן תשובה, או לשלוח עכשיו."
+              : blocker === "allocation-total"
+                ? "חזרו לטבלה והשלימו את החלוקה ל־100, או נקו את השורות כדי לדלג עליה."
+                : `הושלמו ${completedSteps} מתוך ${total} שלבים. חזרו אחורה כדי להשלים את החסרים — שאלות רשות אפשר להשאיר ריקות.`}
           </p>
           <button className="primary-button" type="button" disabled={!canSubmit || submitting} onClick={handleSubmit}>
             {submitting ? (
@@ -545,33 +631,22 @@ export function SurveyFlow({
           </button>
         </div>
       ) : (
-        <div className="survey-focus-card" key={question.id}>
+        <div className="survey-focus-card" key={stepKey}>
           <span className="question-index" aria-hidden="true">
             {currentIndex + 1}
           </span>
           <h2 ref={questionHeading} tabIndex={-1}>
-            {question.text}
+            {stepHeading}
           </h2>
-          <div className="survey-answer-stones">
-            {responseScale.map((option) => {
-              const Icon = optionIcons[option.value];
-              const selected = answers[question.id] === option.value;
-              return (
-                <button
-                  key={option.value}
-                  className={`answer-stone answer-stone-${option.value}`}
-                  type="button"
-                  aria-pressed={selected}
-                  onClick={() => selectAnswer(option.value)}
-                >
-                  <Icon size={30} aria-hidden="true" />
-                  <strong>{option.title}</strong>
-                  <span>{option.text}</span>
-                  {selected ? <Check className="answer-stone-check" size={18} aria-hidden="true" /> : null}
-                </button>
-              );
-            })}
-          </div>
+          {isOptionalStep ? (
+            <p className="quiet-note survey-optional-note">שאלת רשות</p>
+          ) : null}
+          <SurveyAnswerInput
+            step={step}
+            answers={answers}
+            onAnswer={setAnswer}
+            onAdvance={advanceSoon}
+          />
         </div>
       )}
 
@@ -583,15 +658,22 @@ export function SurveyFlow({
           onClick={() => setCurrentIndex((index) => Math.max(index - 1, 0))}
         >
           <ChevronRight size={18} aria-hidden="true" />
-          לשאלה הקודמת
+          לשלב הקודם
         </button>
-        {!isReviewStep && answers[question.id] ? (
+        {/*
+          Offered as soon as the step is complete rather than as soon as it is
+          answered, which is what lets an optional question be walked past: it
+          is complete from the moment it is reached. A typed step — a number, a
+          grid — has no auto-advance, so this button is the only way forward
+          from it and must not be hidden while the respondent is deciding.
+        */}
+        {!isReviewStep && step && isStepComplete(step, answers) ? (
           <button
             className="secondary-button"
             type="button"
             onClick={() => setCurrentIndex((index) => Math.min(index + 1, total))}
           >
-            לשאלה הבאה
+            לשלב הבא
             <ChevronLeft size={18} aria-hidden="true" />
           </button>
         ) : null}
