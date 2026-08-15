@@ -1,8 +1,28 @@
 import assert from "node:assert";
 import test from "node:test";
 import { renderToStaticMarkup } from "react-dom/server";
-import { estimateMinutesForQuestions } from "@/lib/survey-definition";
+import { estimateMinutesForQuestionnaire } from "@/lib/survey/survey-duration";
+import type { SurveyDefinitionQuestion } from "@/lib/types/backend";
 import { SurveyBuilderSettings } from "../survey-builder/survey-builder-settings";
+
+/** N colour questions, which is what a questionnaire of N looked like. */
+function minutesForColourQuestions(count: number): number {
+  const questions: SurveyDefinitionQuestion[] = Array.from(
+    { length: count },
+    (_, index) => ({
+      id: `q${index}`,
+      text: `שאלה ${index}`,
+      required: true,
+      enabled: true,
+      kind: "analytic",
+      dimensionId: "self-expression",
+      scaleId: "wellbeing-colour",
+      polarity: "positive",
+    }),
+  );
+
+  return estimateMinutesForQuestionnaire(questions);
+}
 
 /**
  * The estimate is the one promise this product makes about the respondent's
@@ -28,21 +48,21 @@ function renderSettings(estimatedMinutes: number) {
 }
 
 test("the time estimate cannot be typed over", () => {
-  const markup = renderSettings(estimateMinutesForQuestions(24));
+  const markup = renderSettings(minutesForColourQuestions(24));
 
   assert.match(markup, /readonly[^>]*value="4"|value="4"[^>]*readonly/iu);
 });
 
 test("the estimate says which number it follows", () => {
-  const markup = renderSettings(estimateMinutesForQuestions(24));
+  const markup = renderSettings(minutesForColourQuestions(24));
 
   assert.match(markup, /aria-describedby="builder-minutes-note"/u);
-  assert.match(markup, /מחושב ממספר השאלות הפעילות/u);
+  assert.match(markup, /זמן המילוי מחושב מהשאלות הפעילות/u);
 });
 
 test("a shorter questionnaire shows a shorter estimate", () => {
   // The case the hardcoded number got wrong: a trimmed questionnaire kept
   // promising the minutes of the full one.
-  assert.match(renderSettings(estimateMinutesForQuestions(6)), /value="1"/u);
-  assert.match(renderSettings(estimateMinutesForQuestions(24)), /value="4"/u);
+  assert.match(renderSettings(minutesForColourQuestions(6)), /value="1"/u);
+  assert.match(renderSettings(minutesForColourQuestions(24)), /value="4"/u);
 });

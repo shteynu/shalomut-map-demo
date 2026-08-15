@@ -95,8 +95,9 @@ export function SurveyBuilderSettings({
       </p>
 
       <p id="builder-minutes-note" className="quiet-note">
-        זמן המילוי מחושב ממספר השאלות הפעילות ומתעדכן איתן, כך שהמספר שהמורים
-        רואים לפני שהם מתחילים תמיד מתאר את השאלון הזה.
+        זמן המילוי מחושב מהשאלות הפעילות — לא רק ממספרן, אלא גם מסוג המענה שכל
+        אחת מבקשת — ומתעדכן איתן, כך שהמספר שהמורים רואים לפני שהם מתחילים תמיד
+        מתאר את השאלון הזה.
       </p>
 
       <PrivacyThresholdNotice minimumResponses={minimumResponses} />

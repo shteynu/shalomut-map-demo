@@ -4,7 +4,6 @@ import path from "node:path";
 import test from "node:test";
 import {
   createCanonicalSurveyDefinition,
-  estimateMinutesForQuestions,
   hasSameQuestionSnapshot,
   MINIMUM_PRIVACY_THRESHOLD,
   parseSurveyDefinition,
@@ -242,26 +241,14 @@ test("a threshold that is not a positive whole number is still refused", () => {
  * glancing at the link between lessons decides on that one integer.
  */
 
-test("the completion estimate follows the question count", () => {
-  assert.strictEqual(estimateMinutesForQuestions(24), 4);
-  assert.strictEqual(estimateMinutesForQuestions(6), 1);
-  assert.strictEqual(estimateMinutesForQuestions(48), 8);
-});
-
-test("a questionnaire never estimates less than a minute", () => {
-  // A round under construction has no questions yet, and «0 דקות» reads as a
-  // broken screen rather than as a short survey.
-  assert.strictEqual(estimateMinutesForQuestions(0), 1);
-  assert.strictEqual(estimateMinutesForQuestions(1), 1);
-});
-
 test("the standard questionnaire no longer claims fifteen minutes", () => {
+  // Four, and it stayed four when the estimate stopped being a question count:
+  // twenty-four colour questions still cost ten seconds each. What the estimate
+  // is made of now lives in `survey/__tests__/survey-duration.test.ts`.
   const definition = createCanonicalSurveyDefinition("סבב רגיל", 10);
 
-  assert.strictEqual(
-    definition.estimatedMinutes,
-    estimateMinutesForQuestions(surveyInstrument.questions.length),
-  );
+  assert.strictEqual(definition.estimatedMinutes, 4);
+  assert.strictEqual(definition.questions.length, surveyInstrument.questions.length);
   assert.ok(
     definition.estimatedMinutes < 15,
     "the hardcoded fifteen was several times the real duration",

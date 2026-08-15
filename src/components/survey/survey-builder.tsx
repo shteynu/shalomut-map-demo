@@ -16,7 +16,7 @@ import type { RoundSwitcherOptions } from "@/lib/rounds/round-options";
 import { useShareUrl } from "@/lib/use-share-url";
 import type { SurveyDefinition } from "@/lib/types/backend";
 import { surveyInstrument } from "@/lib/shalomut-source";
-import { estimateMinutesForQuestions } from "@/lib/survey-definition";
+import { estimateMinutesForQuestionnaire } from "@/lib/survey/survey-duration";
 import {
   moveQuestionWithinView,
   sectionNamesIn,
@@ -235,7 +235,7 @@ export function SurveyBuilder({
    * from the questions that will actually be asked, so the promise cannot
    * outlive the questionnaire it was made about.
    */
-  const estimatedMinutes = estimateMinutesForQuestions(enabledQuestions.length);
+  const estimatedMinutes = estimateMinutesForQuestionnaire(enabledQuestions);
   const requiredQuestions = enabledQuestions.filter((question) => question.required);
   const activeDimensions = new Set(
     enabledQuestions
