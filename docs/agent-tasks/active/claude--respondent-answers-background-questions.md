@@ -72,7 +72,8 @@ sentence for each.
 
 ## Exact Git state
 
-- HEAD: `<see git log>` on `claude/respondent-answers-background-questions`
+- HEAD: `f6e4d69` on `claude/respondent-answers-background-questions`
+  (`6be8395` the product change, `f6e4d69` the seed and this file)
 - Committed: everything below, in two commits.
 - Unstaged and deliberately untouched: `.idea/shalomut-map-demo.iml`, which is
   the user's own change and belongs to nobody's task.

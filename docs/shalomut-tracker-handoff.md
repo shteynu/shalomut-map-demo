@@ -47,15 +47,35 @@ three states walked signed-in against a production build, with the suppression
 observed working rather than inferred. Nothing crosses the AI boundary, no
 schema changed, and the deployed endpoint knows nothing about it.
 
-Two things it leaves open, both recorded in its task file. Its
+One thing it leaves open, recorded in its task file. Its
 `suppressCrossTab`/`suppressFrequency` guarantee holds **within one published
 table**, and the screen now offers several tables for the same round — whether
 that is acceptable is an owner decision that should be made before a real school
-uses it. And no respondent has ever produced a background answer by answering:
-the submit API accepts them and the local seed writes them, but the respondent
-screen cannot render a single-choice background question until phase 3.
+uses it.
 
-**None of it is merged.** `origin/main` is still `05a23bc`, thirteen commits
+**2026-08-15, later still: a seventh branch, and the second of those two open
+things is closed.** `claude/respondent-answers-background-questions` sits on top
+of the sixth and is **unpushed** — two commits, `6be8395` and `f6e4d69`. The
+questionnaire screen used to render three colour stones for every question
+whatever its kind; it now walks *steps* rather than questions and picks a widget
+per question, so a respondent meets a single-choice question as a list of its
+own options with a way to decline, a numeric question as a number field, and an
+allocation grid as one screen of rows with a running total that must reach 100.
+
+Verified locally — `verify:core` exit 0, zero test failures, and the whole
+respondent path walked against a production build. **A background answer now
+exists that a person produced by answering**: the walk's stored response holds
+`background_tenure`, `background_hours` and three allocation rows, with the one
+question that was skipped absent rather than blank. That is the residual risk
+from the sixth branch closed, and it is the last thing the breakdown screen was
+waiting on. No schema changed and the deployed endpoint knows nothing about it.
+
+What phase 3 still leaves: the *analytic* half. The 108 Likert items render one
+per screen with their anchors repeated instead of once per block, and the block
+layout waits on the methodologist's item→dimension mapping — the same external
+blocker recorded below.
+
+**None of it is merged.** `origin/main` is still `05a23bc`, fifteen commits
 behind the tip of that stack, and `main` is an ancestor of it — so landing the
 stack is a fast-forward, and merging it is an owner call that has not been made.
 Until then, every claim elsewhere in this file about a 24-question default, a

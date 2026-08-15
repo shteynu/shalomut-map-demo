@@ -344,10 +344,16 @@ questionnaire with the owner's research instrument** (decision 2026-08-14). 126
 items instead of 24, 1–5 and 1–7 scales with mixed polarity instead of one
 three-colour scale, demographic items that score nothing, and k-anonymous
 cross-tabulation. `docs/default-research-instrument-plan-2026-08-14.md` holds
-the six phases; phase 1 is the answer model and waits on nothing, while phases 3
-and 5 wait on the methodologist's item-to-dimension mapping. Nothing is
-implemented, so every capability recorded above still describes the
-24-question default.
+the six phases. Phases 1, 2 and 4 are built, and so is the demographic half of
+phase 3: the answer model carries scales and polarity, demographics are
+k-anonymous, the builder authors a background question, `/breakdown` reads one,
+and as of 2026-08-15 a respondent can *answer* one — a single-choice list with a
+way to decline, a number field and an allocation grid that must total 100.
+
+What is left is the analytic half of phase 3 and phase 5, both of which wait on
+the methodologist's item-to-dimension mapping. And **none of it is merged**: it
+is a seven-branch local stack, so every capability recorded above still
+describes the 24-question default that is actually running.
 
 That decision also closes the answer-scale question the two items below were
 waiting with. The cheap-wins list of
