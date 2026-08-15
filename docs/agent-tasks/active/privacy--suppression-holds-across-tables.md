@@ -9,7 +9,8 @@
   documentation commit sits on top of it. Written this way on purpose — a task
   file that names its own tip is stale the moment the next documentation commit
   lands, which this repository has watched happen twice.
-- Status: implemented, verified locally and committed. Not pushed.
+- Status: implemented, verified locally, committed and **pushed**. Green on the
+  runner. Not merged.
 - Last updated: 2026-08-15
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -123,9 +124,10 @@ the limit with a note.
 
 ## Remaining
 
-- The push. `git push` is an owner action in this environment; the branch is
-  visible in this worktree and, now that a commit exists, to another worktree on
-  the same machine — not to another checkout until it reaches `origin`.
+- The merge. The branch is on `origin` and green; landing it is
+  `git push origin privacy/suppression-holds-across-tables:main`, an owner
+  action here. The work is portable to another checkout or machine as of the
+  push.
 
 ## Changed files
 
@@ -157,6 +159,11 @@ must recreate it.
 - `npx tsx --test src/lib/privacy/__tests__/cell-suppression.test.ts` — 18/18.
 - `npx tsx --test src/lib/analytics/__tests__/background-breakdown.test.ts` —
   13/13.
+- **On the runner, on this branch, at `188379c`.** `Core verification` green,
+  and `Browser smoke` `31882333048` green in 2m17s with 18 tests passed in
+  39.1s — every step, with the failure-report step skipped as it is on a pass.
+  Only two workflows started: `codeql.yml` filters to `main` and never reaches
+  a branch.
 - **The behaviour change was watched in a browser**, signed in against a
   production build (`next start`, port 3210) on the local database, with
   credentials generated for the run rather than the repository's own:
@@ -233,8 +240,7 @@ must recreate it.
 
 ## Next concrete step
 
-Push `privacy/suppression-holds-across-tables` and read the three workflows on
-it. This is also the branch that finally answers the question the CI session
-left open: `Browser smoke` triggers on `push` with no branch filter, and no
-branch push has happened since, so its first run on a branch has been inferred
-from the trigger and never read.
+Land the branch on `main` with
+`git push origin privacy/suppression-holds-across-tables:main`. Nothing on it
+waits on an agent: it is green on the runner and the question that prompted it
+is answered.

@@ -217,15 +217,27 @@ dry run.
 One consequence is deliberate and is written into the workflow: the manual
 deployment job no longer waits on a browser. It waits on `npm run verify` and
 the mutation dry run, while the smoke's own red X arrives at the same commit on
-its own workflow. Three workflows now run on every branch — core verification,
-browser smoke and CodeQL.
+its own workflow. Two workflows now run on every branch — core verification and
+browser smoke.
+
+That sentence said "three ... and CodeQL" until 2026-08-15, and it was wrong
+when it was written. `codeql.yml` triggers on `push` and `pull_request` with
+`branches: ["main"]` on both, so it does not reach a branch at all; it was read
+off the four green checks on a `main` push, where it does run. Corrected against
+the workflow files and against a branch push that started exactly two runs.
 
 Read back at `4ad5977`: four green runs, `Browser smoke` `31880134622` 2m26s
 with 18 tests passed, and the deploy job down to 2m34s with no browser step in
-it, checked step by step. What that does **not** yet show is the smoke on a
-branch: the push went to `main`. The trigger is `on: push` with no filter, the
-same shape `verify-core.yml` has, so the first branch push is what turns the
-inference into a reading.
+it, checked step by step. What that did **not** show is the smoke on a branch:
+the push went to `main`.
+
+**That reading exists now, and it is green.** The push of
+`privacy/suppression-holds-across-tables` on 2026-08-15 started exactly two
+runs on the branch, both on `188379c`: `Core verification` succeeded, and
+`Browser smoke` `31882333048` succeeded in 2m17s with 18 tests passed in 39.1s,
+every step green and the report-keeping step skipped as it is on a pass. So a
+branch now meets Playwright before it lands, which is the whole point of the
+move, and it is a reading rather than an inference from the trigger.
 
 **2026-08-14, later the same day, built the first two phases of it.** Phase 1
 (`claude/answer-model-for-research-instrument`) made a question carry its own
