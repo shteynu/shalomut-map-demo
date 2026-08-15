@@ -53,6 +53,10 @@ export function SurveyAnswerInput({
     );
   }
 
+  if (step.kind === "block") {
+    return <StatementBlock step={step} answers={answers} onAnswer={onAnswer} />;
+  }
+
   const question = step.question;
 
   if (question.kind === "analytic") {
@@ -299,6 +303,91 @@ function NumberField({
       {!question.required ? (
         <p className="quiet-note">אפשר להשאיר ריק.</p>
       ) : null}
+    </div>
+  );
+}
+
+/**
+ * A block of statements answered on one scale.
+ *
+ * The reason this exists is arithmetic: the instrument has 108 Likert
+ * statements in 13 blocks, and one statement per screen means the same five or
+ * seven anchors are read 108 times. Here they are read once — a legend at the
+ * top of the block — and each statement is a row of numbered buttons under it.
+ *
+ * The number is what is on screen and the anchor is what a screen reader says,
+ * via `aria-label`. That is not a shortcut around the accessible name: a sighted
+ * respondent reads the legend once and then works by position, and a listening
+ * one cannot, so the row has to carry the words even though the button shows a
+ * digit. The legend is `aria-hidden` for the same reason — read aloud it would
+ * be seven anchors repeated before every statement, which is the thing this
+ * layout exists to stop.
+ */
+function StatementBlock({
+  step,
+  answers,
+  onAnswer,
+}: {
+  step: Extract<SurveyStep, { kind: "block" }>;
+  answers: Readonly<Record<string, string>>;
+  onAnswer: AnswerInputProps["onAnswer"];
+}) {
+  const scale = getAnswerScale(step.scaleId);
+
+  return (
+    <div className="survey-block">
+      <ol className="survey-block-legend" aria-hidden="true">
+        {scale.points.map((point) => (
+          <li key={point.value}>
+            <strong>{point.value}</strong>
+            <span>{point.label}</span>
+          </li>
+        ))}
+      </ol>
+
+      <ul className="survey-block-rows">
+        {step.questions.map((question) => {
+          const value = answers[question.id];
+
+          return (
+            <li
+              className={`survey-block-row${value ? " is-answered" : ""}`}
+              key={question.id}
+            >
+              <p className="survey-block-statement" id={`statement-${question.id}`}>
+                {question.text}
+                {!question.required ? (
+                  <span className="survey-block-optional"> (רשות)</span>
+                ) : null}
+              </p>
+              <div
+                className="survey-block-choices"
+                role="radiogroup"
+                aria-labelledby={`statement-${question.id}`}
+              >
+                {scale.points.map((point) => (
+                  <label
+                    className={`survey-block-choice${
+                      value === point.value ? " is-selected" : ""
+                    }`}
+                    key={point.value}
+                  >
+                    <input
+                      type="radio"
+                      name={question.id}
+                      value={point.value}
+                      checked={value === point.value}
+                      aria-label={point.label}
+                      onChange={() => onAnswer(question.id, point.value)}
+                    />
+                    <span aria-hidden="true">{point.value}</span>
+                  </label>
+                ))}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }

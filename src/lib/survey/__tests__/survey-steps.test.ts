@@ -49,6 +49,25 @@ function choice(id: string, required = false): SurveyDefinitionQuestion {
   };
 }
 
+function likert(
+  id: string,
+  sectionId: string | undefined,
+  scaleId: 'likert-5-extent' | 'likert-7-frequency' = 'likert-5-extent',
+  required = true,
+): SurveyDefinitionQuestion {
+  return {
+    id,
+    kind: 'analytic',
+    text: `היגד ${id}`,
+    required,
+    enabled: true,
+    sectionId,
+    dimensionId: 'meaning',
+    scaleId,
+    polarity: 'positive',
+  };
+}
+
 function allocationRow(
   id: string,
   groupId: string,
@@ -116,6 +135,62 @@ describe('building steps', () => {
     ]);
 
     assert.equal(steps.length, 2);
+  });
+});
+
+describe('blocks', () => {
+  it('collapses a section answered on one scale into one step', () => {
+    const steps = buildSurveySteps([
+      likert('a1', 'משאבים בעבודה'),
+      likert('a2', 'משאבים בעבודה'),
+      likert('a3', 'משאבים בעבודה'),
+    ]);
+
+    assert.equal(steps.length, 1);
+    assert.equal(questionsInStep(steps[0]).length, 3);
+  });
+
+  it('splits a section that mixes two scales, because a block states one set of anchors', () => {
+    const steps = buildSurveySteps([
+      likert('a1', 'שאלון שחיקה', 'likert-5-extent'),
+      likert('a2', 'שאלון שחיקה', 'likert-7-frequency'),
+    ]);
+
+    assert.equal(steps.length, 2);
+  });
+
+  it('leaves a question with no section on its own screen', () => {
+    const steps = buildSurveySteps([likert('a1', undefined), likert('a2', undefined)]);
+
+    assert.deepEqual(
+      steps.map((step) => step.kind),
+      ['question', 'question'],
+    );
+  });
+
+  it('never blocks the colour scale, however it is sectioned', () => {
+    // The stones are the anchors — three faces with a sentence each — so there
+    // is nothing to hoist above them, and every questionnaire persisted before
+    // sections existed must keep rendering exactly as it did.
+    const coloured = { ...analytic('q1'), sectionId: 'חלק א' };
+    const steps = buildSurveySteps([coloured, { ...coloured, id: 'q2' }]);
+
+    assert.deepEqual(
+      steps.map((step) => step.kind),
+      ['question', 'question'],
+    );
+  });
+
+  it('holds the block until every required statement is answered', () => {
+    // Per statement, not all-or-none: a block shares a screen and a scale, not
+    // a constraint, so an optional row inside it stays optional.
+    const [step] = buildSurveySteps([
+      likert('a1', 'חלק א'),
+      likert('a2', 'חלק א', 'likert-5-extent', false),
+    ]);
+
+    assert.equal(isStepComplete(step, {}), false);
+    assert.equal(isStepComplete(step, { a1: '3' }), true);
   });
 });
 

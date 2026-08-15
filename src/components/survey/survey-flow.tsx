@@ -10,8 +10,8 @@ import {
   useSyncExternalStore,
 } from "react";
 import { calculatePercentage } from "@/lib/utils/math";
-import { estimateMinutesForQuestions } from "@/lib/survey-definition";
 import { isAnswerValueValid } from "@/lib/survey/answer-validity";
+import { estimateMinutesForSteps } from "@/lib/survey/survey-duration";
 import {
   buildSurveySteps,
   isStepComplete,
@@ -108,7 +108,7 @@ export function SurveyFlow({
    * written makes that sentence disagree with itself. The questions in hand are
    * the ones this respondent will be asked.
    */
-  const estimatedMinutes = estimateMinutesForQuestions(surveyQuestions.length);
+  const estimatedMinutes = estimateMinutesForSteps(steps);
   /*
    * Progress counts steps the respondent is done with rather than answers
    * given, because a background question they chose to skip is a step behind
@@ -547,12 +547,21 @@ export function SurveyFlow({
    * the activity names. If the instrument ever gives a grid a title, this is
    * where it goes.
    */
+  /*
+   * A block is headed by its section rather than by its first statement. The
+   * statements are inside it, one per row, and repeating the first one above
+   * them would name the block after one of its members.
+   */
   const stepHeading =
     step?.kind === "allocation"
       ? "חלוקה באחוזים — הסכום של כל השורות צריך להיות 100"
-      : (stepQuestions[0]?.text ?? "");
+      : step?.kind === "block"
+        ? step.sectionId
+        : (stepQuestions[0]?.text ?? "");
   const isOptionalStep =
     stepQuestions.length > 0 && stepQuestions.every((item) => !item.required);
+  const optionalNote =
+    step?.kind === "block" ? "אפשר לדלג על שאלות בחלק הזה" : "שאלת רשות";
 
   return (
     <section className="survey-shell stone-page survey-builder-stone-page survey-focus-shell">
@@ -639,7 +648,7 @@ export function SurveyFlow({
             {stepHeading}
           </h2>
           {isOptionalStep ? (
-            <p className="quiet-note survey-optional-note">שאלת רשות</p>
+            <p className="quiet-note survey-optional-note">{optionalNote}</p>
           ) : null}
           <SurveyAnswerInput
             step={step}

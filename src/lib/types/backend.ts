@@ -203,7 +203,18 @@ export interface SurveyAttemptRecord {
   anonymousTokenHash: string;
   openedAt: Date;
   consentAcceptedAt?: Date;
-  /** Zero-based index of the furthest question reached. */
+  /**
+   * Zero-based index of the furthest question reached.
+   *
+   * Still a question index, and still a lower bound: it names the first
+   * question of the screen the attempt got to. What changed with the research
+   * instrument is the resolution, not the meaning — a screen used to hold one
+   * question and can now hold a whole block, so an attempt abandoned at the
+   * twentieth statement of a block reports the block's first statement. Making
+   * it a screen index instead would have rescaled every number already stored,
+   * and a round from last month and a round from today would be counted on
+   * different scales with nothing on screen to say so.
+   */
   lastQuestionReached?: number;
   completedAt?: Date;
 }

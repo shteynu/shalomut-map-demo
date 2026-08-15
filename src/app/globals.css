@@ -5858,6 +5858,157 @@ label .custom-tooltip-wrapper:hover .custom-tooltip-icon {
   }
 }
 
+/* A block of statements answered on one scale.
+
+   The legend is the point: five or seven anchors stated once, above rows that
+   then carry only their numbers. It sticks to the top of the scrolling card
+   because a respondent on the nineteenth statement of a block of twenty-two has
+   long scrolled past the words their digits stand for. */
+.survey-block {
+  margin-top: 1rem;
+}
+
+.survey-block-legend {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1rem;
+  margin: 0 0 1rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--radius-panel);
+  background: var(--surface-panel-strong);
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.45;
+  list-style: none;
+}
+
+.survey-block-legend li {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+
+.survey-block-legend strong {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.survey-block-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.survey-block-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.6rem 1rem;
+  padding: 0.6rem 0.8rem;
+  border: 1.5px solid transparent;
+  border-radius: var(--radius-panel);
+  line-height: 1.5;
+}
+
+/* Zebra striping rather than a border per row: twenty-two bordered boxes read
+   as twenty-two separate questions, which is what this layout stopped them
+   being. */
+.survey-block-row:nth-child(odd) {
+  background: var(--surface-panel);
+}
+
+/* Answered is carried by the border and by the filled control, never by colour
+   alone — and an unanswered row is the one that has to stand out, because
+   finding it is the whole task of the last pass over a block. */
+.survey-block-row.is-answered {
+  border-color: var(--border-soft);
+}
+
+.survey-block-statement {
+  margin: 0;
+}
+
+.survey-block-optional {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.survey-block-choices {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.survey-block-choice {
+  position: relative;
+  display: grid;
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  place-items: center;
+  border: 1.5px solid var(--border-soft);
+  border-radius: var(--radius-control);
+  background: var(--surface-panel-strong);
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+
+.survey-block-choice:hover {
+  border-color: rgba(159, 101, 0, 0.4);
+}
+
+.survey-block-choice:focus-within {
+  outline: 3px solid var(--navy);
+  outline-offset: 2px;
+}
+
+.survey-block-choice.is-selected {
+  border-color: var(--accent-dark);
+  background: var(--pastel-yellow);
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+
+/* The radio itself is off-screen rather than `display: none`, which would take
+   it out of the accessibility tree along with the anchor it carries. */
+.survey-block-choice input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  clip-path: inset(50%);
+  opacity: 0;
+}
+
+@media (max-width: 620px) {
+  /* A statement and seven targets do not share a line on a phone. The row
+     becomes two: the sentence, then its scale under it. */
+  .survey-block-row {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 0.6rem 0.5rem;
+  }
+
+  /* Seven columns of whatever is left, rather than seven of a fixed width:
+     `min-width` on the choice made the strip wider than the row it sits in, so
+     the scale hung over the edge of its own card. The target stays large enough
+     by height — 2.75rem — and by being at least 24px wide at 320px, which is
+     the AA floor. */
+  .survey-block-choices {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    gap: 0.25rem;
+  }
+
+  .survey-block-choice {
+    min-width: 0;
+    min-height: 2.75rem;
+  }
+}
+
 @media (max-width: 620px) {
   /* Rotated pebbles overflow a 375px viewport by ~1px; flatten on mobile */
   .stat-stone {

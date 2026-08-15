@@ -1,8 +1,11 @@
 import {
+  AnalyticSurveyQuestion,
   BackgroundSurveyQuestion,
   SurveyDefinitionQuestion,
+  isAnalyticQuestion,
   isBackgroundQuestion,
 } from "../types/backend";
+import type { AnswerScaleId } from "./answer-scales";
 
 /**
  * What a respondent is shown at one position in the questionnaire.
@@ -23,6 +26,12 @@ export type SurveyStep =
       readonly kind: "allocation";
       readonly groupId: string;
       readonly questions: readonly BackgroundSurveyQuestion[];
+    }
+  | {
+      readonly kind: "block";
+      readonly sectionId: string;
+      readonly scaleId: AnswerScaleId;
+      readonly questions: readonly AnalyticSurveyQuestion[];
     };
 
 /** Every question a step asks about, whichever shape the step is. */
@@ -31,13 +40,71 @@ export function questionsInStep(step: SurveyStep): readonly SurveyDefinitionQues
 }
 
 /**
+ * Which multi-question step, if any, a question belongs to.
+ *
+ * Two of them, keyed the same way so the grouping loop below stays one loop.
+ * An allocation grid is a constraint — its rows must total 100 — and a block is
+ * a reading unit: statements that share a section and a scale, so their anchors
+ * can be stated once above them instead of repeated under each.
+ *
+ * `wellbeing-colour` is deliberately not blockable. Its stones *are* its
+ * anchors — three faces with a sentence each — so there is nothing to hoist
+ * above them, and twenty-four of them in a column is not a shorter screen than
+ * twenty-four screens. It also keeps every questionnaire persisted before this
+ * module rendering exactly as it did.
+ */
+type GroupedQuestion =
+  | {
+      readonly key: string;
+      readonly step: Extract<SurveyStep, { kind: "allocation" }>;
+      readonly question: BackgroundSurveyQuestion;
+    }
+  | {
+      readonly key: string;
+      readonly step: Extract<SurveyStep, { kind: "block" }>;
+      readonly question: AnalyticSurveyQuestion;
+    };
+
+function groupFor(
+  question: SurveyDefinitionQuestion,
+): GroupedQuestion | undefined {
+  if (isBackgroundQuestion(question)) {
+    const groupId = question.allocationGroupId;
+    if (question.answerMode !== "allocation-100" || !groupId) return undefined;
+
+    return {
+      key: `allocation:${groupId}`,
+      step: { kind: "allocation", groupId, questions: [question] },
+      question,
+    };
+  }
+
+  const sectionId = question.sectionId?.trim();
+  if (!sectionId || question.scaleId === "wellbeing-colour") return undefined;
+
+  return {
+    // The scale is part of the key, not only the section: a block states one
+    // set of anchors, so a section mixing a 1–5 and a 1–7 scale is two blocks.
+    key: `block:${sectionId}:${question.scaleId}`,
+    step: {
+      kind: "block",
+      sectionId,
+      scaleId: question.scaleId,
+      questions: [question],
+    },
+    question,
+  };
+}
+
+/**
  * Group the questionnaire into the steps a respondent walks.
  *
- * Order is the questionnaire's own, and an allocation group takes the position
- * of its first row. Rows of the same group that were separated in the
- * questionnaire are still gathered into one step — a manager who moves one row
- * of a grid has reordered a list, not split a constraint, and thirteen entries
- * that must total 100 cannot be answered in two places.
+ * Order is the questionnaire's own, and a multi-question step takes the
+ * position of its first member. Members separated in the questionnaire are
+ * still gathered — a manager who moved one row of a grid reordered a list
+ * rather than split a constraint, and the builder already shows a section as
+ * one group whatever the order, so gathering is what a manager was looking at
+ * when they arranged it.
  */
 export function buildSurveySteps(
   questions: readonly SurveyDefinitionQuestion[],
@@ -46,33 +113,26 @@ export function buildSurveySteps(
   const groupPosition = new Map<string, number>();
 
   for (const question of questions) {
-    const groupId =
-      isBackgroundQuestion(question) && question.answerMode === "allocation-100"
-        ? question.allocationGroupId
-        : undefined;
+    const group = groupFor(question);
 
-    if (!groupId) {
+    if (!group) {
       steps.push({ kind: "question", question });
       continue;
     }
 
-    const existing = groupPosition.get(groupId);
+    const existing = groupPosition.get(group.key);
     if (existing === undefined) {
-      groupPosition.set(groupId, steps.length);
-      steps.push({
-        kind: "allocation",
-        groupId,
-        questions: [question as BackgroundSurveyQuestion],
-      });
+      groupPosition.set(group.key, steps.length);
+      steps.push(group.step);
       continue;
     }
 
     const step = steps[existing];
-    if (step.kind !== "allocation") continue;
-    steps[existing] = {
-      ...step,
-      questions: [...step.questions, question as BackgroundSurveyQuestion],
-    };
+    if (step.kind === "allocation" && isBackgroundQuestion(question)) {
+      steps[existing] = { ...step, questions: [...step.questions, question] };
+    } else if (step.kind === "block" && isAnalyticQuestion(question)) {
+      steps[existing] = { ...step, questions: [...step.questions, question] };
+    }
   }
 
   return steps;
@@ -110,6 +170,9 @@ export function questionIndexForStep(
  * answer the instrument allows, and the screen must not hold a respondent on a
  * demographic question they would rather not answer.
  *
+ * A block is per question after all: its statements share a screen and a scale
+ * but not a constraint, so each one is required or not on its own.
+ *
  * An allocation grid is the one place where "answered" is not per question. A
  * grid is either untouched or filled in whole — half a grid does not total 100
  * and the submit route refuses it — so a required grid needs every row and an
@@ -121,6 +184,12 @@ export function isStepComplete(
 ): boolean {
   if (step.kind === "question") {
     return !step.question.required || hasAnswer(answers, step.question.id);
+  }
+
+  if (step.kind === "block") {
+    return step.questions.every(
+      (question) => !question.required || hasAnswer(answers, question.id),
+    );
   }
 
   const answered = step.questions.filter((question) =>
