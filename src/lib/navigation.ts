@@ -6,6 +6,7 @@ export const routes = {
   surveyBuilder: "/survey",
   respondentSurvey: "/answer",
   dashboard: "/dashboard",
+  breakdown: "/breakdown",
   goals: "/goals",
 } as const;
 
@@ -15,6 +16,7 @@ export type MainNavItemId =
   | "round"
   | "surveyBuilder"
   | "dashboard"
+  | "breakdown"
   | "goals";
 
 export type AppRouteId = keyof typeof routes;
@@ -85,6 +87,14 @@ export const routeMetadata = {
     actionBody: "אבחון צבעוני, פירוט מילולי, מטרות ויעדים לשיחה ניהולית.",
     actionGlow: "var(--pastel-green)",
   },
+  breakdown: {
+    id: "breakdown",
+    href: routes.breakdown,
+    navLabel: "פילוח קבוצות",
+    actionTitle: "פילוח לפי שאלת רקע",
+    actionBody: "השוואת המדדים בין קבוצות בצוות, כשכל קבוצה קטנה מדי אינה מוצגת.",
+    actionGlow: "var(--pastel-sky)",
+  },
   goals: {
     id: "goals",
     href: routes.goals,
@@ -103,6 +113,7 @@ const mainNavOrder: MainNavItemId[] = [
   "surveyBuilder",
   "round",
   "dashboard",
+  "breakdown",
   "goals",
 ];
 
@@ -117,6 +128,7 @@ export const homeActionRouteIds = [
   "surveyBuilder",
   "round",
   "dashboard",
+  "breakdown",
   "goals",
 ] as const;
 
@@ -350,6 +362,40 @@ export function roundTrackingRoute(roundId?: string) {
   return withRound(routes.round, roundId);
 }
 
+/**
+ * The breakdown screen, for one round and optionally one background question.
+ *
+ * The question rides in its own parameter rather than in the path because it is
+ * a *reading* of the round rather than a place inside it: dropping it lands on
+ * the same screen with nothing chosen, which is exactly the state a manager
+ * arriving from the navigation should get.
+ */
+export function breakdownRoute(roundId?: string, questionId?: string) {
+  const base = withRound(routes.breakdown, roundId);
+  if (!questionId) return base;
+
+  const separator = base.includes("?") ? "&" : "?";
+  return `${base}${separator}${BREAKDOWN_QUESTION_PARAM}=${encodeURIComponent(questionId)}`;
+}
+
+/** Which background question the breakdown screen is grouping by. */
+export const BREAKDOWN_QUESTION_PARAM = "question";
+
+/**
+ * Read the background question out of the breakdown screen's search params. A
+ * repeated parameter is not a link this app produces, so the first value wins —
+ * the same rule the round parameter follows.
+ */
+export function readBreakdownQuestionParam(searchParams: {
+  question?: string | string[];
+}): string | undefined {
+  const value = Array.isArray(searchParams.question)
+    ? searchParams.question[0]
+    : searchParams.question;
+
+  return value?.trim() || undefined;
+}
+
 export function dashboardDimensionRoute(dimensionId: string, roundId?: string) {
   return withRound(`${routes.dashboard}/${dimensionId}`, roundId);
 }
@@ -387,6 +433,10 @@ const roundScopedRoutes: Partial<
   round: roundTrackingRoute,
   surveyBuilder: surveyBuilderRoute,
   dashboard: dashboardMapRoute,
+  // The round only. Which question is being grouped by is this screen's own
+  // state, and carrying it through the header would follow a manager onto a
+  // round whose questionnaire does not have that question.
+  breakdown: (roundId?: string) => breakdownRoute(roundId),
 };
 
 /**

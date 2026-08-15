@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import { Activity, ClipboardList, Home, Map, Send, Target, type LucideIcon } from "lucide-react";
+import { Activity, ClipboardList, Home, Layers, Map, Send, Target, type LucideIcon } from "lucide-react";
 import {
   DASHBOARD_ROUND_PARAM,
   homeRoute,
@@ -23,6 +23,7 @@ const navIcons: Record<MainNavItemId, LucideIcon> = {
   round: Send,
   surveyBuilder: ClipboardList,
   dashboard: Map,
+  breakdown: Layers,
   goals: Target,
 };
 

@@ -1,8 +1,11 @@
 import assert from "node:assert";
 import { test } from "node:test";
 import {
+  breakdownRoute,
   isNewRoundParam,
   newRoundSetupRoute,
+  readBreakdownQuestionParam,
+  routeHrefForRound,
   resolveLoginRedirect,
   roundTrackingRoute,
   setupRoute,
@@ -90,18 +93,42 @@ test("getDashboardDetailActions and metrics actions return correct links", () =>
   assert.strictEqual(recActions[0].href, "/dashboard");
 });
 
-test("mainNavItems follows exact product workflow order: home, setup, surveyBuilder, round, dashboard, goals", () => {
+test("mainNavItems follows exact product workflow order: home, setup, surveyBuilder, round, dashboard, breakdown, goals", () => {
   const ids = mainNavItems.map((item) => item.id);
   // Goals come last because they come after the map in the work as well: the
-  // school reads the picture, then decides what to do about it.
+  // school reads the picture, then decides what to do about it. The breakdown
+  // sits between the two: it is a second reading of the same measurement, and
+  // a school looks at the whole staff room before splitting it into groups.
   assert.deepStrictEqual(ids, [
     "home",
     "setup",
     "surveyBuilder",
     "round",
     "dashboard",
+    "breakdown",
     "goals",
   ]);
+});
+
+test("the breakdown link carries the round but never the question", () => {
+  assert.strictEqual(breakdownRoute("round-7"), "/breakdown?round=round-7");
+  assert.strictEqual(
+    breakdownRoute("round-7", "tenure"),
+    "/breakdown?round=round-7&question=tenure",
+  );
+  assert.strictEqual(breakdownRoute(undefined, "tenure"), "/breakdown?question=tenure");
+
+  // The header carries the round only: a question belongs to one round's
+  // questionnaire, and following it to another round would ask for a question
+  // that round does not have.
+  assert.strictEqual(routeHrefForRound("breakdown", "round-7"), "/breakdown?round=round-7");
+});
+
+test("the breakdown screen reads its question the same way every screen reads its round", () => {
+  assert.strictEqual(readBreakdownQuestionParam({ question: "tenure" }), "tenure");
+  assert.strictEqual(readBreakdownQuestionParam({ question: ["a", "b"] }), "a");
+  assert.strictEqual(readBreakdownQuestionParam({ question: "  " }), undefined);
+  assert.strictEqual(readBreakdownQuestionParam({}), undefined);
 });
 
 test("every dashboard link carries the round it is about", () => {

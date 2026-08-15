@@ -2595,6 +2595,7 @@ textarea {
    control. It carries its own margin: it sits above the setup form, between the
    page intro and the first card, rather than under a heading. */
 .round-switcher,
+.breakdown-picker,
 .school-switcher {
   display: flex;
   align-items: center;
@@ -2612,6 +2613,7 @@ textarea {
 }
 
 .round-switcher label,
+.breakdown-picker label,
 .school-switcher label {
   color: var(--muted);
   font-size: 0.9rem;
@@ -2621,6 +2623,7 @@ textarea {
    school never deletes one. `appearance: none` so the pill matches the rest of
    the stone language, with the caret drawn in the padding it reserves. */
 .round-switcher select,
+.breakdown-picker select,
 .school-switcher select {
   appearance: none;
   min-height: 2.5rem;
@@ -2644,11 +2647,13 @@ textarea {
 }
 
 .round-switcher select:hover,
+.breakdown-picker select:hover,
 .school-switcher select:hover {
   background-color: rgba(255, 250, 240, 1);
 }
 
 .round-switcher select:focus-visible,
+.breakdown-picker select:focus-visible,
 .school-switcher select:focus-visible {
   outline: 2px solid var(--accent-dark);
   outline-offset: 2px;
@@ -5901,6 +5906,139 @@ label .custom-tooltip-wrapper:hover .custom-tooltip-icon {
 
 .school-goals-empty p {
   margin: 0;
+  line-height: 1.6;
+}
+
+/* The breakdown of one round by one background question.
+
+   The two notice states borrow the dashed bed of `.school-goals-empty`, because
+   they say the same kind of thing: there is nothing on this screen yet, and
+   here is why. The table itself is the one grid in the product — everything
+   else is stones — so it stays quiet: no zebra stripes, no vertical rules, and
+   the only colour is the status of a cell that has one. */
+.breakdown-empty,
+.breakdown-locked {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  margin-top: 1.1rem;
+  padding: 1.1rem 1.2rem;
+  border: 1px dashed var(--border-soft);
+  border-radius: var(--radius-panel);
+  background: var(--surface-panel);
+  color: var(--muted);
+}
+
+.breakdown-empty p,
+.breakdown-locked p {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.breakdown-table-panel {
+  margin-top: 1.1rem;
+  padding: 1.1rem 1.2rem;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-panel);
+  background: var(--surface-panel);
+  box-shadow: var(--shadow-ambient);
+}
+
+/* A staff room can have six tenure bands, and eight rows of them do not fit a
+   phone. The table scrolls inside its own panel rather than making the page
+   scroll sideways. */
+.breakdown-table-scroll {
+  overflow-x: auto;
+}
+
+.breakdown-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.breakdown-table th,
+.breakdown-table td {
+  padding: 0.55rem 0.7rem;
+  border-bottom: 1px solid var(--border-soft);
+  text-align: start;
+  vertical-align: top;
+}
+
+.breakdown-table thead th {
+  border-bottom: 2px solid var(--line);
+  font-weight: 800;
+}
+
+.breakdown-table tbody th {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.breakdown-table tbody tr:last-child th,
+.breakdown-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.breakdown-group-label {
+  display: block;
+}
+
+.breakdown-group-size {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.25rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+/* A suppressed column says a whole sentence, so its heading is allowed to wrap
+   where a number would not need to. */
+.breakdown-group-size-hidden {
+  max-width: 12rem;
+  white-space: normal;
+  line-height: 1.4;
+}
+
+.breakdown-cell {
+  font-variant-numeric: tabular-nums;
+}
+
+.breakdown-cell strong {
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+/* The status word beside the number, because status is never colour alone. */
+.breakdown-cell-status {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.breakdown-cell-green {
+  color: var(--success-ink);
+}
+
+.breakdown-cell-yellow {
+  color: var(--warning-ink);
+}
+
+.breakdown-cell-red {
+  color: var(--danger-ink);
+}
+
+.breakdown-cell-hidden,
+.breakdown-cell-empty {
+  color: var(--muted);
+}
+
+.breakdown-total-note {
+  margin: 0.9rem 0 0;
+  color: var(--muted);
+  font-size: 0.86rem;
   line-height: 1.6;
 }
 

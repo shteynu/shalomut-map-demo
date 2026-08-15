@@ -103,6 +103,23 @@ export async function loadRoundFunnel(roundId: string) {
 }
 
 /**
+ * Every response of one round, answers included.
+ *
+ * One extra read, and only the breakdown screen asks for it. Every other
+ * manager screen reads the round's aggregate, which `ManagerContextService`
+ * already computed; the breakdown has to partition the responses themselves, so
+ * it is the one screen that cannot work from the aggregate alone.
+ *
+ * The caller is expected to have a round from the manager's own context, which
+ * is what keeps this from becoming a way to read another school's answers.
+ */
+export async function loadRoundResponses(roundId: string) {
+  const { surveyRepo } = resolveCoreRepositories();
+
+  return surveyRepo.findResponsesByRoundId(roundId);
+}
+
+/**
  * The goals of every round this school has run.
  *
  * One extra read, and only the goals screen asks for it. The rounds come from
