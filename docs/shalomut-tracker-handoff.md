@@ -2,7 +2,17 @@
 
 **2026-08-15, closing that session: the lost submit is mitigated, and the
 deployment's geography is now a known and deliberately accepted cost.**
-`origin/main` is `9c2dde5`, read from the remote.
+
+The tip is the documentation commit carrying these paragraphs, so it is not
+written as a hash here — that trap has caught this file twice. **The load-bearing
+pointer is `ececa34`, the last commit that changed product code**: the submit
+retry. `9c32ef2` before it and everything after touch documentation only.
+
+**Nothing is waiting on a push**, asked of the remote itself rather than of a
+local tracking ref, and the worktree is clean — confirmed with
+`git ls-files -o --exclude-standard` as well as `git status`, because the
+untracked cache has hidden a file here before. All four workflows are green on
+`9c2dde5`, which carries the retry, and all four again on the tip.
 
 The defect is **not fixed at its cause and was never going to be here**: the
 owner read the deployment's function logs and there is **no invocation** for
