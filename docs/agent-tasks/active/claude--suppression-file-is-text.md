@@ -94,12 +94,35 @@ text. That was checked, not assumed.
 
 ## Approval gates
 
-- `git push` is an owner action. This branch sits on top of the four-branch
-  stack, which is already on `origin`.
+- `git push` is an owner action and is **done** for this branch: `d3abeb5` is on
+  `origin`, checked against the remote rather than against a tracking ref. The
+  whole five-branch stack is pushed and none of it is merged; `origin/main` is
+  `05a23bc` and a fast-forward behind.
+
+## Questions requiring an owner decision
+
+- **Unchanged and still the only blocker for the plan:** the methodologist's
+  item-to-dimension mapping, with reverse-scoring marked. Phases 3 and 5 wait on
+  it, phase 6 waits on both.
+- **New, and it shapes the next task:** what should a manager be able to cross
+  against what? `suppressCrossTab` supports demographic × demographic and
+  `suppressFrequency` supports one demographic alone, and the module is
+  indifferent to which the product offers. Asked at the end of the 2026-08-15
+  session and not yet answered. The proposed default, if no other answer comes:
+  **dimension scores broken down by a single demographic question**, because
+  that is the question a school actually asks — "do our newest teachers score
+  lower on belonging?" — with every cell under the privacy threshold suppressed.
 
 ## Next concrete step
 
-Start the manager-facing cross-tab screen on a branch off this one. It is the
-only unblocked item in the plan: it needs demographic questions, which the
-builder can author since phase 4, and dimension scores, which the current
-24-question instrument already produces — not the methodologist's item mapping.
+Answer the cross-tab shape question above, then build the manager-facing
+cross-tab screen on a branch off this one. It is the only unblocked item in the
+plan: it needs demographic questions, which the builder can author since phase
+4, and dimension scores, which the current 24-question instrument already
+produces — not the methodologist's item mapping.
+
+Note for whoever picks this up: `suppressCrossTab` and `suppressFrequency` have
+**no caller outside their own tests**. The privacy rule they implement has
+therefore never run against real data, and this screen is the first thing that
+will exercise it. Treat that as a reason to walk it in a browser, not only to
+test it.

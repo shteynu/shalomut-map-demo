@@ -26,17 +26,22 @@ parses, which is why nothing had noticed.
 Phases 1, 2 and 4 are done. **Phases 3 and 5 remain blocked on the
 methodologist's mapping table**, and phase 6 is the swap itself.
 
-**Four branches wait on a push, as one linear stack on `origin/main`** — ten
-commits, nothing behind, nothing diverged: the plan branch
-`claude/default-research-instrument-plan` (`eeb8a82`), then
+**2026-08-15: that push has landed, and a fifth branch sits on top of it.**
+Verified against the remote itself, not against local tracking refs:
+`claude/default-research-instrument-plan` (`eeb8a82`),
 `claude/answer-model-for-research-instrument` (`4e71bd8`),
-`claude/k-anonymity-for-demographics` (`a2a42df`), and
-`claude/builder-for-background-questions` (`e43dcf5`). The exact push command is
-in the last of their task files. Until that push lands, **none of this is
-visible outside this worktree**, and every claim elsewhere in this file about a
-24-question default, a three-colour answer scale or contract `6.0` still
-describes the running product — because none of these four branches changes what
-a respondent answers or what the deployment serves.
+`claude/k-anonymity-for-demographics` (`a2a42df`),
+`claude/builder-for-background-questions` (`8b2e95c`) and
+`claude/suppression-file-is-text` (`d3abeb5`) are all on `origin`. So the work
+is now portable to another checkout or machine.
+
+**None of it is merged.** `origin/main` is still `05a23bc`, thirteen commits
+behind the tip of that stack, and `main` is an ancestor of it — so landing the
+stack is a fast-forward, and merging it is an owner call that has not been made.
+Until then, every claim elsewhere in this file about a 24-question default, a
+three-colour answer scale or contract `6.0` still describes the running
+product, because nothing in this stack changes what a respondent answers or
+what the deployment serves.
 
 One thing phase 1 leaves for the owner beyond the push:
 `scripts/backfill-round-definitions.ts` has run against the local database and
