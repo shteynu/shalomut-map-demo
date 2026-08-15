@@ -16,10 +16,16 @@ git log --oneline origin/main -- src/ next.config.ts scripts/ playwright.config.
 here, so the local ref goes stale and this command answered `45e1340` — a
 2026-08-13 commit — for a whole session after the stack had landed.
 
-**2026-08-15, a later session: the cross-table privacy question is answered and
-built, and a branch is waiting on a push.**
-`privacy/suppression-holds-across-tables` is one commit, `7ba34ac`, on top of
-`b23ae58`. Owner decision that day: of the three answers to "the module defends
+**2026-08-15, a later session: the cross-table privacy question is answered,
+built and landed.** `privacy/suppression-holds-across-tables` went across as a
+fast-forward the same day; `origin/main` was `b23ae58` and is `2a8f613`, read
+from the remote. The commit that changes product code is `7ba34ac`, with two
+documentation commits after it. All four workflows are green on `2a8f613`:
+`Core verification` `31882668272`, `CodeQL Security Analysis` `31882668183`,
+`Browser smoke` `31882668185` and `Vercel Deployment & Pipeline Checks`
+`31882668193`.
+
+Owner decision that day: of the three answers to "the module defends
 one table and the screen publishes several", take joint suppression rather than
 restricting the screen to one table per round or accepting the limit with a
 note.
@@ -37,19 +43,51 @@ table knowing the other exists, which is what the owner's decision needed.
 Verified locally — `verify:core` exit 0 twice with 1113 tests, and four states
 walked signed-in against a production build: the new refusal, the same round's
 role table still reading, the ordinary round unchanged, and the locked round
-keeping its own message. Nothing crosses the AI boundary, no schema changed, and
-the deployed endpoint knows nothing about it. Details in
-`docs/agent-tasks/active/privacy--suppression-holds-across-tables.md`.
+keeping its own message. Nothing crosses the AI boundary and no schema changed.
+Details in
+`docs/agent-tasks/archive/privacy--suppression-holds-across-tables.md`.
 
-Two things it leaves. The rule suppresses strictly more than before, so a small
-school with one dominant category now reads a table that says nothing where it
-used to say something — intended, and worth knowing before it is read as a
-regression. And the branch's first push is what finally answers the question the
-CI session left open below: `Browser smoke` on a *branch* has been inferred from
-its trigger and never read.
+**The deployed side, read after the merge.** Two of the three questions have
+answers and the third does not:
 
-The rest of the previous session still stands: `origin/main` is `b23ae58`, and
-`docs/agent-tasks/active/` otherwise holds only
+- **The endpoint is up.** `/api/health/` returns 200 with contract `6.0`,
+  `producedContractVersionSource: "configured"`, and `/login/` answers 200.
+- **The deployed database is still empty** — 0 organizations, 0 rounds, 0
+  responses, 0 answers, counted directly on 2026-08-15 rather than carried
+  forward from the earlier entry. So nothing there exercises this code: no round
+  exists to break down, and the rule that changed cannot fire.
+- **The served commit is `2a8f613`, read from the Vercel dashboard.** The
+  deployment is Ready, `Environment: Production — Current`, built from `main` in
+  41s, and `shalomut-map-demo.vercel.app` is among its domains. Its Git Commit
+  link carries the full hash
+  `2a8f613c11a95b6c73acb0a885c1af267ebb8915`, which is exactly what
+  `git ls-remote` returns for `refs/heads/main`. So the endpoint carries
+  `7ba34ac`, the privacy fix.
+
+Two notes for whoever reads this next.
+
+**The CSS trick has stopped being able to answer this question.** `cmp` against
+a local build still passes — `3i8jb3r94-7yz.css`, 116 583 bytes, byte-identical
+— but it says "a build of this tree" exactly as it did before this change and
+separates nothing, because the change touches no CSS and no client chunk. What
+it touches is a privacy module and one Hebrew string rendered by a server
+component behind `/login`, which no anonymous request reaches. Any future
+deployment reading of a server-only change needs the dashboard, not `curl`.
+
+**The project overview card says "No Production Deployment", and it is wrong.**
+The project's own Deployments page shows this one badged `Production` and
+`Current`. Do not take the overview card as evidence that nothing is deployed.
+
+The endpoint being current matters less than usual here: with an empty database
+it would look identical whether or not it carried the fix. What the reading
+buys is that the next round created there gets the new rule.
+
+What it leaves is a caution rather than a task: the rule suppresses strictly
+more than before, so a small school with one dominant category now reads a table
+that says nothing where it used to say something. Intended, and worth knowing
+before it is read as a regression.
+
+`docs/agent-tasks/active/` again holds only
 `research--scientific-evidence-layer.md`, which waits on owner decisions rather
 than on an agent.
 

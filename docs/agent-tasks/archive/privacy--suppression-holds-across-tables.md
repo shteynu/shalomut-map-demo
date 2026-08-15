@@ -9,8 +9,8 @@
   documentation commit sits on top of it. Written this way on purpose — a task
   file that names its own tip is stale the moment the next documentation commit
   lands, which this repository has watched happen twice.
-- Status: implemented, verified locally, committed and **pushed**. Green on the
-  runner. Not merged.
+- Status: **landed on `main`** on 2026-08-15 and archived. Green on the runner
+  both on the branch and on `main`.
 - Last updated: 2026-08-15
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -124,10 +124,8 @@ the limit with a note.
 
 ## Remaining
 
-- The merge. The branch is on `origin` and green; landing it is
-  `git push origin privacy/suppression-holds-across-tables:main`, an owner
-  action here. The work is portable to another checkout or machine as of the
-  push.
+- Nothing. The owner landed the branch on `main` as a fast-forward on
+  2026-08-15.
 
 ## Changed files
 
@@ -164,6 +162,10 @@ must recreate it.
   39.1s — every step, with the failure-report step skipped as it is on a pass.
   Only two workflows started: `codeql.yml` filters to `main` and never reaches
   a branch.
+- **On `main`, after the landing, at `2a8f613`.** All four green: `Core
+  verification` `31882668272` 1m42s, `CodeQL Security Analysis` `31882668183`
+  1m49s, `Browser smoke` `31882668185` 2m22s and `Vercel Deployment & Pipeline
+  Checks` `31882668193` 2m37s.
 - **The behaviour change was watched in a browser**, signed in against a
   production build (`next start`, port 3210) on the local database, with
   credentials generated for the run rather than the repository's own:
@@ -240,7 +242,7 @@ must recreate it.
 
 ## Next concrete step
 
-Land the branch on `main` with
-`git push origin privacy/suppression-holds-across-tables:main`. Nothing on it
-waits on an agent: it is green on the runner and the question that prompted it
-is answered.
+Nothing on this branch; it is landed and this file is archived. The one thing it
+leaves for a later reader is not a step but a caution: the new rule suppresses
+strictly more than the old one, so a small school with one dominant category
+reads a table that says nothing where it used to say something.

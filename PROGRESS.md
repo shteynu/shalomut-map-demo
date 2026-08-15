@@ -361,6 +361,14 @@ Likert statements on one screen with its anchors stated once. The completion
 estimate is derived from what the questionnaire asks rather than from how many
 questions it has.
 
+"Demographics are k-anonymous" became true of the whole screen on 2026-08-15,
+not just of one table on it. Until then a breakdown could publish its large
+groups while leaving a single person as the unpublished remainder — two blanks,
+which satisfied the rule as written, and one person, which is what the rule was
+for. A published table now blanks out either nobody or at least the threshold,
+which is also the property that holds when a manager opens the round's next
+background question.
+
 What is left is phase 5 and the instrument's own content, both of which wait on
 the methodologist's item-to-dimension mapping — the machinery exists and the 126
 items do not. The eight-branch stack **landed on `main` on 2026-08-15** as one
