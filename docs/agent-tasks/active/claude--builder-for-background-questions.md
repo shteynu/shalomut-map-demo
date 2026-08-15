@@ -231,19 +231,23 @@ unchanged, so no round can stop rendering because of it.
 
 ## Approval gates
 
-- `git push` is an owner action. **Four** branches are waiting, and they are one
-  linear stack on top of `origin/main` — ten commits, no divergence, nothing
-  behind:
+- **The push is done, 2026-08-15.** All four refs are on `origin` at the SHAs
+  below, `origin/main` is still an ancestor of the tip, and nothing diverged.
+  Eleven commits sit ahead of `origin/main`, unmerged. What remains an owner
+  action is landing the stack on `main`, not pushing it.
+- `git push` is an owner action. The four branches are one linear stack on top
+  of `origin/main` — no divergence, nothing behind:
 
   ```
   origin/main
    └─ claude/default-research-instrument-plan          eeb8a82  (the plan)
        └─ claude/answer-model-for-research-instrument  4e71bd8  (phase 1)
            └─ claude/k-anonymity-for-demographics      a2a42df  (phase 2)
-               └─ claude/builder-for-background-questions e43dcf5 (phase 4)
+               └─ claude/builder-for-background-questions 6e8849c (phase 4)
   ```
 
-  One command pushes all four refs:
+  The command that pushed all four refs, kept here because a later rebase would
+  need it again:
 
   ```
   git push origin claude/default-research-instrument-plan \
@@ -252,7 +256,7 @@ unchanged, so no round can stop rendering because of it.
     claude/builder-for-background-questions
   ```
 
-  Pushing only the tip would carry all ten commits but leave the other three
+  Pushing only the tip would carry all eleven commits but leave the other three
   refs absent, and each of their task files names its own branch.
 
 ## Questions requiring an owner decision
@@ -262,9 +266,10 @@ unchanged, so no round can stop rendering because of it.
 
 ## Next concrete step
 
-Owner: run the four-branch push above, then supply the methodologist's
-item-to-dimension mapping. With phases 1, 2 and 4 done, that table is the only
-thing standing between here and the rest of the plan.
+Owner: supply the methodologist's item-to-dimension mapping. The push is done;
+this table is now the single blocker. With phases 1, 2 and 4 complete and on
+`origin`, no phase of the plan can start without it — checked again on
+2026-08-15, and nothing in the repository carries it yet.
 
 For the next agent, once the mapping exists: **phase 3, the respondent
 experience.** The answer model, the privacy rule and the builder can all express
