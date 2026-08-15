@@ -15,7 +15,9 @@ export type OperationalMetricName =
   | 'ai_partial_map_ratio_sample'
   | 'ai_deterministic_summary_ratio_sample'
   | 'ai_deterministic_metric_narrative_ratio_sample'
-  | 'duplicate_submission_conflicts';
+  | 'duplicate_submission_conflicts'
+  | 'survey_submission_recovered_by_retry'
+  | 'survey_submission_lost_after_retries';
 
 export interface OperationalMetric {
   name: OperationalMetricName;
@@ -301,6 +303,41 @@ export function recordDeterministicMetricNarrativeSample(input: {
     },
     runId: input.runId,
     roundId: input.roundId,
+  });
+}
+
+/**
+ * How a submission reached the server when it did not reach it the first time.
+ *
+ * The deployed endpoint loses the first submit after an idle period, and it
+ * loses it *before* the function is invoked — the deployment's own logs hold no
+ * entry for the request that died. So the server cannot count this failure by
+ * observing itself; the only witness is the client that had to send twice.
+ * `sendWithRetry` then repairs it silently, which is the right thing for the
+ * respondent and leaves nobody able to say whether it happens once a pilot or
+ * once an hour. This counter is that answer.
+ *
+ * Nothing is emitted for a submission delivered on the first attempt: those are
+ * already counted, one stored response each, and a beacon on the happy path
+ * would double the traffic of the product's most important action to learn a
+ * number the database already holds.
+ *
+ * No `roundId`, deliberately. Correlating one would mean a repository lookup on
+ * the report's own path, and the report exists precisely for the moments when
+ * that lookup is the thing that is failing.
+ */
+export function recordSurveySubmissionDelivery(input: {
+  outcome: 'recovered' | 'lost';
+  attempts: number;
+}) {
+  emit({
+    name:
+      input.outcome === 'recovered'
+        ? 'survey_submission_recovered_by_retry'
+        : 'survey_submission_lost_after_retries',
+    value: 1,
+    unit: 'count',
+    labels: { attempts: String(input.attempts) },
   });
 }
 

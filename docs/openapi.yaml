@@ -357,6 +357,56 @@ paths:
             Accepted, ignored, or refused. The client neither waits for this nor
             distinguishes between them.
 
+  /api/survey/{shareCode}/delivery:
+    post:
+      tags: [Survey]
+      summary: Report how hard it was to deliver one submission
+      description: >-
+        Records that a submission reached the server only after the first
+        attempt failed, or that no attempt reached it at all. The deployment
+        loses the first submit after an idle period before the function is
+        invoked, so the server cannot observe that failure by observing itself;
+        the client is the only witness, and the retry it performs otherwise
+        repairs the failure silently.
+
+
+        Reads no round and writes no row: it emits one operational metric line
+        and nothing else. A submission delivered on the first attempt is not
+        reportable — it is already counted as a stored response — so `attempts`
+        below 2 is ignored, as is anything else malformed. Answers 204 to
+        everything, including a share code that does not exist.
+      parameters:
+        - name: shareCode
+          in: path
+          required: true
+          schema:
+            type: string
+            example: SHALOM-7K2M9QT4
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [outcome, attempts]
+              properties:
+                outcome:
+                  type: string
+                  enum: [recovered, lost]
+                  description: >-
+                    `recovered`: a later attempt got through. `lost`: none did.
+                attempts:
+                  type: integer
+                  minimum: 2
+                  maximum: 10
+                  description: Attempts the delivery took, including the first.
+      responses:
+        "204":
+          description: >-
+            Accepted, ignored, or refused — including when the caller is rate
+            limited. The client neither waits for this nor distinguishes
+            between them.
+
   /api/survey/{shareCode}/submit:
     post:
       tags: [Survey]

@@ -66,6 +66,21 @@ export const RATE_LIMITS = {
     limit: 60,
     windowSeconds: 300,
   },
+  /**
+   * The delivery beacon, in its own bucket rather than sharing the one above.
+   *
+   * Sharing would let a flood of reports refuse a real submission, which
+   * inverts the whole point: the report is the disposable half of the pair and
+   * the answers are not. The number matches the submission limit because a
+   * client fires at most one report per submission and only when the first
+   * attempt threw, so a staffroom cannot reach it without the submissions
+   * having been refused first.
+   */
+  surveyDeliveryReport: {
+    name: "survey-delivery-report",
+    limit: 60,
+    windowSeconds: 300,
+  },
 } as const satisfies Record<string, RateLimitPolicy>;
 
 export type RateLimitDecision = {

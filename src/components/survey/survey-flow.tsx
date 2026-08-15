@@ -36,6 +36,7 @@ import {
   surveyDraftStorageKey,
   writeSurveyDraft,
 } from "@/lib/survey-draft-storage";
+import { reportSubmissionDelivery } from "@/lib/survey-delivery-report";
 import { resolveSubmissionOutcome } from "@/lib/survey-submission-outcome";
 import { sendWithRetry } from "@/lib/survey-submission-retry";
 import type { SurveyDefinitionQuestion } from "@/lib/types/backend";
@@ -448,6 +449,11 @@ export function SurveyFlow({
           : { questionId: item.id, value };
       });
 
+    // Counted here rather than returned by `sendWithRetry`, because the retry
+    // module's job is to deliver the request and this is the only place that
+    // has anywhere to say what it cost.
+    let attemptsUsed = 1;
+
     try {
       const anonymousTokenHash = await hashAnonymousToken(
         attemptToken.current(),
@@ -459,7 +465,19 @@ export function SurveyFlow({
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ answers: formattedAnswers, anonymousTokenHash }),
           }),
-        onRetry: () => setRetrying(true),
+        onRetry: (attempt) => {
+          attemptsUsed = attempt;
+          setRetrying(true);
+        },
+      });
+
+      // The server has spoken, whatever it said. A refusal is still a delivery,
+      // and this counter measures delivery — conflating the two would file a
+      // duplicate submission under a transport failure.
+      void reportSubmissionDelivery({
+        shareCode,
+        outcome: "recovered",
+        attempts: attemptsUsed,
       });
       const payload = res.ok
         ? null
@@ -484,6 +502,15 @@ export function SurveyFlow({
     } catch {
       // Reached only after every attempt threw, so the wording stays as it was:
       // by now the connection really is the honest explanation.
+      //
+      // The report goes over the same connection that just failed three times,
+      // so this counter is a floor rather than a count. A floor above zero is
+      // still the only evidence this failure leaves.
+      void reportSubmissionDelivery({
+        shareCode,
+        outcome: "lost",
+        attempts: attemptsUsed,
+      });
       setSubmitError("לא ניתן להתחבר לשרת. בדקו את החיבור ונסו שוב.");
       setSubmitting(false);
       setRetrying(false);
