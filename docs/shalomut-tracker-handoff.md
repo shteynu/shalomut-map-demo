@@ -42,11 +42,31 @@ walk's data existed for about forty minutes and is gone.
 `scripts/seed-breakdown-round.ts` now takes `--allow-remote`. The loopback
 default stays; the flag exists for a deployed smoke walk and says so.
 
-`docs/agent-tasks/active/` holds **two** files as of this entry:
-`research--scientific-evidence-layer.md`, which waits on owner decisions, and
-this walk's own file, which is complete and stays active only until the submit
-defect it found has a branch. Every sentence below saying the directory holds
-one file was true when it was written.
+**Both branches landed the same day.** `origin/main` is `c4baae9`, read from the
+remote: the walk's two commits and the defect branch's one went across as one
+fast-forward. All four workflows are green on `c6d3efa` — `Core verification`
+`31886254260`, `CodeQL Security Analysis` `31886254250`, `Browser smoke`
+`31886254419` and `Vercel Deployment & Pipeline Checks` `31886254292` — and four
+more were still running on `c4baae9` when this was written.
+
+The walk's task file is archived. `docs/agent-tasks/active/` holds **two**
+files: `research--scientific-evidence-layer.md`, which waits on owner decisions,
+and `fix--the-first-submit-after-idle.md`, which waits on the deployment's
+function logs. Every sentence below saying the directory holds one file was true
+when it was written.
+
+**The defect's investigation has already killed two hypotheses, and the second
+one matters.** The trailing-slash 308 is not the cause, and neither is the
+database: `GET /api/health/` touches no repository and answered in 0.27–0.39s
+across eight consecutive samples, but **once took 11.2s**. A route that only
+returns JSON is not slow because of Postgres, so the ten seconds that kill the
+submit are something else — a cold start against the function's time budget, a
+`pg.Pool` created with no `connectionTimeoutMillis`, or a platform-side drop.
+One thing worth knowing either way: the connection string points at
+`aws-1-ap-northeast-2` — Seoul — and there is no `vercel.json` and no region
+setting, so unless the project defaults to Seoul every query crosses an ocean.
+That is a candidate for the ~2s warm submit even if it is not what kills the
+cold one.
 
 Updated: 2026-08-15, end of session. The tip of `main` is the documentation
 commit carrying these paragraphs — deliberately not written as a hash, because
