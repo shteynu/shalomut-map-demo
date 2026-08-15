@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
 /**
  * The half of the product a school actually uses, walked to its end: consent,
@@ -26,66 +26,17 @@ import { expect, test, type Page } from '@playwright/test';
  * the desktop one is the exception.
  */
 
-import { signIn } from './manager-session';
-
-/** The three answer stones, by the word each one shows. */
-const ANSWERS = ['ירוק', 'צהוב', 'אדום'] as const;
-
-/**
- * How many steps this round walks, read off the progress line rather than
- * assumed to be the canonical 24: a round's questionnaire is its own snapshot,
- * and a test that hard-codes the default template would fail the day a school
- * removes a question — which is a supported thing to do.
- *
- * Steps, not questions, since the flow started walking steps: an allocation
- * grid and a block of Likert statements are each one screen holding many
- * questions. In the round this file seeds they coincide, every question being
- * its own step, which is why the loop below can answer one question per step.
- */
-async function readStepTotal(page: Page): Promise<number> {
-  const progress = page.locator('.survey-progress-sticky small');
-  await expect(progress).toBeVisible();
-  const text = (await progress.textContent()) ?? '';
-  const match = /מתוך\s+(\d+)/u.exec(text);
-
-  expect(match, `the progress line did not say how many steps: "${text}"`)
-    .not.toBeNull();
-
-  return Number(match![1]);
-}
+import {
+  ANSWERS,
+  answerEveryStep,
+  openQuestionnaireAsRespondent,
+  readStepTotal,
+} from './respondent-walk';
 
 test('a respondent answers every question and the round takes the answers', async ({
   page,
 }) => {
-  await signIn(page, '/round');
-
-  const shareLink = page.getByLabel('לינק אנונימי לשאלון');
-  await expect(shareLink).toBeVisible();
-  const shareUrl = await shareLink.inputValue();
-  expect(shareUrl, 'the manager screen showed no share link to hand out').toMatch(
-    /\/answer\/[^/]+/u,
-  );
-
-  /*
-   * The manager's session is dropped rather than a second context opened.
-   *
-   * `browser.newContext()` — which is what the smoke does — starts from the
-   * browser's defaults and not from the project's, so under the phone project
-   * it would hand back a desktop window and this file's whole reason for
-   * existing would quietly evaporate. Clearing the cookie leaves the device
-   * emulation where it is and still proves the point the fresh context was
-   * making: what follows happens with no session at all.
-   */
-  await page.context().clearCookies();
-  await page.goto(new URL(shareUrl).pathname, { waitUntil: 'networkidle' });
-
-  await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
-  const accept = page.getByRole('button', { name: /הבנתי, אפשר להתחיל/u });
-  await expect(
-    accept,
-    'the share link did not open the questionnaire: an inactive round serves ' +
-      'the dead-link screen, which has no buttons',
-  ).toBeVisible();
+  const accept = await openQuestionnaireAsRespondent(page);
 
   // The promise about the language model is a product commitment, not copy —
   // `survey-consent-step.tsx` says so at length. A respondent must not be able
@@ -97,64 +48,49 @@ test('a respondent answers every question and the round takes the answers', asyn
   const total = await readStepTotal(page);
   expect(total, 'the round asked no questions').toBeGreaterThan(0);
 
-  for (let index = 0; index < total; index++) {
-    const heading = page.locator('.survey-focus-card h2');
-    await expect(heading).toBeVisible();
-    await expect(
-      heading,
-      `question ${index + 1} rendered with no text`,
-    ).not.toHaveText('');
+  /*
+   * The first question is measured, not merely queried.
+   *
+   * A stone that is present in the DOM and has no box is exactly the failure
+   * this file was written for: the scale anchors shipped once with
+   * `display: none` on a narrow screen, and every assertion that asks the
+   * document rather than the layout passed straight over it. `toBeVisible`
+   * would catch that one, so this adds the case it would not — a stone small
+   * enough to be untappable while technically visible.
+   */
+  await answerEveryStep(page, total, async (index) => {
+    if (index !== 0) return;
 
-    const stones = page.locator('button.answer-stone');
-    await expect(
-      stones,
-      `question ${index + 1} did not offer the three answers`,
-    ).toHaveCount(ANSWERS.length);
-
-    /*
-     * The first question is measured, not merely queried.
-     *
-     * A stone that is present in the DOM and has no box is exactly the failure
-     * this file was written for: the scale anchors shipped once with
-     * `display: none` on a narrow screen, and every assertion that asks the
-     * document rather than the layout passed straight over it. `toBeVisible`
-     * would catch that one, so this adds the case it would not — a stone small
-     * enough to be untappable while technically visible.
-     */
-    if (index === 0) {
-      for (const answer of ANSWERS) {
-        const stone = page.getByRole('button', { name: new RegExp(answer, 'u') });
-        await expect(stone).toBeVisible();
-        const box = await stone.boundingBox();
-        expect(box, `the ${answer} stone has no box on this viewport`).not.toBeNull();
-        // 44px is the WCAG AA target size this project commits to in AGENTS.md,
-        // and a stone below it on a phone is a stone a thumb misses.
-        expect(
-          box!.height,
-          `the ${answer} stone is ${Math.round(box!.height)}px tall`,
-        ).toBeGreaterThanOrEqual(44);
-      }
+    for (const answer of ANSWERS) {
+      const stone = page.getByRole('button', { name: new RegExp(answer, 'u') });
+      await expect(stone).toBeVisible();
+      const box = await stone.boundingBox();
+      expect(box, `the ${answer} stone has no box on this viewport`).not.toBeNull();
+      // 44px is the WCAG AA target size this project commits to in AGENTS.md,
+      // and a stone below it on a phone is a stone a thumb misses.
+      expect(
+        box!.height,
+        `the ${answer} stone is ${Math.round(box!.height)}px tall`,
+      ).toBeGreaterThanOrEqual(44);
     }
-
-    // Varied on purpose: three identical answers would leave a scoring path
-    // that only ever sees one value, and the round's own numbers would be
-    // indistinguishable from a stuck button.
-    const answer = ANSWERS[index % ANSWERS.length];
-    await page.getByRole('button', { name: new RegExp(answer, 'u') }).click();
-
-    // The flow advances itself 260 ms after a tap. Waiting for the progress
-    // line to move is what proves the answer registered — clicking and
-    // trusting it would pass against a button that does nothing.
-    const remaining = total - index - 1;
-    await expect(page.locator('.survey-progress-sticky small')).toHaveText(
-      remaining === 0
-        ? new RegExp(`הושלמו ${total} מתוך ${total}`, 'u')
-        : new RegExp(`שלב ${index + 2} מתוך ${total}`, 'u'),
-      { timeout: 10_000 },
-    );
-  }
+  });
 
   await expect(page.getByRole('heading', { name: /הכל מוכן לשליחה/u })).toBeVisible();
+
+  /*
+   * The delivery beacon stays off the ordinary path.
+   *
+   * It exists to count the submissions that had to be sent twice, and its
+   * whole cost model rests on never firing for the ones that did not. A change
+   * that made it unconditional would double the requests of the product's most
+   * important action and would look like nothing on any screen.
+   */
+  const deliveryReports: string[] = [];
+  page.on('request', (request) => {
+    if (/\/api\/survey\/[^/]+\/delivery/u.test(request.url())) {
+      deliveryReports.push(request.url());
+    }
+  });
 
   const submitted = page.waitForResponse(
     (response) =>
@@ -173,6 +109,11 @@ test('a respondent answers every question and the round takes the answers', asyn
   ).toBe(200);
 
   await expect(page.getByRole('heading', { name: /תודה, התשובות נקלטו/u })).toBeVisible();
+
+  expect(
+    deliveryReports,
+    'a submission that went through first time still paid for a beacon',
+  ).toEqual([]);
 
   // The last promise of the consent screen, kept: the respondent is told the
   // answers are in and given nothing to identify themselves with.
