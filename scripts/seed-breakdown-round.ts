@@ -21,6 +21,7 @@
  *   npx tsx scripts/seed-breakdown-round.ts --locked
  *   npx tsx scripts/seed-breakdown-round.ts --lopsided
  *   npx tsx scripts/seed-breakdown-round.ts --respondent
+ *   npx tsx scripts/seed-breakdown-round.ts --respondent --allow-remote
  *
  * `--locked` writes the same questionnaire with four responses instead of
  * forty-one, which is below the threshold. That round is how the locked state
@@ -44,8 +45,15 @@
  * allocation grid — because the respondent screen now asks them, and a walk that
  * only meets one widget proves only one widget.
  *
- * Loopback only, for the same reason `seed-local.ts` is: a seeded school on the
- * deployed dashboard would be a fake school on a real screen.
+ * Loopback by default, for the same reason `seed-local.ts` is: a seeded school
+ * on the deployed dashboard would be a fake school on a real screen.
+ *
+ * `--allow-remote` lifts that, and only for the one case the default was never
+ * arguing against: a deployed smoke walk, where the throwaway school *is* the
+ * point and is deleted afterwards by id with `scripts/clear-test-data.ts`. It
+ * has to be typed, it prints the host it is about to write to, and it does not
+ * change what is written. If a real school ever exists on that database, stop
+ * using it — the flag cannot tell a fake school from a real one.
  */
 import 'dotenv/config';
 import { resolveCoreRepositories } from '@/lib/composition-root';
@@ -202,7 +210,7 @@ function scoreFor(value: AnswerValue): number {
   return value === 'green' ? 100 : value === 'yellow' ? 60 : 0;
 }
 
-function requireLocalDatabase(): string {
+function requireSeedableDatabase(allowRemote: boolean): string {
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) {
     throw new Error(
@@ -215,11 +223,17 @@ function requireLocalDatabase(): string {
   const isLoopback =
     host === 'localhost' || host === '::1' || host.startsWith('127.');
 
-  if (!isLoopback) {
+  if (!isLoopback && !allowRemote) {
     throw new Error(
-      `DATABASE_URL points at ${host}. This script only seeds the local ` +
-        'database; the deployed one fills up from real use.',
+      `DATABASE_URL points at ${host}. This script seeds the local database ` +
+        'by default; the deployed one fills up from real use. Pass ' +
+        '--allow-remote if this is a deployed smoke walk, and delete what it ' +
+        'writes afterwards with scripts/clear-test-data.ts.',
     );
+  }
+
+  if (!isLoopback) {
+    console.warn(`--allow-remote: writing to ${host}, which is not loopback.`);
   }
 
   return host;
@@ -267,7 +281,7 @@ function onePerDimension(
 }
 
 async function main() {
-  const host = requireLocalDatabase();
+  const host = requireSeedableDatabase(process.argv.includes('--allow-remote'));
   const isLocked = process.argv.includes('--locked');
   const isLopsided = process.argv.includes('--lopsided');
   const isRespondentWalk = process.argv.includes('--respondent');
