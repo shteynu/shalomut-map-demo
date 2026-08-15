@@ -35,6 +35,26 @@ Verified against the remote itself, not against local tracking refs:
 `claude/suppression-file-is-text` (`d3abeb5`) are all on `origin`. So the work
 is now portable to another checkout or machine.
 
+**2026-08-15, later: a sixth branch, and it is the one that puts the privacy
+rule into service.** `claude/breakdown-by-background-question` sits on top of
+the stack and is **unpushed** — three commits, `aa0e2db`, `1aabeb4` and a
+documentation commit. It adds `/breakdown`, a seventh navigation item between
+the map and the goals: the eight dimension scores split by the categories of one
+background question, with every group below the privacy threshold suppressed and
+a second group taken with it whenever one alone would be recoverable by
+subtraction. Verified locally — `verify:core` exit 0 with 994 tests, and all
+three states walked signed-in against a production build, with the suppression
+observed working rather than inferred. Nothing crosses the AI boundary, no
+schema changed, and the deployed endpoint knows nothing about it.
+
+Two things it leaves open, both recorded in its task file. Its
+`suppressCrossTab`/`suppressFrequency` guarantee holds **within one published
+table**, and the screen now offers several tables for the same round — whether
+that is acceptable is an owner decision that should be made before a real school
+uses it. And no respondent has ever produced a background answer by answering:
+the submit API accepts them and the local seed writes them, but the respondent
+screen cannot render a single-choice background question until phase 3.
+
 **None of it is merged.** `origin/main` is still `05a23bc`, thirteen commits
 behind the tip of that stack, and `main` is an ancestor of it — so landing the
 stack is a fast-forward, and merging it is an owner call that has not been made.
