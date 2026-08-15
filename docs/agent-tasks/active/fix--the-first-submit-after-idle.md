@@ -8,8 +8,9 @@
   because the evidence this task starts from is in that branch's task file.
 - Base commit: `c6d3efa`
 - Current HEAD: `c6d3efa` (no commit on this branch yet)
-- Status: the cause is located outside this repository, and the mitigation is
-  written and tested. Not yet walked in a browser.
+- Status: complete for what this branch set out to do. The cause is located
+  outside this repository; the mitigation is written, tested and walked in a
+  browser in all three of its outcomes.
 - Last updated: 2026-08-15
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -147,17 +148,35 @@ endpoint: the database there had been empty since 2026-08-09.
 - The button now says `מנסה שוב...` on a retry instead of holding one unchanging
   spinner through a fourteen-second silence.
 
+- **Walked in a browser against a local production build on port 3210**, with
+  `window.fetch` made to reject the submit the way the deployed edge does. Three
+  runs, and the third is the one that matters most:
+  1. First send lost, second lands. The respondent never sees an error — the
+     completion screen arrives on its own. Two sends were recorded, 1.2s apart,
+     and the database holds **one** response with 20 answers.
+  2. First two lost. The button reads `מנסה שוב...` under its spinner while it
+     waits — read on screen, not in the diff — and the third send completes.
+     Gaps of 1.1s and 4.0s, which is the 1s and 3s policy plus the failed
+     attempts' own time.
+  3. All three lost. The old message comes back —
+     `לא ניתן להתחבר לשרת. בדקו את החיבור ונסו שוב.` — the button returns to
+     `שליחת שאלון` rather than staying on `מנסה שוב...`, **the draft survives**,
+     and no response is written. Two responses exist for the three runs, which
+     is the arithmetic the whole change rests on.
+- The local walk school was deleted afterwards; the local database is back to
+  the 2 organizations and 4 rounds it held before.
+
 ## In progress
 
 - Nothing.
 
 ## Remaining
 
-- Walk the retry in a browser against a local production build, with the first
-  send forced to fail, so the `מנסה שוב...` state and the recovery are seen
-  rather than inferred.
 - Decide with the owner whether the deployment's function region is worth
   pinning. Separate from this fix and not required by it.
+- Watch the deployed endpoint for the failure after this lands. The mitigation
+  hides the symptom, which also means the next occurrence will be silent unless
+  someone is looking for it.
 
 ## Changed files
 
@@ -191,12 +210,16 @@ Unstaged as of this update:
 
 - The two submits that started this task.
 
+- The three browser runs above, against a local production build. 2026-08-15.
+
 ### Blocked or not run
 
-- A browser walk of the retry. Not run yet; it is the one remaining item.
 - `verify:db`, `verify:ai`, the Python suite and the mutation run. No schema,
   repository, contract or mutated module is in this diff.
 - A deployed check of the fix. It is not deployed.
+- `npm run test:e2e`. The smoke walks a submit that succeeds first time, which
+  this change leaves untouched; the failing path cannot be produced without
+  intercepting the request, which is what the browser runs did by hand.
 
 ### Environment
 
@@ -214,8 +237,9 @@ Unstaged as of this update:
   person on `מנסה שוב...` for the better part of a minute before the error
   arrives. That is a worse wait than today's and a better outcome; if it turns
   out to be common rather than rare, the policy is the thing to revisit.
-- Nothing here has been walked in a browser, so the retry wording has been read
-  in a diff and not on a screen.
+- The browser runs forced the failure at `window.fetch`, which is the shape of
+  the deployed failure and not the deployed failure itself. Nothing has yet
+  retried against the real edge.
 
 ## Failed approaches
 
@@ -241,6 +265,7 @@ Unstaged as of this update:
 
 ## Next concrete step
 
-Walk the retry against a local production build with the first send forced to
-fail — block the submit request once in the browser's network layer — and read
-the `מנסה שוב...` state and the recovery on screen rather than in a diff.
+Hand the branch over for the push. After it lands and Vercel serves it, the open
+question is the region: decide whether to pin the function region to the Seoul
+database, which is the only lead left that could address the cause rather than
+the symptom.
