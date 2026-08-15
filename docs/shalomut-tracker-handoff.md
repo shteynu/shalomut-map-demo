@@ -115,29 +115,43 @@ as one fast-forward of twenty-six commits, so every branch tip above is now an
 ancestor of `main`. The owner ran the push; the agent's `git push` was declined
 by the permission layer as it always is here.
 
-**What that means and what it does not.** `main` auto-deploys to Vercel, so a
-deployment of this tip should exist — **that has not been verified**, and
-nothing in this file should be read as evidence that the deployed endpoint is
-serving it. Two things are known to be missing on the deployed side and were
-missing before this merge:
+**2026-08-15, later: the deployment is serving that stack, and the two
+deployed-side gaps are closed.** The paragraph that stood here said the
+deployment was unverified and the migration missing; both were checked, and the
+current reading is:
 
-- the phase 1 migration making `question_answers.dimension_id` and `.score`
-  nullable has been applied to the local database and **not** to the deployed
-  one, so a deployed round cannot store a background answer until it is;
-- `scripts/backfill-round-definitions.ts` has likewise run locally only.
+- **Deployed code.** `/login/` links
+  `/_next/static/chunks/3i8jb3r94-7yz.css`, and that file is **byte-identical**
+  to what a local production build of `4c25cf4` produces — same content hash,
+  same 116 583 bytes, `cmp` clean — carrying the eight `.survey-block*` rules
+  the Likert-block branch added. So the endpoint is running the merged stack.
+  The dashboard's `gitSource.sha` was not read: it needs the owner's signed-in
+  Chrome, and this reading answers the same question anonymously. It cannot
+  separate `5575177` from `0b3e0af` or `25ee069`, which are documentation-only
+  and build the same bytes.
+- **The phase 1 migration is applied to the deployed database.**
+  `20260814120000_answers_may_have_no_dimension_or_score` was the single pending
+  one; `prisma migrate deploy` applied it and `migrate status` now reads
+  `Database schema is up to date!` at thirteen migrations. Read back from
+  `information_schema`: `question_answers.dimension_id` and `.score` are both
+  nullable there. A deployed round can now store a background answer.
+- **The backfill is a no-op there, which is weaker than having run.**
+  `scripts/backfill-round-definitions.ts` reports every round carrying a
+  snapshot, and the deployed database holds **0 organizations, 0 rounds, 0
+  responses, 0 answers** — so the sentence is vacuous rather than earned. It
+  must be re-run before the `surveyInstrument.questions` fallback is removed,
+  because any round created there in the meantime is exactly what it exists for.
 
-Neither blocks the existing 24-question rounds, which store a dimension and a
-score on every answer as they always did. Both block a deployed round that uses
-the new instrument.
-Until then, every claim elsewhere in this file about a 24-question default, a
-three-colour answer scale or contract `6.0` still describes the running
-product, because nothing in this stack changes what a respondent answers or
-what the deployment serves.
+Every claim elsewhere in this file about a 24-question default, a three-colour
+answer scale or contract `6.0` still describes the running product: nothing in
+this stack changes what a respondent is asked until the instrument's own content
+exists, and that waits on owner decision 3.
 
-One thing phase 1 leaves for the owner beyond the push:
-`scripts/backfill-round-definitions.ts` has run against the local database and
-not the deployed one. Nothing depends on it yet; removing the
-`surveyInstrument.questions` fallback, in a later phase, does.
+**All eight task files of the stack are archived.** Each branch is fully
+contained in `origin/main`, checked branch by branch rather than assumed, so
+`docs/agent-tasks/active/` again holds only
+`research--scientific-evidence-layer.md`, which waits on owner decisions and not
+on an agent.
 
 **2026-08-14, later the same day, built the first two phases of it.** Phase 1
 (`claude/answer-model-for-research-instrument`) made a question carry its own

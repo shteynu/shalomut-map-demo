@@ -5,7 +5,7 @@
 - Branch: `claude/likert-blocks-for-respondent`
 - Base branch: `claude/respondent-answers-background-questions`
 - Base commit: `408386f`
-- Status: complete, merged to `main` (`25ee069`)
+- Status: complete, merged to `main` (`25ee069`), deployed and archived
 - Last updated: 2026-08-15
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -72,6 +72,38 @@ rescaled every number already stored.
   own change.
 - Merged. `origin/main` is `25ee069`, this branch's tip, read from the remote:
   the whole stack went across as one fast-forward of twenty-six commits.
+- Two later documentation commits are **local to this worktree** and on no
+  remote: `4c25cf4` and the one carrying this closing update. `origin` still has
+  this branch at `5575177`, which is an ancestor of `main`, so nothing of
+  substance is unpublished — but the closing record is not portable until the
+  owner pushes it.
+
+## The deployment was read, and the two deployed-side gaps are closed
+
+Done on 2026-08-15 as the step this file left open.
+
+- **The deployment serves this stack.** The stylesheet `/login/` links,
+  `/_next/static/chunks/3i8jb3r94-7yz.css`, is **byte-identical** to the one a
+  local production build of this tree produces — same content hash, same 116 583
+  bytes, `cmp` clean — and it carries the eight `.survey-block*` rules this
+  branch added. The dashboard's `gitSource.sha` was not read: it needs the
+  owner's signed-in Chrome, and this reading answers the same question without
+  it. What it cannot separate is `5575177`, `0b3e0af` and `25ee069` from one
+  another — they are documentation-only and build the same bytes.
+- **The phase 1 migration is applied to the deployed database.**
+  `20260814120000_answers_may_have_no_dimension_or_score` was the one pending
+  migration there; `prisma migrate deploy` applied it and `migrate status` now
+  reads `Database schema is up to date!` with thirteen migrations. Read back
+  from `information_schema`: `question_answers.dimension_id` and `.score` are
+  both nullable on the deployed database. A deployed round can now store a
+  background answer.
+- **The backfill is a no-op there, which is not the same as having run.**
+  `scripts/backfill-round-definitions.ts` reports every round carrying a
+  snapshot — and the deployed database holds **0 organizations, 0 rounds, 0
+  responses, 0 answers**, so that sentence is vacuous rather than earned. It
+  costs nothing now and must be re-run before the
+  `surveyInstrument.questions` fallback is removed, because any round created
+  there in the meantime is what the script exists for.
 
 ## Verification that actually ran
 
@@ -133,7 +165,7 @@ rescaled every number already stored.
 
 ## Next concrete step
 
-Confirm what the deployment is serving: read the Vercel deployment's
-`gitSource.sha` against `25ee069`. Nothing in this repository has verified that,
-and the two deployed-side gaps — the phase 1 migration and the backfill script,
-both run locally only — are recorded in `docs/shalomut-tracker-handoff.md`.
+Nothing on this branch. It is closed and this file is archived; what phase 3
+still owes is owner decision 3 — the item-to-dimension mapping and the
+reverse-scored list — which no agent can supply. The live queue is
+`docs/default-research-instrument-plan-2026-08-14.md` §7.
