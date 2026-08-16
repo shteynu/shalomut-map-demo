@@ -121,6 +121,26 @@ export interface SurveyDefinition {
   introText: string;
   anonymityText: string;
   questions: SurveyDefinitionQuestion[];
+  /**
+   * Which instrument this questionnaire was started from —
+   * `surveyInstrument.id` for one built by the canonical factory.
+   *
+   * Absent means the provenance is unknown, and that is a real answer rather
+   * than a gap to fill in: every round persisted before this field existed has
+   * no record of what it was built from, and stamping them retroactively would
+   * be inventing evidence. A round the manager started from an empty draft has
+   * none either, because it came from no instrument at all.
+   *
+   * A plain `string`, not a union of the ids the code currently knows: a round
+   * may outlive the instrument it was built from, and refusing to parse an
+   * unrecognised id would take that round off every manager screen to punish it
+   * for a fact about the past. Nothing branches on this value; it is a record.
+   *
+   * Not editable by a client. The one write path that accepts a definition from
+   * the browser carries the stored value forward — see
+   * `carryInstrumentProvenance`.
+   */
+  instrumentId?: string;
 }
 
 export interface SurveyRound {

@@ -2235,6 +2235,11 @@
           "anonymityText": {
             "type": "string"
           },
+          "instrumentId": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "Which instrument the questionnaire was started from. Absent means the provenance is unknown — a round created before this field existed, or one the manager started from a blank page. Recorded by the server and carried forward on every save: a value sent in a request body is discarded, so this cannot be set or cleared by a client."
+          },
           "questions": {
             "type": "array",
             "description": "Enabled question IDs must be unique and the enabled set must cover all eight wellbeing dimensions before activation.",

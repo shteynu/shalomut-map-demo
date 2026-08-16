@@ -271,6 +271,7 @@ export function parseSurveyDefinition(
     introText,
     anonymityText,
     questions,
+    instrumentId,
   } = value;
 
   if (
@@ -308,6 +309,19 @@ export function parseSurveyDefinition(
     minimumResponses,
     MINIMUM_PRIVACY_THRESHOLD,
   );
+
+  // Absent is the ordinary case and means "unknown provenance". Present but
+  // unusable is refused rather than dropped: only the server writes this field,
+  // so a number or an empty string here is a bug upstream, and a parser that
+  // quietly discarded it would leave the round claiming a provenance it never
+  // had. The cap is there because the column is opaque JSON with no width.
+  let parsedInstrumentId: string | undefined;
+  if (instrumentId !== undefined) {
+    if (!isNonEmptyString(instrumentId) || instrumentId.trim().length > 200) {
+      return { ok: false, error: "Survey instrument id is invalid." };
+    }
+    parsedInstrumentId = instrumentId.trim();
+  }
 
   if (!Array.isArray(questions)) {
     return { ok: false, error: "Survey questions are required." };
@@ -387,8 +401,35 @@ export function parseSurveyDefinition(
       introText: introText.trim(),
       anonymityText: anonymityText.trim(),
       questions: parsedQuestions,
+      // This function rebuilds from a whitelist rather than spreading its
+      // input, so a field it does not name is dropped — which is why
+      // provenance had to be added here to survive a single database read,
+      // not only to be written.
+      ...(parsedInstrumentId === undefined
+        ? {}
+        : { instrumentId: parsedInstrumentId }),
     },
   };
+}
+
+/**
+ * Provenance is carried, never edited.
+ *
+ * The builder posts a questionnaire it rebuilt from its own draft state — a
+ * title, six fields and a question list — so anything the browser does not know
+ * about is absent from every save. Reading the stamp back off the stored
+ * definition, rather than off the request, is what keeps a manager's first edit
+ * from erasing the record of what the round started from. It also means a
+ * forged `instrumentId` in the request body has no effect: what a round was
+ * built from is a fact about the past, and the browser is not a witness to it.
+ */
+export function carryInstrumentProvenance(
+  current: SurveyDefinition,
+  next: SurveyDefinition,
+): SurveyDefinition {
+  return current.instrumentId === undefined
+    ? { ...next, instrumentId: undefined }
+    : { ...next, instrumentId: current.instrumentId };
 }
 
 export function hasSameQuestionSnapshot(
@@ -493,6 +534,11 @@ export function createEmptyDraftSurveyDefinition(
   return {
     ...createCanonicalSurveyDefinition(title, minimumResponses),
     questions: [],
+    // Borrowed from the canonical factory for its wording and its estimate, but
+    // not for its identity: a manager who starts from a blank page has taken
+    // nothing from the instrument, and a stamp here would put its name on a
+    // questionnaire it contributed no question to.
+    instrumentId: undefined,
   };
 }
 
@@ -543,5 +589,10 @@ export function createCanonicalSurveyDefinition(
     anonymityText:
       "לא נאספים שם, כתובת מייל או פרטים מזהים. רק הנהלת בית הספר רואה תמונת מצב מצרפית.",
     questions,
+    // The one place a round can honestly claim a provenance, because this is
+    // the one place a questionnaire is actually built from the instrument.
+    // `surveyInstrument.id` has been declared since the source file was written
+    // and had no reader anywhere in the repository until this line.
+    instrumentId: surveyInstrument.id,
   };
 }

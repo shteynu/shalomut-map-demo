@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { resolveCoreRepositories } from "@/lib/composition-root";
 import { RoundService } from "@/lib/services";
 import {
+  carryInstrumentProvenance,
   createCanonicalSurveyDefinition,
   hasSameQuestionSnapshot,
   isActivatableSurveyDefinition,
@@ -79,9 +80,23 @@ export async function PUT(request: Request, { params }: RouteParams) {
     const currentDefinition =
       round.surveyDefinition ??
       createCanonicalSurveyDefinition(round.title, round.privacyThreshold);
+    // The builder rebuilds its payload from its own draft state and knows
+    // nothing about provenance, so what the round was started from is read off
+    // the stored definition rather than off the request. Everything below saves
+    // this, not the parsed body: the write, the version history and the
+    // activation gate, so no one of them can record a different questionnaire
+    // from the others.
+    //
+    // A round that never persisted a definition falls back to the canonical
+    // factory here — the same questionnaire the respondent route has been
+    // serving it all along — so its first save records that, which is true.
+    const nextDefinition = carryInstrumentProvenance(
+      currentDefinition,
+      parsed.value,
+    );
     if (
       responseCount > 0 &&
-      !hasSameQuestionSnapshot(currentDefinition, parsed.value)
+      !hasSameQuestionSnapshot(currentDefinition, nextDefinition)
     ) {
       return NextResponse.json(
         {
@@ -93,9 +108,9 @@ export async function PUT(request: Request, { params }: RouteParams) {
     }
 
     const updated = await roundRepo.update(roundId, {
-      title: parsed.value.title,
-      privacyThreshold: parsed.value.minimumResponses,
-      surveyDefinition: parsed.value,
+      title: nextDefinition.title,
+      privacyThreshold: nextDefinition.minimumResponses,
+      surveyDefinition: nextDefinition,
     });
 
     // The history records saves that changed something, not saves that
@@ -108,11 +123,11 @@ export async function PUT(request: Request, { params }: RouteParams) {
     // record is deliberately not a failure to save — the questionnaire is
     // already stored, and refusing the response would tell the manager their
     // work was lost when it was not.
-    if (updated && !isSameSurveyDefinition(currentDefinition, parsed.value)) {
+    if (updated && !isSameSurveyDefinition(currentDefinition, nextDefinition)) {
       try {
         await surveyDefinitionVersionRepo.record(
           roundId,
-          parsed.value,
+          nextDefinition,
           updated.updatedAt ?? undefined,
         );
       } catch (error) {
@@ -130,7 +145,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
     if (
       updated &&
       updated.status === 'draft' &&
-      isActivatableSurveyDefinition(parsed.value)
+      isActivatableSurveyDefinition(nextDefinition)
     ) {
       const activation = await RoundService.activateRound(roundId, roundRepo);
       closedRoundTitles =

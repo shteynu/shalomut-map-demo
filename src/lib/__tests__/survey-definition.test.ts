@@ -5,6 +5,7 @@ import test from "node:test";
 import {
   canonicalSurveyQuestions,
   createCanonicalSurveyDefinition,
+  createEmptyDraftSurveyDefinition,
   hasSameQuestionSnapshot,
   MINIMUM_PRIVACY_THRESHOLD,
   parseSurveyDefinition,
@@ -300,4 +301,70 @@ test("the default questionnaire is built in one place and answered against the s
   });
 
   assert.strictEqual(submission.result.success, true);
+});
+
+test("the questionnaire records which instrument it was built from, and a database round trip keeps it", () => {
+  const definition = createCanonicalSurveyDefinition("סבב עם מקור", 10);
+  assert.strictEqual(definition.instrumentId, surveyInstrument.id);
+
+  // The column is opaque JSON and every read goes back through the parser,
+  // which rebuilds from a whitelist rather than spreading its input — so a
+  // field the parser does not name is lost between two page loads, not between
+  // two releases.
+  const reread = parseSurveyDefinition(
+    JSON.parse(JSON.stringify(definition)) as unknown,
+  );
+  assert.strictEqual(reread.ok, true);
+  assert.strictEqual(
+    reread.ok && reread.value.instrumentId,
+    surveyInstrument.id,
+  );
+});
+
+test("a questionnaire written before provenance existed keeps its silence", () => {
+  const legacy = createCanonicalSurveyDefinition("סבב ותיק", 10);
+  delete legacy.instrumentId;
+
+  const parsed = parseSurveyDefinition(legacy);
+  assert.strictEqual(parsed.ok, true);
+  assert.strictEqual(parsed.ok && parsed.value.instrumentId, undefined);
+});
+
+test("a blank questionnaire claims no instrument", () => {
+  // It borrows the canonical wording and the estimate, and that is all it
+  // borrows: no question in it came from the instrument.
+  const draft = createEmptyDraftSurveyDefinition("סבב מאפס", 10);
+
+  assert.deepStrictEqual(draft.questions, []);
+  assert.strictEqual(draft.instrumentId, undefined);
+});
+
+test("a provenance that is not a usable id is refused rather than dropped", () => {
+  const definition = createCanonicalSurveyDefinition("סבב", 10);
+
+  for (const invalid of [42, "", "   ", "x".repeat(201), null]) {
+    const parsed = parseSurveyDefinition({
+      ...definition,
+      instrumentId: invalid,
+    });
+    assert.strictEqual(
+      parsed.ok,
+      false,
+      `instrumentId ${JSON.stringify(invalid)} should not parse`,
+    );
+  }
+});
+
+test("provenance is outside the hash, so recording it moves no round's identity", () => {
+  // The hash is the identity of the question snapshot the AI is shown, and
+  // Python recomputes it independently from the aggregates it receives. A round
+  // whose questions did not move must not change hash because Core started
+  // writing down where its questionnaire came from.
+  const definition = createCanonicalSurveyDefinition("סבב", 10);
+  const withoutProvenance = { ...definition, instrumentId: undefined };
+
+  assert.strictEqual(
+    createSurveyDefinitionHash(definition.questions),
+    createSurveyDefinitionHash(withoutProvenance.questions),
+  );
 });
