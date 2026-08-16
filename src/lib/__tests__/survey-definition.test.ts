@@ -4,6 +4,7 @@ import path from "node:path";
 import test from "node:test";
 import {
   canonicalSurveyQuestions,
+  carryInstrumentProvenance,
   createCanonicalSurveyDefinition,
   createEmptyDraftSurveyDefinition,
   hasSameQuestionSnapshot,
@@ -339,20 +340,73 @@ test("a blank questionnaire claims no instrument", () => {
   assert.strictEqual(draft.instrumentId, undefined);
 });
 
-test("a provenance that is not a usable id is refused rather than dropped", () => {
+test("a provenance the parser cannot use is read as no provenance, not as a broken round", () => {
+  // The column is opaque JSON and this function is the read gate for the
+  // public answer page. An annotation nothing reads must not be able to refuse
+  // a questionnaire whose questions are perfectly good.
   const definition = createCanonicalSurveyDefinition("סבב", 10);
 
-  for (const invalid of [42, "", "   ", "x".repeat(201), null]) {
+  for (const unusable of [42, "", "   ", "x".repeat(201), null, {}, []]) {
     const parsed = parseSurveyDefinition({
       ...definition,
-      instrumentId: invalid,
+      instrumentId: unusable,
     });
     assert.strictEqual(
       parsed.ok,
+      true,
+      `instrumentId ${JSON.stringify(unusable)} should still parse`,
+    );
+    // No stamp means no key, not a key holding `undefined`. The two survive
+    // `JSON.stringify` and Prisma identically and `deepStrictEqual`
+    // differently, which is how an in-memory test and a database test end up
+    // disagreeing about the same object.
+    assert.strictEqual(
+      parsed.ok && Object.hasOwn(parsed.value, "instrumentId"),
       false,
-      `instrumentId ${JSON.stringify(invalid)} should not parse`,
     );
   }
+});
+
+test("a questionnaire with no provenance has the same shape however it was produced", () => {
+  const stamped = createCanonicalSurveyDefinition("סבב", 10);
+
+  const fromParser = parseSurveyDefinition({
+    ...stamped,
+    instrumentId: undefined,
+  });
+  assert.strictEqual(fromParser.ok, true);
+
+  const fromCarry = carryInstrumentProvenance(
+    { ...stamped, instrumentId: undefined },
+    stamped,
+  );
+  const fromEmptyDraft = createEmptyDraftSurveyDefinition("סבב מאפס", 10);
+
+  for (const definition of [
+    fromParser.ok ? fromParser.value : undefined,
+    fromCarry,
+    fromEmptyDraft,
+  ]) {
+    assert.ok(definition);
+    assert.strictEqual(Object.hasOwn(definition, "instrumentId"), false);
+  }
+});
+
+test("a stamp that could not have come from the parser is not carried forward", () => {
+  // `readSurveyDefinition` hands back raw JSON cast to this type when a
+  // definition fails to parse for some unrelated reason, so the value being
+  // carried is not always one the parser has seen.
+  const poisoned = {
+    ...createCanonicalSurveyDefinition("סבב", 10),
+    instrumentId: { not: "a string" },
+  } as unknown as ReturnType<typeof createCanonicalSurveyDefinition>;
+
+  const carried = carryInstrumentProvenance(
+    poisoned,
+    createCanonicalSurveyDefinition("סבב", 10),
+  );
+
+  assert.strictEqual(Object.hasOwn(carried, "instrumentId"), false);
 });
 
 test("provenance is outside the hash, so recording it moves no round's identity", () => {

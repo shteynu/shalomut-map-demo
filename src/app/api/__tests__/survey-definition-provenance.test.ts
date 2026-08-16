@@ -1,6 +1,7 @@
 import assert from 'node:assert';
 import test, { after, before } from 'node:test';
 import { PUT as saveSurveyDefinition } from '../rounds/[roundId]/survey-definition/route';
+import { GET as getSurveyMeta } from '../survey/[shareCode]/route';
 import {
   InMemoryOrganizationRepository,
   InMemoryRoundRepository,
@@ -154,4 +155,37 @@ test('a round that never stored a questionnaire records the one it was being ans
 
   const round = await roundRepo.findById(ROUND_ID);
   assert.strictEqual(round?.surveyDefinition?.instrumentId, surveyInstrument.id);
+});
+
+test('a questionnaire whose stamp is unreadable is still answerable', async () => {
+  // The stamp lives in an opaque JSON column that outlives the code that wrote
+  // it, and the parser it passes through is the read gate for this public
+  // page. A seed script, a hand-written row or a future migration can put
+  // something unusable there — and when it does, a staffroom must still be
+  // able to answer, because nothing in the product reads this value.
+  const corrupted = {
+    ...createCanonicalSurveyDefinition('סבב פעיל', 10),
+    instrumentId: null,
+  } as unknown as SurveyDefinition;
+
+  overrideCoreRepositories({
+    orgRepo: new InMemoryOrganizationRepository([DEMO_ORGANIZATION]),
+    roundRepo: new InMemoryRoundRepository([
+      { ...DEMO_ROUND, status: 'active', surveyDefinition: corrupted },
+    ]),
+    surveyRepo: new InMemorySurveyRepository(),
+    surveyDefinitionVersionRepo: new InMemorySurveyDefinitionVersionRepository(),
+  });
+
+  const response = await getSurveyMeta(
+    new Request(`http://localhost/api/survey/${DEMO_ROUND.shareCode}`),
+    { params: Promise.resolve({ shareCode: DEMO_ROUND.shareCode }) },
+  );
+
+  assert.strictEqual(response.status, 200, await response.clone().text());
+  const body = await response.json();
+  assert.strictEqual(
+    body.instrument.questions.length,
+    createCanonicalSurveyDefinition('סבב פעיל', 10).questions.length,
+  );
 });

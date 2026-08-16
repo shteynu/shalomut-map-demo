@@ -56,6 +56,30 @@ function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
+/**
+ * The one rule for reading a provenance stamp, and the one place it is lenient.
+ *
+ * An unusable value is read as no stamp rather than refused, which is the
+ * opposite of how everything else here treats a shape it does not recognise.
+ * The reason is what refusing costs: `parseSurveyDefinition` is the read gate
+ * for the public answer page and for submission, so one malformed annotation in
+ * an opaque JSON column would take a staffroom's whole questionnaire off the
+ * wire with a 409 — over a value nothing in the product reads. "Unknown
+ * provenance" is a state the field is designed to hold, and falling back to it
+ * is what keeps the round answerable.
+ *
+ * Refusing would not even have guarded the direction it was written for: the
+ * one write path that accepts a definition from a client discards the client's
+ * value regardless — see `carryInstrumentProvenance`.
+ *
+ * The length cap is here because the column has no width of its own.
+ */
+function readInstrumentId(value: unknown): string | undefined {
+  return isNonEmptyString(value) && value.trim().length <= 200
+    ? value.trim()
+    : undefined;
+}
+
 type QuestionCommon = {
   id: string;
   text: string;
@@ -310,18 +334,7 @@ export function parseSurveyDefinition(
     MINIMUM_PRIVACY_THRESHOLD,
   );
 
-  // Absent is the ordinary case and means "unknown provenance". Present but
-  // unusable is refused rather than dropped: only the server writes this field,
-  // so a number or an empty string here is a bug upstream, and a parser that
-  // quietly discarded it would leave the round claiming a provenance it never
-  // had. The cap is there because the column is opaque JSON with no width.
-  let parsedInstrumentId: string | undefined;
-  if (instrumentId !== undefined) {
-    if (!isNonEmptyString(instrumentId) || instrumentId.trim().length > 200) {
-      return { ok: false, error: "Survey instrument id is invalid." };
-    }
-    parsedInstrumentId = instrumentId.trim();
-  }
+  const parsedInstrumentId = readInstrumentId(instrumentId);
 
   if (!Array.isArray(questions)) {
     return { ok: false, error: "Survey questions are required." };
@@ -427,9 +440,24 @@ export function carryInstrumentProvenance(
   current: SurveyDefinition,
   next: SurveyDefinition,
 ): SurveyDefinition {
-  return current.instrumentId === undefined
-    ? { ...next, instrumentId: undefined }
-    : { ...next, instrumentId: current.instrumentId };
+  // Read rather than copied, because `current` does not always come from the
+  // parser: a definition that failed to parse for some unrelated reason is
+  // returned as raw JSON cast to this type
+  // (`prisma-round.repository.ts` — `readSurveyDefinition`), so its stamp can
+  // be anything at all. Carrying that verbatim would write it back.
+  const carried = readInstrumentId(current.instrumentId);
+
+  // Deleted rather than set to `undefined`. The parser omits the key entirely
+  // when there is no stamp, and a definition that instead carried the key with
+  // an `undefined` value would compare equal through `JSON.stringify` and
+  // through Prisma but not through `deepStrictEqual` — so an in-memory test and
+  // a database test could disagree about the same object.
+  const withoutProvenance: SurveyDefinition = { ...next };
+  delete withoutProvenance.instrumentId;
+
+  return carried === undefined
+    ? withoutProvenance
+    : { ...withoutProvenance, instrumentId: carried };
 }
 
 export function hasSameQuestionSnapshot(
@@ -531,15 +559,16 @@ export function createEmptyDraftSurveyDefinition(
   title: string,
   minimumResponses: number,
 ): SurveyDefinition {
-  return {
-    ...createCanonicalSurveyDefinition(title, minimumResponses),
-    questions: [],
-    // Borrowed from the canonical factory for its wording and its estimate, but
-    // not for its identity: a manager who starts from a blank page has taken
-    // nothing from the instrument, and a stamp here would put its name on a
-    // questionnaire it contributed no question to.
-    instrumentId: undefined,
-  };
+  // Borrowed from the canonical factory for its wording and its estimate, but
+  // not for its identity: a manager who starts from a blank page has taken
+  // nothing from the instrument, and a stamp here would put its name on a
+  // questionnaire it contributed no question to. Deleted rather than set to
+  // `undefined`, so this is the same shape the parser produces for a
+  // questionnaire with no provenance.
+  const canonical = createCanonicalSurveyDefinition(title, minimumResponses);
+  delete canonical.instrumentId;
+
+  return { ...canonical, questions: [] };
 }
 
 /**

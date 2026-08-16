@@ -126,10 +126,18 @@ export interface SurveyDefinition {
    * `surveyInstrument.id` for one built by the canonical factory.
    *
    * Absent means the provenance is unknown, and that is a real answer rather
-   * than a gap to fill in: every round persisted before this field existed has
-   * no record of what it was built from, and stamping them retroactively would
-   * be inventing evidence. A round the manager started from an empty draft has
-   * none either, because it came from no instrument at all.
+   * than a gap to fill in: a round that stored a questionnaire before this
+   * field existed has no record of what it was built from, and stamping it
+   * retroactively would be inventing evidence. A round the manager started from
+   * an empty draft has none either, because it came from no instrument at all.
+   *
+   * One case is not that, and is deliberately allowed to acquire a stamp: a
+   * round that never stored a questionnaire at all. Every read path has been
+   * serving it the canonical one through the same fallback, so recording that
+   * on its first save states what it has in fact been running rather than
+   * guessing at its past. Both paths that do this build the fallback from
+   * `createCanonicalSurveyDefinition` — the save route and the manager-setup
+   * legacy branch.
    *
    * A plain `string`, not a union of the ids the code currently knows: a round
    * may outlive the instrument it was built from, and refusing to parse an
@@ -139,6 +147,10 @@ export interface SurveyDefinition {
    * Not editable by a client. The one write path that accepts a definition from
    * the browser carries the stored value forward — see
    * `carryInstrumentProvenance`.
+   *
+   * A stored value the parser cannot use is read as absent rather than
+   * refused. This annotation must never be able to take a round's answer page
+   * down, and "unknown" is a state it already holds.
    */
   instrumentId?: string;
 }
