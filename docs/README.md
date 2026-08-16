@@ -77,10 +77,21 @@ under "Live plans" above:
 
 - `*-plan*.md`, `completion-plan-*`, `manager-feedback-plan-*`,
   `provider-quota-plan-*` and `e2-step3-contract-version-rollout.md`;
+- [`questionnaire-modularity-audit-2026-08-16.md`](questionnaire-modularity-audit-2026-08-16.md)
+  — dated read-only audit of whether a different questionnaire, several default
+  templates, a Likert scale or a different dimension set cost data or code.
+  Prices all four against `5c7b254`, names what is already right, and records
+  three hypotheses that an adversarial pass refuted. Two of its findings were
+  established by executing shipped code rather than reading it — including a
+  1–7 round whose twelve midpoint answers are published as twelve "yellow".
+  **Not for implementation**: three options with no winner declared, and a
+  recommendation that is the agent's rather than an owner decision;
 - [`scientific-evidence-layer-research-2026-08-09.md`](scientific-evidence-layer-research-2026-08-09.md)
   — dated read-only study of where the AI pipeline lacks scientific evidence and
   which extension points exist. **Not for implementation**: material for a
-  product discussion, with unranked alternatives and open owner decisions;
+  product discussion, with unranked alternatives and open owner decisions.
+  §1.7 is **stale**: it reads as though no attribution reaches the manager, and
+  one has since 2026-08-11 (`dashboard-goals-panel.tsx:136`);
 - [`evidence-card-prototype-2026-08-09.md`](evidence-card-prototype-2026-08-09.md)
   — companion to that study: what one unit of research evidence would look like
   and what it costs to produce, measured by running probes against the shipped
