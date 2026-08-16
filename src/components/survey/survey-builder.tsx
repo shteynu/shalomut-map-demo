@@ -16,6 +16,7 @@ import type { RoundSwitcherOptions } from "@/lib/rounds/round-options";
 import { useShareUrl } from "@/lib/use-share-url";
 import type { SurveyDefinition } from "@/lib/types/backend";
 import { canonicalSurveyQuestions } from "@/lib/survey-definition";
+import type { AnswerScaleId } from "@/lib/survey/answer-scales";
 import { estimateMinutesForQuestionnaire } from "@/lib/survey/survey-duration";
 import {
   moveQuestionWithinView,
@@ -32,6 +33,7 @@ import {
   isTextEntryElement,
 } from "./survey-builder/keyboard-accelerators";
 import { QuestionEditDialog } from "./survey-builder/question-edit-dialog";
+import { scaleForNewQuestion } from "./survey-builder/new-question-scale";
 import {
   requestAiQuestionSuggestion,
   styleTextsForDimension,
@@ -55,15 +57,19 @@ import {
  * other five had nothing to start from. The template half of the suggestion flow
  * now draws on the canonical questionnaire, which covers all eight by
  * construction, and the AI half asks for an item for the dimension in hand.
+ *
+ * The scale arrives rather than being written here: a suggestion joins the
+ * questionnaire being built, so it is answered the way that questionnaire is.
  */
 function buildSuggestedQuestion(
   suggestion: QuestionSuggestion,
+  scaleId: AnswerScaleId,
 ): BuilderQuestion {
   return {
     text: suggestion.text,
     kind: "analytic",
     dimensionId: suggestion.dimensionId,
-    scaleId: "wellbeing-colour",
+    scaleId,
     polarity: "positive",
     required: true,
     enabled: true,
@@ -267,6 +273,12 @@ export function SurveyBuilder({
     targetDimensionId,
     questions.map((question) => question.text),
   );
+  /**
+   * The scale a question written now would be answered on. Read from the draft
+   * rather than named here, so a questionnaire of Likert blocks does not hand
+   * the manager a colour question to put inside one.
+   */
+  const newQuestionScaleId = scaleForNewQuestion(questions, targetDimensionId);
 
   const summaryStones = [
     {
@@ -376,7 +388,10 @@ export function SurveyBuilder({
   function openSuggestion(suggestion: QuestionSuggestion) {
     setEditingQuestion(null);
     setPendingQuestion({
-      draft: buildSuggestedQuestion(suggestion),
+      draft: buildSuggestedQuestion(
+        suggestion,
+        scaleForNewQuestion(questions, suggestion.dimensionId),
+      ),
       suggestion: {
         source: suggestion.source,
         suggestedText: suggestion.text,
@@ -403,7 +418,10 @@ export function SurveyBuilder({
         // The tab the manager is standing in, or — on "all questions" — the
         // dimension that is still keeping the questionnaire from going live.
         dimensionId: targetDimensionId,
-        scaleId: "wellbeing-colour",
+        // The questionnaire's own scale, not the one that used to be the only
+        // one. Polarity stays `positive` on purpose: it is a statement about
+        // this sentence, not about the questionnaire around it.
+        scaleId: newQuestionScaleId,
         polarity: "positive",
         required: true,
         enabled: true,
@@ -799,6 +817,7 @@ export function SurveyBuilder({
             : 0
         }
         sectionNames={sectionNamesIn(questions)}
+        defaultScaleId={newQuestionScaleId}
         isNew={Boolean(pendingQuestion) && !editingQuestion}
         suggestion={
           pendingQuestion && !editingQuestion

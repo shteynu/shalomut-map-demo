@@ -4,7 +4,11 @@ import { useRef, useState } from "react";
 import { Check, Eye, Plus, Sparkles, Trash2 } from "lucide-react";
 import { ModalDialog } from "@/components/ui/modal-dialog";
 import { dimensionPresentations } from "@/lib/dashboard/dimension-presentation";
-import { ANSWER_SCALE_IDS, getAnswerScale } from "@/lib/survey/answer-scales";
+import {
+  ANSWER_SCALE_IDS,
+  COLOUR_SCALE_ID,
+  getAnswerScale,
+} from "@/lib/survey/answer-scales";
 import type {
   AnswerPolarity,
   AnswerScaleId,
@@ -29,6 +33,14 @@ type QuestionEditDialogProps = {
   questionIndex: number;
   /** Section names already in use, offered so a manager reuses rather than retypes. */
   sectionNames?: string[];
+  /**
+   * The scale an analytic question should start on when this dialog has none to
+   * read — a background question whose kind the manager switches to analytic in
+   * here. Derived by the builder from the questionnaire in hand
+   * (`scaleForNewQuestion`); the fallback is the scale that was the only one
+   * before the research instrument.
+   */
+  defaultScaleId?: AnswerScaleId;
   onClose: () => void;
   onSave: (draftKey: string, updater: (q: BuilderQuestion) => BuilderQuestion) => void;
   /**
@@ -67,6 +79,7 @@ export function QuestionEditDialog({
   question,
   questionIndex,
   sectionNames = [],
+  defaultScaleId = COLOUR_SCALE_ID,
   onClose,
   onSave,
   isNew = false,
@@ -76,7 +89,7 @@ export function QuestionEditDialog({
   const [text, setText] = useState("");
   const [kind, setKind] = useState<SurveyQuestionKind>("analytic");
   const [dimensionId, setDimensionId] = useState("");
-  const [scaleId, setScaleId] = useState<AnswerScaleId>("wellbeing-colour");
+  const [scaleId, setScaleId] = useState<AnswerScaleId>(defaultScaleId);
   const [polarity, setPolarity] = useState<AnswerPolarity>("positive");
   const [answerMode, setAnswerMode] = useState<BackgroundAnswerMode>("single-choice");
   const [options, setOptions] = useState<SurveyQuestionOption[]>(EMPTY_OPTIONS);
@@ -106,6 +119,11 @@ export function QuestionEditDialog({
         setScaleId(question.scaleId);
         setPolarity(question.polarity);
       } else {
+        // A background question carries no scale, and the state must not keep
+        // the last analytic question's: switching this one's kind to analytic
+        // would then answer it on whatever the manager edited before.
+        setScaleId(defaultScaleId);
+        setPolarity("positive");
         setAnswerMode(question.answerMode);
         setOptions(
           question.options && question.options.length > 0

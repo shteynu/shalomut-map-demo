@@ -3,7 +3,7 @@ import test from "node:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import { QuestionEditDialog } from "../survey-builder/question-edit-dialog";
 import { SurveyBuilderQuestions } from "../survey-builder/survey-builder-questions";
-import type { BuilderQuestion } from "../survey-builder/types";
+import type { BuilderAnalyticQuestion } from "../survey-builder/types";
 
 /**
  * Writing a question.
@@ -16,7 +16,9 @@ import type { BuilderQuestion } from "../survey-builder/types";
  * question is edited in.
  */
 
-function blankDraft(): BuilderQuestion {
+// Analytic rather than the union: the tests below vary the answer scale, which
+// only one of the two kinds has.
+function blankDraft(): BuilderAnalyticQuestion {
   return {
     id: "custom-1",
     draftKey: "manual-1",
@@ -117,6 +119,34 @@ test("wording the manager typed carries no source label and no rewrite demand", 
   assert.doesNotMatch(markup, /הוצע על ידי הבינה המלאכותית/u);
   assert.doesNotMatch(markup, /תבנית השאלון המקורית/u);
   assert.doesNotMatch(markup, /ההוספה תתאפשר לאחר עריכת הנוסח/u);
+});
+
+test("a new question opens on the scale it was given, not on the colour one", () => {
+  // The draft carries the scale the builder derived from the questionnaire in
+  // hand; the dialog is where the manager sees it, and it used to preselect the
+  // three colour stones whatever the question said.
+  const markup = renderToStaticMarkup(
+    <QuestionEditDialog
+      isOpen
+      isNew
+      question={{ ...blankDraft(), scaleId: "likert-7-frequency" }}
+      questionIndex={0}
+      defaultScaleId="likert-7-frequency"
+      onClose={() => {}}
+      onSave={() => {}}
+    />,
+  );
+
+  const selected = markup.match(/<option value="([^"]+)" selected=""/gu) ?? [];
+
+  assert.ok(
+    selected.some((option) => option.includes("likert-7-frequency")),
+    markup,
+  );
+  assert.ok(
+    !selected.some((option) => option.includes("wellbeing-colour")),
+    markup,
+  );
 });
 
 test("an existing question is still edited, not added", () => {
