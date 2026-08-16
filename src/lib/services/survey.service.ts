@@ -1,11 +1,12 @@
 import { DuplicateResponseError } from '../repositories/errors';
 import { ISurveyRepository } from '../repositories/interfaces';
-import { responseScale, surveyInstrument } from '../shalomut-source';
+import { responseScale } from '../shalomut-source';
 import { isValueOnScale, scoreForAnswer } from '../survey/answer-scales';
 import {
   isAnswerValueValid,
   parseAllocationEntry,
 } from '../survey/answer-validity';
+import { canonicalSurveyQuestions } from '../survey-definition';
 import {
   AnalyticSurveyQuestion,
   AnswerValue,
@@ -56,15 +57,17 @@ export type ExpectedQuestion =
   | Pick<AnalyticSurveyQuestion, 'id' | 'kind' | 'dimensionId' | 'required' | 'scaleId' | 'polarity'>
   | Pick<BackgroundSurveyQuestion, 'id' | 'kind' | 'required' | 'answerMode' | 'options' | 'allocationGroupId'>;
 
+/**
+ * The default a submission is checked against when the caller brings no
+ * questionnaire — a legacy round with no persisted snapshot.
+ *
+ * Delegated rather than re-derived: this used to map `surveyInstrument` itself
+ * and retype the scale and polarity, which made it a second opinion about what
+ * the default asks. An `ExpectedQuestion` is a `Pick` of the persisted shape,
+ * so the full question satisfies it and the extra fields are simply unread.
+ */
 function canonicalExpectedQuestions(): ExpectedQuestion[] {
-  return surveyInstrument.questions.map((question) => ({
-    id: question.id,
-    kind: 'analytic' as const,
-    dimensionId: question.dimensionId,
-    required: question.required,
-    scaleId: 'wellbeing-colour' as const,
-    polarity: 'positive' as const,
-  }));
+  return canonicalSurveyQuestions();
 }
 
 /**

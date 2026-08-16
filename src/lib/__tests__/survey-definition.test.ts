@@ -3,12 +3,14 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import test from "node:test";
 import {
+  canonicalSurveyQuestions,
   createCanonicalSurveyDefinition,
   hasSameQuestionSnapshot,
   MINIMUM_PRIVACY_THRESHOLD,
   parseSurveyDefinition,
 } from "@/lib/survey-definition";
 import { createSurveyDefinitionHash } from "@/lib/survey-definition-hash";
+import { SurveyService } from "@/lib/services/survey.service";
 import { surveyInstrument } from "@/lib/shalomut-source";
 import {
   isAnalyticQuestion,
@@ -253,4 +255,49 @@ test("the standard questionnaire no longer claims fifteen minutes", () => {
     definition.estimatedMinutes < 15,
     "the hardcoded fifteen was several times the real duration",
   );
+});
+
+test("the default questionnaire is built in one place and answered against the same one", () => {
+  // The regression guard for collapsing three constructions into one. Until
+  // this branch, `createCanonicalSurveyDefinition`, the builder's
+  // `loadDefaultTemplate` and `canonicalExpectedQuestions` in
+  // `services/survey.service.ts` each mapped `surveyInstrument.questions` and
+  // re-typed `scaleId` and `polarity` beside it. Nothing compared them, so a
+  // change to one was a silent disagreement about what the product asks.
+  const questions = canonicalSurveyQuestions();
+
+  assert.deepStrictEqual(
+    createCanonicalSurveyDefinition("סבב", MINIMUM_PRIVACY_THRESHOLD).questions,
+    questions,
+    "a new round must be born with exactly the template",
+  );
+
+  // What the template is, pinned so that a change to it is a decision rather
+  // than a diff nobody reads: the instrument's questions, all analytic, all on
+  // the colour scale, all positive, all enabled.
+  assert.deepStrictEqual(
+    questions.map((question) => question.id),
+    surveyInstrument.questions.map((question) => question.id),
+  );
+  for (const question of questions) {
+    assert.strictEqual(question.kind, "analytic");
+    assert.strictEqual(question.scaleId, "wellbeing-colour");
+    assert.strictEqual(question.polarity, "positive");
+    assert.strictEqual(question.enabled, true);
+  }
+
+  // And the half that crosses a module boundary, which is the one a shared
+  // helper cannot make true by construction: a submission answering the
+  // template, with no expected questions passed, is accepted. When the service
+  // kept its own copy this passed by coincidence; it now passes by wiring.
+  const submission = SurveyService.processSubmission({
+    roundId: "round_canonical_default",
+    answers: questions.map((question) => ({
+      questionId: question.id,
+      dimensionId: question.dimensionId,
+      value: "green" as const,
+    })),
+  });
+
+  assert.strictEqual(submission.result.success, true);
 });

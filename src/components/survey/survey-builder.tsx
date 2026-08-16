@@ -15,7 +15,7 @@ import { getNavigationAction } from "@/lib/navigation";
 import type { RoundSwitcherOptions } from "@/lib/rounds/round-options";
 import { useShareUrl } from "@/lib/use-share-url";
 import type { SurveyDefinition } from "@/lib/types/backend";
-import { surveyInstrument } from "@/lib/shalomut-source";
+import { canonicalSurveyQuestions } from "@/lib/survey-definition";
 import { estimateMinutesForQuestionnaire } from "@/lib/survey/survey-duration";
 import {
   moveQuestionWithinView,
@@ -115,6 +115,15 @@ type SurveyBuilderProps = {
   /** Where the switcher's form posts — this screen's own path. */
   roundSwitcherAction?: string;
 };
+
+/**
+ * How many questions the confirmation says the template will bring.
+ *
+ * Read from the template rather than from the instrument, so the number in the
+ * dialog and the questions the button loads cannot come apart — the manager is
+ * being asked to discard their draft on the strength of this figure.
+ */
+const CANONICAL_QUESTION_COUNT = canonicalSurveyQuestions().length;
 
 export function SurveyBuilder({
   organizationName,
@@ -336,19 +345,23 @@ export function SurveyBuilder({
     setPendingRemoval(null);
   }
 
+  /**
+   * The default template, taken from the one place that builds it.
+   *
+   * This used to map `surveyInstrument` here and retype the scale and polarity,
+   * which made the builder a second opinion about what the default asks — and
+   * the copy a manager actually loads, so a drift between it and the round they
+   * were given would have shown up as a questionnaire that changed under them.
+   * The builder adds a draft key and nothing else.
+   */
   function loadDefaultTemplate() {
     setPendingRemoval(null);
-    const defaultQuestions: BuilderQuestion[] = surveyInstrument.questions.map((q, idx) => ({
-      id: q.id,
-      kind: "analytic",
-      dimensionId: q.dimensionId,
-      scaleId: "wellbeing-colour",
-      polarity: "positive",
-      text: q.text,
-      required: q.required,
-      enabled: true,
-      draftKey: createDraftId(`default-${idx}`),
-    }));
+    const defaultQuestions: BuilderQuestion[] = canonicalSurveyQuestions().map(
+      (question, idx) => ({
+        ...question,
+        draftKey: createDraftId(`default-${idx}`),
+      }),
+    );
     markEdited();
     setQuestions(defaultQuestions);
   }
@@ -830,7 +843,7 @@ export function SurveyBuilder({
       <ConfirmDialog
         isOpen={pendingRemoval?.kind === "loadTemplate"}
         title="טעינת תבנית השאלון"
-        body={`תבנית ${surveyInstrument.questions.length} השאלות תחליף את ${questions.length} השאלות שבטיוטה, כולל ניסוחים שנערכו. השאלון שנשמר אחרון נשאר בהיסטוריית הגרסאות.`}
+        body={`תבנית ${CANONICAL_QUESTION_COUNT} השאלות תחליף את ${questions.length} השאלות שבטיוטה, כולל ניסוחים שנערכו. השאלון שנשמר אחרון נשאר בהיסטוריית הגרסאות.`}
         confirmLabel="טעינת התבנית"
         isDestructive
         onConfirm={loadDefaultTemplate}

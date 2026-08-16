@@ -496,22 +496,42 @@ export function createEmptyDraftSurveyDefinition(
   };
 }
 
+/**
+ * The canonical questionnaire's questions, as a round would persist them.
+ *
+ * The one construction of the default, and it is exported for that reason
+ * rather than for convenience. There used to be three — this factory, the
+ * builder's own `loadDefaultTemplate`, and `canonicalExpectedQuestions` in
+ * `services/survey.service.ts` — each independently re-typing `scaleId` and
+ * `polarity` next to the same `surveyInstrument.questions.map`. Three copies of
+ * a default are three answers to "what does this product ask", and nothing in
+ * the type system or the tests would have noticed them drifting apart: the
+ * builder's copy is what a manager loads, the service's copy is what a
+ * submission is checked against, and this one is what a new round is born with.
+ *
+ * `surveyInstrument` carries no scale and no polarity — see
+ * `shalomut-source.ts` — so somebody has to supply them, and this is where.
+ * When the instrument type grows those fields, this is the only place that has
+ * to stop inventing them.
+ */
+export function canonicalSurveyQuestions(): AnalyticSurveyQuestion[] {
+  return surveyInstrument.questions.map((question) => ({
+    id: question.id,
+    text: question.text,
+    required: question.required,
+    enabled: true,
+    kind: "analytic" as const,
+    dimensionId: question.dimensionId,
+    scaleId: "wellbeing-colour" as const,
+    polarity: "positive" as const,
+  }));
+}
+
 export function createCanonicalSurveyDefinition(
   title: string,
   minimumResponses: number,
 ): SurveyDefinition {
-  const questions: SurveyDefinitionQuestion[] = surveyInstrument.questions.map(
-    (question) => ({
-      id: question.id,
-      text: question.text,
-      required: question.required,
-      enabled: true,
-      kind: "analytic" as const,
-      dimensionId: question.dimensionId,
-      scaleId: "wellbeing-colour" as const,
-      polarity: "positive" as const,
-    }),
-  );
+  const questions: SurveyDefinitionQuestion[] = canonicalSurveyQuestions();
 
   return {
     title,
