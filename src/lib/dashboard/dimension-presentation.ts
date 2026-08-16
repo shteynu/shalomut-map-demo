@@ -1,4 +1,4 @@
-import { statusLabels } from "@/lib/shalomut-source";
+import { statusLabels, surveyInstrument } from "@/lib/shalomut-source";
 import type { WellbeingDimensionId, WellbeingStatus } from "@/lib/shalomut-source";
 
 export { statusLabels };
@@ -12,10 +12,6 @@ export { statusLabels };
  * about a round arrives from the analysis as a `DashboardStone`. Keeping them
  * in one type is what kept several hundred lines of demo interpretation in a
  * production module.
- *
- * The labels are the ones the screens have been showing. Some differ from
- * `surveyInstrument` — `self-expression` is "קול אישי" here and "ביטוי עצמי"
- * there — and reconciling them is a product decision, not a refactor.
  */
 export type DimensionPresentation = {
   id: WellbeingDimensionId;
@@ -48,12 +44,38 @@ export type DimensionPresentation = {
   conceptColor: string;
 };
 
-export const dimensionPresentations: DimensionPresentation[] = [
-  {
-    id: "self-expression",
+/**
+ * What the map owns about a dimension, as opposed to what the methodology owns.
+ *
+ * Geometry, colour and the map's own short name for the stone. Everything else
+ * a `DimensionPresentation` carries — which dimensions exist, in what order,
+ * what each is called as a concept and how it is described — is read from
+ * `surveyInstrument` below rather than written again here.
+ *
+ * This file used to re-declare all eight dimensions with their own copies of
+ * those strings. Nothing asserted the two lists stayed in step, and they had
+ * not: `balance` was described as "יחס מאוזן בין כמות המשימות לזמן לביצוען"
+ * on the map and "היחס בין היקף המשימות לבין הזמן לביצוען" in the source. The
+ * map now shows the source's wording, so there is one place to change it.
+ *
+ * A `Record` keyed by the dimension union rather than an array, so the
+ * compiler — not a test, and not the manager's screen — is what refuses a
+ * ninth dimension with no stone and a stone with no dimension.
+ */
+type DimensionMapPlacement = Omit<
+  DimensionPresentation,
+  "id" | "conceptLabel" | "subtitle"
+>;
+
+const dimensionMapPlacements: Record<
+  WellbeingDimensionId,
+  DimensionMapPlacement
+> = {
+  "self-expression": {
+    // The map's name for the stone, deliberately not the source's `label`
+    // ("ביטוי עצמי"). Which name each screen shows is a product decision, and
+    // it is the one thing here that is genuinely the map's to make.
     label: "קול אישי",
-    conceptLabel: "קול אישי",
-    subtitle: "אפשרות לביטוי עצמי",
     mapPosition: { top: "10%", right: "12%", size: "8.6rem", rotate: -9 },
     conceptPosition: {
       top: "2%",
@@ -66,11 +88,8 @@ export const dimensionPresentations: DimensionPresentation[] = [
     plusPosition: { top: "1.4rem", left: "2.0rem" },
     conceptColor: "#24bf10",
   },
-  {
-    id: "professional-competence",
+  "professional-competence": {
     label: "מומחיות בטוחה",
-    conceptLabel: "מומחיות בטוחה",
-    subtitle: "תחושת מסוגלות מקצועית",
     mapPosition: { top: "18%", right: "34%", size: "7.9rem", rotate: 7 },
     conceptPosition: {
       top: "30%",
@@ -83,11 +102,8 @@ export const dimensionPresentations: DimensionPresentation[] = [
     plusPosition: { top: "1.2rem", left: "2.8rem" },
     conceptColor: "#24bf10",
   },
-  {
-    id: "social-resource",
+  "social-resource": {
     label: "משאב חברתי",
-    conceptLabel: "משאב חברתי",
-    subtitle: "קשרים חיוביים עם עמיתות ועמיתים",
     mapPosition: { top: "37%", right: "22%", size: "10.2rem", rotate: -3 },
     conceptPosition: {
       top: "34%",
@@ -100,11 +116,8 @@ export const dimensionPresentations: DimensionPresentation[] = [
     plusPosition: { top: "1.8rem", left: "2.4rem" },
     conceptColor: "#e49902",
   },
-  {
-    id: "balance",
+  "balance": {
     label: "איזון",
-    conceptLabel: "איזון",
-    subtitle: "יחס מאוזן בין כמות המשימות לזמן לביצוען",
     mapPosition: { top: "58%", right: "11%", size: "9.4rem", rotate: 10 },
     conceptPosition: {
       top: "32%",
@@ -117,11 +130,8 @@ export const dimensionPresentations: DimensionPresentation[] = [
     plusPosition: { top: "1.5rem", left: "2.9rem" },
     conceptColor: "#cf2c4e",
   },
-  {
-    id: "management-support",
+  "management-support": {
     label: "עוגן",
-    conceptLabel: "עורף מקצועי",
-    subtitle: "תמיכה מהנהלה",
     mapPosition: { top: "15%", right: "57%", size: "8.8rem", rotate: -11 },
     conceptPosition: {
       top: "5%",
@@ -134,11 +144,8 @@ export const dimensionPresentations: DimensionPresentation[] = [
     plusPosition: { top: "1.3rem", left: "3.6rem" },
     conceptColor: "#e49902",
   },
-  {
-    id: "certainty",
+  "certainty": {
     label: "ודאות",
-    conceptLabel: "ודאות",
-    subtitle: "ודאות בסביבת עבודה",
     mapPosition: { top: "38%", right: "52%", size: "8.4rem", rotate: 8 },
     conceptPosition: {
       top: "4%",
@@ -151,11 +158,8 @@ export const dimensionPresentations: DimensionPresentation[] = [
     plusPosition: { top: "1.7rem", left: "2.1rem" },
     conceptColor: "#e49902",
   },
-  {
-    id: "organizational-climate",
+  "organizational-climate": {
     label: "אקלים ארגוני",
-    conceptLabel: "אקלים ארגוני",
-    subtitle: "קידום רווחה נפשית כחלק מתרבות הארגון",
     mapPosition: { top: "57%", right: "42%", size: "8rem", rotate: -5 },
     conceptPosition: {
       top: "62%",
@@ -168,11 +172,8 @@ export const dimensionPresentations: DimensionPresentation[] = [
     plusPosition: { top: "1.2rem", left: "3.3rem" },
     conceptColor: "#24bf10",
   },
-  {
-    id: "meaning",
+  "meaning": {
     label: "משמעות",
-    conceptLabel: "משמעות",
-    subtitle: "תחושת ערך ומשמעות בעבודה",
     mapPosition: { top: "32%", right: "75%", size: "8.8rem", rotate: 5 },
     conceptPosition: {
       top: "64%",
@@ -185,7 +186,22 @@ export const dimensionPresentations: DimensionPresentation[] = [
     plusPosition: { top: "1.6rem", left: "2.7rem" },
     conceptColor: "#24bf10",
   },
-];
+};
+
+/**
+ * The eight stones, in the order the methodology lists them.
+ *
+ * Derived rather than written, so the map cannot show a stone the instrument
+ * does not have, or miss one it does. The order comes from the same place for
+ * the same reason — it used to match by coincidence.
+ */
+export const dimensionPresentations: DimensionPresentation[] =
+  surveyInstrument.dimensions.map((dimension) => ({
+    id: dimension.id,
+    conceptLabel: dimension.conceptLabel,
+    subtitle: dimension.subtitle,
+    ...dimensionMapPlacements[dimension.id],
+  }));
 
 export function getDimensionPresentation(
   id: string,

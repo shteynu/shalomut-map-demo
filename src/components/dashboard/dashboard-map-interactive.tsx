@@ -396,8 +396,23 @@ export function DashboardMapInteractive({
         </button>
       ) : null}
       {dimensionPresentations.map((dimension, index) => {
-        const { averageScore: score, computedStatus: status } =
-          dimensionScores[dimension.id as WellbeingDimensionId];
+        /*
+         * A stone with no score is skipped, not drawn from `undefined`.
+         *
+         * The type says this index always yields a score, and it lies twice
+         * over: every `Record<WellbeingDimensionId, …>` in the codebase is
+         * built through an `as` cast, and a locked round's is the empty object.
+         * Destructuring straight off it turned both of those into a TypeError
+         * on the manager's main page — a blank screen rather than a missing
+         * stone. The caller withholds a locked round now, so reaching this is
+         * a bug; rendering seven stones while someone fixes it beats rendering
+         * none.
+         */
+        const dimensionScore = dimensionScores[
+          dimension.id as WellbeingDimensionId
+        ] as (typeof dimensionScores)[WellbeingDimensionId] | undefined;
+        if (!dimensionScore) return null;
+        const { averageScore: score, computedStatus: status } = dimensionScore;
         const offset = offsets[dimension.id] ?? zeroOffsets[dimension.id];
         const dragX = offset.x;
         const dragY = offset.y;

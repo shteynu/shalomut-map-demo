@@ -39,6 +39,19 @@ type DashboardMapPageProps = {
   comparison: RoundComparison | null;
   /** Dimensions whose answers split between the two ends of the scale. */
   divisions: DimensionDivision[];
+  /**
+   * Whether this round's numbers are withheld, as the analysis decided it.
+   *
+   * Passed in rather than recomputed here. This screen used to decide for
+   * itself with `responseCount < minimumResponses`, which is one of the three
+   * conditions the analysis actually uses — it also locks a round whose
+   * questionnaire does not cover every dimension, and one where a single
+   * question drew fewer answers than the threshold. When the two disagreed the
+   * analysis withheld `dimensionScores` and this screen rendered the map
+   * anyway, which is a crash on the manager's main page rather than a wrong
+   * number.
+   */
+  isLocked: boolean;
 };
 
 export function DashboardMapPage({
@@ -53,8 +66,8 @@ export function DashboardMapPage({
   roundSwitcherAction,
   comparison,
   divisions,
+  isLocked,
 }: DashboardMapPageProps) {
-  const isLocked = responseCount < minimumResponses;
 
   if (isLocked) {
     return (
@@ -146,7 +159,7 @@ function DashboardMapReady({
   comparison,
   divisions,
   responseCount,
-}: DashboardMapPageProps) {
+}: Omit<DashboardMapPageProps, "isLocked">) {
   const { state, reload } = useAiInsights(roundId);
 
   /*

@@ -57,6 +57,11 @@ export default async function DashboardPage({
       responseCount={context.responseCount}
       minimumResponses={selectedRound.privacyThreshold}
       overallScore={overallScore}
+      // The same flag `overallScore` above is already guarded by. The map
+      // screen used to reach its own verdict from the response count alone,
+      // and a round the analysis had locked for another reason arrived there
+      // with no dimension scores to draw.
+      isLocked={analytics.isLocked}
       dimensionScores={dimensionScores}
       roundOptions={toRoundSwitcherOptions(
         context.rounds,

@@ -22,10 +22,26 @@ export function DashboardMapLocked({
         <strong>{responseCount}</strong>
         <span>מתוך {minimumResponses} תשובות נדרשות</span>
       </span>
-      <p>
-        עוד {remaining} תשובות והמפה תיפתח. הסף הזה שומר על האנונימיות של הצוות: התוצאות מוצגות רק
-        כשאי אפשר לזהות משיב בודד. בינתיים מוצג מספר המשיבים הכללי בלבד.
-      </p>
+      {/*
+        The round total is not the only thing that locks a map. The analysis
+        also withholds a round where a single question drew fewer answers than
+        the threshold, and one whose questionnaire does not cover every
+        dimension. Those rounds reach this screen with the total already met,
+        and promising them "another 0 answers and the map opens" would be a
+        sentence a manager can watch stay false.
+      */}
+      {remaining > 0 ? (
+        <p>
+          עוד {remaining} תשובות והמפה תיפתח. הסף הזה שומר על האנונימיות של הצוות: התוצאות מוצגות רק
+          כשאי אפשר לזהות משיב בודד. בינתיים מוצג מספר המשיבים הכללי בלבד.
+        </p>
+      ) : (
+        <p>
+          מספר המשיבים הכללי כבר הושג, אבל חלק מהשאלון עדיין לא אסף מספיק תשובות
+          כדי להציג אותו בלי לזהות משיב בודד. הסף הזה חל על כל שאלה בנפרד, ולא רק
+          על הסבב כולו. בינתיים מוצג מספר המשיבים הכללי בלבד.
+        </p>
+      )}
       <Link className="primary-button" href={distributeSurveyAction.href}>
         {distributeSurveyAction.label}
         <ArrowLeft size={18} aria-hidden="true" />
