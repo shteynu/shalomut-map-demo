@@ -5,8 +5,8 @@
 - Branch: `fix/a-new-question-answers-on-the-questionnaires-scale`
 - Base branch: `main`
 - Base commit: `18a5cdb`
-- Current HEAD: see `Next concrete step` — the fix is one commit on this branch.
-- Status: implementation complete and verified locally
+- Current HEAD: `f60f442`, which is also `refs/heads/main` on the remote.
+- Status: complete, landed on `main`, all four workflows green
 - Last updated: 2026-08-16
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -143,6 +143,12 @@ Nothing on this task.
   scale did not compile until it was typed as the analytic half.
 - `npm test` — 1080 passed, 0 failed.
 - `npm run lint` clean, `npm run build` clean.
+- **`npm run verify` exit 0 on the landed tree** — the whole chain: eight fitness
+  gates, `typecheck`, `npm test`, `verify:ai`, `lint`, `build`, then `verify:db`
+  with 36 database tests passed. Run after the two commits, not before them.
+- **All four workflows green on `f60f442`** — `Core verification` `31956098063`
+  1m47s, `Browser smoke` `31956098095` 2m41s, `Vercel Deployment & Pipeline
+  Checks` `31956098070` 2m41s, `CodeQL Security Analysis` `31956098262` 1m54s.
 - **Signed-in browser walk, and it is what proves the wiring rather than the
   rule.** A production build on port 3210, a draft round opened through the
   setup screen so the builder was not frozen, and both creation paths read in
@@ -211,15 +217,34 @@ aliases are involved.
 
 None raised by this change.
 
+## Git state, at session close 2026-08-16
+
+Asked of the remote itself rather than of a tracking ref: `refs/heads/main` is
+`f60f442`, which equals this worktree's HEAD; `git rev-list --count` is `0` in
+both directions.
+
+- Committed and pushed: `3fc32ec` (the fix and its tests) and `f60f442` (this
+  file). The owner ran the push, as `branch:main`; the branch itself is not on
+  `origin` as a branch.
+- Committed and **not** pushed: the closing documentation commit that archives
+  this file and updates the operational handoff. It changes no product code.
+- Staged: nothing.
+- Unstaged: `next-env.d.ts` only — a pre-existing modification that is not this
+  task's and was deliberately left alone.
+- Untracked: nothing. Confirmed with `git ls-files -o --exclude-standard`,
+  because `git status` has under-reported untracked files in this worktree
+  before.
+
+**Visibility.** Both commits are on the published `main`, so this handoff is
+portable to another checkout or machine. The one uncommitted thing,
+`next-env.d.ts`, is visible in this worktree alone and belongs to nobody's task.
+
 ## Next concrete step
 
-Nothing on this task. It is one commit on
-`fix/a-new-question-answers-on-the-questionnaires-scale`, and the branch is
-ready to land. `next-env.d.ts` is modified in the worktree and is not this
-task's — it was there before and is deliberately left alone.
+Nothing on this task — it is closed.
 
-The audit's own list is unchanged by this: §3 findings 1–6 stay closed, and what
-remains of `docs/questionnaire-modularity-audit-2026-08-16.md` is the reporting
-half of scenario (c) — `scoreDistribution` still carrying three colour keys for a
-Likert answer — which is phase 5 and contract `7.0`, and blocked on the
-methodologist's answer to question 3.
+The audit's own list is unchanged by it: `docs/questionnaire-modularity-audit-2026-08-16.md`
+§3 findings 1–6 all stay closed. What remains there is the reporting half of
+scenario (c) — `scoreDistribution` still carrying three colour keys for a Likert
+answer — which is phase 5 and contract `7.0`, and waits on the methodologist's
+answer to question 3 rather than on an agent.

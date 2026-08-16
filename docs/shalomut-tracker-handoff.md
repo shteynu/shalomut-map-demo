@@ -1,7 +1,55 @@
 # Shalomut Tracker — operational handoff
 
-**2026-08-16, closing that session: the branch gate changed meaning, and it did
-so because it was letting a whole service through unchecked.**
+**2026-08-16, closing a later session: the questionnaire audit has nothing left
+in it that an agent can act on, and what stops the rest is one person.**
+
+`refs/heads/main` is `f60f442`, asked of the remote itself. **One commit is
+waiting on a push**: the documentation commit carrying these paragraphs, which
+is deliberately not written here as a hash — three entries below were caught by
+exactly that, a commit that stated the tip and then became it. The load-bearing
+pointer is the other one: **the last commit that changes product code is
+`3fc32ec`**, the builder's answer scale, and it is on `main` already.
+
+All four workflows are green on `f60f442` — `Core verification` `31956098063`,
+`Browser smoke` `31956098095`, `Vercel Deployment & Pipeline Checks`
+`31956098070` and `CodeQL Security Analysis` `31956098262` — and
+`npm run verify` exits 0 on the same tree, `verify:db` included.
+
+**Every finding of `docs/questionnaire-modularity-audit-2026-08-16.md` §3 is
+now closed** — 1, 2, 3, 4 and 6 fixed, 5 withdrawn — and both recommendations of
+its §6 are built: the distribution buckets through the shared scoring bands, and
+the default is constructed once with the instrument id stamped into the round's
+snapshot. The last loose end that document left, and the one this session took,
+was the builder writing `wellbeing-colour` into the literal at every place a
+question is born; it now reads the scale from the questionnaire in hand, and the
+walk that proved it is in
+`docs/agent-tasks/archive/fix--a-new-question-answers-on-the-questionnaires-scale.md`.
+
+Three things are deliberately left, and none of them is an oversight:
+
+- **The reporting half of scenario (c).** `scoreDistribution` still carries
+  three colour keys for a Likert answer. That is a wire change, so it belongs to
+  phase 5 and contract `7.0` — and to the methodologist's answer about where the
+  bands sit once an answer is a Likert value.
+- **Scenario (d), a different dimension set.** Not planned, and part of its cost
+  is paid by phase 5 anyway. Next to it sits a thing worth not rediscovering:
+  `AI_ANALYTICS_DIMENSION_IDS` is derived from the frozen v2 manifest and does
+  reach live 6.0 prompts, which is harmless only because all six manifests are
+  asserted to carry identical dimension ids.
+- **`src/app/api/survey/[shareCode]/route.ts:68`**, which ships the global
+  dimension list inside an otherwise snapshot-built payload. The audit left this
+  one unresolved between agents. Read again this session: the parser refuses any
+  question outside the eight, and no in-app consumer reaches that route, so it
+  is wrong only under (d). Named here so nobody reports it as a new finding.
+
+**What actually blocks the product is unchanged and is not engineering.** The
+five questions of `docs/methodologist-questions-2026-08-15-ru.md` and `-he.md`
+have no answers yet. Question 2 — the item-to-dimension mapping and the
+reverse-scored list — is what stops phases 3, 5 and 6 of the research
+instrument: its machinery exists and its content does not.
+
+**2026-08-16, an earlier session that day: the branch gate changed meaning, and
+it did so because it was letting a whole service through unchecked.**
 
 `refs/heads/main` is `4c06351`, asked of the remote itself. Nothing is waiting on
 a push. The session walked findings 2–5 of
