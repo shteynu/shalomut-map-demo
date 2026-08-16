@@ -17,6 +17,7 @@ function canonical(
     roundId: 'round_encoder_1',
     organizationId: 'org_encoder_1',
     surveyDefinitionHash: `sha256:${'a'.repeat(64)}`,
+    measurementSnapshotHash: `sha256:${'b'.repeat(64)}`,
     totalResponses: 10,
     privacyThreshold: 10,
     isLocked: false,

@@ -303,6 +303,21 @@ export interface QuestionAggregate {
 
 export type SurveyDefinitionHash = `sha256:${string}`;
 
+/**
+ * Identity of what a round measured, as opposed to what it asked.
+ *
+ * Structurally the same string as `SurveyDefinitionHash` and deliberately a
+ * separate name: the two are computed from different projections and answer
+ * different questions, and the one place that mixed them up published a
+ * cross-round delta as like-for-like across a changed answer scale. TypeScript
+ * will not stop the two being swapped — template literal types are structural —
+ * so the names are the whole of the warning.
+ *
+ * Core-side only. It never reaches the wire; the AI contract speaks
+ * `surveyDefinitionHash`.
+ */
+export type MeasurementSnapshotHash = `sha256:${string}`;
+
 export interface DynamicQuestionAggregate {
   questionId: string;
   dimensionId: WellbeingDimensionId;

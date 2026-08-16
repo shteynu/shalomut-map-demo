@@ -21,7 +21,10 @@ import {
   isActivatableSurveyDefinition,
   parseSurveyDefinition,
 } from '../survey-definition';
-import { createSurveyDefinitionHash } from '../survey-definition-hash';
+import {
+  createMeasurementSnapshotHash,
+  createSurveyDefinitionHash,
+} from '../survey-definition-hash';
 import {
   QuestionAggregate,
   QuestionAnswerRecord,
@@ -280,6 +283,13 @@ export class AnalyticsService {
     const surveyDefinitionHash = createSurveyDefinitionHash(
       parsedDefinition.value.questions,
     );
+    // Computed beside the AI-visible hash rather than derived from it: the two
+    // read different fields of the same questions, and only this one can tell
+    // a round answered on colours from the same round answered on a Likert
+    // scale.
+    const measurementSnapshotHash = createMeasurementSnapshotHash(
+      parsedDefinition.value.questions,
+    );
     const scopedResponses = responses.filter(
       (response) => response.roundId === round.id,
     );
@@ -332,6 +342,7 @@ export class AnalyticsService {
         roundId: round.id,
         organizationId: round.organizationId,
         surveyDefinitionHash,
+        measurementSnapshotHash,
         totalResponses,
         privacyThreshold,
         isLocked: true,
@@ -394,6 +405,7 @@ export class AnalyticsService {
       roundId: round.id,
       organizationId: round.organizationId,
       surveyDefinitionHash,
+      measurementSnapshotHash,
       totalResponses,
       privacyThreshold,
       isLocked: false,

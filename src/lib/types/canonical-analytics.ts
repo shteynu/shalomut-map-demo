@@ -1,5 +1,6 @@
 import type { WellbeingDimensionId } from '../shalomut-source';
 import type {
+  MeasurementSnapshotHash,
   RoundBackgroundContext,
   RoundDimensionScore,
   SurveyDefinitionHash,
@@ -37,6 +38,17 @@ export interface CanonicalRoundAnalytics {
   roundId: string;
   organizationId: string;
   surveyDefinitionHash: SurveyDefinitionHash;
+  /**
+   * What this round measured, for deciding whether a delta against another
+   * round is like for like. Required rather than optional on purpose: two
+   * rounds that both left it undefined would compare equal and be reported as
+   * the same questionnaire, which is the exact silence this field was added to
+   * end.
+   *
+   * Core-side only — `encodeAnalyticsInput` names the keys that cross the wire
+   * and this is not one of them.
+   */
+  measurementSnapshotHash: MeasurementSnapshotHash;
   totalResponses: number;
   privacyThreshold: number;
   isLocked: boolean;

@@ -30,18 +30,27 @@ export interface RoundComparison {
    */
   minimumReadableDelta: number;
   /**
-   * Whether the two rounds asked different questions.
+   * Whether the two rounds measured differently — different questions, or the
+   * same questions answered on a different scale or in a different direction.
    *
-   * `surveyDefinitionHash` is computed on both runtimes and refused on mismatch
-   * everywhere else in the system, and the comparison was the one place that
-   * never read it: a school that rewrote half its questionnaire got its delta
-   * rendered exactly like a school that changed nothing.
+   * The comparison was once the one place in the system that read no identity
+   * at all: a school that rewrote half its questionnaire got its delta rendered
+   * exactly like a school that changed nothing. It then read
+   * `surveyDefinitionHash`, which was most of the answer and not all of it —
+   * that hash is the snapshot the AI is shown, and the AI is shown neither the
+   * scale nor the polarity, so two rounds asking identical questions on three
+   * colours and on a seven-point scale hashed the same. The delta subtracted
+   * one instrument's mean from another's and the flag stayed false.
    *
-   * It does not cancel the comparison. Dimensions are the stable taxonomy
+   * `measurementSnapshotHash` is the identity that covers what an answer is
+   * worth. It is strictly harder to collide with than the AI-visible hash, so
+   * nothing this flag used to catch stopped being caught.
+   *
+   * It still does not cancel the comparison. Dimensions are the stable taxonomy
    * across rounds by design (ADR-004), so the delta remains the honest
    * dimension-level statement it always was — but the reader has to be told
-   * that part of the movement can belong to the wording rather than to the
-   * school, and only this flag can tell them.
+   * that part of the movement can belong to the questionnaire rather than to
+   * the school, and only this flag can tell them.
    */
   questionnaireChanged: boolean;
 }
@@ -199,7 +208,7 @@ export function toRoundComparison(
       previous.totalResponses,
     ),
     questionnaireChanged:
-      current.surveyDefinitionHash !== previous.surveyDefinitionHash,
+      current.measurementSnapshotHash !== previous.measurementSnapshotHash,
   };
 }
 

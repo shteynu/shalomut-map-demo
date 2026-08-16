@@ -10,8 +10,18 @@ import {
   minimumReadableDelta,
   toRoundComparison,
 } from "@/lib/dashboard/round-comparison";
+import {
+  createMeasurementSnapshotHash,
+  createSurveyDefinitionHash,
+} from "@/lib/survey-definition-hash";
+import { createCanonicalSurveyDefinition } from "@/lib/survey-definition";
 import { surveyInstrument } from "@/lib/shalomut-source";
-import type { RoundDimensionScore, SurveyRound } from "@/lib/types/backend";
+import type {
+  AnalyticSurveyQuestion,
+  RoundDimensionScore,
+  SurveyDefinition,
+  SurveyRound,
+} from "@/lib/types/backend";
 import type { CanonicalRoundAnalytics } from "@/lib/types/canonical-analytics";
 
 function round(
@@ -56,6 +66,7 @@ function analytics(
     roundId,
     organizationId: "org-1",
     surveyDefinitionHash: "hash",
+    measurementSnapshotHash: "measurement",
     totalResponses: 12,
     privacyThreshold: 10,
     isLocked: false,
@@ -231,14 +242,137 @@ test("a rewritten questionnaire is carried into the comparison, not hidden", () 
   // The delta survives — dimensions are the stable taxonomy across rounds —
   // but it stops being indistinguishable from a like-for-like one.
   const comparison = toRoundComparison(
-    analytics("autumn", 70, { surveyDefinitionHash: "sha256:rewritten" }),
+    analytics("autumn", 70, { measurementSnapshotHash: "sha256:rewritten" }),
     round("spring", "closed", "2026-02-01"),
-    analytics("spring", 64, { surveyDefinitionHash: "sha256:original" }),
+    analytics("spring", 64, { measurementSnapshotHash: "sha256:original" }),
   );
 
   assert.ok(comparison);
   assert.strictEqual(comparison.questionnaireChanged, true);
   assert.strictEqual(comparison.overallDelta, 6);
+});
+
+/**
+ * The two identities, on questionnaires rather than on string literals.
+ *
+ * These build real definitions and run the real projections, because the
+ * defect being pinned is precisely that one projection sees a field and the
+ * other does not — a test that made up its own hashes would pass against
+ * either.
+ */
+function definitionOnScale(
+  scaleId: AnalyticSurveyQuestion["scaleId"],
+  polarity: AnalyticSurveyQuestion["polarity"] = "positive",
+): SurveyDefinition {
+  const definition = createCanonicalSurveyDefinition("סבב", 10);
+
+  return {
+    ...definition,
+    questions: definition.questions.map((question) =>
+      question.kind === "analytic"
+        ? { ...question, scaleId, polarity }
+        : question,
+    ),
+  };
+}
+
+test("the same questions on a different answer scale are not the same measurement", () => {
+  const onColours = definitionOnScale("wellbeing-colour");
+  const onSevenPoint = definitionOnScale("likert-7-frequency");
+
+  // Word for word the same questions, in the same order, on the same
+  // dimensions — so the snapshot the AI is shown is identical, and is meant
+  // to be. Changing that would move every round's identity and break a
+  // recomputation the Python service performs from a payload carrying no
+  // scale at all.
+  assert.strictEqual(
+    createSurveyDefinitionHash(onColours.questions),
+    createSurveyDefinitionHash(onSevenPoint.questions),
+  );
+
+  // What they measure is not the same: three colours score 100/60/0 and seven
+  // points score 0/17/33/50/67/83/100, so a delta across the pair subtracts
+  // one instrument's mean from another's.
+  assert.notStrictEqual(
+    createMeasurementSnapshotHash(onColours.questions),
+    createMeasurementSnapshotHash(onSevenPoint.questions),
+  );
+
+  const comparison = toRoundComparison(
+    analytics("autumn", 70, {
+      measurementSnapshotHash: createMeasurementSnapshotHash(
+        onSevenPoint.questions,
+      ),
+    }),
+    round("spring", "closed", "2026-02-01"),
+    analytics("spring", 64, {
+      measurementSnapshotHash: createMeasurementSnapshotHash(
+        onColours.questions,
+      ),
+    }),
+  );
+
+  assert.ok(comparison);
+  assert.strictEqual(comparison.questionnaireChanged, true);
+});
+
+test("the same question asked in the opposite direction is not the same measurement", () => {
+  // A polarity flip leaves the text alone and inverts what the answer is
+  // worth, so the score moves with nothing having happened to the school.
+  const asked = definitionOnScale("wellbeing-colour", "positive");
+  const askedBackwards = definitionOnScale("wellbeing-colour", "negative");
+
+  assert.strictEqual(
+    createSurveyDefinitionHash(asked.questions),
+    createSurveyDefinitionHash(askedBackwards.questions),
+  );
+  assert.notStrictEqual(
+    createMeasurementSnapshotHash(asked.questions),
+    createMeasurementSnapshotHash(askedBackwards.questions),
+  );
+
+  const comparison = toRoundComparison(
+    analytics("autumn", 70, {
+      measurementSnapshotHash: createMeasurementSnapshotHash(
+        askedBackwards.questions,
+      ),
+    }),
+    round("spring", "closed", "2026-02-01"),
+    analytics("spring", 64, {
+      measurementSnapshotHash: createMeasurementSnapshotHash(asked.questions),
+    }),
+  );
+
+  assert.strictEqual(comparison?.questionnaireChanged, true);
+});
+
+test("the measurement identity still catches everything the AI-visible one did", () => {
+  // Strictly harder to collide with, so switching the flag onto it cannot have
+  // stopped anything being reported.
+  const original = createCanonicalSurveyDefinition("סבב", 10);
+  const reworded: SurveyDefinition = {
+    ...original,
+    questions: original.questions.map((question, index) =>
+      index === 0 ? { ...question, text: `${question.text} (נוסח חדש)` } : question,
+    ),
+  };
+  const shortened: SurveyDefinition = {
+    ...original,
+    questions: original.questions.map((question, index) =>
+      index === 0 ? { ...question, enabled: false } : question,
+    ),
+  };
+
+  for (const changed of [reworded, shortened]) {
+    assert.notStrictEqual(
+      createSurveyDefinitionHash(original.questions),
+      createSurveyDefinitionHash(changed.questions),
+    );
+    assert.notStrictEqual(
+      createMeasurementSnapshotHash(original.questions),
+      createMeasurementSnapshotHash(changed.questions),
+    );
+  }
 });
 
 test("a score at the edge of a band is flagged as one", () => {
