@@ -1,5 +1,46 @@
 # Shalomut Tracker — operational handoff
 
+**2026-08-15, closing that session: the blocker that has stood since 2026-08-14
+now has something to send.**
+
+`refs/heads/main` is `3f93bc5`, asked of the remote itself. **One commit is
+waiting on a push**: `21f25dc` on `feat/a-lost-submit-leaves-a-trace`,
+documentation only. Everything else in this file is on `main`. All four
+workflows are green on `3f93bc5` — `Core verification` `31890754582`,
+`Browser smoke` `31890754644`, `Vercel Deployment & Pipeline Checks`
+`31890754567` and `CodeQL Security Analysis` `31890754561`. Nothing has run on
+`21f25dc`, which has not reached the remote.
+
+The two blocked items this file records — backlog §12 phases 3, 5 and 6, and
+the evidence-layer decisions — are blocked on the same person, and nothing had
+ever been written down to send them. `docs/methodologist-questions-2026-08-15-ru.md`
+and `-he.md` are that, in both languages an answer might come back in: five
+questions in plain language, each stating what a sufficient answer looks like.
+What the eight dimensions rest on; the item-to-dimension mapping and the
+reverse-scored list; where the bands belong once an answer is a Likert value
+rather than one of three colours; whether the two allocation grids are scored;
+and who is accountable for the intervention catalog. The first question names
+"it came from practice, not from a publication" as a legitimate answer, because
+the point is that the answer be recorded rather than that it be academic.
+
+**One claim was corrected while writing them, and it corrects this file's
+sources rather than this file.** `docs/scientific-evidence-layer-research-2026-08-09.md`
+§1.7 reads as though no attribution reaches the manager. It does:
+`dashboard-goals-panel.tsx:136` has printed `מבוסס על:` beside every current
+recommendation since `257bb2f` on 2026-08-11, and all 192 catalog entries carry
+a source. The study is a snapshot of `14c2269` and this is exactly the drift its
+own residual-risk note warns about. What the catalog actually cites is narrower
+than "evidence": ISO 45003 clauses and OECD/TALIS material, with 48 of the 192
+sharing the most generic label of them all. So the open question is not whether
+attribution exists but whether a clause of a standard, which attests that a risk
+category is recognised rather than that an action works, is the level of
+grounding this product should stand on. The questions document asks it that way.
+
+The recommendation deliberately *not* acted on: the agent's answer to the
+evidence layer stays what the research task file records — alternative A first,
+no retrieval node, because a retrieval stage has nothing to bind to while the
+catalog carries no structured evidence fields.
+
 **2026-08-15, a later session: the lost submit is countable now, and it has
 landed.**
 

@@ -5,10 +5,15 @@
 - Branch: feat/a-lost-submit-leaves-a-trace
 - Base branch: fix/the-first-submit-after-idle
 - Base commit: `9f617f3`
-- Current HEAD: `b8c23e1`, the third and last commit of this branch.
-- Status: complete, verified locally and landed. `refs/heads/main` is `b8c23e1`
-  read from the remote itself, so all three commits and `9f617f3` beneath them
-  are on `main`. Nothing waits on a push.
+- Current HEAD: `b8c23e1`, the last commit of *this task*. The branch itself has
+  moved on twice since — `3f93bc5`, the deployed reading of the counter, and
+  `21f25dc`, two documents for the methodologist that belong to no task file at
+  all. Neither is part of this work; the branch is simply where the session
+  carried on.
+- Status: complete, verified locally and landed. `refs/heads/main` is `3f93bc5`
+  read from the remote itself, so every commit of this task and `9f617f3`
+  beneath them are on `main`. `21f25dc` is not, and is the only thing waiting on
+  a push as this file is written.
 - Last updated: 2026-08-15
 - Last agent/tool: Claude Code (Opus 5)
 
