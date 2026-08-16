@@ -1,5 +1,43 @@
 # Shalomut Tracker — operational handoff
 
+**2026-08-16, closing that session: the branch gate changed meaning, and it did
+so because it was letting a whole service through unchecked.**
+
+`refs/heads/main` is `4c06351`, asked of the remote itself. Nothing is waiting on
+a push. The session walked findings 2–5 of
+`docs/questionnaire-modularity-audit-2026-08-16.md` §3 and closed each on its own
+branch; the archived task files under `docs/agent-tasks/archive/` hold the
+evidence, and this entry records only what outlives them.
+
+**`npm run verify:core` now runs the Python suite.** It did not before, and
+`.github/workflows/verify-core.yml` runs `verify:core` alone on every push — so
+a regression on the Python side was green on every branch and only met a red X
+on `main`, where `deploy-vercel.yml` runs `npm run verify` whole. This was not a
+theory: with a real prompt defect fully reinstated, the entire old chain — eight
+fitness checks, `typecheck`, `npm test`, `lint`, `build` — exited 0, while
+`npm run verify:ai` on the same tree exited 1.
+
+Two consequences worth knowing before the next session:
+
+- **No CI file changed, and none needed to.** `verify-core.yml` already builds
+  `ai-analytics-service/.venv`, because `npm test` drives the real Python
+  pipeline through it. The gap was never an environment boundary.
+- **`npm run verify` is now `verify:core && verify:db`.** `verify:ai` moved
+  rather than being added twice, so the deploy workflow's coverage is unchanged.
+  A developer without the virtualenv now fails the branch gate earlier and by
+  name instead of at deploy time. The 2026-08-15 entry below still describes
+  `verify:ai` as reached only through `npm run verify`; that sentence was true
+  when written and is superseded here.
+
+**One thing about the deployed environment is unknown and was not established.**
+`src/lib/server/request-question-suggestion.ts` resolves the AI service from
+`AI_SERVICE_URL` and falls back to `http://localhost:8000` when it is unset. If
+Vercel does not carry that variable, every suggestion in the deployed
+environment has been silently taking Core's template path and never reaching the
+model at all. Nobody has checked. It changes nothing about the fix that landed
+today, and it would change what anyone believes about the feature's behaviour in
+the deployed environment. One dashboard read answers it.
+
 **2026-08-15, closing that session: the blocker that has stood since 2026-08-14
 now has something to send.**
 

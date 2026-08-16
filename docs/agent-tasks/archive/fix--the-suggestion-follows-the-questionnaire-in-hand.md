@@ -5,8 +5,8 @@
 - Branch: `fix/the-suggestion-follows-the-questionnaire-in-hand`
 - Base branch: `main`
 - Base commit: `5904fc4`
-- Current HEAD: see `git log -1` on this branch
-- Status: implemented, verified, awaiting push
+- Current HEAD: `4c06351`
+- Status: complete — on `origin/main`, verified, archived at session close
 - Last updated: 2026-08-16
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -151,7 +151,7 @@ Nothing.
 
 ## Remaining
 
-Push. `git push` is an owner action here.
+Nothing on this task. Both commits are on `origin/main`.
 
 ## Changed files
 
@@ -182,7 +182,8 @@ Push. `git push` is an owner action here.
 
 - `npm run verify:core` — exit 0. **1071** TypeScript tests (1068 before) and
   **484** pytest tests (480 before), plus the eight fitness checks, `typecheck`,
-  `lint` and `build`.
+  `lint` and `build`. Re-run at session close against the final tree, with the
+  same result.
 - Execution proof that the canonical 24 answer on a three-point scale — the
   transcript is quoted under **Context**.
 - Falsification A — the prompt reaches for the frozen contract again: three
@@ -258,19 +259,35 @@ aliases are involved.
   been silently serving templates, which changes how urgent this fix was — not
   whether it was right.
 
-## Git state
+## Git state, at session close 2026-08-16
 
-- Branched from `5904fc4`, which reached `origin/main` during this session. The
-  branch is therefore a fast-forward and carries only this task.
+Asked of the remote itself, not of a tracking ref: `refs/heads/main` is
+`4c06351`, which is this branch's HEAD. `git log origin/main..HEAD` is empty.
+
+- Committed and pushed: `4039106` (the fix, its tests, the gate change) and
+  `4c06351` (the audit correction and the task files).
+- Staged: nothing.
+- Unstaged: `next-env.d.ts` only — a pre-existing modification that is not this
+  task's and was deliberately left alone.
+- Untracked: nothing. Confirmed with `git ls-files -o --exclude-standard`,
+  because `git status` has under-reported untracked files in this worktree
+  before.
 - `docs/agent-tasks/active/fix--one-lock-decision-and-one-list-of-dimensions.md`
-  archived here, its commits now being on `main`.
-- `next-env.d.ts` carries a pre-existing modification that is not this task's
-  and was left alone.
+  was archived in `4c06351`, its commits being on `main`.
+
+**Visibility.** Both commits are on the published branch, so this handoff is
+portable to another checkout or machine — not only to this worktree. The one
+uncommitted thing, `next-env.d.ts`, is visible here alone and belongs to nobody's
+task.
 
 ## Next concrete step
 
-Push:
+Nothing on this task — it is closed. The walk down
+`docs/questionnaire-modularity-audit-2026-08-16.md` §3 continues at **finding 6
+in that document's own numbering is already closed here**, so the next
+unaddressed item is whichever the owner picks next; findings 1–5 are now
+confirmed-and-fixed, fixed, fixed, fixed and withdrawn respectively.
 
-```bash
-git push origin fix/the-suggestion-follows-the-questionnaire-in-hand:main
-```
+The two things this task deliberately left for someone else, both recorded above
+in full: the hardcoded `scaleId: "wellbeing-colour"` on a new builder question,
+and the unanswered question of whether `AI_SERVICE_URL` is set on Vercel.
