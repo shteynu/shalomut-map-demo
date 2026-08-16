@@ -13,10 +13,12 @@ import json
 import re
 from typing import Any, Dict, Iterable, Optional
 
-from src.contracts import (
-    AI_ANALYTICS_DIMENSION_NAMES_HEBREW,
-    AI_ANALYTICS_QUESTIONS,
-)
+# The frozen v2 manifest's question list is deliberately not imported here.
+# It is a published contract, immutable by design, and no prompt may take the
+# questionnaire from it: the questionnaire a prompt is about arrives from the
+# caller. Dimension names are a different matter — every shipped contract
+# version carries the same eight, asserted in `src.contracts`.
+from src.contracts import AI_ANALYTICS_DIMENSION_NAMES_HEBREW
 
 # How a status is named to the model. Deliberately not a colour: the copy is
 # refused for naming a foreign colour, so handing the model colour words to
@@ -555,41 +557,40 @@ def v6_intervention_fallback(
         narrative += " ההמלצה נשארת נאמנה לנתונים המצרפיים ולגבולות הפרטיות של הסבב."
     return narrative[:500].rstrip()
 
-def canonical_statements_for_dimension(dimension_id: str) -> list[str]:
-    """The instrument's own items for one dimension.
-
-    They are the style the suggestion has to match: the respondent rates
-    agreement on a six-point scale, so an item is a first-person statement about
-    the writer's own week, never a question and never two ideas in one line.
-    """
-    return [
-        question["textHebrew"]
-        for question in AI_ANALYTICS_QUESTIONS
-        if question["dimensionId"] == dimension_id
-    ]
-
-
 def question_suggestion_prompt(
     *,
     dimension_id: str,
     dimension_hebrew: str,
     existing_texts: Iterable[str] = (),
+    style_texts: Iterable[str] = (),
 ) -> str:
     """Ask for one more item for one dimension of the questionnaire.
 
     This prompt is not about a round: it carries no scores, no aggregates and no
     school, because a questionnaire is built before anyone has answered it. What
-    it carries is the instrument — the canonical items of this dimension as the
-    style to match — and whatever the manager has already written, so the model
-    does not hand back a line the questionnaire already has.
+    it carries is the questionnaire in hand — the draft's own items in this
+    dimension as the style to match, and everything the draft already holds, so
+    the model does not hand back a line it already has.
+
+    Both lists come from the caller. This function used to build the style
+    examples itself, out of `contracts/ai-analytics-v2.json` — a published
+    contract that is frozen by design and cannot follow the instrument. It had
+    already fallen behind: thirteen of its twenty-four sentences are worded
+    differently in Core's own instrument today, and the prompt told the model to
+    copy the frozen wording. A manager drafting a different instrument was shown
+    imitations of an old one, and nothing here could tell.
+
+    `dimension_id` stays in the signature because the caller identifies the
+    dimension by id and the log reads it; nothing in the prompt is looked up
+    from it any more.
 
     The suggestion is a draft for a person to rewrite, which is why the prompt
     asks for the mechanical properties a draft must have (one Hebrew sentence,
     no numbers) and leaves the judgement about wording to the manager.
     """
-    examples = canonical_statements_for_dimension(dimension_id)
+    examples = [text.strip() for text in style_texts if text and text.strip()]
     example_section = (
-        "היגדים קיימים בממד זה בשאלון המקורי:\n"
+        "היגדים קיימים בממד זה בשאלון שנבנה כעת:\n"
         + "\n".join(f"- {example}" for example in examples)
         + "\n"
         if examples
@@ -603,15 +604,23 @@ def question_suggestion_prompt(
         if already
         else ""
     )
+    # Register is pointed at, never asserted. The old prompt said the examples
+    # were feminine and told the model to match that; the draft's items are
+    # whatever the manager wrote, and Core's own instrument writes «אני יכול/ה».
+    # With no examples in hand there is nothing to point at, so the clause goes.
+    register_clause = "באותו משלב ובאותה צורת פנייה כמו בדוגמאות, " if examples else ""
 
     return (
         "את/ה מומחה/ית לבניית שאלוני רווחה לצוותי חינוך.\n"
         f"הממד המבוקש: {dimension_hebrew}.\n"
         f"{example_section}"
         f"{already_section}"
-        "כתוב היגד אחד חדש לממד הזה, שהמשיב מדרג את הסכמתו איתו בסולם של "
-        "שש דרגות. ההיגד בגוף ראשון על החוויה של המשיב עצמו בעבודה, "
-        "בלשון נקבה כמו בדוגמאות, רעיון אחד בלבד, משפט אחד שמסתיים בנקודה. "
+        # No number of steps: the questionnaire chooses a scale per question,
+        # and this service is not told which one. The prompt used to say six,
+        # which no shipped scale has — they have three, five, five and seven.
+        "כתוב היגד אחד חדש לממד הזה, שהמשיב מדרג אותו בסולם התשובות של "
+        "השאלון. ההיגד בגוף ראשון על החוויה של המשיב עצמו בעבודה, "
+        f"{register_clause}רעיון אחד בלבד, משפט אחד שמסתיים בנקודה. "
         "כתוב בעברית בלבד בלי אותיות לטיניות, בלי מספרים, בלי סימן שאלה "
         "ובלי מירכאות. אל תתייחס לאדם מסוים, לתפקיד מזהה או לנתונים של בית "
         "הספר. החזר את ההיגד עצמו בלבד, בלי כותרת, בלי מספור ובלי הסבר."

@@ -12,6 +12,7 @@ that the endpoint is closed to an unauthenticated caller.
 """
 
 import json
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -78,33 +79,117 @@ def _answering_provider(monkeypatch, *answers):
     return prompts
 
 
-def test_the_prompt_carries_the_instrument_and_the_draft(monkeypatch):
+def _frozen_manifest_sentences() -> list[str]:
+    """The v2 manifest's items, read from the file rather than through the code.
+
+    Deliberately not `AI_ANALYTICS_QUESTIONS`. The test this serves asks whether
+    the prompt is still coupled to that manifest, and asking the module under
+    test for the answer is how the previous version of this test passed while
+    the coupling it was named after was fully in place.
+    """
+    manifest_path = (
+        Path(__file__).resolve().parents[2] / "contracts" / "ai-analytics-v2.json"
+    )
+    with manifest_path.open("r", encoding="utf-8") as manifest_file:
+        manifest = json.load(manifest_file)
+
+    return [
+        question["textHebrew"]
+        for dimension in manifest["dimensions"]
+        for question in dimension["questions"]
+    ]
+
+
+def test_the_prompt_carries_the_draft_and_never_the_frozen_contract(monkeypatch):
     """A suggestion has to sound like the questionnaire it is joining.
 
-    The canonical items of the dimension are the style, and the manager's own
-    lines are there so the model does not hand back one of them.
+    Which questionnaire that is arrives from Core. This prompt used to build its
+    own style examples out of `contracts/ai-analytics-v2.json` — a published
+    contract, frozen by design — and it had already fallen behind the instrument
+    Core ships: thirteen of those twenty-four sentences are worded differently
+    there today. A manager drafting a different instrument was shown imitations
+    of an old one.
     """
     prompts = _answering_provider(monkeypatch, SUGGESTED_ITEM)
     existing = "אני יודעת מה מצפים ממני בשבוע הקרוב."
+    # A sentence that is in no manifest and in no instrument: it can only reach
+    # the prompt by having been sent.
+    style = "אני מוצאת זמן לנשום בין שיעורים."
 
     suggestion = llm_provider_service.suggest_question_result(
         dimension_id="certainty",
         dimension_hebrew="ודאות",
         existing_texts=[existing],
+        style_texts=[style],
     )
 
     assert suggestion.text == SUGGESTED_ITEM
     assert suggestion.attempts == 1
     prompt = prompts[0]
-    for canonical in hebrew_prompts.canonical_statements_for_dimension(
-        "certainty",
-    ):
-        assert canonical in prompt
+    assert style in prompt
     assert existing in prompt
+
+    for frozen in _frozen_manifest_sentences():
+        assert frozen not in prompt, "the frozen manifest reached a live prompt"
+
     # No round travels with a suggestion, so nothing about scores or a school
     # may appear in the prompt at all.
     assert "ציון" not in prompt
     assert "רקע בית הספר" not in prompt
+
+
+def test_the_prompt_module_does_not_hold_the_frozen_question_list():
+    """The coupling, not only its effect.
+
+    The behavioural test above is the one that matters, but it can only refuse
+    the sentences it thinks to look for. This refuses the import itself, which
+    is the thing that made those sentences reachable.
+    """
+    assert not hasattr(hebrew_prompts, "AI_ANALYTICS_QUESTIONS")
+    assert not hasattr(hebrew_prompts, "canonical_statements_for_dimension")
+
+
+def test_the_prompt_states_no_number_of_scale_steps(monkeypatch):
+    """The service is not told which scale the question will be answered on.
+
+    It used to say six. The product ships four scales, with three, five, five
+    and seven points, and `likert-6-extent` is an id the definition parser
+    refuses. Six was not a scale anyone could choose.
+    """
+    prompt = hebrew_prompts.question_suggestion_prompt(
+        dimension_id="certainty",
+        dimension_hebrew="ודאות",
+        style_texts=["אני מוצאת זמן לנשום בין שיעורים."],
+    )
+
+    assert "שש דרגות" not in prompt
+    for number_word in ("שלוש דרגות", "חמש דרגות", "שבע דרגות"):
+        assert number_word not in prompt, "the scale is the questionnaire's to pick"
+
+
+def test_the_prompt_claims_a_register_only_when_it_has_examples():
+    """The old prompt asserted the examples were feminine and said to copy that.
+
+    They were, because they were the frozen manifest's. The draft's items are
+    whatever the manager wrote, and Core's own instrument writes «אני יכול/ה»,
+    so the prompt now points at the examples instead of describing them — and
+    with no examples in hand it says nothing about register at all.
+    """
+    with_examples = hebrew_prompts.question_suggestion_prompt(
+        dimension_id="certainty",
+        dimension_hebrew="ודאות",
+        style_texts=["אני מוצאת זמן לנשום בין שיעורים."],
+    )
+    without_examples = hebrew_prompts.question_suggestion_prompt(
+        dimension_id="certainty",
+        dimension_hebrew="ודאות",
+    )
+
+    assert "בלשון נקבה" not in with_examples
+    assert "כמו בדוגמאות" in with_examples
+    assert "כמו בדוגמאות" not in without_examples
+    # An empty draft gets no example section rather than a substitute one.
+    assert "היגדים קיימים בממד זה" not in without_examples
 
 
 @pytest.mark.parametrize(
@@ -286,8 +371,50 @@ def test_a_long_draft_does_not_grow_the_prompt_without_limit(monkeypatch):
         dimensionId="certainty",
         existingTexts=["אני יודעת מה מצפים ממני." for _ in range(200)]
         + ["", "   "],
+        styleTexts=["אני מוצאת זמן לנשום." for _ in range(200)] + ["", "   "],
     )
 
-    bounded = request.bounded_existing_texts()
-    assert len(bounded) == MAX_EXISTING_TEXTS
-    assert all(text.strip() for text in bounded)
+    for bounded in (request.bounded_existing_texts(), request.bounded_style_texts()):
+        assert len(bounded) == MAX_EXISTING_TEXTS
+        assert all(text.strip() for text in bounded)
+
+
+def test_the_endpoint_forwards_the_style_texts(monkeypatch):
+    """The style list is the point of the request, so it may not be dropped here.
+
+    An older Core sends none, and that is honest: the prompt then shows no
+    examples. What it must never do is reach for a questionnaire of its own.
+    """
+    monkeypatch.setattr(settings, "env", "development")
+    monkeypatch.setattr(settings, "ai_webhook_secret", "")
+    style = "אני מוצאת זמן לנשום בין שיעורים."
+    seen = {}
+
+    def record(**kwargs):
+        seen.update(kwargs)
+        return type("S", (), {"text": SUGGESTED_ITEM, "attempts": 1})()
+
+    with patch.object(llm_provider_service, "suggest_question_result", record):
+        response = client.post(
+            "/api/v1/questions/suggest",
+            json={
+                "dimensionId": "certainty",
+                "existingTexts": ["אני יודעת."],
+                "styleTexts": [style],
+            },
+        )
+
+    assert response.status_code == 200
+    assert seen["style_texts"] == [style]
+    assert seen["existing_texts"] == ["אני יודעת."]
+
+    # And a request from a Core that does not know the field still answers.
+    seen.clear()
+    with patch.object(llm_provider_service, "suggest_question_result", record):
+        response = client.post(
+            "/api/v1/questions/suggest",
+            json={"dimensionId": "certainty"},
+        )
+
+    assert response.status_code == 200
+    assert seen["style_texts"] == []

@@ -545,6 +545,7 @@ class LLMProviderService:
         dimension_id: str,
         dimension_hebrew: str,
         existing_texts: Iterable[str] = (),
+        style_texts: Iterable[str] = (),
         retry_tier: str = "fast",
     ) -> QuestionSuggestion:
         """Draft one more questionnaire item for one dimension.
@@ -563,11 +564,13 @@ class LLMProviderService:
         """
         model_name = self._model_for_tier(retry_tier)
         existing = [text for text in existing_texts if text and text.strip()]
+        style = [text for text in style_texts if text and text.strip()]
         text, attempts, fallback_reason = self._complete_with_retries(
             build_prompt=lambda retry_critique=None: hebrew_prompts.question_suggestion_prompt(
                 dimension_id=dimension_id,
                 dimension_hebrew=dimension_hebrew,
                 existing_texts=existing,
+                style_texts=style,
             ),
             system_prompt=(
                 "את/ה מומחה/ית לבניית שאלוני רווחה לצוותי חינוך. "

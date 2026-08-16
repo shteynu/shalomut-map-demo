@@ -65,6 +65,7 @@ test('a model-written item comes back labelled as AI', async () => {
     suggestionRequest({
       dimensionId: 'certainty',
       existingTexts: ['אני יודעת מה מצפים ממני.'],
+      styleTexts: ['אני יודעת מה מצפים ממני.'],
     }),
   );
   const body = await response.json();
@@ -85,9 +86,45 @@ test('a model-written item comes back labelled as AI', async () => {
     (calls[0].init.headers as Record<string, string>).Authorization,
     'Bearer webhook-secret',
   );
+  // Both lists reach the AI service, and the style list is the one that decides
+  // what the model imitates. The service builds no examples of its own: it used
+  // to take them from the frozen v2 contract, which cannot follow the
+  // instrument Core ships.
   assert.deepStrictEqual(JSON.parse(calls[0].init.body as string), {
     dimensionId: 'certainty',
     existingTexts: ['אני יודעת מה מצפים ממני.'],
+    styleTexts: ['אני יודעת מה מצפים ממני.'],
+  });
+});
+
+test('a request that names no style items still travels, carrying an empty list', async () => {
+  // An empty list is not the same as an absent field: it says the draft has
+  // nothing in this dimension yet, and the service shows no examples rather
+  // than substituting a questionnaire of its own.
+  process.env.AI_SERVICE_URL = 'https://ai.example/api/v1/webhook/events';
+  const calls = stubFetch(
+    () =>
+      new Response(
+        JSON.stringify({
+          dimensionId: 'balance',
+          dimensionNameHebrew: 'איזון',
+          questionText: SUGGESTED_ITEM,
+          attempts: 1,
+          source: 'llm',
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      ),
+  );
+
+  const response = await suggestQuestion(
+    suggestionRequest({ dimensionId: 'balance' }),
+  );
+
+  assert.strictEqual(response.status, 200);
+  assert.deepStrictEqual(JSON.parse(calls[0].init.body as string), {
+    dimensionId: 'balance',
+    existingTexts: [],
+    styleTexts: [],
   });
 });
 

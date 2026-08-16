@@ -23,7 +23,8 @@ const dimensionIds = new Set(
   surveyInstrument.dimensions.map((dimension) => dimension.id as string),
 );
 
-function parseExistingTexts(value: unknown): string[] {
+/** Both text lists are bounded the same way; only their meaning differs. */
+function parseTexts(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value
     .filter((text): text is string => typeof text === 'string')
@@ -42,7 +43,10 @@ export async function POST(request: Request) {
     );
   }
 
-  const { dimensionId, existingTexts } = payload as Record<string, unknown>;
+  const { dimensionId, existingTexts, styleTexts } = payload as Record<
+    string,
+    unknown
+  >;
 
   if (typeof dimensionId !== 'string' || !dimensionIds.has(dimensionId)) {
     return NextResponse.json(
@@ -53,7 +57,11 @@ export async function POST(request: Request) {
 
   const result = await requestQuestionSuggestion({
     dimensionId,
-    existingTexts: parseExistingTexts(existingTexts),
+    existingTexts: parseTexts(existingTexts),
+    // The draft's items in this dimension, shown to the model as the style to
+    // match. An absent list is honest — the AI service shows no examples rather
+    // than substituting a frozen contract's.
+    styleTexts: parseTexts(styleTexts),
   });
 
   if (!result.ok) {

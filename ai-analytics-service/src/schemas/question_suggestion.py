@@ -23,14 +23,28 @@ MAX_EXISTING_TEXT_LENGTH = 300
 class QuestionSuggestionRequest:
     dimensionId: str
     existingTexts: Optional[List[str]] = None
+    # The draft's own items in the dimension being asked about, which the prompt
+    # shows the model as the style to match. Optional because the field is newer
+    # than the endpoint: an older Core sends none, and the prompt then shows no
+    # examples rather than reaching for a frozen contract's — which is what it
+    # used to do, and what made a manager drafting one instrument see imitations
+    # of another.
+    styleTexts: Optional[List[str]] = None
 
     def bounded_existing_texts(self) -> List[str]:
-        texts = [
-            text.strip()[:MAX_EXISTING_TEXT_LENGTH]
-            for text in (self.existingTexts or [])
-            if isinstance(text, str) and text.strip()
-        ]
-        return texts[:MAX_EXISTING_TEXTS]
+        return _bounded(self.existingTexts)
+
+    def bounded_style_texts(self) -> List[str]:
+        return _bounded(self.styleTexts)
+
+
+def _bounded(texts: Optional[List[str]]) -> List[str]:
+    bounded = [
+        text.strip()[:MAX_EXISTING_TEXT_LENGTH]
+        for text in (texts or [])
+        if isinstance(text, str) and text.strip()
+    ]
+    return bounded[:MAX_EXISTING_TEXTS]
 
 
 @dataclass

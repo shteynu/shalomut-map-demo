@@ -2,6 +2,7 @@ import {
   surveyInstrument,
   type WellbeingDimensionId,
 } from "@/lib/shalomut-source";
+import type { BuilderQuestion } from "./types";
 
 /**
  * Where a suggested item came from, and it is never decorative.
@@ -46,12 +47,49 @@ export function templateSuggestionForDimension(
     : null;
 }
 
+/**
+ * The draft's own items in one dimension: what the model is shown as the style.
+ *
+ * A separate rule from the do-not-repeat list, and narrower than it on purpose.
+ * A demographic item is not a wellbeing statement — "כמה שנים את/ה מלמד/ת?" is
+ * a question with a factual answer, and offering it as the shape to imitate
+ * teaches the model the one form the validator refuses. Another dimension's
+ * items are about another subject.
+ *
+ * Named and exported rather than written inline at the call site, because it is
+ * the rule this whole change exists to state: the suggestion follows the
+ * questionnaire being written.
+ */
+export function styleTextsForDimension(
+  questions: readonly BuilderQuestion[],
+  dimensionId: WellbeingDimensionId,
+): string[] {
+  return questions
+    .filter(
+      (question) =>
+        question.kind === "analytic" && question.dimensionId === dimensionId,
+    )
+    .map((question) => question.text)
+    .filter((text) => text.trim().length > 0);
+}
+
 export type AiSuggestionOutcome =
   | { ok: true; suggestion: QuestionSuggestion }
   | { ok: false; error: string };
 
 /**
  * Ask the AI service, through Core, for one more item for one dimension.
+ *
+ * Two lists travel, and they are not the same list. `existingTexts` is the whole
+ * draft, so the model does not hand back a line the questionnaire already holds.
+ * `styleTexts` is the draft's own analytic items *in this dimension*, and it is
+ * what the model is shown as the style to match — which is why demographic items
+ * and other dimensions are kept out of it.
+ *
+ * The service used to build that style list itself, from the frozen v2 contract,
+ * and it had already drifted from the instrument Core ships. Sending it from
+ * here is what makes the suggestion follow the questionnaire being written
+ * rather than a published copy of an older one.
  *
  * The failure path returns Hebrew a manager can read, and the caller falls back
  * to the template under the template's own label. It never relabels a failure
@@ -61,11 +99,12 @@ export type AiSuggestionOutcome =
 export async function requestAiQuestionSuggestion(
   dimensionId: WellbeingDimensionId,
   existingTexts: string[] = [],
+  styleTexts: string[] = [],
 ): Promise<AiSuggestionOutcome> {
   const response = await fetch("/api/manager/question-suggestion", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ dimensionId, existingTexts }),
+    body: JSON.stringify({ dimensionId, existingTexts, styleTexts }),
   }).catch(() => null);
 
   if (!response) {

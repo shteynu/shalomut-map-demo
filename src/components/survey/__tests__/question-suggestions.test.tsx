@@ -6,10 +6,14 @@ import { QuestionEditDialog } from "../survey-builder/question-edit-dialog";
 import { SurveyBuilderQuestions } from "../survey-builder/survey-builder-questions";
 import {
   requestAiQuestionSuggestion,
+  styleTextsForDimension,
   suggestionDimensionId,
   templateSuggestionForDimension,
 } from "../survey-builder/question-suggestions";
-import type { BuilderQuestion } from "../survey-builder/types";
+import type {
+  BuilderAnalyticQuestion,
+  BuilderQuestion,
+} from "../survey-builder/types";
 
 /**
  * The builder's question library covered three dimensions of eight, so a manager
@@ -29,7 +33,7 @@ afterEach(() => {
   globalThis.fetch = realFetch;
 });
 
-function draft(text: string): BuilderQuestion {
+function draft(text: string): BuilderAnalyticQuestion {
   return {
     id: "suggested-1",
     draftKey: "suggested-draft-1",
@@ -120,6 +124,59 @@ test("a model-written item is labelled AI; anything else is not", async () => {
   assert.ok(outcome.ok);
   assert.strictEqual(outcome.suggestion.source, "ai");
   assert.strictEqual(outcome.suggestion.text, SUGGESTED_ITEM);
+});
+
+test("the style the model is shown is the draft's own items in that dimension", () => {
+  const inCertainty = draft("אני יודעת מה מצפים ממני בשבוע הקרוב.");
+  const draftQuestions: BuilderQuestion[] = [
+    inCertainty,
+    { ...inCertainty, dimensionId: "meaning", text: "אני מוצאת משמעות בעבודה שלי." },
+    {
+      id: "bg-1",
+      draftKey: "bg-draft-1",
+      text: "כמה שנים את/ה מלמד/ת?",
+      required: false,
+      enabled: true,
+      kind: "background" as const,
+      answerMode: "single-choice" as const,
+      options: [],
+    },
+  ];
+
+  // The demographic item is a question with a factual answer — exactly the
+  // shape the validator refuses — and `meaning` is about another subject.
+  assert.deepStrictEqual(styleTextsForDimension(draftQuestions, "certainty"), [
+    "אני יודעת מה מצפים ממני בשבוע הקרוב.",
+  ]);
+  assert.deepStrictEqual(styleTextsForDimension(draftQuestions, "meaning"), [
+    "אני מוצאת משמעות בעבודה שלי.",
+  ]);
+  // A dimension the draft does not cover yet sends nothing, and the service
+  // shows no examples rather than substituting a questionnaire of its own.
+  assert.deepStrictEqual(styleTextsForDimension(draftQuestions, "balance"), []);
+});
+
+test("both text lists travel, and they are not the same list", async () => {
+  let sent: Record<string, unknown> = {};
+  globalThis.fetch = (async (_url: string, init: RequestInit) => {
+    sent = JSON.parse(String(init.body));
+    return new Response(
+      JSON.stringify({ questionText: SUGGESTED_ITEM, source: "ai" }),
+      { status: 200 },
+    );
+  }) as unknown as typeof fetch;
+
+  await requestAiQuestionSuggestion(
+    "certainty",
+    ["אני יודעת.", "כמה שנים את/ה מלמד/ת?"],
+    ["אני יודעת."],
+  );
+
+  assert.deepStrictEqual(sent.existingTexts, [
+    "אני יודעת.",
+    "כמה שנים את/ה מלמד/ת?",
+  ]);
+  assert.deepStrictEqual(sent.styleTexts, ["אני יודעת."]);
 });
 
 test("a refused request comes back as Hebrew the manager can read", async () => {

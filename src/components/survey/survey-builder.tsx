@@ -34,6 +34,7 @@ import {
 import { QuestionEditDialog } from "./survey-builder/question-edit-dialog";
 import {
   requestAiQuestionSuggestion,
+  styleTextsForDimension,
   suggestionDimensionId,
   templateSuggestionForDimension,
   type QuestionSuggestion,
@@ -430,6 +431,10 @@ export function SurveyBuilder({
       const outcome = await requestAiQuestionSuggestion(
         targetDimensionId,
         questions.map((question) => question.text),
+        // The style the model matches, out of the questionnaire actually being
+        // written. The service used to supply this list itself, from a frozen
+        // contract that cannot follow the instrument.
+        styleTextsForDimension(questions, targetDimensionId),
       );
 
       if (outcome.ok) {

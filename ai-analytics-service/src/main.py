@@ -204,6 +204,7 @@ async def suggest_question(
                 payload.dimensionId
             ],
             existing_texts=payload.bounded_existing_texts(),
+            style_texts=payload.bounded_style_texts(),
         )
     except ProviderUnavailableError as error:
         raise HTTPException(

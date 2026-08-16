@@ -54,6 +54,8 @@ function isNonEmptyString(value: unknown): value is string {
 export async function requestQuestionSuggestion(input: {
   dimensionId: string;
   existingTexts?: string[];
+  /** The draft's own items in this dimension: the style the model matches. */
+  styleTexts?: string[];
 }): Promise<QuestionSuggestionResult> {
   const endpoint = resolveAiServiceEndpoint(SUGGESTION_PATH);
   // Shorter than the analytics dispatch timeout on purpose: a manager is
@@ -71,6 +73,7 @@ export async function requestQuestionSuggestion(input: {
       body: JSON.stringify({
         dimensionId: input.dimensionId,
         existingTexts: input.existingTexts ?? [],
+        styleTexts: input.styleTexts ?? [],
       }),
       signal: AbortSignal.timeout(timeoutMs),
     });

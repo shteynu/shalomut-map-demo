@@ -1964,6 +1964,14 @@
             "items": {
               "type": "string"
             }
+          },
+          "styleTexts": {
+            "type": "array",
+            "maxItems": 40,
+            "description": "The draft's own analytic items in this dimension, shown to the model as the style to match. Narrower than `existingTexts`, which is the whole draft: demographic items and other dimensions are excluded. Absent or empty means the prompt shows no examples — the AI service never substitutes a questionnaire of its own.",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
