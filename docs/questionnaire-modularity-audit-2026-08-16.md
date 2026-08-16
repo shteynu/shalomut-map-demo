@@ -256,10 +256,67 @@ import) and quietly in Core.
    gate. A manager building a 126-item instrument is shown imitations of the old
    one. The same file's docstring asserts a six-point scale that no shipped
    scale matches.
-5. **`src/config.py` imports `src/contracts.py`**, which raises `RuntimeError`
+
+   **Confirmed and sharpened by execution, 2026-08-16, while fixing it.** Three
+   parts of this were understated. The six-point claim is not confined to a
+   docstring: `בסולם של שש דרגות` is in the prompt body sent to the model, and
+   the canonical 24 are answered on `wellbeing-colour`, which has **three**
+   points — so the number was wrong for the instrument that actually ships, not
+   only for the one being adopted. The prompt also instructed the model to write
+   `בלשון נקבה כמו בדוגמאות`, and the frozen manifest and Core's own instrument
+   have **already diverged in 13 of their 24 sentences** (`אני יכולה` against
+   `אני יכול/ה`), so the prompt was teaching a wording the product had
+   deliberately rewritten. And nothing pinned any of it: rebinding the manifest
+   to eight fabricated items left the Python suite at 480 passed, because the
+   one test that looked like a pin compared the prompt against the function that
+   built it.
+
+   Two parts of the diagnosis were wrong. "With no capability gate" implies the
+   fix is a gate; the endpoint is deliberately outside the round-analytics
+   contract versions, and the defect is that the prompt read a frozen artifact
+   at all. And the TypeScript template half is not part of the leak — it already
+   reads Core's living `surveyInstrument` and follows the 126 for free.
+
+   Fixed on `fix/the-suggestion-follows-the-questionnaire-in-hand`: the style
+   examples travel from Core as `styleTexts`, the prompt names no number of
+   scale steps, and the register is pointed at rather than asserted.
+5. ~~**`src/config.py` imports `src/contracts.py`**, which raises `RuntimeError`
    at module import unless the v2 manifest defines exactly 24 unique questions.
    A twenty-fifth question takes the whole Python service down at startup rather
-   than degrading.
+   than degrading.~~
+
+   **Withdrawn, 2026-08-16.** The mechanism is real — `config.py` imports
+   `contracts.py`, which raises at module scope — but the premise is not. A
+   twenty-fifth question does not travel this path: `AI_ANALYTICS_QUESTION_IDS`
+   is built solely from `contracts/ai-analytics-v2.json`, a published manifest
+   that is immutable by design and that
+   `docs/default-research-instrument-plan-2026-08-14.md:91-93` states is
+   untouched by the 126-item rollout. A manager's new question lands in
+   `SurveyDefinitionVersion` and ships as a dynamic 3.0–6.0 payload; the guard's
+   only consumer, `mcp_types.py:620`, is reachable for 2.0 alone, which no
+   current producer emits. The decisive evidence is that the instrument and the
+   manifest **have already diverged in 13 of 24 texts** while the service runs
+   normally: the guard demonstrably does not track the instrument, because it
+   was never about it. A fail-fast tripwire on an immutable published artifact
+   is correct design. No code change.
+
+   **What is really there, next to it.** `AI_ANALYTICS_DIMENSION_IDS` and
+   `AI_ANALYTICS_DIMENSION_NAMES_HEBREW` are also derived from the frozen v2
+   manifest (`contracts.py:46-52`) and **do** reach live 6.0 prompts
+   (`hebrew_prompts.py:225, :293`) and the suggestion endpoint's whitelist
+   (`main.py:186`). This is harmless only because `contracts.py:69-92` asserts
+   that all six manifests carry identical dimension ids. Under scenario (d) — a
+   ninth dimension — it becomes finding 4 again, for the taxonomy. Named here so
+   nobody rediscovers it as a surprise; not worth fixing before (d) is planned.
+6. **A regression on the Python side is green on every branch.** `verify:core`
+   ran the eight fitness checks, `typecheck`, `npm test`, `lint` and `build`,
+   but no pytest, and `.github/workflows/verify-core.yml` runs `verify:core`
+   alone on every push. Established by execution while fixing finding 4: with
+   the prompt defect fully reinstated, that whole chain exited 0. The workflow
+   already builds the service's virtualenv, because `npm test` drives the real
+   Python pipeline through it, so the gap was not an environment boundary.
+   Fixed in the same branch as finding 4 by folding `verify:ai` into
+   `verify:core`.
 
 ## 4. Options, with no winner declared
 
