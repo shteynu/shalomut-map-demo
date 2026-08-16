@@ -8,6 +8,7 @@ import {
 } from '../ai-contract-version';
 import { IRoundRepository, ISurveyRepository } from '../repositories/interfaces';
 import { statusForScore } from '../scoring-bands';
+import { AnswerScaleId, COLOUR_SCALE_ID } from '../survey/answer-scales';
 import {
   WellbeingDimensionId,
   WellbeingStatus,
@@ -69,24 +70,46 @@ export { getProducedAnalyticsContractVersion };
 /**
  * Which colour a single answer counts as in a question's distribution.
  *
- * This is the respondent's own choice rather than an aggregation, so the shared
- * score bands have no say here: a distribution reports what people picked. The
- * score fallback covers a stored row whose value is not one of the three, and
- * it reads the response scale that produced the score in the first place.
+ * The colour scale is the one scale whose points *are* statuses, so a colour
+ * question reports the respondent's own choice and no band has any say in it.
+ * Every other scale has no colour of its own, and its answer is reported by the
+ * band its score falls in — the same `contracts/scoring-bands.json` the
+ * dimension average uses, so a question and the stone above it cannot disagree
+ * about where yellow starts.
+ *
+ * It used to take the nearest colour anchor by score instead, which was wrong
+ * in a way nothing could see. The anchors score `100`/`60`/`0`, so nearest put
+ * the crossovers at 80 and 30 while the shared bands put them at 75 and 50, and
+ * the two disagree on exactly two of the scores the shipped scales produce —
+ * both of them anchors a respondent clicks. `במידה רבה`, point 4 of 5, scores
+ * 75: the bands call it green, nearest called it yellow. `לעיתים די רחוקות`,
+ * point 3 of 7, scores 33: the bands call it red, nearest called it yellow.
+ * Both errors pull toward the middle, which is the direction that hides a
+ * finding rather than inventing one.
+ *
+ * The stone above those questions has always used the bands, so the old rule
+ * could put eight green stones over questions whose every answer was counted
+ * yellow — one screen answering the same question two ways.
+ *
+ * The colour scale never reached that branch, which is why this survived: it
+ * was unreachable for the questionnaire that is running and wrong for the one
+ * that is coming.
+ *
+ * The scale is passed in rather than inferred from the value. Inferring worked
+ * only because no Likert scale happens to use `green` as a point value, and a
+ * scale added later could break it silently.
  */
-function bucketForAnswer(value: string, score: number): WellbeingStatus {
-  const chosen = responseScale.find((option) => option.value === value);
-  if (chosen) return chosen.value;
+function bucketForAnswer(
+  value: string,
+  score: number,
+  scaleId: AnswerScaleId,
+): WellbeingStatus {
+  if (scaleId === COLOUR_SCALE_ID) {
+    const chosen = responseScale.find((option) => option.value === value);
+    if (chosen) return chosen.value;
+  }
 
-  // A Likert answer has no colour of its own, so it falls to the nearest band
-  // by score — which is also what a stored colour row with an unknown value
-  // did before. The distribution stays a report of what people picked whenever
-  // they picked a colour, and a nearest reading only when they did not.
-  return responseScale.reduce((closest, option) =>
-    Math.abs(option.score - score) < Math.abs(closest.score - score)
-      ? option
-      : closest,
-  ).value;
+  return statusForScore(score);
 }
 
 export class AnalyticsService {
@@ -283,13 +306,13 @@ export class AnalyticsService {
       // per-group breakdown of `../analytics/background-breakdown` is the same
       // arithmetic over a partition of these same responses and must not
       // disagree with this aggregate about what counts.
-      for (const { answer, score } of readAnalyticAnswers(
+      for (const { question, answer, score } of readAnalyticAnswers(
         response,
         questionsById,
       )) {
         scoresByQuestion.get(answer.questionId)!.push(score);
         const dist = distributionsByQuestion.get(answer.questionId)!;
-        dist[bucketForAnswer(answer.value, score)]++;
+        dist[bucketForAnswer(answer.value, score, question.scaleId)]++;
       }
     }
 

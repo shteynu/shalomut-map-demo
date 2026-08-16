@@ -182,6 +182,21 @@ published to the manager, into the AI payload and into the divided-dimensions
 feature as twelve "yellow". The three-key shape is manufactured inside the
 service, before anything leaves it, so this is not a presentation choice.
 
+**Correction, made the same day while fixing this.** That example demonstrates
+the *shape* problem — a Likert answer reported in colours at all — and it does
+**not** demonstrate a wrong bucket: nearest-anchor and the shared bands both
+call `50` yellow, so a test built on it passes against the unfixed code. The
+rules were then enumerated over every score the shipped scales can produce, and
+they diverge on exactly two, both of them anchors a respondent clicks: `75`
+(point 4 of 5, `במידה רבה`) is green by the bands and was yellow by nearest,
+and `33` (point 3 of 7, `לעיתים די רחוקות`) is red by the bands and was yellow
+by nearest. Both errors pull toward the middle, which hides a finding rather
+than inventing one — and because the stone has always used the bands, the old
+rule could put eight green stones above questions whose every answer was
+counted yellow. The bucket half is fixed on
+`fix/a-likert-answer-is-not-a-colour`; the shape half is untouched and belongs
+to phase 5.
+
 Two consequences worth carrying: the nearest-anchor rule puts the distribution's
 implied crossovers at 80 and 30, which disagrees with the shared scoring bands
 at 75 and 50 — invisible on three colours, visible the moment a Likert scale is

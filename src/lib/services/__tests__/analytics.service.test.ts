@@ -374,3 +374,167 @@ test('an unlocked 5.0 round carries a distribution for every question', () => {
     }
   }
 });
+
+/**
+ * A questionnaire on a Likert scale, which the builder can produce today.
+ *
+ * Every fixture above answers on the colour scale, and that is why nothing
+ * caught a Likert answer being reported as the nearest colour anchor. Nearest
+ * puts the crossovers at 80 and 30, because the colour anchors score
+ * `100`/`60`/`0`; `contracts/scoring-bands.json` puts them at 75 and 50. The
+ * two rules therefore disagree on exactly two of the scores the shipped scales
+ * can produce — and both of them are anchors a respondent clicks:
+ *
+ * - `75`, point 4 of 5 (`במידה רבה`): the bands call it green, nearest called
+ *   it yellow;
+ * - `33`, point 3 of 7 (`לעיתים די רחוקות`): the bands call it red, nearest
+ *   called it yellow.
+ *
+ * Both errors pull toward the middle, which is the direction that hides a
+ * finding rather than inventing one. The midpoint, `50`, agrees under both
+ * rules — so a test built on it proves nothing, and this file had to be written
+ * against the two scores that separate them.
+ */
+function likertRound(
+  organizationId: string,
+  scaleId: 'likert-7-frequency' | 'likert-5-extent',
+) {
+  return RoundService.createRound({
+    organizationId,
+    title: 'סבב ליקרט',
+    privacyThreshold: MINIMUM_PRIVACY_THRESHOLD,
+    surveyDefinition: {
+      title: 'סבב ליקרט',
+      audience: 'צוות',
+      estimatedMinutes: 10,
+      minimumResponses: MINIMUM_PRIVACY_THRESHOLD,
+      introText: 'פתיח',
+      anonymityText: 'אנונימי',
+      questions: surveyInstrument.questions.map((question) => ({
+        ...question,
+        enabled: true,
+        kind: 'analytic' as const,
+        scaleId,
+        polarity: 'positive' as const,
+      })),
+    },
+  });
+}
+
+function likertResponses(
+  roundId: string,
+  value: string,
+  score: number,
+): SurveyResponseRecord[] {
+  return Array.from({ length: MINIMUM_PRIVACY_THRESHOLD }, (_, index) => ({
+    id: `response_${roundId}_${index}`,
+    roundId,
+    submittedAt: new Date(),
+    answers: surveyInstrument.questions.map((question) => ({
+      questionId: question.id,
+      dimensionId: question.dimensionId,
+      value,
+      score,
+    })),
+  }));
+}
+
+test('a Likert answer is bucketed by the shared score bands, not by the nearest colour', () => {
+  // Ten respondents who all answered `במידה רבה` — point 4 of 5, score 75,
+  // the first score of the green band. Nearest-anchor reported them yellow,
+  // because 75 is closer to the yellow anchor at 60 than to the green one at
+  // 100. A staff room that answered well read as merely adequate.
+  const strong = likertRound('org_likert_strong', 'likert-5-extent');
+  const strongResult = AnalyticsService.calculateDynamicRoundAnalytics(
+    strong,
+    likertResponses(strong.id, '4', 75),
+  );
+
+  assert.strictEqual(strongResult.isLocked, false);
+  for (const aggregate of Object.values(strongResult.questionAggregates)) {
+    assert.deepStrictEqual(aggregate.scoreDistribution, {
+      green: MINIMUM_PRIVACY_THRESHOLD,
+      yellow: 0,
+      red: 0,
+    });
+  }
+
+  // The property the fix exists for, and the one a manager could have seen:
+  // the stone has always gone through the shared bands, so before the fix this
+  // round showed eight green stones above questions whose every answer was
+  // counted yellow. One screen, two rules, no way to tell which was right.
+  for (const dimension of Object.values(strongResult.dimensionScores)) {
+    assert.strictEqual(dimension.computedStatus, 'green');
+  }
+
+  // The other direction, and the one that costs more: `לעיתים די רחוקות` —
+  // point 3 of 7, score 33, inside the red band. Nearest-anchor reported it
+  // yellow, so a dimension in trouble was published as middling.
+  const weak = likertRound('org_likert_weak', 'likert-7-frequency');
+  const weakResult = AnalyticsService.calculateDynamicRoundAnalytics(
+    weak,
+    likertResponses(weak.id, '3', 33),
+  );
+
+  for (const aggregate of Object.values(weakResult.questionAggregates)) {
+    assert.deepStrictEqual(aggregate.scoreDistribution, {
+      green: 0,
+      yellow: 0,
+      red: MINIMUM_PRIVACY_THRESHOLD,
+    });
+  }
+  for (const dimension of Object.values(weakResult.dimensionScores)) {
+    assert.strictEqual(dimension.computedStatus, 'red');
+  }
+});
+
+test('a colour answer still reports the colour the respondent picked', () => {
+  // The regression guard for the fix above: a colour question must keep
+  // reporting the pick rather than the band. Yellow is the value that proves
+  // it — it scores 60, which the bands also call yellow, so this fixture would
+  // pass either way. What separates them is red at 0 and green at 100 staying
+  // exactly where the respondents put them while the round's average sits in
+  // the yellow band; a rule that bucketed by score would still agree here, so
+  // the assertion that matters is the one in the Likert test above. This test
+  // exists to catch the fix changing behaviour it was not meant to touch.
+  const round = RoundService.createRound({
+    organizationId: 'org_colour_unchanged',
+    title: 'סבב צבעים',
+    privacyThreshold: MINIMUM_PRIVACY_THRESHOLD,
+    surveyDefinition: createCanonicalSurveyDefinition(
+      'סבב צבעים',
+      MINIMUM_PRIVACY_THRESHOLD,
+    ),
+  });
+  const responses: SurveyResponseRecord[] = Array.from(
+    { length: MINIMUM_PRIVACY_THRESHOLD },
+    (_, index) => ({
+      id: `response_colour_${index}`,
+      roundId: round.id,
+      submittedAt: new Date(),
+      answers: surveyInstrument.questions.map((question) => {
+        const value: AnswerValue =
+          index < 2 ? 'red' : index < 5 ? 'yellow' : 'green';
+        return {
+          questionId: question.id,
+          dimensionId: question.dimensionId,
+          value,
+          score: value === 'green' ? 100 : value === 'yellow' ? 60 : 0,
+        };
+      }),
+    }),
+  );
+
+  const result = AnalyticsService.calculateDynamicRoundAnalytics(
+    round,
+    responses,
+  );
+
+  for (const aggregate of Object.values(result.questionAggregates)) {
+    assert.deepStrictEqual(aggregate.scoreDistribution, {
+      green: 5,
+      yellow: 3,
+      red: 2,
+    });
+  }
+});

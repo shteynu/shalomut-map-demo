@@ -28,6 +28,16 @@ export const ANSWER_SCALE_IDS: readonly AnswerScaleId[] = [
 ] as const;
 
 /**
+ * The one scale whose points are themselves wellbeing statuses.
+ *
+ * Named rather than written as a literal wherever behaviour turns on it,
+ * because "is this the colour scale" is a question about meaning and not about
+ * a string: an answer on this scale is a colour the respondent chose, and an
+ * answer on any other has no colour until a score band gives it one.
+ */
+export const COLOUR_SCALE_ID: AnswerScaleId = "wellbeing-colour";
+
+/**
  * Which direction a high answer points for the dimension the question belongs
  * to.
  *
