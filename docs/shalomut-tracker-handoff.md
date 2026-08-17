@@ -229,14 +229,38 @@ attempts of 0.43s with two waits between them land in the 2.3–5.8s window — 
 observed 4.6–4.8s sits inside it. The service is not misconfigured, `main.py`'s
 `AI_WEBHOOK_SECRET` branch is not what fired, and no code change would fix this.
 
-One qualification, and it is the honest limit of the reading: the key tested is
-the local copy. Render's own copy was not read, because the dashboard is not
-signed in in the connected Chrome profile and no agent authenticates. If Render
-carries a *different* key, the depleted account is a coincidence rather than the
-cause — but the same account with the same 429 shape and matching retry
-arithmetic is the reading that fits. Confirming it is one look at the service's
-environment or one line of its log
-(`[LLM Service] outcome=provider_unavailable ... scope=question_suggestion`).
+**The service's own log says the same thing, so this is read rather than
+inferred.** The owner signed in to Render and `shalomut-ai-analytics`
+(`srv-d9i8vhnavr4c73ad298g`, Docker, Frankfurt, free, Deployed) shows four
+matched pairs for the four calls, at 07:54:00, :22, :31 and :40 on 2026-08-17:
+
+```
+INFO:shalomut-ai-service:[Question Suggestion] Requested for dimension: balance
+WARNING:src.services.llm_provider:[LLM Service] outcome=provider_unavailable
+  model=gemini-3.5-flash reason=http_429 attempts=3
+  scope=question_suggestion dimension=balance
+```
+
+`reason=http_429` on the service's own key closes the coincidence question, and
+`attempts=3` is the retry arithmetic above, observed rather than computed. Its
+Environment page carries `GEMINI_API_KEY`, `AI_WEBHOOK_SECRET`,
+`AI_CALLBACK_SECRET`, `AI_JOB_POLLING_ENABLED`, `LLM_MODEL_FAST`,
+`LLM_MAX_REQUESTS_PER_MINUTE` and `LLM_MAX_REQUESTS_PER_MINUTE_HEAVY` among
+others — names only, every value masked and none opened.
+
+**One correction to the paragraph above, and it is worth knowing before anyone
+probes this again.** The deployed service does not call the model that
+`config.py:147` defaults to: `LLM_MODEL_FAST` overrides it, and the log names
+`gemini-3.5-flash`. The local probe used the config defaults
+(`gemini-flash-latest`, `gemini-pro-latest`) and got the identical 429, because
+the depletion is a property of the account rather than of a model. So the
+conclusion stands and the model names in it do not — a probe that wants to
+reproduce what the deployment actually does must read `LLM_MODEL_FAST` first.
+
+Incidental, from the same log and not a defect: the run-claim poller posts to
+`/api/ai-analysis-runs/claim/` every 2–3 seconds and answers `204` each time
+against the empty database, while the keep-alive monitor takes `/health` about
+every 5 seconds. Both are alive, which is the first direct sighting of either.
 
 **What this costs the product while it stands.** It is not only the suggestion
 button: the round pipeline reaches the provider through the same transport, so no
