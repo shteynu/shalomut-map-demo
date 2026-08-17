@@ -591,6 +591,57 @@ indexing, uptime monitoring, or a client that branches on `response.ok`. The
 diagnosis and the measurements live in
 `docs/agent-tasks/archive/fix--not-found-answers-404.md`.
 
+### ADR-022: The product describes how a round was filled and never subtracts from it
+
+Owner decision 2026-08-17. A manager may see how a round was filled — how many
+questionnaires came back faster than the instrument can be read — and may act on
+it at the level of the round: extend collection, reword the invitation, ask the
+staff room again. The product does not offer to drop a response, and no screen,
+service or export may single out a subset of respondents.
+
+This is a privacy decision, not a squeamish one. `displayableDistribution`
+publishes exact integer green/yellow/red counts per question. Two publication
+bases differing by one respondent move exactly one bucket by exactly one on
+every question, which is a direct read of that person's answer sheet rather
+than an estimate — 108 analytic items carry roughly 171 bits about one
+individual, where identifying someone in a school of sixty takes about six. The
+demographic breakdown publishes group sizes over the same people, so the same
+one-person difference also yields their role, seniority, stage and age band
+without reading a score at all, and the cell-suppression guarantee is proved for
+one population, never for two overlapping bases from one round.
+
+Any two bases do this, whoever chose them and for whatever reason, so "the
+manager chose by reason rather than by row" protects the selection screen and
+not the numbers. The rule that holds is that a round has exactly one basis of
+calculation.
+
+Two further findings stand behind it. On a unidirectionally keyed three-point
+scale the fast-filling signal is not merely noisy but *directional* — it flags
+dissatisfied respondents more often than satisfied ones — so acting on it would
+bias a school's result in a predictable direction while looking like hygiene.
+And per-item timing, which is what the careless-responding literature actually
+uses, is not measurable here: the questionnaire walks steps, and one step can be
+a block of thirty statements.
+
+What that leaves is safe because a count is not a subset. `RoundFillingService`
+returns counts and one median, never a response id, a session token or an
+individual duration, and nothing joins a duration to an answer. The floor on the
+fast count is `FILLING_DETAIL_MINIMUM = 3`, the same argument as
+`ABANDON_DETAIL_MINIMUM`. As of this ADR the service has no route and no screen
+behind it — the decision is recorded now because it is what the screen will be
+allowed to say, not because a manager can read it yet.
+
+If exclusion is ever revived, the snapshot of the decision has to reach every
+path that recomputes aggregates — `src/app/api/mcp/route.ts` sends them,
+`src/lib/server/ai-insights-service.ts` recomputes them when the callback
+arrives and compares, and `buildBackgroundBreakdown` reads responses on a third
+path of its own. Filtering one and not the others makes Core reject its own
+correct result on every run, or makes the breakdown screen and the map disagree
+in front of a manager. The research is
+`docs/response-quality-research-2026-08-17.md`, on the `research/how-a-round-was-filled`
+branch; the reasoning above is repeated here rather than referenced because that
+branch may never land.
+
 ## Environments
 
 The project supports exactly two environments:
