@@ -1,7 +1,25 @@
 # Shalomut Tracker — operational handoff
 
+**2026-08-17, latest: `main` is `273eda5` and the AI service runs it.** The three
+observability branches were pushed by the owner and are on `main`; `/health`
+answers `commit: 273eda5`, so the deployed service and `main` agree. The watchdog
+for a dead model is live — monitor `803761399`, recorded in full below.
+
+**Render can miss a push, and it did — an auto-deploy is not a guarantee.** The
+push landed on GitHub at 22:38 GMT+3 and Render queued nothing: its dashboard
+carried a *GitHub Outage — deploys from GitHub repositories may be affected*
+banner, and GitHub's own status API confirmed a Partial System Outage with
+sporadic authentication failures, incident opened 19:13Z and still investigating.
+The last auto-deploy was `4c06351` from the day before. `Manual Deploy → Deploy
+latest commit` built `273eda5` normally (`dep-da1m9ougekts738b815g`, about four
+minutes to answering). So when a push that touches `ai-analytics-service/**` does
+not appear on the service, check the deploy list before rereading the diff —
+`buildFilter` in `render.yaml` is the usual explanation, but a missed webhook is
+the other one.
+
 **2026-08-17, a later session: the deployed AI-service variable is no longer an
-unknown, and nothing is waiting on a push.** `refs/heads/main` is `945ed46`,
+unknown, and nothing is waiting on a push.** `refs/heads/main` was `945ed46` at
+the time,
 asked of the remote itself, and it equals this worktree's HEAD — so everything
 here is portable to another checkout or machine. All four workflows are green on
 it — `Core verification` `32047052787`, `Browser smoke` `32047052709`,
@@ -282,13 +300,16 @@ refuses to publish (`src/app/api/health/route.ts:22`). Second owner decision the
 same day: passive rather than an active probe, so the handle never spends a
 provider call.
 
-**And a second UptimeRobot monitor will watch that handle — owner decision,
-2026-08-17, but it does not exist yet.** Of four paths — an anonymous minimal
+**And a second UptimeRobot monitor watches that handle — owner decision,
+2026-08-17, created the same evening.** Of four paths — an anonymous minimal
 endpoint, a real log collector through platform drains, making only the manual
 read cheap, or one more keyword monitor with an `Authorization` header — take the
 monitor, because the mechanism is already chosen and working for `/health` and it
 costs nothing and adds no party. Approved in the same breath, and bounded to it:
-`AI_WEBHOOK_SECRET` may be pasted into that one monitor, by the owner.
+`AI_WEBHOOK_SECRET` may be pasted into that one monitor, by the owner. **That
+approval was never spent** — the header turned out to be a paid feature, the
+anonymous path replaced it, and no secret left this repository's two deployments.
+It is recorded rather than deleted so nobody re-derives it as standing permission.
 
 **Its keyword is `failing`, and the alert fires when that string is present.**
 Not the absence of `answering`, which is the trap this shape has: `unknown` is
@@ -323,9 +344,29 @@ It is its own path rather than a field on `/health` deliberately: the keep-alive
 monitor keys on `"status":"online"` there, and two watchdogs sharing one body is
 how a change made for one quietly breaks the other.
 
-The monitor still cannot be created until the stack is pushed and Render has
-redeployed — a monitor pointed at a path that does not exist teaches its owner to
-ignore it.
+**The monitor exists: `803761399`, created 2026-08-17 at 22:46 GMT+3**, in the
+owner's UptimeRobot account beside the keep-alive one. Keyword type, `GET
+https://shalomut-ai-analytics.onrender.com/api/v1/provider-status`, keyword
+`failing`, `Start incident when keyword exists`, five minutes, e-mail to the
+owner, no header and no credential — which is the whole point of the anonymous
+path. Case-sensitivity is off, which costs nothing: the body has room for one
+word.
+
+It was created only after the endpoint answered, deliberately — a monitor pointed
+at a path that does not exist teaches its owner to ignore it.
+
+**Its first reading is `unknown`, not `failing`, and that is correct.** The task
+file had predicted `failing` because the provider account is depleted; that
+prediction ignored the redeploy. The state lives in process memory, a deploy
+restarts the process, and nothing has called the provider since. So the monitor
+starts green — its own first check, at 22:47, reports `Up` — and it will only go
+red once a real suggestion or a round's analysis is refused. This is the residual
+limit below, seen in its first minute rather than argued about.
+
+**The alert has never fired, and that is the honest state of it.** The green path
+is observed; the red one is not. Proving it end to end takes one real refused
+provider call, which arrives in the owner's inbox as a genuine Down e-mail — so
+it is the owner's to trigger, not something to spend for a screenshot.
 
 **What this still does not do, and it is the honest half: it watches a provider
 that fails in use, not one that fails while unused.** The state only moves when a

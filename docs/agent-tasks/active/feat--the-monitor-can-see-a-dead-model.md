@@ -6,10 +6,9 @@
 - Base branch: main
 - Base commit: `3b02f1c` (tip of `feat/the-service-remembers-its-last-provider-answer`,
   itself not yet on `main`)
-- Current HEAD: `a8f3b40`, the first of this branch's two halves. The second —
-  the anonymous endpoint — is **uncommitted** in this worktree.
-- Status: code and documentation complete and verified; the monitor itself is
-  **not created yet** and cannot be until the endpoint is deployed.
+- Current HEAD: `273eda5`, both halves committed and pushed. `main` is the same
+  commit, and the deployed AI service reports it.
+- Status: **done.** Code, documentation, deployment and the monitor itself.
 - Last updated: 2026-08-17
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -147,6 +146,12 @@ read before anything was proposed:
   owner chose the anonymous word the same day.
 - `read_provider_status` and `GET /api/v1/provider-status` added, with two tests
   holding the disclosure boundary, and the README endpoint list extended.
+- Committed as `273eda5`, pushed by the owner, and on `main`.
+- Deployed. Render had queued nothing after the push — a GitHub outage, confirmed
+  on both dashboards — so `Manual Deploy → Deploy latest commit` built it:
+  `dep-da1m9ougekts738b815g`, about four minutes.
+- **Monitor `803761399` created**, 2026-08-17 at 22:46 GMT+3, with exactly the
+  configuration this task specified and no credential of any kind.
 
 ## In progress
 
@@ -154,16 +159,13 @@ read before anything was proposed:
 
 ## Remaining
 
-1. Commit this branch.
-2. Push the three-branch stack so the endpoint is deployed: `3a17333`,
-   `3b02f1c` and this one.
-3. Confirm Render redeployed the service, then create the monitor: keyword type,
-   `GET https://shalomut-ai-analytics.onrender.com/api/v1/provider-status`,
-   keyword `failing`, `Start incident when keyword exists`, five-minute interval,
-   e-mail alert. No header and no credential — that is the point of the anonymous
-   path.
-4. Record the monitor's id and first reading in the handoff, the way the
-   `/health` monitor is recorded.
+Nothing in this task. What is left is deliberately outside it:
+
+- **The alert has never fired.** The monitor's red path is unproven end to end —
+  it would take a real refused provider call, and firing one sends the owner a
+  genuine Down e-mail, so it is an owner's call to make, not something to trigger
+  for a screenshot.
+- The metric lines are still uncollected; see `Non-goals`.
 
 ## Changed files
 
@@ -214,11 +216,18 @@ Context: local.
   `read_provider_status` failed exactly the two anonymous tests and nothing else;
   restoring the projection returned the suite to 496 passed.
 
+- **Deployed, and read from the outside.** Before the deploy the path answered
+  `404 {"detail":"Not Found"}` and `/health` reported `commit: 4c06351`; after it,
+  `/api/v1/provider-status` answered `{"status":"unknown"}` and `/health` reported
+  `commit: 273eda5`. So the endpoint that is being monitored is the one this
+  branch added, checked by its absence beforehand rather than only its presence
+  after.
+
 ### Blocked or not run
 
-- **The monitor itself.** It cannot be created before the endpoint is deployed —
-  pointing a monitor at a path that does not exist yet would report Down
-  immediately and teach the owner to ignore it.
+- **The alert has never fired.** The monitor was created green and the red path is
+  untested end to end. Proving it means a real refused provider call, which sends
+  the owner a real Down e-mail — an owner's decision, recorded in `Remaining`.
 - **`verify:core`** was run on this branch after the anonymous endpoint landed;
   see `Passed`.
 
@@ -236,9 +245,13 @@ Context: local.
   provider that fails while unused. Naming this is the point — the alternative
   reading, that a silent monitor means a healthy model, is exactly the belief
   this whole line of work exists to prevent.
-- The account behind the key is currently depleted, so the first reading after
-  deployment should be `failing`. A monitor that goes red immediately is correct
-  here and must not be read as a misconfiguration.
+- **This paragraph predicted the first deployed reading would be `failing`,
+  because the provider account is depleted. It was wrong, and the reason is worth
+  keeping.** The state lives in process memory; a deploy restarts the process;
+  nothing has called the provider since. The real first reading was `unknown`,
+  and the monitor started green. The depleted account only becomes visible on the
+  next real suggestion or round analysis — which is the residual limit above,
+  observed rather than argued.
 
 ## Failed approaches
 
@@ -269,7 +282,7 @@ Context: local.
 
 ## Next concrete step
 
-Commit this branch, then push the three-branch stack so the endpoint exists in
-the deployed service. The monitor is created after that, not before. Suggested
-message:
-`feat(ai): a free monitor can read one word and see that the model is down`.
+Archive this task file — the work is delivered and deployed. The one open
+question it leaves behind belongs to the owner, not to a next agent: whether to
+fire one real provider call to prove the alert reaches the inbox, accepting that
+it arrives as a genuine Down e-mail.
