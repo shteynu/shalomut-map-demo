@@ -208,6 +208,16 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
   and says so, and hides where sessions stopped until at least three of them
   stopped. Nothing new is recorded about a respondent: the same per-attempt token
   hash the response already carries, and no address, device or cookie.
+- **A round can also say how long it took to fill.** Beside the funnel, the
+  round screen reports the minutes the questionnaire asks for, the middle
+  session's length, and how many came back in less than a third of that — the
+  manager's original question about suspiciously filled questionnaires, answered
+  in the half the product may answer. It does not offer to remove any of them,
+  and says why: a round has one basis of calculation, and publishing two that
+  differ by one respondent reads that person's answers off the per-question
+  distributions. A response with no timing is named rather than counted as a
+  fast one, and a count of one or two is stated as "fewer than three" so that it
+  never describes an individual.
 - A blocked clipboard is reported as a blocked clipboard: the share link is
   selected, the note names Ctrl+C/Cmd+C and stays until the next attempt.
 - Anonymous respondent flow with stable attempt tokens and database-enforced

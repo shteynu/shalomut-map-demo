@@ -100,6 +100,32 @@ Which screen owns which value, so the same fact is never edited in two places:
 | Remaining `backgroundContext` fields | Setup screen | Reach the AI prompt on contracts `4.0`, `5.0` and `6.0`, and never for a locked round. |
 | `surveyDefinition.questions` | Survey builder | Frozen after the first accepted response. |
 
+## How a Round Was Filled
+
+- The round screen reports how long the round's questionnaires took, and never
+  which of them. `RoundFillingService` returns counts and one median; nothing in
+  it carries a response id, a session token or an individual duration.
+- **A round has one basis of calculation and nothing may offer to change it.**
+  Publishing a round's exact per-question distributions twice for two different
+  sets of respondents reads the difference as one person's answer sheet. This is
+  `PROJECT_CONTEXT.md` ADR-022, and it is why the panel explains the absence of
+  an exclusion control rather than leaving a gap for someone to fill.
+- One duration is `submittedAt − openedAt`: the lifetime of a filling session,
+  not the work inside it. It survives a reload and a forgotten tab, so the
+  product states it only in the direction that survives that — a short session
+  really is short — and reports nothing about the slow side.
+- The estimate it is measured against is recomputed from the round's enabled
+  questions, never read from the stored `surveyDefinition.estimatedMinutes`.
+  That is the number the respondent was shown; `survey-flow.tsx` computes it the
+  same way and for the same reason.
+- Two floors, not one. The panel appears at the round's `privacyThreshold`; the
+  fast count and the median inside it wait for `FILLING_DETAIL_MINIMUM = 3`,
+  which is the funnel's `ABANDON_DETAIL_MINIMUM` argument applied to a weaker
+  signal. A count of zero is published exactly — it names nobody, and it is the
+  answer a manager most wants.
+- A response with no timing is named, never counted as a fast one. Three reasons
+  are counted apart, on the precedent of `completedWithoutAttempt`.
+
 ## AI Analysis Triggering
 
 - The automatic trigger fires at most once per round: on the submission that
