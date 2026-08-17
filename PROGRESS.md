@@ -197,6 +197,15 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
   by GET and HEAD only — and every uncaught server error writes one structured
   line carrying that same digest, in the shape the operational metrics already
   use.
+- **A question suggestion that never reached the model is countable.** That one
+  path had no metric and no log line of any kind, which is how the deployed
+  button could answer `503` on a depleted provider prepayment for an unknown
+  length of time with no trace in Core at all — established on 2026-08-17 only
+  by reading the AI service's own log. It now emits
+  `ai_question_suggestions_succeeded` or `ai_question_suggestions_failed`, the
+  failure labelled with the transport's own reason and the upstream status when
+  a service answered with one. This makes the failure countable, not noticed:
+  where those lines are collected is still open.
 - **A phone and a desktop ask the same question again.** The mobile rule hid the
   scale anchors — the sentences saying what green, yellow and red mean — so a
   teacher on a phone chose between three coloured pills with their definitions

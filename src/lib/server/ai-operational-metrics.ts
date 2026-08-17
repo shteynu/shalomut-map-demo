@@ -14,6 +14,8 @@ export type OperationalMetricName =
   | 'ai_partial_map_ratio_sample'
   | 'ai_deterministic_summary_ratio_sample'
   | 'ai_deterministic_metric_narrative_ratio_sample'
+  | 'ai_question_suggestions_succeeded'
+  | 'ai_question_suggestions_failed'
   | 'duplicate_submission_conflicts'
   | 'survey_submission_recovered_by_retry'
   | 'survey_submission_lost_after_retries';
@@ -298,6 +300,65 @@ export function recordDeterministicMetricNarrativeSample(input: {
     },
     runId: input.runId,
     roundId: input.roundId,
+  });
+}
+
+/**
+ * Whether the model answered the one request a manager waits on synchronously.
+ *
+ * This path had no observability at all until 2026-08-17, and the cost of that
+ * was measured rather than imagined: the deployed suggestion button had been
+ * answering `503` for an unknown length of time because the provider account's
+ * prepayment was depleted, and establishing it took four hand-made requests and
+ * a read of the AI service's own log on Render. Neither the route nor the
+ * transport wrote a line, so Core held no trace of a feature being dead.
+ *
+ * Two names rather than one with an `outcome` label, following
+ * `ai_jobs_succeeded` and `ai_jobs_failed`: the question asked of these counters
+ * is a ratio between them, and a ratio is cheaper to read from two series than
+ * from one series split by label.
+ *
+ * `reason` is the transport's own discriminator rather than a re-derived one, so
+ * a provider that is refusing, timing out, unreachable or answering nonsense
+ * stay four different readings. `upstreamStatus` is carried only when the
+ * service answered with one — the difference between "the service said no" and
+ * "the service was not there" is the first thing anyone debugging this needs.
+ *
+ * No dimension label, deliberately. A suggestion has no round to correlate to,
+ * and which of the eight was asked for says nothing about whether the provider
+ * is alive — it would add cardinality to every series to answer a question
+ * nobody has asked.
+ *
+ * What this does not do is notice. It puts the failure where the product's other
+ * counters land, which today is a `console.info` line; who collects those lines
+ * remains an open owner decision, and until it is answered this makes the
+ * failure countable rather than noticed.
+ */
+export function recordQuestionSuggestionOutcome(
+  input:
+    | { outcome: 'succeeded'; attempts: number }
+    | { outcome: 'failed'; reason: string; upstreamStatus?: number },
+) {
+  if (input.outcome === 'succeeded') {
+    emit({
+      name: 'ai_question_suggestions_succeeded',
+      value: 1,
+      unit: 'count',
+      labels: { attempts: String(input.attempts) },
+    });
+    return;
+  }
+
+  emit({
+    name: 'ai_question_suggestions_failed',
+    value: 1,
+    unit: 'count',
+    labels: {
+      reason: input.reason,
+      ...(input.upstreamStatus === undefined
+        ? {}
+        : { upstreamStatus: String(input.upstreamStatus) }),
+    },
   });
 }
 

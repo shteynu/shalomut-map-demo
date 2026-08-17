@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { recordQuestionSuggestionOutcome } from '@/lib/server/ai-operational-metrics';
 import { requestQuestionSuggestion } from '@/lib/server/request-question-suggestion';
 import { surveyInstrument } from '@/lib/shalomut-source';
 
@@ -69,6 +70,16 @@ export async function POST(request: Request) {
     // suggestion service is unavailable in Hebrew and offers the template,
     // while `reason` keeps the distinction between a timeout, a refusal and a
     // service that is down.
+    //
+    // The same distinction is counted as well as answered. Told to one manager
+    // it is a button that did not work; counted, it is the difference between a
+    // provider having a bad minute and a feature that has been dead for weeks.
+    recordQuestionSuggestionOutcome({
+      outcome: 'failed',
+      reason: result.status,
+      upstreamStatus: result.upstreamStatus,
+    });
+
     return NextResponse.json(
       {
         error: 'הצעת שאלה מהבינה המלאכותית אינה זמינה כרגע.',
@@ -78,6 +89,13 @@ export async function POST(request: Request) {
       { status: 503 },
     );
   }
+
+  // The success side is not optional: a failure count on its own cannot tell a
+  // dead provider from a button nobody pressed.
+  recordQuestionSuggestionOutcome({
+    outcome: 'succeeded',
+    attempts: result.suggestion.attempts,
+  });
 
   return NextResponse.json(result.suggestion);
 }

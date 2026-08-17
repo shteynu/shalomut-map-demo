@@ -257,6 +257,19 @@ the depletion is a property of the account rather than of a model. So the
 conclusion stands and the model names in it do not — a probe that wants to
 reproduce what the deployment actually does must read `LLM_MODEL_FAST` first.
 
+**The trace gap this exposed is closed in code on
+`feat/a-dead-model-leaves-a-trace`, and the sentence above about Core holding no
+trace describes the tree before it.** Neither the route nor the transport wrote a
+line, and `ai-operational-metrics.ts` had no name mentioning a suggestion, so the
+failure existed only in the AI service's own log. The route now emits
+`ai_question_suggestions_succeeded` or `ai_question_suggestions_failed`, the
+latter labelled with the transport's `reason` and, when a service answered with
+one, `upstreamStatus`. A malformed request emits nothing, so a caller defect
+cannot inflate the one number that says whether the provider is alive. It is the
+same `console.info` envelope as every other counter, which means the open
+decision below — nobody collects those lines — now governs this one too. Countable
+is not noticed, and that distinction is the whole of what this change buys.
+
 Incidental, from the same log and not a defect: the run-claim poller posts to
 `/api/ai-analysis-runs/claim/` every 2–3 seconds and answers `204` each time
 against the empty database, while the keep-alive monitor takes `/health` about
