@@ -12,6 +12,7 @@ import {
   InMemorySurveyRepository,
 } from '@/lib/repositories';
 import { overrideCoreRepositories, resetCoreRepositories } from '@/lib/composition-root';
+import { MINIMUM_PRIVACY_THRESHOLD } from '@/lib/survey-definition';
 import { DEMO_ORGANIZATION, DEMO_ROUND } from '@/lib/repositories/__fixtures__/demo-records';
 
 const testRoundId = 'round_demo_1';
@@ -21,16 +22,45 @@ const triggerFailureRoundId = 'round_demo_trigger_failure';
 let previousDatabaseUrl: string | undefined;
 let aiAnalysisRunRepo = new InMemoryAiAnalysisRunRepository();
 
+/**
+ * Enough responses for a round to be analysable at all.
+ *
+ * These suites are about the durable queue and the callback, and they used to
+ * run against a round with no responses whatever — which the product now
+ * refuses, because dispatching the aggregates of a round below its privacy
+ * threshold is the thing the threshold exists to prevent. Only the count is
+ * load-bearing here, so the answers stay empty; a response carrying invented
+ * answers would suggest the queue reads them.
+ */
+function analysableResponses(roundId: string) {
+  return Array.from({ length: MINIMUM_PRIVACY_THRESHOLD }, (_unused, index) => ({
+    id: `${roundId}-response-${index}`,
+    roundId,
+    answers: [],
+    submittedAt: new Date('2026-08-17T09:00:00.000Z'),
+  }));
+}
+
 function installDefaultRepositories() {
   aiAnalysisRunRepo = new InMemoryAiAnalysisRunRepository();
   overrideCoreRepositories({
     aiAnalysisRunRepo,
     orgRepo: new InMemoryOrganizationRepository([DEMO_ORGANIZATION]),
+    // Closed, because re-running an analysis is what this route is for since
+    // 2026-08-17: closing a round is what asks for the first one.
     roundRepo: new InMemoryRoundRepository([
-      DEMO_ROUND,
-      { ...DEMO_ROUND, id: triggerFailureRoundId, shareCode: 'SHALOM-TRIGGER' },
+      { ...DEMO_ROUND, status: 'closed' },
+      {
+        ...DEMO_ROUND,
+        id: triggerFailureRoundId,
+        shareCode: 'SHALOM-TRIGGER',
+        status: 'closed',
+      },
     ]),
-    surveyRepo: new InMemorySurveyRepository(),
+    surveyRepo: new InMemorySurveyRepository([
+      ...analysableResponses(testRoundId),
+      ...analysableResponses(triggerFailureRoundId),
+    ]),
   });
 }
 

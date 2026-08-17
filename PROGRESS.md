@@ -289,9 +289,10 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
   five recommendations per stone while retaining numeric callback evidence.
 - Provider failure is visible. Safety repair is selective and Python validates
   its own outgoing payload before callback.
-- The automatic path re-arms a round invalidated by late responses, up to three
-  runs, and counts the retries; a callback whose delivery fails transiently is
-  retried, while a verdict Core has already refused is not.
+- Closing a round is what asks for its analysis; a submission dispatches
+  nothing, and the manual route refuses a round that is still open or below its
+  privacy threshold. A callback whose delivery fails transiently is retried,
+  while a verdict Core has already refused is not.
 - On `6.0` a silent provider produces aggregate-derived copy rather than
   failing the round, and the dimension screen says in Hebrew that no model
   wrote it. Every accepted map reports how much of itself the service wrote.

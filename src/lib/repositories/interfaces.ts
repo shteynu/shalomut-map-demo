@@ -97,11 +97,11 @@ export interface IAiAnalysisRunRepository {
   findById(runId: string): Promise<AiAnalysisRun | null>;
   findLatestByRoundId(roundId: string): Promise<AiAnalysisRun | null>;
   /**
-   * Every run the round has had, oldest first. The automatic enqueue policy
-   * needs the history rather than the latest row: whether a run already
-   * succeeded, whether one is in flight and how many automatic attempts have
-   * been spent are three different questions, and the newest run answers none
-   * of them on its own.
+   * Every run the round has had, oldest first. The dispatch policy needs the
+   * history rather than the latest row: the request key of the run a closing
+   * is about to queue counts the closings before it, so that two requests
+   * racing on one close compute the same key and collapse on the unique
+   * constraint. The newest run cannot answer that on its own.
    */
   findByRoundId(roundId: string): Promise<AiAnalysisRun[]>;
   deleteByRoundId(roundId: string): Promise<void>;

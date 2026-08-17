@@ -147,10 +147,20 @@ Which screen owns which value, so the same fact is never edited in two places:
 
 ## AI Analysis Triggering
 
-- The automatic trigger fires at most once per round: on the submission that
-  reaches the privacy threshold, and only while no result is persisted. Core
-  commits an `AiAnalysisRun` with the stable `automatic` request key before the
-  respondent request returns.
+- **Closing a round is what asks for its analysis** (owner decision 2026-08-17).
+  The `PATCH /api/rounds/{roundId}` transition to `closed` commits an
+  `AiAnalysisRun` with the `closure` trigger and a request key derived from how
+  many closings came before it, so two requests racing on one close collapse on
+  the unique constraint instead of queueing twice. A round reopened and closed
+  again is analysed again, on what it has then. The dispatch follows the status
+  write and cannot fail it: a round the manager meant to close is closed even
+  when nothing could be queued, and the response reports which in an `analysis`
+  field.
+- A respondent's submission dispatches nothing. Until 2026-08-17 it did — on the
+  submission that crossed the privacy threshold, and again whenever a later
+  answer invalidated the run in flight — so a school's map moved underneath it
+  while collection was still open. The `automatic` trigger value survives only
+  in rows already written.
 - PostgreSQL permits one `queued` or `running` run per round. The Python worker
   polls Core, atomically claims the oldest due run under an opaque 90-second
   lease, renews it by heartbeat, and may recover abandoned work up to three
@@ -161,7 +171,12 @@ Which screen owns which value, so the same fact is never edited in two places:
   and dual-writes `SurveyRound.aiInsights` for rollback compatibility.
 - Refreshing an existing analysis is an explicit manager action
   (`רענון ניתוח` on `/round` → `POST /api/rounds/{roundId}/trigger-ai`), which
-  enqueues a new run only after the previous one is terminal.
+  enqueues a new run only after the previous one is terminal. It is the second
+  opinion, not the first: the route refuses a round that is not `closed`
+  (`round_not_closed`) and a round below its privacy threshold
+  (`below_privacy_threshold`). Both rules live at the route rather than in a
+  disabled button, because two screens offer the action and the route is
+  reachable without either.
 - API/UI run states are `queued`, `running`, `succeeded`, and `failed`; retry
   recovery also emits the `stalled` operational counter. Metrics are structured
   safe logs keyed only by round/run correlation, never respondent data.

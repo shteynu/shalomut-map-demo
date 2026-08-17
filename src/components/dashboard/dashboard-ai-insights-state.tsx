@@ -11,9 +11,13 @@ import type { AiInsightsUiState } from "@/lib/hooks/use-ai-insights";
 
 /**
  * Lets the manager start the analysis from the screen where its absence is
- * visible. Without it a round whose automatic dispatch never landed — the
- * service was down, the response predates the auto-trigger — stays permanently
- * empty unless the manager knows to go back to the round screen.
+ * visible. Without it a closed round whose dispatch never landed — the service
+ * was down, the round was closed before analysis moved to closing — stays
+ * permanently empty unless the manager knows to go back to the round screen.
+ *
+ * The route decides whether the request is allowed; this button only reports
+ * what it answered. A round that is still collecting gets `round_not_closed`
+ * back, which is the correct instruction rather than an error.
  */
 function GenerateAnalysisButton({
   roundId,
@@ -42,8 +46,25 @@ function GenerateAnalysisButton({
       return;
     }
 
+    /*
+     * A 409 carries more than one reason since analysis moved to the moment a
+     * round closes, and the body says which. "Wait for the run to finish" would
+     * be the wrong instruction for a round that is simply still open, and it is
+     * the one a manager would follow forever.
+     */
     if (response.status === 409) {
-      setNote("ניתוח כבר רץ עבור הסבב הזה. המתינו לסיומו ואז רעננו.");
+      const code = await response
+        .json()
+        .then((body) => body?.code)
+        .catch(() => undefined);
+
+      setNote(
+        code === "round_not_closed"
+          ? "הניתוח יופעל בסגירת הסבב, על כל התשובות שיתקבלו עד אז."
+          : code === "below_privacy_threshold"
+            ? "הסבב עדיין לא הגיע לסף הפרטיות, ולכן לא ניתן להפיק ניתוח."
+            : "ניתוח כבר רץ עבור הסבב הזה. המתינו לסיומו ואז רעננו.",
+      );
       setRunning(false);
       return;
     }
@@ -151,8 +172,8 @@ export function DashboardAiInsightsState({
         <Sparkles size={30} aria-hidden="true" />
         <h2>הניתוח עדיין לא נוצר</h2>
         <p>
-          לא נמצאה מפת תובנות עבור הסבב הזה. אפשר להפעיל את הניתוח על התשובות
-          שהתקבלו עד כה.
+          לא נמצאה מפת תובנות עבור הסבב הזה. הניתוח מופק בסגירת הסבב, ואם הסבב
+          כבר נסגר אפשר להפעיל אותו כאן.
         </p>
         {roundId ? (
           <GenerateAnalysisButton roundId={roundId} label="יצירת ניתוח עכשיו" />

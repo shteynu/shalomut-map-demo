@@ -7,7 +7,6 @@ import {
 } from '@/lib/services';
 import { getDurableWriteGuardResponse } from '@/lib/server/durable-write-guard';
 import { getRateLimitResponse, RATE_LIMITS } from '@/lib/server/rate-limit';
-import { enqueueAiAnalyticsAfterResponse } from '@/lib/server/trigger-ai-analytics';
 import {
   QuestionAnswerInput,
   SurveySubmissionErrorCode,
@@ -93,13 +92,8 @@ export async function POST(
       visibleSeconds?: unknown;
     };
 
-    const {
-      aiAnalysisRunRepo,
-      aiInsightsRepo,
-      roundRepo,
-      surveyAttemptRepo,
-      surveyRepo,
-    } = resolveCoreRepositories();
+    const { roundRepo, surveyAttemptRepo, surveyRepo } =
+      resolveCoreRepositories();
     const round = await RoundService.getRoundByShareCode(shareCode, roundRepo);
 
     if (!round) {
@@ -163,26 +157,15 @@ export async function POST(
       }
     }
 
-    // Enqueue before returning so a process restart cannot lose the threshold
-    // event. Analysis itself remains asynchronous and never runs in the
-    // respondent request.
-    try {
-      await enqueueAiAnalyticsAfterResponse(
-        round.id,
-        round.privacyThreshold,
-        aiAnalysisRunRepo,
-        aiInsightsRepo,
-        surveyRepo,
-      );
-    } catch (error) {
-      // The response has already been persisted. Do not make the respondent
-      // resubmit; the manager trigger remains a safe recovery path.
-      console.error(
-        'Auto-enqueue AI analytics failed:',
-        error instanceof Error ? error.message : 'unknown error',
-      );
-    }
-
+    /*
+     * A submission no longer dispatches an analysis. Until 2026-08-17 it did,
+     * once the round crossed its privacy threshold and then again whenever a
+     * later answer invalidated the run in flight, and the school's map moved
+     * under it while collection was still open. Analysis now belongs to the
+     * moment a manager closes the round — see the PATCH handler in
+     * `api/rounds/[roundId]` — so nothing here reaches the provider, and a
+     * respondent's request ends where their answers are stored.
+     */
     return NextResponse.json({ success: true, responseId: result.responseId }, { status: 200 });
   } catch (error) {
     return NextResponse.json(

@@ -1,22 +1,27 @@
+/**
+ * What closing a round dispatches, and what it refuses.
+ *
+ * This suite replaces the one that tested `enqueueAiAnalyticsAfterResponse`.
+ * Most of what it asserted — a re-arm on `round_validation_failed`, a ceiling of
+ * three automatic runs, a succeeded run closing the path — described machinery
+ * that only existed because the dispatch fired on every respondent submission.
+ * Owner decision 2026-08-17 moved it to the moment a manager closes the round,
+ * and those assertions are not weakened here, they are about behaviour that no
+ * longer exists.
+ */
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {
-  InMemoryAiAnalysisRunRepository,
-  InMemoryAiInsightsRepository,
-} from '@/lib/repositories';
+import { InMemoryAiAnalysisRunRepository } from '@/lib/repositories';
 import type { ISurveyRepository } from '@/lib/repositories/interfaces';
 import type { OperationalMetric } from '../ai-operational-metrics';
 import { setOperationalMetricSinkForTests } from '../ai-operational-metrics';
-import {
-  AI_ANALYSIS_AUTOMATIC_MAX_RUNS,
-  enqueueAiAnalyticsAfterResponse,
-} from '../trigger-ai-analytics';
+import { enqueueAiAnalyticsOnClosure } from '../trigger-ai-analytics';
 
 const THRESHOLD = 10;
 
 /**
- * The automatic path asks the survey repository exactly one question, so the
- * stub answers exactly that one. A fuller fake would only hide which fact the
+ * The dispatch asks the survey repository exactly one question, so the stub
+ * answers exactly that one. A fuller fake would only hide which fact the
  * decision actually rests on.
  */
 function surveyRepoWith(responseCount: number): ISurveyRepository {
@@ -27,22 +32,18 @@ function surveyRepoWith(responseCount: number): ISurveyRepository {
 
 interface Harness {
   aiAnalysisRunRepo: InMemoryAiAnalysisRunRepository;
-  aiInsightsRepo: InMemoryAiInsightsRepository;
-  enqueue: (responseCount?: number) => Promise<string>;
+  close: (responseCount?: number) => Promise<string>;
 }
 
 function harness(roundId: string): Harness {
   const aiAnalysisRunRepo = new InMemoryAiAnalysisRunRepository();
-  const aiInsightsRepo = new InMemoryAiInsightsRepository();
   return {
     aiAnalysisRunRepo,
-    aiInsightsRepo,
-    enqueue: (responseCount = THRESHOLD) =>
-      enqueueAiAnalyticsAfterResponse(
+    close: (responseCount = THRESHOLD) =>
+      enqueueAiAnalyticsOnClosure(
         roundId,
         THRESHOLD,
         aiAnalysisRunRepo,
-        aiInsightsRepo,
         surveyRepoWith(responseCount),
       ),
   };
@@ -51,9 +52,7 @@ function harness(roundId: string): Harness {
 /** Claims whatever is queued and ends it, the way a callback would. */
 async function finishQueuedRun(
   repo: InMemoryAiAnalysisRunRepository,
-  outcome:
-    | { state: 'succeeded' }
-    | { state: 'failed'; failureCode: string },
+  outcome: { state: 'succeeded' } | { state: 'failed'; failureCode: string },
 ): Promise<void> {
   const lease = await repo.claimNext({ leaseMs: 60_000, workerId: 'worker-1' });
   assert.ok(lease, 'expected a queued run to claim');
@@ -72,171 +71,128 @@ async function finishQueuedRun(
   assert.equal(finished, 'transitioned');
 }
 
-test('below the privacy threshold nothing is enqueued', async () => {
-  const { enqueue, aiAnalysisRunRepo } = harness('round-rearm-1');
+test('below the privacy threshold closing dispatches nothing', async () => {
+  const { close, aiAnalysisRunRepo } = harness('round-closure-1');
 
-  assert.equal(await enqueue(THRESHOLD - 1), 'below_threshold');
-  assert.deepEqual(await aiAnalysisRunRepo.findByRoundId('round-rearm-1'), []);
+  assert.equal(await close(THRESHOLD - 1), 'below_threshold');
+  assert.deepEqual(await aiAnalysisRunRepo.findByRoundId('round-closure-1'), []);
 });
 
-test('crossing the threshold enqueues the round-s first automatic run', async () => {
-  const { enqueue, aiAnalysisRunRepo } = harness('round-rearm-2');
+test('closing a round above the threshold dispatches its first run', async () => {
+  const { close, aiAnalysisRunRepo } = harness('round-closure-2');
 
-  assert.equal(await enqueue(), 'enqueued');
+  assert.equal(await close(), 'enqueued');
 
-  const runs = await aiAnalysisRunRepo.findByRoundId('round-rearm-2');
+  const runs = await aiAnalysisRunRepo.findByRoundId('round-closure-2');
   assert.equal(runs.length, 1);
-  assert.equal(runs[0].requestKey, 'automatic');
-  assert.equal(runs[0].trigger, 'automatic');
+  assert.equal(runs[0].requestKey, 'closure');
+  assert.equal(runs[0].trigger, 'closure');
 });
 
-test('a run already in flight is not joined by a second one', async () => {
-  const { enqueue, aiAnalysisRunRepo } = harness('round-rearm-3');
-  assert.equal(await enqueue(), 'enqueued');
+test('two requests racing on one close collapse instead of queueing twice', async () => {
+  const { close, aiAnalysisRunRepo } = harness('round-closure-3');
 
-  assert.equal(await enqueue(THRESHOLD + 1), 'already_active');
+  const [first, second] = await Promise.all([close(), close()]);
+
+  assert.ok(
+    [first, second].includes('enqueued'),
+    'one of the two must have queued the run',
+  );
+  assert.ok(
+    [first, second].some((outcome) => outcome !== 'enqueued'),
+    'the other must have been refused rather than queued a second run',
+  );
   assert.equal(
-    (await aiAnalysisRunRepo.findByRoundId('round-rearm-3')).length,
+    (await aiAnalysisRunRepo.findByRoundId('round-closure-3')).length,
     1,
   );
 });
 
-test('a response that lands mid-analysis re-arms the automatic path', async () => {
-  // The defect this slice exists for: the run analysed ten responses, the
-  // eleventh arrived before the callback, and Core refused the result because
-  // its own recalculated aggregates no longer matched.
-  const { enqueue, aiAnalysisRunRepo } = harness('round-rearm-4');
-  assert.equal(await enqueue(), 'enqueued');
-  await finishQueuedRun(aiAnalysisRunRepo, {
-    state: 'failed',
-    failureCode: 'round_validation_failed',
-  });
+test('a run still in flight is not joined by a second one', async () => {
+  const { close, aiAnalysisRunRepo } = harness('round-closure-4');
+  assert.equal(await close(), 'enqueued');
 
-  assert.equal(await enqueue(THRESHOLD + 1), 'enqueued');
-
-  const runs = await aiAnalysisRunRepo.findByRoundId('round-rearm-4');
-  assert.equal(runs.length, 2);
-  // The failed run stays as evidence rather than being reset in place.
-  assert.equal(runs[0].state, 'failed');
-  assert.equal(runs[0].failureCode, 'round_validation_failed');
-  assert.equal(runs[1].state, 'queued');
-  assert.equal(runs[1].requestKey, 'automatic:2');
-});
-
-test('the re-arm is counted so its rate can be read later', async () => {
-  const metrics: OperationalMetric[] = [];
-  setOperationalMetricSinkForTests((metric) => metrics.push(metric));
-  try {
-    const { enqueue, aiAnalysisRunRepo } = harness('round-rearm-5');
-    await enqueue();
-    await finishQueuedRun(aiAnalysisRunRepo, {
-      state: 'failed',
-      failureCode: 'round_validation_failed',
-    });
-    metrics.length = 0;
-
-    await enqueue(THRESHOLD + 1);
-
-    const rearmed = metrics.filter(
-      (metric) => metric.name === 'ai_jobs_rearmed',
-    );
-    assert.equal(rearmed.length, 1);
-    assert.equal(rearmed[0].labels?.attempt, '2');
-    assert.equal(
-      rearmed[0].labels?.previousFailureCode,
-      'round_validation_failed',
-    );
-    assert.equal(rearmed[0].roundId, 'round-rearm-5');
-  } finally {
-    setOperationalMetricSinkForTests(null);
-  }
-});
-
-test('the first automatic run is not counted as a re-arm', async () => {
-  const metrics: OperationalMetric[] = [];
-  setOperationalMetricSinkForTests((metric) => metrics.push(metric));
-  try {
-    await harness('round-rearm-6').enqueue();
-    assert.equal(
-      metrics.some((metric) => metric.name === 'ai_jobs_rearmed'),
-      false,
-    );
-  } finally {
-    setOperationalMetricSinkForTests(null);
-  }
-});
-
-test('a failure a fresh input cannot fix is not retried', async () => {
-  for (const failureCode of [
-    'contract_validation_failed',
-    'analysis_validation_failed',
-    'lease_exhausted',
-    // The analytics service now says why the provider was unavailable, so the
-    // code Core stores varies per run. Only `round_validation_failed` re-arms,
-    // and that is Core's own code — a more specific provider code must not
-    // become retryable by being unrecognised.
-    'provider_unavailable_missing_api_key',
-  ]) {
-    const roundId = `round-rearm-7-${failureCode}`;
-    const { enqueue, aiAnalysisRunRepo } = harness(roundId);
-    await enqueue();
-    await finishQueuedRun(aiAnalysisRunRepo, { state: 'failed', failureCode });
-
-    assert.equal(
-      await enqueue(THRESHOLD + 1),
-      'not_retryable',
-      `${failureCode} must not re-arm`,
-    );
-    assert.equal((await aiAnalysisRunRepo.findByRoundId(roundId)).length, 1);
-  }
-});
-
-test('re-arming stops at the cap instead of following every response', async () => {
-  const { enqueue, aiAnalysisRunRepo } = harness('round-rearm-8');
-
-  for (let attempt = 1; attempt <= AI_ANALYSIS_AUTOMATIC_MAX_RUNS; attempt += 1) {
-    assert.equal(await enqueue(THRESHOLD + attempt), 'enqueued');
-    await finishQueuedRun(aiAnalysisRunRepo, {
-      state: 'failed',
-      failureCode: 'round_validation_failed',
-    });
-  }
-
-  assert.equal(await enqueue(THRESHOLD + 99), 'retries_exhausted');
+  assert.equal(await close(THRESHOLD + 1), 'already_active');
   assert.equal(
-    (await aiAnalysisRunRepo.findByRoundId('round-rearm-8')).length,
-    AI_ANALYSIS_AUTOMATIC_MAX_RUNS,
+    (await aiAnalysisRunRepo.findByRoundId('round-closure-4')).length,
+    1,
   );
 });
 
-test('a manual run that succeeded closes the automatic path', async () => {
-  const { enqueue, aiAnalysisRunRepo } = harness('round-rearm-9');
-  await enqueue();
+test('a round reopened and closed again is analysed again, on what it has now', async () => {
+  // The old automatic path refused this as `already_generated`, which was right
+  // when every answer could ask for a run. Closing is a deliberate act, and a
+  // school reopens a round precisely because the first analysis was of fewer
+  // answers than it now has.
+  const { close, aiAnalysisRunRepo } = harness('round-closure-5');
+  assert.equal(await close(), 'enqueued');
+  await finishQueuedRun(aiAnalysisRunRepo, { state: 'succeeded' });
+
+  assert.equal(await close(THRESHOLD + 4), 'enqueued');
+
+  const runs = await aiAnalysisRunRepo.findByRoundId('round-closure-5');
+  assert.equal(runs.length, 2);
+  assert.equal(runs[0].state, 'succeeded');
+  assert.equal(runs[1].requestKey, 'closure:2');
+  assert.equal(runs[1].state, 'queued');
+});
+
+test('a failed run does not leave the round unable to be analysed again', async () => {
+  const { close, aiAnalysisRunRepo } = harness('round-closure-6');
+  await close();
   await finishQueuedRun(aiAnalysisRunRepo, {
     state: 'failed',
-    failureCode: 'round_validation_failed',
+    failureCode: 'provider_unavailable_missing_api_key',
   });
-  await aiAnalysisRunRepo.enqueue('round-rearm-9', {
+
+  assert.equal(await close(), 'enqueued');
+  assert.equal(
+    (await aiAnalysisRunRepo.findByRoundId('round-closure-6')).length,
+    2,
+  );
+});
+
+test('the manual re-analysis button does not consume a closure key', async () => {
+  const { close, aiAnalysisRunRepo } = harness('round-closure-7');
+  await close();
+  await finishQueuedRun(aiAnalysisRunRepo, { state: 'succeeded' });
+  await aiAnalysisRunRepo.enqueue('round-closure-7', {
     requestKey: 'manual:once',
     trigger: 'manual',
   });
   await finishQueuedRun(aiAnalysisRunRepo, { state: 'succeeded' });
 
-  assert.equal(await enqueue(THRESHOLD + 1), 'already_generated');
-  assert.equal(
-    (await aiAnalysisRunRepo.findByRoundId('round-rearm-9')).length,
-    2,
-  );
+  assert.equal(await close(), 'enqueued');
+
+  const runs = await aiAnalysisRunRepo.findByRoundId('round-closure-7');
+  assert.equal(runs[runs.length - 1].requestKey, 'closure:2');
 });
 
-test('a persisted legacy result is never regenerated', async () => {
-  const { enqueue, aiInsightsRepo, aiAnalysisRunRepo } =
-    harness('round-rearm-10');
-  await aiInsightsRepo.save('round-rearm-10', {
-    contractVersion: '5.0',
-    status: 'success',
-  });
+test('a dispatched run is counted so the queue rate stays readable', async () => {
+  const metrics: OperationalMetric[] = [];
+  setOperationalMetricSinkForTests((metric) => metrics.push(metric));
+  try {
+    await harness('round-closure-8').close();
 
-  assert.equal(await enqueue(), 'already_generated');
-  assert.deepEqual(await aiAnalysisRunRepo.findByRoundId('round-rearm-10'), []);
+    const queued = metrics.filter((metric) => metric.name === 'ai_jobs_queued');
+    assert.equal(queued.length, 1);
+    assert.equal(queued[0].labels?.trigger, 'closure');
+    assert.equal(queued[0].roundId, 'round-closure-8');
+  } finally {
+    setOperationalMetricSinkForTests(null);
+  }
+});
+
+test('a refusal below the threshold is not counted as a queued job', async () => {
+  const metrics: OperationalMetric[] = [];
+  setOperationalMetricSinkForTests((metric) => metrics.push(metric));
+  try {
+    await harness('round-closure-9').close(THRESHOLD - 1);
+    assert.equal(
+      metrics.some((metric) => metric.name === 'ai_jobs_queued'),
+      false,
+    );
+  } finally {
+    setOperationalMetricSinkForTests(null);
+  }
 });

@@ -2,7 +2,6 @@ import type { AiAnalysisRun } from '../types/ai-analysis-run';
 
 export type OperationalMetricName =
   | 'ai_jobs_queued'
-  | 'ai_jobs_rearmed'
   | 'ai_jobs_running'
   | 'ai_jobs_succeeded'
   | 'ai_jobs_failed'
@@ -65,28 +64,24 @@ export function recordAiJobQueued(run: AiAnalysisRun) {
   });
 }
 
-/**
- * A round whose automatic analysis had to be started again because responses
- * moved under the previous run. The rate of this counter is the measurement
- * that says how often the round's input changes mid-analysis, so it is the
- * evidence for whether the durable run needs to own an immutable input
- * snapshot rather than refetching one.
+/*
+ * `ai_jobs_rearmed` was here, and it is gone rather than left silent.
+ *
+ * It counted a round whose automatic analysis had to be started again because
+ * responses moved under the previous run, and its rate was the evidence for
+ * whether a durable run needs to own an immutable input snapshot. Analysis now
+ * follows a manager closing the round (owner decision 2026-08-17), and a closed
+ * round refuses submissions, so the ordinary case it measured cannot happen and
+ * there is no re-arm to count.
+ *
+ * The residual case can: `updateStatus` is an unconditional write outside any
+ * transaction with the dispatch, so a submission that read `active` before the
+ * status changed can still land after the aggregates were read. That is still
+ * measured — `ai_jobs_failed{failureCode="round_validation_failed"}` is the same
+ * signal from the other end — so the evidence moved rather than disappeared. A
+ * counter that stayed in the union and never incremented would have read as
+ * zero occurrences instead of no measurement.
  */
-export function recordAiJobRearmed(
-  run: AiAnalysisRun,
-  input: { attempt: number; previousFailureCode: string },
-) {
-  emit({
-    name: 'ai_jobs_rearmed',
-    value: 1,
-    unit: 'count',
-    labels: {
-      attempt: String(input.attempt),
-      previousFailureCode: input.previousFailureCode,
-    },
-    ...correlation(run),
-  });
-}
 
 export function recordAiJobClaimed(run: AiAnalysisRun) {
   emit({

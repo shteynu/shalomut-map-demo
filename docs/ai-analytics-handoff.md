@@ -8,8 +8,9 @@ and archived task files.
 
 ## Runtime flow
 
-1. A respondent submission reaches the threshold or a manager requests a
-   refresh.
+1. A manager closes a round that has reached its privacy threshold, or asks an
+   already-closed round for a refresh. A respondent submission dispatches
+   nothing (owner decision 2026-08-17).
 2. Core commits an idempotent `AiAnalysisRun` before returning.
 3. The Python worker polls Core, atomically claims the oldest due run and keeps
    its 90-second lease alive by heartbeat.

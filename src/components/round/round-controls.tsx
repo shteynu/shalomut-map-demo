@@ -176,8 +176,24 @@ export function RoundControls({
       return;
     }
 
+    /*
+     * A 409 now carries more than one reason, so the body decides which
+     * sentence the manager reads. Before the privacy threshold moved onto this
+     * route, every 409 here meant a run was already in flight, and printing
+     * that for a round short of the threshold would send a manager to wait for
+     * something that is not happening.
+     */
     if (response.status === 409) {
-      setAnalysisNote("ניתוח כבר רץ עבור הסבב הזה. המתינו לסיומו לפני הפעלה נוספת.");
+      const code = await response
+        .json()
+        .then((body) => body?.code)
+        .catch(() => undefined);
+
+      setAnalysisNote(
+        code === "below_privacy_threshold"
+          ? `הניתוח יופעל רק לאחר ${minimumResponses} תשובות לפחות.`
+          : "ניתוח כבר רץ עבור הסבב הזה. המתינו לסיומו לפני הפעלה נוספת.",
+      );
       setAnalyzing(false);
       return;
     }
@@ -255,16 +271,29 @@ export function RoundControls({
         <div className="round-actions">
           {readOnly ? null : (
             <>
+              {/*
+                Re-running is a second opinion on a round already closed. While
+                a round is still collecting, the first opinion has not been
+                asked for yet — closing is what asks — and pressing this would
+                put a map in front of the school built from a sample that is
+                still moving.
+              */}
               <button
                 id="refresh-round-analysis"
                 className="secondary-button"
                 type="button"
-                disabled={analyzing || responseCount < minimumResponses}
+                disabled={
+                  analyzing ||
+                  !closed ||
+                  responseCount < minimumResponses
+                }
                 onClick={refreshAnalysis}
                 title={
-                  responseCount < minimumResponses
-                    ? `הניתוח יופעל לאחר ${minimumResponses} תשובות לפחות`
-                    : "הפעלת ניתוח מחדש על כל התשובות שהתקבלו עד כה"
+                  !closed
+                    ? "הניתוח יופעל בסגירת הסבב. אחריה אפשר להפעיל אותו מחדש"
+                    : responseCount < minimumResponses
+                      ? `הניתוח יופעל לאחר ${minimumResponses} תשובות לפחות`
+                      : "הפעלת ניתוח מחדש על כל התשובות שהתקבלו עד כה"
                 }
               >
                 {analyzing ? (
