@@ -83,3 +83,25 @@ test("the manager's own wording cannot become a promise", () => {
   );
   assert.ok(markup.includes("מובטח"), "and is still shown, just not as a promise");
 });
+
+test("the timing measurement is disclosed, with its limit", () => {
+  const markup = renderConsent();
+
+  // Something is now stored beside the answers that the respondent did not
+  // type. A screen that collects it silently is a screen that made the first
+  // promise sound wider than it is.
+  assert.ok(markup.includes("כמה זמן השאלון היה פתוח על המסך"));
+  assert.ok(
+    markup.includes("לא נמדד זמן לכל שאלה בנפרד"),
+    "the limit is what makes the measurement bearable, and it is a property of what is collected",
+  );
+});
+
+test("the timing line promises no judgement of the person behind it", () => {
+  const markup = renderConsent();
+
+  // The manager screen refuses to call anyone suspect, and the consent screen
+  // must not imply the opposite is coming.
+  assert.ok(!markup.includes("חשוד"));
+  assert.ok(!markup.includes("רציני"));
+});

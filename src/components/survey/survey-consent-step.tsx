@@ -4,6 +4,7 @@ import {
   HandHeart,
   Server,
   Sparkles,
+  Timer,
   Users,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -49,13 +50,27 @@ type SurveyConsentStepProps = {
  * edge does, and a promise that holds for the code but not for the deployment
  * is the kind a teacher would rightly feel betrayed by. So the address is now
  * described rather than denied. `docs/data-flow-and-subprocessors.md` is the
- * long form of these five sentences, and it is what to check when one of them
+ * long form of these six sentences, and it is what to check when one of them
  * stops being true.
+ *
+ * The timing line was added on 2026-08-17, when the browser began counting how
+ * long the questionnaire was on screen. It sits second because the first
+ * promise says the answers are stored with nothing that links them to a person,
+ * and this number is stored beside them — a respondent who learns that
+ * afterwards would be right to read the first line as having been narrower than
+ * it sounded. It also states the limit that makes the measurement bearable: no
+ * per-question timing, which is a property of what is collected rather than of
+ * what is shown, and therefore not something a later feature can quietly
+ * relax without this sentence becoming false.
  */
 const PROMISES: readonly { icon: LucideIcon; text: string }[] = [
   {
     icon: EyeOff,
     text: "לא נאספים שם, כתובת מייל או פרט מזהה אחר. התשובות נשמרות בלי דבר שמקשר אותן לאדם מסוים.",
+  },
+  {
+    icon: Timer,
+    text: "נמדד כמה זמן השאלון היה פתוח על המסך, והמספר נשמר יחד עם התשובות. ההנהלה רואה ממנו תמונה מצרפית בלבד — כמה זמן לקח המילוי האמצעי וכמה מילויים היו קצרים במיוחד. לא נמדד זמן לכל שאלה בנפרד.",
   },
   {
     icon: Server,

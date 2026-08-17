@@ -110,10 +110,29 @@ Which screen owns which value, so the same fact is never edited in two places:
   sets of respondents reads the difference as one person's answer sheet. This is
   `PROJECT_CONTEXT.md` ADR-022, and it is why the panel explains the absence of
   an exclusion control rather than leaving a gap for someone to fill.
-- One duration is `submittedAt − openedAt`: the lifetime of a filling session,
-  not the work inside it. It survives a reload and a forgotten tab, so the
-  product states it only in the direction that survives that — a short session
-  really is short — and reports nothing about the slow side.
+- There are two measures behind one number, and the report says which it used.
+  The respondent's browser counts the wall time the questionnaire was visible
+  and sends one `visibleSeconds` with the answers; a response carrying none
+  falls back to `submittedAt − openedAt`, the lifetime of the filling session.
+  Both are upper bounds on attention, so the product states them only in the
+  direction that survives that — a short filling really is short — and reports
+  nothing about the slow side.
+- The median mixes the two and says so; the fast count does not need to. A
+  session's lifetime is always at least its visible time, so a response short
+  enough to be flagged on the lifetime is short on either measure, and the count
+  therefore never over-reports. `measuredPrecisely` is published beside the
+  median for exactly the case the count does not have.
+- **No per-question and no per-step timing is collected.** The browser
+  accumulates a single number and no per-step value ever leaves it, so nothing
+  stored can say which question someone hesitated on. This is a boundary on what
+  is collected rather than on what is shown, which is why the consent screen
+  states it and `docs/openapi.yaml` repeats it on the field.
+- The timing figure is dropped, never refused. It arrives on the only
+  unauthenticated write in the product; an old client, a hand-made request or a
+  clock that ran backwards must not cost a respondent their answers. It is not
+  coerced either — `Number(value)` on a string would store a figure the browser
+  never counted. The database's own check constraint holds the same range the
+  route does.
 - The estimate it is measured against is recomputed from the round's enabled
   questions, never read from the stored `surveyDefinition.estimatedMinutes`.
   That is the number the respondent was shown; `survey-flow.tsx` computes it the

@@ -218,6 +218,15 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
   distributions. A response with no timing is named rather than counted as a
   fast one, and a count of one or two is stated as "fewer than three" so that it
   never describes an individual.
+- **That duration is now the time the questionnaire was actually on screen.** The
+  session's lifetime counted a forgotten tab and a lunch break as filling; the
+  respondent's browser now accumulates only the visible time and sends one number
+  with the answers, and a response carrying none still falls back to the session.
+  The panel says which measure a round used, because the middle value mixes the
+  two. What is deliberately absent is per-question timing: the browser keeps a
+  single total and no per-step value ever leaves it, so nothing stored can say
+  which question someone hesitated on — and the consent screen states both the
+  measurement and that limit before the first question.
 - A blocked clipboard is reported as a blocked clipboard: the share link is
   selected, the note names Ctrl+C/Cmd+C and stays until the next attempt.
 - Anonymous respondent flow with stable attempt tokens and database-enforced

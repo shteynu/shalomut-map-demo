@@ -5,8 +5,8 @@
 - Branch: `feat/how-long-the-questionnaire-was-in-front-of-them`
 - Base branch: `feat/the-round-says-how-it-was-filled` (task C), at `a3080fa`
 - Base commit: `a3080fa`
-- Current HEAD: `a3080fa`
-- Status: opened and scoped, not started
+- Current HEAD: `b326615` (the task file only; the work below is uncommitted)
+- Status: implemented and verified locally, uncommitted
 - Last updated: 2026-08-17
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -120,7 +120,36 @@ landed.
 
 ## Completed
 
-Nothing yet.
+Everything in Scope.
+
+- **The accumulator.** `src/lib/survey/visible-time.ts` — `createVisibleTimeClock`
+  banks closed intervals and reports `elapsed` for an open one, caps a single
+  interval at two hours and the total at twelve, and refuses a sub-second total
+  at the submission boundary rather than reporting it as the fastest filling in
+  the round. Fourteen tests.
+- **The client.** `survey-flow.tsx` builds the clock while the restored draft is
+  read, drives it from `visibilitychange` and `pagehide`, banks on cleanup, writes
+  the running total into the draft on every flush, and computes `visibleSeconds`
+  once before the first send so a retry cannot report a longer filling than the
+  first attempt did.
+- **The store.** `visibleMs` is optional inside `SurveyDraftV1` — not a version
+  bump, which would discard every draft a respondent is mid-way through — and is
+  read but never repaired.
+- **The column.** `visible_seconds INTEGER NULL` on `survey_responses` with
+  `survey_responses_visible_seconds_check`, plus the repository mapping, the two
+  backend types, and the service carrying it without validating.
+- **The endpoint.** `readVisibleSeconds` drops rather than refuses, and never
+  coerces. The answers are what the respondent came to send.
+- **The report.** `RoundFillingService` reads the response's own measurement
+  first — it needs no attempt row and no token — and publishes
+  `measuredPrecisely` beside the median.
+- **The panel.** The head describes both measures and calls them upper bounds; a
+  note appears only when the mix is not pure, in two forms for "none of them" and
+  "some of them".
+- **The disclosure.** A second promise on the consent screen states the
+  measurement and the limit that makes it bearable. **Drafted, not approved — see
+  Approval gates.**
+- `docs/openapi.yaml` and the generated `public/openapi.json`.
 
 ## In progress
 
@@ -128,41 +157,103 @@ Nothing.
 
 ## Remaining
 
-Everything in Scope.
+Push, which is the owner's. Then land the four stacked branches in order.
 
 ## Changed files
 
+Committed on this branch:
+
 - `docs/agent-tasks/active/feat--how-long-the-questionnaire-was-in-front-of-them.md`
-  (new, this file)
+  at `b326615`
+
+Modified, uncommitted:
+
+- `PROGRESS.md`, `PROJECT_CONTEXT.md` (ADR-022 amended),
+  `docs/source-of-truth.md`, `docs/data-flow-and-subprocessors.md`,
+  `docs/openapi.yaml`, `public/openapi.json`
+- `prisma/schema.prisma`
+- `src/app/api/survey/[shareCode]/submit/route.ts`
+- `src/components/round/round-filling.tsx` and its test
+- `src/components/survey/survey-consent-step.tsx` and
+  `src/components/survey/__tests__/consent-promises.test.tsx`
+- `src/components/survey/survey-flow.tsx`
+- `src/lib/repositories/prisma/prisma-survey.repository.ts`
+- `src/lib/services/round-filling.service.ts` and its test
+- `src/lib/services/survey.service.ts`
+- `src/lib/survey-draft-storage.ts`
+- `src/lib/types/backend.ts`
+
+Untracked:
+
+- `prisma/migrations/20260817170000_a_response_may_carry_its_visible_seconds/migration.sql`
+- `src/lib/survey/visible-time.ts` and `src/lib/survey/__tests__/visible-time.test.ts`
 
 `next-env.d.ts` carries a pre-existing unstaged modification that predates this
-branch and is not part of this task.
+branch and is not part of this task. It is left alone.
 
 ## Verification evidence
 
 ### Passed
 
-None for this branch yet.
+- `npm run verify:core` — exit 0. 1142 Node tests pass, 484 Python tests pass,
+  ESLint clean, `next build` completes.
+- New tests: 14 in `visible-time.test.ts`, 4 added to
+  `round-filling.service.test.ts` (17 total), 3 added to `round-filling.test.tsx`
+  (17 total), 2 added to `consent-promises.test.tsx` (5 total).
+- **The migration was applied to the local database** with `npx prisma migrate
+  deploy`, and the constraint was then probed directly with `pg`:
+  `NULL`, `1` and `43200` are accepted; `0`, `-5` and `43201` are refused by
+  `survey_responses_visible_seconds_check`. The database refuses exactly what the
+  route drops.
+- **Browser evidence.** The panel was rendered in isolation against the built
+  stylesheet, RTL at 800px, in three states — 8 of 20 measured precisely, all 20
+  measured with a withheld fast count, and none measured with three unmeasured
+  responses. All three read correctly; `פחות מ־3` does not invert, and the mixed
+  note appears only where it should. The consent screen was rendered the same way
+  and the timing line sits second, below the "no identifying detail" promise.
 
 ### Failed
 
-None.
+None outstanding. Two lint refusals were hit and fixed — see Failed approaches.
 
 ### Blocked or not run
 
-Everything. No code has changed.
+- Playwright e2e. Not part of `verify:core`, and nothing here changes a route
+  contract an e2e asserts on.
+- A signed-in walk of `/round` in a real browser. The manager screens are behind
+  `/login`, and typing a password is prohibited; the isolated render above is the
+  substitute, and it is what found the RTL defects on task C.
+- Anything deployed. The migration is applied locally only.
 
 ### Environment
 
-Local worktree only. Nothing deployed, no database read or written.
+Local worktree, local Docker PostgreSQL on `127.0.0.1:5433`. Nothing deployed,
+nothing on Supabase, no AI provider call.
 
 ### Residual risk
 
-None yet — no code has changed.
+- **The deployed database does not have this column.** The migration is applied
+  locally only, and it must be applied before this code runs anywhere else — a
+  Prisma client writing `visible_seconds` against a schema without it fails the
+  write, which is the respondent's submission.
+- The clock trusts `performance.now()` and the visibility events. A browser that
+  fires neither reports the whole phase as visible, which is the same upper bound
+  the session lifetime already was.
+- The two-hour interval cap silently truncates a genuinely long single sitting.
+  That is the deliberate direction: it can only shorten a reported filling, and
+  the report only claims the short side.
 
 ## Failed approaches
 
-None yet.
+- **Creating the clock in an effect.** `react-hooks/set-state-in-effect` refuses
+  the `setVisibleTimeVoid` that has to accompany it.
+- **Creating it during render into a `useRef`.** `react-hooks/refs` refuses
+  writing `.current` during render, even under the lazy-initialisation guard.
+- What works is holding the clock in state and setting it inside the existing
+  render-phase seeding block, which is already where the draft is read. It is
+  also more correct than the ref was: the visibility effect now depends on the
+  clock, so it attaches on the commit that produces it rather than on whichever
+  commit happens to follow.
 
 ## Known risks
 
@@ -185,6 +276,6 @@ None yet.
 
 ## Next concrete step
 
-Write the visible-time accumulator with its tests, before anything that stores
-its output, so that the one thing this task adds to a respondent's record is the
-first thing that has to be right.
+Push this branch — `git push origin feat/how-long-the-questionnaire-was-in-front-of-them`
+— which is the owner's to run, and get the consent wording approved before any
+of the four stacked branches reaches a respondent.

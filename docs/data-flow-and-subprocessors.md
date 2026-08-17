@@ -27,22 +27,31 @@ parties, at least three jurisdictions, none of them the respondent's.
 
 ## What crosses each boundary
 
-**Browser → Core (Vercel).** A submission carries the answers and one
-`anonymousTokenHash`: a hash of a token the browser generated for that filling
-session, which exists so a reload cannot count twice. It is not derived from
-anything about the person. The funnel beacons
-(`POST /api/survey/{shareCode}/attempt`) carry the same hash and a question
-index. No name, address, e-mail or device identifier is read anywhere in `src/`,
-and no analytics or tag-manager package is installed.
+**Browser → Core (Vercel).** A submission carries the answers, one
+`anonymousTokenHash` and, since 2026-08-17, one `visibleSeconds`. The hash is of
+a token the browser generated for that filling session, which exists so a reload
+cannot count twice; it is not derived from anything about the person. The funnel
+beacons (`POST /api/survey/{shareCode}/attempt`) carry the same hash and a
+question index. No name, address, e-mail or device identifier is read anywhere
+in `src/`, and no analytics or tag-manager package is installed.
+
+`visibleSeconds` is a single integer: wall time the questionnaire was on screen,
+accumulated across the attempt and sent once with the answers. What matters
+about it is what it is not. There is no per-question and no per-step timing —
+not sent, not stored, not derivable from what is stored — so the record cannot
+say which question someone hesitated on. ADR-022 in `PROJECT_CONTEXT.md` is why
+that is a design boundary rather than an unimplemented feature, and the consent
+screen states it to the respondent in those words.
 
 What Core does not control is that the request itself arrives at a hosting edge,
 and hosting edges log client addresses. That log is not this product's storage
 and never reaches a manager's screen, but it exists, it is Vercel's, and it is
 the reason the consent screen describes the address instead of denying it.
 
-**Core → Supabase.** A `SurveyResponse` row holds `roundId`, the token hash and
-`submittedAt`; the answers hang off it. A `SurveyAttempt` row holds the same
-hash plus timestamps and the furthest question reached. The identifying columns
+**Core → Supabase.** A `SurveyResponse` row holds `roundId`, the token hash,
+`submittedAt` and the optional `visible_seconds`; the answers hang off it. A
+`SurveyAttempt` row holds the same hash plus timestamps and the furthest
+question reached. The identifying columns
 a survey product usually has are not absent by policy — they are absent from the
 schema.
 

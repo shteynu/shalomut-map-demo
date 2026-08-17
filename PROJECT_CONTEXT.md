@@ -623,13 +623,32 @@ And per-item timing, which is what the careless-responding literature actually
 uses, is not measurable here: the questionnaire walks steps, and one step can be
 a block of thirty statements.
 
+Amended 2026-08-17, when the browser began measuring. `submittedAt − openedAt`
+counted a forgotten tab and a lunch break as filling, so the client now
+accumulates the wall time the questionnaire was actually visible and sends one
+`visibleSeconds` with the answers; a response carrying none falls back to the
+session's lifetime, and the panel says which measure a round used because the
+median mixes the two. The fast count needs no such caveat: a session's lifetime
+is always at least its visible time, so a response flagged fast on the lifetime
+is fast on either measure and the count never over-reports.
+
+What did not change is per-step timing, and the change makes that a refusal
+rather than an absence. Measuring per step is now technically within reach — the
+client already runs a clock — and it is declined: the browser keeps one running
+total, no per-step value is sent, and none is stored. Collecting per-step
+durations in order to reduce them server-side would be the worst version of this
+feature, because the durable record would then hold what question each person
+hesitated on while the screen showed an aggregate. The consent screen states the
+limit to the respondent, so relaxing it later is a promise to re-negotiate and
+not a schema change.
+
 What that leaves is safe because a count is not a subset. `RoundFillingService`
 returns counts and one median, never a response id, a session token or an
 individual duration, and nothing joins a duration to an answer. The floor on the
 fast count is `FILLING_DETAIL_MINIMUM = 3`, the same argument as
-`ABANDON_DETAIL_MINIMUM`. As of this ADR the service has no route and no screen
-behind it — the decision is recorded now because it is what the screen will be
-allowed to say, not because a manager can read it yet.
+`ABANDON_DETAIL_MINIMUM`. The round screen has read it since 2026-08-17, and the
+panel spends its closing sentence explaining why no exclusion control exists — a
+manager who is not told why will reasonably ask for the button.
 
 If exclusion is ever revived, the snapshot of the decision has to reach every
 path that recomputes aggregates — `src/app/api/mcp/route.ts` sends them,
