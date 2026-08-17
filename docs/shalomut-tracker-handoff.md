@@ -1546,7 +1546,17 @@ older snapshots remain available in Git.
   gate, not a blocker for local/docs work.
 - Explicit bounded approval is required before changing secrets, credentials,
   authentication configuration or deployment aliases.
-- No open migration decision remains in the repository record.
+- **Open since 2026-08-17: one migration is applied locally and not deployed.**
+  `20260817120000_analysis_may_be_triggered_by_closing_a_round` widens the
+  `ai_analysis_runs` trigger check to accept `closure`. It sits on the unpushed
+  branch `refactor/analysis-runs-when-a-round-closes`. The deployed database was
+  read on 2026-08-17 and still carries
+  `CHECK ((trigger = ANY (ARRAY['automatic'::text, 'manual'::text])))`, newest
+  applied migration `20260814120000_answers_may_have_no_dimension_or_score`.
+  This is the pattern the 2026-08-10 entry below warns about — the deploy build
+  runs `prisma generate` and never `migrate deploy` — and here it would not be
+  silent: closing a round would fail the constraint and the PATCH response would
+  report `analysis: "not_dispatched"` while still closing the round.
 - **Closed 2026-08-10, no longer waiting.** `20260810101610_add_survey_attempts`
   creates `survey_attempts` and was applied to the deployed database on
   2026-08-10, right after `bf02dd1` landed on `main`; `prisma migrate status`

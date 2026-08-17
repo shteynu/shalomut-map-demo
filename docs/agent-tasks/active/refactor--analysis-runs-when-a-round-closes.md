@@ -5,8 +5,8 @@
 - Branch: `refactor/analysis-runs-when-a-round-closes`
 - Base branch: `main`
 - Base commit: `8231490` (`origin/main`)
-- Current HEAD: `8231490` plus one documentation commit on this branch
-- Status: opened, scoped, not started
+- Current HEAD: `dd96ae0`, five commits ahead of `origin/main`, nothing pushed
+- Status: implemented and verified locally; awaiting the owner's push
 - Last updated: 2026-08-17
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -19,8 +19,8 @@ path currently owns onto whatever path survives.
 ## User-visible outcome
 
 A manager stops seeing analysis appear and re-appear while a round is still
-collecting, and starts getting one analysis for the round they closed. The
-screen stops promising that analysis begins by itself.
+collecting, and gets one analysis for the round they closed. The screen stops
+promising that analysis begins by itself.
 
 ## Context
 
@@ -34,7 +34,7 @@ response-quality feature, which it does not depend on.
 ## Scope
 
 - Remove the automatic dispatch after a respondent submission.
-- Re-home the four things that dispatch silently carries (below).
+- Re-home the four things that dispatch silently carries.
 - Update the screen copy that becomes false, together with its assertions.
 - Update the documents that own the triggering rule.
 
@@ -50,43 +50,73 @@ response-quality feature, which it does not depend on.
 
 - No server path can dispatch an analysis for a round below its effective
   privacy threshold, and this is covered by a test that fails if the check is
-  removed.
-- No test passes while asserting a screen string that is no longer true.
-- No fully tested but unreachable module is left behind.
-- `npm run verify:core` passes.
-
-## Relevant repository instructions
-
-- `AGENTS.md` — privacy is a product invariant, not an environment gate.
-- `.agents/skills/shalomut-map/SKILL.md` — published contracts `1.0`–`6.0` keep
-  their semantics; `resolveCoreRepositories` is for entrypoints only.
-- `.agents/skills/shalomut-verification/SKILL.md` — before claiming completion.
-
-## Relevant architecture and contracts
-
-- `enqueueAiAnalyticsAfterResponse` is called from exactly one place,
-  `src/app/api/survey/[shareCode]/submit/route.ts:10` and its use below.
-- `AiAnalysisRun` carries `@@unique([roundId, requestKey])` plus a partial unique
-  index keeping one run per round in flight while `state` is `queued` or
-  `running`.
-- ADR-016 exists because a round accepted responses while a run was working;
-  that premise weakens once analysis follows closing, but does not vanish (see
-  Known risks).
+  removed. — **met**, and the failure was demonstrated rather than assumed
+  (see Verification evidence).
+- No test passes while asserting a screen string that is no longer true. —
+  **met**; copy and assertions moved in the same commits.
+- No fully tested but unreachable module is left behind. — **met**;
+  `trigger-ai-analytics.ts` was repurposed rather than deleted, because closure
+  still needs a dispatch function, and its test file was rewritten to match.
+- `npm run verify:core` passes. — **met**.
 
 ## Decisions made
 
-None yet beyond the owner decision to do this. The four items below are findings,
-not choices.
+1. **The explicit trigger is closing the round, not the manual button.** The
+   `PATCH /api/rounds/{roundId}` transition to `closed` dispatches; the manual
+   `POST .../trigger-ai` became the second opinion for a round already closed.
+   The first open question is therefore answered "both, with different jobs".
+2. **The trigger enum gained `closure`** rather than reusing `manual`. A run
+   started by a manager pressing refresh and a run started by closing are
+   different facts, and `ai_jobs_queued{trigger=...}` is the only place that
+   distinction survives. `automatic` is kept in the enum for rows already
+   written; nothing produces it any more.
+3. **`round_not_closed` is enforced at the route, not by disabling buttons.**
+   Two screens offer the action and the route is reachable without either. The
+   alternative — prop-drilling `isCollecting` through five dashboard components
+   — would have put the same rule in two places with no way to keep them equal.
+4. **`ai_jobs_rearmed` is removed, not left silent.** A counter that stays in
+   the union and never increments reads as *zero occurrences* on a dashboard,
+   which is the opposite of *no measurement*. The residual signal moved to
+   `ai_jobs_failed{failureCode="round_validation_failed"}`.
+5. **The `already_generated` guard is gone.** It stopped a round being analysed
+   twice, which was right when every answer could ask. Closing is deliberate,
+   `closed → closed` is not an allowed transition, and a school that reopened a
+   round to collect more answers wants the analysis of what it has now.
+6. **The dispatch follows the status write and cannot fail it.** A round the
+   manager meant to close is closed even when nothing could be queued; the
+   PATCH response reports which in an `analysis` field.
 
 ## Assumptions
 
-- The explicit trigger is the manager's, on a closed round. Whether it is the
-  existing `POST /api/rounds/[roundId]/trigger-ai` or a new
-  close-and-analyse action is open, and is the first thing to settle.
+- A reopened-and-reclosed round should be analysed again, on what it has then.
+  The closure request key is numbered from the round's own history (`closure`,
+  `closure:2`) so that this works and so two requests racing on one close
+  collapse on `@@unique([roundId, requestKey])`.
 
 ## Completed
 
-Nothing implemented. The scoping below was measured rather than estimated.
+1. `f6eff06` — `src/lib/server/privacy-threshold-guard.ts`, applied to
+   `POST /api/rounds/[roundId]/trigger-ai`. Written **before** anything was
+   deleted, so the invariant was never briefly unguarded.
+2. `c48fef6` — `enqueueAiAnalyticsAfterResponse` became
+   `enqueueAiAnalyticsOnClosure`; the submit route dispatches nothing; the PATCH
+   route dispatches on close; migration
+   `20260817120000_analysis_may_be_triggered_by_closing_a_round` widens the
+   `trigger` check constraint to include `closure`.
+3. `015ad3f` — screen copy on `/round`, the `round_not_closed` route guard, the
+   refresh button's `disabled` rule, and 409 handling that reads the body `code`
+   on both screens instead of assuming "a run is already going".
+4. `dd96ae0` — `ai_jobs_rearmed` removed with an explanation in its place;
+   `PROJECT_CONTEXT.md` ADR-016 rewritten; `PROGRESS.md`,
+   `docs/source-of-truth.md`, `docs/ai-analytics-handoff.md` and
+   `docs/shalomut-tracker-handoff.md` updated; two stale strings in
+   `dashboard-ai-insights-state.tsx` corrected.
+
+`PROJECT_CONTEXT.md` ADR-006 was inspected and deliberately left alone: it
+describes durable execution mechanics (lease, heartbeat, bounded attempts,
+idempotent callback) that this change does not touch.
+`docs/dashboard-semantic-contract.md` was inspected and needed nothing — the set
+of empty states did not change, only the wording inside one of them.
 
 ## In progress
 
@@ -94,128 +124,153 @@ Nothing.
 
 ## Remaining
 
-Four things the removal takes with it, each of which must be re-homed:
+Nothing in scope. Out of scope but adjacent, in the order they matter:
 
-1. **The only server-side privacy-threshold check before dispatch.**
-   `effectivePrivacyThreshold` is verified at
-   `src/lib/server/trigger-ai-analytics.ts:81-84` and nowhere else on any
-   dispatch path. `POST /api/rounds/[roundId]/trigger-ai` checks authorization
-   and the archived guard, and does not check the threshold at all; the
-   remaining protection is the `disabled` attribute at
-   `src/components/round/round-controls.tsx:262`. **This is the load-bearing
-   item.** Without it, ADR-005 rests on client-side markup.
-2. **The `already_generated` guard**, which prevents a stored result being
-   regenerated, lives in the same function.
-3. **The `ai_jobs_rearmed` metric.**
-   `docs/shalomut-tracker-handoff.md:1466-1473` names its frequency as the
-   evidence for an owner-held decision about an immutable input snapshot.
-   Decide explicitly: declare the measurement finished and record that, or
-   replace the counter. A counter that silently stops emitting is the worst
-   outcome. `ai_jobs_queued{trigger="automatic"}` also goes to zero, which makes
-   any query grouped on that label lie rather than break.
-4. **Three screen strings that become false while their tests stay green.**
-   `src/components/round/round-threshold-next-step.tsx:51, 72, 88` promise that
-   analysis starts automatically at the threshold and that closing the round is
-   unnecessary. Their assertions at
-   `round-threshold-next-step.test.tsx:50, 68, 77` pass after the change. Copy
-   and assertions move in the same commit as the code.
-
-Then:
-
-- `AI_ANALYSIS_AUTOMATIC_MAX_RUNS = 3` loses its subject — it capped a
-  self-feeding loop that no longer exists. What remains as the guard is the
-  partial unique index. Separately, `manual:<uuid>` is unbounded today; if the
-  manual path becomes the main entrance, a ceiling belongs there.
-- Delete `src/lib/server/trigger-ai-analytics.ts` with its test rather than
-  leave a fully tested unreachable module; the third test in
-  `submit-auto-trigger.test.ts` becomes a tautology.
-- Introduce a state meaning "analysis appears once the round is closed" rather
-  than reusing not-found, which must keep meaning an anomaly. Direct-run buttons
-  on an active round (`dashboard-ai-insights-state.tsx`, and
-  `round-controls.tsx` `refresh-round-analysis`) either move or go, otherwise
-  "one entrance" is false.
-- Documents: `PROJECT_CONTEXT.md` ADR-016 and ADR-006,
-  `docs/source-of-truth.md` §AI Analysis Triggering,
-  `docs/ai-analytics-handoff.md`, `docs/openapi.yaml` followed by
-  `npm run openapi:generate`, `docs/shalomut-tracker-handoff.md:1466-1473`, and
-  `docs/dashboard-semantic-contract.md` if the set of empty states changes.
-  Archived task files stay as they are.
+- `manual:<uuid>` is unbounded. The old ceiling (`AI_ANALYSIS_AUTOMATIC_MAX_RUNS
+  = 3`) capped a self-feeding loop that no longer exists, so removing it was
+  right, but the manual path is now a real entrance and has no ceiling of its
+  own. Each run costs roughly two dozen provider calls.
+- Tasks B and C of the response-quality plan (the round-quality report, computed
+  then shown) are untouched and independent of this branch.
 
 ## Changed files
 
-- `docs/agent-tasks/active/refactor--analysis-runs-when-a-round-closes.md`
-  (new, this file)
+Five commits, `origin/main..HEAD`, 28 files, +1318/−519. Nothing staged,
+nothing untracked.
+
+- New: `src/lib/server/privacy-threshold-guard.ts`,
+  `src/app/api/__tests__/round-close-dispatches-analysis.test.ts`,
+  `src/app/api/__tests__/submit-dispatches-no-analysis.test.ts`,
+  `src/app/api/__tests__/trigger-ai-refusals.test.ts` (renamed from
+  `trigger-ai-privacy-threshold.test.ts`), the migration, and this file.
+- Deleted: `src/app/api/__tests__/submit-auto-trigger.test.ts`.
+- Rewritten: `src/lib/server/trigger-ai-analytics.ts` and its test.
+- Edited: the three routes, four components, `src/lib/repositories/interfaces.ts`,
+  `src/lib/types/ai-analysis-run.ts`, `src/lib/server/ai-operational-metrics.ts`,
+  `src/app/round/page.tsx`, `docs/openapi.yaml` with its generated
+  `public/openapi.json`, and the five documents named under Completed.
 
 `next-env.d.ts` carries a pre-existing unstaged modification that predates this
-branch and is not part of this task.
+branch, is not part of this task, and was deliberately left uncommitted.
 
 ## Verification evidence
 
 ### Passed
 
-None for this branch yet.
+- `npm run verify:core`, exit 0, on `dd96ae0`: **1094 tests, 1094 pass, 0 fail**
+  across 18 suites, plus typecheck, eslint, the production build and all eight
+  lint gates (`literals`, `interpreter`, `composition`, `fixtures`, `skills`,
+  `mutation-config`, `contract-refusals`, `fonts`).
+- `npm run openapi:check` — the generated mirror matches `docs/openapi.yaml`.
+- **The privacy guard was proved load-bearing, not assumed.** Deleting
+  `getPrivacyThresholdGuardResponse` from the trigger-ai route made 4 of the 5
+  new refusal tests fail; restoring it returned them to green. The deletion was
+  reverted.
+- `npx prisma migrate deploy` applied
+  `20260817120000_analysis_may_be_triggered_by_closing_a_round` to the local
+  database, and `pg_get_constraintdef` reads back
+  `CHECK ((trigger = ANY (ARRAY['automatic'::text, 'manual'::text, 'closure'::text])))`.
 
 ### Failed
 
-None.
+Three failures were met and fixed during the work; each was a real finding, not
+noise:
+
+- Removing the submit-route dispatch failed the 2 tests in
+  `submit-auto-trigger.test.ts` that asserted it. Expected; the file was
+  replaced by one asserting the absence.
+- Adding the threshold guard failed 2 tests in `mcp-integration.test.ts`, which
+  had been dispatching analyses for rounds holding **zero** responses. The
+  fixtures now seed `MINIMUM_PRIVACY_THRESHOLD` responses.
+- Adding the `round_not_closed` guard failed 2 more there, because the demo
+  round was `active`. Both fixture rounds are now `closed`.
 
 ### Blocked or not run
 
-The full suite has not been run on this branch. It **was** run during research,
-on a throwaway edit that was reverted: removing the
-`enqueueAiAnalyticsAfterResponse` block from the submit route gave **2 failures
-out of 1080 tests**, with `tsc --noEmit` and `eslint` clean and e2e untouched.
-Both failures were in one file and both were about the removed behaviour. That
-measurement scopes the mechanical part; it is not evidence about this branch,
-which has no code change yet.
+- **Browser evidence: none.** No screen was walked in a signed-in session, so
+  the Hebrew copy changes are verified by unit assertions on rendered markup
+  only, not by looking at them.
+- **e2e (Playwright): not run** on this branch. It is not part of
+  `verify:core`, and no e2e spec touches the analysis trigger.
+- **Deployed: nothing.** The migration is applied locally only. The deployed
+  database was read to confirm it, not assumed: its constraint is still
+  `CHECK ((trigger = ANY (ARRAY['automatic'::text, 'manual'::text])))` and its
+  newest applied migration is `20260814120000_answers_may_have_no_dimension_or_score`,
+  so it would reject a `closure` run. Applying the migration is part of whatever
+  deploys this branch.
+- **The database integration suite** (`__dbtests__`) was not run; it is not in
+  `verify:core`. `prisma-ai-analysis-runs.integration.test.ts` still exercises
+  `automatic:2` re-arm keys, which the constraint still permits, so it should
+  pass — but that is reasoning, not a run.
 
 ### Environment
 
-Local worktree only. Nothing deployed, no database read or written.
+Local worktree, and the local database at `127.0.0.1:5433` for the migration
+only. Nothing deployed. No provider call was made — no AI pipeline was run.
 
 ### Residual risk
 
-None yet — no code has changed.
+- The window ADR-016 describes is narrower but not closed: `updateStatus` is not
+  in a transaction with the dispatch, so a submission that read `active` can
+  still land after the aggregates were read. It now shows up only as
+  `ai_jobs_failed{failureCode="round_validation_failed"}`.
+- A closed round whose single dispatch failed has exactly one way back — the
+  manual button. Both screens that carry it were checked for reachability in the
+  failed and not-found states, but by reading the components, not by walking
+  them in a browser.
+- Anything watching `ai_jobs_rearmed` or `ai_jobs_queued{trigger="automatic"}`
+  now sees a metric that stopped rather than one that was retired. Both are
+  named in `docs/shalomut-tracker-handoff.md`, which is where an operator would
+  look.
 
 ## Failed approaches
 
-None yet. Recorded from research: "it is enough to remove the call" is false,
-and why is the Remaining section above.
+- "It is enough to remove the call" — false, and the four re-homed items are
+  why. Recorded from the research phase and confirmed by this implementation.
+- Prop-drilling `isCollecting` to disable the analysis buttons was considered
+  and rejected in favour of the route-level `round_not_closed` refusal. The
+  screens now report what the route answered instead of predicting it.
 
 ## Known risks
 
-- Re-arm loses its main cause but not all of it. `updateStatus` is an
-  unconditional UPDATE outside any transaction with the enqueue
-  (`prisma-round.repository.ts:156-169`), so a submission that read `active`
-  before the PATCH can still land after it. Narrow window, same failure mode.
 - `reset` is available on a closed round and deletes responses and runs
-  together, so a callback can arrive for a run that no longer exists.
-- Without the automatic path and without re-arm, one failed run leaves a round
-  with no analysis and the only way back is a manual button. That is acceptable
-  only if the button is reachable in that state.
+  together, so a callback can still arrive for a run that no longer exists.
+  Unchanged by this branch and out of its scope.
+- The deployed database constraint lags this branch (see Blocked above). A
+  deploy that ships the code without the migration turns every close into a
+  `not_dispatched` outcome — visible, not silent, but wrong.
 
 ## Approval gates
 
-None. No secrets, credentials, authentication configuration or deployment alias
-is touched.
+- **Push is the owner's.** Five commits sit on the branch with no upstream. No
+  secrets, credentials, authentication configuration or deployment alias was
+  touched.
 
 ## Questions requiring an owner decision
 
-- Is the explicit trigger the existing manual button on a closed round, or a
-  new close-and-analyse action? Everything else follows from this.
-- Should `ai_jobs_rearmed` be declared finished, or replaced?
+- Should the manual `POST .../trigger-ai` path gain a ceiling now that it is a
+  real entrance rather than an exception? Each run is roughly two dozen provider
+  calls and `manual:<uuid>` is unbounded.
+- Does closing a round need a confirmation step, given that it now spends
+  provider quota as a side effect? This branch deliberately did not add one.
 
 ## Agent recommendation
 
-- Recommended role: `strong reasoning model`, and an `independent reviewer` for
-  the commit that moves the privacy check.
-- Reason: the load-bearing part of this task is a privacy invariant that has no
-  server-side guard on the path that survives, so the diff is security-sensitive
-  rather than mechanical.
+- Recommended role: `strong reasoning model` for tasks B and C; this task is
+  done.
+- Reason kept for the record: the load-bearing part was a privacy invariant with
+  no server-side guard on the surviving path, which made the diff
+  security-sensitive rather than mechanical.
 
 ## Next concrete step
 
-Settle the first open question — existing manual trigger versus a new
-close-and-analyse action — then write the privacy-threshold check into whichever
-path is chosen, with a test that fails when the check is removed. Do that before
-deleting anything, so the invariant is never briefly unguarded.
+Hand the push over to the owner:
+
+```bash
+git push origin refactor/analysis-runs-when-a-round-closes
+```
+
+Then, before or with the deploy that carries it, apply
+`20260817120000_analysis_may_be_triggered_by_closing_a_round` to the deployed
+database — without it, closing a round fails its constraint and reports
+`not_dispatched`.
