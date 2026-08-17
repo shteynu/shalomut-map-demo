@@ -5,8 +5,8 @@
 - Branch: `feat/how-long-the-questionnaire-was-in-front-of-them`
 - Base branch: `feat/the-round-says-how-it-was-filled` (task C), at `a3080fa`
 - Base commit: `a3080fa`
-- Current HEAD: `b326615` (the task file only; the work below is uncommitted)
-- Status: implemented and verified locally, uncommitted
+- Current HEAD: `82515cb`, this file
+- Status: implemented, verified locally, committed and unpushed
 - Last updated: 2026-08-17
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -161,12 +161,20 @@ Push, which is the owner's. Then land the four stacked branches in order.
 
 ## Changed files
 
-Committed on this branch:
+Six commits on this branch, none pushed. `origin` has never seen this branch,
+so nothing here is visible outside this worktree.
 
-- `docs/agent-tasks/active/feat--how-long-the-questionnaire-was-in-front-of-them.md`
-  at `b326615`
+- `b326615` the task file
+- `b133215` the column, the migration, the repository and types, the endpoint,
+  `docs/openapi.yaml` and `public/openapi.json`
+- `4aa2dbd` `src/lib/survey/visible-time.ts` and its tests,
+  `src/lib/survey-draft-storage.ts`, `src/components/survey/survey-flow.tsx`
+- `af892f2` `src/lib/services/round-filling.service.ts` and
+  `src/components/round/round-filling.tsx`, both with their tests
+- `2b87b8b` the consent screen and its test, and the documents
+- `82515cb` this file
 
-Modified, uncommitted:
+The files, by area:
 
 - `PROGRESS.md`, `PROJECT_CONTEXT.md` (ADR-022 amended),
   `docs/source-of-truth.md`, `docs/data-flow-and-subprocessors.md`,
@@ -182,14 +190,14 @@ Modified, uncommitted:
 - `src/lib/services/survey.service.ts`
 - `src/lib/survey-draft-storage.ts`
 - `src/lib/types/backend.ts`
-
-Untracked:
-
 - `prisma/migrations/20260817170000_a_response_may_carry_its_visible_seconds/migration.sql`
-- `src/lib/survey/visible-time.ts` and `src/lib/survey/__tests__/visible-time.test.ts`
+  (new)
+- `src/lib/survey/visible-time.ts` and
+  `src/lib/survey/__tests__/visible-time.test.ts` (new)
 
 `next-env.d.ts` carries a pre-existing unstaged modification that predates this
-branch and is not part of this task. It is left alone.
+branch and is not part of this task. It is left alone, and it is the only thing
+the worktree still shows as dirty.
 
 ## Verification evidence
 
