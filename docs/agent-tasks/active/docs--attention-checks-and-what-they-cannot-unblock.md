@@ -5,8 +5,9 @@
 - Branch: `docs/attention-checks-and-what-they-cannot-unblock`
 - Base branch: `feat/how-long-the-questionnaire-was-in-front-of-them` (task D), at `c5963d2`
 - Base commit: `c5963d2`
-- Current HEAD: `fa2e816`, this file
-- Status: complete, unpushed
+- Current HEAD: the commit carrying this file, deliberately not written as a
+  hash. The last commit that changes anything but this file is `c94891e`.
+- Status: complete; the session-close commit is unpushed
 - Last updated: 2026-08-17
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -106,16 +107,22 @@ Nothing.
 
 ## Remaining
 
-Push, which is the owner's. Sending the questions is the owner's too — this
-repository only writes them.
+Sending the questions, which is the owner's — this repository only writes them.
+And landing: five branches are stacked ahead of `main` and none has merged.
 
 ## Changed files
 
-Two commits on this branch, neither pushed. `origin` has never seen it.
+Three commits. The first two are on `origin` at `fe1bcb9`, asked of the remote
+itself on 2026-08-17 rather than assumed, so that much is portable to another
+checkout or machine. The third is this session close and is **not pushed** — it
+is visible only in this worktree until someone pushes the branch. Nothing is on
+`main`, which is still `8231490`.
 
 - `c94891e` `PROJECT_CONTEXT.md`, both methodologist files, `docs/README.md`
   and `docs/shalomut-tracker-handoff.md`
-- `fa2e816` this file
+- `fe1bcb9` this file
+- the session close: the handoff's new entry and migration gate, and the two
+  task files corrected from "unpushed"
 
 `next-env.d.ts` carries a pre-existing unstaged modification that predates this
 branch. It is left alone.
@@ -175,6 +182,7 @@ attempted; see Decisions made, 2.
 
 ## Next concrete step
 
-Push this branch —
-`git push origin docs/attention-checks-and-what-they-cannot-unblock` — which is
-the owner's to run. Then land the five stacked branches in order, A first.
+Land the five stacked branches into `main` in order — A
+(`refactor/analysis-runs-when-a-round-closes`), B, C, D, then this — resolving
+the one known conflict in `src/app/api/survey/[shareCode]/submit/route.ts`
+without resurrecting the analytics enqueue A removed.

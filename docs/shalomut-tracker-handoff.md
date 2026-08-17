@@ -1,5 +1,50 @@
 # Shalomut Tracker — operational handoff
 
+**2026-08-17, session close: the response-quality plan is finished, and five
+branches are waiting on `main` rather than on an agent.**
+
+`refs/heads/main` is `8231490`, asked of the remote itself. Nothing is waiting
+on a push — all five branches of this stack are on `origin` at their local tips,
+checked against the remote and not assumed. What they are waiting on is a merge.
+
+The plan `docs/response-quality-plan-2026-08-17.md`, on
+`research/how-a-round-was-filled`, is closed end to end. A moved AI analysis to
+round closure. B computed how long a round took to fill. C put it on the round
+screen. D replaced the session lifetime with the time the questionnaire was
+actually visible in the respondent's browser. E is decided rather than built —
+see below. Each branch's own task file under `docs/agent-tasks/active/` holds
+its evidence; nothing of that is copied here.
+
+Three things outlive the plan and belong to whoever picks this up.
+
+**The branches are a stack, in this order:**
+`refactor/analysis-runs-when-a-round-closes` (`06c20d8`),
+`feat/how-long-a-round-took-to-fill` (`01a0bc7`),
+`feat/the-round-says-how-it-was-filled` (`a3080fa`),
+`feat/how-long-the-questionnaire-was-in-front-of-them` (`c5963d2`, plus one
+unpushed correction to its own task file) and
+`docs/attention-checks-and-what-they-cannot-unblock`. A and B were independent;
+C follows B; D follows C; this one follows D. The one known conflict is
+`src/app/api/survey/[shareCode]/submit/route.ts` — A removes the analytics
+enqueue from it and D adds a validated field to the same handler. The resolution
+is mechanical and must not resurrect the enqueue.
+
+**One consent sentence is drafted and not approved.** The respondent screen now
+states that the time the questionnaire was on screen is measured and stored with
+the answers, and that no per-question timing is collected. The wording is the
+owner's to approve before this reaches a real respondent. It is a promise, not
+copy: the "no per-question timing" half is a limit on what is collected, so
+relaxing it later is a promise to re-negotiate rather than a schema change.
+
+**Exclusion is closed on grounds no methodologist answer can reopen.** The plan
+said attention-check items would make it defensible later, because they are the
+one careless-responding signal that is not directionally biased. ADR-022 closes
+it on the number of published bases instead, which says nothing about how a
+second basis was chosen — so an unbiased criterion leaks exactly as much. This
+is recorded in `PROJECT_CONTEXT.md` ADR-022 and stated at the top of question 6
+of the methodologist files, so that a positive answer cannot be read as
+permission.
+
 **2026-08-16, closing a later session: the questionnaire audit has nothing left
 in it that an agent can act on, and what stops the rest is one person.**
 
@@ -1539,7 +1584,19 @@ older snapshots remain available in Git.
   gate, not a blocker for local/docs work.
 - Explicit bounded approval is required before changing secrets, credentials,
   authentication configuration or deployment aliases.
-- No open migration decision remains in the repository record.
+- **Two migrations are written and not applied to the deployed database, as of
+  2026-08-17.** Both are on unlanded branches, so neither is urgent, and both
+  become urgent the moment their branch reaches `main`: the deploy build runs
+  `prisma generate` and never `migrate deploy`.
+  `20260817170000_a_response_may_carry_its_visible_seconds` adds
+  `survey_responses.visible_seconds` and is on
+  `feat/how-long-the-questionnaire-was-in-front-of-them`; without it a
+  respondent's submission fails on the missing column, which is the one write
+  the product cannot afford to lose. The other is on
+  `refactor/analysis-runs-when-a-round-closes` and that branch's task file owns
+  it. This bullet replaces "no open migration decision remains in the repository
+  record", which was true when it was written and is not now; the sibling branch
+  edits the same line, so expect a trivial conflict there.
 - **Closed 2026-08-10, no longer waiting.** `20260810101610_add_survey_attempts`
   creates `survey_attempts` and was applied to the deployed database on
   2026-08-10, right after `bf02dd1` landed on `main`; `prisma migrate status`
