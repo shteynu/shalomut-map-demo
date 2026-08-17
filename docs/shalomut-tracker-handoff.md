@@ -213,15 +213,41 @@ What that establishes, and it is more than the variable's presence:
   a real fault rather than in a test: the Hebrew "not available right now" plus
   the template under the template's own label.
 
-What is not established is *why*, and `main.py:156-215` gives exactly two
-shapes: a missing `AI_WEBHOOK_SECRET` outside development, which raises `503`
-immediately and fits 4.7s badly, or a `ProviderUnavailableError` after a real
-provider attempt, which fits it well. The service logs the second one as
-`[LLM Service] outcome=provider_unavailable ... scope=question_suggestion` with
-the reason, so **one read of the Render service log names the cause**. The
-leading hypothesis is the provider key, which is also the last open item of
-`docs/product-strategy-axes-2026-08-10.md` — whether `GEMINI_API_KEY` is on a
-live paid billing account, which only the owner can read.
+**The cause is the provider account, and it also answers the question item 1 of
+`docs/product-strategy-axes-2026-08-10.md` has been holding open since
+2026-08-10.** The `GEMINI_API_KEY` in `.env.deployed.local` was used for one
+minimal completion against the same endpoint and both default models the service
+resolves (`generativelanguage.googleapis.com/v1beta/openai/chat/completions`,
+`gemini-flash-latest` and `gemini-pro-latest`). Both answered **`429`
+`RESOURCE_EXHAUSTED`** in 0.43s: *"Your prepayment credits are depleted."* So the
+key is valid, is on a **prepaid** account rather than an unlimited paid one, and
+that account has no credit left.
+
+That closes the loop on the 503 and on its timing. `config.py:184-198` gives
+three attempts with a 0.5–2.0s backoff plus 0.25s jitter, and three exhausted
+attempts of 0.43s with two waits between them land in the 2.3–5.8s window — the
+observed 4.6–4.8s sits inside it. The service is not misconfigured, `main.py`'s
+`AI_WEBHOOK_SECRET` branch is not what fired, and no code change would fix this.
+
+One qualification, and it is the honest limit of the reading: the key tested is
+the local copy. Render's own copy was not read, because the dashboard is not
+signed in in the connected Chrome profile and no agent authenticates. If Render
+carries a *different* key, the depleted account is a coincidence rather than the
+cause — but the same account with the same 429 shape and matching retry
+arithmetic is the reading that fits. Confirming it is one look at the service's
+environment or one line of its log
+(`[LLM Service] outcome=provider_unavailable ... scope=question_suggestion`).
+
+**What this costs the product while it stands.** It is not only the suggestion
+button: the round pipeline reaches the provider through the same transport, so no
+model-written prose is obtainable in the deployed environment at all. How each
+call site degrades is *not* uniform and should not be guessed from this entry —
+`llm_provider.py:373` returns a deterministic summary where
+`llm_provider.py:300` and `:597` raise, so some scopes substitute derived copy and
+others report having no answer. Nothing is mislabelled either way, which is the
+fallback rule working. The load-bearing consequence is narrower and certain:
+nobody should read the deployed environment as exercising the model until the
+account has credit.
 
 Two consequences worth keeping whatever the log says. The round pipeline is a
 different path with its own fallbacks, so this reading says nothing about
