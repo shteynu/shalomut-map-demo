@@ -5,10 +5,9 @@
 - Branch: feat/a-dead-model-leaves-a-trace
 - Base branch: main
 - Base commit: `9d7c067`
-- Current HEAD: `9d7c067`; the implementation is complete and **uncommitted** in
-  the working tree of this worktree only.
-- Status: implementation complete and verified; awaiting commit and push, both of
-  which are the owner's to run here.
+- Final commit: `3a17333`, pushed by the owner on 2026-08-17 and on `main`; the
+  deployed AI service has run it since that evening.
+- Status: **done and archived.**
 - Last updated: 2026-08-17
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -237,7 +236,8 @@ stdout.
 
 ## Next concrete step
 
-Commit the working tree as one commit and push the branch. Until a commit exists
-this work is visible in this worktree only — not to another worktree, and not to
-another checkout or machine. Suggested message:
-`feat(observability): a question suggestion that never reached the model is countable`.
+None — the work landed as `3a17333` and this file is archived. What it made
+countable was then made readable by
+`feat--the-service-remembers-its-last-provider-answer.md` and watched by
+`feat--the-monitor-can-see-a-dead-model.md`; the living record of all three is in
+`docs/shalomut-tracker-handoff.md`.

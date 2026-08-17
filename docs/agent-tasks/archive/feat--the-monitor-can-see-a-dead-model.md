@@ -288,7 +288,8 @@ Context: local.
 
 ## Next concrete step
 
-Archive this task file — the work is delivered and deployed. The one open
-question it leaves behind belongs to the owner, not to a next agent: whether to
-fire one real provider call to prove the alert reaches the inbox, accepting that
-it arrives as a genuine Down e-mail.
+None — the work landed as `273eda5`, the endpoint is deployed, monitor
+`803761399` exists and both its paths have been observed. This file is archived.
+The living record is `docs/shalomut-tracker-handoff.md`, which also carries the
+one thing still open around it: the metric lines are uncollected, and this closed
+only the provider half of that.

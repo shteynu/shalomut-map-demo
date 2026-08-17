@@ -6,8 +6,9 @@
 - Base branch: main
 - Base commit: `3a17333` (the tip of `feat/a-dead-model-leaves-a-trace`, which is
   itself not yet on `main`)
-- Current HEAD: `3a17333`; this task's work is **uncommitted** in this worktree.
-- Status: implementation complete and verified; awaiting commit and push.
+- Final commit: `3b02f1c`, pushed by the owner on 2026-08-17 and on `main`; the
+  deployed AI service has run it since that evening.
+- Status: **done and archived.**
 - Last updated: 2026-08-17
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -233,6 +234,7 @@ Context: local. Nothing was verified against the deployed environment.
 
 ## Next concrete step
 
-Commit the working tree as one commit, then push. Until a commit exists this is
-visible in this worktree only. Suggested message:
-`feat(ai): the service remembers whether the provider answered, behind its own secret`.
+None — the work landed as `3b02f1c` and this file is archived. The reading it
+added is what `feat--the-monitor-can-see-a-dead-model.md` later projected one word
+out of for an anonymous watchdog; the living record is in
+`docs/shalomut-tracker-handoff.md`.
