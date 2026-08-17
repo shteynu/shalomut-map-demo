@@ -185,6 +185,32 @@ def test_the_endpoint_requires_its_secret_outside_development(monkeypatch):
     assert response.status_code == 503
 
 
+def test_the_status_literals_are_a_contract_with_the_external_monitor(monkeypatch):
+    """The three strings an UptimeRobot keyword monitor matches on.
+
+    Pinned because renaming one would not break anything visibly: the monitor
+    stops finding `failing`, reports Up forever, and the alert this whole line of
+    work exists for is silently gone. A watchdog that fails quiet is worse than
+    no watchdog, so the rename has to fail here first.
+    """
+    assert read_provider_health()["status"] == "unknown"
+
+    _run_transport(monkeypatch, urlopen=lambda *a, **k: _Answering())
+    assert read_provider_health()["status"] == "answering"
+
+    _run_transport(monkeypatch, api_key="")
+    assert read_provider_health()["status"] == "failing"
+
+    # And the one the monitor keys on must not appear in either quiet state:
+    # `unknown` is a restarted or unused process, not a fault, and alerting on it
+    # would page a human for silence.
+    reset_provider_health_for_tests()
+    assert "failing" not in json.dumps(read_provider_health())
+
+    _run_transport(monkeypatch, urlopen=lambda *a, **k: _Answering())
+    assert "failing" not in json.dumps(read_provider_health())
+
+
 def test_the_anonymous_health_endpoint_says_nothing_about_the_provider():
     # The boundary this placement exists for. `/health` is anonymous, so a
     # provider or credential fact appearing there would be published to anyone.

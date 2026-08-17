@@ -23,6 +23,17 @@ says so.
 Thread-safe because it is written from worker threads: the provider call runs
 under `asyncio.to_thread`, so a record can arrive on any of them while a request
 handler reads.
+
+**`status` is a wire contract with something outside this repository.** An
+UptimeRobot keyword monitor alerts when the body contains `failing`, so the three
+literals below are not free to be renamed for readability — a rename silences the
+alert rather than breaking anything visibly, which is the worst way for a
+watchdog to fail. `tests/test_provider_health.py` pins them for that reason, and
+`docs/shalomut-tracker-handoff.md` records the monitor itself.
+
+The monitor watches for `failing` rather than the absence of `answering`,
+deliberately: `unknown` is the honest state of a process that has restarted or
+that nobody has used, and alerting on it would page a human for silence.
 """
 
 from __future__ import annotations

@@ -282,6 +282,43 @@ refuses to publish (`src/app/api/health/route.ts:22`). Second owner decision the
 same day: passive rather than an active probe, so the handle never spends a
 provider call.
 
+**And a second UptimeRobot monitor will watch that handle — owner decision,
+2026-08-17, but it does not exist yet.** Of four paths — an anonymous minimal
+endpoint, a real log collector through platform drains, making only the manual
+read cheap, or one more keyword monitor with an `Authorization` header — take the
+monitor, because the mechanism is already chosen and working for `/health` and it
+costs nothing and adds no party. Approved in the same breath, and bounded to it:
+`AI_WEBHOOK_SECRET` may be pasted into that one monitor, by the owner.
+
+**Its keyword is `failing`, and the alert fires when that string is present.**
+Not the absence of `answering`, which is the trap this shape has: `unknown` is
+the honest state of a process that has just redeployed or that nobody has used,
+so a monitor keyed on `answering` would go red on every quiet period. Keyed on
+`failing`, both quiet states stay silent and only a real refusal pages anyone.
+`provider_health.py`'s three `status` literals are therefore a contract with
+something outside this repository, and a test on
+`feat/the-monitor-can-see-a-dead-model` pins them — a rename would not break
+anything visibly, it would just stop the monitor finding the word and leave it
+reporting Up forever.
+
+Two things to know before creating it. It cannot be created until the stack is
+pushed and Render has redeployed, because a monitor pointed at a path that does
+not exist teaches its owner to ignore it. And **whether the free plan allows a
+custom request header is not yet verified** — one look at the monitor form
+answers it, and if it does not, the anonymous-minimal-endpoint option is the
+fallback.
+
+**What this still does not do, and it is the honest half: it watches a provider
+that fails in use, not one that fails while unused.** The state only moves when a
+suggestion or a round's analysis actually calls the provider, so on a deployment
+nobody is touching, a dead provider reads `unknown` and the monitor stays quiet.
+
+**The metric lines are still uncollected.** This closes the provider half of that
+open decision and no more: `ai_question_suggestions_failed`,
+`survey_submission_lost_after_retries` and every other counter still land in a
+`console.info` line that expires with the platform's log window. The collector
+question below stays open.
+
 The reading nobody has taken yet, and the one worth taking first once this is
 deployed: one `curl` with `Authorization: Bearer <AI_WEBHOOK_SECRET>` against
 that path. Against the current account it should answer `failing` with
