@@ -213,8 +213,19 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
   by reading the AI service's own log. It now emits
   `ai_question_suggestions_succeeded` or `ai_question_suggestions_failed`, the
   failure labelled with the transport's own reason and the upstream status when
-  a service answered with one. This makes the failure countable, not noticed:
-  where those lines are collected is still open.
+  a service answered with one. This makes the failure countable; where those lines
+  are collected is still open.
+- **A dead model is now noticed, not merely countable.** `GET
+  /api/v1/provider-status` publishes one word — `answering`, `failing` or
+  `unknown` — and a free UptimeRobot keyword monitor reads it every five minutes
+  and mails the owner when it finds `failing`. Owner decision, 2026-08-17: publish
+  the word anonymously rather than pay for a request header, because the free plan
+  cannot send one; the reason, model, counts and timing stay behind the inbound
+  secret, since they are what turns "the model is down" into "the account has no
+  credit". Proved end to end the same evening: a refused suggestion at 23:00:45
+  reached the owner's inbox at 23:03:12. Its honest limit is that the state only
+  moves when real work calls the provider, so a provider that dies while nobody is
+  using the product reads `unknown` and stays silent.
 - **A phone and a desktop ask the same question again.** The mobile rule hid the
   scale anchors — the sentences saying what green, yellow and red mean — so a
   teacher on a phone chose between three coloured pills with their definitions

@@ -5,6 +5,17 @@ observability branches were pushed by the owner and are on `main`; `/health`
 answers `commit: 273eda5`, so the deployed service and `main` agree. The watchdog
 for a dead model is live — monitor `803761399`, recorded in full below.
 
+**Session close: three documentation commits sit on
+`feat/the-monitor-can-see-a-dead-model` and are not pushed.** `0b238af` (the
+monitor exists), `ceca453` (it fired) and `e4173a0` (the three task files move to
+`archive/`), on top of `273eda5`. The branch has no upstream, and the remote was
+asked: `refs/heads/main` is `273eda5`. So this handoff is portable to another
+worktree, which can check the branch out, and **not** to another checkout or
+machine until someone pushes. No code is in those commits — the deployed
+behaviour is already whole without them. The only worktree modification is
+`next-env.d.ts`, pre-existing and unrelated, left unstaged; `git ls-files -o
+--exclude-standard` confirms nothing untracked.
+
 **Render can miss a push, and it did — an auto-deploy is not a guarantee.** The
 push landed on GitHub at 22:38 GMT+3 and Render queued nothing: its dashboard
 carried a *GitHub Outage — deploys from GitHub repositories may be affected*
