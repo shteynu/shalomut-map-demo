@@ -21,6 +21,7 @@ function ready(
     estimatedMinutes?: number;
     responses?: number;
     measured?: number;
+    measuredPrecisely?: number;
     /** Passed through as written, including an explicit `undefined`. */
     medianMinutes?: number;
     farBelowEstimate?: FastFillingCount;
@@ -32,6 +33,10 @@ function ready(
     summary: {
       estimatedMinutes: overrides.estimatedMinutes ?? 24,
       responses: overrides.responses ?? 20,
+      // Defaults to "all of them", so a test that says nothing about the
+      // measure is testing the clean case rather than a silent mixture.
+      measuredPrecisely:
+        overrides.measuredPrecisely ?? overrides.measured ?? 20,
       unmeasured: {
         withoutToken: 0,
         withoutAttempt: 0,
@@ -199,12 +204,33 @@ test("no state offers to remove a response, and the report says why", () => {
   );
 });
 
+test("a round measured entirely in the browser does not caveat its median", () => {
+  const markup = render(ready());
+
+  assert.ok(!markup.includes("מערבב"));
+  assert.ok(!markup.includes("לא נמדד בדפדפן עצמו"));
+});
+
+test("a mixed round says the middle value mixes two kinds of number", () => {
+  const markup = render(ready({ measured: 20, measuredPrecisely: 8 }));
+
+  assert.ok(markup.includes("8 מתוך 20 המילויים נמדדו בדפדפן עצמו"));
+  assert.ok(markup.includes("מערבב"));
+});
+
+test("a round with no browser measurement at all says every time is an upper bound", () => {
+  const markup = render(ready({ measured: 20, measuredPrecisely: 0 }));
+
+  assert.ok(markup.includes("אף מילוי בסבב הזה לא נמדד בדפדפן עצמו"));
+  assert.ok(markup.includes("גבול עליון"));
+});
+
 test("the panel names itself and describes what the duration is", () => {
   const markup = renderToStaticMarkup(<RoundFilling report={ready()} />);
 
   assert.ok(markup.includes('id="round-filling-title"'));
   assert.ok(markup.includes('aria-labelledby="round-filling-title"'));
-  // The measurement is a session's lifetime, so the head has to say that
-  // before the numbers below invite a different reading.
-  assert.ok(markup.includes("לא כמה זמן"));
+  // Both measures are upper bounds, and the head has to say so before the
+  // numbers below invite a reading of them as attention.
+  assert.ok(markup.includes("גבול עליון ולא מדידה של קשב"));
 });

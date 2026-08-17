@@ -72,6 +72,19 @@ export interface RoundFillingSummary {
   readonly unmeasured: UnmeasuredFillings;
   /** What may be published about the ones with a duration. */
   readonly durations: FillingDurationSummary;
+  /**
+   * How many of the measured responses were measured precisely — the
+   * respondent's browser counting the time the questionnaire was on screen,
+   * rather than the round's own clock counting the whole session.
+   *
+   * Published because the two are different quantities and the median mixes
+   * them. The fast count does not need the caveat: a session's lifetime is
+   * always at least its visible time, so a response short enough to be flagged
+   * on the lifetime is short on either measure, and the count therefore never
+   * over-reports. The median has no such argument, which is why this number
+   * sits beside it.
+   */
+  readonly measuredPrecisely: number;
 }
 
 export type RoundFillingReport =
@@ -138,9 +151,23 @@ export class RoundFillingService {
     let withoutToken = 0;
     let withoutAttempt = 0;
     let unusable = 0;
+    let measuredPrecisely = 0;
     const minutes: number[] = [];
 
     for (const response of responses) {
+      /*
+       * The respondent's own browser counted this: wall time while the
+       * questionnaire was visible, summed over the attempt and sent once with
+       * the answers. It needs no attempt row and no token, so it is read before
+       * either is asked for — a response whose opening beacon was lost still
+       * has a real duration when it carries this.
+       */
+      if (response.visibleSeconds !== undefined) {
+        measuredPrecisely += 1;
+        minutes.push(response.visibleSeconds / 60);
+        continue;
+      }
+
       if (!response.anonymousTokenHash) {
         withoutToken += 1;
         continue;
@@ -178,6 +205,7 @@ export class RoundFillingService {
       summary: {
         estimatedMinutes,
         responses: responses.length,
+        measuredPrecisely,
         unmeasured: { withoutToken, withoutAttempt, unusable },
         durations: summariseFillingDurations(minutes, estimatedMinutes),
       },

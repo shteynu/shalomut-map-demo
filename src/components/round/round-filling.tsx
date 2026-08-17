@@ -19,11 +19,18 @@ const minutesFormatter = new Intl.NumberFormat("he-IL", {
  * manager who is not told why will reasonably ask for the button.
  *
  * Two things the copy is careful about, both of which a shorter version got
- * wrong first. A duration here is the lifetime of a filling session, so it is
- * an upper bound on attention and never a measurement of it — the head says
- * "how long there was", not "how long was spent". And a response with no timing
- * is not a fast one; it says so in the sentence that reports them, next to the
- * count, rather than in a footnote.
+ * wrong first. A duration here is an upper bound on attention and never a
+ * measurement of it — the head says "how long the questionnaire was there", not
+ * "how long was spent". And a response with no timing is not a fast one; it
+ * says so in the sentence that reports them, next to the count, rather than in
+ * a footnote.
+ *
+ * Since 2026-08-17 there are two measures behind one number, and the head has
+ * to describe both without turning into a manual. The respondent's browser
+ * counts the time the questionnaire was on screen; a response that carries no
+ * such count falls back to the session's own lifetime. Both are upper bounds,
+ * which is why one sentence covers them — and the *median* mixes two
+ * quantities, which is why a separate note appears when the mix is not pure.
  *
  * Nothing here is carried by colour. Each number has an icon and a label, and
  * the fast count is a sentence before it is a figure.
@@ -34,9 +41,10 @@ export function RoundFilling({ report }: { report: RoundFillingReport }) {
       <div className="round-filling-head">
         <h2 id="round-filling-title">כמה זמן לקח למלא</h2>
         <p>
-          הזמן נמדד מפתיחת השאלון ועד שליחתו — כמה זמן היה למילוי, לא כמה זמן
-          הושקע בו. לשונית שנשארה פתוחה תיראה ארוכה, ולכן המספר מדויק בכיוון אחד
-          בלבד: מילוי קצר הוא באמת קצר.
+          הזמן נמדד בדפדפן של המשיב — כמה זמן השאלון היה על המסך. במילוי שאין בו
+          מדידה כזו נמדד משך הפגישה, מפתיחת השאלון ועד שליחתו. שני המספרים הם
+          גבול עליון ולא מדידה של קשב, ולכן הם מדויקים בכיוון אחד בלבד: מילוי
+          קצר הוא באמת קצר.
         </p>
       </div>
 
@@ -66,7 +74,8 @@ export function RoundFillingBody({ report }: { report: RoundFillingReport }) {
     );
   }
 
-  const { estimatedMinutes, responses, unmeasured, durations } = report.summary;
+  const { estimatedMinutes, responses, measuredPrecisely, unmeasured, durations } =
+    report.summary;
   const fastBoundary = estimatedMinutes * FAST_FILLING_FRACTION;
   const unmeasuredTotal =
     unmeasured.withoutToken + unmeasured.withoutAttempt + unmeasured.unusable;
@@ -166,6 +175,21 @@ export function RoundFillingBody({ report }: { report: RoundFillingReport }) {
               fastBoundary,
             )} דקות. המספר המדויק אינו מוצג, כדי שלא יתאר אדם אחד.`}
       </p>
+
+      {/*
+        The two measures are different quantities, and the middle value mixes
+        them. Which is worth one sentence rather than a footnote: a round
+        measured mostly by the session's own clock has a middle value that is an
+        upper bound, and a manager comparing two rounds should know when they
+        are not the same kind of number.
+      */}
+      {measuredPrecisely < durations.measured ? (
+        <p className="round-filling-note">
+          {measuredPrecisely === 0
+            ? "אף מילוי בסבב הזה לא נמדד בדפדפן עצמו, ולכן כל הזמנים כאן הם משך הפגישה — גבול עליון ולא מדידה. שאלון שנשאר פתוח בלשונית נראה ארוך."
+            : `${measuredPrecisely} מתוך ${durations.measured} המילויים נמדדו בדפדפן עצמו — הזמן שהשאלון היה על המסך. ליתר נמדד משך הפגישה, שהוא גבול עליון בלבד, ולכן המילוי האמצעי מערבב שני סוגי מספרים.`}
+        </p>
+      ) : null}
 
       {unmeasuredTotal > 0 ? (
         <p className="round-filling-note">

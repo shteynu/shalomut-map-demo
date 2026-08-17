@@ -85,7 +85,11 @@ function attempt(index: number): SurveyAttemptRecord {
 
 function response(
   index: number,
-  options: { minutes?: number; withoutToken?: boolean } = {},
+  options: {
+    minutes?: number;
+    withoutToken?: boolean;
+    visibleSeconds?: number;
+  } = {},
 ): SurveyResponseRecord {
   return {
     id: `response-${index}`,
@@ -93,6 +97,7 @@ function response(
     anonymousTokenHash: options.withoutToken ? undefined : token(index),
     answers: [],
     submittedAt: new Date(OPENED.getTime() + (options.minutes ?? 10) * 60_000),
+    visibleSeconds: options.visibleSeconds,
   };
 }
 
@@ -376,4 +381,108 @@ test("no report names a respondent, a token or one session's length", async () =
     !serialised.includes("attempt-"),
     "no attempt id is published either",
   );
+});
+
+test("a response that carries its own measurement is used instead of the session", () => {
+  // The session lasted an hour; the questionnaire was on screen for three
+  // minutes of it. The report follows the browser, not the clock.
+  const attemptRepo = new InMemorySurveyAttemptRepository(
+    Array.from({ length: 10 }, (_unused, index) => attempt(index)),
+  );
+  const surveyRepo = new InMemorySurveyRepository(
+    Array.from({ length: 10 }, (_unused, index) =>
+      response(index, { minutes: 60, visibleSeconds: 180 }),
+    ),
+  );
+
+  return RoundFillingService.getRoundFilling(
+    round(),
+    attemptRepo,
+    surveyRepo,
+  ).then((report) => {
+    assert.strictEqual(report.status, "ready");
+    if (report.status !== "ready") return;
+    assert.strictEqual(report.summary.measuredPrecisely, 10);
+    assert.strictEqual(report.summary.durations.medianMinutes, 3);
+  });
+});
+
+test("a round mixing both measures counts how many were precise", async () => {
+  const attemptRepo = new InMemorySurveyAttemptRepository(
+    Array.from({ length: 10 }, (_unused, index) => attempt(index)),
+  );
+  const surveyRepo = new InMemorySurveyRepository(
+    Array.from({ length: 10 }, (_unused, index) =>
+      response(index, {
+        minutes: 10,
+        visibleSeconds: index < 4 ? 300 : undefined,
+      }),
+    ),
+  );
+
+  const report = await RoundFillingService.getRoundFilling(
+    round(),
+    attemptRepo,
+    surveyRepo,
+  );
+
+  assert.strictEqual(report.status, "ready");
+  if (report.status !== "ready") return;
+  assert.strictEqual(report.summary.measuredPrecisely, 4);
+  assert.strictEqual(report.summary.durations.measured, 10);
+});
+
+test("a browser measurement needs no attempt row and no token behind it", async () => {
+  // The opening beacon never arrived and the response carries no token, so the
+  // session has no duration at all — and the browser's own count still does.
+  const attemptRepo = new InMemorySurveyAttemptRepository([]);
+  const surveyRepo = new InMemorySurveyRepository(
+    Array.from({ length: 10 }, (_unused, index) =>
+      response(index, { withoutToken: true, visibleSeconds: 240 }),
+    ),
+  );
+
+  const report = await RoundFillingService.getRoundFilling(
+    round(),
+    attemptRepo,
+    surveyRepo,
+  );
+
+  assert.strictEqual(report.status, "ready");
+  if (report.status !== "ready") return;
+  assert.strictEqual(report.summary.durations.measured, 10);
+  assert.deepStrictEqual(report.summary.unmeasured, {
+    withoutToken: 0,
+    withoutAttempt: 0,
+    unusable: 0,
+  });
+});
+
+test("a fast questionnaire measured in the browser is counted as fast", async () => {
+  // Four minutes estimated, so far below is eighty seconds. Sixty seconds of
+  // visible time inside a leisurely half-hour session is still a fast filling.
+  const attemptRepo = new InMemorySurveyAttemptRepository(
+    Array.from({ length: 10 }, (_unused, index) => attempt(index)),
+  );
+  const surveyRepo = new InMemorySurveyRepository(
+    Array.from({ length: 10 }, (_unused, index) =>
+      response(index, {
+        minutes: 30,
+        visibleSeconds: index < 3 ? 60 : 600,
+      }),
+    ),
+  );
+
+  const report = await RoundFillingService.getRoundFilling(
+    round(),
+    attemptRepo,
+    surveyRepo,
+  );
+
+  assert.strictEqual(report.status, "ready");
+  if (report.status !== "ready") return;
+  assert.deepStrictEqual(report.summary.durations.farBelowEstimate, {
+    known: true,
+    count: 3,
+  });
 });
