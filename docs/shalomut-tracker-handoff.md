@@ -1,5 +1,25 @@
 # Shalomut Tracker — operational handoff
 
+**2026-08-17, a later session: the deployed AI-service variable is no longer an
+unknown, and nothing is waiting on a push.** `refs/heads/main` is `945ed46`,
+asked of the remote itself, and it equals this worktree's HEAD — so everything
+here is portable to another checkout or machine. All four workflows are green on
+it — `Core verification` `32047052787`, `Browser smoke` `32047052709`,
+`Vercel Deployment & Pipeline Checks` `32047052647` and
+`CodeQL Security Analysis` `32047052667`.
+
+**That push happened during the session without an agent running `git push`.**
+Forty minutes earlier the same remote answered `f5798cb` for `refs/heads/main`
+and had no branch by this one's name at all, so the commit reached `main`
+directly rather than through its branch. This file's 2026-08-15 paragraph about
+branches reaching `origin` here on their own is the current reading, and this is a
+second observation of it — with the wrinkle that what moved was `main`. Ask the
+remote rather than a tracking ref, and ask it again before calling anything
+unpushed.
+
+The AI-service variable reading is recorded below, beside the paragraph that
+asked for it, rather than repeated here.
+
 **2026-08-17, session close: the response-quality plan is finished and landed on
 `main`.**
 
@@ -147,6 +167,35 @@ environment has been silently taking Core's template path and never reaching the
 model at all. Nobody has checked. It changes nothing about the fix that landed
 today, and it would change what anyone believes about the feature's behaviour in
 the deployed environment. One dashboard read answers it.
+
+**2026-08-17: that read happened, and the variable is there.** The project's
+Environment Variables page was read in the owner's signed-in Chrome:
+`AI_SERVICE_URL` exists for `Production and Preview`, added Jul 25, alongside
+`DATABASE_URL`, `AI_SERVICE_TIMEOUT_MS`, `AI_WEBHOOK_SECRET`,
+`AI_CALLBACK_SECRET`, `MCP_SHARED_SECRET`, `SESSION_SECRET`,
+`MANAGER_ADMIN_PASSWORD`, `MANAGER_ORGANIZATION_ID` and
+`AI_ANALYTICS_CONTRACT_VERSION`. Names only — every one is marked `Sensitive`
+and no value was opened.
+
+Two corrections the read forces on the paragraph above, and the second is the
+one worth keeping:
+
+- The variable's own doc comment already said it
+  (`request-question-suggestion.ts:33-37`, "already set in both environments").
+  The unknown was in this file, not in the code.
+- **"Silently" was wrong, and it would have been wrong even with the variable
+  missing.** A suggestion is labelled `ai` only when the AI service answers with
+  `source: "llm"`; anything else makes
+  `src/app/api/manager/question-suggestion/route.ts` answer `503`, and the
+  builder then offers its template under the template's own label. So the cost of
+  a missing variable was a button that never works, visible to the manager — not
+  a template wearing the model's label. The fallback-never-wears-the-label rule
+  held on this path all along.
+
+What this still does not establish is that the value points at the live Render
+service: a wrong origin looks exactly like a service that is down. The functional
+reading is one signed-in press of the suggestion button on the deployed builder,
+which nobody has done.
 
 **2026-08-15, closing that session: the blocker that has stood since 2026-08-14
 now has something to send.**
