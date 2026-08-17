@@ -42,8 +42,25 @@ function GenerateAnalysisButton({
       return;
     }
 
+    /*
+     * A 409 carries more than one reason since analysis moved to the moment a
+     * round closes, and the body says which. "Wait for the run to finish" would
+     * be the wrong instruction for a round that is simply still open, and it is
+     * the one a manager would follow forever.
+     */
     if (response.status === 409) {
-      setNote("ניתוח כבר רץ עבור הסבב הזה. המתינו לסיומו ואז רעננו.");
+      const code = await response
+        .json()
+        .then((body) => body?.code)
+        .catch(() => undefined);
+
+      setNote(
+        code === "round_not_closed"
+          ? "הניתוח יופעל בסגירת הסבב, על כל התשובות שיתקבלו עד אז."
+          : code === "below_privacy_threshold"
+            ? "הסבב עדיין לא הגיע לסף הפרטיות, ולכן לא ניתן להפיק ניתוח."
+            : "ניתוח כבר רץ עבור הסבב הזה. המתינו לסיומו ואז רעננו.",
+      );
       setRunning(false);
       return;
     }

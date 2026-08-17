@@ -1,5 +1,9 @@
 /**
- * What the manual analysis trigger refuses below the privacy threshold.
+ * What the manual analysis trigger refuses.
+ *
+ * Two rules, added together and for the same reason: this route is reachable
+ * without the screens that offer it, so neither rule may live in a `disabled`
+ * attribute.
  *
  * Until this suite existed, it refused nothing: the route checked
  * authorization and the archive, and the only thing between nine responses and
@@ -8,8 +12,12 @@
  * alone — the one that runs after a respondent submission — so a request made
  * without the screen was never measured against it.
  *
- * These tests are that door, closed, and they are written before the automatic
- * path is removed so the invariant is never briefly unguarded.
+ * These tests are that door, closed, and the threshold half was written before
+ * the automatic path was removed so the invariant was never briefly unguarded.
+ *
+ * The second rule arrived with the move: closing a round is what asks for its
+ * analysis, so this route is the second opinion on a round already closed, and
+ * a round still collecting has not asked for a first one.
  */
 import assert from 'node:assert/strict';
 import test, { after, before, beforeEach } from 'node:test';
@@ -30,7 +38,7 @@ import {
 import { InMemoryAuditLogRepository } from '@/lib/auth/domain-contract';
 import { setAuditLogRepositoryForTests } from '@/lib/server/manager-audit';
 import { MINIMUM_PRIVACY_THRESHOLD } from '@/lib/survey-definition';
-import type { SurveyResponseRecord } from '@/lib/types/backend';
+import type { RoundStatus, SurveyResponseRecord } from '@/lib/types/backend';
 import {
   DEMO_ORGANIZATION,
   DEMO_ROUND,
@@ -57,14 +65,16 @@ function responses(count: number): SurveyResponseRecord[] {
 function install({
   responseCount,
   privacyThreshold = MINIMUM_PRIVACY_THRESHOLD,
+  status = 'closed' as RoundStatus,
 }: {
   responseCount: number;
   privacyThreshold?: number;
+  status?: RoundStatus;
 }) {
   overrideCoreRepositories({
     orgRepo: new InMemoryOrganizationRepository([DEMO_ORGANIZATION]),
     roundRepo: new InMemoryRoundRepository([
-      { ...DEMO_ROUND, status: 'closed', privacyThreshold },
+      { ...DEMO_ROUND, status, privacyThreshold },
     ]),
     roundGoalRepo: new InMemoryRoundGoalRepository(),
     surveyRepo: new InMemorySurveyRepository(responses(responseCount)),
@@ -98,6 +108,32 @@ function post() {
     { method: 'POST' },
   );
 }
+
+test('a round still collecting refuses, because closing is what asks for the analysis', async () => {
+  install({ responseCount: MINIMUM_PRIVACY_THRESHOLD * 3, status: 'active' });
+
+  const response = await triggerAi(post(), params());
+  const body = await response.json();
+
+  assert.equal(response.status, 409);
+  assert.equal(body.code, 'round_not_closed');
+});
+
+test('a draft round refuses too, so the rule is about being closed and not about being open', async () => {
+  install({ responseCount: MINIMUM_PRIVACY_THRESHOLD, status: 'draft' });
+
+  const response = await triggerAi(post(), params());
+
+  assert.equal((await response.json()).code, 'round_not_closed');
+});
+
+test('being closed is not on its own enough — the threshold still decides', async () => {
+  install({ responseCount: MINIMUM_PRIVACY_THRESHOLD - 1 });
+
+  const response = await triggerAi(post(), params());
+
+  assert.equal((await response.json()).code, 'below_privacy_threshold');
+});
 
 test('a round one response short of the threshold refuses to dispatch an analysis', async () => {
   install({ responseCount: MINIMUM_PRIVACY_THRESHOLD - 1 });

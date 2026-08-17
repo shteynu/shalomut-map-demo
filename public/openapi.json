@@ -1655,8 +1655,8 @@
         "tags": [
           "AI Integration"
         ],
-        "summary": "Request AI processing for a survey round",
-        "description": "Durably enqueues a manual AI analysis run. A database constraint permits only one queued or running job per round, so a concurrent request answers 409. The Python worker claims work separately; this request never waits for the provider.",
+        "summary": "Re-run the AI analysis of a closed survey round",
+        "description": "Durably enqueues a manual AI analysis run. This is the second opinion, not the first — closing a round is what asks for its analysis, so a round that is not `closed` is refused. A database constraint permits only one queued or running job per round, so a concurrent request answers 409. The Python worker claims work separately; this request never waits for the provider.",
         "security": [
           {
             "managerSession": []
@@ -1681,7 +1681,7 @@
             "description": "Survey round not found in the manager scope"
           },
           "409": {
-            "description": "An analytics run for this round is already queued or running; or the round is archived and read-only (`code` is `round_archived`); or the round has fewer responses than its privacy threshold (`code` is `below_privacy_threshold`)"
+            "description": "An analytics run for this round is already queued or running; or the round is archived and read-only (`code` is `round_archived`); or the round is not closed, so it has not asked for an analysis yet (`code` is `round_not_closed`); or the round has fewer responses than its privacy threshold (`code` is `below_privacy_threshold`)"
           },
           "500": {
             "description": "Failed to enqueue the analysis run"

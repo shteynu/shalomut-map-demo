@@ -26,6 +26,17 @@ type RoundThresholdNextStepContentProps = {
    * reading an earlier round would be sent to the map of the newest one.
    */
   roundId?: string;
+  /**
+   * Whether the round is still collecting.
+   *
+   * Since analysis follows closing rather than submitting (owner decision
+   * 2026-08-17), "no analysis yet" means two opposite things. On an open round
+   * it is the ordinary state and the next step is to close; on a closed one it
+   * is an anomaly and the next step is to run the analysis by hand. Reusing one
+   * message for both would either alarm a manager whose round is simply still
+   * open, or hide a round that closed and never got its map.
+   */
+  isCollecting?: boolean;
 };
 
 type NextStepCopy = {
@@ -39,6 +50,7 @@ function getNextStepCopy({
   state,
   responseCount,
   minimumResponses,
+  isCollecting = true,
 }: RoundThresholdNextStepContentProps): NextStepCopy {
   if (state.status === "below-threshold") {
     const remaining = Math.max(minimumResponses - responseCount, 0);
@@ -48,7 +60,7 @@ function getNextStepCopy({
     return {
       title: `${remainingLabel} עד סף הפרטיות`,
       body:
-        "המפה נשארת נעולה כדי לשמור על אנונימיות הצוות. כשהסף יושג, הניתוח יתחיל אוטומטית.",
+        "המפה נשארת נעולה כדי לשמור על אנונימיות הצוות. הניתוח יופעל בסגירת הסבב, על כל התשובות שיתקבלו עד אז.",
       icon: <LockKeyhole size={24} aria-hidden="true" />,
     };
   }
@@ -69,7 +81,7 @@ function getNextStepCopy({
 
   if (state.status === "running") {
     return {
-      title: "הניתוח התחיל אוטומטית",
+      title: "הניתוח החל",
       body: "התשובות נשמרו והתוצאות יופיעו במפה בתוך דקות ספורות.",
       icon: (
         <LoaderCircle
@@ -85,7 +97,7 @@ function getNextStepCopy({
   if (state.status === "ready") {
     return {
       title: "המפה מוכנה",
-      body: "הניתוח הסתיים. אין צורך לסגור את הסבב כדי לצפות בתוצאות המצרפיות.",
+      body: "הניתוח הסתיים. התוצאות המצרפיות מוכנות לצפייה.",
       icon: <CircleCheckBig size={24} aria-hidden="true" />,
       action: "dashboard",
     };
@@ -101,9 +113,20 @@ function getNextStepCopy({
   }
 
   if (state.status === "not-found") {
+    // An open round with no analysis is where every round is until it closes,
+    // and telling a manager to press a recovery button here would make the
+    // ordinary case look like a fault.
+    if (isCollecting) {
+      return {
+        title: "הסבב אוסף תשובות",
+        body: "סף הפרטיות הושג. הניתוח יופעל בסגירת הסבב, על כל התשובות שיתקבלו עד אז.",
+        icon: <Sparkles size={24} aria-hidden="true" />,
+      };
+    }
+
     return {
       title: "עדיין לא נוצר ניתוח",
-      body: "סף הפרטיות הושג. הפעילו רענון ניתוח כדי ליצור את המפה מהתשובות שנשמרו.",
+      body: "הסבב נסגר אך המפה לא נוצרה. הפעילו רענון ניתוח כדי ליצור אותה מהתשובות שנשמרו.",
       icon: <Sparkles size={24} aria-hidden="true" />,
       action: "refresh",
     };
@@ -151,10 +174,12 @@ function ThresholdReachedNextStep({
   roundId,
   responseCount,
   minimumResponses,
+  isCollecting,
 }: {
   roundId: string;
   responseCount: number;
   minimumResponses: number;
+  isCollecting: boolean;
 }) {
   const { state } = useAiInsights(roundId);
 
@@ -164,6 +189,7 @@ function ThresholdReachedNextStep({
       responseCount={responseCount}
       minimumResponses={minimumResponses}
       roundId={roundId}
+      isCollecting={isCollecting}
     />
   );
 }
@@ -172,10 +198,12 @@ export function RoundThresholdNextStep({
   roundId,
   responseCount,
   minimumResponses,
+  isCollecting,
 }: {
   roundId: string;
   responseCount: number;
   minimumResponses: number;
+  isCollecting: boolean;
 }) {
   if (responseCount < minimumResponses) {
     return (
@@ -184,6 +212,7 @@ export function RoundThresholdNextStep({
         responseCount={responseCount}
         minimumResponses={minimumResponses}
         roundId={roundId}
+        isCollecting={isCollecting}
       />
     );
   }
@@ -193,6 +222,7 @@ export function RoundThresholdNextStep({
       roundId={roundId}
       responseCount={responseCount}
       minimumResponses={minimumResponses}
+      isCollecting={isCollecting}
     />
   );
 }

@@ -46,9 +46,16 @@ function installDefaultRepositories() {
   overrideCoreRepositories({
     aiAnalysisRunRepo,
     orgRepo: new InMemoryOrganizationRepository([DEMO_ORGANIZATION]),
+    // Closed, because re-running an analysis is what this route is for since
+    // 2026-08-17: closing a round is what asks for the first one.
     roundRepo: new InMemoryRoundRepository([
-      DEMO_ROUND,
-      { ...DEMO_ROUND, id: triggerFailureRoundId, shareCode: 'SHALOM-TRIGGER' },
+      { ...DEMO_ROUND, status: 'closed' },
+      {
+        ...DEMO_ROUND,
+        id: triggerFailureRoundId,
+        shareCode: 'SHALOM-TRIGGER',
+        status: 'closed',
+      },
     ]),
     surveyRepo: new InMemorySurveyRepository([
       ...analysableResponses(testRoundId),

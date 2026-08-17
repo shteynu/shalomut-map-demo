@@ -123,6 +123,7 @@ export default async function RoundPage({
         roundId={selectedRound.id}
         responseCount={responseCount}
         minimumResponses={selectedRound.privacyThreshold}
+        isCollecting={selectedRound.status === "active"}
       />
     </div>
   );
