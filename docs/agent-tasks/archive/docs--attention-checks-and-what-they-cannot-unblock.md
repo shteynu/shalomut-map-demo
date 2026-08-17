@@ -7,7 +7,9 @@
 - Base commit: `c5963d2`
 - Current HEAD: the commit carrying this file, deliberately not written as a
   hash. The last commit that changes anything but this file is `c94891e`.
-- Status: complete; the session-close commit is unpushed
+- Status: complete and landed
+- Landed on `main` on 2026-08-17, in the five-branch stack that reached
+  `f5798cb`. Archived from `active/` the same day.
 - Last updated: 2026-08-17
 - Last agent/tool: Claude Code (Opus 5)
 

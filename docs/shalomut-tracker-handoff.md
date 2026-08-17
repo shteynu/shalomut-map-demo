@@ -20,8 +20,11 @@ The plan `docs/response-quality-plan-2026-08-17.md`, on
 round closure. B computed how long a round took to fill. C put it on the round
 screen. D replaced the session lifetime with the time the questionnaire was
 actually visible in the respondent's browser. E is decided rather than built —
-see below. Each branch's own task file under `docs/agent-tasks/active/` holds
-its evidence; nothing of that is copied here.
+see below. Each branch's own task file holds its evidence, and all five were
+archived to `docs/agent-tasks/archive/` on 2026-08-17 once they had landed;
+`docs/agent-tasks/active/` again holds only
+`research--scientific-evidence-layer.md`. Nothing of that evidence is copied
+here.
 
 Three things outlive the plan and belong to whoever picks this up.
 
@@ -37,12 +40,17 @@ C follows B; D follows C; this one follows D. The one known conflict is
 enqueue from it and D adds a validated field to the same handler. The resolution
 is mechanical and must not resurrect the enqueue.
 
-**One consent sentence is drafted and not approved.** The respondent screen now
+**One consent sentence was drafted and is now approved — owner, 2026-08-17,
+after it had already deployed.** The respondent screen now
 states that the time the questionnaire was on screen is measured and stored with
 the answers, and that no per-question timing is collected. The wording is the
-owner's to approve before this reaches a real respondent. It is a promise, not
-copy: the "no per-question timing" half is a limit on what is collected, so
-relaxing it later is a promise to re-negotiate rather than a schema change.
+owner's to approve before this reaches a real respondent, and the approval came
+after the deploy rather than before it — no real respondent had read it in
+between, because there are none, but the ordering is the thing to fix next time:
+the gate was named on the branch and the branch was landed without checking it.
+It is a promise, not copy: the "no per-question timing" half is a limit on what
+is collected, so relaxing it later is a promise to re-negotiate rather than a
+schema change.
 
 **Exclusion is closed on grounds no methodologist answer can reopen.** The plan
 said attention-check items would make it defensible later, because they are the
@@ -1600,6 +1608,15 @@ older snapshots remain available in Git.
   gate, not a blocker for local/docs work.
 - Explicit bounded approval is required before changing secrets, credentials,
   authentication configuration or deployment aliases.
+- **Closed 2026-08-17: the respondent consent wording is approved.** The second
+  promise on the consent screen — that the time the questionnaire is on screen
+  is measured and stored with the answers, and that no per-question timing is
+  collected — is the owner's, as of 2026-08-17. What stays open is not the
+  wording but what it commits the product to: the per-question half describes
+  what is *collected*, not what is shown, so any later feature that measures per
+  step re-opens this sentence rather than merely extending a schema. It is in
+  `src/components/survey/survey-consent-step.tsx`, tested in
+  `src/components/survey/__tests__/consent-promises.test.tsx`.
 - **Closed 2026-08-17: both of the stack's migrations are applied to the
   deployed database.** `prisma migrate deploy` against the Supabase host
   reported both applied, and the schema was then read back directly:

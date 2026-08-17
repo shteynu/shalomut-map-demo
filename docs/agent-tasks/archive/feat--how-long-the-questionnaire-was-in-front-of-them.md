@@ -8,7 +8,9 @@
 - Current HEAD: the commit carrying this correction, deliberately not
   written as a hash — a commit that states its own tip becomes wrong on amend.
   The last commit that changes product code is `2b87b8b`.
-- Status: implemented, verified locally, committed and pushed
+- Status: complete and landed
+- Landed on `main` on 2026-08-17, in the five-branch stack that reached
+  `f5798cb`. Archived from `active/` the same day.
 - Last updated: 2026-08-17
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -118,7 +120,9 @@ landed.
 ## Assumptions
 
 - The consent copy needs the owner's approval. This task drafts it and flags it;
-  it does not treat a drafted sentence as an approved one.
+  it does not treat a drafted sentence as an approved one. **Approved by the
+  owner on 2026-08-17**, after the stack had already landed and deployed — see
+  Approval gates.
 
 ## Completed
 
@@ -279,9 +283,16 @@ nothing on Supabase, no AI provider call.
 
 ## Approval gates
 
-- **The consent copy is the owner's to approve** before this reaches a real
-  respondent. Nothing else here touches secrets, credentials, authentication
-  configuration or a deployment alias.
+- **The consent copy was the owner's to approve** before it reached a real
+  respondent. **Granted 2026-08-17.** The order was wrong and is worth recording
+  rather than smoothing over: the branch named the gate, the stack landed on
+  `main`, the deploy went out, and the approval came after. No respondent read
+  the unapproved sentence, because there are none — the gate was real and the
+  cost of missing it was zero this time. What would make the next one safe is
+  checking a branch's own Approval gates section before landing it, which is a
+  step no tool performs.
+- Nothing else here touches secrets, credentials, authentication configuration
+  or a deployment alias.
 
 ## Questions requiring an owner decision
 

@@ -6,7 +6,9 @@
 - Base branch: `main`
 - Base commit: `8231490` (`origin/main`)
 - Current HEAD: `dd96ae0`, five commits ahead of `origin/main`, nothing pushed
-- Status: implemented and verified locally; awaiting the owner's push
+- Status: complete and landed
+- Landed on `main` on 2026-08-17, in the five-branch stack that reached
+  `f5798cb`. Archived from `active/` the same day.
 - Last updated: 2026-08-17
 - Last agent/tool: Claude Code (Opus 5)
 

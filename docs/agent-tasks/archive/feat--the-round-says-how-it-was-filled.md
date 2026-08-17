@@ -7,7 +7,9 @@
 - Base commit: `01a0bc7`
 - Current HEAD: `74dde0a` plus this task-file commit; eight commits ahead of
   `origin/main`, of which four belong to task B. Nothing pushed.
-- Status: implemented and verified locally; awaiting the owner's push
+- Status: complete and landed
+- Landed on `main` on 2026-08-17, in the five-branch stack that reached
+  `f5798cb`. Archived from `active/` the same day.
 - Last updated: 2026-08-17
 - Last agent/tool: Claude Code (Opus 5)
 
