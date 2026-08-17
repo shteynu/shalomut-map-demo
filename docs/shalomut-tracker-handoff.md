@@ -1464,13 +1464,21 @@ older snapshots remain available in Git.
   plans.
 - A durable run still refetches the round's aggregates instead of owning an
   immutable snapshot, so a response landing mid-analysis fails the callback with
-  `round_validation_failed`. Since 2026-08-04 the automatic path retries that
-  one failure up to three runs per round (`PROJECT_CONTEXT.md` ADR-016); before
-  that a single late response left the round with no analysis and no signal.
-  The new `ai_jobs_rearmed` operational metric counts the retries. **Its rate is
-  the evidence for whether to build the immutable input snapshot**, which is
-  Phase 1 of the AI harness improvement plan the owner is holding outside the
-  repository.
+  `round_validation_failed`. **The decision this was measuring is now answered
+  by design rather than by rate.** Since 2026-08-17 analysis starts when a
+  manager closes the round, and a closed round refuses submissions, so the
+  ordinary way responses moved under a run no longer exists. The immutable
+  input snapshot — Phase 1 of the AI harness improvement plan the owner is
+  holding outside the repository — is no longer justified by this failure mode;
+  anyone reviving it needs a different reason.
+- **`ai_jobs_rearmed` no longer exists**, and a dashboard panel or alert built
+  on it will read as a metric that stopped rather than one that was retired.
+  It counted the re-arms of the automatic path, which was removed with that
+  path on 2026-08-17. The residual race survives — `updateStatus` is not in a
+  transaction with the dispatch, so a submission that read `active` can still
+  land after the aggregates were read — and it is measured from the other end
+  as `ai_jobs_failed{failureCode="round_validation_failed"}`. Point anything
+  that watched the old counter at that label.
 
 - Since 2026-08-09 a round that fails because the provider was unavailable
   reports why. `failureReason` keeps `provider_unavailable` as its prefix and
@@ -1478,9 +1486,9 @@ older snapshots remain available in Git.
   `provider_unavailable_http_429`, `provider_unavailable_retry_budget_exhausted`
   — and Core stores that string as the run's `failureCode` and as the label on
   its operational metric. **A dashboard or query that matched the old single
-  value must group by prefix.** Re-arming is unaffected: only Core's own
-  `round_validation_failed` re-arms. No contract bump was involved; the field is
-  additive and Core does not declare it.
+  value must group by prefix.** (Re-arming was unaffected by it either, and
+  re-arming itself is gone since 2026-08-17.) No contract bump was involved; the
+  field is additive and Core does not declare it.
 
 - On contract `6.0` a silent provider does not fail a dimension: the structured
   summary and the metric narratives fall back to aggregate-derived copy and the
