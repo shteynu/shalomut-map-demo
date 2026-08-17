@@ -9,9 +9,11 @@ import {
 import {
   AnalyticsService,
   ManagerContextService,
+  RoundFillingService,
   SurveyFunnelService,
 } from "@/lib/services";
 import type { ManagerContext } from "@/lib/services";
+import type { SurveyRound } from "@/lib/types/backend";
 import { MANAGER_ORGANIZATION_HEADER } from "@/lib/server/manager-scope";
 import {
   toSchoolSwitcherOptions,
@@ -97,6 +99,30 @@ export async function loadRoundFunnel(roundId: string) {
 
   return SurveyFunnelService.getRoundFunnel(
     roundId,
+    surveyAttemptRepo,
+    surveyRepo,
+  );
+}
+
+/**
+ * How long one round's questionnaires took to fill.
+ *
+ * A separate read for the same reason as `loadRoundFunnel` above: only the
+ * round screen asks for it, and folding it into `ManagerContextService.load`
+ * would charge every other manager screen for a query it never renders.
+ *
+ * The round is passed rather than its id, because the service needs the stored
+ * questionnaire and the privacy threshold from it — and because the caller is
+ * then holding a round from the manager's own context, which is what keeps this
+ * from becoming a way to read another school's collection.
+ */
+export async function loadRoundFilling(
+  round: Pick<SurveyRound, 'id' | 'privacyThreshold' | 'surveyDefinition'>,
+) {
+  const { surveyAttemptRepo, surveyRepo } = resolveCoreRepositories();
+
+  return RoundFillingService.getRoundFilling(
+    round,
     surveyAttemptRepo,
     surveyRepo,
   );

@@ -6371,7 +6371,16 @@ label .custom-tooltip-wrapper:hover .custom-tooltip-icon {
    verdict on the school.
    --------------------------------------------------------------------------- */
 
-.round-funnel {
+/*
+ * Two panels on the round screen, one shape. `.round-funnel` counts what
+ * happened to the link and `.round-filling` how long the questionnaires took;
+ * they sit next to each other and a manager reads them as one thing, so the
+ * selectors are grouped rather than the values copied. A style that should
+ * differ between them gets its own rule below, and there is currently one such
+ * rule — the funnel's timestamp line.
+ */
+.round-funnel,
+.round-filling {
   margin-top: 1rem;
   padding: 1.2rem 1.4rem;
   border: 1px solid rgba(56, 56, 56, 0.12);
@@ -6380,20 +6389,30 @@ label .custom-tooltip-wrapper:hover .custom-tooltip-icon {
   box-shadow: var(--shadow);
 }
 
-.round-funnel-head h2 {
+.round-funnel-head h2,
+.round-filling-head h2 {
   margin: 0 0 0.35rem;
   font-size: 1.25rem;
 }
 
 .round-funnel-head p,
 .round-funnel-empty,
-.round-funnel-note {
+.round-funnel-note,
+.round-filling-head p,
+.round-filling-empty,
+.round-filling-note {
   margin: 0;
   color: var(--muted);
   line-height: 1.7;
 }
 
-.round-funnel-steps {
+/* The filling panel stacks two or three of these; the funnel has one. */
+.round-filling-note + .round-filling-note {
+  margin-top: 0.6rem;
+}
+
+.round-funnel-steps,
+.round-filling-steps {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.9rem;
@@ -6402,7 +6421,8 @@ label .custom-tooltip-wrapper:hover .custom-tooltip-icon {
   list-style: none;
 }
 
-.round-funnel-step {
+.round-funnel-step,
+.round-filling-step {
   display: grid;
   justify-items: start;
   gap: 0.2rem;
@@ -6412,24 +6432,38 @@ label .custom-tooltip-wrapper:hover .custom-tooltip-icon {
   border: 1px solid rgba(56, 56, 56, 0.1);
 }
 
-.round-funnel-icon {
+.round-funnel-icon,
+.round-filling-icon {
   display: inline-flex;
   margin-bottom: 0.25rem;
   color: var(--navy);
 }
 
-.round-funnel-step > strong {
+.round-funnel-step > strong,
+.round-filling-step > strong {
   color: var(--navy);
   font-size: 1.9rem;
   line-height: 1;
 }
 
-.round-funnel-label {
+.round-funnel-label,
+.round-filling-label {
   font-weight: 700;
 }
 
+/*
+ * A withheld count is a phrase, not a figure: `< 3` is bidi-neutral and
+ * reorders to `3 >` on an RTL line, so the tile says the opposite. The words
+ * need the room the digits do not.
+ */
+.round-filling-step > strong.round-filling-bounded {
+  font-size: 1.15rem;
+  line-height: 1.6;
+}
+
 .round-funnel-helper,
-.round-funnel-timestamp {
+.round-funnel-timestamp,
+.round-filling-helper {
   /* 7:1+ on --surface; the counts above carry the meaning, and these qualify it */
   color: var(--muted);
   font-size: 0.85rem;
@@ -6441,7 +6475,8 @@ label .custom-tooltip-wrapper:hover .custom-tooltip-icon {
 }
 
 @media (max-width: 860px) {
-  .round-funnel-steps {
+  .round-funnel-steps,
+  .round-filling-steps {
     grid-template-columns: 1fr;
   }
 }

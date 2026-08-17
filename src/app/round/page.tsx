@@ -2,6 +2,7 @@ import { ManagerOnboarding } from "@/components/manager";
 import { MetricCard, PageIntro } from "@/components/ui";
 import {
   RoundControls,
+  RoundFilling,
   RoundFunnel,
   RoundSwitcher,
   RoundThresholdNextStep,
@@ -11,6 +12,7 @@ import { describePlannedEnd } from "@/lib/rounds/planned-end";
 import { toRoundSwitcherOptions } from "@/lib/rounds/round-options";
 import {
   loadManagerContext,
+  loadRoundFilling,
   loadRoundFunnel,
   loadSchoolChoices,
 } from "@/lib/server/manager-context";
@@ -42,7 +44,12 @@ export default async function RoundPage({
   }
 
   const { organization, selectedRound, responseCount } = context;
-  const funnel = await loadRoundFunnel(selectedRound.id);
+  // Two reads, run together: they are independent, they are both only wanted by
+  // this screen, and the database is not on the same continent as its users.
+  const [funnel, filling] = await Promise.all([
+    loadRoundFunnel(selectedRound.id),
+    loadRoundFilling(selectedRound),
+  ]);
   // The date closes nothing, so the card is careful about what it claims. See
   // `planned-end.ts`: this used to be labelled `סגירה` over a date that had
   // passed while the questionnaire was still accepting answers.
@@ -117,6 +124,8 @@ export default async function RoundPage({
       />
 
       <RoundFunnel funnel={funnel} expectedResponses={organization.totalStaffCount} />
+
+      <RoundFilling report={filling} />
 
       <RoundThresholdNextStep
         key={`next-step-${selectedRound.id}`}
