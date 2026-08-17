@@ -1,11 +1,19 @@
 # Shalomut Tracker — operational handoff
 
-**2026-08-17, session close: the response-quality plan is finished, and five
-branches are waiting on `main` rather than on an agent.**
+**2026-08-17, session close: the response-quality plan is finished and landed on
+`main`.**
 
-`refs/heads/main` is `8231490`, asked of the remote itself. Nothing is waiting
-on a push — all five branches of this stack are on `origin` at their local tips,
-checked against the remote and not assumed. What they are waiting on is a merge.
+The five branches merged as one stack. B, C, D and the docs branch were already
+linear from `main`, and A came in as a merge commit at the end; the single
+expected conflict was `docs/shalomut-tracker-handoff.md`, where A and D each
+replaced the same migration bullet, and
+`src/app/api/survey/[shareCode]/submit/route.ts` merged itself correctly —
+A's removal of the analytics enqueue and D's added field both survived, which
+was checked by reading the merged handler rather than by trusting the merge.
+`npm run verify:core` exits 0 on the merged tree at 1156 TypeScript tests.
+
+Both migrations were applied to the deployed database **before** the push, since
+both are additive; see the gate below for the read-back evidence.
 
 The plan `docs/response-quality-plan-2026-08-17.md`, on
 `research/how-a-round-was-filled`, is closed end to end. A moved AI analysis to
@@ -1592,8 +1600,19 @@ older snapshots remain available in Git.
   gate, not a blocker for local/docs work.
 - Explicit bounded approval is required before changing secrets, credentials,
   authentication configuration or deployment aliases.
-- **Open since 2026-08-17: two migrations are written and not yet deployed.**
-  Both were applied locally and both were still absent from the deployed
+- **Closed 2026-08-17: both of the stack's migrations are applied to the
+  deployed database.** `prisma migrate deploy` against the Supabase host
+  reported both applied, and the schema was then read back directly:
+  `survey_responses.visible_seconds` exists as a nullable integer,
+  `survey_responses_visible_seconds_check` holds the `NULL or 1..43200` range,
+  and `ai_analysis_runs_trigger_check` now reads
+  `trigger = ANY (ARRAY['automatic', 'manual', 'closure'])`. They were applied
+  **before** the code landed on `main`, because both are additive — one widens a
+  check, one adds a nullable column — so the older code was never running
+  against a schema it did not expect. Keep the ordering as the pattern; what
+  follows is the reasoning, kept because it says what each failure would have
+  looked like.
+  Both were applied locally first and both were still absent from the deployed
   database when this stack was assembled. The deploy build runs
   `prisma generate` and never `migrate deploy`, which is the pattern the
   2026-08-10 entry below warns about, and neither of these would be silent.
@@ -1609,7 +1628,7 @@ older snapshots remain available in Git.
   lose. Both are additive — one widens a check, one adds a nullable column — so
   applying them ahead of the code is safe and is the order this stack used.
   This bullet replaces "no open migration decision remains in the repository
-  record", which was true when it was written and is not now.
+  record", which was true when it was written and was not so on 2026-08-17.
 - **Closed 2026-08-10, no longer waiting.** `20260810101610_add_survey_attempts`
   creates `survey_attempts` and was applied to the deployed database on
   2026-08-10, right after `bf02dd1` landed on `main`; `prisma migrate status`

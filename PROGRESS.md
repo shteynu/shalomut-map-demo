@@ -6,7 +6,14 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 
 ## Current state
 
-- `origin/main` carries the eight-branch research-instrument stack, which landed
+- **`origin/main` carries the response-quality stack, landed 2026-08-17.** Five
+  branches: analysis moved from every answer to the moment a round closes; the
+  round says how long it took to fill and how many questionnaires came back too
+  fast; that duration became the time the questionnaire was actually on the
+  respondent's screen rather than the lifetime of their session; and the
+  attention-check question went to the methodologist instead of into code. Both
+  of its migrations were applied to the deployed database before the push.
+- `origin/main` also carries the eight-branch research-instrument stack, which landed
   on 2026-08-15 as one fast-forward of twenty-six commits, and the smaller
   commits that closed that session after it. Before the stack, `main` was
   `45e1340` plus its archive commits, after six branches landed on 2026-08-11
