@@ -86,6 +86,18 @@ under "Live plans" above:
   1–7 round whose twelve midpoint answers are published as twelve "yellow".
   **Not for implementation**: three options with no winner declared, and a
   recommendation that is the agent's rather than an owner decision;
+- [`response-quality-research-2026-08-17.md`](response-quality-research-2026-08-17.md)
+  — dated read-only study of whether the product can detect suspiciously filled
+  questionnaires, whether it may publish that finding, and where it would live.
+  Carries an owner decision taken the same day, so it is not merely material for
+  a discussion: the requested feature was narrowed to a descriptive report about
+  the collection, and excluding responses was refused on three verified grounds
+  — per-item timing is not measurable on a screen that walks blocks, the
+  flagging is directionally biased toward satisfied respondents, and two bases
+  of calculation let a manager read one person's answers out of the published
+  per-question distributions. **Not for implementation**: the surviving design
+  is described, not specified, and the exclusion half waits on the
+  methodologist;
 - [`scientific-evidence-layer-research-2026-08-09.md`](scientific-evidence-layer-research-2026-08-09.md)
   — dated read-only study of where the AI pipeline lacks scientific evidence and
   which extension points exist. **Not for implementation**: material for a
