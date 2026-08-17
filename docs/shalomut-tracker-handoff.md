@@ -192,10 +192,42 @@ one worth keeping:
   a template wearing the model's label. The fallback-never-wears-the-label rule
   held on this path all along.
 
-What this still does not establish is that the value points at the live Render
-service: a wrong origin looks exactly like a service that is down. The functional
-reading is one signed-in press of the suggestion button on the deployed builder,
-which nobody has done.
+**The functional reading happened the same day, and it found a live defect: the
+question suggestion does not work in the deployed environment.** Signed in as the
+manager, four same-origin `POST /api/manager/question-suggestion` calls for
+`balance` all answered `503` with `reason: "upstream_error"` and
+`upstreamStatus: 503`, at 4.6–4.8s each. No round was needed or created — that
+route reads no repository — and the deployed database was counted empty
+immediately before: 0 organizations, 0 rounds, 0 responses, 0 answers, 0 AI runs.
+
+What that establishes, and it is more than the variable's presence:
+
+- **Core reaches something over HTTP.** An unset variable resolves to
+  `http://localhost:8000` and would fail the fetch, which the route reports as
+  `unavailable`; an HTTP `503` means a real response came back.
+- **The AI service itself is awake.** `GET /health` on
+  `shalomut-ai-analytics.onrender.com` answered `200` in 0.19s and 0.58s,
+  anonymously, while the suggestions were failing. So this is not the free
+  plan's sleep, and not the cold start the keep-alive monitor exists for.
+- **The manager sees an honest failure**, which is the label rule holding under
+  a real fault rather than in a test: the Hebrew "not available right now" plus
+  the template under the template's own label.
+
+What is not established is *why*, and `main.py:156-215` gives exactly two
+shapes: a missing `AI_WEBHOOK_SECRET` outside development, which raises `503`
+immediately and fits 4.7s badly, or a `ProviderUnavailableError` after a real
+provider attempt, which fits it well. The service logs the second one as
+`[LLM Service] outcome=provider_unavailable ... scope=question_suggestion` with
+the reason, so **one read of the Render service log names the cause**. The
+leading hypothesis is the provider key, which is also the last open item of
+`docs/product-strategy-axes-2026-08-10.md` — whether `GEMINI_API_KEY` is on a
+live paid billing account, which only the owner can read.
+
+Two consequences worth keeping whatever the log says. The round pipeline is a
+different path with its own fallbacks, so this reading says nothing about
+contract `6.0` analysis; and nothing has ever exercised the suggestion button on
+the deployed endpoint before today, which is why a feature could be dead there
+across every session that called it "deployed as code".
 
 **2026-08-15, closing that session: the blocker that has stood since 2026-08-14
 now has something to send.**
