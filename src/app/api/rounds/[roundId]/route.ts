@@ -3,6 +3,7 @@ import { resolveCoreRepositories } from "@/lib/composition-root";
 import { RoundService } from "@/lib/services";
 import { getDurableWriteGuardResponse } from "@/lib/server/durable-write-guard";
 import { authorizeManagerRound } from "@/lib/server/manager-scope";
+import { enqueueAiAnalyticsOnClosure } from "@/lib/server/trigger-ai-analytics";
 import type { RoundStatus } from "@/lib/types/backend";
 import {
   createCanonicalSurveyDefinition,
@@ -25,7 +26,8 @@ export async function PATCH(
     if (unavailable) return unavailable;
 
     const { roundId } = await params;
-    const { orgRepo, roundRepo } = resolveCoreRepositories();
+    const { aiAnalysisRunRepo, orgRepo, roundRepo, surveyRepo } =
+      resolveCoreRepositories();
     const authorization = await authorizeManagerRound(
       request,
       roundId,
@@ -73,6 +75,44 @@ export async function PATCH(
     }
 
     const updated = await roundRepo.updateStatus(roundId, targetStatus);
+
+    /*
+     * Closing a round is what asks for its analysis (owner decision
+     * 2026-08-17). It happens after the status write rather than inside it, so
+     * that a round which the manager meant to close is closed even when the
+     * dispatch cannot be recorded — collection has ended either way, and the
+     * re-analysis button is the way back. The reverse order would leave a round
+     * open because a queue row failed.
+     *
+     * Below the threshold this queues nothing and says so; that is a normal
+     * outcome for a round that ended short, not a failure to report.
+     */
+    if (targetStatus === "closed") {
+      try {
+        const outcome = await enqueueAiAnalyticsOnClosure(
+          roundId,
+          round.privacyThreshold,
+          aiAnalysisRunRepo,
+          surveyRepo,
+        );
+        return NextResponse.json({
+          success: true,
+          round: updated,
+          analysis: outcome,
+        });
+      } catch (error) {
+        console.error(
+          "Dispatching the analysis for a closed round failed:",
+          error instanceof Error ? error.message : "unknown error",
+        );
+        return NextResponse.json({
+          success: true,
+          round: updated,
+          analysis: "not_dispatched",
+        });
+      }
+    }
+
     return NextResponse.json({ success: true, round: updated });
   } catch {
     return NextResponse.json(

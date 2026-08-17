@@ -725,6 +725,7 @@
           "Rounds"
         ],
         "summary": "Transition a survey round status",
+        "description": "Transitioning to `closed` is also what asks for the round's AI analysis, and the response reports what that dispatch did in an `analysis` field. The dispatch cannot fail the close — a round the manager meant to close is closed even when nothing could be queued.",
         "security": [
           {
             "managerSession": []
@@ -761,7 +762,29 @@
         },
         "responses": {
           "200": {
-            "description": "Round status updated"
+            "description": "Round status updated. On a transition to `closed`, `analysis` reports the dispatch — `enqueued`, `below_threshold` when the round ended short of its privacy threshold, `already_active` or `duplicate` when a run is already in flight, and `not_dispatched` when the queue could not be reached. The field is absent for every other transition.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "analysis": {
+                      "type": "string",
+                      "enum": [
+                        "enqueued",
+                        "below_threshold",
+                        "already_active",
+                        "duplicate",
+                        "not_dispatched"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
           },
           "400": {
             "description": "Invalid status"
