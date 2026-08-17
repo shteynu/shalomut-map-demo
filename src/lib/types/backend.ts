@@ -208,6 +208,16 @@ export interface SurveyResponseInput {
   roundId: string;
   answers: QuestionAnswerInput[];
   anonymousTokenHash?: string;
+  /**
+   * Whole seconds the questionnaire was visible to this respondent, as their
+   * own browser counted it.
+   *
+   * Optional, and absent is the ordinary case rather than a failure: a browser
+   * that fired no visibility event sends none, and a resumed draft that lost
+   * its accumulated total deliberately sends none rather than a figure that
+   * would undercount. The round's report counts these apart.
+   */
+  visibleSeconds?: number;
 }
 
 export interface SurveyResponseRecord {
@@ -216,6 +226,8 @@ export interface SurveyResponseRecord {
   anonymousTokenHash?: string;
   answers: QuestionAnswerRecord[];
   submittedAt: Date;
+  /** See `SurveyResponseInput.visibleSeconds`. Undefined means not measured. */
+  visibleSeconds?: number;
 }
 
 /**

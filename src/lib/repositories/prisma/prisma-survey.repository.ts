@@ -73,6 +73,12 @@ export class PrismaSurveyRepository implements ISurveyRepository {
       anonymousTokenHash: record.anonymousTokenHash || undefined,
       answers,
       submittedAt: new Date(record.submittedAt),
+      // Same null-versus-undefined boundary as the answer columns above. A
+      // response stored before this column existed reads null, and the domain
+      // type says undefined — "not measured" — rather than a number.
+      ...(record.visibleSeconds == null
+        ? {}
+        : { visibleSeconds: record.visibleSeconds }),
     };
   }
 
@@ -88,6 +94,7 @@ export class PrismaSurveyRepository implements ISurveyRepository {
           roundId: response.roundId,
           anonymousTokenHash: response.anonymousTokenHash,
           submittedAt: response.submittedAt,
+          visibleSeconds: response.visibleSeconds ?? null,
           answers: {
             create: response.answers.map((ans) => ({
               questionId: ans.questionId,

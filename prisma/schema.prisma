@@ -130,6 +130,19 @@ model SurveyResponse {
   roundId            String           @map("round_id")
   anonymousTokenHash String?          @map("anonymous_token_hash")
   submittedAt        DateTime         @default(now()) @map("submitted_at")
+  // Whole seconds the questionnaire was visible to this respondent, summed by
+  // their own browser and sent once with the answers. One number and never a
+  // per-step or per-question breakdown: the round reports how long filling
+  // took, and a finer series would describe how someone thought about a
+  // particular statement.
+  //
+  // Null is the ordinary case, not a defect. A response stored before this
+  // existed has none, a browser that fired no visibility event sends none, and
+  // a draft resumed without its accumulated total deliberately sends none
+  // rather than a figure that would undercount. The round's report counts these
+  // apart and falls back to the session's own clock; it never reads a missing
+  // measurement as a fast one.
+  visibleSeconds     Int?             @map("visible_seconds")
 
   round              SurveyRound      @relation(fields: [roundId], references: [id], onDelete: Cascade)
   answers            QuestionAnswer[]
@@ -155,8 +168,14 @@ model SurveyResponse {
  * It holds no more identity than `SurveyResponse` does: the same hash of the
  * same per-attempt token, which lives in the respondent's own sessionStorage,
  * is reset between people at a shared computer, and is not a device or a
- * person. No IP, no user agent, no timing beyond the round's own clock. What it
- * adds over the response row is the attempts that never became one.
+ * person. No IP and no user agent. What it adds over the response row is the
+ * attempts that never became one.
+ *
+ * This table's own timing is still the round's clock and nothing finer — when
+ * the session opened, consented and finished. Since 2026-08-17 the *response*
+ * row carries one more figure, `visibleSeconds`, which its own comment
+ * describes; it is a total for the whole questionnaire and there is still no
+ * per-step or per-question timing anywhere in this schema.
  */
 model SurveyAttempt {
   id                  String      @id @default(uuid())

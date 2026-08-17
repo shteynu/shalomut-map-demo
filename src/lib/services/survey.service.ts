@@ -298,6 +298,10 @@ export class SurveyService {
       anonymousTokenHash: input.anonymousTokenHash,
       answers: answerRecords,
       submittedAt: new Date(),
+      // Carried through rather than validated here. The route owns the refusal,
+      // because this figure arrives from an unauthenticated body and a service
+      // that quietly repaired it would leave the route with nothing to refuse.
+      visibleSeconds: input.visibleSeconds,
     };
 
     return {

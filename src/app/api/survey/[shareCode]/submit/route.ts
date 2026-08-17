@@ -29,6 +29,41 @@ function refuse(code: SurveySubmissionErrorCode, error: string) {
   );
 }
 
+/**
+ * Twelve hours, matching the database's own check constraint.
+ *
+ * The client caps to the same figure, which is why this is not a duplicate: the
+ * client is not the thing being trusted here. This endpoint is the only
+ * unauthenticated write in the product.
+ */
+const MAX_VISIBLE_SECONDS = 12 * 60 * 60;
+
+/**
+ * How long the questionnaire was visible, or nothing.
+ *
+ * Dropped rather than refused. The answers are what the respondent came to
+ * send, and a malformed timing figure — an old client, a hand-made request, a
+ * clock that ran backwards — must never cost them their submission. Dropping it
+ * lands the response in the report's "not measured" bucket, which is a state
+ * the report already states out loud; refusing the whole request would turn a
+ * decoration into a gate.
+ *
+ * It is not coerced, though. `Number(value)` on a string or a boolean would
+ * write a figure the respondent's browser never counted.
+ */
+function readVisibleSeconds(value: unknown): number | undefined {
+  if (
+    typeof value !== 'number' ||
+    !Number.isInteger(value) ||
+    value <= 0 ||
+    value > MAX_VISIBLE_SECONDS
+  ) {
+    return undefined;
+  }
+
+  return value;
+}
+
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ shareCode: string }> }
@@ -52,9 +87,10 @@ export async function POST(
 
     const { shareCode } = await params;
     const body = await request.json();
-    const { answers, anonymousTokenHash } = body as {
+    const { answers, anonymousTokenHash, visibleSeconds } = body as {
       answers: QuestionAnswerInput[];
       anonymousTokenHash?: string;
+      visibleSeconds?: unknown;
     };
 
     const {
@@ -93,6 +129,7 @@ export async function POST(
         roundId: round.id,
         answers,
         anonymousTokenHash,
+        visibleSeconds: readVisibleSeconds(visibleSeconds),
       },
       surveyRepo,
       parsedDefinition.value.questions.filter((question) => question.enabled)
