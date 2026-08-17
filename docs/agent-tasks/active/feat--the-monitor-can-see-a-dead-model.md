@@ -159,12 +159,12 @@ read before anything was proposed:
 
 ## Remaining
 
-Nothing in this task. What is left is deliberately outside it:
+Nothing in this task — both paths are observed. What is left is deliberately
+outside it:
 
-- **The alert has never fired.** The monitor's red path is unproven end to end —
-  it would take a real refused provider call, and firing one sends the owner a
-  genuine Down e-mail, so it is an owner's call to make, not something to trigger
-  for a screenshot.
+- **The monitor is red and stays red until the provider account is topped up.**
+  That is the watchdog telling the truth, not a state to clear. The incident
+  should not be resolved by hand.
 - The metric lines are still uncollected; see `Non-goals`.
 
 ## Changed files
@@ -223,11 +223,17 @@ Context: local.
   branch added, checked by its absence beforehand rather than only its presence
   after.
 
+- **The alert fired, end to end, at the owner's request.** One real question
+  suggestion on the deployed Core (`503 upstream_error`, 5.2s, 23:00:45) moved the
+  anonymous status to `{"status":"failing"}`. UptimeRobot confirmed the keyword
+  from three locations — Ohio 23:02:39, N. Virginia 23:02:53, Dallas 23:03:10 —
+  opened incident `347832752932025400` with root cause *Keyword has been found*,
+  stored the response body as evidence, and logged `Email sent to Maksim
+  Berenshteyn / SUCCESS` at 23:03:12. Two minutes twenty-seven seconds from a
+  refused model to an e-mail.
+
 ### Blocked or not run
 
-- **The alert has never fired.** The monitor was created green and the red path is
-  untested end to end. Proving it means a real refused provider call, which sends
-  the owner a real Down e-mail — an owner's decision, recorded in `Remaining`.
 - **`verify:core`** was run on this branch after the anonymous endpoint landed;
   see `Passed`.
 

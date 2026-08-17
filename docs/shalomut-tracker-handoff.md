@@ -363,10 +363,24 @@ starts green — its own first check, at 22:47, reports `Up` — and it will onl
 red once a real suggestion or a round's analysis is refused. This is the residual
 limit below, seen in its first minute rather than argued about.
 
-**The alert has never fired, and that is the honest state of it.** The green path
-is observed; the red one is not. Proving it end to end takes one real refused
-provider call, which arrives in the owner's inbox as a genuine Down e-mail — so
-it is the owner's to trigger, not something to spend for a screenshot.
+**The red path was then proved end to end, on the owner's say-so, and it works.**
+One real question suggestion on the deployed Core at 23:00:45 answered `503
+upstream_error` in 5.2s; `/api/v1/provider-status` moved to `{"status":"failing"}`
+by 23:00:45. UptimeRobot found the word from Ohio at 23:02:39, confirmed it from
+N. Virginia at 23:02:53 and Dallas at 23:03:10, opened incident
+`347832752932025400` — *Root cause: Keyword has been found* — and its activity log
+records `Email sent to Maksim Berenshteyn / SUCCESS` at 23:03:12. **Two minutes
+and twenty-seven seconds from a refused model to an e-mail**, and the incident
+page keeps the response body `{"status":"failing"}` as its own evidence. The
+question that cost a whole session on 2026-08-17 now answers itself in under three
+minutes, unasked.
+
+**The monitor is red now and will stay red, which is correct.** The provider
+account is still depleted, so nothing will make the status `answering` again until
+it is topped up. Do not resolve the incident by hand and do not read a green
+monitor after a redeploy as recovery: the state lives in process memory, a restart
+resets it to `unknown`, and `unknown` is silent by design. Green after a deploy
+means nobody has asked the model yet — it does not mean the model answered.
 
 **What this still does not do, and it is the honest half: it watches a provider
 that fails in use, not one that fails while unused.** The state only moves when a
