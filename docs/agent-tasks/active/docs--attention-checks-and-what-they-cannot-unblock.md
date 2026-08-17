@@ -108,7 +108,7 @@ Nothing.
 ## Remaining
 
 Sending the questions, which is the owner's — this repository only writes them.
-And landing: five branches are stacked ahead of `main` and none has merged.
+The landing itself is assembled on this branch and waits only on the push.
 
 ## Changed files
 
@@ -182,7 +182,7 @@ attempted; see Decisions made, 2.
 
 ## Next concrete step
 
-Land the five stacked branches into `main` in order — A
-(`refactor/analysis-runs-when-a-round-closes`), B, C, D, then this — resolving
-the one known conflict in `src/app/api/survey/[shareCode]/submit/route.ts`
-without resurrecting the analytics enqueue A removed.
+Push the landing: `git push origin HEAD:main` from this branch, which is a
+fast-forward of 27 commits over `8231490`. The merge is done and verified
+locally, the deployed database already has both migrations, and the push is the
+owner's to run — it is also what triggers the Vercel deploy.
