@@ -1078,7 +1078,7 @@ paths:
         "404":
           description: Survey round not found in the manager scope
         "409":
-          description: An analytics run for this round is already queued or running, or the round is archived and read-only (`code` is `round_archived`)
+          description: An analytics run for this round is already queued or running; or the round is archived and read-only (`code` is `round_archived`); or the round has fewer responses than its privacy threshold (`code` is `below_privacy_threshold`)
         "503":
           description: Persistent storage is not configured for this deployment
         "500":

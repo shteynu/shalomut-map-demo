@@ -4,6 +4,7 @@ import { getArchivedRoundGuardResponse } from '@/lib/server/archived-round-guard
 import { getDurableWriteGuardResponse } from '@/lib/server/durable-write-guard';
 import { recordAiJobQueued } from '@/lib/server/ai-operational-metrics';
 import { authorizeManagerRound } from '@/lib/server/manager-scope';
+import { getPrivacyThresholdGuardResponse } from '@/lib/server/privacy-threshold-guard';
 
 interface RouteParams {
   params: Promise<{
@@ -17,7 +18,8 @@ export async function POST(request: Request, { params }: RouteParams) {
     if (unavailable) return unavailable;
 
     const { roundId } = await params;
-    const { aiAnalysisRunRepo, orgRepo, roundRepo } = resolveCoreRepositories();
+    const { aiAnalysisRunRepo, orgRepo, roundRepo, surveyRepo } =
+      resolveCoreRepositories();
     const authorization = await authorizeManagerRound(
       request,
       roundId,
@@ -31,6 +33,16 @@ export async function POST(request: Request, { params }: RouteParams) {
     // underneath.
     const archived = getArchivedRoundGuardResponse(authorization.round);
     if (archived) return archived;
+
+    // The threshold is checked here rather than trusted from the screen: the
+    // button that used to be the only thing standing between nine responses
+    // and a dispatched analysis is markup, and this route is reachable without
+    // it.
+    const belowThreshold = await getPrivacyThresholdGuardResponse(
+      authorization.round,
+      surveyRepo,
+    );
+    if (belowThreshold) return belowThreshold;
 
     const enqueued = await aiAnalysisRunRepo.enqueue(roundId, {
       requestKey: `manual:${globalThis.crypto.randomUUID()}`,
