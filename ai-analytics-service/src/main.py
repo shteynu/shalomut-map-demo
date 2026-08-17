@@ -20,7 +20,10 @@ from src.services.llm_provider import (
     ProviderUnavailableError,
     llm_provider_service,
 )
-from src.services.provider_health import read_provider_health
+from src.services.provider_health import (
+    read_provider_health,
+    read_provider_status,
+)
 from src.config import settings
 
 logging.basicConfig(level=logging.INFO)
@@ -153,6 +156,29 @@ async def handle_webhook_event(
         "message": f"Analytics processing accepted for round {payload.roundId}",
         "roundId": payload.roundId,
     }
+
+@app.get("/api/v1/provider-status")
+def provider_status():
+    """One word, anonymously, so a free watchdog can see a dead model.
+
+    `answering`, `failing` or `unknown`, and nothing else — no reason, no model,
+    no counts, no timing. Those stay behind the secret on `/api/v1/provider-health`
+    below, because they are what turns "the model is down" into "the account has
+    no credit", and Core's own `/api/health` states the rule about publishing
+    credential state to anonymous callers.
+
+    This exists because the alternative did not: UptimeRobot's free plan locks
+    `Request headers` to its paid tiers, read in the monitor form itself on
+    2026-08-17, so no free monitor can present a bearer token. Owner decision the
+    same day, of four: publish the word rather than pay, add a second monitoring
+    service, or keep no watchdog at all.
+
+    Deliberately its own path rather than a field on `/health`. The existing
+    keep-alive monitor keys on `"status":"online"` there, and two watchdogs
+    sharing one body is how a change made for one of them quietly breaks the
+    other.
+    """
+    return read_provider_status()
 
 @app.get("/api/v1/provider-health")
 def provider_health(authorization: Optional[str] = Header(default=None)):

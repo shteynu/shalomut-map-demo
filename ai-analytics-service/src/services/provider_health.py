@@ -25,10 +25,11 @@ under `asyncio.to_thread`, so a record can arrive on any of them while a request
 handler reads.
 
 **`status` is a wire contract with something outside this repository.** An
-UptimeRobot keyword monitor alerts when the body contains `failing`, so the three
-literals below are not free to be renamed for readability — a rename silences the
-alert rather than breaking anything visibly, which is the worst way for a
-watchdog to fail. `tests/test_provider_health.py` pins them for that reason, and
+UptimeRobot keyword monitor reads it anonymously through `read_provider_status`
+and alerts when the body contains `failing`, so the three literals below are not
+free to be renamed for readability — a rename silences the alert rather than
+breaking anything visibly, which is the worst way for a watchdog to fail.
+`tests/test_provider_health.py` pins them for that reason, and
 `docs/shalomut-tracker-handoff.md` records the monitor itself.
 
 The monitor watches for `failing` rather than the absence of `answering`,
@@ -122,6 +123,29 @@ def read_provider_health() -> Dict[str, Any]:
         "observedSince": _iso(_STARTED_AT_WALL),
         "observedForSeconds": round(uptime, 1),
     }
+
+
+def read_provider_status() -> Dict[str, Any]:
+    """The one word an anonymous monitor is allowed to see, and nothing else.
+
+    UptimeRobot's free plan cannot send a request header — verified in its own
+    monitor form on 2026-08-17, where `Request headers` is locked to the paid
+    tiers — so the secret-gated reading is unreachable to any free monitor, and a
+    watchdog needs something anonymous to read.
+
+    Owner decision, 2026-08-17: publish the status word alone rather than pay for
+    headers, add a second monitoring service, or go without a watchdog. What
+    becomes public is that the model is or is not answering right now. What stays
+    behind the secret is everything that makes that actionable — the reason, the
+    model, the counts and the timing. `http_429` reads as "the account has no
+    credit"; `failing` does not distinguish it from an outage, a revoked key or a
+    provider having a bad minute.
+
+    Built by projecting one key out of the full reading rather than by assembling
+    a second dict. A field added to `read_provider_health` later cannot leak here
+    by being forgotten: it has to be named to escape.
+    """
+    return {"status": read_provider_health()["status"]}
 
 
 def reset_provider_health_for_tests() -> None:

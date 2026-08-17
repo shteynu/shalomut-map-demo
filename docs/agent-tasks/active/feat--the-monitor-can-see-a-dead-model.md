@@ -6,7 +6,8 @@
 - Base branch: main
 - Base commit: `3b02f1c` (tip of `feat/the-service-remembers-its-last-provider-answer`,
   itself not yet on `main`)
-- Current HEAD: `3b02f1c`; this task's work is **uncommitted** in this worktree.
+- Current HEAD: `a8f3b40`, the first of this branch's two halves. The second —
+  the anonymous endpoint — is **uncommitted** in this worktree.
 - Status: code and documentation complete and verified; the monitor itself is
   **not created yet** and cannot be until the endpoint is deployed.
 - Last updated: 2026-08-17
@@ -42,10 +43,16 @@ read before anything was proposed:
 
 ## Scope
 
-- `ai-analytics-service/src/services/provider_health.py` — docstring recording
-  that `status` is now a contract with something outside the repository.
-- `ai-analytics-service/tests/test_provider_health.py` — pin the three literals.
-- `docs/shalomut-tracker-handoff.md` — the monitor and its keyword logic.
+- `ai-analytics-service/src/services/provider_health.py` — the docstring
+  recording that `status` is a contract with something outside the repository,
+  and `read_provider_status`.
+- `ai-analytics-service/src/main.py` — the anonymous `GET
+  /api/v1/provider-status`.
+- `ai-analytics-service/tests/test_provider_health.py` — pin the three literals
+  and the disclosure boundary.
+- `ai-analytics-service/README.md` — its endpoint list.
+- `docs/shalomut-tracker-handoff.md` — the monitor, its keyword logic and the
+  plan change.
 - The UptimeRobot monitor itself, which is dashboard configuration and is the
   owner's to create.
 
@@ -84,10 +91,12 @@ read before anything was proposed:
 
 ## Decisions made
 
-- **Owner decision, 2026-08-17: a second UptimeRobot monitor with an
-  `Authorization` header against the secret-gated endpoint**, of four offered
+- **Owner decision, 2026-08-17: a second UptimeRobot monitor**, of four offered
   paths — that, an anonymous minimal endpoint, a real log collector via drains,
-  or making only the manual read cheap.
+  or making only the manual read cheap. It was first taken as *with an
+  `Authorization` header against the secret-gated endpoint*; that half was
+  superseded hours later by the plan change below, when the header turned out to
+  be a paid feature. The monitor itself is still the decision.
 - **The keyword is `failing`, with the alert firing when it is present** — not
   the absence of `answering`. This was not part of the question and is the
   consequence that makes the choice work: `unknown` is the honest state of a
@@ -99,13 +108,29 @@ read before anything was proposed:
   visibly: the monitor would stop finding `failing`, report Up forever, and the
   alert would be gone without a single error anywhere. A watchdog that fails
   quiet is worse than no watchdog.
+- **The header plan died on a verified fact, and the fallback was taken.**
+  UptimeRobot's free plan locks `Request headers` to Solo/Team/Scale — read in
+  the monitor form itself, signed in, on 2026-08-17, alongside locks on HTTP
+  method, request body and `Up HTTP status codes`, and with no authentication
+  field of any kind. So no free monitor can present a bearer token.
+  **Owner decision the same day, of four:** publish an anonymous status word
+  rather than pay for the header, add a second monitoring service, or keep no
+  watchdog.
+- **The anonymous endpoint carries the word and nothing else.**
+  `GET /api/v1/provider-status` → `{"status":"answering"|"failing"|"unknown"}`.
+  The reason, model, counts and timing stay behind the secret: they are what
+  turns "the model is down" into "the account has no credit". It is its own path
+  rather than a field on `/health`, because the keep-alive monitor keys on
+  `"status":"online"` there and two watchdogs in one body break each other.
+- **The projection is by explicit key**, `{"status": read_provider_health()["status"]}`,
+  so a field added to the full reading later cannot leak anonymously by being
+  forgotten — it has to be named to escape.
 
 ## Assumptions
 
-- UptimeRobot's free plan allows a custom request header. **This is not yet
-  verified** — see `Blocked or not run`. If it does not, the choice has to be
-  revisited before the monitor exists, and the anonymous-minimal-endpoint option
-  is the fallback the owner already saw.
+- None outstanding. The one this task carried — that UptimeRobot's free plan
+  allows a custom request header — was checked and is **false**, which changed
+  the plan; see `Decisions made`.
 
 ## Completed
 
@@ -117,6 +142,11 @@ read before anything was proposed:
 - `test_the_status_literals_are_a_contract_with_the_external_monitor` added,
   asserting all three literals and that `failing` appears in neither quiet
   state.
+- Committed as `a8f3b40`. Everything below was done after it.
+- UptimeRobot's monitor form read signed-in, which killed the header plan; the
+  owner chose the anonymous word the same day.
+- `read_provider_status` and `GET /api/v1/provider-status` added, with two tests
+  holding the disclosure boundary, and the README endpoint list extended.
 
 ## In progress
 
@@ -127,22 +157,31 @@ read before anything was proposed:
 1. Commit this branch.
 2. Push the three-branch stack so the endpoint is deployed: `3a17333`,
    `3b02f1c` and this one.
-3. Confirm Render redeployed the service, then create the monitor:
-   `GET https://shalomut-ai-analytics.onrender.com/api/v1/provider-health`,
-   header `Authorization: Bearer <AI_WEBHOOK_SECRET>`, keyword type, alert when
-   `failing` **exists**. The secret is pasted by the owner; no agent enters it.
+3. Confirm Render redeployed the service, then create the monitor: keyword type,
+   `GET https://shalomut-ai-analytics.onrender.com/api/v1/provider-status`,
+   keyword `failing`, `Start incident when keyword exists`, five-minute interval,
+   e-mail alert. No header and no credential — that is the point of the anonymous
+   path.
 4. Record the monitor's id and first reading in the handoff, the way the
    `/health` monitor is recorded.
 
 ## Changed files
 
+Committed in `a8f3b40`: the `provider_health.py` docstring, the literal-pinning
+test, the first handoff entry and this file.
+
 Uncommitted in the working tree:
 
-- `ai-analytics-service/src/services/provider_health.py` — docstring only, no
-  behaviour change.
-- `ai-analytics-service/tests/test_provider_health.py` — one test.
-- `docs/shalomut-tracker-handoff.md`.
-- `docs/agent-tasks/active/feat--the-monitor-can-see-a-dead-model.md` (this file).
+- `ai-analytics-service/src/services/provider_health.py` — `read_provider_status`
+  and one corrected docstring sentence.
+- `ai-analytics-service/src/main.py` — the anonymous endpoint and its import.
+- `ai-analytics-service/tests/test_provider_health.py` — two tests.
+- `ai-analytics-service/README.md`, `docs/shalomut-tracker-handoff.md` and this
+  file.
+
+No contract, schema, migration or deployment configuration is touched, and
+`docs/data-flow-and-subprocessors.md` deliberately is not: the monitor receives
+one word and no respondent data.
 
 Pre-existing unrelated modification, left untouched and unstaged:
 `next-env.d.ts`.
@@ -153,8 +192,9 @@ Context: local.
 
 ### Passed
 
-- Full Python suite: `.venv/bin/python -m pytest -q` — **494 passed**, 0 failed.
-- Targeted: `pytest tests/test_provider_health.py -q` — 10 passed.
+- Full Python suite: `.venv/bin/python -m pytest -q` — **496 passed**, 0 failed,
+  after the anonymous endpoint (494 at the first commit of this branch).
+- Targeted: `pytest tests/test_provider_health.py -q` — 12 passed.
 - **The pin was falsified.** Renaming the `failing` literal to `down` in
   `provider_health.py` failed three tests, including the new one; restoring it
   returned the suite to 494 passed. So the test fails for the rename it exists to
@@ -164,17 +204,23 @@ Context: local.
 
 - None.
 
+- **The anonymous endpoint's two states were read from the running app**, with
+  the service configured as `production` and a secret set:
+  `{"status":"unknown"}` before any provider call and `{"status":"failing"}`
+  after a refused one, both without any credential — while
+  `GET /api/v1/provider-health` answered `401` to the same unauthenticated
+  caller. So the split is observed, not intended.
+- **The disclosure boundary was falsified.** Returning the full reading from
+  `read_provider_status` failed exactly the two anonymous tests and nothing else;
+  restoring the projection returned the suite to 496 passed.
+
 ### Blocked or not run
 
-- **Whether UptimeRobot's free plan supports a custom request header.** The
-  dashboard requires a sign-in that no agent performs, and the check is one look
-  at the monitor form. This gates the chosen option.
 - **The monitor itself.** It cannot be created before the endpoint is deployed —
   pointing a monitor at a path that does not exist yet would report Down
   immediately and teach the owner to ignore it.
-- **`verify:core`.** Not re-run for this diff: it is a docstring, a test and
-  Markdown, and the Python suite that covers them ran whole. It was run and
-  exited 0 on the parent commit `3b02f1c`.
+- **`verify:core`** was run on this branch after the anonymous endpoint landed;
+  see `Passed`.
 
 ### Environment
 
@@ -209,9 +255,12 @@ Context: local.
 
 ## Approval gates
 
-- **Credentials configuration: approved by the owner on 2026-08-17**, bounded to
-  pasting `AI_WEBHOOK_SECRET` into one UptimeRobot monitor. No agent enters the
-  value.
+- **None outstanding, and the one that was approved is no longer needed.** The
+  owner approved pasting `AI_WEBHOOK_SECRET` into one UptimeRobot monitor on
+  2026-08-17; the free plan's lack of headers made that impossible, and the
+  anonymous path means no secret leaves this repository's two deployments. The
+  approval is recorded as spent-unused rather than deleted, so nobody re-derives
+  it as permission later.
 
 ## Questions requiring an owner decision
 
@@ -223,4 +272,4 @@ Context: local.
 Commit this branch, then push the three-branch stack so the endpoint exists in
 the deployed service. The monitor is created after that, not before. Suggested
 message:
-`feat(ai): the provider status is a contract with the monitor, and a test says so`.
+`feat(ai): a free monitor can read one word and see that the model is down`.

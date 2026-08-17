@@ -211,6 +211,56 @@ def test_the_status_literals_are_a_contract_with_the_external_monitor(monkeypatc
     assert "failing" not in json.dumps(read_provider_health())
 
 
+def test_the_anonymous_status_word_is_readable_without_a_secret(monkeypatch):
+    # The whole reason this endpoint exists: UptimeRobot's free plan cannot send
+    # a request header, so a watchdog has nothing else it could read.
+    monkeypatch.setattr(settings, "env", "production")
+    monkeypatch.setattr(settings, "ai_webhook_secret", "webhook-secret")
+
+    response = client.get("/api/v1/provider-status")
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "unknown"}
+
+
+def test_the_anonymous_status_publishes_the_word_and_nothing_else(monkeypatch):
+    """The disclosure boundary, enforced rather than intended.
+
+    The reason, the model, the counts and the timing are what turn "the model is
+    down" into "the account has no credit". They stay behind the secret, and a
+    field added to the full reading later must not arrive here by being
+    forgotten.
+    """
+    import urllib.error
+
+    def refusing(*_a, **_k):
+        raise urllib.error.HTTPError(
+            "https://provider.local/v1/chat/completions",
+            429,
+            "Too Many Requests",
+            {},
+            None,
+        )
+
+    _run_transport(monkeypatch, urlopen=refusing)
+    monkeypatch.setattr(settings, "env", "development")
+    monkeypatch.setattr(settings, "ai_webhook_secret", "")
+
+    body = client.get("/api/v1/provider-status").json()
+
+    assert body == {"status": "failing"}
+    assert list(body) == ["status"]
+
+    serialized = json.dumps(body)
+    for withheld in ("http_429", "gemini", "attempts", "observedSince", "reason"):
+        assert withheld not in serialized, withheld
+
+    # And the secret-gated reading still carries all of it, so nothing was lost —
+    # it was only moved out of anonymous reach.
+    full = client.get("/api/v1/provider-health").json()
+    assert full["lastAttempt"]["reason"] == "http_429"
+
+
 def test_the_anonymous_health_endpoint_says_nothing_about_the_provider():
     # The boundary this placement exists for. `/health` is anonymous, so a
     # provider or credential fact appearing there would be published to anyone.

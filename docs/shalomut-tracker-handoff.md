@@ -301,12 +301,31 @@ something outside this repository, and a test on
 anything visibly, it would just stop the monitor finding the word and leave it
 reporting Up forever.
 
-Two things to know before creating it. It cannot be created until the stack is
-pushed and Render has redeployed, because a monitor pointed at a path that does
-not exist teaches its owner to ignore it. And **whether the free plan allows a
-custom request header is not yet verified** — one look at the monitor form
-answers it, and if it does not, the anonymous-minimal-endpoint option is the
-fallback.
+**That header turned out to be a paid feature, and the plan changed the same
+day.** Read in UptimeRobot's own monitor form on 2026-08-17, signed in: `Request
+headers` is marked *Available only in Solo, Team and Scale*, as are HTTP method,
+request body and `Up HTTP status codes`. The free plan offers an anonymous `GET`
+with a keyword, its direction (`Start incident when keyword exists`), case
+sensitivity, a five-minute interval and e-mail alerts — and no authentication of
+any kind. So the secret-gated reading is unreachable to any free monitor.
+
+**Owner decision, 2026-08-17, of four: publish the status word anonymously**
+rather than pay for the header, add a second monitoring service, or keep no
+watchdog. `GET /api/v1/provider-status` answers exactly `{"status":"…"}` —
+`answering`, `failing` or `unknown` — and nothing else. The reason, the model, the
+counts and the timing stay on the secret-gated path, because they are what turns
+"the model is down" into "the account has no credit"; `failing` alone does not
+separate a depleted account from an outage or a revoked key. It is less than
+`/health` already publishes anonymously (`env`, `privacyThreshold`, `commit`,
+`jobPollingEnabled`).
+
+It is its own path rather than a field on `/health` deliberately: the keep-alive
+monitor keys on `"status":"online"` there, and two watchdogs sharing one body is
+how a change made for one quietly breaks the other.
+
+The monitor still cannot be created until the stack is pushed and Render has
+redeployed — a monitor pointed at a path that does not exist teaches its owner to
+ignore it.
 
 **What this still does not do, and it is the honest half: it watches a provider
 that fails in use, not one that fails while unused.** The state only moves when a

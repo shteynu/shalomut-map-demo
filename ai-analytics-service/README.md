@@ -379,11 +379,17 @@ compatibility, but it is ignored and cannot control callback transport.
 
 - `GET /health` — anonymous, and deliberately says nothing about the provider,
   the database or any credential.
-- `GET /api/v1/provider-health` — whether the provider is answering *this*
-  instance, behind the same inbound secret as the two POSTs below. It never calls
-  the provider: it reports what real work last observed and answers `unknown`
-  when this process has observed nothing, because a quiet service and a healthy
-  one are indistinguishable from the inside.
+- `GET /api/v1/provider-status` — anonymous, and one word: `answering`,
+  `failing` or `unknown`. It is what a free uptime monitor can read, since
+  UptimeRobot's free plan locks request headers to its paid tiers and so cannot
+  present a bearer token. It carries no reason, no model, no counts and no
+  timing, which is the line between "the model is down" and "the account has no
+  credit".
+- `GET /api/v1/provider-health` — the same state with all of that detail, behind
+  the same inbound secret as the two POSTs below. It never calls the provider: it
+  reports what real work last observed and answers `unknown` when this process
+  has observed nothing, because a quiet service and a healthy one are
+  indistinguishable from the inside.
 - `POST /api/v1/webhook/events`
 - `POST /api/v1/questions/suggest` — one drafted questionnaire item. This line
   was missing from this list until 2026-08-17; the endpoint is older.
