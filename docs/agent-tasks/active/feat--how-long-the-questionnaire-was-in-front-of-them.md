@@ -5,8 +5,10 @@
 - Branch: `feat/how-long-the-questionnaire-was-in-front-of-them`
 - Base branch: `feat/the-round-says-how-it-was-filled` (task C), at `a3080fa`
 - Base commit: `a3080fa`
-- Current HEAD: `82515cb`, this file
-- Status: implemented, verified locally, committed and unpushed
+- Current HEAD: the commit carrying this correction, deliberately not
+  written as a hash — a commit that states its own tip becomes wrong on amend.
+  The last commit that changes product code is `2b87b8b`.
+- Status: implemented, verified locally, committed and pushed
 - Last updated: 2026-08-17
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -157,12 +159,15 @@ Nothing.
 
 ## Remaining
 
-Push, which is the owner's. Then land the four stacked branches in order.
+Landing. Four branches are stacked ahead of `main` — A, B, C, then this — and
+none has merged.
 
 ## Changed files
 
-Six commits on this branch, none pushed. `origin` has never seen this branch,
-so nothing here is visible outside this worktree.
+Seven commits on this branch. The first six are on `origin` at `c5963d2`,
+checked against the remote itself on 2026-08-17 rather than assumed; the
+seventh is this correction and is not pushed. The handoff is portable to another
+checkout or machine. It is not on `main`, which is still `8231490`.
 
 - `b326615` the task file
 - `b133215` the column, the migration, the repository and types, the endpoint,
@@ -172,7 +177,7 @@ so nothing here is visible outside this worktree.
 - `af892f2` `src/lib/services/round-filling.service.ts` and
   `src/components/round/round-filling.tsx`, both with their tests
 - `2b87b8b` the consent screen and its test, and the documents
-- `82515cb` this file
+- `82515cb` this file, corrected by the unpushed seventh commit
 
 The files, by area:
 
@@ -284,6 +289,8 @@ nothing on Supabase, no AI provider call.
 
 ## Next concrete step
 
-Push this branch — `git push origin feat/how-long-the-questionnaire-was-in-front-of-them`
-— which is the owner's to run, and get the consent wording approved before any
-of the four stacked branches reaches a respondent.
+Get the consent wording approved before any of the stacked branches reaches a
+respondent, and apply
+`20260817170000_a_response_may_carry_its_visible_seconds` to the deployed
+database before this code runs there — the deploy build runs `prisma generate`
+and never `migrate deploy`, so a submission would fail on the missing column.
