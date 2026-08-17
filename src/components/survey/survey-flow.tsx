@@ -13,6 +13,11 @@ import { calculatePercentage } from "@/lib/utils/math";
 import { isAnswerValueValid } from "@/lib/survey/answer-validity";
 import { estimateMinutesForSteps } from "@/lib/survey/survey-duration";
 import {
+  createVisibleTimeClock,
+  visibleSecondsForSubmission,
+  type VisibleTimeClock,
+} from "@/lib/survey/visible-time";
+import {
   buildSurveySteps,
   isStepComplete,
   questionIndexForStep,
@@ -48,6 +53,21 @@ import type { SurveyDefinitionQuestion } from "@/lib/types/backend";
  * would otherwise be the one thing autosave failed to save.
  */
 const SAVE_DEBOUNCE_MS = 400;
+
+/**
+ * A clock that only moves forward.
+ *
+ * `performance.now()` is monotonic, so a machine that corrects its wall clock
+ * mid-questionnaire — or a respondent who changes the time zone — cannot make
+ * an interval negative or enormous. The fallback exists because this runs in
+ * whatever browser a teacher opened the link in.
+ */
+function nowMs(): number {
+  return typeof performance !== "undefined" &&
+    typeof performance.now === "function"
+    ? performance.now()
+    : Date.now();
+}
 
 /**
  * Where the attempt is.
@@ -97,6 +117,34 @@ export function SurveyFlow({
   const [attemptToken] = useState<SurveyAttemptTokenSource>(
     createAttemptTokenSource,
   );
+  /*
+   * How long the questionnaire has actually been on screen.
+   *
+   * The round already measures the session's lifetime from its own clock, and
+   * that number survives a tab left open over lunch. This is the smaller,
+   * truer one, and it is a total for the attempt — never per step and never per
+   * question. `visible-time.ts` owns the arithmetic and the ceilings; this
+   * component owns only when to start it and when to stop.
+   */
+  /*
+   * State rather than a ref, though the clock is a mutable object and its
+   * identity never changes. It is created while the restored draft is being
+   * read, which is render, and a ref may not be written there. Holding it in
+   * state also makes the effects that drive it depend on it honestly: the
+   * visibility listener attaches on the commit that produces the clock instead
+   * of on whichever commit happens to run after it.
+   */
+  const [visibleClock, setVisibleClock] = useState<VisibleTimeClock | null>(
+    null,
+  );
+  /*
+   * Set when a restored draft carried no accumulated total — a draft written
+   * before this existed. The attempt then sends no measurement at all rather
+   * than resuming from zero, because resuming from zero undercounts, and an
+   * undercount is what turns an attentive respondent into the fastest in the
+   * round.
+   */
+  const [visibleTimeVoid, setVisibleTimeVoid] = useState(false);
   const surveyQuestions = questions;
   /*
    * The screen walks steps and the questionnaire stores questions. They used to
@@ -193,6 +241,21 @@ export function SurveyFlow({
   if (!seeded && stored.checked) {
     setSeeded(true);
 
+    /*
+     * The clock is built here rather than in an effect, and for the same reason
+     * the answers are: what it resumes from is in the draft. It runs once,
+     * under the same guard as the rest of the seeding.
+     *
+     * A draft written before this measurement existed carries no total, and
+     * resuming such an attempt from zero would report a filling shorter than it
+     * was. That is the dangerous direction — it is the short side the report
+     * calls fast — so the measurement is voided instead of restarted.
+     */
+    setVisibleClock(createVisibleTimeClock(stored.draft?.visibleMs ?? 0));
+    if (stored.draft && stored.draft.visibleMs === undefined) {
+      setVisibleTimeVoid(true);
+    }
+
     if (stored.draft) {
       setAnswers(stored.draft.answers);
       setCurrentIndex(stored.draft.currentIndex);
@@ -278,6 +341,47 @@ export function SurveyFlow({
     if (consentAcceptedAt) beacon.consented();
   }, [attemptTokenHash, beacon, consentAcceptedAt, seeded]);
 
+  /**
+   * Runs the clock while the questionnaire is both on screen and in front of
+   * someone.
+   *
+   * `visibilitychange` is what makes this different from the round's own clock:
+   * a backgrounded tab stops counting. It is a smaller upper bound rather than
+   * a measurement of attention — a visible tab can still be behind a
+   * conversation — and nothing the product prints claims otherwise.
+   *
+   * The cleanup banks rather than discards, so leaving the questions phase to
+   * submit keeps what the last interval was worth.
+   */
+  useEffect(() => {
+    if (!seeded || phase !== "questions" || !visibleClock) return;
+
+    const clock = visibleClock;
+
+    if (document.visibilityState === "visible") clock.show(nowMs());
+
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        clock.hide(nowMs());
+        return;
+      }
+
+      clock.show(nowMs());
+    };
+    // A tab closed or swapped away on mobile may never fire `visibilitychange`,
+    // and the draft flush below rides the same event for the same reason.
+    const onPageHide = () => clock.hide(nowMs());
+
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pagehide", onPageHide);
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pagehide", onPageHide);
+      clock.hide(nowMs());
+    };
+  }, [phase, seeded, visibleClock]);
+
   const persistDraft = useCallback(() => {
     const storage = getSurveyDraftStorage();
     if (!storage) return;
@@ -292,6 +396,10 @@ export function SurveyFlow({
         answers,
         currentIndex,
         consentAcceptedAt,
+        // Written on every flush so a respondent who closes the tab and returns
+        // keeps the total. Absent only when the clock has not been built yet,
+        // which is the same "not measured" the submission would report.
+        visibleMs: visibleClock?.elapsed(nowMs()),
       }),
     );
 
@@ -304,6 +412,7 @@ export function SurveyFlow({
     draftExpectation.questionnaireFingerprint,
     shareCode,
     storageKey,
+    visibleClock,
   ]);
 
   // Either the browser refused storage outright, or it accepted it and then
@@ -458,12 +567,28 @@ export function SurveyFlow({
       const anonymousTokenHash = await hashAnonymousToken(
         attemptToken.current(),
       );
+      /*
+       * Computed once, before the first attempt, so a retry cannot report a
+       * longer filling than the first send did — the difference would be the
+       * network's, not the respondent's. Undefined when a restored draft lost
+       * its total, and undefined is a state the round's report already knows
+       * how to say out loud.
+       */
+      const visibleSeconds = visibleTimeVoid
+        ? undefined
+        : visibleSecondsForSubmission(
+            visibleClock?.elapsed(nowMs()) ?? 0,
+          );
       const res = await sendWithRetry({
         send: () =>
           fetch(`/api/survey/${encodeURIComponent(shareCode)}/submit`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ answers: formattedAnswers, anonymousTokenHash }),
+            body: JSON.stringify({
+              answers: formattedAnswers,
+              anonymousTokenHash,
+              visibleSeconds,
+            }),
           }),
         onRetry: (attempt) => {
           attemptsUsed = attempt;

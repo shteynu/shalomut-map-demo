@@ -36,6 +36,24 @@ export interface SurveyDraftV1 {
   currentIndex: number;
   consentAcceptedAt: string;
   updatedAt: string;
+  /**
+   * Milliseconds the questionnaire had been visible when this draft was
+   * written, so a respondent who closes the tab and comes back keeps the total
+   * rather than restarting it.
+   *
+   * Optional inside version 1 rather than a version bump, deliberately. A bump
+   * makes `parseSurveyDraft` answer `unknown-version`, which discards the
+   * answers of everyone currently mid-questionnaire — far too much to pay for a
+   * timing figure. Absent therefore has to mean something safe, and it does:
+   * the attempt reports no visible time at all rather than resuming from zero,
+   * because resuming from zero would undercount, and undercounting is what
+   * makes an attentive respondent look like a fast one.
+   *
+   * It is not identity and not a fingerprint of a person. It is one duration of
+   * one filling, in the respondent's own browser, and it is deleted with the
+   * rest of the draft on submit.
+   */
+  visibleMs?: number;
 }
 
 export type SurveyDraftRejection =
@@ -144,6 +162,18 @@ function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
 }
 
+/** Matches the ceiling in `survey/visible-time.ts` and the database's own check. */
+const MAX_DRAFT_VISIBLE_MS = 12 * 60 * 60 * 1000;
+
+function isVisibleMs(value: unknown): value is number {
+  return (
+    typeof value === 'number' &&
+    Number.isFinite(value) &&
+    value >= 0 &&
+    value <= MAX_DRAFT_VISIBLE_MS
+  );
+}
+
 /**
  * Turns stored text into a draft, or says why it will not.
  *
@@ -230,6 +260,11 @@ export function parseSurveyDraft(
       currentIndex,
       consentAcceptedAt: parsed.consentAcceptedAt,
       updatedAt: parsed.updatedAt,
+      // Read, never repaired. A stored value that is not a plausible duration
+      // is dropped, and dropping it says "not measured" — which the rest of the
+      // product already knows how to report. Coercing it would say something
+      // about a respondent that their browser never counted.
+      ...(isVisibleMs(parsed.visibleMs) ? { visibleMs: parsed.visibleMs } : {}),
     },
   };
 }
