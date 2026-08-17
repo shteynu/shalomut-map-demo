@@ -43,8 +43,9 @@ Three things are deliberately left, and none of them is an oversight:
   is wrong only under (d). Named here so nobody reports it as a new finding.
 
 **What actually blocks the product is unchanged and is not engineering.** The
-five questions of `docs/methodologist-questions-2026-08-15-ru.md` and `-he.md`
-have no answers yet. Question 2 — the item-to-dimension mapping and the
+questions of `docs/methodologist-questions-2026-08-15-ru.md` and `-he.md`
+have no answers yet — five of them at the time of this entry, six since
+2026-08-17. Question 2 — the item-to-dimension mapping and the
 reverse-scored list — is what stops phases 3, 5 and 6 of the research
 instrument: its machinery exists and its content does not.
 
@@ -1636,6 +1637,19 @@ owner's own hands.
   undocumented dimension-to-framework bridge below. It blocks plan phases 3 and
   5; phases 1, 2 and 4 can be built and verified without it, and phases 1 and 2
   now have been.
+- **Whether attention-check items belong in the instrument at all, 2026-08-17.**
+  Added as question 6 of `docs/methodologist-questions-2026-08-15-ru.md` and its
+  Hebrew twin, and it is the whole of task E in the response-quality plan. Two
+  things about it are already settled and the question says so out loud, so that
+  a positive answer cannot be read as reopening them. Exclusion is closed on
+  differencing grounds and no answer here changes that — `PROJECT_CONTEXT.md`
+  ADR-022 carries the correction, because the plan claimed a positive answer
+  would make exclusion defensible. And trap items can only enter a **new** round:
+  `src/app/api/rounds/[roundId]/survey-definition/route.ts` refuses any question
+  change once a round holds one response, and `hasSameQuestionSnapshot` compares
+  `polarity` and `scaleId`. "Not worth it for this population" is a full answer
+  and closes the item. Nothing is built against it, deliberately — the item text
+  is the whole of the feature, and there is none.
 - The twelve decisions in
   `docs/scientific-evidence-layer-research-2026-08-09.md` section 5, of which
   1–3 select between three different projects, plus the undocumented bridge

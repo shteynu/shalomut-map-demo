@@ -650,6 +650,29 @@ fast count is `FILLING_DETAIL_MINIMUM = 3`, the same argument as
 panel spends its closing sentence explaining why no exclusion control exists — a
 manager who is not told why will reasonably ask for the button.
 
+Attention-check items do not change this, which is worth stating because the
+plan that produced this feature says they would. Its reasoning was that trap
+items are the one careless-responding signal that is not directionally biased —
+a satisfied respondent fails a trap no more often than a dissatisfied one — and
+that a methodologist's positive answer would therefore "make an exclusion
+feature defensible later". Signal quality is not what closed exclusion. The
+differencing argument above is about the *number of published bases* and says
+nothing about how the second one was chosen, so a perfectly unbiased criterion
+produces exactly the same leak as a biased one. Exclusion stays closed whatever
+the methodologist answers.
+
+What an attention check may still do is gate at intake rather than after the
+fact. A respondent told on their own screen that they missed a trap item, and
+given the chance to fix it before sending, produces no second basis — there is
+one set of responses and it is the one published. That is a different feature
+from the one the plan described, it needs no manager decision and offers none,
+and it is the only shape of "act on a trap item" this ADR permits. The
+alternative it permits is the descriptive one already built for filling times: a
+count beside the others, under the same floor, that sanctions a round-level
+action and nothing else. Both still wait on the methodologist for the items
+themselves — see question 6 in `docs/methodologist-questions-2026-08-15-ru.md`
+and its Hebrew twin.
+
 If exclusion is ever revived, the snapshot of the decision has to reach every
 path that recomputes aggregates — `src/app/api/mcp/route.ts` sends them,
 `src/lib/server/ai-insights-service.ts` recomputes them when the callback
