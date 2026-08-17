@@ -20,6 +20,7 @@ from src.services.llm_provider import (
     ProviderUnavailableError,
     llm_provider_service,
 )
+from src.services.provider_health import read_provider_health
 from src.config import settings
 
 logging.basicConfig(level=logging.INFO)
@@ -152,6 +153,44 @@ async def handle_webhook_event(
         "message": f"Analytics processing accepted for round {payload.roundId}",
         "roundId": payload.roundId,
     }
+
+@app.get("/api/v1/provider-health")
+def provider_health(authorization: Optional[str] = Header(default=None)):
+    """Whether the provider is answering this instance, as one authenticated read.
+
+    Separate from `/health` and behind the inbound secret, both deliberately.
+    `/health` is anonymous, and Core's own `/api/health` states the rule this
+    follows: an endpoint that reports provider or credential state tells an
+    anonymous caller where to push. Whether the account behind the key has
+    credit is exactly that class of fact — `reason=http_429` reads as "they ran
+    out of money" to anyone who can spell it.
+
+    Owner decision, 2026-08-17: of three placements — anonymous on `/health`,
+    behind this secret, or manager-gated in Core — take the secret. It keeps the
+    reading one request for whoever operates the service and publishes nothing.
+
+    Authentication is the same inbound secret the webhook and the suggestion
+    endpoint use, in the same shape, for the same reason: it is the same caller
+    in the same direction, and a second secret would be another thing to rotate
+    for a boundary that is already drawn.
+
+    This never calls the provider. It reports what real work last observed, and
+    says `unknown` when this process has observed nothing — see
+    `provider_health.py` for why absence of a failure is not health.
+    """
+    if settings.env != "development" and not settings.ai_webhook_secret:
+        raise HTTPException(
+            status_code=503,
+            detail="AI_WEBHOOK_SECRET is required outside development",
+        )
+
+    if (
+        settings.ai_webhook_secret
+        and authorization != f"Bearer {settings.ai_webhook_secret}"
+    ):
+        raise HTTPException(status_code=401, detail="Unauthorized health request")
+
+    return read_provider_health()
 
 @app.post("/api/v1/questions/suggest")
 async def suggest_question(

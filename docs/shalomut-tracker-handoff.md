@@ -270,6 +270,25 @@ same `console.info` envelope as every other counter, which means the open
 decision below — nobody collects those lines — now governs this one too. Countable
 is not noticed, and that distinction is the whole of what this change buys.
 
+**And the next time this question is asked it should cost one request, not a
+session.** `feat/the-service-remembers-its-last-provider-answer` adds
+`GET /api/v1/provider-health` to the AI service, behind the same inbound secret
+as its POSTs: the last provider outcome with its reason and model, or an explicit
+`unknown` when this process has observed nothing. **Owner decision, 2026-08-17**,
+of three placements — anonymous on the service's `/health`, behind its secret, or
+manager-gated in Core: take the secret, because whether the account behind the
+key has credit is exactly the class of fact Core's `/api/health` deliberately
+refuses to publish (`src/app/api/health/route.ts:22`). Second owner decision the
+same day: passive rather than an active probe, so the handle never spends a
+provider call.
+
+The reading nobody has taken yet, and the one worth taking first once this is
+deployed: one `curl` with `Authorization: Bearer <AI_WEBHOOK_SECRET>` against
+that path. Against the current account it should answer `failing` with
+`reason: "http_429"` after any suggestion attempt. `unknown` there would mean the
+instance restarted and nothing has used the provider since — not that anything is
+well.
+
 Incidental, from the same log and not a defect: the run-claim poller posts to
 `/api/ai-analysis-runs/claim/` every 2–3 seconds and answers `204` each time
 against the empty database, while the keep-alive monitor takes `/health` about

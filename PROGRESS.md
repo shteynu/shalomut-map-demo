@@ -197,6 +197,15 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
   by GET and HEAD only — and every uncaught server error writes one structured
   line carrying that same digest, in the shape the operational metrics already
   use.
+- **"Is the model alive?" is one authenticated request.** The AI service now
+  remembers the last outcome of a provider conversation — answered or not, with
+  the transport's own reason and the model that was called — and reports it at
+  `GET /api/v1/provider-health` behind the same inbound secret as its POSTs. It
+  never calls the provider, and a process that has observed nothing answers
+  `unknown` rather than `ok`, because a quiet service and a healthy one look
+  identical from the inside. Owner decision, 2026-08-17: behind the secret rather
+  than anonymous, because whether the account behind the key has credit is
+  exactly the class of fact Core's own `/api/health` refuses to publish.
 - **A question suggestion that never reached the model is countable.** That one
   path had no metric and no log line of any kind, which is how the deployed
   button could answer `503` on a depleted provider prepayment for an unknown

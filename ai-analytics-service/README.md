@@ -377,8 +377,16 @@ compatibility, but it is ignored and cannot control callback transport.
 
 ## Endpoints
 
-- `GET /health`
+- `GET /health` — anonymous, and deliberately says nothing about the provider,
+  the database or any credential.
+- `GET /api/v1/provider-health` — whether the provider is answering *this*
+  instance, behind the same inbound secret as the two POSTs below. It never calls
+  the provider: it reports what real work last observed and answers `unknown`
+  when this process has observed nothing, because a quiet service and a healthy
+  one are indistinguishable from the inside.
 - `POST /api/v1/webhook/events`
+- `POST /api/v1/questions/suggest` — one drafted questionnaire item. This line
+  was missing from this list until 2026-08-17; the endpoint is older.
 - `POST /api/v1/rounds/{round_id}/analyze` (`ENV=development` only)
 
 The core application API is documented in `../docs/openapi.yaml`.

@@ -18,6 +18,7 @@ import urllib.request
 
 from src.config import settings
 from src.services.hebrew_validation import sanitize_model_text
+from src.services.provider_health import record_provider_attempt
 from src.services.provider_rate_limit import provider_rate_limiter
 from src.services.retry_after import parse_retry_after
 
@@ -91,6 +92,40 @@ def resolve_endpoint(model_name: str) -> str:
 
 
 def complete_with_retries(
+    *,
+    build_prompt: Callable[..., str],
+    system_prompt: str,
+    model_name: str,
+    is_acceptable: Callable[[str, object], bool],
+    critique_for: Optional[Callable[[str, object], Optional[str]]] = None,
+) -> Tuple[Optional[str], int, str]:
+    """Run one bounded conversation and record that it happened, then report it.
+
+    A thin wrapper over `_complete_with_retries` rather than a recording call
+    beside each of its three exits. The wrapper is what makes the guarantee in
+    this module's own docstring hold for the health reading too: a fourth exit
+    added later is recorded without anyone remembering to record it, and the one
+    place that must not be forgotten is the one place that cannot be.
+    """
+    result = _complete_with_retries(
+        build_prompt=build_prompt,
+        system_prompt=system_prompt,
+        model_name=model_name,
+        is_acceptable=is_acceptable,
+        critique_for=critique_for,
+    )
+
+    _text, attempts, fallback_reason = result
+    record_provider_attempt(
+        model_name=model_name,
+        attempts=attempts,
+        reason=fallback_reason,
+    )
+
+    return result
+
+
+def _complete_with_retries(
     *,
     build_prompt: Callable[..., str],
     system_prompt: str,
