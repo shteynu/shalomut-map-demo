@@ -10,6 +10,34 @@ pushed under its own name. This is the third observation of the same thing in
 this file: work reaches `main` here without an agent running `git push`, and the
 only reliable way to know is to ask the remote.
 
+**2026-08-18: the `429` is a depleted prepaid balance, and it will recur.** Read
+in Google AI Studio's billing page in the owner's signed-in Chrome, read-only:
+the credit balance is **negative**, and the page states the rule outright — *a
+credit balance above $0 is required to resume service*. The last top-up was
+₪50 on 2026-08-05 and it was consumed by 2026-08-17, which is the night the
+provider watchdog first fired. **Auto-reload is Off**, so this is not an
+incident so much as a cycle: the balance empties, the API answers `429`, and
+whoever notices tops it up.
+
+Rate limits rule themselves out as the cause. On the paid tier the peak of the
+last 28 days for `gemini-3.5-flash` is `27/1K` requests per minute and
+`160/10K` per day — two orders of magnitude below the ceiling. Nothing here was
+throttled for asking too fast.
+
+The owner decided, 2026-08-18, not to close the standing monitor incident: it
+reports a true condition, and the fix is the balance. It clears on its own once
+credit is restored and five real conversations succeed, because the window is
+twenty wide.
+
+Two things this changes for the repository. The cost question now has real data
+on both ends — ₪50 spent over twelve days of development at one end, and the
+per-answer token line shipped in `ec847ba` at the other — so "what does a round
+cost" is answerable by arithmetic rather than by the 2026-08-10 estimate. And
+`docs/product-strategy-axes-2026-08-10.md` asks, as its very first Tier 0
+deliverable, that the paid-key question be recorded with its date; the answer
+"paid, Tier 1, prepaid, auto-reload off" is the fuller version of the
+2026-08-05 entry that said only that the key was paid.
+
 **2026-08-18: the map's watchdog is proved end to end, in 46 seconds from
 detection to inbox.** Monitor `803766551` is Down on incident
 `348072543433159758`, root cause `Keyword has been found`, started 14:56:01
