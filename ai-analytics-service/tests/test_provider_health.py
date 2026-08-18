@@ -282,16 +282,19 @@ def test_the_anonymous_health_endpoint_says_nothing_about_the_provider():
 
 
 # The window tests record through `record_provider_attempt` rather than through
-# the transport, and the reason is worth stating: the process paces itself. Every
-# send books a turn on the model's queue, so a second conversation in the same
-# test waits the deployed interval — six seconds on the fast tier — and a test
-# that needs a window of twenty would sit there for two minutes proving nothing
-# about the window.
+# the transport, because the window's arithmetic is what they are about: twenty
+# HTTP stubs to build a window of twenty says nothing the twenty records do not.
 #
-# What that trades away is the tie between the window and real work, so it is not
-# traded away: `test_the_two_watchdogs_do_not_share_a_body` below drives the real
-# transport, and the recording point itself is already pinned by the transport
-# tests above, including the exit that returns before any HTTP.
+# This choice was first made for a worse reason — the suite was paying the
+# heavy tier's interval on every second send, six seconds a call, because the
+# root `unpaced_provider` fixture zeroed one tier of two. That is fixed as of
+# 2026-08-18 and the tests below would run either way; the reason above is the
+# one that survives it.
+#
+# What the choice trades away is the tie between the window and real work, so it
+# is not traded away: `test_the_two_watchdogs_do_not_share_a_body` below drives
+# the real transport, and the recording point itself is already pinned by the
+# transport tests above, including the exit that returns before any HTTP.
 
 
 def _answering(times):

@@ -31,9 +31,20 @@ def unpaced_provider(monkeypatch):
     of it — so the default of five requests per minute would put twelve seconds
     between the provider calls of every test that reaches the transport. Tests
     that own the invariant set their own rate and reset the queue.
+
+    **Both tiers, and the second one was missing until 2026-08-18.** A rate is
+    per model name, and `requests_per_minute_for` gives a name matching neither
+    tier the strictest rate on the key — so zeroing the fast tier alone left
+    every such test paced by the heavy default. The symptom was not a slow suite
+    but a hanging one: a test making two successful provider calls sat six
+    seconds inside the second, which reads as a deadlock rather than as pacing
+    and costs a debugging session to place. This fixture is the only reason most
+    suites can call the transport twice, so it has to zero what the resolver
+    actually reads.
     """
     provider_rate_limiter.reset()
     monkeypatch.setattr(settings, "llm_max_requests_per_minute", 0.0)
+    monkeypatch.setattr(settings, "llm_max_requests_per_minute_heavy", 0.0)
     yield
     provider_rate_limiter.reset()
 

@@ -169,7 +169,10 @@ recording point in `llm_transport.complete_with_retries`.
   `record_provider_attempt` directly; one test still drives the real transport so
   the tie to real work is not lost, and the recording point itself was already
   pinned by the tests above it. Worth knowing generally: a test in this service
-  that makes two successful provider calls pays for the second one.
+  that makes two successful provider calls pays for the second one — **fixed on
+  2026-08-18** on `fix/the-unpaced-fixture-unpaces-both-tiers`, where the root
+  fixture learned to zero the tier it was missing. The tests here still record
+  directly, for the reason that outlives the pacing.
 
 ## Known risks
 

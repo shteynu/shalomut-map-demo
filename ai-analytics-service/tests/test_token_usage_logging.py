@@ -21,7 +21,6 @@ import pytest
 
 from src.config import settings
 from src.services.llm_transport import complete_with_retries
-from src.services.provider_rate_limit import provider_rate_limiter
 
 
 class _Response:
@@ -52,19 +51,6 @@ def _answer(text: str, usage: Optional[object]) -> dict:
 
 
 ANSWER = "אני מרגישה שיש לי מסגרת ברורה לתכנון השבוע הקרוב."
-
-
-@pytest.fixture(autouse=True)
-def _unpaced_both_tiers(monkeypatch):
-    # The root `unpaced_provider` fixture zeroes the fast tier only, and a model
-    # named on neither tier is paced by the strictest rate on the key — so a
-    # second send in one test would wait the heavy tier's interval. These tests
-    # send more than once on purpose.
-    monkeypatch.setattr(settings, "llm_max_requests_per_minute", 0.0)
-    monkeypatch.setattr(settings, "llm_max_requests_per_minute_heavy", 0.0)
-    provider_rate_limiter.reset()
-    yield
-    provider_rate_limiter.reset()
 
 
 def _run(monkeypatch, responses, is_acceptable=None, max_attempts=1):

@@ -161,9 +161,12 @@ module was `max_tokens` on the way out.
   a model named on neither tier is paced by the strictest rate on the key. So a
   second successful provider call inside one test still waits the heavy
   interval — six seconds — and the symptom is a suite that hangs rather than
-  fails. This branch works around it with a local fixture rather than editing
-  shared test infrastructure inside an unrelated slice. Worth one line in
-  `conftest.py` and a full-suite run to confirm nothing was relying on the gap.
+  fails. This branch worked around it with a local fixture rather than editing
+  shared test infrastructure inside an unrelated slice. **Closed on 2026-08-18**
+  by `fix/the-unpaced-fixture-unpaces-both-tiers`, the next branch in this stack:
+  the fixture now zeroes both tiers, the local workaround here is gone, and the
+  full suite dropped from 17.59s to 5.72s — which is the pacing it had been
+  paying, and the evidence that nothing was relying on the gap.
 
 ## Next concrete step
 
