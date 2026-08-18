@@ -47,6 +47,17 @@ is indexed by `contracts/capabilities.json`. OpenAPI has one editable source,
 [`openapi.yaml`](openapi.yaml); `public/openapi.json` is generated from it by
 `npm run openapi:generate` and must never be edited by hand.
 
+One section of a living document is generated the same way, and for the same
+reason: the endpoint surface table in
+[`ai-analysis-run-lifecycle.md`](ai-analysis-run-lifecycle.md) is written by
+`npm run docs:endpoints` from the routes in `src/app/api` and the decorators in
+`ai-analytics-service/src/main.py`, between its `generated:endpoint-surface`
+markers. `npm test` fails when the two disagree, in either direction — a route
+the table has lost, and a row whose route is gone. Everything outside those
+markers is prose a person writes; an endpoint's *direction* and its answer codes
+are declared in the script, because a machine can see that a route exists and
+not who calls it.
+
 ## Released snapshots
 
 [`snapshots/`](snapshots/README.md) holds translations of a source document,
