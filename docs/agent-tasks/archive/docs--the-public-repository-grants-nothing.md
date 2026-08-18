@@ -5,8 +5,9 @@
 - Branch: docs/the-public-repository-grants-nothing
 - Base branch: main
 - Base commit: `d6d6b13`
-- Current HEAD: the single commit on this branch
-- Status: implemented; owner confirmation wanted on one line
+- Current HEAD: `3b7b58c`, which is `origin/main`
+- Status: landed and public. Archived on 2026-08-18; one line still waits on
+  the owner and is carried in `docs/shalomut-tracker-handoff.md`
 - Last updated: 2026-08-18
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -162,5 +163,7 @@ a licence or a private repository.
 
 ## Next concrete step
 
-Confirm or correct the copyright line, then hand over
-`git push origin docs/the-public-repository-grants-nothing:main`.
+None here. Both commits are on `main` and the notice is public. The copyright
+line still waits on the owner's employment agreement; it moved to the open items
+in `docs/shalomut-tracker-handoff.md` when this file was archived, because an
+open question that matters is not one to leave in an archive.

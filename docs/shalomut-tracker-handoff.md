@@ -2244,6 +2244,21 @@ owner's own hands.
 
 **Waits on an owner decision**
 
+- **Whose name belongs on the copyright line, 2026-08-18.** Open decision 7 of
+  the strategy sweep — *public repository with no licence, deliberate?* — was
+  answered that day: deliberate, all rights reserved, and `NOTICE` at the root
+  now says so, with `README.md` pointing at it and `"license": "UNLICENSED"` in
+  `package.json`. It is on `main` and therefore public, which is what makes the
+  remaining line worth tracking here rather than in an archived task file. The
+  notice reads `Copyright (c) 2026 Maxim Berenshtein`, taken from the Git author
+  of 692 of 806 commits, and 88 commits between 2026-06-16 and 2026-07-25 were
+  authored from a `zoominfo.com` address — the same person and the same
+  `user.name` under a `user.email` inherited from another machine, which
+  `.mailmap` now reports as one contributor without rewriting anything. Whether
+  personal ownership is the correct claim depends on an employment agreement no
+  agent can read. It is a one-line change, and it is now a one-line change to a
+  public file.
+
 - **Both goal questions are closed, 2026-08-09, both as "no".** A tracked goal
   gains no owner, no due date and no plan of steps — the three-state goal stays
   the whole of it, because the fields would make this task management rather
