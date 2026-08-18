@@ -1,5 +1,53 @@
 # Shalomut Tracker — operational handoff
 
+**2026-08-18, session close (second and final for the day): the repository now
+says what it grants, and this paragraph went stale while it was being written.**
+`origin/main` is **`ace5c3c`**, asked of the remote directly — and the first
+draft of this sentence said `3b7b58c`, because `ace5c3c` reached the remote in
+the minutes between writing it and committing it. Above the tip sits one local
+commit on `docs/the-public-repository-grants-nothing`: the one carrying these
+words. `ace5c3c` itself archived that branch's task file and moved the copyright
+question into the open items below, where a question that still needs answering
+can be found.
+
+What landed after the close recorded beneath this one: `NOTICE` at the root,
+a `Licence` section in `README.md`, `"license": "UNLICENSED"` in `package.json`
+(`3b68b6e`), and `.mailmap` (`3b7b58c`). Between them they answer open decision 7
+of the 2026-08-10 strategy sweep and take the appearance half of its risk 4 off
+the table; the substance half is the copyright line, which is an owner question
+and is recorded below.
+
+**Every one of those reached `main` without an agent pushing anything.**
+`3b68b6e` was found already on the remote while checking something else, and
+`ace5c3c` arrived between two commands in the same session close. That is the
+fourth, fifth and sixth observation of the same behaviour in this file, and the
+sixth is the sharpest: a written claim about what is unpushed can be false
+before it is committed. Ask the remote, as late as possible; never a tracking
+ref, and never an assumption.
+
+Verification: nothing has changed under `ai-analytics-service` or `src` since the
+full Python suite ran at **513 passed in 5.72s** earlier in this session, so that
+remains the standing evidence and no new run would prove anything. For the
+documentation and metadata that did change: `git diff --check` clean, every
+relative link in the touched files resolves, `package.json` parses and its one
+new field is metadata no build step reads, `npm run lint:skills` passes — run
+because two root-level files were added and that check sweeps the root for
+undeclared entrypoints, which neither `NOTICE` nor `.mailmap` is. `.mailmap` was
+verified by what it does not do as much as by what it does: `git shortlog -sne`
+reports two identities where it reported four, `git check-mailmap` resolves both
+old addresses and leaves `Claude` alone, and every commit hash is unchanged.
+
+The worktree is clean apart from `next-env.d.ts`, modified before this session
+and unrelated to it; `git ls-files -o --exclude-standard` returns nothing.
+`docs/agent-tasks/active/` holds two files and neither belongs to this session:
+`research--scientific-evidence-layer.md` and `claude--free-ai-service-deploy-yk4tjj.md`.
+
+**Next concrete step:** hand over
+`git push origin docs/the-public-repository-grants-nothing:main`. Documentation
+only, so nothing rebuilds and nothing needs re-verifying after it. After that the
+repository has no unfinished agent work; what remains is the owner's — the Gemini
+prepaid balance, and the copyright line now published in `NOTICE`.
+
 **2026-08-18, session close: three observability slices are on `main`, and the
 push that carries this session's documentation was rejected once first.**
 `origin/main` is **`6ae2f13`**, asked of the remote directly. It contains all
@@ -48,13 +96,12 @@ What stays open is the owner's, not an agent's — the Gemini prepaid balance,
 which the entry below explains, and the standing monitor incident that clears
 itself once credit is restored and five real conversations succeed.
 
-**Next concrete step:** hand over
-`git push origin fix/the-unpaced-fixture-unpaces-both-tiers:main` again, now that
-the branch is rebased on the tip that refused it. It carries documentation only,
-so nothing rebuilds and nothing needs re-verifying after it; once it lands, this
-branch has no work left and the next task starts from a fresh branch and a fresh
-task file. If it is refused a second time, the cause is the same and so is the
-remedy: ask the remote, rebase, push again.
+That step — pushing the rebased branch — **was taken the same day and landed as
+`d6d6b13`**. The session did not end there; it continued into the licensing
+slice, and the entry above this one is the close that supersedes this paragraph.
+What is worth keeping here is the pattern, not the instruction: a push refused
+with `fetch first` means `main` moved, and the remedy is ask the remote, rebase,
+push again.
 
 **2026-08-18, latest: `main` is `d47a59c`, and the paragraph below it is what
 happens when a tracking ref is trusted.** The remote was asked directly —
