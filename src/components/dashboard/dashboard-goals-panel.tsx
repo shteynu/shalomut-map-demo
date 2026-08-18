@@ -3,6 +3,7 @@
 import { BookMarked, Flag, History, Loader2, Target, Trash2 } from "lucide-react";
 import { buildGoalRows, type GoalRow } from "@/lib/dashboard/goal-rows";
 import type { DashboardRecommendation } from "@/lib/dashboard/dashboard-insights";
+import { goalActionLabels } from "@/lib/goals/labels";
 import { useRoundGoals } from "@/lib/hooks/use-round-goals";
 import { ROUND_GOAL_STATUSES, type RoundGoalStatus } from "@/lib/types/round-goal";
 
@@ -159,7 +160,7 @@ export function DashboardGoalsPanel({
                           onClick={() => void remove(row.goal!.id)}
                         >
                           <Trash2 size={16} aria-hidden="true" />
-                          הסרה מהיעדים
+                          {goalActionLabels.remove}
                         </button>
                       </div>
                     ) : (

@@ -5,6 +5,7 @@ import {
   managerHelpTopics,
   type HelpTopicId,
 } from "../help/manager-help";
+import { goalActionLabels } from "../goals/labels";
 import { scoringThresholds, statusColorLabels } from "../shalomut-source";
 import { MINIMUM_PRIVACY_THRESHOLD } from "../survey-definition";
 
@@ -104,5 +105,18 @@ test("the AI topic says what the model cannot decide", () => {
   assert.ok(
     ai.points.some((point) => point.includes("לא נכתב")),
     "the guide must explain the not-written-by-AI disclosure",
+  );
+});
+
+test("the goals topic names the control by the label the button renders", () => {
+  const goals = managerHelpTopics().find((topic) => topic.id === "goals");
+  assert.ok(goals);
+
+  // The guide tells a manager what pressing this does, so it has to name the
+  // control the way the screen does. Both sides read `goalActionLabels`, and
+  // this is what fails if the guide ever goes back to quoting the words.
+  assert.ok(
+    goals.points.some((point) => point.includes(goalActionLabels.remove)),
+    "the guide must quote goalActionLabels.remove rather than a copy of it",
   );
 });
