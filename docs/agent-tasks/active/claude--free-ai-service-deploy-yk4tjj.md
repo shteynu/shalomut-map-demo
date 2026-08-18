@@ -5,8 +5,8 @@
 - Branch: `claude/free-ai-service-deploy-yk4tjj`
 - Base branch: `main`
 - Base commit: `d47a59c`
-- Current HEAD: `d47a59c` before this commit
-- Status: documentation delivered; one owner decision open (§ Questions)
+- Current HEAD: `a7511f4` plus this commit
+- Status: delivered, documentation only; the screen it led to is a separate branch
 - Last updated: 2026-08-18
 - Last agent/tool: Claude Code
 
@@ -118,8 +118,9 @@ mechanics; `ai-analytics-service/src/` for the pipeline, transport and sink;
 
 ## Remaining
 
-- Owner decision on an in-product documentation UI (see Questions).
-- If that decision is yes, a separate task and branch: this one is docs-only.
+- Nothing here. The screen the owner asked for is on `claude/manager-help-screen`
+  with its own task file; this branch is documentation and changes no product
+  behaviour, so the two merge independently and in that order.
 
 ## Changed files
 
@@ -186,20 +187,16 @@ mechanics; `ai-analytics-service/src/` for the pipeline, transport and sink;
 
 ## Questions requiring an owner decision
 
-1. **Should the product carry its own documentation screen?** Raised by the owner
-   at the end of the session. The recommendation recorded here is that the
-   handbook itself must **not** be that screen: it names hosting providers,
-   regions, free plans and internal mechanics that a principal has no use for and
-   that do not belong in a product surface. What could be justified is a much
-   smaller Hebrew help section for managers — what the threshold means and why a
-   result is locked, how a stone gets its colour, what the AI does and does not
-   decide, what closing a round triggers — written in product voice, RTL, and
-   linked from the screens that raise those questions. That is product scope with
-   routes, copy, accessibility, tests and e2e coverage, and belongs on its own
-   branch with its own task file.
+- None open. **Should the product carry its own documentation?** was asked here
+  and answered on 2026-08-18: yes, as a manager-facing Hebrew help section, and
+  explicitly **not** as this handbook — it names hosting providers, regions and
+  queue mechanics that a principal has no use for. That work is
+  `claude/manager-help-screen`, branched from this tip so the two land in order.
 
 ## Next concrete step
 
-Answer question 1. If the answer is a manager-facing help section, open a new
-branch and task file for it; if the answer is no, this branch is complete and can
-be merged as documentation only.
+Merge this branch. It touches no file the application serves — `docs/` is not a
+route and nothing in `src/app` reads it — so merging changes nothing a manager or
+a respondent sees, and `deploy-vercel.yml` will redeploy an application that is
+byte-identical in behaviour. The screen waits on its own branch for a
+Hebrew-speaking reader.
