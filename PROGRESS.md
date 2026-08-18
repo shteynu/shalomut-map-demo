@@ -1,11 +1,24 @@
 # Shalomut Map — product progress
 
-Updated: 2026-08-15. This file is a concise product-level milestone record, not
+Updated: 2026-08-18. This file is a concise product-level milestone record, not
 a session log. Branch evidence lives in `docs/agent-tasks/archive/`; current
 deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
 
 ## Current state
 
+- **The product explains itself, on a screen and in the repository.** `/help` is
+  a Hebrew manager guide answering the seven questions the screens raise — why a
+  result is locked, how a stone gets its colour, what the model does and does not
+  decide, what closing a round starts, why a questionnaire freezes, what happens
+  to a goal, and what is stored about respondents. Every number in it is read
+  from the module that enforces it rather than written out, and a test fails if
+  the guide drifts from the threshold or the scoring bands. The locked map links
+  to it directly, because the dashboard renders without the global header and a
+  manager meeting a locked map is the likeliest person to want the explanation.
+  Alongside it, `docs/platform-handbook.md` explains the whole platform to a
+  non-developer, with Russian and Hebrew as dated snapshots under
+  `docs/snapshots/`, and `docs/ai-analysis-run-lifecycle.md` draws the durable
+  analysis run for a developer.
 - **`origin/main` carries the response-quality stack, landed 2026-08-17.** Five
   branches: analysis moved from every answer to the moment a round closes; the
   round says how long it took to fill and how many questionnaires came back too

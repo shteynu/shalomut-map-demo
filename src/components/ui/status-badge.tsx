@@ -1,11 +1,12 @@
 import type { WellbeingStatus } from "@/lib/shalomut-source";
-import { statusLabels } from "@/lib/shalomut-source";
+import { statusColorLabels, statusLabels } from "@/lib/shalomut-source";
 
-export const statusLabelShort: Record<WellbeingStatus, string> = {
-  green: "ירוק",
-  yellow: "צהוב",
-  red: "אדום",
-};
+/**
+ * Kept as this module's name for the colour words, which now live beside the
+ * status words they belong with. The badge is no longer their only reader.
+ */
+export const statusLabelShort: Record<WellbeingStatus, string> =
+  statusColorLabels;
 
 type StatusBadgeProps = {
   status: WellbeingStatus;

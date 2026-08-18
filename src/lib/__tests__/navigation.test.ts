@@ -19,6 +19,7 @@ import {
   getDashboardMetricsActions,
   getDashboardRecommendationsActions,
   getNavigationAction,
+  helpRoute,
   isMainNavItemActive,
   isPathWithin,
   mainNavItems,
@@ -281,4 +282,29 @@ test("opening a new round leaves the header pointing at the current round", () =
   assert.strictEqual(hrefById.round, "/round");
   assert.strictEqual(hrefById.surveyBuilder, "/survey");
   assert.strictEqual(hrefById.dashboard, "/dashboard");
+});
+
+test("the guide is reachable but is not a step in the workflow", () => {
+  assert.strictEqual(helpRoute(), routes.help);
+  assert.strictEqual(helpRoute("help-privacy"), "/help#help-privacy");
+
+  // The main navigation is what a manager does next, and reading an
+  // explanation never is. A guide entry there would push a workflow step out
+  // of sight on a narrow header.
+  assert.ok(!mainNavItems.some((item) => item.href === routes.help));
+});
+
+test("the guide keeps the global header, unlike the map it explains", () => {
+  // The dashboard renders headerless, which is why the locked map carries its
+  // own link to the guide. The guide itself must not: it is the one screen a
+  // manager arrives at without knowing where to go back to.
+  assert.strictEqual(shouldHideGlobalHeader(routes.help), false);
+  assert.strictEqual(isPathWithin("/help", routes.help), true);
+});
+
+test("the guide ignores a round, the way the goals screen does", () => {
+  // It describes how the product behaves rather than one measurement, so a
+  // round in the URL would promise a scoping that does not exist.
+  assert.strictEqual(routeHrefForRound("help", "round-7"), routes.help);
+  assert.strictEqual(routeHrefForRound("help"), routes.help);
 });

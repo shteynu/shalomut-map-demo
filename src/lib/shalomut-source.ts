@@ -189,6 +189,23 @@ export const statusLabels: Record<WellbeingStatus, string> = {
   red: "נדרש טיפול מיידי",
 };
 
+/**
+ * The colour a status is drawn in, said in words.
+ *
+ * It sits beside `statusLabels` rather than in the badge that first needed it,
+ * because a second reader arrived: the manager help screen explains how a score
+ * becomes a colour, and a copy of these three words there would be free to drift
+ * from the ones on the map. The distinction the two records carry is real —
+ * `statusLabels` says what the state *is*, this one names the colour it wears —
+ * and only the first may stand alone, since status must never be carried by
+ * colour on its own.
+ */
+export const statusColorLabels: Record<WellbeingStatus, string> = {
+  green: "ירוק",
+  yellow: "צהוב",
+  red: "אדום",
+};
+
 // The numbers come from `contracts/scoring-bands.json`, which the AI analytics
 // service reads too; only the Hebrew labels belong to this file.
 export const scoringThresholds: ScoringThreshold[] = SCORING_BANDS.map(

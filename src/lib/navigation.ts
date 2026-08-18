@@ -8,6 +8,7 @@ export const routes = {
   dashboard: "/dashboard",
   breakdown: "/breakdown",
   goals: "/goals",
+  help: "/help",
 } as const;
 
 export type MainNavItemId =
@@ -104,6 +105,16 @@ export const routeMetadata = {
     actionTitle: "מעקב יעדים",
     actionBody: "כל היעדים שנבחרו, מכל סבבי האבחון, עם המצב שלהם.",
     actionGlow: "var(--pastel-peach)",
+  },
+  help: {
+    id: "help",
+    href: routes.help,
+    // Not a step in the workflow, which is why it is absent from the main
+    // navigation and from the home screen's action cards: those two say what to
+    // do next, and "read an explanation" never is. It is reached from the
+    // header and from the screens that raise the questions it answers.
+    navLabel: "מדריך למנהל",
+    actionTitle: "מדריך למנהל",
   },
 } satisfies Record<AppRouteId, RouteMetadata>;
 
@@ -479,6 +490,18 @@ export function roundSwitcherAction(id: AppRouteId): string {
 
 export function respondentSurveyRoute(shareCode: string) {
   return `${routes.respondentSurvey}/${encodeURIComponent(shareCode)}`;
+}
+
+/**
+ * The manager guide, optionally opened at one topic.
+ *
+ * The topic is a fragment rather than a parameter because it selects nothing:
+ * the whole page renders either way, and the anchor only decides where the
+ * browser lands. A screen that raises one question links to its own answer, and
+ * a manager who arrives with JavaScript off still gets the page.
+ */
+export function helpRoute(topicAnchor?: string) {
+  return topicAnchor ? `${routes.help}#${topicAnchor}` : routes.help;
 }
 
 export type DashboardActionId = "dimensionMetrics" | "dimensionRecommendations" | "dashboardMap";

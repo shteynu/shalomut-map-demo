@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, LockKeyhole } from "lucide-react";
-import { getNavigationAction } from "@/lib/navigation";
+import { getNavigationAction, helpRoute } from "@/lib/navigation";
+import { helpTopicAnchor } from "@/lib/help/manager-help";
 
 type DashboardMapLockedProps = {
   responseCount: number;
@@ -45,6 +46,15 @@ export function DashboardMapLocked({
       <Link className="primary-button" href={distributeSurveyAction.href}>
         {distributeSurveyAction.label}
         <ArrowLeft size={18} aria-hidden="true" />
+      </Link>
+      {/*
+        The dashboard renders without the global header, so this screen carries
+        its own way to the explanation. A manager meeting a locked map is the
+        likeliest person in the product to want it, and the least likely to
+        find it by navigating somewhere else first.
+      */}
+      <Link className="map-locked-help" href={helpRoute(helpTopicAnchor("privacy"))}>
+        למה התוצאה נעולה?
       </Link>
     </section>
   );
