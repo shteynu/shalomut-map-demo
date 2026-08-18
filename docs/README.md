@@ -19,6 +19,8 @@ These files must stay aligned with `main`:
 | [`local-environment.md`](local-environment.md) | Supported local stack and setup |
 | [`ai-contract-version-matrix.md`](ai-contract-version-matrix.md) | Contract capabilities, produced/supported versions and rollout rule |
 | [`ai-analytics-handoff.md`](ai-analytics-handoff.md) | Current cross-service AI architecture and boundaries |
+| [`ai-analysis-run-lifecycle.md`](ai-analysis-run-lifecycle.md) | One durable analysis run end to end — claim, lease, heartbeat, callback and every failure branch — as diagrams, endpoints and constants |
+| [`platform-handbook.md`](platform-handbook.md) | What the whole platform does, in language a non-developer reads; the source text every translated snapshot is released from |
 | [`shalomut-tracker-handoff.md`](shalomut-tracker-handoff.md) | Current deployed/operational state, external blockers and approval gates |
 | [`data-flow-and-subprocessors.md`](data-flow-and-subprocessors.md) | Who receives respondent data, what crosses each boundary and where it is hosted; the factual basis every future legal document rests on |
 | [`../ai-analytics-service/README.md`](../ai-analytics-service/README.md) | Python service runtime, configuration and verification |
@@ -44,6 +46,20 @@ Versioned machine-readable contracts live under `contracts/`; shared behavior
 is indexed by `contracts/capabilities.json`. OpenAPI has one editable source,
 [`openapi.yaml`](openapi.yaml); `public/openapi.json` is generated from it by
 `npm run openapi:generate` and must never be edited by hand.
+
+## Released snapshots
+
+[`snapshots/`](snapshots/README.md) holds translations of a source document,
+released at a date rather than kept continuously aligned. A snapshot is never
+the place to add content: a correction found while reading one goes into its
+source, and the snapshot is re-released. When a snapshot is older than its
+source, the source wins — that is the normal state between releases.
+
+Currently: [`snapshots/platform-handbook.ru.md`](snapshots/platform-handbook.ru.md)
+and [`snapshots/platform-handbook.he.md`](snapshots/platform-handbook.he.md),
+both released from [`platform-handbook.md`](platform-handbook.md). A snapshot may
+also be published outside the repository for readers who do not use Git; the
+constraints on doing so are in `snapshots/README.md`.
 
 ## Live plans
 
