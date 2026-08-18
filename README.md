@@ -93,3 +93,9 @@ cannot run on a static-only host. The Python service is built from the root
 `Dockerfile` and requires an always-available worker or an explicit wake
 mechanism for durable polling. Deployment details and current gates are in the
 operational handoff.
+
+## Licence
+
+There is none, and that is deliberate. The repository is publicly readable and
+is not open source: see [NOTICE](NOTICE) for what its visibility does and does
+not grant, and for how to ask for anything beyond reading.

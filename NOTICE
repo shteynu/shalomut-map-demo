@@ -1,0 +1,36 @@
+# NOTICE
+
+Copyright (c) 2026 Maxim Berenshtein. All rights reserved.
+
+**This repository is publicly readable. It is not open source.**
+
+No licence is granted by its visibility. Absent a written licence, the default
+of copyright law applies to everything in this repository authored for it: the
+source code, the Hebrew prompt set, the questionnaire and its items, the
+intervention catalogue, the evaluation corpus, the documentation and the design
+material. You may read this repository and you may fork it within GitHub, which
+is what GitHub's own Terms of Service grant to anyone who can see it. Nothing
+here grants permission to use, copy, modify, publish, distribute, sublicense,
+sell, host as a service, or train a model on any of it.
+
+That is deliberate as of 2026-08-18 and is not an oversight. If you want to do
+any of the above, ask: open an issue on the repository, or contact its owner.
+Permission is a conversation someone is willing to have, not a file that is
+missing.
+
+## What this notice does not cover
+
+- **Third-party dependencies.** Everything installed from npm, PyPI or any other
+  registry keeps the licence its own author gave it. This notice governs the
+  content of this repository, not the packages it builds on.
+- **Anything quoted from an external source** and attributed as such in the
+  documentation, which stays under its own terms.
+- **Trademark and naming.** No rights to any name or mark are granted or
+  claimed here.
+
+## No warranty
+
+This is design-stage software with no production deployment and no real
+respondents. It is published for reading, and it is provided as is, without
+warranty of any kind and without any commitment to fitness for a particular
+purpose.
