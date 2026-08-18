@@ -10,6 +10,29 @@ pushed under its own name. This is the third observation of the same thing in
 this file: work reaches `main` here without an agent running `git push`, and the
 only reliable way to know is to ask the remote.
 
+**2026-08-18: the provider is down, and it is `http_429` again.** Established by
+probe rather than by inference. `/api/v1/provider-health` first confirmed the
+process had observed nothing since starting at `11:22:49Z` — so the fifteen-hour
+incident really was cleared by a restart and not by a recovery. One
+`POST /api/v1/questions/suggest` against the deployed service then forced a real
+conversation: `503`, `Question suggestion unavailable: http_429`, three attempts
+on `gemini-3.5-flash`. **The provider account is the thing to fix**; `http_429`
+is what a depleted prepayment produced on 2026-08-17 and nothing here
+distinguishes that from an ordinary quota.
+
+The probe re-armed the watchdog, which is worth recording as the second
+end-to-end proof: `/api/v1/provider-status` moved to `failing` within seconds,
+so monitor `803761399` finds the keyword on its next five-minute check.
+
+**And the two words diverged for the first time, in the mild direction.**
+`fallback-status` stayed `unknown` while `provider-status` said `failing`,
+because the window holds one observation of the five it requires. That is the
+designed behaviour and the reason the two are separate monitors: one failed
+conversation is a dead model, not a half-written map, and only one of those is
+worth an alert about the map. The map's monitor will have something to say the
+first time a round runs against this provider — every dimension would fall back,
+and the window would fill in one round.
+
 **2026-08-18: the fallback monitor exists — `803766551`, and the agent created
 it with the owner's explicit permission after two of the owner's own attempts
 did not save.** Keyword monitor on
