@@ -1,0 +1,20 @@
+# Author identities, consolidated for display only.
+#
+# Git stores whatever `user.email` was configured at the time, and this
+# repository carries three addresses for one person. This file maps them to one
+# identity so `git log`, `git shortlog` and `git blame` report contributors
+# truthfully. Nothing is rewritten: every commit keeps the address it was
+# authored with, and every hash stays what it was.
+#
+# The corporate address is the one worth explaining. It was the configured
+# `user.email` from the first commit on 2026-06-16 until it was changed on
+# 2026-07-25, and it covers 88 commits — the same person, the same `user.name`,
+# a global Git setting inherited from another machine's projects. It says
+# nothing about who owns the work; that question belongs to an employment
+# agreement and is recorded in NOTICE and in this branch's task file.
+#
+# Note what this does not reach: GitHub's web interface ignores .mailmap, so
+# commit pages there still show the address each commit was made with.
+
+maxim.berenshtein <shteynumaks@gmail.com> <maxim.berenshtein@zoominfo.com>
+maxim.berenshtein <shteynumaks@gmail.com> Max <40126999+shteynu@users.noreply.github.com>
