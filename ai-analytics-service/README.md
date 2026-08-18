@@ -404,6 +404,33 @@ compatibility, but it is ignored and cannot control callback transport.
   was missing from this list until 2026-08-17; the endpoint is older.
 - `POST /api/v1/rounds/{round_id}/analyze` (`ENV=development` only)
 
+### What a round costs
+
+Every HTTP 200 from the provider writes one line carrying the provider's own
+accounting:
+
+```
+[LLM Service] outcome=usage provider=gemini model=gemini-3.5-flash attempt=1 \
+  prompt_tokens=812 completion_tokens=143 total_tokens=955
+```
+
+One line per billed answer, including the refused ones — this service retries
+with a critique, so those retries are a real part of the bill, and a
+per-conversation total taken from the accepted answer would hide exactly that.
+A round's cost is the sum of its lines; the transport does not know which round
+it is serving, so summing is the reader's job.
+
+A field reads `unavailable` when the provider sent no `usage`, or sent it in a
+shape this does not recognise. Deliberately not zero: a zero is a number a
+reader would sum, and summing what was never sent is how a cost figure becomes
+confidently wrong.
+
+This exists to answer the cost question once and close it — the 2026-08-10
+strategy sweep estimated $0.31–$1.91 per round, put "do not optimize LLM cost"
+in its do-not-do list, and asked only that the estimate be replaceable by a
+measurement. It does not aggregate and does not alert, and it should not grow
+into a budget feature.
+
 The core application API is documented in `../docs/openapi.yaml`.
 `../public/openapi.json` is generated from it and is what Core serves at
 `/openapi.json`.

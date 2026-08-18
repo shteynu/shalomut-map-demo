@@ -227,6 +227,7 @@ def _complete_with_retries(
                             res = json.loads(
                                 response.read().decode("utf-8"),
                             )
+                            _log_usage(res, provider, model_name, attempt)
                             choice = res["choices"][0]
                             content = choice["message"]["content"]
                             if not isinstance(content, str):
@@ -519,6 +520,69 @@ def _backoff_delay_seconds(
         exponential_delay + jitter,
         settings.llm_retry_max_delay_seconds,
     )
+
+
+def _log_usage(
+    res: object,
+    provider: str,
+    model_name: str,
+    attempt: int,
+) -> None:
+    """What this one answer cost, on the one line that sees every answer.
+
+    The product's LLM cost was estimated at roughly $0.31–$1.91 per round and
+    then deliberately left unoptimized — under 1% of revenue at any plausible
+    price, so the sweep of 2026-08-10 put "do not optimize LLM cost" in its
+    do-not-do list and asked for exactly one thing instead: enough logging that
+    the question is answered from data rather than from an estimate, and then
+    closed for good. This is that logging and nothing more. It does not
+    aggregate, it does not alert, and it must not grow into a budget feature.
+
+    Emitted per HTTP 200 rather than per conversation, because a 200 is the unit
+    the provider bills. A conversation that refused two answers and accepted the
+    third was charged for three, and a per-conversation total reported from the
+    accepted one would undercount by exactly what this service's retries add —
+    which is the part of the bill anyone asking the question wants to see.
+    Summing is the reader's job: a round is the sum of its lines, and the
+    transport does not know which round it is serving.
+
+    Never raises. A provider that omits `usage`, or answers it in a shape this
+    does not expect, must cost the caller nothing more than an `unavailable` in
+    a log line — the answer is already in hand at this point, and losing it to a
+    bookkeeping error would be an absurd way to fail.
+    """
+    try:
+        usage = res.get("usage") if isinstance(res, dict) else None
+        if not isinstance(usage, dict):
+            prompt = completion = total = "unavailable"
+        else:
+            prompt = _usage_count(usage, "prompt_tokens")
+            completion = _usage_count(usage, "completion_tokens")
+            total = _usage_count(usage, "total_tokens")
+    except Exception:  # noqa: BLE001 - see the docstring: never raises.
+        prompt = completion = total = "unavailable"
+
+    logger.info(
+        "[LLM Service] outcome=usage provider=%s model=%s attempt=%s "
+        "prompt_tokens=%s completion_tokens=%s total_tokens=%s",
+        provider,
+        model_name,
+        attempt,
+        prompt,
+        completion,
+        total,
+    )
+
+
+def _usage_count(usage: dict, key: str) -> object:
+    """One integer from the provider's own accounting, or `unavailable`.
+
+    Not coerced from a string and not defaulted to zero. A zero would be a
+    number a reader could sum, and summing a value the provider never sent is
+    how a cost figure becomes confidently wrong.
+    """
+    value = usage.get(key)
+    return value if isinstance(value, int) and not isinstance(value, bool) else "unavailable"
 
 
 def _safe_log_token(value: object) -> str:

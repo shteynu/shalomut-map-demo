@@ -226,6 +226,16 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
   reached the owner's inbox at 23:03:12. Its honest limit is that the state only
   moves when real work calls the provider, so a provider that dies while nobody is
   using the product reads `unknown` and stays silent.
+- **What a round costs is now a measurement rather than an estimate.** The
+  provider answered every call with its own token accounting and the transport
+  threw it away, so the figure behind "do not optimize LLM cost" — $0.31–$1.91
+  per round — had no path to ever being checked. One line now carries it, per
+  HTTP 200 rather than per conversation, because a refused answer was paid for
+  too and this service retries with a critique by design. A field says
+  `unavailable` where the provider sent nothing, never zero: a zero is a number
+  a reader would sum. This is deliberately the whole of it — the sweep asked for
+  a measurement and refused the optimization work, so there is no aggregation,
+  no dashboard and no alert.
 - **A half-written map is now noticed too, and it is a different question from a
   dead model.** The provider word follows the last conversation, so a round whose
   final call succeeded reads `answering` while most of its dimensions carry copy
