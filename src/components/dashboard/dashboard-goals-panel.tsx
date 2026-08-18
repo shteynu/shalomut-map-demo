@@ -3,21 +3,9 @@
 import { BookMarked, Flag, History, Loader2, Target, Trash2 } from "lucide-react";
 import { buildGoalRows, type GoalRow } from "@/lib/dashboard/goal-rows";
 import type { DashboardRecommendation } from "@/lib/dashboard/dashboard-insights";
-import { goalActionLabels } from "@/lib/goals/labels";
+import { goalActionLabels, goalStatusLabels } from "@/lib/goals/labels";
 import { useRoundGoals } from "@/lib/hooks/use-round-goals";
 import { ROUND_GOAL_STATUSES, type RoundGoalStatus } from "@/lib/types/round-goal";
-
-/**
- * The three states a goal moves through, in the order they happen. The labels
- * are the whole vocabulary of this feature: there is no owner, no due date and
- * no plan of steps, because a school that has never tracked a goal should not
- * have to fill a form to try one.
- */
-const STATUS_LABELS: Record<RoundGoalStatus, string> = {
-  selected: "נבחר",
-  in_progress: "בתהליך",
-  done: "הושלם",
-};
 
 function GoalStatusControl({
   row,
@@ -47,7 +35,7 @@ function GoalStatusControl({
               if (!isCurrent) onSelect(status);
             }}
           >
-            {STATUS_LABELS[status]}
+            {goalStatusLabels[status]}
           </button>
         );
       })}

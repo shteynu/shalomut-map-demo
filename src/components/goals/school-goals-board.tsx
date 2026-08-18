@@ -5,14 +5,9 @@ import { Archive, CheckCircle2, Loader2, Target } from "lucide-react";
 import { useState } from "react";
 import { dashboardDimensionRecommendationsRoute } from "@/lib/navigation";
 import { updateRoundGoalStatus } from "@/lib/round-goals-client";
+import { goalGroupLabels, goalStatusLabels } from "@/lib/goals/labels";
 import type { SchoolGoalRow, SchoolGoalsView } from "@/lib/goals/school-goals";
 import { ROUND_GOAL_STATUSES, type RoundGoalStatus } from "@/lib/types/round-goal";
-
-const STATUS_LABELS: Record<RoundGoalStatus, string> = {
-  selected: "נבחר",
-  in_progress: "בתהליך",
-  done: "הושלם",
-};
 
 function GoalRow({
   row,
@@ -66,7 +61,7 @@ function GoalRow({
               if (row.status !== status) onSelect(status);
             }}
           >
-            {STATUS_LABELS[status]}
+            {goalStatusLabels[status]}
           </button>
         ))}
       </div>
@@ -140,7 +135,7 @@ export function SchoolGoalsBoard({ view }: { view: SchoolGoalsView }) {
 
       <h2>
         <Target size={20} aria-hidden="true" />
-        בעבודה ({rows.open.length})
+        {goalGroupLabels.open} ({rows.open.length})
       </h2>
       {rows.open.length === 0 ? (
         <p className="quiet-note">אין כרגע יעד פתוח. כל מה שנבחר הושלם.</p>
@@ -161,7 +156,7 @@ export function SchoolGoalsBoard({ view }: { view: SchoolGoalsView }) {
         <>
           <h2>
             <CheckCircle2 size={20} aria-hidden="true" />
-            הושלמו ({rows.done.length})
+            {goalGroupLabels.done} ({rows.done.length})
           </h2>
           <ul className="school-goal-list is-done">
             {rows.done.map((row) => (
