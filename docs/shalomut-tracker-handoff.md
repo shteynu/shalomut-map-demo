@@ -10,6 +10,27 @@ pushed under its own name. This is the third observation of the same thing in
 this file: work reaches `main` here without an agent running `git push`, and the
 only reliable way to know is to ask the remote.
 
+**2026-08-18, deployed: `main` is `a39ca09`, the AI service runs it, and the
+second watchdog answers.** The owner pushed the three-branch stack.
+`refs/heads/main` is `a39ca09`, asked of the remote, and `/health` reports
+`commit: a39ca09` — so repository and service agree. Read anonymously:
+`/api/v1/fallback-status` → `{"status":"unknown"}`, `/api/v1/provider-status` →
+`{"status":"unknown"}`, `/api/v1/provider-health` → `401`. That is the whole
+contract holding on the deployed service: the new word is reachable without a
+secret, it is `unknown` rather than a healthy word on a process that has
+observed nothing, the two watchdogs answer from two bodies, and the ratio,
+window and counts stay behind the secret. Core answered `status: ok` with
+producer `6.0` on the same pass; nothing in this stack touches Core.
+
+Two readings, ten minutes apart, disagreed — the first said `commit: ec847ba`
+and the second `a39ca09` — because the build for the last commit was still
+running. Worth knowing when checking a fresh push: a `commit` one behind the tip
+can mean "still building" and not "Render missed it", and the way to tell them
+apart is to read again before opening the dashboard.
+
+**What remains is one form in a dashboard.** The UptimeRobot keyword monitor on
+`degraded` does not exist yet; until it does, the reading is live and unwatched.
+
 **A second watchdog is written and is not deployed.** `GET
 /api/v1/fallback-status` on the AI service answers `writing`, `degraded` or
 `unknown` over a bounded window of the last twenty provider conversations, and

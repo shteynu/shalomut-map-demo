@@ -143,10 +143,17 @@ recording point in `llm_transport.complete_with_retries`.
   alert word into every healthy body. Renamed to `alertsAbove`; the test now
   passes and pins the absence.
 
+- **Deployed, 2026-08-18.** The owner pushed the stack; `/health` reports
+  `commit: a39ca09`, which is `refs/heads/main`. Anonymously:
+  `/api/v1/fallback-status` → `{"status":"unknown"}`,
+  `/api/v1/provider-status` → `{"status":"unknown"}`,
+  `/api/v1/provider-health` → `401`. Fresh process, nothing observed, both words
+  honest and the detail still behind the secret.
+
 ### Blocked or not run
 
-- Deployed verification: the endpoint only exists once the service redeploys,
-  which follows a push to `main` the owner makes.
+- The divergence the two words exist for — `answering` beside `degraded` — needs
+  a real round's provider traffic and cannot be provoked read-only.
 - Creating the UptimeRobot monitor: the owner's dashboard.
 
 ### Environment
