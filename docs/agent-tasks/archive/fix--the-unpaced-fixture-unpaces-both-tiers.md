@@ -5,8 +5,8 @@
 - Branch: fix/the-unpaced-fixture-unpaces-both-tiers
 - Base branch: feat/one-line-says-what-a-round-costs (stack based on `d47a59c`)
 - Base commit: `ec847ba`
-- Current HEAD: the single commit on this branch
-- Status: done and verified locally
+- Current HEAD: `a39ca09`, which is `origin/main`
+- Status: landed. Archived on 2026-08-18
 - Last updated: 2026-08-18
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -151,6 +151,7 @@ fixture on `feat/one-line-says-what-a-round-costs`.
 
 ## Next concrete step
 
-Nothing here. This is the third branch of a stack; the push that lands it is
-`git push origin fix/the-unpaced-fixture-unpaces-both-tiers:main`, and it
-carries the two below it.
+None. The push landed the whole stack on 2026-08-18; `a39ca09` is this commit
+and `origin/main` at once. The branch of the same name still carries the
+documentation commits written after it, which is a separate hand-over recorded
+in `docs/shalomut-tracker-handoff.md`.

@@ -5,8 +5,8 @@
 - Branch: feat/one-line-says-what-a-round-costs
 - Base branch: feat/the-monitor-can-see-a-half-written-map (which is based on `d47a59c`)
 - Base commit: `f360d17`
-- Current HEAD: the single commit on this branch
-- Status: implemented and verified locally
+- Current HEAD: `ec847ba`, contained in `origin/main` at `a39ca09`
+- Status: landed and deployed. Archived on 2026-08-18
 - Last updated: 2026-08-18
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -170,6 +170,7 @@ module was `max_tokens` on the way out.
 
 ## Next concrete step
 
-Hand the push over. The stack is
-`feat/the-monitor-can-see-a-half-written-map` then this branch, so
-`git push origin feat/one-line-says-what-a-round-costs:main` lands both.
+None. The stack was pushed on 2026-08-18 and the line is deployed. What is
+still unread is a real round's worth of these lines, which needs a round on the
+deployed service — that is the measurement this branch made possible, not work
+this branch owes.

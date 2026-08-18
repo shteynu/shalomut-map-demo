@@ -5,8 +5,8 @@
 - Branch: feat/the-monitor-can-see-a-half-written-map
 - Base branch: main
 - Base commit: `d47a59c`
-- Current HEAD: see the commit on this branch; base is `d47a59c`
-- Status: implemented and verified locally; not deployed, and the monitor does not exist
+- Current HEAD: `f360d17`, contained in `origin/main` at `a39ca09`
+- Status: landed, deployed and watched. Archived on 2026-08-18
 - Last updated: 2026-08-18
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -211,10 +211,7 @@ recording point in `llm_transport.complete_with_retries`.
 
 ## Next concrete step
 
-Hand the push over: `git push origin feat/the-monitor-can-see-a-half-written-map:main`
-is the owner's to run. Once Render has built it, read
-`GET /api/v1/fallback-status` once anonymously on the deployed service — it
-should answer `unknown` on a fresh process — and then create the UptimeRobot
-keyword monitor on `degraded`, five-minute interval, beside the existing one on
-`failing`. Record the monitor id here and in the handoff, as the provider
-watchdog's entry does.
+None. Pushed, deployed, monitored and proved end to end on 2026-08-18, so this
+file is archived. The one open judgement — whether `> 0.5` over 20
+conversations is the right line — is the owner's and is recorded above; it is a
+one-line change whenever they want to move it.

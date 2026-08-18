@@ -1,5 +1,61 @@
 # Shalomut Tracker — operational handoff
 
+**2026-08-18, session close: three observability slices are on `main`, and the
+push that carries this session's documentation was rejected once first.**
+`origin/main` is **`6ae2f13`**, asked of the remote directly. It contains all
+three code branches of this session's stack —
+`feat/the-monitor-can-see-a-half-written-map` (`f360d17`),
+`feat/one-line-says-what-a-round-costs` (`ec847ba`) and
+`fix/the-unpaced-fixture-unpaces-both-tiers` (`a39ca09`) — and, above them, four
+documentation commits from a concurrent session that landed while this one was
+writing: `b67fcc3`, `45908d1`, `ee6da0b`, `6ae2f13`. The last of those adds
+`GET /api/v1/fallback-status` to the endpoint surface table in
+`docs/ai-analysis-run-lifecycle.md`, correctly leaves *which monitors exist* to
+this file, and is the reason nothing here needs to restate it.
+
+**The rejection was the ordinary one and is worth recording as such.** The push
+was refused with `fetch first` because `main` had moved by four commits nobody
+in this session pushed — the fourth observation in this file that work reaches
+`main` here without an agent running `git push`. The branch was rebased onto
+`6ae2f13` with `--autostash`; every commit replayed without a conflict, because
+the two sessions touched disjoint files, and `next-env.d.ts` — modified before
+this session and unrelated to it — came back untouched.
+
+So the local branch `fix/the-unpaced-fixture-unpaces-both-tiers`, which still
+has no ref on the remote at all, now sits seven commits above `6ae2f13`:
+`cdc4393`, `39f6c80`, `764702a`, `e712fd1`, `fd4ad51`, `458f7fa`, and the one
+carrying this paragraph. Every one of them changes only Markdown — this file and
+the task files archived below. Nothing in them is code, so nothing in them can be
+deployed, and Render's `buildFilter` will ignore the push when it happens. The
+worktree is otherwise clean and `git ls-files -o --exclude-standard` returns
+nothing.
+
+The three task files for the landed branches moved to
+`docs/agent-tasks/archive/`. `docs/agent-tasks/active/` now holds two files and
+neither belongs to this branch: `research--scientific-evidence-layer.md` and
+`claude--free-ai-service-deploy-yk4tjj.md`, the latter from the concurrent
+session above.
+
+Verification for this session, in full: `.venv/bin/python -m pytest` from
+`ai-analytics-service` — **513 passed in 5.72s**, the whole suite the matrix
+requires for that directory. No code has changed since that run, on this branch
+or on the four commits merged under it. For the documentation itself,
+`git diff --check` over `6ae2f13..HEAD` is clean and every relative link in the
+touched files resolves. `npm run lint:skills` was not run and did not need to
+be: no skill and no adapter was touched.
+
+What stays open is the owner's, not an agent's — the Gemini prepaid balance,
+which the entry below explains, and the standing monitor incident that clears
+itself once credit is restored and five real conversations succeed.
+
+**Next concrete step:** hand over
+`git push origin fix/the-unpaced-fixture-unpaces-both-tiers:main` again, now that
+the branch is rebased on the tip that refused it. It carries documentation only,
+so nothing rebuilds and nothing needs re-verifying after it; once it lands, this
+branch has no work left and the next task starts from a fresh branch and a fresh
+task file. If it is refused a second time, the cause is the same and so is the
+remedy: ask the remote, rebase, push again.
+
 **2026-08-18, latest: `main` is `d47a59c`, and the paragraph below it is what
 happens when a tracking ref is trusted.** The remote was asked directly —
 `git ls-remote origin refs/heads/main` — and it answers `d47a59c`, which is the
