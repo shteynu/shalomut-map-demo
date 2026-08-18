@@ -135,9 +135,19 @@ mechanics; `ai-analytics-service/src/` for the pipeline, transport and sink;
 
 ### Passed
 
-- `npm run lint:skills` — the skills sweep, which also fails on undeclared agent
-  entrypoint files anywhere in the repository. Run because this diff adds
-  documentation files; recorded with its actual result at commit time.
+- `npm run verify:core` — **exit 0** on this branch's own tip: every fitness
+  check, `typecheck`, `npm test` (**1175 passing**), `verify:ai` (**496
+  passing**), `lint` and the production build. It proves this branch breaks
+  nothing rather than proving anything about the documents: the diff is Markdown
+  and no check reads it.
+- `npm run verify:db` — **exit 0**: **36 PostgreSQL tests**, after all fifteen
+  migrations applied to an empty database in order. Same caveat, more strongly —
+  nothing here touches the schema. The container has no Docker daemon, so
+  `compose.yaml` could not be used; the cluster was PostgreSQL 16 from the image,
+  initialised at `/var/lib/postgresql/verifydata` on port 5433 and stopped
+  afterwards. No deployed or local development database was touched.
+- `npm run lint:skills` — the check with an actual subject in this diff, since it
+  sweeps the repository for undeclared agent entrypoint files: 28 passing.
 
 ### Failed
 
@@ -145,12 +155,9 @@ mechanics; `ai-analytics-service/src/` for the pipeline, transport and sink;
 
 ### Blocked or not run
 
-- `npm run verify` and `npm run verify:core` — not run. The diff is Markdown
-  only: no TypeScript, Python, schema, contract or configuration file is
-  touched, so typecheck, tests, build, database and Python suites have no
-  subject in it. This is a deliberate proportionality call, not an omission.
-- `npm run openapi:check` — not run, for the same reason: `docs/openapi.yaml` is
-  untouched.
+- `npm run test:e2e` — not run. The pinned Playwright expects a browser build the
+  image does not carry. Nothing in this diff is reachable from a browser, so the
+  suite has no subject here either.
 
 ### Environment
 
