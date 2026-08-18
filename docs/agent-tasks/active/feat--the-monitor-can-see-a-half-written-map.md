@@ -151,11 +151,20 @@ recording point in `llm_transport.complete_with_retries`.
   `/api/v1/provider-health` → `401`. Fresh process, nothing observed, both words
   honest and the detail still behind the secret.
 
+- **Proved end to end, 2026-08-18.** Five suggestion calls against the deployed
+  service filled the window with `http_429` failures, `fallback-status` turned
+  `degraded`, and monitor `803766551` opened incident `348072543433159758` —
+  detected 14:55:16, confirmed from three more regions, e-mail `SUCCESS` at
+  14:56:02. UptimeRobot stored the body it read: `{"status":"degraded"}`.
+- **The two words diverged in both directions.** With one failed conversation:
+  `failing` beside `unknown`. With five: `failing` beside `degraded`. The first
+  is the case that justifies two monitors instead of one field.
+
 ### Blocked or not run
 
-- The divergence the two words exist for — `answering` beside `degraded` — needs
-  a real round's provider traffic and cannot be provoked read-only.
-- Creating the UptimeRobot monitor: the owner's dashboard.
+- What a degraded round does to the *product* — a wholly derived map, or a
+  failed run. That needs a school on the deployed database, which
+  `scripts/seed-local.ts` deliberately refuses to create.
 
 ### Environment
 

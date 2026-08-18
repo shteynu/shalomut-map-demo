@@ -10,6 +10,40 @@ pushed under its own name. This is the third observation of the same thing in
 this file: work reaches `main` here without an agent running `git push`, and the
 only reliable way to know is to ask the remote.
 
+**2026-08-18: the map's watchdog is proved end to end, in 46 seconds from
+detection to inbox.** Monitor `803766551` is Down on incident
+`348072543433159758`, root cause `Keyword has been found`, started 14:56:01
+GMT+3. Its activity log is the whole chain and is worth copying here because
+nothing in this repository can hold it: detected by Ashburn 14:55:16, confirmed
+by N. Virginia 14:55:31, by Ohio 14:55:46 and by Dallas 14:56:01, **e-mail sent
+to the owner 14:56:02, `SUCCESS`**. UptimeRobot also stored the body it read —
+`{"status":"degraded"}` — so the alert carries its own evidence.
+
+**It was provoked without a round and without a byte of data.** The window
+counts provider conversations, not stones, so five `POST
+/api/v1/questions/suggest` calls against the deployed service filled it: four
+reached the provider and failed on `http_429`, joining the one from the earlier
+probe, and `observed: 5, fellBack: 5, ratio: 1.0` crossed the line. A round was
+the obvious way and the wrong one — `scripts/seed-local.ts` refuses any
+non-loopback database on the grounds that a seeded round on the deployed
+endpoint is a fake school on a real dashboard, and defeating that guard to
+demonstrate a monitor is a poor trade. What this therefore does **not** show is
+what the product does with a degraded round — whether a map publishes wholly
+derived or the run fails outright. That still needs a school on the deployed
+database, and it is a separate question.
+
+One detail from the same run is worth keeping: the `workload` suggestion was
+refused with `400` before reaching the provider, and it did not move the window.
+Nothing was spoken to, so there was nothing to count — the same rule that keeps
+a deliberately skipped green dimension from reading as a failure.
+
+**The incident is honest and will stay open.** The provider really is refusing,
+so a round run now really would produce a derived map. It clears when the quota
+or credit is restored *and* real work succeeds enough times to push the failures
+out of a twenty-wide window — or, as the provider watchdog demonstrated this
+morning, when a restart empties it to `unknown`. The fix is the provider
+account, not the monitor.
+
 **2026-08-18: the provider is down, and it is `http_429` again.** Established by
 probe rather than by inference. `/api/v1/provider-health` first confirmed the
 process had observed nothing since starting at `11:22:49Z` — so the fifteen-hour
