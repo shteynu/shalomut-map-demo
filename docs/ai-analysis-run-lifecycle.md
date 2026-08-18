@@ -193,7 +193,22 @@ Three separate secrets, and they are not interchangeable.
 | worker → Core | `POST /api/rounds/:id/ai-insights` | `AI_CALLBACK_SECRET` | 200 · 400 |
 | worker → Core | JSON-RPC `get_round_analytics` | `MCP_SHARED_SECRET` | 200 |
 | Core → worker | `POST /api/v1/questions/suggest` | `AI_WEBHOOK_SECRET` | 200 |
-| public | `GET /health`, `GET /api/v1/provider-status` | none | 200 |
+| public | `GET /health`, `GET /api/v1/provider-status`, `GET /api/v1/fallback-status` | none | 200 |
+| operator → worker | `GET /api/v1/provider-health` | `AI_WEBHOOK_SECRET` | 200 · 401 |
+
+The three public paths answer three different questions and are deliberately
+separate documents rather than fields in one body: `/health` is whether this
+instance is up, `/api/v1/provider-status` is whether the model is answering, and
+`/api/v1/fallback-status` is whether the map is being written by the model at all
+— a round whose last call succeeded reads `answering` while most of its
+dimensions carry copy the service derived. They are separate paths rather than
+fields in one body because each is meant to be read by its own free monitor, and
+one shared body is how a change made for one of them quietly breaks the other.
+Which of those monitors actually exists is operational state and lives in
+[`shalomut-tracker-handoff.md`](shalomut-tracker-handoff.md), not here: an
+endpoint existing and a monitor watching it are two different facts, and this
+file only knows the first. The counts and the window behind the third stay behind
+the secret on `/api/v1/provider-health`.
 
 ## What is deliberately absent from every diagram
 
