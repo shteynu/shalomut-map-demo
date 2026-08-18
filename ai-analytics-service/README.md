@@ -385,8 +385,17 @@ compatibility, but it is ignored and cannot control callback transport.
   present a bearer token. It carries no reason, no model, no counts and no
   timing, which is the line between "the model is down" and "the account has no
   credit".
-- `GET /api/v1/provider-health` — the same state with all of that detail, behind
-  the same inbound secret as the two POSTs below. It never calls the provider: it
+- `GET /api/v1/fallback-status` — anonymous, and one word: `writing`,
+  `degraded` or `unknown`. The other question a watchdog needs answered: not
+  "is the model down" but "is the model still writing the map". It reads a
+  bounded window of the last 20 provider conversations and says `degraded` when
+  more than half of them fell back to service-derived copy, `unknown` below five
+  observed. The two words are on two paths deliberately — a round whose last
+  conversation succeeded reads `answering` while most of its dimensions carry
+  derived text, which is the 2026-08-09 incident exactly.
+- `GET /api/v1/provider-health` — the same state with all of that detail, plus
+  the window under `recent`, behind the same inbound secret as the two POSTs
+  below. It never calls the provider: it
   reports what real work last observed and answers `unknown` when this process
   has observed nothing, because a quiet service and a healthy one are
   indistinguishable from the inside.

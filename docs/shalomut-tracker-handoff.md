@@ -1,6 +1,31 @@
 # Shalomut Tracker — operational handoff
 
-**2026-08-17, latest: `main` is `273eda5` and the AI service runs it.** The three
+**2026-08-18, latest: `main` is `d47a59c`, and the paragraph below it is what
+happens when a tracking ref is trusted.** The remote was asked directly —
+`git ls-remote origin refs/heads/main` — and it answers `d47a59c`, which is the
+tip of the four documentation commits the 2026-08-17 close recorded as unpushed.
+So nothing was waiting on a push; `refs/heads/feat/the-monitor-can-see-a-dead-model`
+is still `273eda5` on the remote, which is how the branch looked when it was last
+pushed under its own name. This is the third observation of the same thing in
+this file: work reaches `main` here without an agent running `git push`, and the
+only reliable way to know is to ask the remote.
+
+**A second watchdog is written and is not deployed.** `GET
+/api/v1/fallback-status` on the AI service answers `writing`, `degraded` or
+`unknown` over a bounded window of the last twenty provider conversations, and
+`degraded` above half. It is the alert on the deterministic-fallback ratio that
+`docs/product-strategy-axes-2026-08-10.md` asks for in Tier 0 §5 and Tier 1 §8,
+and it answers the question the existing provider watchdog cannot: a round whose
+last conversation succeeded reads `answering` while most of its map is
+service-derived copy. It reads the same recording as the provider word rather
+than a second hook, which is what keeps the `ONLY_LLM_FOR_PROBLEMATIC` green
+skip — a dimension deliberately never asked — from counting as a failure.
+Committed on `feat/the-monitor-can-see-a-half-written-map`; the endpoint exists
+on the deployed service only after that reaches `main` and Render builds it, and
+the monitor that reads it does not exist at all yet. Both are the owner's hands
+and are listed as such below.
+
+**2026-08-17: `main` was `273eda5` and the AI service ran it.** The three
 observability branches were pushed by the owner and are on `main`; `/health`
 answers `commit: 273eda5`, so the deployed service and `main` agree. The watchdog
 for a dead model is live — monitor `803761399`, recorded in full below.
@@ -2083,6 +2108,13 @@ owner's own hands.
   completed rather than one that never fired. Details and evidence:
   `docs/agent-tasks/archive/test--deployed-signed-in-walk-2026-08-11.md`,
   archived on 2026-08-11 when the branch landed.
+- **Creating the UptimeRobot monitor for `GET /api/v1/fallback-status`**, once
+  that endpoint is deployed. A keyword monitor matching `degraded`, alongside the
+  provider one that matches `failing` — two monitors, two paths, deliberately not
+  one body. Nothing in this repository can create it and nothing in it can prove
+  it exists; the code side is done and pins its own three literals, so the whole
+  of what remains is a form in a dashboard. Until it is filled in, the ratio is
+  readable and still unwatched, which is the state this work exists to end.
 - Rotating the four design-stage credentials before the first real respondents.
   Listed above as an accepted deferred gate; it is still open.
 

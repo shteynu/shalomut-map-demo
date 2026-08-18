@@ -6,6 +6,13 @@ log line on Render. These tests hold the three things that make the replacement
 trustworthy — that every provider outcome is recorded whichever way the transport
 exits, that a process which has seen nothing says so instead of saying "ok", and
 that the reading is closed to an unauthenticated caller.
+
+The same recording answers a second question, and the tests for it are at the
+bottom of this file: how much of the recent copy the model actually wrote. The
+incident behind that one is 2026-08-09, when every one of eight stones came out
+of the deterministic fallback and the round still reported success — a state the
+`answering`/`failing` word cannot express, because the last conversation of a
+half-written map can be a successful one.
 """
 
 import json
@@ -16,8 +23,11 @@ from fastapi.testclient import TestClient
 
 from src.config import settings
 from src.main import app
+from src.services.llm_provider import llm_provider_service
 from src.services.llm_transport import complete_with_retries
 from src.services.provider_health import (
+    read_fallback_health,
+    record_provider_attempt,
     read_provider_health,
     reset_provider_health_for_tests,
 )
@@ -269,3 +279,202 @@ def test_the_anonymous_health_endpoint_says_nothing_about_the_provider():
     serialized = json.dumps(body)
     for leak in ("provider", "lastAttempt", "http_429", "gemini", "apiKey"):
         assert leak not in serialized, leak
+
+
+# The window tests record through `record_provider_attempt` rather than through
+# the transport, and the reason is worth stating: the process paces itself. Every
+# send books a turn on the model's queue, so a second conversation in the same
+# test waits the deployed interval — six seconds on the fast tier — and a test
+# that needs a window of twenty would sit there for two minutes proving nothing
+# about the window.
+#
+# What that trades away is the tie between the window and real work, so it is not
+# traded away: `test_the_two_watchdogs_do_not_share_a_body` below drives the real
+# transport, and the recording point itself is already pinned by the transport
+# tests above, including the exit that returns before any HTTP.
+
+
+def _answering(times):
+    for _ in range(times):
+        record_provider_attempt(
+            model_name="gemini-3.5-flash",
+            attempts=1,
+            reason="",
+        )
+
+
+def _falling_back(times, reason="http_429"):
+    # The window does not read the reason, only whether the conversation produced
+    # an answer. `http_429` is the one the deployment actually produced.
+    for _ in range(times):
+        record_provider_attempt(
+            model_name="gemini-3.5-flash",
+            attempts=1,
+            reason=reason,
+        )
+
+
+def test_too_small_a_sample_is_unknown_rather_than_healthy():
+    _falling_back(3)
+
+    reading = read_fallback_health()
+
+    # Three failures out of three is not a ratio, it is a restarted process on a
+    # bad minute. Reporting `degraded` here would page a human for it, and
+    # reporting `writing` would be a lie in the other direction.
+    assert reading["status"] == "unknown"
+    assert reading["fellBackRatio"] is None
+    assert reading["window"]["observed"] == 3
+    assert reading["window"]["fellBack"] == 3
+
+
+def test_a_model_that_writes_the_map_reads_as_writing():
+    _answering(6)
+
+    reading = read_fallback_health()
+
+    assert reading["status"] == "writing"
+    assert reading["fellBackRatio"] == 0.0
+    assert reading["window"] == {
+        "observed": 6,
+        "fellBack": 0,
+        "capacity": 20,
+        "minimumSample": 5,
+    }
+
+
+def test_a_map_mostly_derived_by_the_service_reads_as_degraded():
+    _falling_back(6)
+    _answering(2)
+
+    reading = read_fallback_health()
+
+    # 6 of 8, which is the shape of the 2026-08-09 incident: the run succeeds,
+    # the stones are real, and most of the prose is derived from the aggregates.
+    assert reading["status"] == "degraded"
+    assert reading["fellBackRatio"] == 0.75
+
+
+def test_exactly_half_is_not_degraded():
+    _falling_back(4)
+    _answering(4)
+
+    # The threshold is strict, and which side of it half falls on is the kind of
+    # thing an alert is silently re-tuned by. Pinned so the tuning is a diff.
+    assert read_fallback_health()["fellBackRatio"] == 0.5
+    assert read_fallback_health()["status"] == "writing"
+
+
+def test_a_recovered_model_clears_the_alert_by_itself():
+    _falling_back(20)
+    assert read_fallback_health()["status"] == "degraded"
+
+    # The window is bounded, so a bad afternoon leaves on its own once real work
+    # succeeds again. A since-start ratio would hold this alert open for the life
+    # of the process, and an alert that cannot clear is one nobody keeps.
+    _answering(20)
+
+    reading = read_fallback_health()
+    assert reading["status"] == "writing"
+    assert reading["window"]["observed"] == 20
+    assert reading["window"]["fellBack"] == 0
+
+
+def test_a_dimension_never_asked_does_not_count_against_the_model(monkeypatch):
+    """The green skip is not a degradation, and this is where that is decided.
+
+    `ONLY_LLM_FOR_PROBLEMATIC` returns a green dimension's copy without calling
+    the provider at all. Core labels that stone `deterministic_fallback` — which
+    is right for a per-round provenance record and would be a false page here,
+    because nothing failed. Feeding this window from the transport rather than
+    from the stone outcomes is what excludes it, so the exclusion is a property
+    of where the recording happens and is pinned here.
+    """
+    monkeypatch.setattr(settings, "only_llm_for_problematic", True)
+    _answering(6)
+
+    generation = llm_provider_service.generate_psychological_interpretation_result(
+        "meaning",
+        "משמעות",
+        82.0,
+        "green",
+        question_aggregates=[],
+        contract_version="5.0",
+    )
+
+    assert generation.outcome == "deterministic_fallback"
+    assert generation.attempts == 0
+    # The conversation never happened, so the window never heard about it.
+    reading = read_fallback_health()
+    assert reading["window"]["observed"] == 6
+    assert reading["window"]["fellBack"] == 0
+    assert reading["status"] == "writing"
+
+
+def test_the_fallback_literals_are_a_contract_with_the_external_monitor():
+    """The three strings the map's own UptimeRobot monitor matches on.
+
+    Pinned for the same reason as the provider literals above: a rename does not
+    fail visibly, it makes the monitor report Up forever.
+    """
+    assert read_fallback_health()["status"] == "unknown"
+
+    _answering(5)
+    assert read_fallback_health()["status"] == "writing"
+
+    reset_provider_health_for_tests()
+    _falling_back(5)
+    assert read_fallback_health()["status"] == "degraded"
+
+    # And the word the monitor keys on must not appear in either quiet state.
+    reset_provider_health_for_tests()
+    assert "degraded" not in json.dumps(read_fallback_health())
+
+    _answering(5)
+    assert "degraded" not in json.dumps(read_fallback_health())
+
+
+def test_the_two_watchdogs_do_not_share_a_body(monkeypatch):
+    """Neither monitor's keyword may appear in the other's document.
+
+    They answer different questions off one recording, and the failure this
+    guards is not hypothetical — a last conversation that succeeded reads
+    `answering` while the window is still mostly fallback. If the words shared a
+    body, one alert would clear the other.
+    """
+    for _ in range(6):
+        _run_transport(monkeypatch, api_key="")
+    _run_transport(monkeypatch, urlopen=lambda *a, **k: _Answering())
+
+    provider = client.get("/api/v1/provider-status").json()
+    fallback = client.get("/api/v1/fallback-status").json()
+
+    assert provider == {"status": "answering"}
+    assert fallback == {"status": "degraded"}
+
+
+def test_the_anonymous_fallback_word_is_readable_without_a_secret(monkeypatch):
+    monkeypatch.setattr(settings, "env", "production")
+    monkeypatch.setattr(settings, "ai_webhook_secret", "webhook-secret")
+
+    response = client.get("/api/v1/fallback-status")
+
+    assert response.status_code == 200
+    # One key. The ratio, the window and the counts are what turn "the map is
+    # derived" into "the key is rate-limited", and they stay behind the secret.
+    assert response.json() == {"status": "unknown"}
+
+
+def test_the_authenticated_reading_carries_the_window(monkeypatch):
+    monkeypatch.setattr(settings, "env", "development")
+    monkeypatch.setattr(settings, "ai_webhook_secret", "")
+    _falling_back(5)
+
+    body = client.get("/api/v1/provider-health").json()
+
+    # One request for whoever operates the service: the last attempt and how the
+    # recent window is going, without a second round trip.
+    assert body["status"] == "failing"
+    assert body["recent"]["status"] == "degraded"
+    assert body["recent"]["fellBackRatio"] == 1.0
+    assert body["recent"]["alertsAbove"] == 0.5

@@ -21,6 +21,7 @@ from src.services.llm_provider import (
     llm_provider_service,
 )
 from src.services.provider_health import (
+    read_fallback_status,
     read_provider_health,
     read_provider_status,
 )
@@ -179,6 +180,31 @@ def provider_status():
     other.
     """
     return read_provider_status()
+
+@app.get("/api/v1/fallback-status")
+def fallback_status():
+    """One word, anonymously, so a free watchdog can see a half-written map.
+
+    `writing`, `degraded` or `unknown`. `/api/v1/provider-status` answers "is the
+    model down"; this answers "is the model still writing the map", and the two
+    are not the same question. The provider word follows the last conversation,
+    so a round whose final call succeeded reads `answering` while most of its
+    dimensions carry copy the service derived from the aggregates. That is the
+    2026-08-09 incident exactly — eight stones out of the fallback, the round
+    reported success, and the detector that saw it wrote to `console.info` in
+    Core with nothing on the other end.
+
+    Its own path rather than a second field beside the provider word, for the
+    reason that endpoint states above: two monitors reading one body is how a
+    change made for one of them quietly breaks the other.
+
+    Anonymous on the same grounds and no wider: UptimeRobot's free plan locks
+    request headers to its paid tiers, so a free monitor can present no token,
+    and what is published here is a state of the product rather than of the
+    account. The ratio, the window and the counts stay behind the secret on
+    `/api/v1/provider-health`.
+    """
+    return read_fallback_status()
 
 @app.get("/api/v1/provider-health")
 def provider_health(authorization: Optional[str] = Header(default=None)):

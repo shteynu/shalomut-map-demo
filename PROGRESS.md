@@ -226,6 +226,20 @@ deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
   reached the owner's inbox at 23:03:12. Its honest limit is that the state only
   moves when real work calls the provider, so a provider that dies while nobody is
   using the product reads `unknown` and stays silent.
+- **A half-written map is now noticed too, and it is a different question from a
+  dead model.** The provider word follows the last conversation, so a round whose
+  final call succeeded reads `answering` while most of its dimensions carry copy
+  the service derived from the aggregates — which is exactly what happened on
+  2026-08-09, when all eight stones came out of the deterministic fallback and
+  the round reported success. `GET /api/v1/fallback-status` publishes one more
+  word — `writing`, `degraded` or `unknown` — over a bounded window of the last
+  twenty provider conversations, saying `degraded` when more than half of them
+  fell back and `unknown` below five observed. It reads the same recording as the
+  provider watchdog rather than a second hook, which is what keeps a green
+  dimension the service deliberately never asks from counting as a failure. The
+  threshold and the window are product judgements written as two named constants.
+  Until this existed the detector wrote to `console.info` with nothing on the
+  other end, which is the whole distance between countable and noticed.
 - **A phone and a desktop ask the same question again.** The mobile rule hid the
   scale anchors — the sentences saying what green, yellow and red mean — so a
   teacher on a phone chose between three coloured pills with their definitions

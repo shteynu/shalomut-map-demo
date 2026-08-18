@@ -35,13 +35,39 @@ breaking anything visibly, which is the worst way for a watchdog to fail.
 The monitor watches for `failing` rather than the absence of `answering`,
 deliberately: `unknown` is the honest state of a process that has restarted or
 that nobody has used, and alerting on it would page a human for silence.
+
+**A second reading lives here, off the same recording.** `status` above follows
+the *last* attempt, which is the right shape for "is the model down" and the
+wrong one for "how much of the map did the model actually write". A round whose
+last conversation succeeded reads `answering` while five of its eight dimensions
+carry copy the service derived from the aggregates — which is what happened on
+2026-08-09, when every one of eight stones came from the fallback and the round
+reported success. `read_fallback_health` answers that question from a bounded
+window of recent conversations, and `read_fallback_status` is its own one-word
+wire contract, on its own path, with its own literals.
+
+It is fed by `record_provider_attempt` rather than by a second hook at the
+fallback sites, for the reason `llm_transport.complete_with_retries` gives for
+wrapping instead of recording beside each exit: the one place that must not be
+forgotten is the one place that cannot be.
+
+That choice also decides what the window does *not* count, and the exclusion is
+the point rather than a limitation. `ONLY_LLM_FOR_PROBLEMATIC` skips the
+provider entirely for a green dimension — no conversation, so nothing recorded —
+and that stone still reaches Core labelled `deterministic_fallback`. Core's
+`ai_deterministic_summary_ratio_sample` therefore counts a working token
+optimization as fallback, which is correct for a per-round provenance record and
+would be a false page here. The window counts conversations that happened, so
+what it measures is the model failing to write, never the service choosing not
+to ask.
 """
 
 from __future__ import annotations
 
 import threading
 import time
-from typing import Any, Dict, Optional
+from collections import deque
+from typing import Any, Deque, Dict, List, Optional
 
 # Wall-clock is what a human reading the answer needs; monotonic is what an
 # elapsed-seconds figure needs. Keeping both avoids a reading that goes backwards
@@ -53,6 +79,34 @@ _lock = threading.Lock()
 _last: Optional[Dict[str, Any]] = None
 _succeeded = 0
 _failed = 0
+
+# How many recent conversations the fallback reading looks at.
+#
+# Bounded rather than since-start, because an alert that cannot clear itself is
+# an alert nobody keeps: one bad afternoon would hold the ratio above the line
+# for the rest of the process's life, and a since-start reading on a long-lived
+# Render instance is mostly history. Twenty is about two rounds' worth of
+# conversations, so a single degraded round moves it and a single degraded
+# dimension does not.
+_RECENT_WINDOW = 20
+
+# Below this many observed conversations the reading is `unknown`, not healthy
+# and not degraded. One failure out of one is not a ratio, and paging on it
+# would mean a restarted process plus one `http_429` wakes a human.
+_MINIMUM_SAMPLE = 5
+
+# The line. Above it — strictly — the reading is `degraded`.
+#
+# A product judgement, not a derived constant, and it belongs to the owner: half
+# is the point where a map is more derived text than model-written text, which
+# is the weakest claim that is still obviously worth waking up for. Lower would
+# catch the partial degradation earlier and page more often, and this is the
+# only alerting channel the product has, so a false page costs the channel.
+# `docs/shalomut-tracker-handoff.md` records the figure; the exact ratio is on
+# every metric line for anyone who wants to argue with it from data.
+_DEGRADED_ABOVE = 0.5
+
+_recent: Deque[bool] = deque(maxlen=_RECENT_WINDOW)
 
 
 def record_provider_attempt(
@@ -81,6 +135,7 @@ def record_provider_attempt(
 
     with _lock:
         _last = record
+        _recent.append(answered)
         if answered:
             _succeeded += 1
         else:
@@ -93,6 +148,7 @@ def read_provider_health() -> Dict[str, Any]:
         last = dict(_last) if _last is not None else None
         succeeded = _succeeded
         failed = _failed
+        recent = list(_recent)
 
     uptime = time.monotonic() - _STARTED_AT_MONOTONIC
 
@@ -105,6 +161,7 @@ def read_provider_health() -> Dict[str, Any]:
             "detail": "no provider call has been made since this process started",
             "lastAttempt": None,
             "attemptsSeen": {"succeeded": 0, "failed": 0},
+            "recent": _recent_reading(recent),
             "observedSince": _iso(_STARTED_AT_WALL),
             "observedForSeconds": round(uptime, 1),
         }
@@ -120,6 +177,7 @@ def read_provider_health() -> Dict[str, Any]:
             "secondsAgo": round(max(0.0, time.time() - last["at"]), 1),
         },
         "attemptsSeen": {"succeeded": succeeded, "failed": failed},
+        "recent": _recent_reading(recent),
         "observedSince": _iso(_STARTED_AT_WALL),
         "observedForSeconds": round(uptime, 1),
     }
@@ -148,12 +206,96 @@ def read_provider_status() -> Dict[str, Any]:
     return {"status": read_provider_health()["status"]}
 
 
+def read_fallback_health() -> Dict[str, Any]:
+    """How much of the recent copy the model wrote, with the sample beside it.
+
+    Never a bare ratio. `1.0` over one conversation and `1.0` over twenty are the
+    same number and different facts, so the window size, the count above the line
+    and the threshold travel with it — a reader who disagrees with the threshold
+    can apply their own without a second request.
+    """
+    with _lock:
+        recent = list(_recent)
+
+    return {
+        **_recent_reading(recent),
+        "observedSince": _iso(_STARTED_AT_WALL),
+        "observedForSeconds": round(time.monotonic() - _STARTED_AT_MONOTONIC, 1),
+    }
+
+
+def read_fallback_status() -> Dict[str, Any]:
+    """The one word the map's own monitor is allowed to see.
+
+    `writing`, `degraded` or `unknown`, on their own path, for the reason
+    `main.py` gives for not folding a second watchdog into an existing body: the
+    provider monitor keys on `failing` in `/api/v1/provider-status`, and two
+    monitors reading one document is how a change made for one silences the
+    other.
+
+    Same wire-contract rule as `read_provider_status`, and the same failure mode
+    if it is broken: a renamed literal does not break a monitor visibly, it makes
+    it report Up forever. `tests/test_provider_health.py` pins these three.
+
+    The word for the fault is an adjective where the provider's is a participle,
+    and that asymmetry is deliberate: `failing` arrives in an alert e-mail with
+    no context and reads as a fault on its own, and so must this one. `deriving`
+    is what the service is doing and would read as a status line.
+
+    What becomes public is that the map is currently written by the model or not.
+    That is the same class of fact as `answering` — a state of the product, not a
+    state of the account — and the reason, the model and the counts stay behind
+    the secret on `/api/v1/provider-health`, where they already are.
+    """
+    return {"status": read_fallback_health()["status"]}
+
+
+def _recent_reading(recent: List[bool]) -> Dict[str, Any]:
+    """The window as a reading. Pure, so both callers compute it identically.
+
+    Taking a snapshot rather than the deque: `threading.Lock` is not reentrant,
+    and `read_provider_health` already holds it when it needs this.
+    """
+    observed = len(recent)
+    fell_back = sum(1 for answered in recent if not answered)
+
+    if observed < _MINIMUM_SAMPLE:
+        # Same rule as `status` above, for the same reason: a process that has
+        # not seen enough to have an opinion says so rather than reporting the
+        # healthy word. Silence is not health, and a small sample is not either.
+        status = "unknown"
+        ratio = None
+    else:
+        ratio = fell_back / observed
+        status = "degraded" if ratio > _DEGRADED_ABOVE else "writing"
+
+    return {
+        "status": status,
+        "fellBackRatio": None if ratio is None else round(ratio, 3),
+        "window": {
+            "observed": observed,
+            "fellBack": fell_back,
+            "capacity": _RECENT_WINDOW,
+            "minimumSample": _MINIMUM_SAMPLE,
+        },
+        # `alertsAbove` rather than `degradedAbove`, and the awkward name is the
+        # point: a field carrying the alert word puts that word in every reading,
+        # including the healthy ones. The keyword monitor here reads the status
+        # endpoint, which is one key and cannot be caught by it — but the next
+        # monitor, or a log search for the word, would be. The test above pins
+        # the absence, so this cannot drift back by someone preferring the
+        # symmetrical name.
+        "alertsAbove": _DEGRADED_ABOVE,
+    }
+
+
 def reset_provider_health_for_tests() -> None:
     global _last, _succeeded, _failed
     with _lock:
         _last = None
         _succeeded = 0
         _failed = 0
+        _recent.clear()
 
 
 def _iso(epoch_seconds: float) -> str:
