@@ -10,6 +10,37 @@ pushed under its own name. This is the third observation of the same thing in
 this file: work reaches `main` here without an agent running `git push`, and the
 only reliable way to know is to ask the remote.
 
+**2026-08-18, read in the dashboard: the fallback monitor does not exist, and
+the provider one spent fifteen hours Down.** The account holds two monitors —
+`Using 2 of 50` — the keep-alive on `/health` and monitor `803761399` on
+`/api/v1/provider-status`. There is no monitor on `/api/v1/fallback-status`;
+whatever was created did not save, or was created somewhere this account cannot
+see. The endpoint is live and still unwatched.
+
+`803761399` itself is configured correctly — keyword `failing`, *presence*, five
+minutes, the right URL — and its reading is the news. **One incident, started
+2026-08-17 23:03:10 GMT+3, resolved 2026-08-18 14:02:14 GMT+3, duration 14h 59m
+4s**, root cause `Keyword has been found`. That start time is the one this file
+already records as the watchdog's first fire, and what it did not record is that
+the incident never cleared: the model was failing all night and nobody looked.
+Last 24 hours read `5.235%`.
+
+**The resolution is not a recovery, and the endpoint says so.** A cleared
+keyword means `failing` stopped appearing, which happens two ways: the provider
+answered, or the process restarted and forgot. `/api/v1/provider-status` answers
+`unknown` right now, and `unknown` is what a process that has observed nothing
+says — so it restarted. Whether the model answers is therefore not known by
+anyone; the next real provider call decides it, and re-arms the alert within
+five minutes if the condition survived.
+
+That is a cost of the design worth stating rather than a defect in it: the
+reading is in-memory by choice, and `unknown` deliberately does not alert so
+that silence never pages a human. The bill for those two decisions is that a
+deploy silences a standing alert and closes its incident, and the dashboard then
+reads as though the outage ended. The provider account is the thing to check —
+the 2026-08-17 fire was a depleted prepayment, and nothing here has ruled out
+its still being that.
+
 **2026-08-18, deployed: `main` is `a39ca09`, the AI service runs it, and the
 second watchdog answers.** The owner pushed the three-branch stack.
 `refs/heads/main` is `a39ca09`, asked of the remote, and `/health` reports
