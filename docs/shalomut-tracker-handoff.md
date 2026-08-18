@@ -10,7 +10,30 @@ pushed under its own name. This is the third observation of the same thing in
 this file: work reaches `main` here without an agent running `git push`, and the
 only reliable way to know is to ask the remote.
 
-**2026-08-18, read in the dashboard: the fallback monitor does not exist, and
+**2026-08-18: the fallback monitor exists — `803766551`, and the agent created
+it with the owner's explicit permission after two of the owner's own attempts
+did not save.** Keyword monitor on
+`https://shalomut-ai-analytics.onrender.com/api/v1/fallback-status`, keyword
+`degraded`, mode **Start incident when keyword exists**, five-minute interval,
+e-mail to the account address, case-insensitive. Verified on its own page: first
+check completed 31 seconds after creation, `Up`, `0 incidents`, and the list
+reads `Using 3 of 50 monitors` with all three green.
+
+Two things about the creation are worth keeping, because they are how the
+earlier attempts most likely failed. The form opens on **HTTP monitoring**, and
+the keyword fields do not exist until the type is switched to *Keyword
+monitoring* — a monitor saved without switching would be a plain HTTP check that
+can never see the word. And the form re-lays itself out the moment a URL is
+entered: a `Friendly name` line appears and pushes the keyword input down, so a
+click aimed at where the field just was lands on the label instead and the
+keyword silently stays empty. This happened once during this creation and was
+caught only by reading the field back before saving.
+
+The keyword literals are now a contract with two monitors rather than one.
+`tests/test_provider_health.py` pins all six words; nothing in the repository
+can pin the monitors.
+
+**2026-08-18, read in the dashboard: the fallback monitor did not exist, and
 the provider one spent fifteen hours Down.** The account holds two monitors —
 `Using 2 of 50` — the keep-alive on `/health` and monitor `803761399` on
 `/api/v1/provider-status`. There is no monitor on `/api/v1/fallback-status`;

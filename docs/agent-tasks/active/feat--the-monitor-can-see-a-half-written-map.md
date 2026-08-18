@@ -111,9 +111,10 @@ recording point in `llm_transport.complete_with_retries`.
 
 ## Remaining
 
-- The owner pushes this branch to `main`, Render builds it, and the endpoint is
-  then read once on the deployed service.
-- The owner creates the UptimeRobot keyword monitor on `degraded`.
+- Nothing. Deployed on 2026-08-18 and watched by UptimeRobot monitor
+  `803766551` — keyword `degraded`, presence, five minutes, e-mail. The one
+  thing no one has seen yet is the alert firing, which needs a real round that
+  degrades.
 
 ## Changed files
 
