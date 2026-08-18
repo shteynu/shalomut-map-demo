@@ -43,6 +43,8 @@ reader.
   `src/app/help/page.tsx` — locale plumbing.
 - `src/lib/navigation.ts` — `helpRoute(anchor, lang)`; the badge no longer
   follows a manager onto the guide.
+- `src/components/layout/app-header.tsx` — the guide link is gone from the
+  header, owner request 2026-08-18.
 - `src/app/globals.css` — the switcher and the badge's head.
 
 ## Non-goals
@@ -82,6 +84,12 @@ existing tokens, no threshold literals in code.
   would be seven navigation landmarks between a screen reader and its answer.
 - **The badge is now hidden on `/help` itself** — it offered the way to the
   screen already open, and covered the text it was advertising.
+- **The header link is gone, owner request.** It was the guide's first entry
+  point, added before the badge existed; once the badge reached every screen —
+  including the dashboard, where the header does not render at all — the two
+  were doors to one room, and one of them stood in the part of the screen a
+  manager reads first. The badge is the one that stayed, because it is the one
+  that is everywhere.
 - **The Hebrew colour words still come from `statusColorLabels`; the Russian and
   English ones are local to their files.** Only the Hebrew set is rendered
   elsewhere in the product, so only it can drift.
@@ -107,6 +115,9 @@ existing tokens, no threshold literals in code.
   language in the switcher. Horizontal overflow `0` in all three.
 - The badge was opened on the dashboard and shows the three languages above its
   topic list.
+- After removing the header link, the home screen was re-rendered in the
+  browser: zero `a[href^="/help"]` inside `.site-header`, badge still present;
+  and on `/help` itself, zero of each.
 
 ### Failed
 

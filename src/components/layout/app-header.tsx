@@ -3,17 +3,14 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import { Activity, CircleHelp, ClipboardList, Home, Layers, Map, Send, Target, type LucideIcon } from "lucide-react";
+import { Activity, ClipboardList, Home, Layers, Map, Send, Target, type LucideIcon } from "lucide-react";
 import {
   DASHBOARD_ROUND_PARAM,
-  helpRoute,
   homeRoute,
   isMainNavItemActive,
-  isPathWithin,
   mainNavItemsForRound,
   navigationLabels,
   navigationRoundId,
-  routeMetadata,
   routes,
   type MainNavItem,
   type MainNavItemId,
@@ -50,31 +47,13 @@ export function AppHeader() {
       </div>
 
       {/*
-       * The guide sits beside the identity rather than inside the navigation:
-       * the navigation is the workflow, and this is not a step in it. It is
-       * rendered unconditionally, unlike the user bar, because a manager whose
-       * session is still loading is exactly as entitled to the explanation.
+       * No guide link here. It sat beside the identity until 2026-08-18, and the
+       * floating badge — which reaches the dashboard too, where this header does
+       * not render at all — made it a second door to one room, in the corner of
+       * the screen a manager reads first.
        */}
-      <div className="header-utilities">
-        <HeaderHelpLink />
-        <ManagerUserBar />
-      </div>
+      <ManagerUserBar />
     </header>
-  );
-}
-
-function HeaderHelpLink() {
-  const isActive = isPathWithin(usePathname(), routes.help);
-
-  return (
-    <Link
-      href={helpRoute()}
-      className={`header-help-link${isActive ? " active" : ""}`}
-      aria-current={isActive ? "page" : undefined}
-    >
-      <CircleHelp size={15} aria-hidden="true" />
-      <span>{routeMetadata.help.navLabel}</span>
-    </Link>
   );
 }
 

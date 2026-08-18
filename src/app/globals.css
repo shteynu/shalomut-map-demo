@@ -6592,51 +6592,6 @@ label .custom-tooltip-wrapper:hover .custom-tooltip-icon {
   color: var(--accent-dark);
 }
 
-.header-utilities {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-}
-
-.header-help-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  min-height: 2.2rem;
-  padding: 0.25rem 0.75rem;
-  border: 1px solid rgba(56, 56, 56, 0.12);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.72);
-  color: var(--navy);
-  font-size: 0.85rem;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.header-help-link:hover {
-  background: rgba(255, 255, 255, 0.95);
-}
-
-.header-help-link.active {
-  border-color: rgba(228, 153, 2, 0.38);
-  color: var(--accent-dark);
-}
-
-@media (max-width: 768px) {
-  .header-help-link span {
-    /* The icon carries it on a narrow header; the accessible name stays in the
-       link text, which is why this hides the span rather than dropping it. */
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
-}
-
 .map-locked-help {
   position: relative;
   z-index: 1;
