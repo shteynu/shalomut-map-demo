@@ -2393,6 +2393,13 @@ owner's own hands.
   it exists; the code side is done and pins its own three literals, so the whole
   of what remains is a form in a dashboard. Until it is filled in, the ratio is
   readable and still unwatched, which is the state this work exists to end.
+- **Reading the manager guide, in any of its three languages.** `/help` and the
+  floating badge are on `main` and deployed, and no native reader of Hebrew,
+  Russian or English has read the copy. Hebrew is the original and the other two
+  are translated from it, so a correction is made in
+  `src/lib/help/topics/he.ts` first and brought across; every figure the guide
+  shows is computed from the module that enforces it and cannot be edited in a
+  translation. What needs eyes is the wording, not the numbers.
 - Rotating the four design-stage credentials before the first real respondents.
   Listed above as an accepted deferred gate; it is still open.
 
