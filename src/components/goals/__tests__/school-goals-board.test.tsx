@@ -2,6 +2,7 @@ import assert from "node:assert";
 import test from "node:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import { SchoolGoalsBoard } from "../school-goals-board";
+import { goalGroupLabels } from "@/lib/goals/labels";
 import type { SchoolGoalRow } from "@/lib/goals/school-goals";
 
 function row(overrides: Partial<SchoolGoalRow> = {}): SchoolGoalRow {
@@ -25,7 +26,7 @@ test("a school that never chose a goal is told where goals come from", () => {
   );
 
   assert.match(html, /עדיין לא נבחרו יעדים/);
-  assert.doesNotMatch(html, /בעבודה/);
+  assert.ok(!html.includes(goalGroupLabels.open));
 });
 
 test("a goal names its dimension and the round it was chosen in", () => {
@@ -61,6 +62,9 @@ test("finished goals are counted and kept apart from the work in progress", () =
     />,
   );
 
-  assert.match(html, /בעבודה \(1\)/);
-  assert.match(html, /הושלמו \(1\)/);
+  // Read from the shared labels rather than repeated here: the words are one
+  // edit away in `@/lib/goals/labels`, and a test quoting them would be the
+  // next copy to drift.
+  assert.ok(html.includes(`${goalGroupLabels.open} (1)`));
+  assert.ok(html.includes(`${goalGroupLabels.done} (1)`));
 });

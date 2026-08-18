@@ -31,14 +31,15 @@ export const goalStatusLabels: Record<RoundGoalStatus, string> = {
  * The two groups the school's goals screen sorts into.
  *
  * `open` is every goal that is not finished, so it holds `selected` alongside
- * `in_progress` — it is not the `in_progress` status under another name, and a
- * goal labelled `נבחר` sitting under `בעבודה` is that grouping showing through
- * rather than a mislabelled row. The wording is left as it was found; if it is
- * ever changed to match the empty state below it, which calls the same goals
- * `פתוח`, this is the one place to change.
+ * `in_progress`. It is deliberately not named for the status it partly
+ * contains: the heading read `בעבודה` until 2026-08-18, which claimed work had
+ * started on a goal that had only been chosen, and disagreed with the empty
+ * state directly under it that calls the same goals `פתוח`. Owner decision that
+ * day: `פתוחים`, which is what the group actually means and what its own empty
+ * state already said.
  */
 export const goalGroupLabels = {
-  open: "בעבודה",
+  open: "פתוחים",
   done: "הושלמו",
 } as const;
 
