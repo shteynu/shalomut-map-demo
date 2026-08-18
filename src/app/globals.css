@@ -6646,3 +6646,171 @@ label .custom-tooltip-wrapper:hover .custom-tooltip-icon {
   text-decoration: underline;
   text-underline-offset: 0.25rem;
 }
+
+/* The guide badge
+   ------------------------------------------------------------------------
+   A disclosure rather than a menu: no state, no script, and it survives
+   JavaScript being off the way the round switcher does. `--z-floating` puts it
+   over the page and under every dialog, which is the right order — a manager
+   answering a confirm should not be able to open the guide behind it. */
+.help-badge {
+  position: fixed;
+  bottom: clamp(1rem, 2vw, 1.6rem);
+  inset-inline-end: clamp(1rem, 2vw, 1.6rem);
+  z-index: var(--z-floating);
+}
+
+.help-badge > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 2.9rem;
+  padding: 0.4rem 1.1rem;
+  border: 1px solid rgba(56, 56, 56, 0.1);
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--ink);
+  font-weight: 800;
+  font-size: 0.92rem;
+  box-shadow: var(--shadow-raised);
+  cursor: pointer;
+  /* The marker is replaced by the icon inside; both Safari and the rest need
+     saying, and without this the triangle sits inside the pill. */
+  list-style: none;
+}
+
+.help-badge > summary::-webkit-details-marker,
+.help-badge > summary::marker {
+  display: none;
+  content: "";
+}
+
+.help-badge > summary:hover {
+  box-shadow: var(--shadow), 0 10px 20px rgba(228, 153, 2, 0.24);
+}
+
+.help-badge[open] > summary {
+  background: var(--surface-panel-strong, rgba(255, 255, 255, 0.94));
+  color: var(--navy);
+}
+
+.help-badge-panel {
+  /* Anchored to the badge rather than ordered inside it. A grid `order` was the
+     first attempt and it silently did nothing: current Chromium wraps a
+     `<details>`'s content in `::details-content`, so the grid item is that
+     wrapper and not this panel. Absolute positioning against the fixed badge
+     needs no agreement about which element the box model hands to the layout. */
+  position: absolute;
+  bottom: calc(100% + 0.6rem);
+  inset-inline-end: 0;
+  width: min(20rem, calc(100vw - 2.5rem));
+  padding: 1rem 1.1rem;
+  border: 1px solid rgba(56, 56, 56, 0.1);
+  border-radius: var(--radius-panel-organic);
+  /* Fully opaque, unlike the panels that sit in the page flow. This one floats
+     over whatever the manager was reading, and the three percent a `0.97` alpha
+     lets through is enough to read a date placeholder underneath a topic. */
+  background: #fffaf0;
+  box-shadow: var(--shadow-raised);
+}
+
+.help-badge-title {
+  margin: 0 0 0.6rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.help-badge-panel ul {
+  display: grid;
+  gap: 0.1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.help-badge-panel li a {
+  display: block;
+  padding: 0.4rem 0.5rem;
+  border-radius: var(--radius-control);
+  color: var(--ink);
+  font-size: 0.9rem;
+  line-height: 1.4;
+  text-decoration: none;
+}
+
+.help-badge-panel li a:hover {
+  background: rgba(228, 153, 2, 0.12);
+}
+
+.help-badge-all {
+  display: inline-block;
+  margin-top: 0.7rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid rgba(56, 56, 56, 0.09);
+  width: 100%;
+  color: var(--navy);
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+/* Screens that pin something to the bottom of the viewport get the badge lifted
+   above it. The setup form's save bar is the one that exists today; it is
+   sticky, 79px tall, and the badge would otherwise cover the end of its save
+   button. `:has()` keeps the knowledge in the stylesheet rather than making
+   every such screen remember to tell a layout component about itself, and a
+   browser without it lands exactly where the badge is now — overlapping, not
+   broken. */
+body:has(.setup-form-save-bar) .help-badge {
+  bottom: clamp(6rem, 6vw + 4rem, 7rem);
+}
+
+/* And it shrinks to its icon there. Lifting it clears the save button but puts
+   it over the form instead, and on the one screen where a manager is typing
+   into fields the badge should take the least width it can and still be
+   pressable. The accessible name stays on the summary. */
+body:has(.setup-form-save-bar) .help-badge > summary {
+  min-width: 2.9rem;
+  justify-content: center;
+  padding: 0.4rem;
+}
+
+body:has(.setup-form-save-bar) .help-badge > summary span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .help-badge > summary span {
+    /* The icon carries it where the screen is narrow; the accessible name stays
+       on the summary itself, which is why this hides the text rather than
+       dropping it. */
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .help-badge > summary {
+    min-width: 2.9rem;
+    justify-content: center;
+    padding: 0.4rem;
+  }
+}
+
+@media print {
+  .help-badge {
+    display: none;
+  }
+}

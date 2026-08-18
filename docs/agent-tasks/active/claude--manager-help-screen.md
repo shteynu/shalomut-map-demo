@@ -47,6 +47,9 @@ Owner decisions carried by this branch:
 - `src/components/help/manager-help-board.tsx`, `index.ts` — presentational,
   server-rendered, no client JavaScript.
 - `src/app/help/page.tsx` — the screen, scoped to no school and no round.
+- `src/components/help/manager-help-badge.tsx` — the floating badge, a
+  `<details>` disclosure listing the seven topics; `HelpBadgeGate` mounts it in
+  the root layout and `shouldShowHelpBadge` owns which screens it reaches.
 - `src/lib/navigation.ts` — `routes.help`, its metadata, `helpRoute`.
 - `src/components/layout/app-header.tsx` — the guide link beside the user bar.
 - `src/components/dashboard/dashboard-map-locked.tsx` — a link to the privacy
@@ -112,6 +115,13 @@ The seven topics are those decisions said to a principal.
   disagreed with its own empty state three lines below.
 - **Anchor offsets are measured, not guessed** — the sticky header is 214px to
   395px depending on where the navigation wraps, measured at eight widths.
+- **The badge is a `<details>`, not a menu built on state.** It opens, closes,
+  takes focus and announces itself without a line of script, which is the rule
+  the round switcher already set for controls on these screens.
+- **It shrinks to its icon on screens with a pinned bottom bar**, and is lifted
+  above that bar by a `body:has()` rule. Measured rather than eyeballed: with
+  the lift and the shrink it covers no control on the setup screen, where
+  without them it sat on the save button.
 
 ## Assumptions
 
@@ -120,8 +130,10 @@ The seven topics are those decisions said to a principal.
 
 ## Completed
 
-- The screen, its two entry points, its styles, its tests and the label work it
-  pulled in. Five commits, `b3f77f8` through `17e50a6`.
+- The screen, its entry points, its styles, its tests and the label work it
+  pulled in.
+- The floating guide badge, owner request 2026-08-18: bottom corner of every
+  manager screen, opening a list of the seven topics upward.
 
 ## In progress
 

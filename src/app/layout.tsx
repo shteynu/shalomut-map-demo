@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import localFont from "next/font/local";
 import "./globals.css";
 import { HeaderGate } from "@/components/layout/header-gate";
+import { HelpBadgeGate } from "@/components/layout/help-badge-gate";
 
 /**
  * The typeface ships in the repository instead of being fetched while the
@@ -65,6 +66,11 @@ export default function RootLayout({
         <main id="main-content" tabIndex={-1}>
           {children}
         </main>
+        {/* After `main` rather than inside it: the badge floats over every
+            manager screen, including the dashboard, which renders without the
+            header — and it is the last thing a keyboard reaches rather than
+            something to tab past on the way to the page. */}
+        <HelpBadgeGate />
       </body>
     </html>
   );

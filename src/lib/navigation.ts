@@ -230,6 +230,29 @@ export function shouldHideGlobalHeader(pathname: string | null | undefined) {
 }
 
 /**
+ * The screens the floating guide badge belongs on.
+ *
+ * Deliberately not the same set as the header. The dashboard is the screen a
+ * manager is most likely to have a question about — why is this locked, where
+ * did this colour come from — and it is exactly the screen that renders without
+ * a header, so a badge gated on the header's rule would be missing where it is
+ * needed most.
+ *
+ * Two screens it must never reach. `/answer` belongs to a respondent, and this
+ * guide answers a manager's questions about running a round; putting it there
+ * would tell a teacher about privacy thresholds and analysis runs while they are
+ * being asked to trust the form in front of them. `/login` has no session yet,
+ * and the badge links into screens that would bounce straight back to it.
+ */
+const badgelessRoutes = [routes.respondentSurvey, routes.login] as const;
+
+export function shouldShowHelpBadge(pathname: string | null | undefined) {
+  if (!pathname) return false;
+
+  return !badgelessRoutes.some((route) => isPathWithin(pathname, route));
+}
+
+/**
  * Which round a dashboard screen is about, carried in the URL.
  *
  * Every dashboard link takes the selected round with it. Dropping the
