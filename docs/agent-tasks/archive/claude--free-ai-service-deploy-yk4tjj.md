@@ -5,8 +5,8 @@
 - Branch: `claude/free-ai-service-deploy-yk4tjj`
 - Base branch: `main`
 - Base commit: `d47a59c`
-- Current HEAD: `a7511f4` plus this commit
-- Status: delivered, documentation only; the screen it led to is a separate branch
+- Current HEAD: `6ae2f13`, contained in `origin/main` at `6ae2f13`
+- Status: landed. Archived on 2026-08-18
 - Last updated: 2026-08-18
 - Last agent/tool: Claude Code
 
@@ -201,6 +201,8 @@ mechanics; `ai-analytics-service/src/` for the pipeline, transport and sink;
   `claude/manager-help-screen`, branched from this tip so the two land in order.
 
 ## Next concrete step
+
+None — landed. What follows is the record of why, kept as written.
 
 Merge this branch. It touches no file the application serves — `docs/` is not a
 route and nothing in `src/app` reads it — so merging changes nothing a manager or

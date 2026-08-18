@@ -6,8 +6,8 @@
 - Base branch: `claude/free-ai-service-deploy-yk4tjj` (documentation), which is
   itself based on `main` at `d47a59c`
 - Base commit: `8cb42cb`
-- Current HEAD: `17e50a6`
-- Status: delivered; waiting on a Hebrew-speaking reviewer before merge
+- Current HEAD: `acd854d`, contained in `origin/main` at `acd854d`
+- Status: landed. Archived on 2026-08-18
 - Last updated: 2026-08-18
 - Last agent/tool: Claude Code
 
@@ -228,6 +228,11 @@ The seven topics are those decisions said to a principal.
 
 ## Next concrete step
 
-Have a Hebrew-speaking reader review `/help`, then merge — after
-`claude/free-ai-service-deploy-yk4tjj`, which this branch is based on. The copy
-lives in `src/lib/help/manager-help.ts`.
+None on this branch — landed and deployed.
+
+**One thing it landed without, stated plainly rather than closed:** no
+Hebrew-speaking reader reviewed the copy. The owner read all seven topics in
+Russian translation on 2026-08-18 and corrected one of them, and then decided to
+merge; that is a narrower review than a native reading, not the same thing. The
+copy is one file, `src/lib/help/manager-help.ts`, so a later reading costs an
+edit and not a rewrite.
