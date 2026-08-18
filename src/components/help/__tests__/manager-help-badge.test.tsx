@@ -29,12 +29,26 @@ test("the badge opens without JavaScript", () => {
   assert.match(html, /<summary[^>]*aria-label="[^"]+"/);
 });
 
-test("the badge stays away from the respondent and the login screens", () => {
+test("the badge stays away from the respondent, the login and the guide itself", () => {
   // A teacher answering the questionnaire is not the audience: this guide is
-  // about running a round. The login screen has no session for its links.
+  // about running a round. The login screen has no session for its links. And
+  // on the guide the badge would offer the way to the screen already open,
+  // while covering the text it is advertising.
   assert.strictEqual(shouldShowHelpBadge("/answer/ABC123"), false);
   assert.strictEqual(shouldShowHelpBadge(routes.login), false);
+  assert.strictEqual(shouldShowHelpBadge(routes.help), false);
   assert.strictEqual(shouldShowHelpBadge(null), false);
+});
+
+test("the badge offers the guide in the other two languages", () => {
+  const html = renderToStaticMarkup(<ManagerHelpBadge />);
+
+  // The badge itself stays Hebrew on every screen — it is part of the product,
+  // and the product has one language. What the three links open is a document.
+  assert.ok(html.includes('href="/help?lang=ru"'));
+  assert.ok(html.includes('href="/help?lang=en"'));
+  assert.ok(html.includes("Русский"));
+  assert.ok(html.includes("English"));
 });
 
 test("the badge is on the dashboard, which has no header to carry it", () => {

@@ -1,3 +1,5 @@
+import { HELP_LOCALE_PARAM } from "@/lib/help/locales";
+
 export const routes = {
   home: "/",
   login: "/login",
@@ -244,7 +246,14 @@ export function shouldHideGlobalHeader(pathname: string | null | undefined) {
  * being asked to trust the form in front of them. `/login` has no session yet,
  * and the badge links into screens that would bounce straight back to it.
  */
-const badgelessRoutes = [routes.respondentSurvey, routes.login] as const;
+const badgelessRoutes = [
+  routes.respondentSurvey,
+  routes.login,
+  // And the guide itself. A badge offering the way to the screen a manager
+  // is already reading is furniture, and on this screen it covers the text
+  // it is advertising.
+  routes.help,
+] as const;
 
 export function shouldShowHelpBadge(pathname: string | null | undefined) {
   if (!pathname) return false;
@@ -523,8 +532,14 @@ export function respondentSurveyRoute(shareCode: string) {
  * browser lands. A screen that raises one question links to its own answer, and
  * a manager who arrives with JavaScript off still gets the page.
  */
-export function helpRoute(topicAnchor?: string) {
-  return topicAnchor ? `${routes.help}#${topicAnchor}` : routes.help;
+export function helpRoute(topicAnchor?: string, lang?: string) {
+  // The language is a query parameter and the topic is a fragment, so the two
+  // compose: `/help?lang=ru#help-privacy` opens the Russian guide at the privacy
+  // answer. Hebrew carries no parameter — it is the product's language, and a
+  // link that names it would suggest the others are equally the default.
+  const base = lang ? `${routes.help}?${HELP_LOCALE_PARAM}=${encodeURIComponent(lang)}` : routes.help;
+
+  return topicAnchor ? `${base}#${topicAnchor}` : base;
 }
 
 export type DashboardActionId = "dimensionMetrics" | "dimensionRecommendations" | "dashboardMap";

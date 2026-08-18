@@ -1,6 +1,11 @@
 import { ManagerHelpBoard } from "@/components/help";
 import { PageIntro } from "@/components/ui";
-import { managerHelpTopics } from "@/lib/help/manager-help";
+import { helpLocaleDir } from "@/lib/help/locales";
+import {
+  managerHelpIntro,
+  managerHelpTopics,
+  readHelpLocaleParam,
+} from "@/lib/help/manager-help";
 
 /**
  * The manager guide.
@@ -10,17 +15,35 @@ import { managerHelpTopics } from "@/lib/help/manager-help";
  * product behaves, and those answers are the same for a manager whose round is
  * locked, whose database is empty, or who has not opened a round at all —
  * which is precisely when they are most likely to be asked.
+ *
+ * The one thing it does read is the language, from `?lang=`. That keeps the
+ * screen a pure function of its URL: no cookie, no session, nothing that could
+ * decide the language of a screen that never asked to be translated.
  */
-export default function HelpPage() {
+export default async function HelpPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ lang?: string | string[] }>;
+}) {
+  const locale = readHelpLocaleParam(await searchParams);
+  const intro = managerHelpIntro(locale);
+
   return (
-    <div className="page stone-page">
+    // The heading belongs to the translation as much as the topics do: the
+    // document is `dir="rtl"`, and an intro left to inherit it puts the full
+    // stop of a Russian sentence at the wrong end of the line.
+    <div className="page stone-page" lang={locale} dir={helpLocaleDir[locale]}>
       <PageIntro
-        eyebrow="מדריך למנהל"
-        title="איך המערכת עובדת"
-        description="התשובות לשאלות שהמסכים מעוררים: מתי התוצאה נעולה ולמה, איך נקבע צבע של אבן, מה הבינה המלאכותית כותבת ומה היא לא מחליטה, ומה בכלל נשמר על מי שהשיב."
+        eyebrow={intro.eyebrow}
+        title={intro.title}
+        description={intro.description}
       />
 
-      <ManagerHelpBoard topics={managerHelpTopics()} />
+      <ManagerHelpBoard
+        topics={managerHelpTopics(locale)}
+        intro={intro}
+        locale={locale}
+      />
     </div>
   );
 }

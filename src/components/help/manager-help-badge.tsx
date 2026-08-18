@@ -1,7 +1,13 @@
 import Link from "next/link";
 import { CircleHelp } from "lucide-react";
 import { helpRoute, routeMetadata } from "@/lib/navigation";
-import { helpTopicAnchor, managerHelpTopics } from "@/lib/help/manager-help";
+import {
+  helpTopicAnchor,
+  managerHelpIntro,
+  managerHelpTopics,
+} from "@/lib/help/manager-help";
+import { DEFAULT_HELP_LOCALE } from "@/lib/help/locales";
+import { HelpLanguageSwitcher } from "@/components/help/help-language-switcher";
 
 /**
  * The guide, one press away from wherever the manager is standing.
@@ -17,9 +23,15 @@ import { helpTopicAnchor, managerHelpTopics } from "@/lib/help/manager-help";
  * question a manager has is usually one of the seven, and a list that answers
  * "is my question in here" before the navigation costs a click is worth more
  * than a door with no sign on it.
+ *
+ * The badge itself is always Hebrew, in every screen and for every reader. It is
+ * part of the product, and the product has one language; the three links at the
+ * top of the panel open the *guide* in a language, which is a document rather
+ * than a screen a manager works in.
  */
 export function ManagerHelpBadge() {
-  const topics = managerHelpTopics();
+  const intro = managerHelpIntro(DEFAULT_HELP_LOCALE);
+  const topics = managerHelpTopics(DEFAULT_HELP_LOCALE);
 
   return (
     <details className="help-badge">
@@ -29,7 +41,14 @@ export function ManagerHelpBadge() {
       </summary>
 
       <div className="help-badge-panel">
-        <p className="help-badge-title">שאלות שהמסכים מעוררים</p>
+        <div className="help-badge-head">
+          <p className="help-badge-title">{intro.badgeTitle}</p>
+          <HelpLanguageSwitcher
+            current={DEFAULT_HELP_LOCALE}
+            label={intro.languageLabel}
+            compact
+          />
+        </div>
 
         <ul>
           {topics.map((topic) => (
@@ -43,7 +62,7 @@ export function ManagerHelpBadge() {
 
         <Link className="help-badge-all" href={helpRoute()}>
           {/* The whole screen, for a manager who would rather read than search. */}
-          למדריך המלא
+          {intro.wholeGuide}
         </Link>
       </div>
     </details>

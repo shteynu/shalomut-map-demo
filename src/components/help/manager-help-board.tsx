@@ -1,4 +1,7 @@
-import { helpTopicAnchor, type HelpTopic } from "@/lib/help/manager-help";
+import { helpTopicAnchor } from "@/lib/help/manager-help";
+import { helpLocaleDir, type HelpLocale } from "@/lib/help/locales";
+import type { HelpIntro, HelpTopic } from "@/lib/help/types";
+import { HelpLanguageSwitcher } from "@/components/help/help-language-switcher";
 
 /**
  * The manager guide, rendered.
@@ -8,18 +11,37 @@ import { helpTopicAnchor, type HelpTopic } from "@/lib/help/manager-help";
  * work with JavaScript off and be readable by a screen reader in one pass. The
  * table of contents is plain anchors for the same reason.
  */
-export function ManagerHelpBoard({ topics }: { topics: HelpTopic[] }) {
+export function ManagerHelpBoard({
+  topics,
+  intro,
+  locale,
+}: {
+  topics: HelpTopic[];
+  intro: HelpIntro;
+  locale: HelpLocale;
+}) {
   return (
-    <div className="help-board">
-      <nav className="help-contents" aria-label="נושאי המדריך">
-        <ul>
-          {topics.map((topic) => (
-            <li key={topic.id}>
-              <a href={`#${helpTopicAnchor(topic.id)}`}>{topic.title}</a>
-            </li>
-          ))}
-        </ul>
-      </nav>
+    // The document is Hebrew and right-to-left. A translation that did not say
+    // otherwise would render with its punctuation at the wrong end and its
+    // lists indented from the wrong side, so the container carries both.
+    <div className="help-board" lang={locale} dir={helpLocaleDir[locale]}>
+      <div className="help-board-head">
+        <nav className="help-contents" aria-label={intro.badgeTitle}>
+          <ul>
+            {topics.map((topic) => (
+              <li key={topic.id}>
+                <a href={`#${helpTopicAnchor(topic.id)}`}>{topic.title}</a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        {/* Once, at the top, and deliberately not under every topic: seven
+            language switchers would be seven navigation landmarks between a
+            screen reader and the answer it came for. The contents list above is
+            how a reader gets back to where they were. */}
+        <HelpLanguageSwitcher current={locale} label={intro.languageLabel} />
+      </div>
 
       <div className="help-topics">
         {topics.map((topic) => (
