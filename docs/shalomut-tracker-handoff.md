@@ -36,13 +36,21 @@ commits touched only `docs/`. That is the build filter demonstrated in the other
 direction, and it is why the two halves reporting different commits is normal
 here rather than a symptom.
 
-Carried out of `claude--priceless-swanson-9cf466.md` as that file is
-archived: **the `5.0` adaptation fix has never had a live before/after.**
-Low stakes — the deployment produces `6.0`, so the fixed path runs only if
-someone rolls the producer back to `5.0` — but it is an untested fix, not a
-verified one, and the `6.0` round that looks like evidence is not: that
-contract's prompt never names a colour group, so it could not have
-reproduced the defect either way.
+**Closed 2026-08-20: the `5.0` adaptation fix has its live before/after.** This
+was carried out of `claude--priceless-swanson-9cf466.md` as that file was
+archived, and a round on the owner's approval closed it the same evening. All
+eight adaptation calls came back `outcome=llm` on `attempt=1`: zero
+`status_inconsistent`, zero `deterministic_fallback`, zero retries. Before the
+fix, three runs on the same script and contract lost **all eight** dimensions to
+`status_inconsistent`, each burning two or three attempts.
+
+The round cost 17 provider calls and 78,438 tokens, every one of them on the
+first attempt, and produced all eight stones from the model. Durations, on the
+new defaults: adaptation mean 15.6s and max 18.6s, interpretation mean 9.3s,
+the overall summary 8.6s. Read the adaptation figures as a `5.0` measurement
+only — that contract's adaptation prompt is smaller than `6.0`'s, whose calls
+have run to 25.6s and 50.9s, so this round is not a fourth sample of the tail
+that set the 90s timeout.
 
 **Deployed but not yet exercised.** The 90s request timeout, the 300s budget,
 `scope=` on the provider log lines and the error-level
@@ -2481,6 +2489,13 @@ that walk but the sign-in.
 
 ## External blockers and approval gates
 
+- **2026-08-20: `GEMINI_API_KEY` needs rotating.** It was printed in full into
+  an agent session transcript and a scratch file during the round above — a
+  shell presence-check written as `${VAR:-fallback}`, which expands to the
+  value when the variable is set. The scratch copy was redacted; the transcript
+  cannot be. This is the billed key, so the exposure is a spending risk as well
+  as an access one, and it is more current than the four credentials named
+  below. Rotation is an owner action.
 - Before the first real respondents, rotate the four credentials previously
   exposed in a private design-stage transcript. This is an accepted deferred
   gate, not a blocker for local/docs work.
