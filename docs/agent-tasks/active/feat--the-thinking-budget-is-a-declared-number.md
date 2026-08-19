@@ -6,7 +6,7 @@
 - Base branch: `origin/main`
 - Base commit: `dab5ef6`
 - Current HEAD: see `git log -1` (commits listed under Completed)
-- Status: implementation complete, measurement blocked on provider credit
+- Status: implementation and measurement complete; deployed value declared
 - Last updated: 2026-08-19
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -107,6 +107,7 @@ and its logging.
 - Tests: `ai-analytics-service/tests/test_reasoning_effort.py` (new), plus the
   thinking-share cases in `tests/test_token_usage_logging.py`.
 - `ai-analytics-service/README.md`: the knob and the usage line's fields.
+- `render.yaml`: `LLM_REASONING_EFFORT=low`, with the measurement beside it.
 
 ## In progress
 
@@ -114,10 +115,11 @@ Nothing.
 
 ## Remaining
 
-- Run the before/after measurement once the account has credit again (commands
-  under Blocked).
-- From that measurement, set `LLM_REASONING_EFFORT` in `render.yaml` beside the
-  numbers, in the style of the pace and the token cap already there.
+- Run `evals/run_corpus.py` against `low` before trusting it on a harder round.
+  One fixture is not the corpus, and the corpus is this project's instrument for
+  exactly this question — it is what rejected `flash-lite` on 2026-08-09.
+- Decide the adaptation defect below. It is not this branch's work, but it is
+  where roughly half of a round's calls go.
 
 ## Changed files
 
@@ -144,24 +146,39 @@ Nothing.
   anything.
 - One direct request to `generativelanguage.googleapis.com` with the local key,
   to read the error body behind the `429`s.
+- **The measurement.** One round — the local unlocked fixture, `gemini-3.5-flash`
+  at the deployed settings — run three times on 2026-08-19 after the top-up:
+
+  | | billed answers | thinking | visible | cost | map |
+  | --- | --- | --- | --- | --- | --- |
+  | unset | 19 | 58,885 (89% of output) | 6,928 | $0.6226 | 8/8 `llm`, first attempt |
+  | `medium` | 19 | 59,845 (90%) | 6,814 | $0.6301 | 8/8 `llm`, first attempt |
+  | `low` | 31 | 24,742 (68%) | 11,677 | $0.3817 | 8/8 `llm`, first attempt |
+
+  Three things this says. Unset *is* `medium`, within 2% on every count, so the
+  knob only does something below it. `low` costs 39% less while returning the
+  same map, and the saving is a floor: the unset run lost four answers to the
+  20-second client timeout, which this service cannot see the bill for and `low`
+  did not incur. And `low` sends more requests, not fewer — 31 against 19 —
+  because the adaptation retries that used to time out now actually complete.
+
+  Thinking is not itemised by this provider. `reasoning_tokens` reads
+  `unavailable` on every line, and the figures above are
+  `total_tokens - prompt_tokens - completion_tokens`.
 
 ### Failed
 
-- The first full local run with the key: every call answered `429`. Not a defect
-  in this branch — see Blocked.
+- The first full local run of 2026-08-19, before the account was topped up:
+  every call answered `429 RESOURCE_EXHAUSTED`. Not a defect in this branch.
 
 ### Blocked or not run
 
-- **The measurement itself.** The provider answers
-  `429 RESOURCE_EXHAUSTED — "Your prepayment credits are depleted"`, so no round
-  can reach the model on this key. Both runs are ready and take one command each
-  from `ai-analytics-service`, with `GEMINI_API_KEY` exported:
-  `npx tsx scripts/local-unlocked-pipeline.ts` with `LLM_REASONING_EFFORT`
-  unset, then again with `LLM_REASONING_EFFORT=low`. Read `reasoning_tokens` and
-  `completion_tokens` off the `outcome=usage` lines, and read the provenance of
-  the eight stones out of the same output — a cheaper round that stops passing
-  the Hebrew gate is not a cheaper round.
-- No deployed verification. The Render service runs the same depleted key.
+- `evals/run_corpus.py` against `low`. Not run: it is seven cases rather than
+  one and spends accordingly, and the owner has not been asked.
+- `minimal` and `none` were not measured. `low` already returned the whole map,
+  so the cheaper settings were not worth the risk of a round nobody would trust.
+- No deployed verification. `render.yaml` now declares `low`, and nothing has
+  been pushed or redeployed.
 
 ### Environment
 
@@ -185,7 +202,18 @@ provider probe above, which created nothing.
 
 ## Known risks
 
-Recorded under Residual risk.
+Recorded under Residual risk, plus one found by the measurement and belonging to
+no branch yet:
+
+**The question-adaptation step failed on every dimension of every run.** All
+three runs ended with `adaptation=deterministic_fallback` for all eight
+dimensions, refused as `refusal=status_inconsistent` — the model's adapted
+wording disagreed with the dimension's own colour and counts — after two or
+three attempts each. It is independent of `LLM_REASONING_EFFORT`: identical at
+unset, `low` and `medium`. In the `low` run that is 14 of 31 billed answers,
+close to half the round's bill, spent on text that is then thrown away for the
+deterministic sentence. The stones themselves are unaffected and the round
+reports `success`, which is why it has gone unnoticed. Worth its own task.
 
 ## Approval gates
 
@@ -207,7 +235,8 @@ Topping up the provider account is the owner's action.
 
 ## Next concrete step
 
-Once the Gemini account has credit, run the two commands under
-`Verification evidence → Blocked`, record both totals and the eight stones'
-provenance in this file, and then declare `LLM_REASONING_EFFORT` in
-`render.yaml` with those numbers beside it.
+Push the branch, then run `evals/run_corpus.py` with `LLM_REASONING_EFFORT=low`
+and compare its graders against
+`evals/baselines/2026-08-05-gemini-3.5-flash-lite.json`. If refusals appear,
+move `render.yaml` back to unset; the value is one line and the reasoning for
+moving it is already beside it.

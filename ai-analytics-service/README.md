@@ -348,7 +348,14 @@ than per conversation, so the retries a refused answer costs are visible instead
 of hidden inside the accepted one. It carries `prompt_tokens`,
 `completion_tokens`, `reasoning_tokens` and `total_tokens`, each exactly as the
 provider reported it or `unavailable` when it reported nothing. `reasoning_tokens`
-is the thinking part of `completion_tokens`, not an addition to it. A round is
+is the thinking part of `completion_tokens`, not an addition to it, and it is
+reported only by providers that itemise it. Gemini's OpenAI-compatible surface
+does not: it leaves `reasoning_tokens=unavailable` and the thinking appears as
+the gap, `total_tokens - prompt_tokens - completion_tokens`. Measured on one
+round on 2026-08-19 that gap was 58,885 tokens against 6,928 visible ones. The
+line carries all three counts so the gap can be taken from it; the transport
+does not compute it, for the same reason it never defaults a missing count to
+zero. A round is
 the sum of its lines; the transport does not know which round it serves and does
 not aggregate.
 
