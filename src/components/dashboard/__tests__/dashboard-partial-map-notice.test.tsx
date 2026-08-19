@@ -20,17 +20,20 @@ function gaps(
   };
 }
 
-function render(overrides: Partial<DashboardInsightsDto["gapsByReason"]>) {
+function render(
+  overrides: Partial<DashboardInsightsDto["gapsByReason"]>,
+  deterministicSummaries: DashboardInsightsDto["dimensionsWithDeterministicSummary"] = [],
+) {
   return renderToStaticMarkup(
-    <DashboardPartialMapNotice gaps={gaps(overrides)} />,
+    <DashboardPartialMapNotice
+      gaps={gaps(overrides)}
+      deterministicSummaries={deterministicSummaries}
+    />,
   );
 }
 
 test("a whole map renders no notice at all", () => {
-  assert.strictEqual(
-    renderToStaticMarkup(<DashboardPartialMapNotice gaps={gaps()} />),
-    "",
-  );
+  assert.strictEqual(render({}), "");
 });
 
 test("one gap is named, in the singular, with its map caption", () => {
@@ -88,4 +91,67 @@ test("a round from before the reason existed claims no cause", () => {
   assert.match(html, /לא נוצר ניתוח מילולי/u);
   assert.doesNotMatch(html, /שירות הניתוח לא השיב/u);
   assert.doesNotMatch(html, /בדיקות האיכות/u);
+});
+
+/**
+ * The second half of the same question, and the one contract 6.0 actually
+ * produces: a full map whose paragraphs the service composed from the numbers.
+ * Until this arrived it was disclosed only on the dimension screen — the
+ * screen a manager who trusts the map never opens, which is the problem this
+ * component exists for.
+ */
+
+test("service-written paragraphs are named on the map, not only per dimension", () => {
+  const html = render({}, ["balance"]);
+
+  assert.match(html, /הפסקאות של ממד איזון/u);
+  assert.match(html, /לא נכתבו על ידי המודל/u);
+  assert.match(html, /להפעיל ניתוח מחדש/u);
+});
+
+test("a complete map is not called partial", () => {
+  const derived = render({}, ["balance"]);
+  const missing = render({ unstated: ["balance"] });
+
+  // The heading is what a manager reads first, and these are different
+  // claims: nothing is missing from the first map.
+  assert.match(derived, /פסקאות שנגזרו מהנתונים/u);
+  assert.doesNotMatch(derived, /ניתוח חלקי/u);
+  assert.match(missing, /ניתוח חלקי/u);
+
+  // The closing sentence belongs to the missing dimensions and must not
+  // follow a sentence about dimensions that have everything.
+  assert.doesNotMatch(derived, /מלאים/u);
+});
+
+test("a map that is both partial and partly derived says both, under one heading", () => {
+  const html = render({ provider_unavailable: ["balance"] }, ["certainty"]);
+
+  assert.match(html, /שירות הניתוח לא השיב עבור ממד איזון/u);
+  assert.match(html, /של הממד הזה מלאים/u);
+  assert.match(html, /הפסקאות של ממד ודאות/u);
+  assert.match(html, /ניתוח חלקי/u);
+  // One box. Two would read as two problems.
+  assert.strictEqual(html.match(/<section/gu)?.length, 1);
+});
+
+test("every dimension at once is counted, not listed", () => {
+  const html = render(
+    {},
+    [
+      "self-expression",
+      "professional-competence",
+      "social-resource",
+      "balance",
+      "management-support",
+      "certainty",
+      "organizational-climate",
+      "meaning",
+    ],
+  );
+
+  // What a silent provider looks like on contract 6.0. Eight captions in one
+  // sentence is a paragraph nobody reads.
+  assert.match(html, /הפסקאות של כל הממדים/u);
+  assert.doesNotMatch(html, /8 ממדים/u);
 });

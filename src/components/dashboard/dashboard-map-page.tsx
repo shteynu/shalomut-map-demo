@@ -241,7 +241,12 @@ function DashboardMapReady({
           {/* Beside the summary, not above the map: the gap is a fact about
               this analysis, and the sidebar is where the analysis is read. */}
           {state.status === "ready" ? (
-            <DashboardPartialMapNotice gaps={state.value.gapsByReason} />
+            <DashboardPartialMapNotice
+              gaps={state.value.gapsByReason}
+              deterministicSummaries={
+                state.value.dimensionsWithDeterministicSummary
+              }
+            />
           ) : null}
 
           <button type="button" className="primary-button" onClick={() => window.print()}>

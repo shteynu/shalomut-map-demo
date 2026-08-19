@@ -431,3 +431,102 @@ test('the metric narratives carry their own provenance, not the summary’s', ()
     false,
   );
 });
+
+test('the DTO separates a map missing words from one whose words it wrote', () => {
+  // Both are "the model did not write this", and they are not the same fact:
+  // a gapped dimension has no paragraphs, a derived one has three that assert
+  // nothing beyond the numbers. Contract 6.0 produces the second, so on the
+  // deployed contract this list is the one that fills up.
+  const withOutcome = (
+    dimensionId: WellbeingDimensionId,
+    outcome: 'llm' | 'deterministic_fallback' | 'unavailable',
+  ) =>
+    v6Stone({
+      dimensionId,
+      summary: outcome === 'unavailable' ? [] : undefined,
+      generationProvenance: {
+        outcome,
+        attempts: 1,
+        retryCount: 0,
+        sourceQuestionIds: [`${dimensionId}-q1`],
+      },
+    });
+
+  const result = toDashboardInsights({
+    contractVersion: '6.0',
+    roundId: 'round-mixed-provenance',
+    isLocked: false,
+    status: 'success',
+    overallPsychologicalSummary: 'סיכום ארגוני.',
+    stones: {
+      ...Object.fromEntries(
+        AI_ANALYTICS_DIMENSION_IDS.map((dimensionId) => [
+          dimensionId,
+          withOutcome(dimensionId, 'llm'),
+        ]),
+      ),
+      balance: withOutcome('balance', 'unavailable'),
+      certainty: withOutcome('certainty', 'deterministic_fallback'),
+      meaning: withOutcome('meaning', 'deterministic_fallback'),
+    } as StoneMapResult['stones'],
+  });
+
+  assert.deepStrictEqual(result.dimensionsWithoutInterpretation, ['balance']);
+  // Canonical order, like the gaps, so the banner names them the way the map
+  // does.
+  assert.deepStrictEqual(result.dimensionsWithDeterministicSummary, [
+    'certainty',
+    'meaning',
+  ]);
+  // Disjoint, and structurally so: a stone carries one outcome.
+  assert.strictEqual(
+    result.dimensionsWithDeterministicSummary.includes('balance'),
+    false,
+  );
+});
+
+test('a map the model wrote whole names no derived paragraphs', () => {
+  const result = toDashboardInsights({
+    contractVersion: '6.0',
+    roundId: 'round-model-written',
+    isLocked: false,
+    status: 'success',
+    overallPsychologicalSummary: 'סיכום ארגוני.',
+    stones: Object.fromEntries(
+      AI_ANALYTICS_DIMENSION_IDS.map((dimensionId) => [
+        dimensionId,
+        v6Stone({
+          dimensionId,
+          generationProvenance: {
+            outcome: 'llm',
+            attempts: 1,
+            retryCount: 0,
+            sourceQuestionIds: [`${dimensionId}-q1`],
+          },
+        }),
+      ]),
+    ) as StoneMapResult['stones'],
+  });
+
+  assert.deepStrictEqual(result.dimensionsWithDeterministicSummary, []);
+});
+
+test('a round analysed before provenance existed claims nothing', () => {
+  // The rule the stones already follow: absent is not `llm`. Marking these as
+  // derived would be as wrong as claiming a model wrote them.
+  const result = toDashboardInsights({
+    contractVersion: '6.0',
+    roundId: 'round-no-provenance',
+    isLocked: false,
+    status: 'success',
+    overallPsychologicalSummary: 'סיכום ארגוני.',
+    stones: Object.fromEntries(
+      AI_ANALYTICS_DIMENSION_IDS.map((dimensionId) => [
+        dimensionId,
+        v6Stone({ dimensionId }),
+      ]),
+    ) as StoneMapResult['stones'],
+  });
+
+  assert.deepStrictEqual(result.dimensionsWithDeterministicSummary, []);
+});

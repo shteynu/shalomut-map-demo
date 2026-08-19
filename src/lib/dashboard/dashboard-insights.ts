@@ -129,6 +129,24 @@ export interface DashboardInsightsDto {
     validation_rejected: WellbeingDimensionId[];
     unstated: WellbeingDimensionId[];
   };
+  /**
+   * The dimensions whose summary paragraphs the service composed from the
+   * round's own numbers rather than the model writing them, in canonical
+   * order. Disjoint from every list above: a stone's provenance outcome is one
+   * value, so a dimension is either missing its words or has words nobody's
+   * model wrote — never both.
+   *
+   * Separate from `gapsByReason` because it is a different fact. Those
+   * dimensions have no interpretation; these have one, and it is honest about
+   * what it is. Contract 6.0 does not raise per dimension, so this — not
+   * `unavailable` — is the shape a silent provider actually takes on the
+   * deployed contract, and the map page had no way to say so.
+   *
+   * Only the summary. Metric narratives fall back separately and are disclosed
+   * on the screen that shows them, deliberately: a manager who read a real
+   * interpretation has no reason to suspect the readings underneath it.
+   */
+  dimensionsWithDeterministicSummary: WellbeingDimensionId[];
 }
 
 export function getDashboardStone(

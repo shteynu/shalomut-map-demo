@@ -33,6 +33,7 @@ function createReadyResult(
       validation_rejected: [],
       unstated: [],
     },
+    dimensionsWithDeterministicSummary: [],
   };
 }
 

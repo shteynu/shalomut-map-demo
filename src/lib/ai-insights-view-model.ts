@@ -275,5 +275,12 @@ export function toDashboardInsights(
           stones[dimensionId]?.interpretationUnavailableReason === undefined,
       ),
     },
+    // Derived from the same stones as the gaps, for the same reason: the map
+    // banner and the dimension screen then cannot disagree about which
+    // paragraphs a model wrote. `outcome` is one value per stone, so this list
+    // and `gaps` never name the same dimension.
+    dimensionsWithDeterministicSummary: AI_ANALYTICS_DIMENSION_IDS.filter(
+      (dimensionId) => stones[dimensionId]?.summaryIsDeterministic,
+    ),
   };
 }

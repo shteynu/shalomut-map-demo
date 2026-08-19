@@ -16,6 +16,7 @@ const readyResult: DashboardInsightsDto = {
     validation_rejected: [],
     unstated: [],
   },
+  dimensionsWithDeterministicSummary: [],
 };
 
 const lockedResult: DashboardInsightsDto = {
@@ -29,6 +30,7 @@ const lockedResult: DashboardInsightsDto = {
     validation_rejected: [],
     unstated: [],
   },
+  dimensionsWithDeterministicSummary: [],
 };
 
 function renderState(

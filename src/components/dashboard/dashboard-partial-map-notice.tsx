@@ -1,6 +1,9 @@
 import { Info } from "lucide-react";
 import type { DashboardInsightsDto } from "@/lib/dashboard/dashboard-insights";
-import { getDimensionPresentation } from "@/lib/dashboard/dimension-presentation";
+import {
+  dimensionPresentations,
+  getDimensionPresentation,
+} from "@/lib/dashboard/dimension-presentation";
 import type { WellbeingDimensionId } from "@/lib/shalomut-source";
 
 /**
@@ -12,6 +15,13 @@ import type { WellbeingDimensionId } from "@/lib/shalomut-source";
  * below is built here once rather than spliced from a count and a noun.
  */
 function subject(dimensionIds: WellbeingDimensionId[]): string {
+  // Every dimension at once is what a silent provider looks like on contract
+  // 6.0, and it is the one case where the list is worse than the count: eight
+  // names in one sentence is a paragraph a manager skims past.
+  if (dimensionIds.length === dimensionPresentations.length) {
+    return "כל הממדים";
+  }
+
   const names = dimensionIds.map(
     (dimensionId) =>
       getDimensionPresentation(dimensionId)?.conceptLabel ?? dimensionId,
@@ -37,17 +47,32 @@ function subject(dimensionIds: WellbeingDimensionId[]): string {
  * Deliberately not an error. Nothing here failed for the manager: the scores,
  * the questions and the recommendations of those dimensions are all real, and
  * the closing sentence says so.
+ *
+ * It says a second thing, about dimensions that are not missing at all.
+ * Contract 6.0 does not raise per dimension — a provider that answers nothing
+ * produces a full map whose paragraphs the service composed from the round's
+ * own numbers — so on the deployed contract the missing-words case is the rare
+ * one and this is the common one. Until now it was disclosed only on the
+ * dimension and metric screens, which is the same "a manager who trusts the
+ * map never opens it" problem this component was built to solve, one shape
+ * over.
+ *
+ * One box rather than two, because the manager's question is the same both
+ * times — how much of what I am reading did a model write — and two boxes
+ * side by side answering it twice would read as two problems.
  */
 export function DashboardPartialMapNotice({
   gaps,
+  deterministicSummaries,
 }: {
   gaps: DashboardInsightsDto["gapsByReason"];
+  deterministicSummaries: DashboardInsightsDto["dimensionsWithDeterministicSummary"];
 }) {
-  const total =
+  const missing =
     gaps.provider_unavailable.length +
     gaps.validation_rejected.length +
     gaps.unstated.length;
-  if (total === 0) return null;
+  if (missing === 0 && deterministicSummaries.length === 0) return null;
 
   const sentences = [
     gaps.provider_unavailable.length > 0 &&
@@ -59,16 +84,32 @@ export function DashboardPartialMapNotice({
         "ניסוח אחר.",
     gaps.unstated.length > 0 &&
       `עבור ${subject(gaps.unstated)} לא נוצר ניתוח מילולי בסבב הזה.`,
-    total === 1
-      ? "הציון, פירוט השאלות וההמלצות של הממד הזה מלאים."
-      : "הציון, פירוט השאלות וההמלצות של הממדים האלה מלאים.",
+    // Only about the dimensions named above, so it stays with them rather
+    // than closing the box.
+    missing > 0 &&
+      (missing === 1
+        ? "הציון, פירוט השאלות וההמלצות של הממד הזה מלאים."
+        : "הציון, פירוט השאלות וההמלצות של הממדים האלה מלאים."),
+    // The same wording the dimension screen uses, on purpose: a manager who
+    // follows the link should recognise the sentence rather than wonder
+    // whether it is a second, different problem.
+    deterministicSummaries.length > 0 &&
+      `הפסקאות של ${subject(deterministicSummaries)} נגזרו מן הנתונים ` +
+        "המצרפיים של הסבב ולא נכתבו על ידי המודל, ואפשר להפעיל ניתוח מחדש " +
+        "כדי לקבל קריאה מלאה.",
   ].filter((sentence): sentence is string => Boolean(sentence));
 
   return (
     <section className="map-partial-notice" aria-labelledby="map-partial-notice-title">
       <Info size={20} aria-hidden="true" />
       <div>
-        <h2 id="map-partial-notice-title">ניתוח חלקי</h2>
+        {/* A map missing words and a map whose words came from the numbers are
+            not the same claim, and the heading is the part a manager reads
+            first. Calling a complete map "partial" would be the kind of
+            overstatement that teaches people to ignore the box. */}
+        <h2 id="map-partial-notice-title">
+          {missing > 0 ? "ניתוח חלקי" : "פסקאות שנגזרו מהנתונים"}
+        </h2>
         <p>{sentences.join(" ")}</p>
       </div>
     </section>
