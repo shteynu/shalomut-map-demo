@@ -2404,19 +2404,25 @@ owner's own hands.
 - Repeat-measurement reminders (§11). Reminding respondents would need contact
   data the privacy model deliberately does not hold; reminding the manager would
   not.
-- **Two follow-ups from the fallback-disclosure audit, 2026-08-19.**
+- **One follow-up from the fallback-disclosure audit is left, 2026-08-19.**
   `claude/fallback-disclosure` (merged as `9819d1f`) closed the two gaps where
-  a deterministic fallback carried no on-screen note at all — the round
-  summary and the recommendation wording. It deliberately left two larger
-  changes unbuilt, offered but not requested: making
-  `DashboardPartialMapNotice`'s overview-level banner also fire on
-  `deterministic_fallback` (today it fires only on `outcome: "unavailable"`,
-  which contract 6.0's structured operations never actually return — the
-  three per-dimension generators all fall back silently rather than raising,
-  so the banner under-fires for the failure mode that is actually common); and
-  true per-dimension re-run, which does not exist today — a stored
-  `AiAnalysisRun` starts every field empty, so "re-run the analysis" always
-  means the whole round. Both are in
+  a deterministic fallback carried no on-screen note at all — the round summary
+  and the recommendation wording — and deliberately left two larger changes
+  unbuilt, offered but not requested. **The first was requested and is built:**
+  `DashboardPartialMapNotice` now also names the dimensions whose paragraphs the
+  service composed, so the failure contract 6.0 actually produces has an
+  overview-level banner instead of only a per-blob note. It is on
+  `feat/the-map-says-which-paragraphs-it-wrote-itself`; `PROJECT_CONTEXT.md`
+  ADR-007 carries the rule.
+
+  **What is still unrequested is true per-dimension re-run.** It does not exist
+  today — a stored `AiAnalysisRun` starts every field empty, so "re-run the
+  analysis" always means the whole round, and every note the product shows says
+  so. Building it is not a UI change: it needs the AI service to process a
+  subset of dimensions, a merge of a partial result into a stored run, and a
+  contract shape for a callback that carries fewer than eight stones — which
+  ADR-002's additive rule and the "eight failed dimensions fail the round whole"
+  rule both have opinions about. Background in
   `docs/agent-tasks/archive/claude--fallback-disclosure.md`.
 
 **Waits on the owner's hands**

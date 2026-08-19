@@ -185,6 +185,16 @@ no model wrote those paragraphs, and every accepted map emits
 is distinguishable from one it did. Copy the service wrote may be shown; it may
 not be presented as the model's.
 
+**Disclosure reaches the map itself, 2026-08-19.** Naming it only on the
+dimension screen left the disclosure on the screen a manager who trusts the map
+never opens — the same reasoning that put `DashboardPartialMapNotice` on the map
+for missing words. That notice now also names the dimensions whose paragraphs
+the service composed, in one box and under a heading that distinguishes the two:
+`ניתוח חלקי` when something is missing, `פסקאות שנגזרו מהנתונים` when nothing is.
+Only the dimension summaries. Metric narratives fall back separately and stay
+disclosed where their sentences are, deliberately: a manager who read a real
+interpretation has no reason to suspect the readings underneath it.
+
 Python validates its assembled outgoing Stone Map before callback. Repair
 replays only rejected dimensions/parts and carries safe Hebrew critique into
 the repair prompt; non-repairable contract violations fail immediately.
