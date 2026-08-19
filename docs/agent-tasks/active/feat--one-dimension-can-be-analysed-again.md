@@ -119,8 +119,8 @@ Nothing.
 
 - The push (owner action):
   `git push origin feat/one-dimension-can-be-analysed-again:main`.
-- `20260819120000_a_run_may_name_the_dimensions_it_rewrites` has not been
-  applied to the deployed database.
+- Nothing else. `20260819120000_a_run_may_name_the_dimensions_it_rewrites` was
+  applied to the deployed database on 2026-08-19, ahead of the push.
 
 ## Changed files
 
@@ -160,6 +160,11 @@ Service:
   the column and `findLatestResultByRoundId`.
 - `ai-analytics-service` pytest — 526 passed, including the two full-graph tests
   that prove one dimension is re-asked and eight stones come back.
+- `prisma migrate status` against the deployed database after applying
+  `20260819120000_a_run_may_name_the_dimensions_it_rewrites` on 2026-08-19:
+  sixteen migrations, `Database schema is up to date!`. A read-back selecting
+  `regenerate_dimension_ids` from `ai_analysis_runs` succeeded there, with a
+  deliberately wrong column name as the control that it failed.
 - Live browser walk on `localhost:3210` against the local database: the button
   rendered under the deterministic note on `/dashboard/balance/`; pressing it
   produced the Hebrew acknowledgement; the database showed
@@ -176,8 +181,8 @@ None outstanding.
 - No end-to-end run against a real provider. The service side is covered by the
   graph tests, which stub the provider; the paid path was deliberately not
   called.
-- Nothing was exercised on the deployed environment — the migration is not
-  applied there.
+- No screen or route was exercised on the deployed environment. Its schema now
+  carries the column, but its code does not use it until the push lands.
 
 ### Environment
 
@@ -190,8 +195,11 @@ stopped and the scratch directory removed.
 ### Residual risk
 
 Low. The new field defaults to empty everywhere, and every path that ignores it
-behaves as it did before. The one thing to watch is the deployed database: the
-claim route reads a column that does not exist there until the migration runs.
+behaves as it did before. The deployed database already has the column, applied
+ahead of the code — safe for an additive column with a default, and it removes
+the window where a pushed claim route would read a column that is not there. A
+fresh environment or a second checkout still needs the migration before the
+claim route is exercised.
 
 ## Failed approaches
 
@@ -204,7 +212,6 @@ claim route reads a column that does not exist there until the migration runs.
 
 ## Known risks
 
-- Deployed database migration pending (above).
 - A manager pressing the button on several dimensions in a row gets
   `already_running` for the second, which is the existing single-active-run rule
   and reads correctly, but it is one press per run.
@@ -227,5 +234,4 @@ paragraph and whichever lands second needs a trivial rebase:
 2. `git push origin feat/the-map-says-which-paragraphs-it-wrote-itself:main`
 3. `git push origin feat/one-dimension-can-be-analysed-again:main`
 
-Then apply `20260819120000_a_run_may_name_the_dimensions_it_rewrites` to the
-deployed database.
+The deployed database is already migrated, so nothing follows the push.

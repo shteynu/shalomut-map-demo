@@ -1807,12 +1807,15 @@ older snapshots remain available in Git.
   owner's signed-in browser before the push; its task file is archived.
 - The one unmerged branch, `fix/refuse-asserted-causes`, is a decided **no**
   and is described below.
-- **No migration is pending on the deployed database.** The eleventh,
-  `20260805170000_add_survey_definition_versions`, was applied on 2026-08-05
-  immediately after the push that carried its code — the build command runs
-  `prisma generate`, never `prisma migrate deploy`, so this is a hand step every
-  schema change still needs. Details and the read-back are in the database
-  section below. Nothing after it changed a schema.
+- **No migration is pending on the deployed database.** Last read on
+  2026-08-19: `prisma migrate status` against that host reports sixteen
+  migrations and `Database schema is up to date!`. The most recent,
+  `20260819120000_a_run_may_name_the_dimensions_it_rewrites`, was applied that
+  day **ahead of** the push carrying its code; the ones before it were applied
+  right after theirs. Either order works for an additive change, and neither is
+  automatic — the build command runs `prisma generate`, never
+  `prisma migrate deploy`, so this is a hand step every schema change still
+  needs. Details and the read-backs are in the database section below.
 - Verification at `8d4af8d`: `npm run verify:core` exit 0 with 739 TypeScript
   tests, all five fitness checks, typecheck, ESLint and the production build,
   plus `npx playwright test e2e/` 6/6 against the local development database.
@@ -2205,10 +2208,14 @@ the container, not about the deployment.
   reached from the dimension screen's deterministic note, refuses a round with
   no stored analysis (`409 no_previous_analysis`), and an empty list means what
   it has always meant: the whole round. `PROJECT_CONTEXT.md` ADR-024 owns the
-  reasoning. **It needs the migration
-  `20260819120000_a_run_may_name_the_dimensions_it_rewrites`** — until that runs
-  on a database, the claim route there reads a column that does not exist.
-  Landed on `feat/one-dimension-can-be-analysed-again`; it and
+  reasoning. Its migration,
+  `20260819120000_a_run_may_name_the_dimensions_it_rewrites`, **was applied to
+  the deployed database on 2026-08-19, before the push that carries the code** —
+  the safe order, since the column is additive with a default and deployed code
+  that has never heard of it is unaffected. A database that has not had it fails
+  at claim time rather than at deploy time, so a second checkout or a fresh
+  environment needs it before the claim route is exercised. Landed on
+  `feat/one-dimension-can-be-analysed-again`; it and
   `feat/the-map-says-which-paragraphs-it-wrote-itself` close both follow-ups
   the fallback-disclosure audit
   (`docs/agent-tasks/archive/claude--fallback-disclosure.md`) left offered and
