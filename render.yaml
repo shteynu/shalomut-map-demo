@@ -170,30 +170,31 @@ services:
       # Declared here rather than left to the dashboard because it was neither:
       # unset in both, it defaulted to true in `config.py`, so the decision
       # lived nowhere a reader could find it.
-      # `low`, and it is the first number here that was measured on the bill
-      # rather than on the quota. Thinking tokens bill at the output rate — $9
-      # per million against $1.50 for input — and until 2026-08-19 this service
-      # said nothing about them, so the provider's default decided the largest
-      # line of every round.
+      # `LLM_REASONING_EFFORT` is deliberately absent, and the reason is worth
+      # more than the variable would be.
       #
-      # One round, the local unlocked fixture, three times on 2026-08-19,
-      # `gemini-3.5-flash` at the deployed settings. Unset: 58,885 thinking
-      # tokens, 89% of billed output, $0.62. `medium`: 59,845 and $0.63 — so
-      # unset *is* medium, and the knob only does something below it. `low`:
-      # 24,742 thinking tokens and $0.38, a 39% saving. All three returned the
-      # same map — eight stones, every one `llm`, each on the first attempt —
-      # and the same round summary quality.
+      # Thinking tokens bill at the output rate — $9 per million against $1.50
+      # for input — and until 2026-08-19 this service said nothing about them,
+      # so the provider's default decided the largest line of every round.
+      # Measured that day on one round, `gemini-3.5-flash` at these settings:
+      # unset spends 58,885 thinking tokens, 89% of billed output, $0.62;
+      # `medium` spends 59,845 and $0.63, so unset *is* medium and the knob only
+      # does something below it; `low` spends 24,742 and $0.38, a 39% saving,
+      # and returned the same eight stones.
       #
-      # The saving is a floor rather than a ceiling: the unset run lost four
-      # answers to the 20-second client timeout, which the provider may well
-      # have billed and this service cannot see. `low` had none.
+      # The eval corpus then said what one round could not. Seven analysed
+      # cases each way, `evals/baselines/2026-08-19-gemini-3.5-flash.json`
+      # against `...-reasoning-low.json`: the graders barely move — mean 0.9644
+      # to 0.9586, `distinctness` identical, no Hebrew refusal anywhere — but
+      # unset wrote 56 of 56 stones with the model and `low` wrote 53. Three
+      # paragraphs came back as this service's own sentence.
       #
-      # What this does not prove: one fixture is not the eval corpus, and the
-      # failure mode of too little thinking is the same as too small a cap —
-      # answers the Hebrew gate refuses, and a map this service writes itself.
-      # Run `evals/run_corpus.py` before trusting it on a harder round, and
-      # move this back to unset if refusals appear.
-      - key: LLM_REASONING_EFFORT
-        value: "low"
+      # And all three were lost to `TimeoutError`, not to the model: a request
+      # bounded at 20 seconds inside a 25-second retry budget, so an attempt
+      # that times out leaves no room for another. That budget is capped at 25
+      # in `config.py`, written when this call had to fit the core app's HTTP
+      # timeout — which it has not had to since the webhook started answering
+      # `202` before the run. Raise that first; `low` is worth 39% only once a
+      # slow answer is waited for rather than abandoned.
       - key: ONLY_LLM_FOR_PROBLEMATIC
         value: "false"

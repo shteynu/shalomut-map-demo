@@ -12,6 +12,7 @@ uses. Nothing here reads, prints or writes a key.
 import argparse
 import asyncio
 import json
+import logging
 import os
 import re
 import sys
@@ -132,6 +133,11 @@ def main(argv: Optional[List[str]] = None) -> int:
         help="env file to load before running; existing variables win",
     )
     args = parser.parse_args(argv)
+
+    # The service logs what each answer cost at INFO, and nothing here
+    # configured the root logger, so a run that spends real money could not say
+    # how much. Onto stderr: stdout carries this command's own progress.
+    logging.basicConfig(level=logging.INFO, stream=sys.stderr)
 
     loaded = load_env_file(Path(args.env_file))
     if loaded:

@@ -68,7 +68,16 @@ calls a provider and costs money, the second is free and deterministic.
 .venv/bin/python -m evals.report /tmp/eval-payloads/*.json > report.json
 ```
 
-`run_corpus` loads `.env` before importing the service, and refuses to run at
+`--env-file` defaults to `.env`, which is *this directory's* parent — the
+service's own file, and it carries the key and little else. The models and the
+token cap the deployment runs are in the repository root `.env`, so an
+unqualified run measures `gemini-flash-latest` at the 2048-token default rather
+than `gemini-3.5-flash` at 8192, and produces a perfectly readable report about
+a configuration nobody deploys. The line the command prints — `provider gemini
+(model / model), key configured` — is the one to read before letting it spend
+anything. Pass `--env-file ../.env` to measure the deployment.
+
+`run_corpus` loads that file before importing the service, and refuses to run at
 all without a provider key. Both matter: `src.config` builds its settings
 singleton at import time, so a service imported too early runs keyless — and a
 keyless run does not fail. Every dimension falls back to deterministic copy and
@@ -115,7 +124,22 @@ reports of one model differ only by the prompts between them, which is the
 comparison this directory exists to make: `no_overreach` 0.2725 to 0.94,
 21 clinical terms to 0, 9 asserted causes to 4.
 
-Both files are rescorings rather than first drafts. `summary_grounding` read
+`2026-08-19-gemini-3.5-flash.json` is the first report on the model the
+deployment has actually run since 2026-08-09, at `MAX_TOKENS_PER_DIMENSION`
+8192: mean 0.9644, two findings, and `outcome: "llm"` on 56 of 56 stones.
+Against the lite report beside it, `no_overreach` 0.94 to 0.97 and
+`evidence_specificity` 0.9832 to 1.0, while `distinctness` falls 0.9079 to
+0.8522.
+
+`2026-08-19-gemini-3.5-flash-reasoning-low.json` is the same corpus on the same
+model with `LLM_REASONING_EFFORT=low`, and it is the comparison that decided
+that setting. The graders barely notice — mean 0.9586, `distinctness`
+unchanged at 0.8529 — but three stones came back `deterministic_fallback`
+instead of 56 of 56, and all three were lost to `TimeoutError` rather than to
+anything the graders can see. A report is not the only thing to read: check the
+provenance first, as the block above says.
+
+Both 2026-08-05 files are rescorings rather than first drafts. `summary_grounding` read
 every "18 green *answers*" as a claim about dimensions and scored the first run
 at 0.375; the grader was fixed and the same payloads rescored, which is exactly
 what a saved report is for — rescoring costs nothing and needs no provider.

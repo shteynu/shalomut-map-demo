@@ -6,7 +6,7 @@
 - Base branch: `origin/main`
 - Base commit: `dab5ef6`
 - Current HEAD: see `git log -1` (commits listed under Completed)
-- Status: implementation and measurement complete; deployed value declared
+- Status: implementation and measurement complete; the corpus refused the value, and the deployment keeps the provider default
 - Last updated: 2026-08-19
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -82,8 +82,12 @@ and its logging.
   every dimension on the deterministic sentence, and a run that reports success.
 - `reasoning_tokens` is logged as the split of `completion_tokens`, never added
   to a total. Adding it would double-count what the provider already billed once.
-- `render.yaml` is deliberately not touched. That file's own rule is that a
-  number is declared beside the evidence for it, and there is no measurement yet.
+- `render.yaml` keeps the provider default and documents why. `low` was
+  declared there on the strength of one round and withdrawn when the corpus
+  showed it losing three stones in 56. The file's rule cuts both ways: a number
+  is declared beside its evidence, and withdrawn by evidence too.
+- The three lost stones are a timeout rather than a quality verdict, so `low` is
+  not refused permanently — it waits on the retry budget under Remaining.
 
 ## Assumptions
 
@@ -107,7 +111,14 @@ and its logging.
 - Tests: `ai-analytics-service/tests/test_reasoning_effort.py` (new), plus the
   thinking-share cases in `tests/test_token_usage_logging.py`.
 - `ai-analytics-service/README.md`: the knob and the usage line's fields.
-- `render.yaml`: `LLM_REASONING_EFFORT=low`, with the measurement beside it.
+- `render.yaml`: the knob is documented and deliberately unset, with both
+  measurements beside it.
+- `ai-analytics-service/evals/run_corpus.py`: configures logging, so a run that
+  spends money can say how much.
+- `ai-analytics-service/evals/README.md`: the `--env-file` default, and the two
+  new baselines.
+- `ai-analytics-service/evals/baselines/2026-08-19-gemini-3.5-flash.json` and
+  `...-reasoning-low.json` (new).
 
 ## In progress
 
@@ -115,9 +126,12 @@ Nothing.
 
 ## Remaining
 
-- Run `evals/run_corpus.py` against `low` before trusting it on a harder round.
-  One fixture is not the corpus, and the corpus is this project's instrument for
-  exactly this question — it is what rejected `flash-lite` on 2026-08-09.
+- Raise the retry budget before revisiting `low`. `llm_retry_budget_seconds` is
+  capped at 25 in `config.py` and `llm_request_timeout_seconds` at 20, so one
+  timed-out attempt leaves no room for another. Both were sized when this call
+  had to fit the core app's 30-second HTTP timeout, which stopped being true
+  when the webhook started answering `202` before the run — `config.py` says so
+  in its own comment. That is what cost `low` its three stones.
 - Decide the adaptation defect below. It is not this branch's work, but it is
   where roughly half of a round's calls go.
 
@@ -165,6 +179,27 @@ Nothing.
   Thinking is not itemised by this provider. `reasoning_tokens` reads
   `unavailable` on every line, and the figures above are
   `total_tokens - prompt_tokens - completion_tokens`.
+- **The eval corpus, both ways**, 2026-08-19, `gemini-3.5-flash` at the deployed
+  settings, seven analysed cases each (`locked-below-threshold` never reaches a
+  provider). Reports committed under `evals/baselines/`:
+
+  | | mean | findings | distinctness | no_overreach | stones by the model |
+  | --- | --- | --- | --- | --- | --- |
+  | unset | 0.9644 | 2 | 0.8522 | 0.97 | **56 / 56** |
+  | `low` | 0.9586 | 6 | 0.8529 | 0.94 | **53 / 56** |
+
+  The graders barely move and no Hebrew refusal appears anywhere, so `low` does
+  not make the model write worse. What it costs is three paragraphs, and the
+  provenance says why: all three ended `reason=TimeoutError` at
+  `scope=structured_summary`, with 1, 2 and 2 attempts — the request timeout,
+  not the model. `low` had fewer timeouts than unset overall (38 against 51),
+  and unset lost no stone because its timeouts fell where a retry recovered
+  them.
+
+  Cost of the `low` corpus run, from its own usage lines: 141 billed answers,
+  264,334 thinking tokens (76% of billed output), $3.27, or $0.468 a round. The
+  unset corpus run has no token figures — `run_corpus` was still dropping the
+  usage line when it ran, which this branch then fixed.
 
 ### Failed
 
@@ -173,8 +208,8 @@ Nothing.
 
 ### Blocked or not run
 
-- `evals/run_corpus.py` against `low`. Not run: it is seven cases rather than
-  one and spends accordingly, and the owner has not been asked.
+- The corpus was **not** rerun after the timeout finding. Whether a larger
+  retry budget recovers the three stones at `low` is untested.
 - `minimal` and `none` were not measured. `low` already returned the whole map,
   so the cheaper settings were not worth the risk of a round nobody would trust.
 - No deployed verification. `render.yaml` now declares `low`, and nothing has
@@ -235,8 +270,9 @@ Topping up the provider account is the owner's action.
 
 ## Next concrete step
 
-Push the branch, then run `evals/run_corpus.py` with `LLM_REASONING_EFFORT=low`
-and compare its graders against
-`evals/baselines/2026-08-05-gemini-3.5-flash-lite.json`. If refusals appear,
-move `render.yaml` back to unset; the value is one line and the reasoning for
-moving it is already beside it.
+Push the branch. The next change is not this one: raise
+`llm_retry_budget_seconds` past 25 and `llm_request_timeout_seconds` past 20 in
+`ai-analytics-service/src/config.py`, then rerun the corpus at `low` with
+`--env-file ../.env` and see whether 56 of 56 stones come back. If they do,
+`LLM_REASONING_EFFORT=low` returns to `render.yaml` and takes 39% off every
+round with it.
