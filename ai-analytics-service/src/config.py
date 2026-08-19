@@ -127,6 +127,31 @@ class Settings:
                 float(os.getenv("AI_JOB_HEARTBEAT_INTERVAL_SECONDS", "30.0")),
             ),
         )
+        # How many rounds this process analyses at once, each holding its own
+        # lease. One is the shape the service ran in until 2026-08-18: claim,
+        # finish, claim again — so fifty schools closing together queued behind
+        # one another for hours, while the account's paid quota sat mostly idle.
+        # A round is about 28 provider calls over roughly three minutes, near
+        # 11 a minute against a pace of 60, so the process spends most of a
+        # round waiting on an answer rather than on its own rate limit. The
+        # slots that wait are what this fills.
+        #
+        # Raising it is safe because the pace is charged per process, not per
+        # round: `provider_rate_limiter` is one module-level object behind a
+        # lock, so every concurrent round books turns from the same queue and
+        # the account's quota is spent once. That is exactly what a second
+        # container would *not* give — two processes would keep two private
+        # counters and together exceed the quota — which is why this knob comes
+        # before that one.
+        #
+        # The ceiling is 10 rather than unbounded: past roughly 60/11 the pace
+        # is the binding limit and further slots only queue behind it, and each
+        # concurrent round also holds a lease Core must keep alive. The default
+        # stays 1 so a deployment changes behaviour only when it says so.
+        self.ai_job_pool_size: int = max(
+            1,
+            min(10, int(os.getenv("AI_JOB_POOL_SIZE", "1"))),
+        )
 
         # LLM Settings & Token Optimization
         self.llm_base_url: str = os.getenv("LLM_BASE_URL", "")

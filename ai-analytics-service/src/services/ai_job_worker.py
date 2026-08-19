@@ -3,6 +3,7 @@ import logging
 import os
 import uuid
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import Optional
 from urllib.parse import urlsplit
 
@@ -214,13 +215,51 @@ class AiAnalysisJobWorker:
                     pass
 
 
+# Core's `isValidWorkerId` accepts 1..120 characters of `[a-zA-Z0-9._:-]`, and a
+# claim carrying anything else is refused. The slot suffix has to fit inside
+# that, so the base is trimmed rather than the composed id overflowing.
+_MAX_WORKER_ID_LENGTH = 120
+
+
+def worker_id_for_slot(base: str, slot: Optional[int]) -> str:
+    """Name one pool slot, or the whole process when it runs alone.
+
+    `slot` is `None` for a single worker, which keeps the id exactly what it was
+    before pooling existed — an operator reading `worker_id` on a run row sees
+    no change until they ask for more than one slot.
+
+    Slots are numbered because `ai_analysis_runs.worker_id` answers "who holds
+    this run", and a pool sharing one name cannot answer it. The separator is
+    `:` because Core's charset allows it and neither `uuid4()` nor a sane
+    operator value contains one, so the boundary stays readable.
+    """
+    if slot is None:
+        return base[:_MAX_WORKER_ID_LENGTH]
+
+    suffix = f":{slot}"
+    return f"{base[:_MAX_WORKER_ID_LENGTH - len(suffix)]}{suffix}"
+
+
+@lru_cache(maxsize=1)
+def process_worker_id_base() -> str:
+    """The name this process answers to, computed once for all its slots.
+
+    Cached rather than minted per call so a pool reads as one container: four
+    slots become `worker-<id>:1` … `:4` and a reader of `ai_analysis_runs` can
+    see that four runs share a machine. A fresh `uuid4()` per slot would name
+    four unrelated strangers and lose that.
+    """
+    return os.getenv("AI_JOB_WORKER_ID") or f"worker-{uuid.uuid4()}"
+
+
 def create_ai_analysis_job_worker(
     *,
     client: Optional[JobStore] = None,
     runner: Optional[AnalysisRunner] = None,
+    slot: Optional[int] = None,
 ) -> AiAnalysisJobWorker:
     """Compose the worker from configuration, or from what a caller supplies."""
-    worker_id = os.getenv("AI_JOB_WORKER_ID") or f"worker-{uuid.uuid4()}"
+    worker_id = worker_id_for_slot(process_worker_id_base(), slot)
     return AiAnalysisJobWorker(
         client=client
         or CoreJobClient(

@@ -167,12 +167,42 @@ lease becoming eligible again. Expiring the exhausted ones is part of claiming
 rather than a separate collector — every `claim` first marks `lease_exhausted`
 on whatever ran out of attempts, then looks for its own work. There is no cron.
 
+## How many rounds run at once
+
+One worker loop holds one lease: `run_forever` awaits `process_once`, so a
+single lane claims, finishes, and only then claims again. `AI_JOB_POOL_SIZE`
+decides how many such lanes the process runs, each an independent worker with
+its own lease, heartbeat and poll loop, named `worker-<process>:1` … `:n` so a
+run row still says which lane holds it. At the default of `1` the id keeps its
+un-suffixed shape and the behaviour is what it always was.
+
+The lanes are safe to add because they share the one thing that must not be
+duplicated: `provider_rate_limiter` is a module-level object behind a lock, so
+every concurrent round books turns from the same per-model queue and the
+account's quota is spent once. **A second container would not have that
+property** — two processes keep two private counters and together exceed the
+quota — which is why more lanes come before more instances, and why a shared
+limiter is a prerequisite for ever adding one.
+
+What the lanes buy is idle quota rather than more quota. A round is roughly 28
+provider calls over about three minutes, near 11 a minute against a configured
+pace of 60, so a single lane leaves most of the paid rate unspent. Past about
+`60/11` the pace becomes the binding limit and further lanes only queue behind
+it; `config.py` caps the setting at 10 for that reason.
+
+Two things the pool does not change. The queue stays globally first-in
+first-out — `claimNext` orders by `sequence asc` with no fairness between
+schools, so more lanes drain the queue faster without changing whose round goes
+first. And nothing here tells a manager their analysis finished; that gap is
+the same one it was with a single lane.
+
 ## The numbers everything rests on
 
 | What | Value | Name | Where |
 | --- | --- | --- | --- |
 | Poll interval | 2 s | `AI_JOB_POLL_INTERVAL_SECONDS` | `ai-analytics-service/src/config.py` |
 | Heartbeat interval | 30 s | `AI_JOB_HEARTBEAT_INTERVAL_SECONDS` | `ai-analytics-service/src/config.py` |
+| Concurrent rounds per process | 1, up to 10 | `AI_JOB_POOL_SIZE` | `ai-analytics-service/src/config.py` |
 | Lease length | 90 s | `AI_ANALYSIS_JOB_LEASE_MS` | `src/lib/server/ai-analysis-worker.ts` |
 | Attempt ceiling | 3 | `AI_ANALYSIS_JOB_MAX_ATTEMPTS` | `src/lib/server/ai-analysis-worker.ts` |
 | Delivery retries | 4, ≈7 s | `CALLBACK_MAX_ATTEMPTS` | `ai-analytics-service/src/services/result_sink.py` |

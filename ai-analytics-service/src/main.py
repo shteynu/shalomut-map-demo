@@ -33,7 +33,7 @@ logger = logging.getLogger("shalomut-ai-service")
 @asynccontextmanager
 async def lifespan(application: FastAPI):
     stop_event = None
-    task = None
+    tasks: list[asyncio.Task] = []
     if settings.ai_job_polling_enabled:
         configuration_errors = settings.runtime_configuration_errors()
         if configuration_errors:
@@ -41,25 +41,44 @@ async def lifespan(application: FastAPI):
                 "AI job polling is enabled with invalid runtime configuration: "
                 + "; ".join(configuration_errors)
             )
+        # One stop event for the whole pool: shutdown is a fact about the
+        # process, not about a slot, and every loop watches the same flag.
         stop_event = asyncio.Event()
-        worker = create_ai_analysis_job_worker()
-        task = asyncio.create_task(
-            worker.run_forever(
-                stop_event,
-                settings.ai_job_poll_interval_seconds,
+        pool_size = settings.ai_job_pool_size
+        # Each slot is a full worker with its own lease, heartbeat and poll
+        # loop; they share nothing but the rate limiter they all book turns
+        # from. `slot` stays `None` at size one so the worker id keeps the exact
+        # shape it had before this pool existed.
+        for index in range(pool_size):
+            worker = create_ai_analysis_job_worker(
+                slot=index + 1 if pool_size > 1 else None,
             )
+            tasks.append(
+                asyncio.create_task(
+                    worker.run_forever(
+                        stop_event,
+                        settings.ai_job_poll_interval_seconds,
+                    )
+                )
+            )
+        logger.info(
+            "[AI Job Worker] Polling with %s concurrent slot(s)",
+            pool_size,
         )
         application.state.ai_job_worker_stop = stop_event
-        application.state.ai_job_worker_task = task
+        application.state.ai_job_worker_tasks = tasks
 
     try:
         yield
     finally:
         if stop_event is not None:
             stop_event.set()
-        if task is not None:
+        for task in tasks:
             task.cancel()
-            await asyncio.gather(task, return_exceptions=True)
+        if tasks:
+            # Gathered together rather than awaited one at a time: a slot that
+            # refuses to die must not stop the others from being collected.
+            await asyncio.gather(*tasks, return_exceptions=True)
 
 
 app = FastAPI(

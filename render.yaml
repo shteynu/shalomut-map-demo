@@ -54,6 +54,24 @@ services:
         sync: false
       - key: AI_JOB_POLLING_ENABLED
         value: "true"
+      # How many rounds this container analyses at once, each holding its own
+      # lease. Left at the default of one until a deployment actually needs
+      # more: raising it is safe but it is a throughput decision, and the
+      # number belongs next to the evidence for it rather than in a dashboard.
+      #
+      # What it buys, and why it comes before a second instance: a round is
+      # about 28 provider calls over roughly three minutes — near 11 a minute
+      # against the pace of 60 set below — so one round leaves most of the paid
+      # quota unspent, and fifty schools closing together queue behind one
+      # another for hours. Extra slots spend that idle quota instead. They are
+      # safe to add because the pace is charged per process by one shared
+      # limiter; two containers would keep two private counters and together
+      # exceed the quota, which is the failure this knob exists to avoid.
+      #
+      # Past roughly 60/11 the pace becomes the binding limit and further slots
+      # only queue behind it, so `config.py` caps this at 10.
+      - key: AI_JOB_POOL_SIZE
+        value: "1"
       # The ceiling on one dimension's answer, and it was the default — 2048 in
       # `config.py` — until 2026-08-09, when a local run of the real pipeline
       # over a 24-question round showed what that costs: every call came back
