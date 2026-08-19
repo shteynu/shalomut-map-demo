@@ -2385,9 +2385,33 @@ that walk but the sign-in.
   code change helps. Until then, every measurement that needs a live provider is
   blocked, including the one in
   `docs/agent-tasks/active/feat--the-thinking-budget-is-a-declared-number.md`.
-  Worth deciding at the same time whether local runs keep spending the
-  deployment's balance: the local `.env`, the eval corpus and the pipeline script
-  all bill the same key.
+
+  What was spent, read from AI Studio on 2026-08-19 for project
+  `Default Gemini Project` (billing account tier `Paid 1`): one prepayment of
+  **₪50.00 on 2026-08-05**, auto-reload off, balance now **−₪0.82** against
+  ₪50.82 of usage over 28 days. By model: `gemini-3.5-flash` ₪32.34,
+  `gemini-3.5-flash-lite` ₪11.03, `gemini-3.6-flash` ₪7.45 — the three sum to
+  the whole bill. By day it is three days and not a slope: ~₪9 on 08-05 (the
+  eval-corpus runs on lite), ~₪17 on 08-09 (the flash/lite comparison, which
+  also spent ₪7.45 on a model this repository's configuration never names), and
+  ~₪21 on 08-11 (the day of the deployed signed-in walks, whose closed rounds
+  each ran a real analysis). Against the 28-day peak of 160 requests a day on
+  `gemini-3.5-flash`, that day implies roughly ₪0.13 a call and ₪3–4 a round —
+  an inference from two dashboard figures, not a measurement, and the reason
+  the `LLM_REASONING_EFFORT` measurement is still owed.
+
+  A free tier is not a way out of it, and the numbers are now read rather than
+  assumed. AI Studio's tier comparison on 2026-08-19 gives the free tier
+  **5 RPM / 250K TPM / 20 RPD** for `gemini-3.5-flash` and **10 RPM / 250K TPM /
+  500 RPD** for `gemini-3.5-flash-lite`. A round is about 28 calls, so the free
+  tier cannot finish one round a day on the model whose Hebrew this project
+  verified, and the only free-tier model that could is the one measured on
+  2026-08-09 as unable to spell Hebrew. Enabling billing also moves a project to
+  the paid tier permanently — the depleted key returns `429` for every model,
+  free ones included — so a free-tier key means a different project, not a
+  different key. Worth deciding at the same time whether local runs keep
+  spending the deployment's balance: the local `.env`, the eval corpus and the
+  pipeline script all bill the same key.
 - **Closed 2026-08-17: the respondent consent wording is approved.** The second
   promise on the consent screen — that the time the questionnaire is on screen
   is measured and stored with the answers, and that no per-question timing is

@@ -196,7 +196,14 @@ Topping up the provider account is the owner's action.
 
 - Should local development keep using the same key as the deployment? Every
   local pipeline run and every eval-corpus run is billed to the deployment's
-  balance, which is part of how the first $50 went.
+  balance, which is part of how the first ₪50 went — ₪21 of it on 2026-08-11
+  alone, the day of the deployed walks.
+- **Answered 2026-08-19: a free tier does not replace this key.** Read from AI
+  Studio, the free tier allows 20 requests a day on `gemini-3.5-flash` against
+  the ~28 one round needs, and 500 a day on `gemini-3.5-flash-lite`, whose
+  Hebrew this project rejected on 2026-08-09. The full numbers are in
+  `docs/shalomut-tracker-handoff.md`. So the measurement below waits on credit
+  rather than on a cheaper account.
 
 ## Next concrete step
 
