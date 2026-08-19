@@ -1,5 +1,34 @@
 # Shalomut Tracker — operational handoff
 
+**2026-08-19, session close: the three open items from this file are closed,
+built and seen running on the deployed stack.** `origin/main` is **`4bd5b2f`**,
+asked of the remote at the time of writing — and this file has been wrong about
+that twice before, so ask it again rather than trusting this line. What closed:
+
+- **The deployed `commit` was read.** `e752081`, matching `origin/main` exactly,
+  so `VERCEL_GIT_COMMIT_SHA` needed no rename. That item is gone from
+  "waits on the owner's hands".
+- **The AI service's `/health` proves a commit's shape** before publishing it,
+  mirroring Core's resolver rather than truncating whatever the variable holds.
+- **Both fallback-disclosure follow-ups were requested and built.** The map
+  notice now covers `deterministic_fallback`, and a run may name the dimensions
+  it rewrites while still delivering a whole eight-stone map. `PROJECT_CONTEXT.md`
+  ADR-024 owns the second; its migration was applied to the deployed database
+  ahead of the code.
+
+All of it is deployed and was exercised in the owner's signed-in Chrome. The
+evidence — eight stones back, one dimension rewritten, seven carried verbatim —
+is in the contract section below and in the two archived task files. Two things
+that walk also established, both recorded in their own sections: **Render does
+not rebuild for a push that misses its directory**, so the two halves need not
+answer with the same commit, and **the round it ran on is seeded**, with real
+numbers and placeholder prose.
+
+The branch this closes on, `docs/the-partial-run-was-exercised-on-the-deployed-stack`,
+also carries the owner's own in-progress work on the thinking budget, whose
+active task file is `feat--the-thinking-budget-is-a-declared-number.md`. Nothing
+of the work described above is waiting on anything.
+
 **2026-08-18, session close (second and final for the day): the repository now
 says what it grants, and this paragraph went stale while it was being written.**
 `origin/main` is **`ace5c3c`**, asked of the remote directly — and the first
