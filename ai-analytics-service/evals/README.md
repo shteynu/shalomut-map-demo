@@ -132,12 +132,21 @@ Against the lite report beside it, `no_overreach` 0.94 to 0.97 and
 0.8522.
 
 `2026-08-19-gemini-3.5-flash-reasoning-low.json` is the same corpus on the same
-model with `LLM_REASONING_EFFORT=low`, and it is the comparison that decided
-that setting. The graders barely notice — mean 0.9586, `distinctness`
-unchanged at 0.8529 — but three stones came back `deterministic_fallback`
-instead of 56 of 56, and all three were lost to `TimeoutError` rather than to
-anything the graders can see. A report is not the only thing to read: check the
-provenance first, as the block above says.
+model with `LLM_REASONING_EFFORT=low`. The graders barely notice — mean 0.9586,
+`distinctness` unchanged at 0.8529 — but three stones came back
+`deterministic_fallback` instead of 56 of 56, and all three were lost to
+`TimeoutError` rather than to anything the graders can see. A report is not the
+only thing to read: check the provenance first, as the block above says.
+
+`2026-08-19-gemini-3.5-flash-reasoning-low-waited.json` is that run again after
+the retry budget stopped abandoning slow answers (25/20/8 seconds to 90/40/20,
+`src/config.py`): 56 of 56 stones by the model, mean 0.9604, no `TimeoutError`
+anywhere. Read as a trio, the three reports separate two things a single run
+confounds — what the model writes, which `low` does not change, and whether
+this service waits for it, which was the whole defect. It was assembled from
+two runs, four cases and then three, because the account ran out of credit in
+between; the cases are independent and the report carries no timestamp, which
+is what makes that legitimate.
 
 Both 2026-08-05 files are rescorings rather than first drafts. `summary_grounding` read
 every "18 green *answers*" as a claim about dimensions and scored the first run

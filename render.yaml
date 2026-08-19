@@ -170,8 +170,7 @@ services:
       # Declared here rather than left to the dashboard because it was neither:
       # unset in both, it defaulted to true in `config.py`, so the decision
       # lived nowhere a reader could find it.
-      # `LLM_REASONING_EFFORT` is deliberately absent, and the reason is worth
-      # more than the variable would be.
+      # `low`, and the number of measurements behind it is the point.
       #
       # Thinking tokens bill at the output rate — $9 per million against $1.50
       # for input — and until 2026-08-19 this service said nothing about them,
@@ -190,11 +189,23 @@ services:
       # paragraphs came back as this service's own sentence.
       #
       # And all three were lost to `TimeoutError`, not to the model: a request
-      # bounded at 20 seconds inside a 25-second retry budget, so an attempt
-      # that times out leaves no room for another. That budget is capped at 25
-      # in `config.py`, written when this call had to fit the core app's HTTP
-      # timeout — which it has not had to since the webhook started answering
-      # `202` before the run. Raise that first; `low` is worth 39% only once a
-      # slow answer is waited for rather than abandoned.
+      # bounded at 20 seconds inside a 25-second retry budget left no room for
+      # a second attempt. Those bounds are now 90, 40 and 20 — see `config.py`,
+      # which carries the reasoning — and the corpus was run again at `low`:
+      # `evals/baselines/2026-08-19-gemini-3.5-flash-reasoning-low-waited.json`,
+      # 56 of 56 stones written by the model, mean 0.9604 against the unset
+      # run's 0.9644, and not one `TimeoutError` in either half of it.
+      #
+      # So this value rests on quality measured twice and cost measured once.
+      # The 39% comes from one round with both runs on the old bounds; under
+      # the new ones only `low` has been measured, at $0.72 a round on the
+      # three hardest cases against $0.468 under the old ones — the difference
+      # being answers that used to be abandoned and now complete. Unset should
+      # rise by more, since the answers it abandoned were the thinking-heavy
+      # ones, so 39% is expected to be conservative rather than optimistic.
+      # That last step is reasoning, not a measurement, and the honest way to
+      # close it is one unset round on these bounds.
+      - key: LLM_REASONING_EFFORT
+        value: "low"
       - key: ONLY_LLM_FOR_PROBLEMATIC
         value: "false"

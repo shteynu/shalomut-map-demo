@@ -1,0 +1,573 @@
+{
+  "cases": [
+    {
+      "caseId": "contradictory",
+      "challenge": "The work feels meaningful while management support is the worst score on the map. Both have to survive into the summary; averaging them into one mood is the failure.",
+      "graders": [
+        {
+          "findings": [],
+          "measured": {
+            "maxSimilarity": 0.2402,
+            "meanSimilarity": 0.1462,
+            "pairs": 28
+          },
+          "name": "distinctness",
+          "score": 0.8538
+        },
+        {
+          "findings": [],
+          "measured": {
+            "meanShare": 0.5171,
+            "perDimension": {
+              "balance": 0.3333,
+              "certainty": 0.5,
+              "management-support": 0.5714,
+              "meaning": 0.75,
+              "organizational-climate": 0.7273,
+              "professional-competence": 0.5,
+              "self-expression": 0.3,
+              "social-resource": 0.4545
+            }
+          },
+          "name": "evidence_specificity",
+          "score": 1.0
+        },
+        {
+          "findings": [],
+          "measured": {
+            "assertedCauses": 0,
+            "clinicalTerms": 0,
+            "textsChecked": 65
+          },
+          "name": "no_overreach",
+          "score": 1.0
+        },
+        {
+          "findings": [],
+          "measured": {
+            "misfiled": 0,
+            "recommendations": 40,
+            "repeatedTitles": 0
+          },
+          "name": "recommendation_fit",
+          "score": 1.0
+        },
+        {
+          "findings": [],
+          "measured": {
+            "actualStatusCounts": {
+              "green": 2,
+              "red": 2,
+              "yellow": 4
+            },
+            "claims": 0,
+            "unsupported": 0
+          },
+          "name": "summary_grounding",
+          "score": 1.0
+        }
+      ],
+      "isLocked": false,
+      "meanScore": 0.9708,
+      "status": "success"
+    },
+    {
+      "caseId": "dynamic-questionnaire",
+      "challenge": "Not the default questionnaire: dimensions carry one or three questions and the ids are the round's own. Metrics must follow the snapshot rather than the template.",
+      "graders": [
+        {
+          "findings": [],
+          "measured": {
+            "maxSimilarity": 0.207,
+            "meanSimilarity": 0.1594,
+            "pairs": 28
+          },
+          "name": "distinctness",
+          "score": 0.8406
+        },
+        {
+          "findings": [],
+          "measured": {
+            "meanShare": 0.5676,
+            "perDimension": {
+              "balance": 0.7143,
+              "certainty": 0.5,
+              "management-support": 0.4286,
+              "meaning": 0.625,
+              "organizational-climate": 0.6364,
+              "professional-competence": 0.5,
+              "self-expression": 0.5,
+              "social-resource": 0.6364
+            }
+          },
+          "name": "evidence_specificity",
+          "score": 1.0
+        },
+        {
+          "findings": [],
+          "measured": {
+            "assertedCauses": 0,
+            "clinicalTerms": 0,
+            "textsChecked": 63
+          },
+          "name": "no_overreach",
+          "score": 1.0
+        },
+        {
+          "findings": [],
+          "measured": {
+            "misfiled": 0,
+            "recommendations": 40,
+            "repeatedTitles": 0
+          },
+          "name": "recommendation_fit",
+          "score": 1.0
+        },
+        {
+          "findings": [],
+          "measured": {
+            "actualStatusCounts": {
+              "green": 1,
+              "red": 1,
+              "yellow": 6
+            },
+            "claims": 0,
+            "unsupported": 0
+          },
+          "name": "summary_grounding",
+          "score": 1.0
+        }
+      ],
+      "isLocked": false,
+      "meanScore": 0.9681,
+      "status": "success"
+    },
+    {
+      "caseId": "locked-below-threshold",
+      "challenge": "One respondent short of the threshold. There is nothing to interpret and no detail may appear; the only correct output is the locked one.",
+      "graders": [
+        {
+          "findings": [],
+          "measured": {
+            "pairs": 0
+          },
+          "name": "distinctness",
+          "score": 1.0
+        },
+        {
+          "findings": [],
+          "measured": {
+            "dimensions": 0
+          },
+          "name": "evidence_specificity",
+          "score": 1.0
+        },
+        {
+          "findings": [],
+          "measured": {
+            "assertedCauses": 0,
+            "clinicalTerms": 0,
+            "textsChecked": 1
+          },
+          "name": "no_overreach",
+          "score": 1.0
+        },
+        {
+          "findings": [],
+          "measured": {
+            "recommendations": 0
+          },
+          "name": "recommendation_fit",
+          "score": 1.0
+        },
+        {
+          "findings": [],
+          "measured": {
+            "actualStatusCounts": {
+              "green": 0,
+              "red": 0,
+              "yellow": 8
+            },
+            "claims": 0,
+            "unsupported": 0
+          },
+          "name": "summary_grounding",
+          "score": 1.0
+        }
+      ],
+      "isLocked": true,
+      "meanScore": 1.0,
+      "status": "locked_error"
+    },
+    {
+      "caseId": "mixed-middle",
+      "challenge": "Ordinary middle ground, and the twin of `polarized`. Same averages, agreed answers. A summary that reads only averages will say the same thing about both, which is the failure.",
+      "graders": [
+        {
+          "findings": [],
+          "measured": {
+            "maxSimilarity": 0.2607,
+            "meanSimilarity": 0.2019,
+            "pairs": 28
+          },
+          "name": "distinctness",
+          "score": 0.7981
+        },
+        {
+          "findings": [],
+          "measured": {
+            "meanShare": 0.5877,
+            "perDimension": {
+              "balance": 0.75,
+              "certainty": 0.5,
+              "management-support": 0.4286,
+              "meaning": 0.75,
+              "organizational-climate": 0.6364,
+              "professional-competence": 0.5,
+              "self-expression": 0.5,
+              "social-resource": 0.6364
+            }
+          },
+          "name": "evidence_specificity",
+          "score": 1.0
+        },
+        {
+          "findings": [
+            "meaning.narrative: asserted cause “נובעת מ”"
+          ],
+          "measured": {
+            "assertedCauses": 1,
+            "clinicalTerms": 0,
+            "textsChecked": 65
+          },
+          "name": "no_overreach",
+          "score": 0.88
+        },
+        {
+          "findings": [],
+          "measured": {
+            "misfiled": 0,
+            "recommendations": 40,
+            "repeatedTitles": 0
+          },
+          "name": "recommendation_fit",
+          "score": 1.0
+        },
+        {
+          "findings": [],
+          "measured": {
+            "actualStatusCounts": {
+              "green": 0,
+              "red": 0,
+              "yellow": 8
+            },
+            "claims": 0,
+            "unsupported": 0
+          },
+          "name": "summary_grounding",
+          "score": 1.0
+        }
+      ],
+      "isLocked": false,
+      "meanScore": 0.9356,
+      "status": "success"
+    },
+    {
+      "caseId": "polarized",
+      "challenge": "Same averages as `mixed-middle`, but the staff is split: half answer well, half answer badly, almost nobody in between. An analysis that calls this a moderate middle has missed the round.",
+      "graders": [
+        {
+          "findings": [],
+          "measured": {
+            "maxSimilarity": 0.2388,
+            "meanSimilarity": 0.1711,
+            "pairs": 28
+          },
+          "name": "distinctness",
+          "score": 0.8289
+        },
+        {
+          "findings": [],
+          "measured": {
+            "meanShare": 0.5657,
+            "perDimension": {
+              "balance": 0.5833,
+              "certainty": 0.5,
+              "management-support": 0.4286,
+              "meaning": 0.75,
+              "organizational-climate": 0.6364,
+              "professional-competence": 0.5,
+              "self-expression": 0.4,
+              "social-resource": 0.7273
+            }
+          },
+          "name": "evidence_specificity",
+          "score": 1.0
+        },
+        {
+          "findings": [],
+          "measured": {
+            "assertedCauses": 0,
+            "clinicalTerms": 0,
+            "textsChecked": 65
+          },
+          "name": "no_overreach",
+          "score": 1.0
+        },
+        {
+          "findings": [],
+          "measured": {
+            "misfiled": 0,
+            "recommendations": 40,
+            "repeatedTitles": 0
+          },
+          "name": "recommendation_fit",
+          "score": 1.0
+        },
+        {
+          "findings": [],
+          "measured": {
+            "actualStatusCounts": {
+              "green": 0,
+              "red": 0,
+              "yellow": 8
+            },
+            "claims": 0,
+            "unsupported": 0
+          },
+          "name": "summary_grounding",
+          "score": 1.0
+        }
+      ],
+      "isLocked": false,
+      "meanScore": 0.9658,
+      "status": "success"
+    },
+    {
+      "caseId": "uniformly-healthy",
+      "challenge": "Nothing needs fixing. The summary must not invent a problem to have something to say, and must not congratulate its way into claims the answers do not support.",
+      "graders": [
+        {
+          "findings": [],
+          "measured": {
+            "maxSimilarity": 0.2528,
+            "meanSimilarity": 0.1483,
+            "pairs": 28
+          },
+          "name": "distinctness",
+          "score": 0.8517
+        },
+        {
+          "findings": [],
+          "measured": {
+            "meanShare": 0.4832,
+            "perDimension": {
+              "balance": 0.4167,
+              "certainty": 0.3,
+              "management-support": 0.4286,
+              "meaning": 0.375,
+              "organizational-climate": 0.8182,
+              "professional-competence": 0.5,
+              "self-expression": 0.3,
+              "social-resource": 0.7273
+            }
+          },
+          "name": "evidence_specificity",
+          "score": 1.0
+        },
+        {
+          "findings": [
+            "meaning.narrative: asserted cause “נובעת מ”"
+          ],
+          "measured": {
+            "assertedCauses": 1,
+            "clinicalTerms": 0,
+            "textsChecked": 65
+          },
+          "name": "no_overreach",
+          "score": 0.88
+        },
+        {
+          "findings": [],
+          "measured": {
+            "misfiled": 0,
+            "recommendations": 40,
+            "repeatedTitles": 0
+          },
+          "name": "recommendation_fit",
+          "score": 1.0
+        },
+        {
+          "findings": [],
+          "measured": {
+            "actualStatusCounts": {
+              "green": 8,
+              "red": 0,
+              "yellow": 0
+            },
+            "claims": 0,
+            "unsupported": 0
+          },
+          "name": "summary_grounding",
+          "score": 1.0
+        }
+      ],
+      "isLocked": false,
+      "meanScore": 0.9463,
+      "status": "success"
+    },
+    {
+      "caseId": "uniformly-weak",
+      "challenge": "Everything is low. The summary has to stay specific and non-diagnostic instead of sliding into clinical language about the staff.",
+      "graders": [
+        {
+          "findings": [],
+          "measured": {
+            "maxSimilarity": 0.3058,
+            "meanSimilarity": 0.2055,
+            "pairs": 28
+          },
+          "name": "distinctness",
+          "score": 0.7945
+        },
+        {
+          "findings": [],
+          "measured": {
+            "meanShare": 0.5586,
+            "perDimension": {
+              "balance": 0.5833,
+              "certainty": 0.6,
+              "management-support": 0.4286,
+              "meaning": 0.875,
+              "organizational-climate": 0.6364,
+              "professional-competence": 0.5,
+              "self-expression": 0.3,
+              "social-resource": 0.5455
+            }
+          },
+          "name": "evidence_specificity",
+          "score": 1.0
+        },
+        {
+          "findings": [],
+          "measured": {
+            "assertedCauses": 0,
+            "clinicalTerms": 0,
+            "textsChecked": 65
+          },
+          "name": "no_overreach",
+          "score": 1.0
+        },
+        {
+          "findings": [],
+          "measured": {
+            "misfiled": 0,
+            "recommendations": 40,
+            "repeatedTitles": 0
+          },
+          "name": "recommendation_fit",
+          "score": 1.0
+        },
+        {
+          "findings": [],
+          "measured": {
+            "actualStatusCounts": {
+              "green": 0,
+              "red": 8,
+              "yellow": 0
+            },
+            "claims": 0,
+            "unsupported": 0
+          },
+          "name": "summary_grounding",
+          "score": 1.0
+        }
+      ],
+      "isLocked": false,
+      "meanScore": 0.9589,
+      "status": "success"
+    },
+    {
+      "caseId": "workload-pressure",
+      "challenge": "One dimension carries the round and the background explains why. Recommendations that ignore the staffing context are generic; a summary that treats the context as a cause has overreached.",
+      "graders": [
+        {
+          "findings": [],
+          "measured": {
+            "maxSimilarity": 0.25,
+            "meanSimilarity": 0.1905,
+            "pairs": 28
+          },
+          "name": "distinctness",
+          "score": 0.8095
+        },
+        {
+          "findings": [],
+          "measured": {
+            "meanShare": 0.5106,
+            "perDimension": {
+              "balance": 0.5833,
+              "certainty": 0.5,
+              "management-support": 0.4286,
+              "meaning": 0.5,
+              "organizational-climate": 0.7273,
+              "professional-competence": 0.5,
+              "self-expression": 0.3,
+              "social-resource": 0.5455
+            }
+          },
+          "name": "evidence_specificity",
+          "score": 1.0
+        },
+        {
+          "findings": [
+            "certainty.intervention: asserted cause “נובעת מ”"
+          ],
+          "measured": {
+            "assertedCauses": 1,
+            "clinicalTerms": 0,
+            "textsChecked": 65
+          },
+          "name": "no_overreach",
+          "score": 0.88
+        },
+        {
+          "findings": [],
+          "measured": {
+            "misfiled": 0,
+            "recommendations": 40,
+            "repeatedTitles": 0
+          },
+          "name": "recommendation_fit",
+          "score": 1.0
+        },
+        {
+          "findings": [],
+          "measured": {
+            "actualStatusCounts": {
+              "green": 0,
+              "red": 1,
+              "yellow": 7
+            },
+            "claims": 0,
+            "unsupported": 0
+          },
+          "name": "summary_grounding",
+          "score": 1.0
+        }
+      ],
+      "isLocked": false,
+      "meanScore": 0.9379,
+      "status": "success"
+    }
+  ],
+  "findings": 3,
+  "graderMeans": {
+    "distinctness": 0.8471,
+    "evidence_specificity": 1.0,
+    "no_overreach": 0.955,
+    "recommendation_fit": 1.0,
+    "summary_grounding": 1.0
+  },
+  "meanScore": 0.9604
+}

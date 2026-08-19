@@ -6,7 +6,7 @@
 - Base branch: `origin/main`
 - Base commit: `dab5ef6`
 - Current HEAD: see `git log -1` (commits listed under Completed)
-- Status: the timeout cause is confirmed on four of seven corpus cases; the run that would have confirmed the rest died on a depleted account
+- Status: complete. `low` is declared in `render.yaml` on a corpus that returned 56 of 56 stones; one cost comparison is left open and named below
 - Last updated: 2026-08-19
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -130,12 +130,12 @@ Nothing.
 
 ## Remaining
 
-- Rerun the corpus at `low` on the three cases the depleted account cut short —
-  `contradictory`, `workload-pressure`, `dynamic-questionnaire`. They are the
-  harder half of the corpus, and they are the reason `render.yaml` still carries
-  no value. About $1.2 at the measured $0.40 a round.
-- If those three come back 24 of 24, put `LLM_REASONING_EFFORT=low` in
-  `render.yaml` with the corpus numbers beside it.
+- One round at **unset on the raised bounds**, to close the only comparison
+  still resting on reasoning rather than measurement: the 39% saving was
+  measured with both runs on the old bounds, and under the new ones only `low`
+  has been measured. Expected to widen rather than narrow — the answers unset
+  used to abandon were the thinking-heavy ones — but expected is not measured.
+  About $0.7.
 - Decide the adaptation defect below. It is not this branch's work, but it is
   where roughly half of a round's calls go.
 
@@ -219,6 +219,21 @@ Nothing.
   in 105 billed answers, against 38 in the previous `low` run and 51 in the
   unset one. The stones `low` lost were answers this service stopped waiting
   for.
+- **The corpus completed at `low` on the raised bounds**, the three remaining
+  cases run separately once the account had credit again and joined to the four
+  above — legitimate because the cases are independent and the report carries no
+  timestamp. Committed as
+  `evals/baselines/2026-08-19-gemini-3.5-flash-reasoning-low-waited.json`:
+
+  | | stones by the model | mean | findings | distinctness | no_overreach |
+  | --- | --- | --- | --- | --- | --- |
+  | unset, old bounds | 56 / 56 | 0.9644 | 2 | 0.8522 | 0.97 |
+  | `low`, old bounds | 53 / 56 | 0.9586 | 6 | 0.8529 | 0.94 |
+  | `low`, raised bounds | **56 / 56** | 0.9604 | 3 | 0.8471 | 0.955 |
+
+  No `TimeoutError` and no `429` in the three-case run. Cost there was $0.72 a
+  round against $0.468 under the old bounds — the same answers, now finished
+  instead of abandoned.
 
 ### Failed
 
@@ -227,13 +242,14 @@ Nothing.
 
 ### Blocked or not run
 
-- **The corpus rerun at `low` with the raised budget is partial.** The account
-  ran out of prepayment credit inside case 4 of 8; from there every request
-  answered `429` and the last three cases came back with all 24 stones on
-  `deterministic_fallback`. Their report — mean 0.8829, 55 findings — measures
-  this service's own boilerplate and nothing about the prompts, exactly as
-  `evals/README.md` warns. It is not committed as a baseline and must not be
-  read as a regression. What the four completed cases say is under Passed.
+- Nothing is blocked. One measurement is deliberately not taken yet and is under
+  Remaining.
+- Void, recorded so nobody re-reads it as evidence: the first attempt at the
+  `low` rerun ran out of prepayment credit inside case 4 of 8, and its last
+  three cases came back with all 24 stones on `deterministic_fallback` for a
+  report of mean 0.8829 and 55 findings. That measures this service's own
+  boilerplate, exactly as `evals/README.md` warns. Not committed as a baseline.
+  Its four completed cases are sound and were reused in the report that is.
 - `minimal` and `none` were not measured. `low` already returned the whole map,
   so the cheaper settings were not worth the risk of a round nobody would trust.
 - No deployed verification. `render.yaml` now declares `low`, and nothing has
@@ -294,14 +310,7 @@ Topping up the provider account is the owner's action.
 
 ## Next concrete step
 
-Once the account has credit, run the three cases the last run could not reach:
-
-```
-.venv/bin/python -m evals.run_corpus --env-file ../.env \
-  --cases contradictory,workload-pressure,dynamic-questionnaire \
-  --out <dir>
-```
-
-with `LLM_REASONING_EFFORT=low` in the environment, and read the provenance
-before the report. If all 24 stones come back `llm`, `LLM_REASONING_EFFORT=low`
-goes into `render.yaml` with the corpus numbers beside it.
+Push the branch. Then, on the raised bounds, run the local unlocked fixture once
+with `LLM_REASONING_EFFORT` unset and compare its cost to the `low` figure
+already recorded — the last number in this file that is reasoned rather than
+measured.
