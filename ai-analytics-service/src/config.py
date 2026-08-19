@@ -10,6 +10,14 @@ LLM_PROVIDER_KEY_ENV = {
 }
 SUPPORTED_LLM_PROVIDERS = frozenset(LLM_PROVIDER_KEY_ENV)
 
+# What `reasoning_effort` may say. The list is the OpenAI-compatible one Gemini
+# documents for this surface; `none` is accepted by its 2.5 models only, and a
+# model that refuses a value on the list says so itself. What this frozenset is
+# for is the word that is on no provider's list at all.
+SUPPORTED_REASONING_EFFORTS = frozenset(
+    {"none", "minimal", "low", "medium", "high"}
+)
+
 
 def _is_invalid_url(url: str) -> bool:
     try:
@@ -184,6 +192,40 @@ class Settings:
             or os.getenv("OPENAI_MODEL_HEAVY")
             or default_model_heavy
         )
+
+        # How much of that cap the model may spend on thinking, which is a
+        # separate question from how large the cap is. Thinking tokens are
+        # billed at the output rate — on `gemini-3.5-flash` $9 per million
+        # against $1.50 for input — and the interpretation measured on
+        # 2026-07-28 spent 1440 of them against 108 visible ones. The cap below
+        # bounds what one answer may cost; this bounds what it does cost, which
+        # is the larger half of every bill this service has produced.
+        #
+        # Unset sends nothing and leaves the provider's own default — what every
+        # round before this setting existed was charged at. Deliberate: the knob
+        # that moves the bill should be the visible thing that moved it, not a
+        # new default nobody chose.
+        #
+        # `reasoning_effort` is the OpenAI-compatible spelling, which is the
+        # surface this service speaks. An unrecognised value is not forwarded —
+        # it becomes a configuration error instead — so a typo costs the
+        # previous behaviour rather than a `400` on every call of the round.
+        self.llm_reasoning_effort: str = ""
+        self.llm_reasoning_effort_configuration_error: str = ""
+        configured_reasoning_effort = os.getenv(
+            "LLM_REASONING_EFFORT",
+            "",
+        ).strip().lower()
+        if configured_reasoning_effort:
+            if configured_reasoning_effort in SUPPORTED_REASONING_EFFORTS:
+                self.llm_reasoning_effort = configured_reasoning_effort
+            else:
+                self.llm_reasoning_effort_configuration_error = (
+                    "Unsupported LLM_REASONING_EFFORT "
+                    f"'{configured_reasoning_effort}'; use one of "
+                    + ", ".join(sorted(SUPPORTED_REASONING_EFFORTS))
+                    + "."
+                )
 
         # Token cap for one interpretation. It is not the length of the answer:
         # a reasoning model spends this budget on thinking first and writes the
@@ -420,6 +462,9 @@ class Settings:
 
         if self.llm_key_configuration_error:
             errors.append(self.llm_key_configuration_error)
+
+        if self.llm_reasoning_effort_configuration_error:
+            errors.append(self.llm_reasoning_effort_configuration_error)
 
         if (
             self.llm_api_key

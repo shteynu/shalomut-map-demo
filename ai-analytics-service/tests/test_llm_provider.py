@@ -726,6 +726,7 @@ def clear_llm_key_environment(monkeypatch):
     monkeypatch.delenv("LLM_REQUEST_TIMEOUT_SECONDS", raising=False)
     monkeypatch.delenv("LLM_RETRY_BUDGET_SECONDS", raising=False)
     monkeypatch.delenv("LLM_MIN_RETRY_WINDOW_SECONDS", raising=False)
+    monkeypatch.delenv("LLM_REASONING_EFFORT", raising=False)
 
 
 def configure_valid_production_environment(monkeypatch):

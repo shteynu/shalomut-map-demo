@@ -179,3 +179,69 @@ def test_a_usage_block_of_the_wrong_shape_costs_a_field_not_an_answer(
     # confidently wrong. `True` is an int in Python and is refused for the same
     # reason.
     assert "prompt_tokens=unavailable" in line
+
+
+def test_the_thinking_half_of_a_completion_is_named(monkeypatch, caplog):
+    """The split, not a second cost line.
+
+    Reasoning tokens are already inside `completion_tokens` and billed at the
+    same rate, so adding them to a total would double-count. What the split buys
+    is the decision: a completion of 1548 tokens reads differently once 1440 of
+    them are known to be thinking, and that is the number `LLM_REASONING_EFFORT`
+    moves.
+    """
+    caplog.set_level(logging.INFO)
+
+    text, _attempts, reason = _run(
+        monkeypatch,
+        [
+            _answer(
+                ANSWER,
+                {
+                    "prompt_tokens": 812,
+                    "completion_tokens": 1548,
+                    "total_tokens": 2360,
+                    "completion_tokens_details": {"reasoning_tokens": 1440},
+                },
+            ),
+        ],
+    )
+
+    assert text and reason == ""
+    line = _usage_lines(caplog)[0]
+    assert "completion_tokens=1548" in line
+    assert "reasoning_tokens=1440" in line
+    assert "total_tokens=2360" in line
+
+
+@pytest.mark.parametrize(
+    "details",
+    [
+        None,
+        {},
+        {"reasoning_tokens": "1440"},
+        [1440],
+    ],
+)
+def test_a_provider_that_does_not_itemise_thinking_still_answers(
+    monkeypatch,
+    caplog,
+    details,
+):
+    caplog.set_level(logging.INFO)
+
+    usage = {
+        "prompt_tokens": 812,
+        "completion_tokens": 143,
+        "total_tokens": 955,
+    }
+    if details is not None:
+        usage["completion_tokens_details"] = details
+
+    text, _attempts, reason = _run(monkeypatch, [_answer(ANSWER, usage)])
+
+    assert text and reason == ""
+    line = _usage_lines(caplog)[0]
+    assert "reasoning_tokens=unavailable" in line
+    # The counts the provider did send are unaffected by the one it did not.
+    assert "completion_tokens=143" in line

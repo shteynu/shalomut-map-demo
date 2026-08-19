@@ -318,9 +318,39 @@ So a cap that truncates is not a shorter answer, it is no answer. Raise this
 before suspecting the model, and lower it only against a measurement of what
 the configured model actually spends.
 
+`LLM_REASONING_EFFORT` bounds the thinking itself, which is the other half of
+that number. The cap above says how much an answer may spend; this says how
+much of it goes on reasoning nobody reads, and reasoning is billed at the output
+rate — on `gemini-3.5-flash` $9 per million against $1.50 for input. At the
+measured ratio of 1440 thinking tokens to 108 visible ones, almost the whole
+bill for a round is this.
+
+It is unset by default and then nothing is sent, which is the request this
+service made before the setting existed. Set it to one of `none`, `minimal`,
+`low`, `medium` or `high` — the OpenAI-compatible spelling, which is the surface
+this service speaks; Gemini accepts `none` on its 2.5 models only. Anything else
+is refused rather than forwarded and appears in the runtime configuration
+errors, because a misspelt effort sent to the provider is a `400` on every call
+of the round rather than on one.
+
+Lower it against a measurement rather than on principle: thinking is what buys
+the Hebrew that passes the validation gate, and an effort too low fails the same
+way a cap too small does — no answer, and a round that reports success while the
+map is written by this service. The measurement is the `reasoning_tokens` field
+on the usage line below, taken from one round before and after.
+
 LLM logs record only provider, model, outcome, HTTP status and a safe request
 identifier when available. Keys, prompts, responses and respondent data are
 never logged by the provider adapter.
+
+One `outcome=usage` line is written per billed answer — per HTTP `200` rather
+than per conversation, so the retries a refused answer costs are visible instead
+of hidden inside the accepted one. It carries `prompt_tokens`,
+`completion_tokens`, `reasoning_tokens` and `total_tokens`, each exactly as the
+provider reported it or `unavailable` when it reported nothing. `reasoning_tokens`
+is the thinking part of `completion_tokens`, not an addition to it. A round is
+the sum of its lines; the transport does not know which round it serves and does
+not aggregate.
 
 Transient HTTP `408`, `429`, and `5xx` responses use bounded exponential
 backoff with jitter. `Retry-After` is honored up to the configured delay cap.

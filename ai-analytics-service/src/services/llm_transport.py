@@ -164,7 +164,7 @@ def _complete_with_retries(
         endpoint = resolve_endpoint(model_name)
 
         def request_for(critique: Optional[str]) -> urllib.request.Request:
-            payload = json.dumps({
+            body = {
                 "model": model_name,
                 "messages": [
                     {"role": "system", "content": system_prompt},
@@ -172,7 +172,15 @@ def _complete_with_retries(
                 ],
                 "max_tokens": settings.max_tokens_per_dimension,
                 "temperature": 0.2
-            }).encode("utf-8")
+            }
+            # Omitted unless configured, and omitted rather than sent empty:
+            # a provider that has never heard of the field must see the request
+            # this service always sent, and a provider that has one must not be
+            # told "no effort" by a variable nobody set. What the deployment
+            # runs is in `render.yaml`, beside the model it is measured on.
+            if settings.llm_reasoning_effort:
+                body["reasoning_effort"] = settings.llm_reasoning_effort
+            payload = json.dumps(body).encode("utf-8")
             return urllib.request.Request(
                 endpoint,
                 data=payload,
@@ -554,24 +562,43 @@ def _log_usage(
     try:
         usage = res.get("usage") if isinstance(res, dict) else None
         if not isinstance(usage, dict):
-            prompt = completion = total = "unavailable"
+            prompt = completion = total = reasoning = "unavailable"
         else:
             prompt = _usage_count(usage, "prompt_tokens")
             completion = _usage_count(usage, "completion_tokens")
             total = _usage_count(usage, "total_tokens")
+            reasoning = _reasoning_count(usage)
     except Exception:  # noqa: BLE001 - see the docstring: never raises.
-        prompt = completion = total = "unavailable"
+        prompt = completion = total = reasoning = "unavailable"
 
     logger.info(
         "[LLM Service] outcome=usage provider=%s model=%s attempt=%s "
-        "prompt_tokens=%s completion_tokens=%s total_tokens=%s",
+        "prompt_tokens=%s completion_tokens=%s reasoning_tokens=%s "
+        "total_tokens=%s",
         provider,
         model_name,
         attempt,
         prompt,
         completion,
+        reasoning,
         total,
     )
+
+
+def _reasoning_count(usage: dict) -> object:
+    """The thinking half of `completion_tokens`, when the provider itemises it.
+
+    Not a second cost line: reasoning tokens are already inside
+    `completion_tokens` and are billed at the same rate. It is the split that
+    matters — a completion of 1548 tokens is a different decision to make when
+    1440 of them were spent thinking, and that is the number
+    `LLM_REASONING_EFFORT` moves. A provider that does not itemise leaves
+    `unavailable`, exactly like a missing count above.
+    """
+    details = usage.get("completion_tokens_details")
+    if not isinstance(details, dict):
+        return "unavailable"
+    return _usage_count(details, "reasoning_tokens")
 
 
 def _usage_count(usage: dict, key: str) -> object:
