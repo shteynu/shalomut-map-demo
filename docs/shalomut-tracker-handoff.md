@@ -1,5 +1,35 @@
 # Shalomut Tracker — operational handoff
 
+**2026-08-20: both fixes are on `main` and deployed, and the service redeployed
+without being asked.** `main` is `56d1b72`; the push was a fast-forward carrying
+twelve commits, `claude/priceless-swanson-9cf466` included, so the adaptation
+fix and the timeout fix landed together. Both halves answer with that commit:
+Core `/api/health` and the service `/health` each report `56d1b72`.
+
+No manual redeploy was needed, which settles the "picks them up on the next
+deploy" left open in the entry below — the push *was* the deploy.
+`render.yaml`'s `buildFilter` lists `ai-analytics-service/**`, and this stack
+changes `config.py`, `llm_transport.py` and `llm_provider.py`. The same filter
+explains why the service had been serving `2ad95e9` while `main` was `4bd5b2f`:
+by design, not staleness — a service that lags `main` is the expected reading
+whenever the intervening commits touched only Core or docs.
+
+The container is new independently of the commit field it reports:
+`/api/v1/provider-status` and `/api/v1/fallback-status` both read `unknown`, the
+state a process holds before its first provider call.
+
+CI on `56d1b72`: CodeQL, Core verification and the Vercel pipeline checks green.
+Browser smoke was still running when this was written and is not recorded here
+as passed.
+
+**Deployed but not yet exercised.** The 90s request timeout, the 300s budget,
+`scope=` on the provider log lines and the error-level
+`token_budget_exhausted` have not seen a round through the deployed service. The
+numbers behind them come from local rounds against the same provider and key,
+and the slowest call differed by roughly 2x across two otherwise identical
+rounds. The first real deployed round is what turns them from measured into
+confirmed.
+
 **2026-08-19: the twenty-second timeout is fixed, and it was a ceiling in the
 code rather than a missing dashboard value.** `llm_retry_budget_seconds` was
 clamped to `25.0` in `config.py` and the request timeout to whatever the budget
