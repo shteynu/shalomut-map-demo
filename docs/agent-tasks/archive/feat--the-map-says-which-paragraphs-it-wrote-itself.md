@@ -9,7 +9,8 @@
   original base was `e752081` and the rebase was conflict-free, that branch
   having touched a different part of the handoff)
 - Current HEAD: `f9b036a`, two commits above the base
-- Status: implementation complete, verified locally including a browser walk
+- Status: **landed on `main` and deployed**, verified locally and then on the
+  deployed stack (2026-08-19)
 - Last updated: 2026-08-19
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -217,3 +218,13 @@ a Next.js-generated file that was already dirty at session start; left alone.
 
 Commit the work on this branch, then hand `git push origin
 feat/the-map-says-which-paragraphs-it-wrote-itself:main` to the owner.
+
+## Closing note, 2026-08-19
+
+Landed with the sibling `feat/one-dimension-can-be-analysed-again` and seen on
+the deployed stack the same day, in the owner's signed-in Chrome: on a seeded
+round whose `balance` stone carries `deterministic_fallback`, the map sidebar
+showed the heading `פסקאות שנגזרו מהנתונים` — the no-gaps variant — naming
+`ממד איזון` and pointing at the re-run. So the two halves of the disclosure,
+the banner here and the button there, were confirmed together on the screen a
+trusting reader actually opens.

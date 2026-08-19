@@ -9,7 +9,8 @@
   2026-08-19; the original base was `e752081`, and the two branches now form a
   linear stack above `main` at `2b59526`)
 - Current HEAD: three commits above the base
-- Status: complete, verified locally, unpushed
+- Status: **landed on `main` and deployed**, verified locally and then on the
+  deployed stack (2026-08-19)
 - Last updated: 2026-08-19
 - Last agent/tool: Claude Opus 5 (Claude Code)
 
@@ -120,10 +121,9 @@ Nothing.
 
 ## Remaining
 
-- The push (owner action):
-  `git push origin feat/one-dimension-can-be-analysed-again:main`.
-- Nothing else. `20260819120000_a_run_may_name_the_dimensions_it_rewrites` was
-  applied to the deployed database on 2026-08-19, ahead of the push.
+Nothing. The owner pushed the stack on 2026-08-19, both halves serve it, and
+`20260819120000_a_run_may_name_the_dimensions_it_rewrites` was applied to the
+deployed database ahead of that push.
 
 ## Changed files
 
@@ -175,6 +175,21 @@ Service:
   sixteen migrations, `Database schema is up to date!`. A read-back selecting
   `regenerate_dimension_ids` from `ai_analysis_runs` succeeded there, with a
   deliberately wrong column name as the control that it failed.
+- **Exercised on the deployed stack, 2026-08-19**, in the owner's signed-in
+  Chrome, against a seeded round (`SHALOM-DEPLOYED`). The map notice named
+  `איזון` under its own heading; the dimension screen carried the button; a
+  press queued a run with `regenerate: ["balance"]`, the deployed service
+  claimed it, and the callback came back `succeeded` with eight stones —
+  `balance` rewritten at `attempts: 3`, the other seven carrying the previous
+  map's paragraphs **verbatim** at `attempts: 1`, every score and status
+  identical. That is the carry proven from stored data. The provider is
+  `failing` for want of credit, so the rewritten `balance` came back
+  `deterministic_fallback` rather than as model copy, and both screens said so
+  on their own.
+- The seeded round's Hebrew copy is placeholder text shaped to pass the
+  contract validators; only its numbers are real. It was written by a one-off
+  script that was deleted. `scripts/seed-local.ts` still refuses any
+  non-loopback host and was not changed.
 - Live browser walk on `localhost:3210` against the local database: the button
   rendered under the deterministic note on `/dashboard/balance/`; pressing it
   produced the Hebrew acknowledgement; the database showed
@@ -191,8 +206,7 @@ None outstanding.
 - No end-to-end run against a real provider. The service side is covered by the
   graph tests, which stub the provider; the paid path was deliberately not
   called.
-- No screen or route was exercised on the deployed environment. Its schema now
-  carries the column, but its code does not use it until the push lands.
+- Nothing outstanding. The deployed walk was done after the push; see below.
 
 ### Environment
 
@@ -237,11 +251,7 @@ None.
 
 ## Next concrete step
 
-Owner pushes, in this order, since the last two both rewrite the same handoff
-paragraph and whichever lands second needs a trivial rebase:
-
-1. `git push origin fix/the-service-proves-its-commit-the-way-core-does:main`
-2. `git push origin feat/the-map-says-which-paragraphs-it-wrote-itself:main`
-3. `git push origin feat/one-dimension-can-be-analysed-again:main`
-
-The deployed database is already migrated, so nothing follows the push.
+None for this task — it is done, landed and exercised on the deployed stack.
+The one thing it leaves for someone else is not its own: the provider account
+has no credit, so no re-run anywhere can produce model copy until that is
+fixed. `docs/shalomut-tracker-handoff.md` owns that item.
