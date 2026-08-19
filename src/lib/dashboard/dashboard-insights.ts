@@ -43,6 +43,12 @@ export interface DashboardRecommendation {
    * an attribution.
    */
   source: string;
+  /**
+   * `false` on a version that never adapts wording at all, same as the other
+   * provenance flags — the screen only ever adds a note, never claims
+   * authorship it cannot back.
+   */
+  interventionIsDeterministic: boolean;
 }
 
 /**
@@ -99,6 +105,13 @@ export interface DashboardInsightsDto {
   roundId: string;
   /** Empty when the round carries no organization-level summary. */
   overallSummary: string;
+  /**
+   * `false` on a version that never asks the model for this sentence and on a
+   * round analysed before the field existed — the round-level sibling of
+   * every stone's own `summaryIsDeterministic`. The screen only ever adds a
+   * note; it never claims authorship.
+   */
+  overallSummaryIsDeterministic: boolean;
   stones: Partial<Record<WellbeingDimensionId, DashboardStone>>;
   /**
    * The dimensions this round has no interpretation for, in canonical order.

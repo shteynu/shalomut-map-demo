@@ -39,6 +39,7 @@ function stone(overrides: Partial<DashboardStone> = {}): DashboardStone {
         title: "חלונות זמן מוגנים",
         body: "להגן על זמן הכנה.",
         source: "ISO 45003:2021, סעיף 6.1.2.1 — עומס וקצב עבודה",
+        interventionIsDeterministic: false,
       },
     ],
     ...overrides,

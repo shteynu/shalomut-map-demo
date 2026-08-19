@@ -40,6 +40,7 @@ __all__ = [
     "InterpretationGeneration",
     "MetricInsightsGeneration",
     "LLMProviderService",
+    "OverallSummaryGeneration",
     "ProviderUnavailableError",
     "QuestionSuggestion",
     "StructuredSummaryGeneration",
@@ -61,6 +62,25 @@ class InterpretationGeneration:
 @dataclass(frozen=True)
 class StructuredSummaryGeneration:
     paragraphs: tuple[str, str, str]
+    outcome: Literal["llm", "deterministic_fallback"]
+    attempts: int
+
+
+@dataclass(frozen=True)
+class OverallSummaryGeneration:
+    """The round's opening sentence, and who wrote it.
+
+    Every dimension already says this about itself; the round-level sentence
+    did not, so a manager reading a real interpretation under a counted
+    template had no way to tell the second was not the model's either. The
+    label follows the same rule as the rest: `deterministic_fallback` covers
+    both the old contracts that never ask the model (`4.0` and earlier, by
+    design) and a `6.0` round the provider stayed silent for — the field says
+    who wrote it, not why, which is what every other outcome field here
+    already does.
+    """
+
+    text: str
     outcome: Literal["llm", "deterministic_fallback"]
     attempts: int
 
@@ -332,7 +352,16 @@ class LLMProviderService:
             capabilities.supportsPartialMaps
             or capabilities.usesStructuredDimensionSummary
         ):
-            return deterministic_summary
+            # Written here by design on every round of these contracts, not a
+            # fallback from anything — but it is still not the model's words,
+            # and the label says exactly that and nothing more. The encoder
+            # decides whether a version this old is even allowed to say so on
+            # the wire; internally the two cases share one true answer.
+            return OverallSummaryGeneration(
+                text=deterministic_summary,
+                outcome="deterministic_fallback",
+                attempts=0,
+            )
 
         model_name = self._model_for_tier(retry_tier)
         text, attempts, fallback_reason = self._complete_with_retries(
@@ -362,7 +391,11 @@ class LLMProviderService:
                     fallback_reason,
                     attempts,
                 )
-                return deterministic_summary
+                return OverallSummaryGeneration(
+                    text=deterministic_summary,
+                    outcome="deterministic_fallback",
+                    attempts=attempts,
+                )
             logger.warning(
                 "[LLM Service] outcome=provider_unavailable model=%s "
                 "reason=%s attempts=%s scope=overall_summary",
@@ -371,7 +404,11 @@ class LLMProviderService:
                 attempts,
             )
             raise ProviderUnavailableError(fallback_reason)
-        return text
+        return OverallSummaryGeneration(
+            text=text,
+            outcome="llm",
+            attempts=attempts,
+        )
 
     def generate_structured_summary_result(
         self,

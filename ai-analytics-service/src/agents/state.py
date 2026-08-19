@@ -58,6 +58,13 @@ class InterpretationState(TypedDict):
     dimension_interpretations: Dict[str, str]
     dimension_summaries: NotRequired[Dict[str, list[str]]]
     metric_insights: NotRequired[Dict[str, Dict[str, str]]]
+    # Who wrote the round's opening sentence — the one round-level provenance
+    # field, sitting beside `overall_summary` for the same reason the stones'
+    # `outcome` sits beside their own copy. Optional because it is only
+    # meaningful on a contract that can fall back here at all: `4.0` and
+    # earlier never ask the model, and `5.0` raises rather than falling back,
+    # so neither ever writes this key.
+    overall_summary_outcome: NotRequired[Literal["llm", "deterministic_fallback"]]
 
 
 class GenerationProvenanceState(TypedDict, total=False):

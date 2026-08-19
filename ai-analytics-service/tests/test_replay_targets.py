@@ -103,7 +103,11 @@ def _install(
         calls.summaries.append(retry_tier)
         calls.summary_critiques.append(repair_critique)
         if len(calls.summaries) <= bad_summaries:
-            return REFUSED_COPY
+            return type(
+                "Refused",
+                (),
+                {"text": REFUSED_COPY, "outcome": "llm", "attempts": 1},
+            )()
         return _answer_summary(retry_tier=retry_tier, **kwargs)
 
     def adaptation(

@@ -8,6 +8,7 @@ import { RoundThresholdNextStepContent } from "../round-threshold-next-step";
 const readyResult: DashboardInsightsDto = {
   roundId: "round-threshold-state",
   overallSummary: "סיכום ארגוני מוכן.",
+  overallSummaryIsDeterministic: false,
   stones: {},
   dimensionsWithoutInterpretation: [],
   gapsByReason: {
@@ -20,6 +21,7 @@ const readyResult: DashboardInsightsDto = {
 const lockedResult: DashboardInsightsDto = {
   roundId: "round-threshold-state",
   overallSummary: "",
+  overallSummaryIsDeterministic: false,
   stones: {},
   dimensionsWithoutInterpretation: [],
   gapsByReason: {

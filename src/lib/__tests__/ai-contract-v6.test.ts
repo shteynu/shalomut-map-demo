@@ -413,3 +413,23 @@ test('the metric narratives say who wrote them, separately from the summary', ()
   assert.ok(!withOutcome('unavailable').ok);
   assert.ok(!withOutcome('probably').ok);
 });
+
+test('the round summary says who wrote it, independently of any dimension', () => {
+  const withOutcome = (outcome: unknown) => {
+    const payload: Record<string, unknown> = createValidV6Payload();
+    payload.overallSummaryOutcome = outcome;
+    return validateStoneMapResult(payload, payload.roundId as string);
+  };
+
+  for (const outcome of ['llm', 'deterministic_fallback']) {
+    const stated = withOutcome(outcome);
+    assert.ok(stated.ok, !stated.ok ? stated.error : '');
+  }
+
+  // Rounds analysed before the field existed carry none.
+  const payload = createValidV6Payload();
+  assert.ok(validateStoneMapResult(payload, payload.roundId).ok);
+
+  assert.ok(!withOutcome('unavailable').ok);
+  assert.ok(!withOutcome('probably').ok);
+});

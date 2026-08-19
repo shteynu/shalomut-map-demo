@@ -151,6 +151,15 @@ export function DashboardRecommendationsStage({
 }) {
   const recommendations = getDisplayRecommendations(stone);
   const isFiveItemLayout = recommendations.length >= 5;
+  // One call adapts every entry of a dimension together, so this is uniform
+  // in practice — checked per entry anyway because that is the shape the
+  // payload actually carries, and "every" rather than "some" because a note
+  // claiming all of them are catalog text would be wrong if only part were.
+  const allRecommendationsAreDeterministic =
+    recommendations.length > 0 &&
+    recommendations.every(
+      (recommendation) => recommendation.interventionIsDeterministic,
+    );
   const dimensionSurface = getDimensionSurface(stone.status);
   const actionPresentation = getDimensionActionPresentation(stone.status);
   const isPreservation = stone.status === "green";
@@ -199,6 +208,17 @@ export function DashboardRecommendationsStage({
           );
         })}
       </section>
+
+      {allRecommendationsAreDeterministic ? (
+        <p
+          className="dashboard-blob-provenance dashboard-recommendations-provenance"
+          role="note"
+        >
+          ההמלצות האלה מוצגות בנוסח המקורי מהקטלוג ולא הותאמו לסבב הזה על ידי
+          המודל. תוכן ההמלצה עצמו זהה, ואפשר להפעיל ניתוח מחדש כדי לקבל ניסוח
+          מותאם.
+        </p>
+      ) : null}
 
       <DashboardGoalsPanel
         roundId={roundId}

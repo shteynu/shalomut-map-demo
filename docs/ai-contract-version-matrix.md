@@ -1,6 +1,6 @@
 # AI analytics contract version matrix
 
-Updated: 2026-08-05 (metric-narrative provenance).
+Updated: 2026-08-19 (overall-summary provenance).
 
 ## Runtime status
 
@@ -55,11 +55,24 @@ one value for all of the dimension's narratives, and never `unavailable`. It is
 optional, is refused on any version without narrative metrics, and is absent on
 rounds analysed before it existed.
 
+Since 2026-08-19 the round also says who wrote its opening sentence, in
+`overallSummaryOutcome`: `llm` or `deterministic_fallback`, the round-level
+sibling of every stone's own `outcome`. Until it existed, a `6.0` round the
+provider stayed silent for read as a plain success with a real interpretation
+of its numbers, and there was no field a screen could check to say otherwise —
+the summary and the dimensions fall back independently, so a manager could be
+reading the model's account of eight derived stones. It is optional, is refused
+on any version without a structured dimension summary (`4.0` and earlier never
+ask the model for this sentence at all, and the field would describe a choice
+those versions do not make), and is absent on rounds analysed before it
+existed.
+
 ## Amending a published version
 
-`supportsPartialMaps`, `generationProvenance.unavailableReason` and
-`generationProvenance.metricInsightsOutcome` were added to `6.0` after it was
-published. That is allowed, and only in the narrow form
+`supportsPartialMaps`, `generationProvenance.unavailableReason`,
+`generationProvenance.metricInsightsOutcome` and `overallSummaryOutcome` were
+added to `6.0` after it was published. That is allowed, and only in the narrow
+form
 ADR-002 describes since 2026-08-05: an optional field whose absence means what
 the version already meant, no existing field touched, a consumer written before
 it still working, and the consumer still accepting before the producer emits.

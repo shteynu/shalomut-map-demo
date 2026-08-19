@@ -380,6 +380,7 @@ def format_stone_map_output_node(state: AnalyticsState) -> AnalyticsState:
         round_id=analysis_input.round_id,
         survey_definition_hash=analysis_input.survey_definition_hash,
         overall_summary=interpretations.get("overall_summary", ""),
+        overall_summary_outcome=interpretations.get("overall_summary_outcome"),
         stones=stones,
     )
 

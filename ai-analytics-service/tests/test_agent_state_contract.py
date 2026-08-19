@@ -34,6 +34,7 @@ def test_stable_pipeline_records_expose_their_owned_fields() -> None:
         "overall_summary",
         "dimension_interpretations",
     }
+    assert "overall_summary_outcome" in InterpretationState.__optional_keys__
     assert {
         "outcome",
         "attempts",

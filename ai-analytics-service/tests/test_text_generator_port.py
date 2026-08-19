@@ -12,7 +12,11 @@ import pytest
 from src.agents.graph import AnalyticsGraphEngine
 from src.agents.state import AnalyticsState
 from src.mcp_client.mock_server import mock_mcp_server
-from src.services.llm_provider import InterpretationGeneration, llm_provider_service
+from src.services.llm_provider import (
+    InterpretationGeneration,
+    OverallSummaryGeneration,
+    llm_provider_service,
+)
 
 GENERATING_METHODS = (
     "generate_psychological_interpretation_result",
@@ -62,9 +66,13 @@ class RecordingGenerator:
 
     def generate_overall_summary(self, *, dim_scores, **_kwargs):
         self.asked.append(("overall_summary", None))
-        return (
-            "התמונה הכללית של הסבב יציבה ברוב המימדים. "
-            "מומלץ להמשיך במעקב אחר המימדים החלשים יותר."
+        return OverallSummaryGeneration(
+            text=(
+                "התמונה הכללית של הסבב יציבה ברוב המימדים. "
+                "מומלץ להמשיך במעקב אחר המימדים החלשים יותר."
+            ),
+            outcome="llm",
+            attempts=1,
         )
 
     def generate_structured_summary_result(self, **_kwargs):  # pragma: no cover

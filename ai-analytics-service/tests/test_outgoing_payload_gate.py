@@ -27,7 +27,11 @@ def _summary_stub(calls, bad_first):
     def summary(*, retry_tier="fast", repair_critique=None, **kwargs):
         calls.append((retry_tier, repair_critique))
         if len(calls) <= bad_first:
-            return ONE_SENTENCE_SUMMARY
+            return type(
+                "Refused",
+                (),
+                {"text": ONE_SENTENCE_SUMMARY, "outcome": "llm", "attempts": 1},
+            )()
         return _answer_summary(retry_tier=retry_tier, **kwargs)
 
     return summary

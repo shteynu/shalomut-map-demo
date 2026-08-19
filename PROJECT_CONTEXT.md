@@ -220,6 +220,20 @@ other than `unavailable` — a stone may not claim its interpretation is both
 written and missing. The two causes lead to different advice on screen, which
 is the only reason the distinction travels.
 
+Since 2026-08-19 the disclosure this ADR requires of every dimension also
+covers the round: `overallSummaryOutcome` says who wrote the opening sentence,
+the same `llm` or `deterministic_fallback` the stones carry, in
+`generate_overall_summary`'s own return value rather than inferred from its
+text. Before it existed, a `6.0` round the provider never answered still
+produced a real-looking opening sentence with no field anywhere saying it was
+counted rather than written — the summary and the dimensions fall back
+independently, being separate calls, so the gap was not academic: a manager
+could read the model's account of eight stones the model never wrote. The
+screens now carry a quiet note beside the summary and beside a dimension's
+catalog-worded recommendations, each naming what happened and that another run
+may write it differently — the same shape the dimension and metric screens
+already used, extended to the two provenances that had none.
+
 ### ADR-008: Explicit application and repository boundaries
 
 Python application services depend on the ports `AnalyticsSource`,

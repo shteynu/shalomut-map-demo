@@ -168,6 +168,14 @@ function toDashboardRecommendations(
         // attribution, and dropping it at this seam is what made the advice
         // look like it came from nowhere.
         source: intervention.source.trim(),
+        // `adaptationOutcome` reached the wire since 5.0 and was validated
+        // but never read on any screen: a recommendation still on its catalog
+        // wording looked identical to one rewritten for this round. One call
+        // adapts every entry of a dimension together, so this is uniform
+        // within a dimension in practice, but it is read per entry because
+        // that is the shape the payload actually carries.
+        interventionIsDeterministic:
+          intervention.adaptationOutcome === 'deterministic_fallback',
       };
     });
 }
@@ -236,6 +244,13 @@ export function toDashboardInsights(
   return {
     roundId: result.roundId,
     overallSummary: result.overallPsychologicalSummary?.trim() ?? '',
+    // Absent on a version that never asks the model for this sentence and on
+    // a round analysed before the field existed — in both cases `false` is
+    // the wrong answer (it would claim the model wrote something it did not
+    // write and was never asked to), so the screen only ever adds a note; it
+    // never claims authorship, the same rule the stones already follow.
+    overallSummaryIsDeterministic:
+      result.overallSummaryOutcome === 'deterministic_fallback',
     stones,
     // Derived from the stones rather than read from
     // `dimensionsWithoutInterpretation`, which carries the same answer. The

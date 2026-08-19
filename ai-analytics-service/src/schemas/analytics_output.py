@@ -100,6 +100,15 @@ def encode_stone_map(
         "overallPsychologicalSummary": result.overall_summary,
         "stones": stones,
     }
+    # Optional and only where the contract can say it: `4.0` and earlier never
+    # ask the model for this sentence, so the field would describe a choice
+    # the version does not make. Mirrors `metricInsightsOutcome` — one round-
+    # level fact instead of eight per-dimension ones, but the same rule.
+    if (
+        capabilities.usesStructuredDimensionSummary
+        and result.overall_summary_outcome is not None
+    ):
+        payload["overallSummaryOutcome"] = result.overall_summary_outcome
     if capabilities.supportsDynamicQuestions:
         payload["surveyDefinitionHash"] = result.survey_definition_hash
     if capabilities.supportsPartialMaps:

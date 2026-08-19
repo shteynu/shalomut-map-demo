@@ -117,6 +117,28 @@ def test_the_distribution_and_the_insight_belong_to_the_versions_that_carry_them
         assert metric["responseCount"] == 10
 
 
+def test_the_overall_summary_says_who_wrote_it_only_where_the_version_can_say_so():
+    # Mirrors metricInsightsOutcome: one round-level fact instead of eight
+    # per-dimension ones, gated by the same capability, absent when the run
+    # predates the field or the version cannot fall back here at all.
+    written = _result(overall_summary_outcome="llm")
+    fallen_back = _result(overall_summary_outcome="deterministic_fallback")
+    unknown = _result()
+
+    assert encode_stone_map(written, "6.0")["overallSummaryOutcome"] == "llm"
+    assert (
+        encode_stone_map(fallen_back, "6.0")["overallSummaryOutcome"]
+        == "deterministic_fallback"
+    )
+    assert "overallSummaryOutcome" not in encode_stone_map(unknown, "6.0")
+
+    # 4.0 never asks the model for this sentence at all, so the field would
+    # describe a choice the version does not make — omitted regardless of what
+    # Python computed internally.
+    assert "overallSummaryOutcome" not in encode_stone_map(fallen_back, "4.0")
+    assert "overallSummaryOutcome" not in encode_stone_map(written, "5.0")
+
+
 def test_a_whole_map_never_names_dimensions_it_could_write():
     payload = encode_stone_map(_result(), "5.0")
 

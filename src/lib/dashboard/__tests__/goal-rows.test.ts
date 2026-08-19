@@ -9,8 +9,14 @@ const RECOMMENDATIONS = [
     title: 'יום ללא ישיבות',
     body: 'לקבוע יום קבוע בשבוע.',
     source: 'ISO 45003:2021, סעיף 6.1.2.1 — עומס וקצב עבודה',
+    interventionIsDeterministic: false,
   },
-  { title: 'שעת צוות קבועה', body: 'לשריין שעה שבועית.', source: '' },
+  {
+    title: 'שעת צוות קבועה',
+    body: 'לשריין שעה שבועית.',
+    source: '',
+    interventionIsDeterministic: false,
+  },
 ];
 
 function goal(overrides: Partial<RoundGoalView> = {}): RoundGoalView {

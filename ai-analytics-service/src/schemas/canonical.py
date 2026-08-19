@@ -180,3 +180,7 @@ class CanonicalAnalysisResult:
     survey_definition_hash: Optional[str]
     overall_summary: str
     stones: Dict[str, CanonicalStone] = field(default_factory=dict)
+    # Who wrote `overall_summary`. `None` for a version too old to say, and for
+    # a run that predates the field — the encoder is what decides whether a
+    # given contract may put it on the wire at all.
+    overall_summary_outcome: Optional[str] = None

@@ -446,6 +446,15 @@ test('a 5.0 stone cannot label metric narratives it does not carry', () => {
   );
 });
 
+test('a 5.0 payload cannot label a round summary it does not carry', () => {
+  assert.match(
+    refusal((payload) => {
+      (payload as Record<string, unknown>).overallSummaryOutcome = 'llm';
+    }),
+    /overallSummaryOutcome is only supported by contracts with a structured dimension summary/,
+  );
+});
+
 // --- The gap: a stone with no interpretation --------------------------------
 
 test('an unavailable 5.0 stone carries no interpretation at all', () => {

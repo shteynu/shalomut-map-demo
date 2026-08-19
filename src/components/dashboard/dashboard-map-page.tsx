@@ -128,6 +128,7 @@ export function DashboardOverviewSummary({
   }
 
   const summary = state.value.overallSummary;
+  const summaryIsDeterministic = state.value.overallSummaryIsDeterministic;
 
   if (!summary) {
     return (
@@ -143,6 +144,13 @@ export function DashboardOverviewSummary({
     <section className="dashboard-ai-state" aria-labelledby="dashboard-overview-summary-title">
       <h2 id="dashboard-overview-summary-title">סיכום ארגוני</h2>
       <p>{summary}</p>
+      {summaryIsDeterministic ? (
+        <p className="dashboard-blob-provenance" role="note">
+          המשפט הזה נגזר ממספר הממדים של הסבב ולא נכתב על ידי המודל. הוא קובע
+          כמה ממדים דורשים תשומת לב וכמה הם חוזקות לשימור, בלי פרשנות מעבר
+          לכך, ואפשר להפעיל ניתוח מחדש כדי לקבל קריאה מלאה.
+        </p>
+      ) : null}
     </section>
   );
 }

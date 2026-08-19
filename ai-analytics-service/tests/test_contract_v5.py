@@ -357,7 +357,8 @@ def test_overall_summary_uses_the_shared_transport(monkeypatch):
         question_aggregates=list(round_data["questionAggregates"].values()),
     )
 
-    assert summary == accepted
+    assert summary.text == accepted
+    assert summary.outcome == "llm"
     # The hardcoded 300-token cap of the first implementation is gone.
     assert captured["max_tokens"] == 420
 
@@ -424,7 +425,11 @@ def test_overall_summary_stays_deterministic_before_5_0(monkeypatch):
             dim_scores=round_data["dimensionScores"],
             contract_version=version,
         )
-        assert "הניתוח המצרפי מציג" in summary
+        assert "הניתוח המצרפי מציג" in summary.text
+        # Written by design on every round of these contracts, not a fallback
+        # from anything — but still not the model's words, and the label says
+        # exactly that. The encoder is what keeps it off a wire this old.
+        assert summary.outcome == "deterministic_fallback"
 
 
 ADAPTED_SUMMARY = "לפי 12 התשובות באמצע הסולם העומס מתרכז בסוף השבוע."

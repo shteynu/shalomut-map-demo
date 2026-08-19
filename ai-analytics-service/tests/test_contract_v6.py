@@ -15,6 +15,7 @@ from src.schemas.mcp_types import RoundAnalyticsResult
 from src.rag.store import LocalInterventionVectorStore
 from src.services.llm_provider import (
     MetricInsightsGeneration,
+    OverallSummaryGeneration,
     StructuredSummaryGeneration,
     llm_provider_service,
 )
@@ -318,6 +319,9 @@ async def test_v6_graph_fallback_produces_the_complete_contract(monkeypatch):
     assert payload["status"] == "success", result.get("safety_feedback")
     assert payload["contractVersion"] == "6.0"
     assert set(payload["stones"]) == set(AI_ANALYTICS_DIMENSION_IDS)
+    # The round-level sibling of every stone's own `outcome`: a silent
+    # provider does not spare the opening sentence either.
+    assert payload["overallSummaryOutcome"] == "deterministic_fallback"
     for dimension_id, stone in payload["stones"].items():
         assert "psychologicalInterpretation" not in stone, dimension_id
         assert len(stone["summary"]) == 3, dimension_id
@@ -517,6 +521,44 @@ async def test_v6_metric_narratives_and_summary_are_labelled_separately(
         provenance = stone["generationProvenance"]
         assert provenance["outcome"] == "deterministic_fallback", dimension_id
         assert provenance["metricInsightsOutcome"] == "llm", dimension_id
+
+
+@pytest.mark.asyncio
+async def test_v6_overall_summary_is_labelled_independently_of_the_dimensions(
+    monkeypatch,
+):
+    # The mixture the round-level field exists to express: every dimension
+    # falls back, and the opening sentence is the model's anyway, because the
+    # two are separate calls. A manager reading a real summary has no reason to
+    # suspect the readings underneath it — the same principle ADR-007 already
+    # states for the metric narratives, one level up.
+    monkeypatch.setattr(
+        llm_provider_service,
+        "_complete_with_retries",
+        lambda **_kwargs: (None, 1, "http_503"),
+    )
+    real_summary = llm_provider_service.generate_overall_summary
+
+    def as_model_written(**kwargs):
+        generated = real_summary(**kwargs)
+        return OverallSummaryGeneration(generated.text, "llm", 1)
+
+    monkeypatch.setattr(
+        llm_provider_service,
+        "generate_overall_summary",
+        as_model_written,
+    )
+    round_data = RoundAnalyticsResult.from_dict(build_v6_input_payload()).to_dict()
+
+    result = await analytics_graph.ainvoke(_v6_state(round_data))
+    payload = result["final_payload"]
+
+    assert payload["status"] == "success", result.get("safety_feedback")
+    assert payload["overallSummaryOutcome"] == "llm"
+    for dimension_id, stone in payload["stones"].items():
+        assert (
+            stone["generationProvenance"]["outcome"] == "deterministic_fallback"
+        ), dimension_id
 
 
 @pytest.mark.asyncio

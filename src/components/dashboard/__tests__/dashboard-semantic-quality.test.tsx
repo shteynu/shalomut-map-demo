@@ -18,10 +18,14 @@ import {
 } from "../../survey/survey-builder/types";
 import { SurveyQuestionCard } from "../../survey/survey-builder/survey-question-card";
 
-function createReadyResult(summary: string): DashboardInsightsDto {
+function createReadyResult(
+  summary: string,
+  isDeterministic = false,
+): DashboardInsightsDto {
   return {
     roundId: "round-dashboard-summary",
     overallSummary: summary,
+    overallSummaryIsDeterministic: isDeterministic,
     stones: {},
     dimensionsWithoutInterpretation: [],
     gapsByReason: {
@@ -60,6 +64,31 @@ test("DashboardOverviewSummary renders the organization summary exactly once", (
 
   assert.strictEqual(html.split(summary).length - 1, 1);
   assert.match(html, /סיכום ארגוני/);
+});
+
+test("DashboardOverviewSummary discloses a summary the model did not write", () => {
+  const summary = "הניתוח המצרפי מציג 2 ממדים הדורשים תשומת לב.";
+  const html = renderToStaticMarkup(
+    <DashboardOverviewSummary
+      state={{ status: "ready", value: createReadyResult(summary, true) }}
+      onRetry={() => undefined}
+    />,
+  );
+
+  assert.match(html, /לא נכתב על ידי המודל/);
+  assert.match(html, /להפעיל ניתוח מחדש/);
+});
+
+test("DashboardOverviewSummary adds no note when the model wrote the summary", () => {
+  const summary = "הסיכום הזה נכתב על ידי המודל.";
+  const html = renderToStaticMarkup(
+    <DashboardOverviewSummary
+      state={{ status: "ready", value: createReadyResult(summary, false) }}
+      onRetry={() => undefined}
+    />,
+  );
+
+  assert.doesNotMatch(html, /לא נכתב על ידי המודל/);
 });
 
 test("DashboardOverviewSummary localizes invalid or unavailable insight states", () => {

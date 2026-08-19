@@ -98,7 +98,10 @@
     "overallPsychologicalSummary": {
       "sentencesMin": 2,
       "sentencesMax": 4,
-      "language": "Hebrew"
+      "language": "Hebrew",
+      "provenanceField": "overallSummaryOutcome",
+      "provenanceOutcomes": ["llm", "deterministic_fallback"],
+      "provenanceOptional": true
     },
     "partialMap": {
       "generationOutcomes": ["llm", "deterministic_fallback", "unavailable"],

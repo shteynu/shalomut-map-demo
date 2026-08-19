@@ -309,14 +309,20 @@ async def agent_psychologist_node(
         "overall_summary",
         "",
     )
+    previous_summary_outcome = state.get("interpretations", {}).get(
+        "overall_summary_outcome",
+    )
     keeps_summary = (
         plan is not None
         and not plan.overall_summary
         and bool(previous_summary)
     )
     try:
-        overall_summary = previous_summary if keeps_summary else (
-            await asyncio.to_thread(
+        if keeps_summary:
+            overall_summary = previous_summary
+            overall_summary_outcome = previous_summary_outcome
+        else:
+            generation = await asyncio.to_thread(
                 generator.generate_overall_summary,
                 dim_scores=dim_scores,
                 background_context=background_context,
@@ -327,7 +333,8 @@ async def agent_psychologist_node(
                 ),
                 repair_critique=_repair_critique(state, "overall_summary"),
             )
-        )
+            overall_summary = generation.text
+            overall_summary_outcome = generation.outcome
     except ProviderUnavailableError as error:
         logger.warning(
             "[Node 2: Psychologist] Provider unavailable for the round "
@@ -344,6 +351,7 @@ async def agent_psychologist_node(
         **state,
         "interpretations": {
             "overall_summary": overall_summary,
+            "overall_summary_outcome": overall_summary_outcome,
             "dimension_interpretations": interpretations,
             **(
                 {

@@ -3184,17 +3184,32 @@ textarea {
 }
 
 /* A provenance note, not a paragraph of the analysis: it is deliberately
-   quieter than the copy it qualifies, and it must stay legible against every
-   dimension surface, which is why it dims the ink rather than tinting it. */
-.dashboard-single-blob-copy p.dashboard-blob-provenance {
+   quieter than the copy it qualifies, and it must stay legible on every
+   surface it appears on — a colored dimension blob, and the neutral
+   `--surface-panel-strong` the round summary and recommendations sit on —
+   which is why it dims the ink rather than tinting it. Not scoped to a blob
+   parent: the round-level notes on the map and recommendations screens carry
+   the same treatment outside any blob. */
+p.dashboard-blob-provenance {
   font-size: 0.92rem;
   line-height: 1.6;
   /* 0.72 read well but measured 4.57:1 on the red surface — inside AA with no
      margin at all, and this note is the one paragraph a manager must not skim
-     past. 0.82 measures 6.02:1 and is still visibly quieter than the copy. */
+     past. 0.82 measures 6.02:1 and is still visibly quieter than the copy;
+     every other surface this rule now reaches is lower-saturation than that
+     red, so the same value clears AA there with more room, not less. */
   opacity: 0.82;
   border-top: 1px solid currentColor;
   padding-top: 0.9rem;
+}
+
+/* The recommendations screen has no single blob to sit inside — one note
+   covers the whole set of cards, so it gets the blob copy's own max-width and
+   centering instead of inheriting either. */
+.dashboard-recommendations-provenance {
+  max-width: 48rem;
+  margin: 1.6rem auto 0;
+  text-align: center;
 }
 
 .dashboard-ai-state {

@@ -199,6 +199,19 @@ export interface StoneMapResult {
   status: 'success' | 'locked_error' | 'validation_failed';
   errorMessage?: string;
   overallPsychologicalSummary?: string;
+  /**
+   * Who wrote `overallPsychologicalSummary` — the round-level sibling of every
+   * stone's own `generationProvenance.outcome`. `4.0` and earlier never ask
+   * the model for this sentence at all, so it is refused on those versions
+   * rather than merely optional there: a payload declaring it would be
+   * labelling a choice the version does not make.
+   *
+   * Optional on `6.0` too, because a round analysed before this field existed
+   * carries none — the summary and the dimensions fall back independently,
+   * being separate calls, so a `6.0` round the provider never answered used to
+   * read as a real interpretation with nothing anywhere saying otherwise.
+   */
+  overallSummaryOutcome?: 'llm' | 'deterministic_fallback';
   stones?: Record<WellbeingDimensionId, AnyStoneDetail>;
   /**
    * 5.0 and above: the dimensions this round has no interpretation for.
@@ -680,6 +693,29 @@ function isValidMetricInsightsOutcome(
   );
 }
 
+/**
+ * Who wrote the round's opening sentence, on a contract that can say so.
+ *
+ * Absent is always allowed and on every version: rounds callbacked before the
+ * field existed carry none, and a version that never asks the model for this
+ * sentence has no outcome for it to describe. Present on such a version is a
+ * payload labelling a choice the contract does not make, so it is refused
+ * rather than quietly dropped — the same rule `isValidMetricInsightsOutcome`
+ * applies to the sibling field one level down.
+ */
+function isValidOverallSummaryOutcome(
+  value: Record<string, unknown>,
+  structuredDimensionSummary: boolean,
+): boolean {
+  if (value.overallSummaryOutcome === undefined) return true;
+  return (
+    structuredDimensionSummary &&
+    ['llm', 'deterministic_fallback'].includes(
+      String(value.overallSummaryOutcome),
+    )
+  );
+}
+
 function isValidV5GenerationProvenance(
   value: unknown,
   metricQuestionIds: string[],
@@ -1010,6 +1046,16 @@ export function validateStoneMapResult(
     return {
       ok: false,
       error: 'The 5.0 overall psychological summary must have 2 to 4 complete sentences.',
+    };
+  }
+
+  if (
+    !isValidOverallSummaryOutcome(payload, caps.usesStructuredDimensionSummary)
+  ) {
+    return {
+      ok: false,
+      error:
+        'overallSummaryOutcome is only supported by contracts with a structured dimension summary.',
     };
   }
 
