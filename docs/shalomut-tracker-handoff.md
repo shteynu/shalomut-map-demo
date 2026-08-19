@@ -1653,9 +1653,10 @@ older snapshots remain available in Git.
 
 ## Repository snapshot
 
-- **`origin/main` is `dfa05e3`, asked of the remote on 2026-08-19.** Core serves
+- **`origin/main` is `97ccd80`, asked of the remote on 2026-08-19.** Core serves
   it; the AI service serves `2ad95e9`, which is correct rather than late — see
-  the deployed-state section below on why the two halves need not agree.
+  the deployed-state section below on why the two halves need not agree, and on
+  how to read the service's commit without raising a false alarm.
   Beneath it sits the day's three-branch stack: the AI service's `/health`
   proving a commit's shape before publishing it, the map notice covering
   `deterministic_fallback`, and a run that may name the dimensions it rewrites.
@@ -1926,10 +1927,24 @@ explanation and the behaviour as the observed fact.
 
 What follows from it operationally: **a service commit behind Core's is the
 normal resting state, not a failed deploy.** Read the two endpoints as two
-independent questions. The service's commit answers "which revision of the
-service is running", and it only advances when a push touches the service; the
-one to compare it against is the last commit that changed
-`ai-analytics-service/`, not the tip of `main`.
+independent questions.
+
+**And read the service's commit precisely, because the obvious reading is wrong.**
+The first version of this paragraph said to compare it against the last commit
+that changed `ai-analytics-service/`. That is not what the service reports.
+Render builds the **tip of `main` as of the push whose contents touched that
+directory** — not the commit inside the push that did the touching. On
+2026-08-19 the service served `2ad95e9` while the last commit to change anything
+under `ai-analytics-service/` was `057ce1b`, four commits below it in the same
+push. Anyone applying the earlier wording would have expected `057ce1b`, seen
+`2ad95e9` and gone looking for a broken deploy — the exact false alarm this
+entry exists to prevent.
+
+So: to decide whether the service is current, find the most recent push that
+carried a change under `ai-analytics-service/` and take the tip of `main` at
+that moment. Four observations on 2026-08-19 agree — `2b59526` and `2ad95e9`
+built, `dfa05e3` and `97ccd80` did not, the last two verified by ten and five
+minutes of polling.
 
 That reading does not prove the health fix in `6af34e7` works. `RENDER_GIT_COMMIT`
 is a real 40-hex SHA there, so the old truncation and the new shape check return
