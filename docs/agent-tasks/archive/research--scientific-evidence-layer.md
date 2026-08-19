@@ -10,8 +10,15 @@
   `git push origin research/scientific-evidence-layer:main`.
 - Status: research and prototype write-up complete, committed and pushed to
   `main`. Nothing remains for an agent; the task waits on owner decisions.
-- Last updated: 2026-08-09
+- Last updated: 2026-08-09; archived 2026-08-19
 - Last agent/tool: Claude Code (Opus 5)
+
+Archived on 2026-08-19 with nothing about it changed. The work below was on
+`main` from 2026-08-09 and the branch it names no longer exists, so the file had
+been answering "what is being worked on right now" with a task that nobody was
+working on. The owner decisions it waits for are live and live in
+`docs/shalomut-tracker-handoff.md`, which is where open items are read; this
+file is the evidence of how they were arrived at.
 
 ## Objective
 

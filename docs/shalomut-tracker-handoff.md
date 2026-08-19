@@ -2375,7 +2375,10 @@ owner's own hands.
   `docs/scientific-evidence-layer-research-2026-08-09.md` section 5, of which
   1–3 select between three different projects, plus the undocumented bridge
   between the eight dimensions and any published framework — a question for the
-  named research adviser rather than for engineering.
+  named research adviser rather than for engineering. Three more sit in section
+  7 of `docs/evidence-card-prototype-2026-08-09.md`; that pointer is here
+  because its task file was archived on 2026-08-19 and had been the only thing
+  carrying it.
 
 **Waits on being requested**
 
