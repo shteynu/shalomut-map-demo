@@ -14,6 +14,8 @@
     "lint:literals": "node --test scripts/check-version-literals.test.mjs && node scripts/check-version-literals.mjs && node scripts/check-version-literals-python.mjs",
     "openapi:generate": "node scripts/generate-openapi.mjs",
     "openapi:check": "node scripts/generate-openapi.mjs --check",
+    "docs:endpoints": "node scripts/generate-endpoint-surface.mjs",
+    "docs:endpoints:check": "node scripts/generate-endpoint-surface.mjs --check",
     "lint:interpreter": "node --test scripts/check-python-interpreter.test.mjs && node scripts/check-python-interpreter.mjs",
     "lint:composition": "node --test scripts/check-composition-root.test.mjs && node scripts/check-composition-root.mjs",
     "lint:fixtures": "node --test scripts/check-runtime-fixtures.test.mjs && node scripts/check-runtime-fixtures.mjs",

@@ -5,8 +5,8 @@
 - Branch: `claude/manager-help-languages`
 - Base branch: `main`
 - Base commit: `3bf903a`
-- Current HEAD: this commit
-- Status: delivered; unreviewed by a native reader in any of the three languages
+- Current HEAD: `676de73`, merged into `main`
+- Status: merged and deployed; unreviewed by a native reader in any of the three languages
 - Last updated: 2026-08-18
 - Last agent/tool: Claude Code
 
@@ -152,5 +152,10 @@ existing tokens, no threshold literals in code.
 
 ## Next concrete step
 
-Merge, or have someone read the Russian and English first. The copy is three
-files under `src/lib/help/topics/`.
+None. Merged into `main` as `676de73`, followed by `f0d868d`, which took the
+guide's door out of the header and left the floating badge as the only one.
+
+The copy is still unread by a native reader of any of the three languages. That
+outlives this branch, so it is recorded in
+[`shalomut-tracker-handoff.md`](../../shalomut-tracker-handoff.md) under what
+waits on the owner's hands, not here.
