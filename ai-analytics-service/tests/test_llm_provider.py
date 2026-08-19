@@ -1143,3 +1143,119 @@ def test_the_ceiling_still_bounds_a_hung_provider(monkeypatch):
 
     assert configured.llm_retry_budget_seconds == 600.0
     assert configured.llm_request_timeout_seconds == 600.0
+
+
+# --- which call was it, and why did the answer stop -------------------------
+
+def test_the_usage_line_says_which_call_it_was(monkeypatch, caplog):
+    """Cost and duration are unreadable without the call they belong to.
+
+    On 2026-08-19 one call in a live round took 50.9s against a median of 21s,
+    and the log could not say whether it was a stone, a metric batch or an
+    adaptation — the three have very different output sizes, so the difference
+    matters for every question anyone asks next about a timeout or a bill.
+    """
+    configure_gemini_retry_test(monkeypatch, max_attempts=1)
+    monkeypatch.setattr(settings, "only_llm_for_problematic", False)
+    monkeypatch.setattr(
+        "urllib.request.urlopen",
+        lambda *_args, **_kwargs: FakeLLMResponse(),
+    )
+
+    with caplog.at_level(logging.INFO, logger="src.services.llm_transport"):
+        llm_provider_service.generate_psychological_interpretation_result(
+            "balance",
+            "איזון",
+            46.7,
+            "red",
+            question_aggregates=BALANCE_QUESTION_AGGREGATES,
+        )
+
+    usage = [
+        record.getMessage()
+        for record in caplog.records
+        if "outcome=usage" in record.getMessage()
+    ]
+
+    assert usage, "every provider answer is billed and must be logged"
+    assert "scope=interpretation" in usage[0]
+    assert "duration_ms=" in usage[0]
+
+
+def test_a_truncated_answer_is_an_error_naming_the_variable_to_raise(
+    monkeypatch,
+    caplog,
+):
+    """The one failure here nobody upstream can fix, at a level that stops a filter.
+
+    `finish_reason=length` means the provider answered and the answer was cut
+    off mid-word because the token budget ran out. It is a configuration fault
+    wearing a provider fault's clothes, and it has twice been read as the round
+    simply being quiet: on 2026-07-28 at caps of 180 and 420, and again on
+    2026-08-19 at 2048, where 25 of 25 calls truncated, not one answer survived
+    and the round still reported `status: success`.
+
+    The `fallback_reason` deliberately stays `invalid_finish_reason` — that
+    string is what the health reading and the callers branch on, and it covers
+    safety blocks and recitation too. What was missing was the level and the
+    name of the knob.
+    """
+    configure_gemini_retry_test(monkeypatch, max_attempts=1)
+    monkeypatch.setattr(settings, "max_tokens_per_dimension", 2048)
+    monkeypatch.setattr(
+        "urllib.request.urlopen",
+        lambda *_args, **_kwargs: FakeLLMResponse(
+            "התשובה נקטעה באמצע",
+            finish_reason="length",
+        ),
+    )
+
+    with caplog.at_level(logging.INFO, logger="src.services.llm_transport"):
+        with pytest.raises(ProviderUnavailableError) as failure:
+            llm_provider_service.generate_psychological_interpretation_result(
+                "balance",
+                "איזון",
+                46.7,
+                "red",
+                question_aggregates=BALANCE_QUESTION_AGGREGATES,
+            )
+
+    assert failure.value.reason == "invalid_finish_reason"
+
+    errors = [
+        record.getMessage()
+        for record in caplog.records
+        if record.levelno >= logging.ERROR
+    ]
+
+    assert errors, "a truncated answer must not be logged as an ordinary retry"
+    assert "outcome=token_budget_exhausted" in errors[0]
+    assert "scope=interpretation" in errors[0]
+    assert "max_tokens=2048" in errors[0]
+    assert "action=raise MAX_TOKENS_PER_DIMENSION" in errors[0]
+
+
+def test_an_ordinary_refusal_is_not_escalated_to_error(monkeypatch, caplog):
+    """Only truncation. A refused-but-complete answer is a WARNING as before."""
+    configure_gemini_retry_test(monkeypatch, max_attempts=1)
+    monkeypatch.setattr(
+        "urllib.request.urlopen",
+        lambda *_args, **_kwargs: FakeLLMResponse(
+            "Provider output the validators refuse",
+            finish_reason="content_filter",
+        ),
+    )
+
+    with caplog.at_level(logging.INFO, logger="src.services.llm_transport"):
+        with pytest.raises(ProviderUnavailableError):
+            llm_provider_service.generate_psychological_interpretation_result(
+                "balance",
+                "איזון",
+                46.7,
+                "red",
+                question_aggregates=BALANCE_QUESTION_AGGREGATES,
+            )
+
+    assert not [
+        record for record in caplog.records if record.levelno >= logging.ERROR
+    ]

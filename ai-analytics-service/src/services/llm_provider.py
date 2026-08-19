@@ -281,6 +281,7 @@ class LLMProviderService:
                     distribution_counts=self.distribution_counts(questions),
                 )
             ),
+            scope="interpretation",
         )
         if text is not None:
             return InterpretationGeneration(
@@ -383,6 +384,7 @@ class LLMProviderService:
                 and self.is_hebrew_only_copy(candidate)
                 and 2 <= len(self._sentences(candidate)) <= 4
             ),
+            scope="overall_summary",
         )
         if text is None:
             if get_capabilities(contract_version).usesStructuredDimensionSummary:
@@ -474,6 +476,7 @@ class LLMProviderService:
                 if finish_reason == "stop"
                 else None
             ),
+            scope="structured_summary",
         )
         parsed = hebrew_validation.parse_v6_structured_summary(
             text,
@@ -548,6 +551,7 @@ class LLMProviderService:
                 if finish_reason == "stop"
                 else None
             ),
+            scope="metric_insights",
         )
         parsed = hebrew_validation.parse_v6_metric_insights(
             text,
@@ -623,6 +627,7 @@ class LLMProviderService:
                     existing,
                 )
             ),
+            scope="question_suggestion",
         )
         if text is None:
             logger.warning(
@@ -760,6 +765,7 @@ class LLMProviderService:
                     if finish_reason == "stop"
                     else None
                 ),
+                scope="adaptation",
             )
             parsed_v6 = hebrew_validation.parse_v6_intervention_batch(
                 text,
@@ -823,6 +829,7 @@ class LLMProviderService:
             critique_for=lambda _candidate, _finish_reason: (
                 hebrew_prompts.batch_retry_critique(refusal[0].label)
             ),
+            scope="adaptation",
         )
 
         parsed = (
@@ -891,6 +898,7 @@ class LLMProviderService:
         model_name: str,
         is_acceptable,
         critique_for=None,
+        scope: str = "unspecified",
     ) -> Tuple[Optional[str], int, str]:
         return complete_with_retries(
             build_prompt=build_prompt,
@@ -898,6 +906,7 @@ class LLMProviderService:
             model_name=model_name,
             is_acceptable=is_acceptable,
             critique_for=critique_for,
+            scope=scope,
         )
 
     def _resolve_endpoint(self, model_name: str) -> str:

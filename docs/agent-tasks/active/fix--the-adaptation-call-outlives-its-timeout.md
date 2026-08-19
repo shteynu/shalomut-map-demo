@@ -32,6 +32,12 @@ each a summary and its steps, in one request.
 `llm_request_timeout_seconds`, `llm_retry_budget_seconds` and the ceiling that
 bounds them, plus the per-call timing needed to choose them.
 
+Extended on the owner's request after the fix landed: `scope=` on the provider
+log lines, and an error-level signal when an answer is truncated by the token
+budget. Both came out of the same question — what happens when the questionnaire
+grows — and both are prerequisites for answering it with data instead of a
+guess.
+
 ## Non-goals
 
 - The rate limits, the token cap and the model. All three were already measured
@@ -78,6 +84,26 @@ this same defect one level down.
 call refused at twenty seconds says only "longer than twenty", so every
 replacement number would have been as unmeasured as the one it replaced.
 
+**And which call it was.** `scope=` now rides the usage, retry and no-answer
+lines: `interpretation`, `overall_summary`, `structured_summary`,
+`metric_insights`, `question_suggestion`, `adaptation`. Without it a 50.9s call
+could not be attributed, and the three kinds of call have very different output
+sizes. Measured immediately afterwards on one round: adaptation mean 21.2s,
+metric insights 15.0s, structured summary 11.9s, overall summary 8.7s —
+adaptation is the longest, which is what made it the one that died.
+
+**Truncation is now an error, not a warning.** `finish_reason=length` means the
+budget ran out mid-answer: a configuration fault wearing a provider fault's
+clothes, and the only failure here nobody upstream can fix. It has been read as
+the round simply being quiet twice — 2026-07-28 at caps of 180 and 420, and
+2026-08-19 at 2048, where 25 of 25 calls truncated and the round still reported
+success. The log line names `MAX_TOKENS_PER_DIMENSION` and the value in force.
+
+`fallback_reason` deliberately stays `invalid_finish_reason`: that string is what
+the health reading and the callers branch on, and it covers safety blocks and
+recitation too. What was missing was a level a log filter stops on, not another
+label.
+
 ## Assumptions
 
 - The tail measured locally stands for the deployed tail. Same model, same token
@@ -90,7 +116,11 @@ All of the above.
 
 ## Remaining
 
-None.
+None on this branch. The follow-on the owner and I identified — deriving the
+token budget from the round's question count instead of a fixed 8192 — waits on
+the methodologist, because the coefficient is questions-per-dimension and the
+new instrument's item-to-dimension mapping is not decided. Recorded under
+Questions requiring an owner decision.
 
 ## Changed files
 
@@ -112,6 +142,12 @@ None.
 - Measurement round with the ceiling lifted: 27 calls, zero timeouts, min 10.8s,
   median 17.8s, p90 22.6s, max 26.0s.
 - Round at the 25s ceiling: 10 of 20 calls lost to `TimeoutError`.
+- **Live round confirming `scope=`**, after that work: all four scopes present
+  and correctly attributed, zero timeouts, zero adaptation fallbacks, zero
+  error-level lines. Slowest call 25.6s against the previous round's 50.9s on
+  identical settings — the third independent sign that the tail is unstable.
+- The three new observability tests pass; the truncation test asserts the error
+  line, and a sibling asserts an ordinary refusal is *not* escalated.
 
 ### Failed
 
@@ -154,7 +190,14 @@ Recorded under Residual risk.
 
 ## Questions requiring an owner decision
 
-None.
+- When the questionnaire changes, should the token budget scale with the round
+  rather than stay a constant? V6 metric insights ask for one 300-500 character
+  paragraph **per question**, and the validator requires one for every question
+  in the dimension. At today's three questions per dimension the output budget
+  already runs at about 87% of 8192 (prompt ~1340, visible ~1300, reasoning
+  ~5760). At roughly sixteen questions per dimension that call's output grows
+  about fivefold and the constant cannot hold it. The timeout is the lesser
+  problem and is already a variable; this one is not.
 
 ## Next concrete step
 

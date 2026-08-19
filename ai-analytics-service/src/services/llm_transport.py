@@ -98,6 +98,7 @@ def complete_with_retries(
     model_name: str,
     is_acceptable: Callable[[str, object], bool],
     critique_for: Optional[Callable[[str, object], Optional[str]]] = None,
+    scope: str = "unspecified",
 ) -> Tuple[Optional[str], int, str]:
     """Run one bounded conversation and record that it happened, then report it.
 
@@ -113,6 +114,7 @@ def complete_with_retries(
         model_name=model_name,
         is_acceptable=is_acceptable,
         critique_for=critique_for,
+        scope=scope,
     )
 
     _text, attempts, fallback_reason = result
@@ -132,6 +134,7 @@ def _complete_with_retries(
     model_name: str,
     is_acceptable: Callable[[str, object], bool],
     critique_for: Optional[Callable[[str, object], Optional[str]]] = None,
+    scope: str = "unspecified",
 ) -> Tuple[Optional[str], int, str]:
     """Run one bounded provider conversation and report what happened.
 
@@ -239,6 +242,7 @@ def _complete_with_retries(
                                 model_name,
                                 attempt,
                                 time.monotonic() - attempt_started_at,
+                                scope,
                             )
                             choice = res["choices"][0]
                             content = choice["message"]["content"]
@@ -286,6 +290,35 @@ def _complete_with_retries(
                         logged_finish_reason = _safe_log_token(
                             finish_reason or "unavailable",
                         )
+                        # Truncation is the one failure here that nobody
+                        # upstream can fix: the provider answered, the answer
+                        # was cut off mid-word because the token budget ran
+                        # out, and a retry spends another paid call on the same
+                        # wall. It is a configuration fault wearing a provider
+                        # fault's clothes, and it has twice now been read as
+                        # the round simply being quiet — on 2026-07-28 with
+                        # caps of 180 and 420, and again on 2026-08-19 at 2048,
+                        # each time with the round reporting success.
+                        #
+                        # ERROR rather than a new `fallback_reason`: the reason
+                        # string is what the health reading and the callers
+                        # branch on, and `invalid_finish_reason` deliberately
+                        # covers truncation, safety blocks and recitation
+                        # alike. What was missing was not another label but a
+                        # level that a log filter stops on, and the name of the
+                        # variable to raise.
+                        if finish_reason == "length":
+                            logger.error(
+                                "[LLM Service] outcome=token_budget_exhausted "
+                                "provider=%s model=%s scope=%s attempt=%s "
+                                "max_tokens=%s "
+                                "action=raise MAX_TOKENS_PER_DIMENSION",
+                                provider,
+                                model_name,
+                                scope,
+                                attempt,
+                                settings.max_tokens_per_dimension,
+                            )
                         retry_wait = (
                             _book_retry_send(
                                 request_started_at,
@@ -302,12 +335,13 @@ def _complete_with_retries(
                             )
                             logger.warning(
                                 "[LLM Service] outcome=retry "
-                                "provider=%s model=%s reason=%s "
+                                "provider=%s model=%s scope=%s reason=%s "
                                 "finish_reason=%s "
                                 "attempt=%s max_attempts=%s "
                                 "delay_ms=%s critique=%s",
                                 provider,
                                 model_name,
+                                scope,
                                 fallback_reason,
                                 logged_finish_reason,
                                 attempt,
@@ -324,10 +358,11 @@ def _complete_with_retries(
                         # was the one never recorded anywhere.
                         logger.warning(
                             "[LLM Service] outcome=no_answer "
-                            "provider=%s model=%s reason=%s "
+                            "provider=%s model=%s scope=%s reason=%s "
                             "finish_reason=%s attempts=%s",
                             provider,
                             model_name,
+                            scope,
                             fallback_reason,
                             logged_finish_reason,
                             attempts,
@@ -540,6 +575,7 @@ def _log_usage(
     model_name: str,
     attempt: int,
     duration_seconds: float | None = None,
+    scope: str = "unspecified",
 ) -> None:
     """What this one answer cost, on the one line that sees every answer.
 
@@ -577,11 +613,13 @@ def _log_usage(
 
     logger.info(
         "[LLM Service] outcome=usage provider=%s model=%s attempt=%s "
+        "scope=%s "
         "prompt_tokens=%s completion_tokens=%s total_tokens=%s "
         "duration_ms=%s",
         provider,
         model_name,
         attempt,
+        scope,
         prompt,
         completion,
         total,
