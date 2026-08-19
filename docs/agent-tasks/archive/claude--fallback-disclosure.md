@@ -5,9 +5,9 @@
 - Branch: `claude/fallback-disclosure`
 - Base branch: `main`
 - Base commit: `3c22977`
-- Current HEAD: `3c22977` (work is committed on top of this base; see the
-  branch's own log after commit)
-- Status: implemented and verified, not merged
+- Current HEAD: `9819d1f`, merged into `main` (fast-forward, since `main` had
+  not moved since the base commit)
+- Status: merged
 - Last updated: 2026-08-19
 - Last agent/tool: Claude Code
 
@@ -317,5 +317,8 @@ touched.
 
 ## Next concrete step
 
-Commit this working tree and push to `origin/claude/fallback-disclosure`.
-Do not merge — no merge request has been given for this branch.
+None. Merged into `main` as `9819d1f`.
+
+Options 2 and 3 outlive this branch as unrequested follow-up work; recorded in
+[`shalomut-tracker-handoff.md`](../../shalomut-tracker-handoff.md) under
+"waits on being requested" rather than repeated here.

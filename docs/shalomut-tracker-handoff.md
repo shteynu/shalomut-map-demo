@@ -2375,6 +2375,20 @@ owner's own hands.
 - Repeat-measurement reminders (§11). Reminding respondents would need contact
   data the privacy model deliberately does not hold; reminding the manager would
   not.
+- **Two follow-ups from the fallback-disclosure audit, 2026-08-19.**
+  `claude/fallback-disclosure` (merged as `9819d1f`) closed the two gaps where
+  a deterministic fallback carried no on-screen note at all — the round
+  summary and the recommendation wording. It deliberately left two larger
+  changes unbuilt, offered but not requested: making
+  `DashboardPartialMapNotice`'s overview-level banner also fire on
+  `deterministic_fallback` (today it fires only on `outcome: "unavailable"`,
+  which contract 6.0's structured operations never actually return — the
+  three per-dimension generators all fall back silently rather than raising,
+  so the banner under-fires for the failure mode that is actually common); and
+  true per-dimension re-run, which does not exist today — a stored
+  `AiAnalysisRun` starts every field empty, so "re-run the analysis" always
+  means the whole round. Both are in
+  `docs/agent-tasks/archive/claude--fallback-disclosure.md`.
 
 **Waits on the owner's hands**
 
