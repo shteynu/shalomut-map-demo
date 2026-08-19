@@ -112,13 +112,22 @@ shape the fix copies.
 
 ## Assumptions
 
-- The 126-item instrument gives each dimension many more aggregate lines, so the
-  prompt now shows many more colour groups and the model names one nearly every
-  time. Treated as an amplifier of an existing defect, not as its cause: the
-  defect is present for any 5.0 round whose aggregates carry distributions.
+- ~~The 126-item instrument gives each dimension many more aggregate lines, so
+  the prompt shows many more colour groups and the model names one nearly every
+  time.~~ **Withdrawn 2026-08-19.** The runs that measured this used **24**
+  question aggregates — three per dimension — printed by the script's own `MCP:`
+  line. `scripts/local-unlocked-pipeline.ts` builds its round from
+  `createCanonicalSurveyDefinition`, which is the canonical 24 and not whatever
+  the default instrument is now. So the failure needs no amplifier: three
+  colour-group lines per dimension were enough, every time.
 
 ## Completed
 
+- `AI_ANALYTICS_CONTRACT_VERSION` is now required by
+  `scripts/local-unlocked-pipeline.ts` and has no default; the run prints the
+  version it resolved. Only the unset case is checked in the script — an
+  unproducible value is already refused when `analytics.service.ts` is
+  imported, and repeating that check would read as the guard without being it.
 - Diagnosis, reproduced offline with no provider call.
 - The round's contract version now reaches the legacy adaptation validator:
   `agent_adaptation_node` sends it for every round, `adapt_interventions_result`
@@ -151,6 +160,8 @@ All committed in `c1dfed0`.
 - `ai-analytics-service/tests/test_replay_targets.py` — the shared adaptation
   double now spells out `contract_version`, because the node sends it for every
   round rather than only on the 6.0 branch.
+- `scripts/local-unlocked-pipeline.ts` — the contract version is required, and
+  the run prints the one it resolved.
 
 ## Verification evidence
 
@@ -167,6 +178,14 @@ All committed in `c1dfed0`.
   callback boundary.
 - The three new tests were each re-run with the fix reverted and fail there, on
   `invalid_semantic_output` — the production symptom. They are not vacuous.
+- `npm run typecheck` exit 0, `npm run lint` exit 0, after making the contract
+  version required in the pipeline script.
+- The script itself, three ways: unset prints the usage message and exits `1`;
+  `AI_ANALYTICS_CONTRACT_VERSION=2.0` is refused at import by
+  `analytics.service.ts` with Core's own wording; `=6.0` with no provider key
+  runs end to end — `Contract: producing 6.0`, `MCP: contract 6.0 … 24 question
+  aggregates`, `Python: status success … 8 stones`, every stone
+  `deterministic_fallback (attempts 0)`, so nothing was billed.
 - `git diff --check` clean.
 
 ### Failed
@@ -190,9 +209,15 @@ local
   actually writes one. The before/after that closes this is a live run.
 - The saving is bounded by what the measurement showed — 14 of 31 answers in the
   `low` run — it applies to `5.0` only, and no run has yet demonstrated it.
-- Nothing here was measured on `6.0`. The claim that `6.0` is unaffected rests
-  on reading its branch — a prompt that names no colour group, a validator that
-  refuses visible digits — and not on a run.
+- Nothing here was measured on `6.0` with a provider. The claim that `6.0` is
+  unaffected rests on reading its branch — a prompt that names no colour group,
+  a validator that refuses visible digits — and on one keyless run that
+  completed `status: success` with eight stones, which exercises the path but
+  bills nothing and so proves nothing about the model's wording.
+- The script's round is the canonical 24 questions, not the questionnaire the
+  product now uses. So it under-samples the prompt in a second way, independent
+  of the contract version, and a cost measured on it is a floor rather than the
+  real figure.
 - 1.0-4.0 keep the flat blacklist and 6.0 is untouched, so no published contract
   changes meaning. 5.0 gets the rule its own manifest already declares.
 
@@ -214,8 +239,12 @@ Recorded under Residual risk.
 - Whether to spend one round on the before/after measurement, and on which
   contract. `5.0` proves this fix; `6.0` is what the deployment runs. They are
   different questions and only one of them is about production cost.
-- Whether `scripts/local-unlocked-pipeline.ts` should keep its own `"5.0"`
-  default at all, given that it is the tool used to reason about deployed cost.
+- Whether `scripts/local-unlocked-pipeline.ts` should build its round from the
+  current default instrument instead of `createCanonicalSurveyDefinition`. It is
+  the same class of problem as the version default just removed — the instrument
+  used to measure cost is not the instrument in use — but changing it touches
+  the item-to-dimension mapping the methodologist owns and has not yet answered
+  on, so it is left as a question rather than done.
 
 ## Next concrete step
 

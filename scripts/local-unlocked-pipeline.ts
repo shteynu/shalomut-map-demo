@@ -7,7 +7,14 @@
  * MCP handler over it, and pipes the result through the real Python pipeline —
  * no database, no server, no manager login.
  *
- *   npx tsx scripts/local-unlocked-pipeline.ts
+ *   AI_ANALYTICS_CONTRACT_VERSION=6.0 npx tsx scripts/local-unlocked-pipeline.ts
+ *
+ * The contract version is required and has no default. This script is how the
+ * cost and provenance of a round get looked at, and a version nobody typed is
+ * the one nobody checks: until 2026-08-19 it defaulted to `5.0` while the
+ * deployment produced `6.0`, so three runs measured an adaptation branch
+ * nothing runs and the numbers were read as if they were about production.
+ * Name the version you mean — `6.0` for what the deployment produces.
  *
  * Export the provider key first (`GEMINI_API_KEY=...`) to exercise the model.
  * Without one the pipeline still completes and reports `heuristic` provenance,
@@ -24,6 +31,7 @@ import {
   InMemoryRoundRepository,
   InMemorySurveyRepository,
 } from "@/lib/repositories";
+import { PRODUCIBLE_ANALYTICS_CONTRACT_VERSIONS } from "@/lib/ai-contract-version";
 import { overrideCoreRepositories } from "@/lib/composition-root";
 import { surveyInstrument } from "@/lib/shalomut-source";
 import { createCanonicalSurveyDefinition } from "@/lib/survey-definition";
@@ -61,12 +69,44 @@ function scoreFor(value: AnswerValue): number {
   return value === "green" ? 100 : value === "yellow" ? 60 : 0;
 }
 
+/**
+ * The version this run produces, or a usage message and no run.
+ *
+ * Only the unset case is checked here. A value this deployment cannot produce
+ * has already been refused by the time this runs: `analytics.service.ts`
+ * resolves the variable when it is first imported, which the import of the MCP
+ * route at the top of this file triggers, and it throws there. Repeating that
+ * check would read as the guard while never being the guard.
+ *
+ * Unset is what falls through, because unset is a documented default
+ * everywhere else in Core. It must not be one here: this script is how the cost
+ * and provenance of a round get looked at, and until 2026-08-19 it quietly
+ * chose `5.0` while the deployment produced `6.0`, so three runs measured an
+ * adaptation branch nothing runs.
+ */
+function requireContractVersion(): string {
+  const requested = process.env.AI_ANALYTICS_CONTRACT_VERSION?.trim();
+  if (requested) {
+    return requested;
+  }
+
+  console.error(
+    "AI_ANALYTICS_CONTRACT_VERSION is required and has no default.\n" +
+      `Producible versions: ${PRODUCIBLE_ANALYTICS_CONTRACT_VERSIONS.join(", ")}. ` +
+      "The deployment produces 6.0.\n" +
+      "  AI_ANALYTICS_CONTRACT_VERSION=6.0 npx tsx " +
+      "scripts/local-unlocked-pipeline.ts",
+  );
+  process.exit(1);
+}
+
 async function main() {
   // The in-memory repositories are the point: a stray DATABASE_URL would send
   // this at the real database instead.
   delete process.env.DATABASE_URL;
-  process.env.AI_ANALYTICS_CONTRACT_VERSION =
-    process.env.AI_ANALYTICS_CONTRACT_VERSION || "5.0";
+  const contractVersion = requireContractVersion();
+  process.env.AI_ANALYTICS_CONTRACT_VERSION = contractVersion;
+  console.log(`Contract: producing ${contractVersion}`);
 
   const definition = createCanonicalSurveyDefinition("סבב בדיקה מקומי", 10);
   const questions = definition.questions.filter((question) => question.enabled);
