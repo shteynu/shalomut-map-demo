@@ -1,5 +1,29 @@
 # Shalomut Tracker — operational handoff
 
+**2026-08-19: the twenty-second timeout is fixed, and it was a ceiling in the
+code rather than a missing dashboard value.** `llm_retry_budget_seconds` was
+clamped to `25.0` in `config.py` and the request timeout to whatever the budget
+then allowed. A clamp caps the environment variable too, so the dashboard
+reading recorded below was answering a question that had no good answer: setting
+either variable there would not have raised anything. Fixed on
+`fix/the-adaptation-call-outlives-its-timeout`, based on
+`claude/priceless-swanson-9cf466`.
+
+New values are 90s request timeout, 300s retry budget, ceiling 600s, all code
+defaults — **no Render variable needs adding**, the service picks them up on the
+next deploy. They come from 55 measured calls across two live rounds: medians
+17.8s and 21.0s, slowest 26.0s and 50.9s. `outcome=usage` now carries
+`duration_ms`, which is what made the measurement possible at all.
+
+A live `6.0` round at the new defaults: 28 calls, **zero `TimeoutError`, zero
+adaptation fallbacks, eight stones `llm` on the first attempt**. Before it, the
+same round lost seven of eight adaptations.
+
+Worth carrying forward: the tail nearly doubled between two identical rounds, so
+90s is 1.8x a maximum that is itself unstable. If a round ever exceeds it,
+`LLM_REQUEST_TIMEOUT_SECONDS` can now raise it without a code change — that, more
+than the number, is what changed.
+
 **2026-08-19: a live `6.0` round writes its map and then loses seven of its
 eight adaptations to a twenty-second timeout.** First live round on `6.0` with
 deployed settings (`gemini-3.5-flash`, `MAX_TOKENS_PER_DIMENSION=8192`,
