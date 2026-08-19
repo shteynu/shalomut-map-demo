@@ -6,7 +6,7 @@
 - Base branch: `origin/main`
 - Base commit: `dab5ef6`
 - Current HEAD: see `git log -1` (commits listed under Completed)
-- Status: complete. `low` is declared in `render.yaml` on a corpus that returned 56 of 56 stones; one cost comparison is left open and named below
+- Status: complete. Quality measured twice, cost measured on both settings at the bounds the deployment now runs; nothing in this file is reasoned rather than measured
 - Last updated: 2026-08-19
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -130,12 +130,6 @@ Nothing.
 
 ## Remaining
 
-- One round at **unset on the raised bounds**, to close the only comparison
-  still resting on reasoning rather than measurement: the 39% saving was
-  measured with both runs on the old bounds, and under the new ones only `low`
-  has been measured. Expected to widen rather than narrow — the answers unset
-  used to abandon were the thinking-heavy ones — but expected is not measured.
-  About $0.7.
 - Decide the adaptation defect below. It is not this branch's work, but it is
   where roughly half of a round's calls go.
 
@@ -234,6 +228,22 @@ Nothing.
   No `TimeoutError` and no `429` in the three-case run. Cost there was $0.72 a
   round against $0.468 under the old bounds — the same answers, now finished
   instead of abandoned.
+- **The cost comparison, on the bounds the deployment now runs.** The same local
+  fixture, both settings, 31 billed answers each, no timeout in either, eight
+  `llm` stones in both:
+
+  | | billed answers | thinking | cost |
+  | --- | --- | --- | --- |
+  | unset, old bounds | 19 | 58,885 | $0.6226 |
+  | unset, raised bounds | 31 | 106,175 | **$1.1224** |
+  | `low`, old bounds | 31 | 24,742 | $0.3817 |
+  | `low`, raised bounds | 31 | 22,728 | **$0.3707** |
+
+  **67%**, not the 39% one round on the old bounds suggested. The old timeout
+  was saving money by discarding the answers that cost most to produce, and the
+  three lost stones were the visible half of that: unset nearly doubled when it
+  started waiting, while `low` did not move, because its answers were never the
+  ones being abandoned.
 
 ### Failed
 
@@ -310,7 +320,5 @@ Topping up the provider account is the owner's action.
 
 ## Next concrete step
 
-Push the branch. Then, on the raised bounds, run the local unlocked fixture once
-with `LLM_REASONING_EFFORT` unset and compare its cost to the `low` figure
-already recorded — the last number in this file that is reasoned rather than
-measured.
+Push the branch. Nothing in it waits on another measurement; the adaptation
+defect under Known risks is the next piece of work and belongs to its own task.

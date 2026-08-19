@@ -196,15 +196,17 @@ services:
       # 56 of 56 stones written by the model, mean 0.9604 against the unset
       # run's 0.9644, and not one `TimeoutError` in either half of it.
       #
-      # So this value rests on quality measured twice and cost measured once.
-      # The 39% comes from one round with both runs on the old bounds; under
-      # the new ones only `low` has been measured, at $0.72 a round on the
-      # three hardest cases against $0.468 under the old ones — the difference
-      # being answers that used to be abandoned and now complete. Unset should
-      # rise by more, since the answers it abandoned were the thinking-heavy
-      # ones, so 39% is expected to be conservative rather than optimistic.
-      # That last step is reasoning, not a measurement, and the honest way to
-      # close it is one unset round on these bounds.
+      # Cost, measured on these bounds rather than reasoned about: the same
+      # fixture, 31 billed answers each way, no timeout in either. Unset spends
+      # 106,175 thinking tokens and $1.12 a round; `low` spends 22,728 and
+      # $0.37. Both write all eight stones.
+      #
+      # That is 67%, not the 39% one round on the old bounds suggested, and the
+      # reason is worth keeping: the old 20-second timeout was quietly saving
+      # money by throwing away the answers that cost the most to produce — and
+      # with them the paragraphs. Unset nearly doubled, $0.62 to $1.12, when it
+      # started waiting. `low` did not move at all, $0.38 to $0.37, because its
+      # answers were never the ones being abandoned.
       - key: LLM_REASONING_EFFORT
         value: "low"
       - key: ONLY_LLM_FOR_PROBLEMATIC
