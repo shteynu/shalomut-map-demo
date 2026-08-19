@@ -1862,9 +1862,9 @@ older snapshots remain available in Git.
 **Reading the deployed commit stops needing a sign-in, 2026-08-19.** Every
 reading below that names a served commit was taken from the Vercel dashboard in
 the owner's signed-in Chrome, because Core's `/api/health/` did not report one —
-the AI service's `/health` always has. `claude/health-commit-field` adds
-`commit` to Core's health payload, so from the deployment that carries it the
-question is one anonymous request against both halves rather than a dashboard.
+the AI service's `/health` always has. `ca1c6c8` on `main` adds `commit` to
+Core's health payload, so from the deployment that carries it the question is
+one anonymous request against both halves rather than a dashboard.
 It reports `unknown` rather than guessing when it cannot prove a SHA, so a
 reading of `unknown` means the field has not deployed yet — not that the
 deployment is broken. Until that first deploy lands, the dashboard is still the
@@ -2441,6 +2441,18 @@ owner's own hands.
   `src/lib/help/topics/he.ts` first and brought across; every figure the guide
   shows is computed from the module that enforces it and cannot be edited in a
   translation. What needs eyes is the wording, not the numbers.
+- **Reading Core's `commit` off the deployed `/api/health/` once, 2026-08-19.**
+  `ca1c6c8` put the field there and it is verified locally both ways, but no
+  one has read it from the deployment: the container that wrote it cannot reach
+  `*.vercel.app` at all, by `curl` or by a real browser. The reading is one
+  anonymous request and it settles a named assumption — that Vercel populates
+  `VERCEL_GIT_COMMIT_SHA` on this project. A SHA matching
+  `git rev-parse --short=7 origin/main` closes it. `unknown` means the platform
+  names that variable something else, and then the resolver in
+  `src/lib/deployment-commit.ts` needs the real name; it is a one-line change,
+  and until it is made every reading of Core's served commit still goes through
+  the signed-in dashboard.
+
 - Rotating the four design-stage credentials before the first real respondents.
   Listed above as an accepted deferred gate; it is still open.
 

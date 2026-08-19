@@ -5,8 +5,9 @@
 - Branch: `claude/health-commit-field`
 - Base branch: `main`
 - Base commit: `a3dd4fe`
-- Current HEAD: this commit
-- Status: implemented and verified, not merged
+- Current HEAD: `ca1c6c8`, merged into `main` (fast-forward — `main` had not
+  moved since the base commit)
+- Status: merged; unconfirmed on the deployed endpoint
 - Last updated: 2026-08-19
 - Last agent/tool: Claude Code
 
@@ -226,7 +227,10 @@ The new field publishes a commit SHA from a public repository.
 
 ## Next concrete step
 
-Merge is the user's call. On the first deploy that carries this, read
-`https://shalomut-map-demo.vercel.app/api/health/` and confirm `commit` matches
-`git rev-parse --short=7 origin/main`; `unknown` there means the platform
-variable is named something else and the assumption above needs revisiting.
+None on this branch. Merged into `main` as `ca1c6c8`.
+
+The one thing that outlives it is a reading nobody has taken: whether the
+deployed endpoint actually reports a SHA rather than `unknown`. That is the
+assumption this branch could not verify from its own container, so it moves to
+`shalomut-tracker-handoff.md` under what waits on the owner's hands — an
+archived file cannot carry an open item.
