@@ -4,8 +4,11 @@
 
 - Branch: `feat/the-map-says-which-paragraphs-it-wrote-itself`
 - Base branch: `main`
-- Base commit: `e752081`
-- Current HEAD: `e752081` plus uncommitted work at the time of writing
+- Base commit: `2b59526` (rebased onto it on 2026-08-19, when the sibling
+  `fix/the-service-proves-its-commit-the-way-core-does` landed on `main`; the
+  original base was `e752081` and the rebase was conflict-free, that branch
+  having touched a different part of the handoff)
+- Current HEAD: `f9b036a`, two commits above the base
 - Status: implementation complete, verified locally including a browser walk
 - Last updated: 2026-08-19
 - Last agent/tool: Claude Code (Opus 5)
