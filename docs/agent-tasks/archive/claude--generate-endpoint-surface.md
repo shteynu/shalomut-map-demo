@@ -5,8 +5,8 @@
 - Branch: `claude/generate-endpoint-surface`
 - Base branch: `main`
 - Base commit: `f0d868d`
-- Current HEAD: this commit
-- Status: delivered on the branch; not merged
+- Current HEAD: `b6dccac`, merged into `main`
+- Status: merged; the check runs inside `npm test`
 - Last updated: 2026-08-18
 - Last agent/tool: Claude Code
 
@@ -194,4 +194,14 @@ None. No credentials, secrets, deployment aliases or database state are touched.
 
 ## Next concrete step
 
-Merge `claude/generate-endpoint-surface` into `main` when the user asks for it.
+None. Merged into `main` as `b6dccac`.
+
+The merge was itself the first real exercise of what this branch built: `main`
+had meanwhile gained a section and a constants row in the very document the
+table is generated into, and `docs:endpoints:check` passed on the merged tree —
+the generated block survived a three-way merge untouched, which is the property
+the markers exist for.
+
+The open question that outlives the branch — which generator, if any, comes
+next — is a decision rather than work, and it is small enough to live in this
+file rather than in the cross-task handoff.
