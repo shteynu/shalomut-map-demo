@@ -1,5 +1,22 @@
 # Shalomut Tracker — operational handoff
 
+**2026-08-19: half of every round's provider answers were being spent proving a
+validator wrong.** The question-adaptation step fell back to catalog copy on all
+eight dimensions of every round — measured on three local runs that day — always
+`refusal=status_inconsistent`, always after two or three attempts. In the `low`
+run that was 14 of 31 billed answers. The cause was a contract version that
+never reached the validator: `AI_ANALYTICS_CONTRACT_VERSION` is the string
+`"2.0"`, the adaptation path defaulted to it, and 2.0 forbids naming a colour
+group at all — while the 5.0 prompt renders the score distribution and asks the
+model to quote a bucket count. Fixed on
+`claude/priceless-swanson-9cf466`; 1.0-4.0 and 6.0 behave exactly as before.
+
+Two things follow for this file. The round cost that the credit entries below
+are about is expected to drop by roughly the retries this was spending, and that
+is a claim no run has yet checked — **a live before/after round is still owed**,
+and it needs the owner's approval and an account with credit. Until then the
+saving is arithmetic, not evidence.
+
 **2026-08-18, session close (second and final for the day): the repository now
 says what it grants, and this paragraph went stale while it was being written.**
 `origin/main` is **`ace5c3c`**, asked of the remote directly — and the first
