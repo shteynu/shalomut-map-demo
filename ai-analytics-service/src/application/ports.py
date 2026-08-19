@@ -10,7 +10,7 @@ Nothing here imports an implementation, so a port stays cheap to satisfy: a
 test double is any object with the right methods.
 """
 
-from typing import Any, Dict, Optional, Protocol
+from typing import Any, Dict, Optional, Protocol, Sequence
 
 from src.agents.state import AnalyticsState
 from src.schemas.mcp_types import RoundAnalyticsResult
@@ -97,4 +97,6 @@ class AnalysisRunner(Protocol):
         *,
         run_id: Optional[str] = None,
         lease_token: Optional[str] = None,
+        regenerate_dimension_ids: Optional[Sequence[str]] = None,
+        previous_result: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]: ...

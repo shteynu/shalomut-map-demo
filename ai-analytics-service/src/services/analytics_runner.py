@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Sequence
 
 from src.agents.graph import (
     PROVIDER_UNAVAILABLE_MESSAGE_HEBREW,
@@ -41,12 +41,22 @@ class AnalyticsRunnerService:
         *,
         run_id: Optional[str] = None,
         lease_token: Optional[str] = None,
+        regenerate_dimension_ids: Optional[Sequence[str]] = None,
+        previous_result: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
         Executes the end-to-end AI analytics workflow:
         1. Fetch round data from the analytics source
         2. Run the async graph-style analytics workflow
         3. Deliver the compiled Stone Map payload to the result sink
+
+        `regenerate_dimension_ids` and `previous_result` arrive together from
+        the claimed job and turn this into a partial run: the named dimensions
+        are written again and the rest start from the copy the previous map
+        already carries. The delivered payload is a whole map either way —
+        every stone, every number recomputed from this round's aggregates —
+        which is what keeps the callback contract and Core's own verification
+        exactly as they were.
         """
         if bool(run_id) != bool(lease_token):
             raise ValueError(
@@ -77,7 +87,16 @@ class AnalyticsRunnerService:
                 else round_analytics.to_dict()
             ),
             org_context=org_context,
+            regenerate_dimension_ids=regenerate_dimension_ids,
+            previous_result=previous_result,
         )
+        if initial_state.get("regenerate_dimension_ids"):
+            logger.info(
+                "[AnalyticsRunner] Partial run for round %s writes %s again; "
+                "the other dimensions keep the copy they already have",
+                round_id,
+                ",".join(initial_state["regenerate_dimension_ids"]),
+            )
 
         callback_identity = (
             {"run_id": run_id, "lease_token": lease_token}

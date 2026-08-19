@@ -36,9 +36,28 @@ class ReplayPlan(NamedTuple):
 
 
 def _replay_plan(state: AnalyticsState) -> Optional[ReplayPlan]:
-    """Return the targeted replay plan, or ``None`` for a full pass."""
+    """Return the targeted plan, or ``None`` for a full pass.
+
+    Two different things produce one. A replay writes again what the validator
+    refused; a partial run writes again what a manager asked for. They are not
+    the same event — nothing failed in the second — but the nodes need the same
+    answer from both: which dimensions to write, and which already have copy
+    worth keeping. So they share this, and the difference stays where it
+    belongs, in what each one names.
+
+    The round sentence is always in a partial plan. It is written from every
+    dimension at once, so leaving last round's sentence over a rewritten
+    dimension would be the one carried thing that is no longer true.
+    """
     if state.get("retry_count", 0) <= 0:
-        return None
+        requested = frozenset(state.get("regenerate_dimension_ids") or ())
+        if not requested:
+            return None
+        return ReplayPlan(
+            interpretations=requested,
+            recommendations=requested,
+            overall_summary=True,
+        )
 
     plan = ReplayPlan(
         interpretations=frozenset(

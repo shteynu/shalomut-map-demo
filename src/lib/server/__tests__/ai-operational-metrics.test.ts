@@ -20,6 +20,7 @@ const baseRun: AiAnalysisRun = {
   requestKey: 'automatic',
   trigger: 'automatic',
   state: 'queued',
+  regenerateDimensionIds: [],
   attemptCount: 0,
   queuedAt: new Date('2026-07-30T10:00:00.000Z'),
 };

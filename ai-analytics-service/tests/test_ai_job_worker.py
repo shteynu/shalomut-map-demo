@@ -50,6 +50,10 @@ async def test_worker_claims_and_processes_one_run_with_its_lease_identity():
         round_id="round-1",
         run_id="run-1",
         lease_token="lease-token-123456",
+        # An ordinary run names no dimensions and carries no previous map,
+        # which is what every run looked like before partial runs existed.
+        regenerate_dimension_ids=(),
+        previous_result=None,
     )
     client.fail.assert_not_awaited()
 
@@ -203,3 +207,42 @@ async def test_stopping_the_pool_cancels_every_slot():
     stop_event.set()
     await asyncio.wait_for(asyncio.gather(*tasks), timeout=2)
     assert all(task.done() and not task.cancelled() for task in tasks)
+
+
+@pytest.mark.asyncio
+async def test_a_partial_run_carries_its_dimensions_and_the_map_it_amends():
+    """The worker is a courier here, and that is the whole of its job.
+
+    What to write again is Core's decision and how to write it is the graph's;
+    the worker must not improve on either, so this asserts that both arrive
+    from the lease and reach the runner unchanged.
+    """
+    previous = {"stones": {"balance": {"summary": ["פסקה"]}}}
+    lease = JobLease(
+        run_id="run-partial",
+        round_id="round-partial",
+        lease_token="lease-token-partial",
+        attempt_count=0,
+        regenerate_dimension_ids=("balance", "certainty"),
+        previous_result=previous,
+    )
+    client = AsyncMock()
+    client.claim.return_value = lease
+    runner = AsyncMock()
+    runner.process_round.return_value = {"status": "success"}
+    worker = AiAnalysisJobWorker(
+        client=client,
+        runner=runner,
+        worker_id="worker-1",
+        heartbeat_interval_seconds=60,
+    )
+
+    assert await worker.process_once() is True
+
+    runner.process_round.assert_awaited_once_with(
+        round_id="round-partial",
+        run_id="run-partial",
+        lease_token="lease-token-partial",
+        regenerate_dimension_ids=("balance", "certainty"),
+        previous_result=previous,
+    )

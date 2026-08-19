@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { AI_ANALYTICS_DIMENSION_IDS } from '@/lib/ai-contract';
 import { resolveCoreRepositories } from '@/lib/composition-root';
 import { getArchivedRoundGuardResponse } from '@/lib/server/archived-round-guard';
 import { getDurableWriteGuardResponse } from '@/lib/server/durable-write-guard';
@@ -12,12 +13,70 @@ interface RouteParams {
   }>;
 }
 
+/**
+ * Which dimensions this request asks to be written again.
+ *
+ * An absent body, an absent field and an empty list all mean the same thing —
+ * the whole round — because that is what every caller of this route meant
+ * before the field existed, and a screen that posts nothing must keep working.
+ *
+ * Names are checked against the contract's own eight rather than against a
+ * list repeated here. An unknown name is refused rather than dropped: a
+ * request naming a dimension that does not exist has misunderstood something,
+ * and quietly analysing the whole round instead would spend a full round's
+ * provider calls answering a question nobody asked.
+ */
+function readRequestedDimensions(
+  body: unknown,
+): { ok: true; dimensionIds: string[] } | { ok: false; error: string } {
+  if (!body || typeof body !== 'object' || !('dimensionIds' in body)) {
+    return { ok: true, dimensionIds: [] };
+  }
+
+  const requested = (body as { dimensionIds?: unknown }).dimensionIds;
+  if (requested === undefined || requested === null) {
+    return { ok: true, dimensionIds: [] };
+  }
+  if (
+    !Array.isArray(requested) ||
+    requested.some((value) => typeof value !== 'string')
+  ) {
+    return { ok: false, error: 'dimensionIds must be an array of strings' };
+  }
+
+  const unknown = requested.filter(
+    (value) => !AI_ANALYTICS_DIMENSION_IDS.includes(value),
+  );
+  if (unknown.length > 0) {
+    return {
+      ok: false,
+      error: `Unknown dimension ids: ${unknown.join(', ')}`,
+    };
+  }
+
+  // Canonical order and no repeats, so the stored list reads the same however
+  // the caller wrote it and cannot ask for one dimension twice.
+  return {
+    ok: true,
+    dimensionIds: AI_ANALYTICS_DIMENSION_IDS.filter((dimensionId) =>
+      requested.includes(dimensionId),
+    ),
+  };
+}
+
 export async function POST(request: Request, { params }: RouteParams) {
   try {
     const unavailable = getDurableWriteGuardResponse();
     if (unavailable) return unavailable;
 
     const { roundId } = await params;
+    const requested = readRequestedDimensions(
+      await request.clone().json().catch(() => null),
+    );
+    if (!requested.ok) {
+      return NextResponse.json({ error: requested.error }, { status: 400 });
+    }
+
     const { aiAnalysisRunRepo, orgRepo, roundRepo, surveyRepo } =
       resolveCoreRepositories();
     const authorization = await authorizeManagerRound(
@@ -66,9 +125,36 @@ export async function POST(request: Request, { params }: RouteParams) {
     );
     if (belowThreshold) return belowThreshold;
 
+    /*
+     * A partial run amends a map; without one there is nothing to amend.
+     *
+     * Refused rather than widened to a full round: the only screen that asks
+     * for this asks from a note about paragraphs that already exist, so an
+     * empty round means the state changed under the manager — a reset, or an
+     * analysis that never landed. Spending a whole round's provider calls to
+     * paper over that would answer a question nobody asked, and the manager
+     * still has the button that does ask it.
+     */
+    if (requested.dimensionIds.length > 0) {
+      const previous = await aiAnalysisRunRepo.findLatestResultByRoundId(
+        roundId,
+      );
+      if (!previous) {
+        return NextResponse.json(
+          {
+            error:
+              'This round has no stored analysis to amend. Run the full analysis first.',
+            code: 'no_previous_analysis',
+          },
+          { status: 409 },
+        );
+      }
+    }
+
     const enqueued = await aiAnalysisRunRepo.enqueue(roundId, {
       requestKey: `manual:${globalThis.crypto.randomUUID()}`,
       trigger: 'manual',
+      regenerateDimensionIds: requested.dimensionIds,
     });
 
     if (enqueued.outcome === 'already_active') {
@@ -96,6 +182,7 @@ export async function POST(request: Request, { params }: RouteParams) {
           roundId: enqueued.run.roundId,
           state: enqueued.run.state,
           queuedAt: enqueued.run.queuedAt.toISOString(),
+          regenerateDimensionIds: enqueued.run.regenerateDimensionIds,
         },
       },
       { status: 202 },

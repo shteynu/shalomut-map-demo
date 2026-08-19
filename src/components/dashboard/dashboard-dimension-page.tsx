@@ -14,6 +14,7 @@ import { useAiInsights } from "@/lib/hooks/use-ai-insights";
 import { getDashboardDetailActions } from "@/lib/navigation";
 import { DashboardAiInsightsState } from "./dashboard-ai-insights-state";
 import { DashboardCtaRow } from "./dashboard-cta-row";
+import { DashboardDimensionRerun } from "./dashboard-dimension-rerun";
 import { DashboardHeading } from "./dashboard-heading";
 import { DimensionIdentityChip } from "./dimension-identity-chip";
 
@@ -166,11 +167,17 @@ export function DashboardDimensionDetail({
                 <p key={paragraph}>{paragraph}</p>
               ))}
               {stone.summaryIsDeterministic ? (
-                <p className="dashboard-blob-provenance" role="note">
-                  הפסקאות האלה נגזרו מן הנתונים המצרפיים של הסבב ולא נכתבו על
-                  ידי המודל. הן אינן מוסיפות סיבה או פרשנות מעבר למספרים, ואפשר
-                  להפעיל ניתוח מחדש כדי לקבל קריאה מלאה.
-                </p>
+                <>
+                  <p className="dashboard-blob-provenance" role="note">
+                    הפסקאות האלה נגזרו מן הנתונים המצרפיים של הסבב ולא נכתבו על
+                    ידי המודל. הן אינן מוסיפות סיבה או פרשנות מעבר למספרים,
+                    ואפשר להפעיל ניתוח מחדש לממד הזה כדי לקבל קריאה מלאה.
+                  </p>
+                  <DashboardDimensionRerun
+                    roundId={roundId}
+                    dimensionId={dimension.id}
+                  />
+                </>
               ) : null}
             </>
           )}

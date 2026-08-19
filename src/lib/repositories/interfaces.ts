@@ -65,6 +65,8 @@ export interface IAiAnalysisRunRepository {
     input: {
       requestKey: string;
       trigger: AiAnalysisRun['trigger'];
+      /** Omitted or empty means the whole round. */
+      regenerateDimensionIds?: readonly string[];
     },
   ): Promise<EnqueueAiAnalysisRunResult>;
   claimNext(input: {
@@ -96,6 +98,15 @@ export interface IAiAnalysisRunRepository {
   ): Promise<FinishAiAnalysisRunResult>;
   findById(runId: string): Promise<AiAnalysisRun | null>;
   findLatestByRoundId(roundId: string): Promise<AiAnalysisRun | null>;
+  /**
+   * The most recent result this round actually has, whatever has happened
+   * since. Deliberately not `findLatestByRoundId().result`: the run being
+   * claimed is the latest one and has no result yet, and a partial re-run
+   * needs the map it is amending, not the empty row that is amending it.
+   */
+  findLatestResultByRoundId(
+    roundId: string,
+  ): Promise<Record<string, unknown> | null>;
   /**
    * Every run the round has had, oldest first. The dispatch policy needs the
    * history rather than the latest row: the request key of the run a closing

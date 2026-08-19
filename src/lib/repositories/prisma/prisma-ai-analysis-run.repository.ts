@@ -33,6 +33,11 @@ function mapRun(record: any): AiAnalysisRun {
       record.result && typeof record.result === 'object'
         ? structuredClone(record.result)
         : undefined,
+    // A row written before the column existed reads as an empty list, which is
+    // the same thing it always meant: analyse the whole round.
+    regenerateDimensionIds: Array.isArray(record.regenerateDimensionIds)
+      ? [...record.regenerateDimensionIds]
+      : [],
   };
 }
 
@@ -69,6 +74,7 @@ export class PrismaAiAnalysisRunRepository
     input: {
       requestKey: string;
       trigger: AiAnalysisRun['trigger'];
+      regenerateDimensionIds?: readonly string[];
     },
   ): Promise<EnqueueAiAnalysisRunResult> {
     // The automatic path now varies its request key per attempt, so the
@@ -85,6 +91,7 @@ export class PrismaAiAnalysisRunRepository
           trigger: input.trigger,
           state: 'queued',
           queuedAt: this.now(),
+          regenerateDimensionIds: [...(input.regenerateDimensionIds ?? [])],
         },
       });
       return { outcome: 'enqueued', run: mapRun(created) };
@@ -116,6 +123,7 @@ export class PrismaAiAnalysisRunRepository
           trigger: input.trigger,
           state: 'queued',
           queuedAt: this.now(),
+          regenerateDimensionIds: [...(input.regenerateDimensionIds ?? [])],
         },
       });
       return { outcome: 'enqueued', run: mapRun(retried) };
@@ -277,6 +285,27 @@ export class PrismaAiAnalysisRunRepository
       orderBy: { sequence: 'desc' },
     });
     return run ? mapRun(run) : null;
+  }
+
+  async findLatestResultByRoundId(
+    roundId: string,
+  ): Promise<Record<string, unknown> | null> {
+    // `succeeded` rather than a filter on the JSON column: a run reaches that
+    // state by delivering a result and no other way, and asking for "not JSON
+    // null" would need the Prisma namespace's own null sentinel here, which is
+    // more coupling than this repository has anywhere else.
+    //
+    // Ordered by sequence rather than by any timestamp: `sequence` is what
+    // orders runs everywhere else here, and a clock that moves backwards must
+    // not change which map is the current one.
+    const run = await this.delegate.findFirst({
+      where: { roundId, state: 'succeeded' },
+      orderBy: { sequence: 'desc' },
+    });
+    const result = run?.result;
+    return result && typeof result === 'object'
+      ? (structuredClone(result) as Record<string, unknown>)
+      : null;
   }
 
   async findByRoundId(roundId: string): Promise<AiAnalysisRun[]> {

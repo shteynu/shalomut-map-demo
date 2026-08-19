@@ -123,3 +123,65 @@ test('heartbeat and fail require the current lease token', async () => {
     'failed',
   );
 });
+
+/**
+ * What a claimed partial run carries, and what an ordinary one does not.
+ *
+ * The previous map travels with the lease rather than being fetched afterwards
+ * because the two belong together: a result read a moment later could belong
+ * to a different run, and the worker has no manager-scoped way to ask for it.
+ */
+
+async function seedAnalysedRound(roundId: string, result: Record<string, unknown>) {
+  const seeded = await repository.enqueue(roundId, {
+    requestKey: 'seed',
+    trigger: 'closure',
+  });
+  const lease = await repository.claimNext({
+    workerId: 'seed-worker',
+    leaseMs: 60_000,
+  });
+  assert.ok(lease);
+  await repository.finish(seeded.run.id, {
+    state: 'succeeded',
+    leaseToken: lease.leaseToken,
+    result,
+  });
+}
+
+test('a claimed partial run carries its dimensions and the map it amends', async () => {
+  const previous = { roundId: 'round-partial', stones: { balance: {} } };
+  await seedAnalysedRound('round-partial', previous);
+  await repository.enqueue('round-partial', {
+    requestKey: 'manual:one',
+    trigger: 'manual',
+    regenerateDimensionIds: ['balance'],
+  });
+
+  const claimed = await claimJob(
+    workerRequest('http://localhost/api/ai-analysis-runs/claim', { workerId: 'w1' }),
+  );
+  const payload = await claimed.json();
+
+  assert.deepStrictEqual(payload.run.regenerateDimensionIds, ['balance']);
+  assert.deepStrictEqual(payload.previousResult, previous);
+});
+
+test('an ordinary run names no dimensions and is sent no previous map', async () => {
+  // A whole-round run rebuilds every stone and has no use for the old ones, so
+  // the response stays exactly the size it was.
+  const previous = { roundId: 'round-whole', stones: { balance: {} } };
+  await seedAnalysedRound('round-whole', previous);
+  await repository.enqueue('round-whole', {
+    requestKey: 'manual:whole',
+    trigger: 'manual',
+  });
+
+  const claimed = await claimJob(
+    workerRequest('http://localhost/api/ai-analysis-runs/claim', { workerId: 'w1' }),
+  );
+  const payload = await claimed.json();
+
+  assert.deepStrictEqual(payload.run.regenerateDimensionIds, []);
+  assert.strictEqual(payload.previousResult, null);
+});

@@ -33,6 +33,7 @@ function cloneRun(run: StoredAiAnalysisRun): AiAnalysisRun {
       ? new Date(run.callbackReceivedAt)
       : undefined,
     result: run.result ? structuredClone(run.result) : undefined,
+    regenerateDimensionIds: [...run.regenerateDimensionIds],
   };
 }
 
@@ -58,6 +59,7 @@ export class InMemoryAiAnalysisRunRepository
     input: {
       requestKey: string;
       trigger: AiAnalysisRun['trigger'];
+      regenerateDimensionIds?: readonly string[];
     },
   ): Promise<EnqueueAiAnalysisRunResult> {
     const existingRequest = [...this.runs.values()].find(
@@ -83,6 +85,7 @@ export class InMemoryAiAnalysisRunRepository
       state: 'queued',
       attemptCount: 0,
       queuedAt: this.now(),
+      regenerateDimensionIds: [...(input.regenerateDimensionIds ?? [])],
     };
     this.runs.set(run.id, run);
     return { outcome: 'enqueued', run: cloneRun(run) };
@@ -223,6 +226,15 @@ export class InMemoryAiAnalysisRunRepository
     )
       .sort((left, right) => right.sequence - left.sequence)[0];
     return latest ? cloneRun(latest) : null;
+  }
+
+  async findLatestResultByRoundId(
+    roundId: string,
+  ): Promise<Record<string, unknown> | null> {
+    const latest = [...this.runs.values()]
+      .filter((run) => run.roundId === roundId && run.state === 'succeeded')
+      .sort((left, right) => right.sequence - left.sequence)[0];
+    return latest?.result ? structuredClone(latest.result) : null;
   }
 
   async findByRoundId(roundId: string): Promise<AiAnalysisRun[]> {

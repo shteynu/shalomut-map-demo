@@ -210,3 +210,97 @@ test(
     }
   },
 );
+
+test(
+  'PostgreSQL stores the dimensions a run must rewrite, and finds the map it amends',
+  { skip: !connectionString },
+  async () => {
+    // Two things the in-memory repository cannot prove: that the column round
+    // trips through Postgres as a text array rather than a JSON string, and
+    // that the previous result is found by the run that succeeded rather than
+    // by the one being claimed — which is the newest row at exactly that
+    // moment and carries nothing.
+    assert.ok(prisma);
+    const suffix = globalThis.crypto.randomUUID();
+    const organizationId = `org-ai-partial-${suffix}`;
+    const roundId = `round-ai-partial-${suffix}`;
+    await prisma.organization.create({
+      data: {
+        id: organizationId,
+        name: 'Partial run integration test',
+        city: 'local',
+        schoolType: 'test',
+        totalStaffCount: 10,
+      },
+    });
+    await prisma.surveyRound.create({
+      data: {
+        id: roundId,
+        organizationId,
+        title: 'One dimension again',
+        status: 'closed',
+        shareCode: `AI-PARTIAL-${suffix}`,
+        privacyThreshold: 10,
+      },
+    });
+
+    try {
+      const repo = new PrismaAiAnalysisRunRepository(prisma as any);
+
+      const whole = await repo.enqueue(roundId, {
+        requestKey: 'closure',
+        trigger: 'closure',
+      });
+      assert.deepStrictEqual(whole.run.regenerateDimensionIds, []);
+      assert.strictEqual(await repo.findLatestResultByRoundId(roundId), null);
+
+      const firstLease = await repo.claimNext({
+        workerId: 'worker-1',
+        leaseMs: 60_000,
+      });
+      assert.ok(firstLease);
+      const stored = { roundId, stones: { balance: { score: 41 } } };
+      await repo.finish(whole.run.id, {
+        state: 'succeeded',
+        leaseToken: firstLease.leaseToken,
+        result: stored,
+      });
+      assert.deepStrictEqual(
+        await repo.findLatestResultByRoundId(roundId),
+        stored,
+      );
+
+      const partial = await repo.enqueue(roundId, {
+        requestKey: `manual:${suffix}`,
+        trigger: 'manual',
+        regenerateDimensionIds: ['balance', 'meaning'],
+      });
+      assert.deepStrictEqual(partial.run.regenerateDimensionIds, [
+        'balance',
+        'meaning',
+      ]);
+      assert.deepStrictEqual(
+        (await repo.findById(partial.run.id))?.regenerateDimensionIds,
+        ['balance', 'meaning'],
+      );
+
+      const secondLease = await repo.claimNext({
+        workerId: 'worker-2',
+        leaseMs: 60_000,
+      });
+      assert.ok(secondLease);
+      assert.deepStrictEqual(secondLease.run.regenerateDimensionIds, [
+        'balance',
+        'meaning',
+      ]);
+      // The claimed run is the newest row and has no result of its own; the
+      // map it amends is still the one it amends.
+      assert.deepStrictEqual(
+        await repo.findLatestResultByRoundId(roundId),
+        stored,
+      );
+    } finally {
+      await prisma.organization.delete({ where: { id: organizationId } });
+    }
+  },
+);

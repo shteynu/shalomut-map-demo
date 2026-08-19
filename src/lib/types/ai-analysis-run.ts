@@ -35,6 +35,16 @@ export interface AiAnalysisRun {
   callbackReceivedAt?: Date;
   failureCode?: string;
   result?: Record<string, unknown>;
+  /**
+   * The dimensions this run has to write again, or empty for the whole round.
+   *
+   * Empty is the ordinary case and is also what every run written before the
+   * column existed carries, which is why it is an empty array rather than an
+   * absent one: "this run named no dimensions" and "this run analyses the
+   * round" are the same statement, and a nullable field would invite code that
+   * treats them as two.
+   */
+  regenerateDimensionIds: string[];
 }
 
 export interface AiAnalysisRunLease {

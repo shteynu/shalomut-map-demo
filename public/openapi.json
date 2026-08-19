@@ -1674,7 +1674,7 @@
           "AI Integration"
         ],
         "summary": "Re-run the AI analysis of a closed survey round",
-        "description": "Durably enqueues a manual AI analysis run. This is the second opinion, not the first — closing a round is what asks for its analysis, so a round that is not `closed` is refused. A database constraint permits only one queued or running job per round, so a concurrent request answers 409. The Python worker claims work separately; this request never waits for the provider.",
+        "description": "Durably enqueues a manual AI analysis run. This is the second opinion, not the first — closing a round is what asks for its analysis, so a round that is not `closed` is refused. A database constraint permits only one queued or running job per round, so a concurrent request answers 409. The Python worker claims work separately; this request never waits for the provider. The request may name the dimensions to write again; naming none analyses the whole round, which is what every caller meant before the field existed.",
         "security": [
           {
             "managerSession": []
@@ -1691,15 +1691,47 @@
             }
           }
         ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "dimensionIds": {
+                    "type": "array",
+                    "description": "The dimensions whose copy this run must write again. Absent, null or empty means the whole round. Names outside the eight canonical dimensions are refused rather than ignored. The result is always a whole map — the dimensions not named keep the copy the stored analysis already carries, and every score and aggregate is recomputed.",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "self-expression",
+                        "professional-competence",
+                        "social-resource",
+                        "balance",
+                        "management-support",
+                        "certainty",
+                        "organizational-climate",
+                        "meaning"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "202": {
             "description": "Analysis run persisted in `queued` state"
+          },
+          "400": {
+            "description": "`dimensionIds` is not an array of strings, or names something that is not a wellbeing dimension"
           },
           "404": {
             "description": "Survey round not found in the manager scope"
           },
           "409": {
-            "description": "An analytics run for this round is already queued or running; or the round is archived and read-only (`code` is `round_archived`); or the round is not closed, so it has not asked for an analysis yet (`code` is `round_not_closed`); or the round has fewer responses than its privacy threshold (`code` is `below_privacy_threshold`)"
+            "description": "An analytics run for this round is already queued or running; or the round is archived and read-only (`code` is `round_archived`); or the round is not closed, so it has not asked for an analysis yet (`code` is `round_not_closed`); or the round has fewer responses than its privacy threshold (`code` is `below_privacy_threshold`); or dimensions were named for a round with no stored analysis to amend (`code` is `no_previous_analysis`)"
           },
           "500": {
             "description": "Failed to enqueue the analysis run"
@@ -1716,7 +1748,7 @@
           "AI Integration"
         ],
         "summary": "Lease the next durable AI analysis run",
-        "description": "Atomically claims the oldest queued job or an abandoned running job whose lease expired. The 90-second lease is renewed through the heartbeat route; work is failed after three abandoned attempts.",
+        "description": "Atomically claims the oldest queued job or an abandoned running job whose lease expired. The 90-second lease is renewed through the heartbeat route; work is failed after three abandoned attempts. A run that names dimensions to rewrite is answered with `previousResult`, the stored map it amends; an ordinary whole-round run names none and is sent none.",
         "security": [
           {
             "bearerAuth": []
@@ -1742,7 +1774,7 @@
         },
         "responses": {
           "200": {
-            "description": "A job lease with run metadata and an opaque lease token"
+            "description": "A job lease with run metadata and an opaque lease token. `run.regenerateDimensionIds` is empty on an ordinary run, and `previousResult` is then null."
           },
           "204": {
             "description": "No job is currently due"

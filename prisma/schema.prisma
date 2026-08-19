@@ -117,6 +117,12 @@ model AiAnalysisRun {
   failureCode        String?     @map("failure_code")
   result             Json?
 
+  /// Which dimensions this run has to write again. Empty is the ordinary
+  /// case and means the whole round: a run that names nothing regenerates
+  /// everything, so every row written before this column existed keeps its
+  /// meaning without a backfill.
+  regenerateDimensionIds String[] @default([]) @map("regenerate_dimension_ids")
+
   round SurveyRound @relation(fields: [roundId], references: [id], onDelete: Cascade)
 
   @@unique([roundId, requestKey])

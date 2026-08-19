@@ -33,6 +33,11 @@ class JobLease:
     round_id: str
     lease_token: str
     attempt_count: int
+    # What a partial run has to write again, and the map it amends. Both
+    # default to the ordinary run — no dimensions named, no previous map — so a
+    # Core that does not send them yet claims exactly the job it always did.
+    regenerate_dimension_ids: tuple[str, ...] = ()
+    previous_result: Optional[dict] = None
 
 
 class LeaseLostError(RuntimeError):
@@ -80,6 +85,10 @@ class CoreJobClient:
             round_id=run["roundId"],
             lease_token=payload["leaseToken"],
             attempt_count=int(run["attemptCount"]),
+            regenerate_dimension_ids=tuple(
+                run.get("regenerateDimensionIds") or ()
+            ),
+            previous_result=payload.get("previousResult"),
         )
 
     async def heartbeat(self, run_id: str, lease_token: str) -> bool:
@@ -135,6 +144,8 @@ class AiAnalysisJobWorker:
                 round_id=lease.round_id,
                 run_id=lease.run_id,
                 lease_token=lease.lease_token,
+                regenerate_dimension_ids=lease.regenerate_dimension_ids,
+                previous_result=lease.previous_result,
             )
         )
         try:
