@@ -1076,3 +1076,70 @@ def test_request_uses_the_configured_token_cap(monkeypatch):
             contract_version=version,
         )
         assert captured["max_tokens"] == 333, version
+
+
+# --- how long one call may take, and who may say so ------------------------
+
+def test_the_retry_budget_defaults_leave_room_for_the_slowest_measured_call(
+    monkeypatch,
+):
+    """Ninety and three hundred, and the arithmetic that has to hold between them.
+
+    Measured 2026-08-19 on two 6.0 rounds with `gemini-3.5-flash` and
+    `MAX_TOKENS_PER_DIMENSION=8192`, 55 calls: medians 17.8s and 21.0s, slowest
+    26.0s and 50.9s. The previous twenty-second timeout sat below both medians,
+    so seven of eight adaptations died on `TimeoutError` while the round
+    reported success.
+
+    50.9 is the assertion below rather than 26.0 deliberately: the first pass at
+    this used one round, read its 26.0s maximum as the tail, and picked a number
+    the second round would have cut it against.
+
+    The budget has to hold every attempt the timeout allows, or it becomes the
+    thing that kills a call the timeout would have let finish — which is the
+    defect one level up, rebuilt one level down.
+    """
+    for name in (
+        "LLM_REQUEST_TIMEOUT_SECONDS",
+        "LLM_RETRY_BUDGET_SECONDS",
+        "LLM_MAX_ATTEMPTS",
+    ):
+        monkeypatch.delenv(name, raising=False)
+
+    configured = Settings()
+
+    assert configured.llm_request_timeout_seconds == 90.0
+    assert configured.llm_retry_budget_seconds == 300.0
+    assert configured.llm_request_timeout_seconds > 50.9
+    assert (
+        configured.llm_max_attempts * configured.llm_request_timeout_seconds
+        <= configured.llm_retry_budget_seconds
+    )
+
+
+def test_a_deployment_can_now_ask_for_more_than_the_old_ceiling(monkeypatch):
+    """The ceiling caps the variable too, which is why 25 could not be raised.
+
+    Until 2026-08-19 `LLM_RETRY_BUDGET_SECONDS` was clamped to 25 and the
+    request timeout to whatever the budget then allowed, so no dashboard value
+    could lift either. The Render dashboard was read that day: neither variable
+    was set there, and setting them would not have helped.
+    """
+    monkeypatch.setenv("LLM_RETRY_BUDGET_SECONDS", "480")
+    monkeypatch.setenv("LLM_REQUEST_TIMEOUT_SECONDS", "150")
+
+    configured = Settings()
+
+    assert configured.llm_retry_budget_seconds == 480.0
+    assert configured.llm_request_timeout_seconds == 150.0
+
+
+def test_the_ceiling_still_bounds_a_hung_provider(monkeypatch):
+    """Raised, not removed: a slot held forever is still a defect."""
+    monkeypatch.setenv("LLM_RETRY_BUDGET_SECONDS", "9000")
+    monkeypatch.setenv("LLM_REQUEST_TIMEOUT_SECONDS", "9000")
+
+    configured = Settings()
+
+    assert configured.llm_retry_budget_seconds == 600.0
+    assert configured.llm_request_timeout_seconds == 600.0

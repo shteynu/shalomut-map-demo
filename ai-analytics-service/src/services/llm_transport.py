@@ -217,6 +217,12 @@ def _complete_with_retries(
                     settings.llm_request_timeout_seconds,
                     remaining_budget,
                 )
+                # How long the provider actually took, beside what it charged.
+                # Without it the timeout is set by guess: a call that is refused
+                # at twenty seconds says only "longer than twenty", and every
+                # number that would replace it is as unmeasured as the one it
+                # replaces.
+                attempt_started_at = time.monotonic()
                 with urllib.request.urlopen(
                     req,
                     timeout=request_timeout,
@@ -227,7 +233,13 @@ def _complete_with_retries(
                             res = json.loads(
                                 response.read().decode("utf-8"),
                             )
-                            _log_usage(res, provider, model_name, attempt)
+                            _log_usage(
+                                res,
+                                provider,
+                                model_name,
+                                attempt,
+                                time.monotonic() - attempt_started_at,
+                            )
                             choice = res["choices"][0]
                             content = choice["message"]["content"]
                             if not isinstance(content, str):
@@ -527,6 +539,7 @@ def _log_usage(
     provider: str,
     model_name: str,
     attempt: int,
+    duration_seconds: float | None = None,
 ) -> None:
     """What this one answer cost, on the one line that sees every answer.
 
@@ -564,13 +577,19 @@ def _log_usage(
 
     logger.info(
         "[LLM Service] outcome=usage provider=%s model=%s attempt=%s "
-        "prompt_tokens=%s completion_tokens=%s total_tokens=%s",
+        "prompt_tokens=%s completion_tokens=%s total_tokens=%s "
+        "duration_ms=%s",
         provider,
         model_name,
         attempt,
         prompt,
         completion,
         total,
+        (
+            round(duration_seconds * 1000)
+            if duration_seconds is not None
+            else "unavailable"
+        ),
     )
 
 

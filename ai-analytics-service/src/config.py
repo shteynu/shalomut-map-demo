@@ -205,7 +205,10 @@ class Settings:
         # Transient provider failures are retried inside the worker thread.
         # The defaults bound how long one dimension may hold a provider slot;
         # since the webhook answers 202 before the run starts, they no longer
-        # have to fit the core app's 30-second timeout.
+        # have to fit the core app's 30-second timeout. That was written when
+        # the constraint was lifted, and the numbers below were left where the
+        # constraint had put them for another three weeks — which is what the
+        # ceiling further down is about.
         self.llm_max_attempts: int = max(
             1,
             min(5, int(os.getenv("LLM_MAX_ATTEMPTS", "3"))),
@@ -222,20 +225,51 @@ class Settings:
             0.0,
             float(os.getenv("LLM_RETRY_JITTER_SECONDS", "0.25")),
         )
-        # Bounds one dimension's whole retry loop. Values above 25 seconds are
-        # capped.
+        # Bounds one dimension's whole retry loop. The ceiling is what makes
+        # this a code constant rather than a knob: it caps the environment
+        # variable too, so while it was 25 no deployment could raise either
+        # number, whatever the dashboard said.
+        #
+        # Measured 2026-08-19 on 6.0 with `gemini-3.5-flash` and
+        # `MAX_TOKENS_PER_DIMENSION=8192`, two rounds and 55 provider calls.
+        # Round one: median 17.8s, p90 22.6s, slowest 26.0s. Round two: median
+        # 21.0s, slowest **50.9s**. The same work on the same settings, and the
+        # slowest call nearly doubled between them — which is the number that
+        # decides this, because a timeout is sized against the tail and not
+        # against the median.
+        #
+        # The old twenty seconds sat below even the median. Seven of eight
+        # adaptations died on `TimeoutError` while the round reported success;
+        # at the 25s ceiling ten of twenty-seven calls still died. A reasoning
+        # model writing five recommendations in one request is a twenty-to-fifty
+        # second job and was being given twenty.
+        #
+        # Ninety is 1.8x the slowest call actually seen, chosen after sixty
+        # turned out to be 1.2x it — one round is not a distribution, and the
+        # first estimate here was made from one round. Three hundred lets all
+        # three attempts run to ninety with their delays (3x90 + ~7 < 300),
+        # rather than having the budget kill an attempt the timeout would have
+        # allowed: that is this same defect one level down.
+        #
+        # The ceiling is raised, not removed. It is what makes these code
+        # constants rather than knobs — it caps the environment variable too, so
+        # while it was 25 no deployment could lift either number, whatever was
+        # set on the dashboard. The cost of the larger numbers is worst-case
+        # wall time against a hung provider, roughly twelve times what it was.
+        # That is bounded, asynchronous behind the webhook's 202, and preferable
+        # to losing seven adaptations on every round with certainty.
         self.llm_retry_budget_seconds: float = max(
             1.0,
             min(
-                25.0,
-                float(os.getenv("LLM_RETRY_BUDGET_SECONDS", "25.0")),
+                600.0,
+                float(os.getenv("LLM_RETRY_BUDGET_SECONDS", "300.0")),
             ),
         )
         self.llm_request_timeout_seconds: float = max(
             1.0,
             min(
                 self.llm_retry_budget_seconds,
-                float(os.getenv("LLM_REQUEST_TIMEOUT_SECONDS", "20.0")),
+                float(os.getenv("LLM_REQUEST_TIMEOUT_SECONDS", "90.0")),
             ),
         )
         self.llm_min_retry_window_seconds: float = max(
