@@ -1859,6 +1859,17 @@ older snapshots remain available in Git.
 
 ## Deployed state
 
+**Reading the deployed commit stops needing a sign-in, 2026-08-19.** Every
+reading below that names a served commit was taken from the Vercel dashboard in
+the owner's signed-in Chrome, because Core's `/api/health/` did not report one —
+the AI service's `/health` always has. `claude/health-commit-field` adds
+`commit` to Core's health payload, so from the deployment that carries it the
+question is one anonymous request against both halves rather than a dashboard.
+It reports `unknown` rather than guessing when it cannot prove a SHA, so a
+reading of `unknown` means the field has not deployed yet — not that the
+deployment is broken. Until that first deploy lands, the dashboard is still the
+only way, and the readings below stand as they are.
+
 - **The 2026-08-09 smoke's seven findings are deployed and confirmed on the
   endpoint, 2026-08-09**, in the owner's signed-in Chrome. `origin/main` is
   `90a507c`; the served stylesheet carries the new `.round-delta` pill and

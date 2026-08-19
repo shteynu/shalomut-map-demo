@@ -36,11 +36,13 @@ paths:
       tags: [Health]
       summary: Deployment health and analytics contract capability
       description: >-
-        Reports which analytics contract this deployment produces and which
-        versions it still accepts on a callback. Unauthenticated by design and
-        deliberately narrow: no variable value, database, provider or credential
-        state is reported. Answers 503 when the producer version is configured
-        to something Core cannot produce, so the misconfiguration is readable
+        Reports which revision this deployment runs, which analytics contract
+        it produces and which versions it still accepts on a callback.
+        Unauthenticated by design and deliberately narrow: no database,
+        provider or credential state is reported, and the only variable whose
+        value reaches the response is the commit SHA, published only when it is
+        provably a SHA. Answers 503 when the producer version is configured to
+        something Core cannot produce, so the misconfiguration is readable
         rather than silent.
       responses:
         "200":
@@ -49,11 +51,18 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [status, analytics]
+                required: [status, commit, analytics]
                 properties:
                   status:
                     type: string
                     enum: [ok]
+                  commit:
+                    type: string
+                    description: >-
+                      The short SHA of the revision this deployment runs, or
+                      `unknown` when it cannot prove one — running locally, or
+                      a value that is not a commit SHA.
+                    example: a3dd4fe
                   analytics:
                     type: object
                     required:
@@ -91,11 +100,17 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [status, error]
+                required: [status, commit, error]
                 properties:
                   status:
                     type: string
                     enum: [misconfigured]
+                  commit:
+                    type: string
+                    description: >-
+                      Reported here too: which revision is misconfigured is the
+                      first thing worth knowing about it.
+                    example: a3dd4fe
                   error:
                     type: string
                     description: >-

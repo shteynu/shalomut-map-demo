@@ -6,6 +6,7 @@ import {
   PRODUCIBLE_ANALYTICS_CONTRACT_VERSIONS,
   resolveProducedAnalyticsContractVersion,
 } from '@/lib/ai-contract-version';
+import { resolveDeploymentCommit } from '@/lib/deployment-commit';
 
 /**
  * What this deployment is and what it can do.
@@ -19,13 +20,25 @@ import {
  * throws on an unsupported value the moment it loads, so importing it here
  * would take down the endpoint whose whole job is to report that failure.
  *
- * Nothing here is secret. No variable value is echoed, and no database,
- * provider or credential state is reported: an endpoint that says whether a
- * secret is set is an endpoint that tells an anonymous caller where to push.
+ * Nothing here is secret. No database, provider or credential state is
+ * reported: an endpoint that says whether a secret is set is an endpoint that
+ * tells an anonymous caller where to push.
+ *
+ * One variable's value does reach the response, and only one: `commit`, which
+ * says which revision this deployment runs. It is published because the
+ * repository is public, so the SHA is already public, and because the sibling
+ * `/health` on the AI service has reported it all along — without it, "is the
+ * deployed code the code I just pushed?" had an answer for one half of the
+ * system and not the other. `resolveDeploymentCommit` publishes it only when
+ * the value is provably a commit SHA and could be nothing else, which is what
+ * keeps the rule this comment used to state absolutely.
  */
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
+  // Resolved before the branch: a deployment that cannot produce a contract
+  // still runs a revision, and that is the first thing worth knowing about it.
+  const commit = resolveDeploymentCommit();
   const produced = resolveProducedAnalyticsContractVersion(
     process.env[PRODUCER_CONTRACT_VERSION_ENV],
   );
@@ -34,6 +47,7 @@ export async function GET() {
     return NextResponse.json(
       {
         status: 'misconfigured',
+        commit,
         error: produced.error,
         analytics: {
           producibleContractVersions: PRODUCIBLE_ANALYTICS_CONTRACT_VERSIONS,
@@ -46,6 +60,7 @@ export async function GET() {
   return NextResponse.json(
     {
       status: 'ok',
+      commit,
       analytics: {
         // What Core emits right now, and whether that was chosen or inherited.
         producedContractVersion: produced.version,
