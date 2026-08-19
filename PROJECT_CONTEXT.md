@@ -733,9 +733,15 @@ them would describe the deployment's own configuration to an anonymous caller.
 What this binds is the next field, not this one. Anything added to a public
 health payload states what it publishes and why the worst plausible value is
 safe; a field whose value cannot be constrained to a shape does not go there.
-The AI service's `/health` predates this and truncates `RENDER_GIT_COMMIT` to
-seven characters without a shape check — a known divergence, recorded in
-`docs/agent-tasks/archive/claude--health-commit-field.md`, not yet closed.
+
+The AI service's `/health` predates the rule and truncated `RENDER_GIT_COMMIT`
+to seven characters without a shape check, publishing the first seven characters
+of whatever the variable held. **Closed on 2026-08-19**: it now resolves through
+`ai-analytics-service/src/deployment_commit.py`, the same forty-hex rule under a
+different variable name, and `tests/test_deployment_commit.py` asserts it case
+for case against the Core test. Both halves of the system answer the question
+by one rule, which is what makes `unknown` mean the same thing on either
+endpoint.
 
 ## Environments
 

@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import os
 from contextlib import asynccontextmanager
 from typing import Optional
 from fastapi import BackgroundTasks, FastAPI, Header, HTTPException
@@ -26,6 +25,7 @@ from src.services.provider_health import (
     read_provider_status,
 )
 from src.config import settings
+from src.deployment_commit import resolve_deployment_commit
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("shalomut-ai-service")
@@ -96,13 +96,19 @@ def health_check():
     `commit` and `supportedContractVersions` exist so a consumer-first rollout
     can be verified from outside: Core must not start emitting a contract
     version before this endpoint proves the deployed code accepts it.
+
+    `commit` goes through `resolve_deployment_commit` rather than being cut to
+    seven characters here: this endpoint is anonymous, and the rule that makes
+    a variable safe to publish is that its shape proves what it is. Core's
+    `/api/health` has held that rule since it gained the same field, and
+    `PROJECT_CONTEXT.md` ADR-023 owns it for both.
     """
     return {
         "status": "online",
         "service": settings.app_name,
         "env": settings.env,
         "privacyThreshold": settings.privacy_threshold,
-        "commit": os.getenv("RENDER_GIT_COMMIT", "unknown")[:7],
+        "commit": resolve_deployment_commit(),
         "supportedContractVersions": list(
             AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS,
         ),

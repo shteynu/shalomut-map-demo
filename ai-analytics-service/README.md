@@ -378,7 +378,11 @@ compatibility, but it is ignored and cannot control callback transport.
 ## Endpoints
 
 - `GET /health` — anonymous, and deliberately says nothing about the provider,
-  the database or any credential.
+  the database or any credential. Its `commit` is the one variable value that
+  reaches the response, and it is published only when `RENDER_GIT_COMMIT` is
+  provably a Git SHA — exactly forty hex digits — and `unknown` otherwise. The
+  rule lives in `src/deployment_commit.py` and is the same one Core's
+  `/api/health` holds; `PROJECT_CONTEXT.md` ADR-023 owns it for both.
 - `GET /api/v1/provider-status` — anonymous, and one word: `answering`,
   `failing` or `unknown`. It is what a free uptime monitor can read, since
   UptimeRobot's free plan locks request headers to its paid tiers and so cannot
