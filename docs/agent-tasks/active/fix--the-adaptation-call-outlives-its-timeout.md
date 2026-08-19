@@ -212,5 +212,8 @@ Recorded under Residual risk.
 
 ## Next concrete step
 
-Land this branch and its base, then redeploy so the service picks up the new
-defaults; no Render variable needs adding.
+Land this branch — `git push origin fix/the-adaptation-call-outlives-its-timeout:main`,
+a fast-forward that carries its base with it. The redeploy then happens on its
+own: `render.yaml`'s `buildFilter` lists `ai-analytics-service/**`, and this
+stack changes three files under it. No Render variable needs adding, and no
+manual redeploy either.
