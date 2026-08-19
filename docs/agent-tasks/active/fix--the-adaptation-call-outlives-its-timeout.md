@@ -5,9 +5,9 @@
 - Branch: fix/the-adaptation-call-outlives-its-timeout
 - Base branch: claude/priceless-swanson-9cf466 (itself unmerged; `origin/main` is `4bd5b2f`)
 - Base commit: 8629363
-- Current HEAD: 8629363
+- Current HEAD: 31bd03d, three commits above the base
 - Status: fixed and verified against the provider
-- Last updated: 2026-08-19
+- Last updated: 2026-08-20
 - Last agent/tool: Claude Opus 5 (Claude Code)
 
 ## Objective
@@ -126,13 +126,24 @@ Questions requiring an owner decision.
 
 - `ai-analytics-service/src/config.py`
 - `ai-analytics-service/src/services/llm_transport.py`
+- `ai-analytics-service/src/services/llm_provider.py` — the seven call
+  sites, each naming its own `scope`.
 - `ai-analytics-service/tests/test_llm_provider.py`
+- `docs/shalomut-tracker-handoff.md`, and this file.
+- `docs/agent-tasks/archive/feat--one-dimension-can-be-analysed-again.md`
+  and
+  `docs/agent-tasks/archive/feat--the-map-says-which-paragraphs-it-wrote-itself.md`
+  — moved out of `active/` on 2026-08-20. Both branches are in `main`
+  (`2ad95e9`, `68fd473`) while their files still asked for a push and a
+  commit. Housekeeping, unrelated to the timeout; it rode this branch
+  because this is the checked-out worktree.
 
 ## Verification evidence
 
 ### Passed
 
-- `.venv/bin/python -m pytest` from `ai-analytics-service`: **546 passed**.
+- `.venv/bin/python -m pytest` from `ai-analytics-service`: **549 passed**,
+  re-run at `31bd03d`. It read 546 before the observability tests.
 - The three new tests re-run against the old `20/25/25` values: all three fail.
 - **Live `6.0` round at the committed defaults**, deployed settings,
   `LLM_REQUEST_TIMEOUT_SECONDS` and `LLM_RETRY_BUDGET_SECONDS` unset: 28 calls,
