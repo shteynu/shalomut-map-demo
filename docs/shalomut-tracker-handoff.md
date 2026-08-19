@@ -2398,7 +2398,19 @@ that walk but the sign-in.
   each ran a real analysis). Against the 28-day peak of 160 requests a day on
   `gemini-3.5-flash`, that day implies roughly ₪0.13 a call and ₪3–4 a round —
   an inference from two dashboard figures, not a measurement, and the reason
-  the `LLM_REASONING_EFFORT` measurement is still owed.
+  the `LLM_REASONING_EFFORT` measurement was owed.
+
+  **That measurement is now made, and ₪3–4 a round was the right order.** Same
+  fixture, both settings, on the bounds now in `render.yaml`: unset costs $1.12
+  a round (₪4.1), `LLM_REASONING_EFFORT=low` costs $0.37 (₪1.35) — **67% less**,
+  with all eight stones written by the model either way. Evidence and the
+  corpus baselines are in
+  `docs/agent-tasks/active/feat--the-thinking-budget-is-a-declared-number.md`;
+  the setting and its reasoning are in `render.yaml`. Note the shape of it: the
+  saving came out far larger than the 39% one round suggested because the old
+  20-second request timeout had been discarding the most expensive answers —
+  and three of the corpus's paragraphs with them. Raising the bounds cost money
+  and bought back the paragraphs; `low` gives the money back.
 
   **Depleted a second time on 2026-08-19**, after the owner topped the account
   up and the measurement work resumed. Roughly $13 of provider spend went to it
