@@ -186,6 +186,21 @@ All committed in `c1dfed0`.
   runs end to end — `Contract: producing 6.0`, `MCP: contract 6.0 … 24 question
   aggregates`, `Python: status success … 8 stones`, every stone
   `deterministic_fallback (attempts 0)`, so nothing was billed.
+- **Live round on `6.0`, deployed settings, 2026-08-19.** `gemini-3.5-flash`,
+  `MAX_TOKENS_PER_DIMENSION=8192`, `ONLY_LLM_FOR_PROBLEMATIC=false`,
+  `LLM_REASONING_EFFORT` unset. 15 provider calls, 65,033 total tokens, zero
+  truncations, 14 `outcome=llm`. Seven of eight stones written by the model;
+  `meaning` fell back on `TimeoutError`. Of eight adaptations, one succeeded
+  (`organizational-climate`) and seven fell back, every one of them on
+  `TimeoutError`. **Zero `status_inconsistent` anywhere in the run**, which
+  confirms live what had until now only been read off the branch: `6.0` does not
+  have the defect this task fixed.
+- A first live round the same day was run on the config default
+  `MAX_TOKENS_PER_DIMENSION=2048` instead of the deployed `8192` — my mistake,
+  and about 74,000 tokens spent on measuring a setting nothing runs. It is
+  recorded because of what it showed: 25 of 25 calls ended `finish_reason=length`
+  and not one answer survived, which is exactly what the comment beside that
+  variable in `render.yaml` already says 2048 does.
 - `git diff --check` clean.
 
 ### Failed
@@ -194,8 +209,10 @@ None.
 
 ### Blocked or not run
 
-- Any live-provider before/after measurement. Needs the owner's approval and a
-  funded account.
+- The `5.0` half of the before/after. The fix was proven on `5.0` only against a
+  stubbed transport; no live `5.0` round has been run, so how often
+  `gemini-3.5-flash` actually writes an acceptable counted-colour summary is
+  still unmeasured.
 
 ### Environment
 
@@ -209,11 +226,8 @@ local
   actually writes one. The before/after that closes this is a live run.
 - The saving is bounded by what the measurement showed — 14 of 31 answers in the
   `low` run — it applies to `5.0` only, and no run has yet demonstrated it.
-- Nothing here was measured on `6.0` with a provider. The claim that `6.0` is
-  unaffected rests on reading its branch — a prompt that names no colour group,
-  a validator that refuses visible digits — and on one keyless run that
-  completed `status: success` with eight stones, which exercises the path but
-  bills nothing and so proves nothing about the model's wording.
+- `6.0` being unaffected is now measured, not inferred: a live round produced no
+  `status_inconsistent` at all.
 - The script's round is the canonical 24 questions, not the questionnaire the
   product now uses. So it under-samples the prompt in a second way, independent
   of the contract version, and a cost measured on it is a floor rather than the
@@ -227,7 +241,20 @@ None.
 
 ## Known risks
 
-Recorded under Residual risk.
+Recorded under Residual risk, plus one found by the live round and belonging to
+no task yet:
+
+**On `6.0` the adaptation step still ends on catalog copy, for an unrelated
+reason.** Seven of eight dimensions fell back on `TimeoutError`. The adaptation
+call is the largest answer of the round — five recommendations, each a summary
+and its steps, in one request — and `llm_request_timeout_seconds` defaults to
+`20.0`, capped by a `25.0` retry budget. Neither
+`LLM_REQUEST_TIMEOUT_SECONDS` nor `LLM_RETRY_BUDGET_SECONDS` is declared in
+`render.yaml`, so unless they are set on the dashboard the deployment runs the
+same numbers and a real round loses the same seven. Not fixed here: raising a
+timeout without measuring where the wall actually is is guesswork, and the
+budget cap means the two numbers have to move together. Recorded in the
+operational handoff.
 
 ## Approval gates
 
@@ -248,10 +275,8 @@ Recorded under Residual risk.
 
 ## Next concrete step
 
-Ask the owner to approve one live round (about $0.4, and the provider account
-needs credit), and run it as
-`AI_ANALYTICS_CONTRACT_VERSION=6.0 npx tsx scripts/local-unlocked-pipeline.ts`
-if the question is deployed cost, or without the override if the question is
-whether this fix works. Record the adaptation outcome and the billed answer
-count against the 2026-08-19 `5.0` baseline of eight dimensions on
-`deterministic_fallback` and 14 of 31 answers spent on the retries.
+Open a separate task for the adaptation timeout under Known risks: time one
+adaptation call on `6.0` with the timeout raised well past the wall, find where
+it actually lands, and move `LLM_REQUEST_TIMEOUT_SECONDS` and
+`LLM_RETRY_BUDGET_SECONDS` together to a measured number. This task's own work
+is finished.

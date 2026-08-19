@@ -1,5 +1,29 @@
 # Shalomut Tracker — operational handoff
 
+**2026-08-19: a live `6.0` round writes its map and then loses seven of its
+eight adaptations to a twenty-second timeout.** First live round on `6.0` with
+deployed settings (`gemini-3.5-flash`, `MAX_TOKENS_PER_DIMENSION=8192`,
+`ONLY_LLM_FOR_PROBLEMATIC=false`, `LLM_REASONING_EFFORT` unset): 15 provider
+calls, 65,033 tokens, no truncation. Seven of eight stones came from the model.
+Every adaptation but `organizational-climate` fell back, and all seven on
+`TimeoutError` — not on a validator.
+
+The adaptation call is the largest answer of a round, five recommendations in
+one request, and `llm_request_timeout_seconds` defaults to `20.0` under a `25.0`
+retry budget cap. **Neither `LLM_REQUEST_TIMEOUT_SECONDS` nor
+`LLM_RETRY_BUDGET_SECONDS` is declared in `render.yaml`**, so unless the
+dashboard sets them the deployment runs these defaults and a real round loses
+the same seven — silently, because the round still reports success. Not fixed:
+the number wants measuring, and the budget cap means both have to move together.
+
+Two smaller facts from the same round. The `5.0` defect fixed on
+`claude/priceless-swanson-9cf466` is confirmed absent on `6.0` — zero
+`status_inconsistent` in the whole run. And an earlier round that day was run on
+the config default `MAX_TOKENS_PER_DIMENSION=2048` rather than the deployed
+`8192`: 25 of 25 calls ended `finish_reason=length` and nothing survived, which
+is what the comment beside that variable in `render.yaml` already predicted. It
+cost about 74,000 tokens and measured a setting nothing runs.
+
 **2026-08-19: the local measurement script was burning half a round's provider
 answers on `5.0`, which is not the contract the deployment produces.** The
 question-adaptation step fell back to catalog copy on all eight dimensions of

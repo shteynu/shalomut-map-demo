@@ -199,8 +199,17 @@ async function main() {
     },
   );
 
+  // Always, not only on failure. The service's own log lines — `adaptation=`,
+  // `outcome=usage`, every refusal and its detail — go to stderr, and they are
+  // most of what a run is for: the stone list below says what was produced, and
+  // these say what it cost and which gate turned anything away. Captured and
+  // dropped on success, a paid round answers half the question it was run for.
+  if (python.stderr) {
+    process.stderr.write(python.stderr);
+  }
+
   if (python.status !== 0) {
-    throw new Error(`Python pipeline exited ${python.status}: ${python.stderr}`);
+    throw new Error(`Python pipeline exited ${python.status}`);
   }
 
   const result = JSON.parse(python.stdout);
