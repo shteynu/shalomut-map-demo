@@ -250,11 +250,12 @@ call is the largest answer of the round — five recommendations, each a summary
 and its steps, in one request — and `llm_request_timeout_seconds` defaults to
 `20.0`, capped by a `25.0` retry budget. Neither
 `LLM_REQUEST_TIMEOUT_SECONDS` nor `LLM_RETRY_BUDGET_SECONDS` is declared in
-`render.yaml`, so unless they are set on the dashboard the deployment runs the
-same numbers and a real round loses the same seven. Not fixed here: raising a
-timeout without measuring where the wall actually is is guesswork, and the
-budget cap means the two numbers have to move together. Recorded in the
-operational handoff.
+`render.yaml`, and the Render dashboard was read directly on 2026-08-19: they
+are not set there either, there are no linked environment groups and no secret
+files, so the deployment runs the same twenty seconds and a real round loses the
+same seven. Not fixed here: raising a timeout without measuring where the wall
+actually is is guesswork, and the budget cap means the two numbers have to move
+together. Recorded in the operational handoff.
 
 ## Approval gates
 

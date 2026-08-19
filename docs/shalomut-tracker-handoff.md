@@ -10,11 +10,24 @@ Every adaptation but `organizational-climate` fell back, and all seven on
 
 The adaptation call is the largest answer of a round, five recommendations in
 one request, and `llm_request_timeout_seconds` defaults to `20.0` under a `25.0`
-retry budget cap. **Neither `LLM_REQUEST_TIMEOUT_SECONDS` nor
-`LLM_RETRY_BUDGET_SECONDS` is declared in `render.yaml`**, so unless the
-dashboard sets them the deployment runs these defaults and a real round loses
-the same seven — silently, because the round still reports success. Not fixed:
-the number wants measuring, and the budget cap means both have to move together.
+retry budget cap. Neither variable is declared in `render.yaml`, and **the Render
+dashboard was read directly on 2026-08-19 to close the question: neither is set
+there either.** The service carries exactly sixteen variables —
+`AI_CALLBACK_SECRET`, `AI_JOB_POLLING_ENABLED`, `AI_JOB_POOL_SIZE`,
+`AI_WEBHOOK_SECRET`, `DATA_LAYER_CALLBACK_URL`, `DATA_LAYER_MCP_URL`, `ENV`,
+`GEMINI_API_KEY`, `LLM_MAX_REQUESTS_PER_MINUTE`,
+`LLM_MAX_REQUESTS_PER_MINUTE_HEAVY`, `LLM_MODEL_FAST`, `LLM_MODEL_HEAVY`,
+`MAX_TOKENS_PER_DIMENSION`, `MCP_SHARED_SECRET`, `ONLY_LLM_FOR_PROBLEMATIC`,
+`USE_MOCK_MCP` — with no linked environment groups and no secret files, so there
+is nowhere else for a value to come from. **The deployment runs the twenty-second
+timeout, and a real round loses the same seven adaptations** — silently, because
+it still reports success. Not fixed: the number wants measuring, and the budget
+cap means both have to move together.
+
+Two variables `render.yaml` marks `sync: false`, meaning "set on the dashboard",
+are not on the dashboard: `LLM_MAX_CONCURRENT_REQUESTS` (code default `2`) and
+`VERCEL_PROTECTION_BYPASS`. `sync: false` records an intention, not a fact, and
+for these two the intention was never carried out.
 
 Two smaller facts from the same round. The `5.0` defect fixed on
 `claude/priceless-swanson-9cf466` is confirmed absent on `6.0` — zero
