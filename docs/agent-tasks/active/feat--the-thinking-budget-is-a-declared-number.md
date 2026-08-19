@@ -6,7 +6,7 @@
 - Base branch: `origin/main`
 - Base commit: `dab5ef6`
 - Current HEAD: see `git log -1` (commits listed under Completed)
-- Status: implementation and measurement complete; the corpus refused the value, and the deployment keeps the provider default
+- Status: the timeout cause is confirmed on four of seven corpus cases; the run that would have confirmed the rest died on a depleted account
 - Last updated: 2026-08-19
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -119,6 +119,10 @@ and its logging.
   new baselines.
 - `ai-analytics-service/evals/baselines/2026-08-19-gemini-3.5-flash.json` and
   `...-reasoning-low.json` (new).
+- `ai-analytics-service/src/config.py`: the retry budget, request timeout and
+  minimum retry window, with the reason they were 25/20/8 and are now 90/40/20.
+- `ai-analytics-service/tests/test_llm_provider.py`: the invariant those three
+  numbers exist to have, and the ceiling that survives raising them.
 
 ## In progress
 
@@ -126,12 +130,12 @@ Nothing.
 
 ## Remaining
 
-- Raise the retry budget before revisiting `low`. `llm_retry_budget_seconds` is
-  capped at 25 in `config.py` and `llm_request_timeout_seconds` at 20, so one
-  timed-out attempt leaves no room for another. Both were sized when this call
-  had to fit the core app's 30-second HTTP timeout, which stopped being true
-  when the webhook started answering `202` before the run — `config.py` says so
-  in its own comment. That is what cost `low` its three stones.
+- Rerun the corpus at `low` on the three cases the depleted account cut short —
+  `contradictory`, `workload-pressure`, `dynamic-questionnaire`. They are the
+  harder half of the corpus, and they are the reason `render.yaml` still carries
+  no value. About $1.2 at the measured $0.40 a round.
+- If those three come back 24 of 24, put `LLM_REASONING_EFFORT=low` in
+  `render.yaml` with the corpus numbers beside it.
 - Decide the adaptation defect below. It is not this branch's work, but it is
   where roughly half of a round's calls go.
 
@@ -200,6 +204,21 @@ Nothing.
   264,334 thinking tokens (76% of billed output), $3.27, or $0.468 a round. The
   unset corpus run has no token figures — `run_corpus` was still dropping the
   usage line when it ran, which this branch then fixed.
+- **The raised budget recovers the stones, on the four cases that completed.**
+  After `llm_retry_budget_seconds` 25 → 90, `llm_request_timeout_seconds`
+  20 → 40 and `llm_min_retry_window_seconds` 8 → 20, the corpus was rerun at
+  `low`. Four cases finished before the account ran dry; on exactly those four:
+
+  | | stones by the model | mean | findings |
+  | --- | --- | --- | --- |
+  | unset, old bounds | 32 / 32 | 0.9598 | 1 |
+  | `low`, old bounds | 30 / 32 | 0.9602 | 3 |
+  | `low`, raised bounds | **32 / 32** | 0.9516 | 2 |
+
+  And the mechanism is confirmed rather than inferred: **zero** `TimeoutError`
+  in 105 billed answers, against 38 in the previous `low` run and 51 in the
+  unset one. The stones `low` lost were answers this service stopped waiting
+  for.
 
 ### Failed
 
@@ -208,8 +227,13 @@ Nothing.
 
 ### Blocked or not run
 
-- The corpus was **not** rerun after the timeout finding. Whether a larger
-  retry budget recovers the three stones at `low` is untested.
+- **The corpus rerun at `low` with the raised budget is partial.** The account
+  ran out of prepayment credit inside case 4 of 8; from there every request
+  answered `429` and the last three cases came back with all 24 stones on
+  `deterministic_fallback`. Their report — mean 0.8829, 55 findings — measures
+  this service's own boilerplate and nothing about the prompts, exactly as
+  `evals/README.md` warns. It is not committed as a baseline and must not be
+  read as a regression. What the four completed cases say is under Passed.
 - `minimal` and `none` were not measured. `low` already returned the whole map,
   so the cheaper settings were not worth the risk of a round nobody would trust.
 - No deployed verification. `render.yaml` now declares `low`, and nothing has
@@ -270,9 +294,14 @@ Topping up the provider account is the owner's action.
 
 ## Next concrete step
 
-Push the branch. The next change is not this one: raise
-`llm_retry_budget_seconds` past 25 and `llm_request_timeout_seconds` past 20 in
-`ai-analytics-service/src/config.py`, then rerun the corpus at `low` with
-`--env-file ../.env` and see whether 56 of 56 stones come back. If they do,
-`LLM_REASONING_EFFORT=low` returns to `render.yaml` and takes 39% off every
-round with it.
+Once the account has credit, run the three cases the last run could not reach:
+
+```
+.venv/bin/python -m evals.run_corpus --env-file ../.env \
+  --cases contradictory,workload-pressure,dynamic-questionnaire \
+  --out <dir>
+```
+
+with `LLM_REASONING_EFFORT=low` in the environment, and read the provenance
+before the report. If all 24 stones come back `llm`, `LLM_REASONING_EFFORT=low`
+goes into `render.yaml` with the corpus numbers beside it.

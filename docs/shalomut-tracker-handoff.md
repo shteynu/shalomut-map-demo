@@ -2400,6 +2400,15 @@ that walk but the sign-in.
   an inference from two dashboard figures, not a measurement, and the reason
   the `LLM_REASONING_EFFORT` measurement is still owed.
 
+  **Depleted a second time on 2026-08-19**, after the owner topped the account
+  up and the measurement work resumed. Roughly $13 of provider spend went to it
+  that day: three single-round runs and three eval-corpus runs at about $0.40 a
+  round. The second corpus rerun died inside its fourth case, and everything
+  after that point is `429` — see the active task file for which evidence is
+  therefore void. Anyone resuming should check the balance *before* starting a
+  corpus run, not after: a depleted account does not stop a run, it fills the
+  report with this service's own fallback copy and reports `success`.
+
   A free tier is not a way out of it, and the numbers are now read rather than
   assumed. AI Studio's tier comparison on 2026-08-19 gives the free tier
   **5 RPM / 250K TPM / 20 RPD** for `gemini-3.5-flash` and **10 RPM / 250K TPM /

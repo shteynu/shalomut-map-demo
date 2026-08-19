@@ -745,6 +745,55 @@ def configure_valid_production_environment(monkeypatch):
     )
 
 
+def test_the_default_budget_holds_a_second_full_attempt(monkeypatch):
+    """The property the three timeout numbers exist to have.
+
+    They were 25, 20 and 8: an attempt that used its whole timeout left five
+    seconds, less than the minimum window, so the retry was never made and a
+    slow answer became no answer. Measured on the eval corpus of 2026-08-19,
+    that cost three of 56 stones at `LLM_REASONING_EFFORT=low` while the
+    graders showed no drop in what the model wrote.
+
+    The invariant is not the numbers, it is that one timed-out attempt can be
+    followed by another of full length.
+    """
+    clear_llm_key_environment(monkeypatch)
+    for name in (
+        "LLM_RETRY_BUDGET_SECONDS",
+        "LLM_REQUEST_TIMEOUT_SECONDS",
+        "LLM_MIN_RETRY_WINDOW_SECONDS",
+    ):
+        monkeypatch.delenv(name, raising=False)
+
+    configured = Settings()
+
+    assert (
+        configured.llm_retry_budget_seconds
+        >= 2 * configured.llm_request_timeout_seconds
+    )
+    # And the window that decides whether to start it does not refuse one.
+    assert configured.llm_min_retry_window_seconds <= (
+        configured.llm_retry_budget_seconds
+        - configured.llm_request_timeout_seconds
+    )
+
+
+def test_the_retry_budget_still_has_a_ceiling(monkeypatch):
+    """Raised on evidence, not removed. A round Core reads as stalled after
+    fifteen minutes cannot have one dimension waiting forever."""
+    clear_llm_key_environment(monkeypatch)
+    monkeypatch.setenv("LLM_RETRY_BUDGET_SECONDS", "6000")
+
+    configured = Settings()
+
+    assert configured.llm_retry_budget_seconds == 300.0
+    # The request timeout is bounded by the budget, whatever it is asked for.
+    assert (
+        configured.llm_request_timeout_seconds
+        <= configured.llm_retry_budget_seconds
+    )
+
+
 def test_named_gemini_key_preserves_provider_source(monkeypatch):
     clear_llm_key_environment(monkeypatch)
     monkeypatch.setenv("GEMINI_API_KEY", "opaque-google-key")
