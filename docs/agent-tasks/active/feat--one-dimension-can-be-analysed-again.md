@@ -4,8 +4,11 @@
 
 - Branch: `feat/one-dimension-can-be-analysed-again`
 - Base branch: `main`
-- Base commit: `e752081`
-- Current HEAD: two commits above the base on this branch
+- Base commit: `68fd473`, the tip of
+  `feat/the-map-says-which-paragraphs-it-wrote-itself` (rebased there on
+  2026-08-19; the original base was `e752081`, and the two branches now form a
+  linear stack above `main` at `2b59526`)
+- Current HEAD: three commits above the base
 - Status: complete, verified locally, unpushed
 - Last updated: 2026-08-19
 - Last agent/tool: Claude Opus 5 (Claude Code)
@@ -160,6 +163,13 @@ Service:
   the column and `findLatestResultByRoundId`.
 - `ai-analytics-service` pytest — 526 passed, including the two full-graph tests
   that prove one dimension is re-asked and eight stones come back.
+- **All of the above re-run on the rebased tip, 2026-08-19**, because the two
+  branches touch the same dashboard DTO and the stack had never been compiled
+  together: `typecheck`, `lint` and `build` clean, `npm test` 1219 passed (1212
+  plus the sibling branch's seven), `verify:db` 37 passed, and pytest 534 passed
+  (526 plus the eight `deployment_commit` tests that arrived with the
+  already-landed health branch). Run pytest with
+  `ai-analytics-service/.venv/bin/python`; the system Python has no pytest.
 - `prisma migrate status` against the deployed database after applying
   `20260819120000_a_run_may_name_the_dimensions_it_rewrites` on 2026-08-19:
   sixteen migrations, `Database schema is up to date!`. A read-back selecting

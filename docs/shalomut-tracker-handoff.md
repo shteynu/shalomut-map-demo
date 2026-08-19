@@ -1888,6 +1888,24 @@ And **outbound reachability to `*.vercel.app` varies by container** — the
 could, from `curl` in the first attempt. Treat a failed request as a fact about
 the container, not about the deployment.
 
+**Both halves served `2b59526` on 2026-08-19**, read anonymously after that
+commit reached `main`: Core answered `commit: 2b59526` with
+`producedContractVersion: 6.0`, and the AI service answered `commit: 2b59526`,
+`env: production`, `jobPollingEnabled: true`. Two things worth keeping from it.
+**Render redeploys on a push to `main` by itself**, like Vercel — this session
+predicted it would need a hand and was wrong. And the first reading, taken
+minutes after the push, still said `e752081` on Core while the build was
+running; a served commit one behind the tip means a build in flight, not a
+failure, which is the same lesson the 2026-08-06 pair of readings left.
+
+That reading does not prove the health fix in `6af34e7` works. `RENDER_GIT_COMMIT`
+is a real 40-hex SHA there, so the old truncation and the new shape check return
+the same string; the difference shows only on an absent or malformed value,
+which is not reproducible from outside without touching the service's
+configuration. The two cases are covered by
+`ai-analytics-service/tests/test_deployment_commit.py`. What the reading does
+prove is that the new resolver did not break the ordinary path.
+
 - **The 2026-08-09 smoke's seven findings are deployed and confirmed on the
   endpoint, 2026-08-09**, in the owner's signed-in Chrome. `origin/main` is
   `90a507c`; the served stylesheet carries the new `.round-delta` pill and
