@@ -2291,6 +2291,22 @@ owner's own hands.
 
 **Waits on an owner decision**
 
+- **How many rounds the deployed service should analyse at once, 2026-08-18.**
+  `AI_JOB_POOL_SIZE` landed on `main` as `9d34572` and is set to `1` in
+  `render.yaml`, which is exactly the behaviour the service had before it
+  existed — one lane, one lease. Raising it is what turns a burst of closures
+  from a queue into parallel lanes, and it is safe up to the point where the
+  provider's pace binds instead: a round is about 28 calls over three minutes,
+  near 11 a minute against the configured 60, so 4–5 is the useful range at
+  today's pace. Two things gate the decision rather than the code. The real
+  provider tier is the actual ceiling for any number of schools and nothing in
+  this repository can read it, so it is worth confirming before raising the
+  number. And a second Render instance is **not** the next step after this one
+  without work first: `provider_rate_limiter` is per-process, so two containers
+  would keep two private counters and together exceed the quota — the `429`
+  that killed every early live round. `docs/ai-analysis-run-lifecycle.md`
+  carries the mechanism.
+
 - **Whose name belongs on the copyright line, 2026-08-18.** Open decision 7 of
   the strategy sweep — *public repository with no licence, deliberate?* — was
   answered that day: deliberate, all rights reserved, and `NOTICE` at the root

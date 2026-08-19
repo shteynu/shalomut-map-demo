@@ -5,8 +5,8 @@
 - Branch: `claude/parallel-analysis-pool`
 - Base branch: `main`
 - Base commit: `f0d868d`
-- Current HEAD: this commit
-- Status: delivered on the branch; not merged, default unchanged
+- Current HEAD: `9d34572`, merged into `main`
+- Status: merged; the deployed value stays `1`, so behaviour is unchanged until raised
 - Last updated: 2026-08-18
 - Last agent/tool: Claude Code
 
@@ -200,5 +200,11 @@ deployed value is unchanged.
 
 ## Next concrete step
 
-Merge `claude/parallel-analysis-pool` into `main` when the user asks for it.
-Raising the deployed value is a separate, explicit decision.
+None. Merged into `main` as `9d34572`.
+
+What outlives this branch is a decision, not work: whether to raise
+`AI_JOB_POOL_SIZE` on the deployed service, and whether to confirm the provider
+tier first. Both are recorded in
+[`shalomut-tracker-handoff.md`](../../shalomut-tracker-handoff.md) under what
+waits on an owner decision, because an archived file is not where anyone looks
+for what is still owed.
