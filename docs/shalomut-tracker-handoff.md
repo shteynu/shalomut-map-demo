@@ -1653,6 +1653,15 @@ older snapshots remain available in Git.
 
 ## Repository snapshot
 
+- **`origin/main` is `2ad95e9`, asked of the remote on 2026-08-19**, and both
+  deployed halves serve it — the reading is in the deployed-state section below.
+  It carries the day's three-branch stack: the AI service's `/health` proving a
+  commit's shape before publishing it, the map notice covering
+  `deterministic_fallback`, and a run that may name the dimensions it rewrites.
+  Nothing of it is waiting on a push. The dated tip in the bullet further down
+  (`6e06ff7`) belongs to the 2026-08-08 chain and is left as it was written; this
+  line is the current one.
+
 - **A workaround inside the browser smoke was hiding a real defect, and it is
   fixed.** `8d4af8d`: the first sign-in of a browser session never left
   `/login`. The login screen's brand `<Link href="/">` prefetches the home page
@@ -1888,15 +1897,21 @@ And **outbound reachability to `*.vercel.app` varies by container** — the
 could, from `curl` in the first attempt. Treat a failed request as a fact about
 the container, not about the deployment.
 
-**Both halves served `2b59526` on 2026-08-19**, read anonymously after that
-commit reached `main`: Core answered `commit: 2b59526` with
-`producedContractVersion: 6.0`, and the AI service answered `commit: 2b59526`,
-`env: production`, `jobPollingEnabled: true`. Two things worth keeping from it.
-**Render redeploys on a push to `main` by itself**, like Vercel — this session
-predicted it would need a hand and was wrong. And the first reading, taken
-minutes after the push, still said `e752081` on Core while the build was
-running; a served commit one behind the tip means a build in flight, not a
-failure, which is the same lesson the 2026-08-06 pair of readings left.
+**Both halves serve `2ad95e9`, read anonymously on 2026-08-19** once that
+commit was the tip of `main`: Core answered `commit: 2ad95e9` with
+`producedContractVersion: 6.0`, and the AI service answered `commit: 2ad95e9`,
+`env: production`, `jobPollingEnabled: true`. That is the whole of the day's
+three-branch stack — the health endpoint's shape check, the map notice, and the
+per-dimension re-run — deployed on both halves.
+
+Two things the day left behind, learned on the intermediate reading at
+`2b59526` and confirmed again at `2ad95e9`. **Render redeploys on a push to
+`main` by itself**, like Vercel — this session predicted it would need a hand
+and was wrong, twice in a row. And both times the first reading, taken within a
+minute or two of the push, still named the previous commit while the build ran;
+a served commit one behind the tip means a build in flight, not a failure, which
+is the same lesson the 2026-08-06 pair of readings left. Poll rather than
+conclude.
 
 That reading does not prove the health fix in `6af34e7` works. `RENDER_GIT_COMMIT`
 is a real 40-hex SHA there, so the old truncation and the new shape check return
@@ -1905,6 +1920,18 @@ which is not reproducible from outside without touching the service's
 configuration. The two cases are covered by
 `ai-analytics-service/tests/test_deployment_commit.py`. What the reading does
 prove is that the new resolver did not break the ordinary path.
+
+**What was checked anonymously beyond identity, 2026-08-19.** `/login/` answers
+`200` with a rendered page, `/` and `/survey/` answer `307` — the latter having
+no round token — and `/dashboard/` answers `307` to
+`/login?next=%2Fdashboard`, so the manager boundary holds on the deployed build.
+That is the end of what an anonymous reader can see. **Neither the map's
+deterministic-summary notice nor the dimension screen's re-run button has been
+looked at on the deployed environment**: both are behind the manager login, and
+seeing them needs the owner signed in to the connected Chrome. The deployed
+database already carries
+`20260819120000_a_run_may_name_the_dimensions_it_rewrites`, so nothing blocks
+that walk but the sign-in.
 
 - **The 2026-08-09 smoke's seven findings are deployed and confirmed on the
   endpoint, 2026-08-09**, in the owner's signed-in Chrome. `origin/main` is
