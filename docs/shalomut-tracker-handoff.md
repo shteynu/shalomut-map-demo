@@ -1653,10 +1653,11 @@ older snapshots remain available in Git.
 
 ## Repository snapshot
 
-- **`origin/main` is `2ad95e9`, asked of the remote on 2026-08-19**, and both
-  deployed halves serve it — the reading is in the deployed-state section below.
-  It carries the day's three-branch stack: the AI service's `/health` proving a
-  commit's shape before publishing it, the map notice covering
+- **`origin/main` is `dfa05e3`, asked of the remote on 2026-08-19.** Core serves
+  it; the AI service serves `2ad95e9`, which is correct rather than late — see
+  the deployed-state section below on why the two halves need not agree.
+  Beneath it sits the day's three-branch stack: the AI service's `/health`
+  proving a commit's shape before publishing it, the map notice covering
   `deterministic_fallback`, and a run that may name the dimensions it rewrites.
   Nothing of it is waiting on a push. The dated tip in the bullet further down
   (`6e06ff7`) belongs to the 2026-08-08 chain and is left as it was written; this
@@ -1904,14 +1905,31 @@ commit was the tip of `main`: Core answered `commit: 2ad95e9` with
 three-branch stack — the health endpoint's shape check, the map notice, and the
 per-dimension re-run — deployed on both halves.
 
-Two things the day left behind, learned on the intermediate reading at
-`2b59526` and confirmed again at `2ad95e9`. **Render redeploys on a push to
-`main` by itself**, like Vercel — this session predicted it would need a hand
-and was wrong, twice in a row. And both times the first reading, taken within a
-minute or two of the push, still named the previous commit while the build ran;
-a served commit one behind the tip means a build in flight, not a failure, which
-is the same lesson the 2026-08-06 pair of readings left. Poll rather than
-conclude.
+Two things the day left behind. **Both platforms redeploy on their own** — this
+session predicted Render would need a hand and was wrong twice. And both times
+the first reading, taken within a minute or two of the push, still named the
+previous commit while the build ran; a served commit one behind the tip means a
+build in flight, not a failure, which is the same lesson the 2026-08-06 pair of
+readings left. Poll rather than conclude.
+
+**Correction the same day: Render does not rebuild for every push, and the two
+halves are not expected to answer with the same commit.** The sentence above
+first said Render redeploys on any push to `main`, which was written from two
+observations that happened to share a property nobody checked: both of those
+pushes changed files under `ai-analytics-service/`. The third did not — `dfa05e3`
+touches only this file — and the service stayed on `2ad95e9` for **ten minutes of
+polling at thirty-second intervals** while Core moved to `dfa05e3` within the
+usual couple of minutes. Three observations, all consistent with Render building
+only when its own directory changed; the setting behind it lives in the Render
+dashboard and has not been read, so treat the mechanism as the likely
+explanation and the behaviour as the observed fact.
+
+What follows from it operationally: **a service commit behind Core's is the
+normal resting state, not a failed deploy.** Read the two endpoints as two
+independent questions. The service's commit answers "which revision of the
+service is running", and it only advances when a push touches the service; the
+one to compare it against is the last commit that changed
+`ai-analytics-service/`, not the tip of `main`.
 
 That reading does not prove the health fix in `6af34e7` works. `RENDER_GIT_COMMIT`
 is a real 40-hex SHA there, so the old truncation and the new shape check return
