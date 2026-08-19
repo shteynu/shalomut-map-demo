@@ -2286,7 +2286,31 @@ that walk but the sign-in.
   reached from the dimension screen's deterministic note, refuses a round with
   no stored analysis (`409 no_previous_analysis`), and an empty list means what
   it has always meant: the whole round. `PROJECT_CONTEXT.md` ADR-024 owns the
-  reasoning. Its migration,
+  **It has now been exercised on the deployed stack, 2026-08-19**, and the
+  carry is visible in the stored data rather than argued from the code. A
+  manager-pressed re-run of `balance` came back `succeeded` with **eight
+  stones**: `balance` carried new copy and `attempts: 3`, while the other seven
+  kept the previous map's paragraphs verbatim at `attempts: 1`, and every score
+  and status was identical because they are recomputed either way. So one
+  dimension cost one dimension's provider calls, which is the whole point of
+  the feature.
+
+  Two things that run also shows. The provider is still `failing` — the open
+  question about the key, below — so the rewritten `balance` came back
+  `deterministic_fallback` after three attempts rather than as model copy: the
+  re-run worked and the model still did not answer. And the map said so on its
+  own, without anyone reading a log: the dimension screen kept its note and the
+  map notice kept naming `איזון`, which is ADR-007 behaving as written.
+
+  **The round it was exercised on is seeded, not real.** `SHALOM-DEPLOYED`,
+  school `בית ספר הדגמה`, twelve responses, and a stored analysis whose Hebrew
+  copy is placeholder text shaped to pass the contract's own validators. Every
+  number in it is recomputed from those answers, so it is a truthful round with
+  untruthful prose — fine for looking at screens, useless as evidence about
+  wording. `scripts/seed-local.ts` still refuses any non-loopback host and was
+  not changed; that round was written by a one-off script that was deleted.
+
+  Its migration,
   `20260819120000_a_run_may_name_the_dimensions_it_rewrites`, **was applied to
   the deployed database on 2026-08-19, before the push that carries the code** —
   the safe order, since the column is additive with a default and deployed code
