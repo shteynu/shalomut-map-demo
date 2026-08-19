@@ -5,9 +5,11 @@
 - Branch: claude/priceless-swanson-9cf466
 - Base branch: main
 - Base commit: 4bd5b2f
-- Current HEAD: c1dfed0
-- Status: fixed and verified locally; live before/after still owed
-- Last updated: 2026-08-19
+- Current HEAD: `8629363`. The file was written at `c1dfed0` and not
+  refreshed through the four commits that followed.
+- Status: complete, landed on `main` inside `56d1b72` and deployed; the live
+  `5.0` before/after was never run. Archived.
+- Last updated: 2026-08-20
 - Last agent/tool: Claude Opus 5 (Claude Code)
 
 ## Objective
@@ -146,7 +148,15 @@ None.
 
 ## Remaining
 
-- The live before/after run, which is an approval gate rather than work.
+- The live `5.0` before/after run was never made, and archiving this file
+  does not close it. It is carried in `docs/shalomut-tracker-handoff.md`,
+  which is where an open gate belongs once its task file stops being the
+  living record. What exists instead is indirect: a live `6.0` round with
+  zero `status_inconsistent`, on a contract whose prompt never names a
+  colour group — consistent with the fix, but not a test of it.
+
+Archived 2026-08-20. The code landed and is deployed; nothing above this
+line was rewritten.
 
 ## Changed files
 
@@ -275,6 +285,9 @@ together. Recorded in the operational handoff.
   on, so it is left as a question rather than done.
 
 ## Next concrete step
+
+Done: that task was opened as `fix/the-adaptation-call-outlives-its-timeout`,
+and it has itself landed and deployed. The original text follows.
 
 Open a separate task for the adaptation timeout under Known risks: time one
 adaptation call on `6.0` with the timeout raised well past the wall, find where

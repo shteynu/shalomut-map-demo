@@ -1,10 +1,12 @@
 # Shalomut Tracker — operational handoff
 
 **2026-08-20: both fixes are on `main` and deployed, and the service redeployed
-without being asked.** `main` is `56d1b72`; the push was a fast-forward carrying
-twelve commits, `claude/priceless-swanson-9cf466` included, so the adaptation
-fix and the timeout fix landed together. Both halves answer with that commit:
-Core `/api/health` and the service `/health` each report `56d1b72`.
+without being asked.** The code landed as `56d1b72`; the push was a
+fast-forward carrying twelve commits, `claude/priceless-swanson-9cf466`
+included, so the adaptation fix and the timeout fix landed together. Both
+halves answered with that commit within about two minutes — Core
+`/api/health` and the service `/health` both read `56d1b72`. Core has moved
+on since; see below.
 
 No manual redeploy was needed, which settles the "picks them up on the next
 deploy" left open in the entry below — the push *was* the deploy.
@@ -18,9 +20,29 @@ The container is new independently of the commit field it reports:
 `/api/v1/provider-status` and `/api/v1/fallback-status` both read `unknown`, the
 state a process holds before its first provider call.
 
-CI on `56d1b72`: CodeQL, Core verification and the Vercel pipeline checks green.
-Browser smoke was still running when this was written and is not recorded here
-as passed.
+CI on `56d1b72`: CodeQL, Core verification and the Vercel pipeline checks
+green. Browser smoke reads `cancelled`, and it is not a failure — the workflow
+declares `concurrency: browser-smoke-${{ github.ref }}` with
+`cancel-in-progress`, so the next push to `main` three and a half minutes later
+killed it mid-run. It passed on `c183c6e`, which differs from `56d1b72` by one
+docs commit and by nothing else. Read a cancelled smoke run on `main` as "a
+later push arrived", and look for the workflow's own concurrency group before
+reading it as a break.
+
+`main` has since moved to `7c2b002`, and further docs commits will keep moving
+it; the deployed *code* is still `56d1b72`. Core follows every push and
+now answers `7c2b002`, while the service stayed on `56d1b72` because those
+commits touched only `docs/`. That is the build filter demonstrated in the other
+direction, and it is why the two halves reporting different commits is normal
+here rather than a symptom.
+
+Carried out of `claude--priceless-swanson-9cf466.md` as that file is
+archived: **the `5.0` adaptation fix has never had a live before/after.**
+Low stakes — the deployment produces `6.0`, so the fixed path runs only if
+someone rolls the producer back to `5.0` — but it is an untested fix, not a
+verified one, and the `6.0` round that looks like evidence is not: that
+contract's prompt never names a colour group, so it could not have
+reproduced the defect either way.
 
 **Deployed but not yet exercised.** The 90s request timeout, the 300s budget,
 `scope=` on the provider log lines and the error-level

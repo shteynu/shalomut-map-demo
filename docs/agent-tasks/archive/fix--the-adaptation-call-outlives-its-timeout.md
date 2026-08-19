@@ -5,8 +5,11 @@
 - Branch: fix/the-adaptation-call-outlives-its-timeout
 - Base branch: claude/priceless-swanson-9cf466 (itself unmerged; `origin/main` is `4bd5b2f`)
 - Base commit: 8629363
-- Current HEAD: 31bd03d, three commits above the base
-- Status: fixed and verified against the provider
+- Current HEAD: `56d1b72`, the commit that landed on `main`. The archival
+  itself rides a later commit on the same branch, so this file cannot name
+  the sha that moved it.
+- Status: complete, landed on `main` as `56d1b72` and deployed — the service
+  `/health` and Core `/api/health` both answer with it. Archived.
 - Last updated: 2026-08-20
 - Last agent/tool: Claude Opus 5 (Claude Code)
 
@@ -116,7 +119,9 @@ All of the above.
 
 ## Remaining
 
-None on this branch. The follow-on the owner and I identified — deriving the
+None on this branch, and it is deployed. What the deploy did not prove: no
+round has run through the deployed service at the new defaults, so `90/300`
+is measured locally and confirmed nowhere else. The follow-on the owner and I identified — deriving the
 token budget from the round's question count instead of a fixed 8192 — waits on
 the methodologist, because the coefficient is questions-per-dimension and the
 new instrument's item-to-dimension mapping is not decided. Recorded under
