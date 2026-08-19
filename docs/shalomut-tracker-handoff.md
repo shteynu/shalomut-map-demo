@@ -1,21 +1,33 @@
 # Shalomut Tracker — operational handoff
 
-**2026-08-19: half of every round's provider answers were being spent proving a
-validator wrong.** The question-adaptation step fell back to catalog copy on all
-eight dimensions of every round — measured on three local runs that day — always
-`refusal=status_inconsistent`, always after two or three attempts. In the `low`
-run that was 14 of 31 billed answers. The cause was a contract version that
-never reached the validator: `AI_ANALYTICS_CONTRACT_VERSION` is the string
-`"2.0"`, the adaptation path defaulted to it, and 2.0 forbids naming a colour
-group at all — while the 5.0 prompt renders the score distribution and asks the
-model to quote a bucket count. Fixed on
-`claude/priceless-swanson-9cf466`; 1.0-4.0 and 6.0 behave exactly as before.
+**2026-08-19: the local measurement script was burning half a round's provider
+answers on `5.0`, which is not the contract the deployment produces.** The
+question-adaptation step fell back to catalog copy on all eight dimensions of
+every run — three local runs that day — always `refusal=status_inconsistent`,
+always after two or three attempts; in the `low` run, 14 of 31 billed answers.
+The cause was a contract version that never reached the validator:
+`AI_ANALYTICS_CONTRACT_VERSION` is the version string of the **2.0** manifest,
+the adaptation path defaulted to it, and 2.0 forbids naming a colour group at
+all — while the 5.0 prompt renders the score distribution and asks the model to
+quote a bucket count. Fixed on `claude/priceless-swanson-9cf466` (`c1dfed0`);
+1.0-4.0 and 6.0 behave exactly as before.
 
-Two things follow for this file. The round cost that the credit entries below
-are about is expected to drop by roughly the retries this was spending, and that
-is a claim no run has yet checked — **a live before/after round is still owed**,
-and it needs the owner's approval and an account with credit. Until then the
-saving is arithmetic, not evidence.
+**The scope is narrower than the first version of this entry claimed, and the
+correction is the operational part.** Production explicitly selects `6.0`, and
+`6.0` takes the v6 adaptation branch — a prompt that never names a colour group
+and a validator that forbids visible digits — so deployed rounds could not hit
+this and their cost does not change. What was affected is `5.0`: the unset
+default, the documented rollback value, and the hardcoded default of
+`scripts/local-unlocked-pipeline.ts`, which pins itself to `"5.0"` and reads no
+`.env`. So the tool used to measure what a round costs was measuring a branch
+the deployment does not run.
+
+Two consequences. The credit entries below are about the deployed account and
+are **not** relieved by this fix. And any live before/after round has to be
+launched with `AI_ANALYTICS_CONTRACT_VERSION=6.0` if the question is about the
+deployment — otherwise it measures the same wrong branch again. Either way a
+live round is still owed, and it needs the owner's approval and an account with
+credit.
 
 **2026-08-18, session close (second and final for the day): the repository now
 says what it grants, and this paragraph went stale while it was being written.**

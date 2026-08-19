@@ -13,14 +13,20 @@
 ## Objective
 
 Stop the question-adaptation step falling back to catalog text on every
-dimension, and stop it spending half a round's provider answers on retries that
-cannot succeed.
+dimension of a `5.0` round, and stop it spending half that round's provider
+answers on retries that cannot succeed.
 
 ## User-visible outcome
 
-A manager reads recommendations written against this school's own numbers
-instead of the catalog wording, and a round costs roughly half the provider
-answers it costs today.
+On `5.0`, a manager reads recommendations written against this school's own
+numbers instead of the catalog wording, and the round stops paying for the
+retries.
+
+Not on the deployment as it stands. Production selects `6.0`, which takes the v6
+adaptation branch and never had this failure, so deployed rounds read the same
+before and after and cost the same. What changes is the unset default, the
+documented rollback value, and every run of
+`scripts/local-unlocked-pipeline.ts` — see Context.
 
 ## Context
 
@@ -34,6 +40,18 @@ settings, `LLM_REASONING_EFFORT` unset / low / medium). Every run ended
 unaffected and the round reported `status: success`, which is why it went
 unnoticed. The measurement itself is recorded on the branch of
 `docs/agent-tasks/archive/feat--the-thinking-budget-is-a-declared-number.md`.
+
+Those runs were on `5.0`, not on what the deployment produces. The script pins
+itself to `"5.0"` at `scripts/local-unlocked-pipeline.ts:68` and reads no
+`.env`, so "deployed settings" in that measurement means the key and the model
+and not the contract. The log format says the same independently: `refusal=` and
+`detail=` exist only on the pre-6.0 branch. Production explicitly selects `6.0`.
+
+That is the correction to the first version of this file and of the handoff
+entry, both of which read as though every round were affected. The fix is still
+worth having — `5.0` is the rollback value and the version the cost-measuring
+script actually runs, so the instrument used to measure what a round costs was
+wrong about the thing being measured — but it buys the deployment nothing.
 
 ## Scope
 
@@ -171,7 +189,10 @@ local
   for is now accepted; what is not proven is how often `gemini-3.5-flash`
   actually writes one. The before/after that closes this is a live run.
 - The saving is bounded by what the measurement showed — 14 of 31 answers in the
-  `low` run — and no run has yet demonstrated it.
+  `low` run — it applies to `5.0` only, and no run has yet demonstrated it.
+- Nothing here was measured on `6.0`. The claim that `6.0` is unaffected rests
+  on reading its branch — a prompt that names no colour group, a validator that
+  refuses visible digits — and not on a run.
 - 1.0-4.0 keep the flat blacklist and 6.0 is untouched, so no published contract
   changes meaning. 5.0 gets the rule its own manifest already declares.
 
@@ -190,12 +211,18 @@ Recorded under Residual risk.
 
 ## Questions requiring an owner decision
 
-- Whether to spend one round on the before/after measurement once the fix lands.
+- Whether to spend one round on the before/after measurement, and on which
+  contract. `5.0` proves this fix; `6.0` is what the deployment runs. They are
+  different questions and only one of them is about production cost.
+- Whether `scripts/local-unlocked-pipeline.ts` should keep its own `"5.0"`
+  default at all, given that it is the tool used to reason about deployed cost.
 
 ## Next concrete step
 
 Ask the owner to approve one live round (about $0.4, and the provider account
-needs credit) and re-run `npx tsx scripts/local-unlocked-pipeline.ts` with the
-deployed settings, to record the adaptation outcome and the billed answer count
-against the 2026-08-19 baseline of eight dimensions on `deterministic_fallback`
-and 14 of 31 answers spent on the retries.
+needs credit), and run it as
+`AI_ANALYTICS_CONTRACT_VERSION=6.0 npx tsx scripts/local-unlocked-pipeline.ts`
+if the question is deployed cost, or without the override if the question is
+whether this fix works. Record the adaptation outcome and the billed answer
+count against the 2026-08-19 `5.0` baseline of eight dimensions on
+`deterministic_fallback` and 14 of 31 answers spent on the retries.
