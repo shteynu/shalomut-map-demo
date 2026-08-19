@@ -2344,6 +2344,21 @@ that walk but the sign-in.
   gate, not a blocker for local/docs work.
 - Explicit bounded approval is required before changing secrets, credentials,
   authentication configuration or deployment aliases.
+- **Open since 2026-08-19: the Gemini account has no credit, so no round can be
+  analysed anywhere.** The provider answers every request
+  `429 RESOURCE_EXHAUSTED` with `"Your prepayment credits are depleted"`, read
+  directly from the error body on 2026-08-19 with the local key. It is an
+  account balance rather than a rate: pacing, model and concurrency are not
+  involved, and the same key is on the Render dashboard, so the deployed service
+  is in the same state. A round in this state does not fail quietly — it comes
+  back `validation_failed` with `provider_unavailable_http_429` — but it also
+  does not produce a map. Clearing it is the owner's action in AI Studio; no
+  code change helps. Until then, every measurement that needs a live provider is
+  blocked, including the one in
+  `docs/agent-tasks/active/feat--the-thinking-budget-is-a-declared-number.md`.
+  Worth deciding at the same time whether local runs keep spending the
+  deployment's balance: the local `.env`, the eval corpus and the pipeline script
+  all bill the same key.
 - **Closed 2026-08-17: the respondent consent wording is approved.** The second
   promise on the consent screen — that the time the questionnaire is on screen
   is measured and stored with the answers, and that no per-question timing is
