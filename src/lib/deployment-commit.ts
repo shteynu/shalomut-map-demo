@@ -39,6 +39,7 @@ const SHORT_COMMIT_LENGTH = 7;
  * hold is how a misplaced secret gets published. A commit SHA is the one value
  * worth breaking that rule for, and the rule is kept anyway by publishing only
  * a value that is provably a commit SHA and could be nothing else.
+ * `PROJECT_CONTEXT.md` ADR-023 owns this and binds the next field added here.
  *
  * Exactly forty, not "at least": this repository generates its shared secrets
  * with `openssl rand -hex 32`, which is sixty-four hex characters and would

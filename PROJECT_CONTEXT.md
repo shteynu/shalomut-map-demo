@@ -704,6 +704,39 @@ in front of a manager. The research is
 branch; the reasoning above is repeated here rather than referenced because that
 branch may never land.
 
+### ADR-023: An anonymous endpoint publishes a variable only when its shape proves what it is
+
+2026-08-19, with `commit` on `GET /api/health`. The rule that endpoint had held
+until then was absolute and stated in `ai-contract-version.ts`: no variable's
+value is echoed, because echoing whatever a variable happens to hold is how a
+misplaced secret gets published. It is an unauthenticated endpoint, so the
+question is never "is this value secret" but "what could this value turn out to
+be".
+
+Reporting the deployed commit is worth an exception, and the exception is
+written so the rule survives it. `resolveDeploymentCommit` publishes
+`VERCEL_GIT_COMMIT_SHA` only when it matches `^[0-9a-f]{40}$` — exactly the
+shape of a Git SHA-1 — and `unknown` otherwise. A value that passes could be
+nothing but a commit, so the endpoint never publishes a variable's contents,
+only a proof about them.
+
+Exactly forty rather than at least forty, because this repository generates its
+own shared secrets with `openssl rand -hex 32`: sixty-four hex characters, which
+a lower bound would accept and publish the first seven of. No secret belongs in
+that variable and the endpoint does not get to assume so.
+
+`unknown` deliberately does not say which of three things happened — running
+locally, an unrecognised host, or a value that is not a SHA. All three mean the
+same thing to a caller comparing against `git rev-parse`, and distinguishing
+them would describe the deployment's own configuration to an anonymous caller.
+
+What this binds is the next field, not this one. Anything added to a public
+health payload states what it publishes and why the worst plausible value is
+safe; a field whose value cannot be constrained to a shape does not go there.
+The AI service's `/health` predates this and truncates `RENDER_GIT_COMMIT` to
+seven characters without a shape check — a known divergence, recorded in
+`docs/agent-tasks/archive/claude--health-commit-field.md`, not yet closed.
+
 ## Environments
 
 The project supports exactly two environments:

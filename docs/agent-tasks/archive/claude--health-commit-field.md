@@ -92,7 +92,9 @@ any agent.
 ## Decisions made
 
 - **The field is published only when the value is provably a commit SHA.** This
-  is the whole design. `/api/health` is anonymous and its own doc comment
+  is the whole design. Recorded as `PROJECT_CONTEXT.md` ADR-023 on 2026-08-19,
+  because it binds every field added to a public health payload after it, not
+  just this one. `/api/health` is anonymous and its own doc comment
   promised that no variable's value is echoed; adding a field that echoes one
   needed that promise kept another way. `^[0-9a-f]{40}$` is exactly the shape of
   a Git SHA-1, so a value matching it can be nothing else.

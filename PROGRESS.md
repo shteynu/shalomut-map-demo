@@ -544,6 +544,17 @@ saying so. One outcome covers all of a dimension's narratives — one call write
 them together — and the metrics screen carries the note, because that is where
 the sentences are.
 
+Closed 2026-08-19, and the same clause again: the disclosure now covers the two
+surfaces that had none. `overallSummaryOutcome` says who wrote the round's
+opening sentence, and the goals screen says when its recommendations are the
+catalog's own wording rather than an adaptation written for this round —
+`adaptationOutcome` had been on the wire since `6.0` and read by nothing. The
+gap was worth closing because on `6.0` a silent provider does not raise: all
+three per-dimension generators fall back and label themselves, so the overview
+banner, which fires on `unavailable`, stays quiet through the failure that is
+actually common. Whether that banner should fire on a fallback too is open and
+unrequested; `docs/shalomut-tracker-handoff.md` carries it.
+
 ### Architecture
 
 Nothing open. Mutant classification closed on 2026-08-03, and on 2026-08-07 the
