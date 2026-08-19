@@ -1859,16 +1859,31 @@ older snapshots remain available in Git.
 
 ## Deployed state
 
-**Reading the deployed commit stops needing a sign-in, 2026-08-19.** Every
-reading below that names a served commit was taken from the Vercel dashboard in
-the owner's signed-in Chrome, because Core's `/api/health/` did not report one —
-the AI service's `/health` always has. `ca1c6c8` on `main` adds `commit` to
-Core's health payload, so from the deployment that carries it the question is
-one anonymous request against both halves rather than a dashboard.
-It reports `unknown` rather than guessing when it cannot prove a SHA, so a
-reading of `unknown` means the field has not deployed yet — not that the
-deployment is broken. Until that first deploy lands, the dashboard is still the
-only way, and the readings below stand as they are.
+**Reading the deployed commit stops needing a sign-in, 2026-08-19 — and the
+first reading has been taken.** Every reading below that names a served commit
+was taken from the Vercel dashboard in the owner's signed-in Chrome, because
+Core's `/api/health/` did not report one — the AI service's `/health` always
+has. `ca1c6c8` on `main` added `commit` to Core's health payload, so from the
+deployment that carries it the question is one anonymous request against both
+halves rather than a dashboard.
+
+**It works, and it agrees with the remote.** Anonymously on 2026-08-19,
+`GET https://shalomut-map-demo.vercel.app/api/health/` answered `status: ok`,
+`commit: e752081`, `producedContractVersion: 6.0` from `configured`. At the same
+moment `git ls-remote origin refs/heads/main` was
+`e752081a3d466b19c64f8f1a0fff856725dacfb8`, whose short form is exactly
+`e752081`. So the named assumption is settled: **Vercel does populate
+`VERCEL_GIT_COMMIT_SHA` on this project**, the resolver needs no rename, and
+every future "is the deployed code what I pushed?" is one anonymous request
+against each half. It also re-confirms that Vercel builds every push to `main`
+without anyone asking it to — the tip had landed and was already being served.
+
+Two things that reading does not prove. It is a liveness and identity reading,
+not a content one: it says which revision answers, not that any page renders.
+And **outbound reachability to `*.vercel.app` varies by container** — the
+2026-08-13 and 2026-08-19-earlier sessions could not connect at all and this one
+could, from `curl` in the first attempt. Treat a failed request as a fact about
+the container, not about the deployment.
 
 - **The 2026-08-09 smoke's seven findings are deployed and confirmed on the
   endpoint, 2026-08-09**, in the owner's signed-in Chrome. `origin/main` is
@@ -2444,17 +2459,13 @@ owner's own hands.
   `src/lib/help/topics/he.ts` first and brought across; every figure the guide
   shows is computed from the module that enforces it and cannot be edited in a
   translation. What needs eyes is the wording, not the numbers.
-- **Reading Core's `commit` off the deployed `/api/health/` once, 2026-08-19.**
-  `ca1c6c8` put the field there and it is verified locally both ways, but no
-  one has read it from the deployment: the container that wrote it cannot reach
-  `*.vercel.app` at all, by `curl` or by a real browser. The reading is one
-  anonymous request and it settles a named assumption — that Vercel populates
-  `VERCEL_GIT_COMMIT_SHA` on this project. A SHA matching
-  `git rev-parse --short=7 origin/main` closes it. `unknown` means the platform
-  names that variable something else, and then the resolver in
-  `src/lib/deployment-commit.ts` needs the real name; it is a one-line change,
-  and until it is made every reading of Core's served commit still goes through
-  the signed-in dashboard.
+- **Done 2026-08-19, and nothing needs renaming.** Core's `commit` was read off
+  the deployed `/api/health/` anonymously and answered `e752081`, which is
+  `origin/main` exactly. The assumption `ca1c6c8` could not verify from its own
+  container — that Vercel populates `VERCEL_GIT_COMMIT_SHA` on this project — is
+  settled, and the deployed-state section above carries the reading. Nothing is
+  left here; reading the served commit no longer waits on the owner's hands at
+  all.
 
 - Rotating the four design-stage credentials before the first real respondents.
   Listed above as an accepted deferred gate; it is still open.
