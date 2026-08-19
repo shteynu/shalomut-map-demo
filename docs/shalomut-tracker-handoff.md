@@ -2182,9 +2182,37 @@ the container, not about the deployment.
   beside the summary ratio, not instead of it**: a key that answers the short
   prompt and times out on the longer one shows a healthy summary ratio and
   derived narratives underneath.
+- **Since 2026-08-19 the overview-level notice covers the failure 6.0 actually
+  produces.** `DashboardPartialMapNotice` fired only on `outcome: "unavailable"`,
+  which the contract's structured operations never return — the per-dimension
+  generators fall back silently — so the map read as complete in exactly the
+  common case. It now also names the dimensions whose paragraphs this service
+  composed, under a heading of its own, and the map notice is part of ADR-007's
+  disclosure rule rather than a thing the dimension screen does alone. Metric
+  narratives stay off it deliberately; the metrics screen owns that sentence.
 - The same slice documented `unavailableReason` and the `unavailable` outcome in
   `docs/openapi.yaml`, which the partial-map work put on the wire and never
   wrote down. `public/openapi.json` was regenerated.
+
+- **Since 2026-08-19 a run may name the dimensions it rewrites, and the map it
+  delivers is still whole.** `AiAnalysisRun.regenerate_dimension_ids` carries
+  the list; the service asks the provider for those dimensions only and starts
+  the rest from the copy the stored map already holds; the callback is an
+  ordinary eight-stone 6.0 payload with every number recomputed from this
+  round's aggregates. So there is **no partial-payload shape and no merge
+  step**, and `verifyAiResultAgainstRound` is untouched — which is the thing to
+  know before reading a per-dimension re-run as a contract change. It is
+  reached from the dimension screen's deterministic note, refuses a round with
+  no stored analysis (`409 no_previous_analysis`), and an empty list means what
+  it has always meant: the whole round. `PROJECT_CONTEXT.md` ADR-024 owns the
+  reasoning. **It needs the migration
+  `20260819120000_a_run_may_name_the_dimensions_it_rewrites`** — until that runs
+  on a database, the claim route there reads a column that does not exist.
+  Landed on `feat/one-dimension-can-be-analysed-again`; it and
+  `feat/the-map-says-which-paragraphs-it-wrote-itself` close both follow-ups
+  the fallback-disclosure audit
+  (`docs/agent-tasks/archive/claude--fallback-disclosure.md`) left offered and
+  unrequested.
 
 ## Operational invariants
 
@@ -2404,26 +2432,6 @@ owner's own hands.
 - Repeat-measurement reminders (§11). Reminding respondents would need contact
   data the privacy model deliberately does not hold; reminding the manager would
   not.
-- **One follow-up from the fallback-disclosure audit is left, 2026-08-19.**
-  `claude/fallback-disclosure` (merged as `9819d1f`) closed the two gaps where
-  a deterministic fallback carried no on-screen note at all — the round summary
-  and the recommendation wording — and deliberately left two larger changes
-  unbuilt, offered but not requested. **The first was requested and is built:**
-  `DashboardPartialMapNotice` now also names the dimensions whose paragraphs the
-  service composed, so the failure contract 6.0 actually produces has an
-  overview-level banner instead of only a per-blob note. It is on
-  `feat/the-map-says-which-paragraphs-it-wrote-itself`; `PROJECT_CONTEXT.md`
-  ADR-007 carries the rule.
-
-  **What is still unrequested is true per-dimension re-run.** It does not exist
-  today — a stored `AiAnalysisRun` starts every field empty, so "re-run the
-  analysis" always means the whole round, and every note the product shows says
-  so. Building it is not a UI change: it needs the AI service to process a
-  subset of dimensions, a merge of a partial result into a stored run, and a
-  contract shape for a callback that carries fewer than eight stones — which
-  ADR-002's additive rule and the "eight failed dimensions fail the round whole"
-  rule both have opinions about. Background in
-  `docs/agent-tasks/archive/claude--fallback-disclosure.md`.
 
 **Waits on the owner's hands**
 

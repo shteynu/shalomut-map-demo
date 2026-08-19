@@ -487,6 +487,19 @@ unhandled worker exception is reported through Core's failure endpoint. Core
 can therefore recover abandoned work without treating a `202` acknowledgement
 as completion.
 
+**A claimed run may name the dimensions it has to write again.** The claim
+response then carries `run.regenerateDimensionIds` and `previousResult`, the
+stored map that run amends, and the runner starts the graph with the copy of
+every other dimension already in its state — the same mechanism a targeted
+replay uses, which is why the nodes needed nothing new: a node skips a
+dimension when the state already says who wrote it. What is delivered is still
+a whole map, with every score and aggregate recomputed from this round's own
+data, so nothing about the callback, the contract or Core's verification of it
+changes. Only the writing is carried, never a number, and the round summary is
+always rewritten because it is written from every dimension at once. An
+ordinary run names no dimensions, is sent no previous map, and behaves exactly
+as it did. `PROJECT_CONTEXT.md` ADR-024 owns the rule.
+
 Callback delivery is retried, bounded at four attempts with exponential backoff
 from `1s`, capped at `8s`, with up to `0.5s` jitter and `Retry-After` honored as
 sent. Only answers that judge nothing are retried — `408`, `425`, `429`, every

@@ -753,6 +753,54 @@ for case against the Core test. Both halves of the system answer the question
 by one rule, which is what makes `unknown` mean the same thing on either
 endpoint.
 
+### ADR-024: A run may name the dimensions it rewrites, and still deliver a whole map
+
+2026-08-19, with the per-dimension re-run button. Until then "re-run the
+analysis" meant all eight dimensions, so a manager reading that one dimension's
+paragraphs were composed from the numbers had to pay for seven nobody had
+complained about — and on contract 6.0, where a silent provider produces
+derived copy rather than failing, that is the ordinary case rather than the
+rare one.
+
+`AiAnalysisRun.regenerate_dimension_ids` carries the request. Empty means the
+whole round, which is what every run written before the column existed did, so
+no history had to be backfilled and no caller had to change. `POST
+/api/rounds/{roundId}/trigger-ai` accepts the list, validates it against the
+contract's own eight rather than a list repeated in the route, and refuses a
+name it does not recognise instead of quietly analysing everything.
+
+**The callback is unchanged, and that is the decision.** The service delivers a
+whole map either way: the named dimensions are written again, the rest start
+from the copy the stored map already carries, and every score, status and
+aggregate is recomputed from this run's own data. So no contract version, no
+partial-payload shape and no merge step exists — `verifyAiResultAgainstRound`
+runs exactly as it did, and "eight stones or the round fails" still holds. The
+alternative, a callback carrying one stone merged into a stored result, was
+refused on that: it buys a smaller payload and costs a new contract shape, a
+merge rule, and a question about what the round-level summary then means.
+
+Only the writing is carried. A carried stone is last round's words over today's
+figures, never a stale stone copied whole — Core would refuse the stale one,
+because it recomputes the numbers before it stores anything. The round sentence
+is always rewritten: it is written from every dimension at once, so keeping it
+over a rewritten dimension would be the one carried thing that is no longer
+true.
+
+Provenance travels with the copy it describes. A dimension the previous run
+fell back on keeps reading as fallen back until a run actually rewrites it,
+which is ADR-007's disclosure rule holding across a partial run.
+
+The map the run amends travels with the lease, in the claim response. The
+worker has no manager-scoped way to ask for it, and widening
+`/api/rounds/{roundId}/ai-insights` so a service could read through it would
+trade a manager boundary for a convenience. A run that names nothing is sent
+nothing.
+
+A partial run is refused for a round with no stored analysis: there is nothing
+to amend, the manager reached it from a note about paragraphs that exist, and
+spending a whole round's provider calls to paper over that would answer a
+question nobody asked.
+
 ## Environments
 
 The project supports exactly two environments:
