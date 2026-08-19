@@ -5,10 +5,30 @@
 - Branch: `feat/the-thinking-budget-is-a-declared-number`
 - Base branch: `origin/main`
 - Base commit: `dab5ef6`
-- Current HEAD: see `git log -1` (commits listed under Completed)
+- Current HEAD: `54eb8f7`, thirteen commits ahead of `origin/feat/…` and twelve
+  ahead of `origin/main` (`4bd5b2f`)
+- Git state at close: nothing staged, nothing untracked (`git ls-files -o
+  --exclude-standard` empty), one unstaged file — `next-env.d.ts`, the owner's
+  pre-existing change, untouched by this task
+- Visibility: this worktree and any other worktree of this repository, because
+  every commit is on the branch. **Not** another checkout or machine — the
+  branch on `origin` is still at `dab5ef6` and carries none of it
 - Status: complete. Quality measured twice, cost measured on both settings at the bounds the deployment now runs; nothing in this file is reasoned rather than measured
 - Last updated: 2026-08-19
 - Last agent/tool: Claude Code (Opus 5)
+
+**One correction worth reading before anything else.** For most of this task the
+commits were not on the branch this file is named for. They were piled on
+`docs/the-partial-run-was-exercised-on-the-deployed-stack`, whose own commit
+`4bd5b2f` was already on `main`, while `feat/the-thinking-budget-is-a-declared-number`
+sat empty at `dab5ef6` — and that empty branch is the one that reached `origin`.
+Corrected on 2026-08-19 by fast-forwarding `feat/…` to `54eb8f7` and returning
+the `docs/…` label to `4bd5b2f`, where the owner left it. No history was
+rewritten and no commit was lost; `dab5ef6` is an ancestor of `54eb8f7`, so the
+push that publishes this is still a fast-forward. The lesson for the next agent
+is the cheap check that would have caught it: after creating a branch, confirm
+`git status -sb` names it before the first commit, because a task file named
+from the branch cannot detect that the branch is somewhere else.
 
 ## Objective
 
@@ -150,9 +170,12 @@ Nothing.
 
 ### Passed
 
-- `ai-analytics-service/.venv/bin/python -m pytest -q` → 548 passed, run with
-  `GEMINI_API_KEY` and `LLM_REASONING_EFFORT` stripped from the environment.
-- `npm run typecheck` → clean. `npm run lint` → clean.
+- `ai-analytics-service/.venv/bin/python -m pytest -q` → **550 passed**, at
+  `54eb8f7`, run with `GEMINI_API_KEY` and `LLM_REASONING_EFFORT` stripped from
+  the environment. (548 at the earlier commits, before the two tests that pin
+  the raised bounds.)
+- `npx tsc --noEmit` → clean at `54eb8f7`. `npm run lint` → clean.
+- `git diff --check origin/main..HEAD` → clean.
 - Local pipeline without a provider key: the run reaches the model boundary and
   reports `missing_api_key`, which proves the stderr plumbing without spending
   anything.
@@ -252,8 +275,9 @@ Nothing.
 
 ### Blocked or not run
 
-- Nothing is blocked. One measurement is deliberately not taken yet and is under
-  Remaining.
+- Nothing is blocked and nothing is owed. Every number in this file was
+  measured, including the last one — see the four-run cost table under
+  Completed.
 - Void, recorded so nobody re-reads it as evidence: the first attempt at the
   `low` rerun ran out of prepayment credit inside case 4 of 8, and its last
   three cases came back with all 24 stones on `deterministic_fallback` for a
@@ -262,8 +286,12 @@ Nothing.
   Its four completed cases are sound and were reused in the report that is.
 - `minimal` and `none` were not measured. `low` already returned the whole map,
   so the cheaper settings were not worth the risk of a round nobody would trust.
-- No deployed verification. `render.yaml` now declares `low`, and nothing has
-  been pushed or redeployed.
+- No deployed verification, and it is not yet possible: `render.yaml` declares
+  `low` on this branch only, and Render rebuilds the service from `main`. The
+  deployed row of the verification matrix — source, build, health, status,
+  logs — is owed by whoever lands this, not by this task. What to look for
+  afterwards is one usage line per answer with a `total_tokens` roughly a fifth
+  of what an unset round logged.
 
 ### Environment
 
@@ -320,5 +348,14 @@ Topping up the provider account is the owner's action.
 
 ## Next concrete step
 
-Push the branch. Nothing in it waits on another measurement; the adaptation
-defect under Known risks is the next piece of work and belongs to its own task.
+Push this branch — it is the same command as before, but now the branch actually
+carries the thirteen commits:
+
+```
+git push origin feat/the-thinking-budget-is-a-declared-number
+```
+
+It fast-forwards `origin` from `dab5ef6`; no force, nothing to rebase, because
+`origin/main` (`4bd5b2f`) is already an ancestor of `54eb8f7`. After that the
+work is portable to another machine, and landing it on `main` is what triggers
+the Render deploy whose verification is listed as owed above.
