@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 import sys
 from typing import Any, Dict
 
@@ -19,6 +20,14 @@ async def run_pipeline(round_data: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def main() -> None:
+    # The service logs what each answer cost, which model wrote it and why a
+    # dimension fell back — at INFO, onto the root logger nobody configures
+    # here. `main.py` configures it for the server; this entrypoint did not, so
+    # every one of those lines was dropped and a local run could report which
+    # stones came back but never what they cost. Onto stderr, deliberately:
+    # stdout is the payload its caller parses.
+    logging.basicConfig(level=logging.INFO, stream=sys.stderr)
+
     round_data = json.load(sys.stdin)
     result = asyncio.run(run_pipeline(round_data))
     json.dump(result, sys.stdout, ensure_ascii=False)

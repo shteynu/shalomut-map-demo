@@ -156,6 +156,12 @@ async function main() {
       cwd: aiServiceRoot,
       input: JSON.stringify(analytics),
       encoding: "utf8",
+      // stdout is the payload this script parses; stderr is where the service
+      // logs what every answer cost, and it used to be captured and then
+      // dropped on success. A run that reaches the provider is the only place
+      // those counts exist locally, so the successful run is exactly the one
+      // that must not swallow them.
+      stdio: ["pipe", "pipe", "inherit"],
     },
   );
 
