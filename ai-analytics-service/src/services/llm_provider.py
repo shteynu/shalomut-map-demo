@@ -140,6 +140,7 @@ def _record_refusal(
     expected_steps_per_entry: list[int],
     status: str,
     distribution_counts: Optional[set[str]] = None,
+    contract_version: str = AI_ANALYTICS_CONTRACT_VERSION,
 ) -> hebrew_validation.AdaptationRefusal:
     """Judge one adaptation batch and remember why it was turned away.
 
@@ -159,6 +160,7 @@ def _record_refusal(
         expected_steps_per_entry=expected_steps_per_entry,
         status=status,
         distribution_counts=distribution_counts,
+        contract_version=contract_version,
     )
     return sink[0]
 
@@ -812,6 +814,7 @@ class LLMProviderService:
                     expected_steps_per_entry=expected_steps_per_entry,
                     status=status,
                     distribution_counts=distribution_counts,
+                    contract_version=contract_version,
                 )
             ),
             # `is_acceptable` ran first on this candidate and left its verdict

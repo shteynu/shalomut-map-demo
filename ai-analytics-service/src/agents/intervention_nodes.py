@@ -133,12 +133,14 @@ async def agent_adaptation_node(
                 dim_id,
             ),
         }
-        if get_capabilities(
-            _effective_contract_version(round_data),
-        ).usesStructuredDimensionSummary:
-            adaptation_kwargs["contract_version"] = (
-                _effective_contract_version(round_data)
-            )
+        # The round's own version, for every round rather than only for the
+        # ones that take the 6.0 branch. Withheld, it left the adaptation
+        # call defaulting to `"2.0"`, and 2.0 forbids naming a colour group
+        # at all — so a 5.0 round was shown its score distribution, asked to
+        # quote a bucket count, and then refused for quoting it.
+        adaptation_kwargs["contract_version"] = _effective_contract_version(
+            round_data,
+        )
         adaptations.append(
             _in_provider_slot(
                 slots,

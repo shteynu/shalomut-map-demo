@@ -12,7 +12,10 @@ import pytest
 
 from src.agents.graph import analytics_graph
 from src.agents.nodes import agent_psychologist_node
-from src.contracts import AI_ANALYTICS_DIMENSION_IDS
+from src.contracts import (
+    AI_ANALYTICS_CONTRACT_VERSION,
+    AI_ANALYTICS_DIMENSION_IDS,
+)
 from src.services.llm_provider import (
     AdaptedIntervention,
     ProviderUnavailableError,
@@ -120,6 +123,10 @@ def _install(
         background_context=None,
         retry_tier="fast",
         repair_critique=None,
+        # Sent for every round since 2026-08-19, not only for the ones on the
+        # 6.0 branch. Spelled out rather than swallowed by `**kwargs`, so the
+        # next change to the call shape fails here instead of passing quietly.
+        contract_version=AI_ANALYTICS_CONTRACT_VERSION,
     ):
         dimension_id = interventions[0]["dimensionId"]
         calls.adaptations.append((dimension_id, retry_tier))
