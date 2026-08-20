@@ -180,8 +180,9 @@ user, and replacing one is revoke-then-invite rather than a transfer.
 
 ### Phase 0 — the boundary closes before there is anything to protect
 
-Unblocked, needs none of the open questions, and should land before any identity
-work.
+**Implemented 2026-08-20** on `feat/a-chosen-school-needs-a-membership`, which
+had not reached `main` when this line was written. Needed none of the open
+questions.
 
 - The middleware honours a chosen school only when the session holds an **active**
   membership for it.
@@ -195,6 +196,13 @@ work.
 membership, built from `MANAGER_ORGANIZATION_ID`, so every current request
 resolves as it does now. That is the point — the rule is in place while it costs
 nothing to verify.
+
+One caveat the implementation found: unchanged means unchanged *for the deployed
+runtime*, which holds one school. A runtime holding more schools than the session
+is a member of does behave differently, and visibly — the local database has two
+schools, and the setup screen's switcher, which listed both, now lists the one.
+That is the disclosure this phase was meant to close, arriving a phase earlier
+than the model that makes it matter.
 
 The administrator bypass is **not** part of this phase, because there are no
 administrators until phase 1. It arrives as one additional branch in the same

@@ -18,27 +18,30 @@ and in Git; what was durable in them is below.
 
 Verified 2026-08-20, in this worktree:
 
-- **`origin/main` is `136a752`**, asked of the remote — the multi-tenancy plan,
-  pushed by the owner on 2026-08-20. The documentation commit that carries this
-  paragraph sits on top of it and was still local when it was written. The only
+- **`origin/main` is `8a9d803`**, asked of the remote — the multi-tenancy plan
+  and the archive of its task file, pushed by the owner on 2026-08-20. The only
   modified file is `next-env.d.ts`, which is generated, was dirty before the
-  session and belongs to the owner; `git ls-files -o --exclude-standard` is empty.
-- **`docs/agent-tasks/active/` is empty.** No branch has unfinished agent work.
-- **The suite is green**: `npm test` 1219 passed, `npx tsc --noEmit` clean,
-  `npm run lint` clean, `lint:skills`, `lint:doc-numbers`, `openapi:check` and
-  `docs:endpoints:check` all pass. Read at `a07a77d`; nothing but documentation
-  has changed since.
+  session and belongs to the owner; `git ls-files -o --exclude-standard` is empty
+  apart from the task file named below.
+- **`feat/a-chosen-school-needs-a-membership` holds phase 0 of multi-tenancy**
+  and is unpushed. Its task file is
+  `docs/agent-tasks/active/feat--a-chosen-school-needs-a-membership.md`, and the
+  work in it is complete and verified rather than in progress: the tenant
+  boundary is now the session's memberships instead of the schools that exist.
+- **The suite is green**: `npm test` 1231 passed, `npx tsc --noEmit` clean,
+  `npm run lint` clean, `npm run build` clean, `lint:doc-numbers` passes. Read on
+  that branch at `c8db2d6`.
 
-**Next concrete step:** none for an agent. Two things wait on the owner and have
-their own entries below — **rotate `GEMINI_API_KEY`**, exposed in a transcript on
-2026-08-20 and billed, before any paid round; and, off a round run for some other
-reason, read the usage lines for what a `6.0` round costs at
-`LLM_REASONING_EFFORT=low`. The next product work is multi-tenancy, whose model
-the owner settled on 2026-08-20 and whose phases are in
-[`multi-tenancy-plan-2026-08-20.md`](multi-tenancy-plan-2026-08-20.md); phase 0
-is unblocked and needs none of the three questions still open there.
+**Next concrete step:** push `feat/a-chosen-school-needs-a-membership` — an owner
+action here — and then phase 1 of
+[`multi-tenancy-plan-2026-08-20.md`](multi-tenancy-plan-2026-08-20.md), which is
+blocked on one owner answer: own passwords or an identity provider. Two other
+things wait on the owner and have their own entries below — **rotate
+`GEMINI_API_KEY`**, exposed in a transcript on 2026-08-20 and billed, before any
+paid round; and, off a round run for some other reason, read the usage lines for
+what a `6.0` round costs at `LLM_REASONING_EFFORT=low`.
 `docs/product-behaviour-backlog.md` §12, the research instrument, is the
-alternative and is not blocked by it.
+alternative to phase 1 and is not blocked by that answer.
 
 ## Deployed state
 

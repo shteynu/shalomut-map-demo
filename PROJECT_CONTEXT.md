@@ -269,8 +269,16 @@ ownership and hide foreign resources as `404`.
 
 Since ADR-020 that scope is the school the manager chose, and
 `MANAGER_ORGANIZATION_ID` is the one they land on when they have chosen none.
-The header is still server-owned: a client cannot set it, and a chosen school is
-honoured only after it is matched against the schools that exist.
+The header is still server-owned: a client cannot set it, and since phase 0 of
+the multi-tenancy plan (2026-08-20) a chosen school is honoured only when the
+session holds an **active membership** for it — not merely when the school
+exists. The middleware decides that, because it is the only place holding the
+session, and it sends the session's own schools along in a second server-owned
+header so the scope service and the school switcher reason about those schools
+rather than about every school in the system.
+
+Behaviour is unchanged while each session carries exactly one membership, which
+is the point: the rule is in place before a second one exists.
 
 Deployed login fails closed when `SESSION_SECRET`,
 `MANAGER_ADMIN_PASSWORD` or `MANAGER_ORGANIZATION_ID` is missing. This is a
