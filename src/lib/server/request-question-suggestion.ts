@@ -58,9 +58,11 @@ export async function requestQuestionSuggestion(input: {
   styleTexts?: string[];
 }): Promise<QuestionSuggestionResult> {
   const endpoint = resolveAiServiceEndpoint(SUGGESTION_PATH);
-  // Shorter than the analytics dispatch timeout on purpose: a manager is
-  // watching a button, and one item is one provider request. Long enough to
-  // survive a paced queue turn and a retry.
+  // A manager is watching a button, and one item is one provider request: long
+  // enough to survive a paced queue turn and a retry, short enough that a dead
+  // service does not hold the screen. It used to be described as shorter than
+  // the analytics dispatch timeout; that timeout is gone, because closing a
+  // round enqueues a job instead of dispatching a request.
   const timeoutMs = Number(process.env.AI_SUGGESTION_TIMEOUT_MS) || 45_000;
 
   try {

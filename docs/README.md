@@ -27,7 +27,9 @@ These files must stay aligned with `main`:
 | [`shalomut-tracker-handoff.md`](shalomut-tracker-handoff.md) | Current deployed/operational state, external blockers and approval gates |
 | [`data-flow-and-subprocessors.md`](data-flow-and-subprocessors.md) | Who receives respondent data, what crosses each boundary and where it is hosted; the factual basis every future legal document rests on |
 | [`../ai-analytics-service/README.md`](../ai-analytics-service/README.md) | Python service runtime, configuration and verification |
-| [`../AGENTS.md`](../AGENTS.md) and [`.agents/skills/`](../.agents/skills/) | Canonical repository instructions for coding agents |
+| [`../design.md`](../design.md) | Design-system tokens, typography and component rules the UI is built from |
+| [`../NOTICE`](../NOTICE) | Copyright and licensing of this repository |
+| [`../AGENTS.md`](../AGENTS.md) and [`.agents/skills/`](../.agents/skills/) | Canonical repository instructions for coding agents. `CLAUDE.md` and `GEMINI.md` are client adapters that point here and hold no rules of their own; `npm run lint:skills` fails if either stops routing here |
 
 ## Implemented specifications
 
@@ -129,7 +131,10 @@ or deployment snapshots. The one plan that *is* a current task queue is listed
 under "Live plans" above:
 
 - `*-plan*.md`, `completion-plan-*`, `manager-feedback-plan-*`,
-  `provider-quota-plan-*` and `e2-step3-contract-version-rollout.md`;
+  `provider-quota-plan-*`, `e2-step3-contract-version-rollout.md` and
+  [`ai-insights-distribution-ui-proposal-2026-07-27.md`](ai-insights-distribution-ui-proposal-2026-07-27.md),
+  which carries no `plan` in its name and so is named here rather than caught
+  by the pattern above;
 - [`questionnaire-modularity-audit-2026-08-16.md`](questionnaire-modularity-audit-2026-08-16.md)
   — dated read-only audit of whether a different questionnaire, several default
   templates, a Likert scale or a different dimension set cost data or code.
