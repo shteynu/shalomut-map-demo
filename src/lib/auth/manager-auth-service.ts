@@ -1,10 +1,13 @@
+import { isIdentityProviderConfigured } from "./identity-provider";
 import type { Manager, OrganizationMembership } from "./types";
 
 export type AuthFailureReason =
   | "INVALID_CREDENTIALS"
   | "USER_NOT_FOUND"
   | "ACCOUNT_SUSPENDED"
-  | "UNCONFIGURED";
+  | "UNCONFIGURED"
+  /** This runtime signs in through the identity provider, so there is no password to check. */
+  | "PROVIDER_REQUIRED";
 
 export type AuthenticateResult =
   | {
@@ -214,24 +217,42 @@ export class ManagerAuthenticationService {
   }
 
   /**
-   * Authenticates by verified password only.
+   * The interim door: an e-mail and a password, checked against accounts this
+   * process assembles from environment variables.
    *
-   * This used to accept an optional `IManagerRepository` and, when one was
-   * passed, return a session for any manager that repository could find by
-   * email — no password checked, no password even stored, because `Manager`
-   * carries no credential. Nothing production wired it up, so the hole was
-   * dormant rather than open, and dormant is exactly how it would have gone
-   * unnoticed the day the database-backed manager store was connected.
+   * It is on its way out and the successor already exists. Identity comes from
+   * an external provider (owner decision, 2026-08-20) and manager rows say who
+   * may sign in; `ManagerDirectoryService` is that half, and
+   * `/api/auth/oidc/callback` is the door. This one answers only while no
+   * provider is configured — a local runtime, or a deployment whose OAuth
+   * client has not been created yet — and refuses outright once one is.
    *
-   * The parameter is gone rather than fixed. Verifying a credential needs a
-   * credential to verify, and giving `Manager` one belongs to the persistent
-   * identity work that also replaces this SHA-256 hash with Argon2 or a
-   * managed identity provider. Until then, this method has one path.
+   * That is also why it was never made repository-backed. Reading managers from
+   * the database here would be work on a path being deleted, and it would break
+   * the local accounts this method exists to serve, which have no rows.
+   *
+   * `Manager` carries no credential and never will, which is why the optional
+   * `IManagerRepository` this used to take was removed rather than fixed: with
+   * one passed, it returned a session for any manager found by e-mail, with no
+   * password checked, because there was none to check.
    */
   public static async authenticateCredentials(
     email: string,
     password: string,
   ): Promise<AuthenticateResult> {
+    // The one rule that keeps this path from outliving its replacement: where
+    // an identity provider is configured, it is the only way in. The password
+    // accounts below are the interim door of a runtime that has no provider
+    // yet, and this is the line that closes it the day one appears — rather
+    // than a second, quieter way in that nobody remembers to remove.
+    if (isIdentityProviderConfigured()) {
+      return {
+        ok: false,
+        reason: "PROVIDER_REQUIRED",
+        message: "יש להתחבר עם החשבון הארגוני",
+      };
+    }
+
     if (this.isUnconfigured()) {
       return {
         ok: false,

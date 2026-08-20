@@ -31,7 +31,12 @@ export interface Manager {
 export interface ManagerSession {
   managerId: string;
   email: string;
-  activeOrganizationId: string;
+  /**
+   * The school this session lands on, or `null` for a platform administrator,
+   * who belongs to none and chooses one per visit. A school user's session
+   * always names one: it is their only school.
+   */
+  activeOrganizationId: string | null;
   role: ManagerRole;
   memberships: OrganizationMembership[];
   /**

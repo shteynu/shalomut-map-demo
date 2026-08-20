@@ -8,6 +8,7 @@ import {
   isRespondentRoute,
 } from "@/lib/server/basic-auth";
 import {
+  EVERY_SCHOOL,
   MANAGER_SCHOOL_COOKIE,
   createScopedManagerHeaders,
 } from "@/lib/server/manager-scope";
@@ -115,18 +116,30 @@ export async function middleware(request: NextRequest) {
     // This is the whole tenant boundary. Every manager route and every manager
     // screen reads the header set here, and nothing below re-derives which
     // school was asked for, so a school refused here is refused everywhere.
+    // The second branch, and the reason the check went here rather than into
+    // the scope service: a platform administrator may open any school that
+    // exists, and that is one condition in the same expression instead of an
+    // exception threaded through everything below.
+    const isAdministrator = managerSession.isPlatformAdministrator;
     const schools = memberSchools(managerSession);
+    const mayOpen = (school: string) =>
+      isAdministrator || schools.includes(school);
+
     const chosenSchool = readChosenSchool(request);
     const honouredSchool =
-      chosenSchool && schools.includes(chosenSchool.id) ? chosenSchool : null;
-    const defaultSchool = schools.includes(managerSession.activeOrganizationId)
-      ? managerSession.activeOrganizationId
-      : schools[0];
+      chosenSchool && mayOpen(chosenSchool.id) ? chosenSchool : null;
+
+    // An administrator's session names no school until they choose one, and
+    // then the choice is the whole scope. `resolveOrganizationId` still proves
+    // the school exists, so "any school" never becomes "any string".
+    const sessionSchool = managerSession.activeOrganizationId;
+    const defaultSchool =
+      sessionSchool && mayOpen(sessionSchool) ? sessionSchool : schools[0];
 
     const headers = createScopedManagerHeaders(
       request.headers,
       honouredSchool?.id ?? defaultSchool,
-      schools,
+      isAdministrator ? EVERY_SCHOOL : schools,
     );
     const response = NextResponse.next({ request: { headers } });
 

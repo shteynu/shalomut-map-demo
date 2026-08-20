@@ -42,7 +42,15 @@ export async function POST(request: NextRequest) {
     );
 
     if (!authResult.ok) {
-      const status = authResult.reason === "UNCONFIGURED" ? 503 : 401;
+      // 403 rather than 401: the credentials were not wrong, they were the
+      // wrong kind. A 401 would invite the browser — and the manager — to try
+      // the password again.
+      const status =
+        authResult.reason === "UNCONFIGURED"
+          ? 503
+          : authResult.reason === "PROVIDER_REQUIRED"
+            ? 403
+            : 401;
       return NextResponse.json(
         {
           ok: false,

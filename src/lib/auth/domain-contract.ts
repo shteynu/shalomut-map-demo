@@ -25,7 +25,7 @@ export interface IManagerRepository {
 export interface ISessionProvider {
   createSession(
     manager: Manager,
-    activeOrganizationId: string,
+    activeOrganizationId: string | null,
     memberships: OrganizationMembership[],
     ttlSeconds?: number,
   ): Promise<{ token: string; session: ManagerSession }>;
@@ -102,15 +102,18 @@ export class InMemorySessionProvider implements ISessionProvider {
 
   async createSession(
     manager: Manager,
-    activeOrganizationId: string,
+    activeOrganizationId: string | null,
     memberships: OrganizationMembership[],
     ttlSeconds = 86400,
   ): Promise<{ token: string; session: ManagerSession }> {
-    const membership = memberships.find(
-      (m) => m.organizationId === activeOrganizationId,
-    );
-    if (!membership) {
+    const membership = activeOrganizationId
+      ? memberships.find((m) => m.organizationId === activeOrganizationId)
+      : null;
+    if (activeOrganizationId && !membership) {
       throw new Error(`Manager is not a member of organization '${activeOrganizationId}'`);
+    }
+    if (!activeOrganizationId && !manager.isPlatformAdministrator) {
+      throw new Error('A school user session must name the school it is read inside');
     }
 
     const token = `token-${manager.id}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -121,7 +124,7 @@ export class InMemorySessionProvider implements ISessionProvider {
       managerId: manager.id,
       email: manager.email,
       activeOrganizationId,
-      role: membership.role,
+      role: membership?.role ?? 'admin',
       memberships,
       isPlatformAdministrator: manager.isPlatformAdministrator,
       issuedAt: now,
@@ -197,14 +200,21 @@ export class ManagerAuthorizationService {
       (m) => m.organizationId === session.activeOrganizationId && m.status === 'active',
     );
 
-    if (!activeMembership) {
+    // A platform administrator is outside the membership system rather than a
+    // member of everything, so asking which membership authorises them is the
+    // wrong question. The flag is the answer.
+    if (!activeMembership && !session.isPlatformAdministrator) {
       return {
         ok: false,
         error: { error: 'Manager has no active membership in the selected organization.', statusCode: 403 },
       };
     }
 
-    if (requiredRole === 'admin' && session.role !== 'admin') {
+    if (
+      requiredRole === 'admin' &&
+      session.role !== 'admin' &&
+      !session.isPlatformAdministrator
+    ) {
       return {
         ok: false,
         error: { error: 'Insufficient permissions: admin role required.', statusCode: 403 },
@@ -224,7 +234,10 @@ export class ManagerAuthorizationService {
     session: ManagerSession,
     resourceOrganizationId: string,
   ): AuthorizeResult {
-    if (session.activeOrganizationId !== resourceOrganizationId) {
+    if (
+      session.activeOrganizationId !== resourceOrganizationId &&
+      !session.isPlatformAdministrator
+    ) {
       // Hiding foreign resources with 404 to avoid tenant entity enumeration
       return {
         ok: false,
@@ -252,7 +265,9 @@ export class ManagerAuthorizationService {
       timestamp: new Date(),
       action,
       managerId: session.managerId,
-      organizationId: session.activeOrganizationId,
+      // An event that names no school is an event nobody can file. A session
+      // without one has not opened a school yet, so it has not acted on one.
+      organizationId: session.activeOrganizationId ?? 'unknown',
       roundId,
       details,
     };

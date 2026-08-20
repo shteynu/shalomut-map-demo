@@ -24,7 +24,11 @@ export class ManagerAuditService {
       timestamp: new Date(),
       action,
       managerId: session.managerId,
-      organizationId: session.activeOrganizationId,
+      // A platform administrator's session names no school, so an event filed
+      // from the session alone cannot say which one. The production path,
+      // `recordRoundAuditEvent`, takes the school from the authorized round and
+      // never from here — which is exactly why it takes it as an argument.
+      organizationId: session.activeOrganizationId ?? 'unknown',
       roundId,
       details,
     };

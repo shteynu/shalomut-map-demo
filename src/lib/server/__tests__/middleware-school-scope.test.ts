@@ -222,3 +222,72 @@ test("a request cannot carry its own scope past the middleware", async () => {
     `${SESSION_SCHOOL},${SECOND_SCHOOL}`,
   );
 });
+
+/**
+ * The second branch of the same check. An administrator belongs to no school
+ * and may open any, which is one condition in the middleware rather than an
+ * exception spread through the scope service and the switcher.
+ */
+async function administratorCookie(
+  memberships: OrganizationMembership[] = [],
+  activeOrganizationId: string | null = null,
+) {
+  const provider = new JwtSessionProvider();
+  const { token } = await provider.createSession(
+    { ...manager, id: "mgr-platform", isPlatformAdministrator: true },
+    activeOrganizationId,
+    memberships,
+  );
+
+  return `shalomut_session=${token}`;
+}
+
+test("an administrator may open a school no membership names", async () => {
+  const request = new NextRequest(
+    `http://localhost:3000/setup?school=${FOREIGN_SCHOOL}`,
+    { headers: { cookie: await administratorCookie() } },
+  );
+
+  const response = await middleware(request);
+
+  assert.strictEqual(injectedSchool(response), FOREIGN_SCHOOL);
+  assert.strictEqual(
+    response.cookies.get(MANAGER_SCHOOL_COOKIE)?.value,
+    FOREIGN_SCHOOL,
+  );
+});
+
+test("an administrator's request is restricted to no school in particular", async () => {
+  const request = new NextRequest("http://localhost:3000/setup", {
+    headers: { cookie: await administratorCookie() },
+  });
+
+  const response = await middleware(request);
+
+  // Every school, rather than a list of them: the number of schools must not
+  // change what an administrator's session carries.
+  assert.strictEqual(injectedMemberSchools(response), "*");
+  assert.strictEqual(injectedSchool(response), null);
+});
+
+test("an administrator who has not chosen a school is scoped to none", async () => {
+  const request = new NextRequest("http://localhost:3000/dashboard", {
+    headers: { cookie: await administratorCookie() },
+  });
+
+  const response = await middleware(request);
+
+  assert.strictEqual(injectedSchool(response), null);
+});
+
+test("a school user is still refused the school an administrator may open", async () => {
+  const request = new NextRequest(
+    `http://localhost:3000/setup?school=${FOREIGN_SCHOOL}`,
+    { headers: { cookie: await sessionCookie() } },
+  );
+
+  const response = await middleware(request);
+
+  assert.strictEqual(injectedSchool(response), SESSION_SCHOOL);
+  assert.notStrictEqual(injectedMemberSchools(response), "*");
+});

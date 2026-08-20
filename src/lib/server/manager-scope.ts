@@ -26,6 +26,18 @@ export const MANAGER_MEMBER_SCHOOLS_HEADER =
   "x-shalomut-manager-member-organization-ids";
 
 /**
+ * What the header says for a platform administrator: every school, rather than
+ * a list of them.
+ *
+ * An administrator is outside the membership system, so enumerating the schools
+ * into their token would make the number of schools change what a session
+ * carries — the one thing the model was chosen to avoid. Downstream this reads
+ * as "no restriction", which is what the scope service did before memberships
+ * were consulted at all.
+ */
+export const EVERY_SCHOOL = "*";
+
+/**
  * The school the manager last chose.
  *
  * The choice is made on one screen and has to hold on every other one, and the
@@ -45,17 +57,18 @@ export function getManagerOrganizationId(request: Pick<Request, "headers">) {
 }
 
 /**
- * The session's schools, or `undefined` when the request carries no session.
+ * The session's schools, or `undefined` when nothing restricts this request to
+ * particular ones — an administrator's request, or one the middleware never
+ * scoped because it carries no session.
  *
- * The empty array and `undefined` are different answers and callers treat them
- * differently: the first is a session entitled to nothing, the second is a
- * request the middleware never scoped.
+ * The empty array is a third answer and not the same as `undefined`: it is a
+ * session entitled to nothing, which reads nothing.
  */
 export function getManagerMemberSchools(
   request: { headers: Pick<Headers, "get"> },
 ): readonly string[] | undefined {
   const raw = request.headers.get(MANAGER_MEMBER_SCHOOLS_HEADER);
-  if (raw === null) return undefined;
+  if (raw === null || raw.trim() === EVERY_SCHOOL) return undefined;
 
   return raw
     .split(",")
@@ -66,7 +79,7 @@ export function getManagerMemberSchools(
 export function createScopedManagerHeaders(
   requestHeaders: Headers,
   organizationId?: string,
-  memberOrganizationIds?: readonly string[],
+  memberOrganizationIds?: readonly string[] | typeof EVERY_SCHOOL,
 ) {
   const headers = new Headers(requestHeaders);
   headers.delete(MANAGER_ORGANIZATION_HEADER);
@@ -78,7 +91,12 @@ export function createScopedManagerHeaders(
   }
 
   if (memberOrganizationIds) {
-    headers.set(MANAGER_MEMBER_SCHOOLS_HEADER, memberOrganizationIds.join(","));
+    headers.set(
+      MANAGER_MEMBER_SCHOOLS_HEADER,
+      typeof memberOrganizationIds === "string"
+        ? memberOrganizationIds
+        : memberOrganizationIds.join(","),
+    );
   }
 
   return headers;

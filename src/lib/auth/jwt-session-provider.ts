@@ -90,16 +90,25 @@ export class JwtSessionProvider implements ISessionProvider {
 
   async createSession(
     manager: Manager,
-    activeOrganizationId: string,
+    activeOrganizationId: string | null,
     memberships: OrganizationMembership[],
     ttlSeconds = 86400,
   ): Promise<{ token: string; session: ManagerSession }> {
-    const membership = memberships.find(
-      (m) => m.organizationId === activeOrganizationId,
-    );
-    if (!membership) {
+    const membership = activeOrganizationId
+      ? memberships.find((m) => m.organizationId === activeOrganizationId)
+      : null;
+    if (activeOrganizationId && !membership) {
       throw new Error(
         `Manager is not a member of organization '${activeOrganizationId}'`,
+      );
+    }
+    // A platform administrator belongs to no school and names none until they
+    // open one. Everybody else has exactly one and the token must say so:
+    // a session with no school and no flag would read every screen as
+    // "choose a school" with nothing to choose.
+    if (!activeOrganizationId && !manager.isPlatformAdministrator) {
+      throw new Error(
+        "A school user's session must name the school it is read inside",
       );
     }
 
@@ -110,7 +119,7 @@ export class JwtSessionProvider implements ISessionProvider {
       managerId: manager.id,
       email: manager.email,
       activeOrganizationId,
-      role: membership.role,
+      role: membership?.role ?? "admin",
       memberships,
       isPlatformAdministrator: manager.isPlatformAdministrator,
       issuedAt: now,
@@ -122,7 +131,7 @@ export class JwtSessionProvider implements ISessionProvider {
       sub: manager.id,
       email: manager.email,
       org: activeOrganizationId,
-      role: membership.role,
+      role: membership?.role ?? "admin",
       // Short, like every other claim here, and absent rather than false for a
       // school user: a token minted before administrators existed decodes as
       // "not an administrator", which is the safe reading of silence.
@@ -213,7 +222,7 @@ export class JwtSessionProvider implements ISessionProvider {
       return {
         managerId: payload.sub,
         email: payload.email,
-        activeOrganizationId: payload.org,
+        activeOrganizationId: payload.org ?? null,
         role: payload.role,
         memberships,
         isPlatformAdministrator: payload.adm === true,
