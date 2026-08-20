@@ -206,7 +206,11 @@ Outside development, missing shared secrets, local Data Layer URLs, and
 development may run without shared secrets.
 
 `AI_JOB_POLLING_ENABLED=true` starts the durable worker in the FastAPI
-lifespan. `AI_JOB_POLL_INTERVAL_SECONDS` controls empty-queue polling and
+lifespan. `AI_JOB_POLL_INTERVAL_SECONDS` is how soon a worker with work asks
+again, and `AI_JOB_POLL_MAX_INTERVAL_SECONDS` is how far that wait drifts out
+while the queue answers `204`: it doubles after every empty poll and resets on
+the first claim, so an idle day costs Core thousands of invocations rather than
+tens of thousands. Each slot of `AI_JOB_POOL_SIZE` backs off on its own.
 `AI_JOB_HEARTBEAT_INTERVAL_SECONDS` must remain comfortably below Core's
 90-second lease. The switch is explicit so Core can deploy the durable routes
 and migration before the worker begins claiming them.

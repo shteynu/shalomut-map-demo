@@ -34,7 +34,7 @@ sequenceDiagram
     Note over DB: requestKey derived from the round's history;<br/>a partial unique index keeps one<br/>active run per round
     DB-->>C: run.id
 
-    loop poll every 2 s
+    loop poll every 2 s, widening to 30 s while empty
         W->>C: POST /api/ai-analysis-runs/claim
         alt queue empty
             C-->>W: 204 No Content
@@ -70,6 +70,23 @@ sequenceDiagram
 The order at step 21 is deliberate. Identity is resolved before the payload is
 validated — otherwise a callback aimed at the wrong round could mark a healthy
 leased run as failed.
+
+The poll loop at the top is not a metronome. Two seconds is what a worker with
+work uses; every `204` doubles the next wait up to the idle ceiling
+(`AI_JOB_POLL_MAX_INTERVAL_SECONDS`), and the first claim snaps it back. The reason is arithmetic on Core's
+side rather than on the database's: one claim is two indexed queries against a
+table that gains a row per run, but it is also a serverless invocation, and a
+flat two seconds spends about 43 000 of them a day — per slot — to be told
+there is nothing to do. Backing off to 30 s spends about 2 900. What it costs
+is up to half a minute before the first round of a quiet stretch begins, which
+is nothing against an analysis of roughly three minutes that nothing notifies
+the manager about anyway.
+
+Two consequences worth knowing. A worker that cannot reach Core backs off on
+the same curve, so an outage is not also a hammering. And an idle service is
+now quiet in the logs for half-minute stretches — the startup line reports both
+intervals so that silence can be read as the backoff rather than as a dead
+loop.
 
 ## The three branches the queue exists for
 
@@ -201,6 +218,7 @@ the same one it was with a single lane.
 | What | Value | Name | Where |
 | --- | --- | --- | --- |
 | Poll interval | 2 s | `AI_JOB_POLL_INTERVAL_SECONDS` | `ai-analytics-service/src/config.py` |
+| Idle poll ceiling | 30 s | `AI_JOB_POLL_MAX_INTERVAL_SECONDS` | `ai-analytics-service/src/config.py` |
 | Heartbeat interval | 30 s | `AI_JOB_HEARTBEAT_INTERVAL_SECONDS` | `ai-analytics-service/src/config.py` |
 | Concurrent rounds per process | 1, up to 10 | `AI_JOB_POOL_SIZE` | `ai-analytics-service/src/config.py` |
 | Lease length | 90 s | `AI_ANALYSIS_JOB_LEASE_MS` | `src/lib/server/ai-analysis-worker.ts` |
