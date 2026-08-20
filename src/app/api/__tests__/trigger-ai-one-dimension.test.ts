@@ -26,8 +26,6 @@ import {
   resetCoreRepositories,
   resolveCoreRepositories,
 } from '@/lib/composition-root';
-import { InMemoryAuditLogRepository } from '@/lib/auth/domain-contract';
-import { setAuditLogRepositoryForTests } from '@/lib/server/manager-audit';
 import { MINIMUM_PRIVACY_THRESHOLD } from '@/lib/survey-definition';
 import type { SurveyResponseRecord } from '@/lib/types/backend';
 import {
@@ -102,7 +100,6 @@ function post(body?: unknown) {
 before(() => {
   previousDatabaseUrl = process.env.DATABASE_URL;
   delete process.env.DATABASE_URL;
-  setAuditLogRepositoryForTests(new InMemoryAuditLogRepository());
 });
 
 after(() => {

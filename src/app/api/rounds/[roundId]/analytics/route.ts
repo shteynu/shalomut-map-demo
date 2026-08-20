@@ -10,12 +10,13 @@ export async function GET(
 ) {
   try {
     const { roundId } = await params;
-    const { orgRepo, roundRepo, surveyRepo } = resolveCoreRepositories();
+    const { auditLogRepo, orgRepo, roundRepo, surveyRepo } = resolveCoreRepositories();
     const authorization = await authorizeManagerRound(
       request,
       roundId,
       orgRepo,
       roundRepo,
+      auditLogRepo,
     );
     if (!authorization.ok) return authorization.response;
 

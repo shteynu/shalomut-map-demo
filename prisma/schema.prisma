@@ -74,6 +74,35 @@ model OrganizationMembership {
   @@map("organization_memberships")
 }
 
+/**
+ * What a manager did, kept where a restart cannot reach it.
+ *
+ * It carries no foreign keys on purpose. An audit row must outlive the thing it
+ * describes — a deleted school and a removed manager are exactly the cases
+ * somebody would later want to reconstruct, and a cascade would remove the
+ * record of the removal along with it. The identifiers are therefore plain
+ * strings, and `managerId` may read `unknown` for an action no session was
+ * attached to.
+ */
+model AuditEvent {
+  id             String   @id
+  timestamp      DateTime @default(now())
+  /// One of `AuditActionType` (`src/lib/auth/manager-audit-service.ts`). Stored
+  /// as text rather than an enum: a new action must not need a migration, and
+  /// an old row must keep the name it was written with.
+  action         String
+  managerId      String   @map("manager_id")
+  organizationId String   @map("organization_id")
+  roundId        String?  @map("round_id")
+  details        Json?
+
+  // Reading one school's log, newest first, is the only read this table has.
+  @@index([organizationId, timestamp])
+  // What one person did, which is the question an administrator's visit raises.
+  @@index([managerId, timestamp])
+  @@map("audit_events")
+}
+
 model SurveyRound {
   id                  String           @id @default(uuid())
   organizationId      String           @map("organization_id")

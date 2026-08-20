@@ -1,7 +1,18 @@
 import type { IAuditLogRepository } from "./domain-contract";
 import type { AuditEvent, ManagerSession } from "./types";
 
+/**
+ * A platform administrator opened a school they are not a member of.
+ *
+ * The only read in a list that is otherwise all writes, and the reason the list
+ * needed one: an administrator reading a school is precisely the action nothing
+ * else records. It is exported as a constant because the recorder fails closed
+ * on it and a typo would be a silent hole rather than an error.
+ */
+export const ADMINISTRATOR_SCHOOL_VISIT = "ADMINISTRATOR_SCHOOL_VISIT";
+
 export type AuditActionType =
+  | typeof ADMINISTRATOR_SCHOOL_VISIT
   | "SETUP_SAVED"
   | "ROUND_CREATED"
   | "ROUND_STATUS_UPDATED"
@@ -36,12 +47,24 @@ export class ManagerAuditService {
     return auditRepo.recordEvent(event);
   }
 
+  /**
+   * One school's log, to whoever may read it.
+   *
+   * An administrator may read any school's, which is the same reach they have
+   * over everything else and is what makes their own visits reviewable at all.
+   * Whether a school's own user should see the visits made to it is deliberately
+   * still open — it is a question for the administrators rather than for this
+   * function, and today nothing renders either answer.
+   */
   public static async getOrganizationAuditLogs(
     auditRepo: IAuditLogRepository,
     session: ManagerSession,
     targetOrganizationId: string,
   ): Promise<AuditEvent[]> {
-    if (session.activeOrganizationId !== targetOrganizationId) {
+    const mayRead =
+      session.isPlatformAdministrator ||
+      session.activeOrganizationId === targetOrganizationId;
+    if (!mayRead) {
       // Hiding foreign organization audit logs
       return [];
     }

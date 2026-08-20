@@ -15,13 +15,14 @@ interface RouteParams {
 export async function GET(request: Request, { params }: RouteParams) {
   try {
     const { roundId } = await params;
-    const { orgRepo, roundGoalRepo, roundRepo } = resolveCoreRepositories();
+    const { auditLogRepo, orgRepo, roundGoalRepo, roundRepo } = resolveCoreRepositories();
 
     const authorization = await authorizeManagerRound(
       request,
       roundId,
       orgRepo,
       roundRepo,
+      auditLogRepo,
     );
     if (!authorization.ok) return authorization.response;
 
@@ -41,13 +42,14 @@ export async function POST(request: Request, { params }: RouteParams) {
     if (unavailable) return unavailable;
 
     const { roundId } = await params;
-    const { orgRepo, roundGoalRepo, roundRepo } = resolveCoreRepositories();
+    const { auditLogRepo, orgRepo, roundGoalRepo, roundRepo } = resolveCoreRepositories();
 
     const authorization = await authorizeManagerRound(
       request,
       roundId,
       orgRepo,
       roundRepo,
+      auditLogRepo,
     );
     if (!authorization.ok) return authorization.response;
 

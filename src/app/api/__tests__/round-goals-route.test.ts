@@ -17,8 +17,6 @@ import {
   overrideCoreRepositories,
   resetCoreRepositories,
 } from '@/lib/composition-root';
-import { InMemoryAuditLogRepository } from '@/lib/auth/domain-contract';
-import { setAuditLogRepositoryForTests } from '@/lib/server/manager-audit';
 import { DEMO_ORGANIZATION, DEMO_ROUND } from '@/lib/repositories/__fixtures__/demo-records';
 
 const ROUND_ID = DEMO_ROUND.id;
@@ -50,7 +48,6 @@ function params(goalId?: string) {
 before(() => {
   previousDatabaseUrl = process.env.DATABASE_URL;
   delete process.env.DATABASE_URL;
-  setAuditLogRepositoryForTests(new InMemoryAuditLogRepository());
 });
 
 after(() => {

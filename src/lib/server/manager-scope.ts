@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server";
+import type { IAuditLogRepository } from "@/lib/auth/domain-contract";
 import type {
   IOrganizationRepository,
   IRoundRepository,
 } from "@/lib/repositories";
+import {
+  UNRECORDABLE_VISIT_MESSAGE,
+  recordAdministratorSchoolVisit,
+} from "@/lib/server/manager-audit";
 import {
   ManagerScopeRequiredError,
   ManagerScopeService,
@@ -111,11 +116,22 @@ export function getManagerScopeErrorResponse(error: unknown) {
     : null;
 }
 
+/**
+ * The round this request is allowed to be about, and the record that an
+ * administrator was here.
+ *
+ * Both in one function on purpose: this is the chokepoint every round route
+ * passes through, so a route cannot reach a round without the visit being
+ * recorded, and a new route cannot forget to. The record is taken after the
+ * round resolves — a request that names a round in a school it may not read
+ * gets a 404 and is not a visit.
+ */
 export async function authorizeManagerRound(
   request: Pick<Request, "headers">,
   roundId: string,
   orgRepo: IOrganizationRepository,
   roundRepo: IRoundRepository,
+  auditRepo: IAuditLogRepository,
 ) {
   try {
     const round = await ManagerScopeService.findRound(
@@ -125,6 +141,24 @@ export async function authorizeManagerRound(
       getManagerOrganizationId(request),
       getManagerMemberSchools(request),
     );
+
+    if (round) {
+      const recorded = await recordAdministratorSchoolVisit(
+        auditRepo,
+        request,
+        round.organizationId,
+        round.id,
+      );
+      if (!recorded) {
+        return {
+          ok: false as const,
+          response: NextResponse.json(
+            { error: UNRECORDABLE_VISIT_MESSAGE },
+            { status: 503 },
+          ),
+        };
+      }
+    }
 
     return round
       ? { ok: true as const, round }

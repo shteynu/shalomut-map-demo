@@ -25,8 +25,6 @@ import {
   overrideCoreRepositories,
   resetCoreRepositories,
 } from '@/lib/composition-root';
-import { InMemoryAuditLogRepository } from '@/lib/auth/domain-contract';
-import { setAuditLogRepositoryForTests } from '@/lib/server/manager-audit';
 import { createCanonicalSurveyDefinition } from '@/lib/survey-definition';
 import type { RoundStatus } from '@/lib/types/backend';
 import {
@@ -55,7 +53,6 @@ function install(status: RoundStatus) {
 before(() => {
   previousDatabaseUrl = process.env.DATABASE_URL;
   delete process.env.DATABASE_URL;
-  setAuditLogRepositoryForTests(new InMemoryAuditLogRepository());
 });
 
 after(() => {

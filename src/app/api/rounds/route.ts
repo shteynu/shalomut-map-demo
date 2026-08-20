@@ -6,6 +6,7 @@ import {
   RoundService,
 } from '@/lib/services';
 import { getDurableWriteGuardResponse } from '@/lib/server/durable-write-guard';
+import { recordRoundAuditEvent } from '@/lib/server/manager-audit';
 import {
   authorizeManagerRound,
   getManagerMemberSchools,
@@ -16,7 +17,7 @@ import { CreateRoundInput } from '@/lib/types/backend';
 
 export async function GET(request?: Request) {
   try {
-    const { orgRepo, roundRepo, surveyRepo } = resolveCoreRepositories();
+    const { auditLogRepo, orgRepo, roundRepo, surveyRepo } = resolveCoreRepositories();
     const roundId = request
       ? new URL(request.url).searchParams.get('roundId')?.trim()
       : undefined;
@@ -26,6 +27,7 @@ export async function GET(request?: Request) {
         roundId,
         orgRepo,
         roundRepo,
+        auditLogRepo,
       );
       if (!authorization.ok) return authorization.response;
 
@@ -69,7 +71,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { orgRepo, roundRepo } = resolveCoreRepositories();
+    const { auditLogRepo, orgRepo, roundRepo } = resolveCoreRepositories();
     const organizationId = await ManagerScopeService.resolveOrganizationId(
       orgRepo,
       getManagerOrganizationId(request),
@@ -89,6 +91,14 @@ export async function POST(request: Request) {
     }
 
     const round = await RoundService.createAndSaveRound(body, roundRepo);
+    await recordRoundAuditEvent(
+      auditLogRepo,
+      request,
+      'ROUND_CREATED',
+      round.id,
+      organization.id,
+      { title: round.title },
+    );
     return NextResponse.json({ success: true, round }, { status: 201 });
   } catch (error) {
     const scopeResponse = getManagerScopeErrorResponse(error);

@@ -18,13 +18,14 @@ interface RouteParams {
 export async function GET(request: Request, { params }: RouteParams) {
   try {
     const { roundId } = await params;
-    const { orgRepo, roundRepo, surveyDefinitionVersionRepo } =
+    const { auditLogRepo, orgRepo, roundRepo, surveyDefinitionVersionRepo } =
       resolveCoreRepositories();
     const authorization = await authorizeManagerRound(
       request,
       roundId,
       orgRepo,
       roundRepo,
+      auditLogRepo,
     );
     if (!authorization.ok) return authorization.response;
 

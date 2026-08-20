@@ -74,6 +74,7 @@ export async function GET(request: Request, { params }: RouteParams) {
       roundId,
       repositories.orgRepo,
       repositories.roundRepo,
+      repositories.auditLogRepo,
     );
     if (!authorization.ok) return authorization.response;
 

@@ -179,3 +179,40 @@ test("MembershipService allows admin to add member and denies non-admins", async
   );
   assert.strictEqual(addedByManager, null); // Manager role cannot add members
 });
+
+test("a platform administrator may read any school's log, and a school user only their own", async () => {
+  const auditRepo = new InMemoryAuditLogRepository();
+  await ManagerAuditService.logEvent(
+    auditRepo,
+    sessionAdminSchoolA,
+    "SETUP_SAVED",
+    "round-101",
+  );
+
+  const administrator: ManagerSession = {
+    managerId: "mgr-operator",
+    email: "operator@shalomut.example",
+    // An administrator belongs to no school, which is why the old comparison
+    // against the active organization gave them nothing at all.
+    activeOrganizationId: null,
+    role: "admin",
+    memberships: [],
+    isPlatformAdministrator: true,
+    issuedAt: new Date(),
+    expiresAt: new Date(Date.now() + 86400000),
+  };
+
+  const readByAdministrator = await ManagerAuditService.getOrganizationAuditLogs(
+    auditRepo,
+    administrator,
+    "org-school-a",
+  );
+  assert.strictEqual(readByAdministrator.length, 1);
+
+  const readByOutsider = await ManagerAuditService.getOrganizationAuditLogs(
+    auditRepo,
+    sessionManagerSchoolB,
+    "org-school-a",
+  );
+  assert.strictEqual(readByOutsider.length, 0);
+});

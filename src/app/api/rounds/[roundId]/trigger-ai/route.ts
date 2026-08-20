@@ -4,6 +4,7 @@ import { resolveCoreRepositories } from '@/lib/composition-root';
 import { getArchivedRoundGuardResponse } from '@/lib/server/archived-round-guard';
 import { getDurableWriteGuardResponse } from '@/lib/server/durable-write-guard';
 import { recordAiJobQueued } from '@/lib/server/ai-operational-metrics';
+import { recordRoundAuditEvent } from '@/lib/server/manager-audit';
 import { authorizeManagerRound } from '@/lib/server/manager-scope';
 import { getPrivacyThresholdGuardResponse } from '@/lib/server/privacy-threshold-guard';
 
@@ -77,13 +78,14 @@ export async function POST(request: Request, { params }: RouteParams) {
       return NextResponse.json({ error: requested.error }, { status: 400 });
     }
 
-    const { aiAnalysisRunRepo, orgRepo, roundRepo, surveyRepo } =
+    const { aiAnalysisRunRepo, auditLogRepo, orgRepo, roundRepo, surveyRepo } =
       resolveCoreRepositories();
     const authorization = await authorizeManagerRound(
       request,
       roundId,
       orgRepo,
       roundRepo,
+      auditLogRepo,
     );
     if (!authorization.ok) return authorization.response;
 
@@ -171,6 +173,17 @@ export async function POST(request: Request, { params }: RouteParams) {
 
     if (enqueued.outcome === 'enqueued') {
       recordAiJobQueued(enqueued.run);
+      await recordRoundAuditEvent(
+        auditLogRepo,
+        request,
+        'AI_TRIGGERED',
+        roundId,
+        authorization.round.organizationId,
+        {
+          runId: enqueued.run.id,
+          regenerateDimensionIds: enqueued.run.regenerateDimensionIds,
+        },
+      );
     }
 
     return NextResponse.json(

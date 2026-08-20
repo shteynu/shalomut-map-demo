@@ -31,12 +31,12 @@ const ENTRYPOINT_PATTERNS = [
 ];
 
 /**
- * The one acknowledged exception. `manager-audit.ts` keeps a process-local
- * `InMemoryAuditLogRepository` because the audit log has no durable table yet;
- * the structured log line next to it is what makes an action traceable in
- * deployment. When that table lands, this entry goes away with it.
+ * No exceptions. There was one — `manager-audit.ts` kept a process-local
+ * `InMemoryAuditLogRepository` while the audit log had no durable table — and
+ * it went away with the table on 2026-08-20, exactly as the entry said it
+ * would.
  */
-const WIRING_EXCEPTIONS = ['src/lib/server/manager-audit.ts'];
+const WIRING_EXCEPTIONS = [];
 
 const RESOLVE_CALL = /\bresolveCoreRepositories\s*\(/;
 const CONSTRUCTS_REPOSITORY = /\bnew\s+(?:Prisma|InMemory)\w*Repository\s*\(/;

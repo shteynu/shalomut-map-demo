@@ -7,6 +7,7 @@ import {
   type ManagerSetupInput,
 } from "@/lib/services";
 import { getDurableWriteGuardResponse } from "@/lib/server/durable-write-guard";
+import { recordRoundAuditEvent } from "@/lib/server/manager-audit";
 import { MINIMUM_PRIVACY_THRESHOLD } from "@/lib/survey-definition";
 import {
   authorizeManagerRound,
@@ -178,7 +179,7 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: refusal.message }, { status: 422 });
     }
 
-    const { orgRepo, roundRepo } = resolveCoreRepositories();
+    const { auditLogRepo, orgRepo, roundRepo } = resolveCoreRepositories();
 
     if (createsOrganization(body)) {
       // A school being opened is outside every existing school, so there is no
@@ -223,6 +224,7 @@ export async function PUT(request: Request) {
         input.round.id,
         orgRepo,
         roundRepo,
+        auditLogRepo,
       );
       if (!authorization.ok) return authorization.response;
     }
@@ -237,6 +239,15 @@ export async function PUT(request: Request) {
       },
       orgRepo,
       roundRepo,
+    );
+
+    await recordRoundAuditEvent(
+      auditLogRepo,
+      request,
+      "SETUP_SAVED",
+      result.round.id,
+      result.organization.id,
+      { createdOrganization: createsOrganization(body) },
     );
 
     // The screen shows when the work reached the database, so the time is the

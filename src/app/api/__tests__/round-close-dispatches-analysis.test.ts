@@ -23,8 +23,6 @@ import {
   overrideCoreRepositories,
   resetCoreRepositories,
 } from '@/lib/composition-root';
-import { InMemoryAuditLogRepository } from '@/lib/auth/domain-contract';
-import { setAuditLogRepositoryForTests } from '@/lib/server/manager-audit';
 import { MINIMUM_PRIVACY_THRESHOLD } from '@/lib/survey-definition';
 import type { RoundStatus, SurveyResponseRecord } from '@/lib/types/backend';
 import {
@@ -65,7 +63,6 @@ function install({
 before(() => {
   previousDatabaseUrl = process.env.DATABASE_URL;
   delete process.env.DATABASE_URL;
-  setAuditLogRepositoryForTests(new InMemoryAuditLogRepository());
 });
 
 after(() => {

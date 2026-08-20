@@ -64,6 +64,12 @@ export interface MinimalPrismaClient {
     count: (args?: any) => Promise<number>;
     deleteMany: (args?: any) => Promise<{ count: number }>;
   };
+  auditEvent?: {
+    upsert: (args: any) => Promise<any>;
+    findMany: (args: any) => Promise<any[]>;
+    count: (args?: any) => Promise<number>;
+    deleteMany: (args?: any) => Promise<{ count: number }>;
+  };
   organizationMembership?: {
     findMany: (args: any) => Promise<any[]>;
     upsert: (args: any) => Promise<any>;

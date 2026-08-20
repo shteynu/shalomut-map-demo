@@ -21,7 +21,6 @@ import {
 } from '@/lib/repositories';
 import { overrideCoreRepositories, resetCoreRepositories } from '@/lib/composition-root';
 import { InMemoryAuditLogRepository } from '@/lib/auth/domain-contract';
-import { setAuditLogRepositoryForTests } from '@/lib/server/manager-audit';
 import { surveyInstrument } from '@/lib/shalomut-source';
 import { createCanonicalSurveyDefinition } from '@/lib/survey-definition';
 import {
@@ -894,16 +893,15 @@ test('API Route POST /api/rounds/[roundId]/reset drops stale insights and writes
   const roundRepo = new InMemoryRoundRepository([DEMO_ROUND]);
   const aiInsightsRepo = new InMemoryAiInsightsRepository(roundRepo);
   const surveyRepo = new InMemorySurveyRepository();
+  const auditLogRepo = new InMemoryAuditLogRepository();
   overrideCoreRepositories({
     aiAnalysisRunRepo,
     aiInsightsRepo,
+    auditLogRepo,
     orgRepo: new InMemoryOrganizationRepository([DEMO_ORGANIZATION]),
     roundRepo,
     surveyRepo,
   });
-
-  const auditRepo = new InMemoryAuditLogRepository();
-  setAuditLogRepositoryForTests(auditRepo);
 
   try {
     await submitSurvey(
@@ -945,7 +943,7 @@ test('API Route POST /api/rounds/[roundId]/reset drops stale insights and writes
     );
     assert.strictEqual(await surveyRepo.getResponseCount(DEMO_ROUND.id), 0);
 
-    const events = await auditRepo.findByOrganizationId(
+    const events = await auditLogRepo.findByOrganizationId(
       DEMO_ROUND.organizationId,
     );
     const resetEvent = events.find((event) => event.action === 'ROUND_RESET');
@@ -953,7 +951,60 @@ test('API Route POST /api/rounds/[roundId]/reset drops stale insights and writes
     assert.strictEqual(resetEvent?.roundId, DEMO_ROUND.id);
     assert.strictEqual(resetEvent?.details?.deletedResponseCount, 1);
   } finally {
-    setAuditLogRepositoryForTests(null);
+    useDemoRepositories();
+  }
+});
+
+test('a created round and a status change each leave an audit row', async () => {
+  const auditLogRepo = new InMemoryAuditLogRepository();
+  const roundRepo = new InMemoryRoundRepository([DEMO_ROUND]);
+  overrideCoreRepositories({
+    aiAnalysisRunRepo: new InMemoryAiAnalysisRunRepository(),
+    auditLogRepo,
+    orgRepo: new InMemoryOrganizationRepository([DEMO_ORGANIZATION]),
+    roundRepo,
+    surveyRepo: new InMemorySurveyRepository(),
+  });
+
+  try {
+    const created = await createRound(
+      new Request('http://localhost/api/rounds', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          organizationId: DEMO_ORGANIZATION.id,
+          title: 'A round worth recording',
+        }),
+      }),
+    );
+    assert.strictEqual(created.status, 201);
+
+    const closed = await updateRound(
+      new Request(`http://localhost/api/rounds/${DEMO_ROUND.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'closed' }),
+      }),
+      { params: Promise.resolve({ roundId: DEMO_ROUND.id }) },
+    );
+    assert.strictEqual(closed.status, 200);
+
+    const actions = (
+      await auditLogRepo.findByOrganizationId(DEMO_ORGANIZATION.id)
+    ).map((event) => event.action);
+
+    // Five action types were declared when the audit service was written and
+    // one of them was ever recorded. A durable table that only knows about
+    // resets is a durable empty table.
+    assert.ok(
+      actions.includes('ROUND_CREATED'),
+      'expected the created round to be audited',
+    );
+    assert.ok(
+      actions.includes('ROUND_STATUS_UPDATED'),
+      'expected the status change to be audited',
+    );
+  } finally {
     useDemoRepositories();
   }
 });

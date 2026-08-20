@@ -15,6 +15,10 @@ import {
 import type { ManagerContext } from "@/lib/services";
 import type { SurveyRound } from "@/lib/types/backend";
 import {
+  UNRECORDABLE_VISIT_MESSAGE,
+  recordAdministratorSchoolVisit,
+} from "@/lib/server/manager-audit";
+import {
   MANAGER_ORGANIZATION_HEADER,
   getManagerMemberSchools,
 } from "@/lib/server/manager-scope";
@@ -25,10 +29,26 @@ import {
 
 export async function loadManagerContext(roundId?: string) {
   await connection();
-  const { orgRepo, roundRepo, surveyRepo } = resolveCoreRepositories();
+  const { auditLogRepo, orgRepo, roundRepo, surveyRepo } =
+    resolveCoreRepositories();
   const requestHeaders = await headers();
   const organizationId =
     requestHeaders.get(MANAGER_ORGANIZATION_HEADER)?.trim() || undefined;
+
+  // The screens' half of the same chokepoint the round routes have in
+  // `authorizeManagerRound`: eight manager pages enter here, so an
+  // administrator cannot open one over a school they are not a member of
+  // without the visit being recorded. It throws rather than returning a state,
+  // because there is no honest screen for "we are showing you this school but
+  // nobody will ever know we did".
+  if (organizationId) {
+    const recorded = await recordAdministratorSchoolVisit(
+      auditLogRepo,
+      { headers: requestHeaders },
+      organizationId,
+    );
+    if (!recorded) throw new Error(UNRECORDABLE_VISIT_MESSAGE);
+  }
 
   return ManagerContextService.load(
     orgRepo,

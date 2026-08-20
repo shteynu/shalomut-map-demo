@@ -11,6 +11,7 @@ import {
 } from "@/lib/survey-definition";
 import { getArchivedRoundGuardResponse } from "@/lib/server/archived-round-guard";
 import { getDurableWriteGuardResponse } from "@/lib/server/durable-write-guard";
+import { recordRoundAuditEvent } from "@/lib/server/manager-audit";
 import { authorizeManagerRound } from "@/lib/server/manager-scope";
 
 interface RouteParams {
@@ -20,12 +21,13 @@ interface RouteParams {
 export async function GET(request: Request, { params }: RouteParams) {
   try {
     const { roundId } = await params;
-    const { orgRepo, roundRepo } = resolveCoreRepositories();
+    const { auditLogRepo, orgRepo, roundRepo } = resolveCoreRepositories();
     const authorization = await authorizeManagerRound(
       request,
       roundId,
       orgRepo,
       roundRepo,
+      auditLogRepo,
     );
     if (!authorization.ok) return authorization.response;
 
@@ -49,13 +51,14 @@ export async function PUT(request: Request, { params }: RouteParams) {
     if (unavailable) return unavailable;
 
     const { roundId } = await params;
-    const { orgRepo, roundRepo, surveyRepo, surveyDefinitionVersionRepo } =
+    const { auditLogRepo, orgRepo, roundRepo, surveyDefinitionVersionRepo, surveyRepo } =
       resolveCoreRepositories();
     const authorization = await authorizeManagerRound(
       request,
       roundId,
       orgRepo,
       roundRepo,
+      auditLogRepo,
     );
     if (!authorization.ok) return authorization.response;
 
@@ -159,6 +162,21 @@ export async function PUT(request: Request, { params }: RouteParams) {
         { status: 500 },
       );
     }
+
+    // After the activation, so one save that also started the round is one
+    // event that says both.
+    await recordRoundAuditEvent(
+      auditLogRepo,
+      request,
+      "SURVEY_DEFINITION_UPDATED",
+      roundId,
+      round.organizationId,
+      {
+        changed: !isSameSurveyDefinition(currentDefinition, nextDefinition),
+        activated: savedRound?.status === 'active' && round.status === 'draft',
+        closedRoundTitles,
+      },
+    );
 
     return NextResponse.json({
       success: true,

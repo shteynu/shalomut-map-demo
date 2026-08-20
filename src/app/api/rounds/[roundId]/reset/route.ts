@@ -17,6 +17,7 @@ export async function POST(
     const {
       aiAnalysisRunRepo,
       aiInsightsRepo,
+      auditLogRepo,
       orgRepo,
       roundGoalRepo,
       roundRepo,
@@ -29,6 +30,7 @@ export async function POST(
       roundId,
       orgRepo,
       roundRepo,
+      auditLogRepo,
     );
     if (!authorization.ok) return authorization.response;
 
@@ -72,6 +74,7 @@ export async function POST(
     const updatedRound = await roundRepo.updateStatus(roundId, "draft");
 
     await recordRoundAuditEvent(
+      auditLogRepo,
       request,
       "ROUND_RESET",
       roundId,

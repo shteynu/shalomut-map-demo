@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { resolveCoreRepositories } from "@/lib/composition-root";
 import { RoundService } from "@/lib/services";
 import { getDurableWriteGuardResponse } from "@/lib/server/durable-write-guard";
+import { recordRoundAuditEvent } from "@/lib/server/manager-audit";
 import { authorizeManagerRound } from "@/lib/server/manager-scope";
 import { enqueueAiAnalyticsOnClosure } from "@/lib/server/trigger-ai-analytics";
 import type { RoundStatus } from "@/lib/types/backend";
@@ -26,13 +27,14 @@ export async function PATCH(
     if (unavailable) return unavailable;
 
     const { roundId } = await params;
-    const { aiAnalysisRunRepo, orgRepo, roundRepo, surveyRepo } =
+    const { aiAnalysisRunRepo, auditLogRepo, orgRepo, roundRepo, surveyRepo } =
       resolveCoreRepositories();
     const authorization = await authorizeManagerRound(
       request,
       roundId,
       orgRepo,
       roundRepo,
+      auditLogRepo,
     );
     if (!authorization.ok) return authorization.response;
 
@@ -75,6 +77,15 @@ export async function PATCH(
     }
 
     const updated = await roundRepo.updateStatus(roundId, targetStatus);
+
+    await recordRoundAuditEvent(
+      auditLogRepo,
+      request,
+      "ROUND_STATUS_UPDATED",
+      roundId,
+      round.organizationId,
+      { from: round.status, to: targetStatus },
+    );
 
     /*
      * Closing a round is what asks for its analysis (owner decision

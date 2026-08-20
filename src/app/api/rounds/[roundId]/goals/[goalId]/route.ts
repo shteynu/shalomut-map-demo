@@ -24,13 +24,14 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     if (unavailable) return unavailable;
 
     const { roundId, goalId } = await params;
-    const { orgRepo, roundGoalRepo, roundRepo } = resolveCoreRepositories();
+    const { auditLogRepo, orgRepo, roundGoalRepo, roundRepo } = resolveCoreRepositories();
 
     const authorization = await authorizeManagerRound(
       request,
       roundId,
       orgRepo,
       roundRepo,
+      auditLogRepo,
     );
     if (!authorization.ok) return authorization.response;
 
@@ -66,13 +67,14 @@ export async function DELETE(request: Request, { params }: RouteParams) {
     if (unavailable) return unavailable;
 
     const { roundId, goalId } = await params;
-    const { orgRepo, roundGoalRepo, roundRepo } = resolveCoreRepositories();
+    const { auditLogRepo, orgRepo, roundGoalRepo, roundRepo } = resolveCoreRepositories();
 
     const authorization = await authorizeManagerRound(
       request,
       roundId,
       orgRepo,
       roundRepo,
+      auditLogRepo,
     );
     if (!authorization.ok) return authorization.response;
 

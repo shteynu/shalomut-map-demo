@@ -9,6 +9,7 @@ import {
   InMemorySurveyAttemptRepository,
   PrismaAiAnalysisRunRepository,
   PrismaAiInsightsRepository,
+  PrismaAuditLogRepository,
   PrismaManagerRepository,
   PrismaOrganizationRepository,
   PrismaRoundGoalRepository,
@@ -18,7 +19,9 @@ import {
   PrismaSurveyAttemptRepository,
 } from '@/lib/repositories';
 import {
+  InMemoryAuditLogRepository,
   InMemoryManagerRepository,
+  type IAuditLogRepository,
   type IManagerRepository,
 } from '@/lib/auth/domain-contract';
 import type {
@@ -51,6 +54,13 @@ export interface CoreRepositories {
   aiAnalysisRunRepo: IAiAnalysisRunRepository;
   aiInsightsRepo: IAiInsightsRepository;
   /**
+   * What a manager did. It was a process-local store reached through its own
+   * getter until the audit table landed; it is wired here now for the reason
+   * every other repository is, and so that a test can watch what an action
+   * recorded without installing a global first.
+   */
+  auditLogRepo: IAuditLogRepository;
+  /**
    * Who may sign in, and into which schools. It belongs here rather than beside
    * the session provider for the reason every other repository does: one module
    * decides which store the application is really talking to.
@@ -64,13 +74,14 @@ export interface CoreRepositories {
   surveyDefinitionVersionRepo: ISurveyDefinitionVersionRepository;
 }
 
-/** The durable wiring: one Prisma client, nine repositories over it. */
+/** The durable wiring: one Prisma client, ten repositories over it. */
 export function createPersistentRepositories(
   prisma: MinimalPrismaClient,
 ): CoreRepositories {
   return {
     aiAnalysisRunRepo: new PrismaAiAnalysisRunRepository(prisma),
     aiInsightsRepo: new PrismaAiInsightsRepository(prisma),
+    auditLogRepo: new PrismaAuditLogRepository(prisma),
     managerRepo: new PrismaManagerRepository(prisma),
     orgRepo: new PrismaOrganizationRepository(prisma),
     roundGoalRepo: new PrismaRoundGoalRepository(prisma),
@@ -93,6 +104,7 @@ export function createEphemeralRepositories(): CoreRepositories {
   return {
     aiAnalysisRunRepo: new InMemoryAiAnalysisRunRepository(),
     aiInsightsRepo: new InMemoryAiInsightsRepository(roundRepo),
+    auditLogRepo: new InMemoryAuditLogRepository(),
     managerRepo: new InMemoryManagerRepository(),
     orgRepo: new InMemoryOrganizationRepository(),
     roundGoalRepo: new InMemoryRoundGoalRepository(),
@@ -158,6 +170,9 @@ export function overrideCoreRepositories(
   }
   if (repositories.aiInsightsRepo) {
     ephemeralRepositories.aiInsightsRepo = repositories.aiInsightsRepo;
+  }
+  if (repositories.auditLogRepo) {
+    ephemeralRepositories.auditLogRepo = repositories.auditLogRepo;
   }
   if (repositories.managerRepo) {
     ephemeralRepositories.managerRepo = repositories.managerRepo;
