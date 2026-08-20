@@ -1,5 +1,42 @@
 # Shalomut Tracker — operational handoff
 
+**2026-08-20, later: the thinking-budget branch is merged with `main` and waits
+on one push.** `origin/main` is **`09efd528`**, asked of the remote. The branch
+`feat/the-thinking-budget-is-a-declared-number` is `b674287`, which contains it,
+so landing it is a fast-forward — but ask the remote again before pushing, as
+this file has had to say six times.
+
+It had diverged badly enough to be worth recording as a pattern rather than an
+incident: **two sessions fixed the same request timeout from different
+evidence.** The branch had one eval corpus and set 40 inside 90; `main` had 55
+timed provider calls across two live rounds and set 90 inside 300. The merge
+keeps `main`'s, and keeps the corpus finding as corroboration — the same defect
+seen from the other end. The same thing happened to `pipeline_cli.py`'s dropped
+log line, fixed twice, and to the usage line, extended twice; it now carries
+`scope`, `reasoning_tokens` and `duration_ms` together.
+
+Two claims elsewhere in this file were narrowed by the merge, both about the
+same tool. **The 67% saving is a `5.0` measurement**: every single-round cost
+figure behind it came from `local-unlocked-pipeline.ts` while that script still
+pinned contract `5.0`, so it describes a round whose adaptation was failing on
+every dimension rather than the round the deployment produces. The quality half
+of the case is unaffected — the eval corpus runs `6.0` — and the setting stands,
+but a `6.0` cost run is still unmade. **And the adaptation defect** the branch
+recorded as needing its own task was fixed on `main` as `c1dfed0` before the
+merge reached it.
+
+Verification at `b674287`: **564 passed** from `ai-analytics-service`,
+`npx tsc --noEmit` clean, `npm run lint` clean, `render.yaml` parses. No
+provider call, nothing billed, no database touched. The service README had also
+been documenting the pre-2026-08-19 timeouts (20/25/8) and now documents the
+ones the code runs.
+
+Landing this is the deploy: the build filter covers `ai-analytics-service/**`
+and the merge changes `config.py` and `llm_transport.py`, so Render rebuilds on
+its own — and `LLM_REASONING_EFFORT=low` reaches the deployment with it, which
+is the first time this project's provider bill changes by decision rather than
+by default.
+
 **2026-08-20: both fixes are on `main` and deployed, and the service redeployed
 without being asked.** The code landed as `56d1b72`; the push was a
 fast-forward carrying twelve commits, `claude/priceless-swanson-9cf466`

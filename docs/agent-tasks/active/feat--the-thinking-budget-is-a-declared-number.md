@@ -5,16 +5,22 @@
 - Branch: `feat/the-thinking-budget-is-a-declared-number`
 - Base branch: `origin/main`
 - Base commit: `dab5ef6`
-- Current HEAD: `54eb8f7`, thirteen commits ahead of `origin/feat/…` and twelve
-  ahead of `origin/main` (`4bd5b2f`)
-- Git state at close: nothing staged, nothing untracked (`git ls-files -o
+- Current HEAD: the documentation commit sitting directly above the merge
+  `b674287`, which brought `origin/main` (`09efd528`) into the thirteen commits
+  of this task. Seventeen commits ahead of `origin/feat/…`, two ahead of
+  `origin/main`. The tip is deliberately not named by hash: a commit cannot
+  carry its own, and the last attempt to write one here was wrong the moment it
+  was amended — `git log -1` is the answer
+- Git state: nothing staged, nothing untracked (`git ls-files -o
   --exclude-standard` empty), one unstaged file — `next-env.d.ts`, the owner's
   pre-existing change, untouched by this task
-- Visibility: this worktree and any other worktree of this repository, because
-  every commit is on the branch. **Not** another checkout or machine — the
-  branch on `origin` is still at `dab5ef6` and carries none of it
-- Status: complete. Quality measured twice, cost measured on both settings at the bounds the deployment now runs; nothing in this file is reasoned rather than measured
-- Last updated: 2026-08-19
+- Visibility: this worktree and any other worktree of this repository. **Not**
+  another checkout or machine: `origin/feat/…` still stands at `7e1d836`, which
+  is the work before the merge
+- Status: complete and merged with `main`. Ready to land; nothing in this file
+  is reasoned rather than measured, and where a measurement has a limit the
+  limit is named beside it
+- Last updated: 2026-08-20
 - Last agent/tool: Claude Code (Opus 5)
 
 **One correction worth reading before anything else.** For most of this task the
@@ -102,10 +108,12 @@ and its logging.
   every dimension on the deterministic sentence, and a run that reports success.
 - `reasoning_tokens` is logged as the split of `completion_tokens`, never added
   to a total. Adding it would double-count what the provider already billed once.
-- `render.yaml` keeps the provider default and documents why. `low` was
-  declared there on the strength of one round and withdrawn when the corpus
-  showed it losing three stones in 56. The file's rule cuts both ways: a number
-  is declared beside its evidence, and withdrawn by evidence too.
+- `render.yaml` declares `LLM_REASONING_EFFORT: low`, and the route it took
+  there is the decision worth keeping. `low` was declared on the strength of
+  one round, withdrawn when the corpus showed it losing three stones in 56, and
+  declared again only once those three were traced to the request timeout and
+  the corpus returned 56 of 56 with the timeout raised. A number is declared
+  beside its evidence, withdrawn by evidence, and restored by evidence.
 - The three lost stones are a timeout rather than a quality verdict, so `low` is
   not refused permanently — it waits on the retry budget under Remaining.
 
@@ -150,8 +158,63 @@ Nothing.
 
 ## Remaining
 
-- Decide the adaptation defect below. It is not this branch's work, but it is
-  where roughly half of a round's calls go.
+- Nothing on this branch. The one item that was here — the adaptation defect
+  under Known risks — was fixed and proven live on `main` while this branch sat
+  published; see the merge section below.
+- Owner action, not this task's: land the branch, then read one deployed round's
+  usage lines. What to look for is unchanged — one line per answer, with a
+  `total_tokens` roughly a fifth of what an unset round logged.
+
+## The merge with `main`, 2026-08-20
+
+While this branch sat published at `7e1d836`, `main` moved fifteen commits and
+three of them are about the same code. Merged as `b674287`, a true merge rather
+than a rebase, because the branch was already on `origin` and rewriting it would
+have needed a force-push nobody asked for. What the merge decided:
+
+- **The timeout, twice fixed.** Both sessions found it. This branch measured one
+  eval corpus and set 40 inside 90 with a 300 ceiling; `main` measured 55 timed
+  provider calls across two live rounds — medians 17.8s and 21.0s, slowest 26.0s
+  and **50.9s** on identical work — and set 90 inside 300 with a 600 ceiling.
+  `main`'s numbers win on evidence and are what the merge keeps. This branch's
+  corpus finding survives in the same comment as corroboration from the other
+  end: three stones lost to `TimeoutError` while the graders showed no drop.
+- **`llm_min_retry_window_seconds` stays 20**, which only this branch raised,
+  but its comment no longer claims twenty is "half the request timeout". It is
+  about the median measured call; with three attempts of ninety inside three
+  hundred the bound rarely binds at all.
+- **`test_the_retry_budget_still_has_a_ceiling` is deleted**, not repaired. It
+  asserted the 300 ceiling this branch chose, and `main`'s
+  `test_the_ceiling_still_bounds_a_hung_provider` already asserts the one that
+  survived. `test_the_default_budget_holds_a_second_full_attempt` is kept: it
+  asserts the invariant rather than the numbers, and holds at 300/90/20.
+- **One `logging.basicConfig` survives.** Both sessions fixed the same dropped
+  log line in `pipeline_cli.py`; `main`'s is at import and honours
+  `PIPELINE_LOG_LEVEL`, so this branch's copy inside `main()` — a no-op once the
+  root logger has a handler — is gone.
+- **The usage line carries both halves.** `scope`, `reasoning_tokens` and
+  `duration_ms` on one line, nine placeholders and nine arguments.
+
+Two things the merge changed about what this file may claim:
+
+- **The adaptation defect under Known risks is closed**, and not by this branch.
+  `main` carries `c1dfed0` — the `5.0` adaptation validator was judging a `5.0`
+  round by `6.0` rules — and a live round on 2026-08-20 came back with all eight
+  adaptation calls `outcome=llm` on the first attempt, against the all-eight
+  loss recorded here. The paragraph is left standing below as what was seen; the
+  answer is in `docs/shalomut-tracker-handoff.md` and in
+  `docs/agent-tasks/archive/claude--priceless-swanson-9cf466.md`.
+- **The 67% is a `5.0` measurement.** Every single-round cost figure in this
+  file came from `scripts/local-unlocked-pipeline.ts`, which pinned itself to
+  contract `5.0` until `main` fixed it on 2026-08-19, while the deployment
+  produces `6.0`. So the dollars describe a round whose adaptation was failing
+  on every dimension — roughly half its calls thrown away — and not the round
+  `render.yaml` configures. The half of the case that decides the setting is
+  unaffected: the eval corpus runs `6.0`, and at `low` it returned 56 of 56
+  stones with the graders flat, while the thinking share is a property of one
+  answer rather than of a contract. A run with
+  `AI_ANALYTICS_CONTRACT_VERSION=6.0` is what would turn 67% into a `6.0`
+  number, and nobody has made one.
 
 ## Changed files
 
@@ -175,6 +238,11 @@ Nothing.
   the environment. (548 at the earlier commits, before the two tests that pin
   the raised bounds.)
 - `npx tsc --noEmit` → clean at `54eb8f7`. `npm run lint` → clean.
+- **At the merge `b674287`**, with `GEMINI_API_KEY` and `LLM_REASONING_EFFORT`
+  stripped from the environment: `ai-analytics-service/.venv/bin/python -m
+  pytest -q` → **564 passed in 5.91s**, both sessions' timeout tests green
+  together. `npx tsc --noEmit` → clean, `npm run lint` → clean, `render.yaml`
+  parses. No provider was called and no round was run, so nothing was billed.
 - `git diff --check origin/main..HEAD` → clean.
 - Local pipeline without a provider key: the run reaches the model boundary and
   reports `missing_api_key`, which proves the stderr plumbing without spending
@@ -318,7 +386,10 @@ provider probe above, which created nothing.
 Recorded under Residual risk, plus one found by the measurement and belonging to
 no branch yet:
 
-**The question-adaptation step failed on every dimension of every run.** All
+**The question-adaptation step failed on every dimension of every run.**
+*(Closed on `main` 2026-08-20 — see the merge section above. Kept here as what
+this task actually saw, because the reading below is still how the defect
+presents.)* All
 three runs ended with `adaptation=deterministic_fallback` for all eight
 dimensions, refused as `refusal=status_inconsistent` — the model's adapted
 wording disagreed with the dimension's own colour and counts — after two or
@@ -348,14 +419,22 @@ Topping up the provider account is the owner's action.
 
 ## Next concrete step
 
-Push this branch — it is the same command as before, but now the branch actually
-carries the thirteen commits:
+Hand the owner the push that lands this on `main`:
 
 ```
-git push origin feat/the-thinking-budget-is-a-declared-number
+git push origin feat/the-thinking-budget-is-a-declared-number:main
 ```
 
-It fast-forwards `origin` from `dab5ef6`; no force, nothing to rebase, because
-`origin/main` (`4bd5b2f`) is already an ancestor of `54eb8f7`. After that the
-work is portable to another machine, and landing it on `main` is what triggers
-the Render deploy whose verification is listed as owed above.
+It is a fast-forward: `b674287` contains `origin/main` (`09efd528`) as an
+ancestor, checked against the remote rather than a tracking ref. Ask the remote
+again first — `main` has moved between two commands in this repository before,
+and if it has, merge it in again rather than forcing anything.
+
+The push is the deploy. `render.yaml`'s `buildFilter` lists
+`ai-analytics-service/**` and this merge changes `config.py` and
+`llm_transport.py`, so Render rebuilds on its own and `LLM_REASONING_EFFORT=low`
+takes effect with it. What is owed immediately afterwards is the deployed row of
+the verification matrix — source, build, health, status, logs — and one round's
+usage lines: one line per billed answer, `reasoning_tokens` most likely
+`unavailable` because this provider does not itemise, and a `total_tokens`
+roughly a fifth of what an unset round logged.
