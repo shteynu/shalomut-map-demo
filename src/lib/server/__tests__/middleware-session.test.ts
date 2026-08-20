@@ -16,6 +16,7 @@ const mockManager: Manager = {
   id: "mgr-test-999",
   email: "principal@shalom-school.ac.il",
   name: "Principal Cohen",
+  isPlatformAdministrator: false,
   createdAt: new Date(),
 };
 

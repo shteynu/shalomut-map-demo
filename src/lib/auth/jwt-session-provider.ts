@@ -112,6 +112,7 @@ export class JwtSessionProvider implements ISessionProvider {
       activeOrganizationId,
       role: membership.role,
       memberships,
+      isPlatformAdministrator: manager.isPlatformAdministrator,
       issuedAt: now,
       expiresAt,
     };
@@ -122,6 +123,10 @@ export class JwtSessionProvider implements ISessionProvider {
       email: manager.email,
       org: activeOrganizationId,
       role: membership.role,
+      // Short, like every other claim here, and absent rather than false for a
+      // school user: a token minted before administrators existed decodes as
+      // "not an administrator", which is the safe reading of silence.
+      ...(manager.isPlatformAdministrator ? { adm: true } : {}),
       mbs: memberships.map((m) => ({
         id: m.id,
         org: m.organizationId,
@@ -211,6 +216,7 @@ export class JwtSessionProvider implements ISessionProvider {
         activeOrganizationId: payload.org,
         role: payload.role,
         memberships,
+        isPlatformAdministrator: payload.adm === true,
         issuedAt: new Date(payload.iat * 1000),
         expiresAt: new Date(payload.exp * 1000),
       };

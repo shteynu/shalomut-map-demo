@@ -58,6 +58,17 @@ export interface MinimalPrismaClient {
   questionAnswer?: {
     deleteMany: (args?: any) => Promise<any>;
   };
+  manager?: {
+    findUnique: (args: any) => Promise<any>;
+    upsert: (args: any) => Promise<any>;
+    count: (args?: any) => Promise<number>;
+    deleteMany: (args?: any) => Promise<{ count: number }>;
+  };
+  organizationMembership?: {
+    findMany: (args: any) => Promise<any[]>;
+    upsert: (args: any) => Promise<any>;
+    deleteMany: (args?: any) => Promise<{ count: number }>;
+  };
 }
 
 let globalPrisma: MinimalPrismaClient | null = null;

@@ -13,6 +13,13 @@ export interface IManagerRepository {
   findMembershipsByManagerId(managerId: string): Promise<OrganizationMembership[]>;
   saveManager(manager: Manager): Promise<Manager>;
   saveMembership(membership: OrganizationMembership): Promise<OrganizationMembership>;
+  /**
+   * How many platform administrators exist, which is the only question the
+   * bootstrap asks. A count rather than a list: nothing needs to know who they
+   * are to decide whether the first one is still missing, and a list would
+   * invite a screen that enumerates them without an audit trail.
+   */
+  countPlatformAdministrators(): Promise<number>;
 }
 
 export interface ISessionProvider {
@@ -80,6 +87,14 @@ export class InMemoryManagerRepository implements IManagerRepository {
     this.memberships.set(membership.managerId, existing);
     return membership;
   }
+
+  async countPlatformAdministrators(): Promise<number> {
+    let count = 0;
+    for (const manager of this.managers.values()) {
+      if (manager.isPlatformAdministrator) count += 1;
+    }
+    return count;
+  }
 }
 
 export class InMemorySessionProvider implements ISessionProvider {
@@ -108,6 +123,7 @@ export class InMemorySessionProvider implements ISessionProvider {
       activeOrganizationId,
       role: membership.role,
       memberships,
+      isPlatformAdministrator: manager.isPlatformAdministrator,
       issuedAt: now,
       expiresAt,
     };

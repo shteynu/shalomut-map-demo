@@ -35,6 +35,7 @@ const sessionAdminSchoolA: ManagerSession = {
   activeOrganizationId: "org-school-a",
   role: "admin",
   memberships: mockMemberships,
+  isPlatformAdministrator: false,
   issuedAt: new Date(),
   expiresAt: new Date(Date.now() + 86400000),
 };
@@ -45,6 +46,7 @@ const sessionManagerSchoolB: ManagerSession = {
   activeOrganizationId: "org-school-b",
   role: "manager",
   memberships: mockMemberships,
+  isPlatformAdministrator: false,
   issuedAt: new Date(),
   expiresAt: new Date(Date.now() + 86400000),
 };
@@ -129,6 +131,7 @@ test("MembershipService allows multi-org managers to switch active organization"
         id: "mgr-cohen",
         email: "cohen@school-a.ac.il",
         name: "Cohen",
+        isPlatformAdministrator: false,
         createdAt: new Date(),
       },
     ],

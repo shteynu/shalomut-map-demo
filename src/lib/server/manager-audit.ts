@@ -84,6 +84,7 @@ export async function recordRoundAuditEvent(
     role: session?.role ?? "manager",
     activeOrganizationId: organizationId,
     memberships: session?.memberships ?? [],
+    isPlatformAdministrator: session?.isPlatformAdministrator ?? false,
     issuedAt: session?.issuedAt ?? new Date(),
     expiresAt: session?.expiresAt ?? new Date(),
   };

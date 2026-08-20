@@ -9,6 +9,7 @@ import {
   InMemorySurveyAttemptRepository,
   PrismaAiAnalysisRunRepository,
   PrismaAiInsightsRepository,
+  PrismaManagerRepository,
   PrismaOrganizationRepository,
   PrismaRoundGoalRepository,
   PrismaRoundRepository,
@@ -16,6 +17,10 @@ import {
   PrismaSurveyRepository,
   PrismaSurveyAttemptRepository,
 } from '@/lib/repositories';
+import {
+  InMemoryManagerRepository,
+  type IManagerRepository,
+} from '@/lib/auth/domain-contract';
 import type {
   IAiAnalysisRunRepository,
   IAiInsightsRepository,
@@ -45,6 +50,12 @@ import {
 export interface CoreRepositories {
   aiAnalysisRunRepo: IAiAnalysisRunRepository;
   aiInsightsRepo: IAiInsightsRepository;
+  /**
+   * Who may sign in, and into which schools. It belongs here rather than beside
+   * the session provider for the reason every other repository does: one module
+   * decides which store the application is really talking to.
+   */
+  managerRepo: IManagerRepository;
   orgRepo: IOrganizationRepository;
   roundGoalRepo: IRoundGoalRepository;
   roundRepo: IRoundRepository;
@@ -53,13 +64,14 @@ export interface CoreRepositories {
   surveyDefinitionVersionRepo: ISurveyDefinitionVersionRepository;
 }
 
-/** The durable wiring: one Prisma client, eight repositories over it. */
+/** The durable wiring: one Prisma client, nine repositories over it. */
 export function createPersistentRepositories(
   prisma: MinimalPrismaClient,
 ): CoreRepositories {
   return {
     aiAnalysisRunRepo: new PrismaAiAnalysisRunRepository(prisma),
     aiInsightsRepo: new PrismaAiInsightsRepository(prisma),
+    managerRepo: new PrismaManagerRepository(prisma),
     orgRepo: new PrismaOrganizationRepository(prisma),
     roundGoalRepo: new PrismaRoundGoalRepository(prisma),
     roundRepo: new PrismaRoundRepository(prisma),
@@ -81,6 +93,7 @@ export function createEphemeralRepositories(): CoreRepositories {
   return {
     aiAnalysisRunRepo: new InMemoryAiAnalysisRunRepository(),
     aiInsightsRepo: new InMemoryAiInsightsRepository(roundRepo),
+    managerRepo: new InMemoryManagerRepository(),
     orgRepo: new InMemoryOrganizationRepository(),
     roundGoalRepo: new InMemoryRoundGoalRepository(),
     roundRepo,
@@ -145,6 +158,9 @@ export function overrideCoreRepositories(
   }
   if (repositories.aiInsightsRepo) {
     ephemeralRepositories.aiInsightsRepo = repositories.aiInsightsRepo;
+  }
+  if (repositories.managerRepo) {
+    ephemeralRepositories.managerRepo = repositories.managerRepo;
   }
   if (repositories.surveyRepo) {
     ephemeralRepositories.surveyRepo = repositories.surveyRepo;

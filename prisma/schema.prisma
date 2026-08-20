@@ -17,8 +17,61 @@ model Organization {
   totalStaffCount Int           @map("total_staff_count")
   createdAt       DateTime      @default(now()) @map("created_at")
   rounds          SurveyRound[]
+  memberships     OrganizationMembership[]
 
   @@map("organizations")
+}
+
+/**
+ * A person who signs in.
+ *
+ * There is no password column and there will not be one: identity comes from an
+ * external provider (owner decision, 2026-08-20), so what this row holds is who
+ * the address belongs to and what it may reach — never a credential.
+ *
+ * `isPlatformAdministrator` is a property of the person rather than a
+ * membership, which is the whole point of it: an administrator is outside the
+ * membership system instead of being a member of every school, so the number of
+ * schools never changes what their session carries.
+ */
+model Manager {
+  id                      String   @id @default(uuid())
+  /// Lowercased before it is stored. The provider decides the case of what it
+  /// returns and a second sign-in must not create a second person.
+  email                   String   @unique
+  name                    String
+  isPlatformAdministrator Boolean  @default(false) @map("is_platform_administrator")
+  createdAt               DateTime @default(now()) @map("created_at")
+
+  memberships OrganizationMembership[]
+
+  @@map("managers")
+}
+
+/**
+ * What one person may reach in one school.
+ *
+ * Many-to-many even though the product gives a school user exactly one school:
+ * the types and the session token already carry a list, the product is what
+ * constrains it to one, and nothing has to be migrated the day that constraint
+ * is relaxed.
+ */
+model OrganizationMembership {
+  id             String   @id @default(uuid())
+  managerId      String   @map("manager_id")
+  organizationId String   @map("organization_id")
+  role           String   // 'admin' | 'manager'
+  status         String   // 'active' | 'invited' | 'suspended'
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  manager      Manager      @relation(fields: [managerId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // One person is a member of one school once. Two rows would be two answers to
+  // "what may they do here", and the session reads whichever came back first.
+  @@unique([managerId, organizationId])
+  @@index([organizationId])
+  @@map("organization_memberships")
 }
 
 model SurveyRound {

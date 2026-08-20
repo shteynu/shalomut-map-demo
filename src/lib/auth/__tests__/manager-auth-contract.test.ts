@@ -12,6 +12,7 @@ const adminUser: Manager = {
   id: 'mgr-admin-1',
   email: 'admin@school-a.edu',
   name: 'School A Principal',
+  isPlatformAdministrator: false,
   createdAt: new Date('2026-07-01T00:00:00.000Z'),
 };
 
@@ -19,6 +20,7 @@ const managerUser: Manager = {
   id: 'mgr-user-1',
   email: 'teacher@school-a.edu',
   name: 'School A Teacher',
+  isPlatformAdministrator: false,
   createdAt: new Date('2026-07-01T00:00:00.000Z'),
 };
 
@@ -26,6 +28,7 @@ const suspendedUser: Manager = {
   id: 'mgr-suspended-1',
   email: 'former@school-a.edu',
   name: 'Former Staff',
+  isPlatformAdministrator: false,
   createdAt: new Date('2026-07-01T00:00:00.000Z'),
 };
 

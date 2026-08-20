@@ -22,6 +22,7 @@ const manager: Manager = {
   id: "mgr-test-scope",
   email: "principal@shalom-school.ac.il",
   name: "Principal Cohen",
+  isPlatformAdministrator: false,
   createdAt: new Date("2026-07-01T00:00:00.000Z"),
 };
 

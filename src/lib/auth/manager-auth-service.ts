@@ -58,6 +58,11 @@ const DEFAULT_ADMIN_USER: Manager = {
   id: "mgr-admin-001",
   email: process.env.MANAGER_ADMIN_EMAIL || "admin@shalomut.edu.il",
   name: "מנהל מערכת ראשי",
+  // Not a platform administrator. This account administers one school in a
+  // local runtime; the platform administrator of the 2026-08-20 model is a row
+  // with the flag set, created by the bootstrap and reachable only through the
+  // identity provider.
+  isPlatformAdministrator: false,
   createdAt: new Date("2026-07-01T00:00:00.000Z"),
 };
 
@@ -65,6 +70,7 @@ const DEFAULT_MANAGER_USER: Manager = {
   id: "mgr-user-001",
   email: "manager@shalomut.edu.il",
   name: "מנהל בית ספר",
+  isPlatformAdministrator: false,
   createdAt: new Date("2026-07-01T00:00:00.000Z"),
 };
 
@@ -72,6 +78,7 @@ const DEFAULT_SUSPENDED_USER: Manager = {
   id: "mgr-suspended-001",
   email: "suspended@shalomut.edu.il",
   name: "משתמש מוקפא",
+  isPlatformAdministrator: false,
   createdAt: new Date("2026-07-01T00:00:00.000Z"),
 };
 

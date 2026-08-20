@@ -7,6 +7,7 @@ const mockManager: Manager = {
   id: "mgr-101",
   email: "manager@school.edu.il",
   name: "Sarah Manager",
+  isPlatformAdministrator: false,
   createdAt: new Date(),
 };
 
@@ -63,6 +64,7 @@ test("verifyToken passes the signature as a typed array, so a foreign-realm Arra
       id: "mgr-realm-001",
       email: "principal@shalom-school.ac.il",
       name: "Principal Cohen",
+      isPlatformAdministrator: false,
       createdAt: new Date(),
     },
     "org-realm-001",
@@ -109,4 +111,43 @@ test("verifyToken passes the signature as a typed array, so a foreign-realm Arra
   } finally {
     crypto.subtle.verify = originalVerify;
   }
+});
+
+test("a platform administrator is a claim in the token, and a school user is its absence", async () => {
+  const provider = new JwtSessionProvider("test-secret-key-12345");
+
+  const school = await provider.createSession(mockManager, "org-school-101", [
+    mockMembership,
+  ]);
+  const platform = await provider.createSession(
+    { ...mockManager, isPlatformAdministrator: true },
+    "org-school-101",
+    [mockMembership],
+  );
+
+  const claims = (token: string) =>
+    JSON.parse(Buffer.from(token.split(".")[1], "base64url").toString());
+
+  assert.strictEqual("adm" in claims(school.token), false);
+  assert.strictEqual(claims(platform.token).adm, true);
+
+  assert.strictEqual(
+    (await provider.verifyToken(school.token))?.isPlatformAdministrator,
+    false,
+  );
+  assert.strictEqual(
+    (await provider.verifyToken(platform.token))?.isPlatformAdministrator,
+    true,
+  );
+});
+
+test("a token minted before administrators existed is not one", async () => {
+  const provider = new JwtSessionProvider("test-secret-key-12345");
+  const { token } = await provider.createSession(mockManager, "org-school-101", [
+    mockMembership,
+  ]);
+
+  const session = await provider.verifyToken(token);
+
+  assert.strictEqual(session?.isPlatformAdministrator, false);
 });

@@ -27,6 +27,7 @@ export class MembershipService {
         id: session.managerId,
         email: session.email,
         name: session.email,
+        isPlatformAdministrator: session.isPlatformAdministrator,
         createdAt: session.issuedAt,
       },
       newOrganizationId,

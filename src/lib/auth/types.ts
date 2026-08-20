@@ -15,6 +15,16 @@ export interface Manager {
   id: string;
   email: string;
   name: string;
+  /**
+   * One of the handful of people who administer the platform itself.
+   *
+   * A property of the person and not a membership, which is what keeps an
+   * administrator outside the membership system rather than a member of every
+   * school: the number of schools never changes what their session carries.
+   * Required rather than optional, because "the field was not set" and "this
+   * person is not an administrator" must not be the same expression.
+   */
+  isPlatformAdministrator: boolean;
   createdAt: Date;
 }
 
@@ -24,6 +34,13 @@ export interface ManagerSession {
   activeOrganizationId: string;
   role: ManagerRole;
   memberships: OrganizationMembership[];
+  /**
+   * Carried in the token so the middleware can answer "may this request open
+   * that school" without a database read. It is the reason the plan could
+   * refuse a membership lookup per request: Seoul database, Washington
+   * functions, roughly 180 ms each time.
+   */
+  isPlatformAdministrator: boolean;
   issuedAt: Date;
   expiresAt: Date;
 }

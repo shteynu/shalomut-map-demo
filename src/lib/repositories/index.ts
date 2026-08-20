@@ -11,6 +11,7 @@ export * from './in-memory/in-memory-survey.repository';
 export * from './in-memory/in-memory-survey-attempt.repository';
 export * from './in-memory/in-memory-survey-definition-version.repository';
 export * from './prisma/prisma-client';
+export * from './prisma/prisma-manager.repository';
 export * from './prisma/prisma-organization.repository';
 export * from './prisma/prisma-ai-analysis-run.repository';
 export * from './prisma/prisma-ai-insights.repository';

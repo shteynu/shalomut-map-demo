@@ -110,6 +110,7 @@ test("ManagerAuthenticationService: a manager record is not a credential", async
     id: "mgr-cohen",
     email: "cohen@school-a.ac.il",
     name: "Cohen",
+    isPlatformAdministrator: false,
     createdAt: new Date(),
   };
   const membership = {
