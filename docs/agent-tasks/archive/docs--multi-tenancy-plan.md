@@ -5,8 +5,8 @@
 - Branch: `docs/multi-tenancy-plan`
 - Base branch: `main`
 - Base commit: `6d6ec97`
-- Current HEAD: see `git log -1`; the plan's decisions commit is the tip
-- Status: plan written and its four decisions recorded; waiting on a push
+- Final content commit: `136a752`; this archive commit sits on top of it
+- Status: complete, merged and archived. Reached `main` on 2026-08-20.
 - Last updated: 2026-08-20
 - Last agent/tool: Claude Opus 5 (Claude Code)
 
@@ -84,13 +84,15 @@ Agent design calls, not owner decisions:
 
 - `f16a01b` — the plan, listed under "Live plans" in `docs/README.md`.
 - `ea356c2` — the first two decisions, which reordered the phases.
-- The tip — the model rewritten around administrators and one user per school;
+- `136a752` — the model rewritten around administrators and one user per school;
   §3 is new, the phases are rebuilt, and three of the six open questions are
   closed.
 
 ## Remaining
 
-Nothing on this branch. Implementation is phase 0 of the plan, on its own branch.
+Nothing on this branch; it reached `origin/main` on 2026-08-20 as `136a752`.
+Implementation is phase 0 of the plan, on its own branch and with its own task
+file.
 
 ## Verification evidence
 
@@ -143,6 +145,12 @@ standing credential.
 
 ## Next concrete step
 
-Hand over `git push origin docs/multi-tenancy-plan:main`. Then start phase 0 on
-its own branch — it needs none of the four remaining answers, and it is the one
-piece that is cheaper to verify now than at any later point.
+None on this branch. The work continues as phase 0 of
+[`docs/multi-tenancy-plan-2026-08-20.md`](../../multi-tenancy-plan-2026-08-20.md),
+on a new branch: make the middleware honour a chosen school only when the session
+holds an active membership for it, narrow `loadSchools` to the session's schools,
+make `resolveOrganizationId`'s population-dependent branches membership-dependent,
+and add a regression test that a foreign `?school=` is ignored. It needs none of
+the three remaining owner answers, and it changes no behaviour while every session
+still carries exactly one membership — which is exactly why it is cheaper to
+verify now than at any later point.

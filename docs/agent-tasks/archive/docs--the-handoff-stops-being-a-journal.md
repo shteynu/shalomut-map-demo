@@ -5,8 +5,8 @@
 - Branch: `docs/the-handoff-stops-being-a-journal`
 - Base branch: `main`
 - Base commit: `17792be`
-- Current HEAD: `a07a77d`
-- Status: work complete, waiting on a push
+- Final commit: `6d6ec97`
+- Status: complete, merged and archived. Reached `main` on 2026-08-20.
 - Last updated: 2026-08-20
 - Last agent/tool: Claude Opus 5 (Claude Code)
 
@@ -87,6 +87,7 @@ boundaries, save-progress), `.agents/skills/shalomut-verification/SKILL.md`.
   three documents its index did not classify.
 - `a07a77d` — the handoff compacted from 3116 lines to 516, with the original
   snapshotted; the stale branch citation in `docs/ai-analysis-jobs.html` fixed.
+- `6d6ec97` — this record.
 
 ## In progress
 
@@ -94,7 +95,7 @@ Nothing.
 
 ## Remaining
 
-Nothing on this branch. It needs a push.
+Nothing. The branch reached `origin/main` on 2026-08-20 as `6d6ec97`.
 
 ## Changed files
 
@@ -193,6 +194,6 @@ written and withdrawn, on the local-only branch `fix/manager-password-must-be-st
 
 ## Next concrete step
 
-Hand over `git push origin docs/the-handoff-stops-being-a-journal:main`.
-Documentation and one comment only, so nothing rebuilds and nothing needs
-re-verifying after it.
+None. The branch is merged and this file is archived. The findings below were
+taken up by `docs/multi-tenancy-plan-2026-08-20.md`, which is where the
+multi-tenancy work continues.

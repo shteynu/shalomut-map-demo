@@ -18,22 +18,27 @@ and in Git; what was durable in them is below.
 
 Verified 2026-08-20, in this worktree:
 
-- **`origin/main` is `17792be`**, asked of the remote. Nothing is outstanding on
-  any branch: `git log origin/main..HEAD` empty, nothing staged,
-  `git ls-files -o --exclude-standard` empty. The only modified file is
-  `next-env.d.ts`, which is generated, was dirty before the session and belongs
-  to the owner.
+- **`origin/main` is `136a752`**, asked of the remote — the multi-tenancy plan,
+  pushed by the owner on 2026-08-20. The documentation commit that carries this
+  paragraph sits on top of it and was still local when it was written. The only
+  modified file is `next-env.d.ts`, which is generated, was dirty before the
+  session and belongs to the owner; `git ls-files -o --exclude-standard` is empty.
 - **`docs/agent-tasks/active/` is empty.** No branch has unfinished agent work.
 - **The suite is green**: `npm test` 1219 passed, `npx tsc --noEmit` clean,
   `npm run lint` clean, `lint:skills`, `lint:doc-numbers`, `openapi:check` and
-  `docs:endpoints:check` all pass.
+  `docs:endpoints:check` all pass. Read at `a07a77d`; nothing but documentation
+  has changed since.
 
 **Next concrete step:** none for an agent. Two things wait on the owner and have
 their own entries below — **rotate `GEMINI_API_KEY`**, exposed in a transcript on
 2026-08-20 and billed, before any paid round; and, off a round run for some other
 reason, read the usage lines for what a `6.0` round costs at
-`LLM_REASONING_EFFORT=low`. The next available product work is
-`docs/product-behaviour-backlog.md` §12, the research instrument.
+`LLM_REASONING_EFFORT=low`. The next product work is multi-tenancy, whose model
+the owner settled on 2026-08-20 and whose phases are in
+[`multi-tenancy-plan-2026-08-20.md`](multi-tenancy-plan-2026-08-20.md); phase 0
+is unblocked and needs none of the three questions still open there.
+`docs/product-behaviour-backlog.md` §12, the research instrument, is the
+alternative and is not blocked by it.
 
 ## Deployed state
 
@@ -111,12 +116,15 @@ intention, not a fact.
 `status: ok`, `producedContractVersion: 6.0`; the service `env: production`,
 `jobPollingEnabled: true`.
 
-Since then `origin/main` moved to `17792be` over eight commits that touch only
-`docs/`, `AGENTS.md`, `package.json`, `eslint.config.mjs` and two new scripts. No
-`src/`, no `ai-analytics-service/`, no `prisma/`. So Core is *expected* to have
-followed to `17792be` and the service is *expected* to have stayed on `e69a5eb`
-— neither has been read since, and both are inferences from the rules above
-rather than readings.
+Since then `origin/main` moved to `136a752` over seventeen commits. Sixteen touch
+only `docs/`, the root documents, `package.json`, `eslint.config.mjs`,
+`.gitattributes` and two new scripts; the seventeenth changes one line of
+`src/lib/server/request-question-suggestion.ts`, and that line is a comment. No
+`ai-analytics-service/`, no `prisma/`. So Core is *expected* to have rebuilt and
+to be serving `136a752` with unchanged behaviour, and the service is *expected*
+to have stayed on `e69a5eb` — neither has been read since, and both are
+inferences from the rules above rather than readings. `GET /api/health/` settles
+the Core half in one anonymous request whenever it matters.
 
 **The idle poll backoff was read in Render's logs at the moment it changed**, on
 2026-08-20 (times GMT+3). The outgoing instance `6tl48` posted

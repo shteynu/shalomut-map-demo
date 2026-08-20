@@ -335,6 +335,13 @@ credential, rotation means a redeploy, and there is no per-user revocation.
 The trigger for real identity work is a second manager, multi-tenant hosting or
 real respondents — whichever arrives first.
 
+That trigger fired on 2026-08-20: the owner chose multi-tenant hosting, with
+about four platform administrators who see every school and exactly one invited
+user per school. This ADR still describes the running code and stays until the
+phase that makes it untrue replaces it with a successor; the decision itself, and
+the order the work happens in, are in
+[`docs/multi-tenancy-plan-2026-08-20.md`](docs/multi-tenancy-plan-2026-08-20.md).
+
 ### ADR-014: A school runs one round at a time
 
 Owner decision 2026-08-03. A school may hold any number of rounds — drafts
