@@ -1,10 +1,26 @@
 # Shalomut Tracker — operational handoff
 
-**2026-08-20, later: the thinking-budget branch is merged with `main` and waits
-on one push.** `origin/main` is **`09efd528`**, asked of the remote. The branch
-`feat/the-thinking-budget-is-a-declared-number` is `b674287`, which contains it,
-so landing it is a fast-forward — but ask the remote again before pushing, as
-this file has had to say six times.
+**2026-08-20, later: the thinking-budget branch is on `main` and deployed, and
+the provider bill now changes by decision rather than by default.**
+`origin/main` is **`d07bb39`**, asked of the remote after the owner pushed
+`feat/the-thinking-budget-is-a-declared-number:main`. Both halves answer that
+commit: Core `/api/health/` `status: ok`, the service `/health` `status:
+online`, having moved off `56d1b72` between 11:44:02 and 11:44:33 without anyone
+asking it to — the build filter covers `ai-analytics-service/**` and the merge
+changed `config.py` and `llm_transport.py`. `provider-status` and
+`fallback-status` both read `unknown`, which is a new container rather than a
+fault. CI on `d07bb39`: CodeQL, Browser smoke, Core verification and the Vercel
+pipeline checks all green, the smoke run to completion because no later push
+cancelled it.
+
+**One thing is deployed but unread: whether the process actually holds
+`LLM_REASONING_EFFORT=low`.** No endpoint publishes the value. The service is
+blueprint managed and a `render.yaml` pace change was seen on the dashboard on
+2026-08-05, so the expectation is sound — but that is a precedent, not a
+reading. It closes either on the service's environment page in the owner's
+Chrome, or from the usage lines of the next round run for some other reason,
+where `total_tokens` should be about a fifth of an unset round's. That second
+reading would also produce the `6.0` cost figure the task could not make.
 
 It had diverged badly enough to be worth recording as a pattern rather than an
 incident: **two sessions fixed the same request timeout from different
@@ -31,11 +47,12 @@ provider call, nothing billed, no database touched. The service README had also
 been documenting the pre-2026-08-19 timeouts (20/25/8) and now documents the
 ones the code runs.
 
-Landing this is the deploy: the build filter covers `ai-analytics-service/**`
-and the merge changes `config.py` and `llm_transport.py`, so Render rebuilds on
-its own — and `LLM_REASONING_EFFORT=low` reaches the deployment with it, which
-is the first time this project's provider bill changes by decision rather than
-by default.
+The task file is archived as
+`docs/agent-tasks/archive/feat--the-thinking-budget-is-a-declared-number.md`,
+and `docs/agent-tasks/active/` is empty for the first time in a while. What it
+leaves behind is listed above and is the owner's: the dashboard reading, an
+eventual `6.0` cost run, and the `GEMINI_API_KEY` rotation recorded below, which
+should come before either.
 
 **2026-08-20: both fixes are on `main` and deployed, and the service redeployed
 without being asked.** The code landed as `56d1b72`; the push was a

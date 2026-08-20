@@ -14,12 +14,13 @@
 - Git state: nothing staged, nothing untracked (`git ls-files -o
   --exclude-standard` empty), one unstaged file — `next-env.d.ts`, the owner's
   pre-existing change, untouched by this task
-- Visibility: this worktree and any other worktree of this repository. **Not**
-  another checkout or machine: `origin/feat/…` still stands at `7e1d836`, which
-  is the work before the merge
-- Status: complete and merged with `main`. Ready to land; nothing in this file
-  is reasoned rather than measured, and where a measurement has a limit the
-  limit is named beside it
+- Visibility: everywhere. The owner pushed the branch to `main` on 2026-08-20,
+  so `origin/main` carries all of it. The branch ref `origin/feat/…` was left at
+  `7e1d836`, the pre-merge state; nothing depends on it any more
+- Status: **landed on `main` as `d07bb39` and deployed**, 2026-08-20. Both
+  halves answer that commit and CI is green on it. One thing this task set out
+  to change is still unconfirmed rather than measured — see the deployed
+  evidence below
 - Last updated: 2026-08-20
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -238,6 +239,33 @@ Two things the merge changed about what this file may claim:
   the environment. (548 at the earlier commits, before the two tests that pin
   the raised bounds.)
 - `npx tsc --noEmit` → clean at `54eb8f7`. `npm run lint` → clean.
+- **The deployed row, 2026-08-20, at `d07bb39`.** The owner pushed
+  `feat/…:main`; `origin/main` answered `d07bb39` when asked directly. Render
+  rebuilt without being asked — the build filter covers `ai-analytics-service/**`
+  and the merge changed `config.py` and `llm_transport.py` — and the service
+  moved from `56d1b72` to `d07bb39` between 11:44:02 and 11:44:33.
+  - `https://shalomut-ai-analytics.onrender.com/health` → `status: online`,
+    `commit: d07bb39`, `privacyThreshold: 10`, contracts `1.0`–`6.0`,
+    `jobPollingEnabled: true`.
+  - `/api/v1/provider-status` and `/api/v1/fallback-status` → both `unknown`,
+    the state a process holds before its first provider call. That is the
+    container being new, not a fault.
+  - `https://shalomut-map-demo.vercel.app/api/health/` → `status: ok`,
+    `commit: d07bb39`, producing `6.0` from `configured`.
+  - CI on `d07bb39`: CodeQL, Browser smoke, Core verification and the Vercel
+    pipeline checks all `success`. Browser smoke ran to completion this time —
+    its `cancel-in-progress` had no later push to kill it.
+  - Read-only throughout. No round was started, no data written, nothing billed.
+
+- **Not confirmed: that the deployed process actually holds
+  `LLM_REASONING_EFFORT=low`.** `/health` does not publish the value, and no
+  endpoint does. The service is blueprint managed — on 2026-08-05 a pace change
+  in `render.yaml` was seen on the dashboard afterwards — so the expectation is
+  reasonable, but a precedent is not a reading. Two ways to close it: the
+  service's environment page on the Render dashboard, or one round's usage
+  lines, where `total_tokens` should be roughly a fifth of an unset round's.
+  The second costs money and needs the owner.
+
 - **At the merge `b674287`**, with `GEMINI_API_KEY` and `LLM_REASONING_EFFORT`
   stripped from the environment: `ai-analytics-service/.venv/bin/python -m
   pytest -q` → **564 passed in 5.91s**, both sessions' timeout tests green
@@ -419,22 +447,16 @@ Topping up the provider account is the owner's action.
 
 ## Next concrete step
 
-Hand the owner the push that lands this on `main`:
+None on this branch — it is landed, deployed and green. What it leaves is one
+reading and one measurement, both the owner's to authorise:
 
-```
-git push origin feat/the-thinking-budget-is-a-declared-number:main
-```
+1. Confirm `LLM_REASONING_EFFORT=low` on the Render dashboard's environment page
+   for `shalomut-ai-analytics`. That is the whole point of the branch and it is
+   the one claim nothing here has read back.
+2. When a round is next run for another reason, read its usage lines instead of
+   running one for this: `total_tokens` roughly a fifth of an unset round is the
+   confirmation, and it also produces the `6.0` cost figure this task could not
+   make — every dollar figure in it came from a `5.0` round.
 
-It is a fast-forward: `b674287` contains `origin/main` (`09efd528`) as an
-ancestor, checked against the remote rather than a tracking ref. Ask the remote
-again first — `main` has moved between two commands in this repository before,
-and if it has, merge it in again rather than forcing anything.
-
-The push is the deploy. `render.yaml`'s `buildFilter` lists
-`ai-analytics-service/**` and this merge changes `config.py` and
-`llm_transport.py`, so Render rebuilds on its own and `LLM_REASONING_EFFORT=low`
-takes effect with it. What is owed immediately afterwards is the deployed row of
-the verification matrix — source, build, health, status, logs — and one round's
-usage lines: one line per billed answer, `reasoning_tokens` most likely
-`unavailable` because this provider does not itemise, and a `total_tokens`
-roughly a fifth of what an unset round logged.
+`GEMINI_API_KEY` still needs rotating before either; `docs/shalomut-tracker-handoff.md`
+owns that item.
