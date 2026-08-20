@@ -2988,6 +2988,27 @@ owner's own hands.
   one 5m 5s timeout at 05:01 on 2026-08-07**. Both readings are in the
   keep-alive section. Nothing here is left to look at; the next thing that would
   add information is whether a second night passes without an incident.
+- **The three published artifacts match the repository as of 2026-08-20.**
+  «Механика одного прогона», «Джобы AI-анализа Шаломут» and «Как устроена
+  Шаломут» became living documents under `docs/` that day and were republished
+  to their existing claude.ai URLs from those files. `docs/README.md` owns the
+  rule; this line only records that the two sides were level once, on that date,
+  and it stops being true the moment a document changes without a republish.
+- **Publishing a document is an undocumented hand transformation.** A repository
+  document is a whole HTML page; the artifact platform wraps content in its own
+  skeleton and injects its own mermaid. So publishing means stripping
+  `<!doctype>`/`<html>`/`<head>`/`<body>`, dropping the `vendor/` script tags and
+  keeping `<title>` inside the first 8 KB — and nothing in the repository does
+  it, so the next person derives it again from scratch. The 2026-08-20 pass left
+  the `claude-mermaid-runtime` marker block in the published body, so those two
+  pages now carry that small `<style>` twice; the rules are identical and
+  nothing renders differently, but it is the visible symptom of the missing
+  script. One script beside the other checks in `scripts/` would end both.
+- **The lede of `docs/ai-analysis-jobs.html` still cites a branch.** It says the
+  document was read from `claude/free-ai-service-deploy-yk4tjj`, which was
+  honest for a 2026-08-18 snapshot and is misleading now: the file is a living
+  document and that branch is gone. One sentence, and it wants the republish
+  above in the same pass.
 
 ## Next operational check
 
