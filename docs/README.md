@@ -104,6 +104,14 @@ historical section below once it is delivered or abandoned. This section exists
 because the two states are read differently: a live plan is meant to be acted
 on, and a historical one explicitly is not.
 
+- [`multi-tenancy-plan-2026-08-20.md`](multi-tenancy-plan-2026-08-20.md) —
+  many schools each with their own users, granted by invitation. Two owner
+  decisions taken on 2026-08-20 and six questions open. Phase 0 — the tenant
+  boundary starting to consult memberships instead of the list of all schools —
+  is unblocked and deliberately lands before any identity work, because it costs
+  nothing to verify while there is still one manager. **Not yet implemented**:
+  every living document still describes one manager per deployment, because that
+  is what the code does.
 - [`default-research-instrument-plan-2026-08-14.md`](default-research-instrument-plan-2026-08-14.md)
   — replacing the default 24-question template with the owner's 126-item
   research instrument. Six phases, three owner decisions taken and five open.
