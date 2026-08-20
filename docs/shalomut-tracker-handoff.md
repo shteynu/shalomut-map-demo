@@ -2995,6 +2995,12 @@ Before the next deployment-sensitive task, compare `origin/main` with deployed
 Core and Python source/health, then record only fresh read-only evidence in the
 new branch task file.
 
+**That comparison was made on 2026-08-20 and both halves matched the tip** —
+`e69a5eb` on Core's `/api/health/` and on the AI service's `/health`, read
+anonymously, with the Render logs read in the owner's signed-in Chrome. The
+readings are in `## Deployed state`; everything below this paragraph predates
+them and is kept for what it exercised, not as the current deployed commit.
+
 **Core was last read in the Vercel dashboard on 2026-08-10 and was `568fbcb`,
 `Ready`, Production, built in 40s** — `origin/main` at that moment. **That
 reading is now two sessions behind the repository:** 2026-08-11 pushed six
