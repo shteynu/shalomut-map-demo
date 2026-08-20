@@ -848,6 +848,7 @@ def is_valid_adaptation_batch(
     expected_steps_per_entry: list[int],
     status: str,
     distribution_counts: Optional[set[str]] = None,
+    contract_version: str = AI_ANALYTICS_CONTRACT_VERSION,
 ) -> bool:
     """A batch is acceptable only if every entry in it would be.
 
@@ -860,6 +861,7 @@ def is_valid_adaptation_batch(
         expected_steps_per_entry=expected_steps_per_entry,
         status=status,
         distribution_counts=distribution_counts,
+        contract_version=contract_version,
     )
 
 
@@ -869,6 +871,7 @@ def adaptation_batch_refusal(
     expected_steps_per_entry: list[int],
     status: str,
     distribution_counts: Optional[set[str]] = None,
+    contract_version: str = AI_ANALYTICS_CONTRACT_VERSION,
 ) -> AdaptationRefusal:
     """Which gate turns this batch away, and the shape of what it saw.
 
@@ -885,6 +888,15 @@ def adaptation_batch_refusal(
     the product's boundary for the convenience of debugging. The detail carries
     the shape instead — counts, indices, code points — which is what picks the
     next step. A falsy refusal means the batch is acceptable.
+
+    `contract_version` is a parameter rather than the module constant because
+    the constant is `"2.0"`, and 2.0 does not know what a score distribution is.
+    Pinned to it, this refused every 5.0 answer that did what the 5.0 prompt
+    asks — name a colour group with its count in digits — and the adaptation
+    step of every dimension fell back to catalog copy after spending two or
+    three answers proving it. Measured on three runs of 2026-08-19. The caller
+    owns the version; the interpretation path already threads its own, which is
+    why the stones never showed this.
     """
     parsed = parse_adaptation_batch(candidate, expected_steps_per_entry)
     if parsed is None:
@@ -922,7 +934,7 @@ def adaptation_batch_refusal(
         if not is_status_consistent(
             " ".join([summary, *steps]),
             status,
-            contract_version=AI_ANALYTICS_CONTRACT_VERSION,
+            contract_version=contract_version,
             distribution_counts=distribution_counts,
         ):
             return AdaptationRefusal(
@@ -1016,24 +1028,28 @@ def _status_inconsistency_detail(
     usually true and merely uncheckable, as "and the absence of green answers"
     was on 2026-07-29; that one is fixed in the prompt, not in the guard.
     """
+    counted: Optional[str] = None
     for sentence in sentences_or_whole(text):
         for colour_status, colour_word in _STATUS_WORDS_HEBREW.items():
             if colour_status == status or colour_word not in sentence:
                 continue
-            verdict = next(
-                (
-                    marker
-                    for marker in _VERDICT_MARKERS_HEBREW
-                    if f"{marker} {colour_word}" in sentence
-                ),
-                None,
+            verdict = any(
+                f"{marker} {colour_word}" in sentence
+                for marker in _VERDICT_MARKERS_HEBREW
             )
-            if verdict is not None:
+            if verdict:
                 return f"colour={colour_status} verdict=yes"
-            numbers = _INTEGER_PATTERN.findall(sentence)
-            return (
-                f"colour={colour_status} verdict=no "
-                f"numbers={','.join(numbers[:4]) or 'none'}"
-            )
+            if counted is None:
+                numbers = _INTEGER_PATTERN.findall(sentence)
+                counted = (
+                    f"colour={colour_status} verdict=no "
+                    f"numbers={','.join(numbers[:4]) or 'none'}"
+                )
+    # A verdict outranks a bare mention rather than whichever came first in the
+    # sentence. One answer can hold both — "4 green answers, but the dimension
+    # is in the red zone" — and only the verdict is refused on every contract,
+    # so reporting the mention would name a colour the gate had just allowed.
+    if counted is not None:
+        return counted
     # The judgement-phrase blacklist, which names no colour at all.
     return "judgement_phrase"

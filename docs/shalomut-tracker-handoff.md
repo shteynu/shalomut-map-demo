@@ -1,5 +1,155 @@
 # Shalomut Tracker — operational handoff
 
+**2026-08-20: both fixes are on `main` and deployed, and the service redeployed
+without being asked.** The code landed as `56d1b72`; the push was a
+fast-forward carrying twelve commits, `claude/priceless-swanson-9cf466`
+included, so the adaptation fix and the timeout fix landed together. Both
+halves answered with that commit within about two minutes — Core
+`/api/health` and the service `/health` both read `56d1b72`. Core has moved
+on since; see below.
+
+No manual redeploy was needed, which settles the "picks them up on the next
+deploy" left open in the entry below — the push *was* the deploy.
+`render.yaml`'s `buildFilter` lists `ai-analytics-service/**`, and this stack
+changes `config.py`, `llm_transport.py` and `llm_provider.py`. The same filter
+explains why the service had been serving `2ad95e9` while `main` was `4bd5b2f`:
+by design, not staleness — a service that lags `main` is the expected reading
+whenever the intervening commits touched only Core or docs.
+
+The container is new independently of the commit field it reports:
+`/api/v1/provider-status` and `/api/v1/fallback-status` both read `unknown`, the
+state a process holds before its first provider call.
+
+CI on `56d1b72`: CodeQL, Core verification and the Vercel pipeline checks
+green. Browser smoke reads `cancelled`, and it is not a failure — the workflow
+declares `concurrency: browser-smoke-${{ github.ref }}` with
+`cancel-in-progress`, so the next push to `main` three and a half minutes later
+killed it mid-run. It passed on `c183c6e`, which differs from `56d1b72` by one
+docs commit and by nothing else. Read a cancelled smoke run on `main` as "a
+later push arrived", and look for the workflow's own concurrency group before
+reading it as a break.
+
+`main` has since moved to `7c2b002`, and further docs commits will keep moving
+it; the deployed *code* is still `56d1b72`. Core follows every push and
+now answers `7c2b002`, while the service stayed on `56d1b72` because those
+commits touched only `docs/`. That is the build filter demonstrated in the other
+direction, and it is why the two halves reporting different commits is normal
+here rather than a symptom.
+
+**Closed 2026-08-20: the `5.0` adaptation fix has its live before/after.** This
+was carried out of `claude--priceless-swanson-9cf466.md` as that file was
+archived, and a round on the owner's approval closed it the same evening. All
+eight adaptation calls came back `outcome=llm` on `attempt=1`: zero
+`status_inconsistent`, zero `deterministic_fallback`, zero retries. Before the
+fix, three runs on the same script and contract lost **all eight** dimensions to
+`status_inconsistent`, each burning two or three attempts.
+
+The round cost 17 provider calls and 78,438 tokens, every one of them on the
+first attempt, and produced all eight stones from the model. Durations, on the
+new defaults: adaptation mean 15.6s and max 18.6s, interpretation mean 9.3s,
+the overall summary 8.6s. Read the adaptation figures as a `5.0` measurement
+only — that contract's adaptation prompt is smaller than `6.0`'s, whose calls
+have run to 25.6s and 50.9s, so this round is not a fourth sample of the tail
+that set the 90s timeout.
+
+**Deployed but not yet exercised.** The 90s request timeout, the 300s budget,
+`scope=` on the provider log lines and the error-level
+`token_budget_exhausted` have not seen a round through the deployed service. The
+numbers behind them come from local rounds against the same provider and key,
+and the slowest call differed by roughly 2x across two otherwise identical
+rounds. The first real deployed round is what turns them from measured into
+confirmed.
+
+**2026-08-19: the twenty-second timeout is fixed, and it was a ceiling in the
+code rather than a missing dashboard value.** `llm_retry_budget_seconds` was
+clamped to `25.0` in `config.py` and the request timeout to whatever the budget
+then allowed. A clamp caps the environment variable too, so the dashboard
+reading recorded below was answering a question that had no good answer: setting
+either variable there would not have raised anything. Fixed on
+`fix/the-adaptation-call-outlives-its-timeout`, based on
+`claude/priceless-swanson-9cf466`.
+
+New values are 90s request timeout, 300s retry budget, ceiling 600s, all code
+defaults — **no Render variable needs adding**, the service picks them up on the
+next deploy. They come from 55 measured calls across two live rounds: medians
+17.8s and 21.0s, slowest 26.0s and 50.9s. `outcome=usage` now carries
+`duration_ms`, which is what made the measurement possible at all.
+
+A live `6.0` round at the new defaults: 28 calls, **zero `TimeoutError`, zero
+adaptation fallbacks, eight stones `llm` on the first attempt**. Before it, the
+same round lost seven of eight adaptations.
+
+Worth carrying forward: the tail nearly doubled between two identical rounds, so
+90s is 1.8x a maximum that is itself unstable. If a round ever exceeds it,
+`LLM_REQUEST_TIMEOUT_SECONDS` can now raise it without a code change — that, more
+than the number, is what changed.
+
+**2026-08-19: a live `6.0` round writes its map and then loses seven of its
+eight adaptations to a twenty-second timeout.** First live round on `6.0` with
+deployed settings (`gemini-3.5-flash`, `MAX_TOKENS_PER_DIMENSION=8192`,
+`ONLY_LLM_FOR_PROBLEMATIC=false`, `LLM_REASONING_EFFORT` unset): 15 provider
+calls, 65,033 tokens, no truncation. Seven of eight stones came from the model.
+Every adaptation but `organizational-climate` fell back, and all seven on
+`TimeoutError` — not on a validator.
+
+The adaptation call is the largest answer of a round, five recommendations in
+one request, and `llm_request_timeout_seconds` defaults to `20.0` under a `25.0`
+retry budget cap. Neither variable is declared in `render.yaml`, and **the Render
+dashboard was read directly on 2026-08-19 to close the question: neither is set
+there either.** The service carries exactly sixteen variables —
+`AI_CALLBACK_SECRET`, `AI_JOB_POLLING_ENABLED`, `AI_JOB_POOL_SIZE`,
+`AI_WEBHOOK_SECRET`, `DATA_LAYER_CALLBACK_URL`, `DATA_LAYER_MCP_URL`, `ENV`,
+`GEMINI_API_KEY`, `LLM_MAX_REQUESTS_PER_MINUTE`,
+`LLM_MAX_REQUESTS_PER_MINUTE_HEAVY`, `LLM_MODEL_FAST`, `LLM_MODEL_HEAVY`,
+`MAX_TOKENS_PER_DIMENSION`, `MCP_SHARED_SECRET`, `ONLY_LLM_FOR_PROBLEMATIC`,
+`USE_MOCK_MCP` — with no linked environment groups and no secret files, so there
+is nowhere else for a value to come from. **The deployment runs the twenty-second
+timeout, and a real round loses the same seven adaptations** — silently, because
+it still reports success. Not fixed: the number wants measuring, and the budget
+cap means both have to move together.
+
+Two variables `render.yaml` marks `sync: false`, meaning "set on the dashboard",
+are not on the dashboard: `LLM_MAX_CONCURRENT_REQUESTS` (code default `2`) and
+`VERCEL_PROTECTION_BYPASS`. `sync: false` records an intention, not a fact, and
+for these two the intention was never carried out.
+
+Two smaller facts from the same round. The `5.0` defect fixed on
+`claude/priceless-swanson-9cf466` is confirmed absent on `6.0` — zero
+`status_inconsistent` in the whole run. And an earlier round that day was run on
+the config default `MAX_TOKENS_PER_DIMENSION=2048` rather than the deployed
+`8192`: 25 of 25 calls ended `finish_reason=length` and nothing survived, which
+is what the comment beside that variable in `render.yaml` already predicted. It
+cost about 74,000 tokens and measured a setting nothing runs.
+
+**2026-08-19: the local measurement script was burning half a round's provider
+answers on `5.0`, which is not the contract the deployment produces.** The
+question-adaptation step fell back to catalog copy on all eight dimensions of
+every run — three local runs that day — always `refusal=status_inconsistent`,
+always after two or three attempts; in the `low` run, 14 of 31 billed answers.
+The cause was a contract version that never reached the validator:
+`AI_ANALYTICS_CONTRACT_VERSION` is the version string of the **2.0** manifest,
+the adaptation path defaulted to it, and 2.0 forbids naming a colour group at
+all — while the 5.0 prompt renders the score distribution and asks the model to
+quote a bucket count. Fixed on `claude/priceless-swanson-9cf466` (`c1dfed0`);
+1.0-4.0 and 6.0 behave exactly as before.
+
+**The scope is narrower than the first version of this entry claimed, and the
+correction is the operational part.** Production explicitly selects `6.0`, and
+`6.0` takes the v6 adaptation branch — a prompt that never names a colour group
+and a validator that forbids visible digits — so deployed rounds could not hit
+this and their cost does not change. What was affected is `5.0`: the unset
+default, the documented rollback value, and the hardcoded default of
+`scripts/local-unlocked-pipeline.ts`, which pins itself to `"5.0"` and reads no
+`.env`. So the tool used to measure what a round costs was measuring a branch
+the deployment does not run.
+
+Two consequences. The credit entries below are about the deployed account and
+are **not** relieved by this fix. And any live before/after round has to be
+launched with `AI_ANALYTICS_CONTRACT_VERSION=6.0` if the question is about the
+deployment — otherwise it measures the same wrong branch again. Either way a
+live round is still owed, and it needs the owner's approval and an account with
+credit.
+
 **2026-08-19, session close: the three open items from this file are closed,
 built and seen running on the deployed stack.** `origin/main` is **`4bd5b2f`**,
 asked of the remote at the time of writing — and this file has been wrong about
@@ -2368,6 +2518,13 @@ that walk but the sign-in.
 
 ## External blockers and approval gates
 
+- **2026-08-20: `GEMINI_API_KEY` needs rotating.** It was printed in full into
+  an agent session transcript and a scratch file during the round above — a
+  shell presence-check written as `${VAR:-fallback}`, which expands to the
+  value when the variable is set. The scratch copy was redacted; the transcript
+  cannot be. This is the billed key, so the exposure is a spending risk as well
+  as an access one, and it is more current than the four credentials named
+  below. Rotation is an owner action.
 - Before the first real respondents, rotate the four credentials previously
   exposed in a private design-stage transcript. This is an accepted deferred
   gate, not a blocker for local/docs work.
@@ -2401,9 +2558,13 @@ that walk but the sign-in.
   the `LLM_REASONING_EFFORT` measurement was owed.
 
   **That measurement is now made, and ₪3–4 a round was the right order.** Same
-  fixture, both settings, on the bounds now in `render.yaml`: unset costs $1.12
-  a round (₪4.1), `LLM_REASONING_EFFORT=low` costs $0.37 (₪1.35) — **67% less**,
-  with all eight stones written by the model either way. Evidence and the
+  fixture, both settings, at a 40-second request timeout inside a 90-second
+  budget: unset costs $1.12 a round (₪4.1), `LLM_REASONING_EFFORT=low` costs
+  $0.37 (₪1.35) — **67% less**, with all eight stones written by the model
+  either way. The deployment now waits longer than that run did — 90 inside 300,
+  raised by a second session on 55 timed calls — which can only widen the gap,
+  because the extra room lets unset finish expensive answers it used to abandon
+  while `low` never had a timeout to begin with. Read 67% as a floor. Evidence and the
   corpus baselines are in
   `docs/agent-tasks/active/feat--the-thinking-budget-is-a-declared-number.md`;
   the setting and its reasoning are in `render.yaml`. Note the shape of it: the

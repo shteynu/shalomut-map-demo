@@ -8,10 +8,10 @@
   `fix/the-service-proves-its-commit-the-way-core-does` landed on `main`; the
   original base was `e752081` and the rebase was conflict-free, that branch
   having touched a different part of the handoff)
-- Current HEAD: `f9b036a`, two commits above the base
-- Status: **landed on `main` and deployed**, verified locally and then on the
-  deployed stack (2026-08-19)
-- Last updated: 2026-08-19
+- Current HEAD: `68fd473`. The file was written at `f9b036a`, two commits
+  above the base; more landed after it and it was never updated again.
+- Status: complete, landed on `main` as `68fd473`, archived
+- Last updated: 2026-08-20
 - Last agent/tool: Claude Code (Opus 5)
 
 ## Objective
@@ -116,7 +116,13 @@ Nothing.
 
 ## Remaining
 
-- Commit, and hand the push over. The push is an owner action here.
+None. Both happened: the work was committed and `68fd473` is in `main`'s
+history.
+
+Archived 2026-08-20, when the file was found still sitting in `active/`
+asking for a commit that had already been made. Nothing above this line was
+rewritten — only the metadata and this section, which were describing a state
+that had stopped being true.
 
 ## Changed files
 

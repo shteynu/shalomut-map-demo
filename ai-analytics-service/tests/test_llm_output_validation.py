@@ -1066,3 +1066,134 @@ def test_the_summary_refusal_names_the_gate_that_closed(answer, expected_label):
     assert bool(refusal) == (parsed is None)
     if refusal:
         assert hebrew_prompts.batch_retry_critique(refusal.label)
+
+
+# --- the version the adaptation validator is told about ---------------------
+
+# A summary that does exactly what the 5.0 adaptation prompt asks for: it names
+# a colour group and puts that group's own count beside it, in digits. The
+# dimension is yellow, so `ירוק` is a foreign colour; `4` is the green bucket of
+# AGGREGATES, so the sentence is checkable against the map.
+_COUNTED_COLOUR_SUMMARY = "לפי 4 התשובות הירוקות בשאלה החוזקה חלקית בלבד."
+
+
+def _counted_colour_batch(entries: int = 1, steps: int = 2) -> str:
+    block = "\n".join([_COUNTED_COLOUR_SUMMARY] + [f"- {_STEP}"] * steps)
+    return "\n===\n".join([block] * entries)
+
+
+@pytest.mark.parametrize(
+    "contract_version,refused",
+    [
+        ("2.0", True),
+        ("3.0", True),
+        ("4.0", True),
+        ("5.0", False),
+        ("6.0", False),
+    ],
+)
+def test_a_counted_colour_is_refused_only_where_the_contract_has_no_buckets(
+    contract_version,
+    refused,
+):
+    """The gate is the round's contract, not the module's default.
+
+    `AI_ANALYTICS_CONTRACT_VERSION` is `"2.0"`, and 2.0 never showed a model a
+    score distribution, so under it any foreign colour is a contradiction. That
+    default was what judged every round: on 2026-08-19 three local runs ended
+    with all eight dimensions on `adaptation=deterministic_fallback` and
+    `refusal=status_inconsistent`, two or three answers spent per dimension, on
+    copy that had quoted the round's own bucket count exactly as asked.
+
+    1.0-4.0 keep the flat blacklist. 5.0 and 6.0 declare
+    `supportsScoreDistribution`, and there a colour with its count beside it is
+    a report rather than a verdict.
+    """
+    refusal = hebrew_validation.adaptation_batch_refusal(
+        _counted_colour_batch(),
+        expected_steps_per_entry=[2],
+        status="yellow",
+        distribution_counts=hebrew_validation.distribution_counts(AGGREGATES),
+        contract_version=contract_version,
+    )
+
+    assert bool(refusal) is refused
+    if refused:
+        assert refusal.label == "status_inconsistent"
+        assert refusal.detail == "block=1 colour=green verdict=no numbers=4"
+
+
+@pytest.mark.parametrize(
+    "summary,detail",
+    [
+        # A verdict is the model overruling the score Core owns. 5.0 loosens
+        # nothing here — and the detail names the verdict rather than the
+        # allowed green mention standing next to it in the same sentence.
+        (
+            "הממד נמצא באזור אדום למרות 4 התשובות הירוקות.",
+            "block=1 colour=red verdict=yes",
+        ),
+        # A colour whose number is not one of the round's buckets: still
+        # uncheckable against the map, still refused.
+        (
+            "לפי 30 התשובות אין תשובות ירוקות בשאלה הזו.",
+            "block=1 colour=green verdict=no numbers=30",
+        ),
+    ],
+)
+def test_five_zero_still_refuses_a_verdict_and_an_uncheckable_count(
+    summary,
+    detail,
+):
+    """What the fix must not have bought: a colour the reader cannot check."""
+    refusal = hebrew_validation.adaptation_batch_refusal(
+        "\n".join([summary] + [f"- {_STEP}"] * 2),
+        expected_steps_per_entry=[2],
+        status="yellow",
+        distribution_counts=hebrew_validation.distribution_counts(AGGREGATES),
+        contract_version="5.0",
+    )
+
+    assert refusal.label == "status_inconsistent"
+    assert refusal.detail == detail
+
+
+def test_the_adaptation_call_judges_the_answer_by_the_version_it_was_given(
+    monkeypatch,
+):
+    """End to end over the provider seam, because the pin was in the plumbing.
+
+    The validator taking a version is only half of it: `adapt_interventions_result`
+    defaulted to `"2.0"` as well, so the round's own version had to reach the
+    call before it could reach the gate. One attempt, no retry budget: under the
+    old default this answer cost three and ended on catalog copy.
+    """
+    interventions = [
+        {
+            "id": "int-1",
+            "dimensionId": "balance",
+            "summary": "המלצת קטלוג על איזון עומסים.",
+            "actionable_steps": ["שלב קטלוגי אחד.", "שלב קטלוגי שני."],
+        },
+    ]
+
+    monkeypatch.setattr(settings, "llm_api_key", "sk-test-validation")
+    monkeypatch.setattr(settings, "llm_base_url", "https://provider.local/v1")
+    monkeypatch.setattr(settings, "llm_max_attempts", 1)
+    monkeypatch.setattr(
+        "urllib.request.urlopen",
+        lambda request, timeout=None: _response(_counted_colour_batch()),
+    )
+
+    adapted = llm_provider_service.adapt_interventions_result(
+        interventions=interventions,
+        dim_hebrew="איזון",
+        score=45.5,
+        status="yellow",
+        question_aggregates=AGGREGATES,
+        contract_version="5.0",
+    )
+
+    assert [entry.outcome for entry in adapted] == ["llm"]
+    assert [entry.summary for entry in adapted] == [_COUNTED_COLOUR_SUMMARY]
+    assert [entry.attempts for entry in adapted] == [1]

@@ -8,10 +8,9 @@
   `feat/the-map-says-which-paragraphs-it-wrote-itself` (rebased there on
   2026-08-19; the original base was `e752081`, and the two branches now form a
   linear stack above `main` at `2b59526`)
-- Current HEAD: three commits above the base
-- Status: **landed on `main` and deployed**, verified locally and then on the
-  deployed stack (2026-08-19)
-- Last updated: 2026-08-19
+- Current HEAD: `2ad95e9`, three commits above the base
+- Status: complete, landed on `main` as `2ad95e9`, archived
+- Last updated: 2026-08-20
 - Last agent/tool: Claude Opus 5 (Claude Code)
 
 ## Objective
@@ -121,9 +120,14 @@ Nothing.
 
 ## Remaining
 
-Nothing. The owner pushed the stack on 2026-08-19, both halves serve it, and
-`20260819120000_a_run_may_name_the_dimensions_it_rewrites` was applied to the
-deployed database ahead of that push.
+None. The push happened: `2ad95e9` is in `main`'s history, so the branch
+landed as it stood. `20260819120000_a_run_may_name_the_dimensions_it_rewrites`
+had already been applied to the deployed database on 2026-08-19, ahead of it.
+
+Archived 2026-08-20, when the file was found still sitting in `active/`
+claiming the push was outstanding. Nothing above this line was rewritten —
+only the metadata and this section, which were describing a state that had
+stopped being true.
 
 ## Changed files
 

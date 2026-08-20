@@ -247,7 +247,10 @@ class Settings:
         # Transient provider failures are retried inside the worker thread.
         # The defaults bound how long one dimension may hold a provider slot;
         # since the webhook answers 202 before the run starts, they no longer
-        # have to fit the core app's 30-second timeout.
+        # have to fit the core app's 30-second timeout. That was written when
+        # the constraint was lifted, and the numbers below were left where the
+        # constraint had put them for another three weeks — which is what the
+        # ceiling further down is about.
         self.llm_max_attempts: int = max(
             1,
             min(5, int(os.getenv("LLM_MAX_ATTEMPTS", "3"))),
@@ -264,50 +267,70 @@ class Settings:
             0.0,
             float(os.getenv("LLM_RETRY_JITTER_SECONDS", "0.25")),
         )
-        # Bounds one dimension's whole retry loop, and the three numbers below
-        # are one decision rather than three: the budget has to hold two full
-        # attempts, or a slow answer is abandoned rather than retried.
+        # Bounds one dimension's whole retry loop. The ceiling is what makes
+        # this a code constant rather than a knob: it caps the environment
+        # variable too, so while it was 25 no deployment could raise either
+        # number, whatever the dashboard said.
         #
-        # They were 25, 20 and 8, sized when this call had to finish inside the
-        # core app's 30-second HTTP timeout. It has not had to since the webhook
-        # started answering `202` before the run starts — the comment above
-        # `llm_max_attempts` has said so for a while — and 20 inside 25 meant an
-        # attempt that timed out left five seconds, which is less than the
-        # minimum window, so the second attempt was never made.
+        # Measured 2026-08-19 on 6.0 with `gemini-3.5-flash` and
+        # `MAX_TOKENS_PER_DIMENSION=8192`, two rounds and 55 provider calls.
+        # Round one: median 17.8s, p90 22.6s, slowest 26.0s. Round two: median
+        # 21.0s, slowest **50.9s**. The same work on the same settings, and the
+        # slowest call nearly doubled between them — which is the number that
+        # decides this, because a timeout is sized against the tail and not
+        # against the median.
         #
-        # Measured, 2026-08-19: the eval corpus at `LLM_REASONING_EFFORT=low`
-        # lost three of 56 stones to `TimeoutError` at `structured_summary`,
-        # each after one or two attempts, while the graders showed no drop in
-        # what the model wrote. The saving that setting offers is only real if a
-        # slow answer is waited for.
+        # The old twenty seconds sat below even the median. Seven of eight
+        # adaptations died on `TimeoutError` while the round reported success;
+        # at the 25s ceiling ten of twenty-seven calls still died. A reasoning
+        # model writing five recommendations in one request is a twenty-to-fifty
+        # second job and was being given twenty.
         #
-        # 90 = two attempts of 40 plus room for backoff, jitter and a booked
-        # turn. What bounds the round rather than the call: Core reads a run as
-        # stalled after fifteen minutes, and eight dimensions at two concurrent
-        # requests is about five and a half minutes even if every one of them
-        # takes both attempts in full. The cap is 300 so an operator can go
-        # further on evidence; it is no longer a number chosen to fit a timeout
-        # that is gone.
+        # Ninety is 1.8x the slowest call actually seen, chosen after sixty
+        # turned out to be 1.2x it — one round is not a distribution, and the
+        # first estimate here was made from one round. Three hundred lets all
+        # three attempts run to ninety with their delays (3x90 + ~7 < 300),
+        # rather than having the budget kill an attempt the timeout would have
+        # allowed: that is this same defect one level down.
+        #
+        # The ceiling is raised, not removed. It is what makes these code
+        # constants rather than knobs — it caps the environment variable too, so
+        # while it was 25 no deployment could lift either number, whatever was
+        # set on the dashboard. The cost of the larger numbers is worst-case
+        # wall time against a hung provider, roughly twelve times what it was.
+        # That is bounded, asynchronous behind the webhook's 202, and preferable
+        # to losing seven adaptations on every round with certainty.
+        #
+        # Corroborated from the other direction on 2026-08-19: the eval corpus
+        # at `LLM_REASONING_EFFORT=low` lost three of 56 stones to
+        # `TimeoutError` at `structured_summary` while the graders showed no
+        # drop in what the model wrote. Waiting for those answers cost 67% less
+        # than an unset round, so the saving that setting offers is only real
+        # once a slow answer is retried rather than abandoned.
         self.llm_retry_budget_seconds: float = max(
             1.0,
             min(
-                300.0,
-                float(os.getenv("LLM_RETRY_BUDGET_SECONDS", "90.0")),
+                600.0,
+                float(os.getenv("LLM_RETRY_BUDGET_SECONDS", "300.0")),
             ),
         )
         self.llm_request_timeout_seconds: float = max(
             1.0,
             min(
                 self.llm_retry_budget_seconds,
-                float(os.getenv("LLM_REQUEST_TIMEOUT_SECONDS", "40.0")),
+                float(os.getenv("LLM_REQUEST_TIMEOUT_SECONDS", "90.0")),
             ),
         )
         # What the next attempt must be able to keep to be worth starting. A
         # retry booked with less time than this gets a request timeout of
         # whatever is left, so the old 8 bought an attempt that was almost
         # certain to time out again — the failure this raise is about. Twenty is
-        # half the request timeout: short enough that a fast answer still gets
-        # its second chance, long enough that the second chance is one.
+        # about the median call measured on 2026-08-19 (17.8s and 21.0s over two
+        # rounds), not a fraction of the 90-second timeout: an attempt given
+        # twenty seconds can still finish a typical answer, and one given eight
+        # could not finish any of them. With a 300-second budget and three
+        # attempts of ninety, this bound rarely binds at all; it exists for the
+        # round that has already spent most of its budget.
         self.llm_min_retry_window_seconds: float = max(
             1.0,
             min(

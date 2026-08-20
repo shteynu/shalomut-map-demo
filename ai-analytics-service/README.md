@@ -394,10 +394,14 @@ for as long as it was never asked, so withholding it would take away text the
 manager already has. For yellow and red the same substitution would be a guess
 about a problem, which is what the rule above exists to prevent — they raise.
 
-Each provider request may run for up to `LLM_REQUEST_TIMEOUT_SECONDS` (`20s`
+Each provider request may run for up to `LLM_REQUEST_TIMEOUT_SECONDS` (`90s`
 by default). The full retry loop for one dimension is capped by
-`LLM_RETRY_BUDGET_SECONDS` (`25s`, with a hard maximum of `25s`), and a new
-attempt starts only when at least `LLM_MIN_RETRY_WINDOW_SECONDS` (`8s`) remain.
+`LLM_RETRY_BUDGET_SECONDS` (`300s`, with a hard maximum of `600s`), and a new
+attempt starts only when at least `LLM_MIN_RETRY_WINDOW_SECONDS` (`20s`)
+remain. All four numbers were `20`, `25`, `25` and `8` until 2026-08-19, when
+55 timed provider calls showed the request timeout sitting below even the
+median answer; `config.py` carries the measurements and the reason the ceiling
+is raised rather than removed.
 The budget bounds how long one dimension may hold a provider slot. The durable
 job request is already committed before processing, and the legacy webhook
 also answers before its background run, so neither path has to fit the Core

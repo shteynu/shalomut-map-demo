@@ -1111,3 +1111,50 @@ async def test_an_unavailable_stone_may_not_gain_copy_later(answering_llm):
 
     assert validated["safety_status"] == "fail"
     assert "must be empty" in validated["safety_feedback"]
+
+
+# The summary above quotes a number and no colour, which is why the suite went
+# on passing while every real round fell back: a foreign colour is the one thing
+# the 2.0 rule refuses, and nothing here had ever written one.
+COUNTED_COLOUR_SUMMARY = "לפי 4 התשובות הירוקות בשאלה החוזקה חלקית בלבד."
+
+
+def _counted_colour_response(request, timeout=None):
+    """The same stub, answering the way the 5.0 prompt asks it to.
+
+    The prompt renders `(תשובות: 4 ירוק, 12 צהוב, 4 אדום)` for every question
+    and then says: when you name a colour group, write its count in the same
+    sentence in digits. This does that, with the round's own green bucket.
+    """
+    prompt = _prompt_of(request)
+    step_counts = [int(count) for count in _BATCH_STEP_COUNTS.findall(prompt)]
+    blocks = [
+        "\n".join([COUNTED_COLOUR_SUMMARY] + [f"- {ADAPTED_STEP}"] * count)
+        for count in step_counts
+    ]
+    return _summary_response("\n===\n".join(blocks))
+
+
+@pytest.mark.asyncio
+async def test_a_five_zero_round_may_quote_its_own_colour_buckets(monkeypatch):
+    """The prompt asks for a counted colour; 5.0 has to accept one.
+
+    Until 2026-08-19 it did not. `agent_adaptation_node` passed the round's
+    contract version only to the 6.0 branch, so a 5.0 round was judged by the
+    module default of `"2.0"` — a contract that never showed a model a
+    distribution and therefore treats every foreign colour as a contradiction.
+    Three local runs that day ended with all eight dimensions on catalog copy
+    and `refusal=status_inconsistent`, having spent two or three provider
+    answers each getting there.
+    """
+    catalog, state = await _adapted_state(
+        build_v5_round_data(),
+        monkeypatch,
+        _counted_colour_response,
+    )
+
+    assert catalog
+    for dimension_id, interventions in state["recommendations"].items():
+        for intervention in interventions:
+            assert intervention["adaptationOutcome"] == "llm", dimension_id
+            assert intervention["summary"] == COUNTED_COLOUR_SUMMARY

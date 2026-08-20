@@ -190,16 +190,37 @@ services:
       #
       # And all three were lost to `TimeoutError`, not to the model: a request
       # bounded at 20 seconds inside a 25-second retry budget left no room for
-      # a second attempt. Those bounds are now 90, 40 and 20 — see `config.py`,
-      # which carries the reasoning — and the corpus was run again at `low`:
+      # a second attempt. The bounds were raised to 40 inside 90 for that
+      # measurement and stand at 90 inside 300 today — a second session raised
+      # them further on 55 timed calls; `config.py` carries both readings — and
+      # the corpus was run again at `low`:
       # `evals/baselines/2026-08-19-gemini-3.5-flash-reasoning-low-waited.json`,
       # 56 of 56 stones written by the model, mean 0.9604 against the unset
       # run's 0.9644, and not one `TimeoutError` in either half of it.
       #
-      # Cost, measured on these bounds rather than reasoned about: the same
+      # Cost, measured on those bounds rather than reasoned about: the same
       # fixture, 31 billed answers each way, no timeout in either. Unset spends
       # 106,175 thinking tokens and $1.12 a round; `low` spends 22,728 and
       # $0.37. Both write all eight stones.
+      #
+      # Read 67% as a floor rather than a point, because the deployment now
+      # waits longer than the run that produced it: at 90 inside 300 an unset
+      # round can finish answers that 40 inside 90 still abandoned, and every
+      # such answer is billed at the thinking rate. `low` has nothing to gain
+      # from the extra room — it had no timeout at either setting — so the gap
+      # can widen and cannot close. Re-measuring it is cheap and nobody has.
+      #
+      # One limit on that figure, found when this branch met `main`: every
+      # single-round cost run above went through `local-unlocked-pipeline.ts`,
+      # which pinned itself to contract `5.0` while the deployment produces
+      # `6.0`. So the dollars are a `5.0` round — a round whose adaptation was
+      # failing on every dimension at the time — and not the round this file
+      # configures. What is measured on `6.0` is the half that decides the
+      # setting anyway: the eval corpus runs `6.0`, and at `low` it returned 56
+      # of 56 stones written by the model with the graders flat. The thinking
+      # share itself is a property of one answer, not of a contract. Both are
+      # reasons to keep `low`; neither makes 67% a `6.0` number, and a run with
+      # `AI_ANALYTICS_CONTRACT_VERSION=6.0` set is what would.
       #
       # That is 67%, not the 39% one round on the old bounds suggested, and the
       # reason is worth keeping: the old 20-second timeout was quietly saving
