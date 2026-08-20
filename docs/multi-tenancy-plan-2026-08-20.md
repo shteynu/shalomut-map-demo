@@ -304,6 +304,10 @@ schools.
 
 ### Phase 3 — the audit log survives a restart
 
+**Implemented 2026-08-20** on `feat/the-audit-log-survives-a-restart`, which had
+not reached `main` when this line was written. One thing landed that the list
+below does not ask for, and the third bullet is still open on purpose.
+
 Moved ahead of everything optional by the decision that an administrator reads
 any school. `InMemoryAuditLogRepository` (`src/lib/auth/domain-contract.ts:134`)
 is what `getAuditLogRepository()` returns, so audit events die with the
@@ -316,11 +320,31 @@ before the administrators do, not after — a role whose use cannot be
 reconstructed is a role nobody can defend having granted.
 
 - A Prisma-backed `IAuditLogRepository` behind the interface that already exists.
+  Done: `audit_events`, `PrismaAuditLogRepository`, and the repository resolved
+  through the composition root — which also removed the one exception
+  `check-composition-root.mjs` was carrying, exactly as that exception said it
+  would be.
 - **An administrator reading another school is itself an audited action**, which
   is a new event type: the current `AuditActionType` list covers writes only
-  (`src/lib/auth/manager-audit-service.ts:4`).
+  (`src/lib/auth/manager-audit-service.ts:4`). Done as
+  `ADMINISTRATOR_SCHOOL_VISIT`, recorded at `authorizeManagerRound` and
+  `loadManagerContext` — the two chokepoints every manager path passes through —
+  and **failing closed**: a visit that cannot be written refuses the read, which
+  is the only place in the product that refuses on an audit failure. One visit is
+  one row per fifteen minutes per administrator per school, because a screen is a
+  dozen requests.
+- **Not in this list, and done anyway: the writes that were declared and never
+  recorded.** Five action types were named when the audit service was written in
+  slice 3 and exactly one — `ROUND_RESET` — was ever recorded, so a durable table
+  would have been a durable empty table. `ROUND_CREATED`,
+  `ROUND_STATUS_UPDATED`, `SETUP_SAVED`, `SURVEY_DEFINITION_UPDATED` and
+  `AI_TRIGGERED` now record where they happen. The two membership actions wait
+  for the phase 2 screens that raise them.
 - Who may read the log, and whether a school can see the visits made to it, is
-  worth deciding with the administrators rather than later.
+  worth deciding with the administrators rather than later. **Still open, and
+  deliberately.** `getOrganizationAuditLogs` lets an administrator read any
+  school's log and a school user their own, and nothing renders either: there is
+  no screen and no endpoint. Reading the log today means reading the table.
 
 ### Phase 4 — what the administrator can see about every school
 

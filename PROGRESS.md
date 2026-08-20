@@ -580,11 +580,14 @@ to a second subject stays conditional, and `ROADMAP.md` records why.
 
 The long-term identity model left this list on 2026-08-03 as requirement-gated
 future work, and came back on 2026-08-20 when the owner asked for multi-tenant
-hosting. Phases 0 and 1 of `docs/multi-tenancy-plan-2026-08-20.md` are done —
+hosting. Phases 0, 1 and 3 of `docs/multi-tenancy-plan-2026-08-20.md` are done —
 the tenant boundary is a membership, identity is a row, sign-in is an identity
-provider — and `PROJECT_CONTEXT.md` ADR-025 is the successor to ADR-013, whose
-argument about the password hash turned out to end with the hash being deleted
-rather than replaced. Phases 2 to 6 remain, and the plan holds them.
+provider, and the audit log outlived the container in time for the
+administrators who make it matter. `PROJECT_CONTEXT.md` ADR-025 is the successor
+to ADR-013, whose argument about the password hash turned out to end with the
+hash being deleted rather than replaced, and ADR-026 records why an
+administrator's read of a school they do not belong to is refused when it cannot
+be written down. Phases 2, 4, 5 and 6 remain, and the plan holds them.
 
 ## Durable references
 

@@ -35,9 +35,19 @@ crosses that boundary in either direction — this product asks the provider who
 somebody is and tells it nothing about what they then read.
 
 The address is stored here as well, in `managers.email`: it is how an invitation
-is addressed and how a sign-in is recognised. That is the only place in this
-system where a named person is stored at all, and the reason the tables that
-hold respondents' answers still hold no name.
+is addressed and how a sign-in is recognised. Since 2026-08-20 it also appears in
+`audit_events`, which records what a manager did and, for a platform
+administrator, which school they opened without belonging to it — a manager
+identifier on every row and the address alongside a visit. Those two tables are
+the only places in this system where a named person is stored at all, and the
+reason the tables that hold respondents' answers still hold no name. The audit
+rows describe managers acting, never respondents: no answer, no token hash and no
+demographic value reaches them.
+
+Retention below applies to them too. `audit_events` deliberately has no foreign
+keys, so deleting a school or a manager does not remove the record of what was
+done — which is the point of an audit log and, equally, something a privacy
+notice has to state rather than imply.
 
 ## What crosses each boundary
 

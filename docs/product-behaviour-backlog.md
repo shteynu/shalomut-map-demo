@@ -360,7 +360,9 @@ Current state, rewritten 2026-08-20: a manager **is** a database record now, and
 so is a membership. Phase 1 of `docs/multi-tenancy-plan-2026-08-20.md` created
 `managers` and `organization_memberships`, moved sign-in to an identity
 provider, and gave the platform about four administrators who may open any
-school. The audit-log interface is still in-memory and is phase 3.
+school. Phase 3 followed on the same day: the audit-log interface is Prisma-backed
+now, `audit_events` is a table, and an administrator opening a school they are not
+a member of is a row in it.
 
 That closed the machinery this item asked for without closing the item. What the
 owner chose on 2026-08-20 is **one user per school** — many schools, one person
@@ -400,8 +402,8 @@ starts earning its keep. Until then the requirement stays advisory, stated in
 Proposal, when a second manager is actually requested. Three of these five were
 taken by the 2026-08-20 multi-tenancy work rather than by this item, and are
 marked as such:
-- ~~Persist `Manager`, `OrganizationMembership` and audit events~~ — done for the
-  first two on 2026-08-20; audit events are phase 3 of the plan.
+- ~~Persist `Manager`, `OrganizationMembership` and audit events~~ — all three
+  done on 2026-08-20, the first two in phase 1 and the third in phase 3.
 - ~~Store a real credential with a memory-hard KDF, or store none at all under an
   identity provider.~~ Done, as the second: the product stores none.
 - ~~Enforce credential strength at the point a password is set~~ — no longer
@@ -419,9 +421,10 @@ Why it matters:
 - The single-account shape had real limits worth naming while it lasted: the
   deployment secret was the credential, rotation meant a redeploy, and per-user
   revocation did not exist. The first two ended on 2026-08-20 for any runtime
-  with an identity provider. A meaningful "who signed in" audit trail still does
-  not exist, and it is phase 3 rather than part of this item — an administrator
-  who can open every school makes it urgent on its own.
+  with an identity provider. What a manager did is durable as of 2026-08-20 and
+  an administrator's cross-school read is in it; who *signed in* is still not
+  recorded, and belongs with the short session of phase 5 rather than with this
+  item.
 
 ### 9. Configurable Scoring Thresholds (completed 2026-08-03)
 

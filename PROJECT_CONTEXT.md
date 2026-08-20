@@ -256,9 +256,10 @@ repositories, and `src/lib/composition-root.ts` is the only module that
 constructs them. Only an entrypoint — a route handler, the server-component
 context loader, a script or a test — calls `resolveCoreRepositories()`;
 everything below that edge receives repositories as arguments.
-`npm run lint:composition` enforces both halves. The one acknowledged exception
-is the process-local audit log in `src/lib/server/manager-audit.ts`, which waits
-on a durable audit table.
+`npm run lint:composition` enforces both halves, and as of 2026-08-20 it has no
+exceptions: the one it carried — the process-local audit log in
+`src/lib/server/manager-audit.ts` — went away with the durable audit table
+(ADR-026).
 
 ### ADR-009: Manager UI requires server runtime and server-owned scope
 
@@ -873,6 +874,45 @@ their memberships.
 `docs/data-flow-and-subprocessors.md` before the role existed. It touches
 managers and never respondents: a teacher filling in a questionnaire has no
 account and never reaches it.
+
+### ADR-026: The audit log outlives the container, and an administrator's read is in it
+
+2026-08-20, phase 3 of the multi-tenancy plan, and the consequence of ADR-025.
+
+**`audit_events` is a table.** `getAuditLogRepository()` returned an in-memory
+store, so a recorded action died with the container and the `console.info` beside
+it landed in a log window nothing collects. `PrismaAuditLogRepository` sits behind
+the `IAuditLogRepository` that already existed, and it is resolved through the
+composition root like every other repository.
+
+**An administrator opening a school they are not a member of is an event**, which
+is the first read in a list that was all writes. It is recorded at the two
+chokepoints every manager path passes through — `authorizeManagerRound` for the
+round routes and `loadManagerContext` for the screens — so a route cannot reach a
+school without the visit being recorded, and a new route cannot forget to.
+
+**That read fails closed, and it is the only thing here that does.** If the visit
+cannot be written the read is refused: `503` to an API caller, a thrown error to a
+screen. A read nobody can reconstruct is worse than a read that did not happen. A
+manager's write in their own school keeps the opposite rule — a failed audit write
+is logged and the action proceeds, because refusing it would take away access
+rather than record it.
+
+**One visit is one row for fifteen minutes**, per administrator per school. One
+screen is a dozen requests, and a row per request would bury the log it exists to
+make readable. The window is process-local, so two instances can each record the
+same visit; the log would rather hold it twice than miss it.
+
+**The table carries no foreign keys.** An audit row has to outlive what it
+describes — a deleted school and a removed manager are exactly the cases somebody
+would want to reconstruct — so a cascade would delete the record of the deletion.
+`manager_id` may also read `unknown`, for an action that reached the server
+without a manager session.
+
+**Who may read the log is deliberately still open.** `getOrganizationAuditLogs`
+lets an administrator read any school's and a school user their own, and nothing
+renders either: no screen and no endpoint exposes the log yet. Whether a school
+should see the visits made to it is a question for the administrators.
 
 ## Environments
 
