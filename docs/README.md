@@ -139,6 +139,15 @@ under "Live plans" above:
   — defects and drift found during that study. Deferred by owner decision on
   2026-08-09, then all seven fixed the same day; the file records what each one
   was and which branch closed it;
+- [`ai-analysis-run-mechanics-2026-08-18.html`](ai-analysis-run-mechanics-2026-08-18.html)
+  — a copy of the published artifact «Механика одного прогона» as it read on
+  2026-08-18: the whole pipeline from "close the round" to the map on screen,
+  drawn. Kept for its diagrams and its account of *why* each fork went the way
+  it did. The living source of the same mechanism is
+  [`ai-analysis-run-lifecycle.md`](ai-analysis-run-lifecycle.md), which moves
+  with the code; this one does not. Already **stale** in one place: it says the
+  worker asks Core every two seconds, and since 2026-08-20 an empty queue
+  doubles that wait up to thirty. The file's own header comment says so too;
 - `wellbeing-refactoring-plan-v4-review.md` (its section 6 is the final audit of
   the merged refactoring stack; remaining work is summarized in `ROADMAP.md`);
 - `redesign-change-log.md`;

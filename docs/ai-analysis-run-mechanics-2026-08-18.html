@@ -1,0 +1,2011 @@
+<!doctype html>
+<!--
+  Снимок артефакта «Механика одного прогона», опубликованного на claude.ai
+  (https://claude.ai/code/artifact/444558e1-6ea5-47a3-8945-960a3a7893d3),
+  в редакции 2026-08-18. Копия сделана 2026-08-20.
+
+  Это исторический снимок, а не живой документ. Живой источник той же механики —
+  docs/ai-analysis-run-lifecycle.md, и он обновляется вместе с кодом.
+
+  Что здесь уже разошлось с кодом: разделы 01 и 03 говорят, что воркер
+  опрашивает Core «каждые 2 с». С 2026-08-20 (коммит 90a1306) пустой опрос
+  удваивает паузу до 30 с и сбрасывает её на первой забранной джобе.
+
+  Из исходного файла удалён только служебный блок рантайма claude.ai,
+  размеченный парой комментариев frame-runtime: он не часть документа.
+  Остальное — байт в байт как опубликовано. Шрифты грузятся с Google Fonts,
+  как в оригинале; docs/ не входит в область проверки npm run lint:fonts.
+-->
+<html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}</style></head><body>
+<title>Механика одного прогона</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Golos+Text:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+
+<style>
+  :root {
+    --ground: #eceff3;
+    --surface: #ffffff;
+    --surface-sunk: #e3e8ee;
+    --ink: #151b22;
+    --ink-soft: #4d5a67;
+    --ink-faint: #78868f;
+    --rule: #c6d0d9;
+    --rule-strong: #9daebc;
+    --accent: #1c4c68;
+    --accent-soft: #dbe7ef;
+    --good: #2c6a4b;
+    --warn: #8d6210;
+    --bad: #96382f;
+    --shadow: 0 1px 0 rgba(21, 27, 34, .05), 0 12px 28px -20px rgba(21, 27, 34, .45);
+
+    --measure: 34rem;
+    --wide: 68rem;
+
+    --step--1: clamp(.82rem, .8rem + .1vw, .89rem);
+    --step-0: clamp(1rem, .97rem + .16vw, 1.09rem);
+    --step-1: clamp(1.2rem, 1.14rem + .3vw, 1.4rem);
+    --step-2: clamp(1.5rem, 1.38rem + .6vw, 1.95rem);
+    --step-3: clamp(2rem, 1.7rem + 1.5vw, 3.2rem);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0e1317;
+      --surface: #151b21;
+      --surface-sunk: #1b232a;
+      --ink: #e3e9ee;
+      --ink-soft: #a3b1bc;
+      --ink-faint: #7e8d99;
+      --rule: #2b353d;
+      --rule-strong: #46555f;
+      --accent: #85b7d3;
+      --accent-soft: #1c2b36;
+      --good: #6fbf92;
+      --warn: #d3a441;
+      --bad: #e0796d;
+      --shadow: 0 1px 0 rgba(0, 0, 0, .3), 0 14px 30px -22px rgba(0, 0, 0, .9);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #0e1317;
+    --surface: #151b21;
+    --surface-sunk: #1b232a;
+    --ink: #e3e9ee;
+    --ink-soft: #a3b1bc;
+    --ink-faint: #7e8d99;
+    --rule: #2b353d;
+    --rule-strong: #46555f;
+    --accent: #85b7d3;
+    --accent-soft: #1c2b36;
+    --good: #6fbf92;
+    --warn: #d3a441;
+    --bad: #e0796d;
+    --shadow: 0 1px 0 rgba(0, 0, 0, .3), 0 14px 30px -22px rgba(0, 0, 0, .9);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "Golos Text", system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: var(--step-0);
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    display: grid;
+    grid-template-columns: minmax(1rem, 1fr) min(var(--measure), 100% - 2rem) minmax(1rem, 1fr);
+    row-gap: 1.35rem;
+    padding: 0 0 6rem;
+  }
+
+  .page > * { grid-column: 2; }
+
+  .page > .wide {
+    grid-column: 1 / -1;
+    justify-self: center;
+    width: min(var(--wide), 100% - 2rem);
+  }
+
+  h1, h2, h3 {
+    font-family: "Source Serif 4", Georgia, serif;
+    font-weight: 600;
+    line-height: 1.15;
+    text-wrap: balance;
+    margin: 0;
+  }
+
+  h1 { font-size: var(--step-3); letter-spacing: -.02em; }
+  h2 { font-size: var(--step-2); letter-spacing: -.015em; }
+  h3 { font-size: var(--step-1); }
+
+  p { margin: 0; }
+  strong { font-weight: 600; }
+  em { font-style: normal; color: var(--ink-soft); }
+
+  code, .mono {
+    font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: .87em;
+    font-weight: 400;
+  }
+
+  code {
+    background: var(--surface-sunk);
+    border-radius: 3px;
+    padding: .08em .3em;
+    word-break: break-word;
+  }
+
+  .eyebrow {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: var(--step--1);
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+
+  /* ---------- header ---------- */
+
+  .masthead {
+    grid-column: 1 / -1;
+    justify-self: center;
+    width: min(var(--wide), 100% - 2rem);
+    border-bottom: 1px solid var(--rule);
+    padding: clamp(3rem, 8vw, 6rem) 0 2.2rem;
+    margin-bottom: 2.5rem;
+    display: grid;
+    gap: 1.1rem;
+  }
+
+  .masthead .lede {
+    max-width: 42rem;
+    font-size: var(--step-1);
+    color: var(--ink-soft);
+    line-height: 1.5;
+  }
+
+  .masthead-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem 1.6rem;
+    padding-top: .6rem;
+    border-top: 1px solid var(--rule);
+    color: var(--ink-faint);
+    font-size: var(--step--1);
+  }
+
+  /* ---------- section furniture ---------- */
+
+  .section-head {
+    grid-column: 1 / -1;
+    justify-self: center;
+    width: min(var(--wide), 100% - 2rem);
+    margin-top: 3.5rem;
+    padding-top: 1.1rem;
+    border-top: 2px solid var(--ink);
+    display: grid;
+    grid-template-columns: 3.2rem 1fr;
+    gap: .2rem 1rem;
+    align-items: start;
+  }
+
+  .section-head .num {
+    font-family: "JetBrains Mono", monospace;
+    font-size: var(--step-1);
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+  }
+
+  .section-head .standfirst {
+    grid-column: 2;
+    color: var(--ink-soft);
+    max-width: 40rem;
+    margin-top: .4rem;
+  }
+
+  /* ---------- figures ---------- */
+
+  figure {
+    margin: 1.2rem 0 .4rem;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    box-shadow: var(--shadow);
+    padding: 1.4rem 1.4rem 1rem;
+    overflow-x: auto;
+  }
+
+  figure svg {
+    display: block;
+    width: 100%;
+    min-width: 34rem;
+    height: auto;
+    color: var(--ink);
+  }
+
+  figcaption {
+    margin-top: 1rem;
+    padding-top: .8rem;
+    border-top: 1px solid var(--rule);
+    color: var(--ink-soft);
+    font-size: var(--step--1);
+    line-height: 1.55;
+    max-width: 46rem;
+  }
+
+  .svg-box { fill: var(--surface); stroke: currentColor; stroke-width: 1.2; }
+  .svg-box-sunk { fill: var(--surface-sunk); stroke: var(--rule-strong); stroke-width: 1; }
+  .svg-accent { stroke: var(--accent); }
+  .svg-fill-accent { fill: var(--accent); }
+  .svg-label { fill: currentColor; font-family: "Golos Text", sans-serif; font-size: 13px; }
+  .svg-title { fill: currentColor; font-family: "Source Serif 4", serif; font-size: 15px; font-weight: 600; }
+  .svg-mono { fill: currentColor; font-family: "JetBrains Mono", monospace; font-size: 11.5px; }
+  .svg-muted { fill: var(--ink-faint); }
+  .svg-soft { fill: var(--ink-soft); }
+  .svg-line { stroke: currentColor; stroke-width: 1.2; fill: none; }
+  .svg-thin { stroke: var(--rule-strong); stroke-width: 1; fill: none; }
+  .svg-dash { stroke-dasharray: 5 4; }
+  .svg-good { fill: var(--good); }
+  .svg-bad { fill: var(--bad); }
+  .svg-warn { fill: var(--warn); }
+  .stroke-good { stroke: var(--good); }
+  .stroke-bad { stroke: var(--bad); }
+
+  /* ---------- blocks ---------- */
+
+  .note {
+    border-inline-start: 3px solid var(--accent);
+    background: var(--accent-soft);
+    padding: .9rem 1.1rem;
+    border-radius: 0 2px 2px 0;
+    font-size: calc(var(--step-0) * .96);
+  }
+
+  .table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--rule);
+    background: var(--surface);
+    border-radius: 2px;
+  }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: var(--step--1);
+    line-height: 1.5;
+  }
+
+  th, td {
+    text-align: start;
+    padding: .62rem .85rem;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+  }
+
+  thead th {
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 500;
+    font-size: calc(var(--step--1) * .92);
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    background: var(--surface-sunk);
+  }
+
+  tbody tr:last-child td { border-bottom: 0; }
+  td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  .why {
+    display: grid;
+    gap: 0;
+    border: 1px solid var(--rule);
+    background: var(--surface);
+    border-radius: 2px;
+  }
+
+  .why > article {
+    padding: 1.15rem 1.3rem;
+    border-bottom: 1px solid var(--rule);
+    display: grid;
+    gap: .55rem;
+  }
+
+  .why > article:last-child { border-bottom: 0; }
+
+  .why h3 { font-size: calc(var(--step-1) * .92); }
+
+  .alts {
+    list-style: none;
+    margin: .2rem 0 0;
+    padding: 0;
+    display: grid;
+    gap: .55rem;
+    font-size: calc(var(--step-0) * .94);
+  }
+
+  .alts li {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: .55rem;
+    align-items: baseline;
+    color: var(--ink-soft);
+  }
+
+  .alts li::before {
+    content: "✕";
+    color: var(--bad);
+    font-size: .8em;
+    line-height: 1.6;
+  }
+
+  .alts li.kept::before { content: "✓"; color: var(--good); }
+  .alts b { color: var(--ink); font-weight: 600; }
+
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .cards > div {
+    background: var(--surface);
+    padding: 1.05rem 1.15rem;
+    display: grid;
+    gap: .4rem;
+    align-content: start;
+  }
+
+  .cards h3 { font-size: calc(var(--step-0) * 1.02); font-family: "Golos Text", sans-serif; font-weight: 600; }
+  .cards p { font-size: calc(var(--step-0) * .93); color: var(--ink-soft); }
+
+  ul.plain {
+    margin: 0;
+    padding-inline-start: 1.15rem;
+    display: grid;
+    gap: .5rem;
+  }
+
+  ul.plain li { padding-inline-start: .15rem; }
+  ul.plain li::marker { color: var(--rule-strong); }
+
+  .limit {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: .1rem .8rem;
+    padding: .9rem 0;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .limit:last-of-type { border-bottom: 0; }
+  .limit .tag {
+    font-family: "JetBrains Mono", monospace;
+    font-size: var(--step--1);
+    color: var(--accent);
+    padding-top: .18rem;
+    white-space: nowrap;
+  }
+  .limit p { grid-column: 2; }
+  .limit .sub { color: var(--ink-soft); font-size: calc(var(--step-0) * .94); }
+
+  .end {
+    margin-top: 4rem;
+    padding-top: 1.2rem;
+    border-top: 2px solid var(--ink);
+    color: var(--ink-faint);
+    font-size: var(--step--1);
+  }
+
+  @media (max-width: 34rem) {
+    .section-head { grid-template-columns: 1fr; }
+    .section-head .num { font-size: var(--step-0); }
+    .section-head .standfirst { grid-column: 1; }
+  }
+</style>
+
+<div class="page">
+
+  <header class="masthead">
+    <p class="eyebrow">Шаломут · как это работает внутри</p>
+    <h1>Механика одного прогона</h1>
+    <p class="lede">
+      Платформа состоит из двух программ, которые не доверяют друг другу настолько,
+      что общаются только через очередь заданий в базе данных. Ниже — вся цепочка
+      от нажатия «закрыть раунд» до появления карты на экране: кто за что отвечает,
+      что такое джобы и аренда, что происходит внутри AI-сервиса, и почему в каждой
+      развилке выбрано именно это, а не одно из очевидных альтернативных решений.
+    </p>
+    <div class="masthead-meta">
+      <span>Core — Next.js&nbsp;16 + PostgreSQL</span>
+      <span>AI-сервис — Python&nbsp;3.11 + FastAPI</span>
+      <span>12 эндпоинтов на границе</span>
+      <span>3 общих секрета</span>
+    </div>
+  </header>
+
+  <div class="section-head">
+    <span class="num">01</span>
+    <h2>Две программы и стена между ними</h2>
+    <p class="standfirst">
+      Разделение проходит не по «фронтенд и бэкенд», а по гораздо более жёсткой линии:
+      кто владеет фактами и кто владеет словами.
+    </p>
+  </div>
+
+  <p>
+    <strong>Core</strong> — это всё, что школа видит и всё, что система знает наверняка.
+    Школы, раунды, снимок анкеты, анонимные ответы, подсчёт баллов, цвета камней,
+    порог приватности, база данных, все экраны. Core — единственный владелец данных.
+  </p>
+
+  <p>
+    <strong>AI-сервис</strong> — это отдельная программа на Python, которая не имеет
+    доступа к базе. У неё нет ни одной таблицы. Она умеет ровно одно: получить
+    <em>усреднённые</em> цифры по раунду и написать на иврите текст — интерпретацию
+    каждого камня, общее резюме, пояснение к каждому вопросу и адаптированные
+    формулировки рекомендаций из каталога.
+  </p>
+
+  <p>
+    Ключевая асимметрия, которую стоит увидеть до всего остального: <strong>почти все
+    вызовы идут в одну сторону</strong> — из AI-сервиса в Core. Core не звонит сервису,
+    чтобы заказать анализ. Core кладёт запись в таблицу и ждёт, пока сервис сам
+    придёт и заберёт работу.
+  </p>
+
+  <figure class="wide">
+    <svg viewBox="0 0 900 400" role="img" aria-label="Схема границы: AI-сервис сам инициирует четыре вызова к Core — забрать работу, получить агрегаты, продлить аренду, отдать результат; Core вызывает сервис только для подсказки формулировки вопроса.">
+      <defs>
+        <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+        </marker>
+        <marker id="ar-accent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/>
+        </marker>
+      </defs>
+
+      <!-- Core -->
+      <rect class="svg-box" x="30" y="60" width="250" height="250" rx="2"/>
+      <text class="svg-title" x="50" y="90">Core · Next.js</text>
+      <text class="svg-mono svg-muted" x="50" y="108">владеет данными</text>
+      <line class="svg-thin" x1="50" y1="122" x2="260" y2="122"/>
+      <text class="svg-label svg-soft" x="50" y="146">школы, раунды, анкета</text>
+      <text class="svg-label svg-soft" x="50" y="168">анонимные ответы</text>
+      <text class="svg-label svg-soft" x="50" y="190">баллы, цвета, статусы</text>
+      <text class="svg-label svg-soft" x="50" y="212">порог приватности</text>
+      <text class="svg-label svg-soft" x="50" y="234">очередь заданий</text>
+      <text class="svg-label svg-soft" x="50" y="256">все экраны</text>
+
+      <rect class="svg-box-sunk" x="50" y="272" width="210" height="24" rx="2"/>
+      <text class="svg-mono" x="60" y="288">PostgreSQL</text>
+
+      <!-- Service -->
+      <rect class="svg-box" x="620" y="60" width="250" height="250" rx="2"/>
+      <text class="svg-title" x="640" y="90">AI-сервис · Python</text>
+      <text class="svg-mono svg-muted" x="640" y="108">владеет словами</text>
+      <line class="svg-thin" x1="640" y1="122" x2="850" y2="122"/>
+      <text class="svg-label svg-soft" x="640" y="146">граф из пяти узлов</text>
+      <text class="svg-label svg-soft" x="640" y="168">каталог вмешательств</text>
+      <text class="svg-label svg-soft" x="640" y="190">валидатор текста</text>
+      <text class="svg-label svg-soft" x="640" y="212">вызовы модели</text>
+      <text class="svg-label svg-soft" x="640" y="234">ни одной таблицы</text>
+      <text class="svg-label svg-soft" x="640" y="256">никакого состояния</text>
+
+      <rect class="svg-box-sunk" x="640" y="272" width="210" height="24" rx="2"/>
+      <text class="svg-mono" x="650" y="288">stateless-контейнер</text>
+
+      <!-- arrows service -> core -->
+      <line class="svg-line svg-accent" x1="612" y1="100" x2="288" y2="100" marker-end="url(#ar-accent)"/>
+      <text class="svg-mono svg-fill-accent" x="300" y="94">POST /claim — «есть работа?» каждые 2 с</text>
+
+      <line class="svg-line svg-accent" x1="612" y1="150" x2="288" y2="150" marker-end="url(#ar-accent)"/>
+      <text class="svg-mono svg-fill-accent" x="300" y="144">MCP get_round_analytics — только средние</text>
+
+      <line class="svg-line svg-accent" x1="612" y1="200" x2="288" y2="200" marker-end="url(#ar-accent)"/>
+      <text class="svg-mono svg-fill-accent" x="300" y="194">POST /heartbeat — «я ещё жив» каждые 30 с</text>
+
+      <line class="svg-line svg-accent" x1="612" y1="250" x2="288" y2="250" marker-end="url(#ar-accent)"/>
+      <text class="svg-mono svg-fill-accent" x="300" y="244">POST /ai-insights — готовая карта</text>
+
+      <!-- the one call the other way -->
+      <line class="svg-line svg-dash" x1="288" y1="300" x2="612" y2="300" marker-end="url(#ar)"/>
+      <text class="svg-mono svg-muted" x="300" y="294">POST /questions/suggest — единственный вызов в эту сторону</text>
+
+      <text class="svg-label svg-muted" x="300" y="330">Менеджер собирает анкету и ждёт ответа на кнопку —</text>
+      <text class="svg-label svg-muted" x="300" y="348">один вопрос, 45 секунд, человек смотрит на экран.</text>
+      <text class="svg-label svg-muted" x="300" y="366">Здесь синхронный вызов уместен, и он выбран сознательно.</text>
+    </svg>
+    <figcaption>
+      Граница между двумя рантаймами. Четыре сплошные стрелки — это <em>инициатива
+      сервиса</em>: он опрашивает Core, забирает работу, продлевает свою аренду и
+      приносит результат. Пунктирная — единственный случай, когда Core звонит сам, и
+      он не про анализ раунда.
+    </figcaption>
+  </figure>
+
+  <p>
+    Одна деталь, которая обычно удивляет: <strong>«воркер» — не отдельный процесс</strong>.
+    Это фоновая задача внутри того же самого приложения, которое отвечает на HTTP.
+    Тот же контейнер, тот же процесс: пока он обслуживает запросы, в нём же крутится
+    цикл «спросить у Core, нет ли работы». Отдельный воркер понадобится тогда, когда
+    анализы начнут мешать друг другу, — сегодня их слишком мало для этого.
+  </p>
+
+  <p>
+    Такое разделение — не эстетика, а инвариант приватности. За стену уходят только
+    средние значения и формулировки вопросов; ответ конкретного человека, фоновые
+    признаки (возраст, стаж, ставка) и что-либо, по чему можно узнать человека,
+    не пересекают границу вообще. Модель физически не может проговориться о том,
+    чего никогда не видела.
+  </p>
+
+  <p>
+    Стена держится тремя независимыми способами, и каждый работает, даже если двух
+    других нет.
+  </p>
+
+  <ul class="plain">
+    <li><strong>В задании нет данных.</strong> Строка, которую забирает воркер, содержит
+    идентификаторы, состояние, счётчик попыток и пропуск — и ни одной цифры о раунде.
+    Чтобы что-то узнать, сервис обязан отдельно попросить, предъявив второй секрет.</li>
+    <li><strong>Запертый раунд отдаёт пустоту.</strong> Порог проверяют в трёх местах —
+    перед постановкой задания, при выдаче агрегатов и первым узлом графа, — но решает
+    здесь второе: Core просто <em>не кладёт цифры в ответ</em>. У запертого раунда и
+    измерения, и разрезы по вопросам приходят пустыми, так что сервису нечего было бы
+    разгласить, даже если бы он захотел.</li>
+    <li><strong>Фоновые вопросы не становятся агрегатами вообще.</strong> Возраст, стаж,
+    должность и ставка отфильтровываются раньше, чем считается хоть одно среднее. Это не
+    «их не отправляют» — их не существует в том, что считается.</li>
+  </ul>
+
+  <p>
+    Ограничение доходит и до служебных записей: словарь того, что система пишет о
+    самой себе, закрытый, и в метку метрики не может попасть ничего о респонденте —
+    туда пускают только коды причин и версии контракта. Наблюдаемость обычно и есть
+    та дверь, через которую данные утекают последними.
+  </p>
+
+  <p>
+    И блокировка работает по принципу «всё или ничего»: если хотя бы у одного вопроса
+    ответов меньше порога, закрывается вся детализация. Скрыть один вопрос было бы
+    хуже, чем бесполезно — недостающее вычисляется из того, что осталось показано.
+  </p>
+
+  <div class="section-head">
+    <span class="num">02</span>
+    <h2>Что такое джоба и зачем она вообще</h2>
+    <p class="standfirst">
+      Джоба — это строка в таблице <code>ai_analysis_runs</code>. Не процесс, не поток,
+      не сообщение в брокере. Строка. И почти вся механика надёжности следует из этого.
+    </p>
+  </div>
+
+  <p>
+    Когда менеджер закрывает раунд, Core не запускает анализ. Core создаёт запись:
+    «для раунда X нужен анализ, состояние — <code>queued</code>». На этом обязанность
+    Core заканчивается, HTTP-ответ уходит менеджеру немедленно.
+  </p>
+
+  <p>
+    Анализ занимает несколько минут и стоит примерно две дюжины вызовов языковой
+    модели. Это слишком долго и слишком дорого, чтобы держать открытым HTTP-соединение
+    и молиться, чтобы никто не обновил вкладку. Джоба существует, чтобы у этой
+    длинной работы был <strong>адрес в базе</strong>: за ней можно прийти позже, её
+    состояние переживает перезапуск любого из двух процессов, и её нельзя потерять
+    молча.
+  </p>
+
+  <div class="note">
+    Проще всего думать так: очередь заданий — это способ превратить «сделай сейчас и
+    подожди» в «запиши, что это нужно сделать». Первое ломается при любом обрыве.
+    Второе — это факт в базе, который никуда не денется.
+  </div>
+
+  <h3 style="margin-top:1.6rem">Что записано в строке</h3>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Поле</th><th>Зачем оно</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="mono">state</td><td><code>queued</code> → <code>running</code> → <code>succeeded</code> или <code>failed</code>. Единственный источник правды о том, что с анализом.</td></tr>
+        <tr><td class="mono">requestKey</td><td>Ключ запроса. Два одновременных нажатия «закрыть» вычисляют один и тот же ключ и схлопываются в одну джобу, а не в две.</td></tr>
+        <tr><td class="mono">attemptCount</td><td>Сколько раз работу забирали. Потолок — 3.</td></tr>
+        <tr><td class="mono">leaseToken</td><td>Одноразовый пропуск, выданный тому воркеру, который забрал работу. Без него результат не примут.</td></tr>
+        <tr><td class="mono">leaseExpiresAt</td><td>Момент, после которого аренда считается брошенной и работу может забрать другой.</td></tr>
+        <tr><td class="mono">heartbeatAt</td><td>Когда воркер последний раз подавал признаки жизни.</td></tr>
+        <tr><td class="mono">result</td><td>Готовая карта. Хранится прямо в строке — это долговременный источник для экранов.</td></tr>
+        <tr><td class="mono">failureCode</td><td>Почему не получилось, машиночитаемо: <code>provider_unavailable_http_429</code>, <code>lease_exhausted</code>, <code>round_validation_failed</code>.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 style="margin-top:1.8rem">Аренда: главный трюк во всей конструкции</h3>
+
+  <p>
+    Задача, которую решает аренда, звучит так: <em>как отличить воркера, который долго
+    думает, от воркера, который умер?</em> Извне это одно и то же — тишина. А ответы
+    противоположные: первого нельзя трогать, второго нужно заменить немедленно.
+  </p>
+
+  <p>
+    Решение: забирая работу, воркер получает её <strong>не навсегда, а на 90 секунд</strong>.
+    Пока он жив, он каждые 30 секунд стучится и продлевает срок ещё на 90. Если он
+    умер, стук прекращается, срок истекает, и строка снова становится доступной для
+    захвата — с увеличенным счётчиком попыток.
+  </p>
+
+  <figure class="wide">
+    <svg viewBox="0 0 900 330" role="img" aria-label="Временная шкала аренды: при захвате аренда даётся на 90 секунд, каждый стук через 30 секунд отодвигает её конец ещё на 90 секунд вперёд; если воркер умирает, стук прекращается и в момент истечения аренды работу забирает другой воркер, увеличив счётчик попыток.">
+      <defs>
+        <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+
+      <!-- time axis -->
+      <line class="svg-thin" x1="150" y1="52" x2="826" y2="52"/>
+      <g class="svg-mono svg-muted">
+        <text x="150" y="40" text-anchor="middle">0 с</text>
+        <text x="246" y="40" text-anchor="middle">30</text>
+        <text x="342" y="40" text-anchor="middle">60</text>
+        <text x="438" y="40" text-anchor="middle">90</text>
+        <text x="534" y="40" text-anchor="middle">120</text>
+        <text x="630" y="40" text-anchor="middle">150</text>
+        <text x="726" y="40" text-anchor="middle">180</text>
+        <text x="822" y="40" text-anchor="middle">210</text>
+      </g>
+      <g class="svg-thin">
+        <line x1="150" y1="46" x2="150" y2="52"/><line x1="246" y1="46" x2="246" y2="52"/>
+        <line x1="342" y1="46" x2="342" y2="52"/><line x1="438" y1="46" x2="438" y2="52"/>
+        <line x1="534" y1="46" x2="534" y2="52"/><line x1="630" y1="46" x2="630" y2="52"/>
+        <line x1="726" y1="46" x2="726" y2="52"/><line x1="822" y1="46" x2="822" y2="52"/>
+      </g>
+
+      <!-- row 1 -->
+      <text class="svg-mono svg-soft" x="14" y="82">захват, t=0</text>
+      <rect x="150" y="70" width="288" height="18" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1"/>
+      <text class="svg-mono svg-fill-accent" x="444" y="83">аренда до 90 с</text>
+
+      <!-- row 2 -->
+      <text class="svg-mono svg-soft" x="14" y="122">стук, t=30</text>
+      <rect x="150" y="110" width="384" height="18" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1"/>
+      <circle cx="246" cy="119" r="4" class="svg-fill-accent"/>
+      <text class="svg-mono svg-fill-accent" x="540" y="123">→ 120 с</text>
+
+      <!-- row 3 -->
+      <text class="svg-mono svg-soft" x="14" y="162">стук, t=90</text>
+      <rect x="150" y="150" width="576" height="18" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1"/>
+      <circle cx="246" cy="159" r="4" class="svg-fill-accent"/>
+      <circle cx="342" cy="159" r="4" class="svg-fill-accent"/>
+      <circle cx="438" cy="159" r="4" class="svg-fill-accent"/>
+      <text class="svg-mono svg-fill-accent" x="732" y="163">→ 180 с</text>
+
+      <!-- finish -->
+      <line class="svg-line stroke-good" x1="502" y1="176" x2="502" y2="200" marker-end="url(#ar2)" stroke="var(--good)"/>
+      <text class="svg-mono svg-good" x="510" y="196">t≈110 с: карта готова, отправлена в Core, состояние succeeded</text>
+
+      <line class="svg-thin svg-dash" x1="20" y1="224" x2="880" y2="224"/>
+
+      <!-- crash row -->
+      <text class="svg-mono svg-soft" x="14" y="262">воркер умер</text>
+      <rect x="150" y="250" width="384" height="18" fill="var(--surface-sunk)" stroke="var(--rule-strong)" stroke-width="1"/>
+      <circle cx="246" cy="259" r="4" class="svg-fill-accent"/>
+      <line x1="294" y1="244" x2="294" y2="274" class="svg-line stroke-bad" stroke="var(--bad)"/>
+      <text class="svg-mono svg-bad" x="300" y="242">t=40: процесс упал, стук прекратился</text>
+      <line x1="534" y1="244" x2="534" y2="286" class="svg-line stroke-bad svg-dash" stroke="var(--bad)"/>
+      <text class="svg-mono svg-bad" x="540" y="264">t=120: аренда истекла</text>
+      <text class="svg-label svg-soft" x="540" y="284">строка снова свободна, следующий воркер</text>
+      <text class="svg-label svg-soft" x="540" y="302">забирает её попыткой №2 из трёх</text>
+
+      <text class="svg-mono svg-muted" x="150" y="302">работа шла 40 с и пропала — но не пропало то, что она нужна</text>
+    </svg>
+    <figcaption>
+      Аренда во времени. Пока воркер жив, конец аренды всё время убегает вперёд от
+      текущего момента: стук раз в 30 секунд против 90-секундного срока даёт запас на
+      <em>опоздание</em> — беспокоиться не о чем, даже если удар задержался вдвое.
+      Мёртвый воркер ничего не сообщает о своей смерти — о ней сообщает истёкший срок.
+    </figcaption>
+  </figure>
+
+  <p>
+    Обратите внимание на важную деталь: <strong>умерший воркер не может «дописать»
+    работу задним числом</strong>. Его пропуск (<code>leaseToken</code>) больше не
+    совпадает с тем, что записан в строке, и любая его попытка сдать результат
+    получит <code>409</code>. Это защита от классической аварии распределённых
+    систем — «зомби», который очнулся через десять минут и записал устаревший
+    результат поверх свежего.
+  </p>
+
+  <p>
+    Симметричная деталь: воркер, обнаруживший, что аренду потерял, <strong>не сообщает
+    о провале</strong>. Он просто молча бросает работу. Логика простая — работа уже
+    принадлежит кому-то другому, и написать «у меня не получилось» значило бы
+    оклеветать чужой прогон, который в эту секунду прекрасно идёт. О провале
+    сообщается только тогда, когда работа действительно упала в руках у того, кто ею
+    владеет.
+  </p>
+
+  <p>
+    Технически стук и анализ живут в двух параллельных задачах: сама тяжёлая работа
+    уходит в отдельный поток, а цикл событий остаётся свободным, чтобы каждые 30
+    секунд отправить продление. Поэтому длительность анализа ничем не ограничена
+    девяноста секундами — аренда продлевается столько раз, сколько нужно. Девяносто
+    секунд — это не «максимум работы», а «максимум тишины».
+  </p>
+
+  <h3 style="margin-top:1.8rem">Почему два воркера не могут забрать одну работу</h3>
+
+  <p>
+    Захват сделан не «найти и обновить», а условным обновлением. Воркер сначала
+    находит кандидата, а потом выполняет <code>UPDATE … WHERE id = кандидат AND
+    (условие пригодности всё ещё выполняется)</code>. Если строку уже успел
+    забрать другой, обновится <em>ноль</em> строк — и это единственный признак,
+    по которому проигравший понимает, что проиграл. Он просто идёт за следующей
+    работой; на это ему дано пять кругов.
+  </p>
+
+  <p>
+    Классическое решение той же задачи в PostgreSQL — <code>SELECT … FOR UPDATE SKIP
+    LOCKED</code>: база сама выдаёт каждому конкуренту разную строку. В репозитории
+    оно не упоминается ни разу, так что причины отказа никто не записывал. Наиболее
+    правдоподобная видна из кода: это потребовало бы сырого SQL, а весь слой
+    репозиториев держится на одном узком интерфейсе к клиенту базы — том самом,
+    который в тестах подменяется реализацией в памяти. Условный <code>UPDATE</code>
+    даёт ту же гарантию и сохраняет этот шов.
+  </p>
+
+  <p>
+    И ещё одна тонкость, которую легко пропустить: <strong>счётчик попыток растёт в
+    момент захвата, а не в момент провала</strong>. «Попытка» здесь означает «воркер
+    держал эту работу», а не «работа провалилась». Иначе тихая смерть не считалась бы
+    вовсе: упавший процесс не пишет никаких отчётов, и единственное, что о нём
+    известно, — что аренду он взял.
+  </p>
+
+  <p>
+    Ровно то же самое сделано на другом уровне: частичный уникальный индекс
+    <code>ai_analysis_runs_one_active_per_round_key</code> физически запрещает
+    существование двух активных прогонов у одного раунда. Не «код проверяет» —
+    база не даёт вставить.
+  </p>
+
+  <div class="section-head">
+    <span class="num">03</span>
+    <h2>Полная цепочка: от «закрыть раунд» до карты на экране</h2>
+    <p class="standfirst">
+      Четырнадцать шагов. Менеджер участвует в первых трёх и в последнем; всё
+      остальное происходит без него и переживает закрытую вкладку.
+    </p>
+  </div>
+
+  <figure class="wide">
+    <svg viewBox="0 0 900 660" role="img" aria-label="Последовательность одного прогона анализа: менеджер закрывает раунд, Core записывает задание в базу и сразу отвечает, воркер забирает работу по опросу, тянет агрегаты через MCP, вызывает модель примерно две дюжины раз, стучит каждые 30 секунд, отдаёт карту в Core, Core перепроверяет её против пересчитанных агрегатов и записывает результат.">
+      <defs>
+        <marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+
+      <!-- lane heads -->
+      <g>
+        <rect class="svg-box" x="14" y="16" width="120" height="30" rx="2"/>
+        <text class="svg-mono" x="74" y="36" text-anchor="middle">Менеджер</text>
+        <rect class="svg-box" x="192" y="16" width="120" height="30" rx="2"/>
+        <text class="svg-mono" x="252" y="36" text-anchor="middle">Core</text>
+        <rect class="svg-box" x="370" y="16" width="120" height="30" rx="2"/>
+        <text class="svg-mono" x="430" y="36" text-anchor="middle">PostgreSQL</text>
+        <rect class="svg-box" x="548" y="16" width="130" height="30" rx="2"/>
+        <text class="svg-mono" x="613" y="36" text-anchor="middle">AI-сервис</text>
+        <rect class="svg-box" x="736" y="16" width="130" height="30" rx="2"/>
+        <text class="svg-mono" x="801" y="36" text-anchor="middle">модель</text>
+      </g>
+
+      <!-- lifelines -->
+      <g class="svg-thin svg-dash">
+        <line x1="74" y1="46" x2="74" y2="640"/>
+        <line x1="252" y1="46" x2="252" y2="640"/>
+        <line x1="430" y1="46" x2="430" y2="640"/>
+        <line x1="613" y1="46" x2="613" y2="640"/>
+        <line x1="801" y1="46" x2="801" y2="640"/>
+      </g>
+
+      <g class="svg-mono">
+        <!-- 1 -->
+        <line class="svg-line" x1="74" y1="80" x2="246" y2="80" marker-end="url(#ar3)"/>
+        <text class="svg-mono" x="80" y="74">1 · «закрыть раунд»</text>
+        <!-- 2 -->
+        <text class="svg-mono svg-muted" x="258" y="102">2 · проверка: раунд закрыт? ответов ≥ порога?</text>
+        <!-- 3 -->
+        <line class="svg-line" x1="252" y1="126" x2="424" y2="126" marker-end="url(#ar3)"/>
+        <text class="svg-mono" x="258" y="120">3 · INSERT строка state=queued</text>
+        <!-- 4 -->
+        <line class="svg-line" x1="246" y1="152" x2="80" y2="152" marker-end="url(#ar3)"/>
+        <text class="svg-mono svg-good" x="80" y="146">4 · 200 «анализ заказан» — сразу, не дожидаясь</text>
+      </g>
+
+      <line class="svg-thin svg-dash" x1="14" y1="172" x2="880" y2="172"/>
+      <text class="svg-mono svg-muted" x="14" y="188">дальше без менеджера · вкладку можно закрыть</text>
+
+      <g class="svg-mono">
+        <!-- 5 -->
+        <line class="svg-line svg-accent" x1="607" y1="214" x2="258" y2="214" marker-end="url(#ar3)" stroke="var(--accent)"/>
+        <text class="svg-mono svg-fill-accent" x="258" y="208">5 · POST /claim — воркер спрашивает каждые 2 с</text>
+        <!-- 6 -->
+        <line class="svg-line" x1="252" y1="240" x2="424" y2="240" marker-end="url(#ar3)"/>
+        <text class="svg-mono" x="258" y="234">6 · условный UPDATE → running, попытка +1, аренда 90 с</text>
+        <!-- 7 -->
+        <line class="svg-line" x1="258" y1="266" x2="607" y2="266" marker-end="url(#ar3)"/>
+        <text class="svg-mono" x="264" y="260">7 · выдан leaseToken — пропуск на эту работу</text>
+        <!-- 8 -->
+        <line class="svg-line svg-accent" x1="607" y1="298" x2="258" y2="298" marker-end="url(#ar3)" stroke="var(--accent)"/>
+        <text class="svg-mono svg-fill-accent" x="258" y="292">8 · MCP get_round_analytics — «дай агрегаты раунда»</text>
+        <!-- 9 -->
+        <line class="svg-line" x1="258" y1="324" x2="607" y2="324" marker-end="url(#ar3)"/>
+        <text class="svg-mono" x="264" y="318">9 · средние, распределения, тексты вопросов — и ничего больше</text>
+      </g>
+
+      <!-- graph box -->
+      <rect class="svg-box-sunk" x="530" y="342" width="166" height="118" rx="2"/>
+      <text class="svg-mono" x="613" y="362" text-anchor="middle">граф анализа</text>
+      <text class="svg-label svg-soft" x="613" y="382" text-anchor="middle">приватность</text>
+      <text class="svg-label svg-soft" x="613" y="400" text-anchor="middle">психолог</text>
+      <text class="svg-label svg-soft" x="613" y="418" text-anchor="middle">каталог</text>
+      <text class="svg-label svg-soft" x="613" y="436" text-anchor="middle">адаптация</text>
+      <text class="svg-label svg-soft" x="613" y="454" text-anchor="middle">валидатор</text>
+
+      <g class="svg-mono">
+        <line class="svg-line" x1="700" y1="372" x2="795" y2="372" marker-end="url(#ar3)"/>
+        <line class="svg-line" x1="795" y1="392" x2="700" y2="392" marker-end="url(#ar3)"/>
+        <text class="svg-mono svg-muted" x="704" y="416">≈ 24 вызова,</text>
+        <text class="svg-mono svg-muted" x="704" y="432">несколько минут</text>
+
+        <!-- heartbeat -->
+        <line class="svg-line svg-dash" x1="524" y1="400" x2="258" y2="400" marker-end="url(#ar3)"/>
+        <text class="svg-mono svg-muted" x="258" y="394">10 · heartbeat каждые 30 с, всё это время</text>
+      </g>
+
+      <g class="svg-mono">
+        <!-- 11 -->
+        <line class="svg-line svg-accent" x1="607" y1="490" x2="258" y2="490" marker-end="url(#ar3)" stroke="var(--accent)"/>
+        <text class="svg-mono svg-fill-accent" x="258" y="484">11 · POST /ai-insights + runId + leaseToken</text>
+        <!-- 12 -->
+        <line class="svg-line" x1="252" y1="516" x2="424" y2="516" marker-end="url(#ar3)"/>
+        <text class="svg-mono" x="258" y="510">12 · Core пересчитывает агрегаты и сверяет карту с ними</text>
+        <!-- 13 -->
+        <line class="svg-line" x1="252" y1="546" x2="424" y2="546" marker-end="url(#ar3)"/>
+        <text class="svg-mono svg-good" x="258" y="540">13 · state=succeeded, карта записана в result</text>
+        <!-- 14 -->
+        <line class="svg-line" x1="258" y1="572" x2="607" y2="572" marker-end="url(#ar3)"/>
+        <text class="svg-mono" x="264" y="566">14 · 200 — воркер отпускает работу и идёт за следующей</text>
+      </g>
+
+      <line class="svg-thin svg-dash" x1="14" y1="596" x2="880" y2="596"/>
+      <g class="svg-mono">
+        <line class="svg-line" x1="74" y1="626" x2="246" y2="626" marker-end="url(#ar3)"/>
+        <text class="svg-mono" x="80" y="620">позже · менеджер открывает дашборд и читает готовую карту</text>
+      </g>
+    </svg>
+    <figcaption>
+      Один прогон целиком. Синим — то, что инициирует воркер: он приходит сам,
+      забирает работу, тянет данные, приносит результат. Шаг 12 — не формальность:
+      Core пересчитывает агрегаты заново и отказывает карте, которая им не
+      соответствует.
+    </figcaption>
+  </figure>
+
+  <p>
+    В этой цепочке есть красноречивое отсутствие. Для работы существуют три эндпоинта —
+    «забрать», «я жив», «не получилось» — и <strong>никакого «получилось»</strong>.
+    Успех приходит другим маршрутом, вместе с самой картой: чтобы объявить прогон
+    успешным, Core должен сначала проверить карту по контракту и сверить её с
+    пересчитанными цифрами. Отдельная кнопка «успех» дублировала бы всю эту проверку
+    или, что хуже, позволила бы объявить успех без неё.
+  </p>
+
+  <p>
+    Шаг 12 стоит отдельного объяснения. Между моментом, когда воркер прочитал
+    агрегаты, и моментом, когда он принёс карту, прошло несколько минут. Core
+    не верит на слово: он <strong>заново считает агрегаты из ответов</strong> и
+    сверяет с тем, что написано в карте. Если цифры разошлись — карта отвергается
+    с кодом <code>round_validation_failed</code>, даже если текст безупречен.
+    Это единственный способ гарантировать, что подпись под камнем описывает
+    именно те ответы, которые сейчас в базе.
+  </p>
+
+  <p>
+    Порядок проверок на входе тоже выбран не наугад: сначала выясняется, чья это
+    работа, и только потом проверяется содержимое. Наоборот было бы опасно — испорченная
+    карта, отправленная не в тот раунд, убивала бы чужой исправный прогон ещё до того,
+    как выяснилось, что она вообще ни к чему не относится.
+  </p>
+
+  <p>
+    С одной оговоркой, которую честнее сказать вслух: <strong>глубину этой проверки
+    выбирает сама присланная карта</strong>. В ней указана версия контракта, и от неё
+    зависит, какие сверки применятся; версии с динамической анкетой — а это все,
+    начиная с 3.0, и обе, которыми система пользуется, — проходят полную сверку с
+    пересчитанными цифрами, а самые ранние не сравниваются по числам вовсе. При этом
+    Core не сверяет заявленную версию с той, которую он сам выдал в агрегатах. На
+    практике версию задаёт Core, и разойтись ей неоткуда; но строго говоря это
+    доверие к отправителю, а не проверка. Держится оно на том, что дверь закрыта
+    секретом.
+  </p>
+
+  <h3 style="margin-top:1.8rem">Последняя миля, которой нет</h3>
+
+  <p>
+    В этой цепочке есть разрыв, и он ровно в том месте, где кончается машина и
+    начинается человек. <strong>Ничего не сообщает менеджеру, что анализ готов.</strong>
+    Нажав «закрыть раунд», он видит фразу «результаты обновятся на карте в течение
+    нескольких минут» — и на этом всё. Экран не опрашивает сервер, не держит
+    соединение и не показывает индикатор; данные подтягиваются один раз при открытии
+    страницы и ещё раз, если нажать кнопку. Узнать, что карта появилась, можно только
+    одним способом: перезагрузить страницу и посмотреть.
+  </p>
+
+  <p>
+    Это самая заметная дыра в цепочке ответственности. Прогон доведён до строки в базе
+    безупречно — состояние, аренда, повторы, идемпотентность, — и на последнем метре
+    его никто не передаёт человеку. Причём момент выбран так, что человек как раз за
+    клавиатурой: он только что сам закрыл раунд. Обоснования этому в проекте нет
+    нигде — не «решили, что не нужно», а просто не обсуждалось.
+  </p>
+
+  <div class="section-head">
+    <span class="num">04</span>
+    <h2>Состояния прогона, и почему ничего не перезапускается само</h2>
+    <p class="standfirst">
+      Четыре состояния и жёсткое правило: терминальное состояние остаётся терминальным.
+    </p>
+  </div>
+
+  <figure class="wide">
+    <svg viewBox="0 0 900 300" role="img" aria-label="Состояния прогона: queued переходит в running при захвате с увеличением счётчика попыток; из running успешный обратный вызов даёт succeeded, отвергнутая карта или сбой провайдера дают failed; истёкшая аренда при счётчике попыток меньше трёх возвращает работу в захватываемое состояние, а при трёх попытках даёт failed с кодом lease_exhausted.">
+      <defs>
+        <marker id="ar4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+
+      <rect class="svg-box" x="40" y="110" width="140" height="52" rx="2"/>
+      <text class="svg-mono" x="110" y="134" text-anchor="middle">queued</text>
+      <text class="svg-label svg-muted" x="110" y="152" text-anchor="middle">ждёт воркера</text>
+
+      <rect class="svg-box" x="330" y="110" width="140" height="52" rx="2"/>
+      <text class="svg-mono" x="400" y="134" text-anchor="middle">running</text>
+      <text class="svg-label svg-muted" x="400" y="152" text-anchor="middle">под арендой</text>
+
+      <rect class="svg-box" x="680" y="42" width="180" height="52" rx="2" stroke="var(--good)"/>
+      <text class="svg-mono svg-good" x="770" y="66" text-anchor="middle">succeeded</text>
+      <text class="svg-label svg-muted" x="770" y="84" text-anchor="middle">карта в result</text>
+
+      <rect class="svg-box" x="680" y="180" width="180" height="52" rx="2" stroke="var(--bad)"/>
+      <text class="svg-mono svg-bad" x="770" y="204" text-anchor="middle">failed</text>
+      <text class="svg-label svg-muted" x="770" y="222" text-anchor="middle">с причиной в failureCode</text>
+
+      <line class="svg-line" x1="182" y1="136" x2="324" y2="136" marker-end="url(#ar4)"/>
+      <text class="svg-mono svg-muted" x="253" y="126" text-anchor="middle">захват</text>
+      <text class="svg-mono svg-muted" x="253" y="158" text-anchor="middle">попытка +1</text>
+
+      <path class="svg-line" d="M 470 126 L 600 126 L 600 68 L 674 68" marker-end="url(#ar4)" stroke="var(--good)"/>
+      <text class="svg-mono svg-good" x="482" y="118">карта принята</text>
+
+      <path class="svg-line" d="M 470 146 L 600 146 L 600 206 L 674 206" marker-end="url(#ar4)" stroke="var(--bad)"/>
+      <text class="svg-mono svg-bad" x="482" y="162">карта отвергнута · провайдер молчит · воркер упал</text>
+
+      <path class="svg-line svg-dash" d="M 400 166 L 400 250 L 110 250 L 110 168" marker-end="url(#ar4)"/>
+      <text class="svg-mono svg-muted" x="255" y="268" text-anchor="middle">аренда истекла и попыток меньше трёх — строка снова свободна</text>
+
+      <path class="svg-line svg-dash" d="M 470 156 L 520 156 L 520 232 L 674 232" marker-end="url(#ar4)" stroke="var(--bad)"/>
+      <text class="svg-mono svg-bad" x="528" y="250">третья истёкшая аренда → lease_exhausted</text>
+
+      <text class="svg-label svg-soft" x="40" y="292">Из succeeded и failed стрелок нет. Новый анализ — это новая строка, а не сброс старой.</text>
+    </svg>
+    <figcaption>
+      Машина состояний прогона. Обратите внимание, чего здесь нет: перехода из
+      <code>failed</code> обратно в <code>queued</code>. Провалившийся прогон
+      сохраняется как есть — он и есть свидетельство того, что произошло.
+    </figcaption>
+  </figure>
+
+  <p>
+    Здесь же прячется приятная мелочь: <strong>ничего не подметает истёкшие аренды по
+    расписанию</strong>. Никакого крона, никакого сторожевого таймера. Уборка сделана
+    первым же действием захвата: воркер, пришедший за работой, сначала переводит в
+    <code>failed</code> всё, у чего аренда истекла на третьей попытке, и только потом
+    ищет себе занятие. Механизм, который срабатывает ровно тогда, когда кто-то
+    заинтересован в его результате, невозможно забыть завести.
+  </p>
+
+  <p>
+    Отсутствие автоматического ретрая — сознательное решение, и оно противоречит
+    инстинкту. Логика такая: посмотрите на причины отказа. <code>contract_validation_failed</code>
+    и <code>analysis_validation_failed</code> описывают <em>карту, которую сервис
+    только что произвёл</em>. <code>lease_exhausted</code> описывает воркера, который
+    стабильно умирает. Повторный запуск на тех же данных ничего из этого не меняет —
+    он воспроизведёт тот же результат, потратив ещё две дюжины вызовов модели.
+  </p>
+
+  <p>
+    Поэтому повтор — это действие человека: менеджер видит на экране, что анализ не
+    получился, и нажимает «запросить ещё раз». Тот же маршрут, что и «второе мнение»
+    по уже проанализированному раунду.
+  </p>
+
+  <div class="note">
+    Единственное, что действительно повторяется само — это <strong>доставка</strong>
+    готового результата. Разница принципиальная: потерянный ответ и вынесенный
+    вердикт — разные вещи. Обрыв связи, таймаут, <code>5xx</code> ничего не говорят
+    о карте, и попытка повторяется (до четырёх раз, с нарастающей паузой). А
+    <code>400</code> «карта не прошла проверку», <code>409</code> «аренда устарела»,
+    <code>404</code> «нет такой работы» — это мнение Core о содержимом, и повторять
+    его бессмысленно.
+  </div>
+
+  <p>
+    У провала при этом две разные дороги, и это не небрежность. Если сорвалось <em>внутри
+    анализа</em>, сервис сам присылает карту-отказ — с человеческой фразой и машинным
+    кодом причины. Если сорвалось <em>до анализа</em> — например, не удалось получить
+    агрегаты, — присылать нечего, и прогон закрывается через отдельный маршрут «не
+    получилось». Первое — это результат, пусть и отрицательный; второе — отсутствие
+    результата.
+  </p>
+
+  <p>
+    Повтор доставки безопасен, потому что каждая попытка отправляет <em>те же байты
+    под тем же пропуском</em>. Core узнаёт повтор уже записанного результата и
+    отвечает «успех, это дубль» — вместо того чтобы записать карту дважды.
+  </p>
+
+  <div class="section-head">
+    <span class="num">05</span>
+    <h2>Внутри AI-сервиса: пять узлов и петля починки</h2>
+    <p class="standfirst">
+      Это не «спросили у модели — получили ответ». Это конвейер с приёмкой, которая
+      имеет право отвергнуть работу модели и потребовать переделать — до трёх раз.
+    </p>
+  </div>
+
+  <figure class="wide">
+    <svg viewBox="0 0 900 440" role="img" aria-label="Граф анализа: ворота приватности, узел психолога, выбор из каталога вмешательств, адаптация формулировок, валидатор; при отказе валидатора или отказе исходящей проверки состояние возвращается к психологу на ремонт, не более трёх кругов; при исчерпании бюджета — частичная карта или отказ раунда.">
+      <defs>
+        <marker id="ar5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+        </marker>
+        <marker id="ar5b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--bad)"/>
+        </marker>
+      </defs>
+
+      <!-- top exit labels -->
+      <text class="svg-mono svg-bad" x="40" y="26">заперто порогом → карта-заглушка,</text>
+      <text class="svg-mono svg-bad" x="40" y="42">ни одного вызова модели</text>
+      <text class="svg-mono svg-bad" x="440" y="26">провайдер не ответил →</text>
+      <text class="svg-mono svg-bad" x="440" y="42">provider_unavailable, круг не идёт</text>
+
+      <!-- row 1 -->
+      <rect class="svg-box" x="40" y="64" width="160" height="56" rx="2"/>
+      <text class="svg-mono" x="120" y="88" text-anchor="middle">1 · приватность</text>
+      <text class="svg-label svg-muted" x="120" y="106" text-anchor="middle">хватает ли ответов</text>
+
+      <rect class="svg-box" x="240" y="64" width="160" height="56" rx="2"/>
+      <text class="svg-mono" x="320" y="88" text-anchor="middle">2 · психолог</text>
+      <text class="svg-label svg-muted" x="320" y="106" text-anchor="middle">пишет тексты камней</text>
+
+      <rect class="svg-box" x="440" y="64" width="160" height="56" rx="2"/>
+      <text class="svg-mono" x="520" y="88" text-anchor="middle">3 · каталог</text>
+      <text class="svg-label svg-muted" x="520" y="106" text-anchor="middle">выбирает вмешательства</text>
+
+      <rect class="svg-box" x="640" y="64" width="160" height="56" rx="2"/>
+      <text class="svg-mono" x="720" y="88" text-anchor="middle">4 · адаптация</text>
+      <text class="svg-label svg-muted" x="720" y="106" text-anchor="middle">подгоняет формулировку</text>
+
+      <line class="svg-line" x1="202" y1="92" x2="234" y2="92" marker-end="url(#ar5)"/>
+      <line class="svg-line" x1="402" y1="92" x2="434" y2="92" marker-end="url(#ar5)"/>
+      <line class="svg-line" x1="602" y1="92" x2="634" y2="92" marker-end="url(#ar5)"/>
+
+      <line class="svg-line stroke-bad" x1="120" y1="62" x2="120" y2="50" marker-end="url(#ar5b)" stroke="var(--bad)"/>
+      <line class="svg-line stroke-bad" x1="520" y1="62" x2="520" y2="50" marker-end="url(#ar5b)" stroke="var(--bad)"/>
+
+      <!-- connector down the right side -->
+      <path class="svg-line" d="M 802 92 L 850 92 L 850 278 L 806 278" marker-end="url(#ar5)"/>
+
+      <!-- row 2, right to left -->
+      <rect class="svg-box" x="640" y="250" width="160" height="56" rx="2"/>
+      <text class="svg-mono" x="720" y="274" text-anchor="middle">5 · валидатор</text>
+      <text class="svg-label svg-muted" x="720" y="292" text-anchor="middle">приёмка текста</text>
+
+      <rect class="svg-box" x="440" y="250" width="160" height="56" rx="2"/>
+      <text class="svg-mono" x="520" y="274" text-anchor="middle">сборка карты</text>
+      <text class="svg-label svg-muted" x="520" y="292" text-anchor="middle">в формате контракта</text>
+
+      <rect class="svg-box" x="240" y="250" width="160" height="56" rx="2"/>
+      <text class="svg-mono" x="320" y="274" text-anchor="middle">примут ли в Core?</text>
+      <text class="svg-label svg-muted" x="320" y="292" text-anchor="middle">проверка до отправки</text>
+
+      <rect class="svg-box" x="40" y="250" width="160" height="56" rx="2" stroke="var(--good)"/>
+      <text class="svg-mono svg-good" x="120" y="274" text-anchor="middle">отправка</text>
+      <text class="svg-label svg-muted" x="120" y="292" text-anchor="middle">карта уходит в Core</text>
+
+      <line class="svg-line" x1="634" y1="278" x2="606" y2="278" marker-end="url(#ar5)"/>
+      <line class="svg-line" x1="434" y1="278" x2="406" y2="278" marker-end="url(#ar5)"/>
+      <line class="svg-line" x1="234" y1="278" x2="206" y2="278" marker-end="url(#ar5)" stroke="var(--good)"/>
+
+      <!-- repair loop -->
+      <path class="svg-line svg-dash stroke-bad" d="M 720 308 L 720 352 L 320 352" stroke="var(--bad)" fill="none"/>
+      <path class="svg-line svg-dash stroke-bad" d="M 320 308 L 320 352" stroke="var(--bad)" fill="none"/>
+      <path class="svg-line svg-dash stroke-bad" d="M 320 352 L 16 352 L 16 92 L 234 92" stroke="var(--bad)" fill="none" marker-end="url(#ar5b)"/>
+      <text class="svg-mono svg-bad" x="340" y="344">ремонт: переписывается только отвергнутое, с критикой в запросе</text>
+
+      <!-- budget exit -->
+      <line class="svg-line stroke-bad" x1="480" y1="352" x2="480" y2="386" marker-end="url(#ar5b)" stroke="var(--bad)"/>
+      <text class="svg-mono svg-bad" x="490" y="382">после трёх кругов: либо частичная карта с честными пробелами,</text>
+      <text class="svg-mono svg-bad" x="490" y="400">либо раунд падает целиком</text>
+
+      <text class="svg-label svg-soft" x="16" y="424">Ни один узел не имеет права изменить цифру или цвет: они пришли из Core готовыми и только сопровождаются текстом.</text>
+    </svg>
+    <figcaption>
+      Граф анализа. Красным — всё, что связано с отказом: два ранних выхода, петля
+      ремонта и исчерпание бюджета. Предпоследний шаг — «примут ли в Core?» —
+      задаёт вопрос приёмки на шаг раньше, пока ещё можно починить: после отправки
+      вызовы модели уже оплачены и круга не осталось.
+    </figcaption>
+  </figure>
+
+  <h3>Что делает каждый узел</h3>
+
+  <div class="cards">
+    <div>
+      <h3>1 · Ворота приватности</h3>
+      <p>Первым делом, до всего. Если ответов меньше порога или раунд помечен как
+      закрытый — граф немедленно останавливается и возвращает «карту-заглушку».
+      Модель не вызывается ни разу. Дешёвая проверка стоит первой не случайно.</p>
+    </div>
+    <div>
+      <h3>2 · Психолог</h3>
+      <p>Единственный узел, который действительно пишет содержательный текст:
+      интерпретацию каждого камня, три абзаца обзора, пояснение к каждому вопросу
+      и общее резюме раунда. Он получает средние и распределения — и всё.</p>
+    </div>
+    <div>
+      <h3>3 · Каталог вмешательств</h3>
+      <p>Здесь модели нет вообще. 192 записи со ссылками на ISO 45003 и OECD/TALIS —
+      по восемь на каждую пару «измерение × цвет», так что пустых сочетаний нет.
+      Отбор взвешивает редкость темы в этом пуле, поляризацию ответов и фоновый
+      контекст школы. Это поиск, а не генерация.</p>
+    </div>
+    <div>
+      <h3>4 · Адаптация</h3>
+      <p>Модель переписывает <em>формулировку</em> выбранной рекомендации под этот
+      раунд. Что именно рекомендовать, решил каталог; модель отвечает только за то,
+      как это звучит на иврите.</p>
+    </div>
+    <div>
+      <h3>5 · Валидатор</h3>
+      <p>Приёмка. Проверяет, что статус согласован с баллом, что текст на иврите и
+      без чужих языков, что тон соответствует цвету камня, что рекомендаций ровно
+      столько, сколько обещает контракт, и что «недоступная» интерпретация
+      действительно пуста, а не заполнена отговоркой.</p>
+    </div>
+    <div>
+      <h3>Сборка и исходящая проверка</h3>
+      <p>Собирает карту в формате версии контракта и спрашивает: приняли бы её в
+      Core? Если нет и это чинится — назад в петлю. Валидатор судит <em>состояние</em>,
+      исходящая проверка — <em>готовый пакет</em>; это разные вопросы.</p>
+    </div>
+  </div>
+
+  <p style="margin-top:1.4rem">
+    Здесь же ответ на вопрос «почему это занимает минуты, а не секунды». Один раунд —
+    это около двух дюжин обращений к модели, и одновременно их идёт всего два. Плюс
+    сервис <strong>сам себя придерживает по темпу</strong>. Предел живёт в конфигурации
+    рядом с именем модели, потому что квота считается на модель и в отрыве от имени
+    ничего не значит: на развёрнутом окружении это 60 запросов в минуту для быстрой
+    модели и 30 для тяжёлой, куда уходит ремонт.
+  </p>
+
+  <p>
+    Числа не выведены из тарифной таблицы, а измерены: их подняли после того, как
+    прогнали корпус проверочных раундов на оплаченном ключе и ни разу не поймали
+    отказ по квоте. А значение по умолчанию, если не задано ничего, — пять в минуту,
+    самый строгий бесплатный тариф, который бывает. Логика в комментарии рядом:
+    окружение, которое ничего не сказало о своей квоте, не следует считать щедрым.
+    Именно на квотах умирали живые раунды, и это единственное место, где темп важнее
+    скорости.
+  </p>
+
+  <p>
+    Петля ремонта устроена умнее, чем «попробовать ещё раз». В повторный запрос
+    уходит <strong>критика</strong> — что именно не понравилось приёмке — и
+    переписываются только отвергнутые части. Семь камней, прошедших проверку,
+    не переписываются заново. Ремонт вдобавок уходит на <strong>отдельную, «тяжёлую»
+    модель</strong>: первый заход делает быстрая, вторая подключается только там, где
+    первая не справилась. Правда, на сегодняшнем развёрнутом окружении обе настройки
+    указывают на одну и ту же модель — не потому, что механизм лишний, а потому, что
+    выбор упёрся в качество иврита: более лёгкая модель вплетала арабские буквы в
+    ивритские слова, приёмка отвергала такой текст, и камень заканчивался
+    детерминированной фразой. Разделение на два уровня осталось и ждёт момента, когда
+    появится вторая модель, которую есть смысл ставить второй.
+  </p>
+
+  <p>
+    А когда три круга потрачены, есть промежуточный исход между «всё хорошо» и
+    «ничего нет»: если непринятыми остались только тексты отдельных камней, эти
+    камни объявляются <strong>честным пробелом</strong> — пустой текст, пометка
+    «недоступно» с указанием причины — и карта отдаётся с остальными семью.
+    Причём валидатор запускается по такой урезанной карте <em>ещё раз</em>: пробел
+    принимается, а не предполагается безопасным. Но отвергнутое общее резюме,
+    отвергнутая рекомендация или восемь пустых камней — это провал раунда целиком:
+    карта, в которой ничего не написано, — это провалившийся раунд в форме карты.
+  </p>
+
+  <div class="section-head">
+    <span class="num">06</span>
+    <h2>Кто что решает: цифры, цвета, слова</h2>
+    <p class="standfirst">
+      Самый частый вопрос про такие системы — «а что если ИИ ошибётся в оценке?».
+      Ответ: он не оценивает. Оценка сделана до того, как он вызван.
+    </p>
+  </div>
+
+  <figure class="wide">
+    <svg viewBox="0 0 900 250" role="img" aria-label="Разделение полномочий: Core считает баллы и определяет цвет по фиксированным границам, передаёт готовые цифры и статусы в AI-сервис, который пишет только текст; обратного пути от текста к цифре нет, а валидатор отвергает текст, противоречащий статусу.">
+      <defs>
+        <marker id="ar6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+
+      <rect class="svg-box" x="30" y="60" width="180" height="90" rx="2"/>
+      <text class="svg-mono" x="120" y="86" text-anchor="middle">ответы</text>
+      <text class="svg-label svg-muted" x="120" y="108" text-anchor="middle">анонимные,</text>
+      <text class="svg-label svg-muted" x="120" y="126" text-anchor="middle">по одному человеку</text>
+
+      <rect class="svg-box" x="270" y="60" width="180" height="90" rx="2"/>
+      <text class="svg-mono" x="360" y="86" text-anchor="middle">балл 0–100</text>
+      <text class="svg-label svg-muted" x="360" y="108" text-anchor="middle">среднее по вопросам</text>
+      <text class="svg-label svg-muted" x="360" y="126" text-anchor="middle">одной стороны</text>
+
+      <rect class="svg-box" x="510" y="60" width="180" height="90" rx="2"/>
+      <text class="svg-mono" x="600" y="86" text-anchor="middle">цвет камня</text>
+      <text class="svg-mono svg-good" x="600" y="108" text-anchor="middle">75+ зелёный</text>
+      <text class="svg-mono svg-warn" x="600" y="124" text-anchor="middle">50–74 жёлтый</text>
+      <text class="svg-mono svg-bad" x="600" y="140" text-anchor="middle">&lt;50 красный</text>
+
+      <rect class="svg-box" x="750" y="60" width="130" height="90" rx="2" stroke="var(--accent)"/>
+      <text class="svg-mono svg-fill-accent" x="815" y="86" text-anchor="middle">слова</text>
+      <text class="svg-label svg-muted" x="815" y="108" text-anchor="middle">то, что пишет</text>
+      <text class="svg-label svg-muted" x="815" y="126" text-anchor="middle">модель</text>
+
+      <line class="svg-line" x1="212" y1="105" x2="264" y2="105" marker-end="url(#ar6)"/>
+      <line class="svg-line" x1="452" y1="105" x2="504" y2="105" marker-end="url(#ar6)"/>
+      <line class="svg-line svg-accent" x1="692" y1="105" x2="744" y2="105" marker-end="url(#ar6)" stroke="var(--accent)"/>
+
+      <path class="svg-line svg-dash stroke-bad" d="M 815 156 L 815 190 L 360 190 L 360 158" stroke="var(--bad)" fill="none"/>
+      <line x1="580" y1="176" x2="596" y2="204" class="svg-line stroke-bad" stroke="var(--bad)"/>
+      <line x1="596" y1="176" x2="580" y2="204" class="svg-line stroke-bad" stroke="var(--bad)"/>
+      <text class="svg-mono svg-bad" x="612" y="184">обратного пути нет: текст не может изменить балл или цвет</text>
+
+      <text class="svg-label svg-soft" x="30" y="228">Всё слева от синей стрелки посчитано Core и уже записано. Модель получает это как данность и сопровождает словами.</text>
+      <text class="svg-label svg-soft" x="30" y="244">Валидатор отвергает текст, который противоречит статусу камня, — приёмка проверяет и согласованность тоже.</text>
+    </svg>
+    <figcaption>
+      Разделение полномочий. Цифра рождается из ответов, цвет — из фиксированных
+      границ, одинаковых для всех школ; и только потом появляется текст. Одинаковое
+      среднее всегда даёт одинаковый цвет, что бы ни было написано рядом.
+    </figcaption>
+  </figure>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Решение</th><th>Кто принимает</th><th>Чем закреплено</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Балл измерения</td><td>Core</td><td>среднее по ответам; модель этих ответов не видит</td></tr>
+        <tr><td>Цвет и статус камня</td><td>Core</td><td>границы из <code>contracts/scoring-bands.json</code>, один файл на всю систему</td></tr>
+        <tr><td>Показывать ли результат вообще</td><td>Core</td><td>порог приватности, проверяется и до отправки, и в самом графе</td></tr>
+        <tr><td>Какие рекомендации предложить</td><td>каталог в AI-сервисе</td><td>отбор по измерению и статусу из файла, написанного людьми</td></tr>
+        <tr><td>Как это звучит на иврите</td><td>модель</td><td>единственная её работа</td></tr>
+        <tr><td>Годится ли написанное</td><td>валидатор AI-сервиса, затем Core</td><td>две независимые приёмки, вторая — с пересчётом цифр</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p style="margin-top:1.4rem">
+    Замок приватности при этом не может разойтись между экраном и анализом по
+    построению: браузер менеджера и AI-сервис читают <strong>один и тот же расчёт</strong> —
+    два маршрута отдают значение одной и той же функции, а не два правила,
+    написанных дважды.
+  </p>
+
+  <p>
+    Одна деталь про самый первый шаг этой цепочки: <strong>балл вычисляет сервер</strong>.
+    Браузер отправляет выбор респондента, а не число; во что превращается этот выбор,
+    решает шкала вопроса, сохранённая в снимке анкеты. Значение, которого на шкале нет,
+    не превращается ни во что и просто выпадает из расчёта — раньше на его месте
+    подставлялось 60, то есть испорченная анкета молча засчитывалась как умеренно
+    благополучная. Так же выпадает ответ, у которого присланное измерение не совпадает
+    с тем, к которому вопрос принадлежит на самом деле.
+  </p>
+
+  <div class="section-head">
+    <span class="num">07</span>
+    <h2>Когда модель молчит</h2>
+    <p class="standfirst">
+      Самая интересная часть проектирования — не счастливый путь, а честность
+      в неудаче.
+    </p>
+  </div>
+
+  <p>
+    Провайдер может не ответить: кончилась квота, нет ключа, таймаут, или ответ
+    пришёл, но не прошёл проверку качества. Транспорт делает несколько попыток
+    внутри себя, и если ничего не вышло — раунд <strong>падает</strong> с кодом,
+    который говорит, что именно случилось: <code>provider_unavailable_http_429</code>,
+    <code>provider_unavailable_missing_api_key</code>. Менеджеру показывают
+    человеческую фразу «сервис анализа сейчас недоступен, попробуйте через несколько
+    минут», а не код ошибки провайдера.
+  </p>
+
+  <p>
+    Стоит сразу снять одно распространённое ожидание: <strong>переключения на другого
+    провайдера здесь нет</strong>. Провайдер определяется один раз на вызов, и если он
+    не ответил, второй вендор не пробуется. Слово «запасной вариант» в этом коде всегда
+    означает одно и то же — текст, который сервис пишет сам, из цифр, без модели.
+  </p>
+
+  <p>
+    Главное здесь — то, чего система <em>не</em> делает: она не подставляет
+    заранее заготовленный текст, выдавая его за анализ. Формулировка из ADR-007
+    звучит так: «текст, написанный сервисом, показывать можно; выдавать его за
+    текст модели — нельзя».
+  </p>
+
+  <p>
+    На практике это компромисс, который менялся между версиями контракта. Вплоть до
+    версии 5.0 включительно у жёлтого и красного камня не было никакого
+    детерминированного текста:
+    двухфразовая интерпретация проблемы вынуждена была бы сказать то, чего в цифрах
+    нет, — поэтому исчерпанный бюджет попыток просто ронял раунд. Версия 6.0
+    разрешает откат на всех статусах, но её запасной текст построен так, чтобы
+    <strong>только пересказать статус и распределение</strong>: он не называет ни
+    причины, ни диагноза, ни человека. Это не догадка, от которой отказывалась 5.0.
+  </p>
+
+  <p>
+    Цена такого разрешения — обязанность раскрытия. Исход остаётся помеченным как
+    <code>deterministic_fallback</code>, на экране камня на иврите написано, что эти
+    абзацы написаны не моделью, и каждая принятая карта отдаёт метрику
+    «какая доля текста написана без модели» — чтобы раунд, на который провайдер
+    ни разу не ответил, отличался от раунда, на который ответил.
+  </p>
+
+  <div class="note">
+    Причина пробела тоже путешествует до экрана: <code>provider_unavailable</code> —
+    сервис не ответил; <code>validation_rejected</code> — текст был написан, и наша
+    же приёмка его отвергла. Это две разные ситуации, и советы на экране в них
+    разные. Ровно поэтому различие вообще хранится.
+  </div>
+
+  <div class="section-head">
+    <span class="num">08</span>
+    <h2>Почему так, а не иначе</h2>
+    <p class="standfirst">
+      Каждая развилка ниже имела очевидную альтернативу, и почти каждая из них
+      выглядит проще. Здесь — чем именно за эту простоту пришлось бы платить.
+    </p>
+  </div>
+
+  <figure class="wide">
+    <svg viewBox="0 0 900 330" role="img" aria-label="Сравнение трёх способов заказать анализ: синхронный вызов держит HTTP-соединение несколько минут и теряет работу при обрыве; вебхук без состояния не позволяет узнать, что случилось; очередь в базе данных хранит состояние, которое переживает перезапуск обоих процессов.">
+      <defs>
+        <marker id="ar7" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+
+      <!-- A -->
+      <text class="svg-title" x="30" y="30">А · синхронный вызов</text>
+      <rect class="svg-box" x="30" y="48" width="110" height="40" rx="2"/>
+      <text class="svg-mono" x="85" y="72" text-anchor="middle">Core</text>
+      <rect class="svg-box" x="150" y="48" width="110" height="40" rx="2"/>
+      <text class="svg-mono" x="205" y="72" text-anchor="middle">сервис</text>
+      <path class="svg-line" d="M 85 90 L 85 130 L 205 130 L 205 90" marker-end="url(#ar7)"/>
+      <text class="svg-mono svg-muted" x="30" y="150">соединение живёт 2–5 минут</text>
+      <text class="svg-mono svg-bad" x="30" y="176">✕ обрыв, таймаут прокси, деплой —</text>
+      <text class="svg-mono svg-bad" x="30" y="192">   анализ потерян, следов нет</text>
+      <text class="svg-mono svg-bad" x="30" y="212">✕ менеджер сидит и ждёт</text>
+      <text class="svg-mono svg-bad" x="30" y="232">✕ два нажатия — два анализа</text>
+
+      <line class="svg-thin" x1="292" y1="16" x2="292" y2="300"/>
+
+      <!-- B -->
+      <text class="svg-title" x="320" y="30">Б · вебхук «выстрелил и забыл»</text>
+      <rect class="svg-box" x="320" y="48" width="110" height="40" rx="2"/>
+      <text class="svg-mono" x="375" y="72" text-anchor="middle">Core</text>
+      <rect class="svg-box" x="440" y="48" width="110" height="40" rx="2"/>
+      <text class="svg-mono" x="495" y="72" text-anchor="middle">сервис</text>
+      <path class="svg-line" d="M 375 90 L 375 118 L 495 118 L 495 90" marker-end="url(#ar7)"/>
+      <text class="svg-mono svg-muted" x="320" y="140">202 «принято» — и тишина</text>
+      <text class="svg-mono svg-bad" x="320" y="166">✕ Core не знает, идёт ли работа</text>
+      <text class="svg-mono svg-bad" x="320" y="186">✕ упавший сервис = молча ничего</text>
+      <text class="svg-mono svg-bad" x="320" y="206">✕ нечего показать на экране</text>
+      <text class="svg-mono svg-bad" x="320" y="226">✕ повтор нельзя отличить от нового</text>
+      <text class="svg-mono svg-muted" x="320" y="252">этот путь в коде есть — как</text>
+      <text class="svg-mono svg-muted" x="320" y="268">граница отката, им никто не пользуется</text>
+
+      <line class="svg-thin" x1="582" y1="16" x2="582" y2="300"/>
+
+      <!-- C -->
+      <text class="svg-title" x="610" y="30">В · очередь с арендой</text>
+      <rect class="svg-box" x="610" y="48" width="110" height="40" rx="2"/>
+      <text class="svg-mono" x="665" y="72" text-anchor="middle">Core</text>
+      <rect class="svg-box" x="760" y="48" width="110" height="40" rx="2"/>
+      <text class="svg-mono" x="815" y="72" text-anchor="middle">сервис</text>
+      <rect class="svg-box-sunk" x="660" y="118" width="160" height="40" rx="2" stroke="var(--accent)"/>
+      <text class="svg-mono svg-fill-accent" x="740" y="142" text-anchor="middle">строка в базе</text>
+      <path class="svg-line svg-accent" d="M 665 90 L 665 138 L 654 138" marker-end="url(#ar7)" stroke="var(--accent)"/>
+      <path class="svg-line svg-accent" d="M 815 90 L 815 138 L 826 138" marker-end="url(#ar7)" stroke="var(--accent)" marker-start="url(#ar7)"/>
+      <text class="svg-mono svg-good" x="610" y="180">✓ состояние переживает перезапуск</text>
+      <text class="svg-mono svg-good" x="610" y="200">✓ видно, что происходит, на экране</text>
+      <text class="svg-mono svg-good" x="610" y="220">✓ дубликаты схлопываются</text>
+      <text class="svg-mono svg-good" x="610" y="240">✓ мёртвого воркера видно по тишине</text>
+      <text class="svg-mono svg-muted" x="610" y="266">— задержка старта до 2 секунд</text>
+      <text class="svg-mono svg-muted" x="610" y="286">— контейнер должен быть всегда включён</text>
+    </svg>
+    <figcaption>
+      Три способа заказать длинную работу. Разница не в красоте, а в том, что
+      остаётся, когда что-то ломается: в первых двух — ничего, в третьем — строка,
+      по которой видно и что просили, и что успело произойти.
+    </figcaption>
+  </figure>
+
+  <div class="why">
+    <article>
+      <h3>Очередь — таблица в PostgreSQL, а не брокер сообщений</h3>
+      <p>
+        Состояние работы живёт там же, где данные, о которых она. Один
+        <code>UPDATE</code> переводит прогон в терминальное состояние и записывает
+        результат — без «а что если запись прошла, а подтверждение в брокер нет».
+        Ноль новых сервисов в эксплуатации.
+      </p>
+      <ul class="alts">
+        <li><b>SQS / RabbitMQ / Redis</b> — ещё один сервис, который надо оплачивать, мониторить и чинить; результат всё равно пришлось бы класть в ту же базу, и появилась бы вторая правда о состоянии работы.</li>
+        <li><b>Celery / RQ</b> — тянет за собой брокер и вторую модель развёртывания; для одного вида задач с частотой «несколько в день на школу» это накладные расходы без выгоды.</li>
+        <li><b>Temporal / Inngest / Trigger.dev</b> — по сути правильный класс инструмента, и он умеет больше: ветвление, таймеры, история. Но это внешняя зависимость с собственной ценой и собственным обучением, а всё, что здесь нужно, — три состояния и аренда.</li>
+        <li class="kept"><b>Что выбрано</b> — таблица <code>ai_analysis_runs</code>, частичный уникальный индекс и условный <code>UPDATE</code>. Пока задач один вид, это дешевле по всем осям, кроме одной: писать пришлось самому.</li>
+      </ul>
+    </article>
+
+    <article>
+      <h3>Воркер опрашивает Core, а не Core будит воркера</h3>
+      <p>
+        Опрос выглядит примитивно, но у него есть свойство, которого нет у push:
+        <strong>он самовосстанавливается</strong>. Сервис, который проспал два часа
+        из-за деплоя, просто придёт снова и заберёт всё, что накопилось. При push
+        потерянное уведомление потеряно навсегда, и нужен ещё один механизм, чтобы
+        это заметить, — обычно тот же опрос, только сбоку.
+      </p>
+      <ul class="alts">
+        <li><b>Push-уведомление из Core</b> — требует, чтобы сервис был доступен ровно в момент события, и добавляет отдельную ответственность «а кто повторит потерянное». Именно так работал прежний вебхук, и при разборе это записали как дефект высшей категории: подтверждение о приёме выдавалось за факт выполнения.</li>
+        <li><b>Cron раз в минуту</b> — та же архитектура, но задержка до минуты вместо двух секунд, и это заметно, когда менеджер смотрит на экран.</li>
+        <li><b>LISTEN/NOTIFY в PostgreSQL</b> — требует прямого доступа к базе из Python, что рушит главную границу: у сервиса нет и не должно быть подключения к базе.</li>
+        <li class="kept"><b>Что выбрано</b> — опрос раз в 2 секунды по HTTP, с явным переключателем на случай, если воркер задеплоили раньше, чем Core начал раздавать работу.</li>
+      </ul>
+    </article>
+
+    <article>
+      <h3>Аренда со стуком, а не блокировка</h3>
+      <p>
+        Блокировка в базе жива, пока жив коннект. Здесь коннекта нет: воркер — чужой
+        процесс, который приходит по HTTP раз в 30 секунд. Аренда — это блокировка,
+        которая истекает сама, и именно поэтому смерть воркера не требует, чтобы
+        кто-то её заметил.
+      </p>
+      <ul class="alts">
+        <li><b><code>SELECT … FOR UPDATE</code></b> — держит транзакцию открытой на всё время анализа, то есть минуты; для пула соединений это яд, и работает только пока процесс жив на том же коннекте.</li>
+        <li><b>Advisory lock</b> — та же привязка к соединению плюс необходимость дать Python прямой доступ к базе.</li>
+        <li><b>Флаг «занято» без срока</b> — упавший воркер заклинивает раунд навсегда; нужен сторож, который снимает зависшие флаги, то есть та же аренда, только написанная позже и хуже.</li>
+        <li class="kept"><b>Что выбрано</b> — 90 секунд аренды, стук каждые 30, и никакой зависимости от того, жив ли коннект. Запас втрое покрывает опоздание удара; провал удара — отдельная история, и она в разделе 09.</li>
+      </ul>
+    </article>
+
+    <article>
+      <h3>Анализ заказывает закрытие раунда, а не каждый ответ</h3>
+      <p>
+        Раньше анализ запускался после каждой присланной анкеты. Это выглядело
+        отзывчиво и было неправильно по существу: пока раунд открыт, картина ещё
+        меняется, а прогон читает агрегаты в начале и сверяется с ними в конце —
+        ответ, пришедший в середине, ронял корректный анализ.
+      </p>
+      <ul class="alts">
+        <li><b>Анализ после каждого ответа</b> — требовал перезапуска при каждом расхождении и потолка в три автоматических прогона, иначе школа, отвечающая пачкой, тратила по вызову модели на человека. Вся эта машинерия существовала только чтобы пережить собственную частоту.</li>
+        <li><b>Анализ по расписанию (раз в ночь)</b> — менеджер закрывает раунд и не понимает, почему ничего не происходит.</li>
+        <li class="kept"><b>Что выбрано</b> — закрытие раунда как единственный автоматический заказ, плюс ручной «второй взгляд» по уже закрытому раунду. Закрытый раунд не принимает ответы, поэтому гонка исчезла вместе с механизмами против неё.</li>
+      </ul>
+    </article>
+
+    <article>
+      <h3>Ничто не перезапускается само</h3>
+      <p>
+        Автоматический ретрай уместен, когда повтор может дать другой результат.
+        Здесь почти все причины отказа — свойства входа или свойства самого сервиса,
+        и повтор их воспроизведёт, потратив ещё две дюжины вызовов модели.
+      </p>
+      <ul class="alts">
+        <li><b>Экспоненциальный ретрай всего подряд</b> — превращает системную ошибку в системный счёт за модель и прячет проблему вместо того, чтобы показать её.</li>
+        <li><b>Сброс упавшего прогона в очередь</b> — стирает свидетельство. Строка в состоянии <code>failed</code> с кодом причины и есть то, по чему потом понятно, что случилось.</li>
+        <li class="kept"><b>Что выбрано</b> — повтор просит человек, и это одна кнопка. Автоматически повторяется только <em>доставка</em> результата, и только по классу ответов, который ничего не говорит о содержимом.</li>
+      </ul>
+    </article>
+
+    <article>
+      <h3>Два рантайма, а не один</h3>
+      <p>
+        Соблазн переписать анализ на TypeScript и убрать целый сервис — реальный.
+        Против него два довода: библиотечная экосистема для такой работы живёт в
+        Python, и — важнее — стена между «владеет данными» и «пишет слова»
+        перестала бы быть стеной. Она держится не на дисциплине, а на том, что у
+        Python-процесса физически нет доступа к базе.
+      </p>
+      <ul class="alts">
+        <li><b>Всё в Next.js</b> — один деплой и никакого протокола, но приватность становится вопросом code review, а не топологии.</li>
+        <li><b>Сервис с собственной базой</b> — снимает MCP-запрос, но создаёт вторую правду о раунде и вторую копию персональных данных.</li>
+        <li class="kept"><b>Что выбрано</b> — сервис без состояния, который тянет агрегаты через MCP и не имеет ни таблицы. Цена — сетевой вызов и две системы для сопровождения.</li>
+      </ul>
+    </article>
+
+    <article>
+      <h3>Свой маленький движок графа, а не фреймворк</h3>
+      <p>
+        Граф здесь — это <code>while True</code> на девяносто строк с пятью вызовами
+        функций и понятными условиями выхода. Он ничего не сохраняет между шагами,
+        не нуждается в возобновлении и не ветвится сложнее, чем «принято или нет».
+      </p>
+      <ul class="alts">
+        <li><b>LangGraph / LangChain</b> — даёт чекпоинты, ветвление и наблюдаемость, которых здесь пока не требуется; взамен — зависимость, версии которой меняются быстрее, чем этот продукт.</li>
+        <li><b>Оркестрация в самом промпте</b> («агент сам решит, что делать») — исключает приёмку: узел, который проверяет результат, не может быть тем же, кто его пишет.</li>
+        <li class="kept"><b>Что выбрано</b> — явный цикл, который читается целиком за одну минуту. Если понадобятся долгие возобновляемые шаги — это будет момент взять фреймворк.</li>
+      </ul>
+    </article>
+
+    <article>
+      <h3>Рекомендации выбираются из каталога, а не сочиняются</h3>
+      <p>
+        Что именно предложить школе — решает файл, написанный специалистами, с
+        отбором по измерению, статусу камня, темам вопросов и поляризации ответов.
+        Модели остаётся формулировка.
+      </p>
+      <ul class="alts">
+        <li><b>Модель сама придумывает вмешательства</b> — уверенный текст без источника; ровно тот случай, когда правдоподобие опаснее незнания.</li>
+        <li><b>Векторная база с эмбеддингами</b> — правильный шаг, когда каталог вырастет; сегодня он помещается в один JSON, и взвешенный отбор по ключевым словам даёт понятный, воспроизводимый результат без ещё одного хранилища.</li>
+        <li class="kept"><b>Что выбрано</b> — локальный каталог и явные веса. Отбор можно объяснить словами, а это ровно то, что спросит методист.</li>
+      </ul>
+    </article>
+
+    <article>
+      <h3>Контейнер всегда включён, а не «просыпается по запросу»</h3>
+      <p>
+        Опрос требует живого процесса. Serverless со scale-to-zero не опрашивает
+        ничего, пока спит, — а разбудить его некому, потому что Core специально не
+        умеет будить сервис.
+      </p>
+      <ul class="alts">
+        <li><b>Cloud Run с нулём минимальных экземпляров</b> — дёшево ровно до того момента, когда выясняется, что спящий сервис не опрашивает ничего, и всё равно нужен будильник или ненулевой минимум.</li>
+        <li><b>Vercel и для Python тоже</b> — не подходит по форме: там нужен entrypoint под <code>api/</code>, которого у этого пакета нет.</li>
+        <li><b>Платный тариф</b> — «та версия этого решения, которой не нужны никакие ухищрения». Не выбрана по цене; на бесплатном тарифе месяц требует 730 часов работы при выданных 750, так что держать сервис включённым круглосуточно в бюджет укладывается.</li>
+        <li><b>Cron в GitHub Actions как будильник</b> — пробовали: десять окон подряд не запустились вовсе, при живом и включённом workflow. Заменено внешним монитором, который дёргает сервис раз в пять минут.</li>
+        <li class="kept"><b>Что выбрано</b> — обычный всегда работающий контейнер плюс внешний пингер, чтобы бесплатный тариф не усыплял его. Пересборка сервиса вдобавок ограничена его собственными путями: на бесплатном тарифе нет бесшовной подмены, а воркер в окне 502 не заберёт ни одной работы.</li>
+      </ul>
+    </article>
+  </div>
+
+  <div class="section-head">
+    <span class="num">09</span>
+    <h2>Границы: что эта конструкция сегодня не умеет</h2>
+    <p class="standfirst">
+      Часть этого — сознательно не сделанное, и тогда сказано, почему. Часть —
+      места, про которые решения просто нет: они всплыли, когда эту страницу
+      сверяли с кодом, и честнее их назвать, чем сгладить.
+    </p>
+  </div>
+
+  <div class="limit">
+    <span class="tag">последняя миля</span>
+    <p>Самая большая дыра в цепочке ответственности — её последний метр. Прогон
+    аккуратно доводится до строки в базе, и <strong>на этом всё</strong>: никто не
+    сообщает менеджеру, что карта готова. Экран запрашивает результат один раз при
+    открытии; обе кнопки заканчивают фразой «результаты обновятся на карте через
+    несколько минут» — и человек узнаёт о готовности, перезагрузив страницу.
+    Никакого опроса с экрана, никакого письма, никакого значка. И нигде не записано,
+    что это решение, а не недоделка: почему уведомления нет — единственный вопрос
+    этой страницы, на который в репозитории нет ни строчки ответа.</p>
+  </div>
+
+  <div class="limit">
+    <span class="tag">пропускная способность</span>
+    <p>Один процесс сервиса выполняет <strong>один анализ за раз</strong>: забрал
+    работу — довёл до конца — пошёл за следующей. Механика захвата рассчитана на
+    конкуренцию нескольких воркеров, и запустить второй экземпляр можно без единой
+    правки, но пока это одна очередь и один исполнитель.</p>
+  </div>
+
+  <div class="limit">
+    <span class="tag">задержка</span>
+    <p>До двух секунд между постановкой задания и его захватом — цена опроса в
+    ожидании. У неё есть и вторая половина, постоянная: опрос раз в две секунды —
+    это порядка 43&nbsp;тысяч запросов к Core и к базе в сутки, есть работа или нет.
+    На фоне анализа в несколько минут задержка невидима, а вот стоимость холостого
+    хода в репозитории никто не считал — двухсекундное число выбрано, а не
+    выведено.</p>
+  </div>
+
+  <div class="limit">
+    <span class="tag">остаточная гонка</span>
+    <p>Смена статуса раунда и постановка задания <strong>не в одной транзакции</strong>,
+    и порядок выбран сознательно: сначала раунд закрывается, потом заказывается анализ.
+    Если заказ не удался, раунд всё равно остаётся закрытым, а ответ честно говорит
+    «анализ не отправлен» — сбор ведь действительно закончен, и кнопка «запросить»
+    никуда не делась. Обратный порядок оставлял бы раунд открытым из-за проблемы,
+    которая к сбору ответов отношения не имеет. Остаточное расхождение намеренно не
+    залатано, а измеряется с другого конца: долей прогонов, упавших с
+    <code>round_validation_failed</code>.</p>
+  </div>
+
+  <div class="limit">
+    <span class="tag">хрупкий стук</span>
+    <p>Самая заметная асимметрия во всей конструкции. Доставку результата система
+    защищает тщательно: четыре попытки, классификация ответов, повтор только того,
+    что ничего не говорит о содержимом. А <strong>продление аренды не защищено
+    ничем</strong>. Один упавший запрос на продление — обычный сетевой таймаут, или
+    <code>503</code> от Core в неудачную секунду — вылетает наружу, отменяет анализ и
+    записывает прогон как <code>worker_error</code>, потратив попытку. Две дюжины уже
+    оплаченных вызовов модели выбрасываются из-за одного HTTP-запроса, который в
+    принципе можно было бы повторить через секунду: до истечения аренды оставалось
+    ещё около минуты. Причём различать эти случаи код уже умеет — «аренду отобрали»
+    (404 и 409) он обрабатывает отдельно и правильно, молча бросая чужую работу.
+    Не хватает ровно одного: повторить неудавшееся продление, прежде чем считать
+    прогон погибшим.</p>
+  </div>
+
+  <div class="limit">
+    <span class="tag">неограниченная пауза</span>
+    <p>Если Core отвечает на доставку <code>429</code> или <code>503</code> с
+    заголовком <code>Retry-After</code>, эта пауза выдерживается как есть, без
+    верхней границы: «время, которое попросила другая сторона, не нам сокращать».
+    Аренда при этом не теряется — стук продолжается, — но воркер занят, а он
+    единственный и делает одно дело за раз. Достаточно одного некорректного
+    <code>Retry-After</code>, чтобы очередь встала целиком.</p>
+  </div>
+
+  <div class="limit">
+    <span class="tag">кнопка без потолка</span>
+    <p>У автоматического заказа когда-то был предел в три прогона на раунд; он ушёл
+    вместе с самим автоматическим путём. У ручной кнопки «запросить ещё раз» предела
+    нет вовсе: каждый запрос получает случайный ключ, а значит не схлопывается ни с
+    чем. От бесконтрольной траты защищает только правило «один активный прогон на
+    раунд» — то есть терпение менеджера, а не система. Риск известен и записан как
+    оставшийся за рамками.</p>
+  </div>
+
+  <div class="limit">
+    <span class="tag">порядок каталога</span>
+    <p>Отбор рекомендаций складывается из трёх слагаемых, а при равном счёте
+    побеждает тот, кто раньше лежит в файле. Для раунда без распределений ответов
+    все слагаемые нулевые — и выбор целиком определяется порядком строк в JSON.
+    Порядок файла оказался значимым, и ни один тест его не закрепляет.</p>
+  </div>
+
+  <div class="limit">
+    <span class="tag">версию выбирает гость</span>
+    <p>Продолжение оговорки из раздела 03: набор проверок на входе определяется полем
+    внутри самой присланной карты, а не тем, что Core заказывал. Карта, объявившая
+    раннюю версию контракта, миновала бы сверку чисел. Сегодня это неопасно — версию
+    подставляет сам Core, а маршрут закрыт секретом, — но это доверие, и стоит оно
+    ровно столько, сколько стоит секрет.</p>
+  </div>
+
+  <div class="limit">
+    <span class="tag">секрет как выключатель</span>
+    <p>Проверка общего секрета устроена так: секрет задан — предъяви его; секрет не
+    задан — проходи, но только если это не Vercel. На машине разработчика это удобство,
+    ради которого не нужно раздавать ключи; на развёрнутом Core это закрытая дверь,
+    потому что там переменная окружения Vercel всегда есть. Стоит помнить об этом,
+    если Core когда-нибудь поедет на площадку, которая Vercel не является: там
+    незаданный секрет означает открытые машинные маршруты, а не отказ.</p>
+  </div>
+
+  <div class="limit">
+    <span class="tag">некому прочитать причину</span>
+    <p>Код причины отказа записывается в строку прогона и даже отдаётся наружу вместе с
+    ответом «анализа нет» — но <strong>ни один экран его не читает</strong>. Менеджеру
+    и не надо: ему показывают одну фразу и кнопку, и это правильно. А вот тому, кто
+    захочет понять, почему у школы третью неделю нет карты, читать нечего: истории
+    прогонов раунда не показывает никакая страница и никакой скрипт. «Строка — это
+    свидетельство» верно ровно наполовину: свидетельство есть, читателя нет.</p>
+  </div>
+
+  <div class="limit">
+    <span class="tag">порог движется под ногами</span>
+    <p>Вопросы анкеты замораживаются с первого же ответа — изменить формулировку,
+    порядок или состав нельзя. А вот <strong>порог приватности той же операцией
+    сохраняется без всяких условий</strong>. Значит, менеджер, поднявший порог, пока
+    анализ идёт, может перевести раунд в «заперт» — и корректная карта, вернувшись,
+    не сойдётся с пересчётом и будет отвергнута. Заморозка вопросов объяснена в коде
+    подробно; молчание про порог, который тоже участвует в проверке, выглядит
+    недосмотром, а не решением.</p>
+  </div>
+
+  <div class="limit">
+    <span class="tag">машинные двери без счётчика</span>
+    <p>В проекте есть аккуратный ограничитель частоты — с обоснованием, с хранилищем,
+    с политиками. Он применён к входу менеджера и к отправке анкеты, и <strong>ни к
+    одному машинному маршруту</strong>: ни к захвату работы, ни к обратному вызову, ни
+    к MCP, ни к кнопке «запросить анализ». Неверный секрет можно подбирать без счётчика
+    и без задержки, а сама проверка секрета — обычное сравнение строк, не устойчивое к
+    измерению времени. Двери закрыты ключом, но никто не считает, сколько раз в них
+    постучали.</p>
+  </div>
+
+  <div class="limit">
+    <span class="tag">ключ выше школ</span>
+    <p>Каждый менеджерский маршрут проверяет, что раунд принадлежит его школе. Обратный
+    вызов — нет: он находит раунд по идентификатору, и школьная принадлежность здесь
+    не проверяется вовсе. Секрет обратного вызова — это, строго говоря, полномочие над
+    всеми школами сразу. Пока школа одна, разницы не видно; она появится ровно в тот
+    день, когда их станет две.</p>
+  </div>
+
+  <div class="limit">
+    <span class="tag">очередь без справедливости</span>
+    <p>Работа выдаётся строго в порядке поступления, по всей базе. Один воркер, одна
+    работа за раз, глобальная очередь — значит, повторный анализ одной школы честно
+    задержит первый анализ другой. Пока школа одна, это не проявляется. И ещё тоньше:
+    правильность самоограничения по темпу держится на том, что процесс один, — а
+    «один» нигде не закреплено: ни числом рабочих процессов в конфигурации, ни
+    проверкой.</p>
+  </div>
+
+  <div class="limit">
+    <span class="tag">телеметрия в пустоту</span>
+    <p>Система аккуратно пишет о себе метрики — сколько работ поставлено, сколько
+    провалилось и почему, какая доля текста написана без модели. Все они уходят в
+    обычный вывод процесса, где их никто не собирает и откуда они исчезают вместе с
+    окном логов площадки. Это не сломано — просто наблюдаемость сегодня заканчивается
+    на границе строки в журнале, и стоит это помнить, читая раздел про измерение.</p>
+  </div>
+
+  <div class="limit">
+    <span class="tag">история доставки</span>
+    <p>Сколько попыток доставки было сделано, нигде не сохраняется — только факт
+    подтверждения. Отдельная запись о доставке станет правильной формой ровно
+    тогда, когда историю попыток понадобится читать снаружи воркера. Сейчас не
+    понадобилось.</p>
+  </div>
+
+  <div class="limit">
+    <span class="tag">переключатель</span>
+    <p>Опрос включается флагом <code>AI_JOB_POLLING_ENABLED</code>, и по умолчанию он
+    выключен. Это не забытая настройка, а порядок выкатки: сначала воркер, потом
+    Core начинает раздавать работу. Обратная сторона — сервис, у которого забыли
+    включить флаг, выглядит совершенно здоровым и не делает ничего.</p>
+  </div>
+
+  <div class="limit">
+    <span class="tag">мёртвые пути</span>
+    <p>В коде живут два эндпоинта, которые никто не вызывает: старый вебхук
+    <code>/api/v1/webhook/events</code> — граница отката, сохранённая намеренно, —
+    и прямой <code>/api/v1/rounds/:id/analyze</code>, который вне режима разработки
+    отвечает 404. Оба существуют, оба задокументированы как неиспользуемые, и оба
+    стоит удалять осознанно, а не случайно.</p>
+  </div>
+
+  <div class="limit">
+    <span class="tag">мёртвое значение</span>
+    <p>В ограничении на тип заказа до сих пор разрешено значение <code>automatic</code>,
+    которое сегодня не пишет никто: так помечены прогоны, созданные до перехода на
+    «анализ по закрытию». Убрать его нельзя, не сломав миграцию на любой базе,
+    где эти строки лежат. Ограничение, которое отказывает собственной истории, —
+    это ограничение, которое не применится.</p>
+  </div>
+
+  <div class="limit">
+    <span class="tag">двойная запись</span>
+    <p>Результат анализа пока пишется в двух местах: в строку прогона (долговременный
+    источник) и в старое поле раунда — временная совместимость на время перехода.
+    Два места для одной правды — это долг, и он записан как долг.</p>
+  </div>
+
+  <div class="section-head">
+    <span class="num">10</span>
+    <h2>Числа, на которых всё держится</h2>
+    <p class="standfirst">
+      Каждое живёт ровно в одном месте кода и ниоткуда не копируется. Но происхождение
+      у них разное, и это стоит различать.
+    </p>
+  </div>
+
+  <p>
+    Записанное обоснование есть у меньшинства. Потолок стука в 60 секунд объяснён
+    прямо в коде — он обязан быть меньше срока аренды. Темпы обращения к модели
+    измерены прогонами и подписаны датой. Порог приватности и границы цвета — это
+    решения о продукте, и они лежат в файлах контракта. А вот <strong>90 секунд
+    аренды, 2 секунды опроса, три попытки и четыре доставки нигде не выведены</strong>:
+    это разумно выбранные величины, которые работают, а не результат расчёта.
+    Объяснения ниже — реконструкция того, что каждое число делает, а не цитата из
+    документа. Если однажды они окажутся малы, менять их можно спокойно: ни одна
+    другая часть системы на их точных значениях не построена.
+  </p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Что</th><th>Значение</th><th>Почему столько</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Интервал опроса</td><td class="num">2 с</td><td>Незаметно на фоне минут анализа, не создаёт заметной нагрузки на Core.</td></tr>
+        <tr><td>Интервал стука</td><td class="num">30 с</td><td>Треть срока аренды — запас на опоздание удара, но не на его провал (см. раздел 09).</td></tr>
+        <tr><td>Срок аренды</td><td class="num">90 с</td><td>Достаточно, чтобы пережить паузу сети; достаточно мало, чтобы упавшего воркера заменили быстро.</td></tr>
+        <tr><td>Потолок попыток</td><td class="num">3</td><td>Воркер, умирающий трижды подряд, умирает не случайно.</td></tr>
+        <tr><td>Кругов ремонта</td><td class="num">до 3</td><td>Дальше вложения в переписывание перестают окупаться: каждый круг — это новые вызовы модели.</td></tr>
+        <tr><td>Попыток доставки</td><td class="num">4, ≈7 с</td><td>Умещается внутри одной аренды, потому что стук идёт всё это время.</td></tr>
+        <tr><td>Таймаут доставки</td><td class="num">5 с</td><td>Core либо отвечает быстро, либо не отвечает.</td></tr>
+        <tr><td>Таймаут MCP-запроса</td><td class="num">5 с</td><td>То же самое на входе: агрегаты приходят сразу или не приходят.</td></tr>
+        <tr><td>Порог приватности</td><td class="num">10 ответов</td><td>Одновременно значение по умолчанию и минимум. Поднять можно, опустить нельзя.</td></tr>
+        <tr><td>Границы цвета</td><td class="num">75 / 50</td><td>Один файл контракта на всю систему; одинаковы для всех школ.</td></tr>
+        <tr><td>Одновременных запросов к модели</td><td class="num">2</td><td>Вместе с числом вызовов это и определяет длительность раунда.</td></tr>
+        <tr><td>Темп, быстрая модель</td><td class="num">60/мин</td><td>Измерено на оплаченном ключе, а не взято из тарифной таблицы. По умолчанию — 5.</td></tr>
+        <tr><td>Темп, тяжёлая модель</td><td class="num">30/мин</td><td>Отдельное число: у второй модели своя квота, и наследовать чужую нельзя.</td></tr>
+        <tr><td>Попыток одного запроса к модели</td><td class="num">3, бюджет 25 с</td><td>Транспорт пробует сам, но в жёстких рамках: дальше это уже отказ.</td></tr>
+        <tr><td>Рекомендаций на камень</td><td class="num">5</td><td>На текущей версии контракта; на старых — 3. Проверяется приёмкой.</td></tr>
+        <tr><td>Измерений на карте</td><td class="num">8</td><td>Фиксированная таксономия: анкета может меняться, стороны карты — нет.</td></tr>
+        <tr><td>Версия контракта</td><td class="num">6.0 / 5.0</td><td>Один переключатель, который выбирает форму всей карты: три абзаца или один, пять рекомендаций или три, разрешён ли откат и частичные карты. На деплое 6.0; не задано — откатобезопасная 5.0.</td></tr>
+        <tr><td>Температура модели</td><td class="num">0.2</td><td>Единственная ручка провайдера, зашитая в код: всё остальное — настройки с записанным обоснованием, эта — литерал без строчки рядом.</td></tr>
+        <tr><td>Таймаут подсказки вопроса</td><td class="num">45 с</td><td>Единственный синхронный вызов: человек смотрит на кнопку.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section-head">
+    <span class="num">11</span>
+    <h2>В каком состоянии всё это сейчас</h2>
+    <p class="standfirst">
+      Схема описывает работающий механизм. Это не то же самое, что работающая
+      система, и разницу стоит назвать.
+    </p>
+  </div>
+
+  <figure class="wide">
+    <svg viewBox="0 0 900 250" role="img" aria-label="Цепочка прогона с отмеченными разрывами: обращение к модели на развёрнутом окружении отвечает отказом по исчерпанному балансу; между записанным результатом и экраном менеджера нет уведомления; причина отказа сохраняется, но не читается ни одним экраном.">
+      <defs>
+        <marker id="ar8" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+
+      <g>
+        <rect class="svg-box" x="20" y="80" width="95" height="46" rx="2"/>
+        <text class="svg-mono" x="67" y="108" text-anchor="middle">закрытие</text>
+        <rect class="svg-box" x="127" y="80" width="95" height="46" rx="2"/>
+        <text class="svg-mono" x="174" y="108" text-anchor="middle">строка</text>
+        <rect class="svg-box" x="234" y="80" width="95" height="46" rx="2"/>
+        <text class="svg-mono" x="281" y="108" text-anchor="middle">захват</text>
+        <rect class="svg-box" x="341" y="80" width="95" height="46" rx="2"/>
+        <text class="svg-mono" x="388" y="108" text-anchor="middle">агрегаты</text>
+        <rect class="svg-box" x="448" y="80" width="95" height="46" rx="2" stroke="var(--bad)"/>
+        <text class="svg-mono svg-bad" x="495" y="108" text-anchor="middle">модель</text>
+        <rect class="svg-box" x="555" y="80" width="95" height="46" rx="2"/>
+        <text class="svg-mono" x="602" y="108" text-anchor="middle">карта</text>
+        <rect class="svg-box" x="662" y="80" width="95" height="46" rx="2"/>
+        <text class="svg-mono" x="709" y="108" text-anchor="middle">записано</text>
+        <rect class="svg-box" x="805" y="80" width="75" height="46" rx="2"/>
+        <text class="svg-mono" x="842" y="108" text-anchor="middle">менеджер</text>
+      </g>
+
+      <g class="svg-line">
+        <line x1="117" y1="103" x2="123" y2="103" marker-end="url(#ar8)"/>
+        <line x1="224" y1="103" x2="230" y2="103" marker-end="url(#ar8)"/>
+        <line x1="331" y1="103" x2="337" y2="103" marker-end="url(#ar8)"/>
+        <line x1="438" y1="103" x2="444" y2="103" marker-end="url(#ar8)"/>
+        <line x1="545" y1="103" x2="551" y2="103" marker-end="url(#ar8)"/>
+        <line x1="652" y1="103" x2="658" y2="103" marker-end="url(#ar8)"/>
+      </g>
+
+      <line class="svg-line svg-dash stroke-bad" x1="759" y1="103" x2="799" y2="103" stroke="var(--bad)"/>
+      <line x1="772" y1="92" x2="786" y2="114" class="svg-line stroke-bad" stroke="var(--bad)"/>
+      <line x1="786" y1="92" x2="772" y2="114" class="svg-line stroke-bad" stroke="var(--bad)"/>
+
+      <line class="svg-line stroke-bad" x1="495" y1="78" x2="495" y2="56" stroke="var(--bad)"/>
+      <text class="svg-mono svg-bad" x="418" y="46">на развёрнутом окружении отвечает отказом:</text>
+      <text class="svg-mono svg-bad" x="418" y="30">баланс у провайдера отрицательный</text>
+
+      <line class="svg-line stroke-bad" x1="779" y1="118" x2="779" y2="156" stroke="var(--bad)"/>
+      <text class="svg-mono svg-bad" x="560" y="172" text-anchor="middle">уведомления нет — только перезагрузка страницы</text>
+
+      <line class="svg-line stroke-bad" x1="709" y1="128" x2="709" y2="196" stroke="var(--bad)"/>
+      <text class="svg-mono svg-bad" x="330" y="212" text-anchor="middle">причина отказа сохранена и не читается ни одним экраном</text>
+
+      <text class="svg-label svg-soft" x="20" y="240">Первые семь звеньев проверены целиком — на локальном стенде: восемь камней из восьми, с первой попытки, около трёх минут.</text>
+    </svg>
+    <figcaption>
+      Где механизм заканчивается и начинается то, что ещё не подключено. Красным —
+      не поломки, а места, которых просто нет: непополненный баланс, отсутствующее
+      уведомление и сохранённая причина, у которой нет читателя.
+    </figcaption>
+  </figure>
+
+  <p>
+    Вся цепочка, описанная выше, <strong>проверена от начала до конца — на локальном
+    стенде</strong>. Анализ запускался с экрана раунда, завершился успехом с первой
+    попытки примерно за три минуты, версия контракта 6.0, восемь камней из восьми
+    написаны моделью, ни одного отказа приёмки. Все 305 ивритских строк результата
+    проверены: ни арабских букв, ни кириллицы.
+  </p>
+
+  <p>
+    На развёрнутом окружении <strong>не был проанализирован ни один раунд</strong>.
+    База там пуста — анализировать просто нечего. Код развёрнут и опрос включён, но
+    развёрнутый код и развёрнутое поведение — разные вещи, и второго пока не было.
+  </p>
+
+  <p>
+    И ещё одно, датированное сегодняшним днём: у аккаунта провайдера
+    <strong>отрицательный баланс</strong>, автопополнение выключено, и до пополнения
+    любой вызов модели отвечает отказом. Это не авария, а цикл: баланс кончается,
+    сервис отвечает 429, кто-нибудь замечает и пополняет. То есть на развёрнутом
+    окружении этот конвейер исполнял пока только одну свою ветку — ту, что честно
+    сообщает «сервис анализа недоступен».
+  </p>
+
+  <div class="note">
+    Из этого не следует, что описанное выше неправда. Следует ровно одно: механизм
+    доказан там, где его можно было прогнать, а на площадке ждёт первой настоящей
+    школы и пополненного счёта. Пункт про уведомление станет заметен в тот же день,
+    что и первая школа, — и, вероятно, раньше всего остального.
+  </div>
+
+  <div class="section-head">
+    <span class="num">12</span>
+    <h2>Если запомнить только пять вещей</h2>
+  </div>
+
+  <ul class="plain">
+    <li><strong>Джоба — это строка в базе, а не процесс.</strong> Поэтому её нельзя
+    потерять при перезапуске, обрыве связи или закрытии вкладки.</li>
+    <li><strong>Аренда отвечает на вопрос «он думает или умер».</strong> Живой стучит
+    и продлевает; мёртвый молчит, срок истекает, работу забирает другой.</li>
+    <li><strong>Инициатива у сервиса.</strong> Core ничего не запускает — он записывает,
+    что работа нужна, и отвечает менеджеру немедленно.</li>
+    <li><strong>Модель пишет только слова.</strong> Цифры, цвета и статусы посчитаны
+    до её вызова, и вернуться назад к ним текст не может.</li>
+    <li><strong>Неудача видна.</strong> Ничего не перезапускается само, ничего не
+    подставляется вместо анализа, и текст, написанный без модели, помечен как
+    написанный без модели.</li>
+  </ul>
+
+  <p class="end">
+    Всё описанное восстановлено по коду репозитория: маршруты в <code>src/app/api</code>,
+    репозиторий прогонов в <code>src/lib/repositories/prisma</code>, воркер и граф в
+    <code>ai-analytics-service/src</code>, а обоснования — из решений ADR-001, 005,
+    006, 007, 010, 016 и 017 в <code>PROJECT_CONTEXT.md</code>. Числа взяты из тех же
+    файлов, что использует работающая система. Черновик страницы прошёл проверку
+    против исходников по трём линиям — оркестрация, отказы, границы данных — плюс
+    отдельный поиск того, о чём страница молчала; всё найденное либо исправлено в
+    тексте, либо честно вынесено в раздел 09.
+  </p>
+
+</div>
+
+</body></html>
