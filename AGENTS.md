@@ -103,6 +103,10 @@ Direct system, developer and user instructions take precedence over this file.
   specifications, historical plans and branch-local task records.
 - Current code, tests, schemas and configuration outrank prose. When a living
   document disagrees with them, update the document in the same task.
+- `npm run lint:doc-numbers` enforces that rule for the numbers documents quote
+  from configuration, and only for those. It says nothing about prose that
+  describes behaviour, so a passing check is not evidence that a document
+  survived a change — read it.
 - Do not rewrite dated plans or archived task files as if they were current.
   Preserve them as historical evidence and point readers to the living source.
 - Keep `PROGRESS.md` to concise product-level milestones and keep

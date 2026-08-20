@@ -61,6 +61,26 @@ markers is prose a person writes; an endpoint's *direction* and its answer codes
 are declared in the script, because a machine can see that a route exists and
 not who calls it.
 
+Numbers are guarded rather than generated. `npm run lint:doc-numbers` reads the
+configured default for a setting — `AI_JOB_POLL_INTERVAL_SECONDS` and its idle
+ceiling, the heartbeat, the lease, the attempt ceiling — and compares it against
+every place the documents state it: seventeen claims across
+[`ai-analysis-run-lifecycle.md`](ai-analysis-run-lifecycle.md),
+[`ai-analysis-jobs.html`](ai-analysis-jobs.html) and
+[`ai-analysis-run-mechanics.html`](ai-analysis-run-mechanics.html), in tables and
+in diagram labels alike. It runs inside `npm run verify:core`, and it fails in
+three directions: prose that disagrees with the code, a setting renamed or
+removed at the source, and a passage rewritten so that the check no longer finds
+anything — because a gate whose anchor has slipped off passes forever and guards
+nothing. Adding a claim means adding a line to
+`scripts/check-doc-numbers.mjs`.
+
+What it deliberately does not cover is prose that describes behaviour rather
+than quoting a figure. On 2026-08-20 the hardest correction was a passage
+claiming nobody had counted what idle polling costs; no checker would have
+noticed it. Numbers no longer depend on an agent remembering. Meaning still
+does, which is why the rule below is written out.
+
 ## Released snapshots
 
 [`snapshots/`](snapshots/README.md) holds translations of a source document,
