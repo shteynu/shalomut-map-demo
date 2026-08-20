@@ -1,5 +1,46 @@
 # Shalomut Tracker — operational handoff
 
+**2026-08-20, session close: the thinking budget is finished end to end, and
+`docs/agent-tasks/active/` is empty.** `origin/main` is **`2b87836`**, asked of
+the remote — the last documentation commit reached it without an agent pushing
+anything, which is the seventh observation of that in this file and the reason
+every claim above about what is unpushed was checked against the remote rather
+than a tracking ref. Nothing is outstanding on any branch: `git log
+origin/main..HEAD` is empty, nothing is staged, `git ls-files -o
+--exclude-standard` returns nothing, and the only modified file is
+`next-env.d.ts`, which was dirty before this session and belongs to the owner.
+
+What this session did, in one line each: merged
+`feat/the-thinking-budget-is-a-declared-number` with a `main` that had moved
+fifteen commits and had independently fixed the same request timeout; kept
+`main`'s measured bounds and this branch's reasoning knob; landed it; confirmed
+both halves and CI on `d07bb39`; and read `LLM_REASONING_EFFORT=low` off the
+Render dashboard. The three entries below carry the evidence.
+
+**The one thing worth carrying into the next session** is not a task but a
+habit this session paid for twice: two sessions fixed the same defect from
+different evidence, and neither knew. The branch had been published and left for
+a day. Ask the remote for `main` before trusting a branch's numbers, not only
+before pushing them.
+
+Verification for the documentation commits themselves: `git diff --check` clean
+over `c55d506..2b87836`, every relative link in both touched files resolves,
+`docs/agent-tasks/active/` verified empty. No code changed after the suite that
+covers it — **564 passed**, `npx tsc --noEmit` clean, `npm run lint` clean at
+`b674287` — so no run was repeated to prove nothing. `npm run lint:skills` was
+not run and did not need to be: no skill, adapter or root entrypoint was
+touched. `PROGRESS.md` is deliberately unchanged; the change has no
+user-visible outcome and its operational state lives here.
+
+**Next concrete step:** none for an agent — the repository has no unfinished
+agent work. Two items wait on the owner and are recorded in their own sections
+below: **rotate `GEMINI_API_KEY`**, exposed in a transcript on 2026-08-20 and
+billed, which should come before any paid round; and then, off a round run for
+some other reason, read the usage lines for what a `6.0` round costs at `low`.
+The next available piece of product work, if a session wants one, is
+`docs/product-behaviour-backlog.md` §12 — the research instrument — which
+already has a stack of branches under it.
+
 **2026-08-20, later: the thinking-budget branch is on `main` and deployed, and
 the provider bill now changes by decision rather than by default.**
 `origin/main` is **`d07bb39`**, asked of the remote after the owner pushed
