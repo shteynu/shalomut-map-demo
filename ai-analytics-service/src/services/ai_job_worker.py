@@ -124,6 +124,18 @@ class CoreJobClient:
         return True
 
 
+async def wait_between_polls(stop_event: asyncio.Event, timeout: float) -> None:
+    """Wait out one poll interval, or return early when the process stops.
+
+    A function of its own so shutdown stays immediate however long the idle
+    wait has grown — and so a test can watch the lengths without a clock.
+    """
+    try:
+        await asyncio.wait_for(stop_event.wait(), timeout=timeout)
+    except asyncio.TimeoutError:
+        pass
+
+
 class AiAnalysisJobWorker:
     def __init__(
         self,
@@ -209,21 +221,33 @@ class AiAnalysisJobWorker:
         self,
         stop_event: asyncio.Event,
         poll_interval_seconds: float,
+        max_poll_interval_seconds: Optional[float] = None,
     ) -> None:
+        """Claim work until told to stop, asking less often while idle.
+
+        An empty queue is the ordinary state, and asking it every couple of
+        seconds spends a Core invocation and two queries to be told `204`. So
+        each empty answer doubles the next wait up to the ceiling, and a
+        claimed job snaps it back to `poll_interval_seconds`. A failed poll
+        widens it too, on purpose: a Core that cannot answer is the last thing
+        to ask twice as often. Omitting the ceiling keeps the flat cadence this
+        loop had before, which is what existing callers get.
+        """
+        ceiling = max(poll_interval_seconds, max_poll_interval_seconds or 0.0)
+        interval = poll_interval_seconds
         while not stop_event.is_set():
             try:
                 processed = await self.process_once()
             except Exception:
                 logger.exception("[AI Job Worker] Poll failed")
                 processed = False
-            if not processed:
-                try:
-                    await asyncio.wait_for(
-                        stop_event.wait(),
-                        timeout=poll_interval_seconds,
-                    )
-                except asyncio.TimeoutError:
-                    pass
+            if processed:
+                interval = poll_interval_seconds
+                continue
+            await wait_between_polls(stop_event, interval)
+            # Widened after the wait, not before it: the first quiet poll is
+            # still one interval away, and only a stretch of them drifts out.
+            interval = min(interval * 2, ceiling)
 
 
 # Core's `isValidWorkerId` accepts 1..120 characters of `[a-zA-Z0-9._:-]`, and a

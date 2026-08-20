@@ -58,12 +58,19 @@ async def lifespan(application: FastAPI):
                     worker.run_forever(
                         stop_event,
                         settings.ai_job_poll_interval_seconds,
+                        settings.ai_job_poll_max_interval_seconds,
                     )
                 )
             )
+        # The cadence is logged because a quiet log is how idle polling now
+        # looks: minutes can pass between claims, and the line says whether
+        # that is the backoff working or the loop having died.
         logger.info(
-            "[AI Job Worker] Polling with %s concurrent slot(s)",
+            "[AI Job Worker] Polling with %s concurrent slot(s), every %ss and "
+            "up to %ss while the queue is empty",
             pool_size,
+            settings.ai_job_poll_interval_seconds,
+            settings.ai_job_poll_max_interval_seconds,
         )
         application.state.ai_job_worker_stop = stop_event
         application.state.ai_job_worker_tasks = tasks

@@ -126,6 +126,27 @@ class Settings:
             0.2,
             min(60.0, float(os.getenv("AI_JOB_POLL_INTERVAL_SECONDS", "2.0"))),
         )
+        # How far apart the polls drift while the queue stays empty, which is
+        # the ordinary state: rounds close a few times a day, and every poll in
+        # between costs Core a serverless invocation and two queries to answer
+        # `204`. The interval above is what a worker uses when there is work;
+        # after an empty poll the wait doubles up to this ceiling and snaps
+        # back to the interval the moment a job is claimed. At 2 s → 30 s that
+        # is about 2 900 polls a day instead of 43 000, and it is charged per
+        # slot, since every lane of `AI_JOB_POOL_SIZE` polls on its own.
+        #
+        # What it costs is up to one ceiling of delay before the first round of
+        # a quiet stretch starts — invisible next to an analysis of about three
+        # minutes that nothing notifies the manager about anyway. Setting it to
+        # the poll interval restores the old flat cadence; it can never be less,
+        # because a ceiling below the base would only be read as one.
+        self.ai_job_poll_max_interval_seconds: float = max(
+            self.ai_job_poll_interval_seconds,
+            min(
+                300.0,
+                float(os.getenv("AI_JOB_POLL_MAX_INTERVAL_SECONDS", "30.0")),
+            ),
+        )
         # Core leases for 90 seconds. Capping heartbeats at 60 seconds leaves a
         # full retry window even when one renewal is delayed.
         self.ai_job_heartbeat_interval_seconds: float = max(

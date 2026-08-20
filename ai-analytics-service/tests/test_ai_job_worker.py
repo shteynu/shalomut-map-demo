@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from src.config import Settings
 from src.services.ai_job_worker import (
     AiAnalysisJobWorker,
     JobLease,
@@ -246,3 +247,133 @@ async def test_a_partial_run_carries_its_dimensions_and_the_map_it_amends():
         regenerate_dimension_ids=("balance", "certainty"),
         previous_result=previous,
     )
+
+
+async def test_an_idle_worker_widens_its_wait_up_to_the_ceiling(monkeypatch):
+    """The queue is empty almost always, and every ask costs Core a request.
+
+    Core answers a claim with two queries and a `204`, on a serverless
+    invocation, once per slot. At a flat two seconds that is some 43 000 a day
+    to learn nothing. Doubling the wait after each empty answer brings it near
+    2 900 without changing what a busy worker does, so what this pins down is
+    the sequence: one base interval first, then out to the ceiling and no
+    further.
+    """
+    waits: list[float] = []
+    stop_event = asyncio.Event()
+
+    async def record(event, timeout):
+        waits.append(timeout)
+        if len(waits) == 5:
+            event.set()
+
+    monkeypatch.setattr("src.services.ai_job_worker.wait_between_polls", record)
+
+    client = AsyncMock()
+    client.claim.return_value = None
+    worker = AiAnalysisJobWorker(
+        client=client,
+        runner=AsyncMock(),
+        worker_id="worker-idle",
+        heartbeat_interval_seconds=60,
+    )
+
+    await asyncio.wait_for(
+        worker.run_forever(stop_event, 2.0, 30.0),
+        timeout=2,
+    )
+
+    assert waits == [2.0, 4.0, 8.0, 16.0, 30.0]
+
+
+async def test_claimed_work_snaps_the_wait_back_to_the_base_interval(
+    monkeypatch,
+):
+    """A queue that just had work is the one most likely to have more.
+
+    Fifty schools closing together arrive as a queue, not as one job, so a
+    worker that stayed at its idle ceiling after finishing would leave the rest
+    of them waiting half a minute apiece. The reset is what keeps the backoff a
+    property of silence rather than of the queue's length.
+    """
+    waits: list[float] = []
+    stop_event = asyncio.Event()
+
+    async def record(event, timeout):
+        waits.append(timeout)
+        if len(waits) == 4:
+            event.set()
+
+    monkeypatch.setattr("src.services.ai_job_worker.wait_between_polls", record)
+
+    lease = JobLease(
+        run_id="run-idle-then-busy",
+        round_id="round-idle-then-busy",
+        lease_token="lease-token-987654",
+        attempt_count=1,
+    )
+    answers = iter([None, None, lease])
+
+    async def claim(_worker_id):
+        return next(answers, None)
+
+    client = AsyncMock()
+    client.claim.side_effect = claim
+    runner = AsyncMock()
+    runner.process_round.return_value = {"status": "success"}
+    worker = AiAnalysisJobWorker(
+        client=client,
+        runner=runner,
+        worker_id="worker-idle-then-busy",
+        heartbeat_interval_seconds=60,
+    )
+
+    await asyncio.wait_for(
+        worker.run_forever(stop_event, 2.0, 30.0),
+        timeout=2,
+    )
+
+    # Two empty polls widen the wait, the claimed run resets it, and the two
+    # empty polls after it start over from the base rather than from 8.
+    assert waits == [2.0, 4.0, 2.0, 4.0]
+
+
+async def test_a_worker_without_a_ceiling_keeps_the_flat_cadence(monkeypatch):
+    """Backoff is opt-in at the call site, so a caller that never heard of it
+    polls exactly as it did before."""
+    waits: list[float] = []
+    stop_event = asyncio.Event()
+
+    async def record(event, timeout):
+        waits.append(timeout)
+        if len(waits) == 3:
+            event.set()
+
+    monkeypatch.setattr("src.services.ai_job_worker.wait_between_polls", record)
+
+    client = AsyncMock()
+    client.claim.return_value = None
+    worker = AiAnalysisJobWorker(
+        client=client,
+        runner=AsyncMock(),
+        worker_id="worker-flat",
+        heartbeat_interval_seconds=60,
+    )
+
+    await asyncio.wait_for(worker.run_forever(stop_event, 2.0), timeout=2)
+
+    assert waits == [2.0, 2.0, 2.0]
+
+
+def test_the_idle_ceiling_can_never_sit_below_the_poll_interval(monkeypatch):
+    """A ceiling under the base would read as a shorter interval, not a longer
+    one, and would speed the polling up in the name of slowing it down."""
+    monkeypatch.setenv("AI_JOB_POLL_INTERVAL_SECONDS", "5")
+    monkeypatch.setenv("AI_JOB_POLL_MAX_INTERVAL_SECONDS", "1")
+    assert Settings().ai_job_poll_max_interval_seconds == 5.0
+
+    monkeypatch.setenv("AI_JOB_POLL_MAX_INTERVAL_SECONDS", "45")
+    assert Settings().ai_job_poll_max_interval_seconds == 45.0
+
+    monkeypatch.delenv("AI_JOB_POLL_MAX_INTERVAL_SECONDS")
+    assert Settings().ai_job_poll_max_interval_seconds == 30.0
