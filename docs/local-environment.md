@@ -62,6 +62,14 @@ Sign in at `http://localhost:3000/login/` as `admin@shalomut.edu.il`. The
 password is `MANAGER_ADMIN_PASSWORD` from `.env`, or `admin123` when that is
 empty.
 
+That password door exists only while this runtime has no identity provider. Set
+all four `OIDC_*` variables and the login screen offers the organizational
+account instead and `/api/auth/login` refuses with `PROVIDER_REQUIRED` — two
+ways in never exist at once. Locally that means signing in needs a real OAuth
+client whose authorized redirect URI is
+`http://localhost:3000/api/auth/oidc/callback`, so leave the four empty unless
+the provider itself is what you are working on.
+
 ## What is identical, and what is not
 
 | | local | deployed |
@@ -69,7 +77,7 @@ empty.
 | Database | Postgres container, `compose.yaml` | Supabase `tpfzhyalaftotljmlont` |
 | Migrations | `npm run db:migrate:deploy` | same migrations, applied deliberately |
 | Core runtime | `next dev`, `NODE_ENV=development` | `next build`, `NODE_ENV=production` |
-| Manager sign-in | `admin123` when the password is unset | password required, else `503 UNCONFIGURED` |
+| Manager sign-in | `admin123` when the password is unset | the identity provider once `OIDC_*` is set; until then the password, else `503 UNCONFIGURED` |
 | AI service mode | `ENV=local` | `ENV=production` |
 | Shared secrets | required, from `.env` | required, from Vercel and Render |
 | Direct `/analyze` | disabled | disabled |

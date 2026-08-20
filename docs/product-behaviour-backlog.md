@@ -356,15 +356,31 @@ Why it matters:
 
 ### 8. More Than One Manager Per School (not requested yet)
 
-Current state: one manager signs in per deployment. The account is not a
-database record — it is built in `src/lib/auth/manager-auth-service.ts` from
-`MANAGER_ADMIN_PASSWORD`, and `MANAGER_ORGANIZATION_ID` binds the session to a
-single organization. Roles, memberships, permissions and an audit-log interface
-already exist as types and in-memory services; nothing persists them.
+Current state, rewritten 2026-08-20: a manager **is** a database record now, and
+so is a membership. Phase 1 of `docs/multi-tenancy-plan-2026-08-20.md` created
+`managers` and `organization_memberships`, moved sign-in to an identity
+provider, and gave the platform about four administrators who may open any
+school. The audit-log interface is still in-memory and is phase 3.
+
+That closed the machinery this item asked for without closing the item. What the
+owner chose on 2026-08-20 is **one user per school** — many schools, one person
+in each — and a second person inside one school is still not a requirement.
+There is nothing to build in the data model when it becomes one:
+`OrganizationMembership` is many-to-many already and the session token carries a
+list. What is missing is the product question this item exists for — what two
+people in one school may each do — which is phase 6 of that plan.
 
 Owner decision 2026-08-03: a second manager is not a requirement today, so this
 stays a future feature rather than an open architecture task. Recorded here so
 the trigger is explicit rather than assumed.
+
+Owner decision 2026-08-10, **overtaken on 2026-08-20**: enforcing password
+strength waited for this trigger, and then the passwords went away. A runtime
+with an identity provider has no password to enforce anything about, and
+`/api/auth/login` refuses before it reads one. The paragraph below is kept
+because it still describes the interim door — a deployment whose OAuth client
+does not exist yet — and because its reasoning is why the rule was never added
+to the path that is now being deleted.
 
 Owner decision 2026-08-10: **enforcing password strength in code also waits for
 this trigger.** It was written and then withdrawn before it was pushed — a
@@ -381,27 +397,31 @@ starts earning its keep. Until then the requirement stays advisory, stated in
 `.env.example` beside the variable and as a pre-pilot gate in
 `docs/shalomut-tracker-handoff.md`.
 
-Proposal, when a second manager is actually requested:
-- Persist `Manager`, `OrganizationMembership` and audit events, or delegate
-  authentication to an identity provider and keep membership in Core either way.
-- Store a real credential with a memory-hard KDF, or store none at all under an
-  identity provider.
-- Enforce credential strength at the point a password is set, which is where it
-  belongs once there is such a point — a rule at sign-in time is a blunt
-  substitute for one at registration time, and it exists only because today the
-  password arrives as an environment variable.
-- Add invitation, revocation and password recovery, each with Hebrew RTL
-  screens, or accept the provider's hosted screens only after checking their RTL
-  behaviour by hand.
+Proposal, when a second manager is actually requested. Three of these five were
+taken by the 2026-08-20 multi-tenancy work rather than by this item, and are
+marked as such:
+- ~~Persist `Manager`, `OrganizationMembership` and audit events~~ — done for the
+  first two on 2026-08-20; audit events are phase 3 of the plan.
+- ~~Store a real credential with a memory-hard KDF, or store none at all under an
+  identity provider.~~ Done, as the second: the product stores none.
+- ~~Enforce credential strength at the point a password is set~~ — no longer
+  applicable where the provider is configured. There is no such point.
+- ~~Add invitation and revocation~~ — phase 2 of the plan, and no longer waiting
+  on this item. Password recovery is gone with the passwords.
+- What remains for **this** item: what two people inside one school may each do,
+  and the screens that say so.
 
 Why it matters:
 - Every part of this is a data model and a set of flows, not a configuration
   change; treating it as one would surface late.
 - Building invitation and recovery flows before a second manager exists means
   maintaining Hebrew screens nobody opens.
-- The single-account shape has real limits worth naming while it lasts: the
-  deployment secret is the credential, rotation means a redeploy, and per-user
-  revocation and a meaningful "who signed in" audit trail do not exist.
+- The single-account shape had real limits worth naming while it lasted: the
+  deployment secret was the credential, rotation meant a redeploy, and per-user
+  revocation did not exist. The first two ended on 2026-08-20 for any runtime
+  with an identity provider. A meaningful "who signed in" audit trail still does
+  not exist, and it is phase 3 rather than part of this item — an administrator
+  who can open every school makes it urgent on its own.
 
 ### 9. Configurable Scoring Thresholds (completed 2026-08-03)
 

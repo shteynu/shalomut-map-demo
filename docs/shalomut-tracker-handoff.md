@@ -18,32 +18,38 @@ and in Git; what was durable in them is below.
 
 Verified 2026-08-20, in this worktree:
 
-- **`origin/main` is `8a9d803`**, asked of the remote — the multi-tenancy plan
-  and the archive of its task file, pushed by the owner on 2026-08-20. The only
-  modified file is `next-env.d.ts`, which is generated, was dirty before the
-  session and belongs to the owner; `git ls-files -o --exclude-standard` is empty
-  apart from the task file named below.
-- **`feat/a-chosen-school-needs-a-membership` holds phase 0 of multi-tenancy**
-  and is unpushed. Its task file is
-  `docs/agent-tasks/active/feat--a-chosen-school-needs-a-membership.md`, and the
-  work in it is complete and verified rather than in progress: the tenant
-  boundary is now the session's memberships instead of the schools that exist.
-- **The suite is green**: `npm test` 1231 passed, `npx tsc --noEmit` clean,
-  `npm run lint` clean, `npm run build` clean, `lint:doc-numbers` passes. Read on
-  that branch at `c8db2d6`.
+- **`origin/main` is `6a19916`**, asked of the remote — the multi-tenancy plan
+  and phase 0, pushed by the owner on 2026-08-20. The only modified file outside
+  the branch below is `next-env.d.ts`, which is generated, was dirty before the
+  session and belongs to the owner.
+- **`feat/identity-becomes-a-row` holds phase 1 of multi-tenancy** and is
+  unpushed. Its task file is
+  `docs/agent-tasks/active/feat--identity-becomes-a-row.md`, and the work in it
+  is complete and verified: managers and memberships are tables, sign-in is an
+  OpenID Connect flow, and a platform administrator may open any school.
+- **The local database has the phase 1 migration applied**
+  (`20260820120000_identity_becomes_a_row`). The deployed database does not, and
+  applying it is an owner step that goes with the push.
+- **The suite is green**: `npm test` 1278 passed, `npx tsc --noEmit` clean,
+  `npm run lint` clean, `npm run build` clean, `lint:composition`,
+  `lint:doc-numbers`, `openapi:check` and `docs:endpoints:check` all pass.
 
-**Next concrete step:** push `feat/a-chosen-school-needs-a-membership` — an owner
-action here — and then phase 1 of
-[`multi-tenancy-plan-2026-08-20.md`](multi-tenancy-plan-2026-08-20.md), which is
-no longer blocked: the owner chose Google Workspace / OIDC over own passwords on
-2026-08-20, so the product stores no passwords and phase 1 deletes the password
-path rather than hardening it. Two other
-things wait on the owner and have their own entries below — **rotate
-`GEMINI_API_KEY`**, exposed in a transcript on 2026-08-20 and billed, before any
-paid round; and, off a round run for some other reason, read the usage lines for
-what a `6.0` round costs at `LLM_REASONING_EFFORT=low`.
-`docs/product-behaviour-backlog.md` §12, the research instrument, is the
-alternative to phase 1 and is not blocked by that answer.
+**Next concrete step:** push `feat/identity-becomes-a-row`, apply its migration
+to the deployed database, and then create the Google OAuth client — all three are
+owner actions here, and the third falls under the standing approval gate on
+authentication configuration. The deployment keeps its password screen until
+`OIDC_ISSUER`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET` and `OIDC_REDIRECT_URI`
+are set, and switches the moment they are; the redirect URI must be
+`https://<deployment>/api/auth/oidc/callback`, listed verbatim on the client.
+After that, phase 2 of
+[`multi-tenancy-plan-2026-08-20.md`](multi-tenancy-plan-2026-08-20.md) — the
+administrator area and invitations — which is what a school user needs before
+anybody but the operator can be given a school. Two other things wait on the
+owner and have their own entries below: **rotate `GEMINI_API_KEY`**, exposed in a
+transcript on 2026-08-20 and billed, before any paid round; and, off a round run
+for some other reason, read the usage lines for what a `6.0` round costs at
+`LLM_REASONING_EFFORT=low`. `docs/product-behaviour-backlog.md` §12, the research
+instrument, is the alternative to phase 2.
 
 ## Deployed state
 
@@ -355,7 +361,10 @@ without a code change; that, more than the number, is what changed.
 - Keep respondent identity and sub-threshold detail out of every manager and AI
   boundary.
 - Deployed manager auth requires `SESSION_SECRET`, `MANAGER_ADMIN_PASSWORD` and
-  `MANAGER_ORGANIZATION_ID`; machine boundaries use their own shared secrets.
+  `MANAGER_ORGANIZATION_ID` while it still signs in with a password. Once the
+  four `OIDC_*` variables are set the password stops being a way in at all and
+  `MANAGER_ADMIN_EMAIL` becomes the seed for the first platform administrator;
+  machine boundaries use their own shared secrets either way.
 - The deployed producer switch is configuration, not a silent fallback. Unknown
   contract versions fail closed.
 - Parallel agents use separate branches, worktrees and active task files.
@@ -378,7 +387,25 @@ without a code change; that, more than the number, is what changed.
    2026-08-10. **Nothing in the code enforces it, by decision** —
    `ManagerAuthenticationService` requires the variable to be non-empty and would
    accept `123`. That is why it is written here and in `.env.example` rather than
-   left to judgement; the enforcement waits on a second manager (see below).
+   left to judgement.
+
+   **Re-read this gate once the OAuth client exists (2026-08-20).** On a runtime
+   with an identity provider the variable is not a credential and not a way in:
+   `/api/auth/login` refuses before it looks at any password. What still matters
+   there is `MANAGER_ADMIN_EMAIL`, which decides who becomes the first platform
+   administrator, and which is a name rather than a secret — anyone who can set
+   it can already grant themselves everything, so it is protected by the
+   deployment's own access and not by its entropy.
+
+   **Create the Google OAuth client (2026-08-20), which is what turns that on.**
+   A Web application client in Google Cloud Console, with
+   `https://<deployment>/api/auth/oidc/callback` listed verbatim as an
+   authorized redirect URI, and its id and secret plus `OIDC_ISSUER`
+   (`https://accounts.google.com`) and `OIDC_REDIRECT_URI` set on the
+   deployment. Authentication configuration, so it is the owner's and sits
+   inside the standing approval gate. Phase 1 of the multi-tenancy plan is
+   written and verified against a stand-in provider; this is the only thing
+   between it and a real sign-in.
 4. **Create an uptime monitor on Core's `/api/health`.**
 5. **Decide where the structured observability lines land** — a log sink or an
    error tracker, and with which alert. Every counter the product emits still

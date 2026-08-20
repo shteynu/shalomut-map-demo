@@ -8,6 +8,19 @@ inside it.
 
 ## Current state
 
+- **A manager is a person the database knows, and their password is nobody's.**
+  Since 2026-08-20 `managers` and `organization_memberships` are tables: a
+  session is built from rows rather than assembled per login from environment
+  variables, and which school it may read is the membership rather than the
+  configuration. Sign-in goes to an external identity provider — Google
+  Workspace, decided the same day — so the product stores no password at all,
+  and an address the provider vouches for is still refused unless somebody
+  invited it. About four platform administrators may open any school; a school
+  user may open theirs. A deployment without an OAuth client keeps the interim
+  password screen until it has one, and never both at once. The screens that
+  create schools and issue those invitations are the next slice; until they
+  exist, membership rows are written by hand.
+
 - **The product explains itself, on a screen and in the repository.** `/help` is
   a Hebrew manager guide answering the seven questions the screens raise — why a
   result is locked, how a stone gets its colour, what the model does and does not
@@ -565,11 +578,13 @@ tests — what the classification had called a missing-fixture problem. `4.0`
 needed no slice: it validates through the `3.0` path. Widening mutation scope
 to a second subject stays conditional, and `ROADMAP.md` records why.
 
-The long-term identity model left this list on 2026-08-03: one manager per
-deployment is the requested product shape, so it is requirement-gated future
-work in `docs/product-behaviour-backlog.md` §8, not an open task. See
-`PROJECT_CONTEXT.md` ADR-013 for why swapping the password hash alone does not
-close it.
+The long-term identity model left this list on 2026-08-03 as requirement-gated
+future work, and came back on 2026-08-20 when the owner asked for multi-tenant
+hosting. Phases 0 and 1 of `docs/multi-tenancy-plan-2026-08-20.md` are done —
+the tenant boundary is a membership, identity is a row, sign-in is an identity
+provider — and `PROJECT_CONTEXT.md` ADR-025 is the successor to ADR-013, whose
+argument about the password hash turned out to end with the hash being deleted
+rather than replaced. Phases 2 to 6 remain, and the plan holds them.
 
 ## Durable references
 

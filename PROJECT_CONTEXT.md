@@ -321,7 +321,12 @@ outside that list could drift unobserved. Now `npm run openapi:check`, which
 
 ### ADR-013: One manager per deployment, until a second one is requested
 
-There is no persistent identity, and that is deliberate rather than unfinished.
+**Superseded on 2026-08-20 by ADR-025.** Identity is a row now, and the trigger
+this ADR named — multi-tenant hosting — is what fired. It is kept because the
+reasoning it records is still the reason the successor looks the way it does,
+in particular why replacing the password hash was never the work.
+
+There was no persistent identity, and that was deliberate rather than unfinished.
 The signed-in manager is not a database record: it is constructed in
 `src/lib/auth/manager-auth-service.ts` from `MANAGER_ADMIN_PASSWORD`, and
 `MANAGER_ORGANIZATION_ID` names the organization that session starts in — since
@@ -345,10 +350,9 @@ real respondents — whichever arrives first.
 
 That trigger fired on 2026-08-20: the owner chose multi-tenant hosting, with
 about four platform administrators who see every school and exactly one invited
-user per school. This ADR still describes the running code and stays until the
-phase that makes it untrue replaces it with a successor; the decision itself, and
-the order the work happens in, are in
-[`docs/multi-tenancy-plan-2026-08-20.md`](docs/multi-tenancy-plan-2026-08-20.md).
+user per school. Phase 1 of
+[`docs/multi-tenancy-plan-2026-08-20.md`](docs/multi-tenancy-plan-2026-08-20.md)
+is what replaced this ADR, on the same day, and ADR-025 is the successor.
 
 ### ADR-014: A school runs one round at a time
 
@@ -587,6 +591,13 @@ would empty every manager screen with nothing on them saying why. An unknown id
 is therefore no choice at all: one school is read, and several ask to be chosen
 again.
 
+Since phase 0 of the multi-tenancy plan (2026-08-20) it is checked against the
+session's **active memberships** first, and the sentence above now describes the
+second half of the check rather than the whole of it. That is the line this ADR
+said would be crossed — "when memberships become real, this is the layer that
+starts consulting them" — and nothing above the middleware moved when it was.
+ADR-025 is where the memberships come from.
+
 The switcher is on the setup screen alone, and only when there is more than one
 school to switch between. A round is chosen per screen and travels in the URL,
 because a manager reads one round on the map while another is running. A school
@@ -816,6 +827,52 @@ A partial run is refused for a round with no stored analysis: there is nothing
 to amend, the manager reached it from a note about paragraphs that exist, and
 spending a whole round's provider calls to paper over that would answer a
 question nobody asked.
+
+### ADR-025: Identity is a row, the credential belongs to somebody else
+
+2026-08-20, phase 1 of the multi-tenancy plan, and the successor to ADR-013.
+
+**A manager is a row.** `managers` and `organization_memberships` replace the
+accounts `manager-auth-service.ts` assembled from environment variables per
+login. A membership is what the tenant boundary already reads (ADR-020, ADR-009),
+so making them real changed where they come from and not what they mean.
+
+**There is no credential column and there will not be one.** The owner chose an
+external identity provider, so the product never learns a password. This is the
+part of ADR-013 that finally resolves: that ADR spent a paragraph explaining why
+swapping SHA-256 for Argon2 closed nothing, and the answer turned out to be that
+the hash is deleted rather than improved. `src/lib/auth/identity-provider.ts`
+runs an authorization-code flow with PKCE against any OpenID Connect issuer —
+endpoints come from that issuer's discovery document — and everything it learns
+about a person is `openid email profile`.
+
+**Authenticating is not being invited.** The provider says an address is
+genuine; `ManagerDirectoryService` says whether that address is anybody here,
+and an address with no row is refused. There is no registration. The single
+exception is the bootstrap: the first time `MANAGER_ADMIN_EMAIL` signs in and no
+platform administrator exists, one row is created — after which the variable is
+a seed rather than a credential, and the standing rotation gate on
+`MANAGER_ADMIN_PASSWORD` changes meaning and should be re-read.
+
+**Two ways in never exist at once.** A runtime with all four `OIDC_*` variables
+signs in through the provider and `/api/auth/login` refuses with
+`PROVIDER_REQUIRED`; a runtime with fewer keeps the password form. That is what
+lets a deployment keep working until its OAuth client exists, and it is a
+transition rather than a design: the password path has no second purpose and is
+deleted when no runtime is on it.
+
+**A platform administrator is a flag on the person, not a membership.** They are
+outside the membership system rather than a member of every school, so the number
+of schools never changes what their session carries. The session token carries
+the flag, and the middleware's second branch — `isAdministrator || memberships
+include it` — is the whole of the exception. Their session names no school until
+they choose one, and the scope header then says `*` where a school user's lists
+their memberships.
+
+**The identity provider is a subprocessor**, recorded in
+`docs/data-flow-and-subprocessors.md` before the role existed. It touches
+managers and never respondents: a teacher filling in a questionnaire has no
+account and never reaches it.
 
 ## Environments
 

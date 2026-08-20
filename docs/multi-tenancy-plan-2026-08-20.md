@@ -224,14 +224,23 @@ place, which is the argument for putting the check there rather than spreading i
 
 ### Phase 1 — identity becomes a row
 
+**Implemented 2026-08-20** on `feat/identity-becomes-a-row`, which had not
+reached `main` when this line was written. Two things landed differently from
+the text below and both are marked where they happened; a third, the OAuth
+client itself, is the owner's to create and is what the deployed runtime is
+waiting for.
+
 - `Manager` and `OrganizationMembership` tables, and repositories behind the
   interfaces that already exist in `src/lib/auth/domain-contract.ts`.
 - A platform-administrator flag on `Manager`. The middleware check from phase 0
   gains its second branch: an administrator may open any school that exists.
-- `authenticateCredentials` reads the repository instead of building
-  `defaultAccounts()`. Its doc comment already anticipates this and explains why
-  the repository parameter was removed rather than fixed
-  (`manager-auth-service.ts:212`).
+- ~~`authenticateCredentials` reads the repository instead of building
+  `defaultAccounts()`.~~ **Not done, deliberately.** It would have been work on
+  a path being deleted, and it would have broken the local accounts that method
+  exists to serve, which have no rows. What replaced the intent is stricter:
+  where a provider is configured, `authenticateCredentials` refuses outright
+  with `PROVIDER_REQUIRED`, so the password path cannot outlive its successor.
+  Two ways in never exist at once.
 - **Sign-in moves to the identity provider** (decided 2026-08-20). The password
   path is deleted rather than hardened: `hashPassword`, `timingSafeEqualStrings`
   and `authenticateCredentials`'s comparison go with it, and `Manager` never
@@ -243,13 +252,25 @@ place, which is the argument for putting the check there rather than spreading i
     same control.
   - An address with no `Manager` row is refused. Signing in with Google is not a
     way to acquire access; an administrator's invitation is.
-- Bootstrap: on first start, if no administrator exists, one is created from
-  `MANAGER_ADMIN_EMAIL`. It grants nothing by itself — that person still signs in
-  through the provider — so the variable becomes a seed and stops being a
+- Bootstrap: **on first sign-in rather than on first start**, because there is
+  no start — the deployed runtime is functions that come and go, and a cold
+  start that writes to the database is a write nobody asked for on every
+  scale-up. The occasion is an address the provider has just verified: if it is
+  `MANAGER_ADMIN_EMAIL` and no administrator exists, one row is created. It
+  grants no school by itself, it creates nobody else, and it stops existing the
+  moment an administrator does. The variable becomes a seed and stops being a
   credential, which is also when the outstanding `MANAGER_ADMIN_PASSWORD`
   rotation gate changes meaning and should be re-read.
-- The three hardcoded local accounts go, or become seed data that cannot exist in
-  a deployed runtime.
+- The three hardcoded local accounts became the second: two of them already
+  could not exist in a deployed runtime, and the third — the operator account
+  built from `MANAGER_ADMIN_PASSWORD` — is now unreachable on any runtime that
+  has a provider. They are deleted with the password path, once no runtime is
+  on it.
+
+What phase 1 does **not** do, and phase 2 must: there is no screen that creates
+a school or issues an invitation, so a school user's membership row is written
+by hand. An administrator can sign in and read any school; they cannot yet make
+one.
 
 `OrganizationMembership` keeps its many-to-many shape even though today every
 school user has exactly one school. The types and the JWT already carry a list
@@ -363,21 +384,24 @@ together, in the phase that makes each untrue — not all at once, and not befor
 
 ## 6. Still open
 
-1. **Which e-mail provider**, given it becomes a subprocessor that sees a school
+1. **The OAuth client itself.** Phase 1 is written and verified against a
+   stand-in provider; the deployed runtime signs in through Google only once a
+   Web application client exists in Google Cloud Console and its four `OIDC_*`
+   values are set, with
+   `https://<deployment>/api/auth/oidc/callback` listed verbatim as an
+   authorized redirect URI. Until then the deployment keeps the password screen.
+   This is the owner's to create, and it falls under the standing approval gate
+   on authentication configuration.
+2. **Which e-mail provider**, given it becomes a subprocessor that sees a school
    staff member's address. Less urgent than it was: with sign-in on the identity
-   provider, e-mail carries an invitation and not a credential, so phase 1 can be
-   built and tested before it is chosen. Phase 2 needs it.
-2. **What a school user may not do** — phase 6, deferred on purpose.
+   provider, e-mail carries an invitation and not a credential. Phase 2 needs it.
+3. **What a school user may not do** — phase 6, deferred on purpose.
 
-Neither blocks phase 1. **Own passwords or an identity provider** was the one
-that did, and the owner answered it on 2026-08-20: the identity provider, with no
-passwords stored. It is recorded in §3.
-
-Two things it drags in, both of which belong to phase 1 rather than to a
-decision: the provider becomes a subprocessor and
-`docs/data-flow-and-subprocessors.md` has to say so before anyone signs in
-through it, and the OAuth client's own secret becomes deployment configuration
-under the same rotation gate as the rest.
+**Own passwords or an identity provider** was the question that blocked phase 1,
+and the owner answered it on 2026-08-20: the identity provider, with no passwords
+stored. It is recorded in §3. The provider became a subprocessor in
+`docs/data-flow-and-subprocessors.md` in the same task, before anyone signed in
+through it.
 
 ## 7. What does not change, and is worth stating so nobody redesigns it
 

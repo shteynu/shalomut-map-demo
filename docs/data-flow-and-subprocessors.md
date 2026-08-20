@@ -21,9 +21,23 @@ file. If something here changes, that screen is the first thing to correct.
 | Supabase | the PostgreSQL database | organizations, rounds, questionnaires, responses, answers, funnel sessions, AI results | `aws-1-ap-northeast-2` — Seoul, read off the connection host |
 | Render | hosts the AI analytics service | the analytics payload described below; no respondent-level row ever | `frankfurt`, pinned in `render.yaml` |
 | Google | the language model behind the analysis | whatever the AI service sends it as a prompt | `generativelanguage.googleapis.com`; region not selected by this project |
+| The identity provider | authenticates the people who manage a school; Google Workspace is the one the owner chose on 2026-08-20 | the manager's own address and name, and the fact that they signed in — never a respondent, never an answer, and nothing about a round | wherever that provider runs; for Google, `accounts.google.com` with no region selected by this project |
 
-Israel, where the school and the teachers are, is not in that column. Four
+Israel, where the school and the teachers are, is not in that column. Five
 parties, at least three jurisdictions, none of them the respondent's.
+
+The fifth is different in kind from the other four and the difference is worth
+being precise about: it touches **managers, not respondents**. A teacher filling
+in a questionnaire never reaches it and never has an account. What it receives
+is one school staff member's work address, which the school already gave them,
+and what it sends back is that the address is genuine. Nothing about the survey
+crosses that boundary in either direction — this product asks the provider who
+somebody is and tells it nothing about what they then read.
+
+The address is stored here as well, in `managers.email`: it is how an invitation
+is addressed and how a sign-in is recognised. That is the only place in this
+system where a named person is stored at all, and the reason the tables that
+hold respondents' answers still hold no name.
 
 ## What crosses each boundary
 
@@ -187,4 +201,8 @@ is not switched on today.
 4. `next.config.ts` and `e2e/security-headers.spec.ts` — the headers above and
    the test that keeps them from quietly disappearing.
 5. `src/lib/server/rate-limit.ts` — the only code that touches a client
-   address, and the only thing that would add a fourth processor.
+   address, and the only thing that would add another processor on the
+   respondent's side.
+6. `src/lib/auth/identity-provider.ts` — the only code that talks to the
+   identity provider, and the scope it asks for (`openid email profile`) is the
+   whole of what this product learns about a manager.
