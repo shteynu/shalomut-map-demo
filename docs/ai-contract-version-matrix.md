@@ -1,7 +1,5 @@
 # AI analytics contract version matrix
 
-Updated: 2026-08-19 (overall-summary provenance).
-
 ## Runtime status
 
 | Boundary | Source of supported versions | Current result |

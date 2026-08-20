@@ -1,6 +1,9 @@
 # AI analytics — current cross-service overview
 
-Updated: 2026-08-02. This document explains the current Core/Python boundary.
+This document explains the current Core/Python boundary. When it was last
+touched is a question for `git log -1 -- docs/ai-analytics-handoff.md`, not for
+a line inside it.
+
 Contract capability and rollout status is canonical in
 `ai-contract-version-matrix.md`; service configuration belongs in
 `../ai-analytics-service/README.md`; historical rollout evidence remains in Git

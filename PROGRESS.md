@@ -1,8 +1,10 @@
 # Shalomut Map — product progress
 
-Updated: 2026-08-18. This file is a concise product-level milestone record, not
-a session log. Branch evidence lives in `docs/agent-tasks/archive/`; current
-deployed state and approval gates live in `docs/shalomut-tracker-handoff.md`.
+This file is a concise product-level milestone record, not a session log. Branch
+evidence lives in `docs/agent-tasks/archive/`; current deployed state and
+approval gates live in `docs/shalomut-tracker-handoff.md`. When this file was
+last touched is a question for `git log -1 -- PROGRESS.md`, not for a line
+inside it.
 
 ## Current state
 

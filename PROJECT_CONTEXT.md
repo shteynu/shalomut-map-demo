@@ -1,9 +1,10 @@
 # PROJECT CONTEXT: Shalomut Map (מפת שלומות)
 
-Updated: 2026-08-04. This file owns stable architecture and long-lived product
-decisions. Current branch work belongs in `docs/agent-tasks/active/`, milestones
-in `PROGRESS.md`, and deployed/operational state in
-`docs/shalomut-tracker-handoff.md`.
+This file owns stable architecture and long-lived product decisions. Current
+branch work belongs in `docs/agent-tasks/active/`, milestones in `PROGRESS.md`,
+and deployed/operational state in `docs/shalomut-tracker-handoff.md`. When this
+file was last touched is a question for `git log -1 -- PROJECT_CONTEXT.md`, not
+for a line inside it.
 
 ## Product and stack
 

@@ -1,7 +1,8 @@
 # Product Roadmap — Shalomut Map (מפת שלומות)
 
-Updated: 2026-08-14. This roadmap summarizes outcomes; detailed session history
-belongs in archived task files and Git.
+This roadmap summarizes outcomes; detailed session history belongs in archived
+task files and Git. When this file was last touched is a question for
+`git log -1 -- ROADMAP.md`, not for a line inside it.
 
 ## Completed platform foundation
 

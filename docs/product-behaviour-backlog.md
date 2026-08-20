@@ -1,6 +1,5 @@
 # Product Behaviour Backlog
 
-Updated: 2026-08-14
 Status: every numbered item below is closed except §12, which is open and
 decided, and the two that wait on being requested — §8, a second manager per
 school, and §11, repeat-measurement reminders. §12, the research instrument
