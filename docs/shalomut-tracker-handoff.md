@@ -13,14 +13,27 @@ fault. CI on `d07bb39`: CodeQL, Browser smoke, Core verification and the Vercel
 pipeline checks all green, the smoke run to completion because no later push
 cancelled it.
 
-**One thing is deployed but unread: whether the process actually holds
-`LLM_REASONING_EFFORT=low`.** No endpoint publishes the value. The service is
-blueprint managed and a `render.yaml` pace change was seen on the dashboard on
-2026-08-05, so the expectation is sound — but that is a precedent, not a
-reading. It closes either on the service's environment page in the owner's
-Chrome, or from the usage lines of the next round run for some other reason,
-where `total_tokens` should be about a fifth of an unset round's. That second
-reading would also produce the `6.0` cost figure the task could not make.
+**And the setting was read back rather than assumed.** On the Render dashboard
+in the owner's signed-in Chrome, `shalomut-ai-analytics`
+(`srv-d9i8vhnavr4c73ad298g`, *Blueprint managed*) lists `LLM_REASONING_EFFORT`
+with the value `low`. Its Events tab dates the deploy that carries it: `Deploy
+started for d07bb39 — New commit via Auto-Deploy` at 11:43, live at 11:44,
+above the previous live deploy of `56d1b72` from 12:28 AM. Blueprint change and
+deploy came from one push, so the running container is the one the variable was
+set for. Read-only throughout: one value unmasked, read, masked again, nothing
+edited, no deploy triggered.
+
+Two things that reading also settled. Neither `LLM_REQUEST_TIMEOUT_SECONDS` nor
+`LLM_RETRY_BUDGET_SECONDS` exists on the dashboard — the list runs
+`LLM_REASONING_EFFORT` straight into `MAX_TOKENS_PER_DIMENSION` — so nothing
+overrides the code defaults and the deployment runs the 90-inside-300 bounds the
+merge kept. And `render.yaml`'s env block does reach the dashboard on deploy,
+which until now rested on the 2026-08-05 pace change alone.
+
+**What is still unmeasured is the saving, not the setting.** A `6.0` round's
+cost at `low` needs one round's usage lines — `total_tokens` about a fifth of an
+unset round's — and should be read off a round run for some other reason, after
+the key is rotated.
 
 It had diverged badly enough to be worth recording as a pattern rather than an
 incident: **two sessions fixed the same request timeout from different

@@ -17,10 +17,9 @@
 - Visibility: everywhere. The owner pushed the branch to `main` on 2026-08-20,
   so `origin/main` carries all of it. The branch ref `origin/feat/…` was left at
   `7e1d836`, the pre-merge state; nothing depends on it any more
-- Status: **landed on `main` as `d07bb39` and deployed**, 2026-08-20. Both
-  halves answer that commit and CI is green on it. One thing this task set out
-  to change is still unconfirmed rather than measured — see the deployed
-  evidence below
+- Status: **landed on `main` as `d07bb39`, deployed and confirmed**,
+  2026-08-20. Both halves answer that commit, CI is green on it, and
+  `LLM_REASONING_EFFORT=low` was read off the Render dashboard. Complete
 - Last updated: 2026-08-20
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -257,14 +256,30 @@ Two things the merge changed about what this file may claim:
     its `cancel-in-progress` had no later push to kill it.
   - Read-only throughout. No round was started, no data written, nothing billed.
 
-- **Not confirmed: that the deployed process actually holds
-  `LLM_REASONING_EFFORT=low`.** `/health` does not publish the value, and no
-  endpoint does. The service is blueprint managed — on 2026-08-05 a pace change
-  in `render.yaml` was seen on the dashboard afterwards — so the expectation is
-  reasonable, but a precedent is not a reading. Two ways to close it: the
-  service's environment page on the Render dashboard, or one round's usage
-  lines, where `total_tokens` should be roughly a fifth of an unset round's.
-  The second costs money and needs the owner.
+- **`LLM_REASONING_EFFORT=low` is confirmed on the deployment**, read on the
+  Render dashboard the same day in the owner's signed-in Chrome. The service
+  `shalomut-ai-analytics` (`srv-d9i8vhnavr4c73ad298g`) is marked *Blueprint
+  managed*, its environment page lists the key, and its value reads `low`. The
+  Events tab shows why the running process has it: `Deploy started for d07bb39
+  — New commit via Auto-Deploy` at 11:43, `Deploy live for d07bb39` at 11:44,
+  above the previous live deploy of `56d1b72`. The blueprint change and the
+  deploy came from the same push, so the container serving `d07bb39` is the one
+  the variable was set for.
+
+  Also read, and worth recording because it is what the merge decided: neither
+  `LLM_REQUEST_TIMEOUT_SECONDS` nor `LLM_RETRY_BUDGET_SECONDS` appears on the
+  dashboard at all — the list goes `LLM_REASONING_EFFORT` straight to
+  `MAX_TOKENS_PER_DIMENSION`. Nothing overrides the code defaults, so the
+  deployment runs the 90-inside-300 bounds this merge kept from `main`.
+
+  Read-only: one value was unmasked, read, and masked again; nothing was edited
+  and no deploy was triggered. No secret was revealed or recorded.
+
+- **Still not measured: what a `6.0` round actually costs at `low`.** The
+  dashboard says the setting is there; it cannot say what it saves. That needs
+  one round's usage lines — `total_tokens` roughly a fifth of an unset round's —
+  and it should wait for a round run for some other reason, after the key is
+  rotated.
 
 - **At the merge `b674287`**, with `GEMINI_API_KEY` and `LLM_REASONING_EFFORT`
   stripped from the environment: `ai-analytics-service/.venv/bin/python -m
@@ -447,16 +462,11 @@ Topping up the provider account is the owner's action.
 
 ## Next concrete step
 
-None on this branch — it is landed, deployed and green. What it leaves is one
-reading and one measurement, both the owner's to authorise:
+None. Landed, deployed, green, and the setting read back off the dashboard.
 
-1. Confirm `LLM_REASONING_EFFORT=low` on the Render dashboard's environment page
-   for `shalomut-ai-analytics`. That is the whole point of the branch and it is
-   the one claim nothing here has read back.
-2. When a round is next run for another reason, read its usage lines instead of
-   running one for this: `total_tokens` roughly a fifth of an unset round is the
-   confirmation, and it also produces the `6.0` cost figure this task could not
-   make — every dollar figure in it came from a `5.0` round.
-
-`GEMINI_API_KEY` still needs rotating before either; `docs/shalomut-tracker-handoff.md`
-owns that item.
+One measurement outlives the task and belongs to no branch: what a `6.0` round
+costs at `low`. Every dollar figure here came from a `5.0` round, and the way to
+get the `6.0` one is to read the usage lines of a round run for some other
+reason rather than to buy a round for the question — `total_tokens` roughly a
+fifth of an unset round's. `GEMINI_API_KEY` needs rotating before any of that;
+`docs/shalomut-tracker-handoff.md` owns that item.
