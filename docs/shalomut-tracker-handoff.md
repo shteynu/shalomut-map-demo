@@ -2160,6 +2160,22 @@ older snapshots remain available in Git.
 
 ## Deployed state
 
+**Both halves serve `e69a5eb`, read anonymously on 2026-08-20**, and with it the
+AI service's poll loop backs off while the queue is empty. Core's
+`/api/health/` answered `status: ok`, `commit: e69a5eb`,
+`producedContractVersion: 6.0`; the AI service's `/health` answered
+`commit: e69a5eb`, `env: production`, `jobPollingEnabled: true`. The service had
+been serving `d07bb39` a few minutes earlier — one reading during the build, the
+now-familiar shape — and `render.yaml`'s `buildFilter` did fire, because the
+stack changes `ai-analytics-service/**`.
+
+What is not proven from outside: the cadence itself. An empty claim now waits
+2 s, then 4, 8, 16 and 30, resetting on the first claim, and the only places
+that fact is visible are Render's startup line and Vercel's request log — both
+behind a sign-in that the connected Chrome does not currently hold. The
+deployed evidence is identity, not behaviour. No environment variable had to be
+set for it: `AI_JOB_POLL_MAX_INTERVAL_SECONDS` defaults to the 30 s ceiling.
+
 **Reading the deployed commit stops needing a sign-in, 2026-08-19 — and the
 first reading has been taken.** Every reading below that names a served commit
 was taken from the Vercel dashboard in the owner's signed-in Chrome, because

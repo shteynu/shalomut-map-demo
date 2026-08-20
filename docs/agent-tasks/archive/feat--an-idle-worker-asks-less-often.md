@@ -5,8 +5,8 @@
 - Branch: `feat/an-idle-worker-asks-less-often`
 - Base branch: `main` (`origin/main` = `e2b70ce`)
 - Base commit: `e2b70ce0df463256815f6342661b28e640a06806`
-- Current HEAD: see `## Exact Git state`
-- Status: implementation complete, unpushed
+- Current HEAD: `e69a5eb` — landed on `main` and deployed
+- Status: complete
 - Last updated: 2026-08-20
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -86,7 +86,7 @@ state). Slowing the poll cannot put the service to sleep.
 
 ## Remaining
 
-- Owner push. Nothing else in this scope.
+- Nothing. The stack is on `main` and both halves serve it.
 
 ## Changed files
 
@@ -109,6 +109,11 @@ state). Slowing the poll cannot put the service to sleep.
 - `.venv/bin/python -c "import src.main; …"` — settings resolve to poll 2.0,
   ceiling 30.0.
 - `git diff --check` — clean.
+- Deployed, 2026-08-20, read anonymously: Core `/api/health/` and the AI
+  service `/health` both answer `commit: e69a5eb`, the latter with
+  `env: production`, `jobPollingEnabled: true`.
+- All four GitHub Actions workflows green on `e69a5eb`: Core verification,
+  Browser smoke, CodeQL Security Analysis, Vercel Deployment & Pipeline Checks.
 
 ### Failed
 
@@ -117,19 +122,22 @@ state). Slowing the poll cannot put the service to sleep.
 ### Blocked or not run
 
 - No TypeScript check run: the diff touches no `.ts`/`.tsx` file.
-- Not exercised against a running Core or the deployed service.
+- The deployed cadence itself was not observed. It is visible only in Render's
+  startup line and Vercel's request log, and the connected Chrome is signed in
+  to neither dashboard. The deployed reading is identity, not behaviour.
 
 ### Environment
 
-- local and test.
+- local, test and deployed.
 
 ### Residual risk
 
 - The unit tests patch `wait_between_polls`, so the loop's sequence and the real
   sleep are proven separately (the wall-clock check above covers the second, and
   `test_stopping_the_pool_cancels_every_slot` still runs the unpatched path).
-- Deployed behaviour changes only when Render rebuilds after this lands. No
-  deployed environment variable has to be set: the default is the ceiling.
+- Render rebuilt on the push and serves the stack; no deployed environment
+  variable had to be set, since the default is the 30 s ceiling. What remains
+  unseen is the interval between two live claims.
 
 ## Known risks
 
@@ -144,17 +152,13 @@ state). Slowing the poll cannot put the service to sleep.
 
 ## Exact Git state
 
-- Committed on this branch, ahead of `origin/main` by the commits listed by
-  `git log --oneline origin/main..HEAD`.
+- `main` and this branch are both `e69a5eb`; `origin/main` agrees.
 - Unstaged and unrelated: `next-env.d.ts` (Next.js regenerated the routes-type
   import path; pre-existing, left alone).
 - Untracked: none (`git ls-files -o --exclude-standard`).
-- Visibility: this branch has not been pushed. The handoff is worktree-local
-  until `git push origin feat/an-idle-worker-asks-less-often` (or
-  `…:main`) runs, which is an owner action here.
+- Visibility: pushed, so this handoff is portable to any checkout or machine.
 
 ## Next concrete step
 
-Owner pushes the branch — `git push origin feat/an-idle-worker-asks-less-often:main`
-— after which Render rebuilds the service and the startup line reports the two
-intervals.
+None — the task is closed. If the cadence is ever worth proving from outside,
+the cheapest evidence is Render's startup line, which now names both intervals.
