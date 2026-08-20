@@ -114,6 +114,11 @@ state). Slowing the poll cannot put the service to sleep.
   `env: production`, `jobPollingEnabled: true`.
 - All four GitHub Actions workflows green on `e69a5eb`: Core verification,
   Browser smoke, CodeQL Security Analysis, Vercel Deployment & Pipeline Checks.
+- Deployed behaviour, from Render's application logs (GMT+3): the outgoing
+  instance `6tl48` claimed every three seconds up to 12:53:26, while the new
+  instance `7hprp` claimed at 12:53:21, :24, :29, :40, :59, 12:54:31, 12:55:03
+  and on at 32-second gaps — the 2/4/8/16/30 ladder plus the round trip, all
+  answered `204`. Its startup line names both intervals.
 
 ### Failed
 
@@ -122,9 +127,9 @@ state). Slowing the poll cannot put the service to sleep.
 ### Blocked or not run
 
 - No TypeScript check run: the diff touches no `.ts`/`.tsx` file.
-- The deployed cadence itself was not observed. It is visible only in Render's
-  startup line and Vercel's request log, and the connected Chrome is signed in
-  to neither dashboard. The deployed reading is identity, not behaviour.
+- The reset from the ceiling back to the base interval is unobserved on the
+  deployed service: no round has been analysed there since the deploy, so
+  nothing has claimed a job and snapped the interval back.
 
 ### Environment
 
@@ -136,8 +141,8 @@ state). Slowing the poll cannot put the service to sleep.
   sleep are proven separately (the wall-clock check above covers the second, and
   `test_stopping_the_pool_cancels_every_slot` still runs the unpatched path).
 - Render rebuilt on the push and serves the stack; no deployed environment
-  variable had to be set, since the default is the 30 s ceiling. What remains
-  unseen is the interval between two live claims.
+  variable had to be set, since the default is the 30 s ceiling. The widening is
+  observed in production; the reset is not, for want of a round to analyse.
 
 ## Known risks
 

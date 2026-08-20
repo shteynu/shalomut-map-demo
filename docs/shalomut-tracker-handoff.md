@@ -2169,12 +2169,23 @@ been serving `d07bb39` a few minutes earlier — one reading during the build, t
 now-familiar shape — and `render.yaml`'s `buildFilter` did fire, because the
 stack changes `ai-analytics-service/**`.
 
-What is not proven from outside: the cadence itself. An empty claim now waits
-2 s, then 4, 8, 16 and 30, resetting on the first claim, and the only places
-that fact is visible are Render's startup line and Vercel's request log — both
-behind a sign-in that the connected Chrome does not currently hold. The
-deployed evidence is identity, not behaviour. No environment variable had to be
-set for it: `AI_JOB_POLL_MAX_INTERVAL_SECONDS` defaults to the 30 s ceiling.
+**And the cadence itself was read, in Render's logs, at the moment it changed.**
+Both instances appear in the same minute (times GMT+3, 2026-08-20). The outgoing
+one, `6tl48`, posts `/api/ai-analysis-runs/claim/` at 12:53:00, :03, :06, :09,
+:12, :15, :18, :20, :23, :26 — every three seconds, which is the flat two-second
+interval plus the round trip to Vercel. The new one, `7hprp`, starts at 12:53:21
+and posts at :21, :24, :29, :40, :59, then 12:54:31, 12:55:03, 12:55:35,
+12:56:07, 12:56:39, 12:57:11, 12:57:43. The gaps are 3, 5, 11, 19, 32, 32, 32 …
+— the 2/4/8/16/30 ladder with the same round trip on top, holding at the
+ceiling. Every one of those answers is `204`. Its startup line reads
+`Polling with 1 concurrent slot(s), every 2.0s and up to 30.0s while the queue
+is empty`, where the two builds before it said only `Polling with 1 concurrent
+slot(s)`.
+
+No environment variable had to be set: `AI_JOB_POLL_MAX_INTERVAL_SECONDS`
+defaults to the 30 s ceiling. What is still unobserved is the reset — no round
+has been analysed on the deployed service since, so nothing has yet snapped the
+interval back from 30 s to 2 s in production.
 
 **Reading the deployed commit stops needing a sign-in, 2026-08-19 — and the
 first reading has been taken.** Every reading below that names a served commit
