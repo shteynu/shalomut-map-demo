@@ -20,6 +20,7 @@ These files must stay aligned with `main`:
 | [`ai-contract-version-matrix.md`](ai-contract-version-matrix.md) | Contract capabilities, produced/supported versions and rollout rule |
 | [`ai-analytics-handoff.md`](ai-analytics-handoff.md) | Current cross-service AI architecture and boundaries |
 | [`ai-analysis-run-lifecycle.md`](ai-analysis-run-lifecycle.md) | One durable analysis run end to end — claim, lease, heartbeat, callback and every failure branch — as diagrams, endpoints and constants |
+| [`ai-analysis-run-mechanics.html`](ai-analysis-run-mechanics.html) | The same pipeline drawn — every stage from "close the round" to the map on screen, and why each fork went the way it did. A standalone page: open it from disk, no server and no network needed |
 | [`platform-handbook.md`](platform-handbook.md) | What the whole platform does, in language a non-developer reads; the source text every translated snapshot is released from |
 | [`shalomut-tracker-handoff.md`](shalomut-tracker-handoff.md) | Current deployed/operational state, external blockers and approval gates |
 | [`data-flow-and-subprocessors.md`](data-flow-and-subprocessors.md) | Who receives respondent data, what crosses each boundary and where it is hosted; the factual basis every future legal document rests on |
@@ -139,15 +140,6 @@ under "Live plans" above:
   — defects and drift found during that study. Deferred by owner decision on
   2026-08-09, then all seven fixed the same day; the file records what each one
   was and which branch closed it;
-- [`ai-analysis-run-mechanics-2026-08-18.html`](ai-analysis-run-mechanics-2026-08-18.html)
-  — a copy of the published artifact «Механика одного прогона» as it read on
-  2026-08-18: the whole pipeline from "close the round" to the map on screen,
-  drawn. Kept for its diagrams and its account of *why* each fork went the way
-  it did. The living source of the same mechanism is
-  [`ai-analysis-run-lifecycle.md`](ai-analysis-run-lifecycle.md), which moves
-  with the code; this one does not. Already **stale** in one place: it says the
-  worker asks Core every two seconds, and since 2026-08-20 an empty queue
-  doubles that wait up to thirty. The file's own header comment says so too;
 - `wellbeing-refactoring-plan-v4-review.md` (its section 6 is the final audit of
   the merged refactoring stack; remaining work is summarized in `ROADMAP.md`);
 - `redesign-change-log.md`;
@@ -162,7 +154,12 @@ Branch-local in-progress state belongs only in
 
 ## Update rules
 
-- Update a living document when its owned state changes.
+- Update a living document when its owned state changes. This includes the
+  HTML ones: `ai-analysis-run-mechanics.html` is a document, not an exported
+  artifact, and a change to the AI-analysis pipeline updates it in the same
+  task that changes the behaviour. Its published copy on claude.ai is a
+  snapshot — republish it from this file when a link is needed, never edit
+  the published copy and expect the repository to follow.
 - Update an implemented specification only when its contract changes; keep
   older-version sections explicitly historical.
 - Do not copy task evidence into `PROGRESS.md` or the operational handoff.
