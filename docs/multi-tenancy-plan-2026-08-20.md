@@ -161,10 +161,24 @@ aggregates over people.
 
 ### Decided with it
 
+- **Identity comes from an external provider — Google Workspace / OIDC — and the
+  product stores no passwords at all** (owner, 2026-08-20). Many Israeli schools
+  are already on Workspace, the whole population is four administrators and one
+  person per school, and what this removes is a credential store, a password
+  reset, its Hebrew screens, a strength policy and the consequences of a breach.
+  It also settles what ADR-013 left open: the SHA-256 hash is not replaced by
+  Argon2, it is removed along with the thing it was hashing.
+  - The accepted risk is named rather than mitigated: **a school not on Google
+    cannot sign in** until a second path exists. The obvious one is an e-mailed
+    sign-in link, which needs the same e-mail provider invitations need, so it
+    stays available as a later addition rather than a redesign.
+  - An invitation stops being a credential and becomes an entitlement: this
+    address may sign in, and to what.
 - **The first administrator is seeded from the environment**
-  (`MANAGER_ADMIN_EMAIL` / `MANAGER_ADMIN_PASSWORD`, which already exist), and
-  invites the other three through the same mechanism that invites school users.
-  One invitation flow serves both, differing only in what the invitation grants.
+  (`MANAGER_ADMIN_EMAIL`, and `MANAGER_ADMIN_PASSWORD` only for as long as the
+  password path exists at all), and invites the other three through the same
+  mechanism that invites school users. One invitation flow serves both,
+  differing only in what the invitation grants.
 - **An administrator creates the school first, then invites its user.** The
   school exists in the administrator's list before anyone has accepted, and the
   staff size — which sets the floor under the privacy threshold — is set by the
@@ -218,13 +232,22 @@ place, which is the argument for putting the check there rather than spreading i
   `defaultAccounts()`. Its doc comment already anticipates this and explains why
   the repository parameter was removed rather than fixed
   (`manager-auth-service.ts:212`).
-- A real credential: Argon2 or an identity provider. ADR-013 is explicit that
-  swapping the SHA-256 hash **alone** closes nothing, because nothing stores it —
-  it is derived from the environment variable per login and discarded.
+- **Sign-in moves to the identity provider** (decided 2026-08-20). The password
+  path is deleted rather than hardened: `hashPassword`, `timingSafeEqualStrings`
+  and `authenticateCredentials`'s comparison go with it, and `Manager` never
+  gains a credential column. What the callback establishes is an e-mail address;
+  what turns it into a session is a `Manager` row and its memberships, which is
+  the part this phase builds.
+  - The login rate limit stays. It stops guarding a password and starts guarding
+    the callback and the session endpoint, which is a different reason for the
+    same control.
+  - An address with no `Manager` row is refused. Signing in with Google is not a
+    way to acquire access; an administrator's invitation is.
 - Bootstrap: on first start, if no administrator exists, one is created from
-  `MANAGER_ADMIN_EMAIL` and `MANAGER_ADMIN_PASSWORD`. After that the variables
-  stop being the credential and become the seed — which is also when the
-  outstanding rotation gate changes meaning and should be re-read.
+  `MANAGER_ADMIN_EMAIL`. It grants nothing by itself — that person still signs in
+  through the provider — so the variable becomes a seed and stops being a
+  credential, which is also when the outstanding `MANAGER_ADMIN_PASSWORD`
+  rotation gate changes meaning and should be re-read.
 - The three hardcoded local accounts go, or become seed data that cannot exist in
   a deployed runtime.
 
@@ -340,15 +363,21 @@ together, in the phase that makes each untrue — not all at once, and not befor
 
 ## 6. Still open
 
-1. **Own passwords or an identity provider?** The invitation decision implies own
-   passwords, but an identity provider is still compatible with invite-only and
-   removes password reset, storage and their RTL screens. Many Israeli schools
-   are on Google Workspace.
-2. **Which e-mail provider**, given it becomes a subprocessor that sees a school
-   staff member's address.
-3. **What a school user may not do** — phase 6, deferred on purpose.
+1. **Which e-mail provider**, given it becomes a subprocessor that sees a school
+   staff member's address. Less urgent than it was: with sign-in on the identity
+   provider, e-mail carries an invitation and not a credential, so phase 1 can be
+   built and tested before it is chosen. Phase 2 needs it.
+2. **What a school user may not do** — phase 6, deferred on purpose.
 
-None of these blocks phase 0, and only the first blocks phase 1.
+Neither blocks phase 1. **Own passwords or an identity provider** was the one
+that did, and the owner answered it on 2026-08-20: the identity provider, with no
+passwords stored. It is recorded in §3.
+
+Two things it drags in, both of which belong to phase 1 rather than to a
+decision: the provider becomes a subprocessor and
+`docs/data-flow-and-subprocessors.md` has to say so before anyone signs in
+through it, and the OAuth client's own secret becomes deployment configuration
+under the same rotation gate as the rest.
 
 ## 7. What does not change, and is worth stating so nobody redesigns it
 

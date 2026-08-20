@@ -35,7 +35,9 @@ Verified 2026-08-20, in this worktree:
 **Next concrete step:** push `feat/a-chosen-school-needs-a-membership` — an owner
 action here — and then phase 1 of
 [`multi-tenancy-plan-2026-08-20.md`](multi-tenancy-plan-2026-08-20.md), which is
-blocked on one owner answer: own passwords or an identity provider. Two other
+no longer blocked: the owner chose Google Workspace / OIDC over own passwords on
+2026-08-20, so the product stores no passwords and phase 1 deletes the password
+path rather than hardening it. Two other
 things wait on the owner and have their own entries below — **rotate
 `GEMINI_API_KEY`**, exposed in a transcript on 2026-08-20 and billed, before any
 paid round; and, off a round run for some other reason, read the usage lines for

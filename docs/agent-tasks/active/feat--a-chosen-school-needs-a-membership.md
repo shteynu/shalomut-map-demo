@@ -211,12 +211,17 @@ an owner action in this environment.
 
 ## Questions requiring an owner decision
 
-Own passwords or an identity provider (plan §6.1). It does not block this branch;
-it blocks phase 1, and it decides whether the product stores passwords at all.
+None left for this branch. The one that blocked phase 1 was answered while this
+branch was being written: **identity comes from Google Workspace / OIDC and the
+product stores no passwords**, owner, 2026-08-20, now recorded in §3 of the plan
+with the accepted risk that a school not on Google cannot sign in until an
+e-mailed link path exists.
 
 ## Next concrete step
 
-Push `feat/a-chosen-school-needs-a-membership` to `main`, then answer §6.1 of the
-plan and start phase 1 — `Manager` and `OrganizationMembership` as rows, the
-platform-administrator flag, and the second branch of the middleware check this
-branch left one line away.
+Push `feat/a-chosen-school-needs-a-membership` to `main`, then start phase 1 on
+its own branch: `Manager` and `OrganizationMembership` as rows behind the
+interfaces in `src/lib/auth/domain-contract.ts`, the platform-administrator flag,
+sign-in through the identity provider replacing `authenticateCredentials`'s
+password path outright, and the second branch of the middleware check this branch
+left one line away.
