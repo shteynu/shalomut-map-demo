@@ -105,8 +105,8 @@ because the two states are read differently: a live plan is meant to be acted
 on, and a historical one explicitly is not.
 
 - [`multi-tenancy-plan-2026-08-20.md`](multi-tenancy-plan-2026-08-20.md) —
-  many schools each with their own users, granted by invitation. Two owner
-  decisions taken on 2026-08-20 and six questions open. Phase 0 — the tenant
+  many schools each with their own users, granted by invitation. Four owner
+  decisions taken on 2026-08-20 and four questions open. Phase 0 — the tenant
   boundary starting to consult memberships instead of the list of all schools —
   is unblocked and deliberately lands before any identity work, because it costs
   nothing to verify while there is still one manager. **Not yet implemented**:

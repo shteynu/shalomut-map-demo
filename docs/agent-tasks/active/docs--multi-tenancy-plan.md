@@ -5,8 +5,8 @@
 - Branch: `docs/multi-tenancy-plan`
 - Base branch: `main`
 - Base commit: `6d6ec97`
-- Current HEAD: `f16a01b`
-- Status: plan written, waiting on a push and on owner answers
+- Current HEAD: see `git log -1`; the plan's decisions commit is the tip
+- Status: plan written and its four decisions recorded; waiting on a push
 - Last updated: 2026-08-20
 - Last agent/tool: Claude Opus 5 (Claude Code)
 
@@ -39,6 +39,19 @@ system; are action permissions tied to the tenant.
 - **Phase 0 lands before any identity work.** With one membership per session it
   changes no behaviour, which is precisely why it is cheap to verify now and
   expensive to add after a second user exists.
+- **Owner, 2026-08-20: the operator can read any school**, not merely administer
+  it. The agent had recommended administration-without-data-access and said so;
+  the owner chose full visibility for support and onboarding, and that is the
+  decision. Two things follow and are in the plan: the promise to the respondent
+  changes and belongs in `docs/data-flow-and-subprocessors.md` before the role
+  exists, and the persistent audit log moves from phase 4 to phase 3, because
+  once one person can open every school the log is the only account of whether a
+  visit was legitimate. The cross-tenant aggregate stays refused — that was part
+  of every option offered and of the one accepted.
+- **Owner, 2026-08-20: revocation within about fifteen minutes** — a short session
+  with silent renewal, rather than a membership read on every request. The
+  per-request read was declined on latency: the database is in Seoul and the
+  functions in Washington, roughly 180 ms per action.
 
 ## Completed
 
@@ -89,17 +102,12 @@ code when phase 0 is actually written rather than trusted from here.
 
 ## Questions requiring an owner decision
 
-Six, in §5 of the plan. The two that gate design rather than detail:
-
-1. **Is there a role above the tenant?** Support and onboarding need someone who
-   sees more than their own memberships, and that person can read every school's
-   respondent aggregates — so it is a privacy decision, not a convenience. Note
-   the k-anonymity guarantee is stated for one population, so such a role must not
-   be handed a cross-tenant aggregate.
-2. **How fast must revocation take effect?** The session is a stateless 24-hour
-   JWT, so a revoked member keeps access for up to a day unless something changes.
+Four remain, in §5 of the plan: who may create a school, what happens to the
+current operator's credentials at phase 1, own passwords or an identity provider,
+and which e-mail provider. None of them blocks phase 0.
 
 ## Next concrete step
 
-Hand over `git push origin docs/multi-tenancy-plan:main`. Then either answer the
-two gating questions above, or start phase 0, which needs neither.
+Hand over `git push origin docs/multi-tenancy-plan:main`. Then start phase 0 on
+its own branch — it needs none of the four remaining answers, and it is the one
+piece that is cheaper to verify now than at any later point.
