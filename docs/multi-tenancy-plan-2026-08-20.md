@@ -1,14 +1,22 @@
 # Multi-tenancy plan — many schools, each with its own users
 
-Four owner decisions, all taken on 2026-08-20: the product becomes
-**multi-tenant with per-tenant users**; access is granted by **invitation**
-rather than open registration; there is an **operator role that can read any
-school**, not only administer it; and **revocation takes effect within about
-fifteen minutes** rather than the current day. The reasoning for the last two,
-including what they cost, is in §5a.
+Owner decisions, all taken on 2026-08-20. The product becomes multi-tenant with
+per-tenant users, in a specific shape: **about four platform administrators who
+see and do everything**, and **exactly one user per school** who sees only their
+own. Access is granted by **invitation** — an administrator creates the school
+and invites its user; there is no open registration. **Revocation takes effect
+within about fifteen minutes** rather than the current day. What a school user
+may *not* do is deliberately left undecided.
 
-This is a live plan, not a specification: phase 0 is unblocked, everything after
-it carries the four questions still open in §5.
+§3 is the model and what was decided with it. §4 is the work, in the order it
+should happen. §6 is what is still open — phase 0 waits on none of it.
+
+The two questions the first draft of this plan called load-bearing are answered
+in §3: there **is** a role above the tenant and it reads data as well as
+administering it, chosen over the narrower option the agent recommended; and
+revocation is bought with a short session rather than a database read on every
+request, which was declined on latency — the database is in Seoul and the
+functions in Washington, roughly 180 ms per action.
 
 Every claim about current behaviour below was read from the code on 2026-08-20
 and carries its anchor. Where this document and the code disagree, the code wins.
@@ -38,9 +46,13 @@ the third:
 
 | | Shape | State |
 | --- | --- | --- |
-| (a) | one school, several staff | `docs/product-behaviour-backlog.md` §8, gated on being requested |
+| (a) | one school, several staff | `docs/product-behaviour-backlog.md` §8, and **not** what was chosen — a school gets one user |
 | (b) | several schools, one operator | **built** |
-| (c) | several schools, each with its own users, isolated | **chosen 2026-08-20** — nothing built |
+| (c) | several schools, each with its own user, isolated, plus administrators above them | **chosen 2026-08-20** — nothing built |
+
+Worth noticing that (a) is not on the way to (c). A second person inside one
+school is a different feature from a second school with its own person, and the
+decision took the second without the first.
 
 ## 2. The boundary that has to move first, and why it is urgent rather than large
 
@@ -113,11 +125,63 @@ the trade is one more piece of trusted-but-unsigned data between middleware and
 page, in a header the middleware already strips and rewrites
 (`createScopedManagerHeaders` deletes before it sets).
 
-## 3. Phases
+## 3. The model, decided 2026-08-20
+
+Two kinds of person, and the second one is simpler than the types in the
+repository currently assume.
+
+| | Who | Attached to | Sees |
+| --- | --- | --- | --- |
+| **Platform administrator** | about four people | no school | every school, every round, every school's results; creates schools and issues invitations |
+| **School user** | exactly one per school | one school | that school only |
+
+Three consequences, and each of them removes work rather than adding it.
+
+**Roles inside a school are not needed yet.** One person per school means there
+is nobody to separate. The owner's restrictions on what a school user may do are
+deliberately deferred — see phase 6 — and until they are decided a school user
+does everything today's manager does, inside their own school.
+
+**Only administrators issue invitations.** There is no "the head teacher invites
+a colleague" flow to build, which is most of what phase 2 would otherwise have
+been.
+
+**Administrator is a property of the person, not a membership.** An administrator
+is not a member of every school; they are outside that system entirely. In the
+schema that is a flag on `Manager`, not a row per school — which also means the
+number of schools never changes what an administrator's session carries.
+
+One limit follows from the k-anonymity guarantee and is not negotiable by
+convenience: an administrator may open **each school's own results**, which is
+the same suppressed view that school's own user sees. A figure computed **across**
+schools is a different object and stays refused — two schools whose small groups
+are each suppressed become readable when added together. Counts are safe: how
+many schools, how many rounds, how many responses are cardinalities, not
+aggregates over people.
+
+### Decided with it
+
+- **The first administrator is seeded from the environment**
+  (`MANAGER_ADMIN_EMAIL` / `MANAGER_ADMIN_PASSWORD`, which already exist), and
+  invites the other three through the same mechanism that invites school users.
+  One invitation flow serves both, differing only in what the invitation grants.
+- **An administrator creates the school first, then invites its user.** The
+  school exists in the administrator's list before anyone has accepted, and the
+  staff size — which sets the floor under the privacy threshold — is set by the
+  administrator rather than by the school describing itself.
+- **A school user starts with everything today's manager has**, scoped to their
+  school: setup, the questionnaire builder, rounds, the map, the breakdown and
+  goals.
+
+Assumed rather than asked, and cheap to change: a school may temporarily have no
+user, and replacing one is revoke-then-invite rather than a transfer.
+
+## 4. Phases
 
 ### Phase 0 — the boundary closes before there is anything to protect
 
-Unblocked, and should land before any identity work.
+Unblocked, needs none of the open questions, and should land before any identity
+work.
 
 - The middleware honours a chosen school only when the session holds an **active**
   membership for it.
@@ -132,10 +196,16 @@ membership, built from `MANAGER_ORGANIZATION_ID`, so every current request
 resolves as it does now. That is the point — the rule is in place while it costs
 nothing to verify.
 
+The administrator bypass is **not** part of this phase, because there are no
+administrators until phase 1. It arrives as one additional branch in the same
+place, which is the argument for putting the check there rather than spreading it.
+
 ### Phase 1 — identity becomes a row
 
 - `Manager` and `OrganizationMembership` tables, and repositories behind the
   interfaces that already exist in `src/lib/auth/domain-contract.ts`.
+- A platform-administrator flag on `Manager`. The middleware check from phase 0
+  gains its second branch: an administrator may open any school that exists.
 - `authenticateCredentials` reads the repository instead of building
   `defaultAccounts()`. Its doc comment already anticipates this and explains why
   the repository parameter was removed rather than fixed
@@ -143,21 +213,38 @@ nothing to verify.
 - A real credential: Argon2 or an identity provider. ADR-013 is explicit that
   swapping the SHA-256 hash **alone** closes nothing, because nothing stores it —
   it is derived from the environment variable per login and discarded.
+- Bootstrap: on first start, if no administrator exists, one is created from
+  `MANAGER_ADMIN_EMAIL` and `MANAGER_ADMIN_PASSWORD`. After that the variables
+  stop being the credential and become the seed — which is also when the
+  outstanding rotation gate changes meaning and should be re-read.
 - The three hardcoded local accounts go, or become seed data that cannot exist in
   a deployed runtime.
 
-### Phase 2 — invitations
+`OrganizationMembership` keeps its many-to-many shape even though today every
+school user has exactly one school. The types and the JWT already carry a list
+(`src/lib/auth/types.ts`), the product constrains it to one, and nothing has to
+be migrated the day that constraint is relaxed.
 
-- `MembershipStatus` already includes `'invited'` (`src/lib/auth/types.ts:3`) and
-  nothing has ever used it. The flow is already named by the type.
-- Signed invite token → e-mail → the invitee sets their own password. No open
-  registration.
+### Phase 2 — the administrator area, and invitations
+
+This is the piece the owner asked for directly, and the minimum useful version is
+small: an administrator cannot invite a school user without first seeing the
+schools.
+
+- A new `/admin` section, reachable only by a platform administrator. It lists
+  the schools and offers **create school** and **invite this school's user**.
+- Invitations: signed token → e-mail → the invitee sets their own password. No
+  open registration. `MembershipStatus` already includes `'invited'`
+  (`src/lib/auth/types.ts:3`) and nothing has ever used it — the flow is already
+  named by the type.
+- The same screen invites another administrator, which is how the remaining three
+  arrive.
 - Revocation sets `suspended`; `authenticateCredentials` already refuses an
   account with no active membership.
 - Password strength enforced **where a password is set**, which is what backlog §8
   says the current sign-in-time rule is a blunt substitute for. The withdrawn
   implementation is on the local-only branch `fix/manager-password-must-be-strong`.
-- Hebrew RTL screens for invite, set-password, forgot-password. If an identity
+- Hebrew RTL screens for invite, set-password and forgot-password. If an identity
   provider is used instead, its hosted screens still need their RTL behaviour
   checked by hand.
 - **An e-mail sender is a new subprocessor** and belongs in
@@ -165,54 +252,66 @@ nothing to verify.
 
 ### Phase 3 — the audit log survives a restart
 
-Moved ahead of role enforcement by the 2026-08-20 decision that the operator can
-read any school. `InMemoryAuditLogRepository`
-(`src/lib/auth/domain-contract.ts:134`) is what `getAuditLogRepository()`
-returns, so audit events die with the container, and the `console.info` line
-beside it lands in a log window nothing collects.
+Moved ahead of everything optional by the decision that an administrator reads
+any school. `InMemoryAuditLogRepository` (`src/lib/auth/domain-contract.ts:134`)
+is what `getAuditLogRepository()` returns, so audit events die with the
+container, and the `console.info` line beside it lands in a log window nothing
+collects.
 
-Once one person can open every school, that log is the only thing standing
+Once four people can open every school, that log is the only thing standing
 between a legitimate support visit and an unaccountable one. It has to exist
-before the role does, not after — a role whose use cannot be reconstructed is a
-role nobody can defend having granted.
+before the administrators do, not after — a role whose use cannot be
+reconstructed is a role nobody can defend having granted.
 
 - A Prisma-backed `IAuditLogRepository` behind the interface that already exists.
-- Reading another tenant's data is itself an audited action, which is a new event
-  type: the current `AuditActionType` list covers writes only
+- **An administrator reading another school is itself an audited action**, which
+  is a new event type: the current `AuditActionType` list covers writes only
   (`src/lib/auth/manager-audit-service.ts:4`).
-- Who may read the log, and whether a school sees the visits made to it, is worth
-  deciding with the role rather than later.
+- Who may read the log, and whether a school can see the visits made to it, is
+  worth deciding with the administrators rather than later.
 
-### Phase 4 — roles start being enforced
+### Phase 4 — what the administrator can see about every school
 
-- `RolePermissionService` already defines nine actions across `admin` and
-  `manager` (`src/lib/auth/roles-and-permissions.ts:3`) and has **zero production
-  callers** — its only consumer is `slice-3-roles-audit-membership.test.ts`. The
-  session carries `role`, and it is echoed back by `/api/auth/me` and the login
-  response and used as an audit label, never as a gate.
-- Map the nine actions onto the twelve manager routes and enforce at the same
-  chokepoint the scope uses.
-- **The operator role joins here**, and it is not a third value of `ManagerRole`:
-  it is a property of the person rather than of a membership, so it sits on
-  `Manager` and is consulted *before* the membership check phase 0 introduces —
-  the one place that already decides whether a school may be opened.
-- Note the asymmetry this reveals: the current `manager` role is read-only. The
-  single deployed account is `admin`, so nobody has met that restriction yet.
+The fuller half of the owner's description: how many schools, how many rounds
+each has, and the results of any school's round.
+
+- Counts and lists are cardinalities and carry no privacy question.
+- Opening one school's results reuses the existing manager screens under an
+  administrator's scope, so it is mostly routing rather than new analytics.
+- **No screen and no export combines schools into one figure.** This is the
+  k-anonymity limit above, and it is the one thing in this phase that has to be
+  designed in rather than checked afterwards.
 
 ### Phase 5 — the session gets short
 
 The 2026-08-20 revocation decision. The 24-hour stateless session
 (`login/route.ts:103`) becomes a short one with silent renewal, and the renewal
-is where memberships, roles and the operator flag are re-read from the database.
+is where memberships, the administrator flag and a suspended account are re-read
+from the database.
 
 - It can land any time after phase 1, and it is what makes suspension in phase 2
   mean anything within the quarter hour rather than within the day.
 - The interval is also an idle-logout timer, so pick the number against how a
-  manager actually works — reading a map and writing goals is not a keyboard-busy
-  task, and a session that dies mid-reading is a worse defect than the one this
-  fixes.
+  manager actually works — reading a map and writing goals is not a
+  keyboard-busy task, and a session that dies mid-reading is a worse defect than
+  the one this fixes.
 
-## 4. What this supersedes
+### Phase 6 — what a school user may not do
+
+Deliberately deferred by the owner on 2026-08-20: the restrictions exist in
+principle and their content is undecided. Recorded as a phase so that "we will
+decide later" stays visible instead of becoming an assumption that no
+restrictions were ever wanted.
+
+The machinery is already written and unused: `RolePermissionService` defines nine
+actions across `admin` and `manager` (`src/lib/auth/roles-and-permissions.ts:3`)
+and has **zero production callers** — its only consumer is
+`slice-3-roles-audit-membership.test.ts`. The session carries `role`, and it is
+echoed back by `/api/auth/me` and the login response and used as an audit label,
+never as a gate. Whatever is decided, the place to enforce it is the chokepoint
+phases 0 and 1 already use.
+
+## 5. What this supersedes
 
 Four documents jointly declare "one manager per deployment" a deliberate decision
 and name multi-tenant hosting as the trigger that reopens it. They change
@@ -227,82 +326,33 @@ together, in the phase that makes each untrue — not all at once, and not befor
 - `PROJECT_CONTEXT.md` ADR-020 — not superseded. Phase 0 is the sentence it
   already promised, and its wording about a preference rather than a permission
   needs the update that phase makes true.
+- `docs/data-flow-and-subprocessors.md` — gains two things before they exist: that
+  a platform administrator can read any school's results, and the e-mail
+  subprocessor.
 
-## 5. Open questions for the owner
+## 6. Still open
 
-Two of the original six were answered on 2026-08-20 and have moved to §5a below.
-
-1. **Who may create a school?** The operator only, or a tenant admin? This decides
-   whether `createOrganization` needs a permission above the tenant, and whether
-   "school" and "tenant" are the same object at all.
-2. **What happens to the current operator's credentials at phase 1?** The password
-   is an environment variable today; after phase 1 it is a row. Seeded on first
-   boot, migrated by a one-off script, or re-invited like anyone else — and
-   `MANAGER_ADMIN_PASSWORD`/`MANAGER_ORGANIZATION_ID` either keep a bootstrap
-   meaning or are retired.
-3. **Own passwords or an identity provider?** The invitation decision implies own
-   passwords, but an IdP is still compatible with invite-only and removes password
-   reset, storage and their RTL screens. Many Israeli schools are on Google
-   Workspace.
-4. **Which e-mail provider**, given it becomes a subprocessor that sees a school
+1. **Own passwords or an identity provider?** The invitation decision implies own
+   passwords, but an identity provider is still compatible with invite-only and
+   removes password reset, storage and their RTL screens. Many Israeli schools
+   are on Google Workspace.
+2. **Which e-mail provider**, given it becomes a subprocessor that sees a school
    staff member's address.
+3. **What a school user may not do** — phase 6, deferred on purpose.
 
+None of these blocks phase 0, and only the first blocks phase 1.
 
-## 5a. Answered, 2026-08-20
-
-**There is a role above the tenant, and it reads data as well as administering
-it.** Of three options — no such role, administration without data access, or
-full visibility — the owner took full visibility, for support and onboarding.
-The agent had recommended the middle one. Recorded here with what the choice
-carries, because the reasoning is what a later reader needs:
-
-- **The promise to the respondent changes.** Today nobody outside a school can
-  open its map. After this, someone can. That belongs in
-  `docs/data-flow-and-subprocessors.md`, which is the factual basis every future
-  legal document rests on, and it should be written there before the role exists
-  rather than after.
-- **The cross-tenant aggregate stays refused.** This was stated in all three
-  options and is part of what was accepted. The k-anonymity guarantee is
-  formulated for one population, so no screen and no export may combine several
-  schools into one figure — small schools that are individually suppressed would
-  otherwise become readable together.
-- **The audit log becomes the only remaining accountability**, which moves it out
-  of phase 4. If the operator can open any school, "who looked at whose data" is
-  the sole record that the access was legitimate, and today that record is
-  `InMemoryAuditLogRepository` and dies with the container. Persisting it should
-  land with the role, not after it.
-- The role is a property of the person, not of a membership, so it does not fit
-  `OrganizationMembership` — it belongs on `Manager` or on a separate table.
-
-**Revocation takes effect within about fifteen minutes.** Of three options — a
-membership read on every request, a short session with silent renewal, or the
-current 24 hours — the owner took the short session. A per-request read was
-declined on cost: the database is in Seoul and the functions in Washington, about
-180 ms per round trip, on every action. What this buys and costs:
-
-- The window between removing someone's access and their losing it falls from 24
-  hours to roughly one renewal interval.
-- The renewal is the moment memberships are re-read, so it is also where a
-  suspended membership, a changed role and a deleted school take effect.
-- The user notices nothing while working. A session that is idle past the
-  interval ends, so the interval is also a logout timer — worth confirming
-  against how a manager actually uses these screens before fixing the number.
-
-## 6. What does not change, and is worth stating so nobody redesigns it
+## 7. What does not change, and is worth stating so nobody redesigns it
 
 - **The respondent path.** A share code is globally unique
   (`prisma/schema.prisma:29`) and is itself the credential; a respondent never
   authenticates and never names a school. Multi-tenancy does not reach it.
 - **The privacy threshold and cell suppression.** Both are computed inside one
-  round of one school, and more tenants do not weaken them. The operator role
-  decided on 2026-08-20 does not change this either, and the reason is worth
-  being precise about: that role may open each school's own map, which is the
-  same view that school's own manager sees and is already suppressed. What it may
-  not have is a figure computed **across** schools — the guarantee is formulated
-  for one population, so two schools whose small groups are each suppressed can
-  become readable when added together. Reading many schools one at a time is the
-  decision that was taken; reading them as one number is not, and no screen or
-  export may offer it.
+  round of one school, and more tenants do not weaken them. The administrator
+  role does not change this either, and the reason is worth being precise about:
+  that role may open each school's own map, which is the same view that school's
+  own user sees and is already suppressed. What it may not have is a figure
+  computed **across** schools.
 - **The worker's shared secrets.** `AI_CALLBACK_SECRET` and `MCP_SHARED_SECRET`
   are the operator's own service reaching Core across all tenants by design. That
   stays a trust boundary rather than becoming per-tenant, and it is worth writing

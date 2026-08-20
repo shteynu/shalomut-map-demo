@@ -12,8 +12,9 @@
 
 ## Objective
 
-Answer the owner's four questions about multi-tenancy from the code, and turn the
-answers into a plan the next session can act on.
+Answer the owner's questions about multi-tenancy from the code, and turn the
+answers — and the model the owner then specified — into a plan the next session
+can act on.
 
 ## User-visible outcome
 
@@ -27,36 +28,65 @@ system; are action permissions tied to the tenant.
 
 ## Decisions made
 
-- **Owner, 2026-08-20: many schools each with their own users** — shape (c) in the
-  plan, not "a second manager in one school" and not the multi-school operator
-  the product already is.
-- **Owner, 2026-08-20: access by invitation**, not open registration.
-- **Agent design call: the membership check belongs in the middleware**, not in
-  `ManagerScopeService.resolveOrganizationId`. That function receives a repository
-  and an id and has no session; the middleware has already resolved the session
-  two lines above where the header is set. This avoids changing a signature
-  fourteen call sites depend on.
+Owner, 2026-08-20, in three rounds. The third round replaced the general
+membership model with something considerably more specific:
+
+- **Two kinds of person.** About four **platform administrators** who see and do
+  everything and belong to no school, and **exactly one user per school** who
+  sees only theirs. This is not "a second manager in one school" (backlog §8) —
+  that feature was not chosen and is not on the way to this one.
+- **Administrator is a flag on the person, not a membership.** They are outside
+  the membership system rather than a member of everything, so the number of
+  schools never changes what their session carries.
+- **An administrator creates the school, then invites its user.** The school
+  exists in the administrator's list before anyone accepts, and the staff size —
+  which sets the floor under the privacy threshold — is the administrator's to
+  set rather than the school's to describe.
+- **The first administrator is seeded from `MANAGER_ADMIN_EMAIL` /
+  `MANAGER_ADMIN_PASSWORD`** and invites the other three through the same
+  mechanism as school users. One invitation flow, two things it can grant.
+- **A school user starts with everything today's manager has**, scoped to their
+  school. Restrictions are deferred by the owner and kept visible as phase 6, so
+  that "decide later" does not decay into "nobody wanted any".
+- **An administrator reads any school's results** — chosen over the narrower
+  administration-without-data-access option the agent recommended and argued for.
+  Two things follow and are in the plan: `docs/data-flow-and-subprocessors.md`
+  needs it before the role exists, and the persistent audit log moves ahead of
+  everything optional, because with four people able to open every school the log
+  is the only account of whether a visit was legitimate.
+- **The cross-tenant aggregate stays refused.** Per-school results yes; one figure
+  computed across schools no — two schools whose small groups are each suppressed
+  become readable added together. Counts of schools, rounds and responses are
+  cardinalities and are safe.
+- **Revocation within about fifteen minutes**, as a short session with silent
+  renewal. A membership read on every request was declined on latency: Seoul
+  database, Washington functions, roughly 180 ms per action.
+
+Agent design calls, not owner decisions:
+
+- **The membership check belongs in the middleware**, not in
+  `ManagerScopeService.resolveOrganizationId` — that function receives a
+  repository and an id and has no session, and threading one in would change a
+  signature fourteen call sites depend on. The middleware has the session two
+  lines above where the header is set, and the administrator bypass later becomes
+  one more branch in the same place.
 - **Phase 0 lands before any identity work.** With one membership per session it
-  changes no behaviour, which is precisely why it is cheap to verify now and
+  changes no behaviour, which is exactly why it is cheap to verify now and
   expensive to add after a second user exists.
-- **Owner, 2026-08-20: the operator can read any school**, not merely administer
-  it. The agent had recommended administration-without-data-access and said so;
-  the owner chose full visibility for support and onboarding, and that is the
-  decision. Two things follow and are in the plan: the promise to the respondent
-  changes and belongs in `docs/data-flow-and-subprocessors.md` before the role
-  exists, and the persistent audit log moves from phase 4 to phase 3, because
-  once one person can open every school the log is the only account of whether a
-  visit was legitimate. The cross-tenant aggregate stays refused — that was part
-  of every option offered and of the one accepted.
-- **Owner, 2026-08-20: revocation within about fifteen minutes** — a short session
-  with silent renewal, rather than a membership read on every request. The
-  per-request read was declined on latency: the database is in Seoul and the
-  functions in Washington, roughly 180 ms per action.
+- **`OrganizationMembership` keeps its many-to-many shape** even though every
+  school user has exactly one school today. The types and the JWT already carry a
+  list; the product constrains it to one, and nothing needs migrating the day that
+  constraint is relaxed.
+- Assumed rather than asked: a school may temporarily have no user, and replacing
+  one is revoke-then-invite rather than a transfer.
 
 ## Completed
 
-- `f16a01b` — `docs/multi-tenancy-plan-2026-08-20.md`, listed under "Live plans"
-  in `docs/README.md`.
+- `f16a01b` — the plan, listed under "Live plans" in `docs/README.md`.
+- `ea356c2` — the first two decisions, which reordered the phases.
+- The tip — the model rewritten around administrators and one user per school;
+  §3 is new, the phases are rebuilt, and three of the six open questions are
+  closed.
 
 ## Remaining
 
@@ -102,9 +132,14 @@ code when phase 0 is actually written rather than trusted from here.
 
 ## Questions requiring an owner decision
 
-Four remain, in §5 of the plan: who may create a school, what happens to the
-current operator's credentials at phase 1, own passwords or an identity provider,
-and which e-mail provider. None of them blocks phase 0.
+Three remain, in §6 of the plan: own passwords or an identity provider, which
+e-mail provider, and what a school user may not do. None blocks phase 0; only the
+first blocks phase 1.
+
+"Who may create a school" and "what happens to the operator's credentials" were
+both answered by the 2026-08-20 model — administrators create schools, and the
+environment variables become the seed for the first administrator rather than the
+standing credential.
 
 ## Next concrete step
 
