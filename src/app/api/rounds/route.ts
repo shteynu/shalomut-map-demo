@@ -8,6 +8,7 @@ import {
 import { getDurableWriteGuardResponse } from '@/lib/server/durable-write-guard';
 import {
   authorizeManagerRound,
+  getManagerMemberSchools,
   getManagerOrganizationId,
   getManagerScopeErrorResponse,
 } from '@/lib/server/manager-scope';
@@ -36,6 +37,8 @@ export async function GET(request?: Request) {
       roundRepo,
       surveyRepo,
       request ? getManagerOrganizationId(request) : undefined,
+      undefined,
+      request ? getManagerMemberSchools(request) : undefined,
     );
     if (context.state === 'scope-required') {
       return NextResponse.json(
@@ -70,6 +73,7 @@ export async function POST(request: Request) {
     const organizationId = await ManagerScopeService.resolveOrganizationId(
       orgRepo,
       getManagerOrganizationId(request),
+      getManagerMemberSchools(request),
     );
     const organization = organizationId
       ? await orgRepo.findById(organizationId)

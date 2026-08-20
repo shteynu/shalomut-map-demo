@@ -108,12 +108,14 @@ export class ManagerContextService {
     surveyRepo: ISurveyRepository,
     requestedOrganizationId?: string,
     requestedRoundId?: string,
+    memberOrganizationIds?: readonly string[],
   ): Promise<ManagerContext> {
     let organizationId: string | null;
     try {
       organizationId = await ManagerScopeService.resolveOrganizationId(
         orgRepo,
         requestedOrganizationId,
+        memberOrganizationIds,
       );
     } catch (error) {
       if (!(error instanceof ManagerScopeRequiredError)) throw error;

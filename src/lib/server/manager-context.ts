@@ -14,7 +14,10 @@ import {
 } from "@/lib/services";
 import type { ManagerContext } from "@/lib/services";
 import type { SurveyRound } from "@/lib/types/backend";
-import { MANAGER_ORGANIZATION_HEADER } from "@/lib/server/manager-scope";
+import {
+  MANAGER_ORGANIZATION_HEADER,
+  getManagerMemberSchools,
+} from "@/lib/server/manager-scope";
 import {
   toSchoolSwitcherOptions,
   type SchoolChoices,
@@ -33,21 +36,34 @@ export async function loadManagerContext(roundId?: string) {
     surveyRepo,
     organizationId,
     roundId?.trim() || undefined,
+    getManagerMemberSchools({ headers: requestHeaders }),
   );
 }
 
 /**
- * Every school the system has.
+ * Every school this session has, which is not every school the system has.
  *
  * One extra read, and only the setup screen asks for it: it is the one screen
  * that can change which school the manager is in, so it is the only one that
  * needs the list. The other screens are already scoped to the chosen school and
  * would pay for a query they never render.
+ *
+ * The list is narrowed to the session's memberships, and that is a disclosure
+ * boundary rather than a nicety: a school the manager cannot open would still
+ * have its name and its city on the switcher. The filter is applied here rather
+ * than in the query because the repository is the one place that legitimately
+ * knows about every school — the setup screen is not.
  */
 export async function loadSchools() {
   await connection();
   const { orgRepo } = resolveCoreRepositories();
-  return orgRepo.findAll();
+  const requestHeaders = await headers();
+  const memberSchools = getManagerMemberSchools({ headers: requestHeaders });
+  const schools = await orgRepo.findAll();
+
+  return memberSchools
+    ? schools.filter((school) => memberSchools.includes(school.id))
+    : schools;
 }
 
 /**

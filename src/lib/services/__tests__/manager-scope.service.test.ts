@@ -89,3 +89,88 @@ test("a round is never reached from another school", async () => {
     null,
   );
 });
+
+test("a school the session is not a member of is not a school it can be read inside", async () => {
+  const orgRepo = new InMemoryOrganizationRepository([first, second]);
+
+  assert.strictEqual(
+    await ManagerScopeService.resolveOrganizationId(orgRepo, second.id, [
+      first.id,
+    ]),
+    first.id,
+  );
+});
+
+test("one membership needs no choosing, however many schools the system has", async () => {
+  const orgRepo = new InMemoryOrganizationRepository([first, second]);
+
+  assert.strictEqual(
+    await ManagerScopeService.resolveOrganizationId(orgRepo, undefined, [
+      second.id,
+    ]),
+    second.id,
+  );
+});
+
+test("two memberships and no choice is a question, not a school", async () => {
+  const orgRepo = new InMemoryOrganizationRepository([first, second]);
+
+  await assert.rejects(
+    () =>
+      ManagerScopeService.resolveOrganizationId(orgRepo, undefined, [
+        first.id,
+        second.id,
+      ]),
+    ManagerScopeRequiredError,
+  );
+});
+
+test("a session with no membership is read inside no school at all", async () => {
+  const orgRepo = new InMemoryOrganizationRepository([first, second]);
+
+  assert.strictEqual(
+    await ManagerScopeService.resolveOrganizationId(orgRepo, first.id, []),
+    null,
+  );
+});
+
+test("an empty system adopts the id of the school the session is a member of", async () => {
+  const orgRepo = new InMemoryOrganizationRepository();
+
+  assert.strictEqual(
+    await ManagerScopeService.resolveOrganizationId(orgRepo, "org-configured", [
+      "org-configured",
+    ]),
+    "org-configured",
+  );
+});
+
+test("an empty system does not adopt an id the session has no membership for", async () => {
+  const orgRepo = new InMemoryOrganizationRepository();
+
+  assert.strictEqual(
+    await ManagerScopeService.resolveOrganizationId(orgRepo, "org-someone-else", [
+      "org-configured",
+    ]),
+    "org-configured",
+  );
+});
+
+test("a round is never reached from a school the session is not a member of", async () => {
+  const orgRepo = new InMemoryOrganizationRepository([first, second]);
+  const roundRepo = {
+    findById: async (id: string) =>
+      id === "round-2" ? ({ id, organizationId: second.id } as never) : null,
+  } as never;
+
+  assert.strictEqual(
+    await ManagerScopeService.findRound(
+      "round-2",
+      orgRepo,
+      roundRepo,
+      second.id,
+      [first.id],
+    ),
+    null,
+  );
+});

@@ -10,6 +10,7 @@ import { getDurableWriteGuardResponse } from "@/lib/server/durable-write-guard";
 import { MINIMUM_PRIVACY_THRESHOLD } from "@/lib/survey-definition";
 import {
   authorizeManagerRound,
+  getManagerMemberSchools,
   getManagerOrganizationId,
   getManagerScopeErrorResponse,
 } from "@/lib/server/manager-scope";
@@ -203,6 +204,7 @@ export async function PUT(request: Request) {
     const organizationId = await ManagerScopeService.resolveOrganizationId(
       orgRepo,
       getManagerOrganizationId(request),
+      getManagerMemberSchools(request),
     );
     if (
       organizationId &&

@@ -11,6 +11,7 @@ import {
   MANAGER_SCHOOL_COOKIE,
   createScopedManagerHeaders,
 } from "@/lib/server/manager-scope";
+import type { ManagerSession } from "@/lib/auth/types";
 import {
   SESSION_COOKIE_NAME,
   describeSessionProviderFailure,
@@ -36,6 +37,23 @@ function readChosenSchool(request: NextRequest) {
 
   const remembered = request.cookies.get(MANAGER_SCHOOL_COOKIE)?.value?.trim();
   return remembered ? { id: remembered, isNewChoice: false } : null;
+}
+
+/**
+ * The schools this session may read, which is not the same as the schools that
+ * exist.
+ *
+ * An invited membership has not been accepted and a suspended one has been taken
+ * away; only an active one is a school. Today every session carries exactly one
+ * active membership, built from `MANAGER_ORGANIZATION_ID`, so this list has one
+ * entry and nothing below it can behave differently than it did — which is why
+ * the rule is worth putting in place now rather than on the day a second
+ * membership exists.
+ */
+function memberSchools(session: ManagerSession): string[] {
+  return session.memberships
+    .filter((membership) => membership.status === "active")
+    .map((membership) => membership.organizationId);
 }
 
 /**
@@ -88,23 +106,46 @@ export async function middleware(request: NextRequest) {
   const managerSession = await resolveManagerSession(request);
   if (managerSession) {
     // The session names the school a manager lands on; the chosen school, when
-    // there is one, is what they are reading now. The session value stays the
-    // default rather than the pin, which is what makes a second school
-    // reachable at all without touching authentication.
+    // there is one and the session is a member of it, is what they are reading
+    // now. The session value stays the default rather than the pin, which is
+    // what makes a second school reachable at all without touching
+    // authentication — and the membership is what keeps "reachable" from
+    // meaning "anyone's".
+    //
+    // This is the whole tenant boundary. Every manager route and every manager
+    // screen reads the header set here, and nothing below re-derives which
+    // school was asked for, so a school refused here is refused everywhere.
+    const schools = memberSchools(managerSession);
     const chosenSchool = readChosenSchool(request);
+    const honouredSchool =
+      chosenSchool && schools.includes(chosenSchool.id) ? chosenSchool : null;
+    const defaultSchool = schools.includes(managerSession.activeOrganizationId)
+      ? managerSession.activeOrganizationId
+      : schools[0];
+
     const headers = createScopedManagerHeaders(
       request.headers,
-      chosenSchool?.id ?? managerSession.activeOrganizationId,
+      honouredSchool?.id ?? defaultSchool,
+      schools,
     );
     const response = NextResponse.next({ request: { headers } });
 
-    if (chosenSchool?.isNewChoice) {
-      response.cookies.set(MANAGER_SCHOOL_COOKIE, chosenSchool.id, {
+    if (honouredSchool?.isNewChoice) {
+      response.cookies.set(MANAGER_SCHOOL_COOKIE, honouredSchool.id, {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
         secure: process.env.NODE_ENV === "production",
       });
+    }
+
+    // A remembered school the session is no longer a member of is a preference
+    // that can never be honoured again. Forgetting it is what keeps the refusal
+    // from being repeated on every navigation for the rest of the session, and
+    // it is a preference being dropped rather than access being revoked — the
+    // revocation already happened to the membership.
+    if (chosenSchool && !honouredSchool && !chosenSchool.isNewChoice) {
+      response.cookies.delete(MANAGER_SCHOOL_COOKIE);
     }
 
     return response;
