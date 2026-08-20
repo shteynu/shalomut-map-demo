@@ -21,6 +21,8 @@ These files must stay aligned with `main`:
 | [`ai-analytics-handoff.md`](ai-analytics-handoff.md) | Current cross-service AI architecture and boundaries |
 | [`ai-analysis-run-lifecycle.md`](ai-analysis-run-lifecycle.md) | One durable analysis run end to end — claim, lease, heartbeat, callback and every failure branch — as diagrams, endpoints and constants |
 | [`ai-analysis-run-mechanics.html`](ai-analysis-run-mechanics.html) | The same pipeline drawn — every stage from "close the round" to the map on screen, and why each fork went the way it did. A standalone page: open it from disk, no server and no network needed |
+| [`ai-analysis-jobs.html`](ai-analysis-jobs.html) | The job queue between Core and the AI service in detail — claim, lease, heartbeat, retries and every failure branch, as mermaid diagrams and a settings table |
+| [`how-shalomut-works.html`](how-shalomut-works.html) | The whole platform explained without code, in twelve chapters with diagrams; the illustrated companion to [`platform-handbook.md`](platform-handbook.md) |
 | [`platform-handbook.md`](platform-handbook.md) | What the whole platform does, in language a non-developer reads; the source text every translated snapshot is released from |
 | [`shalomut-tracker-handoff.md`](shalomut-tracker-handoff.md) | Current deployed/operational state, external blockers and approval gates |
 | [`data-flow-and-subprocessors.md`](data-flow-and-subprocessors.md) | Who receives respondent data, what crosses each boundary and where it is hosted; the factual basis every future legal document rests on |
@@ -155,11 +157,18 @@ Branch-local in-progress state belongs only in
 ## Update rules
 
 - Update a living document when its owned state changes. This includes the
-  HTML ones: `ai-analysis-run-mechanics.html` is a document, not an exported
-  artifact, and a change to the AI-analysis pipeline updates it in the same
-  task that changes the behaviour. Its published copy on claude.ai is a
-  snapshot — republish it from this file when a link is needed, never edit
-  the published copy and expect the repository to follow.
+  three HTML ones — `ai-analysis-run-mechanics.html`, `ai-analysis-jobs.html`
+  and `how-shalomut-works.html`. They are documents, not exported artifacts, and
+  a change to the AI-analysis pipeline updates them in the same task that
+  changes the behaviour. Their published copies on claude.ai are snapshots —
+  republish from these files when a link is needed, never edit a published copy
+  and expect the repository to follow.
+- Keep exact numbers out of `how-shalomut-works.html`. It is the non-developer
+  overview, and a figure repeated there is a second truth that goes stale in
+  silence; name the order of magnitude or point at the living source.
+- `vendor/mermaid.min.js` renders the diagrams in those pages from disk, so they
+  open with nothing running and no network. It is vendored build output, shared
+  by both pages, and nothing in it is ours to edit.
 - Update an implemented specification only when its contract changes; keep
   older-version sections explicitly historical.
 - Do not copy task evidence into `PROGRESS.md` or the operational handoff.

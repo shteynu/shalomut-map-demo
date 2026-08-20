@@ -13,6 +13,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vendored mermaid, kept beside the HTML documents in docs/ so their
+    // diagrams render straight from disk. It is someone else's build
+    // output: nothing here is ours to fix, and linting 3 MB costs time.
+    "docs/vendor/**",
     "outputs/**",
     "work/**",
   ]),

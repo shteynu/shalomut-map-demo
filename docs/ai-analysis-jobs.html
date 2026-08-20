@@ -1,0 +1,617 @@
+<!doctype html>
+<!--
+  «Джобы AI-анализа Шаломут» — живой документ: очередь заданий между Core и
+  AI-сервисом, захват, аренда, стук, повторы и все ветки отказа, диаграммами и
+  таблицами.
+
+  Правится вместе с кодом, который описывает. Если задача меняет контракт джобы,
+  аренду, повторы или числа в таблице настроек — этот файл правится в той же
+  задаче. Рядом две родственные вещи: docs/ai-analysis-run-lifecycle.md — та же
+  механика текстом и с таблицей эндпоинтов, docs/ai-analysis-run-mechanics.html —
+  шире, от закрытия раунда до карты на экране.
+
+  Таблица настроек называет файлы, но не номера строк: номер ломается от любой
+  правки выше по файлу, и к моменту переноса врали все семь. Имя настройки
+  ищется поиском и переживает переезд.
+
+  Открывается двойным щелчком по file://. Диаграммы — mermaid, он лежит рядом в
+  vendor/ и грузится с диска; из сети тянутся только шрифты, и без неё они молча
+  подменяются. docs/ не входит в область проверки npm run lint:fonts.
+
+  Происхождение: опубликован как артефакт claude.ai 2026-08-18, перенесён в
+  репозиторий 2026-08-20, дальше ведётся здесь. Из опубликованной версии удалён
+  служебный блок рантайма claude.ai, размеченный парой комментариев
+  frame-runtime, а вставленный платформой mermaid вынесен в vendor/ — оба не
+  часть документа. Опубликованная копия — снимок, а не вторая правда;
+  переиздавать её следует отсюда и только когда ссылка кому-то нужна.
+-->
+<html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}</style></head><body>
+<title>Джобы AI-анализа Шаломут</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@400;500&display=swap">
+
+<style>
+  :root {
+    --bg: #FAF8FB;
+    --surface: #FFFFFF;
+    --border: #E6E0EA;
+    --border-strong: #D3C9DA;
+    --text: #1F1A24;
+    --muted: #6C6377;
+    --accent: #7A3B5C;
+    --accent-soft: #F3E7ED;
+    --ok: #2C7355;
+    --warn: #96691A;
+    --bad: #A03636;
+    --figure-bg: #EFEBF2;
+    --figure-border: #DCD4E2;
+    --shadow: 0 1px 2px rgba(31, 26, 36, .05), 0 8px 24px -16px rgba(31, 26, 36, .25);
+
+    --step: clamp(1rem, 0.95rem + 0.25vw, 1.0625rem);
+    --measure: 68ch;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #16131A;
+      --surface: #1E1A24;
+      --border: #322B3B;
+      --border-strong: #443B50;
+      --text: #EDE8F1;
+      --muted: #A79EB2;
+      --accent: #D48FB0;
+      --accent-soft: #2E2233;
+      --ok: #74C29A;
+      --warn: #D6A85C;
+      --bad: #E08A8A;
+      --figure-bg: #D8D3DF;
+      --figure-border: #463E52;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px -16px rgba(0, 0, 0, .8);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #16131A;
+    --surface: #1E1A24;
+    --border: #322B3B;
+    --border-strong: #443B50;
+    --text: #EDE8F1;
+    --muted: #A79EB2;
+    --accent: #D48FB0;
+    --accent-soft: #2E2233;
+    --ok: #74C29A;
+    --warn: #D6A85C;
+    --bad: #E08A8A;
+    --figure-bg: #D8D3DF;
+    --figure-border: #463E52;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px -16px rgba(0, 0, 0, .8);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+    font-size: var(--step);
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 62rem;
+    margin: 0 auto;
+    padding: clamp(2rem, 1.2rem + 3vw, 4.5rem) clamp(1.1rem, 0.6rem + 2vw, 2.5rem) 6rem;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(2.5rem, 2rem + 2vw, 4rem);
+  }
+
+  h1, h2, h3, .eyebrow, .label {
+    font-family: 'Golos Text', 'PT Sans', system-ui, sans-serif;
+    text-wrap: balance;
+  }
+
+  .eyebrow {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0;
+  }
+
+  h1 {
+    font-size: clamp(2rem, 1.5rem + 2.4vw, 3.1rem);
+    font-weight: 700;
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+    margin: 0.55rem 0 0;
+  }
+
+  .lede {
+    margin: 1.1rem 0 0;
+    max-width: var(--measure);
+    font-size: 1.15em;
+    color: var(--muted);
+  }
+
+  h2 {
+    font-size: clamp(1.3rem, 1.15rem + 0.7vw, 1.7rem);
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    line-height: 1.2;
+    margin: 0;
+  }
+
+  h3 {
+    font-size: 1.02rem;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    margin: 0;
+  }
+
+  p { margin: 0; max-width: var(--measure); }
+
+  section {
+    display: flex;
+    flex-direction: column;
+    gap: 1.15rem;
+  }
+
+  .section-head {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding-bottom: 0.9rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  code, .mono {
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.855em;
+  }
+
+  code {
+    background: var(--accent-soft);
+    color: var(--text);
+    padding: 0.1em 0.36em;
+    border-radius: 3px;
+  }
+
+  /* Diagram plates: deliberately a fixed light "paper" in both themes, the way a
+     printed figure keeps its own ground inside a dark book. */
+  .figure {
+    background: var(--figure-bg);
+    border: 1px solid var(--figure-border);
+    border-radius: 8px;
+    padding: 1.25rem 0.75rem;
+    overflow-x: auto;
+    box-shadow: var(--shadow);
+  }
+
+  .figure pre.mermaid {
+    margin: 0;
+    min-width: 34rem;
+    background: transparent;
+    text-align: center;
+  }
+
+  .figure-caption {
+    margin: 0;
+    max-width: var(--measure);
+    font-size: 0.9rem;
+    color: var(--muted);
+  }
+
+  .figure-caption strong { color: var(--text); font-weight: 600; }
+
+  .branches {
+    display: grid;
+    gap: 1.75rem;
+  }
+
+  .branch {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+  }
+
+  .branch-head {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+  }
+
+  .tag {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.16rem 0.45rem;
+    border-radius: 3px;
+    border: 1px solid currentColor;
+    white-space: nowrap;
+  }
+
+  .tag-bad { color: var(--bad); }
+  .tag-warn { color: var(--warn); }
+  .tag-ok { color: var(--ok); }
+
+  .table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'Golos Text', system-ui, sans-serif;
+    font-size: 0.88rem;
+    min-width: 40rem;
+  }
+
+  thead th {
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-strong);
+    white-space: nowrap;
+  }
+
+  tbody td {
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+
+  tbody tr:last-child td { border-bottom: none; }
+
+  td.num {
+    font-variant-numeric: tabular-nums;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    white-space: nowrap;
+  }
+
+  td.src {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+
+  .callout {
+    border-left: 3px solid var(--warn);
+    background: var(--surface);
+    border-radius: 0 8px 8px 0;
+    padding: 1rem 1.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .callout h3 { color: var(--warn); }
+  .callout p { font-size: 0.95rem; }
+
+  footer {
+    border-top: 1px solid var(--border);
+    padding-top: 1.2rem;
+    color: var(--muted);
+    font-size: 0.85rem;
+    font-family: 'Golos Text', system-ui, sans-serif;
+  }
+
+  a { color: var(--accent); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+
+<div class="page">
+
+  <header>
+    <p class="eyebrow">מפת שלומות · durable-джобы</p>
+    <h1>Жизненный цикл AI-анализа раунда</h1>
+    <p class="lede">
+      Как закрытие раунда превращается в строку очереди, кто её забирает, чем удерживает
+      и что происходит, когда исполнитель засыпает посередине. Всё ниже прочитано из кода
+      на ветке <span class="mono">claude/free-ai-service-deploy-yk4tjj</span>, а не из документации.
+    </p>
+  </header>
+
+  <section>
+    <div class="section-head">
+      <h2>Основной путь</h2>
+      <p>
+        Пять участников. У Python-половины нет доступа к базе: данные она получает
+        по MCP, состояние джобы меняет только через HTTP-эндпоинты Core.
+      </p>
+    </div>
+
+    <div class="figure">
+<pre class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'JetBrains Mono, ui-monospace, monospace','fontSize':'13px','primaryColor':'#EDE3EA','primaryTextColor':'#1F1A24','primaryBorderColor':'#7A3B5C','lineColor':'#6C6377','actorBkg':'#FFFFFF','actorBorder':'#7A3B5C','actorTextColor':'#1F1A24','signalColor':'#3A3342','signalTextColor':'#3A3342','labelBoxBkg':'#F3E7ED','labelBoxBorderColor':'#7A3B5C','labelTextColor':'#1F1A24','noteBkgColor':'#FFF6E0','noteBorderColor':'#96691A','noteTextColor':'#3A3342'}}}%%
+sequenceDiagram
+    autonumber
+    actor M as Менеджер
+    participant C as Core · Next.js
+    participant DB as ai_analysis_runs
+    participant W as AI service · воркер
+    participant G as Gemini
+
+    M->>C: PATCH /api/rounds/… — закрыть раунд
+    C->>C: responseCount против privacyThreshold
+    Note over C: ниже порога — below_threshold,&lt;br/&gt;джоба не создаётся вовсе
+    C->>DB: INSERT · state=queued · trigger=closure
+    Note over DB: requestKey детерминированный,&lt;br/&gt;частичный уникальный индекс держит&lt;br/&gt;один активный run на раунд
+    DB-->>C: run.id
+
+    loop поллинг: 2 с, до 30 с на простое
+        W->>C: POST /api/ai-analysis-runs/claim
+        alt очередь пуста
+            C-->>W: 204 No Content
+            Note over W: пауза удваивается&lt;br/&gt;до потолка в 30 с
+        else джоба найдена
+            C->>DB: claimNext — условный UPDATE
+            DB-->>C: state=running · attempt+1 · lease +90 с
+            C-->>W: 200 · run и leaseToken
+        end
+    end
+
+    W->>C: MCP get_round_analytics
+    C-->>W: агрегаты раунда — без единого респондента
+
+    par heartbeat каждые 30 секунд
+        W->>C: POST /…/heartbeat · leaseToken
+        C->>DB: lease продлён ещё на 90 с
+        C-->>W: 200 running
+    and анализ раунда
+        W->>W: privacy gate — до первого токена
+        W->>G: около 30 вызовов на 8 измерений
+        G-->>W: текст на иврите
+        W->>W: safety validator · до 3 циклов ремонта
+    end
+
+    W->>C: POST /api/rounds/…/ai-insights + заголовки run-id и lease-token
+    C->>C: сверка личности, затем валидация контракта
+    C->>DB: finish · state=succeeded · result
+    C-->>W: 200
+    Note over W: воркер возвращается к поллингу
+
+    M->>C: GET /api/rounds/…/ai-insights
+    C-->>M: карта камней
+</pre>
+    </div>
+    <p class="figure-caption">
+      <strong>Порядок сверки на шаге 21 не случаен.</strong> Личность проверяется до валидации
+      содержимого — иначе callback, промахнувшийся раундом, мог бы пометить чужой здоровый run
+      как проваленный.
+    </p>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Три ветки, ради которых очередь и существует</h2>
+      <p>
+        Каждая из них — это момент, когда исполнителя не стало, а раунд остался.
+      </p>
+    </div>
+
+    <div class="branches">
+
+      <article class="branch">
+        <div class="branch-head">
+          <span class="tag tag-warn">409 stale</span>
+          <h3>Аренда потеряна: инстанс уснул, работу забрал другой</h3>
+        </div>
+        <div class="figure">
+<pre class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'JetBrains Mono, ui-monospace, monospace','fontSize':'13px','primaryColor':'#EDE3EA','primaryTextColor':'#1F1A24','primaryBorderColor':'#7A3B5C','lineColor':'#6C6377','actorBkg':'#FFFFFF','actorBorder':'#7A3B5C','actorTextColor':'#1F1A24','signalColor':'#3A3342','signalTextColor':'#3A3342','labelBoxBkg':'#F3E7ED','labelBoxBorderColor':'#7A3B5C','labelTextColor':'#1F1A24','noteBkgColor':'#FFF6E0','noteBorderColor':'#96691A','noteTextColor':'#3A3342'}}}%%
+sequenceDiagram
+    participant A as Воркер A
+    participant C as Core
+    participant DB as ai_analysis_runs
+    participant B as Воркер B
+
+    Note over A: контейнер уснул или уехал на редеплой
+    Note over DB: leaseExpiresAt прошёл,&lt;br/&gt;attemptCount меньше 3
+    B->>C: POST /claim
+    C->>DB: claimNext берёт просроченный run
+    DB-->>C: attempt+1 · новый leaseToken
+    C-->>B: 200 · аренда теперь у B
+    A->>C: POST /…/heartbeat старым токеном
+    C-->>A: 409 stale
+    Note over A: LeaseLostError — анализ отменяется&lt;br/&gt;сразу, ничего не записывается
+</pre>
+        </div>
+        <p class="figure-caption">
+          Проснувшийся воркер A не дописывает результат, на который уже не имеет права:
+          отмена происходит на ближайшем heartbeat, максимум через 30 секунд.
+        </p>
+      </article>
+
+      <article class="branch">
+        <div class="branch-head">
+          <span class="tag tag-bad">400 · failed</span>
+          <h3>Карта приехала, но не сошлась с контрактом</h3>
+        </div>
+        <div class="figure">
+<pre class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'JetBrains Mono, ui-monospace, monospace','fontSize':'13px','primaryColor':'#EDE3EA','primaryTextColor':'#1F1A24','primaryBorderColor':'#7A3B5C','lineColor':'#6C6377','actorBkg':'#FFFFFF','actorBorder':'#7A3B5C','actorTextColor':'#1F1A24','signalColor':'#3A3342','signalTextColor':'#3A3342','labelBoxBkg':'#F3E7ED','labelBoxBorderColor':'#7A3B5C','labelTextColor':'#1F1A24','noteBkgColor':'#FFF6E0','noteBorderColor':'#96691A','noteTextColor':'#3A3342'}}}%%
+sequenceDiagram
+    participant W as Воркер
+    participant C as Core
+    participant DB as ai_analysis_runs
+
+    W->>C: POST /…/ai-insights + run-id + lease-token
+    C->>C: личность в порядке, схема контракта — нет
+    C->>DB: finish · state=failed · contract_validation_failed
+    C-->>W: 400
+    Note over C: результат не сохраняется,&lt;br/&gt;failureCode остаётся в строке джобы
+    Note over W: 400 не транзиентный —&lt;br/&gt;доставка не повторяется
+</pre>
+        </div>
+        <p class="figure-caption">
+          Ретраи доставки различают вердикт и обрыв связи: <code>400</code>, <code>404</code>
+          и <code>409</code> повторять бессмысленно, а таймаут и <code>5xx</code> — четыре
+          попытки примерно за семь секунд, заведомо короче аренды.
+        </p>
+      </article>
+
+      <article class="branch">
+        <div class="branch-head">
+          <span class="tag tag-bad">worker_error</span>
+          <h3>Провайдер лёг или воркер упал</h3>
+        </div>
+        <div class="figure">
+<pre class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'JetBrains Mono, ui-monospace, monospace','fontSize':'13px','primaryColor':'#EDE3EA','primaryTextColor':'#1F1A24','primaryBorderColor':'#7A3B5C','lineColor':'#6C6377','actorBkg':'#FFFFFF','actorBorder':'#7A3B5C','actorTextColor':'#1F1A24','signalColor':'#3A3342','signalTextColor':'#3A3342','labelBoxBkg':'#F3E7ED','labelBoxBorderColor':'#7A3B5C','labelTextColor':'#1F1A24','noteBkgColor':'#FFF6E0','noteBorderColor':'#96691A','noteTextColor':'#3A3342'}}}%%
+sequenceDiagram
+    participant W as Воркер
+    participant G as Gemini
+    participant C as Core
+    participant DB as ai_analysis_runs
+
+    W->>G: вызов измерения
+    G-->>W: 429 · Retry-After
+    W->>W: bounded retry внутри транспорта
+
+    alt транспорт сдался
+        W->>C: POST /…/ai-insights · provider_unavailable_http_429
+        C->>DB: finish · state=failed
+        Note over C: менеджер видит фразу на иврите,&lt;br/&gt;а не пустой экран
+    else исключение в самом воркере
+        W->>C: POST /…/fail · worker_error
+        C->>DB: finish · state=failed
+    else процесс умер молча
+        Note over DB: heartbeat прекратился,&lt;br/&gt;аренда истекает сама
+    end
+
+    Note over DB: attemptCount меньше 3 — следующий claim берёт снова&lt;br/&gt;attemptCount равен 3 — lease_exhausted, конец
+</pre>
+        </div>
+        <p class="figure-caption">
+          Третья ветка — единственная, которую никто не сообщает: если процесс исчез,
+          строка чинится тем, что аренда просто истекает. Ради неё heartbeat и существует.
+        </p>
+      </article>
+
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Состояния строки</h2>
+      <p>
+        В базе всего четыре состояния. Повторная попытка — это не отдельный статус,
+        а тот же <code>running</code> с истёкшей арендой, который снова стал пригоден к захвату.
+      </p>
+    </div>
+
+    <div class="figure">
+<pre class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'JetBrains Mono, ui-monospace, monospace','fontSize':'13px','primaryColor':'#EDE3EA','primaryTextColor':'#1F1A24','primaryBorderColor':'#7A3B5C','lineColor':'#6C6377','labelColor':'#1F1A24','transitionColor':'#6C6377','transitionLabelColor':'#3A3342'}}}%%
+stateDiagram-v2
+    [*] --> queued: закрытие раунда или ручной перезапуск
+    queued --> running: claim · attempt+1 · lease 90 с
+    running --> running: heartbeat каждые 30 с
+    running --> running: аренда истекла и attempt меньше 3 — повторный claim
+    running --> succeeded: callback прошёл сверку и валидацию
+    running --> failed: fail, отказ валидации или lease_exhausted
+    succeeded --> [*]
+    failed --> [*]
+</pre>
+    </div>
+    <p class="figure-caption">
+      <strong>Гашение просроченных — часть захвата, а не отдельный сборщик.</strong>
+      Каждый <code>claim</code> сначала помечает <code>lease_exhausted</code> всё, что исчерпало
+      попытки, и только потом ищет себе работу. Отдельного крона в системе нет.
+    </p>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Числа, на которых всё держится</h2>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Что</th><th>Значение</th><th>Имя</th><th>Где</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Интервал поллинга</td><td class="num">2 с</td><td class="src">AI_JOB_POLL_INTERVAL_SECONDS</td><td class="src">config.py</td></tr>
+          <tr><td>Потолок поллинга на простое</td><td class="num">30 с</td><td class="src">AI_JOB_POLL_MAX_INTERVAL_SECONDS</td><td class="src">config.py</td></tr>
+          <tr><td>Интервал heartbeat</td><td class="num">30 с</td><td class="src">AI_JOB_HEARTBEAT_INTERVAL_SECONDS</td><td class="src">config.py</td></tr>
+          <tr><td>Длина аренды</td><td class="num">90 с</td><td class="src">AI_ANALYSIS_JOB_LEASE_MS</td><td class="src">ai-analysis-worker.ts</td></tr>
+          <tr><td>Потолок попыток</td><td class="num">3</td><td class="src">AI_ANALYSIS_JOB_MAX_ATTEMPTS</td><td class="src">ai-analysis-worker.ts</td></tr>
+          <tr><td>Ретраи доставки</td><td class="num">4 ≈ 7 с</td><td class="src">CALLBACK_MAX_ATTEMPTS</td><td class="src">result_sink.py</td></tr>
+          <tr><td>Таймаут callback</td><td class="num">5 с</td><td class="src">CALLBACK_TIMEOUT_SECONDS</td><td class="src">result_sink.py</td></tr>
+          <tr><td>Таймаут MCP</td><td class="num">5 с</td><td class="src">MCP_REQUEST_TIMEOUT_SECONDS</td><td class="src">mcp_client/client.py</td></tr>
+          <tr><td>Циклы ремонта в графе</td><td class="num">до 3</td><td class="src">retry_count</td><td class="src">agents/graph.py</td></tr>
+          <tr><td>Гонка за захват</td><td class="num">5 попыток</td><td class="src">claimNext</td><td class="src">prisma-ai-analysis-run.repository.ts</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Поверхность между половинами</h2>
+      <p>Три разных секрета, и они не взаимозаменяемы.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Направление</th><th>Эндпоинт</th><th>Секрет</th><th>Ответы</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>воркер → Core</td><td class="src">POST /api/ai-analysis-runs/claim</td><td class="src">AI_CALLBACK_SECRET</td><td class="num">200 · 204 · 401</td></tr>
+          <tr><td>воркер → Core</td><td class="src">POST /api/ai-analysis-runs/:id/heartbeat</td><td class="src">AI_CALLBACK_SECRET</td><td class="num">200 · 409 · 400</td></tr>
+          <tr><td>воркер → Core</td><td class="src">POST /api/ai-analysis-runs/:id/fail</td><td class="src">AI_CALLBACK_SECRET</td><td class="num">200 · 404 · 409</td></tr>
+          <tr><td>воркер → Core</td><td class="src">POST /api/rounds/:id/ai-insights</td><td class="src">AI_CALLBACK_SECRET</td><td class="num">200 · 400</td></tr>
+          <tr><td>воркер → Core</td><td class="src">JSON-RPC get_round_analytics</td><td class="src">MCP_SHARED_SECRET</td><td class="num">200</td></tr>
+          <tr><td>Core → воркер</td><td class="src">POST /api/v1/questions/suggest</td><td class="src">AI_WEBHOOK_SECRET</td><td class="num">200</td></tr>
+          <tr><td>наружу</td><td class="src">GET /health · /api/v1/provider-status</td><td class="src">—</td><td class="num">200</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="callout">
+      <h3>Что на диаграммах отсутствует намеренно</h3>
+      <p>
+        <span class="mono">POST /api/v1/webhook/events</span> — живой эндпоинт на Python-стороне,
+        который запускает тот же анализ <em>без</em> <code>run_id</code> и <code>lease_token</code>,
+        а Core принимает такой callback как legacy. Core этим путём анализ не запускает: в исходниках
+        нет ни одного отправителя <code>round_closed</code> вне тестов. Это остаток, а не механизм —
+        поэтому его нет ни в одной последовательности выше.
+      </p>
+    </div>
+  </section>
+
+  <footer>
+    Прочитано по коду · Core на Next.js, AI service на FastAPI в Docker ·
+    очередь в таблице <span class="mono">ai_analysis_runs</span>
+  </footer>
+
+</div>
+
+<!--claude-mermaid-runtime-begin:3316302-->
+<style>.mermaid-diagram{margin-block:4px}.mermaid-diagram svg{display:block;margin:0 auto;max-width:100%;height:auto}</style>
+<script src="vendor/mermaid.min.js"></script>
+<script src="vendor/mermaid-init.js"></script>
+<!--claude-mermaid-runtime-end-->
+
+</body></html>

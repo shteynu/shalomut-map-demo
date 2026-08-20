@@ -1,0 +1,5 @@
+# Vendored mermaid, kept beside the HTML documents in docs/ so their diagrams
+# render straight from disk. Three megabytes of someone else's minified build
+# output: a textual diff of it would be unreadable and would never be reviewed,
+# and it is not part of what this repository is written in.
+docs/vendor/** -diff linguist-vendored
