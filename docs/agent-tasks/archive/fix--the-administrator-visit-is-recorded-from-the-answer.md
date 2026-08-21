@@ -6,8 +6,8 @@
   record beside this one; this work landed on the same branch afterwards)
 - Base branch: `main`
 - Base commit: `29ac8ec`
-- Current HEAD: `bbcc41b`
-- Status: complete, pushed and proved on the deployed endpoint
+- Current HEAD: `a240927`
+- Status: complete, pushed, proved on the deployed endpoint, and guarded
 - Last updated: 2026-08-21
 - Last agent/tool: Claude Opus 5 / Claude Code
 
@@ -103,6 +103,31 @@ deduplication window. The correction is recorded there.
 - `083cbe4` — the deployed evidence.
 - `bbcc41b` — the backlog's §12 state, which was stale, and a next step that
   does not name unstartable work.
+- `9133f56` — `lint:tenant-chokepoints`, the follow-up below.
+- `d4b6039`, `a240927` — where that check is written down, and the handoff tip.
+
+### Follow-up: the chokepoints stop being a convention (same day)
+
+Reviewing what the multi-tenancy work is tested by turned up the reason this
+defect could exist at all: routing every manager path through one function was a
+convention nothing held. `scripts/check-tenant-chokepoints.mjs` holds it now,
+and it is in `verify:core`.
+
+Three rules. A `page.tsx` that reads persistence must be named in a short list
+of pages about no single school with a reason — the respondent's questionnaire
+and the administrator area, and nothing else today. Every route under
+`src/app/api/rounds/` must call `authorizeManagerRound`. Each chokepoint must
+still call its recorder; that third rule exists because this defect had every
+path going through the chokepoint while the chokepoint named the wrong school,
+so routing alone proves nothing.
+
+`check-composition-root.mjs` could not have caught any of it: it asks who may
+construct a repository, and it explicitly permits a page to resolve the wiring.
+
+Each rule was proved against the real tree — the recorder call removed, an
+unauthorized round route added, a page reading `orgRepo` added — and the check
+failed on each, with the tree restored after. Ten unit tests cover the
+predicates directly.
 
 ## In progress
 
@@ -126,7 +151,11 @@ Nothing on this branch.
 - `npm test` — 1346/1346, including four new tests.
 - `npm run typecheck`, `npm run lint`, `npm run build`.
 - `npm run lint:composition`, `lint:doc-numbers`, `lint:skills`.
-- `npm run verify:core` at close of session.
+- `npm run verify:core` at close of session, with `lint:tenant-chokepoints` in
+  it: **1452 tests, 0 failures, exit 0**, and every fitness check reporting
+  passed. Read the exit code from the command itself rather than from a pipe —
+  `npm run verify:core | tail` reports `tail`'s status, which is 0 whatever the
+  run did, and earlier runs in this session had been read that way.
 - **Deployed, against `179600c`.** Signed in with Google, landed on `/setup/`
   with no `?school=`, saw the demo school; `audit_events` went 1 → 2, the new
   row naming the demo school with no round, 11:38:06Z. Then
@@ -169,7 +198,10 @@ whatever the cookie held.
 
 ## Known risks
 
-None outstanding for this change.
+None outstanding for this change. One coverage gap is left open and named in the
+handoff: multi-tenancy has no browser-level test at all — no Playwright spec
+opens a second school or signs in as an administrator — so every proof of it is
+a unit or route test plus the manual walks above.
 
 ## Approval gates
 
