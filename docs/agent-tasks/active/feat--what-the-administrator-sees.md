@@ -6,10 +6,8 @@
 - Base branch: `main`
 - Base commit: `64ed991` (also `origin/main`; the previous task on this branch
   is fully landed)
-- Current HEAD: `64ed991` at the time of writing; this task's commit is the next
-  one
-- Status: implementation and documentation done, verification run, ready to
-  commit
+- Current HEAD: `6bf0757`, pushed to `main` by the owner and deployed
+- Status: done, committed, pushed and verified on the deployed endpoint
 - Last updated: 2026-08-21
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -151,6 +149,15 @@ tooling and left alone.
   configuration, contract refusals, local font, and documented numbers (17
   claims across 3 documents).
 
+- **Deployed.** `GET https://shalomut-map-demo.vercel.app/api/health/` answered
+  `commit: 64ed991` and was watched flipping to `commit: 6bf0757`, so the
+  running build is this commit rather than an assumed one.
+- **The string is in the deployed bundle.** The two client chunks that carry the
+  dimension texts were fetched anonymously from
+  `/_next/static/chunks/` and are byte-identical to the local `next build`:
+  each contains `עורף מקצועי` and neither contains `עוגן`. `עוגן` survives in
+  the tree only inside two comments explaining why it is gone.
+
 ### Failed
 
 None.
@@ -160,8 +167,11 @@ None.
 - `npm run test:e2e` was not run. Nothing in this task touches the respondent
   path, sign-in or the dashboard's data flow; the one changed string is on the
   breakdown table, which the smoke path does not read.
-- No browser walk. The change is one Hebrew label; the parity test asserts the
-  value the component renders.
+- **No signed-in browser walk of the breakdown table.** The manager session in
+  the connected Chrome had expired, `/breakdown/` redirected to
+  `/login/?next=%2Fbreakdown`, and signing in is the owner's action. What is
+  proved instead is that the deployed bundle carries the new string and not the
+  old one — one step short of seeing it rendered.
 
 ### Environment
 

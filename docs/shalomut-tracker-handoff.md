@@ -18,10 +18,11 @@ and in Git; what was durable in them is below.
 
 Verified 2026-08-21, in this worktree and on the deployed endpoint:
 
-- **`origin/main` is `a240927`** and `GET /api/health/` answers
-  `commit: a240927`, so the deployed endpoint is the pushed tip and the branch
+- **`origin/main` is `6bf0757`** and `GET /api/health/` answers
+  `commit: 6bf0757`, so the deployed endpoint is the pushed tip and the branch
   tip. Every deploy of the day was watched flipping rather than assumed —
-  `29ac8ec` → `179600c` → `bbcc41b` → `5a7591d` → `d4b6039` → `a240927`. Nothing
+  `29ac8ec` → `179600c` → `bbcc41b` → `5a7591d` → `d4b6039` → `a240927` →
+  `64ed991` → `6bf0757`. Nothing
   is unpushed. The only modified file is `next-env.d.ts`, which is generated and
   belongs to the owner. Nothing about the runtime changed after `179600c` —
   everything above it is documentation, tests and a check script — so that is
