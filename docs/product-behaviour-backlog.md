@@ -587,10 +587,14 @@ on two scale lengths. This reverses the "Deliberate differences" entry above on
 the answer model and closes the answer-scale question the 2026-08-10 strategy
 sweep left open.
 
-Current state: nothing is implemented. `src/lib/shalomut-source.ts` holds the
-24 questions and one three-colour scale, and `SurveyDefinitionQuestion` has no
-representation for a scale length, an answer polarity, an option set or an item
-that scores nothing.
+Current state: the machinery is built and the content is not. Phases 1 to 4
+landed on `main` on 2026-08-15 — `SurveyDefinitionQuestion` carries `scaleId`,
+polarity, options and a kind; `src/lib/privacy/cell-suppression.ts` suppresses
+cross-tab cells and background answers stay out of the AI payload; the builder
+authors a background question and a respondent can answer the whole shape of
+the new instrument, allocation grid included. What is missing is phase 5
+(contract `7.0`) and the 126 items themselves, and both wait on the same thing.
+A manager therefore still gets the canonical 24 questions.
 
 The plan is `docs/default-research-instrument-plan-2026-08-14.md` and is not
 restated here. What belongs in this backlog is the shape of the behaviour

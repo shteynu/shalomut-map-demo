@@ -93,13 +93,16 @@ Verified 2026-08-21, in this worktree and on the deployed endpoint:
   `lint:fixtures` were not run, because nothing in this work touched the AI
   contract or the Python service.
 
-**Next concrete step:** start
-[`product-behaviour-backlog.md`](product-behaviour-backlog.md) §12, the research
-instrument. Nothing in this work is outstanding: the multi-tenancy plan is
-closed, the deployment signs in with Google, and the one defect the sign-in walk
-found is fixed, deployed and proved there. What is outstanding belongs to the
-owner and blocks nothing here — rotating `GEMINI_API_KEY` before any paid round,
-and deleting the Google client secret the deployment no longer uses.
+**Next concrete step:** ask the owner for the methodologist's item-to-dimension
+mapping, because without it there is no substantial product work an agent can
+start. This branch is finished — the multi-tenancy plan is closed, the
+deployment signs in with Google, and the one defect the sign-in walk found is
+fixed, deployed and proved there. The standing alternative,
+[`product-behaviour-backlog.md`](product-behaviour-backlog.md) §12, is not
+startable: its machinery landed on 2026-08-15 and both halves that remain — the
+126 items and contract `7.0` — wait on that mapping. Two more owner items are
+open and block nothing: rotating `GEMINI_API_KEY` before any paid round, and
+deleting the Google client secret the deployment no longer uses.
 
 That defect, for the record, was that **a platform administrator who belongs to
 no school read that school's screens unrecorded whenever exactly one school
