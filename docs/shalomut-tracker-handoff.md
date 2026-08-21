@@ -108,15 +108,17 @@ open and blocks nothing: rotating `GEMINI_API_KEY` before any paid round. The
 unused Google client secret was deleted on 2026-08-21 and is no longer one.
 
 Two coverage gaps were found while reviewing what the multi-tenancy work is
-tested by, and neither is a defect today. **Nothing pins either chokepoint.**
-Nine manager pages reach a school through `loadManagerContext` and every
-`/api/rounds/**` route through `authorizeManagerRound`, by convention alone — a
-new page or route that resolves the composition root itself would read a school
-with no row and no test would fail, and `check-composition-root.mjs` explicitly
-permits a page to resolve the wiring. A fitness check in that script's style is
-the fix. **And multi-tenancy has no browser-level coverage**: no Playwright spec
-opens a second school or signs in as an administrator, so every proof of it is a
-unit or route test plus the manual walks recorded above.
+tested by. **The first is closed:** `npm run lint:tenant-chokepoints` now pins
+both chokepoints, and it is in `verify:core`. Routing every manager path through
+`loadManagerContext` or `authorizeManagerRound` had been convention alone, and
+`check-composition-root.mjs` explicitly permits a page to resolve the wiring, so
+a new page could have read a school unrecorded with no test failing. Its three
+rules were each proved against the real tree by breaking it and watching the
+check fail. **The second is open and is not a defect:** multi-tenancy has no
+browser-level coverage — no Playwright spec opens a second school or signs in as
+an administrator — so every proof of it is a unit or route test plus the manual
+walks recorded above. Closing it needs a second school and an administrator
+fixture in `e2e/`, which is real work rather than a script.
 
 That defect, for the record, was that **a platform administrator who belongs to
 no school read that school's screens unrecorded whenever exactly one school

@@ -903,6 +903,17 @@ the setup screen and every other screen has a round in its URL. Corrected on
 cost is that the record now comes after the context resolves, so a page that is
 then refused has already paid for its reads.
 
+**`npm run lint:tenant-chokepoints` is what keeps both of them chokepoints.**
+Routing every path through one function was a convention until 2026-08-21, and
+`lint:composition` cannot help — it permits any page to resolve the wiring,
+because it is asking who may construct a repository rather than who may read a
+school. Three rules: a `page.tsx` that reads persistence must be named in the
+check's short list of pages about no single school, with a reason; every route
+under `src/app/api/rounds/` must call `authorizeManagerRound`; and each
+chokepoint must still call its recorder. The third rule exists because the
+original defect had exactly that shape — every path went through the chokepoint,
+and the chokepoint recorded the wrong thing.
+
 **That read fails closed, and it is the only thing here that does.** If the visit
 cannot be written the read is refused: `503` to an API caller, a thrown error to a
 screen. A read nobody can reconstruct is worse than a read that did not happen. A

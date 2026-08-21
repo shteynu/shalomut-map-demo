@@ -99,6 +99,13 @@ description: Работай с продуктом и кодом Shalomut Map в 
   ответы или detailed results ниже порога. Для dynamic questionnaire не делай
   partial unlocked analysis: если total или хотя бы один анализируемый вопрос
   ниже threshold, весь detailed result остаётся locked и provider не вызывается.
+- Веди путь менеджера к данным школы через один из двух chokepoints:
+  `loadManagerContext` для экранов и `authorizeManagerRound` для маршрутов
+  раунда. Каждый из них записывает визит платформенного администратора в школу,
+  членом которой он не является, и берёт школу из ответа, а не из запроса —
+  большинство запросов школу не называют вовсе. Проверяет это
+  `npm run lint:tenant-chokepoints`; страница, которая читает persistence сама,
+  должна быть названа в его списке страниц не про одну школу.
 - Сохраняй границу между Core Data Layer и внешним AI analytics service.
   Проверяй versioned contract и используй fail-closed transport.
 - Сохраняй отделение canonical domain models от wire contracts: Core считает
