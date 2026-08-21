@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
 /**
- * One smoke path through the real application, in a real browser.
+ * What only a browser can see, in a real browser.
  *
  * Everything else in this repository is verified without a browser: 733 unit
  * and API tests, 26 database integration tests, and the AI service's own
@@ -11,10 +11,16 @@ import { defineConfig, devices } from '@playwright/test';
  * screen. Until now that half was checked by hand, once per session, by the
  * owner with a signed-in browser.
  *
- * So this is deliberately one path and not a suite. It answers "is the app
- * standing?", not "is every rule correct" — that is what the other tests are
- * for, and a broad end-to-end suite over screens that are still changing would
- * cost more than it catches.
+ * So this is deliberately a short list and not a suite. The smoke path answers
+ * "is the app standing?", not "is every rule correct" — that is what the other
+ * tests are for, and a broad end-to-end suite over screens that are still
+ * changing would cost more than it catches.
+ *
+ * One rule earned a path of its own anyway: which school a manager is reading.
+ * It is decided in middleware, before any handler runs, from a query parameter
+ * and a cookie — none of which exists outside a browser — and getting it wrong
+ * shows one school's results to another school. `tenant-boundary.spec.ts` is
+ * that path, and `TENANT_PORT` below is why it needs a second server.
  *
  * It runs against a production build, on a server of its own, with credentials
  * generated for the run. Two dead ends led here, and both are worth knowing
@@ -39,6 +45,32 @@ import { defineConfig, devices } from '@playwright/test';
 const PORT = Number(process.env.SMOKE_PORT ?? 3100);
 
 /**
+ * A second server, for the one spec the first cannot host.
+ *
+ * `tenant-boundary.spec.ts` needs a platform administrator, and the smoke
+ * server cannot have one. With no identity provider configured, the directory
+ * *is* the password accounts — `SessionRenewalService.readDirectory` reads
+ * `ManagerAuthenticationService.findAccountById`, not the database — and every
+ * account it assembles is a member of one school and an administrator of
+ * nothing. An administrator minted into a cookie survives exactly until the
+ * first renewal, which the browser fires on the first activity event, and then
+ * lands on `/login`.
+ *
+ * So this one is configured the way the deployment is: with a provider. That
+ * makes the directory the database, which is where a test can put an
+ * administrator. It also closes the password door — `authenticateCredentials`
+ * refuses with `PROVIDER_REQUIRED` — which is why it is a second server rather
+ * than a setting on the first: every other spec signs in through that door.
+ *
+ * The provider values are shaped like a real one and point nowhere. Nothing in
+ * this project ever calls the issuer: the spec mints its own sessions, and what
+ * these four variables buy is the *directory* behaviour, not the flow.
+ */
+const TENANT_PORT = Number(process.env.TENANT_PORT ?? 3101);
+
+export const TENANT_BASE_URL = `http://127.0.0.1:${TENANT_PORT}`;
+
+/**
  * Throwaway credentials for the smoke server. Not secrets, and deliberately
  * constant rather than generated: this file is evaluated once in the runner
  * and again in every worker process, so a random value would differ between
@@ -50,7 +82,15 @@ const PORT = Number(process.env.SMOKE_PORT ?? 3100);
  * point the smoke somewhere else.
  */
 export const SMOKE_PASSWORD = process.env.SMOKE_PASSWORD ?? 'smoke-run-password';
-const SMOKE_SESSION_SECRET =
+/**
+ * Exported for the same reason `SMOKE_PASSWORD` is: `tenant-boundary.spec.ts`
+ * mints a platform administrator's session itself, because the password door
+ * cannot issue one — every account it assembles is a member of one school and
+ * an administrator of none. A token signed with a different secret than the
+ * server verifies with would be rejected as an expired session, which reads
+ * like a broken sign-in rather than a mismatched fixture.
+ */
+export const SMOKE_SESSION_SECRET =
   process.env.SESSION_SECRET ?? 'smoke-run-session-secret-not-a-real-secret';
 const SMOKE_ORGANIZATION_ID =
   process.env.MANAGER_ORGANIZATION_ID ?? 'local-dev-organization';
@@ -73,7 +113,17 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] },
+      // The tenant boundary has a server of its own; see TENANT_PORT above.
+      testIgnore: /tenant-boundary\.spec\.ts/u,
+    },
+    {
+      name: 'tenant-boundary',
+      use: { ...devices['Desktop Chrome'], baseURL: TENANT_BASE_URL },
+      testMatch: /tenant-boundary\.spec\.ts/u,
+    },
     /*
      * The respondent path, again, on a phone.
      *
@@ -97,7 +147,8 @@ export default defineConfig({
       testMatch: /respondent-answers\.spec\.ts/u,
     },
   ],
-  webServer: {
+  webServer: [
+    {
     // `npm run test:e2e` builds first; this serves what the build produced.
     command: `npx next start --port ${PORT}`,
     url: `http://127.0.0.1:${PORT}/login`,
@@ -112,5 +163,24 @@ export default defineConfig({
     timeout: 180_000,
     stdout: 'pipe',
     stderr: 'pipe',
-  },
+    },
+    {
+      command: `npx next start --port ${TENANT_PORT}`,
+      url: `${TENANT_BASE_URL}/login`,
+      reuseExistingServer: false,
+      env: {
+        SESSION_SECRET: SMOKE_SESSION_SECRET,
+        MANAGER_ADMIN_PASSWORD: SMOKE_PASSWORD,
+        MANAGER_ORGANIZATION_ID: SMOKE_ORGANIZATION_ID,
+        // The four that make the directory the database. See TENANT_PORT.
+        OIDC_ISSUER: 'https://accounts.google.com',
+        OIDC_CLIENT_ID: 'tenant-boundary-spec-client',
+        OIDC_CLIENT_SECRET: 'tenant-boundary-spec-secret',
+        OIDC_REDIRECT_URI: `${TENANT_BASE_URL}/api/auth/oidc/callback`,
+      },
+      timeout: 180_000,
+      stdout: 'pipe',
+      stderr: 'pipe',
+    },
+  ],
 });

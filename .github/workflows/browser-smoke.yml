@@ -104,9 +104,17 @@ jobs:
       # link the manager screen stopped showing. One path covers it — sign in,
       # read the link, open it as a respondent, look at the map.
       #
-      # `playwright.config.ts` starts the server itself, with a password and an
-      # organization id it invents, against the build produced above.
-      - name: Smoke the manager and respondent flow in a browser
+      # A second path covers the one rule that is decided before any handler
+      # runs and only exists in a browser: which school a manager is reading,
+      # from a query parameter and a cookie the middleware honours or refuses.
+      # It has a server of its own on 3101, configured with an identity
+      # provider so that the directory is the database and a platform
+      # administrator can exist at all — `playwright.config.ts` explains it at
+      # `TENANT_PORT`.
+      #
+      # `playwright.config.ts` starts both servers itself, with a password and
+      # an organization id it invents, against the build produced above.
+      - name: Smoke the manager, respondent and tenant paths in a browser
         env:
           DATABASE_URL: postgresql://shalomut:shalomut@127.0.0.1:5433/shalomut_test
         run: |
