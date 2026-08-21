@@ -20,11 +20,11 @@ Verified 2026-08-21, in this worktree:
 
 - **`origin/main` is `54881c5`**, asked of the remote, and `GET /api/health/`
   answers `commit: 54881c5` — so the deployed endpoint is the pushed tip. Above
-  it sit two unpushed local commits the owner has yet to push: `f2b8653` on
-  `feat/a-school-gets-its-person`, and phase 5 on
-  `feat/the-session-gets-short`, which is branched off it. The only modified
-  file neither owns is `next-env.d.ts`, which is generated and belongs to the
-  owner.
+  it sit three unpushed local branches, each on the one below: `f2b8653` on
+  `feat/a-school-gets-its-person`, phase 5 on `feat/the-session-gets-short`,
+  and phase 4 on `feat/what-the-administrator-sees`. Pushing the last lands all
+  three. The only modified file none of them owns is `next-env.d.ts`, which is
+  generated and belongs to the owner.
 - **The deployed database is no longer behind the code deployed on it.** The two
   migrations named here on 2026-08-20 were applied on 2026-08-21 —
   `20260820120000_identity_becomes_a_row` and
@@ -47,8 +47,8 @@ Verified 2026-08-21, in this worktree:
 - **The local database has all 18 migrations** and carries the walk's leftovers:
   an extra school, an invited-then-revoked person, and `audit_events` rows.
   Disposable.
-- **The suite is green on `feat/the-session-gets-short`**, run at session close:
-  `npm test` 1333 passed, `npm run typecheck`, `npm run lint` and `npm run
+- **The suite is green on `feat/what-the-administrator-sees`**, run at session
+  close: `npm test` 1342 passed, `npm run typecheck`, `npm run lint` and `npm run
   build` clean, and `lint:composition`, `lint:doc-numbers`, `lint:literals`,
   `lint:skills`, `openapi:check` and `docs:endpoints:check` all pass.
   `verify:core` was not run whole; `verify:ai`, `lint:interpreter`,
@@ -56,10 +56,12 @@ Verified 2026-08-21, in this worktree:
   run, because nothing in this work touched the AI contract or the Python
   service.
 
-**Next concrete step:** push the two branches, and read `GET /api/health/` once
-Vercel has rebuilt — phase 5 is the first change since the migrations that
-alters how anybody stays signed in, and the deployed endpoint is on the password
-door it was fixed for.
+**Next concrete step:** push the three branches — `git push origin
+feat/what-the-administrator-sees` lands all of them, since each is branched on
+the one below — and read `GET /api/health/` once Vercel has rebuilt. Phase 5 is
+the first change since the migrations that alters how anybody stays signed in,
+and the deployed endpoint is on the password door it was fixed for, so signing
+in there once is the check that matters.
 
 Then the Google OAuth client, which falls under the standing approval gate on
 authentication configuration. The deployment keeps its password screen until
@@ -67,20 +69,22 @@ authentication configuration. The deployment keeps its password screen until
 are set, and switches the moment they are; the redirect URI must be
 `https://<deployment>/api/auth/oidc/callback`, listed verbatim on the client.
 
-Then **phase 4** of
-[`multi-tenancy-plan-2026-08-20.md`](multi-tenancy-plan-2026-08-20.md) — what an
-administrator can see about every school. It is the last unbuilt phase that is
-not deferred: phase 6 was deferred on purpose by the owner, and phases 0, 1, 2, 3
-and 5 are written. Phase 2 needed no e-mail provider in the end: an invitation is
-an entitlement, so the administrator tells the invitee out of band and they sign
-in. Who may read `audit_events`, and whether a school sees the visits made to it,
-is the one product question these phases deliberately left open, and it has no
-addressee until there are real schools. Two other things wait on the owner and
-have their own entries below: **rotate `GEMINI_API_KEY`**, exposed in a
-transcript on 2026-08-20 and billed, before any paid round; and, off a round run
-for some other reason, read the usage lines for what a `6.0` round costs at
-`LLM_REASONING_EFFORT=low`. `docs/product-behaviour-backlog.md` §12, the research
-instrument, is the alternative to phase 4.
+**Every phase of
+[`multi-tenancy-plan-2026-08-20.md`](multi-tenancy-plan-2026-08-20.md) that was
+not deferred is now written** — 0, 1, 2, 3, 4 and 5. Phase 6, what a school user
+may not do, was deferred on purpose by the owner and its content is undecided.
+Phase 2 needed no e-mail provider in the end: an invitation is an entitlement, so
+the administrator tells the invitee out of band and they sign in. Who may read
+`audit_events`, and whether a school sees the visits made to it, is the one
+product question these phases deliberately left open, and it has no addressee
+until there are real schools.
+
+So the next substantial piece of work is no longer in that plan.
+`docs/product-behaviour-backlog.md` §12, the research instrument, is the
+standing alternative. Two things wait on the owner and have their own entries
+below: **rotate `GEMINI_API_KEY`**, exposed in a transcript on 2026-08-20 and
+billed, before any paid round; and, off a round run for some other reason, read
+the usage lines for what a `6.0` round costs at `LLM_REASONING_EFFORT=low`.
 
 ## Deployed state
 

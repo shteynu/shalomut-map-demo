@@ -1001,6 +1001,42 @@ browser stays valid until it expires — at most fifteen minutes. Closing that
 needs a revocation list, which is a different design and was not what this phase
 asked for. `revokeSession()` remains a no-op and now says why.
 
+### ADR-029: An administrator reads each school, and never the schools together
+
+2026-08-21, phase 4 of the multi-tenancy plan, and the last of its phases that
+was not deferred.
+
+**The administrator's screen says whether anything is happening in each school**
+— how many rounds it has run, which one it is currently about, that round's
+state, and how many people have answered against the threshold that would unlock
+it. A school that has never opened a round says so.
+
+**Opening a school's results needed no mechanism.** The middleware already
+honours `?school=` on any path for an administrator and remembers the choice in
+a cookie, so the card's link to that school's map is a link. What the
+administrator then sees is that school's own screens under that school's own
+suppression: the locked map, with the same two numbers the school's user is
+shown.
+
+**No figure is computed across schools, and the type is where that is enforced.**
+`CurrentRoundSummary` carries an id, a title, a status, a response count, a
+threshold and whether the two have met — and no score. This is the k-anonymity
+limit rather than a preference: two schools whose small groups are each
+suppressed become readable when added together, and a per-school score rendered
+down a list is the first half of exactly that object. Two tests pin it, one on
+the separateness of the counts and one on the summary's field list, so adding a
+score is a failing test rather than a review question. Counting schools is not
+the same act and stays: it counts schools, not people.
+
+**Three queries per school and none per round.** The response count is asked only
+for the round the card names, so the screen's cost grows with the number of
+schools rather than with any school's history — the deployed database is in Seoul
+and the functions are in Washington.
+
+**Reading the list is still not a visit.** An administrator opening a school is
+recorded in `audit_events` (ADR-026); the list that says a school has four rounds
+is a cardinality about it, not a read of it, and records nothing.
+
 ## Environments
 
 The project supports exactly two environments:

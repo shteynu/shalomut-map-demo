@@ -22,6 +22,15 @@ inside it.
   — including an administrator reading a school they are not a member of — is a
   row in `audit_events`, which nothing renders yet.
 
+- **An administrator can see what every school is doing, one school at a time.**
+  Since 2026-08-21 each school on `/admin` says how many rounds it has run, which
+  round it is currently about, and how many people have answered against the
+  threshold that would unlock it — with a link into that school's own map. What
+  no screen and no export does is put two schools into one figure: small groups
+  that are each suppressed become readable when added together, so the summary
+  carries counts and never a score. That limit is enforced by the type the screen
+  reads and by tests over its fields, not by review.
+
 - **A session lasts fifteen minutes, and taking access away means it.** Since
   2026-08-21 the token is short rather than good for a day, and the renewal that
   replaces it is the moment memberships, role and the administrator flag are
