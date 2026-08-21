@@ -160,6 +160,18 @@ tooling and left alone.
   `/_next/static/chunks/` and are byte-identical to the local `next build`:
   each contains `עורף מקצועי` and neither contains `עוגן`. `עוגן` survives in
   the tree only inside three comments explaining why it is gone.
+- **The table was walked, locally, on the production build.**
+  `npx tsx scripts/seed-breakdown-round.ts` wrote a local round with two
+  background questions and 41 responses; `next start -p 3210` served the same
+  `next build` whose chunks the deployed endpoint serves byte for byte, and
+  `/breakdown/` rendered all eight rows. The fifth reads **עורף מקצועי**, and
+  `עוגן` appears nowhere on the page. The suppression behaviour is on the same
+  screenshot — `עד שנה` has four respondents and is withheld, and `לא ענו על
+  השאלה` goes with it so the four cannot be recovered by subtraction.
+  The sign-in used an invented `MANAGER_ADMIN_PASSWORD` passed to that one
+  process, against the disposable local database; no configured secret was read
+  or typed, and `OIDC_*` were blanked for the child so the local password door
+  stayed open.
 - **The table itself is rendered in a test.**
   `src/components/breakdown/__tests__/breakdown-board.test.tsx` renders
   `BreakdownBoard` with a background question and two published groups, and
@@ -179,14 +191,19 @@ None.
 - `npm run test:e2e` was not run. Nothing in this task touches the respondent
   path, sign-in or the dashboard's data flow; the one changed string is on the
   breakdown table, which the smoke path does not read.
-- **The deployed breakdown table was not seen, because it does not render.**
-  The owner signed in and `/breakdown/` was reached on the deployed endpoint,
+- **The table cannot be shown on the deployed endpoint, and the product is
+  right to refuse.** The owner signed in and `/breakdown/` was reached there,
   but the demo round's questionnaire has no background question with options,
-  so the screen shows its empty state — "בשאלון של הסבב הזה אין שאלת רקע עם
-  אפשרויות בחירה" — and the table is unreachable there. This is round content,
-  not a deploy problem, and the only way to see it on the deployed endpoint is
-  to add a background question to that round, which changes a round that
-  already holds 12 responses. Not done; the owner's call.
+  so the screen shows its empty state. Adding one is refused: the builder is
+  frozen — "השאלון הוקפא לעריכה משום שכבר התקבלו תשובות בסבב זה" — and the
+  refusal is server-side, not a disabled control.
+  `src/app/api/rounds/[roundId]/survey-definition/route.ts:101` answers `409`
+  when `responseCount > 0` and the question snapshot would change, and says to
+  create a new round instead. That is the 2026-08-17 one-basis-of-calculation
+  rule doing its job on a round holding 12 responses. A new round would have
+  worked but would have closed `סבב הדגמה` — `RoundService` closes the
+  previous active round and a partial unique index refuses a second one — so
+  the owner chose the local walk above instead.
 - The other seven dimensions' names are unchanged, so no other screen
   distinguishes the old build from the new one. Every screen that shows a
   dimension name reads `dimensionPresentations[…].conceptLabel`, and that value
