@@ -18,13 +18,14 @@ and in Git; what was durable in them is below.
 
 Verified 2026-08-21, in this worktree and on the deployed endpoint:
 
-- **`origin/main` is `2576b99`** and `GET /api/health/` answers
-  `commit: 2576b99`, so the deployed endpoint is the pushed tip. It flipped
-  about forty-five seconds after the push, watched rather than assumed. The
-  push carried `f2b8653`, phase 5 and phase 4 together, since each branch sat
-  on the one below. Nothing is unpushed. The only modified file is
+- **`origin/main` is `595c8e6`** and `GET /api/health/` answers
+  `commit: 595c8e6`, so the deployed endpoint is the pushed tip. It flipped
+  about forty seconds after the push, watched rather than assumed. The code is
+  `2576b99` — `f2b8653`, phase 5 and phase 4 in one push, since each branch sat
+  on the one below; the commit above it is this document and nothing else.
+  Nothing is unpushed. The only modified file is
   `next-env.d.ts`, which is generated and belongs to the owner.
-- **No migration was needed for this deploy.** `54881c5..2576b99` touches no
+- **No migration was needed for this deploy.** `54881c5..595c8e6` touches no
   file under `prisma/`. The deployed schema is the one applied earlier the same
   day — 18 migrations, `Database schema is up to date!` — with `managers`,
   `organization_memberships` and `audit_events` present and empty,
@@ -62,7 +63,7 @@ Verified 2026-08-21, in this worktree and on the deployed endpoint:
 - **The local database has all 18 migrations** and carries the walks' leftovers:
   extra schools, an invited-then-revoked person, and `audit_events` rows.
   Disposable.
-- **The suite was green at `2576b99`**: `npm test` 1342 passed, `npm run
+- **The suite was green at `2576b99`**, the last commit that carried code: `npm test` 1342 passed, `npm run
   typecheck`, `npm run lint` and `npm run build` clean, and `lint:composition`,
   `lint:doc-numbers`, `lint:literals`, `lint:skills`, `openapi:check` and
   `docs:endpoints:check` all pass. `verify:core` was not run whole; `verify:ai`,
