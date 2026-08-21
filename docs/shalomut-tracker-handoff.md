@@ -19,15 +19,22 @@ and in Git; what was durable in them is below.
 Verified 2026-08-21, in this worktree and on the deployed endpoint:
 
 - **`origin/main` is `6bf0757`** and `GET /api/health/` answers
-  `commit: 6bf0757`, so the deployed endpoint is the pushed tip and the branch
-  tip. Every deploy of the day was watched flipping rather than assumed —
-  `29ac8ec` → `179600c` → `bbcc41b` → `5a7591d` → `d4b6039` → `a240927` →
-  `64ed991` → `6bf0757`. Nothing
-  is unpushed. The only modified file is `next-env.d.ts`, which is generated and
-  belongs to the owner. Nothing about the runtime changed after `179600c` —
-  everything above it is documentation, tests and a check script — so that is
-  the commit the evidence below was taken against, and the deployed behaviour
-  was re-checked on `d4b6039` anyway.
+  `commit: 6bf0757`, so the deployed endpoint is the pushed tip. Every deploy of
+  the day was watched flipping rather than assumed — `29ac8ec` → `179600c` →
+  `bbcc41b` → `5a7591d` → `d4b6039` → `a240927` → `64ed991` → `6bf0757`.
+- **The branch tip is ahead of the deployed one, harmlessly.** Four commits on
+  `feat/what-the-administrator-sees` are not pushed — `159994a`, `16c0aed`,
+  `d0bb7e4` and the tip that carries this sentence — and none of them changes
+  runtime: one test file, the rest documentation. The deployed endpoint is correct at `6bf0757` and stays correct
+  when they land. The only modified file is `next-env.d.ts`, which is generated
+  and belongs to the owner.
+- **Two commits of the day changed runtime; the rest did not.** `179600c` is
+  the one the tenancy evidence below was taken against, re-checked on `d4b6039`
+  anyway. `6bf0757` moved the eight dimensions' Hebrew texts into
+  `contracts/wellbeing-dimensions.json` and deleted the drifted second copy of
+  the names — one string changes on screen, `management-support` on the
+  breakdown table. Everything else since `179600c` is documentation, tests and
+  check scripts.
 - **No migration was needed for any deploy since.** `54881c5..bbcc41b` touches
   no file under `prisma/`. The deployed schema is the one applied earlier the
   same day — 18 migrations, `Database schema is up to date!` The identity tables

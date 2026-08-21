@@ -6,8 +6,12 @@
 - Base branch: `main`
 - Base commit: `64ed991` (also `origin/main`; the previous task on this branch
   is fully landed)
-- Current HEAD: `6bf0757`, pushed to `main` by the owner and deployed
-- Status: done, committed, pushed and verified on the deployed endpoint
+- Current HEAD: the commit carrying this file. `6bf0757` is pushed and
+  deployed; `159994a`, `16c0aed`, `d0bb7e4` and this one sit unpushed on the
+  branch and change no runtime. The tip is deliberately not written as a sha —
+  a file cannot name the commit that contains it without being stale the moment
+  it is amended
+- Status: done and verified; four commits await the owner's push
 - Last updated: 2026-08-21
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -117,7 +121,9 @@ Nothing.
 
 ## Remaining
 
-Commit. The owner pushes.
+Nothing in the work itself. Four commits are unpushed: `159994a` (handoff tip),
+`16c0aed` (the render test), `d0bb7e4` (this file plus the handoff) and the tip,
+which carries the handoff's unpushed/runtime corrections. The owner pushes.
 
 ## Changed files
 
@@ -132,8 +138,11 @@ Added: `contracts/wellbeing-dimensions.json`, `src/lib/wellbeing-dimensions.ts`,
 `src/lib/__tests__/wellbeing-dimensions.test.ts`,
 `src/components/breakdown/__tests__/breakdown-board.test.tsx`.
 
-Untracked and not this task's: `next-env.d.ts` is modified by the owner's
-tooling and left alone.
+Also modified: `docs/shalomut-tracker-handoff.md`.
+
+Not this task's: `next-env.d.ts` is modified by the owner's tooling and left
+alone. `git ls-files -o --exclude-standard` reports nothing untracked, which is
+the check that survives a stale untracked cache.
 
 ## Verification evidence
 
@@ -242,4 +251,7 @@ None open. `עוגן` was the only one and it is answered.
 
 ## Next concrete step
 
-Commit the working tree as one commit, then hand the push to the owner.
+`git push origin feat/what-the-administrator-sees:main` — the owner's action.
+Nothing else on this branch is open, and no deploy check is needed after it: the
+four commits carry one test file and documentation, so `/api/health/` will move
+to the branch tip with no behaviour to re-verify.
