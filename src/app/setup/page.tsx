@@ -7,9 +7,13 @@ import {
   isNewSchoolParam,
   readRoundParam,
   readSchoolParam,
+  routes,
 } from "@/lib/navigation";
 import { toSchoolSwitcherOptions } from "@/lib/schools/school-options";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { loadManagerContext, loadSchools } from "@/lib/server/manager-context";
+import { resolveManagerSessionFromHeaders } from "@/lib/server/session-auth";
 
 export default async function SetupPage({
   searchParams,
@@ -19,7 +23,18 @@ export default async function SetupPage({
   const resolvedSearchParams = await searchParams;
   const requestedRound = readRoundParam(resolvedSearchParams);
   const isNewRound = isNewRoundParam(requestedRound);
-  const isNewSchool = isNewSchoolParam(readSchoolParam(resolvedSearchParams));
+  const session = await resolveManagerSessionFromHeaders({
+    headers: await headers(),
+  });
+  // A school is opened by a platform administrator, who then invites its user.
+  // Anybody else asking for the new-school form is sent back to their own
+  // school rather than shown a form whose save is refused.
+  const mayOpenASchool = Boolean(session?.isPlatformAdministrator);
+  const isNewSchool =
+    isNewSchoolParam(readSchoolParam(resolvedSearchParams)) && mayOpenASchool;
+  if (isNewSchoolParam(readSchoolParam(resolvedSearchParams)) && !mayOpenASchool) {
+    redirect(routes.setup);
+  }
   // A school that does not exist yet has no rounds to ask for. Loading the
   // context anyway is what keeps the switcher — and the way back to the school
   // the manager came from — on the screen while the new one is filled in.
@@ -111,7 +126,9 @@ export default async function SetupPage({
         canOpenNewRound={Boolean(
           !isNewSchool && context.organization && context.selectedRound,
         )}
-        canOpenNewSchool={Boolean(!isNewSchool && context.organization)}
+        canOpenNewSchool={Boolean(
+          !isNewSchool && context.organization && mayOpenASchool,
+        )}
         organization={
           !isNewSchool && context.organization
             ? {

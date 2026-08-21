@@ -70,3 +70,49 @@ export async function resolveManagerSession(
   return activeProvider.verifyToken(token);
 }
 
+/**
+ * The session behind a plain `Request`.
+ *
+ * `resolveManagerSession` above needs a `NextRequest` for its parsed cookie jar,
+ * which the middleware has and a route handler does not. Route handlers were
+ * each parsing the cookie header themselves; this is that parsing, once.
+ */
+export function extractSessionTokenFromHeaders(
+  request: { headers: Pick<Headers, "get"> },
+): string | null {
+  const authorization = request.headers.get("authorization");
+  if (authorization?.toLowerCase().startsWith("bearer ")) {
+    return authorization.slice(7).trim() || null;
+  }
+
+  const cookieHeader = request.headers.get("cookie");
+  if (!cookieHeader) return null;
+
+  for (const part of cookieHeader.split(";")) {
+    const [name, ...rest] = part.trim().split("=");
+    if (name === SESSION_COOKIE_NAME) {
+      return rest.join("=").trim() || null;
+    }
+  }
+
+  return null;
+}
+
+export async function resolveManagerSessionFromHeaders(
+  request: { headers: Pick<Headers, "get"> },
+  provider?: ISessionProvider,
+): Promise<ManagerSession | null> {
+  const token = extractSessionTokenFromHeaders(request);
+  if (!token) return null;
+
+  const activeProvider = provider ?? getDefaultProvider();
+  if (!activeProvider) return null;
+
+  try {
+    return await activeProvider.verifyToken(token);
+  } catch {
+    // An invalid token is not a session. The caller decides whether that is a
+    // refusal or merely an unidentified actor.
+    return null;
+  }
+}

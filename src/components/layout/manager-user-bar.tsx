@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Loader2, LogOut, ShieldCheck, User } from "lucide-react";
 import { routes } from "@/lib/navigation";
 
@@ -9,7 +10,8 @@ export interface ManagerSessionData {
   email: string;
   name?: string;
   role: "admin" | "manager";
-  activeOrganizationId: string;
+  activeOrganizationId: string | null;
+  isPlatformAdministrator?: boolean;
 }
 
 export function ManagerUserBar() {
@@ -56,7 +58,14 @@ export function ManagerUserBar() {
     return null;
   }
 
-  const roleTitle = session.role === "admin" ? "מנהל מערכת" : "מנהל";
+  // A platform administrator is a different thing from the `admin` role inside
+  // a school, and the bar has said "מנהל מערכת" for the second one since before
+  // the first existed. The wider one wins where somebody has both.
+  const roleTitle = session.isPlatformAdministrator
+    ? "מנהל פלטפורמה"
+    : session.role === "admin"
+      ? "מנהל מערכת"
+      : "מנהל";
 
   return (
     <div className="manager-user-bar" dir="rtl">
@@ -69,6 +78,15 @@ export function ManagerUserBar() {
         <ShieldCheck size={13} aria-hidden="true" />
         <span>{roleTitle}</span>
       </span>
+
+      {/* The only way into the administrator area, and it is rendered for
+          nobody else. The middleware refuses the route regardless — this is
+          navigation, not a permission. */}
+      {session.isPlatformAdministrator ? (
+        <Link href={routes.admin} className="manager-user-bar-admin-link">
+          ניהול פלטפורמה
+        </Link>
+      ) : null}
 
       <button
         type="button"

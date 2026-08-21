@@ -11,6 +11,23 @@ export interface IManagerRepository {
   findById(id: string): Promise<Manager | null>;
   findByEmail(email: string): Promise<Manager | null>;
   findMembershipsByManagerId(managerId: string): Promise<OrganizationMembership[]>;
+  /**
+   * Who reaches one school, which is the question the administrator area asks
+   * and no session ever does. A session is built from one person outward; this
+   * reads from one school outward, and they are different queries against the
+   * same rows.
+   */
+  findMembershipsByOrganizationId(
+    organizationId: string,
+  ): Promise<OrganizationMembership[]>;
+  /**
+   * Every person who may sign in.
+   *
+   * Only the administrator area calls this, and it is the reason that area is
+   * gated rather than merely unlinked: this is the one query that returns a
+   * list of named people.
+   */
+  findAllManagers(): Promise<Manager[]>;
   saveManager(manager: Manager): Promise<Manager>;
   saveMembership(membership: OrganizationMembership): Promise<OrganizationMembership>;
   /**
@@ -69,6 +86,18 @@ export class InMemoryManagerRepository implements IManagerRepository {
 
   async findMembershipsByManagerId(managerId: string): Promise<OrganizationMembership[]> {
     return this.memberships.get(managerId) ?? [];
+  }
+
+  async findMembershipsByOrganizationId(
+    organizationId: string,
+  ): Promise<OrganizationMembership[]> {
+    return Array.from(this.memberships.values())
+      .flat()
+      .filter((membership) => membership.organizationId === organizationId);
+  }
+
+  async findAllManagers(): Promise<Manager[]> {
+    return Array.from(this.managers.values());
   }
 
   async saveManager(manager: Manager): Promise<Manager> {

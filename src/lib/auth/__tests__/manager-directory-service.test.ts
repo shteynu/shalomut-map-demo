@@ -71,7 +71,7 @@ test("a suspended membership is not a school to land in", async () => {
   assert.deepStrictEqual(result, { ok: false, reason: "NO_ACTIVE_MEMBERSHIP" });
 });
 
-test("an invitation that was never accepted is not an account yet", async () => {
+test("arriving is how an invitation is accepted", async () => {
   const repo = new InMemoryManagerRepository(
     [manager()],
     [membership({ status: "invited" })],
@@ -83,8 +83,18 @@ test("an invitation that was never accepted is not an account yet", async () => 
     {},
   );
 
-  assert.deepStrictEqual(result, { ok: false, reason: "NO_ACTIVE_MEMBERSHIP" });
+  assert.strictEqual(result.ok, true);
+  assert.strictEqual(
+    result.ok ? result.activeOrganizationId : null,
+    "org-school",
+  );
+
+  // And it stays accepted: the row was written, not merely treated as active
+  // for one sign-in.
+  const stored = await repo.findMembershipsByManagerId("mgr-cohen");
+  assert.strictEqual(stored[0].status, "active");
 });
+
 
 test("a platform administrator signs in without belonging to a school", async () => {
   const repo = new InMemoryManagerRepository([

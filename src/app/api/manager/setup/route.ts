@@ -8,6 +8,7 @@ import {
 } from "@/lib/services";
 import { getDurableWriteGuardResponse } from "@/lib/server/durable-write-guard";
 import { recordRoundAuditEvent } from "@/lib/server/manager-audit";
+import { resolveManagerSessionFromHeaders } from "@/lib/server/session-auth";
 import { MINIMUM_PRIVACY_THRESHOLD } from "@/lib/survey-definition";
 import {
   authorizeManagerRound,
@@ -182,6 +183,26 @@ export async function PUT(request: Request) {
     const { auditLogRepo, orgRepo, roundRepo } = resolveCoreRepositories();
 
     if (createsOrganization(body)) {
+      /*
+       * Opening a school is a platform act, not a manager one (owner's model,
+       * 2026-08-20: the administrator creates the school, then invites its
+       * user). Refused here rather than only hidden on the screen — and it was
+       * already broken for anybody else since phase 0: the creator gets no
+       * membership, so the school they just opened is one the boundary refuses
+       * to let them read. A refusal says that; a silent bounce back to their
+       * own school did not.
+       */
+      const session = await resolveManagerSessionFromHeaders(request);
+      if (!session?.isPlatformAdministrator) {
+        return NextResponse.json(
+          {
+            error:
+              "Opening a school is a platform administrator's action. Ask one to create it and invite you.",
+          },
+          { status: 403 },
+        );
+      }
+
       // A school being opened is outside every existing school, so there is no
       // scope to resolve and none to check against: ids arriving with it would
       // only name records belonging to somebody else's school, and are dropped

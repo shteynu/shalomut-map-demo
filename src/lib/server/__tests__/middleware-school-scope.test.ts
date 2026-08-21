@@ -291,3 +291,36 @@ test("a school user is still refused the school an administrator may open", asyn
   assert.strictEqual(injectedSchool(response), SESSION_SCHOOL);
   assert.notStrictEqual(injectedMemberSchools(response), "*");
 });
+
+test("the administrator area is not there for a school user", async () => {
+  const response = await middleware(
+    new NextRequest("http://localhost:3000/admin", {
+      headers: { cookie: await sessionCookie() },
+    }),
+  );
+
+  assert.strictEqual(response.status, 307);
+  assert.strictEqual(new URL(response.headers.get("location")!).pathname, "/");
+});
+
+test("its API answers 404 rather than 403, which would confirm it exists", async () => {
+  const response = await middleware(
+    new NextRequest("http://localhost:3000/api/admin/schools", {
+      method: "POST",
+      headers: { cookie: await sessionCookie() },
+    }),
+  );
+
+  assert.strictEqual(response.status, 404);
+});
+
+test("a platform administrator reaches the area, and reaches it unscoped", async () => {
+  const response = await middleware(
+    new NextRequest("http://localhost:3000/admin", {
+      headers: { cookie: await administratorCookie() },
+    }),
+  );
+
+  assert.strictEqual(response.status, 200);
+  assert.strictEqual(injectedMemberSchools(response), "*");
+});

@@ -21,6 +21,7 @@ import {
 } from '@/lib/repositories';
 import { overrideCoreRepositories, resetCoreRepositories } from '@/lib/composition-root';
 import { InMemoryAuditLogRepository } from '@/lib/auth/domain-contract';
+import { JwtSessionProvider } from '@/lib/auth/jwt-session-provider';
 import { surveyInstrument } from '@/lib/shalomut-source';
 import { createCanonicalSurveyDefinition } from '@/lib/survey-definition';
 import {
@@ -30,6 +31,26 @@ import {
 import { DEMO_ORGANIZATION, DEMO_ROUND } from '@/lib/repositories/__fixtures__/demo-records';
 
 let previousDatabaseUrl: string | undefined;
+
+/**
+ * A platform administrator's cookie, for the two routes that ask whether the
+ * caller is one. It is minted rather than faked: the routes verify the token,
+ * so a handmade cookie would prove nothing about the check.
+ */
+async function administratorCookie() {
+  const { token } = await new JwtSessionProvider().createSession(
+    {
+      id: 'mgr-platform',
+      email: 'platform@shalomut.example',
+      name: 'Platform',
+      isPlatformAdministrator: true,
+      createdAt: new Date(),
+    },
+    null,
+    [],
+  );
+  return `shalomut_session=${token}`;
+}
 
 function useDemoRepositories() {
   overrideCoreRepositories({
@@ -541,7 +562,7 @@ test('API Route PUT /api/manager/setup creates the configured scoped organizatio
   }
 });
 
-test('API Route PUT /api/manager/setup opens a second school beside the scoped one', async () => {
+test('API Route PUT /api/manager/setup opens a second school beside the scoped one, for an administrator', async () => {
   const orgRepo = new InMemoryOrganizationRepository([DEMO_ORGANIZATION]);
   overrideCoreRepositories({
     aiAnalysisRunRepo: new InMemoryAiAnalysisRunRepository(),
@@ -555,6 +576,7 @@ test('API Route PUT /api/manager/setup opens a second school beside the scoped o
       method: 'PUT',
       headers: {
         'x-shalomut-manager-organization-id': DEMO_ORGANIZATION.id,
+        cookie: await administratorCookie(),
       },
       body: JSON.stringify({
         createOrganization: true,
@@ -595,6 +617,58 @@ test('API Route PUT /api/manager/setup opens a second school beside the scoped o
     const scopedSchool = await orgRepo.findById(DEMO_ORGANIZATION.id);
     assert.strictEqual(scopedSchool?.name, DEMO_ORGANIZATION.name);
     assert.strictEqual((await orgRepo.findAll()).length, 2);
+  } finally {
+    useDemoRepositories();
+  }
+});
+
+test('API Route PUT /api/manager/setup refuses to open a school for anybody but an administrator', async () => {
+  const orgRepo = new InMemoryOrganizationRepository([DEMO_ORGANIZATION]);
+  overrideCoreRepositories({
+    aiAnalysisRunRepo: new InMemoryAiAnalysisRunRepository(),
+    orgRepo,
+    roundRepo: new InMemoryRoundRepository([DEMO_ROUND]),
+    surveyRepo: new InMemorySurveyRepository(),
+  });
+
+  try {
+    const response = await saveManagerSetup(
+      new Request('http://localhost/api/manager/setup', {
+        method: 'PUT',
+        headers: {
+          'x-shalomut-manager-organization-id': DEMO_ORGANIZATION.id,
+        },
+        body: JSON.stringify({
+          createOrganization: true,
+          organization: {
+            name: 'בית ספר שלישי',
+            city: 'חיפה',
+            schoolType: 'יסודי',
+            totalStaffCount: 30,
+          },
+          round: {
+            title: 'סבב ראשון',
+            privacyThreshold: 10,
+            startDate: '2026-09-01',
+            endDate: '',
+            backgroundContext: {
+              notes: '',
+              audience: 'all-staff',
+              sicknessDaysThisQuarter: 0,
+              newStaffMembers: 0,
+              studentCount: 300,
+              socioEconomicIndex: 5,
+              classesPerGrade: { א: 2 },
+            },
+          },
+        }),
+      }),
+    );
+
+    assert.strictEqual(response.status, 403);
+    // And nothing was opened. A refusal that still writes is worse than no
+    // refusal, because the school then exists with nobody able to read it.
+    assert.strictEqual((await orgRepo.findAll()).length, 1);
   } finally {
     useDemoRepositories();
   }

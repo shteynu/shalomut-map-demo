@@ -193,11 +193,35 @@ test("an address the provider verified but nobody invited gets no session", asyn
   }
 });
 
-test("an invited-but-not-active membership is refused as such", async () => {
+test("an invitation is accepted by the invitee turning up", async () => {
+  const managerRepo = new InMemoryManagerRepository(
+    [cohen],
+    [{ ...cohenMembership, status: "invited" }],
+  );
+  overrideCoreRepositories({ managerRepo });
+  const restore = installProvider();
+
+  try {
+    const response = await callbackHandler(
+      callback(
+        "http://localhost:3000/api/auth/oidc/callback?code=code-1&state=state-1",
+        handshakeCookie(),
+      ),
+    );
+
+    assert.ok(response.cookies.get(SESSION_COOKIE_NAME));
+    const [stored] = await managerRepo.findMembershipsByManagerId(cohen.id);
+    assert.strictEqual(stored.status, "active");
+  } finally {
+    restore();
+  }
+});
+
+test("a revoked membership is not an invitation, and stays refused", async () => {
   overrideCoreRepositories({
     managerRepo: new InMemoryManagerRepository(
       [cohen],
-      [{ ...cohenMembership, status: "invited" }],
+      [{ ...cohenMembership, status: "suspended" }],
     ),
   });
   const restore = installProvider();
@@ -214,6 +238,7 @@ test("an invited-but-not-active membership is refused as such", async () => {
       redirectTarget(response).searchParams.get("error"),
       "no_active_membership",
     );
+    assert.strictEqual(response.cookies.get(SESSION_COOKIE_NAME), undefined);
   } finally {
     restore();
   }

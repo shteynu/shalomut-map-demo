@@ -18,6 +18,7 @@ function createManagerClient() {
     surveyRound: {} as never,
     surveyResponse: {} as never,
     manager: {
+      findMany: async () => Array.from(managers.values()),
       findUnique: async ({ where }: any) => {
         if (where.id) return managers.get(where.id) ?? null;
         for (const row of managers.values()) {

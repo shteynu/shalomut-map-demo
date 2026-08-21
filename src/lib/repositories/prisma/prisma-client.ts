@@ -60,6 +60,7 @@ export interface MinimalPrismaClient {
   };
   manager?: {
     findUnique: (args: any) => Promise<any>;
+    findMany: (args?: any) => Promise<any[]>;
     upsert: (args: any) => Promise<any>;
     count: (args?: any) => Promise<number>;
     deleteMany: (args?: any) => Promise<{ count: number }>;

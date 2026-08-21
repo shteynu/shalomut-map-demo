@@ -58,6 +58,22 @@ function memberSchools(session: ManagerSession): string[] {
 }
 
 /**
+ * The administrator area: the schools, the people, and who may reach what.
+ *
+ * Named here rather than derived from a route table because the middleware is
+ * where it has to be true — a page and an API route under the same prefix are
+ * the same area, and both are refused by the same expression.
+ */
+function isAdminArea(pathname: string): boolean {
+  return (
+    pathname === "/admin" ||
+    pathname.startsWith("/admin/") ||
+    pathname === "/api/admin" ||
+    pathname.startsWith("/api/admin/")
+  );
+}
+
+/**
  * One line per distinct reason, not one per request: a browser holding a
  * rejected cookie retries on every navigation, and a log that repeats itself
  * is a log nobody reads.
@@ -121,6 +137,18 @@ export async function middleware(request: NextRequest) {
     // exists, and that is one condition in the same expression instead of an
     // exception threaded through everything below.
     const isAdministrator = managerSession.isPlatformAdministrator;
+
+    // The administrator area, refused to everybody else before any handler
+    // runs. It is the one part of the product that is not about one school, so
+    // it sits outside the scope logic below rather than inside it. The routes
+    // check the flag again — see `requirePlatformAdministrator` — because this
+    // check depends on a matcher that can be edited.
+    if (isAdminArea(pathname) && !isAdministrator) {
+      return pathname.startsWith("/api/")
+        ? NextResponse.json({ error: "Not found." }, { status: 404 })
+        : NextResponse.redirect(new URL("/", request.url));
+    }
+
     const schools = memberSchools(managerSession);
     const mayOpen = (school: string) =>
       isAdministrator || schools.includes(school);

@@ -6859,3 +6859,161 @@ body:has(.setup-form-save-bar) .help-badge > summary span {
 .help-badge-head .help-badge-title {
   margin: 0;
 }
+
+/* ── The administrator area ─────────────────────────────────────────────────
+   The one screen that is not about a school. It reuses the page shell and the
+   buttons; what it adds is the list shape — a school, the people in it, and the
+   one form that puts somebody there. */
+
+.admin-console {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+.admin-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.admin-section h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 650;
+  color: var(--text-strong, #2f2a26);
+}
+
+.admin-note,
+.admin-empty {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--text-muted, #6f665e);
+}
+
+.admin-school,
+.admin-new-school {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 1.1rem 1.25rem;
+  border: 1px solid var(--stone-border, rgba(120, 105, 90, 0.22));
+  border-radius: 14px;
+  background: var(--stone-surface, rgba(255, 253, 250, 0.72));
+}
+
+.admin-school-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.admin-school-header h3 {
+  margin: 0 0 0.2rem;
+  font-size: 1.05rem;
+  font-weight: 650;
+}
+
+.admin-school-header p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-muted, #6f665e);
+}
+
+.admin-people {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-people li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.admin-person-identity {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.admin-person-identity strong {
+  font-weight: 600;
+  direction: ltr;
+  unicode-bidi: isolate;
+  overflow-wrap: anywhere;
+}
+
+/* Status is never carried by colour alone — every pill states its meaning in
+   words, and the tint only repeats it. */
+.admin-status {
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  white-space: nowrap;
+  border: 1px solid currentColor;
+}
+
+.admin-status-active {
+  color: var(--status-green-text, #2f6b4f);
+}
+
+.admin-status-invited {
+  color: var(--status-amber-text, #8a6320);
+}
+
+.admin-status-suspended {
+  color: var(--status-red-text, #93412f);
+}
+
+.admin-invite,
+.admin-new-school-grid {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem;
+}
+
+.admin-invite label,
+.admin-new-school label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  flex: 1 1 14rem;
+  font-size: 0.85rem;
+  color: var(--text-muted, #6f665e);
+}
+
+.admin-invite input,
+.admin-new-school input {
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--stone-border, rgba(120, 105, 90, 0.3));
+  border-radius: 9px;
+  background: var(--surface, #fffdfa);
+  font: inherit;
+  color: inherit;
+}
+
+.manager-user-bar-admin-link {
+  font-size: 0.82rem;
+  text-decoration: none;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  color: inherit;
+}
+
+.manager-user-bar-admin-link:hover,
+.manager-user-bar-admin-link:focus-visible {
+  text-decoration: underline;
+}

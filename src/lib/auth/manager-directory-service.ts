@@ -48,7 +48,10 @@ export class ManagerDirectoryService {
 
     if (!manager) return { ok: false, reason: "USER_NOT_FOUND" };
 
-    const memberships = await managerRepo.findMembershipsByManagerId(manager.id);
+    const memberships = await this.acceptInvitations(
+      managerRepo,
+      await managerRepo.findMembershipsByManagerId(manager.id),
+    );
     const active = memberships.filter(
       (membership) => membership.status === "active",
     );
@@ -63,6 +66,37 @@ export class ManagerDirectoryService {
       memberships,
       activeOrganizationId: active[0]?.organizationId ?? null,
     };
+  }
+
+  /**
+   * Arriving is how an invitation is accepted.
+   *
+   * There is no acceptance screen and no acceptance link, because there is
+   * nothing for the invitee to do: identity comes from the provider, so an
+   * invitation grants an entitlement rather than delivering a credential. The
+   * first successful sign-in is the moment the person turned out to be real,
+   * and that is what `invited` becomes `active` on.
+   *
+   * Kept as a distinct state rather than inviting straight into `active` so the
+   * administrator area can tell an invitation nobody used from a person who is
+   * actually working — which is the only way to notice an address that was
+   * typed wrong.
+   */
+  private static async acceptInvitations(
+    managerRepo: IManagerRepository,
+    memberships: OrganizationMembership[],
+  ): Promise<OrganizationMembership[]> {
+    if (!memberships.some((membership) => membership.status === "invited")) {
+      return memberships;
+    }
+
+    return Promise.all(
+      memberships.map((membership) =>
+        membership.status === "invited"
+          ? managerRepo.saveMembership({ ...membership, status: "active" })
+          : membership,
+      ),
+    );
   }
 
   /**

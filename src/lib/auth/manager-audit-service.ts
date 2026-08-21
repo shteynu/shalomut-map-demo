@@ -11,6 +11,13 @@ import type { AuditEvent, ManagerSession } from "./types";
  */
 export const ADMINISTRATOR_SCHOOL_VISIT = "ADMINISTRATOR_SCHOOL_VISIT";
 
+/**
+ * What an event names when it happened above every school: an administrator was
+ * invited, and no school was involved. `unknown` would be a lie — it is not that
+ * nobody knows which school, it is that there is none.
+ */
+export const PLATFORM_SCOPE = "platform";
+
 export type AuditActionType =
   | typeof ADMINISTRATOR_SCHOOL_VISIT
   | "SETUP_SAVED"
@@ -19,8 +26,11 @@ export type AuditActionType =
   | "ROUND_RESET"
   | "SURVEY_DEFINITION_UPDATED"
   | "AI_TRIGGERED"
+  | "SCHOOL_CREATED"
   | "MEMBER_INVITED"
-  | "MEMBER_ROLE_CHANGED";
+  | "MEMBER_REVOKED"
+  | "MEMBER_RESTORED"
+  | "ADMINISTRATOR_INVITED";
 
 export class ManagerAuditService {
   public static async logEvent(

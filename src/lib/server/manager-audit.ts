@@ -1,46 +1,18 @@
 import type { IAuditLogRepository } from "@/lib/auth/domain-contract";
-import { JwtSessionProvider } from "@/lib/auth/jwt-session-provider";
 import {
   ADMINISTRATOR_SCHOOL_VISIT,
   ManagerAuditService,
   type AuditActionType,
 } from "@/lib/auth/manager-audit-service";
 import type { ManagerSession } from "@/lib/auth/types";
-import { SESSION_COOKIE_NAME } from "@/lib/server/session-auth";
+import { resolveManagerSessionFromHeaders } from "@/lib/server/session-auth";
 
-function readSessionToken(request: Pick<Request, "headers">): string | null {
-  const authorization = request.headers.get("authorization");
-  if (authorization?.toLowerCase().startsWith("bearer ")) {
-    return authorization.slice(7).trim() || null;
-  }
-
-  const cookieHeader = request.headers.get("cookie");
-  if (!cookieHeader) return null;
-
-  for (const part of cookieHeader.split(";")) {
-    const [name, ...rest] = part.trim().split("=");
-    if (name === SESSION_COOKIE_NAME) {
-      return rest.join("=").trim() || null;
-    }
-  }
-
-  return null;
-}
-
-async function resolveActor(
-  request: Pick<Request, "headers">,
-): Promise<ManagerSession | null> {
-  const token = readSessionToken(request);
-  if (!token) return null;
-
-  try {
-    return await new JwtSessionProvider().verifyToken(token);
-  } catch {
-    // Missing session secret or an invalid token: the action is still audited,
-    // just without an identified actor.
-    return null;
-  }
-}
+/**
+ * Who is acting, or nobody. A missing session secret and an invalid token both
+ * come back `null`: the action is still audited, just without an identified
+ * actor.
+ */
+const resolveActor = resolveManagerSessionFromHeaders;
 
 /**
  * Records a manager action against a round. Never receives respondent data —

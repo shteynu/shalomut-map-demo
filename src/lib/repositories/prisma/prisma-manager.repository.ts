@@ -107,6 +107,21 @@ export class PrismaManagerRepository implements IManagerRepository {
     return rows.map(toMembership);
   }
 
+  public async findMembershipsByOrganizationId(
+    organizationId: string,
+  ): Promise<OrganizationMembership[]> {
+    const rows = await this.memberships.findMany({
+      where: { organizationId },
+      orderBy: { createdAt: 'asc' },
+    });
+    return rows.map(toMembership);
+  }
+
+  public async findAllManagers(): Promise<Manager[]> {
+    const rows = await this.managers.findMany({ orderBy: { createdAt: 'asc' } });
+    return rows.map(toManager);
+  }
+
   public async saveManager(manager: Manager): Promise<Manager> {
     const email = manager.email.trim().toLowerCase();
     const data = {

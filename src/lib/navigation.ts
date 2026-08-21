@@ -11,6 +11,12 @@ export const routes = {
   breakdown: "/breakdown",
   goals: "/goals",
   help: "/help",
+  /**
+   * Outside `MainNavItemId` on purpose: the main navigation is the eight
+   * screens of one school, and this is the one screen that is about all of
+   * them. It is reached from the identity bar, by the people who have it.
+   */
+  admin: "/admin",
 } as const;
 
 export type MainNavItemId =
@@ -107,6 +113,13 @@ export const routeMetadata = {
     actionTitle: "מעקב יעדים",
     actionBody: "כל היעדים שנבחרו, מכל סבבי האבחון, עם המצב שלהם.",
     actionGlow: "var(--pastel-peach)",
+  },
+  admin: {
+    id: "admin",
+    href: routes.admin,
+    navLabel: "ניהול פלטפורמה",
+    actionTitle: "ניהול פלטפורמה",
+    actionBody: "בתי הספר במערכת, ומי מגיע לכל אחד מהם.",
   },
   help: {
     id: "help",
