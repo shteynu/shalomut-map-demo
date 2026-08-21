@@ -46,7 +46,9 @@ description: Работай с продуктом и кодом Shalomut Map в 
      `ai-analytics-service/README.md`; `docs/ai-analytics-handoff.md` даёт
      cross-service overview, а archived rollout details не являются current
      state;
-   - survey methodology: `src/lib/shalomut-source.ts`.
+   - survey methodology: `src/lib/shalomut-source.ts`; тексты восьми
+     измерений — `contracts/wellbeing-dimensions.json` через
+     `src/lib/wellbeing-dimensions.ts`.
 4. Проверь существующие компоненты, тесты и patterns до добавления новых
    abstractions.
 
@@ -58,7 +60,12 @@ description: Работай с продуктом и кодом Shalomut Map в 
 
 - Используй `src/lib/shalomut-source.ts` как источник восьми канонических
   dashboard dimensions, scoring/status semantics и default questionnaire
-  template. Фактическим источником вопросов для конкретного раунда должен быть
+  template. Их ивритские тексты — название, описание и заголовок из Google Form —
+  лежат в `contracts/wellbeing-dimensions.json` и читаются через
+  `src/lib/wellbeing-dimensions.ts`; переименование измерения — правка манифеста,
+  а не кода. Сам список из восьми id остаётся компайл-таймовым, и загрузчик
+  отвергает манифест, который его переупорядочил, сократил или дополнил.
+  Фактическим источником вопросов для конкретного раунда должен быть
   persisted `SurveyRound.surveyDefinition` snapshot.
 - Считай Google Form upstream-источником default/v1 questionnaire template, а
   Adobe XD — визуальной reference, согласно `docs/source-of-truth.md`.
@@ -68,8 +75,11 @@ description: Работай с продуктом и кодом Shalomut Map в 
 - Экраны Dashboard рендерят `DashboardInsightsDto`
   (`src/lib/dashboard/dashboard-insights.ts`), а не wire-тип. Единственный
   перевод из `StoneMapResult` — `toDashboardInsights` в
-  `ai-insights-view-model.ts`. Статическая презентация измерения (подписи,
-  геометрия карты, цвет) живёт в `src/lib/dashboard/dimension-presentation.ts`.
+  `ai-insights-view-model.ts`. Статическая презентация измерения (геометрия
+  карты, форма камня, цвет) живёт в
+  `src/lib/dashboard/dimension-presentation.ts`; подписи там больше не хранятся —
+  вторая копия названия успела разойтись с методологией, и с 2026-08-21 имя у
+  измерения одно.
 - Оставляй пустую или недоступную persistence пустой; deployed writes без
   `DATABASE_URL` должны завершаться fail-closed.
 - Сохраняй восемь wellbeing dimensions как стабильную выходную taxonomy для

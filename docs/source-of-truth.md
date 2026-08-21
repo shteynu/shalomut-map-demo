@@ -37,9 +37,17 @@ round questionnaires and from demo result data.
 - `SurveyRound.surveyDefinition` is the runtime source of truth for the exact
   questions shown and analyzed in that round. `src/lib/shalomut-source.ts`
   supplies the dimension/status model and default questionnaire template. The
-  Dashboard's static presentation of those dimensions — labels, map geometry,
-  colours — lives in `src/lib/dashboard/dimension-presentation.ts`, and
-  everything about a round comes from the analysis as a `DashboardInsightsDto`.
+  Hebrew texts of the eight dimensions — name, description and the heading each
+  had in the Google Form — are data rather than code: they live in
+  `contracts/wellbeing-dimensions.json` and are read through
+  `src/lib/wellbeing-dimensions.ts`, which refuses a manifest that renames,
+  reorders, drops or invents a dimension. The Dashboard's static presentation of
+  those dimensions — map geometry, colours, stone shapes — lives in
+  `src/lib/dashboard/dimension-presentation.ts`; it no longer carries names of
+  its own, because the second copy had drifted (owner decision 2026-08-21:
+  `management-support` is `עורף מקצועי` everywhere, and the map's `עוגן` was a
+  bug). Everything about a round comes from the analysis as a
+  `DashboardInsightsDto`.
   `src/lib/demo-data.ts` no longer exists; nothing renders fixture analysis.
 - AI must consume the exact persisted round-question snapshot and its
   privacy-safe aggregates, then return the fixed eight-stone Dashboard output.
@@ -82,7 +90,8 @@ round questionnaires and from demo result data.
 - `src/lib/survey-definition-hash.ts`: deterministic hash of the exact enabled
   AI-visible question snapshot.
 - `src/lib/dashboard/dashboard-insights.ts`: `DashboardInsightsDto`, the stable presentation contract the screens render; `ai-insights-view-model.ts` is the only translation from the versioned wire payload.
-- `src/lib/dashboard/dimension-presentation.ts`: per-dimension labels, map geometry, concept colours and status surfaces.
+- `contracts/wellbeing-dimensions.json`: the eight dimensions' Hebrew name, description and Google Form heading, read through `src/lib/wellbeing-dimensions.ts`.
+- `src/lib/dashboard/dimension-presentation.ts`: per-dimension map geometry, stone shape, concept colours and status surfaces — no names of its own.
 - `PRODUCT.md`: product voice, users, principles, privacy posture, accessibility expectations, and brand personality.
 - `docs/product-requirements-summary.md`: canonical summary of original product requirements documents, methodology, MVP definition, 8 wellbeing dimensions, and pilot roadmap.
 - `design.md`: design tokens and implementation notes for the current Next.js demo.

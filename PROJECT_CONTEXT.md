@@ -305,9 +305,20 @@ paragraphs, metrics and recommendations. `toDashboardInsights` in
 `ai-insights-view-model.ts` is the only translation from `StoneMapResult`, so a
 new contract version changes one function and no component.
 
-A dimension's stable presentation — labels, map geometry, concept colour — is
-separate again, in `src/lib/dashboard/dimension-presentation.ts`. The two were
+A dimension's stable presentation — map geometry, stone shape, concept colour —
+is separate again, in `src/lib/dashboard/dimension-presentation.ts`. The two were
 one type, which is why fixture analysis lived in a production module.
+
+Presentation stopped carrying names on 2026-08-21. It had re-declared all eight
+labels beside the geometry, and the 2026-08-16 modularity audit named the risk
+exactly: duplication without a parity test. One of the eight had already drifted
+— `management-support` read `עוגן` on the breakdown table and `עורף מקצועי`
+everywhere else. The names now live once, in
+`contracts/wellbeing-dimensions.json`, read through
+`src/lib/wellbeing-dimensions.ts`, which validates the manifest at load and
+refuses one that renames the set rather than a member. Renaming a dimension is
+now a data edit; adding a ninth is still a code change, because the map has
+eight hand-drawn stones.
 
 ### ADR-012: OpenAPI has one editable source and one generated mirror
 

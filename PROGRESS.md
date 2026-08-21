@@ -471,6 +471,16 @@ inside it.
   score threshold, and `ROADMAP.md` records why there is none.
 - The OpenAPI specification has one editable source, `docs/openapi.yaml`;
   `public/openapi.json` is generated from it and checked as a whole document.
+- The eight dimensions' Hebrew texts are configuration, not code:
+  `contracts/wellbeing-dimensions.json` holds each dimension's name,
+  description and Google Form heading, and `src/lib/wellbeing-dimensions.ts`
+  validates the manifest at load. Renaming a dimension is a data edit; adding a
+  ninth is still a code change, because the map has eight hand-drawn stones.
+  The move also deleted the second copy of the names that the 2026-08-16
+  modularity audit had flagged as duplication without a parity test — one of
+  the eight had already drifted, so the breakdown table called
+  `management-support` `עוגן` while every other screen called it
+  `עורף מקצועי`.
 
 ## Next up
 

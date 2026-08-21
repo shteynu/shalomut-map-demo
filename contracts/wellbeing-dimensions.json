@@ -1,0 +1,61 @@
+{
+  "description": "The eight wellbeing dimensions and the Hebrew a reader sees for each. Texts only: which dimensions exist and what they are called, with no scores, no questions and no geometry. The methodology owns these words, so changing one is an edit here rather than a change to TypeScript — and there is one copy of each, which is what the map and the breakdown table had drifted apart on. Order is the order every screen lists them in. Adding or removing a dimension is not a text change and is refused by the loader: the union in shalomut-source.ts and the eight hand-tuned stones on the map both have to move with it.",
+  "dimensions": [
+    {
+      "id": "self-expression",
+      "label": "ביטוי עצמי",
+      "conceptLabel": "קול אישי",
+      "subtitle": "אפשרות לביטוי עצמי",
+      "sourceLabel": "ביטוי עצמי"
+    },
+    {
+      "id": "professional-competence",
+      "label": "מסוגלות מקצועית",
+      "conceptLabel": "מומחיות בטוחה",
+      "subtitle": "תחושת מסוגלות מקצועית",
+      "sourceLabel": "מסוגלות מקצועית"
+    },
+    {
+      "id": "social-resource",
+      "label": "קשרים חברתיים",
+      "conceptLabel": "משאב חברתי",
+      "subtitle": "קשרים חיוביים עם עמיתות ועמיתים",
+      "sourceLabel": "קשרים חברתיים"
+    },
+    {
+      "id": "balance",
+      "label": "איזון",
+      "conceptLabel": "איזון",
+      "subtitle": "היחס בין היקף המשימות לבין הזמן לביצוען",
+      "sourceLabel": "איזון: היחס בין היקף המשימות לבין הזמן לביצוען"
+    },
+    {
+      "id": "management-support",
+      "label": "עורף מקצועי",
+      "conceptLabel": "עורף מקצועי",
+      "subtitle": "תמיכה מהנהלה",
+      "sourceLabel": "עורף מקצועי: תמיכת הנהלה"
+    },
+    {
+      "id": "certainty",
+      "label": "ודאות",
+      "conceptLabel": "ודאות",
+      "subtitle": "ודאות בסביבת עבודה",
+      "sourceLabel": "ודאות"
+    },
+    {
+      "id": "organizational-climate",
+      "label": "אקלים ארגוני",
+      "conceptLabel": "אקלים ארגוני",
+      "subtitle": "קידום רווחה נפשית כחלק מתרבות הארגון",
+      "sourceLabel": "אקלים ארגוני: תמיכה ברווחה פסיכולוגית ברמה ארגונית"
+    },
+    {
+      "id": "meaning",
+      "label": "משמעות",
+      "conceptLabel": "משמעות",
+      "subtitle": "תחושת ערך ומשמעות בעבודה",
+      "sourceLabel": "משמעות"
+    }
+  ]
+}

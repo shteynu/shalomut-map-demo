@@ -198,7 +198,7 @@ function BreakdownTable({ breakdown }: { breakdown: BackgroundBreakdown }) {
           <tbody>
             {dimensionPresentations.map((dimension) => (
               <tr key={dimension.id}>
-                <th scope="row">{dimension.label}</th>
+                <th scope="row">{dimension.conceptLabel}</th>
                 {breakdown.groups.map((group) => (
                   <ScoreCell
                     key={group.categoryId}

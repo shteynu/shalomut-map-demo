@@ -1,16 +1,17 @@
 import { SCORING_BANDS } from "./scoring-bands";
+import {
+  WELLBEING_DIMENSION_TEXTS,
+  type WellbeingDimensionId,
+} from "./wellbeing-dimensions";
 
 export type WellbeingStatus = "green" | "yellow" | "red";
 
-export type WellbeingDimensionId =
-  | "self-expression"
-  | "professional-competence"
-  | "social-resource"
-  | "balance"
-  | "management-support"
-  | "certainty"
-  | "organizational-climate"
-  | "meaning";
+/**
+ * Re-exported rather than moved away, because every reader of a dimension id
+ * already imports it from the methodology source and none of them cares that
+ * the list now sits beside the manifest that names the dimensions.
+ */
+export type { WellbeingDimensionId };
 
 export type SourceMaterial = {
   id: string;
@@ -227,116 +228,75 @@ function question(id: string, dimensionId: WellbeingDimensionId, text: string): 
   };
 }
 
-const surveyDimensions: SurveyDimension[] = [
-  {
-    id: "self-expression",
-    label: "ביטוי עצמי",
-    conceptLabel: "קול אישי",
-    subtitle: "אפשרות לביטוי עצמי",
-    sourceLabel: "ביטוי עצמי",
-    questions: [
-      question("self-expression-1", "self-expression", "אני יכול/ה להביע בחופשיות את הרעיונות והמחשבות שלי בעבודה."),
-      question("self-expression-2", "self-expression", "אני מרגיש/ה ששומעים אותי ומתחשבים בדעתי."),
-      question("self-expression-3", "self-expression", "אני מרגיש/ה שאני עצמי בעבודה, ושאין לי צורך להעמיד פנים."),
-    ],
-  },
-  {
-    id: "professional-competence",
-    label: "מסוגלות מקצועית",
-    conceptLabel: "מומחיות בטוחה",
-    subtitle: "תחושת מסוגלות מקצועית",
-    sourceLabel: "מסוגלות מקצועית",
-    questions: [
-      question(
-        "professional-competence-1",
-        "professional-competence",
-        "אני מקבל/ת באופן קבוע חיזוק לכך שהמאמצים והכישורים שלי בעלי ערך.",
-      ),
-      question("professional-competence-2", "professional-competence", "אני בטוח/ה במומחיות המקצועית שלי וביכולות שלי."),
-      question("professional-competence-3", "professional-competence", "אני מרגיש/ה כשיר/ה מספיק כדי להתמודד עם המשימות שעולות."),
-    ],
-  },
-  {
-    id: "social-resource",
-    label: "קשרים חברתיים",
-    conceptLabel: "משאב חברתי",
-    subtitle: "קשרים חיוביים עם עמיתות ועמיתים",
-    sourceLabel: "קשרים חברתיים",
-    questions: [
-      question(
-        "social-resource-1",
-        "social-resource",
-        "יש לי לפחות אדם אחד בעבודה שאני סומך/ת עליו/עליה ושאני יכול/ה לדבר איתו/איתה בפתיחות.",
-      ),
-      question("social-resource-2", "social-resource", "בצוות קיימים כבוד הדדי ותמיכה."),
-      question("social-resource-3", "social-resource", "התקשורת עם הקולגות נותנת לי אנרגיה ורגשות חיוביים."),
-    ],
-  },
-  {
-    id: "balance",
-    label: "איזון",
-    conceptLabel: "איזון",
-    subtitle: "היחס בין היקף המשימות לבין הזמן לביצוען",
-    sourceLabel: "איזון: היחס בין היקף המשימות לבין הזמן לביצוען",
-    questions: [
-      question("balance-1", "balance", "אני מצליח/ה לבצע את משימות העבודה בזמן שנקבע."),
-      question("balance-2", "balance", "יש לי מספיק זמן למנוחה ולהתאוששות אחרי העבודה."),
-      question("balance-3", "balance", "אני מרגיש/ה שהעומס בעבודה מתאים לי והוא בהישג יד/בר־ביצוע עבורי."),
-    ],
-  },
-  {
-    id: "management-support",
-    label: "עורף מקצועי",
-    conceptLabel: "עורף מקצועי",
-    subtitle: "תמיכה מהנהלה",
-    sourceLabel: "עורף מקצועי: תמיכת הנהלה",
-    questions: [
-      question("management-support-1", "management-support", "אני מקבל/ת באופן קבוע תמיכה ומשוב מההנהלה."),
-      question("management-support-2", "management-support", "אני יכול/ה לפנות למנהל/ת לעזרה בלי חשש."),
-      question("management-support-3", "management-support", "המנהל/ת מעריכ/ה את המאמצים שלי ומביע/ה זאת באופן גלוי."),
-    ],
-  },
-  {
-    id: "certainty",
-    label: "ודאות",
-    conceptLabel: "ודאות",
-    subtitle: "ודאות בסביבת עבודה",
-    sourceLabel: "ודאות",
-    questions: [
-      question("certainty-1", "certainty", "אני מבין/ה מה מצפה לי בעבודה מחר ובזמן הקרוב."),
-      question("certainty-2", "certainty", "בעבודה יש מינימום שינויים בלתי צפויים ולא מתוכננים."),
-      question("certainty-3", "certainty", "המשימות והאחריות שלי מוגדרות בבירור ואינן משתנות ללא התראה מראש."),
-    ],
-  },
-  {
-    id: "organizational-climate",
-    label: "אקלים ארגוני",
-    conceptLabel: "אקלים ארגוני",
-    subtitle: "קידום רווחה נפשית כחלק מתרבות הארגון",
-    sourceLabel: "אקלים ארגוני: תמיכה ברווחה פסיכולוגית ברמה ארגונית",
-    questions: [
-      question(
-        "organizational-climate-1",
-        "organizational-climate",
-        "בארגון מקובל לדבר באופן פתוח על קשיים רגשיים ופסיכולוגיים.",
-      ),
-      question("organizational-climate-2", "organizational-climate", "המצב הנפשי שלי נלקח בחשבון בעת חלוקת המשימות."),
-      question("organizational-climate-3", "organizational-climate", "האווירה בצוות חיובית ואינה יוצרת לחץ מיותר."),
-    ],
-  },
-  {
-    id: "meaning",
-    label: "משמעות",
-    conceptLabel: "משמעות",
-    subtitle: "תחושת ערך ומשמעות בעבודה",
-    sourceLabel: "משמעות",
-    questions: [
-      question("meaning-1", "meaning", "אני רואה תועלת ברורה עבור אנשים אחרים בעבודה שלי."),
-      question("meaning-2", "meaning", "ברור לי למה אני עושה את מה שאני עושה."),
-      question("meaning-3", "meaning", "אני מרגיש/ה שלעבודה שלי יש משמעות והיא חשובה לי באופן אישי."),
-    ],
-  },
-];
+/**
+ * Which questions ask about which dimension. The words a reader sees for the
+ * dimension itself are in `contracts/wellbeing-dimensions.json`; what stays
+ * here is the part that is about the questionnaire rather than about the
+ * model. When the research instrument replaces these 24, this record is what
+ * gets replaced — the manifest beside it does not move.
+ */
+const questionsByDimension: Record<WellbeingDimensionId, SurveyQuestion[]> = {
+  "self-expression": [
+    question("self-expression-1", "self-expression", "אני יכול/ה להביע בחופשיות את הרעיונות והמחשבות שלי בעבודה."),
+    question("self-expression-2", "self-expression", "אני מרגיש/ה ששומעים אותי ומתחשבים בדעתי."),
+    question("self-expression-3", "self-expression", "אני מרגיש/ה שאני עצמי בעבודה, ושאין לי צורך להעמיד פנים."),
+  ],
+  "professional-competence": [
+    question(
+      "professional-competence-1",
+      "professional-competence",
+      "אני מקבל/ת באופן קבוע חיזוק לכך שהמאמצים והכישורים שלי בעלי ערך.",
+    ),
+    question("professional-competence-2", "professional-competence", "אני בטוח/ה במומחיות המקצועית שלי וביכולות שלי."),
+    question("professional-competence-3", "professional-competence", "אני מרגיש/ה כשיר/ה מספיק כדי להתמודד עם המשימות שעולות."),
+  ],
+  "social-resource": [
+    question(
+      "social-resource-1",
+      "social-resource",
+      "יש לי לפחות אדם אחד בעבודה שאני סומך/ת עליו/עליה ושאני יכול/ה לדבר איתו/איתה בפתיחות.",
+    ),
+    question("social-resource-2", "social-resource", "בצוות קיימים כבוד הדדי ותמיכה."),
+    question("social-resource-3", "social-resource", "התקשורת עם הקולגות נותנת לי אנרגיה ורגשות חיוביים."),
+  ],
+  "balance": [
+    question("balance-1", "balance", "אני מצליח/ה לבצע את משימות העבודה בזמן שנקבע."),
+    question("balance-2", "balance", "יש לי מספיק זמן למנוחה ולהתאוששות אחרי העבודה."),
+    question("balance-3", "balance", "אני מרגיש/ה שהעומס בעבודה מתאים לי והוא בהישג יד/בר־ביצוע עבורי."),
+  ],
+  "management-support": [
+    question("management-support-1", "management-support", "אני מקבל/ת באופן קבוע תמיכה ומשוב מההנהלה."),
+    question("management-support-2", "management-support", "אני יכול/ה לפנות למנהל/ת לעזרה בלי חשש."),
+    question("management-support-3", "management-support", "המנהל/ת מעריכ/ה את המאמצים שלי ומביע/ה זאת באופן גלוי."),
+  ],
+  "certainty": [
+    question("certainty-1", "certainty", "אני מבין/ה מה מצפה לי בעבודה מחר ובזמן הקרוב."),
+    question("certainty-2", "certainty", "בעבודה יש מינימום שינויים בלתי צפויים ולא מתוכננים."),
+    question("certainty-3", "certainty", "המשימות והאחריות שלי מוגדרות בבירור ואינן משתנות ללא התראה מראש."),
+  ],
+  "organizational-climate": [
+    question(
+      "organizational-climate-1",
+      "organizational-climate",
+      "בארגון מקובל לדבר באופן פתוח על קשיים רגשיים ופסיכולוגיים.",
+    ),
+    question("organizational-climate-2", "organizational-climate", "המצב הנפשי שלי נלקח בחשבון בעת חלוקת המשימות."),
+    question("organizational-climate-3", "organizational-climate", "האווירה בצוות חיובית ואינה יוצרת לחץ מיותר."),
+  ],
+  "meaning": [
+    question("meaning-1", "meaning", "אני רואה תועלת ברורה עבור אנשים אחרים בעבודה שלי."),
+    question("meaning-2", "meaning", "ברור לי למה אני עושה את מה שאני עושה."),
+    question("meaning-3", "meaning", "אני מרגיש/ה שלעבודה שלי יש משמעות והיא חשובה לי באופן אישי."),
+  ],
+};
+
+/**
+ * The model as the product reads it: the manifest's texts in the manifest's
+ * order, each carrying its own questions.
+ */
+const surveyDimensions: SurveyDimension[] = WELLBEING_DIMENSION_TEXTS.map(
+  (texts) => ({ ...texts, questions: questionsByDimension[texts.id] }),
+);
 
 export const surveyInstrument: SurveyInstrument = {
   id: "shalomut-organizational-diagnosis-v1",

@@ -67,8 +67,8 @@ test("the map skips a stone with no score instead of blanking the page", () => {
     />,
   );
 
-  assert.ok(html.includes(dimensionPresentations[1].label));
-  assert.ok(!html.includes(dimensionPresentations[0].label));
+  assert.ok(html.includes(dimensionPresentations[1].conceptLabel));
+  assert.ok(!html.includes(dimensionPresentations[0].conceptLabel));
 });
 
 test("a locked round's empty score map renders no stones rather than throwing", () => {
@@ -85,7 +85,7 @@ test("a locked round's empty score map renders no stones rather than throwing", 
 
   for (const dimension of dimensionPresentations) {
     assert.ok(
-      !html.includes(dimension.label),
+      !html.includes(dimension.conceptLabel),
       `${dimension.id} should not be drawn without a score`,
     );
   }
@@ -102,10 +102,9 @@ test("the map's stones are the methodology's dimensions, not a second list", () 
       (candidate) => candidate.id === dimension.id,
     );
     assert.ok(presentation);
-    // The concept name and the description belong to the methodology. Only
-    // `label` — what the stone is called on the map — is the map's own, and
-    // `management-support` is where that shows: "עוגן" here, "עורף מקצועי"
-    // there.
+    // The name and the description belong to the methodology, and since
+    // 2026-08-21 there is nothing else: the map's own `label` was a second
+    // copy that had drifted on `management-support`, and it is gone.
     assert.strictEqual(presentation.conceptLabel, dimension.conceptLabel);
     assert.strictEqual(presentation.subtitle, dimension.subtitle);
   }

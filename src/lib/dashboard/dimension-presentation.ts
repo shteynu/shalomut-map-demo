@@ -8,14 +8,13 @@ export { statusLabels };
  *
  * This used to live in `demo-data.ts` inside a `WellbeingDimension` that also
  * held a score, a status and Hebrew analysis copy. The two have different
- * lifetimes: geometry and labels are fixed product design, while everything
+ * lifetimes: geometry is fixed product design, while everything
  * about a round arrives from the analysis as a `DashboardStone`. Keeping them
  * in one type is what kept several hundred lines of demo interpretation in a
  * production module.
  */
 export type DimensionPresentation = {
   id: WellbeingDimensionId;
-  label: string;
   conceptLabel: string;
   subtitle: string;
   mapPosition: {
@@ -47,16 +46,21 @@ export type DimensionPresentation = {
 /**
  * What the map owns about a dimension, as opposed to what the methodology owns.
  *
- * Geometry, colour and the map's own short name for the stone. Everything else
- * a `DimensionPresentation` carries — which dimensions exist, in what order,
- * what each is called as a concept and how it is described — is read from
- * `surveyInstrument` below rather than written again here.
+ * Geometry and colour, and nothing that is a word. Everything a
+ * `DimensionPresentation` carries besides those — which dimensions exist, in
+ * what order, what each is called and how it is described — is read from
+ * `surveyInstrument`, which reads it from
+ * `contracts/wellbeing-dimensions.json`.
  *
  * This file used to re-declare all eight dimensions with their own copies of
- * those strings. Nothing asserted the two lists stayed in step, and they had
- * not: `balance` was described as "יחס מאוזן בין כמות המשימות לזמן לביצוען"
- * on the map and "היחס בין היקף המשימות לבין הזמן לביצוען" in the source. The
- * map now shows the source's wording, so there is one place to change it.
+ * those strings, and they drifted twice. `balance` was described one way on the
+ * map and another in the source; that was fixed by deriving the description.
+ * The name survived as a separate `label` on the grounds that the map may call
+ * a stone what it likes — and then held the same string as `conceptLabel` for
+ * seven of the eight while `management-support` read `עוגן` on the breakdown
+ * table and `עורף מקצועי` everywhere else. The owner called that a drift rather
+ * than a decision on 2026-08-21, so the field is gone: one name per dimension,
+ * in the manifest.
  *
  * A `Record` keyed by the dimension union rather than an array, so the
  * compiler — not a test, and not the manager's screen — is what refuses a
@@ -72,10 +76,6 @@ const dimensionMapPlacements: Record<
   DimensionMapPlacement
 > = {
   "self-expression": {
-    // The map's name for the stone, deliberately not the source's `label`
-    // ("ביטוי עצמי"). Which name each screen shows is a product decision, and
-    // it is the one thing here that is genuinely the map's to make.
-    label: "קול אישי",
     mapPosition: { top: "10%", right: "12%", size: "8.6rem", rotate: -9 },
     conceptPosition: {
       top: "2%",
@@ -89,7 +89,6 @@ const dimensionMapPlacements: Record<
     conceptColor: "#24bf10",
   },
   "professional-competence": {
-    label: "מומחיות בטוחה",
     mapPosition: { top: "18%", right: "34%", size: "7.9rem", rotate: 7 },
     conceptPosition: {
       top: "30%",
@@ -103,7 +102,6 @@ const dimensionMapPlacements: Record<
     conceptColor: "#24bf10",
   },
   "social-resource": {
-    label: "משאב חברתי",
     mapPosition: { top: "37%", right: "22%", size: "10.2rem", rotate: -3 },
     conceptPosition: {
       top: "34%",
@@ -117,7 +115,6 @@ const dimensionMapPlacements: Record<
     conceptColor: "#e49902",
   },
   "balance": {
-    label: "איזון",
     mapPosition: { top: "58%", right: "11%", size: "9.4rem", rotate: 10 },
     conceptPosition: {
       top: "32%",
@@ -131,7 +128,6 @@ const dimensionMapPlacements: Record<
     conceptColor: "#cf2c4e",
   },
   "management-support": {
-    label: "עוגן",
     mapPosition: { top: "15%", right: "57%", size: "8.8rem", rotate: -11 },
     conceptPosition: {
       top: "5%",
@@ -145,7 +141,6 @@ const dimensionMapPlacements: Record<
     conceptColor: "#e49902",
   },
   "certainty": {
-    label: "ודאות",
     mapPosition: { top: "38%", right: "52%", size: "8.4rem", rotate: 8 },
     conceptPosition: {
       top: "4%",
@@ -159,7 +154,6 @@ const dimensionMapPlacements: Record<
     conceptColor: "#e49902",
   },
   "organizational-climate": {
-    label: "אקלים ארגוני",
     mapPosition: { top: "57%", right: "42%", size: "8rem", rotate: -5 },
     conceptPosition: {
       top: "62%",
@@ -173,7 +167,6 @@ const dimensionMapPlacements: Record<
     conceptColor: "#24bf10",
   },
   "meaning": {
-    label: "משמעות",
     mapPosition: { top: "32%", right: "75%", size: "8.8rem", rotate: 5 },
     conceptPosition: {
       top: "64%",

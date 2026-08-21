@@ -21,10 +21,13 @@ export interface SchoolGoalsView {
   done: SchoolGoalRow[];
 }
 
-// The label a stone carries on the map, so a goal is named by the same word
+// The name a stone carries on the map, so a goal is named by the same word
 // the manager saw when they chose it.
 const DIMENSION_LABELS = new Map(
-  dimensionPresentations.map((dimension) => [dimension.id, dimension.label]),
+  dimensionPresentations.map((dimension) => [
+    dimension.id,
+    dimension.conceptLabel,
+  ]),
 );
 
 /**
