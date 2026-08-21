@@ -8,12 +8,13 @@ import { getDurableWriteGuardResponse } from "@/lib/server/durable-write-guard";
 /**
  * Takes a school's person away, or gives them back.
  *
- * Revocation reaches the boundary on the person's next request rather than
- * immediately: the session token carries its memberships and lives for a day,
- * which is exactly the gap phase 5 exists to close. Until it does, revoking
- * somebody who is signed in leaves them working until their token expires, and
- * an administrator who needs it to be immediate has to say so — nothing here
- * can make it so.
+ * Revocation reaches the boundary within a quarter of an hour rather than
+ * immediately: the session token carries its memberships, and the middleware
+ * trusts them without a query on purpose. What phase 5 changed is how long that
+ * trust lasts — the token expires in `SESSION_TTL_SECONDS` and the renewal that
+ * would replace it re-reads this row, so a revoked person's next renewal is
+ * refused and the token they are holding runs out on its own. An administrator
+ * who needs it to be immediate still has to say so; nothing here can make it so.
  */
 export async function PATCH(
   request: Request,

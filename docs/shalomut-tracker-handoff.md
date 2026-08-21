@@ -16,72 +16,71 @@ and in Git; what was durable in them is below.
 
 ## Now
 
-Verified 2026-08-20, in this worktree:
+Verified 2026-08-21, in this worktree:
 
-- **`origin/main` is `54881c5`**, asked of the remote rather than read from a
-  local ref — phases 0 to 3 of multi-tenancy, all four pushed by the owner on
-  2026-08-20. Nothing is unpushed, `docs/agent-tasks/active/` is empty, and the
-  four task files are in `archive/`. The only modified file in the worktree is
-  `next-env.d.ts`, which is generated, was dirty before the session and belongs
-  to the owner.
-- **The deployed database is two migrations behind the code now deployed on it.**
-  Checked 2026-08-20 against `.env.deployed.local`: the last applied migration is
-  `20260819120000_a_run_may_name_the_dimensions_it_rewrites`, and there is no
-  `managers`, `organization_memberships` or `audit_events` table. Vercel deploys
-  every push to `main`, so the endpoint is already running phase 0–3 code.
-  - **It still works, and cannot lock anybody out.** With no `OIDC_*` set,
-    sign-in takes the password path, which never reads `managers`. The
-    administrator's fail-closed read cannot fire either, because the password
-    path's session is not a platform administrator — nobody can be one there
-    until the tables exist.
-  - **What is degraded is the audit log.** Every manager write action tries to
-    record and fails on the missing table; the failure is caught, logged as
-    `[audit] … was not recorded`, and the action proceeds. So the deployed
-    runtime is auditing nothing, silently apart from that warning.
-  - The fix is `npm run db:migrate:deploy` against the deployed
-    `DATABASE_URL`. Both migrations are additive — two `CREATE TABLE` pairs and
-    their indexes — and touch no existing row. Identity first, then the audit
-    log.
-- **The local database has both migrations applied** and carries the walk's
-  leftovers: an extra school, an invited-then-revoked person, and nine
-  `audit_events` rows. Disposable.
-- **The suite is green**, run at session close: `npm test` 1319 passed,
-  `npm run typecheck` clean, `npm run lint` clean, `npm run build` clean, and
-  `lint:composition`, `lint:doc-numbers`, `lint:skills`, `lint:fixtures`,
-  `lint:literals`, `lint:fonts`, `openapi:check` and `docs:endpoints:check` all
-  pass. `verify:core` was not run whole; `verify:ai`, `lint:interpreter`,
-  `lint:mutation-config` and `lint:contract-refusals` were not run, because
-  nothing in this work touched the AI contract or the Python service.
+- **`origin/main` is `54881c5`**, asked of the remote, and `GET /api/health/`
+  answers `commit: 54881c5` — so the deployed endpoint is the pushed tip. Above
+  it sit two unpushed local commits the owner has yet to push: `f2b8653` on
+  `feat/a-school-gets-its-person`, and phase 5 on
+  `feat/the-session-gets-short`, which is branched off it. The only modified
+  file neither owns is `next-env.d.ts`, which is generated and belongs to the
+  owner.
+- **The deployed database is no longer behind the code deployed on it.** The two
+  migrations named here on 2026-08-20 were applied on 2026-08-21 —
+  `20260820120000_identity_becomes_a_row` and
+  `20260820160000_the_audit_log_survives_a_restart` — and `prisma migrate
+  status` then read `Database schema is up to date!` at 18 migrations.
+  `managers`, `organization_memberships` and `audit_events` exist and are empty;
+  `organizations` holds 1. **So the deployed audit log records again**: every
+  manager write had been failing on the missing table and logging
+  `[audit] … was not recorded` while the action proceeded.
+- **Phase 5 is written but not deployed.** The session is fifteen minutes under
+  a twelve-hour cap, renewed by the manager's own activity, and renewal re-reads
+  the directory — `PROJECT_CONTEXT.md` ADR-028 owns it. Two things about
+  deploying it are worth knowing before it lands rather than after. **Everybody
+  signed in at that moment signs in once more**, because a token without the new
+  deadline claim is refused. And **the password door still works**: a local walk
+  caught that renewing an environment-built manager against `managers` signs
+  them straight back out, so renewal asks whichever directory the runtime's own
+  configuration says is live. Setting the four `OIDC_*` values ends the password
+  sessions still in browsers at their next renewal, which is intended.
+- **The local database has all 18 migrations** and carries the walk's leftovers:
+  an extra school, an invited-then-revoked person, and `audit_events` rows.
+  Disposable.
+- **The suite is green on `feat/the-session-gets-short`**, run at session close:
+  `npm test` 1333 passed, `npm run typecheck`, `npm run lint` and `npm run
+  build` clean, and `lint:composition`, `lint:doc-numbers`, `lint:literals`,
+  `lint:skills`, `openapi:check` and `docs:endpoints:check` all pass.
+  `verify:core` was not run whole; `verify:ai`, `lint:interpreter`,
+  `lint:mutation-config`, `lint:contract-refusals` and `lint:fixtures` were not
+  run, because nothing in this work touched the AI contract or the Python
+  service.
 
-**Next concrete step:** apply both migrations to the deployed database — that is
-the one thing standing between the deployed endpoint and the code already on it.
-Then create the Google OAuth client, which falls under the standing approval gate
-on authentication configuration. The deployment keeps its password screen until
+**Next concrete step:** push the two branches, and read `GET /api/health/` once
+Vercel has rebuilt — phase 5 is the first change since the migrations that
+alters how anybody stays signed in, and the deployed endpoint is on the password
+door it was fixed for.
+
+Then the Google OAuth client, which falls under the standing approval gate on
+authentication configuration. The deployment keeps its password screen until
 `OIDC_ISSUER`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET` and `OIDC_REDIRECT_URI`
 are set, and switches the moment they are; the redirect URI must be
 `https://<deployment>/api/auth/oidc/callback`, listed verbatim on the client.
 
-Then **phase 5** of
-[`multi-tenancy-plan-2026-08-20.md`](multi-tenancy-plan-2026-08-20.md) — the
-short session — recommended ahead of phase 4, because it is the only remaining
-phase that fixes something already observed failing: the phase 2 walk watched a
-revoked person keep reading their school on a token minted before the
-revocation. Until it lands, revoking access means "from their next sign-in".
-
-After that, phase 4 — what an administrator can see about every school. Phase 2
-needed no e-mail provider in the end: an invitation is an entitlement, so the
-administrator tells the invitee out of band and they sign in. Phase 3 was taken
-ahead of phase 2 because an administrator who can read every school has to be
-reconstructable before those administrators exist; it now is, in `audit_events`,
-though nothing renders that table yet — who may read it, and whether a school
-sees the visits made to it, is the one product question these phases
-deliberately left open, and it has no addressee until there are real schools.
-Two other things wait on the
-owner and have their own entries below: **rotate `GEMINI_API_KEY`**, exposed in a
+Then **phase 4** of
+[`multi-tenancy-plan-2026-08-20.md`](multi-tenancy-plan-2026-08-20.md) — what an
+administrator can see about every school. It is the last unbuilt phase that is
+not deferred: phase 6 was deferred on purpose by the owner, and phases 0, 1, 2, 3
+and 5 are written. Phase 2 needed no e-mail provider in the end: an invitation is
+an entitlement, so the administrator tells the invitee out of band and they sign
+in. Who may read `audit_events`, and whether a school sees the visits made to it,
+is the one product question these phases deliberately left open, and it has no
+addressee until there are real schools. Two other things wait on the owner and
+have their own entries below: **rotate `GEMINI_API_KEY`**, exposed in a
 transcript on 2026-08-20 and billed, before any paid round; and, off a round run
 for some other reason, read the usage lines for what a `6.0` round costs at
 `LLM_REASONING_EFFORT=low`. `docs/product-behaviour-backlog.md` §12, the research
-instrument, is the alternative to phase 2.
+instrument, is the alternative to phase 4.
 
 ## Deployed state
 

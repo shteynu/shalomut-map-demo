@@ -935,8 +935,12 @@ became a notification rather than a delivery mechanism.
 standing one exists — `active` or `invited` — and replacing somebody is
 revoke-then-invite rather than a transfer. Revocation is a status and never a
 delete, because the audit log's `manager_id` points at that row. It takes effect
-from the person's next sign-in, not immediately: the session token carries its
-memberships for a day, which is the gap phase 5 exists to close.
+within a quarter of an hour rather than immediately, and phase 5 is why it is a
+quarter of an hour rather than a day: the token still carries its memberships and
+the middleware still trusts them without a query, but the token now expires in
+fifteen minutes and the renewal that replaces it re-reads those memberships from
+the database. A revoked person's next renewal is refused; the token already in
+their browser dies on its own inside the window.
 
 **Opening a school became a platform act.** The owner's order is that the
 administrator creates the school and then invites its user, and the alternative
@@ -948,6 +952,54 @@ offers it and `/api/manager/setup` refuses it with a reason.
 administrator because it is the floor under every privacy threshold the school
 can later choose; the first round is the school user's own first act rather than
 an administrator guessing at a quarter.
+
+### ADR-028: The session is short, and renewal is where the database is re-read
+
+2026-08-21, phase 5 of the multi-tenancy plan. It closes the gap ADR-027 named:
+revoking a school's person meant "from their next sign-in", because the token
+carrying their memberships was good for a day.
+
+**Fifteen minutes, under a twelve-hour cap.** Owner decision, taken against how a
+manager actually works — the same number is the idle-logout timer, and a session
+that dies mid-reading is a worse defect than the one this fixes. The window
+slides on activity; the cap is set at sign-in, copied unchanged into every
+renewed token, and is the ceiling on a stolen cookie and on a tab left open over
+a weekend. Both live in `src/lib/auth/session-lifetime.ts` and nowhere else;
+`86400` used to appear in two route handlers and a provider default.
+
+**Renewal is the only moment a live session meets the database.** The token
+asserts memberships, role and the administrator flag so the middleware can answer
+"may this request open that school" without a query — Seoul database, Washington
+functions. That trade is unchanged and the assertion is now good for fifteen
+minutes instead of a day. `SessionRenewalService` re-reads all of it and refuses
+a session whose manager is gone, whose memberships were suspended, or whose named
+school is no longer theirs.
+
+**It refuses rather than repairs.** A person whose named school was taken away
+but who still has another is sent to sign in again, not slid sideways into the
+remaining one — changing what somebody is reading without saying so is worse than
+asking them to sign in. And renewal never writes: an invitation is accepted by
+signing in, so granting access here would be a second, quieter sign-in path with
+no audit event behind it.
+
+**A route handler, not the middleware**, which is where it belongs by every other
+measure — the middleware sees every navigation and is the only place that can set
+a cookie on one. It is ruled out by this repository's own composition rule:
+repositories are resolved from a route handler, a server-component context loader,
+a script or a test, and `npm run lint:composition` enforces it. A server component
+cannot set a cookie in Next 16 either. So `POST /api/auth/session/renew` does the
+read and `SessionRenewal` asks for it, on the manager's own activity and never on
+a timer — a timer would keep a forgotten tab signed in for as long as the browser
+was open, which is the variant this decision turned down.
+
+**A token without the deadline claim is refused**, the same safe reading of
+silence the administrator flag gets. Whoever is signed in when this deploys signs
+in once more.
+
+**What is still open is the last window.** A token already in a revoked person's
+browser stays valid until it expires — at most fifteen minutes. Closing that
+needs a revocation list, which is a different design and was not what this phase
+asked for. `revokeSession()` remains a no-op and now says why.
 
 ## Environments
 

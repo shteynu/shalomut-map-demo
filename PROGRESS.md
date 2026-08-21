@@ -17,9 +17,18 @@ inside it.
   and an address the provider vouches for is still refused unless somebody
   invited it. About four platform administrators may open any school; a school
   user may open theirs. A deployment without an OAuth client keeps the interim
-  password screen until it has one, and never both at once. The screens that
-  create schools and issue those invitations are the next slice; until they
-  exist, membership rows are written by hand.
+  password screen until it has one, and never both at once. An administrator
+  opens a school and invites its person from `/admin`, and every manager action
+  — including an administrator reading a school they are not a member of — is a
+  row in `audit_events`, which nothing renders yet.
+
+- **A session lasts fifteen minutes, and taking access away means it.** Since
+  2026-08-21 the token is short rather than good for a day, and the renewal that
+  replaces it is the moment memberships, role and the administrator flag are
+  re-read from the database. Revoking somebody who is signed in stops them
+  within the quarter hour instead of at their next sign-in. A manager's own
+  activity is what renews it, so an idle screen signs itself out and a working
+  one never does; twelve hours after signing in, everybody signs in again.
 
 - **The product explains itself, on a screen and in the repository.** `/help` is
   a Hebrew manager guide answering the seven questions the screens raise — why a
