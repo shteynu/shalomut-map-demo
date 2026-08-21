@@ -438,12 +438,24 @@ inside it.
 - CI runs TypeScript tests/types/lint/build, PostgreSQL integration tests and
   the full Python suite through `npm run verify`; CodeQL covers TypeScript and
   Python.
-- One browser path is automated: `npm run test:e2e` signs a manager in, reads
-  the round's share link, opens it as a respondent and looks at the dashboard.
-  It runs in CI after `npm run verify`, against a seeded disposable database
-  and a server the run starts with credentials it invents, so no secret is
-  configured for it. It answers "is the app standing?" and replaces the manual
-  browser walk that used to be repeated once per session.
+- Two browser paths are automated. The smoke: `npm run test:e2e` signs a
+  manager in, reads the round's share link, opens it as a respondent and looks
+  at the dashboard. It runs in CI after `npm run verify`, against a seeded
+  disposable database and a server the run starts with credentials it invents,
+  so no secret is configured for it. It answers "is the app standing?" and
+  replaces the manual browser walk that used to be repeated once per session.
+- The second is the tenant boundary, added 2026-08-21. Which school a manager is
+  reading is decided in middleware from a query parameter and a cookie, so it
+  exists only in a browser and every unit test around it is blind to the thing
+  that actually goes wrong: one school's screen showing another school. Four
+  checks — a member asking for a school they are not in stays where they are and
+  the refusal is not remembered, a member is turned away from the administrator
+  area, an administrator opens a school they do not belong to and the visit is
+  written to the audit log, and the administrator area is theirs. Each was
+  watched failing against a deliberately broken middleware, one mutation per
+  check. It runs on a second server configured with an identity provider,
+  because in a runtime without one the directory is the password accounts and
+  none of them is an administrator.
 - The Dashboard renders `DashboardInsightsDto` instead of the AI wire payload,
   and `src/lib/demo-data.ts` is gone along with the fixture analysis it held.
 - StrykerJS provides an opt-in, non-blocking mutation pilot for
