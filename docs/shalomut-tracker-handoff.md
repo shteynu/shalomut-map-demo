@@ -16,75 +16,82 @@ and in Git; what was durable in them is below.
 
 ## Now
 
-Verified 2026-08-21, in this worktree:
+Verified 2026-08-21, in this worktree and on the deployed endpoint:
 
-- **`origin/main` is `54881c5`**, asked of the remote, and `GET /api/health/`
-  answers `commit: 54881c5` — so the deployed endpoint is the pushed tip. Above
-  it sit three unpushed local branches, each on the one below: `f2b8653` on
-  `feat/a-school-gets-its-person`, phase 5 on `feat/the-session-gets-short`,
-  and phase 4 on `feat/what-the-administrator-sees`. Pushing the last lands all
-  three. The only modified file none of them owns is `next-env.d.ts`, which is
-  generated and belongs to the owner.
-- **The deployed database is no longer behind the code deployed on it.** The two
-  migrations named here on 2026-08-20 were applied on 2026-08-21 —
-  `20260820120000_identity_becomes_a_row` and
-  `20260820160000_the_audit_log_survives_a_restart` — and `prisma migrate
-  status` then read `Database schema is up to date!` at 18 migrations.
-  `managers`, `organization_memberships` and `audit_events` exist and are empty;
-  `organizations` holds 1. **So the deployed audit log records again**: every
-  manager write had been failing on the missing table and logging
-  `[audit] … was not recorded` while the action proceeded.
-- **Phase 5 is written but not deployed.** The session is fifteen minutes under
-  a twelve-hour cap, renewed by the manager's own activity, and renewal re-reads
-  the directory — `PROJECT_CONTEXT.md` ADR-028 owns it. Two things about
-  deploying it are worth knowing before it lands rather than after. **Everybody
-  signed in at that moment signs in once more**, because a token without the new
-  deadline claim is refused. And **the password door still works**: a local walk
-  caught that renewing an environment-built manager against `managers` signs
-  them straight back out, so renewal asks whichever directory the runtime's own
-  configuration says is live. Setting the four `OIDC_*` values ends the password
-  sessions still in browsers at their next renewal, which is intended.
-- **The local database has all 18 migrations** and carries the walk's leftovers:
-  an extra school, an invited-then-revoked person, and `audit_events` rows.
+- **`origin/main` is `2576b99`** and `GET /api/health/` answers
+  `commit: 2576b99`, so the deployed endpoint is the pushed tip. It flipped
+  about forty-five seconds after the push, watched rather than assumed. The
+  push carried `f2b8653`, phase 5 and phase 4 together, since each branch sat
+  on the one below. Nothing is unpushed. The only modified file is
+  `next-env.d.ts`, which is generated and belongs to the owner.
+- **No migration was needed for this deploy.** `54881c5..2576b99` touches no
+  file under `prisma/`. The deployed schema is the one applied earlier the same
+  day — 18 migrations, `Database schema is up to date!` — with `managers`,
+  `organization_memberships` and `audit_events` present and empty,
+  `organizations` at 1 and `survey_rounds` at 1. **The deployed audit log
+  records again**; before those migrations every manager write had been failing
+  on the missing table and logging `[audit] … was not recorded` while the action
+  itself proceeded.
+- **The AI service correctly did not rebuild** and still serves `e69a5eb`.
+  Nothing in this push touches its `buildFilter` paths, so a service commit
+  behind Core's is the expected resting state here, not a missed deploy.
+- **Phase 5 is deployed and the signed-in path was walked there.** Signed in
+  through the password door as `admin@shalomut.edu.il` (`mgr-admin-001`, a
+  school admin, `isPlatformAdministrator: false`), the session read
+  `09:45:05 → 10:00:05` — fifteen minutes, ADR-028 alive on the real endpoint.
+  `SessionRenewal` fired its own `POST /api/auth/session/renew` on page arrival
+  and got **`200`** with `renewAfterSeconds: 300`; the window moved to
+  `09:45:13 → 10:00:13`, the length unchanged, and `/api/auth/me` still answered
+  `authenticated: true` afterwards. No console errors. This is exactly the path
+  phase 5's first version broke — renewal signed the password-door manager
+  straight back out — so it is the check that had to happen here rather than
+  only locally.
+- **Refusals hold on the deployed endpoint, signed in and anonymous.** Anonymous:
+  `POST /api/auth/session/renew/` → `401 NO_SESSION` with a `Max-Age=0` cookie
+  clear, `/admin/` → `307` to `/login`, `/api/admin/people/` → `401`. Signed in
+  as a school admin: `/admin` redirects away and `/api/admin/people/` answers
+  **`404 Not found.`** rather than `403` — the deliberate non-disclosure, since a
+  `403` would confirm the screen exists.
+- **Phase 4 has not been exercised on the deployed endpoint**, and cannot be
+  usefully: the deployed `managers` table is empty, so the only account there is
+  the environment-built school admin, and `/admin` is unreachable through it by
+  design. The administrator screen was walked locally against a stand-in identity
+  provider — see
+  [`archive/feat--what-the-administrator-sees.md`](agent-tasks/archive/feat--what-the-administrator-sees.md).
+  Setting the four `OIDC_*` values is what makes it reachable there.
+- **The local database has all 18 migrations** and carries the walks' leftovers:
+  extra schools, an invited-then-revoked person, and `audit_events` rows.
   Disposable.
-- **The suite is green on `feat/what-the-administrator-sees`**, run at session
-  close: `npm test` 1342 passed, `npm run typecheck`, `npm run lint` and `npm run
-  build` clean, and `lint:composition`, `lint:doc-numbers`, `lint:literals`,
-  `lint:skills`, `openapi:check` and `docs:endpoints:check` all pass.
-  `verify:core` was not run whole; `verify:ai`, `lint:interpreter`,
-  `lint:mutation-config`, `lint:contract-refusals` and `lint:fixtures` were not
-  run, because nothing in this work touched the AI contract or the Python
-  service.
+- **The suite was green at `2576b99`**: `npm test` 1342 passed, `npm run
+  typecheck`, `npm run lint` and `npm run build` clean, and `lint:composition`,
+  `lint:doc-numbers`, `lint:literals`, `lint:skills`, `openapi:check` and
+  `docs:endpoints:check` all pass. `verify:core` was not run whole; `verify:ai`,
+  `lint:interpreter`, `lint:mutation-config`, `lint:contract-refusals` and
+  `lint:fixtures` were not run, because nothing in this work touched the AI
+  contract or the Python service.
 
-**Next concrete step:** push the three branches — `git push origin
-feat/what-the-administrator-sees` lands all of them, since each is branched on
-the one below — and read `GET /api/health/` once Vercel has rebuilt. Phase 5 is
-the first change since the migrations that alters how anybody stays signed in,
-and the deployed endpoint is on the password door it was fixed for, so signing
-in there once is the check that matters.
-
-Then the Google OAuth client, which falls under the standing approval gate on
-authentication configuration. The deployment keeps its password screen until
-`OIDC_ISSUER`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET` and `OIDC_REDIRECT_URI`
-are set, and switches the moment they are; the redirect URI must be
-`https://<deployment>/api/auth/oidc/callback`, listed verbatim on the client.
+**Next concrete step:** the Google OAuth client, which falls under the standing
+approval gate on authentication configuration. The deployment keeps its password
+screen until `OIDC_ISSUER`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET` and
+`OIDC_REDIRECT_URI` are set, and switches the moment they are; the redirect URI
+must be `https://<deployment>/api/auth/oidc/callback`, listed verbatim on the
+client. Two consequences worth knowing before it is set rather than after:
+setting it ends the password sessions still in browsers at their next renewal,
+which is intended, and it is what first makes `/admin` reachable on the deployed
+endpoint.
 
 **Every phase of
 [`multi-tenancy-plan-2026-08-20.md`](multi-tenancy-plan-2026-08-20.md) that was
-not deferred is now written** — 0, 1, 2, 3, 4 and 5. Phase 6, what a school user
-may not do, was deferred on purpose by the owner and its content is undecided.
-Phase 2 needed no e-mail provider in the end: an invitation is an entitlement, so
-the administrator tells the invitee out of band and they sign in. Who may read
-`audit_events`, and whether a school sees the visits made to it, is the one
-product question these phases deliberately left open, and it has no addressee
-until there are real schools.
-
-So the next substantial piece of work is no longer in that plan.
-`docs/product-behaviour-backlog.md` §12, the research instrument, is the
-standing alternative. Two things wait on the owner and have their own entries
-below: **rotate `GEMINI_API_KEY`**, exposed in a transcript on 2026-08-20 and
-billed, before any paid round; and, off a round run for some other reason, read
-the usage lines for what a `6.0` round costs at `LLM_REASONING_EFFORT=low`.
+not deferred is now written and deployed** — 0, 1, 2, 3, 4 and 5. Phase 6, what a
+school user may not do, was deferred on purpose by the owner and its content is
+undecided. Phase 2 needed no e-mail provider in the end: an invitation is an
+entitlement, so the administrator tells the invitee out of band and they sign in.
+Who may read `audit_events`, and whether a school sees the visits made to it, is
+the one product question these phases deliberately left open, and it has no
+addressee until there are real schools. With the plan closed, the next
+substantial work is no longer in it —
+[`product-behaviour-backlog.md`](product-behaviour-backlog.md) §12, the research
+instrument, is the standing alternative.
 
 ## Deployed state
 

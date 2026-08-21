@@ -6,7 +6,8 @@
 - Base branch: `feat/a-school-gets-its-person` (one unpushed docs commit above `origin/main`)
 - Base commit: `f2b8653`
 - Current HEAD: `85d5676`
-- Status: implemented and verified locally; unpushed
+- Final commit on `main`: landed inside `2576b99`, pushed with phase 4 above it
+- Status: complete, deployed and verified on the deployed endpoint
 - Last updated: 2026-08-21
 - Last agent/tool: Claude Opus 5 / Claude Code
 
@@ -167,6 +168,21 @@ the new required `ManagerSession.absoluteExpiresAt`.
   deployed endpoint is on that door. Renewal now asks the directory the
   runtime's configuration says is live, and two tests pin both halves.
 
+- **The deployed endpoint, signed in, 2026-08-21.** The check this branch
+  actually needed, because the deployment is on the password door whose renewal
+  the first version broke. Signed in as `admin@shalomut.edu.il`
+  (`mgr-admin-001`), `/api/auth/me/` read `09:45:05 → 10:00:05` — fifteen
+  minutes, on the real endpoint. `SessionRenewal` fired its own
+  `POST /api/auth/session/renew` on page arrival and got **`200`** with
+  `renewAfterSeconds: 300`; the window moved to `09:45:13 → 10:00:13`, the same
+  length eight seconds later, and `/api/auth/me/` still answered
+  `authenticated: true`. No console errors, and the dashboard rendered signed in
+  after a reload rather than bouncing to `/login`.
+- **The anonymous refusal, deployed.** `POST /api/auth/session/renew/` with no
+  cookie answers `401 {"ok":false,"reason":"NO_SESSION"}` and sends
+  `shalomut_session=; Max-Age=0; HttpOnly; SameSite=lax`, so a refusal clears
+  the cookie rather than leaving a dead one in the browser.
+
 ### Failed
 
 - None outstanding. The `USER_NOT_FOUND` bounce above is recorded because it was
@@ -175,8 +191,6 @@ the new required `ManagerSession.absoluteExpiresAt`.
 
 ### Blocked or not run
 
-- **Nothing was verified on the deployed endpoint**, because this branch is
-  unpushed and `git push` is the owner's action here.
 - The idle expiry itself was not waited out — no walk sat still for fifteen
   minutes. The arithmetic is covered by tests; the browser evidence covers
   renewal, not expiry.
@@ -235,8 +249,8 @@ the new required `ManagerSession.absoluteExpiresAt`.
 
 ## Next concrete step
 
-Hand `git push origin feat/the-session-gets-short` to the owner — the branch
-carries `f2b8653` beneath it, so pushing it lands both. Then read
-`GET /api/health/` once Vercel has rebuilt, and sign in on the deployed endpoint
-once: it is on the password door this branch fixed, and that path has been
-verified locally but never there.
+None — this task is complete, deployed and verified there. The session work
+continues only where the identity provider does: setting the four `OIDC_*`
+values on the deployment ends the password sessions still in browsers at their
+next renewal, which is intended and is recorded in
+[`../../shalomut-tracker-handoff.md`](../../shalomut-tracker-handoff.md).

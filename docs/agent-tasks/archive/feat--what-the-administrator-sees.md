@@ -6,8 +6,10 @@
 - Base branch: `feat/the-session-gets-short` (phase 5, unpushed, which itself
   sits on `f2b8653` above `origin/main`)
 - Base commit: `d0efa81`
-- Current HEAD: `427c132`
-- Status: implemented and verified locally; unpushed
+- Current HEAD: `2576b99` (`427c132` plus the documentation commit above it)
+- Final commit on `main`: `2576b99`, which fast-forwarded `main` from `54881c5`
+- Status: complete and deployed; verified locally, and see below for what the
+  deployed endpoint can and cannot show
 - Last updated: 2026-08-21
 - Last agent/tool: Claude Opus 5 / Claude Code
 
@@ -123,7 +125,9 @@ All of Scope, in `427c132`.
 
 ## Remaining
 
-- The owner pushes. Nothing else in this task is unfinished.
+- Nothing. The owner pushed on 2026-08-21 and `main` fast-forwarded to
+  `2576b99`; `GET /api/health/` answered `commit: 2576b99` about forty-five
+  seconds later.
 
 ## Changed files
 
@@ -170,10 +174,17 @@ service, the page, the console component and the stylesheet.
 
 ### Blocked or not run
 
-- **Nothing was verified on the deployed endpoint**, because this branch is
-  unpushed and `git push` is the owner's action here.
-- The deployed database has one school and no rounds, so the deployed screen
-  would exercise only the empty case even after a push.
+- **The administrator screen itself was not exercised on the deployed
+  endpoint, and cannot be yet.** The deployed `managers` table is empty, so the
+  only account there is the environment-built school admin, which `/admin`
+  refuses by design. Setting the four `OIDC_*` values is what makes the screen
+  reachable there. What *was* checked on the deployed endpoint is that the
+  refusal is the intended one: signed in as the school admin, `/admin`
+  redirects away and `/api/admin/people/` answers `404 Not found.` rather than
+  `403`, since a `403` would confirm the screen exists. Anonymous, the same
+  endpoint answers `401`.
+- Even once it is reachable, the deployed database has one school and no rounds,
+  so the deployed screen would exercise only the empty case.
 - `verify:core` was not run whole. `verify:ai`, `lint:interpreter`,
   `lint:mutation-config`, `lint:contract-refusals` and `lint:fixtures` were not
   run: nothing here touches the AI contract or the Python service.
@@ -226,7 +237,8 @@ service, the page, the console component and the stylesheet.
 
 ## Next concrete step
 
-Hand `git push origin feat/what-the-administrator-sees` to the owner — it lands
-this branch, phase 5 and `f2b8653` in one push, since each sits on the one below.
-Then sign in once on the deployed endpoint: it is on the password door phase 5
-fixed, and that path has been verified locally but never there.
+None — this task is complete and deployed. The open thread it leaves is not
+its own: with every undeferred phase of the multi-tenancy plan written, the next
+substantial work is outside that plan, and
+[`product-behaviour-backlog.md`](../../product-behaviour-backlog.md) §12, the
+research instrument, is the standing alternative.
