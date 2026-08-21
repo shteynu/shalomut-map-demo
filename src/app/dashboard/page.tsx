@@ -2,6 +2,7 @@ import { ManagerOnboarding } from "@/components/manager";
 import { DashboardMapPage } from "@/components/dashboard";
 import { dividedDimensions } from "@/lib/dashboard/dimension-division";
 import { toRoundSwitcherOptions } from "@/lib/rounds/round-options";
+import { isRoundCollecting } from "@/lib/rounds/round-status";
 import { readRoundParam, roundSwitcherAction } from "@/lib/navigation";
 import {
   loadManagerContext,
@@ -62,7 +63,10 @@ export default async function DashboardPage({
       // and a round the analysis had locked for another reason arrived there
       // with no dimension scores to draw.
       isLocked={analytics.isLocked}
-      lockReason={analytics.lockReason}
+      // Read off the round rather than carried back from the analysis: the
+      // analysis withholds a collecting round, and the screen has to say so
+      // instead of promising the map after N more answers.
+      isCollecting={isRoundCollecting(selectedRound.status)}
       dimensionScores={dimensionScores}
       roundOptions={toRoundSwitcherOptions(
         context.rounds,

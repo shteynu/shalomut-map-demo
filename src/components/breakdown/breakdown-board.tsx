@@ -6,7 +6,6 @@ import type {
 } from "@/lib/analytics/background-breakdown";
 import { dimensionPresentations } from "@/lib/dashboard/dimension-presentation";
 import type { WellbeingDimensionId } from "@/lib/shalomut-source";
-import type { RoundLockReason } from "@/lib/types/canonical-analytics";
 import { statusLabelShort } from "@/components/ui";
 import { BreakdownQuestionPicker } from "./breakdown-question-picker";
 
@@ -103,7 +102,7 @@ export function BreakdownBoard({
   selectedQuestionId,
   roundId,
   isRoundLocked,
-  lockReason,
+  isCollecting,
   privacyThreshold,
   totalResponses,
 }: {
@@ -112,8 +111,8 @@ export function BreakdownBoard({
   selectedQuestionId: string | undefined;
   roundId: string;
   isRoundLocked: boolean;
-  /** Why the round is withheld, so this screen says the same true thing the map does. */
-  lockReason: RoundLockReason | null;
+  /** Whether the round can still receive an answer, so this screen says the same true thing the map does. */
+  isCollecting: boolean;
   privacyThreshold: number;
   totalResponses: number;
 }) {
@@ -146,7 +145,7 @@ export function BreakdownBoard({
             be one product giving two accounts of the same lock — and the
             threshold sentence is plainly false on a round that passed it.
           */}
-          {lockReason === "still-collecting" ? (
+          {isCollecting ? (
             <p>
               תוצאות הסבב ייפתחו כשהוא ייסגר, ולכן גם הפילוח ייפתח אז. פילוח
               שמתעדכן בזמן שתשובות ממשיכות להגיע היה מאפשר לקרוא בחיסור את

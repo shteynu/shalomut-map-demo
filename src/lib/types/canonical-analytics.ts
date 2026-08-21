@@ -25,25 +25,6 @@ export interface CanonicalQuestionAggregate {
 }
 
 /**
- * Why a round's numbers are withheld, or `null` when they are published.
- *
- * The reason exists because the screens have to say something true. A locked
- * round used to be a bare boolean, and every screen re-derived the cause by
- * comparing the response count to the threshold — which was the only cause
- * there was until a round could also be locked for having arrived too early.
- * A manager looking at seventeen responses against a threshold of ten would
- * otherwise be told they need another zero.
- *
- * `still-collecting` is the one that is not about how many answers came back.
- * It is about how many times the round has been published: see ADR-030.
- */
-export type RoundLockReason =
-  | 'still-collecting'
-  | 'below-threshold'
-  | 'question-below-threshold'
-  | 'unfinished-questionnaire';
-
-/**
  * The round as Core computed it — no contract version, no wire shape. Encoders
  * in the contract package turn this into the versioned payloads the AI service
  * and the manager API receive, which is what keeps `AnalyticsService` free of
@@ -51,7 +32,11 @@ export type RoundLockReason =
  *
  * A locked round carries empty `dimensionScores` and `questionAggregates`: the
  * privacy gate is a property of the round, so it is decided here and not left
- * for a boundary to remember.
+ * for a boundary to remember. A round is locked below the privacy threshold and
+ * also while it is still collecting, because a round that keeps filling up
+ * would otherwise publish a new basis of calculation on every read (ADR-030).
+ * Why it is locked is not carried here — the screens that explain it hold the
+ * round itself, and `isRoundCollecting` is the one predicate they share.
  */
 export interface CanonicalRoundAnalytics {
   roundId: string;
@@ -71,15 +56,6 @@ export interface CanonicalRoundAnalytics {
   totalResponses: number;
   privacyThreshold: number;
   isLocked: boolean;
-  /**
-   * Why `isLocked` is true, and `null` exactly when it is false.
-   *
-   * Core-side only, like `measurementSnapshotHash` above:
-   * `encodeAnalyticsInput` names the keys that cross the wire and this is not
-   * one of them. The AI service is told whether a round is locked, which is
-   * all it can act on — it is never called for a locked round at all.
-   */
-  lockReason: RoundLockReason | null;
   dimensionScores: Record<WellbeingDimensionId, RoundDimensionScore>;
   questionAggregates: Record<string, CanonicalQuestionAggregate>;
   /** The school context the manager entered, when the round has one. */

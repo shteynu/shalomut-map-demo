@@ -89,7 +89,6 @@ test('a round still collecting publishes no numbers, however many answers it hol
   // this round published its full per-question distributions on every read.
   assert.equal(analytics.totalResponses, MINIMUM_PRIVACY_THRESHOLD + 7);
   assert.equal(analytics.isLocked, true);
-  assert.equal(analytics.lockReason, 'still-collecting');
   assert.deepEqual(analytics.dimensionScores, {});
   assert.deepEqual(analytics.questionAggregates, {});
 });
@@ -101,7 +100,6 @@ test('a draft round is withheld for the same reason as an active one', () => {
   );
 
   assert.equal(analytics.isLocked, true);
-  assert.equal(analytics.lockReason, 'still-collecting');
 });
 
 test('two reads either side of one submission give an open round nothing to subtract', () => {
@@ -134,7 +132,6 @@ test('closing the round is what publishes it, and archiving keeps it published',
     collected,
   );
   assert.equal(closed.isLocked, false);
-  assert.equal(closed.lockReason, null);
   assert.equal(
     Object.keys(closed.questionAggregates).length,
     surveyInstrument.questions.length,

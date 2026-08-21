@@ -1,4 +1,5 @@
 import type { RoundStatus } from '../types/backend';
+import { isRoundCollecting } from './round-status';
 
 /**
  * What the round's end date is allowed to say about itself.
@@ -59,7 +60,7 @@ export function describePlannedEnd(
 
   // A round that is no longer collecting has nothing to be late for; the date
   // is history, and whether it matched the closing is not this card's subject.
-  const isCollecting = status === 'active' || status === 'draft';
+  const isCollecting = isRoundCollecting(status);
   if (!isCollecting) {
     return { label, helper: 'תאריך היעד שנקבע לסבב.', isOverdue: false };
   }

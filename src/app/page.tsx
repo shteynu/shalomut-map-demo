@@ -15,6 +15,7 @@ import {
   routeMetadata,
 } from "@/lib/navigation";
 import { toRoundSwitcherOptions } from "@/lib/rounds/round-options";
+import { isRoundCollecting } from "@/lib/rounds/round-status";
 import {
   loadManagerContext,
   loadSchoolChoices,
@@ -65,13 +66,13 @@ export default async function HomePage({
     getStatusCount("red"),
     selectedRound.privacyThreshold,
     "אבנים הדורשות התייחסות במפה",
-    analytics?.lockReason ?? null,
+    isRoundCollecting(selectedRound.status),
   );
   const strengthStone = describeStatusStone(
     getStatusCount("green"),
     selectedRound.privacyThreshold,
     "אבנים במצב טוב במפה",
-    analytics?.lockReason ?? null,
+    isRoundCollecting(selectedRound.status),
   );
 
   return (

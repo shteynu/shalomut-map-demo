@@ -1116,15 +1116,17 @@ path of its own — and warns that filtering one and not the others makes Core
 reject its own result or makes two screens disagree in front of a manager. So
 the condition lives in `calculateDynamicRoundAnalytics`, beside the threshold,
 and every one of those paths inherits it without knowing it exists. Nothing was
-added to the wire: `lockReason` is Core-side, like `measurementSnapshotHash`,
-and no contract version changed.
+added to the wire and no contract version changed.
 
 **The screens had to stop guessing why.** A locked round was a bare boolean and
 each screen re-derived the cause by comparing the count to the threshold — sound
 while the count was the only cause. A round at seventeen answers out of ten is
 now withheld too, so that arithmetic would have told a manager they need another
-zero. `lockReason` travels with the verdict and the map, the breakdown and the
-home stones each say the reason that is true.
+zero. The reason is not carried back from the analysis, because the screens
+already hold the round: they call `isRoundCollecting(round.status)`, the same
+predicate the gate calls, and the map, the breakdown and the home stones each
+say the reason that is true. One predicate rather than a field means the
+explanation cannot drift from the verdict it explains.
 
 **What a manager loses is the live map, and they are told so.** Watching the
 dimensions move during collection is the feature this removes; the AI analysis

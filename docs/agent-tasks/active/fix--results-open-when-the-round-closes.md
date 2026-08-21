@@ -23,7 +23,8 @@ A round that is still collecting no longer shows its map, its dimension scores,
 its per-question numbers or its demographic breakdown. It shows the response
 count, the funnel and how the round was filled, as before. Closing the round
 publishes everything, as it always did. The three screens that report a locked
-round now say which of the four reasons it is.
+round now say whether it is the round still being open or the privacy threshold,
+which they read from the round's own status rather than from the count.
 
 ## Context
 
@@ -48,15 +49,19 @@ second basis costs nobody a decision, only a refresh.
 - **`closed` and `archived` publish; `draft` and `active` do not.** Archived has
   to publish: the callback verifier recomputes the round it is checking, and an
   archived round read as locked would make Core reject a correct result.
-- **`lockReason` is Core-side, so no contract changed.** It sits on
-  `CanonicalRoundAnalytics` next to `measurementSnapshotHash`, which is
-  documented as Core-only for the same reason: `encodeAnalyticsInput` names the
-  keys that cross the wire. No versioned manifest and no consumer-first rollout.
-- **The screens are told the reason rather than deriving it.** Each of the three
-  worked the cause out by comparing the count to the threshold, which was sound
-  while the count was the only cause. A round at seventeen answers out of ten
-  would have been told it needs another zero — the exact sentence
-  `dashboard-map-locked.tsx` already carried a comment warning against.
+- **Nothing was added to the wire, so no contract changed.** The gate only
+  changes what `dimensionScores` and `questionAggregates` hold, and both are
+  already allowed to be empty on a locked round. No versioned manifest and no
+  consumer-first rollout.
+- **The screens read the round, they do not derive the reason from the count.**
+  Each of the three worked the cause out by comparing the count to the
+  threshold, which was sound while the count was the only cause. A round at
+  seventeen answers out of ten would have been told it needs another zero — the
+  exact sentence `dashboard-map-locked.tsx` already carried a comment warning
+  against. The fourth commit cut the `lockReason` field that first carried the
+  answer back from the analysis: the screens hold `selectedRound` already, so
+  they call `isRoundCollecting(status)` — the same predicate the gate calls —
+  and the domain model keeps one field fewer.
 - **The seed grows a second round.** One round cannot demonstrate both halves
   any more: the respondent route needs `active`, an open map needs `closed`. The
   seed's own summary had also been claiming the AI analysis could be triggered
@@ -76,6 +81,14 @@ second basis costs nobody a decision, only a refresh.
 Everything in Scope. `ADR-030` records the decision; ADR-022 gained a short
 amendment pointing at it, since it is the document that left this axis open.
 
+A fourth commit then cut the `lockReason` field the first three introduced. The
+owner judged it machinery the change did not need, and it was: the screens hold
+`selectedRound` already, so `isRoundCollecting(status)` — the predicate the gate
+itself calls — answers the same question without a field on the domain model,
+without a case the encoder has to ignore, and without a way for the explanation
+to disagree with the verdict. `planned-end.ts` had the same predicate inline and
+now shares it.
+
 ## In progress
 
 Nothing.
@@ -89,7 +102,8 @@ Nothing. The owner pushes.
 Added: `src/lib/privacy/__tests__/one-basis-of-calculation.test.ts`, this file.
 
 Modified — behaviour: `src/lib/services/analytics.service.ts` (the gate),
-`src/lib/types/canonical-analytics.ts` (`RoundLockReason`),
+`src/lib/rounds/round-status.ts` (`isRoundCollecting`),
+`src/lib/rounds/planned-end.ts` (same predicate, was inline),
 `src/components/dashboard/dashboard-map-locked.tsx`,
 `src/components/dashboard/dashboard-map-page.tsx`,
 `src/components/breakdown/breakdown-board.tsx`,
@@ -116,25 +130,34 @@ left uncommitted.
 
 ### Passed
 
+All of the below was re-run after the `lockReason` cut, not carried over.
+
 - `npm run verify:core`, unpiped with its exit code captured: `REAL_EXIT=0`,
-  `# tests 1365 / # pass 1365 / # fail 0`, no `not ok`, all fitness checks
+  `# tests 1366 / # pass 1366 / # fail 0`, no `not ok`, all fitness checks
   passing.
 - `npx playwright test` — the whole browser suite, all three projects:
   **23 passed**, 0 failed, including `the dashboard renders a map or says why it
   is locked` and the respondent walk.
-- **The gate was watched failing.** With `publishesResults` forced to `true`,
-  four of the six new privacy checks fail and the end-to-end repository workflow
-  fails with them; the two that still pass are the two about closed rounds,
-  which is what they claim to be about. The tree was restored and re-run clean.
+- **The gate was watched failing.** With `isRoundCollecting` forced to return
+  `false`, seven tests fail: four of the six new privacy checks, the end-to-end
+  repository workflow, and the two `planned-end` checks that now share the
+  predicate. The two privacy checks that still pass are the two about closed
+  rounds, which is what they claim to be about. The tree was restored and
+  re-run clean at 1366/1366.
 - **Browser walk, signed in on `:3210` against the local database** (a
-  production build, password door, `local-dev-organization`):
-  - the active round holding **24 answers against a threshold of 10** renders
-    `המפה עדיין נעולה`, the count as "24 received so far" rather than "24 of 10
-    required", and the sentence about closing the round;
-  - a closed round in the same school renders the full map — overall 76, eight
-    stones with their scores — so publication itself is unregressed;
-  - the home screen's two status stones show a dash and `ייפתח בסגירת הסבב`
-    instead of the red/green counts they used to publish live.
+  production build served from `next start`, password door, the admin
+  organization). A seeded round carrying a background question was set to
+  `active` for the walk and set back to `closed` afterwards, which is what
+  reached the breakdown's locked state that the earlier walk could not:
+  - the active round holding **41 answers against a threshold of 10** renders
+    `המפה עדיין נעולה`, the count as `41 תשובות התקבלו עד כה` rather than "41 of
+    10 required", and the sentence about closing the round;
+  - `/breakdown` on the same round renders `תוצאות הסבב ייפתחו כשהוא ייסגר` with
+    the count, and no table;
+  - the home screen's two status stones show `ייפתח בסגירת הסבב` instead of the
+    red/green counts they used to publish live;
+  - a closed round in the same school still renders the full map, so publication
+    itself is unregressed.
 
 ### Failed
 
@@ -144,10 +167,11 @@ its subject needs, not to work around the gate.
 
 ### Blocked or not run
 
-- The breakdown screen's locked state was not reached in the browser: the
-  seeded canonical questionnaire carries no background question, so that screen
-  short-circuits to its own empty state. It is covered by a component test
-  instead, which asserts both the new sentence and the absence of the table.
+- `npm run db:seed:local` fails partway on this database: `SHALOM-LOCAL` is
+  already taken by an earlier seeding under a different organization, so the
+  active round it wants to write hits the unique constraint on `share_code`.
+  The walk used the rounds already in the database instead. Worth fixing, but
+  it is a seed-script defect and not this task's.
 - Nothing on the deployed endpoint. This branch changes runtime behaviour and
   has not been deployed.
 - Python suite not run: no file under `ai-analytics-service` changed, and

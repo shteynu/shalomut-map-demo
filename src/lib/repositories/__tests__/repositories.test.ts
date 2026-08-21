@@ -196,7 +196,6 @@ test('End-to-End Workflow: Round creation -> 10 submissions -> Analytics Unlocki
   );
   assert.strictEqual(analytics?.totalResponses, 10);
   assert.strictEqual(analytics?.isLocked, true);
-  assert.strictEqual(analytics?.lockReason, 'still-collecting');
   assert.deepStrictEqual(analytics?.dimensionScores, {});
 
   // 5. Close the round -> the numbers are published
@@ -209,7 +208,6 @@ test('End-to-End Workflow: Round creation -> 10 submissions -> Analytics Unlocki
   );
   assert.strictEqual(analytics?.totalResponses, 10);
   assert.strictEqual(analytics?.isLocked, false);
-  assert.strictEqual(analytics?.lockReason, null);
   assert.ok(analytics);
   assert.strictEqual(
     encodeRoundAnalytics(analytics).contractVersion,

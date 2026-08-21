@@ -9,7 +9,6 @@ import {
   type RoundComparison,
 } from "@/lib/dashboard/round-comparison";
 import type { RoundSwitcherOptions } from "@/lib/rounds/round-options";
-import type { RoundLockReason } from "@/lib/types/canonical-analytics";
 import type { AiInsightsUiState } from "@/lib/hooks/use-ai-insights";
 import { useAiInsights } from "@/lib/hooks/use-ai-insights";
 import type { WellbeingDimensionId, WellbeingStatus } from "@/lib/shalomut-source";
@@ -53,8 +52,8 @@ type DashboardMapPageProps = {
    * number.
    */
   isLocked: boolean;
-  /** Which of the reasons it was, so the locked screen can say the true one. */
-  lockReason: RoundLockReason | null;
+  /** Whether the round can still receive an answer, so the locked screen says the true reason. */
+  isCollecting: boolean;
 };
 
 export function DashboardMapPage({
@@ -70,7 +69,7 @@ export function DashboardMapPage({
   comparison,
   divisions,
   isLocked,
-  lockReason,
+  isCollecting,
 }: DashboardMapPageProps) {
 
   if (isLocked) {
@@ -90,7 +89,7 @@ export function DashboardMapPage({
         <DashboardMapLocked
           responseCount={responseCount}
           minimumResponses={minimumResponses}
-          lockReason={lockReason}
+          isCollecting={isCollecting}
         />
       </div>
     );
@@ -172,7 +171,7 @@ function DashboardMapReady({
   comparison,
   divisions,
   responseCount,
-}: Omit<DashboardMapPageProps, "isLocked" | "lockReason">) {
+}: Omit<DashboardMapPageProps, "isLocked" | "isCollecting">) {
   const { state, reload } = useAiInsights(roundId);
 
   /*

@@ -12,6 +12,7 @@ import {
 } from "@/lib/navigation";
 import { RoundSwitcher } from "@/components/round";
 import { toRoundSwitcherOptions } from "@/lib/rounds/round-options";
+import { isRoundCollecting } from "@/lib/rounds/round-status";
 import {
   loadManagerContext,
   loadRoundResponses,
@@ -85,7 +86,7 @@ export default async function BreakdownPage({
         selectedQuestionId={selectedQuestionId}
         roundId={selectedRound.id}
         isRoundLocked={analytics.isLocked}
-        lockReason={analytics.lockReason}
+        isCollecting={isRoundCollecting(selectedRound.status)}
         privacyThreshold={analytics.privacyThreshold}
         totalResponses={context.responseCount}
       />

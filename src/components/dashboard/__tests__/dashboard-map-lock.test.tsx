@@ -40,7 +40,7 @@ test("the locked screen names the reason the round is actually withheld", () => 
     <DashboardMapLocked
       responseCount={12}
       minimumResponses={10}
-      lockReason="question-below-threshold"
+      isCollecting={false}
     />,
   );
 
@@ -53,7 +53,7 @@ test("the locked screen names the reason the round is actually withheld", () => 
     <DashboardMapLocked
       responseCount={6}
       minimumResponses={10}
-      lockReason="below-threshold"
+      isCollecting={false}
     />,
   );
   assert.ok(closedShort.includes("הסבב נסגר עם 6 תשובות"));
@@ -66,7 +66,7 @@ test("the locked screen names the reason the round is actually withheld", () => 
     <DashboardMapLocked
       responseCount={17}
       minimumResponses={10}
-      lockReason="still-collecting"
+      isCollecting
     />,
   );
   assert.ok(collecting.includes("ייפתחו כשתסגרו את הסבב"));
@@ -156,7 +156,7 @@ test("the map page obeys the analysis about being locked, and does not re-decide
       comparison={null}
       divisions={[]}
       isLocked
-      lockReason="question-below-threshold"
+      isCollecting={false}
     />,
   );
 

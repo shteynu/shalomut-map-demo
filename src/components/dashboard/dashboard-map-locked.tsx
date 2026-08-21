@@ -2,32 +2,28 @@ import Link from "next/link";
 import { ArrowLeft, LockKeyhole } from "lucide-react";
 import { getNavigationAction, helpRoute } from "@/lib/navigation";
 import { helpTopicAnchor } from "@/lib/help/manager-help";
-import type { RoundLockReason } from "@/lib/types/canonical-analytics";
 
 type DashboardMapLockedProps = {
   responseCount: number;
   minimumResponses: number;
   /**
-   * Why the analysis withheld this round, as the analysis decided it.
+   * Whether the round can still receive an answer, from `isRoundCollecting`.
    *
-   * Passed in for the same reason `isLocked` is: this screen used to work the
-   * cause out for itself by comparing the two numbers above, which was right
-   * only while the count was the only thing that could lock a round. A round
-   * that is still collecting is withheld at seventeen answers out of ten, and
-   * "another 0 answers and the map opens" is a sentence a manager can watch
-   * stay false.
+   * The count alone no longer says why a round is withheld. A collecting round
+   * is withheld at seventeen answers out of ten, so working the reason out from
+   * the two numbers above would print "another 0 answers and the map opens" —
+   * a sentence a manager can watch stay false.
    */
-  lockReason: RoundLockReason | null;
+  isCollecting: boolean;
 };
 
 export function DashboardMapLocked({
   responseCount,
   minimumResponses,
-  lockReason,
+  isCollecting,
 }: DashboardMapLockedProps) {
   const remaining = Math.max(minimumResponses - responseCount, 0);
   const distributeSurveyAction = getNavigationAction("distributeSurvey");
-  const isCollecting = lockReason === "still-collecting";
 
   return (
     <section

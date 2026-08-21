@@ -7,6 +7,7 @@ import {
   resolveProducedAnalyticsContractVersion,
 } from '../ai-contract-version';
 import { IRoundRepository, ISurveyRepository } from '../repositories/interfaces';
+import { isRoundCollecting } from '../rounds/round-status';
 import { statusForScore } from '../scoring-bands';
 import { AnswerScaleId, COLOUR_SCALE_ID } from '../survey/answer-scales';
 import {
@@ -37,7 +38,6 @@ import {
 import {
   CanonicalQuestionAggregate,
   CanonicalRoundAnalytics,
-  RoundLockReason,
 } from '../types/canonical-analytics';
 
 /**
@@ -347,28 +347,14 @@ export class AnalyticsService {
     // changes nothing about it (ADR-018). Withholding there would also make the
     // callback verifier recompute a locked round for a result that carries
     // detail, and reject Core's own correct analysis.
-    const publishesResults =
-      round.status === 'closed' || round.status === 'archived';
-    const someQuestionBelowThreshold = enabledQuestions.some(
-      (question) =>
-        (scoresByQuestion.get(question.id)?.length ?? 0) < privacyThreshold,
-    );
-    // Ordered so that each reason is the one a manager can act on. Collecting
-    // outranks the counts because it binds however many answers are in: a round
-    // at seventeen of ten is still withheld, and saying "another zero answers"
-    // would be a sentence they can watch stay false. Below-threshold outranks
-    // the two structural reasons because their sentence opens by saying the
-    // total was reached, which for a short round it was not.
-    const lockReason: RoundLockReason | null = !publishesResults
-      ? 'still-collecting'
-      : totalResponses < privacyThreshold
-        ? 'below-threshold'
-        : isUnfinishedQuestionnaire
-          ? 'unfinished-questionnaire'
-          : someQuestionBelowThreshold
-            ? 'question-below-threshold'
-            : null;
-    const isLocked = lockReason !== null;
+    const isLocked =
+      isRoundCollecting(round.status) ||
+      isUnfinishedQuestionnaire ||
+      totalResponses < privacyThreshold ||
+      enabledQuestions.some(
+        (question) =>
+          (scoresByQuestion.get(question.id)?.length ?? 0) < privacyThreshold,
+      );
 
     if (isLocked) {
       return {
@@ -379,7 +365,6 @@ export class AnalyticsService {
         totalResponses,
         privacyThreshold,
         isLocked: true,
-        lockReason,
         dimensionScores: {} as Record<
           WellbeingDimensionId,
           RoundDimensionScore
@@ -443,7 +428,6 @@ export class AnalyticsService {
       totalResponses,
       privacyThreshold,
       isLocked: false,
-      lockReason: null,
       dimensionScores,
       questionAggregates,
       backgroundContext: round.backgroundContext,

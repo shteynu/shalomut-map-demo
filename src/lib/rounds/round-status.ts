@@ -30,3 +30,20 @@ export function isRoundTransitionAllowed(
 ): boolean {
   return roundTransitions[current]?.includes(target) ?? false;
 }
+
+/**
+ * Whether the round can still receive an answer.
+ *
+ * Two things read this and they must not drift apart. The analysis withholds a
+ * collecting round's numbers, because a round that is still filling up would
+ * otherwise publish a fresh basis of calculation on every read and two reads
+ * either side of one submission would name the person between them (ADR-030).
+ * The screens then explain that lock, and an explanation that disagreed with
+ * the verdict would be worse than none.
+ *
+ * A draft counts as collecting: it has not published, and its questionnaire is
+ * still being built.
+ */
+export function isRoundCollecting(status: RoundStatus): boolean {
+  return status === "active" || status === "draft";
+}

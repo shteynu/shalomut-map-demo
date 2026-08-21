@@ -63,7 +63,7 @@ function render() {
       selectedQuestionId="tenure"
       roundId="round-1"
       isRoundLocked={false}
-      lockReason={null}
+      isCollecting={false}
       privacyThreshold={10}
       totalResponses={25}
     />,
@@ -88,7 +88,7 @@ test("a breakdown locked by an open round explains the round, not the threshold"
       selectedQuestionId="tenure"
       roundId="round-1"
       isRoundLocked
-      lockReason="still-collecting"
+      isCollecting
       privacyThreshold={10}
       totalResponses={25}
     />,
