@@ -6,12 +6,11 @@
 - Base branch: `main`
 - Base commit: `64ed991` (also `origin/main`; the previous task on this branch
   is fully landed)
-- Current HEAD: the commit carrying this file. `6bf0757` is pushed and
-  deployed; `159994a`, `16c0aed`, `d0bb7e4` and this one sit unpushed on the
-  branch and change no runtime. The tip is deliberately not written as a sha —
-  a file cannot name the commit that contains it without being stale the moment
-  it is amended
-- Status: done and verified; four commits await the owner's push
+- Current HEAD: the commit carrying this file. Everything before it is pushed
+  and deployed — `origin/main` and `/api/health/` both read `86a870c`. The tip
+  is deliberately not written as a sha: a file cannot name the commit that
+  contains it without being stale the moment it is amended
+- Status: done, verified, pushed and deployed
 - Last updated: 2026-08-21
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -121,9 +120,9 @@ Nothing.
 
 ## Remaining
 
-Nothing in the work itself. Four commits are unpushed: `159994a` (handoff tip),
-`16c0aed` (the render test), `d0bb7e4` (this file plus the handoff) and the tip,
-which carries the handoff's unpushed/runtime corrections. The owner pushes.
+Nothing. `159994a`, `16c0aed`, `d0bb7e4` and `86a870c` are on `main` and
+deployed. Only the commit carrying this sentence is unpushed, and it is
+documentation.
 
 ## Changed files
 
@@ -251,7 +250,10 @@ None open. `עוגן` was the only one and it is answered.
 
 ## Next concrete step
 
-`git push origin feat/what-the-administrator-sees:main` — the owner's action.
-Nothing else on this branch is open, and no deploy check is needed after it: the
-four commits carry one test file and documentation, so `/api/health/` will move
-to the branch tip with no behaviour to re-verify.
+Nothing on this branch. The work is on `main` and deployed at `86a870c`, and the
+only outstanding commit is this documentation correction — push it and no deploy
+check is needed, because it carries no code.
+
+The branch's next substantial task is a new one. The nearest unblocked candidate
+is the multi-tenancy coverage gap named below: no browser-level test opens a
+second school or signs in as an administrator.

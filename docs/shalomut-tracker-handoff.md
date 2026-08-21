@@ -18,16 +18,19 @@ and in Git; what was durable in them is below.
 
 Verified 2026-08-21, in this worktree and on the deployed endpoint:
 
-- **`origin/main` is `6bf0757`** and `GET /api/health/` answers
-  `commit: 6bf0757`, so the deployed endpoint is the pushed tip. Every deploy of
+- **`origin/main` is `86a870c`** and `GET /api/health/` answers
+  `commit: 86a870c`, so the deployed endpoint is the pushed tip. Every deploy of
   the day was watched flipping rather than assumed — `29ac8ec` → `179600c` →
-  `bbcc41b` → `5a7591d` → `d4b6039` → `a240927` → `64ed991` → `6bf0757`.
-- **The branch tip is ahead of the deployed one, harmlessly.** Four commits on
-  `feat/what-the-administrator-sees` are not pushed — `159994a`, `16c0aed`,
-  `d0bb7e4` and the tip that carries this sentence — and none of them changes
-  runtime: one test file, the rest documentation. The deployed endpoint is correct at `6bf0757` and stays correct
-  when they land. The only modified file is `next-env.d.ts`, which is generated
-  and belongs to the owner.
+  `bbcc41b` → `5a7591d` → `d4b6039` → `a240927` → `64ed991` → `6bf0757` →
+  `86a870c`. Everything from the session is pushed except the commit carrying
+  this sentence, which is documentation. The only modified file is
+  `next-env.d.ts`, which is generated and belongs to the owner.
+- **The old `feat/what-the-administrator-sees` ref on `origin` is gone**, deleted
+  2026-08-21. It had stopped at `2576b99` while `main` moved on, so it held no
+  work of its own — `main` already contained it — and a future agent reading it
+  would have found a tree 27 files behind. Branches on this project land with
+  `git push origin <branch>:main`, so a same-named remote branch is a leftover,
+  not a target.
 - **Two commits of the day changed runtime; the rest did not.** `179600c` is
   the one the tenancy evidence below was taken against, re-checked on `d4b6039`
   anyway. `6bf0757` moved the eight dimensions' Hebrew texts into
