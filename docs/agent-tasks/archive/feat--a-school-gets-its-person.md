@@ -7,7 +7,8 @@
   on `feat/identity-becomes-a-row` (phase 1). None of the three is pushed.
 - Base commit: `914abdb`
 - Current HEAD: `be3c0d7` plus the documentation commit on top
-- Status: complete and verified, unpushed
+- Status: complete, verified and **landed on `main`** — its tip is `54881c5`,
+  pushed by the owner on 2026-08-20. Archived 2026-08-20.
 - Last updated: 2026-08-20
 - Last agent/tool: Claude Opus 5 (Claude Code)
 

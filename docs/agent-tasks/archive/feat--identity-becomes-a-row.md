@@ -6,7 +6,8 @@
 - Base branch: `main`
 - Base commit: `6a19916`
 - Current HEAD: `9d229f6` plus the documentation commit on top
-- Status: complete and verified, unpushed
+- Status: complete, verified and **landed on `main`** — its tip is `a22efe9`,
+  pushed by the owner on 2026-08-20. Archived 2026-08-20.
 - Last updated: 2026-08-20
 - Last agent/tool: Claude Opus 5 (Claude Code)
 
