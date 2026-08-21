@@ -684,6 +684,12 @@ manager chose by reason rather than by row" protects the selection screen and
 not the numbers. The rule that holds is that a round has exactly one basis of
 calculation.
 
+Amended 2026-08-21. That rule was enforced here against a manager *choosing* a
+second basis, and the product went on publishing a fresh one on every read of an
+open round — where the second basis costs nobody a decision, only a refresh
+after somebody presses send. ADR-030 closes that axis: a round publishes when it
+closes. The reasoning above is what it rests on, and is not repeated there.
+
 Two further findings stand behind it. On a unidirectionally keyed three-point
 scale the fast-filling signal is not merely noisy but *directional* — it flags
 dissatisfied respondents more often than satisfied ones — so acting on it would
@@ -1070,6 +1076,63 @@ and the functions are in Washington.
 **Reading the list is still not a visit.** An administrator opening a school is
 recorded in `audit_events` (ADR-026); the list that says a school has four rounds
 is a cardinality about it, not a read of it, and records nothing.
+
+### ADR-030: A round is published when it closes, and until then only its count
+
+2026-08-21. ADR-022 settled that a round has exactly one basis of calculation,
+and closed the way a manager could have asked for a second one: excluding
+responses. It left open the way nobody has to ask for at all.
+
+**Every read of an open round was its own publication basis.** The analytics
+were recomputed from the current responses on each request, and the only gate
+was the count, so a round past the threshold published exact per-question
+green/yellow/red integers, exact per-question response counts and exact
+demographic group sizes — again on the next request, over one more person.
+ADR-022 already did this arithmetic for the exclusion case: two bases one
+respondent apart move exactly one bucket by exactly one on every question, which
+is that person's answer sheet read directly rather than estimated, and the
+demographic breakdown yields their role, seniority, stage and age band without
+reading a score at all. The manager did not need a tool. They needed to refresh
+the dashboard after watching somebody press send.
+
+**So the rule now holds on the clock as well.** A round publishes its numbers
+once it has stopped collecting: `draft` and `active` are withheld whatever they
+hold, `closed` and `archived` publish under the same threshold as before.
+Reaching the threshold is what makes a round *publishable*; closing it is what
+publishes it. While it is open the product still shows the response count, the
+funnel and how the round was filled — one number about the round is not a subset
+of its people, which is the same line ADR-022 drew.
+
+**Archived publishes, and that is not an oversight.** Archiving takes a round
+out of the list and changes nothing else (ADR-018). Withholding there would also
+make the AI callback verifier recompute an archived round as locked while
+holding a result full of detail, and reject Core's own correct analysis.
+
+**The gate is inside the calculation, which is the only place it works.**
+ADR-022 closes by naming the paths any such decision has to reach — the MCP
+route sends aggregates, `ai-insights-service` recomputes them when the callback
+arrives and compares, and `buildBackgroundBreakdown` reads responses on a third
+path of its own — and warns that filtering one and not the others makes Core
+reject its own result or makes two screens disagree in front of a manager. So
+the condition lives in `calculateDynamicRoundAnalytics`, beside the threshold,
+and every one of those paths inherits it without knowing it exists. Nothing was
+added to the wire: `lockReason` is Core-side, like `measurementSnapshotHash`,
+and no contract version changed.
+
+**The screens had to stop guessing why.** A locked round was a bare boolean and
+each screen re-derived the cause by comparing the count to the threshold — sound
+while the count was the only cause. A round at seventeen answers out of ten is
+now withheld too, so that arithmetic would have told a manager they need another
+zero. `lockReason` travels with the verdict and the map, the breakdown and the
+home stones each say the reason that is true.
+
+**What a manager loses is the live map, and they are told so.** Watching the
+dimensions move during collection is the feature this removes; the AI analysis
+was already dispatched at closure (ADR-016), so the narrative half of the
+dashboard never existed for an open round anyway. The seed carries two rounds
+for this reason — an active one holding the share link and a closed one whose
+map opens — because one round can no longer demonstrate both halves of the
+product.
 
 ## Environments
 

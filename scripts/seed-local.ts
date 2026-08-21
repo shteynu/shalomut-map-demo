@@ -4,16 +4,27 @@
  * The deployed environment starts empty and fills up from real use. The local
  * one has no respondents, so every manual test would stop at the privacy lock:
  * ten answers are needed on the round and on every analysed question before the
- * dashboard unlocks. This writes an organization, one active round and twelve
- * responses through the same repositories the application uses.
+ * dashboard unlocks. This writes an organization and two rounds, each with
+ * twelve responses, through the same repositories the application uses.
  *
- * The round is `active` rather than `closed`, and that is not cosmetic: the
- * respondent route serves `notFound()` for a round in any other status, so
- * while this seeded `closed` there was no share link in either environment
- * that opened the questionnaire — not for a manual walk, and not for the
- * browser smoke, which asserted an RTL heading and got the dead-link screen's.
- * Twelve responses still sit on it, so the dashboard unlocks exactly as
- * before; what changed is that the link now leads somewhere.
+ * Two rounds, because one round can no longer do both jobs. The respondent
+ * route serves `notFound()` for a round that is not `active`, so a share link
+ * that opens the questionnaire needs an active round — while a round that is
+ * still collecting publishes no numbers at all (ADR-030), so a dashboard worth
+ * looking at needs a closed one. Seeding either alone leaves the other screen
+ * dead:
+ *
+ *   - `סבב שנסגר` is `closed`, and it is the one whose map opens. Being closed
+ *     is also what lets the AI analysis be triggered from the round screen,
+ *     which has required a closed round since ADR-016 — so this line of the
+ *     summary below stopped being true of the active round some time ago.
+ *   - `סבב פעיל` is `active` and holds the share code, so `/answer/<code>`
+ *     opens the questionnaire and accepts answers. Its own map stays locked,
+ *     which is not a defect to fix in the seed: it is the product, and the
+ *     round switcher on the locked screen reaches the closed round.
+ *
+ * The manager lands on the active round, because that is the round their school
+ * is working on (`orderRoundsForManager`).
  *
  *   npx tsx scripts/seed-local.ts          add the round
  *   npx tsx scripts/seed-local.ts --reset  clear the database first
@@ -109,47 +120,76 @@ async function main() {
   const definition = createCanonicalSurveyDefinition('סבב בדיקה מקומי', 10);
   const questions = definition.questions.filter((question) => question.enabled);
 
-  const roundId = `round_local_${SEEDED_AT.getTime()}`;
-  await roundRepo.create({
-    id: roundId,
-    organizationId,
-    title: definition.title,
-    status: 'active',
-    shareCode: SHARE_CODE,
-    privacyThreshold: 10,
-    startDate: SEEDED_AT,
-    surveyDefinition: definition,
-    createdAt: SEEDED_AT,
-  });
+  async function seedRound(
+    suffix: string,
+    title: string,
+    status: 'active' | 'closed',
+    shareCode: string,
+    // Older than the active one, so the manager still lands on the round their
+    // school is working on rather than on last term's.
+    createdAt: Date,
+  ): Promise<string> {
+    const roundId = `round_local_${suffix}_${SEEDED_AT.getTime()}`;
+    await roundRepo.create({
+      id: roundId,
+      organizationId,
+      title,
+      status,
+      shareCode,
+      privacyThreshold: 10,
+      startDate: createdAt,
+      surveyDefinition: { ...definition, title },
+      createdAt,
+    });
 
-  for (let index = 0; index < RESPONSE_COUNT; index++) {
-    const response: SurveyResponseRecord = {
-      id: `${roundId}_response_${index}`,
-      roundId,
-      submittedAt: SEEDED_AT,
-      answers: questions.map((question) => {
-        const value = answerFor(question.dimensionId, index);
-        return {
-          questionId: question.id,
-          dimensionId: question.dimensionId,
-          value,
-          score: scoreFor(value),
-        };
-      }),
-    };
-    await surveyRepo.saveResponse(response);
+    for (let index = 0; index < RESPONSE_COUNT; index++) {
+      const response: SurveyResponseRecord = {
+        id: `${roundId}_response_${index}`,
+        roundId,
+        submittedAt: createdAt,
+        answers: questions.map((question) => {
+          const value = answerFor(question.dimensionId, index);
+          return {
+            questionId: question.id,
+            dimensionId: question.dimensionId,
+            value,
+            score: scoreFor(value),
+          };
+        }),
+      };
+      await surveyRepo.saveResponse(response);
+    }
+
+    return roundId;
   }
+
+  const closedRoundId = await seedRound(
+    'closed',
+    'סבב שנסגר',
+    'closed',
+    `${SHARE_CODE}-CLOSED`,
+    new Date(SEEDED_AT.getTime() - 86_400_000),
+  );
+  const activeRoundId = await seedRound(
+    'active',
+    'סבב פעיל',
+    'active',
+    SHARE_CODE,
+    SEEDED_AT,
+  );
 
   console.log(
     [
       `Seeded ${host}:`,
       `  organization ${organizationId}`,
-      `  round        ${roundId} (${SHARE_CODE}, active, threshold 10)`,
-      `  responses    ${RESPONSE_COUNT} × ${questions.length} answers`,
+      `  closed round ${closedRoundId} (${SHARE_CODE}-CLOSED, threshold 10)`,
+      `  active round ${activeRoundId} (${SHARE_CODE}, threshold 10)`,
+      `  responses    ${RESPONSE_COUNT} × ${questions.length} answers on each`,
       '',
-      'The round is above the privacy threshold, so the dashboard unlocks and',
-      'the AI analysis can be triggered from the round screen. It is active, so',
-      `/answer/${SHARE_CODE} opens the questionnaire and accepts answers.`,
+      'The closed round is above the privacy threshold, so its map opens and the',
+      'AI analysis can be triggered for it from the round screen. The active one',
+      `is what /answer/${SHARE_CODE} opens; its own map stays locked until it is`,
+      'closed, and the round switcher on that screen reaches the closed round.',
     ].join('\n'),
   );
 }
