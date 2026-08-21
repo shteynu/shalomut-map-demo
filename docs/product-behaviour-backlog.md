@@ -408,8 +408,10 @@ marked as such:
   identity provider.~~ Done, as the second: the product stores none.
 - ~~Enforce credential strength at the point a password is set~~ — no longer
   applicable where the provider is configured. There is no such point.
-- ~~Add invitation and revocation~~ — phase 2 of the plan, and no longer waiting
-  on this item. Password recovery is gone with the passwords.
+- ~~Add invitation and revocation~~ — done on 2026-08-20 in phase 2, and never
+  waiting on this item. An invitation grants an entitlement rather than
+  delivering a credential, so there is no acceptance screen: arriving is the
+  acceptance. Password recovery is gone with the passwords.
 - What remains for **this** item: what two people inside one school may each do,
   and the screens that say so.
 

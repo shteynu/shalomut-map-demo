@@ -22,37 +22,40 @@ Verified 2026-08-20, in this worktree:
   and phase 0, pushed by the owner on 2026-08-20. The only modified file outside
   the branch below is `next-env.d.ts`, which is generated, was dirty before the
   session and belongs to the owner.
-- **Two branches hold multi-tenancy phases 1 and 3, and neither is pushed.**
-  `feat/identity-becomes-a-row` is phase 1 — managers and memberships are tables,
+- **Three branches hold multi-tenancy phases 1, 3 and 2, and none is pushed.**
+  Each is stacked on the one before, so pushing the last lands all three:
+  `feat/identity-becomes-a-row` (phase 1 — managers and memberships are tables,
   sign-in is an OpenID Connect flow, a platform administrator may open any
-  school. `feat/the-audit-log-survives-a-restart` continues from it and is phase
-  3 — `audit_events` is a table and an administrator opening a school they are
-  not a member of is a row in it. The second branch contains the first, so
-  pushing it lands both. Their task files are in `docs/agent-tasks/active/`.
+  school), `feat/the-audit-log-survives-a-restart` (phase 3 — `audit_events` is
+  a table and an administrator's visit to a school is a row in it), and
+  `feat/a-school-gets-its-person` (phase 2 — `/admin`, school creation and
+  invitations). Their task files are in `docs/agent-tasks/active/`.
 - **The local database has both migrations applied**
   (`20260820120000_identity_becomes_a_row`,
   `20260820160000_the_audit_log_survives_a_restart`). The deployed database has
   neither, and applying them is an owner step that goes with the push. Order
   matters only in that identity comes first.
-- **The suite is green**: `npm test` 1295 passed, `npx tsc --noEmit` clean,
+- **The suite is green**: `npm test` 1319 passed, `npx tsc --noEmit` clean,
   `npm run lint` clean, `npm run build` clean, `lint:composition`,
   `lint:doc-numbers`, `lint:skills`, `openapi:check` and
   `docs:endpoints:check` all pass.
 
-**Next concrete step:** push `feat/the-audit-log-survives-a-restart`, which
-carries phase 1 under it, apply both migrations to the deployed database, and
+**Next concrete step:** push `feat/a-school-gets-its-person`, which carries
+phases 1 and 3 under it, apply both migrations to the deployed database, and
 then create the Google OAuth client — all three are owner actions here, and the
 third falls under the standing approval gate on authentication configuration. The deployment keeps its password screen until
 `OIDC_ISSUER`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET` and `OIDC_REDIRECT_URI`
 are set, and switches the moment they are; the redirect URI must be
 `https://<deployment>/api/auth/oidc/callback`, listed verbatim on the client.
-After that, phase 2 of
-[`multi-tenancy-plan-2026-08-20.md`](multi-tenancy-plan-2026-08-20.md) — the
-administrator area and invitations — which is what a school user needs before
-anybody but the operator can be given a school. Phase 3 was taken ahead of it
+After that, phase 4 of
+[`multi-tenancy-plan-2026-08-20.md`](multi-tenancy-plan-2026-08-20.md) — what an
+administrator can see about every school. Phase 2 landed on 2026-08-20 and needs
+no e-mail provider: an invitation is an entitlement, so the administrator tells
+the invitee out of band and they sign in. Phase 3 was taken ahead of phase 2
 because an administrator who can read every school has to be reconstructable
 before those administrators exist; it now is, in `audit_events`, though nothing
-renders that table yet. Two other things wait on the
+renders that table yet — who may read it is the one product question these three
+phases deliberately left open. Two other things wait on the
 owner and have their own entries below: **rotate `GEMINI_API_KEY`**, exposed in a
 transcript on 2026-08-20 and billed, before any paid round; and, off a round run
 for some other reason, read the usage lines for what a `6.0` round costs at

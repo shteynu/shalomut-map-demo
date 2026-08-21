@@ -279,28 +279,57 @@ be migrated the day that constraint is relaxed.
 
 ### Phase 2 — the administrator area, and invitations
 
+**Implemented 2026-08-20** on `feat/a-school-gets-its-person`, which had not
+reached `main` when this line was written. Half the list below did not survive
+the identity decision taken the same day, and each of those is struck through
+where it stood.
+
 This is the piece the owner asked for directly, and the minimum useful version is
 small: an administrator cannot invite a school user without first seeing the
 schools.
 
 - A new `/admin` section, reachable only by a platform administrator. It lists
   the schools and offers **create school** and **invite this school's user**.
-- Invitations: signed token → e-mail → the invitee sets their own password. No
-  open registration. `MembershipStatus` already includes `'invited'`
-  (`src/lib/auth/types.ts:3`) and nothing has ever used it — the flow is already
-  named by the type.
+  Done, plus a third list: people with a row and nowhere to go, who would
+  otherwise be invisible and uncleanable.
+- ~~Invitations: signed token → e-mail → the invitee sets their own password.~~
+  **None of that exists, because none of it can.** There is no password to set,
+  so an invitation carries no credential and needs no delivery: §3 of this
+  document already called it an entitlement. The membership is written
+  `invited`, the person signs in with their organizational account, and arriving
+  is the acceptance — the row becomes `active` on the first successful sign-in.
+  `MembershipStatus` was already named for this and had never been used.
+  Keeping the state rather than inviting straight into `active` is what lets the
+  screen show an invitation nobody used, which is the only way to notice a
+  mistyped address.
 - The same screen invites another administrator, which is how the remaining three
-  arrive.
-- Revocation sets `suspended`; `authenticateCredentials` already refuses an
-  account with no active membership.
-- Password strength enforced **where a password is set**, which is what backlog §8
-  says the current sign-in-time rule is a blunt substitute for. The withdrawn
-  implementation is on the local-only branch `fix/manager-password-must-be-strong`.
-- Hebrew RTL screens for invite, set-password and forgot-password. If an identity
-  provider is used instead, its hosted screens still need their RTL behaviour
-  checked by hand.
+  arrive. Done. They get no membership and nothing to accept: the flag is the
+  entitlement.
+- Revocation sets `suspended`. Done, and it is a status rather than a delete
+  because the audit log's `manager_id` points at that row. **It is not
+  immediate**: the session token carries its memberships for a day, so a revoked
+  person keeps working until it expires. That is exactly the gap phase 5 exists
+  to close, and until it does, revocation means "from their next sign-in".
+- ~~Password strength enforced where a password is set.~~ **No longer
+  applicable.** There is no such point. `fix/manager-password-must-be-strong`
+  stays withdrawn.
+- ~~Hebrew RTL screens for invite, set-password and forgot-password.~~ Two of
+  the three do not exist. What was built is the administrator area itself, in
+  Hebrew and RTL. The provider's own sign-in screens still need their RTL
+  behaviour checked by hand, and have not been — there is no OAuth client yet.
 - **An e-mail sender is a new subprocessor** and belongs in
-  `docs/data-flow-and-subprocessors.md` before it sends anything.
+  `docs/data-flow-and-subprocessors.md` before it sends anything. **Off this
+  phase's critical path**, and that is the main thing the identity decision
+  bought: e-mail is now a notification — "you have been given a school" — rather
+  than the way access is delivered, so an administrator can say it out of band
+  and nothing waits on the choice of provider.
+- **Not in this list, and done anyway: opening a school stopped being something
+  any manager can do.** It is this section's own model — the administrator
+  creates the school, then invites its user — and it had been quietly broken
+  since phase 0: the creator got no membership, so the boundary refused them the
+  school they had just opened and the screen bounced them back without saying
+  why. The setup screen no longer offers it and the route refuses it with a
+  reason.
 
 ### Phase 3 — the audit log survives a restart
 
@@ -417,8 +446,11 @@ together, in the phase that makes each untrue — not all at once, and not befor
    This is the owner's to create, and it falls under the standing approval gate
    on authentication configuration.
 2. **Which e-mail provider**, given it becomes a subprocessor that sees a school
-   staff member's address. Less urgent than it was: with sign-in on the identity
-   provider, e-mail carries an invitation and not a credential. Phase 2 needs it.
+   staff member's address. Less urgent than it was twice over: with sign-in on
+   the identity provider, e-mail carries an invitation and not a credential — and
+   phase 2 then shipped without it, because an entitlement needs no delivery. It
+   buys a notification rather than a mechanism, so it is now a convenience and
+   not a blocker for anything.
 3. **What a school user may not do** — phase 6, deferred on purpose.
 
 **Own passwords or an identity provider** was the question that blocked phase 1,

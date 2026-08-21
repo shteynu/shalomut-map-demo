@@ -914,6 +914,41 @@ lets an administrator read any school's and a school user their own, and nothing
 renders either: no screen and no endpoint exposes the log yet. Whether a school
 should see the visits made to it is a question for the administrators.
 
+### ADR-027: A school is opened by the platform, and its person is invited into it
+
+2026-08-20, phase 2 of the multi-tenancy plan.
+
+**`/admin` is the platform's own screen**, gated in the middleware and again in
+everything it renders or calls. Its refusal is `404` rather than `403`, matching
+the rest of the product: a route that answers `403` has confirmed it exists.
+
+**An invitation is an entitlement, not a credential**, which is what ADR-025 left
+implied. Nothing is sent and nothing is set: the membership is written `invited`,
+the person signs in with their organizational account, and arriving is the
+acceptance — `ManagerDirectoryService` flips the row to `active` on the first
+successful sign-in. The state is kept rather than skipped so the screen can show
+an invitation nobody used, which is the only way to notice a mistyped address.
+This is also what took the e-mail provider off phase 2's critical path: e-mail
+became a notification rather than a delivery mechanism.
+
+**A school has one user, enforced.** A second invitation is refused while a
+standing one exists — `active` or `invited` — and replacing somebody is
+revoke-then-invite rather than a transfer. Revocation is a status and never a
+delete, because the audit log's `manager_id` points at that row. It takes effect
+from the person's next sign-in, not immediately: the session token carries its
+memberships for a day, which is the gap phase 5 exists to close.
+
+**Opening a school became a platform act.** The owner's order is that the
+administrator creates the school and then invites its user, and the alternative
+had been broken since phase 0 anyway — the creator got no membership, so the
+boundary refused them the school they had just opened. The setup screen no longer
+offers it and `/api/manager/setup` refuses it with a reason.
+
+**A school is created with no round.** The staff count is set by the
+administrator because it is the floor under every privacy threshold the school
+can later choose; the first round is the school user's own first act rather than
+an administrator guessing at a quarter.
+
 ## Environments
 
 The project supports exactly two environments:
