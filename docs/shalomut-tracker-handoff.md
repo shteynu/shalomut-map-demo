@@ -18,12 +18,15 @@ and in Git; what was durable in them is below.
 
 Verified 2026-08-21, in this worktree and on the deployed endpoint:
 
-- **`origin/main` is `179600c`** and `GET /api/health/` answers
-  `commit: 179600c`, so the deployed endpoint is the pushed tip and the branch
-  tip. It was watched flipping from `29ac8ec` about a minute after the push
-  rather than assumed. Nothing is unpushed. The only modified file is
-  `next-env.d.ts`, which is generated and belongs to the owner.
-- **No migration was needed for any deploy since.** `54881c5..179600c` touches
+- **`origin/main` is `bbcc41b`** and `GET /api/health/` answers
+  `commit: bbcc41b`, so the deployed endpoint is the pushed tip and the branch
+  tip. Two intermediate deploys were watched flipping rather than assumed —
+  `29ac8ec` → `179600c`, then `179600c` → `bbcc41b`. Nothing is unpushed. The
+  only modified file is `next-env.d.ts`, which is generated and belongs to the
+  owner. The last three commits carry documentation only, so nothing about the
+  runtime changed after `179600c`, which is the commit the evidence below was
+  taken against.
+- **No migration was needed for any deploy since.** `54881c5..bbcc41b` touches
   no file under `prisma/`. The deployed schema is the one applied earlier the
   same day — 18 migrations, `Database schema is up to date!` The identity tables
   are no longer empty: `managers` holds **1** row (the bootstrapped platform
