@@ -65,10 +65,30 @@ empty.
 That password door exists only while this runtime has no identity provider. Set
 all four `OIDC_*` variables and the login screen offers the organizational
 account instead and `/api/auth/login` refuses with `PROVIDER_REQUIRED` — two
-ways in never exist at once. Locally that means signing in needs a real OAuth
-client whose authorized redirect URI is
-`http://localhost:3000/api/auth/oidc/callback/`, so leave the four empty unless
-the provider itself is what you are working on.
+ways in never exist at once. So leave the four empty unless the provider itself
+is what you are working on.
+
+When it is, the Google client already exists: **Shalomut Map — deployed**, a Web
+application client in the `Default Gemini Project` (2026-08-21). It carries the
+deployment's callback and three local ports, each listed both with and without
+a trailing slash:
+
+| Port | What runs there | Why it is on the client |
+| --- | --- | --- |
+| 3000 | `npm run dev` | the ordinary local runtime |
+| 3210 | `next start` on a second port | signed-in screens, where a stale dev server can fake a layout bug |
+| 3212 | a build raised only to exercise sign-in | where the provider itself is the subject |
+
+`OIDC_REDIRECT_URI` must name **the port the server is actually on**, with the
+trailing slash — `trailingSlash: true` makes the unslashed spelling a `308`, and
+Google matches the string byte for byte, port included. A fourth port means
+another line on the client, not a wildcard: Google has none for redirect URIs.
+
+Two more things the client cannot do for you. Its consent screen is **External,
+in Testing**, so only addresses on the test-user list may sign in at all. And
+`MANAGER_ADMIN_EMAIL` still decides who becomes the first platform
+administrator — an address the provider verifies impeccably is refused if no
+`managers` row matches it and it is not that variable.
 
 ## What is identical, and what is not
 

@@ -380,9 +380,10 @@ Owner decision 2026-08-10, **overtaken on 2026-08-20**: enforcing password
 strength waited for this trigger, and then the passwords went away. A runtime
 with an identity provider has no password to enforce anything about, and
 `/api/auth/login` refuses before it reads one. The paragraph below is kept
-because it still describes the interim door — a deployment whose OAuth client
-does not exist yet — and because its reasoning is why the rule was never added
-to the path that is now being deleted.
+because it still describes the interim door — a deployment on which the four
+`OIDC_*` variables are not set, which as of 2026-08-21 is still this one even
+though the Google client now exists — and because its reasoning is why the rule
+was never added to the path that is now being deleted.
 
 Owner decision 2026-08-10: **enforcing password strength in code also waits for
 this trigger.** It was written and then withdrawn before it was pushed — a

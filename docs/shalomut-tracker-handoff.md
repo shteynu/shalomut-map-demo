@@ -71,15 +71,14 @@ Verified 2026-08-21, in this worktree and on the deployed endpoint:
   `lint:fixtures` were not run, because nothing in this work touched the AI
   contract or the Python service.
 
-**Next concrete step:** the Google OAuth client, which falls under the standing
-approval gate on authentication configuration. The deployment keeps its password
-screen until `OIDC_ISSUER`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET` and
-`OIDC_REDIRECT_URI` are set, and switches the moment they are; the redirect URI
-must be `https://<deployment>/api/auth/oidc/callback/` — with the trailing
-slash, because `trailingSlash: true` makes the unslashed spelling a `308` —
-listed verbatim on the client. A fifth variable belongs in the same edit:
-`MANAGER_ADMIN_EMAIL`, without which the deployment's empty `managers` table
-leaves nobody able to sign in once the password door closes. Two consequences worth knowing before it is set rather than after:
+**Next concrete step:** set the five identity variables on the deployment. The
+Google OAuth client was created on 2026-08-21 and is no longer what is missing;
+the gate below carries the exact five values and why the fifth,
+`MANAGER_ADMIN_EMAIL`, cannot wait for a second edit. Setting them switches the
+login screen away from the password, ends the password sessions still in
+browsers at their next renewal, and makes `/admin` reachable on the deployed
+endpoint for the first time — the administrator screen phase 4 built has never
+run against a real administrator anywhere but a local stand-in provider. Two consequences worth knowing before it is set rather than after:
 setting it ends the password sessions still in browsers at their next renewal,
 which is intended, and it is what first makes `/admin` reachable on the deployed
 endpoint.
@@ -443,21 +442,35 @@ without a code change; that, more than the number, is what changed.
    it can already grant themselves everything, so it is protected by the
    deployment's own access and not by its entropy.
 
-   **Create the Google OAuth client (2026-08-20), which is what turns that on.**
-   A Web application client in Google Cloud Console, with
-   `https://<deployment>/api/auth/oidc/callback/` listed verbatim as an
-   authorized redirect URI, and its id and secret plus `OIDC_ISSUER`
-   (`https://accounts.google.com`) and `OIDC_REDIRECT_URI` set on the
-   deployment. **The trailing slash is not a typo** — `next.config.ts` sets
-   `trailingSlash: true`, and the unslashed spelling answers `308`, so listing
-   only it would put a redirect in the middle of every sign-in. **And the
-   variables are five, not four**: on a deployment whose `managers` table is
-   empty, `MANAGER_ADMIN_EMAIL` must be set to the address the provider will
-   return, or the password door closes with nothing behind it and nobody can
-   sign in at all. Authentication configuration, so it is the owner's and sits
-   inside the standing approval gate. Phase 1 of the multi-tenancy plan is
-   written and verified against a stand-in provider; this is the only thing
-   between it and a real sign-in.
+   **The Google OAuth client exists as of 2026-08-21.** *Shalomut Map —
+   deployed*, a Web application client in the `Default Gemini Project`
+   (`gen-lang-client-0236547395`), created by the owner from a form an agent
+   filled in. Its consent screen is *Shalomut Map*, **External** and in
+   **Testing**, with `shteynumaks@gmail.com` as the single test user — in that
+   state no other address can sign in at all, whoever they are. Redirect URIs:
+   the deployment's callback plus ports 3000, 3210 and 3212 on `localhost`, each
+   listed both with and without a trailing slash. The local half is documented
+   in
+   [`local-environment.md`](local-environment.md).
+
+   **What is left is the five variables on the deployment, and they are the
+   owner's** — authentication configuration, inside the standing approval gate.
+   `OIDC_ISSUER` is `https://accounts.google.com`; `OIDC_CLIENT_ID` and
+   `OIDC_CLIENT_SECRET` come from that client; `OIDC_REDIRECT_URI` is
+   `https://shalomut-map-demo.vercel.app/api/auth/oidc/callback/`. **The
+   trailing slash is not a typo** — `next.config.ts` sets `trailingSlash: true`,
+   the unslashed spelling answers `308`, and Google matches the string byte for
+   byte in both the authorize request and the token exchange. **And the fifth is
+   `MANAGER_ADMIN_EMAIL`**, which must be set in the same edit: this
+   deployment's `managers` table is empty, so four variables alone close the
+   password door with nothing behind it — no address matches a row, the
+   bootstrap fires only for that variable, and nobody can sign in. Google also
+   warns that client settings take from five minutes to a few hours to take
+   effect, and Vercel applies variables only on a redeploy.
+
+   Phase 1 of the multi-tenancy plan is written and verified against a stand-in
+   provider; those five values are the only thing between it and a real
+   sign-in.
 4. **Create an uptime monitor on Core's `/api/health`.**
 5. **Decide where the structured observability lines land** — a log sink or an
    error tracker, and with which alert. Every counter the product emits still
