@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import localFont from "next/font/local";
 import "./globals.css";
 import { HeaderGate } from "@/components/layout/header-gate";
+import { SessionRenewal } from "@/components/layout/session-renewal";
 import { HelpBadgeGate } from "@/components/layout/help-badge-gate";
 
 /**
@@ -71,6 +72,10 @@ export default function RootLayout({
             header — and it is the last thing a keyboard reaches rather than
             something to tab past on the way to the page. */}
         <HelpBadgeGate />
+        {/* Renders nothing. It is here rather than in the header because the
+            header does not render on the dashboard, and the dashboard is the
+            screen a manager reads longest without pressing anything. */}
+        <SessionRenewal />
       </body>
     </html>
   );

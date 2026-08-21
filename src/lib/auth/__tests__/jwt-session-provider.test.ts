@@ -46,7 +46,7 @@ test("JwtSessionProvider rejects tampered or expired tokens", async () => {
     mockManager,
     "org-school-101",
     [mockMembership],
-    -1, // Expired immediately
+    { ttlSeconds: -1 }, // Expired immediately
   );
 
   const verifiedExpired = await provider.verifyToken(token);

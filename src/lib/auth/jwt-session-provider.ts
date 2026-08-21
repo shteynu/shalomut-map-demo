@@ -1,4 +1,5 @@
-import type { ISessionProvider } from "./domain-contract";
+import type { ISessionProvider, SessionMintOptions } from "./domain-contract";
+import { absoluteDeadlineFrom, ttlSecondsWithin } from "./session-lifetime";
 import type {
   Manager,
   ManagerSession,
@@ -92,7 +93,7 @@ export class JwtSessionProvider implements ISessionProvider {
     manager: Manager,
     activeOrganizationId: string | null,
     memberships: OrganizationMembership[],
-    ttlSeconds = 86400,
+    options: SessionMintOptions = {},
   ): Promise<{ token: string; session: ManagerSession }> {
     const membership = activeOrganizationId
       ? memberships.find((m) => m.organizationId === activeOrganizationId)
@@ -113,6 +114,13 @@ export class JwtSessionProvider implements ISessionProvider {
     }
 
     const now = new Date();
+    // A renewal hands back the deadline its predecessor carried; a sign-in
+    // names none and starts one. That single line is the difference between a
+    // window that slides and a session nobody can end by waiting.
+    const absoluteExpiresAt =
+      options.absoluteExpiresAt ?? absoluteDeadlineFrom(now);
+    const ttlSeconds =
+      options.ttlSeconds ?? ttlSecondsWithin(absoluteExpiresAt, now);
     const expiresAt = new Date(now.getTime() + ttlSeconds * 1000);
 
     const session: ManagerSession = {
@@ -124,6 +132,7 @@ export class JwtSessionProvider implements ISessionProvider {
       isPlatformAdministrator: manager.isPlatformAdministrator,
       issuedAt: now,
       expiresAt,
+      absoluteExpiresAt,
     };
 
     const header = { alg: "HS256", typ: "JWT" };
@@ -144,6 +153,10 @@ export class JwtSessionProvider implements ISessionProvider {
       })),
       iat: Math.floor(now.getTime() / 1000),
       exp: Math.floor(expiresAt.getTime() / 1000),
+      // The only claim a renewal copies rather than recomputes. Required on the
+      // way back in — see `verifyToken` — so a token minted before this claim
+      // existed cannot be renewed into one that has it.
+      abs: Math.floor(absoluteExpiresAt.getTime() / 1000),
     };
 
     const encoder = new TextEncoder();
@@ -208,6 +221,16 @@ export class JwtSessionProvider implements ISessionProvider {
         return null; // Expired
       }
 
+      // Absent, not merely past, is also a refusal — the safe reading of
+      // silence, the same one `adm` gets three lines down. The claim arrived
+      // with the short session, so a token without it is a 24-hour token minted
+      // before the deadline existed, and honouring it would mean the one class
+      // of session this phase exists to end outlives the phase. The cost is
+      // that whoever is signed in when this deploys signs in once more.
+      if (typeof payload.abs !== "number" || nowSeconds > payload.abs) {
+        return null;
+      }
+
       const memberships: OrganizationMembership[] = (payload.mbs || []).map(
         (m: { id: string; org: string; role: string; status: string }) => ({
           id: m.id,
@@ -228,6 +251,7 @@ export class JwtSessionProvider implements ISessionProvider {
         isPlatformAdministrator: payload.adm === true,
         issuedAt: new Date(payload.iat * 1000),
         expiresAt: new Date(payload.exp * 1000),
+        absoluteExpiresAt: new Date(payload.abs * 1000),
       };
     } catch (error) {
       // A malformed token is refused above, by the shape checks and the
@@ -245,6 +269,12 @@ export class JwtSessionProvider implements ISessionProvider {
   }
 
   async revokeSession(): Promise<void> {
-    // JWT tokens are stateless; revocation can be handled via short TTL or a token blacklist if needed
+    // Still nothing to do, and now for a stated reason rather than a pending
+    // one. A JWT is not held anywhere it could be deleted from, so revocation
+    // is the short window plus the database re-read at renewal
+    // (`/api/auth/session/renew`): taking a membership away stops the next
+    // renewal, and the token that is still in the browser dies on its own
+    // within `SESSION_TTL_SECONDS`. A blacklist would close that last window
+    // and is a different design; it is not what phase 5 asked for.
   }
 }

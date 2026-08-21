@@ -32,6 +32,10 @@ export class MembershipService {
       },
       newOrganizationId,
       session.memberships,
+      // Switching school continues the session rather than starting one, so it
+      // inherits the deadline instead of pushing it out. Otherwise the twelve
+      // hours would reset every time an administrator opened another school.
+      { absoluteExpiresAt: session.absoluteExpiresAt },
     );
   }
 

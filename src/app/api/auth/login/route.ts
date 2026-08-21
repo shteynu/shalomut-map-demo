@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { JwtSessionProvider } from "@/lib/auth/jwt-session-provider";
 import { ManagerAuthenticationService } from "@/lib/auth/manager-auth-service";
-import { SESSION_COOKIE_NAME } from "@/lib/server/session-auth";
+import { setSessionCookie } from "@/lib/server/session-auth";
 import { getRateLimitResponse, RATE_LIMITS } from "@/lib/server/rate-limit";
 
 export async function POST(request: NextRequest) {
@@ -85,10 +85,6 @@ export async function POST(request: NextRequest) {
       memberships,
     );
 
-    const isSecure =
-      process.env.NODE_ENV === "production" ||
-      request.nextUrl.protocol === "https:";
-
     const response = NextResponse.json({
       ok: true,
       session: {
@@ -101,17 +97,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    response.cookies.set({
-      name: SESSION_COOKIE_NAME,
-      value: token,
-      httpOnly: true,
-      sameSite: "lax",
-      path: "/",
-      secure: isSecure,
-      maxAge: 86400, // 24 hours
-    });
-
-    return response;
+    return setSessionCookie(response, token, request);
   } catch (error) {
     return NextResponse.json(
       {

@@ -275,6 +275,24 @@ export function shouldShowHelpBadge(pathname: string | null | undefined) {
 }
 
 /**
+ * The screens on which a manager's activity keeps their session alive.
+ *
+ * A third set, and not by oversight. It is the header's screens plus the
+ * dashboard — because the dashboard is the screen a manager sits on longest
+ * without pressing anything, and a session that expires under someone reading
+ * the map is the defect phase 5 was warned not to introduce. It is not the
+ * respondent's screens, which have no session to renew, and not `/login`, where
+ * asking to renew is asking about a session that has not started.
+ */
+const sessionlessRoutes = [routes.respondentSurvey, routes.login] as const;
+
+export function shouldRenewSession(pathname: string | null | undefined) {
+  if (!pathname) return false;
+
+  return !sessionlessRoutes.some((route) => isPathWithin(pathname, route));
+}
+
+/**
  * Which round a dashboard screen is about, carried in the URL.
  *
  * Every dashboard link takes the selected round with it. Dropping the

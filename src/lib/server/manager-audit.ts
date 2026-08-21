@@ -45,6 +45,7 @@ export async function recordRoundAuditEvent(
     isPlatformAdministrator: session?.isPlatformAdministrator ?? false,
     issuedAt: session?.issuedAt ?? new Date(),
     expiresAt: session?.expiresAt ?? new Date(),
+    absoluteExpiresAt: session?.absoluteExpiresAt ?? new Date(),
   };
 
   try {

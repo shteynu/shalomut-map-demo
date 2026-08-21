@@ -1,9 +1,69 @@
-import type { NextRequest } from "next/server";
+import type { NextRequest, NextResponse } from "next/server";
 import { JwtSessionProvider } from "@/lib/auth/jwt-session-provider";
+import { SESSION_TTL_SECONDS } from "@/lib/auth/session-lifetime";
 import type { ManagerSession } from "@/lib/auth/types";
 import type { ISessionProvider } from "@/lib/auth/domain-contract";
 
 export const SESSION_COOKIE_NAME = "shalomut_session";
+
+/**
+ * Whether this response's cookie may insist on HTTPS.
+ *
+ * `secure` on a cookie sent over plain HTTP is not a stricter cookie, it is no
+ * cookie at all — which on a local `http://localhost` walk reads as a login
+ * screen that will not stay signed in.
+ */
+function isSecureRequest(request: NextRequest): boolean {
+  return (
+    process.env.NODE_ENV === "production" ||
+    request.nextUrl.protocol === "https:"
+  );
+}
+
+/**
+ * Hand the browser a session, on every path that mints one.
+ *
+ * One writer rather than three, because the lifetime here and the `exp` inside
+ * the token are two statements of the same fact and drift silently when they
+ * are written apart. They were `86400` in two route handlers and a provider
+ * default until the session got short.
+ */
+export function setSessionCookie(
+  response: NextResponse,
+  token: string,
+  request: NextRequest,
+): NextResponse {
+  response.cookies.set({
+    name: SESSION_COOKIE_NAME,
+    value: token,
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+    secure: isSecureRequest(request),
+    maxAge: SESSION_TTL_SECONDS,
+  });
+  return response;
+}
+
+/**
+ * Take the session away — on sign-out, and on a renewal that was refused.
+ *
+ * A refused renewal has to clear rather than merely answer, or the browser
+ * keeps presenting a cookie the server has already decided against until it
+ * expires on its own.
+ */
+export function clearSessionCookie(response: NextResponse): NextResponse {
+  response.cookies.set({
+    name: SESSION_COOKIE_NAME,
+    value: "",
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 0,
+    expires: new Date(0),
+  });
+  return response;
+}
 
 let cachedDefaultProvider: ISessionProvider | null | undefined;
 let cachedDefaultProviderFailure: string | null = null;

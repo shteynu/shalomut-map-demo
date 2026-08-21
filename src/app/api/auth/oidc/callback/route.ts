@@ -10,7 +10,7 @@ import { JwtSessionProvider } from "@/lib/auth/jwt-session-provider";
 import { ManagerDirectoryService } from "@/lib/auth/manager-directory-service";
 import { routes } from "@/lib/navigation";
 import { getRateLimitResponse, RATE_LIMITS } from "@/lib/server/rate-limit";
-import { SESSION_COOKIE_NAME } from "@/lib/server/session-auth";
+import { setSessionCookie } from "@/lib/server/session-auth";
 import {
   OIDC_HANDSHAKE_COOKIE,
   OIDC_HANDSHAKE_PATH,
@@ -136,17 +136,6 @@ export async function GET(request: NextRequest) {
   const response = endHandshake(
     NextResponse.redirect(new URL(handshake.next, request.url)),
   );
-  response.cookies.set({
-    name: SESSION_COOKIE_NAME,
-    value: token,
-    httpOnly: true,
-    sameSite: "lax",
-    path: "/",
-    secure:
-      process.env.NODE_ENV === "production" ||
-      request.nextUrl.protocol === "https:",
-    maxAge: 86400,
-  });
 
-  return response;
+  return setSessionCookie(response, token, request);
 }

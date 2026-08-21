@@ -6,6 +6,7 @@ import type {
   ManagerSession,
   OrganizationMembership,
 } from './types';
+import { absoluteDeadlineFrom, ttlSecondsWithin } from './session-lifetime';
 
 export interface IManagerRepository {
   findById(id: string): Promise<Manager | null>;
@@ -39,12 +40,25 @@ export interface IManagerRepository {
   countPlatformAdministrators(): Promise<number>;
 }
 
+/**
+ * What a mint may be told, beyond who the session is for.
+ *
+ * Both fields exist for renewal and both default correctly without it: a fresh
+ * sign-in names neither, and gets the configured window and a deadline starting
+ * now. A renewal names `absoluteExpiresAt` — the one its predecessor carried —
+ * which is what stops activity from extending a session forever.
+ */
+export interface SessionMintOptions {
+  ttlSeconds?: number;
+  absoluteExpiresAt?: Date;
+}
+
 export interface ISessionProvider {
   createSession(
     manager: Manager,
     activeOrganizationId: string | null,
     memberships: OrganizationMembership[],
-    ttlSeconds?: number,
+    options?: SessionMintOptions,
   ): Promise<{ token: string; session: ManagerSession }>;
 
   verifyToken(token: string): Promise<ManagerSession | null>;
@@ -133,7 +147,7 @@ export class InMemorySessionProvider implements ISessionProvider {
     manager: Manager,
     activeOrganizationId: string | null,
     memberships: OrganizationMembership[],
-    ttlSeconds = 86400,
+    options: SessionMintOptions = {},
   ): Promise<{ token: string; session: ManagerSession }> {
     const membership = activeOrganizationId
       ? memberships.find((m) => m.organizationId === activeOrganizationId)
@@ -147,6 +161,9 @@ export class InMemorySessionProvider implements ISessionProvider {
 
     const token = `token-${manager.id}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const now = new Date();
+    const absoluteExpiresAt =
+      options.absoluteExpiresAt ?? absoluteDeadlineFrom(now);
+    const ttlSeconds = options.ttlSeconds ?? ttlSecondsWithin(absoluteExpiresAt, now);
     const expiresAt = new Date(now.getTime() + ttlSeconds * 1000);
 
     const session: ManagerSession = {
@@ -158,6 +175,7 @@ export class InMemorySessionProvider implements ISessionProvider {
       isPlatformAdministrator: manager.isPlatformAdministrator,
       issuedAt: now,
       expiresAt,
+      absoluteExpiresAt,
     };
 
     this.sessions.set(token, session);
@@ -167,7 +185,8 @@ export class InMemorySessionProvider implements ISessionProvider {
   async verifyToken(token: string): Promise<ManagerSession | null> {
     const session = this.sessions.get(token);
     if (!session) return null;
-    if (new Date() > session.expiresAt) {
+    const now = new Date();
+    if (now > session.expiresAt || now > session.absoluteExpiresAt) {
       this.sessions.delete(token);
       return null;
     }

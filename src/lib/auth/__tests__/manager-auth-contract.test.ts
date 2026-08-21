@@ -86,7 +86,7 @@ test('Manager Identity: challenges missing, invalid or expired tokens with 401',
     managerUser,
     'org-school-a',
     [managerMembership],
-    -10, // expired 10s ago
+    { ttlSeconds: -10 }, // expired 10s ago
   );
 
   const missingResult = await ManagerAuthorizationService.authorizeManagerAccess(

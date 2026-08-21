@@ -48,6 +48,15 @@ export interface ManagerSession {
   isPlatformAdministrator: boolean;
   issuedAt: Date;
   expiresAt: Date;
+  /**
+   * When this session must end however active its manager stays.
+   *
+   * `expiresAt` moves forward on every renewal and this does not: it is set
+   * once, at the sign-in that began the session, and copied unchanged into
+   * every token that follows. That is the whole difference between a window
+   * that slides and a session that never ends.
+   */
+  absoluteExpiresAt: Date;
 }
 
 export interface ManagerAuthContext {

@@ -38,6 +38,7 @@ const sessionAdminSchoolA: ManagerSession = {
   isPlatformAdministrator: false,
   issuedAt: new Date(),
   expiresAt: new Date(Date.now() + 86400000),
+  absoluteExpiresAt: new Date(Date.now() + 86400000),
 };
 
 const sessionManagerSchoolB: ManagerSession = {
@@ -49,6 +50,7 @@ const sessionManagerSchoolB: ManagerSession = {
   isPlatformAdministrator: false,
   issuedAt: new Date(),
   expiresAt: new Date(Date.now() + 86400000),
+  absoluteExpiresAt: new Date(Date.now() + 86400000),
 };
 
 test("RolePermissionService grants full mutation rights to admin and restricts manager to read-only", () => {
@@ -200,6 +202,7 @@ test("a platform administrator may read any school's log, and a school user only
     isPlatformAdministrator: true,
     issuedAt: new Date(),
     expiresAt: new Date(Date.now() + 86400000),
+  absoluteExpiresAt: new Date(Date.now() + 86400000),
   };
 
   const readByAdministrator = await ManagerAuditService.getOrganizationAuditLogs(

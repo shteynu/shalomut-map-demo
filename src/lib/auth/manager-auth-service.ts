@@ -309,5 +309,30 @@ export class ManagerAuthenticationService {
       memberships: account.memberships,
     };
   }
+
+  /**
+   * The same account again, without asking for the password a second time.
+   *
+   * Renewal re-reads whichever directory the session came from, and for this
+   * path the directory is the environment: these managers are constants in this
+   * file with no row anywhere, which is what `authenticateCredentials` says
+   * above and the reason it was never made repository-backed. Looking them up
+   * in `managers` finds nothing, so a short session would sign a password
+   * manager out one renewal after letting them in — the deployed endpoint is on
+   * this path until its OAuth client exists.
+   *
+   * No password is checked because none is being offered: the caller is holding
+   * a signed session this runtime minted, and the question is whether the
+   * account behind it is still there.
+   */
+  public static async findAccountById(
+    managerId: string,
+  ): Promise<{ manager: Manager; memberships: OrganizationMembership[] } | null> {
+    const accounts = await this.defaultAccounts();
+    const account = accounts.find((acc) => acc.manager.id === managerId);
+    if (!account) return null;
+
+    return { manager: account.manager, memberships: account.memberships };
+  }
 }
 
