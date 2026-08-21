@@ -103,9 +103,20 @@ deployment signs in with Google, and the one defect the sign-in walk found is
 fixed, deployed and proved there. The standing alternative,
 [`product-behaviour-backlog.md`](product-behaviour-backlog.md) §12, is not
 startable: its machinery landed on 2026-08-15 and both halves that remain — the
-126 items and contract `7.0` — wait on that mapping. Two more owner items are
-open and block nothing: rotating `GEMINI_API_KEY` before any paid round, and
-deleting the Google client secret the deployment no longer uses.
+126 items and contract `7.0` — wait on that mapping. One owner item is still
+open and blocks nothing: rotating `GEMINI_API_KEY` before any paid round. The
+unused Google client secret was deleted on 2026-08-21 and is no longer one.
+
+Two coverage gaps were found while reviewing what the multi-tenancy work is
+tested by, and neither is a defect today. **Nothing pins either chokepoint.**
+Nine manager pages reach a school through `loadManagerContext` and every
+`/api/rounds/**` route through `authorizeManagerRound`, by convention alone — a
+new page or route that resolves the composition root itself would read a school
+with no row and no test would fail, and `check-composition-root.mjs` explicitly
+permits a page to resolve the wiring. A fitness check in that script's style is
+the fix. **And multi-tenancy has no browser-level coverage**: no Playwright spec
+opens a second school or signs in as an administrator, so every proof of it is a
+unit or route test plus the manual walks recorded above.
 
 That defect, for the record, was that **a platform administrator who belongs to
 no school read that school's screens unrecorded whenever exactly one school
@@ -500,7 +511,15 @@ without a code change; that, more than the number, is what changed.
    11:17:43 — five seconds before the session it issued — and no membership. The
    fifth value, `OIDC_CLIENT_SECRET`, was added by the owner; Google no longer
    shows a client secret after creation, so it came from `+ Add secret` and the
-   original `****CrUr` is now unused and can be deleted. The other four, on
+   original `****CrUr` was left unused and **was disabled and then deleted on
+   2026-08-21**, in that order and with a full sign-in between the two steps, so
+   the client now holds exactly one secret and the console's
+   more-than-one-secret warning is gone. Signing in was walked again after the
+   deletion and still works. Google warns that a secret change takes five
+   minutes to a few hours to take effect, so neither walk proves by itself which
+   secret the runtime holds; what does is that the deployment has been
+   authenticating since the owner added `****whGu` and redeployed. The other
+   four, on
    Vercel, scoped to **Production only** and **not** marked Sensitive:
    `OIDC_ISSUER=https://accounts.google.com`,
    `OIDC_CLIENT_ID=921662152966-oqth23ooibkr1cs3vvvqbpjbsq40pacg.apps.googleusercontent.com`,
