@@ -18,21 +18,24 @@ and in Git; what was durable in them is below.
 
 Verified 2026-08-21, in this worktree and on the deployed endpoint:
 
-- **`origin/main` is `bbcc41b`** and `GET /api/health/` answers
-  `commit: bbcc41b`, so the deployed endpoint is the pushed tip and the branch
-  tip. Two intermediate deploys were watched flipping rather than assumed —
-  `29ac8ec` → `179600c`, then `179600c` → `bbcc41b`. Nothing is unpushed. The
-  only modified file is `next-env.d.ts`, which is generated and belongs to the
-  owner. The last three commits carry documentation only, so nothing about the
-  runtime changed after `179600c`, which is the commit the evidence below was
-  taken against.
+- **`origin/main` is `d4b6039`** and `GET /api/health/` answers
+  `commit: d4b6039`, so the deployed endpoint is the pushed tip and the branch
+  tip. Every deploy of the day was watched flipping rather than assumed —
+  `29ac8ec` → `179600c` → `bbcc41b` → `5a7591d` → `d4b6039`. Nothing is
+  unpushed. The only modified file is `next-env.d.ts`, which is generated and
+  belongs to the owner. Nothing about the runtime changed after `179600c` —
+  everything above it is documentation, tests and a check script — so that is
+  the commit the evidence below was taken against, and the deployed behaviour
+  was re-checked on `d4b6039` anyway.
 - **No migration was needed for any deploy since.** `54881c5..bbcc41b` touches
   no file under `prisma/`. The deployed schema is the one applied earlier the
   same day — 18 migrations, `Database schema is up to date!` The identity tables
   are no longer empty: `managers` holds **1** row (the bootstrapped platform
-  administrator), `organization_memberships` **0**, `audit_events` **3** — all
-  three `ADMINISTRATOR_SCHOOL_VISIT`, all naming the demo school — and
-  `organizations` 1, `survey_rounds` 1. **The deployed audit log records
+  administrator), `organization_memberships` **0**, `organizations` 1 and
+  `survey_rounds` 1. `audit_events` is not a fixed number and should not be
+  quoted as one — every walk of a manager screen adds an
+  `ADMINISTRATOR_SCHOOL_VISIT`, all of them naming the demo school. It stood at
+  1 before the fix and at 7 by the end of the day. **The deployed audit log records
   again**; before those migrations every manager write had been failing on the
   missing table and logging `[audit] … was not recorded` while the action itself
   proceeded.
