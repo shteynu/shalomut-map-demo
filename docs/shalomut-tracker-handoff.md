@@ -71,14 +71,15 @@ Verified 2026-08-21, in this worktree and on the deployed endpoint:
   `lint:fixtures` were not run, because nothing in this work touched the AI
   contract or the Python service.
 
-**Next concrete step:** set the five identity variables on the deployment. The
-Google OAuth client was created on 2026-08-21 and is no longer what is missing;
-the gate below carries the exact five values and why the fifth,
-`MANAGER_ADMIN_EMAIL`, cannot wait for a second edit. Setting them switches the
-login screen away from the password, ends the password sessions still in
-browsers at their next renewal, and makes `/admin` reachable on the deployed
-endpoint for the first time — the administrator screen phase 4 built has never
-run against a real administrator anywhere but a local stand-in provider. Two consequences worth knowing before it is set rather than after:
+**Next concrete step:** add `OIDC_CLIENT_SECRET` to Production on Vercel and
+redeploy. It is the last of five identity variables and the only one an agent
+must not handle; the other four were set on 2026-08-21 and the gate below
+records them verbatim. Until it lands the deployment still signs in with a
+password, unchanged. Once it does, the login screen switches to the provider,
+the password sessions still in browsers end at their next renewal, and `/admin`
+becomes reachable on the deployed endpoint for the first time — the
+administrator screen phase 4 built has never run against a real administrator
+anywhere but a local stand-in provider. Two consequences worth knowing before it is set rather than after:
 setting it ends the password sessions still in browsers at their next renewal,
 which is intended, and it is what first makes `/admin` reachable on the deployed
 endpoint.
@@ -453,24 +454,38 @@ without a code change; that, more than the number, is what changed.
    in
    [`local-environment.md`](local-environment.md).
 
-   **What is left is the five variables on the deployment, and they are the
-   owner's** — authentication configuration, inside the standing approval gate.
-   `OIDC_ISSUER` is `https://accounts.google.com`; `OIDC_CLIENT_ID` and
-   `OIDC_CLIENT_SECRET` come from that client; `OIDC_REDIRECT_URI` is
-   `https://shalomut-map-demo.vercel.app/api/auth/oidc/callback/`. **The
-   trailing slash is not a typo** — `next.config.ts` sets `trailingSlash: true`,
-   the unslashed spelling answers `308`, and Google matches the string byte for
-   byte in both the authorize request and the token exchange. **And the fifth is
-   `MANAGER_ADMIN_EMAIL`**, which must be set in the same edit: this
-   deployment's `managers` table is empty, so four variables alone close the
-   password door with nothing behind it — no address matches a row, the
-   bootstrap fires only for that variable, and nobody can sign in. Google also
-   warns that client settings take from five minutes to a few hours to take
-   effect, and Vercel applies variables only on a redeploy.
+   **Four of the five variables are set on the deployment (2026-08-21), and the
+   fifth is `OIDC_CLIENT_SECRET`, which stays the owner's.** On Vercel, scoped
+   to **Production only** and **not** marked Sensitive:
+   `OIDC_ISSUER=https://accounts.google.com`,
+   `OIDC_CLIENT_ID=921662152966-oqth23ooibkr1cs3vvvqbpjbsq40pacg.apps.googleusercontent.com`,
+   `OIDC_REDIRECT_URI=https://shalomut-map-demo.vercel.app/api/auth/oidc/callback/`
+   and `MANAGER_ADMIN_EMAIL=shteynumaks@gmail.com`. Two deliberate choices
+   there. **Production only**, because a preview deployment's URL is generated
+   per build and cannot be registered with Google, so previews keep the password
+   door — which is also why `MANAGER_ADMIN_PASSWORD` stays. **Not Sensitive**,
+   unlike every older variable here, because none of the four is a secret and a
+   Sensitive value cannot be read back — and the one failure this setup invites,
+   `redirect_uri_mismatch`, is diagnosed by reading exactly this string.
+
+   **The trailing slash in `OIDC_REDIRECT_URI` is not a typo** —
+   `next.config.ts` sets `trailingSlash: true`, the unslashed spelling answers
+   `308`, and Google matches the string byte for byte in both the authorize
+   request and the token exchange.
+
+   **Nothing changes until the secret is added and Production is redeployed.**
+   `resolveIdentityProviderConfig` wants all four `OIDC_*` or none, and three
+   are set, so it still returns `null` and the runtime still signs in with a
+   password. One thing does change at that redeploy regardless of the secret:
+   `MANAGER_ADMIN_EMAIL` is also the password door's address
+   (`manager-auth-service.ts:62` falls back to `admin@shalomut.edu.il` only when
+   it is unset), so the password login on Production becomes
+   `shteynumaks@gmail.com`. Note also that Google warns client settings take
+   from five minutes to a few hours to take effect.
 
    Phase 1 of the multi-tenancy plan is written and verified against a stand-in
-   provider; those five values are the only thing between it and a real
-   sign-in.
+   provider; that one secret and a redeploy are all that stand between it and a
+   real sign-in.
 4. **Create an uptime monitor on Core's `/api/health`.**
 5. **Decide where the structured observability lines land** — a log sink or an
    error tracker, and with which alert. Every counter the product emits still
