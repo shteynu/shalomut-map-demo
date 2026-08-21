@@ -8,6 +8,7 @@ import {
   UNRECORDABLE_VISIT_MESSAGE,
   recordAdministratorSchoolVisit,
 } from "@/lib/server/manager-audit";
+import type { ManagerContext } from "@/lib/services/manager-context.service";
 import {
   ManagerScopeRequiredError,
   ManagerScopeService,
@@ -174,4 +175,33 @@ export async function authorizeManagerRound(
     if (response) return { ok: false as const, response };
     throw error;
   }
+}
+/**
+ * The record that an administrator read a manager screen, taken from the school
+ * the screen was actually read inside.
+ *
+ * The screens' half of the chokepoint `authorizeManagerRound` is for the round
+ * routes, and it takes the school from the loaded context for the same reason
+ * that one takes it from the resolved round: what a request asked for and what
+ * it was answered with are not the same thing.
+ *
+ * Which matters most where a request asks for nothing. A manager chooses a
+ * school once and the other screens carry a round in their URLs, so most
+ * requests arrive with no school on them at all, and `resolveOrganizationId`
+ * then hands back the only school there is without anyone having named it. That
+ * is the reading this used to miss — and on a deployment with one school it is
+ * every reading there is.
+ *
+ * `null` in the context is a request that reached no school: nothing was read,
+ * so there is nothing to record.
+ */
+export async function recordManagerScreenVisit(
+  auditRepo: IAuditLogRepository,
+  request: Pick<Request, "headers">,
+  context: Pick<ManagerContext, "organization">,
+): Promise<boolean> {
+  const organizationId = context.organization?.id;
+  if (!organizationId) return true;
+
+  return recordAdministratorSchoolVisit(auditRepo, request, organizationId);
 }

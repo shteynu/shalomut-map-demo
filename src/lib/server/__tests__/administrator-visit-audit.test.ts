@@ -10,6 +10,7 @@ import type { Manager, OrganizationMembership } from "@/lib/auth/types";
 import {
   InMemoryOrganizationRepository,
   InMemoryRoundRepository,
+  InMemorySurveyRepository,
 } from "@/lib/repositories";
 import {
   DEMO_ORGANIZATION,
@@ -24,7 +25,9 @@ import {
   MANAGER_MEMBER_SCHOOLS_HEADER,
   MANAGER_ORGANIZATION_HEADER,
   authorizeManagerRound,
+  recordManagerScreenVisit,
 } from "../manager-scope";
+import { ManagerContextService } from "@/lib/services";
 
 const SCHOOL = DEMO_ORGANIZATION.id;
 
@@ -56,6 +59,12 @@ const schoolMembership: OrganizationMembership = {
 async function requestAs(
   manager: Manager,
   memberships: OrganizationMembership[],
+  /**
+   * Whether the request names a school. Most manager screens do not: the choice
+   * is made once and the other screens carry a round in the URL, so `false` is
+   * the ordinary shape of a request rather than an edge case.
+   */
+  namesASchool = true,
 ) {
   const { token } = await new JwtSessionProvider().createSession(
     manager,
@@ -63,15 +72,29 @@ async function requestAs(
     memberships,
   );
 
-  return {
-    headers: new Headers({
-      cookie: `shalomut_session=${token}`,
-      [MANAGER_ORGANIZATION_HEADER]: SCHOOL,
-      [MANAGER_MEMBER_SCHOOLS_HEADER]: manager.isPlatformAdministrator
-        ? EVERY_SCHOOL
-        : SCHOOL,
-    }),
-  };
+  const headers = new Headers({
+    cookie: `shalomut_session=${token}`,
+    [MANAGER_MEMBER_SCHOOLS_HEADER]: manager.isPlatformAdministrator
+      ? EVERY_SCHOOL
+      : SCHOOL,
+  });
+  if (namesASchool) headers.set(MANAGER_ORGANIZATION_HEADER, SCHOOL);
+
+  return { headers };
+}
+
+/** The context a manager screen would have been rendered from. */
+async function contextFor(request: { headers: Headers }) {
+  return ManagerContextService.load(
+    new InMemoryOrganizationRepository([DEMO_ORGANIZATION]),
+    new InMemoryRoundRepository([DEMO_ROUND]),
+    new InMemorySurveyRepository(),
+    request.headers.get(MANAGER_ORGANIZATION_HEADER)?.trim() || undefined,
+    undefined,
+    request.headers.get(MANAGER_MEMBER_SCHOOLS_HEADER) === EVERY_SCHOOL
+      ? undefined
+      : [SCHOOL],
+  );
 }
 
 /** An audit store that cannot be written to, which is the case worth refusing. */
@@ -222,4 +245,63 @@ test("a school user's own round is answered even when the audit store is broken"
   );
 
   assert.strictEqual(authorization.ok, true);
+});
+
+test("a screen the administrator did not ask a school for is still recorded", async () => {
+  resetVisitWindowForTests();
+  const auditRepo = new InMemoryAuditLogRepository();
+  const request = await requestAs(administrator, [], false);
+  const context = await contextFor(request);
+
+  // The request named no school and was answered with one anyway, because one
+  // school is all there is. That is the reading the log used to miss, and on a
+  // new deployment it is every reading there is.
+  assert.strictEqual(context.organization?.id, SCHOOL);
+
+  const recorded = await recordManagerScreenVisit(auditRepo, request, context);
+
+  assert.strictEqual(recorded, true);
+  const [event] = await auditRepo.findByOrganizationId(SCHOOL);
+  assert.strictEqual(event.action, ADMINISTRATOR_SCHOOL_VISIT);
+  assert.strictEqual(event.managerId, administrator.id);
+});
+
+test("a screen that reached no school records nothing", async () => {
+  resetVisitWindowForTests();
+  const auditRepo = new InMemoryAuditLogRepository();
+
+  const recorded = await recordManagerScreenVisit(
+    auditRepo,
+    await requestAs(administrator, []),
+    { organization: null },
+  );
+
+  assert.strictEqual(recorded, true);
+  assert.deepStrictEqual(await auditRepo.findByOrganizationId(SCHOOL), []);
+});
+
+test("a screen is refused when the administrator's visit cannot be recorded", async () => {
+  resetVisitWindowForTests();
+  const request = await requestAs(administrator, [], false);
+
+  const recorded = await recordManagerScreenVisit(
+    brokenAuditRepo,
+    request,
+    await contextFor(request),
+  );
+
+  assert.strictEqual(recorded, false);
+});
+
+test("a school user's own screen is rendered even when the audit store is broken", async () => {
+  resetVisitWindowForTests();
+  const request = await requestAs(schoolUser, [schoolMembership], false);
+
+  const recorded = await recordManagerScreenVisit(
+    brokenAuditRepo,
+    request,
+    await contextFor(request),
+  );
+
+  assert.strictEqual(recorded, true);
 });

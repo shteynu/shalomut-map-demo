@@ -14,13 +14,11 @@ import {
 } from "@/lib/services";
 import type { ManagerContext } from "@/lib/services";
 import type { SurveyRound } from "@/lib/types/backend";
+import { UNRECORDABLE_VISIT_MESSAGE } from "@/lib/server/manager-audit";
 import {
-  UNRECORDABLE_VISIT_MESSAGE,
-  recordAdministratorSchoolVisit,
-} from "@/lib/server/manager-audit";
-import {
-  MANAGER_ORGANIZATION_HEADER,
   getManagerMemberSchools,
+  getManagerOrganizationId,
+  recordManagerScreenVisit,
 } from "@/lib/server/manager-scope";
 import {
   toSchoolSwitcherOptions,
@@ -32,8 +30,15 @@ export async function loadManagerContext(roundId?: string) {
   const { auditLogRepo, orgRepo, roundRepo, surveyRepo } =
     resolveCoreRepositories();
   const requestHeaders = await headers();
-  const organizationId =
-    requestHeaders.get(MANAGER_ORGANIZATION_HEADER)?.trim() || undefined;
+
+  const context = await ManagerContextService.load(
+    orgRepo,
+    roundRepo,
+    surveyRepo,
+    getManagerOrganizationId({ headers: requestHeaders }),
+    roundId?.trim() || undefined,
+    getManagerMemberSchools({ headers: requestHeaders }),
+  );
 
   // The screens' half of the same chokepoint the round routes have in
   // `authorizeManagerRound`: eight manager pages enter here, so an
@@ -41,23 +46,19 @@ export async function loadManagerContext(roundId?: string) {
   // without the visit being recorded. It throws rather than returning a state,
   // because there is no honest screen for "we are showing you this school but
   // nobody will ever know we did".
-  if (organizationId) {
-    const recorded = await recordAdministratorSchoolVisit(
-      auditLogRepo,
-      { headers: requestHeaders },
-      organizationId,
-    );
-    if (!recorded) throw new Error(UNRECORDABLE_VISIT_MESSAGE);
-  }
-
-  return ManagerContextService.load(
-    orgRepo,
-    roundRepo,
-    surveyRepo,
-    organizationId,
-    roundId?.trim() || undefined,
-    getManagerMemberSchools({ headers: requestHeaders }),
+  //
+  // The record is taken after the context resolves, which costs the reads of a
+  // page that is then refused. That is the price of naming the right school:
+  // the request often names none, and the school it was answered with is only
+  // known once it has been.
+  const recorded = await recordManagerScreenVisit(
+    auditLogRepo,
+    { headers: requestHeaders },
+    context,
   );
+  if (!recorded) throw new Error(UNRECORDABLE_VISIT_MESSAGE);
+
+  return context;
 }
 
 /**
