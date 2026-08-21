@@ -1,5 +1,9 @@
-import type { IOrganizationRepository } from "../repositories/interfaces";
-import type { Organization } from "../types/backend";
+import type {
+  IOrganizationRepository,
+  IRoundRepository,
+  ISurveyRepository,
+} from "../repositories/interfaces";
+import type { Organization, RoundStatus, SurveyRound } from "../types/backend";
 import type { IManagerRepository } from "./domain-contract";
 import type { Manager, ManagerRole, OrganizationMembership } from "./types";
 
@@ -14,10 +18,49 @@ export type AdministrationResult<T> =
   | { ok: true; value: T }
   | { ok: false; reason: AdministrationRefusal };
 
+/**
+ * Whether anything is happening in a school, in the only terms an administrator
+ * may be told outside it.
+ *
+ * Every field is a cardinality, a status or a name — nothing here is derived
+ * from what anybody answered. That is the k-anonymity limit of the 2026-08-20
+ * model expressed as a type: an administrator may open **each school's own**
+ * results, which is the same suppressed view that school's user sees, and a
+ * figure computed across schools is a different object that stays refused. A
+ * score on this summary would be the first half of exactly that object, because
+ * the screen renders one of these per school in a list.
+ */
+export interface CurrentRoundSummary {
+  id: string;
+  title: string;
+  status: RoundStatus;
+  /**
+   * How many questionnaires came back. A count of people, not a fact about any
+   * of them — `getResponseCount` rather than `findResponsesByRoundId`, which
+   * would read the answers.
+   */
+  responseCount: number;
+  /** The round's own threshold, which a school may raise above the minimum. */
+  privacyThreshold: number;
+  /**
+   * Whether the count has reached the threshold. Stated rather than left to the
+   * screen to derive, so the rule lives beside the numbers it is about and one
+   * card cannot render it differently from another.
+   */
+  isUnlocked: boolean;
+}
+
 /** One school and the people who reach it, which is what the screen lists. */
 export interface SchoolWithPeople {
   organization: Organization;
   people: { manager: Manager; membership: OrganizationMembership }[];
+  /**
+   * How many rounds this school has ever had, and what its current one is
+   * doing. `null` for a school that has never opened one, which is a real state
+   * with its own sentence on the screen rather than a card with a gap in it.
+   */
+  roundCount: number;
+  currentRound: CurrentRoundSummary | null;
 }
 
 export interface AdministrationOverview {
@@ -60,6 +103,28 @@ function stands(membership: OrganizationMembership): boolean {
 }
 
 /**
+ * The round a school is currently about.
+ *
+ * A school runs one round at a time (ADR-014), so at most one is `active` and
+ * that one is the answer whenever it exists. Otherwise the most recently created
+ * round is what the school last did — a closed round is still the thing an
+ * administrator would want to look at, and a draft is still evidence somebody
+ * started. `archived` rounds are deliberately eligible: the school took them out
+ * of its own list, not out of its history, and a school whose only round is
+ * archived should not read as a school that never ran one.
+ */
+function currentRoundOf(rounds: SurveyRound[]): SurveyRound | null {
+  if (rounds.length === 0) return null;
+
+  const active = rounds.find((round) => round.status === "active");
+  if (active) return active;
+
+  return rounds.reduce((newest, round) =>
+    round.createdAt.getTime() > newest.createdAt.getTime() ? round : newest,
+  );
+}
+
+/**
  * What a platform administrator can do that nobody else can: create a school,
  * and decide who reaches it.
  *
@@ -73,10 +138,22 @@ function stands(membership: OrganizationMembership): boolean {
  * called with a forged one.
  */
 export class ManagerAdministrationService {
-  /** Every school, everyone in it, and everyone who is not in one. */
+  /**
+   * Every school, everyone in it, everyone who is not in one, and whether
+   * anything is happening in each.
+   *
+   * Three queries per school and none per round: the memberships, the school's
+   * rounds, and a response count for the one round the screen names. The
+   * response count is deliberately not asked for every round — that would make
+   * the cost of this screen grow with a school's history rather than with the
+   * number of schools, and the deployed database is in Seoul at roughly 180 ms
+   * a query.
+   */
   public static async loadOverview(
     orgRepo: IOrganizationRepository,
     managerRepo: IManagerRepository,
+    roundRepo: IRoundRepository,
+    surveyRepo: ISurveyRepository,
   ): Promise<AdministrationOverview> {
     const [organizations, managers] = await Promise.all([
       orgRepo.findAll(),
@@ -99,7 +176,28 @@ export class ManagerAdministrationService {
         if (stands(membership)) attached.add(manager.id);
         people.push({ manager, membership });
       }
-      schools.push({ organization, people });
+
+      const rounds = await roundRepo.findByOrganizationId(organization.id);
+      const current = currentRoundOf(rounds);
+      const responseCount = current
+        ? await surveyRepo.getResponseCount(current.id)
+        : 0;
+
+      schools.push({
+        organization,
+        people,
+        roundCount: rounds.length,
+        currentRound: current
+          ? {
+              id: current.id,
+              title: current.title,
+              status: current.status,
+              responseCount,
+              privacyThreshold: current.privacyThreshold,
+              isUnlocked: responseCount >= current.privacyThreshold,
+            }
+          : null,
+      });
     }
 
     return {

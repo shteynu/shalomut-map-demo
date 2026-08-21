@@ -6923,6 +6923,59 @@ body:has(.setup-form-save-bar) .help-badge > summary span {
   color: var(--text-muted, #6f665e);
 }
 
+/* Two ways into one school — its map and its settings. They wrap together
+   rather than separately, so a narrow screen never leaves one stranded on a
+   line of its own. */
+.admin-school-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* What is happening in the school, between its name and its people: the round,
+   and how far it has got. Set apart by a rule rather than a panel — it is the
+   same card, read in two breaths. */
+.admin-school-activity {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding-block-start: 0.8rem;
+  border-block-start: 1px solid var(--stone-border, rgba(120, 105, 90, 0.22));
+}
+
+.admin-school-activity p {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+/* Same rule as the membership pills above: the word carries the state and the
+   tint only repeats it, so nothing here is legible by colour alone. */
+.admin-round-status {
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  white-space: nowrap;
+  border: 1px solid currentColor;
+}
+
+.admin-round-status-active {
+  color: var(--status-green-text, #2f6b4f);
+}
+
+.admin-round-status-draft {
+  color: var(--status-amber-text, #8a6320);
+}
+
+.admin-round-status-closed,
+.admin-round-status-archived {
+  color: var(--text-muted, #6f665e);
+}
+
 .admin-people {
   display: flex;
   flex-direction: column;

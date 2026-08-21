@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { InMemoryOrganizationRepository } from "@/lib/repositories";
+import {
+  InMemoryOrganizationRepository,
+  InMemoryRoundRepository,
+  InMemorySurveyRepository,
+} from "@/lib/repositories";
 import type { Organization } from "@/lib/types/backend";
 import { InMemoryManagerRepository } from "../domain-contract";
 import { ManagerAdministrationService } from "../manager-administration-service";
@@ -19,6 +23,8 @@ function repos() {
   return {
     managerRepo: new InMemoryManagerRepository(),
     orgRepo: new InMemoryOrganizationRepository([SCHOOL]),
+    roundRepo: new InMemoryRoundRepository(),
+    surveyRepo: new InMemorySurveyRepository(),
   };
 }
 
@@ -258,7 +264,7 @@ test("promoting an existing school user keeps their id, and refuses a second tim
 });
 
 test("the overview names every school, its people, and the people with nowhere to go", async () => {
-  const { managerRepo, orgRepo } = repos();
+  const { managerRepo, orgRepo, roundRepo, surveyRepo } = repos();
   await ManagerAdministrationService.inviteAdministrator(managerRepo, {
     email: "platform@shalomut.example",
   });
@@ -272,6 +278,8 @@ test("the overview names every school, its people, and the people with nowhere t
   const before = await ManagerAdministrationService.loadOverview(
     orgRepo,
     managerRepo,
+    roundRepo,
+    surveyRepo,
   );
   assert.strictEqual(before.schools.length, 1);
   assert.strictEqual(before.schools[0].people.length, 1);
@@ -288,6 +296,8 @@ test("the overview names every school, its people, and the people with nowhere t
   const after = await ManagerAdministrationService.loadOverview(
     orgRepo,
     managerRepo,
+    roundRepo,
+    surveyRepo,
   );
   // The revoked person is still listed under the school — the row is what says
   // who had it — and is also named as somebody who can no longer sign in.

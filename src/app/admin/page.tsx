@@ -26,10 +26,13 @@ export default async function AdminPage() {
   // the page into a list of every school and every address.
   if (!session?.isPlatformAdministrator) notFound();
 
-  const { managerRepo, orgRepo } = resolveCoreRepositories();
+  const { managerRepo, orgRepo, roundRepo, surveyRepo } =
+    resolveCoreRepositories();
   const overview = await ManagerAdministrationService.loadOverview(
     orgRepo,
     managerRepo,
+    roundRepo,
+    surveyRepo,
   );
 
   return (
@@ -46,6 +49,12 @@ export default async function AdminPage() {
           name: school.organization.name,
           city: school.organization.city,
           totalStaffCount: school.organization.totalStaffCount,
+          roundCount: school.roundCount,
+          // Passed through as it is built. The screen decides how to say these
+          // numbers and never which ones exist — a card that derived a figure of
+          // its own would be deriving it per school, in a list, which is the
+          // shape the k-anonymity limit refuses.
+          currentRound: school.currentRound,
           people: school.people.map(({ manager, membership }) => ({
             membershipId: membership.id,
             email: manager.email,
