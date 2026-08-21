@@ -129,7 +129,8 @@ Modified: `src/lib/shalomut-source.ts`,
 `.agents/skills/shalomut-map/SKILL.md`.
 
 Added: `contracts/wellbeing-dimensions.json`, `src/lib/wellbeing-dimensions.ts`,
-`src/lib/__tests__/wellbeing-dimensions.test.ts`.
+`src/lib/__tests__/wellbeing-dimensions.test.ts`,
+`src/components/breakdown/__tests__/breakdown-board.test.tsx`.
 
 Untracked and not this task's: `next-env.d.ts` is modified by the owner's
 tooling and left alone.
@@ -139,10 +140,12 @@ tooling and left alone.
 ### Passed
 
 - `npx tsc --noEmit` — clean.
-- `npm test` run unpiped with `echo "EXIT=$?"`: `EXIT=0`, 1356 tests, 1356 pass,
-  0 fail (1346 before this task; the ten new ones are the manifest suite).
-- `npm run verify:core > verify.log 2>&1; echo $?` — `REAL_EXIT=0`. The log
-  holds `# tests 1356 / # pass 1356 / # fail 0`, `568 passed` from the Python
+- `npm test` run unpiped with `echo "EXIT=$?"`: `EXIT=0`, 1358 tests, 1358 pass,
+  0 fail (1346 before this task; ten new in the manifest suite, two in the
+  breakdown render suite).
+- `npm run verify:core > verify.log 2>&1; echo $?` — `REAL_EXIT=0`, re-run
+  after the render test was added. The log holds
+  `# tests 1358 / # pass 1358 / # fail 0`, `568 passed` from the Python
   suite, a clean `next build`, and every fitness check passing: architecture,
   Python interpreter, composition root, tenant chokepoints (two chokepoints,
   two pages about no single school), runtime fixtures, agent skills, mutation
@@ -156,7 +159,16 @@ tooling and left alone.
   dimension texts were fetched anonymously from
   `/_next/static/chunks/` and are byte-identical to the local `next build`:
   each contains `עורף מקצועי` and neither contains `עוגן`. `עוגן` survives in
-  the tree only inside two comments explaining why it is gone.
+  the tree only inside three comments explaining why it is gone.
+- **The table itself is rendered in a test.**
+  `src/components/breakdown/__tests__/breakdown-board.test.tsx` renders
+  `BreakdownBoard` with a background question and two published groups, and
+  asserts the markup carries `עורף מקצועי` and not `עוגן`, plus one
+  `<th scope="row">` per dimension named from the manifest. Both tests were
+  watched failing before they were trusted: setting `management-support`'s
+  `conceptLabel` back to `עוגן` in the manifest fails this test and the parity
+  test in `wellbeing-dimensions.test.ts`, and the manifest was restored with no
+  diff left behind.
 
 ### Failed
 
@@ -167,11 +179,19 @@ None.
 - `npm run test:e2e` was not run. Nothing in this task touches the respondent
   path, sign-in or the dashboard's data flow; the one changed string is on the
   breakdown table, which the smoke path does not read.
-- **No signed-in browser walk of the breakdown table.** The manager session in
-  the connected Chrome had expired, `/breakdown/` redirected to
-  `/login/?next=%2Fbreakdown`, and signing in is the owner's action. What is
-  proved instead is that the deployed bundle carries the new string and not the
-  old one — one step short of seeing it rendered.
+- **The deployed breakdown table was not seen, because it does not render.**
+  The owner signed in and `/breakdown/` was reached on the deployed endpoint,
+  but the demo round's questionnaire has no background question with options,
+  so the screen shows its empty state — "בשאלון של הסבב הזה אין שאלת רקע עם
+  אפשרויות בחירה" — and the table is unreachable there. This is round content,
+  not a deploy problem, and the only way to see it on the deployed endpoint is
+  to add a background question to that round, which changes a round that
+  already holds 12 responses. Not done; the owner's call.
+- The other seven dimensions' names are unchanged, so no other screen
+  distinguishes the old build from the new one. Every screen that shows a
+  dimension name reads `dimensionPresentations[…].conceptLabel`, and that value
+  was already `עורף מקצועי` before this task. The breakdown table is the only
+  place the change is visible.
 
 ### Environment
 
