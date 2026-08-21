@@ -62,6 +62,7 @@ export default async function DashboardPage({
       // and a round the analysis had locked for another reason arrived there
       // with no dimension scores to draw.
       isLocked={analytics.isLocked}
+      lockReason={analytics.lockReason}
       dimensionScores={dimensionScores}
       roundOptions={toRoundSwitcherOptions(
         context.rounds,

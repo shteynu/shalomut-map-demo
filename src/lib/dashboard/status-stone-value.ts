@@ -11,6 +11,8 @@
  * dash and says when it will. The dash is decoration; the sentence carries the
  * meaning, and `screenReaderValue` is what a screen reader hears in its place.
  */
+import type { RoundLockReason } from "../types/canonical-analytics";
+
 export const STATUS_STONE_UNAVAILABLE = "—";
 
 export interface StatusStoneValue {
@@ -26,12 +28,23 @@ export function describeStatusStone(
   minimumResponses: number,
   /** What the stone says once there is a number to show. */
   readyHelper: string,
+  /**
+   * Why there is no number yet, so the stone names the right condition.
+   *
+   * A round still collecting does not open at any number of answers — it opens
+   * when it closes — so promising it "after ten answers" is a sentence the
+   * manager watches stay false from the eleventh answer onward.
+   */
+  lockReason: RoundLockReason | null,
 ): StatusStoneValue {
   if (count === null) {
     return {
       value: STATUS_STONE_UNAVAILABLE,
       screenReaderValue: "עדיין אין נתון",
-      helper: `ייפתח לאחר ${minimumResponses} תשובות`,
+      helper:
+        lockReason === "still-collecting"
+          ? "ייפתח בסגירת הסבב"
+          : `ייפתח לאחר ${minimumResponses} תשובות`,
     };
   }
 

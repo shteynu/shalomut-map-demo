@@ -65,11 +65,13 @@ export default async function HomePage({
     getStatusCount("red"),
     selectedRound.privacyThreshold,
     "אבנים הדורשות התייחסות במפה",
+    analytics?.lockReason ?? null,
   );
   const strengthStone = describeStatusStone(
     getStatusCount("green"),
     selectedRound.privacyThreshold,
     "אבנים במצב טוב במפה",
+    analytics?.lockReason ?? null,
   );
 
   return (

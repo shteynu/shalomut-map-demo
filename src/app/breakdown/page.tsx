@@ -85,6 +85,7 @@ export default async function BreakdownPage({
         selectedQuestionId={selectedQuestionId}
         roundId={selectedRound.id}
         isRoundLocked={analytics.isLocked}
+        lockReason={analytics.lockReason}
         privacyThreshold={analytics.privacyThreshold}
         totalResponses={context.responseCount}
       />

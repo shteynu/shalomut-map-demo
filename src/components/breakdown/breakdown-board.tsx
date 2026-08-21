@@ -6,6 +6,7 @@ import type {
 } from "@/lib/analytics/background-breakdown";
 import { dimensionPresentations } from "@/lib/dashboard/dimension-presentation";
 import type { WellbeingDimensionId } from "@/lib/shalomut-source";
+import type { RoundLockReason } from "@/lib/types/canonical-analytics";
 import { statusLabelShort } from "@/components/ui";
 import { BreakdownQuestionPicker } from "./breakdown-question-picker";
 
@@ -102,6 +103,7 @@ export function BreakdownBoard({
   selectedQuestionId,
   roundId,
   isRoundLocked,
+  lockReason,
   privacyThreshold,
   totalResponses,
 }: {
@@ -110,6 +112,8 @@ export function BreakdownBoard({
   selectedQuestionId: string | undefined;
   roundId: string;
   isRoundLocked: boolean;
+  /** Why the round is withheld, so this screen says the same true thing the map does. */
+  lockReason: RoundLockReason | null;
   privacyThreshold: number;
   totalResponses: number;
 }) {
@@ -136,11 +140,25 @@ export function BreakdownBoard({
       {isRoundLocked ? (
         <section className="breakdown-locked">
           <EyeOff size={20} aria-hidden="true" />
-          <p>
-            תוצאות הסבב עדיין נעולות, ולכן גם הפילוח נעול. פילוח של תוצאה שאי
-            אפשר להציג במלואה הוא דרך לקרוא אותה בחלקים. נדרשות לפחות{" "}
-            {privacyThreshold} תשובות, ובינתיים יש {totalResponses}.
-          </p>
+          {/*
+            The reason has to match the map's. A breakdown that explained the
+            threshold while the map explained the round still being open would
+            be one product giving two accounts of the same lock — and the
+            threshold sentence is plainly false on a round that passed it.
+          */}
+          {lockReason === "still-collecting" ? (
+            <p>
+              תוצאות הסבב ייפתחו כשהוא ייסגר, ולכן גם הפילוח ייפתח אז. פילוח
+              שמתעדכן בזמן שתשובות ממשיכות להגיע היה מאפשר לקרוא בחיסור את
+              תשובותיו של משיב יחיד. עד כה התקבלו {totalResponses} תשובות.
+            </p>
+          ) : (
+            <p>
+              תוצאות הסבב נעולות, ולכן גם הפילוח נעול. פילוח של תוצאה שאי אפשר
+              להציג במלואה הוא דרך לקרוא אותה בחלקים. נדרשות לפחות{" "}
+              {privacyThreshold} תשובות, ובינתיים יש {totalResponses}.
+            </p>
+          )}
         </section>
       ) : null}
 

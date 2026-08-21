@@ -33,21 +33,48 @@ function scores(): ScoreMap {
   }, {} as ScoreMap);
 }
 
-test("the locked screen does not promise that zero more answers will open the map", () => {
+test("the locked screen names the reason the round is actually withheld", () => {
   // A round the analysis locked while the total was already met: one question
   // drew fewer answers than the threshold.
-  const html = renderToStaticMarkup(
-    <DashboardMapLocked responseCount={12} minimumResponses={10} />,
+  const oneQuestionShort = renderToStaticMarkup(
+    <DashboardMapLocked
+      responseCount={12}
+      minimumResponses={10}
+      lockReason="question-below-threshold"
+    />,
   );
 
-  assert.ok(!html.includes("עוד 0 תשובות"));
-  assert.ok(html.includes("חלק מהשאלון"));
+  assert.ok(!oneQuestionShort.includes("עוד 0 תשובות"));
+  assert.ok(oneQuestionShort.includes("חלק מהשאלון"));
 
-  // And the ordinary case still says the useful thing.
-  const stillCollecting = renderToStaticMarkup(
-    <DashboardMapLocked responseCount={6} minimumResponses={10} />,
+  // A round that stopped collecting short of the threshold never opens, so it
+  // is told what happened rather than what would fix it.
+  const closedShort = renderToStaticMarkup(
+    <DashboardMapLocked
+      responseCount={6}
+      minimumResponses={10}
+      lockReason="below-threshold"
+    />,
   );
-  assert.ok(stillCollecting.includes("עוד 4 תשובות"));
+  assert.ok(closedShort.includes("הסבב נסגר עם 6 תשובות"));
+
+  // The reason this file exists, in its newest form. A round past its
+  // threshold and still collecting is withheld anyway (ADR-030), so any
+  // sentence promising that answers will open it is one the manager can watch
+  // stay false — including the honest-looking "another 0".
+  const collecting = renderToStaticMarkup(
+    <DashboardMapLocked
+      responseCount={17}
+      minimumResponses={10}
+      lockReason="still-collecting"
+    />,
+  );
+  assert.ok(collecting.includes("ייפתחו כשתסגרו את הסבב"));
+  assert.ok(!collecting.includes("עוד 0 תשובות"));
+  assert.ok(
+    !collecting.includes("מתוך 10 תשובות נדרשות"),
+    "a round past the threshold must not be shown counting up to it",
+  );
 });
 
 test("the map skips a stone with no score instead of blanking the page", () => {
@@ -129,6 +156,7 @@ test("the map page obeys the analysis about being locked, and does not re-decide
       comparison={null}
       divisions={[]}
       isLocked
+      lockReason="question-below-threshold"
     />,
   );
 

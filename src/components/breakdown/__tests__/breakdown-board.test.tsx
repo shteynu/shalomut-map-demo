@@ -63,11 +63,45 @@ function render() {
       selectedQuestionId="tenure"
       roundId="round-1"
       isRoundLocked={false}
+      lockReason={null}
       privacyThreshold={10}
       totalResponses={25}
     />,
   );
 }
+
+test("a breakdown locked by an open round explains the round, not the threshold", () => {
+  // The two screens have to give one account of one lock. This round holds 25
+  // answers against a threshold of 10, so the threshold sentence — "at least 10
+  // are needed, and meanwhile there are 25" — reads as nonsense, and the table
+  // is withheld for a reason that has nothing to do with the count (ADR-030).
+  const html = renderToStaticMarkup(
+    <BreakdownBoard
+      breakdown={breakdown()}
+      choices={[
+        {
+          questionId: "tenure",
+          questionText: "כמה שנים את/ה מלמד/ת?",
+          categoryCount: GROUPS.length,
+        },
+      ]}
+      selectedQuestionId="tenure"
+      roundId="round-1"
+      isRoundLocked
+      lockReason="still-collecting"
+      privacyThreshold={10}
+      totalResponses={25}
+    />,
+  );
+
+  assert.ok(html.includes("ייפתחו כשהוא ייסגר"));
+  assert.ok(
+    !html.includes("נדרשות לפחות"),
+    "a round past its threshold must not be told it needs more answers",
+  );
+  // And the table itself is gone, not merely explained away.
+  assert.ok(!html.includes("עורף מקצועי"));
+});
 
 test("the table names management-support the way the methodology does", () => {
   const html = render();
