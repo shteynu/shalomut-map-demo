@@ -67,7 +67,7 @@ all four `OIDC_*` variables and the login screen offers the organizational
 account instead and `/api/auth/login` refuses with `PROVIDER_REQUIRED` — two
 ways in never exist at once. Locally that means signing in needs a real OAuth
 client whose authorized redirect URI is
-`http://localhost:3000/api/auth/oidc/callback`, so leave the four empty unless
+`http://localhost:3000/api/auth/oidc/callback/`, so leave the four empty unless
 the provider itself is what you are working on.
 
 ## What is identical, and what is not

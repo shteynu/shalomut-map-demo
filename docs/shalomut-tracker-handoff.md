@@ -75,8 +75,11 @@ Verified 2026-08-21, in this worktree and on the deployed endpoint:
 approval gate on authentication configuration. The deployment keeps its password
 screen until `OIDC_ISSUER`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET` and
 `OIDC_REDIRECT_URI` are set, and switches the moment they are; the redirect URI
-must be `https://<deployment>/api/auth/oidc/callback`, listed verbatim on the
-client. Two consequences worth knowing before it is set rather than after:
+must be `https://<deployment>/api/auth/oidc/callback/` — with the trailing
+slash, because `trailingSlash: true` makes the unslashed spelling a `308` —
+listed verbatim on the client. A fifth variable belongs in the same edit:
+`MANAGER_ADMIN_EMAIL`, without which the deployment's empty `managers` table
+leaves nobody able to sign in once the password door closes. Two consequences worth knowing before it is set rather than after:
 setting it ends the password sessions still in browsers at their next renewal,
 which is intended, and it is what first makes `/admin` reachable on the deployed
 endpoint.
@@ -442,10 +445,16 @@ without a code change; that, more than the number, is what changed.
 
    **Create the Google OAuth client (2026-08-20), which is what turns that on.**
    A Web application client in Google Cloud Console, with
-   `https://<deployment>/api/auth/oidc/callback` listed verbatim as an
+   `https://<deployment>/api/auth/oidc/callback/` listed verbatim as an
    authorized redirect URI, and its id and secret plus `OIDC_ISSUER`
    (`https://accounts.google.com`) and `OIDC_REDIRECT_URI` set on the
-   deployment. Authentication configuration, so it is the owner's and sits
+   deployment. **The trailing slash is not a typo** — `next.config.ts` sets
+   `trailingSlash: true`, and the unslashed spelling answers `308`, so listing
+   only it would put a redirect in the middle of every sign-in. **And the
+   variables are five, not four**: on a deployment whose `managers` table is
+   empty, `MANAGER_ADMIN_EMAIL` must be set to the address the provider will
+   return, or the password door closes with nothing behind it and nobody can
+   sign in at all. Authentication configuration, so it is the owner's and sits
    inside the standing approval gate. Phase 1 of the multi-tenancy plan is
    written and verified against a stand-in provider; this is the only thing
    between it and a real sign-in.
