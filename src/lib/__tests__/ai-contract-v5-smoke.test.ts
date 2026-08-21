@@ -44,7 +44,10 @@ test('Smoke Test 1: Full Contract 5.0 analytical calculation and validation', as
     id: roundId,
     organizationId: orgId,
     title: 'סקר סמוק 5.0',
-    status: 'active',
+    // Closed, because this smoke is about what a published round carries
+    // across the 5.0 boundary. A round still collecting publishes nothing at
+    // all (ADR-030), which would make every assertion below vacuous.
+    status: 'closed',
     shareCode: 'SMOKE50',
     privacyThreshold: 10,
     startDate: new Date(),

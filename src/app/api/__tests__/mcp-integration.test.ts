@@ -244,12 +244,16 @@ test('MCP payload carries the school background context on 4.0 only, never when 
 
   try {
     // Locked round: no responses at all, so nothing may cross the boundary.
+    // Closed, so that the threshold is what withholds it — the AI service is
+    // only ever asked about a round that has stopped collecting anyway, since
+    // closing is what dispatches the analysis (ADR-016).
     overrideCoreRepositories({
       orgRepo: new InMemoryOrganizationRepository([DEMO_ORGANIZATION]),
       roundRepo: new InMemoryRoundRepository([
         {
           ...DEMO_ROUND,
           id: contextRoundId,
+          status: 'closed',
           shareCode: 'SHALOM-CONTEXT',
           privacyThreshold: 10,
           backgroundContext,
@@ -270,12 +274,13 @@ test('MCP payload carries the school background context on 4.0 only, never when 
         {
           ...DEMO_ROUND,
           id: contextRoundId,
+          status: 'closed',
           shareCode: 'SHALOM-CONTEXT',
           privacyThreshold: 10,
           backgroundContext,
         },
       ]),
-      // Ten answers, because that is what unlocks a round.
+      // Ten answers on a closed round, which is what unlocks one.
       surveyRepo: new InMemorySurveyRepository(
         Array.from({ length: 10 }, (_, index) => ({
           id: `response-context-${index + 1}`,

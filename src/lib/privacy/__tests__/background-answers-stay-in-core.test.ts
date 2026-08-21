@@ -89,7 +89,11 @@ function roundWithBackgroundQuestions(): SurveyRound {
     id: ROUND_ID,
     organizationId: 'org_background_boundary',
     title: 'סבב עם רקע',
-    status: 'active',
+    // Closed: this file's subject is which answers reach an aggregate and
+    // which can lock a round, and both questions only arise once a round
+    // publishes. A collecting round is withheld whatever its answers say
+    // (ADR-030).
+    status: 'closed',
     shareCode: 'BACKGROUND',
     privacyThreshold: THRESHOLD,
     startDate: new Date('2026-08-01T00:00:00.000Z'),

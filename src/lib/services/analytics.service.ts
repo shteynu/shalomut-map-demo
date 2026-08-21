@@ -37,6 +37,7 @@ import {
 import {
   CanonicalQuestionAggregate,
   CanonicalRoundAnalytics,
+  RoundLockReason,
 } from '../types/canonical-analytics';
 
 /**
@@ -329,13 +330,45 @@ export class AnalyticsService {
     const privacyThreshold = effectivePrivacyThreshold(
       round.privacyThreshold,
     );
-    const isLocked =
-      isUnfinishedQuestionnaire ||
-      totalResponses < privacyThreshold ||
-      enabledQuestions.some(
-        (question) =>
-          (scoresByQuestion.get(question.id)?.length ?? 0) < privacyThreshold,
-      );
+    // A round publishes its numbers once, when it has stopped collecting.
+    //
+    // The threshold below protects one published set of respondents; it cannot
+    // protect two. While answers keep arriving, every read is a fresh
+    // publication basis, and two reads that straddle a single submission differ
+    // by exactly one person: the difference of the per-question distributions
+    // is that respondent's own answer sheet, and the difference of the group
+    // counts is their demographic row. ADR-022 measured that leak and refused
+    // to let a manager choose a second basis by excluding responses; the same
+    // arithmetic works just as well when the second basis is chosen by waiting,
+    // so the rule it settled on — a round has exactly one basis of calculation
+    // — has to hold on the clock too. ADR-030 is where that is written down.
+    //
+    // Archived counts as published: archiving takes a round out of the list and
+    // changes nothing about it (ADR-018). Withholding there would also make the
+    // callback verifier recompute a locked round for a result that carries
+    // detail, and reject Core's own correct analysis.
+    const publishesResults =
+      round.status === 'closed' || round.status === 'archived';
+    const someQuestionBelowThreshold = enabledQuestions.some(
+      (question) =>
+        (scoresByQuestion.get(question.id)?.length ?? 0) < privacyThreshold,
+    );
+    // Ordered so that each reason is the one a manager can act on. Collecting
+    // outranks the counts because it binds however many answers are in: a round
+    // at seventeen of ten is still withheld, and saying "another zero answers"
+    // would be a sentence they can watch stay false. Below-threshold outranks
+    // the two structural reasons because their sentence opens by saying the
+    // total was reached, which for a short round it was not.
+    const lockReason: RoundLockReason | null = !publishesResults
+      ? 'still-collecting'
+      : totalResponses < privacyThreshold
+        ? 'below-threshold'
+        : isUnfinishedQuestionnaire
+          ? 'unfinished-questionnaire'
+          : someQuestionBelowThreshold
+            ? 'question-below-threshold'
+            : null;
+    const isLocked = lockReason !== null;
 
     if (isLocked) {
       return {
@@ -346,6 +379,7 @@ export class AnalyticsService {
         totalResponses,
         privacyThreshold,
         isLocked: true,
+        lockReason,
         dimensionScores: {} as Record<
           WellbeingDimensionId,
           RoundDimensionScore
@@ -409,6 +443,7 @@ export class AnalyticsService {
       totalResponses,
       privacyThreshold,
       isLocked: false,
+      lockReason: null,
       dimensionScores,
       questionAggregates,
       backgroundContext: round.backgroundContext,

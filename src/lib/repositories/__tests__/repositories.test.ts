@@ -183,6 +183,25 @@ test('End-to-End Workflow: Round creation -> 10 submissions -> Analytics Unlocki
     surveyRepo
   );
 
+  // The tenth answer meets the threshold, and the round is still collecting —
+  // so it is still withheld. Reaching the threshold is what makes a round
+  // *publishable*; closing it is what publishes it, once, on one set of
+  // respondents (ADR-030). Reading it live would let two reads taken either
+  // side of this submission be subtracted to recover the answer sheet that
+  // just arrived.
+  analytics = await AnalyticsService.getAnalyticsForRound(
+    round.id,
+    roundRepo,
+    surveyRepo
+  );
+  assert.strictEqual(analytics?.totalResponses, 10);
+  assert.strictEqual(analytics?.isLocked, true);
+  assert.strictEqual(analytics?.lockReason, 'still-collecting');
+  assert.deepStrictEqual(analytics?.dimensionScores, {});
+
+  // 5. Close the round -> the numbers are published
+  await roundRepo.updateStatus(round.id, 'closed');
+
   analytics = await AnalyticsService.getAnalyticsForRound(
     round.id,
     roundRepo,
@@ -190,6 +209,7 @@ test('End-to-End Workflow: Round creation -> 10 submissions -> Analytics Unlocki
   );
   assert.strictEqual(analytics?.totalResponses, 10);
   assert.strictEqual(analytics?.isLocked, false);
+  assert.strictEqual(analytics?.lockReason, null);
   assert.ok(analytics);
   assert.strictEqual(
     encodeRoundAnalytics(analytics).contractVersion,

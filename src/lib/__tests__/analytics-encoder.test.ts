@@ -21,6 +21,7 @@ function canonical(
     totalResponses: 10,
     privacyThreshold: 10,
     isLocked: false,
+    lockReason: null,
     dimensionScores: {} as Record<WellbeingDimensionId, RoundDimensionScore>,
     questionAggregates: {
       'q-1': {

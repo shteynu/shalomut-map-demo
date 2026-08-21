@@ -1,7 +1,11 @@
 import assert from 'node:assert';
 import { test } from 'node:test';
 import { surveyInstrument } from '../../shalomut-source';
-import { AnswerValue, SurveyResponseRecord } from '../../types/backend';
+import {
+  AnswerValue,
+  SurveyResponseRecord,
+  SurveyRound,
+} from '../../types/backend';
 import { encodeRoundAnalytics } from '../../analytics-encoder';
 import { AnalyticsService } from '../analytics.service';
 import {
@@ -11,6 +15,19 @@ import {
 } from '../../survey-definition';
 import { RoundService } from '../round.service';
 import { SurveyService } from '../survey.service';
+
+/**
+ * The same round, after collection stopped.
+ *
+ * A round publishes its numbers on one basis and only once it has closed
+ * (ADR-030), so a fixture whose subject is the arithmetic of a *published*
+ * round has to say so rather than inherit it. Everything below that measures
+ * bands, scales or distributions goes through here; the lock has its own tests,
+ * and they build the statuses they mean.
+ */
+function closed(round: SurveyRound): SurveyRound {
+  return { ...round, status: 'closed' };
+}
 
 test('AnalyticsService.computeStatus returns correct status thresholds', () => {
   assert.strictEqual(AnalyticsService.computeStatus(100), 'green');
@@ -337,7 +354,7 @@ test('an unlocked 5.0 round carries a distribution for every question', () => {
     );
 
     const result = AnalyticsService.calculateDynamicRoundAnalytics(
-      round,
+      closed(round),
       responses,
     );
 
@@ -399,7 +416,7 @@ function likertRound(
   organizationId: string,
   scaleId: 'likert-7-frequency' | 'likert-5-extent',
 ) {
-  return RoundService.createRound({
+  return closed(RoundService.createRound({
     organizationId,
     title: 'סבב ליקרט',
     privacyThreshold: MINIMUM_PRIVACY_THRESHOLD,
@@ -418,7 +435,7 @@ function likertRound(
         polarity: 'positive' as const,
       })),
     },
-  });
+  }));
 }
 
 function likertResponses(
