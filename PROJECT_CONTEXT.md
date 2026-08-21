@@ -891,6 +891,18 @@ chokepoints every manager path passes through — `authorizeManagerRound` for th
 round routes and `loadManagerContext` for the screens — so a route cannot reach a
 school without the visit being recorded, and a new route cannot forget to.
 
+**Both chokepoints take the school from the answer, not from the request**, and
+the screens' half did not at first. `authorizeManagerRound` always read
+`round.organizationId` off the resolved round; `loadManagerContext` read the
+`MANAGER_ORGANIZATION_HEADER` the middleware sets from `?school=`, and a request
+carrying no school therefore recorded nothing while being answered with one
+anyway — which is what `resolveOrganizationId` does when there is only one school
+to hand back. Most manager requests carry no school: the choice is made once on
+the setup screen and every other screen has a round in its URL. Corrected on
+2026-08-21 by `recordManagerScreenVisit`, which is given the loaded context. The
+cost is that the record now comes after the context resolves, so a page that is
+then refused has already paid for its reads.
+
 **That read fails closed, and it is the only thing here that does.** If the visit
 cannot be written the read is refused: `503` to an API caller, a thrown error to a
 screen. A read nobody can reconstruct is worse than a read that did not happen. A

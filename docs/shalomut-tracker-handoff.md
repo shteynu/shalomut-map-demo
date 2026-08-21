@@ -18,13 +18,13 @@ and in Git; what was durable in them is below.
 
 Verified 2026-08-21, in this worktree and on the deployed endpoint:
 
-- **`origin/main` is `3ebd715`** and `GET /api/health/` answers
-  `commit: 3ebd715`, so the deployed endpoint is the pushed tip. The last commit
-  carrying code is still `2576b99` — `f2b8653`, phase 5 and phase 4 in one push,
-  since each branch sat on the one below; everything above it is documentation.
-  Two documentation commits on `feat/what-the-administrator-sees` are unpushed.
-  The only modified file is `next-env.d.ts`, which is generated and belongs to
-  the owner.
+- **`origin/main` is `29ac8ec`** and `GET /api/health/` answers
+  `commit: 29ac8ec`, so the deployed endpoint is the pushed tip — but no longer
+  the branch tip. Two commits on `feat/what-the-administrator-sees` are
+  unpushed: the audit fix below and this document. **The deployment is still the
+  version that misses the visit**, and stays that way until the branch is
+  pushed. The only modified file is `next-env.d.ts`, which is generated and
+  belongs to the owner.
 - **No migration was needed for any deploy since.** `54881c5..3ebd715` touches
   no file under `prisma/`. The deployed schema is the one applied earlier the
   same day — 18 migrations, `Database schema is up to date!` The identity tables
@@ -36,10 +36,10 @@ Verified 2026-08-21, in this worktree and on the deployed endpoint:
   `[audit] … was not recorded` while the action itself proceeded.
 - **Sign-in on Production is Google, not a password (2026-08-21).** All five
   identity variables are set and the whole flow was walked on the deployed
-  endpoint. The approval-gate entry below carries the evidence, the client's
-  configuration, and the one finding the walk produced — an administrator's
-  reading of a school going unrecorded while only one school exists, which is
-  this deployment today.
+  endpoint. The approval-gate entry below carries the evidence and the client's
+  configuration. The walk also produced a finding, now fixed in the branch and
+  not yet deployed: an administrator's reading of a school went unrecorded
+  whenever exactly one school existed.
 - **The AI service correctly did not rebuild** and still serves `e69a5eb`.
   Nothing in this push touches its `buildFilter` paths, so a service commit
   behind Core's is the expected resting state here, not a missed deploy.
@@ -80,27 +80,31 @@ Verified 2026-08-21, in this worktree and on the deployed endpoint:
   `lint:fixtures` were not run, because nothing in this work touched the AI
   contract or the Python service.
 
-**Next concrete step:** decide what to do about the audit gap found while
-walking the new sign-in — **a platform administrator who belongs to no school
-reads that school's screens unrecorded whenever exactly one school exists.**
-Watched on the deployed endpoint 2026-08-21: signing in landed on `/setup/`,
-which rendered the demo school's name, city, staff count and round dates, and
-`audit_events` stayed at 0. The same page with `?school=<id>` recorded a row
-immediately, so the mechanism works and only this path misses it.
+**Next concrete step:** push `feat/what-the-administrator-sees` to `main` and
+watch the deployed endpoint record an administrator's reading of a school. Everything before that has
+happened: the gap found on 2026-08-21 is fixed on the branch, tested and built,
+and the deployment is the only place it still exists.
 
-`loadManagerContext` records a visit only when the organization arrives in the
-`MANAGER_ORGANIZATION_HEADER`, which the middleware sets from `?school=`
-(`manager-context.ts:44`). With no `?school=`, `resolveOrganizationId` falls
-through to `return schools[0] ?? null` (`manager-scope.service.ts:77`) — and for
-an administrator `schools` is every organization, unfiltered, because their
-scope is `EVERY_SCHOOL` rather than a membership list. At two schools or more
-the line above it throws `ManagerScopeRequiredError`, the screen asks which
-school, and the choice arrives as `?school=` and is recorded. So the gap is
-exactly the one-school case, which is every new deployment and is this one
-today. Not yet decided, and not fixed — the choice is between recording the
-adopted school in `loadManagerContext` when no header arrives, and making the
-administrator name a school before any screen renders. Both are product
-decisions about what the log is for, so they belong to the owner.
+The gap was that **a platform administrator who belongs to no school read that
+school's screens unrecorded whenever exactly one school existed.** Watched on
+the deployed endpoint: signing in landed on `/setup/`, which rendered the demo
+school's name, city, staff count and round dates, and `audit_events` stayed at
+0; the same page with `?school=<id>` recorded a row immediately. The cause was
+that `loadManagerContext` recorded from the request rather than from the answer
+— the school had to arrive in `MANAGER_ORGANIZATION_HEADER`, which the
+middleware sets from `?school=`, while `resolveOrganizationId` hands back the
+only school there is to a request that named none. Most manager requests name
+none: a school is chosen once and the other screens carry a round in the URL.
+
+The fix takes the school from the loaded context, which is what
+`authorizeManagerRound` already did for the round routes and the reason those
+were never affected. `recordManagerScreenVisit` is now the screens' half of that
+chokepoint, and the record is taken after the context resolves — a refused page
+therefore costs its reads, which is the price of naming the school that was
+actually read. Four tests cover it, the one that matters being an administrator
+whose request names no school. **The deployed proof is still outstanding** and
+is the step above: reproduce the original observation on the deployment and
+expect a row this time.
 
 **Every phase of
 [`multi-tenancy-plan-2026-08-20.md`](multi-tenancy-plan-2026-08-20.md) that was

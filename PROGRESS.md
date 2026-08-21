@@ -18,11 +18,12 @@ inside it.
   invited it. About four platform administrators may open any school; a school
   user may open theirs. A deployment without an OAuth client keeps the interim
   password screen until it has one, and never both at once. An administrator
-  opens a school and invites its person from `/admin`, and a manager action —
-  including an administrator reading a school they are not a member of — is a
-  row in `audit_events`, which nothing renders yet. One reading escapes it: when
-  a deployment holds exactly one school, the administrator's screens adopt that
-  school without naming it, and an unnamed school is an unrecorded one.
+  opens a school and invites its person from `/admin`, and every manager action
+  — including an administrator reading a school they are not a member of — is a
+  row in `audit_events`, which nothing renders yet. The row names the school the
+  screen was answered with rather than the one the request asked for: most
+  requests ask for none, and a deployment with one school hands that school back
+  to all of them.
 
 - **An administrator can see what every school is doing, one school at a time.**
   Since 2026-08-21 each school on `/admin` says how many rounds it has run, which
