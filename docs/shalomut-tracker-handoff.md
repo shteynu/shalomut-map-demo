@@ -18,27 +18,36 @@ and in Git; what was durable in them is below.
 
 Verified 2026-08-21, in this worktree and on the deployed endpoint:
 
-- **`origin/main` is `595c8e6`** and `GET /api/health/` answers
-  `commit: 595c8e6`, so the deployed endpoint is the pushed tip. It flipped
-  about forty seconds after the push, watched rather than assumed. The code is
-  `2576b99` — `f2b8653`, phase 5 and phase 4 in one push, since each branch sat
-  on the one below; the commit above it is this document and nothing else.
-  Nothing is unpushed. The only modified file is
-  `next-env.d.ts`, which is generated and belongs to the owner.
-- **No migration was needed for this deploy.** `54881c5..595c8e6` touches no
-  file under `prisma/`. The deployed schema is the one applied earlier the same
-  day — 18 migrations, `Database schema is up to date!` — with `managers`,
-  `organization_memberships` and `audit_events` present and empty,
-  `organizations` at 1 and `survey_rounds` at 1. **The deployed audit log
-  records again**; before those migrations every manager write had been failing
-  on the missing table and logging `[audit] … was not recorded` while the action
-  itself proceeded.
+- **`origin/main` is `3ebd715`** and `GET /api/health/` answers
+  `commit: 3ebd715`, so the deployed endpoint is the pushed tip. The last commit
+  carrying code is still `2576b99` — `f2b8653`, phase 5 and phase 4 in one push,
+  since each branch sat on the one below; everything above it is documentation.
+  Two documentation commits on `feat/what-the-administrator-sees` are unpushed.
+  The only modified file is `next-env.d.ts`, which is generated and belongs to
+  the owner.
+- **No migration was needed for any deploy since.** `54881c5..3ebd715` touches
+  no file under `prisma/`. The deployed schema is the one applied earlier the
+  same day — 18 migrations, `Database schema is up to date!` The identity tables
+  are no longer empty: `managers` holds **1** row (the bootstrapped platform
+  administrator), `organization_memberships` **0**, `audit_events` **1** — a
+  single `ADMINISTRATOR_SCHOOL_VISIT` — and `organizations` 1, `survey_rounds`
+  1. **The deployed audit log records again**; before those migrations every
+  manager write had been failing on the missing table and logging
+  `[audit] … was not recorded` while the action itself proceeded.
+- **Sign-in on Production is Google, not a password (2026-08-21).** All five
+  identity variables are set and the whole flow was walked on the deployed
+  endpoint. The approval-gate entry below carries the evidence, the client's
+  configuration, and the one finding the walk produced — an administrator's
+  reading of a school going unrecorded while only one school exists, which is
+  this deployment today.
 - **The AI service correctly did not rebuild** and still serves `e69a5eb`.
   Nothing in this push touches its `buildFilter` paths, so a service commit
   behind Core's is the expected resting state here, not a missed deploy.
-- **Phase 5 is deployed and the signed-in path was walked there.** Signed in
-  through the password door as `admin@shalomut.edu.il` (`mgr-admin-001`, a
-  school admin, `isPlatformAdministrator: false`), the session read
+- **Phase 5 is deployed and the signed-in path was walked there.** That walk
+  used the password door, which Production no longer has; it stands as evidence
+  for renewal, not as a way in. Signed in as `admin@shalomut.edu.il`
+  (`mgr-admin-001`, a school admin, `isPlatformAdministrator: false`), the
+  session read
   `09:45:05 → 10:00:05` — fifteen minutes, ADR-028 alive on the real endpoint.
   `SessionRenewal` fired its own `POST /api/auth/session/renew` on page arrival
   and got **`200`** with `renewAfterSeconds: 300`; the window moved to
@@ -71,18 +80,27 @@ Verified 2026-08-21, in this worktree and on the deployed endpoint:
   `lint:fixtures` were not run, because nothing in this work touched the AI
   contract or the Python service.
 
-**Next concrete step:** add `OIDC_CLIENT_SECRET` to Production on Vercel and
-redeploy. It is the last of five identity variables and the only one an agent
-must not handle; the other four were set on 2026-08-21 and the gate below
-records them verbatim. Until it lands the deployment still signs in with a
-password, unchanged. Once it does, the login screen switches to the provider,
-the password sessions still in browsers end at their next renewal, and `/admin`
-becomes reachable on the deployed endpoint for the first time — the
-administrator screen phase 4 built has never run against a real administrator
-anywhere but a local stand-in provider. Two consequences worth knowing before it is set rather than after:
-setting it ends the password sessions still in browsers at their next renewal,
-which is intended, and it is what first makes `/admin` reachable on the deployed
-endpoint.
+**Next concrete step:** decide what to do about the audit gap found while
+walking the new sign-in — **a platform administrator who belongs to no school
+reads that school's screens unrecorded whenever exactly one school exists.**
+Watched on the deployed endpoint 2026-08-21: signing in landed on `/setup/`,
+which rendered the demo school's name, city, staff count and round dates, and
+`audit_events` stayed at 0. The same page with `?school=<id>` recorded a row
+immediately, so the mechanism works and only this path misses it.
+
+`loadManagerContext` records a visit only when the organization arrives in the
+`MANAGER_ORGANIZATION_HEADER`, which the middleware sets from `?school=`
+(`manager-context.ts:44`). With no `?school=`, `resolveOrganizationId` falls
+through to `return schools[0] ?? null` (`manager-scope.service.ts:77`) — and for
+an administrator `schools` is every organization, unfiltered, because their
+scope is `EVERY_SCHOOL` rather than a membership list. At two schools or more
+the line above it throws `ManagerScopeRequiredError`, the screen asks which
+school, and the choice arrives as `?school=` and is recorded. So the gap is
+exactly the one-school case, which is every new deployment and is this one
+today. Not yet decided, and not fixed — the choice is between recording the
+adopted school in `loadManagerContext` when no header arrives, and making the
+administrator name a school before any screen renders. Both are product
+decisions about what the log is for, so they belong to the owner.
 
 **Every phase of
 [`multi-tenancy-plan-2026-08-20.md`](multi-tenancy-plan-2026-08-20.md) that was
@@ -454,9 +472,18 @@ without a code change; that, more than the number, is what changed.
    in
    [`local-environment.md`](local-environment.md).
 
-   **Four of the five variables are set on the deployment (2026-08-21), and the
-   fifth is `OIDC_CLIENT_SECRET`, which stays the owner's.** On Vercel, scoped
-   to **Production only** and **not** marked Sensitive:
+   **All five variables are set and the deployment signs in with Google
+   (2026-08-21).** Walked end to end: `/login/` offers only the organizational
+   account, `POST /api/auth/login/` answers `403 PROVIDER_REQUIRED` before
+   reading a password, `GET /api/auth/oidc/start/` redirects to Google carrying
+   the registered `redirect_uri` with its trailing slash, and the callback
+   returns signed in. The bootstrap fired once: `managers` holds exactly one
+   row, `shteynumaks@gmail.com`, `is_platform_administrator: true`, created
+   11:17:43 — five seconds before the session it issued — and no membership. The
+   fifth value, `OIDC_CLIENT_SECRET`, was added by the owner; Google no longer
+   shows a client secret after creation, so it came from `+ Add secret` and the
+   original `****CrUr` is now unused and can be deleted. The other four, on
+   Vercel, scoped to **Production only** and **not** marked Sensitive:
    `OIDC_ISSUER=https://accounts.google.com`,
    `OIDC_CLIENT_ID=921662152966-oqth23ooibkr1cs3vvvqbpjbsq40pacg.apps.googleusercontent.com`,
    `OIDC_REDIRECT_URI=https://shalomut-map-demo.vercel.app/api/auth/oidc/callback/`
@@ -473,19 +500,18 @@ without a code change; that, more than the number, is what changed.
    `308`, and Google matches the string byte for byte in both the authorize
    request and the token exchange.
 
-   **Nothing changes until the secret is added and Production is redeployed.**
-   `resolveIdentityProviderConfig` wants all four `OIDC_*` or none, and three
-   are set, so it still returns `null` and the runtime still signs in with a
-   password. One thing does change at that redeploy regardless of the secret:
-   `MANAGER_ADMIN_EMAIL` is also the password door's address
-   (`manager-auth-service.ts:62` falls back to `admin@shalomut.edu.il` only when
-   it is unset), so the password login on Production becomes
-   `shteynumaks@gmail.com`. Note also that Google warns client settings take
-   from five minutes to a few hours to take effect.
+   **The password door is closed on Production and `MANAGER_ADMIN_PASSWORD` no
+   longer opens anything there.** It still opens Preview, which keeps the
+   password because a preview URL cannot be registered with Google. The consent
+   screen is still **External / Testing** with one test user, so no address but
+   `shteynumaks@gmail.com` can sign in to Production at all — that is the
+   current access control, ahead of any manager row.
 
-   Phase 1 of the multi-tenancy plan is written and verified against a stand-in
-   provider; that one secret and a redeploy are all that stand between it and a
-   real sign-in.
+   Phase 1 of the multi-tenancy plan is now verified against the real provider
+   rather than a stand-in, and phase 4's administrator screen has run on the
+   deployed endpoint for the first time: one school, its round named and its
+   status shown, `12 תשובות · התוצאות פתוחות`, and the platform-administrator
+   list naming the bootstrapped row.
 4. **Create an uptime monitor on Core's `/api/health`.**
 5. **Decide where the structured observability lines land** — a log sink or an
    error tracker, and with which alert. Every counter the product emits still
