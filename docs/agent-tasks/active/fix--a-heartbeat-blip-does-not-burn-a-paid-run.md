@@ -5,7 +5,7 @@
 - Branch: `fix/a-heartbeat-blip-does-not-burn-a-paid-run`
 - Base branch: `main`
 - Base commit: `bda7165`
-- Current HEAD: the commit carrying this file, on top of `e1a0081`
+- Current HEAD: `25c3939`, on top of `e1a0081`
 - Status: code done, verified, **not pushed**
 - Last updated: 2026-08-22
 - Last agent/tool: Claude Code (Opus 5)
@@ -125,8 +125,9 @@ Modified: `ai-analytics-service/src/services/ai_job_worker.py`,
 `PROGRESS.md`, `docs/shalomut-tracker-handoff.md`,
 `docs/critical-audit-2026-08-21.md`.
 
-Moved: `docs/agent-tasks/active/fix--a-failed-re-analysis-keeps-the-map.md` into
-`archive/`, closing the previous task.
+Moved into `archive/` in `e1a0081`, both already finished and on `main`:
+`fix--a-failed-re-analysis-keeps-the-map.md` and
+`fix--a-status-write-that-failed-says-so.md`.
 
 Not this task's: `next-env.d.ts` is generated and belongs to the owner.
 
@@ -135,7 +136,10 @@ Not this task's: `next-env.d.ts` is generated and belongs to the owner.
 ### Passed
 
 - `ai-analytics-service`: `python -m pytest`, 576 of 576.
-- `npm run verify:core` unpiped with its exit code captured — see below.
+- `npm run verify:core` unpiped with its exit code captured: `REAL_EXIT=0`,
+  `# tests 1393 / # pass 1393 / # fail 0`, zero `not ok`, the Python suite
+  green inside `verify:ai`, and the build completed. Run before the two
+  commits; nothing but documentation changed after it.
 - **Seven mutation passes**, each restored from a scratchpad copy of the fixed
   file and each producing exactly the expected failure:
   1. one heartbeat attempt instead of three → the renewal test fails;
