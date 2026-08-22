@@ -172,6 +172,38 @@ test("a verified address with a row becomes a session", async () => {
   }
 });
 
+/**
+ * The handshake cookie is HttpOnly and unsigned, and its `next` came from a
+ * query string one link ago. Whatever the start route thought of it, this is
+ * the line that turns it into a `Location` header, so this is where it is
+ * checked. The smuggled value below passed the redirect rule that shipped
+ * before 2026-08-22 and landed the browser on `evil.example.com`.
+ */
+test("a next smuggled into the handshake still lands inside the product", async () => {
+  overrideCoreRepositories({
+    managerRepo: new InMemoryManagerRepository([cohen], [cohenMembership]),
+  });
+  const restore = installProvider();
+
+  try {
+    const response = await callbackHandler(
+      callback(
+        "http://localhost:3000/api/auth/oidc/callback?code=code-1&state=state-1",
+        handshakeCookie({ next: "/\n/evil.example.com" }),
+      ),
+    );
+
+    const target = redirectTarget(response);
+    assert.strictEqual(target.origin, "http://localhost:3000");
+    assert.strictEqual(target.pathname, "/");
+    // And the sign-in itself succeeded: a bad destination is a redirect home,
+    // not a refused session.
+    assert.ok(response.cookies.get(SESSION_COOKIE_NAME)?.value);
+  } finally {
+    restore();
+  }
+});
+
 test("an address the provider verified but nobody invited gets no session", async () => {
   overrideCoreRepositories({ managerRepo: new InMemoryManagerRepository() });
   const restore = installProvider("stranger@elsewhere.ac.il");

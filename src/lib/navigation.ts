@@ -642,21 +642,56 @@ export function getDashboardRecommendationsActions(
 export const LOGIN_NEXT_PARAM = "next";
 
 /**
+ * A host that cannot exist. `.invalid` is reserved by RFC 2606 and resolves
+ * nowhere, so a candidate that still names this origin after being parsed named
+ * no host of its own.
+ */
+const SAME_ORIGIN_PROBE = "https://login-redirect.invalid";
+
+/**
  * Where to land after signing in — but only ever inside this application.
  *
  * The value arrives from the query string, so it is attacker-controlled even
- * though the middleware only ever writes a pathname into it. Anything that is
- * not a plain same-origin path becomes the home screen: an absolute URL
- * (`https://elsewhere/`), a scheme-relative one (`//elsewhere`), and the
- * backslash form browsers also normalise to a host (`/\elsewhere`). Without
- * this, `/login?next=https://elsewhere/` is an open redirect that borrows this
+ * though the middleware only ever writes a pathname into it. Without this,
+ * `/login?next=https://elsewhere/` is an open redirect that borrows this
  * product's login screen to launder the destination.
+ *
+ * ## Why this parses instead of comparing prefixes
+ *
+ * It used to reject `//elsewhere` and `/\elsewhere` by their first two
+ * characters, which is a reading of the string nobody else performs. Browsers
+ * and the WHATWG URL parser strip ASCII tab, line feed and carriage return from
+ * anywhere in a URL before they look at it, so `/<LF>/elsewhere` passed a check
+ * on its first two characters and then landed on `elsewhere` — the string that
+ * was inspected was not the string that was navigated to. A prefix rule can
+ * only ever list the normalisations somebody has thought of; the parser knows
+ * all of them because it is the thing doing them.
+ *
+ * So the candidate is resolved against an origin that cannot exist, and it is
+ * honoured only if it still names that origin afterwards. What comes back is
+ * the parser's own output rather than the original string, which means the
+ * value handed to a `Location` header or an `href` has already survived the
+ * normalisation a browser would apply to it — including the removal of the
+ * control characters that could otherwise split a header.
+ *
+ * A candidate must still start with `/`. The middleware writes absolute paths
+ * and nothing else, and `round` resolving to `/round` would be an accident
+ * working rather than a contract holding.
  */
 export function resolveLoginRedirect(next: string | null | undefined) {
   const candidate = next?.trim();
 
   if (!candidate || !candidate.startsWith("/")) return routes.home;
-  if (candidate.startsWith("//") || candidate.startsWith("/\\")) return routes.home;
 
-  return candidate;
+  let parsed: URL;
+  try {
+    parsed = new URL(candidate, SAME_ORIGIN_PROBE);
+  } catch {
+    // A candidate the parser refuses is one no browser would follow either.
+    return routes.home;
+  }
+
+  if (parsed.origin !== SAME_ORIGIN_PROBE) return routes.home;
+
+  return `${parsed.pathname}${parsed.search}${parsed.hash}`;
 }

@@ -248,12 +248,70 @@ test("the login redirect refuses a destination outside this application", () => 
   assert.strictEqual(resolveLoginRedirect("//example.com"), "/");
   assert.strictEqual(resolveLoginRedirect("/\\example.com"), "/");
   assert.strictEqual(resolveLoginRedirect("javascript:alert(1)"), "/");
+
+  // Refused whole rather than trimmed down to the path inside it. Keeping
+  // `/goals` out of `//example.com/goals` would be honouring the half of an
+  // attacker's value that happens to be harmless, and it would make the
+  // fallback depend on what the other host's path spelled.
+  assert.strictEqual(resolveLoginRedirect("//example.com/goals"), "/");
+  assert.strictEqual(resolveLoginRedirect("/\\example.com/goals"), "/");
+});
+
+/**
+ * The string that was checked has to be the string that is navigated to.
+ *
+ * Browsers and the WHATWG URL parser drop ASCII tab, line feed and carriage
+ * return from anywhere in a URL before parsing it, so a check on the first two
+ * characters reads a value nobody else ever sees. Each candidate here passed
+ * the old prefix rule and landed on `example.com`.
+ */
+test("the login redirect refuses a host smuggled past a prefix check", () => {
+  for (const smuggled of [
+    "/\n/example.com",
+    "/\r/example.com",
+    "/\t/example.com",
+    "/\n\\example.com",
+    "/\t\\example.com",
+    "/\n/example.com/goals",
+    "/\t\\example.com/goals",
+  ]) {
+    assert.strictEqual(
+      resolveLoginRedirect(smuggled),
+      "/",
+      JSON.stringify(smuggled),
+    );
+  }
+});
+
+/**
+ * Whatever is honoured is honoured in the parser's own words. A `Location`
+ * header assembled from a raw candidate could carry a CR or an LF into the
+ * response; one assembled from the parsed path cannot, because the parse is
+ * where those characters stop existing.
+ */
+test("an honoured login redirect comes back parsed, not echoed", () => {
+  assert.strictEqual(resolveLoginRedirect("/round\n"), "/round");
+  assert.strictEqual(resolveLoginRedirect("/dash\tboard"), "/dashboard");
+  assert.strictEqual(
+    resolveLoginRedirect("/dashboard/../round?round=round-7#top"),
+    "/round?round=round-7#top",
+  );
+  // A control character the parser encodes rather than strips stays inside the
+  // path, where it names no host and reaches no header raw. It has to be in the
+  // middle of the value: the parser removes leading and trailing C0 controls
+  // outright, which is a third normalisation a prefix check would not have
+  // known about either.
+  assert.strictEqual(resolveLoginRedirect("/ro\u0001und"), "/ro%01und");
 });
 
 test("the login redirect falls back to home when there is nothing to honour", () => {
   assert.strictEqual(resolveLoginRedirect(null), "/");
   assert.strictEqual(resolveLoginRedirect(undefined), "/");
   assert.strictEqual(resolveLoginRedirect("   "), "/");
+  // A relative reference resolves to a path inside the product, so the parser
+  // would accept it. The middleware writes absolute paths and nothing else, and
+  // a contract that holds by accident is one that stops holding quietly.
+  assert.strictEqual(resolveLoginRedirect("round"), "/");
 });
 
 test("the header's round is the one in the URL, once it is a round", () => {

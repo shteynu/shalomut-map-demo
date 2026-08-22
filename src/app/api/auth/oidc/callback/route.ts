@@ -8,7 +8,7 @@ import {
 } from "@/lib/auth/identity-provider";
 import { JwtSessionProvider } from "@/lib/auth/jwt-session-provider";
 import { ManagerDirectoryService } from "@/lib/auth/manager-directory-service";
-import { routes } from "@/lib/navigation";
+import { resolveLoginRedirect, routes } from "@/lib/navigation";
 import { getRateLimitResponse, RATE_LIMITS } from "@/lib/server/rate-limit";
 import { setSessionCookie } from "@/lib/server/session-auth";
 import {
@@ -133,8 +133,15 @@ export async function GET(request: NextRequest) {
     resolved.memberships,
   );
 
+  // Checked again here rather than trusted from the handshake. The cookie is
+  // HttpOnly but it is plain JSON this runtime does not sign, and its `next`
+  // came from a query string one link ago — so the value is exactly as
+  // attacker-shaped at the end of the sign-in as it was at the start, and this
+  // is the line that turns it into a `Location` header.
   const response = endHandshake(
-    NextResponse.redirect(new URL(handshake.next, request.url)),
+    NextResponse.redirect(
+      new URL(resolveLoginRedirect(handshake.next), request.url),
+    ),
   );
 
   return setSessionCookie(response, token, request);
