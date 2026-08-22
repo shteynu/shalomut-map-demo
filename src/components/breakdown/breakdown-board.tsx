@@ -47,6 +47,12 @@ function GroupSize({ group }: { group: BreakdownGroup }) {
  * Never colour alone: the cell carries the number, the status word and a
  * status class. A reader who cannot tell the three surfaces apart still reads
  * "68 · צהוב".
+ *
+ * Three unlike blanks, and they must not look alike. "The questionnaire never
+ * asked about this" is a fact about the round; "this group is not shown" is a
+ * fact about the group; "this cell is not shown" is a fact about how few people
+ * inside a shown group answered these questions. A manager who reads the same
+ * dash for all three learns nothing from any of them.
  */
 function ScoreCell({
   group,
@@ -67,13 +73,28 @@ function ScoreCell({
   const score = group.dimensionScores?.[dimensionId];
 
   if (!score) {
-    // The group exists and answered nothing in this dimension. Distinct from a
-    // suppressed cell, and it has to look distinct: "we may not tell you" and
-    // "nobody answered" are not the same sentence.
+    // The round's questionnaire asks nothing that feeds this dimension, so
+    // there is nothing here for anyone — not for this group and not for the
+    // round as a whole. A dimension nobody was asked about is empty, not
+    // hidden.
     return (
       <td className="breakdown-cell breakdown-cell-empty">
         <span aria-hidden="true">·</span>
-        <span className="visually-hidden">אין תשובות</span>
+        <span className="visually-hidden">השאלון אינו שואל על המדד הזה</span>
+      </td>
+    );
+  }
+
+  if (score.suppressed) {
+    // The group is large enough to name, and still too few of its people
+    // answered this dimension's questions for an average to be anyone's but
+    // theirs. Same two rules as a group size, one cell down.
+    return (
+      <td className="breakdown-cell breakdown-cell-hidden">
+        <span aria-hidden="true">—</span>
+        <span className="visually-hidden">
+          {SUPPRESSION_NOTES[score.reason]}
+        </span>
       </td>
     );
   }
@@ -83,6 +104,16 @@ function ScoreCell({
       <strong>{score.averageScore}</strong>
       <span className="breakdown-cell-status">
         {statusLabelShort[score.computedStatus]}
+      </span>
+      {/*
+        How many people the average stands on, in the cell rather than in a
+        tooltip. The column header's group size is not this number: background
+        questions and analytic questions are answered separately, so a group of
+        thirty can bring twelve people to one dimension and thirty to the next.
+        A manager comparing two columns is comparing these counts too.
+      */}
+      <span className="breakdown-cell-respondents">
+        {score.respondentCount} משיבים
       </span>
     </td>
   );
@@ -171,6 +202,13 @@ export function BreakdownBoard({
 function BreakdownTable({ breakdown }: { breakdown: BackgroundBreakdown }) {
   const hiddenGroups = breakdown.groups.filter((group) => group.size.suppressed);
 
+  // Blanks inside a published column need their own sentence. Without one they
+  // read as a rendering fault — the column has a size, the row has a name, and
+  // the cell where they meet is a dash.
+  const hidesACell = breakdown.groups.some((group) =>
+    Object.values(group.dimensionScores ?? {}).some((score) => score.suppressed),
+  );
+
   // A table can come out empty for two unlike reasons, and the same sentence
   // would be wrong about one of them. Either every category really is tiny, or
   // one of them holds almost the whole staff room — and publishing that one
@@ -237,6 +275,13 @@ function BreakdownTable({ breakdown }: { breakdown: BackgroundBreakdown }) {
             {" "}
             {hiddenGroups.length} קבוצות אינן מוצגות, ולכן סכום הקבוצות המוצגות
             קטן מסך התשובות — זה מכוון.
+          </>
+        ) : null}
+        {hidesACell ? (
+          <>
+            {" "}
+            תא ריק בתוך קבוצה מוצגת פירושו שפחות מ־{breakdown.privacyThreshold}{" "}
+            מאנשיה ענו על שאלות המדד הזה, ולכן הממוצע שלו אינו מוצג.
           </>
         ) : null}
       </p>

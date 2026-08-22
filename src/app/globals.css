@@ -6383,6 +6383,20 @@ label .custom-tooltip-wrapper:hover .custom-tooltip-icon {
   color: var(--muted);
 }
 
+/*
+ * How many people the average stands on. Quieter than the number and the status
+ * word, because it qualifies them rather than competing with them — but present
+ * on every published cell, since a count that appears only when it looks
+ * alarming is a count nobody learns to read.
+ */
+.breakdown-cell-respondents {
+  display: block;
+  margin-top: 0.15rem;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
 .breakdown-total-note {
   margin: 0.9rem 0 0;
   color: var(--muted);

@@ -125,6 +125,96 @@ function cohort(
   );
 }
 
+/**
+ * `count` responses in one category, of which only `answering` answered the
+ * analytic question at all. Analytic questions can be optional, so a group's
+ * size and the number of people behind any one of its dimension scores are two
+ * different numbers — which is the whole subject of the tests below.
+ */
+function mixedCohort(
+  categoryId: string,
+  count: number,
+  answering: number,
+  score: number,
+  startAt = 0,
+): SurveyResponseRecord[] {
+  return Array.from({ length: count }, (_, index) =>
+    response(
+      startAt + index,
+      categoryId,
+      index < answering ? colourAnswers(score) : [],
+    ),
+  );
+}
+
+/** Three teammates of one dimension, so answers and people cannot be confused. */
+const THREE_PER_DIMENSION = definitionWith([
+  analyticQuestion('q1', 'self-expression'),
+  analyticQuestion('q2', 'self-expression'),
+  analyticQuestion('q3', 'self-expression'),
+  tenureQuestion([
+    { value: 'new', label: 'עד שלוש שנים' },
+    { value: 'veteran', label: 'ארבע שנים ומעלה' },
+  ]),
+]);
+
+function trioCohort(
+  categoryId: string,
+  count: number,
+  answering: number,
+  score: number,
+  startAt = 0,
+): SurveyResponseRecord[] {
+  return Array.from({ length: count }, (_, index) =>
+    response(
+      startAt + index,
+      categoryId,
+      index < answering
+        ? ['q1', 'q2', 'q3'].map((questionId) => ({
+            questionId,
+            dimensionId: 'self-expression' as WellbeingDimensionId,
+            value: 'green',
+            score,
+          }))
+        : [],
+    ),
+  );
+}
+
+/** The published side of a cell, or a failed assertion naming what it was. */
+function cell(
+  breakdown: ReturnType<typeof buildBackgroundBreakdown>,
+  categoryId: string,
+  dimensionId: WellbeingDimensionId = 'self-expression',
+) {
+  const score = group(breakdown, categoryId).dimensionScores?.[dimensionId];
+  assert.ok(score, `expected a ${dimensionId} cell for ${categoryId}`);
+  assert.equal(
+    score.suppressed,
+    false,
+    `the ${categoryId} cell is suppressed, not published`,
+  );
+  assert.ok(!score.suppressed);
+  return score;
+}
+
+/** The suppressed side of a cell, likewise. */
+function hiddenCell(
+  breakdown: ReturnType<typeof buildBackgroundBreakdown>,
+  categoryId: string,
+  dimensionId: WellbeingDimensionId = 'self-expression',
+) {
+  const score = group(breakdown, categoryId).dimensionScores?.[dimensionId];
+  assert.ok(score, `expected a ${dimensionId} cell for ${categoryId}`);
+  assert.equal(
+    score.suppressed,
+    true,
+    `the ${categoryId} cell is published, not suppressed`,
+  );
+  assert.ok(score.suppressed);
+  return score;
+}
+
 test('a group at the threshold publishes its size and its dimension scores', () => {
   const breakdown = buildBackgroundBreakdown({
     definition: DEFINITION,
@@ -141,13 +231,16 @@ test('a group at the threshold publishes its size and its dimension scores', () 
   assert.equal(newcomers.size.suppressed, false);
   assert.equal(newcomers.size.suppressed === false && newcomers.size.count, 10);
   assert.equal(newcomers.label, 'עד שלוש שנים');
-  assert.equal(newcomers.dimensionScores?.['self-expression']?.averageScore, 100);
-  assert.equal(newcomers.dimensionScores?.['self-expression']?.computedStatus, 'green');
-  assert.equal(newcomers.dimensionScores?.['self-expression']?.answerCount, 10);
 
-  const veterans = group(breakdown, 'veteran');
-  assert.equal(veterans.dimensionScores?.['self-expression']?.averageScore, 0);
-  assert.equal(veterans.dimensionScores?.['self-expression']?.computedStatus, 'red');
+  const newcomerScore = cell(breakdown, 'new');
+  assert.equal(newcomerScore.averageScore, 100);
+  assert.equal(newcomerScore.computedStatus, 'green');
+  assert.equal(newcomerScore.answerCount, 10);
+  assert.equal(newcomerScore.respondentCount, 10);
+
+  const veteranScore = cell(breakdown, 'veteran');
+  assert.equal(veteranScore.averageScore, 0);
+  assert.equal(veteranScore.computedStatus, 'red');
 });
 
 test('a group below the threshold publishes neither its size nor any score', () => {
@@ -265,7 +358,7 @@ test('respondents who skipped the question are a named category, not a remainder
 
   const skipped = group(breakdown, UNANSWERED_CATEGORY_ID);
   assert.equal(skipped.size.suppressed === false && skipped.size.count, 12);
-  assert.equal(skipped.dimensionScores?.['self-expression']?.averageScore, 60);
+  assert.equal(cell(breakdown, UNANSWERED_CATEGORY_ID).averageScore, 60);
   assert.equal(skipped.label, 'לא ענו על השאלה');
 });
 
@@ -354,10 +447,7 @@ test('a background answer never reaches a dimension average', () => {
   });
 
   // 100, not the 50 that averaging the forged zero in would produce.
-  assert.equal(
-    group(breakdown, 'new').dimensionScores?.['self-expression']?.averageScore,
-    100,
-  );
+  assert.equal(cell(breakdown, 'new').averageScore, 100);
 });
 
 test('an answer naming a dimension its question does not belong to is refused', () => {
@@ -379,8 +469,12 @@ test('an answer naming a dimension its question does not belong to is refused', 
   });
 
   const newcomers = group(breakdown, 'new');
+  // `meaning` is absent because this round asks nothing about it, and the
+  // refused answer does not conjure a column. `self-expression` is present and
+  // blank, because the round does measure it and these twelve contributed
+  // nobody to it — an unlike fact that has to look unlike.
   assert.equal(newcomers.dimensionScores?.['meaning'], undefined);
-  assert.equal(newcomers.dimensionScores?.['self-expression'], undefined);
+  assert.equal(hiddenCell(breakdown, 'new').reason, 'below-threshold');
 });
 
 test('only single-choice background questions are offered', () => {
@@ -431,4 +525,137 @@ test('a question the round does not have breaks down to null rather than to noth
     }),
     null,
   );
+});
+
+/**
+ * The cell is where the threshold was still missing.
+ *
+ * A group large enough to name is not a guarantee about any one of its
+ * dimensions: analytic questions may be optional, and a group of twenty can
+ * bring four people to one dimension. The published average was then those four
+ * people's, printed beside a group size of twenty that said nothing about it.
+ */
+test('a dimension too few of a published group answered publishes no number', () => {
+  const breakdown = buildBackgroundBreakdown({
+    definition: definitionWith([
+      analyticQuestion('q1', 'self-expression'),
+      tenureQuestion([
+        { value: 'new', label: 'עד שלוש שנים' },
+        { value: 'mid', label: 'בין ארבע לעשר' },
+        { value: 'veteran', label: 'אחת עשרה ומעלה' },
+      ]),
+    ]),
+    responses: [
+      ...mixedCohort('new', 20, 20, 100),
+      ...mixedCohort('mid', 20, 4, 40, 20),
+      ...mixedCohort('veteran', 20, 8, 60, 40),
+    ],
+    questionId: TENURE,
+    privacyThreshold: THRESHOLD,
+    isRoundLocked: false,
+  });
+
+  assert.ok(breakdown);
+  // Every group is on the table: the sizes are twenty apiece and this rule is
+  // about the cells, not about who may be named.
+  for (const entry of breakdown.groups) {
+    assert.equal(entry.size.suppressed, false, `${entry.categoryId} lost its size`);
+  }
+
+  assert.equal(hiddenCell(breakdown, 'mid').reason, 'below-threshold');
+  assert.equal(hiddenCell(breakdown, 'veteran').reason, 'below-threshold');
+
+  // The two blanks come to twelve, which is a crowd, so the third cell stands.
+  const newcomers = cell(breakdown, 'new');
+  assert.equal(newcomers.averageScore, 100);
+  assert.equal(newcomers.respondentCount, 20);
+});
+
+/**
+ * One blank in a dimension is not a blank. The round's own map publishes each
+ * dimension's average and the answers behind it, so the published groups of a
+ * dimension plus that dimension's total determine the hidden one — the same
+ * subtraction the group sizes are already closed under, one row down.
+ */
+test('a lone thin cell takes a published cell down with it', () => {
+  const breakdown = buildBackgroundBreakdown({
+    definition: DEFINITION,
+    responses: [
+      ...mixedCohort('new', 20, 20, 100),
+      ...mixedCohort('veteran', 20, 5, 0, 20),
+    ],
+    questionId: TENURE,
+    privacyThreshold: THRESHOLD,
+    isRoundLocked: false,
+  });
+
+  assert.ok(breakdown);
+  assert.equal(hiddenCell(breakdown, 'veteran').reason, 'below-threshold');
+  assert.equal(hiddenCell(breakdown, 'new').reason, 'complementary');
+
+  // And the table itself survives: the groups are still named and sized, so a
+  // manager reads "these two groups exist, this dimension is not shown for
+  // them" rather than an empty screen.
+  assert.equal(breakdown.isFullySuppressed, false);
+  assert.equal(
+    breakdown.groups.every((entry) => !entry.size.suppressed),
+    true,
+  );
+});
+
+/**
+ * The threshold counts people, and a person who answered three questions of one
+ * dimension is one person. Counting answers would publish a cell standing on
+ * four teachers as though twelve of them were behind it.
+ */
+test('four people answering three questions each are four, not twelve', () => {
+  const breakdown = buildBackgroundBreakdown({
+    definition: THREE_PER_DIMENSION,
+    responses: [
+      ...trioCohort('new', 20, 4, 100),
+      ...trioCohort('veteran', 20, 20, 60, 20),
+    ],
+    questionId: TENURE,
+    privacyThreshold: THRESHOLD,
+    isRoundLocked: false,
+  });
+
+  assert.ok(breakdown);
+  assert.equal(hiddenCell(breakdown, 'new').reason, 'below-threshold');
+});
+
+test('a published cell says how many answers and how many people it stands on', () => {
+  const breakdown = buildBackgroundBreakdown({
+    definition: THREE_PER_DIMENSION,
+    responses: [
+      ...trioCohort('new', 12, 12, 100),
+      ...trioCohort('veteran', 12, 12, 100, 12),
+    ],
+    questionId: TENURE,
+    privacyThreshold: THRESHOLD,
+    isRoundLocked: false,
+  });
+
+  const newcomers = cell(breakdown, 'new');
+  assert.equal(newcomers.respondentCount, 12);
+  assert.equal(newcomers.answerCount, 36);
+});
+
+/**
+ * A dimension the questionnaire asks nothing about is absent rather than
+ * blank. There is nothing to hide there, and a suppressed cell would tell a
+ * manager the round measured something it never asked.
+ */
+test('a dimension this round does not measure has no cell at all', () => {
+  const breakdown = buildBackgroundBreakdown({
+    definition: DEFINITION,
+    responses: [...cohort('new', 12, 100), ...cohort('veteran', 12, 60, 12)],
+    questionId: TENURE,
+    privacyThreshold: THRESHOLD,
+    isRoundLocked: false,
+  });
+
+  const newcomers = group(breakdown, 'new');
+  assert.equal(newcomers.dimensionScores?.['meaning'], undefined);
+  assert.equal(Object.keys(newcomers.dimensionScores ?? {}).length, 1);
 });

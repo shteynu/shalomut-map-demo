@@ -1,4 +1,8 @@
-import { suppressFrequency, type SuppressedEntry } from '../privacy/cell-suppression';
+import {
+  suppressFrequency,
+  type SuppressedEntry,
+  type SuppressionReason,
+} from '../privacy/cell-suppression';
 import { WellbeingDimensionId, surveyInstrument } from '../shalomut-source';
 import { statusForScore } from '../scoring-bands';
 import {
@@ -47,13 +51,35 @@ import { averageScore, readAnalyticAnswers } from './analytic-answers';
 /** The category holding respondents who skipped the background question. */
 export const UNANSWERED_CATEGORY_ID = 'unanswered';
 
-export type BreakdownDimensionScore = {
-  readonly dimensionId: WellbeingDimensionId;
-  readonly averageScore: number;
-  readonly computedStatus: WellbeingStatus;
-  /** How many answers the average is over — never respondents, always answers. */
-  readonly answerCount: number;
-};
+/**
+ * One dimension's number for one group, or the reason it has none.
+ *
+ * A group large enough to publish its size can still be one person inside a
+ * single dimension: analytic questions may be optional, so a group of thirty
+ * can contain one respondent who answered the three belonging questions and
+ * twenty-nine who skipped them. The printed average was then that person's own
+ * score, with nothing on the screen to say so. So the cell carries how many
+ * people it stands on, and it is suppressed by the same rule as a group size —
+ * `suppressFrequency` over the respondents each category contributed to this
+ * dimension, which also stops a hidden cell from being recovered by
+ * subtraction from the round's own per-dimension average.
+ */
+export type BreakdownDimensionScore =
+  | {
+      readonly suppressed: false;
+      readonly dimensionId: WellbeingDimensionId;
+      readonly averageScore: number;
+      readonly computedStatus: WellbeingStatus;
+      /** How many answers the average is over — never respondents, always answers. */
+      readonly answerCount: number;
+      /** How many people those answers came from. What the threshold protects. */
+      readonly respondentCount: number;
+    }
+  | {
+      readonly suppressed: true;
+      readonly dimensionId: WellbeingDimensionId;
+      readonly reason: SuppressionReason;
+    };
 
 export type BreakdownGroup = {
   readonly categoryId: string;
@@ -62,9 +88,11 @@ export type BreakdownGroup = {
   /** The group's size, or the reason it may not be published. */
   readonly size: SuppressedEntry;
   /**
-   * Present only for a published group, and only for the dimensions that group
-   * actually answered. A suppressed group has no scores at all — that is the
-   * whole point of suppressing it.
+   * Present only for a published group, and only for the dimensions this round
+   * measures at all. A suppressed group has no scores at all — that is the
+   * whole point of suppressing it — and a dimension the questionnaire asks
+   * nothing about is absent rather than hidden, because there is nothing there
+   * to hide.
    */
   readonly dimensionScores?: Readonly<
     Partial<Record<WellbeingDimensionId, BreakdownDimensionScore>>
@@ -221,6 +249,12 @@ export function buildBackgroundBreakdown(options: {
       .map((candidate) => [candidate.id, candidate]),
   );
 
+  const dimensionScores = suppressDimensionScores(
+    responsesByCategory,
+    analyticQuestions,
+    privacyThreshold,
+  );
+
   const groups = [...responsesByCategory.keys()].map<BreakdownGroup>(
     (categoryId) => {
       const size: SuppressedEntry =
@@ -235,10 +269,7 @@ export function buildBackgroundBreakdown(options: {
         categoryId,
         label: labelFor(categoryId, labels),
         size,
-        dimensionScores: dimensionScoresFor(
-          responsesByCategory.get(categoryId) ?? [],
-          analyticQuestions,
-        ),
+        dimensionScores: dimensionScores.get(categoryId) ?? {},
       };
     },
   );
@@ -263,40 +294,95 @@ function labelFor(categoryId: string, labels: ReadonlyMap<string, string>) {
   return labels.get(categoryId) ?? categoryId;
 }
 
-function dimensionScoresFor(
-  responses: readonly SurveyResponseRecord[],
+/**
+ * Every group's dimension cells at once, suppressed dimension by dimension.
+ *
+ * Computed across the groups rather than inside each, because the rule needs
+ * the whole line: the round's own map publishes each dimension's average and
+ * the response count behind it, so a dimension whose groups are published save
+ * one has published that one too, by subtraction. `suppressFrequency` is the
+ * same function the group sizes go through and it enforces the same two rules
+ * — never exactly one hidden entry, and the hidden ones together account for
+ * nothing or for at least the threshold.
+ *
+ * A category that contributed nobody to a dimension is suppressed rather than
+ * shown as "nobody answered". It is a published zero, and this module's own
+ * rule is that publishing "no one" publishes something about everyone else.
+ */
+function suppressDimensionScores(
+  responsesByCategory: ReadonlyMap<string, readonly SurveyResponseRecord[]>,
   analyticQuestions: ReadonlyMap<string, AnalyticSurveyQuestion>,
-): Readonly<Partial<Record<WellbeingDimensionId, BreakdownDimensionScore>>> {
-  const scores = new Map<WellbeingDimensionId, number[]>();
+  privacyThreshold: number,
+): Map<
+  string,
+  Readonly<Partial<Record<WellbeingDimensionId, BreakdownDimensionScore>>>
+> {
+  const categoryIds = [...responsesByCategory.keys()];
+  const measured = new Set<WellbeingDimensionId>(
+    [...analyticQuestions.values()].map((question) => question.dimensionId),
+  );
+  const cells = new Map<
+    string,
+    Partial<Record<WellbeingDimensionId, BreakdownDimensionScore>>
+  >(categoryIds.map((categoryId) => [categoryId, {}]));
 
-  for (const response of responses) {
-    for (const { question, score } of readAnalyticAnswers(
-      response,
-      analyticQuestions,
-    )) {
-      const bucket = scores.get(question.dimensionId) ?? [];
-      bucket.push(score);
-      scores.set(question.dimensionId, bucket);
+  // Iterated over the canonical dimensions rather than over the questions, so
+  // the eight always come out in the taxonomy's own order and a dimension this
+  // round does not measure is missing in place rather than shifting the others.
+  for (const dimension of surveyInstrument.dimensions) {
+    if (!measured.has(dimension.id)) continue;
+
+    const respondents: Record<string, number> = {};
+    const scores = new Map<string, number[]>();
+
+    for (const categoryId of categoryIds) {
+      const bucket: number[] = [];
+      let people = 0;
+
+      for (const response of responsesByCategory.get(categoryId) ?? []) {
+        let answered = false;
+        for (const { question, score } of readAnalyticAnswers(
+          response,
+          analyticQuestions,
+        )) {
+          if (question.dimensionId !== dimension.id) continue;
+          bucket.push(score);
+          answered = true;
+        }
+        // Counted once however many of the dimension's questions they
+        // answered: three answers from one person are one person, and the
+        // threshold protects people.
+        if (answered) people += 1;
+      }
+
+      respondents[categoryId] = people;
+      scores.set(categoryId, bucket);
+    }
+
+    const published = suppressFrequency(respondents, privacyThreshold);
+
+    for (const categoryId of categoryIds) {
+      const entry = published.categories[categoryId];
+      const bucket = scores.get(categoryId) ?? [];
+      const average = averageScore(bucket);
+
+      cells.get(categoryId)![dimension.id] =
+        entry && !entry.suppressed && average !== undefined
+          ? {
+              suppressed: false,
+              dimensionId: dimension.id,
+              averageScore: average,
+              computedStatus: statusForScore(average),
+              answerCount: bucket.length,
+              respondentCount: entry.count,
+            }
+          : {
+              suppressed: true,
+              dimensionId: dimension.id,
+              reason: entry?.suppressed ? entry.reason : 'below-threshold',
+            };
     }
   }
 
-  const result: Partial<Record<WellbeingDimensionId, BreakdownDimensionScore>> =
-    {};
-
-  // Iterated over the canonical dimensions rather than over the map, so the
-  // eight always come out in the taxonomy's own order and a group missing one
-  // is missing it in place rather than shifting the others up.
-  for (const dimension of surveyInstrument.dimensions) {
-    const average = averageScore(scores.get(dimension.id) ?? []);
-    if (average === undefined) continue;
-
-    result[dimension.id] = {
-      dimensionId: dimension.id,
-      averageScore: average,
-      computedStatus: statusForScore(average),
-      answerCount: (scores.get(dimension.id) ?? []).length,
-    };
-  }
-
-  return result;
+  return cells;
 }

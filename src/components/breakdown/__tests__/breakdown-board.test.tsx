@@ -38,10 +38,12 @@ function breakdown(): BackgroundBreakdown {
         WELLBEING_DIMENSION_TEXTS.map((texts) => [
           texts.id,
           {
+            suppressed: false as const,
             dimensionId: texts.id,
             averageScore: 78,
             computedStatus: "green" as const,
             answerCount: group.size * 3,
+            respondentCount: group.size,
           },
         ]),
       ),
@@ -49,10 +51,37 @@ function breakdown(): BackgroundBreakdown {
   };
 }
 
-function render() {
+/**
+ * The same table with one cell withheld — a group large enough to name whose
+ * people mostly skipped that dimension's questions.
+ */
+function breakdownHidingOneCell(): BackgroundBreakdown {
+  const base = breakdown();
+  const [dimension] = WELLBEING_DIMENSION_TEXTS;
+
+  return {
+    ...base,
+    groups: base.groups.map((group) => ({
+      ...group,
+      dimensionScores: {
+        ...group.dimensionScores,
+        [dimension.id]: {
+          suppressed: true as const,
+          dimensionId: dimension.id,
+          reason:
+            group.categoryId === "new"
+              ? ("below-threshold" as const)
+              : ("complementary" as const),
+        },
+      },
+    })),
+  };
+}
+
+function render(table: BackgroundBreakdown = breakdown()) {
   return renderToStaticMarkup(
     <BreakdownBoard
-      breakdown={breakdown()}
+      breakdown={table}
       choices={[
         {
           questionId: "tenure",
@@ -125,4 +154,42 @@ test("every dimension gets a row, named from the manifest", () => {
       texts.id,
     );
   }
+});
+
+/**
+ * The printed average used to be a number with nothing beside it, and a group
+ * of fourteen could bring one person to a dimension. The cell now carries its
+ * own count, which is not the column's group size.
+ */
+test("a published cell says how many people it stands on", () => {
+  const html = render();
+
+  assert.ok(
+    html.includes("14 משיבים"),
+    "the veteran cells should name the fourteen people behind them",
+  );
+  assert.ok(html.includes("11 משיבים"), "and the newcomers' eleven");
+});
+
+test("a withheld cell is a blank with a reason, not a zero", () => {
+  const html = render(breakdownHidingOneCell());
+
+  assert.ok(
+    html.includes("קבוצה קטנה מדי מכדי להישאר אנונימית"),
+    "the thin cell should say it is too small",
+  );
+  assert.ok(
+    html.includes("לא מוצג כדי שלא ניתן יהיה לחשב את הקבוצה הקטנה בחיסור"),
+    "and its companion should say why it went with it",
+  );
+  assert.ok(
+    html.includes("ולכן הממוצע שלו אינו מוצג"),
+    "and the table should explain the blanks it now contains",
+  );
+  // The groups are still named and sized: only the cells went.
+  assert.ok(html.includes("ותק מעל עשר שנים"));
+});
+
+test("a table with no withheld cell says nothing about withheld cells", () => {
+  assert.ok(!render().includes("ולכן הממוצע שלו אינו מוצג"));
 });
