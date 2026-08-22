@@ -18,15 +18,35 @@ and in Git; what was durable in them is below.
 
 Verified 2026-08-22, in this worktree and on the deployed endpoint:
 
-- **Both halves answer `commit: 262583a`**, read 2026-08-22, and `origin/main`
-  is the same commit — so Core and the AI service are level with `main` and with
-  each other. Read the endpoints again rather than this line whenever the tip
-  matters:
+- **`origin/main` is `57c9e58`. Core answers it; the AI service answers
+  `262583a`, and that gap is correct.** Read 2026-08-23. The two halves are
+  level with `main` only when a push touches the AI service's `buildFilter`
+  paths — `ai-analytics-service/**`, `contracts/**`, `Dockerfile`,
+  `render.yaml` — and `57c9e58` touches none of them, so Render did not rebuild
+  and its container still runs the tree from `262583a`. **A service commit
+  behind Core's is the expected resting state here, not a missed deploy**;
+  compare the two endpoints against that rule rather than against each other:
   `GET https://shalomut-map-demo.vercel.app/api/health/` and
   `GET https://shalomut-ai-analytics.onrender.com/health`. The only unrelated
   modified file in this worktree is `next-env.d.ts`, which is generated,
   belongs to the owner, and flips between `.next/dev/types` and `.next/types`
   depending on whether `next dev` or `next build` ran last.
+- **Six of the seven hygiene findings of the 2026-08-21 audit are on `main` and
+  in the deployed tree** as of `57c9e58`: the share code's uniformity claim,
+  a rate limit on the funnel beacon, one `isDeployedRuntime` behind the
+  machine-to-machine door plus a constant-time comparison, `db:clear` covering
+  the whole schema, subresource integrity on the Swagger UI bundle, and a
+  warning under the background-note field saying the text reaches the model
+  verbatim. **None of the six was walked on the deployment** — each was proved
+  locally, and the one that could be walked there would cost six hundred
+  fabricated funnel rows to watch the six hundred and first be refused. The
+  seventh, the temporary password door, stays open and needs an owner decision:
+  harden it on `fix/manager-password-must-be-strong`, or remove it because
+  identity comes from Google since 2026-08-20.
+- **`npm run db:clear` has not been run since it was rewritten.** The table
+  list is derived from Prisma's model metadata and tested against the schema,
+  but the script itself has never printed its new closing message. Someone
+  should run it once against the local database.
 - **The four audit entries that were stranded on a branch are on `main` and
   deployed.** `git reflog show origin/main` records the push that moved the
   branch onto `main`, `5b7f3cc → 8af02ab`, and the four are its linear content:

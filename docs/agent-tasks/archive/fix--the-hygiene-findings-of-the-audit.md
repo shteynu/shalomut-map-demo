@@ -5,10 +5,10 @@
 - Branch: `fix/the-hygiene-findings-of-the-audit`
 - Base branch: `main`
 - Base commit: `262583a`
-- Current HEAD: `b50247a` is the last of the six fixes; the tip is the
-  documentation commit that carries this file
-- Status: complete and verified, committed locally, unpushed
-- Last updated: 2026-08-22
+- Current HEAD: `b50247a` is the last of the six fixes; `57c9e58` is the tip,
+  and it is now also `origin/main`
+- Status: closed — landed on `main` as `57c9e58` and deployed to Core
+- Last updated: 2026-08-23
 - Last agent/tool: Claude Code (Opus 5)
 
 ## Objective
@@ -194,6 +194,12 @@ None.
 
 ### Blocked or not run
 
+- **None of the six was walked on the deployment.** They are in the deployed
+  tree — `GET /api/health/` answers `57c9e58` — and each was proved locally.
+  Walking the beacon limit there would mean writing six hundred fabricated
+  funnel rows into the deployed database to watch the six hundred and first be
+  refused, which costs the demo round's funnel more than the check is worth;
+  the rest are invisible from outside.
 - **`npm run db:clear` was never executed.** It is an owner action in this
   environment. What was proved instead is the half that was wrong — the table
   list — plus the statement it builds; the `TRUNCATE` itself is one ordinary
@@ -258,12 +264,10 @@ The push. `git push` is an owner action here.
 
 ## Git state
 
-Read 2026-08-22, not remembered:
+Read 2026-08-23, after the push:
 
-- Branch `fix/the-hygiene-findings-of-the-audit`, based on `262583a`, which is
-  now `origin/main`: the branch it was stacked on landed during the session, so
-  this one is a clean seven commits on top of the deployed tree rather than a
-  stack on unlanded work.
+- `origin/main` is `57c9e58`, which is this branch's tip: the seven commits are
+  landed and this file joins the archive.
 
   | commit | |
   | --- | --- |
@@ -273,33 +277,23 @@ Read 2026-08-22, not remembered:
   | `a3c156f` | clearing the database clears all of it |
   | `9829c3a` | the CDN script is checked before it runs |
   | `b50247a` | the background note says where it goes |
+  | `341f6ca`, `57c9e58` | the documentation for both |
 
 - Worktree clean apart from ` M next-env.d.ts`, which is generated and belongs
-  to the owner. Nothing staged. `git ls-files -o --exclude-standard` is empty,
-  which is the check that matters here because this repository's untracked
-  cache has hidden a new file before.
-- **`next-env.d.ts` flips with whichever Next command ran last** — `next dev`
-  writes `./.next/dev/types/routes.d.ts` and `next build` writes
-  `./.next/types/routes.d.ts` — so it appears, disappears and reappears in
-  `git status` through a session that runs both. It was committed into this
-  branch's documentation commit by a `git add -A` and taken back out by an
-  amend; it is an unstaged modification again, as it was at the start.
-- Nothing is on `origin`. All seven commits are visible only in this worktree.
-- `origin/main` is `262583a`, and both deployed halves answer that commit.
+  to the owner. Nothing staged. `git ls-files -o --exclude-standard` is empty.
+- Vercel built it; `GET /api/health/` answers `57c9e58`. Render did not build,
+  and that is the correct outcome — see "Next concrete step".
 
 ## Next concrete step
 
-Land it, which is the owner's action:
+None on this branch. Two things are true after it and belong to whoever reads
+this next:
 
-```bash
-git push origin fix/the-hygiene-findings-of-the-audit:main
-```
-
-Vercel only. These seven commits touch none of `render.yaml`'s `buildFilter`
-paths — `ai-analytics-service/**`, `contracts/**`, `Dockerfile`, `render.yaml` —
-so the AI service is not rebuilt and there is no downtime window. Afterwards
-read `GET /api/health/` for the new tip.
-
-One thing does want doing by hand, and it is not blocking: run `npm run
-db:clear` once against the local database. It is an owner action in this
-environment, so the new closing message has never actually been printed.
+- **The two halves are deliberately at different commits.** Core is `57c9e58`
+  and the AI service is `262583a`, because nothing here touches
+  `render.yaml`'s `buildFilter` paths. That is a service that was correctly not
+  rebuilt, not a missed deploy — the prediction was made before the push and
+  the endpoint confirmed it after.
+- **`npm run db:clear` still wants one run** against the local database. It is
+  an owner action in this environment, so the rewritten script's closing
+  message has never been printed by the script itself.
