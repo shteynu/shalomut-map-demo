@@ -20,6 +20,18 @@ inside it.
   promising the map after N more answers. Closed and archived rounds publish
   exactly as before.
 
+- **The login screen cannot be borrowed to send a manager somewhere else.**
+  Since 2026-08-22 the `next` a sign-in carries is resolved by a URL parser
+  rather than checked by its first two characters. Browsers drop ASCII tab, line
+  feed and carriage return from anywhere in a URL before parsing it, so
+  `/login?next=/<LF>/elsewhere` passed the old rule and then landed on
+  `elsewhere` — a phishing destination laundered through this product's own
+  login screen. What is honoured now comes back in the parser's own words, so
+  the value reaching a `Location` header has already lost the characters that
+  could split one, and the OIDC callback checks the destination again where it
+  builds that header rather than trusting the unsigned handshake cookie.
+  `PROJECT_CONTEXT.md` ADR-038 records it; the audit of 2026-08-21 found it.
+
 - **A group's dimension score says how many people are behind it, or it is not
   shown.** Since 2026-08-22 the breakdown table gates each cell as well as each
   column. A group large enough to name is no guarantee about any one of its

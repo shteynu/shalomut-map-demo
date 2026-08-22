@@ -1507,6 +1507,42 @@ at all. A withheld cell inside a published group says which of the two reasons i
 is, and the table's footnote explains the blanks it contains, because otherwise
 they read as a rendering fault.
 
+### ADR-038: A redirect is checked in the words the browser will read it in
+
+2026-08-22. `resolveLoginRedirect` refused a destination outside the product by
+looking at the first two characters of the string: `//` and `/\`. Browsers and
+the WHATWG URL parser strip ASCII tab, line feed and carriage return from
+anywhere in a URL before parsing it, so `/<LF>/elsewhere` passed a check on its
+first two characters and then landed on `elsewhere`. The string that was
+inspected was not the string that was navigated to.
+
+**Parsed, not prefixed.** The candidate resolves against
+`https://login-redirect.invalid` — a host RFC 2606 reserves and nothing can
+answer for — and is honoured only if it still names that origin afterwards. A
+prefix rule can list the normalisations somebody thought of; the parser knows
+all of them because it performs them.
+
+**What comes back is the parser's output, not the candidate.** So the value
+handed to a `Location` header or an `href` has already been through the
+normalisation a browser would apply, control characters included. A CR or an LF
+cannot reach a response header from here, because the parse is where those
+characters stop existing.
+
+**A candidate naming another host is refused whole.** Not reduced to the path
+inside it: keeping `/goals` out of `//elsewhere/goals` would honour the half of
+an attacker's value that happens to be harmless, and would make where a manager
+lands depend on what the other host's path spelled.
+
+**It still has to start with `/`.** The parser would resolve `round` to `/round`
+quite happily. The middleware writes absolute paths and nothing else, and a
+contract that holds by accident is one that stops holding quietly.
+
+**Checked again where it is used.** The OIDC callback used to redirect straight
+to the `next` it read from the handshake cookie. That cookie is HttpOnly but it
+is unsigned JSON, and its `next` came from a query string one link ago — so the
+value is exactly as attacker-shaped at the end of a sign-in as at the start. The
+line that builds the `Location` header is the line that checks it.
+
 ## Environments
 
 The project supports exactly two environments:

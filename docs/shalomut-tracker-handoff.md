@@ -237,7 +237,17 @@ comparison's four full response loads per render were closed by ADR-035 — the
 path never changed, but three closed candidates now cost three row reads. And
 the missing `survey_rounds(organization_id)` index was closed in its index half
 by ADR-036, with its summary-read half still open for `findByOrganizationId`.
-**Thirty-seven entries remain open; none of them is a high finding still open in
+Then the login screen's open redirect. `resolveLoginRedirect` decided whether a
+destination was inside the product by reading the first two characters of the
+string, and browsers strip ASCII tab, line feed and carriage return from
+anywhere in a URL before parsing it — so `/login?next=/<LF>/elsewhere` passed the
+check and landed on `elsewhere`. The candidate is now resolved by a URL parser
+against a host that cannot exist and honoured only if it still names that
+origin, and the OIDC callback re-checks the destination where it builds the
+`Location` header instead of trusting its unsigned handshake cookie (ADR-038).
+No migration; Core only.
+
+**Thirty-six entries remain open; none of them is a high finding still open in
 full.**
 
 **The remaining entries were re-checked against current code on 2026-08-22**,
@@ -250,9 +260,10 @@ database, the shared secret's fail-open branch, the unlimited attempt beacon,
 the share-code alphabet, `clear-db.ts`, and Swagger's unpinned unpkg script.
 None had closed on its own; the code at each anchor is what the audit described.
 The entries marked `ЗАКРЫТА` in the file are the closed ones, and they are the
-only ones. Breakdown cell suppression, one of the twelve, has since been closed
-by the slice above; the dashboard comparison and the index half were closed
-after that re-check by work that had already landed.
+only ones. Two of the twelve have since been closed by the slices above —
+breakdown cell suppression and the login open redirect — and the dashboard
+comparison and the index half were closed after that re-check by work that had
+already landed.
 
 **One owner item, outside the repository.** Rotating `GEMINI_API_KEY` before any
 paid round blocks nothing and is still open. The unused Google client secret was
