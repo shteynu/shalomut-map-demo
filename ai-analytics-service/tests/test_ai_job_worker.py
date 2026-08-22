@@ -1,17 +1,51 @@
 import asyncio
 import re
+from pathlib import Path
 from unittest.mock import AsyncMock
 
+import httpx
 import pytest
 
-from src.config import Settings
+from src.config import Settings, settings
 from src.services.ai_job_worker import (
+    CORE_LEASE_SECONDS,
     AiAnalysisJobWorker,
     JobLease,
     LeaseLostError,
     core_job_api_base,
     worker_id_for_slot,
 )
+from src.services.result_sink import CallbackDeliveryError
+
+# Core's own copy of the lease. Present when the service is checked out inside
+# the monorepo, absent when it is deployed on its own.
+CORE_WORKER_MODULE = (
+    Path(__file__).resolve().parents[2]
+    / "src"
+    / "lib"
+    / "server"
+    / "ai-analysis-worker.ts"
+)
+
+
+def worker_under_test(client, runner, **overrides):
+    """A worker whose waits are short enough to watch in a test.
+
+    The intervals are the only thing scaled down: a real one beats every 30
+    seconds against a 90-second lease, and every test here is about what
+    happens between two beats.
+    """
+    return AiAnalysisJobWorker(
+        client=client,
+        runner=runner,
+        worker_id="worker-1",
+        **{
+            "heartbeat_interval_seconds": 0.01,
+            "heartbeat_retry_delay_seconds": 0.0,
+            "lease_seconds": 0.2,
+            **overrides,
+        },
+    )
 
 
 def test_core_job_api_is_derived_from_the_trusted_callback_origin():
@@ -377,3 +411,245 @@ def test_the_idle_ceiling_can_never_sit_below_the_poll_interval(monkeypatch):
 
     monkeypatch.delenv("AI_JOB_POLL_MAX_INTERVAL_SECONDS")
     assert Settings().ai_job_poll_max_interval_seconds == 30.0
+
+
+@pytest.mark.asyncio
+async def test_a_heartbeat_that_could_not_be_sent_is_tried_again():
+    """One blip must not cost a three-minute paid analysis.
+
+    Core serves claims, heartbeats, callbacks and manager screens from the same
+    deployment: on a busy day of closings a renewal meets a 502 or takes longer
+    than the ten-second timeout. That said nothing about this run — and before
+    this, it ended it, cancelling the analysis and burning up to 28 provider
+    calls that had already been paid for.
+    """
+    beats = []
+    renewed = asyncio.Event()
+    completed = False
+
+    async def heartbeat(_run_id, _lease_token):
+        beats.append(len(beats) + 1)
+        if len(beats) == 1:
+            raise httpx.ConnectTimeout("Core did not answer in time")
+        renewed.set()
+        return True
+
+    async def process_round(**_kwargs):
+        nonlocal completed
+        await renewed.wait()
+        completed = True
+        return {"status": "success"}
+
+    client = AsyncMock()
+    client.claim.return_value = JobLease(
+        run_id="run-blip",
+        round_id="round-blip",
+        lease_token="lease-token-blip",
+        attempt_count=1,
+    )
+    client.heartbeat.side_effect = heartbeat
+    runner = AsyncMock()
+    runner.process_round.side_effect = process_round
+
+    assert await worker_under_test(client, runner).process_once() is True
+
+    assert len(beats) == 2, "the failed renewal was not tried again"
+    assert completed, "the analysis was cancelled over a renewal that failed"
+    client.fail.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_one_renewal_is_three_tries_before_it_reports_silence():
+    """The retry has to happen inside the renewal, not on the next beat.
+
+    A worker that took one try per beat would get three chances in a lease and
+    spend a full interval waiting between them. Asserted on `_renew_lease`
+    itself because through the loop the two are indistinguishable — the next
+    beat also sends a heartbeat, and a test that only counted them would pass
+    with the retrying removed.
+    """
+    lease = JobLease(
+        run_id="run-renew",
+        round_id="round-renew",
+        lease_token="lease-token-renew",
+        attempt_count=1,
+    )
+    answers = [
+        httpx.ConnectTimeout("first"),
+        httpx.ConnectTimeout("second"),
+        True,
+    ]
+
+    async def heartbeat(_run_id, _lease_token):
+        answer = answers.pop(0)
+        if isinstance(answer, Exception):
+            raise answer
+        return answer
+
+    client = AsyncMock()
+    client.heartbeat.side_effect = heartbeat
+    worker = worker_under_test(client, AsyncMock())
+
+    assert await worker._renew_lease(lease) is True
+    assert client.heartbeat.await_count == 3
+
+    client.reset_mock()
+    client.heartbeat.side_effect = httpx.ConnectError("Core is unreachable")
+    assert await worker._renew_lease(lease) is False
+    assert client.heartbeat.await_count == worker.heartbeat_attempts
+
+
+@pytest.mark.asyncio
+async def test_a_lease_core_says_is_gone_is_not_argued_with():
+    """A refusal is a verdict, and repeating the question repeats the verdict.
+
+    Core answers 404 or 409 when the run is gone or the lease has been handed
+    to somebody else. Retrying that would keep a stale analysis running against
+    a round another worker is already redoing.
+    """
+    client = AsyncMock()
+    client.claim.return_value = JobLease(
+        run_id="run-lost",
+        round_id="round-lost",
+        lease_token="lease-token-lost",
+        attempt_count=1,
+    )
+    client.heartbeat.return_value = False
+
+    async def process_round(**_kwargs):
+        await asyncio.Event().wait()
+
+    runner = AsyncMock()
+    runner.process_round.side_effect = process_round
+
+    assert await worker_under_test(client, runner).process_once() is True
+
+    assert client.heartbeat.await_count == 1
+    client.fail.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_a_lease_that_can_never_be_renewed_is_released_not_failed():
+    """Core unreachable for the whole lease still leaves the run its attempts.
+
+    `fail()` is terminal: `claimNext` never picks the run up again, nobody is
+    notified and the school's map simply never arrives. Silence from Core is
+    not a verdict on the analysis, so the lease is left to expire — expiry plus
+    reclaim is exactly the mechanism that gives a run its remaining attempts.
+    """
+    cancelled = False
+
+    async def process_round(**_kwargs):
+        nonlocal cancelled
+        try:
+            await asyncio.Event().wait()
+        except asyncio.CancelledError:
+            cancelled = True
+            raise
+
+    client = AsyncMock()
+    client.claim.return_value = JobLease(
+        run_id="run-unreachable",
+        round_id="round-unreachable",
+        lease_token="lease-token-unreachable",
+        attempt_count=1,
+    )
+    client.heartbeat.side_effect = httpx.ConnectError("Core is unreachable")
+    runner = AsyncMock()
+    runner.process_round.side_effect = process_round
+
+    worker = worker_under_test(client, runner, lease_seconds=0.05)
+    assert await asyncio.wait_for(worker.process_once(), timeout=2) is True
+
+    # More than one whole renewal — the lease outlives the beat several times
+    # over, and a worker that released at the first silent renewal would throw
+    # the analysis away with most of its lease still unspent.
+    assert client.heartbeat.await_count > worker.heartbeat_attempts
+    assert cancelled, "stale work kept running after the lease was released"
+    client.fail.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_an_undelivered_result_is_released_for_another_attempt():
+    """The map exists; only the road to Core was out.
+
+    `HttpResultSink` already retries a transient callback four times, and what
+    escapes it is a Core that stayed unreachable throughout. Failing the run
+    then throws away a finished analysis over the last hop — and the retry
+    re-sends the same bytes under the same run identity, which Core recognises
+    as the result it may already hold.
+    """
+    client = AsyncMock()
+    client.claim.return_value = JobLease(
+        run_id="run-undelivered",
+        round_id="round-undelivered",
+        lease_token="lease-token-undelivered",
+        attempt_count=1,
+    )
+    runner = AsyncMock()
+    runner.process_round.side_effect = CallbackDeliveryError(
+        "Callback undelivered after 4 attempts",
+        transient=True,
+        status=503,
+    )
+
+    assert await worker_under_test(client, runner).process_once() is True
+
+    client.fail.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_a_refused_payload_still_fails_the_run_once():
+    """Retrying a verdict spends the money again to hear it again.
+
+    Core answers 400 to a payload it will not accept and 409 to a stale lease.
+    Neither changes on a second attempt, so the run is failed once — which is
+    also what keeps the release path above from becoming "retry everything".
+    """
+    client = AsyncMock()
+    client.claim.return_value = JobLease(
+        run_id="run-refused",
+        round_id="round-refused",
+        lease_token="lease-token-refused",
+        attempt_count=1,
+    )
+    runner = AsyncMock()
+    runner.process_round.side_effect = CallbackDeliveryError(
+        "Callback refused",
+        transient=False,
+        status=400,
+    )
+
+    assert await worker_under_test(client, runner).process_once() is True
+
+    client.fail.assert_awaited_once_with(
+        "run-refused",
+        "lease-token-refused",
+        "worker_error",
+    )
+
+
+def test_the_lease_this_worker_measures_is_the_lease_core_grants():
+    """A mirrored constant that drifts is worse than no constant at all.
+
+    The worker decides when to stop analysing by how long it has gone without
+    renewing. If Core shortened its lease and this number stayed at ninety, the
+    worker would keep spending provider calls on a round another worker had
+    already reclaimed — and both would deliver a map for it.
+    """
+    if not CORE_WORKER_MODULE.exists():
+        pytest.skip("Core is not checked out beside the service")
+
+    granted = re.search(
+        r"AI_ANALYSIS_JOB_LEASE_MS\s*=\s*([\d_]+)",
+        CORE_WORKER_MODULE.read_text(encoding="utf-8"),
+    )
+    assert granted, "Core no longer declares AI_ANALYSIS_JOB_LEASE_MS"
+    assert float(granted.group(1).replace("_", "")) / 1000 == CORE_LEASE_SECONDS
+
+
+def test_the_heartbeat_cadence_leaves_room_for_a_missed_renewal():
+    """`config.py` says the 30s/90s pair "leaves a full retry window". This is
+    that claim, asserted: a lease has to outlast at least two beats, or a
+    single missed renewal would end the run whatever the retrying did."""
+    assert settings.ai_job_heartbeat_interval_seconds * 2 <= CORE_LEASE_SECONDS

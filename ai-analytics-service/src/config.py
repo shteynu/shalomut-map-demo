@@ -148,7 +148,9 @@ class Settings:
             ),
         )
         # Core leases for 90 seconds. Capping heartbeats at 60 seconds leaves a
-        # full retry window even when one renewal is delayed.
+        # full retry window even when one renewal is delayed — a window
+        # `AiAnalysisJobWorker` spends: a renewal it could not send is retried,
+        # and the run is released only once the lease itself has run out.
         self.ai_job_heartbeat_interval_seconds: float = max(
             1.0,
             min(

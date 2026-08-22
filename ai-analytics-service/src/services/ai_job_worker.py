@@ -12,6 +12,7 @@ import httpx
 from src.application.ports import AnalysisRunner, JobStore
 from src.config import settings
 from src.services.analytics_runner import analytics_runner_service
+from src.services.result_sink import CallbackDeliveryError
 
 logger = logging.getLogger(__name__)
 
@@ -40,8 +41,47 @@ class JobLease:
     previous_result: Optional[dict] = None
 
 
+# Core leases a run for ninety seconds — `AI_ANALYSIS_JOB_LEASE_MS` in
+# `src/lib/server/ai-analysis-worker.ts`. The worker needs the number to know
+# when a renewal it could not make has actually cost it the lease, so the
+# constant is mirrored here; `test_ai_job_worker.py` reads Core's file and
+# fails if the two ever disagree.
+CORE_LEASE_SECONDS = 90.0
+
+# One renewal is three tries, spaced far enough apart that a passing blip is
+# over before the last of them and close enough together that all three fit
+# inside the heartbeat interval they belong to.
+HEARTBEAT_ATTEMPTS = 3
+HEARTBEAT_RETRY_DELAY_SECONDS = 2.0
+
+
 class LeaseLostError(RuntimeError):
-    pass
+    """Core answered that this lease is not ours any more."""
+
+
+class LeaseUnreachableError(LeaseLostError):
+    """Core could not be asked, for longer than the lease can survive.
+
+    A loss we assume rather than one we were told about, which is why it is a
+    `LeaseLostError`: both mean stop working on this run, and neither means
+    the run is finished. What it must never become is a `fail()` — the run is
+    still eligible for its remaining attempts, and only its own expiry can
+    hand it to the next worker.
+    """
+
+
+def is_worth_another_attempt(error: BaseException) -> bool:
+    """Whether a failure says anything about the analysis itself.
+
+    A delivery that ran out of attempts against a Core that was unreachable,
+    timing out or answering `5xx` is a statement about the network, not about
+    the map: the roughly two dozen provider calls behind that payload are
+    already spent, and a reclaimed attempt re-sends the same bytes under the
+    same run identity, which Core recognises as the result it already has.
+    Everything else — a refused payload, a stale lease, a crash in our own
+    code — repeats verdict for verdict, so it is failed once and left failed.
+    """
+    return isinstance(error, CallbackDeliveryError) and error.transient
 
 
 class CoreJobClient:
@@ -144,11 +184,54 @@ class AiAnalysisJobWorker:
         runner: AnalysisRunner,
         worker_id: str,
         heartbeat_interval_seconds: float,
+        lease_seconds: float = CORE_LEASE_SECONDS,
+        heartbeat_attempts: int = HEARTBEAT_ATTEMPTS,
+        heartbeat_retry_delay_seconds: float = HEARTBEAT_RETRY_DELAY_SECONDS,
     ):
         self.client = client
         self.runner = runner
         self.worker_id = worker_id
         self.heartbeat_interval_seconds = heartbeat_interval_seconds
+        self.lease_seconds = lease_seconds
+        self.heartbeat_attempts = heartbeat_attempts
+        self.heartbeat_retry_delay_seconds = heartbeat_retry_delay_seconds
+
+    async def _renew_lease(self, lease: JobLease) -> bool:
+        """Ask Core to extend this lease, retrying a blip but not a refusal.
+
+        Returns whether the lease was renewed, so a caller that could not ask
+        can decide what the silence is worth. Raises `LeaseLostError` when
+        Core answers that the lease is no longer ours: that answer is final,
+        and asking again only takes longer to arrive at the same place.
+        """
+        for attempt in range(1, self.heartbeat_attempts + 1):
+            try:
+                renewed = await self.client.heartbeat(
+                    lease.run_id,
+                    lease.lease_token,
+                )
+            except Exception:
+                # Every way of not getting an answer is one case: a timeout, a
+                # 502 from a busy Core, a dropped connection. None of them says
+                # the lease is gone, and none of them is worth throwing a
+                # three-minute paid analysis away for.
+                logger.warning(
+                    "[AI Job Worker] Heartbeat attempt %s of %s did not reach "
+                    "Core for runId=%s",
+                    attempt,
+                    self.heartbeat_attempts,
+                    lease.run_id,
+                    exc_info=True,
+                )
+            else:
+                if renewed:
+                    return True
+                raise LeaseLostError(
+                    f"Lease lost for analysis run {lease.run_id}"
+                )
+            if attempt < self.heartbeat_attempts:
+                await asyncio.sleep(self.heartbeat_retry_delay_seconds)
+        return False
 
     async def _run_with_heartbeat(self, lease: JobLease) -> None:
         analysis = asyncio.create_task(
@@ -160,6 +243,10 @@ class AiAnalysisJobWorker:
                 previous_result=lease.previous_result,
             )
         )
+        # Measured against the loop's own clock, which only moves forward and
+        # is what `asyncio.wait` counts its timeout in.
+        loop = asyncio.get_running_loop()
+        renewed_at = loop.time()
         try:
             while True:
                 done, _ = await asyncio.wait(
@@ -169,14 +256,26 @@ class AiAnalysisJobWorker:
                 if analysis in done:
                     await analysis
                     return
-                renewed = await self.client.heartbeat(
-                    lease.run_id,
-                    lease.lease_token,
-                )
-                if not renewed:
-                    raise LeaseLostError(
-                        f"Lease lost for analysis run {lease.run_id}"
+                if await self._renew_lease(lease):
+                    renewed_at = loop.time()
+                    continue
+                # Core could not be asked. The lease is what decides whether
+                # that matters yet: it outlives the heartbeat interval several
+                # times over precisely so a renewal can be missed, and until it
+                # runs out this run is still ours and still being analysed.
+                unrenewed_for = loop.time() - renewed_at
+                if unrenewed_for >= self.lease_seconds:
+                    raise LeaseUnreachableError(
+                        f"Lease for analysis run {lease.run_id} went "
+                        f"{unrenewed_for:.0f}s without a renewal"
                     )
+                logger.warning(
+                    "[AI Job Worker] Lease for runId=%s unrenewed for %.0fs of "
+                    "%.0fs; the analysis continues",
+                    lease.run_id,
+                    unrenewed_for,
+                    self.lease_seconds,
+                )
         finally:
             if not analysis.done():
                 analysis.cancel()
@@ -194,12 +293,30 @@ class AiAnalysisJobWorker:
         )
         try:
             await self._run_with_heartbeat(lease)
+        except LeaseUnreachableError as error:
+            # Deliberately not a `fail()`. The run keeps its remaining
+            # attempts, its lease expires on its own, and `claimNext` hands it
+            # to whichever worker asks next.
+            logger.warning(
+                "[AI Job Worker] Releasing runId=%s for a later attempt: %s",
+                lease.run_id,
+                error,
+            )
         except LeaseLostError:
             logger.warning(
                 "[AI Job Worker] Lease lost for runId=%s; stopping stale work",
                 lease.run_id,
             )
-        except Exception:
+        except Exception as error:
+            if is_worth_another_attempt(error):
+                logger.warning(
+                    "[AI Job Worker] Analysis for runId=%s could not be "
+                    "delivered (%s); releasing the lease rather than failing "
+                    "the run",
+                    lease.run_id,
+                    error,
+                )
+                return True
             logger.exception(
                 "[AI Job Worker] Analysis failed for runId=%s",
                 lease.run_id,
