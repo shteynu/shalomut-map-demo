@@ -5,9 +5,9 @@
 - Branch: `fix/the-deployed-database-certificate-is-verified`
 - Base branch: `main`
 - Base commit: `25858a9`
-- Current HEAD: `5309de9` plus the documentation commit that follows it
-- Status: code complete, verified against the live deployed database, awaiting
-  the owner's push
+- Current HEAD: `3fed143`, plus the handoff commit that carries this file
+- Status: complete and published on `origin`; **not merged into `main` and not
+  deployed** — see "Git state" and "Next concrete step"
 - Last updated: 2026-08-22
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -192,3 +192,48 @@ The push. `git push` is an owner action here.
 - Standing: rotate `GEMINI_API_KEY` before any paid round; the server-issued
   attempt token from the previous slice; pagination and server-side search in
   the administration console.
+
+## Git state
+
+Read 2026-08-22 at the end of the session, not remembered:
+
+- Branch `fix/the-deployed-database-certificate-is-verified`. `3fed143` is
+  the last commit of the work itself; the tip is the handoff commit that adds
+  this section, which is why no hash is written for it here.
+- Worktree clean apart from ` M next-env.d.ts`, which is generated and belongs
+  to the owner. Nothing staged. `git ls-files -o --exclude-standard` is empty,
+  which is the check that matters here because this repository's untracked
+  cache has hidden a new file before.
+- The branch was on `origin` at `3fed143` when this was written, so the work
+  itself is already portable to another checkout or machine; the handoff commit
+  reaches them with the next push.
+- `origin/main` is `5b7f3cc`. **None of this session's four slices are on
+  `main`, and the deployment is therefore still serving the tree from before
+  them.** The `git push origin <branch>` commands run during the session
+  published branches; they did not land anything.
+- The four slices are stacked linearly on top of `5b7f3cc`, so one push of this
+  branch lands all four:
+
+  | commit | |
+  | --- | --- |
+  | `91f4c8b`, `b78a9fb` | a breakdown cell says how many people are behind it |
+  | `92d8cc2`, `f906406` | a login redirect is checked after the browser would parse it |
+  | `bfbfdf9`, `25858a9` | an anonymous submission carries a session and meets a ceiling |
+  | `5309de9`, `3fed143` | the deployed database's certificate is verified |
+
+  The first branch's name is not on `origin`; its commits are, as ancestors of
+  the three that are. The other three task files are already in
+  `docs/agent-tasks/archive/`.
+
+## Next concrete step
+
+Land the stack on `main`, which is the owner's action:
+
+```bash
+git push origin fix/the-deployed-database-certificate-is-verified:main
+```
+
+Vercel builds every push to `main`, so that one command is also the deploy.
+Afterwards, read `GET /api/health/` and expect the tip rather than `b4f9b50`,
+and re-check the four audit entries against the deployed endpoint if any of
+them is going to be reported as closed there rather than merely in the tree.

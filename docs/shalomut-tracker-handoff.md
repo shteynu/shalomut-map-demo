@@ -18,15 +18,24 @@ and in Git; what was durable in them is below.
 
 Verified 2026-08-22, in this worktree and on the deployed endpoint:
 
-- **`GET /api/health/` answers `commit: b4f9b50`**, read 2026-08-22 after the
-  redeploy that restarted the pipeline. It carries the day's earlier runtime
-  changes — the bounded connection pool, the dropped index, and the build that
-  applies its own migrations — but **not** the conditional round status write
-  below, which is committed on `fix/a-status-write-that-failed-says-so` and
-  reaches the deployment when that branch is pushed and Vercel builds it. Read
-  the endpoint again rather than this line whenever the tip matters. The only
-  unrelated modified file in this worktree is `next-env.d.ts`, which is
-  generated and belongs to the owner.
+- **`GET /api/health/` answers `commit: 5b7f3cc`**, read 2026-08-22 at the end
+  of the session, and `origin/main` is the same commit — so the deployment is
+  level with `main` and carries everything up to and including the conditional
+  round status write below. Read the endpoint again rather than this line
+  whenever the tip matters. The only unrelated modified file in this worktree is
+  `next-env.d.ts`, which is generated and belongs to the owner.
+- **Four closed audit entries are published on a branch and are not on `main`,
+  so none of them is deployed.** `fix/the-deployed-database-certificate-is-
+  verified` is on `origin` at `3fed143` and stacks all four linearly on top of
+  `5b7f3cc`: a breakdown cell that says how many people are behind it
+  (`91f4c8b`, `b78a9fb`), a login redirect checked after the browser would parse
+  it (`92d8cc2`, `f906406`), an anonymous submission that carries a session and
+  meets a ceiling (`bfbfdf9`, `25858a9`), and a verified database certificate
+  (`5309de9`, `3fed143`). One push lands and deploys all four:
+  `git push origin fix/the-deployed-database-certificate-is-verified:main`.
+  The `git push origin <branch>` commands run during the session published the
+  branches without landing anything — on this project a branch lands with
+  `git push origin <branch>:main`.
 - **A round status write that failed now says which failure it was.** The write
   is conditional on the status the request read, so a transition validated
   against a stale read is refused by the database rather than applied over
