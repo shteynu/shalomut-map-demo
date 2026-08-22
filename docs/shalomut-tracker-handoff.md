@@ -259,7 +259,21 @@ that bounds the rows rather than the ratio — a ceiling a real round can reach
 still leaves room for fabricated answers beside real ones. No migration; Core
 only.
 
-**Thirty-six entries remain open; none of them is a high finding still open in
+Then the unverified TLS to the deployed database. Every connection to it — the
+serverless runtime and every administrative script — used
+`rejectUnauthorized: false`, so it was encrypted to whoever answered. Supabase's
+root now ships in the repository and is checked on every connection, its
+provenance confirmed from two directions, and this was verified against the live
+deployed database rather than reasoned about: `select 1` succeeds with
+verification on, and the same connection is refused when a different real
+authority is supplied (ADR-040). **The migration path stays open**: `prisma
+migrate deploy` reaches `DIRECT_URL` through Prisma's own engine on the
+session-mode port, which is not reachable from the environment this was made in,
+and an unverified change there fails the whole build rather than one request. No
+migration and no environment variable; `DATABASE_CA_CERT` exists as an override
+and is deliberately unset.
+
+**Thirty-five entries remain open; none of them is a high finding still open in
 full.**
 
 **The remaining entries were re-checked against current code on 2026-08-22**,
@@ -268,14 +282,14 @@ opened and read — the per-screen analytics recompute (closed since, above), th
 administrator overview's N+1, the worker's missing retry (closed since, above),
 the unpinned Python dependencies,
 breakdown cell suppression, the login open redirect, the unverified TLS to the
-database, the shared secret's fail-open branch, the unlimited attempt beacon,
+database (closed since, above), the shared secret's fail-open branch, the unlimited attempt beacon,
 the share-code alphabet, `clear-db.ts`, and Swagger's unpinned unpkg script.
 None had closed on its own; the code at each anchor is what the audit described.
 The entries marked `ЗАКРЫТА` in the file are the closed ones, and they are the
-only ones. Two of the twelve have since been closed by the slices above —
-breakdown cell suppression and the login open redirect — and the dashboard
-comparison and the index half were closed after that re-check by work that had
-already landed.
+only ones. Three of the twelve have since been closed by the slices above —
+breakdown cell suppression, the login open redirect and the database's
+unverified TLS — and the dashboard comparison and the index half were closed
+after that re-check by work that had already landed.
 
 **One owner item, outside the repository.** Rotating `GEMINI_API_KEY` before any
 paid round blocks nothing and is still open. The unused Google client secret was

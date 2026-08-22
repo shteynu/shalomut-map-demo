@@ -1584,6 +1584,58 @@ rather than a number, and which is still defeated by minting tokens one GET at a
 time. It stays open, named in `src/lib/survey/response-ceiling.ts` and in the
 audit, so nobody mistakes the ceiling for the whole defence.
 
+### ADR-040: The deployed database is verified, not merely encrypted
+
+2026-08-22. Every connection to the deployed database — the serverless runtime
+pool and every administrative script, since both build their configuration from
+`resolvePoolConfig` — used `rejectUnauthorized: false`. TLS was negotiated and
+nobody was authenticated: an active attacker between the function and the pooler
+could present any certificate at all, read and rewrite every survey answer, and
+take the database credentials on the way past. Encryption without verification
+is a conversation with whoever answers.
+
+**The reason it was there was true and is not a reason.** Supabase terminates
+TLS with its own authority rather than one in a public trust store, so the
+default trust store fails with `SELF_SIGNED_CERT_IN_CHAIN`. That is an argument
+for carrying the authority, not for switching the check off.
+
+**The root is in the repository, inline.** A certificate is what the server
+hands to every client that connects, so there is nothing here a repository
+should not hold. Inline rather than a `.crt` beside the module because the
+runtime is serverless and a file would have to survive whatever the build's
+tracing decided about it — and the failure mode of getting that wrong is a
+deployment that cannot reach its database at all.
+
+**Two independent checks on where it came from.** Downloaded over verified
+HTTPS, so the public PKI vouches for the source; then compared against the chain
+the pooler itself presents, whose root has the same SHA-256 fingerprint. A
+certificate taken from the server you are authenticating proves nothing on its
+own, and a download page could serve the wrong file; together there is nothing
+for one compromised party to lie about. The fingerprint is pinned in a test.
+
+**The shipped root replaces the trust store rather than joining it.** This
+connection has exactly one known counterparty, so a certificate for
+`*.pooler.supabase.com` from any other authority — including a public one that
+was compromised or coerced — is refused. The cost is that pointing this project
+at a database somewhere else needs a deliberate act, which is the right amount
+of friction for that decision. `DATABASE_CA_CERT` is that act: a PEM that
+replaces the shipped root. It cannot switch verification off, and a value that
+is not a PEM is ignored rather than becoming an empty trust store.
+
+**Three cases and no fourth.** Loopback gets no TLS, because the local container
+speaks none; `sslmode=disable` says the same explicitly; everything else is
+encrypted and verified, including a connection string that does not parse. A
+test asserts the property rather than the three examples: no connection string
+produces an encrypted-but-unverified pool.
+
+**What is not closed.** `prisma migrate deploy`, which the Vercel build runs
+through `scripts/deploy-migrate.mjs`, connects through Prisma's own engine on
+`DIRECT_URL` rather than through this pool, and still does not verify. It
+carries the same credentials. It is left open deliberately: the session-mode
+port it uses is not reachable from the environment this change was made in, so
+the fix could not be run even once — and an unverified change there fails the
+build rather than one request.
+
 ## Environments
 
 The project supports exactly two environments:

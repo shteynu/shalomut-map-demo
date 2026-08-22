@@ -20,6 +20,16 @@ inside it.
   promising the map after N more answers. Closed and archived rounds publish
   exactly as before.
 
+- **The deployed database is verified, not merely encrypted.** Since 2026-08-22
+  every connection to it — the serverless runtime and every administrative
+  script — checks the certificate against Supabase's own root, which the
+  repository carries because a public trust store does not. Before this the
+  connection was encrypted to whoever answered: an attacker between the
+  function and the database could have presented any certificate, read and
+  rewritten every survey answer, and taken the credentials on the way past.
+  `PROJECT_CONTEXT.md` ADR-040 records it, including the one path it does not
+  close — the migration step, which uses Prisma's own engine.
+
 - **An anonymous submission carries a filling session, and a round stops
   somewhere.** Since 2026-08-22 the attempt token hash is required rather than
   optional — omitting it used to skip the duplicate guard, so the only defence
