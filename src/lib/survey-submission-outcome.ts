@@ -26,6 +26,13 @@ const MESSAGES: Record<SurveySubmissionErrorCode, string> = {
   // Never reached: a duplicate is a completion, not an error. Present so the
   // record stays exhaustive and a new code cannot be added without a message.
   ALREADY_SUBMITTED: '',
+  // A respondent whose browser dropped the attempt token — a cleared session
+  // mid-answer, an extension, a hand-made request. Reloading mints a new one,
+  // and the draft is what carries their answers across the reload.
+  ATTEMPT_TOKEN_REQUIRED:
+    'ההפעלה של השאלון פגה. רעננו את הדף — התשובות שמולאו נשמרות בדפדפן.',
+  ROUND_FULL:
+    'סבב האבחון קיבל את מלוא התשובות שהוא יכול לקבל. עדכנו את ההנהלה — התשובות לא נשמרו.',
 };
 
 const UNKNOWN_FAILURE = 'לא ניתן היה לשמור את התשובות. נסו שוב.';

@@ -390,7 +390,11 @@ export type SurveySubmissionErrorCode =
   | 'ROUND_NOT_ACTIVE'
   | 'DEFINITION_INVALID'
   | 'INVALID_ANSWERS'
-  | 'ALREADY_SUBMITTED';
+  | 'ALREADY_SUBMITTED'
+  /** No attempt token hash, or one that is not the shape this product hashes. */
+  | 'ATTEMPT_TOKEN_REQUIRED'
+  /** The round has stored as many responses as it will ever store. */
+  | 'ROUND_FULL';
 
 export interface SubmitSurveyResult {
   success: boolean;

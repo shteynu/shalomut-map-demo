@@ -27,6 +27,25 @@ import { recordDuplicateSubmissionConflict } from '../server/ai-operational-metr
 export const ALREADY_SUBMITTED_ERROR =
   'You have already submitted a response for this survey round.';
 
+export const ATTEMPT_TOKEN_REQUIRED_ERROR =
+  'A submission must carry the attempt token hash of the session that made it.';
+
+/**
+ * The shape `hashAnonymousToken` produces: a SHA-256 digest in lowercase hex.
+ *
+ * The token hash used to be optional, and omitting it skipped the duplicate
+ * guard entirely — so the one defence against a round being stuffed was a field
+ * the caller could simply leave out. Requiring it is not a claim that the value
+ * is trustworthy; anybody can produce sixty-four hex characters. It is a claim
+ * that the guard runs, and that this endpoint and the attempt endpoint agree on
+ * what a token hash is, so a value one of them stores is one the other can find.
+ */
+const ATTEMPT_TOKEN_HASH = /^[0-9a-f]{64}$/;
+
+function isAttemptTokenHash(value: string | undefined): value is string {
+  return typeof value === 'string' && ATTEMPT_TOKEN_HASH.test(value);
+}
+
 /**
  * The HTTP status each refusal maps to, kept next to the codes rather than
  * inside the route so the contract has one home and `docs/openapi.yaml` has
@@ -46,6 +65,10 @@ export const SURVEY_SUBMISSION_ERROR_STATUS: Record<
   DEFINITION_INVALID: 409,
   INVALID_ANSWERS: 400,
   ALREADY_SUBMITTED: 409,
+  ATTEMPT_TOKEN_REQUIRED: 400,
+  // A conflict rather than a rate limit: nothing about waiting changes it, and
+  // `429` would invite a client to retry a request that will never be accepted.
+  ROUND_FULL: 409,
 };
 
 /**
@@ -321,7 +344,15 @@ export class SurveyService {
     surveyRepo: ISurveyRepository,
     expectedQuestions: ExpectedQuestion[] = canonicalExpectedQuestions(),
   ): Promise<SubmitSurveyResult> {
-    if (input.anonymousTokenHash) {
+    if (!isAttemptTokenHash(input.anonymousTokenHash)) {
+      return {
+        success: false,
+        error: ATTEMPT_TOKEN_REQUIRED_ERROR,
+        code: 'ATTEMPT_TOKEN_REQUIRED',
+      };
+    }
+
+    {
       const alreadySubmitted = await surveyRepo.hasTokenSubmitted(
         input.roundId,
         input.anonymousTokenHash

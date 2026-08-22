@@ -109,8 +109,17 @@ beforeEach(async () => {
   });
 });
 
+/**
+ * The shape `hashAnonymousToken` produces. `randomUUID()` was close enough
+ * while the endpoint accepted any string; since 2026-08-22 it requires a
+ * SHA-256 digest in lowercase hex, and a UUID is neither.
+ */
+function attemptHash(): string {
+  return randomUUID().replace(/-/g, '').padEnd(64, '0');
+}
+
 test('parallel submissions of one filling session create exactly one response', async () => {
-  const tokenHash = randomUUID();
+  const tokenHash = attemptHash();
   const parallelRequests = 8;
 
   const results = await Promise.all(
@@ -139,7 +148,7 @@ test('parallel submissions of one filling session create exactly one response', 
 });
 
 test('a losing parallel request is told it already submitted, not that it failed', async () => {
-  const tokenHash = randomUUID();
+  const tokenHash = attemptHash();
 
   const results = await Promise.all(
     Array.from({ length: 4 }, () =>
@@ -163,7 +172,7 @@ test('a losing parallel request is told it already submitted, not that it failed
 });
 
 test('the repository reports a duplicate as a domain error, not a Prisma code', async () => {
-  const tokenHash = randomUUID();
+  const tokenHash = attemptHash();
   const record = {
     id: randomUUID(),
     roundId,
@@ -191,27 +200,47 @@ test('the repository reports a duplicate as a domain error, not a Prisma code', 
   );
 });
 
-test('submissions without a token are not deduplicated against each other', async () => {
-  // PostgreSQL treats NULLs as distinct, and a submission with no token has no
-  // filling session to deduplicate. This states that on purpose: the unique
-  // index must not turn "no token" into "one response per round".
-  const results = await Promise.all(
-    Array.from({ length: 3 }, () =>
-      SurveyService.submitAndSaveResponse(
-        { roundId, answers: answersForAllQuestions() },
-        surveyRepo,
-        questions,
-      ),
-    ),
-  );
-
-  assert.ok(
-    results.every((result) => result.success),
-    'a token-less submission is unaffected by the unique index',
-  );
+test('the unique index does not turn "no token" into "one response per round"', async () => {
+  // PostgreSQL treats NULLs as distinct, and this states that on purpose: the
+  // index constrains filling sessions, not rounds.
+  //
+  // Written through the repository rather than the service, because the
+  // service refuses a submission with no attempt token since 2026-08-22 —
+  // accepting one skipped the duplicate guard entirely. The rows this writes
+  // are the ones already in the database from before that rule, and the index
+  // still has to leave them alone.
+  for (let index = 0; index < 3; index += 1) {
+    await surveyRepo.saveResponse({
+      id: randomUUID(),
+      roundId,
+      submittedAt: new Date(),
+      answers: questions.map((question) => ({
+        questionId: question.id,
+        dimensionId: question.dimensionId,
+        value: 'green' as AnswerValue,
+        score: 100 as const,
+      })),
+    });
+  }
 
   const stored = await surveyRepo.findResponsesByRoundId(roundId);
   assert.strictEqual(stored.length, 3);
+});
+
+test('the service refuses a submission that carries no filling session', async () => {
+  const result = await SurveyService.submitAndSaveResponse(
+    { roundId, answers: answersForAllQuestions() },
+    surveyRepo,
+    questions,
+  );
+
+  assert.strictEqual(result.success, false);
+  assert.strictEqual(result.code, 'ATTEMPT_TOKEN_REQUIRED');
+  assert.strictEqual(
+    (await surveyRepo.findResponsesByRoundId(roundId)).length,
+    0,
+    'nothing may be stored for a submission the guard could not run on',
+  );
 });
 
 test('a response cannot hold two answers for one question', async () => {
@@ -260,7 +289,7 @@ test('a response and its answers are written together or not at all', async () =
     {
       roundId,
       answers: answersForAllQuestions(),
-      anonymousTokenHash: randomUUID(),
+      anonymousTokenHash: attemptHash(),
     },
     surveyRepo,
     questions,

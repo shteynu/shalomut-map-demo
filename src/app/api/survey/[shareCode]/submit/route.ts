@@ -15,6 +15,7 @@ import {
   createCanonicalSurveyDefinition,
   parseSurveyDefinition,
 } from '@/lib/survey-definition';
+import { responseCeiling } from '@/lib/survey/response-ceiling';
 
 /**
  * Every refusal the respondent client can act on carries its reason. The status
@@ -92,7 +93,7 @@ export async function POST(
       visibleSeconds?: unknown;
     };
 
-    const { roundRepo, surveyAttemptRepo, surveyRepo } =
+    const { orgRepo, roundRepo, surveyAttemptRepo, surveyRepo } =
       resolveCoreRepositories();
     const round = await RoundService.getRoundByShareCode(shareCode, roundRepo);
 
@@ -105,6 +106,27 @@ export async function POST(
 
     if (round.status !== 'active') {
       return refuse('ROUND_NOT_ACTIVE', `Survey round is not active`);
+    }
+
+    /*
+     * Two extra reads on the product's only unauthenticated write, and they
+     * earn it: without a ceiling a patient script can write rows into an open
+     * round indefinitely, and the rate limit above is deliberately too loose to
+     * stop one (a staffroom shares an address). Placed before the definition is
+     * parsed so a full round refuses cheaply, and read from the organization
+     * rather than stored on the round, so a school that corrects its staff
+     * count corrects the ceiling of the round it is running.
+     *
+     * `response-ceiling.ts` says what this does not buy: it bounds the rows,
+     * not the ratio of honest answers to fabricated ones.
+     */
+    const organization = await orgRepo.findById(round.organizationId);
+    const ceiling = responseCeiling(organization?.totalStaffCount);
+    if ((await surveyRepo.getResponseCount(round.id)) >= ceiling) {
+      return refuse(
+        'ROUND_FULL',
+        `Survey round has reached its ceiling of ${ceiling} responses`,
+      );
     }
 
     const definitionCandidate =

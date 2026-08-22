@@ -627,7 +627,8 @@
               "schema": {
                 "type": "object",
                 "required": [
-                  "answers"
+                  "answers",
+                  "anonymousTokenHash"
                 ],
                 "properties": {
                   "answers": {
@@ -637,7 +638,9 @@
                     }
                   },
                   "anonymousTokenHash": {
-                    "type": "string"
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$",
+                    "description": "SHA-256 of the attempt token, computed in the browser, in lowercase hex — the same value the attempt endpoint takes. Required since 2026-08-22: it was optional, and omitting it skipped the duplicate guard, which was the only thing standing between an open round and a script writing the same answers forever. It identifies one filling session, never a device and never a person."
                   },
                   "visibleSeconds": {
                     "type": "integer",
@@ -670,7 +673,7 @@
             }
           },
           "400": {
-            "description": "Invalid answers (INVALID_ANSWERS) or inactive round (ROUND_NOT_ACTIVE)",
+            "description": "Invalid answers (INVALID_ANSWERS), an inactive round (ROUND_NOT_ACTIVE), or a missing or malformed attempt token hash (ATTEMPT_TOKEN_REQUIRED).",
             "content": {
               "application/json": {
                 "schema": {
@@ -690,7 +693,7 @@
             }
           },
           "409": {
-            "description": "The round already holds a response carrying this attempt token (ALREADY_SUBMITTED), or the stored survey definition is not usable (DEFINITION_INVALID). A client retrying a submission whose response it never received should treat ALREADY_SUBMITTED as success.",
+            "description": "The round already holds a response carrying this attempt token (ALREADY_SUBMITTED), the stored survey definition is not usable (DEFINITION_INVALID), or the round has stored as many responses as it will ever store (ROUND_FULL). A client retrying a submission whose response it never received should treat ALREADY_SUBMITTED as success. ROUND_FULL is not a rate limit: waiting does not change it, and a client must not retry.",
             "content": {
               "application/json": {
                 "schema": {
@@ -4232,7 +4235,9 @@
               "ROUND_NOT_ACTIVE",
               "DEFINITION_INVALID",
               "INVALID_ANSWERS",
-              "ALREADY_SUBMITTED"
+              "ALREADY_SUBMITTED",
+              "ATTEMPT_TOKEN_REQUIRED",
+              "ROUND_FULL"
             ]
           }
         }

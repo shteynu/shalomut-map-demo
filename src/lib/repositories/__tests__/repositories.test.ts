@@ -106,7 +106,7 @@ test('InMemoryRoundRepository isolates the persisted questionnaire snapshot from
 
 test('InMemorySurveyRepository prevents duplicate token submissions', async () => {
   const surveyRepo = new InMemorySurveyRepository();
-  const tokenHash = 'hash_user_123';
+  const tokenHash = 'a'.repeat(64);
   const roundId = 'round_test_1';
 
   const answers = buildDummyAnswers('green');
@@ -160,7 +160,7 @@ test('End-to-End Workflow: Round creation -> 10 submissions -> Analytics Unlocki
       {
         roundId: round.id,
         answers: buildDummyAnswers(i % 2 === 0 ? 'green' : 'yellow'),
-        anonymousTokenHash: `token_${i}`,
+        anonymousTokenHash: `${i}`.padStart(64, '0'),
       },
       surveyRepo
     );
@@ -182,7 +182,7 @@ test('End-to-End Workflow: Round creation -> 10 submissions -> Analytics Unlocki
     {
       roundId: round.id,
       answers: buildDummyAnswers('green'),
-      anonymousTokenHash: 'token_9',
+      anonymousTokenHash: '9'.padStart(64, '0'),
     },
     surveyRepo
   );

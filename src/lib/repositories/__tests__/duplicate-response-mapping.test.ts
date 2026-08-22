@@ -59,7 +59,7 @@ function repositoryThatThrows(error: unknown): PrismaSurveyRepository {
 const record: SurveyResponseRecord = {
   id: 'response-1',
   roundId: 'round-1',
-  anonymousTokenHash: 'token-hash',
+  anonymousTokenHash: 'd'.repeat(64),
   submittedAt: new Date('2026-07-30T10:00:00.000Z'),
   answers: [],
 };
@@ -145,7 +145,7 @@ test('the service answers a lost race with the ordinary duplicate message', asyn
     {
       roundId: 'round-1',
       answers: [],
-      anonymousTokenHash: 'token-hash',
+      anonymousTokenHash: 'd'.repeat(64),
     },
     surveyRepo,
     [],

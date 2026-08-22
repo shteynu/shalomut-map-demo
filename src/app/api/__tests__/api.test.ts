@@ -85,6 +85,15 @@ function buildAnswers(): QuestionAnswerInput[] {
   }));
 }
 
+/**
+ * The shape `hashAnonymousToken` produces — a SHA-256 digest in lowercase hex —
+ * without hashing anything. The submit endpoint requires one since 2026-08-22,
+ * so a test that leaves it out is testing a request no respondent client sends.
+ */
+function attemptHash(seed: number): string {
+  return seed.toString(16).padStart(64, '0');
+}
+
 test('API Route GET /api/rounds returns demo round', async () => {
   const res = await getRounds();
   assert.strictEqual(res.status, 200);
@@ -274,6 +283,7 @@ test('API Route POST /api/survey/[shareCode]/submit processes responses', async 
     method: 'POST',
     body: JSON.stringify({
       answers: buildAnswers(),
+      anonymousTokenHash: attemptHash(1),
     }),
   });
 
@@ -300,8 +310,8 @@ test('API Route submit accepts a second attempt from the same device', async () 
 
   // One anonymous link, one browser, two separate people answering: each
   // attempt carries its own token, so the round must record both.
-  const first = await submit('attempt-token-hash-1');
-  const second = await submit('attempt-token-hash-2');
+  const first = await submit(attemptHash(11));
+  const second = await submit(attemptHash(12));
 
   assert.strictEqual(first.status, 200);
   assert.strictEqual(second.status, 200);
@@ -309,7 +319,7 @@ test('API Route submit accepts a second attempt from the same device', async () 
   // The same token still de-duplicates, which is what protects a retry of one
   // attempt from counting twice. The refusal is a conflict, not a bad request:
   // the payload is fine, it just loses to a response the round already holds.
-  const replay = await submit('attempt-token-hash-2');
+  const replay = await submit(attemptHash(12));
   assert.strictEqual(replay.status, 409);
 
   // The reason travels as a code so a respondent client can recognise its own
@@ -327,7 +337,10 @@ test('API Route submit names why it refused, not only that it refused', async ()
   const missingRound = await submitSurvey(
     new Request('http://localhost/api/survey/SHALOM-NOPE/submit', {
       method: 'POST',
-      body: JSON.stringify({ answers: buildAnswers() }),
+      body: JSON.stringify({
+        answers: buildAnswers(),
+        anonymousTokenHash: attemptHash(21),
+      }),
     }),
     { params: Promise.resolve({ shareCode: 'SHALOM-NOPE' }) },
   );
@@ -337,12 +350,43 @@ test('API Route submit names why it refused, not only that it refused', async ()
   const badAnswers = await submitSurvey(
     new Request('http://localhost/api/survey/SHALOM-DEMO/submit', {
       method: 'POST',
-      body: JSON.stringify({ answers: [] }),
+      body: JSON.stringify({
+        answers: [],
+        anonymousTokenHash: attemptHash(22),
+      }),
     }),
     { params: Promise.resolve({ shareCode: 'SHALOM-DEMO' }) },
   );
   assert.strictEqual(badAnswers.status, 400);
   assert.strictEqual((await badAnswers.json()).code, 'INVALID_ANSWERS');
+
+  // A submission with no attempt token at all. It used to be accepted, and
+  // accepting it skipped the duplicate guard entirely — the one thing standing
+  // between an open round and a script writing the same answers forever.
+  const noToken = await submitSurvey(
+    new Request('http://localhost/api/survey/SHALOM-DEMO/submit', {
+      method: 'POST',
+      body: JSON.stringify({ answers: buildAnswers() }),
+    }),
+    { params: Promise.resolve({ shareCode: 'SHALOM-DEMO' }) },
+  );
+  assert.strictEqual(noToken.status, 400);
+  assert.strictEqual((await noToken.json()).code, 'ATTEMPT_TOKEN_REQUIRED');
+
+  // And one that is not the shape this product hashes into. The attempt
+  // endpoint has always required it; now the two agree.
+  const wrongShape = await submitSurvey(
+    new Request('http://localhost/api/survey/SHALOM-DEMO/submit', {
+      method: 'POST',
+      body: JSON.stringify({
+        answers: buildAnswers(),
+        anonymousTokenHash: 'not-a-digest',
+      }),
+    }),
+    { params: Promise.resolve({ shareCode: 'SHALOM-DEMO' }) },
+  );
+  assert.strictEqual(wrongShape.status, 400);
+  assert.strictEqual((await wrongShape.json()).code, 'ATTEMPT_TOKEN_REQUIRED');
 
   useDemoRepositories();
 });
@@ -822,6 +866,7 @@ test('Dynamic survey API preserves exact questions and freezes the snapshot afte
               dimensionId: question.dimensionId,
               value: 'green',
             })),
+          anonymousTokenHash: attemptHash(31),
         }),
       }),
       { params: Promise.resolve({ shareCode: 'SHALOM-DEMO' }) },
@@ -990,6 +1035,7 @@ test('API Route POST /api/rounds/[roundId]/reset drops stale insights and writes
             dimensionId: question.dimensionId,
             value: 'green',
           })),
+          anonymousTokenHash: attemptHash(41),
         }),
       }),
       { params: Promise.resolve({ shareCode: DEMO_ROUND.shareCode }) },

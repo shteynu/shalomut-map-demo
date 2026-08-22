@@ -78,4 +78,23 @@ describe('survey attempt token', () => {
       createHash('sha256').update(token).digest('hex'),
     );
   });
+
+  /**
+   * Both write endpoints require `^[0-9a-f]{64}$` — the attempt endpoint always
+   * did, the submit endpoint since 2026-08-22. Neither of them can see this
+   * function, so this is the test that says the shape the client produces is
+   * the shape the server accepts. Without it, tightening the server is a change
+   * whose only witness is a test fixture nobody generates.
+   */
+  it('produces the shape both write endpoints require', async () => {
+    for (const token of [
+      'a2f0a5f4-0a5a-4a41-9a0f-4f4f8f4a1a11',
+      '',
+      ' ',
+      'שלום',
+      'x'.repeat(200),
+    ]) {
+      assert.match(await hashAnonymousToken(token), /^[0-9a-f]{64}$/, token);
+    }
+  });
 });

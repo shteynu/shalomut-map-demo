@@ -58,8 +58,12 @@ export const RATE_LIMITS = {
    * than the questionnaire can be read; sixty leaves room and still stops a
    * script writing thousands of rows.
    *
-   * The narrower defence against stuffing is not here anyway: a submission
-   * carries a per-attempt token hash, and the round refuses a repeat of one.
+   * This is not the defence against stuffing, and it never was. The line that
+   * stood here said the attempt token hash was — but that value is computed in
+   * the respondent's own browser and rotating it costs nothing, so refusing a
+   * repeat of one stops a double click and not a script. What bounds a round
+   * since 2026-08-22 is the ceiling in `survey/response-ceiling.ts`, which is
+   * honest about bounding the rows rather than the ratio.
    */
   surveySubmission: {
     name: "survey-submission",

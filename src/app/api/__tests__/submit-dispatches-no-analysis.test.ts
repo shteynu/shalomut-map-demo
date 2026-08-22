@@ -71,7 +71,12 @@ function buildAnswers() {
   }));
 }
 
-function submit(tokenHash?: string) {
+/** The shape `hashAnonymousToken` produces, which the endpoint now requires. */
+function attemptHash(seed: number): string {
+  return seed.toString(16).padStart(64, '0');
+}
+
+function submit(tokenHash: string) {
   return submitSurvey(
     new Request(`http://localhost:3000/api/survey/${SHARE_CODE}/submit`, {
       method: 'POST',
@@ -106,7 +111,7 @@ beforeEach(() => {
 
 test('the submission that reaches the privacy threshold dispatches nothing', async () => {
   for (let index = 0; index < MINIMUM_PRIVACY_THRESHOLD; index += 1) {
-    const response = await submit(`token-${index}`);
+    const response = await submit(attemptHash(index));
     assert.strictEqual(response.status, 200);
   }
 
@@ -119,15 +124,15 @@ test('the submission that reaches the privacy threshold dispatches nothing', asy
 
 test('answers beyond the threshold dispatch nothing either', async () => {
   for (let index = 0; index < MINIMUM_PRIVACY_THRESHOLD + 5; index += 1) {
-    assert.strictEqual((await submit(`token-${index}`)).status, 200);
+    assert.strictEqual((await submit(attemptHash(index))).status, 200);
   }
 
   assert.deepStrictEqual(await aiAnalysisRunRepo.findByRoundId(ROUND_ID), []);
 });
 
 test('the answers themselves are still stored, so nothing was traded for the silence', async () => {
-  await submit('token-a');
-  await submit('token-b');
+  await submit(attemptHash(0xa));
+  await submit(attemptHash(0xb));
 
   const { surveyRepo } = (
     await import('@/lib/composition-root')
