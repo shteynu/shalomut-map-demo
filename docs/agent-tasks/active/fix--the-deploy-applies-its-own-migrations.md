@@ -5,10 +5,12 @@
 - Branch: `fix/the-deploy-applies-its-own-migrations`
 - Base branch: `fix/one-pool-per-process-and-one-index-per-lookup`, itself on
   `main`
-- Base commit: `bb4163c` (unpushed; `origin/main` is `f8dda5d`)
+- Base commit: `bb4163c`
+- Landed as: `e1da436` and `342606c`, both on `origin/main`, whose tip is
+  `342606c`
 - Current HEAD: the commit carrying this file
-- Status: done and verified locally; **blocked on one owner action before it may
-  be pushed**
+- Status: code done, pushed and **proved on the real deployment by refusing**;
+  blocked on one owner action before anything new can ship
 - Last updated: 2026-08-22
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -104,11 +106,10 @@ branch's own parent.
 
 ## Assumptions
 
-- `DIRECT_URL` is not currently set on the Vercel project. The last reading of
-  that dashboard, 2026-08-17, lists ten variables and does not include it, and
-  the five identity variables added on 2026-08-21 show that reading is not
-  current — so this is the assumption most worth checking before the push, and
-  checking it costs one look at the dashboard.
+- ~~`DIRECT_URL` is not currently set on the Vercel project.~~ **Confirmed on
+  2026-08-22**, on the dashboard and by the failed build. Filtering the
+  project's variables by `URL` returns `DATABASE_URL` and `AI_SERVICE_URL` and
+  nothing else, both scoped Production and Preview.
 
 ## Completed
 
@@ -163,6 +164,15 @@ Not this task's: `next-env.d.ts` is generated and belongs to the owner.
   added that bypasses it, and the step moved after `next build`. Each produced
   exactly the matching failure.
 - `npm run lint:doc-numbers` — exit 0 after the documentation edits.
+- **The refusal happened on the real deployment, which is the first evidence
+  that is not a simulation.** Vercel built `342606c` on the push and the
+  deployment reads `Error`, `Command "npm run build" exited with 1`, duration
+  **7s**. The build log carries the script's own sentence — `[deploy-migrate]
+  refusing to build: DIRECT_URL is not set on this deployment…` — 132 ms after
+  `npm run build` started, and neither `prisma generate` nor `next build` ran.
+  The Production alias stayed on `bb4163c`, and `GET /api/health/` answers
+  `commit: bb4163c`: a stopped pipeline, not a broken product, which is exactly
+  the intended failure mode.
 
 ### Failed
 
@@ -170,11 +180,10 @@ None.
 
 ### Blocked or not run
 
-- **Nothing was run on Vercel.** The step cannot be exercised where it matters
-  until `DIRECT_URL` exists there, and the first real proof will be the first
-  deployed build after the push.
-- Whether `DIRECT_URL` is already set on the project was not read. It needs the
-  owner's signed-in dashboard.
+- **The success path has not run on Vercel**, and cannot until `DIRECT_URL`
+  exists there. The refusal path has — see Passed.
+- Adding the variable was not done by this agent: it is a database credential,
+  and entering one is not something this agent does. It is the owner's step.
 
 ### Environment
 
@@ -184,10 +193,10 @@ created and dropped on the same server. `GEMINI_API_KEY` was stripped from the
 
 ### Residual risk
 
-**Named and real: the first deployed build after this lands will fail if
-`DIRECT_URL` is not set.** That is the design working, and it is recoverable in
-one dashboard edit and one redeploy, but it is a stopped deployment pipeline
-until someone does it — so the variable goes first and the push second.
+**This is no longer a risk but an open state:** the push happened before the
+variable, so the pipeline is stopped now. Recoverable in one dashboard edit plus
+one redeploy — and the redeploy is required, because adding a variable does not
+rebuild anything on its own.
 
 Second, smaller: the schema now moves ahead of the alias, so a destructive
 migration would break the deployment still serving. ADR-031 states additive-first
@@ -217,12 +226,12 @@ None. Which audit finding comes next is a question, not a blocker.
 
 ## Next concrete step
 
-Set `DIRECT_URL` on the Vercel project to the direct connection string — the
-`DIRECT_URL` line of `.env.deployed.local`, port `5432`, not the `6543` one.
-Then, and only then:
+The owner adds `DIRECT_URL` to the Vercel project — Settings → Environment
+Variables → Add Environment Variable, scope Production, value the `DIRECT_URL`
+line of `.env.deployed.local` (port `5432`, not the `6543` one; the build
+refuses the `6543` string by port if they are confused).
 
-`git push origin fix/the-deploy-applies-its-own-migrations:main`
-
-The first deployed build after that push is the real test: it should report
-`No pending migrations to apply.` and then build, and `GET /api/health/` should
-answer the new commit.
+Then **redeploy `342606c`**, because adding a variable rebuilds nothing by
+itself: the failed deployment's Redeploy button, or any new push. The build
+should then log `No pending migrations to apply.` and go on to build, and
+`GET /api/health/` should answer `commit: 342606c`.
