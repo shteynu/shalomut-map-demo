@@ -5,9 +5,10 @@
 - Branch: `fix/one-pool-per-process-and-one-index-per-lookup`
 - Base branch: `docs/the-audit-of-2026-08-21-gets-a-file`, itself based on
   `docs/the-tenancy-spec-landed`, itself based on `main`
-- Base commit: `bb9fc08` (unpushed; `origin/main` is `68ec755`)
-- Current HEAD: the commit carrying this file
-- Status: done and verified; awaiting the owner's push and one manual migration
+- Base commit: `bb9fc08`
+- Landed as: `f7da423`, `4392c34` and `f8dda5d`, all on `origin/main`, whose tip
+  is `f8dda5d`
+- Status: done, verified, pushed, deployed and migrated; archived
 - Last updated: 2026-08-22
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -118,7 +119,8 @@ Nothing.
 
 ## Remaining
 
-Nothing in the tree. Two steps outside it, both named under Next concrete step.
+Nothing. Pushed 2026-08-22, and the migration was applied to the deployed
+database the same day.
 
 ## Changed files
 
@@ -161,6 +163,20 @@ Not this task's: `next-env.d.ts` is generated and belongs to the owner.
   reports "No difference detected" at exit 0, so the migration and the datamodel
   agree.
 - `npm run lint:doc-numbers` — exit 0, after the documentation edits.
+- **The migration ran against the deployed database on 2026-08-22**, through
+  `DIRECT_URL` from `.env.deployed.local` — Supabase Seoul, port 5432. Before:
+  `migrate status` named exactly this migration as pending and
+  `question_answers` carried three indexes. After: `Database schema is up to
+  date!` at exit 0, two indexes, and the row counts unchanged at 288 answers
+  across 12 responses.
+- **The deployed endpoint answers `commit: f8dda5d`**, which is `origin/main`,
+  so the runtime half shipped with it.
+- **The composite index serves the lookup on the deployed database too.** Its
+  288 rows are too few for the planner to prefer any index — the unforced plan
+  is a seq scan — so the check there is `enable_seqscan = off`, under which the
+  plan is an index scan on `question_answers_response_id_question_id_key` with 3
+  buffers hit. The cost-for-cost comparison stays the local one, where the table
+  has 4576 rows.
 
 ### Failed
 
@@ -168,10 +184,8 @@ None that survived.
 
 ### Blocked or not run
 
-- **The deployed database has not had the migration applied.** Deliberate: the
-  branch is unpushed, and applying it first would leave the deployed database
-  carrying a migration whose directory the deployed tree does not have, which
-  reads as drift to the next person running `migrate status`.
+- Nothing outstanding. The deployed migration, which was the one item here, ran
+  after the push; its evidence is under Passed.
 - No browser walk. Neither change is visible on a screen, and the suite covers
   the paths that touch them.
 - The pool bound was not observed under real concurrency. Nothing here can
@@ -217,11 +231,6 @@ None open. Which audit finding comes next is a question, not a blocker.
 
 ## Next concrete step
 
-`git push origin fix/one-pool-per-process-and-one-index-per-lookup:main` — the
-owner's action. It carries the three commits below it, so this one push lands
-the tenancy documentation fix, the restored audit and both of these fixes.
-
-Then the migration against the deployed database, which an agent can run: pass
-`DIRECT_URL` from `.env.deployed.local` as `DATABASE_URL` and run
-`prisma migrate deploy`. Order against the push does not matter — Prisma names
-columns, never indexes — so this cannot break a running deployment either way.
+None. The work is landed, deployed and migrated, and this file is archived.
+Which of the audit's forty-five remaining entries comes next is a question for
+the owner, not a step in this task.

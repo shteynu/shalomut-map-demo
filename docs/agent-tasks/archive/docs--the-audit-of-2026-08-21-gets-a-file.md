@@ -4,9 +4,9 @@
 
 - Branch: `docs/the-audit-of-2026-08-21-gets-a-file`
 - Base branch: `docs/the-tenancy-spec-landed`, which is itself based on `main`
-- Base commit: `0a56f8c` (unpushed; `origin/main` is `68ec755`)
-- Current HEAD: the commit carrying this file
-- Status: done; awaiting the owner's push
+- Base commit: `0a56f8c`
+- Landed as: `ce7754b` and `bb9fc08`, both on `origin/main`
+- Status: done, verified and landed; archived
 - Last updated: 2026-08-22
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -110,7 +110,7 @@ Nothing.
 
 ## Remaining
 
-Nothing. The owner pushes.
+Nothing. The push happened on 2026-08-22.
 
 ## Changed files
 
@@ -198,7 +198,6 @@ None. Unchanged: `GEMINI_API_KEY` awaits the owner's rotation.
 
 ## Next concrete step
 
-`git push origin docs/the-audit-of-2026-08-21-gets-a-file:main` — the owner's
-action. It carries the `docs/the-tenancy-spec-landed` commit `0a56f8c`
-underneath it, so this one push lands both and the other branch needs no push of
-its own. No deploy check is needed: documentation only, no runtime change.
+None. `ce7754b` and `bb9fc08` are on `origin/main`, together with the
+`docs/the-tenancy-spec-landed` commit `0a56f8c` they sat on top of. Documentation
+only, so there was no deploy check to make.

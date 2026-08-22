@@ -18,12 +18,11 @@ and in Git; what was durable in them is below.
 
 Verified 2026-08-22, in this worktree and on the deployed endpoint:
 
-- **The last commit that changed runtime is `66707ae`**, and its deployment was
-  walked. `GET /api/health/` was read at `d72e76b` and answered
-  `commit: d72e76b`; `origin/main` has moved past it since, but only over
-  documentation, so that reading still identifies the deployed runtime. Read the
-  endpoint again rather than this line whenever the tip matters. The only
-  modified file in this worktree is `next-env.d.ts`, which is generated and
+- **`GET /api/health/` answers `commit: f8dda5d`**, read 2026-08-22, which is
+  `origin/main` — so the deployed endpoint is the pushed tip and carries both of
+  the day's runtime changes, the bounded connection pool and the dropped index.
+  Read the endpoint again rather than this line whenever the tip matters. The
+  only modified file in this worktree is `next-env.d.ts`, which is generated and
   belongs to the owner.
 - **A collecting round no longer publishes its numbers, on the deployment too.**
   `648465c..66707ae` closed the critical finding of the 2026-08-21 audit: an
@@ -84,14 +83,18 @@ Verified 2026-08-22, in this worktree and on the deployed endpoint:
   for the same administrator and school, which is the fifteen-minute window
   being process-local across two instances — documented behaviour, and the log
   holding a visit twice rather than missing it.
-- **One migration is written and not yet applied to the deployed database.**
-  `20260822120000_one_index_per_lookup_on_question_answers` drops the redundant
-  `question_answers_response_id_idx`. Unlike a column change it cannot break a
-  running deployment in either order — Prisma selects columns by name and never
-  names an index — so the usual race does not apply here, and the step is
-  outstanding rather than urgent. It runs against the deployed database by
-  passing `DIRECT_URL` from `.env.deployed.local` as `DATABASE_URL`, as every
-  migration here does.
+- **The deployed database has all 19 migrations**, `Database schema is up to
+  date!`, read 2026-08-22 after applying
+  `20260822120000_one_index_per_lookup_on_question_answers` by hand through
+  `DIRECT_URL` from `.env.deployed.local`. `question_answers` there now carries
+  `question_answers_pkey` and `question_answers_response_id_question_id_key` and
+  nothing else, with its 288 answer rows across 12 responses untouched. The
+  table is far too small for the planner to choose an index on its own — a
+  `response_id` lookup seq-scans 288 rows — so the check that means anything
+  there is that the composite *can* serve it: with `enable_seqscan = off` the
+  plan is an index scan on
+  `question_answers_response_id_question_id_key`, 3 buffers. The cost comparison
+  was made locally, where the table has 4576 rows.
 - **The AI service correctly did not rebuild** and still serves `e69a5eb`.
   Nothing in this push touches its `buildFilter` paths, so a service commit
   behind Core's is the expected resting state here, not a missed deploy.
@@ -307,9 +310,11 @@ nothing has snapped the interval back from 30 s to 2 s there.
 
 Supabase PostgreSQL, region `aws-1-ap-northeast-2` (**Seoul**).
 
-**Sixteen migrations, `Database schema is up to date!`**, read 2026-08-19. The
-most recent, `20260819120000_a_run_may_name_the_dimensions_it_rewrites`, was
-applied that day *ahead of* the push carrying its code.
+**Nineteen migrations, `Database schema is up to date!`**, read 2026-08-22. The
+most recent, `20260822120000_one_index_per_lookup_on_question_answers`, was
+applied that day *after* the push carrying its code, which is safe only because
+it drops an index; the 2026-08-19 migration before it was applied *ahead of* its
+push, which is the order every column change needs.
 
 **Migrations are a hand step, every time.** The build command runs
 `prisma generate` and never `prisma migrate deploy`. A schema change must reach
