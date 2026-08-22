@@ -247,6 +247,18 @@ origin, and the OIDC callback re-checks the destination where it builds the
 `Location` header instead of trusting its unsigned handshake cookie (ADR-038).
 No migration; Core only.
 
+Then the anonymous submission's missing floor, closed in the half that was a
+defect and left open in the half that is a design question. The attempt token
+hash was an optional field, so not sending it skipped the duplicate guard
+entirely — the defence against a round being stuffed was something the caller
+could leave out. It is now required and must be the shape the product hashes,
+and a round refuses answers past three times its school's staff count with a
+floor of one hundred (ADR-039). **The open half is an owner item**: binding a
+submission to a token this server issued changes the respondent flow, and even
+that bounds the rows rather than the ratio — a ceiling a real round can reach
+still leaves room for fabricated answers beside real ones. No migration; Core
+only.
+
 **Thirty-six entries remain open; none of them is a high finding still open in
 full.**
 

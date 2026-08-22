@@ -20,6 +20,16 @@ inside it.
   promising the map after N more answers. Closed and archived rounds publish
   exactly as before.
 
+- **An anonymous submission carries a filling session, and a round stops
+  somewhere.** Since 2026-08-22 the attempt token hash is required rather than
+  optional — omitting it used to skip the duplicate guard, so the only defence
+  against a round being stuffed was a field the caller could leave out — and a
+  round refuses answers past three times its school's staff count, with a floor
+  of one hundred. `PROJECT_CONTEXT.md` ADR-039 records both, and is explicit
+  that they bound the rows rather than the ratio: binding a submission to
+  something this server issued is the open half of the audit's entry and a
+  change to the respondent flow rather than a number.
+
 - **The login screen cannot be borrowed to send a manager somewhere else.**
   Since 2026-08-22 the `next` a sign-in carries is resolved by a URL parser
   rather than checked by its first two characters. Browsers drop ASCII tab, line

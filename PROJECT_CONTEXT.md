@@ -1543,6 +1543,47 @@ is unsigned JSON, and its `next` came from a query string one link ago — so th
 value is exactly as attacker-shaped at the end of a sign-in as at the start. The
 line that builds the `Location` header is the line that checks it.
 
+### ADR-039: An anonymous submission carries a session and meets a ceiling
+
+2026-08-22. The submit endpoint is the product's only unauthenticated write. Its
+rate limit is deliberately loose — a staffroom answers from one address, and a
+limit tuned for a script refuses exactly the moment the product is working — and
+the comment beside it named the attempt token hash as the narrower defence. That
+value is computed in the respondent's own browser, it was an **optional** field,
+and omitting it skipped the duplicate guard entirely. So the defence against
+stuffing was a field the caller could leave out.
+
+**The attempt token hash is required, and must be the shape this product
+hashes.** `^[0-9a-f]{64}$`, the same rule the attempt endpoint has always
+applied, so a value one endpoint stores is one the other can find. This is not a
+claim that the value is trustworthy — anybody can produce sixty-four hex
+characters. It is a claim that the guard runs.
+
+**A round stops accepting answers somewhere.** Three times the school's own
+`totalStaffCount`, with a floor of one hundred. The multiplier is generous
+because the product publishes response rates over 100% quite legitimately — a
+link forwarded past the staff list is ordinary — and the floor exists because
+the multiplier trusts a number a manager typed once: a mistyped `2` must not
+cost the staffroom its answers.
+
+**Read from the organization on every submission, not stamped on the round.** A
+school that corrects its staff count corrects the ceiling of the round it is
+running. That is two extra reads on the hot unauthenticated path, and they are
+the price of the round being bounded at all.
+
+**`ROUND_FULL` is a 409, not a 429.** Waiting does not change it, and a `429`
+invites a client to retry a request that will never be accepted.
+
+**What this does not buy, said out loud.** It bounds the rows, not the ratio. A
+school of sixty with a ceiling of one hundred and eighty leaves room for a
+hundred and twenty fabricated answers beside sixty real ones, and no ceiling a
+real round can reach is also a ceiling that makes stuffing pointless. The answer
+to that is a submission bound to something this server issued — a token minted
+when the questionnaire is served — which is a change to the respondent flow
+rather than a number, and which is still defeated by minting tokens one GET at a
+time. It stays open, named in `src/lib/survey/response-ceiling.ts` and in the
+audit, so nobody mistakes the ceiling for the whole defence.
+
 ## Environments
 
 The project supports exactly two environments:
