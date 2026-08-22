@@ -18,12 +18,13 @@ and in Git; what was durable in them is below.
 
 Verified 2026-08-22, in this worktree and on the deployed endpoint:
 
-- **`origin/main` is `d72e76b`** and `GET /api/health/` answers
-  `commit: d72e76b`, so the deployed endpoint is the pushed tip. The last
-  commit that changed runtime is `66707ae`, whose deployment was walked
-  before `d72e76b` — a documentation commit — was pushed on top of it. The only
-  modified file is `next-env.d.ts`, which is generated and belongs to the
-  owner.
+- **The last commit that changed runtime is `66707ae`**, and its deployment was
+  walked. `GET /api/health/` was read at `d72e76b` and answered
+  `commit: d72e76b`; `origin/main` has moved past it since, but only over
+  documentation, so that reading still identifies the deployed runtime. Read the
+  endpoint again rather than this line whenever the tip matters. The only
+  modified file in this worktree is `next-env.d.ts`, which is generated and
+  belongs to the owner.
 - **A collecting round no longer publishes its numbers, on the deployment too.**
   `648465c..66707ae` closed the critical finding of the 2026-08-21 audit: an
   open round republished its full per-question aggregates on every read, so two
@@ -135,17 +136,22 @@ open and blocks nothing: rotating `GEMINI_API_KEY` before any paid round. The
 unused Google client secret was deleted on 2026-08-21 and is no longer one.
 
 Two coverage gaps were found while reviewing what the multi-tenancy work is
-tested by. **The first is closed:** `npm run lint:tenant-chokepoints` now pins
-both chokepoints, and it is in `verify:core`. Routing every manager path through
-`loadManagerContext` or `authorizeManagerRound` had been convention alone, and
-`check-composition-root.mjs` explicitly permits a page to resolve the wiring, so
-a new page could have read a school unrecorded with no test failing. Its three
-rules were each proved against the real tree by breaking it and watching the
-check fail. **The second is open and is not a defect:** multi-tenancy has no
-browser-level coverage — no Playwright spec opens a second school or signs in as
-an administrator — so every proof of it is a unit or route test plus the manual
-walks recorded above. Closing it needs a second school and an administrator
-fixture in `e2e/`, which is real work rather than a script.
+tested by, and **both are closed.** The first: `npm run lint:tenant-chokepoints`
+now pins both chokepoints, and it is in `verify:core`. Routing every manager path
+through `loadManagerContext` or `authorizeManagerRound` had been convention
+alone, and `check-composition-root.mjs` explicitly permits a page to resolve the
+wiring, so a new page could have read a school unrecorded with no test failing.
+Its three rules were each proved against the real tree by breaking it and
+watching the check fail. The second: multi-tenancy had no browser-level coverage
+— no Playwright spec opened a second school or signed in as an administrator —
+so every proof of it was a unit or route test plus the manual walks recorded
+above. `a16406f` closed it on 2026-08-21 with `e2e/tenant-boundary.spec.ts`,
+which needs a second Playwright server on 3101 and two minted sessions, because
+a runtime with no identity provider reads its directory from the password
+accounts and cannot hold an administrator at all. Four checks, each watched
+failing against a deliberately broken middleware, one mutation per check:
+detail in
+[`archive/test--multi-tenancy-in-the-browser.md`](agent-tasks/archive/test--multi-tenancy-in-the-browser.md).
 
 That defect, for the record, was that **a platform administrator who belongs to
 no school read that school's screens unrecorded whenever exactly one school

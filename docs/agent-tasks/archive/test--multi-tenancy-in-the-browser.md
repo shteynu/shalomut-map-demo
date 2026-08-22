@@ -5,9 +5,10 @@
 - Branch: `test/multi-tenancy-in-the-browser`
 - Base branch: `main`
 - Base commit: `a96b971` (also `origin/main`, and deployed)
-- Current HEAD: the commit carrying this file
-- Status: done and verified; awaiting the owner's push
-- Last updated: 2026-08-21
+- Landed as: `a16406f` (spec and fixtures) and `c40fb94` (this file), both on
+  `origin/main`
+- Status: done, verified and landed; archived
+- Last updated: 2026-08-22
 - Last agent/tool: Claude Code (Opus 5)
 
 ## Objective
@@ -124,13 +125,13 @@ Nothing.
 
 ## Remaining
 
-Nothing. The owner pushes.
+Nothing. The push happened on 2026-08-21.
 
 ## Changed files
 
 Added: `e2e/tenant-boundary.spec.ts`, `e2e/tenant-fixtures.ts`,
-`e2e/local-database-url.ts`,
-`docs/agent-tasks/active/test--multi-tenancy-in-the-browser.md`.
+`e2e/local-database-url.ts`, and this file — added under
+`docs/agent-tasks/active/` and moved to `archive/` on 2026-08-22.
 
 Modified: `playwright.config.ts` (second server, second project, exported
 session secret and base URL), `.github/workflows/browser-smoke.yml` (the comment
@@ -216,7 +217,7 @@ None open.
 
 ## Next concrete step
 
-`git push origin test/multi-tenancy-in-the-browser:main` — the owner's action.
-No deploy check is needed after it: the branch adds tests and documentation and
-changes no runtime code, so `/api/health/` will move to the new tip with no
-behaviour to re-verify.
+None. The push happened: `a16406f` and `c40fb94` are on `origin/main`, and
+`e2e/tenant-boundary.spec.ts` is in the tree. No deploy check was needed — the
+branch adds tests and documentation and changes no runtime code, so
+`/api/health/` moved to the new tip with no behaviour to re-verify.
