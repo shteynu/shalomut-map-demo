@@ -1,3 +1,5 @@
+import { isDeployedRuntime } from "@/lib/deployment-runtime";
+
 import type { ISessionProvider, SessionMintOptions } from "./domain-contract";
 import { absoluteDeadlineFrom, ttlSecondsWithin } from "./session-lifetime";
 import type {
@@ -10,13 +12,8 @@ const DEFAULT_SECRET = "shalomut-map-dev-session-secret-must-be-configured-in-pr
 
 function getSessionSecret(): string {
   const secret = process.env.SESSION_SECRET?.trim();
-  const isBuilding = process.env.NEXT_PHASE === "phase-production-build";
-  const isDeployedRuntime =
-    (process.env.NODE_ENV === "production" ||
-      Boolean(process.env.VERCEL_ENV?.trim())) &&
-    !isBuilding;
 
-  if (isDeployedRuntime && !secret) {
+  if (isDeployedRuntime() && !secret) {
     throw new Error(
       "SESSION_SECRET environment variable must be configured in production/deployed environment.",
     );

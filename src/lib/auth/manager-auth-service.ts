@@ -1,3 +1,5 @@
+import { isDeployedRuntime as isDeployedRuntimeShared } from "@/lib/deployment-runtime";
+
 import { isIdentityProviderConfigured } from "./identity-provider";
 import type { Manager, OrganizationMembership } from "./types";
 
@@ -38,14 +40,13 @@ interface RuntimeEnvironment {
  */
 const LOCAL_DEV_ORGANIZATION_ID = "local-dev-organization";
 
+/**
+ * One predicate, shared with the session provider and the machine-to-machine
+ * door. It used to be written out here, and the third copy — in
+ * `server/shared-secret.ts` — had drifted into asking a weaker question.
+ */
 function isDeployedRuntime(environment: RuntimeEnvironment = process.env) {
-  const isBuilding = environment.NEXT_PHASE === "phase-production-build";
-
-  return (
-    (environment.NODE_ENV === "production" ||
-      Boolean(environment.VERCEL_ENV?.trim())) &&
-    !isBuilding
-  );
+  return isDeployedRuntimeShared(environment);
 }
 
 export function resolveManagerOrganizationId(
