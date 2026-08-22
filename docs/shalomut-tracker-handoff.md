@@ -18,12 +18,15 @@ and in Git; what was durable in them is below.
 
 Verified 2026-08-22, in this worktree and on the deployed endpoint:
 
-- **`GET /api/health/` answers `commit: 8af02ab`**, read 2026-08-22 after the
-  push described below landed, and `origin/main` is the same commit — so the
-  deployment is level with `main` and carries everything in this section. Read
-  the endpoint again rather than this line whenever the tip matters. The only
-  unrelated modified file in this worktree is `next-env.d.ts`, which is
-  generated and belongs to the owner.
+- **Both halves answer `commit: 262583a`**, read 2026-08-22, and `origin/main`
+  is the same commit — so Core and the AI service are level with `main` and with
+  each other. Read the endpoints again rather than this line whenever the tip
+  matters:
+  `GET https://shalomut-map-demo.vercel.app/api/health/` and
+  `GET https://shalomut-ai-analytics.onrender.com/health`. The only unrelated
+  modified file in this worktree is `next-env.d.ts`, which is generated,
+  belongs to the owner, and flips between `.next/dev/types` and `.next/types`
+  depending on whether `next dev` or `next build` ran last.
 - **The four audit entries that were stranded on a branch are on `main` and
   deployed.** `git reflog show origin/main` records the push that moved the
   branch onto `main`, `5b7f3cc → 8af02ab`, and the four are its linear content:
@@ -120,17 +123,16 @@ Verified 2026-08-22, in this worktree and on the deployed endpoint:
   plan is an index scan on
   `question_answers_response_id_question_id_key`, 3 buffers. The cost comparison
   was made locally, where the table has 4576 rows.
-- **The AI service still serves `e69a5eb`, and the next landing will rebuild
-  it.** Until 2026-08-22 nothing had touched its `buildFilter` paths, so a
-  service commit behind Core's was the expected resting state rather than a
-  missed deploy. The dependency lock changes `Dockerfile` and
-  `ai-analytics-service/**`, which are two of those paths — so whichever push
-  lands it triggers a Render build, and on the free plan the old container stops
-  before the new one answers. Expect a few minutes of `502` and an uptime-monitor
-  alert, and read `/health` afterwards for a commit that is no longer `e69a5eb`.
-  The image was built locally on that lock and the whole service suite ran
-  inside it, so the build itself is not the risk; the downtime window is
-  ordinary for this plan.
+- **The AI service rebuilt on the dependency lock and serves `262583a`.** It
+  had sat at `e69a5eb` for weeks, correctly — nothing had touched its
+  `buildFilter` paths. The lock changes `Dockerfile` and
+  `ai-analytics-service/**`, which are two of them, so landing it triggered a
+  Render build, and that build is the thing worth recording: Render's own
+  builder resolved the hashed lock and installed it, not just a development
+  machine. `/health` answers `online` in under half a second, so the container
+  is awake as well as built. **A push that touches none of those four paths —
+  `ai-analytics-service/**`, `contracts/**`, `Dockerfile`, `render.yaml` — does
+  not rebuild this service and costs no downtime.**
 - **Phase 5 is deployed and the signed-in path was walked there.** That walk
   used the password door, which Production no longer has; it stands as evidence
   for renewal, not as a way in. Signed in as `admin@shalomut.edu.il`

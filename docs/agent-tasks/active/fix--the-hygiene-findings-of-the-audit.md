@@ -261,9 +261,9 @@ The push. `git push` is an owner action here.
 Read 2026-08-22, not remembered:
 
 - Branch `fix/the-hygiene-findings-of-the-audit`, based on `262583a`, which is
-  the tip of `fix/the-ai-service-installs-what-it-was-tested-with`. **That
-  branch is not on `main` either**, so this one stacks on unlanded work: six
-  fix commits here plus the two before them.
+  now `origin/main`: the branch it was stacked on landed during the session, so
+  this one is a clean seven commits on top of the deployed tree rather than a
+  stack on unlanded work.
 
   | commit | |
   | --- | --- |
@@ -284,19 +284,22 @@ Read 2026-08-22, not remembered:
   `git status` through a session that runs both. It was committed into this
   branch's documentation commit by a `git add -A` and taken back out by an
   amend; it is an unstaged modification again, as it was at the start.
-- Nothing is on `origin`. All eight commits are visible only in this worktree.
-- `origin/main` is `8af02ab`.
+- Nothing is on `origin`. All seven commits are visible only in this worktree.
+- `origin/main` is `262583a`, and both deployed halves answer that commit.
 
 ## Next concrete step
 
-Land both branches, which is the owner's action. This one contains the other,
-so one push does it:
+Land it, which is the owner's action:
 
 ```bash
 git push origin fix/the-hygiene-findings-of-the-audit:main
 ```
 
-That push rebuilds the Render AI service as well as Vercel — the dependency
-lock in the commits below touches `Dockerfile` and `ai-analytics-service/**`,
-which are in `render.yaml`'s `buildFilter`. Expect a few minutes of `502` from
-the AI service on the free plan.
+Vercel only. These seven commits touch none of `render.yaml`'s `buildFilter`
+paths — `ai-analytics-service/**`, `contracts/**`, `Dockerfile`, `render.yaml` —
+so the AI service is not rebuilt and there is no downtime window. Afterwards
+read `GET /api/health/` for the new tip.
+
+One thing does want doing by hand, and it is not blocking: run `npm run
+db:clear` once against the local database. It is an owner action in this
+environment, so the new closing message has never actually been printed.

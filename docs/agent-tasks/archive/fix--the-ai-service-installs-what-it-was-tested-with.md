@@ -5,9 +5,10 @@
 - Branch: `fix/the-ai-service-installs-what-it-was-tested-with`
 - Base branch: `main`
 - Base commit: `697109c`
-- Current HEAD: `075c4a6` is the work; the tip is the documentation commit that
-  carries this file
-- Status: complete and verified, committed locally, unpushed
+- Current HEAD: `075c4a6` is the work; `262583a` is the documentation commit
+  that carries this file and is now also `origin/main`
+- Status: closed — landed on `main` as `262583a`, and Render rebuilt the AI
+  service from the lock
 - Last updated: 2026-08-22
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -153,6 +154,13 @@ Nothing on this branch. The push is the owner's.
   one package was altered in a copy of the lock and the install re-run in the
   image: pip refused with `THESE PACKAGES DO NOT MATCH THE HASHES FROM THE
   REQUIREMENTS FILE`, naming expected and received digests.
+- **Render's own builder installed the lock.** This is the half that could not
+  be proved before the push, and it is the half that mattered: a hashed lock
+  that resolves on a development machine still has to resolve on the build
+  service. `GET https://shalomut-ai-analytics.onrender.com/health` answers
+  `{"status":"online","commit":"262583a"}` in under half a second, and Core's
+  `/api/health/` answers the same commit — so the service was rebuilt from
+  these pins rather than left on `e69a5eb`, and it is awake.
 - **`npm run verify:core`, unpiped, `REAL_EXIT=0`.** 1435 Node tests, 576 Python
   tests, build included. `npm run lint:skills` separately, `REAL_EXIT=0`, for
   the verification-skill edit.
@@ -172,11 +180,9 @@ None.
 
 ### Blocked or not run
 
-- **Nothing was deployed.** The Render service still serves `e69a5eb`; the
-  rebuild happens when this lands. The build was exercised locally instead,
-  which is the same `Dockerfile` and the same base image but not the same
-  builder.
 - No `verify:db` run: this branch touches no repository, schema or query.
+- Nothing else. The deployment gap that stood here is closed — see the last
+  entry under "Passed".
 
 ### Environment
 
@@ -186,11 +192,12 @@ database, deployed or local.
 
 ### Residual risk
 
-Low, and it is a build risk rather than a runtime one: if Render's builder
-resolves the image differently from this machine's, the build fails loudly
-rather than deploying something unexpected — which is the property being added.
-The versions themselves are today's resolution of floors that were already in
-force, and the suite passes on them on both interpreters.
+It was a build risk rather than a runtime one — if Render's builder resolved
+the image differently, the build would fail loudly rather than deploy something
+unexpected — and it did not materialize: the build ran and the service answers.
+What remains is the ordinary one: these pins are today's resolution of floors
+that were already in force, and they stay today's until somebody takes an
+upgrade pass.
 
 ## Failed approaches
 
@@ -225,32 +232,20 @@ The push. `git push` is an owner action here.
 
 ## Git state
 
-Read 2026-08-22, not remembered:
+Read 2026-08-22, after the push:
 
-- Branch `fix/the-ai-service-installs-what-it-was-tested-with`, based on
-  `697109c` — which is `main` plus the documentation commit that closed the
-  previous task. `075c4a6` is the work; the tip is the documentation commit
-  carrying this file.
-- Worktree clean apart from ` M next-env.d.ts`, which is generated and belongs
-  to the owner. Nothing staged. `git ls-files -o --exclude-standard` is empty,
-  which is the check that matters here because this repository's untracked
-  cache has hidden a new file before.
-- Nothing is on `origin`. Both commits are visible only in this worktree until
-  the branch is pushed; another checkout or machine sees none of it.
-- `origin/main` is `8af02ab`, so this branch is two commits ahead of the
-  deployment.
+- `origin/main` is `262583a`, which is this branch's tip: `git reflog show
+  origin/main` records `8af02ab → 262583a` as `update by push`. The work is
+  landed and this file joins the archive.
+- The two commits: `075c4a6` is the lock and its wiring, `262583a` the
+  documentation.
+- Vercel and Render both built it; both `/health` endpoints answer `262583a`.
 
 ## Next concrete step
 
-Land it, which is the owner's action:
+None. The work is landed, both halves are deployed, and the one thing that
+could only be checked after the push — whether Render's builder installs the
+hashed lock — has been checked there.
 
-```bash
-git push origin fix/the-ai-service-installs-what-it-was-tested-with:main
-```
-
-That push rebuilds two things, not one: Vercel builds Core as always, and
-Render rebuilds the AI service because `Dockerfile` and `ai-analytics-service/**`
-are in its `buildFilter`. On the free plan the old container stops before the
-new one answers, so expect a few minutes of `502` and an uptime-monitor alert.
-Afterwards read the service's `/health` and expect a commit that is no longer
-`e69a5eb`.
+The open question below is a scheduling question for the owner, not a step in
+this task.
