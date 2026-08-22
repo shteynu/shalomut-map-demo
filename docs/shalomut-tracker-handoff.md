@@ -188,12 +188,26 @@ are consequences of a confirmed write (ADR-032).
 Then the one where a re-analysis hid the round's map, `85ad5dd`: the map a
 manager reads is the newest result the round has, and a run that is queued,
 running or failed now qualifies it on screen instead of replacing it with an
-empty state (ADR-033). **Forty-one entries remain open, three of them high.**
+empty state (ADR-033).
+
+Then the worker's resilience entry: a heartbeat that could not be sent is
+retried, the lease Core granted — not the beat — decides when to stop analysing,
+and a run the worker has to let go is released for its remaining attempts rather
+than failed terminally. The same rule covers a finished map whose delivery ran
+out of attempts against an unreachable Core (ADR-034). **Forty entries remain
+open, two of them high** — the per-screen analytics recompute and the
+administrator overview's N+1.
+
+This one changes the AI service, not Core. Pushing it rebuilds Core on Vercel and
+changes nothing about the running worker: `ai-analytics-service` deploys on
+Render on its own, so until that service is redeployed the deployed run loop
+still fails a paid run on the first blip.
 
 **The remaining entries were re-checked against current code on 2026-08-22**,
 after the owner suspected some had been fixed in passing. Twelve anchors were
 opened and read — the per-screen analytics recompute, the administrator
-overview's N+1, the worker's missing retry, the unpinned Python dependencies,
+overview's N+1, the worker's missing retry (closed since, above), the unpinned
+Python dependencies,
 breakdown cell suppression, the login open redirect, the unverified TLS to the
 database, the shared secret's fail-open branch, the unlimited attempt beacon,
 the share-code alphabet, `clear-db.ts`, and Swagger's unpinned unpkg script.

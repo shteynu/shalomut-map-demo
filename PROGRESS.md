@@ -136,6 +136,15 @@ inside it.
   produces it. The unset configuration default remains rollback-safe `5.0`. A
   published version may gain an optional additive field under ADR-002's stated
   rule; a changed meaning still needs a new version.
+- **A blip between the worker and Core no longer burns a paid run** as of
+  2026-08-22. A heartbeat that could not be sent is retried, and the worker
+  keeps analysing until the lease Core granted has actually run out; a run it
+  then has to let go is released for its remaining attempts rather than failed
+  terminally. The same rule covers a finished map whose delivery ran out of
+  attempts against an unreachable Core. Before this, one timeout or one `502`
+  mid-run cancelled a three-minute analysis, spent up to 28 paid provider calls
+  for nothing, and left the run in a state nothing ever retried, with nobody
+  notified. ADR-034 records it, including what a released run costs.
 - **A re-analysis no longer takes the round's map away** as of 2026-08-22. The
   map a manager reads is the newest result the round has, and a run that is
   queued, running or failed qualifies it on screen instead of replacing it with

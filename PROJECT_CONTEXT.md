@@ -1310,6 +1310,53 @@ map it is amending — that is the worker's business and unchanged here. It does
 not retry a failed run; the run that failed stays failed until someone asks for
 another, which is the separate resilience finding of the 2026-08-21 audit.
 
+### ADR-034: A run is failed for its own reasons, not for the network's
+
+2026-08-22. The worker heartbeats every 30 seconds against a 90-second lease.
+`heartbeat()` read only `404` and `409` as lease loss and `raise_for_status()`ed
+everything else, so one timeout or one `502` from a Core that was busy serving
+manager screens escaped the heartbeat loop, `finally` cancelled a three-minute
+analysis, and `except` sent `fail(..., 'worker_error')`. That state is terminal:
+`claimNext` never picks it up again. Up to 28 paid provider calls were spent, the
+school's map never arrived, and nobody was told. The same ending waited at the
+other end of the run — `HttpResultSink` retries a transient callback four times
+and then raises, so a Core that stayed unreachable for those seven seconds burnt
+a finished map the same way. The three attempts a run is allowed covered only a
+worker that died without saying anything.
+
+**A renewal that could not be sent is retried, three times inside one beat.**
+Every way of not getting an answer is one case — a timeout, a `5xx`, a dropped
+connection — and none of them says the lease is gone. An answer that says so
+(`404`, `409`) is a verdict and is not retried: asking again only takes longer to
+arrive at the same place, while a stale analysis keeps running against a round
+somebody else has already reclaimed.
+
+**The lease, not the beat, decides when to stop.** The worker measures how long
+it has gone without a renewal and keeps analysing until that reaches the 90
+seconds Core grants. This is what `config.py` always claimed the 30/90 pair was
+for. `CORE_LEASE_SECONDS` mirrors `AI_ANALYSIS_JOB_LEASE_MS`, and a test reads
+Core's file so the mirror cannot drift — a worker measuring a longer lease than
+Core grants would spend provider calls on a run another worker already holds.
+
+**Silence releases the lease; it never fails the run.** `LeaseUnreachableError`
+is a `LeaseLostError` for exactly that reason: both mean stop, neither means
+finished. No `fail()` is sent, the lease expires on its own, and expiry plus
+reclaim is the mechanism that hands the run its remaining attempts. The same
+rule covers a result that could not be delivered: `CallbackDeliveryError` already
+carries whether another attempt could change the answer, and a transient one is
+released rather than failed, because the map is made and only the last hop was
+out.
+
+**`fail()` is kept for verdicts.** A refused payload, a stale lease, a crash in
+our own code — these repeat verdict for verdict, and retrying one spends the
+money again to hear it again.
+
+**What this costs.** A released run is analysed again from the beginning, so its
+provider calls are spent again, bounded by the three attempts after which
+`claimNext` marks it `lease_exhausted`. A reclaim also waits out the remainder of
+the lease before it can happen, because the worker cannot tell Core to expire it
+early — Core has no endpoint for that, and adding one is not this change.
+
 ## Environments
 
 The project supports exactly two environments:
