@@ -416,6 +416,24 @@ export interface UpdateOrganizationInput {
   totalStaffCount?: number;
 }
 
+/**
+ * A round as a list of schools needs it: what it is called, where it stands,
+ * and nothing that costs a JSON column to read.
+ *
+ * `surveyDefinition` is the reason this type exists. A round carries its whole
+ * questionnaire — 126 questions on the default instrument — and the
+ * administrator overview needs none of it to say that a school is running a
+ * round called this, with that many responses.
+ */
+export interface SurveyRoundSummary {
+  id: string;
+  organizationId: string;
+  title: string;
+  status: RoundStatus;
+  privacyThreshold: number;
+  createdAt: Date;
+}
+
 export interface UpdateRoundInput {
   title?: string;
   privacyThreshold?: number;

@@ -2,7 +2,12 @@ import {
   decodePublishedAnalytics,
   encodePublishedAnalytics,
 } from '../../analytics/published-analytics';
-import { RoundStatus, SurveyRound, UpdateRoundInput } from '../../types/backend';
+import {
+  RoundStatus,
+  SurveyRound,
+  SurveyRoundSummary,
+  UpdateRoundInput,
+} from '../../types/backend';
 import type { CanonicalRoundAnalytics } from '../../types/canonical-analytics';
 import { IRoundRepository, RoundStatusWrite } from '../interfaces';
 
@@ -126,6 +131,23 @@ export class InMemoryRoundRepository implements IRoundRepository {
   public clear(): void {
     this.rounds.clear();
     this.publishedAnalytics.clear();
+  }
+
+  public async findSummariesByOrganizationIds(
+    organizationIds: readonly string[],
+  ): Promise<SurveyRoundSummary[]> {
+    const wanted = new Set(organizationIds);
+    return Array.from(this.rounds.values())
+      .filter((round) => wanted.has(round.organizationId))
+      .sort((left, right) => left.createdAt.getTime() - right.createdAt.getTime())
+      .map((round) => ({
+        id: round.id,
+        organizationId: round.organizationId,
+        title: round.title,
+        status: round.status,
+        privacyThreshold: round.privacyThreshold,
+        createdAt: round.createdAt,
+      }));
   }
 
   public async findPublishedAnalytics(

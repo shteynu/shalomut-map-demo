@@ -45,6 +45,18 @@ export class InMemorySurveyRepository implements ISurveyRepository {
     return results;
   }
 
+  public async countResponsesByRoundIds(
+    roundIds: readonly string[],
+  ): Promise<Map<string, number>> {
+    const wanted = new Set(roundIds);
+    const counts = new Map<string, number>();
+    for (const response of this.responses.values()) {
+      if (!wanted.has(response.roundId)) continue;
+      counts.set(response.roundId, (counts.get(response.roundId) ?? 0) + 1);
+    }
+    return counts;
+  }
+
   public async hasTokenSubmitted(
     roundId: string,
     tokenHash: string

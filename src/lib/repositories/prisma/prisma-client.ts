@@ -53,6 +53,9 @@ export interface MinimalPrismaClient {
     findMany: (args: any) => Promise<any[]>;
     findFirst: (args: any) => Promise<any>;
     count: (args: any) => Promise<number>;
+    // One count per round for many rounds, which is what keeps a screen that
+    // lists schools from asking per school.
+    groupBy: (args: any) => Promise<any[]>;
     deleteMany: (args?: any) => Promise<any>;
   };
   questionAnswer?: {

@@ -148,6 +148,21 @@ function createMockPrismaClient(): MinimalPrismaClient {
         }
         return count;
       },
+      // Only the shape the repository asks for: group by round, count all,
+      // restricted to a named list. A round with no responses is absent from
+      // the result, which is what PostgreSQL answers too.
+      groupBy: async ({ where }: any) => {
+        const wanted: string[] | undefined = where?.roundId?.in;
+        const counts = new Map<string, number>();
+        for (const res of responses.values()) {
+          if (wanted && !wanted.includes(res.roundId)) continue;
+          counts.set(res.roundId, (counts.get(res.roundId) ?? 0) + 1);
+        }
+        return Array.from(counts, ([roundId, all]) => ({
+          roundId,
+          _count: { _all: all },
+        }));
+      },
       deleteMany: async (args?: any) => deleteMatching(responses, args?.where),
     },
   };

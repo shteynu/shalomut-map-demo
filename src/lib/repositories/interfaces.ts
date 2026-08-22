@@ -1,6 +1,7 @@
 import {
   Organization,
   SurveyDefinition,
+  SurveyRoundSummary,
   QuestionAnswerRecord,
   RoundStatus,
   SurveyAttemptClientStage,
@@ -61,6 +62,17 @@ export interface IRoundRepository {
   findById(id: string): Promise<SurveyRound | null>;
   findByShareCode(shareCode: string): Promise<SurveyRound | null>;
   findByOrganizationId(organizationId: string): Promise<SurveyRound[]>;
+  /**
+   * Every round of many schools, without the questionnaires.
+   *
+   * A list of schools needs each school's rounds to count them and to name the
+   * current one; it needs no `surveyDefinition`, and reading one per round is
+   * how a screen that shows six fields pulls megabytes. Named ids rather than
+   * "all of them" so a paged console asks about its page.
+   */
+  findSummariesByOrganizationIds(
+    organizationIds: readonly string[],
+  ): Promise<SurveyRoundSummary[]>;
   update(id: string, input: UpdateRoundInput): Promise<SurveyRound | null>;
   /**
    * Move a round from `expectedCurrent` to `status`, and only from there.
@@ -300,5 +312,15 @@ export interface ISurveyRepository {
   findResponsesByRoundId(roundId: string): Promise<SurveyResponseRecord[]>;
   hasTokenSubmitted(roundId: string, tokenHash: string): Promise<boolean>;
   getResponseCount(roundId: string): Promise<number>;
+  /**
+   * How many responses each of these rounds has, counted in one query.
+   *
+   * A round with no responses is absent from the result rather than present as
+   * zero — the caller is reading counts for rounds it already knows about, and
+   * `?? 0` is the honest reading of "not in the group".
+   */
+  countResponsesByRoundIds(
+    roundIds: readonly string[],
+  ): Promise<Map<string, number>>;
   deleteByRoundId(roundId: string): Promise<void>;
 }

@@ -3,6 +3,7 @@ import {
   RoundStatus,
   SurveyDefinition,
   SurveyRound,
+  SurveyRoundSummary,
   UpdateRoundInput,
 } from '../../types/backend';
 import {
@@ -270,6 +271,36 @@ export class PrismaRoundRepository implements IRoundRepository {
       outcome: 'status_changed',
       current: this.mapToDomain(current).status,
     };
+  }
+
+  public async findSummariesByOrganizationIds(
+    organizationIds: readonly string[],
+  ): Promise<SurveyRoundSummary[]> {
+    if (organizationIds.length === 0) return [];
+
+    const rows = await this.prisma.surveyRound.findMany({
+      where: { organizationId: { in: [...organizationIds] } },
+      // The whole point of the method: six scalar columns instead of every
+      // round's questionnaire.
+      select: {
+        id: true,
+        organizationId: true,
+        title: true,
+        status: true,
+        privacyThreshold: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    return rows.map((row: any) => ({
+      id: row.id,
+      organizationId: row.organizationId,
+      title: row.title,
+      status: row.status as RoundStatus,
+      privacyThreshold: row.privacyThreshold,
+      createdAt: new Date(row.createdAt),
+    }));
   }
 
   public async findPublishedAnalytics(

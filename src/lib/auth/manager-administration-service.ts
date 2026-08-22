@@ -3,7 +3,11 @@ import type {
   IRoundRepository,
   ISurveyRepository,
 } from "../repositories/interfaces";
-import type { Organization, RoundStatus, SurveyRound } from "../types/backend";
+import type {
+  Organization,
+  RoundStatus,
+  SurveyRoundSummary,
+} from "../types/backend";
 import type { IManagerRepository } from "./domain-contract";
 import type { Manager, ManagerRole, OrganizationMembership } from "./types";
 
@@ -113,7 +117,9 @@ function stands(membership: OrganizationMembership): boolean {
  * of its own list, not out of its history, and a school whose only round is
  * archived should not read as a school that never ran one.
  */
-function currentRoundOf(rounds: SurveyRound[]): SurveyRound | null {
+function currentRoundOf(
+  rounds: SurveyRoundSummary[],
+): SurveyRoundSummary | null {
   if (rounds.length === 0) return null;
 
   const active = rounds.find((round) => round.status === "active");
@@ -122,6 +128,19 @@ function currentRoundOf(rounds: SurveyRound[]): SurveyRound | null {
   return rounds.reduce((newest, round) =>
     round.createdAt.getTime() > newest.createdAt.getTime() ? round : newest,
   );
+}
+
+function groupBy<T>(
+  items: readonly T[],
+  key: (item: T) => string,
+): Map<string, T[]> {
+  const grouped = new Map<string, T[]>();
+  for (const item of items) {
+    const bucket = grouped.get(key(item));
+    if (bucket) bucket.push(item);
+    else grouped.set(key(item), [item]);
+  }
+  return grouped;
 }
 
 /**
@@ -142,12 +161,19 @@ export class ManagerAdministrationService {
    * Every school, everyone in it, everyone who is not in one, and whether
    * anything is happening in each.
    *
-   * Three queries per school and none per round: the memberships, the school's
-   * rounds, and a response count for the one round the screen names. The
-   * response count is deliberately not asked for every round — that would make
-   * the cost of this screen grow with a school's history rather than with the
-   * number of schools, and the deployed database is in Seoul at roughly 180 ms
-   * a query.
+   * Five queries for the whole screen, whatever the number of schools: the
+   * schools, the people, every membership among them, every round of them as a
+   * summary, and one grouped count of the responses to the rounds the screen
+   * actually names. It used to ask three per school inside a loop, each one
+   * awaited before the next — some 180 ms apiece against the deployed database,
+   * so a hundred schools was around 300 round trips in sequence and a function
+   * that timed out before it answered.
+   *
+   * The rounds arrive as summaries because a round carries its whole
+   * questionnaire, and a list of schools needs none of it. Response counts are
+   * still asked only for the round each school is currently about: counting
+   * every round of every school would make this screen grow with the schools'
+   * histories rather than with their number.
    */
   public static async loadOverview(
     orgRepo: IOrganizationRepository,
@@ -161,14 +187,38 @@ export class ManagerAdministrationService {
     ]);
     const byId = new Map(managers.map((manager) => [manager.id, manager]));
     const attached = new Set<string>();
+    const organizationIds = organizations.map((organization) => organization.id);
 
-    const schools: SchoolWithPeople[] = [];
-    for (const organization of organizations) {
-      const memberships = await managerRepo.findMembershipsByOrganizationId(
-        organization.id,
-      );
+    const [memberships, roundSummaries] = await Promise.all([
+      managerRepo.findMembershipsByOrganizationIds(organizationIds),
+      roundRepo.findSummariesByOrganizationIds(organizationIds),
+    ]);
+
+    const membershipsByOrganization = groupBy(
+      memberships,
+      (membership) => membership.organizationId,
+    );
+    const roundsByOrganization = groupBy(
+      roundSummaries,
+      (round) => round.organizationId,
+    );
+
+    const currentRounds = new Map(
+      organizationIds.map((organizationId) => [
+        organizationId,
+        currentRoundOf(roundsByOrganization.get(organizationId) ?? []),
+      ]),
+    );
+    const responseCounts = await surveyRepo.countResponsesByRoundIds(
+      Array.from(currentRounds.values())
+        .filter((round): round is SurveyRoundSummary => round !== null)
+        .map((round) => round.id),
+    );
+
+    const schools: SchoolWithPeople[] = organizations.map((organization) => {
       const people = [];
-      for (const membership of memberships) {
+      for (const membership of membershipsByOrganization.get(organization.id) ??
+        []) {
         const manager = byId.get(membership.managerId);
         // A membership naming a manager who is gone is a row worth not
         // rendering rather than a crash: the audit log keeps what happened.
@@ -177,16 +227,17 @@ export class ManagerAdministrationService {
         people.push({ manager, membership });
       }
 
-      const rounds = await roundRepo.findByOrganizationId(organization.id);
-      const current = currentRoundOf(rounds);
+      const current = currentRounds.get(organization.id) ?? null;
+      // Absent from the grouped count means no responses, which is what a
+      // round nobody has answered looks like in a `GROUP BY`.
       const responseCount = current
-        ? await surveyRepo.getResponseCount(current.id)
+        ? (responseCounts.get(current.id) ?? 0)
         : 0;
 
-      schools.push({
+      return {
         organization,
         people,
-        roundCount: rounds.length,
+        roundCount: (roundsByOrganization.get(organization.id) ?? []).length,
         currentRound: current
           ? {
               id: current.id,
@@ -197,8 +248,8 @@ export class ManagerAdministrationService {
               isUnlocked: responseCount >= current.privacyThreshold,
             }
           : null,
-      });
-    }
+      };
+    });
 
     return {
       schools,

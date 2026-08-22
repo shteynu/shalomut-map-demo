@@ -22,6 +22,18 @@ export interface IManagerRepository {
     organizationId: string,
   ): Promise<OrganizationMembership[]>;
   /**
+   * The same question asked about many schools at once.
+   *
+   * The administrator overview needs every school's people, and asking school
+   * by school made the screen cost one round trip per school — some 180 ms
+   * apiece against the deployed database, which is how a hundred schools became
+   * a function timeout. Named ids rather than "all of them" so the day the
+   * console pages its list, the page is what it asks about.
+   */
+  findMembershipsByOrganizationIds(
+    organizationIds: readonly string[],
+  ): Promise<OrganizationMembership[]>;
+  /**
    * Every person who may sign in.
    *
    * Only the administrator area calls this, and it is the reason that area is
@@ -108,6 +120,15 @@ export class InMemoryManagerRepository implements IManagerRepository {
     return Array.from(this.memberships.values())
       .flat()
       .filter((membership) => membership.organizationId === organizationId);
+  }
+
+  async findMembershipsByOrganizationIds(
+    organizationIds: readonly string[],
+  ): Promise<OrganizationMembership[]> {
+    const wanted = new Set(organizationIds);
+    return Array.from(this.memberships.values())
+      .flat()
+      .filter((membership) => wanted.has(membership.organizationId));
   }
 
   async findAllManagers(): Promise<Manager[]> {

@@ -1,0 +1,11 @@
+-- Every read that starts from a school filters `survey_rounds` by this column,
+-- and until now none of them could use an index: the only index on
+-- `organization_id` is partial, `WHERE status = 'active'`, so it holds a
+-- fraction of the rows and answers none of these queries.
+--
+-- Measured on 5 000 rounds (500 schools, questionnaires included, 5.7 MB):
+-- one school's rounds went from a 0.50 ms sequential scan to a 0.034 ms index
+-- scan. The administrator overview, which asks about every school at once, is
+-- a sequential scan either way and the planner says so — this is for the
+-- per-school reads that every manager screen makes.
+CREATE INDEX "survey_rounds_organization_id_idx" ON "survey_rounds"("organization_id");

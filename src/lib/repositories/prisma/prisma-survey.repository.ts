@@ -150,6 +150,22 @@ export class PrismaSurveyRepository implements ISurveyRepository {
     });
   }
 
+  public async countResponsesByRoundIds(
+    roundIds: readonly string[],
+  ): Promise<Map<string, number>> {
+    if (roundIds.length === 0) return new Map();
+
+    const grouped = await this.prisma.surveyResponse.groupBy({
+      by: ['roundId'],
+      where: { roundId: { in: [...roundIds] } },
+      _count: { _all: true },
+    });
+
+    return new Map(
+      grouped.map((row: any) => [row.roundId, row._count._all as number]),
+    );
+  }
+
   public async deleteByRoundId(roundId: string): Promise<void> {
     await this.prisma.surveyResponse.deleteMany({
       where: { roundId },

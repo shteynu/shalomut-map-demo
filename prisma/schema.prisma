@@ -134,6 +134,13 @@ model SurveyRound {
   goals               RoundGoal[]
   definitionVersions  SurveyDefinitionVersion[]
 
+  // Every read that starts from a school scans this column: the manager screens
+  // through `findByOrganizationId`, the administrator overview through
+  // `findSummariesByOrganizationIds`. The partial unique index below cannot
+  // serve them — it holds only the active rounds. Measured at 5 000 rounds:
+  // 0.50 ms sequential scan against 0.034 ms index scan for one school.
+  @@index([organizationId])
+
   // A school runs one round at a time, enforced by the partial unique index
   // `survey_rounds_one_active_per_organization` on `(organization_id) where
   // status = 'active'`. Prisma cannot express a partial index here, so it is
