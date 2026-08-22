@@ -208,8 +208,20 @@ stopped collecting keeps the numbers it published in a new
 basis of calculation is unchanged (ADR-035). **This one carries a migration** —
 `20260822180000_a_closed_round_keeps_the_numbers_it_published` — which a deployed
 build applies on its own since ADR-031; nothing to do by hand, but the first
-build after this push is the one that adds the column. **Thirty-nine entries
-remain open, one of them high** — the administrator overview's N+1.
+build after this push is the one that adds the column.
+
+Then the last high finding, the administrator overview's N+1 — closed in the half
+it named as the mechanism. The screen asks five queries for the whole list
+instead of three per school in a loop, rounds arrive as summaries without their
+questionnaires, and response counts come back from one `GROUP BY` (ADR-036). It
+carries a migration too: an index on `survey_rounds(organization_id)`, added
+because the planner was asked rather than because the finding said "unscannable"
+— measured at 5 000 rounds, it does nothing for the overview and takes one
+school's rounds from 0.50 ms to 0.034 ms, which is the per-school read every
+manager screen makes. **The second half of that entry stays open and is an owner
+decision**: the console still renders every school with no pagination and no
+server-side search. **Thirty-nine entries remain open; none of them is a high
+finding still open in full.**
 
 **The remaining entries were re-checked against current code on 2026-08-22**,
 after the owner suspected some had been fixed in passing. Twelve anchors were

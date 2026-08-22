@@ -1071,7 +1071,11 @@ the same act and stays: it counts schools, not people.
 **Three queries per school and none per round.** The response count is asked only
 for the round the card names, so the screen's cost grows with the number of
 schools rather than with any school's history — the deployed database is in Seoul
-and the functions are in Washington.
+and the functions are in Washington. *Superseded by ADR-036 on 2026-08-22: the
+per-school cost was accepted as three queries and turned out to be three
+sequential round trips, which at a hundred schools is a function timeout. The
+screen is now a fixed number of queries. What this paragraph decided and ADR-036
+keeps is the other half — no count per round.*
 
 **Reading the list is still not a visit.** An administrator opening a school is
 recorded in `audit_events` (ADR-026); the list that says a school has four rounds
@@ -1416,6 +1420,51 @@ about `expectedCurrent`.
 the demographic breakdown, which partitions the responses themselves, and the
 filling report, which needs per-respondent timing. Neither is on the path every
 screen takes.
+
+### ADR-036: The administrator's screen costs the same whatever the platform holds
+
+2026-08-22. ADR-029 accepted a cost linear in the number of schools and wrote it
+down as "three queries per school". What it did not say is that the three sat
+inside a loop, each awaited before the next: memberships, the school's rounds
+with their questionnaires, and a response count. The deployed database answers in
+roughly 180 ms, so a hundred schools is around 300 sequential round trips — some
+54 seconds, past the function timeout, on the only administration screen there
+is.
+
+**Five queries, whatever the number of schools.** The schools, the people, every
+membership among them, every round of them as a summary, and one grouped count
+of the responses to the rounds the screen names. A test counts the calls for one
+school and for twenty-five and asserts the two lists are identical, so the loop
+cannot come back unnoticed.
+
+**Rounds arrive as `SurveyRoundSummary`.** Six scalar columns, because a round
+carries its whole questionnaire — 126 questions on the default instrument — and a
+list of schools needs none of it. That is invisible in what the repository
+returns, which is a summary either way, so the test reads the query rather than
+its result.
+
+**The reads name their ids rather than asking for everything.** The console
+renders every school today, so "all of them" would have been the same query; the
+day it pages its list, the page is what these methods are asked about.
+
+**A round with no responses is absent from the grouped count.** That is what a
+`GROUP BY` says about it, and the caller reads it as `?? 0` rather than the
+repository inventing zeroes for rows PostgreSQL never mentioned.
+
+**An index on `survey_rounds(organization_id)`, and the measurement that decided
+it.** The only index on that column was the partial unique one — `WHERE status =
+'active'` — which holds a fraction of the rows and serves none of these reads. At
+5 000 rounds across 500 schools, questionnaires included: one school's rounds
+went from a 0.50 ms sequential scan to a 0.034 ms index scan, and the overview's
+own query is a sequential scan either way because it wants every row, which the
+planner confirms. So the index is not for this screen at all. It is for the
+per-school read every manager screen makes, and it is in this change because
+this is where the measurement was taken.
+
+**What is left, and it is a product decision.** The console still renders every
+school with no pagination and no server-side search. That is the second half of
+the audit's entry and it is not closed here: how many schools to a page, and what
+searching them means, is the owner's call rather than a refactor.
 
 ## Environments
 

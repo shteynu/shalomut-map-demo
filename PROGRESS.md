@@ -136,6 +136,15 @@ inside it.
   produces it. The unset configuration default remains rollback-safe `5.0`. A
   published version may gain an optional additive field under ADR-002's stated
   rule; a changed meaning still needs a new version.
+- **The administrator's screen costs the same whatever the platform holds** as
+  of 2026-08-22. It asks five queries for the whole list instead of three per
+  school inside a loop; at a hundred schools that was around 300 sequential
+  round trips against a database some 180 ms away, which is a function timeout
+  on the only administration screen there is. Rounds arrive as summaries, so a
+  list of schools no longer reads 126-question questionnaires it does not
+  display. ADR-036 records it, supersedes half of ADR-029, and names what is
+  left: the console still renders every school without pagination or search,
+  which is a product decision rather than a refactor.
 - **A round's numbers are derived once, not once per screen** as of
   2026-08-22. A round that is still collecting reads no answer rows at all —
   its result is locked whatever they say, and the locked payload needs only a
