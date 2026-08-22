@@ -136,6 +136,15 @@ inside it.
   produces it. The unset configuration default remains rollback-safe `5.0`. A
   published version may gain an optional additive field under ADR-002's stated
   rule; a changed meaning still needs a new version.
+- **A round status write that failed says so** as of 2026-08-22. The write is
+  conditional on the status the request read, and its outcome is named rather
+  than collapsed into `null`, so audit rows, analysis dispatches and
+  `success: true` are consequences of a confirmed write. Before this, a refused
+  activation was recorded as a transition that never happened, a failed close
+  still queued the closing analysis for a round that was still collecting, and a
+  builder that could not start a round reported a successful save after closing
+  the round the school had been running. ADR-032 records the decision and what
+  it deliberately does not make atomic.
 - **A deployed build applies its own migrations** as of 2026-08-22, and fails
   rather than shipping when it cannot. It was a hand step before that, which
   cost a broken deployment on 2026-08-04 and one manual command after every

@@ -19,12 +19,23 @@ and in Git; what was durable in them is below.
 Verified 2026-08-22, in this worktree and on the deployed endpoint:
 
 - **`GET /api/health/` answers `commit: b4f9b50`**, read 2026-08-22 after the
-  redeploy that restarted the pipeline, and that is `origin/main` — so the
-  deployed endpoint is the pushed tip and carries every runtime change of the
-  day: the bounded connection pool, the dropped index, and the build that
-  applies its own migrations. Read the endpoint again rather than this line
-  whenever the tip matters. The only modified file in this worktree is
-  `next-env.d.ts`, which is generated and belongs to the owner.
+  redeploy that restarted the pipeline. It carries the day's earlier runtime
+  changes — the bounded connection pool, the dropped index, and the build that
+  applies its own migrations — but **not** the conditional round status write
+  below, which is committed on `fix/a-status-write-that-failed-says-so` and
+  reaches the deployment when that branch is pushed and Vercel builds it. Read
+  the endpoint again rather than this line whenever the tip matters. The only
+  unrelated modified file in this worktree is `next-env.d.ts`, which is
+  generated and belongs to the owner.
+- **A round status write that failed now says which failure it was.** The write
+  is conditional on the status the request read, so a transition validated
+  against a stale read is refused by the database rather than applied over
+  whatever happened since, and `RoundStatusWrite` names the five outcomes the
+  old `null` collapsed. The audit row and the closing analysis are now
+  consequences of a confirmed write — before this, a failed `active → closed`
+  still queued the analysis and produced a map for a round that was still
+  collecting. ADR-032 records it, including what it deliberately leaves
+  non-atomic.
 - **A collecting round no longer publishes its numbers, on the deployment too.**
   `648465c..66707ae` closed the critical finding of the 2026-08-21 audit: an
   open round republished its full per-question aggregates on every read, so two
@@ -166,8 +177,14 @@ index on `question_answers` is gone.
 
 Then the migrations one, which is why the hand step above existed at all: a
 deployed build now applies its pending migrations before it builds anything and
-fails rather than shipping when it cannot (ADR-031). Forty-four entries remain
-open, six of them high.
+fails rather than shipping when it cannot (ADR-031).
+
+Then the fail-open cluster on the round status write, `12980ca` — two entries
+and five findings, because four of them met on one path. The write is now
+conditional on the status the request read, its outcome is named instead of
+collapsed into `null`, and audit rows, analysis dispatches and `success: true`
+are consequences of a confirmed write (ADR-032). **Forty-two entries remain
+open, four of them high.**
 
 **One owner item, outside the repository.** Rotating `GEMINI_API_KEY` before any
 paid round blocks nothing and is still open. The unused Google client secret was

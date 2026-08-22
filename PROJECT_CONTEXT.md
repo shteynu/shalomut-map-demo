@@ -1191,6 +1191,73 @@ skipped the build. The audit's suggestion of a startup `migrate status` that
 puts the app into maintenance instead of answering 500 per query is not built
 here, and is not implied by this decision.
 
+### ADR-032: A round's status write is conditional, and its outcome is named
+
+2026-08-22. `IRoundRepository.updateStatus` answered `SurveyRound | null` and
+caught every database error into that `null`. Four things therefore looked
+identical to a caller: the round no longer exists, the partial unique index
+refused the school a second active round, another request had already moved the
+status, and the connection dropped. None of the callers could tell them apart,
+so all of them read `null` as nothing worth reporting.
+
+**What that cost.** The PATCH route wrote `ROUND_STATUS_UPDATED` and answered
+`success: true, round: null` for transitions that never happened — an audit log
+recording a state the round never reached. For `closed` it went on to queue the
+closing analysis, so a failed `active → closed` produced a map for a round that
+was still collecting, which is the single-basis rule of ADR-030 broken from the
+other end. The builder closed the school's running round, met the index on the
+activation that followed, and reported a successful save with an empty
+`closedRoundTitles` — leaving the school with no live round and no sentence
+saying which one had stopped.
+
+**The write is conditional.** `updateStatus(id, status, expectedCurrent)` sends
+the expected status into the `WHERE` of an `updateMany`, so the database decides
+whether the transition still applies rather than a read taken moments earlier.
+Two requests that both read `active` produce one write and one refusal. The
+parameter is required rather than optional, because an omitted expectation is
+exactly the unconditional write this replaces, and an optional one would be left
+out.
+
+**The outcome is named.** `RoundStatusWrite` is `written`, `not_found`,
+`status_changed`, `another_round_is_active` or `write_failed`, and
+`describeRefusedStatusWrite` maps those to one set of answers used by every
+route: 404 for a round that is gone, 409 for a conflict the manager can resolve
+by looking at the school's rounds, 500 only for a failure that is ours. The
+refusal names the running round, because a manager whose activation was refused
+needs to know which round refused it. The database's own words are not
+forwarded; a driver message is for a log.
+
+**Audit rows, dispatches and `success: true` are consequences of a confirmed
+write.** That is the rule the cluster comes down to, and it is what the tests
+hold. Two paths report a partial outcome rather than a failure, because a
+partial outcome is what happened: a reset whose erasure succeeded but whose
+return to draft did not says both and carries the deleted counts, and a builder
+save that stored the questionnaire but could not start the round says both and
+names the rounds it closed on the way.
+
+**The in-memory repository enforces one running round per school.** It has no
+constraints and never refused anything, so it was the one place the invariant
+did not hold — and nearly every test of a refused activation runs against it. A
+repository that cannot refuse proves the handling works by never reaching it.
+
+**How the index reports itself was measured, not assumed.** The adapter-backed
+runtime names this constraint by its *columns* —
+`meta.driverAdapterError.cause.constraint.fields` is `['organization_id']` —
+with `survey_rounds_one_active_per_organization` appearing only inside the
+driver's message, and `meta.target` undefined. A reader written for
+`constraint.index` called a real refusal an unknown write failure; the
+PostgreSQL suite is what caught it. Any unrecognised `P2002` stays
+`write_failed`, because answering an unknown constraint with "another round is
+active" would explain a real defect away in the manager's own words.
+
+**What this does not do.** It does not make the multi-write paths atomic. The
+builder still closes the previous round and then activates the new one as two
+writes, and `createAndSaveRound` still closes before creating; the repository
+interface has no transaction primitive. What changed is that a jam between those
+writes is now reported instead of absorbed — a sibling that could not be closed
+still holds the school's active slot, so the activation meets the index and
+comes back as `another_round_is_active`.
+
 ## Environments
 
 The project supports exactly two environments:
