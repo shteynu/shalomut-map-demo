@@ -12,7 +12,10 @@ import type { RoundSwitcherOptions } from "@/lib/rounds/round-options";
 import type { AiInsightsUiState } from "@/lib/hooks/use-ai-insights";
 import { useAiInsights } from "@/lib/hooks/use-ai-insights";
 import type { WellbeingDimensionId, WellbeingStatus } from "@/lib/shalomut-source";
-import { DashboardAiInsightsState } from "./dashboard-ai-insights-state";
+import {
+  DashboardAiInsightsState,
+  DashboardAiRefreshNotice,
+} from "./dashboard-ai-insights-state";
 import { DashboardMapInteractive } from "./dashboard-map-interactive";
 import { DashboardHeading } from "./dashboard-heading";
 import { DashboardHomeLink } from "./dashboard-home-link";
@@ -243,14 +246,23 @@ function DashboardMapReady({
           />
 
           {/* Beside the summary, not above the map: the gap is a fact about
-              this analysis, and the sidebar is where the analysis is read. */}
+              this analysis, and the sidebar is where the analysis is read.
+              The re-analysis note joins it for the same reason, and only here:
+              every dashboard screen is reached through this one, and the same
+              sentence repeated on four of them would be read on none. */}
           {state.status === "ready" ? (
-            <DashboardPartialMapNotice
-              gaps={state.value.gapsByReason}
-              deterministicSummaries={
-                state.value.dimensionsWithDeterministicSummary
-              }
-            />
+            <>
+              <DashboardAiRefreshNotice
+                refresh={state.refresh}
+                onRetry={reload}
+              />
+              <DashboardPartialMapNotice
+                gaps={state.value.gapsByReason}
+                deterministicSummaries={
+                  state.value.dimensionsWithDeterministicSummary
+                }
+              />
+            </>
           ) : null}
 
           <button type="button" className="primary-button" onClick={() => window.print()}>

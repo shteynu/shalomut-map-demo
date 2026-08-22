@@ -3247,6 +3247,31 @@ p.dashboard-blob-provenance {
   animation: ai-insights-spin 900ms linear infinite;
 }
 
+/*
+ * The map is real and something is happening to it. A band rather than a panel:
+ * the panel shapes below replace the content, and this one qualifies content
+ * that is on screen and readable.
+ */
+.dashboard-ai-refresh-note {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: min(44rem, 100%);
+  margin: 1.25rem auto 0;
+  padding: 0.7rem 1rem;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-panel-organic);
+  background: var(--surface-panel);
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.55;
+  text-align: start;
+}
+
+.dashboard-ai-refresh-note svg {
+  flex: none;
+}
+
 @keyframes ai-insights-spin {
   to {
     transform: rotate(1turn);

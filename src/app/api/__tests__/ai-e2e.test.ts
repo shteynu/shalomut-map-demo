@@ -382,7 +382,7 @@ test('two dynamic questionnaires cross Core MCP -> Python -> callback with exact
         { params: Promise.resolve({ roundId: fixture.roundId }) },
       );
       assert.strictEqual(getResponse.status, 200);
-      const persisted = await getResponse.json();
+      const persisted = (await getResponse.json()).result;
       assert.strictEqual(
         persisted.contractVersion,
         DEFAULT_PRODUCED_ANALYTICS_CONTRACT_VERSION,
@@ -566,7 +566,7 @@ test('a 5.0 round carries its distributions to Python and back under Core verifi
       { params: Promise.resolve({ roundId: fixture.roundId }) },
     );
     assert.strictEqual(getResponse.status, 200);
-    const persisted = await getResponse.json();
+    const persisted = (await getResponse.json()).result;
     assert.strictEqual(persisted.contractVersion, '5.0');
     assert.deepStrictEqual(
       persisted.stones[surveyInstrument.dimensions[0].id].metrics[0]

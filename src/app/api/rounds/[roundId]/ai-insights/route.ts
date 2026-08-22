@@ -80,7 +80,19 @@ export async function GET(request: Request, { params }: RouteParams) {
 
     const result = await readAiInsights(roundId, repositories);
     if (result.outcome === 'found') {
-      return NextResponse.json(result.insights);
+      /*
+       * An envelope rather than the payload itself, because the map is only
+       * half of what the screen needs: a re-analysis that is queued, running or
+       * failed leaves the previous map readable, and the manager has to be told
+       * that is what they are looking at. `result` keeps the wire contract
+       * intact — the client still validates that object and nothing else — and
+       * `run` is Core's own field, which is why it sits beside the payload and
+       * not inside it.
+       */
+      return NextResponse.json({
+        result: result.insights,
+        run: result.run ? runSummary(result.run) : null,
+      });
     }
 
     return NextResponse.json(

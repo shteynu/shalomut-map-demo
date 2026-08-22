@@ -7,9 +7,33 @@ import type { DashboardInsightsDto } from './dashboard/dashboard-insights';
  * `StoneMapResult`; everything downstream — the hook, the screens — holds the
  * presentation DTO and cannot read a payload field by name.
  */
+/**
+ * What is happening to the map the manager is looking at.
+ *
+ * Present only when the newest run has not produced the map on screen — that
+ * is, when a re-analysis is queued, running, or has failed. A map with no
+ * `refresh` is the current one and nothing is replacing it.
+ *
+ * This exists because the map now survives a re-analysis. Without the note the
+ * screen would be honest about the data and silent about the work: a manager
+ * who pressed "rewrite this dimension" would see the old map, no spinner, and
+ * no way to tell whether anything had happened.
+ */
+export type AiInsightsRefreshState =
+  | { state: 'running' }
+  | { state: 'failed'; failureCode: string | null };
+
 export type AiInsightsLoadResult =
-  | { status: 'ready'; value: DashboardInsightsDto }
-  | { status: 'locked'; value: DashboardInsightsDto }
+  | {
+      status: 'ready';
+      value: DashboardInsightsDto;
+      refresh?: AiInsightsRefreshState;
+    }
+  | {
+      status: 'locked';
+      value: DashboardInsightsDto;
+      refresh?: AiInsightsRefreshState;
+    }
   | { status: 'not-found' }
   | { status: 'running' }
   | { status: 'error'; error: string };
@@ -17,7 +41,29 @@ export type AiInsightsLoadResult =
 interface AiInsightsRunState {
   run?: {
     state?: unknown;
+    failureCode?: unknown;
   };
+}
+
+/**
+ * The run beside a map that was read successfully. A `succeeded` run is the one
+ * that produced this map, so it qualifies nothing and is reported as absent.
+ */
+function refreshStateOf(
+  run: AiInsightsRunState['run'],
+): AiInsightsRefreshState | undefined {
+  if (run?.state === 'queued' || run?.state === 'running') {
+    return { state: 'running' };
+  }
+
+  if (run?.state === 'failed') {
+    return {
+      state: 'failed',
+      failureCode: typeof run.failureCode === 'string' ? run.failureCode : null,
+    };
+  }
+
+  return undefined;
 }
 
 export async function loadAiInsights(
@@ -68,14 +114,24 @@ export async function loadAiInsights(
       };
     }
 
-    const payload: unknown = await response.json();
-    const validation = validateStoneMapResult(payload, roundId);
+    // The envelope: `result` is the contract payload and the only thing
+    // validated as one, `run` is Core's account of the newest run.
+    const envelope = (await response.json()) as {
+      result?: unknown;
+    } & AiInsightsRunState;
+    const validation = validateStoneMapResult(envelope?.result, roundId);
     if (!validation.ok) {
       return { status: 'error', error: validation.error };
     }
 
+    const refresh = refreshStateOf(envelope?.run);
+
     if (validation.value.isLocked) {
-      return { status: 'locked', value: toDashboardInsights(validation.value) };
+      return {
+        status: 'locked',
+        value: toDashboardInsights(validation.value),
+        refresh,
+      };
     }
 
     if (
@@ -88,7 +144,11 @@ export async function loadAiInsights(
       };
     }
 
-    return { status: 'ready', value: toDashboardInsights(validation.value) };
+    return {
+      status: 'ready',
+      value: toDashboardInsights(validation.value),
+      refresh,
+    };
   } catch (error) {
     return {
       status: 'error',

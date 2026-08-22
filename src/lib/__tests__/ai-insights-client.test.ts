@@ -32,16 +32,66 @@ test('loadAiInsights returns a validated ready state', async () => {
   const result = await loadAiInsights(
     'round-ui',
     async () =>
-      new Response(JSON.stringify(createStoneMap()), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      }),
+      new Response(
+        JSON.stringify({
+          result: createStoneMap(),
+          run: { id: 'run-1', state: 'succeeded' },
+        }),
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      ),
   );
 
   assert.strictEqual(result.status, 'ready');
   if (result.status === 'ready') {
     assert.strictEqual(result.value.stones.balance?.status, 'red');
+    // The run that produced this map qualifies nothing, so no note is offered.
+    assert.strictEqual(result.refresh, undefined);
   }
+});
+
+test('a map being replaced says so instead of disappearing', async () => {
+  const running = await loadAiInsights(
+    'round-ui',
+    async () =>
+      new Response(
+        JSON.stringify({
+          result: createStoneMap(),
+          run: { id: 'run-2', state: 'running' },
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      ),
+  );
+
+  assert.strictEqual(running.status, 'ready');
+  assert.deepStrictEqual(
+    running.status === 'ready' ? running.refresh : null,
+    { state: 'running' },
+  );
+
+  const failed = await loadAiInsights(
+    'round-ui',
+    async () =>
+      new Response(
+        JSON.stringify({
+          result: createStoneMap(),
+          run: {
+            id: 'run-3',
+            state: 'failed',
+            failureCode: 'provider_unavailable',
+          },
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      ),
+  );
+
+  assert.strictEqual(failed.status, 'ready');
+  assert.deepStrictEqual(
+    failed.status === 'ready' ? failed.refresh : null,
+    { state: 'failed', failureCode: 'provider_unavailable' },
+  );
 });
 
 test('loadAiInsights distinguishes not-found and locked states', async () => {
@@ -70,11 +120,14 @@ test('loadAiInsights distinguishes not-found and locked states', async () => {
     async () =>
       new Response(
         JSON.stringify({
-          contractVersion: '1.0',
-          roundId: 'round-ui',
-          isLocked: true,
-          status: 'locked_error',
-          errorMessage: 'Privacy lock active',
+          result: {
+            contractVersion: '1.0',
+            roundId: 'round-ui',
+            isLocked: true,
+            status: 'locked_error',
+            errorMessage: 'Privacy lock active',
+          },
+          run: { id: 'run-1', state: 'succeeded' },
         }),
         {
           status: 200,

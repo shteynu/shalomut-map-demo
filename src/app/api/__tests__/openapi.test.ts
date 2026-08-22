@@ -49,15 +49,33 @@ describe('OpenAPI Specification Integrity', () => {
 
   it('documents the durable AI job lifecycle and worker authentication', () => {
     const spec = JSON.parse(fs.readFileSync(openapiPath, 'utf8'));
-    const missingRun =
-      spec.paths['/api/rounds/{roundId}/ai-insights'].get.responses['404']
-        .content['application/json'].schema.properties.run;
-    assert.deepStrictEqual(missingRun.properties.state.enum, [
+    const runSummary = spec.components.schemas.AiAnalysisRunSummary;
+    assert.deepStrictEqual(runSummary.properties.state.enum, [
       'queued',
       'running',
       'succeeded',
       'failed',
     ]);
+
+    // The map and its absence must describe the same run, so both responses
+    // point at that one schema. A re-analysis no longer removes the previous
+    // map, which is why the 200 has a run to describe at all.
+    const insights = spec.paths['/api/rounds/{roundId}/ai-insights'].get;
+    const readable = insights.responses['200'].content['application/json'].schema;
+    assert.deepStrictEqual(readable.required, ['result', 'run']);
+    assert.strictEqual(
+      readable.properties.result.$ref,
+      '#/components/schemas/StoneMapResult',
+    );
+    assert.strictEqual(
+      readable.properties.run.$ref,
+      '#/components/schemas/AiAnalysisRunSummary',
+    );
+    assert.strictEqual(
+      insights.responses['404'].content['application/json'].schema.properties.run
+        .$ref,
+      '#/components/schemas/AiAnalysisRunSummary',
+    );
 
     const callbackParameters =
       spec.paths['/api/rounds/{roundId}/ai-insights'].post.parameters;

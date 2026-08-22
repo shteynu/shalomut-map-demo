@@ -1015,11 +1015,23 @@ paths:
         - managerSession: []
       responses:
         "200":
-          description: Validated, versioned Stone Map result
+          description: >-
+            The newest result the round has, with the newest run beside it.
+            `result` is the validated, versioned Stone Map payload. `run`
+            qualifies it: `queued` or `running` means a re-analysis is replacing
+            this map, `failed` means one tried and did not, and `succeeded`
+            means this run produced the map. A re-analysis never removes the
+            previous map from this response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StoneMapResult'
+                type: object
+                required: [result, run]
+                properties:
+                  result:
+                    $ref: '#/components/schemas/StoneMapResult'
+                  run:
+                    $ref: '#/components/schemas/AiAnalysisRunSummary'
         "404":
           description: No readable AI result is persisted. `run` is null when the round was never queued; otherwise its durable state is `queued`, `running`, `succeeded`, or `failed`.
           content:
@@ -1033,32 +1045,7 @@ paths:
                   roundId:
                     type: string
                   run:
-                    type: object
-                    nullable: true
-                    required: [id, state, attemptCount, queuedAt]
-                    properties:
-                      id:
-                        type: string
-                      state:
-                        type: string
-                        enum: [queued, running, succeeded, failed]
-                      attemptCount:
-                        type: integer
-                        minimum: 0
-                      queuedAt:
-                        type: string
-                        format: date-time
-                      startedAt:
-                        type: string
-                        format: date-time
-                        nullable: true
-                      completedAt:
-                        type: string
-                        format: date-time
-                        nullable: true
-                      failureCode:
-                        type: string
-                        nullable: true
+                    $ref: '#/components/schemas/AiAnalysisRunSummary'
         "500":
           description: Failed to fetch AI insights
     post:
@@ -1245,6 +1232,36 @@ components:
       scheme: bearer
       description: Shared service secret. Required only when the corresponding environment variable is configured.
   schemas:
+    # The durable run beside a round's map. `null` when the round has never
+    # been queued. Referenced by both the 200 and the 404 of
+    # /api/rounds/{roundId}/ai-insights, which must describe the same run.
+    AiAnalysisRunSummary:
+      type: object
+      nullable: true
+      required: [id, state, attemptCount, queuedAt]
+      properties:
+        id:
+          type: string
+        state:
+          type: string
+          enum: [queued, running, succeeded, failed]
+        attemptCount:
+          type: integer
+          minimum: 0
+        queuedAt:
+          type: string
+          format: date-time
+        startedAt:
+          type: string
+          format: date-time
+          nullable: true
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+        failureCode:
+          type: string
+          nullable: true
     RoundStatus:
       type: string
       enum: [draft, active, closed, archived]

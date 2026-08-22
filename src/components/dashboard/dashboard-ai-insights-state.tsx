@@ -7,6 +7,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useState } from "react";
+import type { AiInsightsRefreshState } from "@/lib/ai-insights-client";
 import type { AiInsightsUiState } from "@/lib/hooks/use-ai-insights";
 
 /**
@@ -113,6 +114,61 @@ function GenerateAnalysisButton({
       {note ? <p role="status">{note}</p> : null}
       {error ? <p role="alert">{error}</p> : null}
     </>
+  );
+}
+
+/**
+ * The map is on screen and something is happening to it.
+ *
+ * A re-analysis no longer takes the map away while it runs, which is the
+ * behaviour this note exists to explain: without it the screen would be honest
+ * about the data and silent about the work, and a manager who pressed "rewrite
+ * this dimension" would see the same map, no spinner, and no way to tell
+ * whether anything had happened. A failed re-run gets the same treatment for
+ * the same reason — the map is the previous one, and saying so is the whole
+ * difference between an old map and a wrong one.
+ *
+ * `role="status"` and not `alert`: nothing is broken on this screen. The map is
+ * readable and the numbers in it are real.
+ */
+export function DashboardAiRefreshNotice({
+  refresh,
+  onRetry,
+}: {
+  refresh: AiInsightsRefreshState | undefined;
+  onRetry?: () => void;
+}) {
+  if (!refresh) return null;
+
+  if (refresh.state === "running") {
+    return (
+      <p className="dashboard-ai-refresh-note" role="status">
+        <LoaderCircle
+          className="dashboard-ai-state-spinner"
+          size={18}
+          aria-hidden="true"
+        />
+        <span>
+          מוצג הניתוח האחרון שהושלם. ניתוח מחדש פועל כעת, והמפה תתעדכן בתוך דקות
+          ספורות.
+        </span>
+        {onRetry ? (
+          <button type="button" className="secondary-button" onClick={onRetry}>
+            בדיקה חוזרת
+          </button>
+        ) : null}
+      </p>
+    );
+  }
+
+  return (
+    <p className="dashboard-ai-refresh-note" role="status">
+      <AlertTriangle size={18} aria-hidden="true" />
+      <span>
+        מוצג הניתוח האחרון שהושלם. ניתוח מחדש נכשל, ולכן המפה לא התעדכנה. אפשר
+        להפעיל אותו שוב בעוד מספר דקות.
+      </span>
+    </p>
   );
 }
 

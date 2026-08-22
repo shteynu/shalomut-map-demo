@@ -35,8 +35,20 @@ export interface AiCallbackIdentity {
   leaseToken: string | null;
 }
 
+/**
+ * The map a manager gets, and what the round's newest run is doing.
+ *
+ * Both halves travel together on purpose. The map is the newest result the
+ * round actually has; the run is what is happening to it now. Answering only
+ * one of them is what produced the defect this replaces — a re-analysis in
+ * flight became "no map", and a failed one became "no map" for good.
+ */
 export type AiInsightsReadResult =
-  | { outcome: 'found'; insights: Record<string, any> }
+  | {
+      outcome: 'found';
+      insights: Record<string, any>;
+      run: AiAnalysisRun | null;
+    }
   | { outcome: 'missing'; run: AiAnalysisRun | null };
 
 export type AiInsightsCallbackResult =
@@ -49,27 +61,39 @@ export type AiInsightsCallbackResult =
   | { outcome: 'persisted'; duplicate: boolean };
 
 /**
- * Reads the result a manager is asking for. The durable run owns it; the round
- * column is the dual-read that keeps a result written before `AiAnalysisRun`
- * existed reachable. A missing result carries the run, if any, because the run
- * is what explains the absence.
+ * Reads the map a manager is asking for, and reports what the newest run is
+ * doing to it.
+ *
+ * The map is `findLatestResultByRoundId` — the newest result the round actually
+ * has — and not the newest run's own `result`. Those are different rounds of
+ * the same question, and the difference was a real defect: this used to resolve
+ * through `findLatestByRoundId`, which prefers an active run and otherwise
+ * takes the newest in any state. So pressing "rewrite this dimension" made the
+ * whole map unreadable for the ~3 minutes the re-run took, and a re-run that
+ * failed hid it indefinitely — while the previous successful map sat in the
+ * database the entire time.
+ *
+ * The round column stays as the dual-read that keeps a result written before
+ * `AiAnalysisRun` existed reachable. Both outcomes carry the run, because the
+ * run is what explains an absence and what qualifies a map that is being
+ * replaced.
  */
 export async function readAiInsights(
   roundId: string,
   repositories: Pick<AiInsightsRepositories, 'aiAnalysisRunRepo' | 'aiInsightsRepo'>,
 ): Promise<AiInsightsReadResult> {
   const run = await repositories.aiAnalysisRunRepo.findLatestByRoundId(roundId);
-  if (run?.result) {
-    return { outcome: 'found', insights: run.result };
-  }
-  if (run) {
-    return { outcome: 'missing', run };
+
+  const succeeded =
+    await repositories.aiAnalysisRunRepo.findLatestResultByRoundId(roundId);
+  if (succeeded) {
+    return { outcome: 'found', insights: succeeded, run };
   }
 
   const insights = await repositories.aiInsightsRepo.findByRoundId(roundId);
   return insights
-    ? { outcome: 'found', insights }
-    : { outcome: 'missing', run: null };
+    ? { outcome: 'found', insights, run }
+    : { outcome: 'missing', run };
 }
 
 /**
@@ -160,11 +184,21 @@ export async function applyAiInsightsCallback(
     return { outcome: 'round_mismatch', error: roundError };
   }
 
+  /*
+   * A payload that carries a result, rather than one that reports a failure.
+   * `locked_error` counts: a round below the privacy threshold produces a map
+   * that is deliberately locked, which is an answer and not a breakdown.
+   *
+   * Read once and used twice — to close the durable run and to decide whether
+   * the round's rollback copy may be replaced — because those two must agree.
+   */
+  const payloadCarriesAResult =
+    validation.value.status === 'success' ||
+    validation.value.status === 'locked_error';
+
   let completionOutcome: 'transitioned' | 'duplicate' | undefined;
   if (runId && leaseToken) {
-    const succeeded =
-      validation.value.status === 'success' ||
-      validation.value.status === 'locked_error';
+    const succeeded = payloadCarriesAResult;
     const failureCode =
       'failureReason' in validation.value &&
       typeof validation.value.failureReason === 'string'
@@ -228,13 +262,24 @@ export async function applyAiInsightsCallback(
     });
   }
 
-  // Dual-write during rollout keeps the legacy reader/rollback path viable.
-  const saved = await repositories.aiInsightsRepo.save(
-    roundId,
-    validation.value,
-  );
-  if (!saved) {
-    return { outcome: 'round_not_found' };
+  /*
+   * Dual-write during rollout keeps the legacy reader/rollback path viable —
+   * for results. A failure payload is not one.
+   *
+   * This used to write whatever validated, so a re-run that failed overwrote
+   * the round's rollback copy of the map it was meant to replace. The durable
+   * run keeps the failure with its own row and its `failureCode`; the column is
+   * the copy someone falls back to, and a fallback to a failure is not a
+   * fallback.
+   */
+  if (payloadCarriesAResult) {
+    const saved = await repositories.aiInsightsRepo.save(
+      roundId,
+      validation.value,
+    );
+    if (!saved) {
+      return { outcome: 'round_not_found' };
+    }
   }
 
   return { outcome: 'persisted', duplicate: completionOutcome === 'duplicate' };

@@ -355,7 +355,9 @@ test('AI Insights API saves and retrieves Stone Map JSON payload', async () => {
 
   const getRes = await getInsightsHandler(getReq, { params: Promise.resolve({ roundId: testRoundId }) });
   assert.strictEqual(getRes.status, 200);
-  const savedData = await getRes.json();
+  // The map arrives under `result`; `run` beside it says what the round's
+  // newest analysis run is doing to that map.
+  const savedData = (await getRes.json()).result;
   assert.strictEqual(savedData.roundId, testRoundId);
   assert.strictEqual(savedData.overallPsychologicalSummary, 'Test summary from AI Microservice');
 });

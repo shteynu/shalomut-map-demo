@@ -453,8 +453,9 @@ test('API Route ai-insights serves one round its own analysis and hides another 
 
     assert.strictEqual(own.status, 200);
     // The analysis a screen reads names the round it is about, so a result
-    // stored for one round can never be served under another.
-    assert.strictEqual((await own.json()).roundId, ownRound.id);
+    // stored for one round can never be served under another. It arrives under
+    // `result`, with the round's newest run beside it.
+    assert.strictEqual((await own.json()).result.roundId, ownRound.id);
 
     const foreign = await getAiInsights(
       new Request(`http://localhost/api/rounds/${otherRound.id}/ai-insights`, {
