@@ -16,6 +16,7 @@ import type {
   EnqueueAiAnalysisRunResult,
   FinishAiAnalysisRunResult,
 } from '../types/ai-analysis-run';
+import type { CanonicalRoundAnalytics } from '../types/canonical-analytics';
 import type { SurveyDefinitionVersion } from '../types/survey-definition-version';
 import type {
   CreateRoundGoalInput,
@@ -79,6 +80,28 @@ export interface IRoundRepository {
     status: RoundStatus,
     expectedCurrent: RoundStatus,
   ): Promise<RoundStatusWrite>;
+  /**
+   * The numbers this round published, or `null` if it has not published any
+   * that are still readable.
+   *
+   * On the round repository rather than in a repository of its own — the way
+   * `IAiInsightsRepository` owns the other JSON column of the same table —
+   * because this one is read on the way to every manager screen. A separate
+   * collaborator would have to be passed to `getAnalyticsForRound` by every
+   * caller, and a caller that forgets it gets the slow path with no sign that
+   * anything is missing. The same argument ADR-032 made about `expectedCurrent`.
+   *
+   * Nothing here decides whether the stored copy still applies. That is a
+   * question about the round's basis of calculation, and `AnalyticsService`
+   * is what holds it.
+   */
+  findPublishedAnalytics(id: string): Promise<CanonicalRoundAnalytics | null>;
+  savePublishedAnalytics(
+    id: string,
+    analytics: CanonicalRoundAnalytics,
+  ): Promise<void>;
+  /** Used where a round's basis is destroyed rather than changed — a reset. */
+  clearPublishedAnalytics(id: string): Promise<void>;
 }
 
 /**

@@ -121,6 +121,11 @@ model SurveyRound {
   updatedAt           DateTime?        @updatedAt @map("updated_at")
   aiInsights          Json?            @map("ai_insights")
   aiInsightsUpdatedAt DateTime?        @map("ai_insights_updated_at")
+  // The numbers this round published, written once it has stopped collecting
+  // and read instead of recomputed. Nullable because it is a copy of something
+  // derivable: a round that has never been read since it closed has none, and
+  // anything that changes the basis clears it (ADR-035).
+  publishedAnalytics  Json?            @map("published_analytics")
 
   organization     Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   responses           SurveyResponse[]

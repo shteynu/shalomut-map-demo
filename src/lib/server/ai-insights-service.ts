@@ -159,18 +159,26 @@ export async function applyAiInsightsCallback(
     validation.value.contractVersion,
   ).supportsDynamicQuestions;
 
-  const roundError = isDynamicVersion
+  /*
+   * Verified against what Core would have sent for this deployment's contract
+   * version, not against everything Core knows — and read through
+   * `getAnalyticsForRound` for the same reason: that is the call the MCP tool
+   * made when it handed these numbers out. Recomputing here instead would
+   * compare the payload against a second calculation of the same round, which
+   * is both the expensive way to ask and the way to disagree with ourselves.
+   */
+  const roundAnalytics = isDynamicVersion
+    ? await AnalyticsService.getAnalyticsForRound(
+        roundId,
+        repositories.roundRepo,
+        repositories.surveyRepo,
+      )
+    : null;
+  const roundError = roundAnalytics
     ? verifyAiResultAgainstRound(
         validation.value,
         round,
-        // Verified against what Core would have sent for this deployment's
-        // contract version, not against everything Core knows.
-        encodeRoundAnalytics(
-          AnalyticsService.calculateDynamicRoundAnalytics(
-            round,
-            await repositories.surveyRepo.findResponsesByRoundId(roundId),
-          ),
-        ),
+        encodeRoundAnalytics(roundAnalytics),
       )
     : null;
   if (roundError) {

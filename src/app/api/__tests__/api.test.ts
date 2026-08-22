@@ -20,6 +20,7 @@ import {
   InMemorySurveyRepository,
 } from '@/lib/repositories';
 import { overrideCoreRepositories, resetCoreRepositories } from '@/lib/composition-root';
+import { AnalyticsService } from '@/lib/services/analytics.service';
 import { InMemoryAuditLogRepository } from '@/lib/auth/domain-contract';
 import { JwtSessionProvider } from '@/lib/auth/jwt-session-provider';
 import { surveyInstrument } from '@/lib/shalomut-source';
@@ -998,6 +999,12 @@ test('API Route POST /api/rounds/[roundId]/reset drops stale insights and writes
       requestKey: 'automatic',
       trigger: 'automatic',
     });
+    // The numbers the round published, as a reader of a closed round would
+    // have left them behind.
+    await roundRepo.savePublishedAnalytics(
+      DEMO_ROUND.id,
+      AnalyticsService.lockedRoundAnalytics(DEMO_ROUND, 1),
+    );
 
     const response = await resetRound(
       new Request(`http://localhost/api/rounds/${DEMO_ROUND.id}/reset`, {
@@ -1017,6 +1024,13 @@ test('API Route POST /api/rounds/[roundId]/reset drops stale insights and writes
       null,
     );
     assert.strictEqual(await surveyRepo.getResponseCount(DEMO_ROUND.id), 0);
+    // And so did the round's own numbers. The basis check alone would not
+    // catch this: a re-collection ending at the same count with the same
+    // questionnaire matches the erased round's copy exactly.
+    assert.strictEqual(
+      await roundRepo.findPublishedAnalytics(DEMO_ROUND.id),
+      null,
+    );
 
     const events = await auditLogRepo.findByOrganizationId(
       DEMO_ROUND.organizationId,

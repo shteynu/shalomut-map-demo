@@ -5,7 +5,12 @@ import {
   SurveyRound,
   UpdateRoundInput,
 } from '../../types/backend';
+import {
+  decodePublishedAnalytics,
+  encodePublishedAnalytics,
+} from '../../analytics/published-analytics';
 import { parseSurveyDefinition } from '../../survey-definition';
+import type { CanonicalRoundAnalytics } from '../../types/canonical-analytics';
 import { IRoundRepository, RoundStatusWrite } from '../interfaces';
 import { MinimalPrismaClient } from './prisma-client';
 
@@ -265,6 +270,40 @@ export class PrismaRoundRepository implements IRoundRepository {
       outcome: 'status_changed',
       current: this.mapToDomain(current).status,
     };
+  }
+
+  public async findPublishedAnalytics(
+    id: string,
+  ): Promise<CanonicalRoundAnalytics | null> {
+    const round = await this.prisma.surveyRound.findUnique({
+      where: { id },
+      select: { publishedAnalytics: true },
+    });
+    // `select` on purpose: this is read on the way to every manager screen, and
+    // the round itself is already in the caller's hand.
+    return round?.publishedAnalytics
+      ? decodePublishedAnalytics(round.publishedAnalytics)
+      : null;
+  }
+
+  public async savePublishedAnalytics(
+    id: string,
+    analytics: CanonicalRoundAnalytics,
+  ): Promise<void> {
+    // `updateMany` rather than `update`: a round deleted between the
+    // calculation and this write is not an error worth failing a read over —
+    // the caller already has the numbers it was asked for.
+    await this.prisma.surveyRound.updateMany({
+      where: { id },
+      data: { publishedAnalytics: encodePublishedAnalytics(analytics) },
+    });
+  }
+
+  public async clearPublishedAnalytics(id: string): Promise<void> {
+    await this.prisma.surveyRound.updateMany({
+      where: { id },
+      data: { publishedAnalytics: null },
+    });
   }
 
   /**

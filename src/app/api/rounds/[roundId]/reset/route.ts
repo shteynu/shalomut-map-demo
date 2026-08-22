@@ -56,6 +56,11 @@ export async function POST(
 
     // A persisted analysis describes responses that no longer exist.
     await aiInsightsRepo.deleteByRoundId(roundId);
+    // So do the numbers the round published. The basis check would catch most
+    // of this on its own — but a re-collection that ends at the same count with
+    // the same questionnaire matches it exactly, and would republish the
+    // erased round's numbers as the new round's result.
+    await roundRepo.clearPublishedAnalytics(roundId);
     // Pending and terminal runs describe the same deleted response snapshot.
     // Removing them also releases the stable `automatic` request key so a new
     // collection cycle can enqueue once it reaches the threshold again.

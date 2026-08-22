@@ -1,4 +1,9 @@
+import {
+  decodePublishedAnalytics,
+  encodePublishedAnalytics,
+} from '../../analytics/published-analytics';
 import { RoundStatus, SurveyRound, UpdateRoundInput } from '../../types/backend';
+import type { CanonicalRoundAnalytics } from '../../types/canonical-analytics';
 import { IRoundRepository, RoundStatusWrite } from '../interfaces';
 
 function cloneRound(round: SurveyRound): SurveyRound {
@@ -23,6 +28,12 @@ function cloneRound(round: SurveyRound): SurveyRound {
 
 export class InMemoryRoundRepository implements IRoundRepository {
   private rounds: Map<string, SurveyRound> = new Map();
+  /**
+   * Held encoded, exactly as the column holds it. A `Map` of live objects
+   * would hand every reader the same `Date` instances and hide the one thing
+   * worth exercising here — that what was written can be read back.
+   */
+  private publishedAnalytics: Map<string, Record<string, unknown>> = new Map();
 
   constructor(initialRounds: SurveyRound[] = []) {
     for (const round of initialRounds) {
@@ -114,5 +125,26 @@ export class InMemoryRoundRepository implements IRoundRepository {
 
   public clear(): void {
     this.rounds.clear();
+    this.publishedAnalytics.clear();
+  }
+
+  public async findPublishedAnalytics(
+    id: string,
+  ): Promise<CanonicalRoundAnalytics | null> {
+    if (!this.rounds.has(id)) return null;
+    const stored = this.publishedAnalytics.get(id);
+    return stored ? decodePublishedAnalytics(stored) : null;
+  }
+
+  public async savePublishedAnalytics(
+    id: string,
+    analytics: CanonicalRoundAnalytics,
+  ): Promise<void> {
+    if (!this.rounds.has(id)) return;
+    this.publishedAnalytics.set(id, encodePublishedAnalytics(analytics));
+  }
+
+  public async clearPublishedAnalytics(id: string): Promise<void> {
+    this.publishedAnalytics.delete(id);
   }
 }

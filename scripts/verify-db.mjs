@@ -12,6 +12,7 @@
  * the local development one.
  */
 import { spawnSync } from 'node:child_process';
+import { readdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -72,41 +73,29 @@ run('npx', ['prisma', 'generate'], 'Prisma client generation');
 
 run('npx', ['prisma', 'migrate', 'deploy'], 'Migrations');
 
+/**
+ * Every file in `__dbtests__`, read rather than listed.
+ *
+ * The list used to be written out by hand, and a suite added beside it ran
+ * nowhere until someone noticed — a green `verify:db` that had skipped the
+ * tests it was added for is worse than a red one.
+ */
+const suiteDirectory = path.join(
+  repositoryRoot,
+  'src/lib/repositories/__dbtests__',
+);
+const suites = readdirSync(suiteDirectory)
+  .filter((name) => name.endsWith('.test.ts'))
+  .sort()
+  .map((name) => path.join(suiteDirectory, name));
+
+if (suites.length === 0) {
+  console.error(`No PostgreSQL suites found in ${suiteDirectory}`);
+  process.exit(1);
+}
+
 run(
   process.execPath,
-  [
-    '--import',
-    'tsx',
-    '--test',
-    '--test-concurrency=1',
-    path.join(
-      repositoryRoot,
-      'src/lib/repositories/__dbtests__/postgres-concurrency.test.ts',
-    ),
-    path.join(
-      repositoryRoot,
-      'src/lib/repositories/__dbtests__/prisma-ai-analysis-runs.integration.test.ts',
-    ),
-    path.join(
-      repositoryRoot,
-      'src/lib/repositories/__dbtests__/postgres-one-active-round.test.ts',
-    ),
-    path.join(
-      repositoryRoot,
-      'src/lib/repositories/__dbtests__/postgres-round-goals.test.ts',
-    ),
-    path.join(
-      repositoryRoot,
-      'src/lib/repositories/__dbtests__/postgres-survey-definition-versions.test.ts',
-    ),
-    path.join(
-      repositoryRoot,
-      'src/lib/repositories/__dbtests__/postgres-survey-attempts.test.ts',
-    ),
-    path.join(
-      repositoryRoot,
-      'src/lib/repositories/__dbtests__/postgres-answer-shapes.test.ts',
-    ),
-  ],
+  ['--import', 'tsx', '--test', '--test-concurrency=1', ...suites],
   'PostgreSQL suite',
 );

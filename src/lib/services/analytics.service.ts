@@ -253,10 +253,17 @@ export class AnalyticsService {
    * callers can continue using calculateRoundAnalytics for the immutable
    * canonical 2.0 shape.
    */
-  public static calculateDynamicRoundAnalytics(
-    round: SurveyRound,
-    responses: SurveyResponseRecord[],
-  ): CanonicalRoundAnalytics {
+  /**
+   * Everything a round's analytics need from its questionnaire, and nothing
+   * from its answers.
+   *
+   * Separated because a round that is still collecting publishes no numbers:
+   * its result is locked whatever the answers say, so it can be built from
+   * this and a count. Reading every answer row to reach the same locked
+   * payload is what made eight manager screens load a round's whole
+   * collection to display one number.
+   */
+  private static readRoundQuestionnaire(round: SurveyRound) {
     const definition =
       round.surveyDefinition ??
       createCanonicalSurveyDefinition(round.title, round.privacyThreshold);
@@ -270,27 +277,75 @@ export class AnalyticsService {
       throw new Error(`Invalid round survey definition: ${parsedDefinition.error}`);
     }
 
-    // Analytic only, everywhere below. A background question is answered and
-    // stored like any other, and it belongs on no stone: letting one reach the
-    // aggregates would put a demographic answer into a dimension average, and
-    // letting one reach the lock check would make an optional question about
-    // commute time able to lock a school's whole result.
-    const enabledQuestions = parsedDefinition.value.questions
-      .filter((question) => question.enabled)
-      .filter(isAnalyticQuestion);
-    const isUnfinishedQuestionnaire = !isActivatableSurveyDefinition(
-      parsedDefinition.value,
-    );
-    const surveyDefinitionHash = createSurveyDefinitionHash(
-      parsedDefinition.value.questions,
-    );
-    // Computed beside the AI-visible hash rather than derived from it: the two
-    // read different fields of the same questions, and only this one can tell
-    // a round answered on colours from the same round answered on a Likert
-    // scale.
-    const measurementSnapshotHash = createMeasurementSnapshotHash(
-      parsedDefinition.value.questions,
-    );
+    return {
+      // Analytic only, everywhere below. A background question is answered and
+      // stored like any other, and it belongs on no stone: letting one reach
+      // the aggregates would put a demographic answer into a dimension
+      // average, and letting one reach the lock check would make an optional
+      // question about commute time able to lock a school's whole result.
+      enabledQuestions: parsedDefinition.value.questions
+        .filter((question) => question.enabled)
+        .filter(isAnalyticQuestion),
+      isUnfinishedQuestionnaire: !isActivatableSurveyDefinition(
+        parsedDefinition.value,
+      ),
+      surveyDefinitionHash: createSurveyDefinitionHash(
+        parsedDefinition.value.questions,
+      ),
+      // Computed beside the AI-visible hash rather than derived from it: the
+      // two read different fields of the same questions, and only this one can
+      // tell a round answered on colours from the same round answered on a
+      // Likert scale.
+      measurementSnapshotHash: createMeasurementSnapshotHash(
+        parsedDefinition.value.questions,
+      ),
+      privacyThreshold: effectivePrivacyThreshold(round.privacyThreshold),
+    };
+  }
+
+  /**
+   * The result of a round that publishes nothing, from its count alone.
+   *
+   * Every field here is a fact about the round or its questionnaire; the only
+   * thing the answers contribute is how many there are. Kept beside the full
+   * calculation and pinned by a test that runs both, because two ways of
+   * producing the same payload is exactly how they drift.
+   */
+  public static lockedRoundAnalytics(
+    round: SurveyRound,
+    totalResponses: number,
+  ): CanonicalRoundAnalytics {
+    const questionnaire = this.readRoundQuestionnaire(round);
+
+    return {
+      roundId: round.id,
+      organizationId: round.organizationId,
+      surveyDefinitionHash: questionnaire.surveyDefinitionHash,
+      measurementSnapshotHash: questionnaire.measurementSnapshotHash,
+      totalResponses,
+      privacyThreshold: questionnaire.privacyThreshold,
+      isLocked: true,
+      dimensionScores: {} as Record<
+        WellbeingDimensionId,
+        RoundDimensionScore
+      >,
+      questionAggregates: {},
+      backgroundContext: round.backgroundContext,
+      calculatedAt: new Date(),
+    };
+  }
+
+  public static calculateDynamicRoundAnalytics(
+    round: SurveyRound,
+    responses: SurveyResponseRecord[],
+  ): CanonicalRoundAnalytics {
+    const {
+      enabledQuestions,
+      isUnfinishedQuestionnaire,
+      surveyDefinitionHash,
+      measurementSnapshotHash,
+      privacyThreshold,
+    } = this.readRoundQuestionnaire(round);
     const scopedResponses = responses.filter(
       (response) => response.roundId === round.id,
     );
@@ -327,9 +382,6 @@ export class AnalyticsService {
       }
     }
 
-    const privacyThreshold = effectivePrivacyThreshold(
-      round.privacyThreshold,
-    );
     // A round publishes its numbers once, when it has stopped collecting.
     //
     // The threshold below protects one published set of respondents; it cannot
@@ -436,7 +488,50 @@ export class AnalyticsService {
   }
 
   /**
-   * Fetch round metadata and responses from repositories, then compute analytics
+   * Whether the numbers a round published still describe the round it is now.
+   *
+   * The stored copy is used only when everything the calculation consumed is
+   * unchanged: how many responses there are, what the questionnaire asked, how
+   * it was answered, and the threshold that decides whether any of it may be
+   * shown. Anything else and the copy is ignored and replaced — a reset that
+   * happens to end at the same count with the same questionnaire would
+   * otherwise republish the erased round's numbers.
+   */
+  private static stillTheSameBasis(
+    published: CanonicalRoundAnalytics,
+    round: SurveyRound,
+    questionnaire: ReturnType<typeof AnalyticsService.readRoundQuestionnaire>,
+    totalResponses: number,
+  ): boolean {
+    return (
+      published.roundId === round.id &&
+      published.organizationId === round.organizationId &&
+      published.totalResponses === totalResponses &&
+      published.privacyThreshold === questionnaire.privacyThreshold &&
+      // The measurement hash and not both hashes: it is computed from the same
+      // questions as `surveyDefinitionHash` plus `scaleId` and `polarity`, so
+      // it changes whenever that one does and comparing both would be one
+      // comparison and one decoration. A test pins that relation, because the
+      // day the projections stop overlapping this check quietly narrows.
+      published.measurementSnapshotHash ===
+        questionnaire.measurementSnapshotHash
+    );
+  }
+
+  /**
+   * A round's analytics, computed as rarely as they can honestly be.
+   *
+   * Three paths, in the order of how much they cost. A round that is still
+   * collecting publishes nothing, so its locked result needs a count and not a
+   * single answer row. A round that has stopped collecting has exactly one
+   * basis of calculation (ADR-030), so the numbers it published are read back
+   * instead of derived again. Only a round with no usable copy loads its
+   * responses, and it stores what it computed on the way out.
+   *
+   * Before this, every one of these read every `SurveyResponse` of the round
+   * with all its answers — some 38 000 rows for 300 staff on the 126-question
+   * instrument — on every manager screen, up to four more times for the
+   * dashboard's comparison, and again for every AI request.
    */
   public static async getAnalyticsForRound(
     roundId: string,
@@ -446,7 +541,26 @@ export class AnalyticsService {
     const round = await roundRepo.findById(roundId);
     if (!round) return null;
 
+    const totalResponses = await surveyRepo.getResponseCount(roundId);
+    if (isRoundCollecting(round.status)) {
+      return this.lockedRoundAnalytics(round, totalResponses);
+    }
+
+    const questionnaire = this.readRoundQuestionnaire(round);
+    const published = await roundRepo.findPublishedAnalytics(roundId);
+    if (
+      published &&
+      this.stillTheSameBasis(published, round, questionnaire, totalResponses)
+    ) {
+      // The school context is the round's, always. It is not one of the
+      // numbers, it can be edited after the round closed, and the stored copy
+      // deliberately does not carry it.
+      return { ...published, backgroundContext: round.backgroundContext };
+    }
+
     const responses = await surveyRepo.findResponsesByRoundId(roundId);
-    return this.calculateDynamicRoundAnalytics(round, responses);
+    const analytics = this.calculateDynamicRoundAnalytics(round, responses);
+    await roundRepo.savePublishedAnalytics(roundId, analytics);
+    return analytics;
   }
 }
