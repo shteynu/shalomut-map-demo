@@ -122,6 +122,11 @@ jobs:
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
 
+      # This job does not migrate, and does not need to. `vercel deploy --prod`
+      # asks Vercel to build, and every Vercel build runs `npm run build`, whose
+      # first step is `scripts/deploy-migrate.mjs`. Adding a migration step here
+      # would cover this path twice and Vercel's own git deployments — which are
+      # how nearly every deploy actually happens — not at all. See ADR-031.
       - name: Deploy to Vercel Production
         run: vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }}
         env:
