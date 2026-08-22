@@ -5,9 +5,11 @@
 - Branch: `fix/the-deployed-database-certificate-is-verified`
 - Base branch: `main`
 - Base commit: `25858a9`
-- Current HEAD: `3fed143`, plus the handoff commit that carries this file
-- Status: complete and published on `origin`; **not merged into `main` and not
-  deployed** — see "Git state" and "Next concrete step"
+- Current HEAD: `8af02ab`, which is also `origin/main`. `3fed143` is the last
+  commit of the work itself; `8af02ab` is the handoff commit that carried this
+  file, and the commit that archives it follows both
+- Status: closed — landed on `main` as `8af02ab` and deployed; the database
+  connection was re-checked on the deployment afterwards
 - Last updated: 2026-08-22
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -92,7 +94,8 @@ Nothing.
 
 ## Remaining
 
-Nothing on this branch. The push is the owner's.
+Nothing. The push the earlier version of this line was waiting for has
+happened; see "Git state".
 
 ## Changed files
 
@@ -125,6 +128,13 @@ Nothing on this branch. The push is the owner's.
   being switched on.
 - Hostname checking was confirmed separately: the same handshake with
   `servername: 'wrong.example.com'` fails `ERR_TLS_CERT_ALTNAME_INVALID`.
+- **The deployed runtime reaches its database through the verified pool.**
+  Checked 2026-08-22 after the branch landed, which is the moment the residual
+  risk below was either real or not: `GET /api/survey/ZZZZZZZZ/` on the
+  deployment answers `404` with `Survey round with code 'ZZZZZZZZ' not found`.
+  That is a query that ran — a refused handshake would have come back as the
+  route's `500` — and `GET /api/health/` answers `commit: 8af02ab`, so the tree
+  that ran it is this one. A second unknown code answers the same way.
 - `npm run verify:core`, unpiped, `REAL_EXIT=0`. 1435 tests.
 - `npm run verify:db`, `REAL_EXIT=0`. 48 tests against the local PostgreSQL,
   which is the loopback branch and must keep speaking no TLS at all.
@@ -164,7 +174,8 @@ written to the deployed database — the only statement issued was `select 1`.
 If the shipped root were wrong, the deployed application would fail to reach its
 database on the first request after the deploy. It is not wrong: it was checked
 against the live chain and used to make a real query, and a test pins its
-fingerprint and asserts it has not expired.
+fingerprint and asserts it has not expired. That prediction has now been
+settled on the deployment itself — see the last entry under "Passed".
 
 ## Failed approaches
 
@@ -182,7 +193,8 @@ changed. That is deliberate, and ADR-040 says so.
 
 ## Approval gates
 
-The push. `git push` is an owner action here.
+The push, which was the owner's and is done. Nothing here is waiting on an
+approval any more.
 
 ## Questions requiring an owner decision
 
@@ -195,24 +207,17 @@ The push. `git push` is an owner action here.
 
 ## Git state
 
-Read 2026-08-22 at the end of the session, not remembered:
+Read 2026-08-22, after the push, not remembered:
 
-- Branch `fix/the-deployed-database-certificate-is-verified`. `3fed143` is
-  the last commit of the work itself; the tip is the handoff commit that adds
-  this section, which is why no hash is written for it here.
+- Branch `fix/the-deployed-database-certificate-is-verified` at `8af02ab`, and
+  `origin/main` is the same commit: `git reflog show origin/main` records
+  `5b7f3cc → 8af02ab` as `update by push`, so this branch's four slices are
+  `main` now rather than a stack waiting beside it.
 - Worktree clean apart from ` M next-env.d.ts`, which is generated and belongs
   to the owner. Nothing staged. `git ls-files -o --exclude-standard` is empty,
   which is the check that matters here because this repository's untracked
   cache has hidden a new file before.
-- The branch was on `origin` at `3fed143` when this was written, so the work
-  itself is already portable to another checkout or machine; the handoff commit
-  reaches them with the next push.
-- `origin/main` is `5b7f3cc`. **None of this session's four slices are on
-  `main`, and the deployment is therefore still serving the tree from before
-  them.** The `git push origin <branch>` commands run during the session
-  published branches; they did not land anything.
-- The four slices are stacked linearly on top of `5b7f3cc`, so one push of this
-  branch lands all four:
+- The four slices, in the order they land:
 
   | commit | |
   | --- | --- |
@@ -221,19 +226,19 @@ Read 2026-08-22 at the end of the session, not remembered:
   | `bfbfdf9`, `25858a9` | an anonymous submission carries a session and meets a ceiling |
   | `5309de9`, `3fed143` | the deployed database's certificate is verified |
 
-  The first branch's name is not on `origin`; its commits are, as ancestors of
-  the three that are. The other three task files are already in
-  `docs/agent-tasks/archive/`.
+  The first branch's name is not on `origin`; its commits are, as ancestors.
+  The other three task files are already in `docs/agent-tasks/archive/`, and
+  this one joins them.
+- Vercel built the push: `GET /api/health/` answers `commit: 8af02ab`.
 
 ## Next concrete step
 
-Land the stack on `main`, which is the owner's action:
+None. The work is landed, deployed, and the one prediction it made about the
+deployment has been checked there. What is left is not a step in this task:
 
-```bash
-git push origin fix/the-deployed-database-certificate-is-verified:main
-```
-
-Vercel builds every push to `main`, so that one command is also the deploy.
-Afterwards, read `GET /api/health/` and expect the tip rather than `b4f9b50`,
-and re-check the four audit entries against the deployed endpoint if any of
-them is going to be reported as closed there rather than merely in the tree.
+- **The migration path** — `prisma migrate deploy` on `DIRECT_URL` still does
+  not verify. It is named in ADR-040 and in the audit, and closing it needs a
+  real deploy to try it on, because the session-mode port is unreachable from a
+  development machine. That is the owner's call about when to risk a build.
+- The other three slices of this stack are in the deployed tree but have not
+  been walked on the deployment; each was proved locally in its own task file.
