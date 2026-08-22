@@ -183,8 +183,23 @@ Then the fail-open cluster on the round status write, `12980ca` — two entries
 and five findings, because four of them met on one path. The write is now
 conditional on the status the request read, its outcome is named instead of
 collapsed into `null`, and audit rows, analysis dispatches and `success: true`
-are consequences of a confirmed write (ADR-032). **Forty-two entries remain
-open, four of them high.**
+are consequences of a confirmed write (ADR-032).
+
+Then the one where a re-analysis hid the round's map, `85ad5dd`: the map a
+manager reads is the newest result the round has, and a run that is queued,
+running or failed now qualifies it on screen instead of replacing it with an
+empty state (ADR-033). **Forty-one entries remain open, three of them high.**
+
+**The remaining entries were re-checked against current code on 2026-08-22**,
+after the owner suspected some had been fixed in passing. Twelve anchors were
+opened and read — the per-screen analytics recompute, the administrator
+overview's N+1, the worker's missing retry, the unpinned Python dependencies,
+breakdown cell suppression, the login open redirect, the unverified TLS to the
+database, the shared secret's fail-open branch, the unlimited attempt beacon,
+the share-code alphabet, `clear-db.ts`, and Swagger's unpinned unpkg script.
+None had closed on its own; the code at each anchor is what the audit described.
+The entries marked `ЗАКРЫТА` in the file are the closed ones, and they are the
+only ones.
 
 **One owner item, outside the repository.** Rotating `GEMINI_API_KEY` before any
 paid round blocks nothing and is still open. The unused Google client secret was

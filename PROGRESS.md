@@ -136,6 +136,13 @@ inside it.
   produces it. The unset configuration default remains rollback-safe `5.0`. A
   published version may gain an optional additive field under ADR-002's stated
   rule; a changed meaning still needs a new version.
+- **A re-analysis no longer takes the round's map away** as of 2026-08-22. The
+  map a manager reads is the newest result the round has, and a run that is
+  queued, running or failed qualifies it on screen instead of replacing it with
+  an empty state. Before this, any re-analysis hid the map while it ran and a
+  failed one hid it indefinitely, and a failure payload overwrote the round's
+  rollback copy of the map it was meant to replace. ADR-033 records it, including
+  the earlier rule it reverses.
 - **A round status write that failed says so** as of 2026-08-22. The write is
   conditional on the status the request read, and its outcome is named rather
   than collapsed into `null`, so audit rows, analysis dispatches and

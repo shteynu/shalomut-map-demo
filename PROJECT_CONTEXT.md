@@ -1258,6 +1258,58 @@ writes is now reported instead of absorbed — a sibling that could not be close
 still holds the school's active slot, so the activation meets the index and
 comes back as `another_round_is_active`.
 
+### ADR-033: A re-analysis qualifies the map, it does not remove it
+
+2026-08-22. The manager GET resolved a round's map through
+`findLatestByRoundId`, which prefers an active run and otherwise takes the
+newest one in any state, and answered with that run's own `result`. A run that
+has just been queued has no result yet. So pressing "rewrite this dimension" —
+a partial re-analysis whose entire purpose is to amend the map that exists —
+made the whole map unreadable for the roughly three minutes the run took, and a
+re-run that failed hid it with no end date, while the previous successful result
+sat in the database untouched. The callback compounded it from the other side:
+the dual-write to `survey_rounds.ai_insights` accepted whatever validated, and a
+failure payload validates, so the round's own rollback copy was overwritten by
+the failure of the run meant to replace it.
+
+**The map is the newest result the round has.** `findLatestResultByRoundId`
+already existed and already meant that; the read now uses it, with the legacy
+column behind it for results written before `AiAnalysisRun` did. A run in
+flight, or a run that failed, changes what is *said about* the map. It does not
+change which map there is.
+
+**The rollback copy holds results only.** A payload counts as carrying one when
+its status is `success` or `locked_error` — a round below the privacy threshold
+produces a map that is deliberately locked, which is an answer rather than a
+breakdown. Failures already have a durable place: their own run row, with their
+own `failureCode`. A fallback to a failure is not a fallback.
+
+**The response is an envelope, `{ result, run }`.** The map alone is half of
+what the screen needs, because a map that survives a re-analysis has to say so —
+otherwise the screen is honest about the data and silent about the work, and a
+manager sees an unchanged map with no way to tell whether their re-run started,
+finished or died. `result` is the versioned contract payload and the only thing
+validated as one; `run` is Core's account of the newest run and therefore sits
+beside the payload rather than inside it. One `AiAnalysisRunSummary` schema
+serves the 200 and the 404, so a map and its absence cannot describe the same
+run differently.
+
+**The note lives on the map screen only.** It joins the partial-map notice in
+that sidebar, which is already where facts about *this analysis* are stated, and
+every dashboard screen is reached through the map. The same sentence repeated on
+four screens would be read on none.
+
+**What this reverses.** The read used to hold, deliberately, that an active run
+wins so that a queued analysis is never answered with a stale Stone Map. The map
+in question is not stale: it is the round's real, previous, successful result,
+and withholding it cost more than labelling it ever could. The test that pinned
+the old rule now pins the new one and says why.
+
+**What this does not do.** It does not make a partial re-analysis merge into the
+map it is amending — that is the worker's business and unchanged here. It does
+not retry a failed run; the run that failed stays failed until someone asks for
+another, which is the separate resilience finding of the 2026-08-21 audit.
+
 ## Environments
 
 The project supports exactly two environments:
