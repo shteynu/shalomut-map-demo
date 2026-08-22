@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Building2, CalendarPlus, Check, ChevronLeft, ClipboardPen, Lightbulb, Loader2, ShieldCheck, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { type FormEvent, type MouseEvent, useId, useState } from "react";
+import { BackgroundNoteWarning } from "@/components/round/background-note-warning";
 import { NewRoundDialog } from "@/components/round/new-round-dialog";
 import { NewSchoolDialog } from "@/components/school/new-school-dialog";
 import {
@@ -306,8 +307,14 @@ export function SetupForm({
             name="notes"
             defaultValue={round?.backgroundContext?.notes ?? ""}
             rows={3}
+            aria-describedby="setup-notes-note"
           />
         </label>
+
+        {/* The only free text on this screen that leaves the platform, said at
+            the field and before the typing rather than in a policy nobody
+            opens. */}
+        <BackgroundNoteWarning id="setup-notes-note" />
       </section>
 
       <section className="form-section-card">
