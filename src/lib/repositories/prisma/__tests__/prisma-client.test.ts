@@ -70,3 +70,32 @@ test('a broken client fails loudly instead of degrading to empty repositories', 
     );
   });
 });
+
+test('the cached client lives on globalThis, not in one module graph', () => {
+  // Next.js compiles route handlers and RSC into separate module graphs. A
+  // module-level cache is one client — and therefore one connection pool — per
+  // graph, which is how a process ends up with more pools than anyone bounded.
+  withDatabaseUrl('postgresql://configured/db', () => {
+    getPrismaClient(() => STUB_CLIENT);
+
+    const holder = globalThis as typeof globalThis & {
+      shalomutPrismaClient?: MinimalPrismaClient;
+    };
+    assert.strictEqual(holder.shalomutPrismaClient, STUB_CLIENT);
+  });
+});
+
+test('a second module graph reuses the client the first one built', () => {
+  withDatabaseUrl('postgresql://configured/db', () => {
+    const first = getPrismaClient(() => STUB_CLIENT);
+
+    let built = false;
+    const second = getPrismaClient(() => {
+      built = true;
+      return {} as MinimalPrismaClient;
+    });
+
+    assert.strictEqual(second, first);
+    assert.equal(built, false, 'a second client is a second connection pool');
+  });
+});

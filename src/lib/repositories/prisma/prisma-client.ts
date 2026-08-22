@@ -1,5 +1,5 @@
 import { Organization, QuestionAnswerRecord, RoundStatus, SurveyResponseRecord, SurveyRound } from '../../types/backend';
-import { resolvePoolSsl } from './pool-options';
+import { resolvePoolConfig } from './pool-options';
 
 // Type definitions for minimal Prisma Client interface contract to ensure decouple execution
 export interface MinimalPrismaClient {
@@ -78,17 +78,22 @@ export interface MinimalPrismaClient {
   };
 }
 
-let globalPrisma: MinimalPrismaClient | null = null;
+// Next.js compiles route handlers and React Server Components into separate
+// module graphs, so a module-level variable caches one client per graph rather
+// than one per process — the same reason `composition-root.ts` keeps its
+// ephemeral repositories on `globalThis`. What a second graph costs here is not
+// a second variable but a second connection pool, against a bound this file
+// sets per pool and not per process.
+const globalForPrisma = globalThis as typeof globalThis & {
+  shalomutPrismaClient?: MinimalPrismaClient;
+};
 
 function createAdapterBackedClient(connectionString: string): MinimalPrismaClient {
   const { PrismaClient } = require('@prisma/client');
   const { PrismaPg } = require('@prisma/adapter-pg');
   const { Pool } = require('pg');
 
-  const pool = new Pool({
-    connectionString,
-    ssl: resolvePoolSsl(connectionString),
-  });
+  const pool = new Pool(resolvePoolConfig(connectionString));
 
   return new PrismaClient({ adapter: new PrismaPg(pool) });
 }
@@ -101,9 +106,9 @@ export function getPrismaClient(
     return null;
   }
 
-  if (!globalPrisma) {
+  if (!globalForPrisma.shalomutPrismaClient) {
     try {
-      globalPrisma = createClient(process.env.DATABASE_URL);
+      globalForPrisma.shalomutPrismaClient = createClient(process.env.DATABASE_URL);
     } catch (error) {
       // Fail loudly. Returning null here degraded a configured-but-broken
       // database into empty in-memory repositories, where a client that never
@@ -117,10 +122,10 @@ export function getPrismaClient(
     }
   }
 
-  return globalPrisma;
+  return globalForPrisma.shalomutPrismaClient;
 }
 
 /** Test seam: drops the cached client so a test can supply its own factory. */
 export function resetPrismaClientForTests() {
-  globalPrisma = null;
+  delete globalForPrisma.shalomutPrismaClient;
 }

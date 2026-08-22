@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { resolvePoolSsl } from '@/lib/repositories/prisma/pool-options';
+import { resolvePoolConfig } from '@/lib/repositories/prisma/pool-options';
 import { createCanonicalSurveyDefinition } from '@/lib/survey-definition';
 
 /**
@@ -40,10 +40,7 @@ async function backfillRoundDefinitions() {
   const { PrismaPg } = require('@prisma/adapter-pg');
   const pg = require('pg');
 
-  const pool = new pg.Pool({
-    connectionString,
-    ssl: resolvePoolSsl(connectionString),
-  });
+  const pool = new pg.Pool(resolvePoolConfig(connectionString));
   const prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
 
   // `Prisma.DbNull`, not `null`. On a nullable `Json` column Prisma treats a

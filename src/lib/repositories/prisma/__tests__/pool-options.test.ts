@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { resolvePoolSsl } from '../pool-options';
+import { resolvePoolConfig, resolvePoolSsl } from '../pool-options';
 
 test('the deployed database keeps TLS with an untrusted chain accepted', () => {
   assert.deepEqual(
@@ -29,4 +29,31 @@ test('sslmode=disable is honoured wherever the host is', () => {
 
 test('an unparseable connection string falls back to the encrypted setting', () => {
   assert.deepEqual(resolvePoolSsl('not-a-url'), { rejectUnauthorized: false });
+});
+
+test('the pool is bounded: a finite size, a finite wait and a finite idle', () => {
+  const config = resolvePoolConfig(
+    'postgresql://user:pass@db.example.com:5432/app',
+  );
+
+  // `pg`'s defaults are ten connections and an unbounded wait, which is one
+  // pool's worth of demand multiplied by however many warm instances exist,
+  // and exhaustion presenting as a hang rather than an error.
+  assert.equal(config.max, 2);
+  assert.ok(
+    config.connectionTimeoutMillis > 0,
+    'an unbounded wait turns exhaustion into a hung request',
+  );
+  assert.ok(config.idleTimeoutMillis > 0, 'idle connections must be returned');
+});
+
+test('the pool config carries the same SSL decision the pool always made', () => {
+  assert.equal(
+    resolvePoolConfig('postgresql://user:pass@localhost:5432/app').ssl,
+    false,
+  );
+  assert.deepEqual(
+    resolvePoolConfig('postgresql://user:pass@db.example.com:5432/app').ssl,
+    { rejectUnauthorized: false },
+  );
 });
