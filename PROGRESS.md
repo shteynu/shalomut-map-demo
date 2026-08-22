@@ -20,6 +20,19 @@ inside it.
   promising the map after N more answers. Closed and archived rounds publish
   exactly as before.
 
+- **The one note that leaves the platform says so, at the field.** Since
+  2026-08-22 the background note on the round setup screen carries a line under
+  it: the text is sent verbatim to the model that writes the map, so it leaves
+  the platform, and names of staff do not belong in it. On contract 4.0 and
+  above that note has always reached the prompt as written; what was missing was
+  any way for the manager to know it while typing. The same day closed five
+  neighbouring hygiene findings from the 2026-08-21 audit — the funnel beacon
+  got a rate limit, the machine-to-machine secret fails closed on any deployed
+  runtime and compares in constant time, the share code's uniformity claim
+  became true, `npm run db:clear` clears the whole schema rather than five
+  tables of it, and the Swagger UI script from unpkg is hash-checked before it
+  runs inside a manager's session.
+
 - **The AI service runs the packages it was tested with.** Since 2026-08-22 its
   Python dependencies are a generated lock — the whole transitive tree at exact
   versions, every distribution hashed — and the container Render builds, both CI
