@@ -16,15 +16,27 @@ and in Git; what was durable in them is below.
 
 ## Now
 
-Verified 2026-08-21, in this worktree and on the deployed endpoint:
+Verified 2026-08-22, in this worktree and on the deployed endpoint:
 
-- **`origin/main` is `86a870c`** and `GET /api/health/` answers
-  `commit: 86a870c`, so the deployed endpoint is the pushed tip. Every deploy of
-  the day was watched flipping rather than assumed — `29ac8ec` → `179600c` →
-  `bbcc41b` → `5a7591d` → `d4b6039` → `a240927` → `64ed991` → `6bf0757` →
-  `86a870c`. Everything from the session is pushed except the commit carrying
-  this sentence, which is documentation. The only modified file is
+- **`origin/main` is `66707ae`** and `GET /api/health/` answers
+  `commit: 66707ae`; the Vercel production deployment reports `● Ready` with
+  `gitSource.sha` `66707ae14d313c…` on `main` and all three aliases on it. The
+  deployed endpoint is the pushed tip. The only modified file is
   `next-env.d.ts`, which is generated and belongs to the owner.
+- **A collecting round no longer publishes its numbers, on the deployment too.**
+  `648465c..66707ae` closed the critical finding of the 2026-08-21 audit: an
+  open round republished its full per-question aggregates on every read, so two
+  reads taken either side of one submission could be subtracted to recover that
+  respondent's answer sheet. The gate sits in
+  `calculateDynamicRoundAnalytics`, so all seven consumers inherit it; ADR-030
+  records it and amends ADR-022. Walked on the deployed endpoint on 2026-08-22
+  with the demo round set to `active` and back to `closed`: locked while
+  collecting, full map once closed. Detail in
+  `docs/agent-tasks/archive/fix--results-open-when-the-round-closes.md`.
+- **Deployed reads can be served by the Next.js client router cache.** The first
+  `/dashboard` load after a status change showed the previous render; a fresh
+  URL showed the truth. When checking a deployed behaviour change, vary the URL
+  rather than trusting a repeat navigation.
 - **The old `feat/what-the-administrator-sees` ref on `origin` is gone**, deleted
   2026-08-21. It had stopped at `2576b99` while `main` moved on, so it held no
   work of its own — `main` already contained it — and a future agent reading it

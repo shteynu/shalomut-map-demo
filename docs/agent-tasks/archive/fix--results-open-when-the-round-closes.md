@@ -5,9 +5,10 @@
 - Branch: `fix/results-open-when-the-round-closes`
 - Base branch: `main`
 - Base commit: `c40fb94` (also `origin/main`)
-- Current HEAD: the commit carrying this file
-- Status: implemented and verified; awaiting the owner's push
-- Last updated: 2026-08-21
+- Final commit: `66707ae`, which is also `origin/main` and the deployed sha
+- Status: complete, verified locally and on the deployed endpoint, landed on
+  `main`
+- Last updated: 2026-08-22
 - Last agent/tool: Claude Code (Opus 5)
 
 ## Objective
@@ -95,7 +96,8 @@ Nothing.
 
 ## Remaining
 
-Nothing. The owner pushes.
+Nothing. The owner pushed on 2026-08-22; Vercel built `66707ae` and the walk
+below was done against it.
 
 ## Changed files
 
@@ -172,10 +174,29 @@ its subject needs, not to work around the gate.
   active round it wants to write hits the unique constraint on `share_code`.
   The walk used the rounds already in the database instead. Worth fixing, but
   it is a seed-script defect and not this task's.
-- Nothing on the deployed endpoint. This branch changes runtime behaviour and
-  has not been deployed.
+- The breakdown screen's locked state was not reached on the deployed endpoint:
+  the demo round's questionnaire carries no background question, so that screen
+  short-circuits to its own empty state there. It was reached locally, on a
+  round that has one, and is covered by a component test.
 - Python suite not run: no file under `ai-analytics-service` changed, and
   `verify:ai` inside `verify:core` passed.
+
+- **Deployed walk on `shalomut-map-demo.vercel.app`, signed in by the owner in
+  the connected Chrome.** The Vercel production deployment reports `● Ready`
+  with `gitSource.sha` `66707ae14d313cb7ab398eee7d7d6fd1676a5e06` on `main`,
+  and all three aliases point at it. The deployed database held one round —
+  `סבב הדגמה`, `closed`, 12 responses — so it was set to `active` for the walk
+  and set back to `closed` afterwards:
+  - `closed`, before and after: `/dashboard` renders the full map, overall 76,
+    eight stones. Publication is unregressed on the deployed endpoint.
+  - `active`: `/dashboard` renders `המפה עדיין נעולה`, `12 תשובות התקבלו עד כה`
+    and the ADR-030 sentence — no dimension scores, no per-question numbers.
+  - `active`: the home screen's two status stones show a dash and
+    `ייפתח בסגירת הסבב`, while the response count `12/20` and the privacy
+    threshold `10` stay visible, which is the line ADR-030 draws.
+  - The first `/dashboard` load after the flip served the Next.js client router
+    cache and still showed the map; a fresh URL showed the lock. Worth knowing
+    for the next deployed check — it is a client-side cache, not the gate.
 
 ### Environment
 
@@ -211,7 +232,6 @@ None. Unchanged: `GEMINI_API_KEY` awaits the owner's rotation.
 
 ## Next concrete step
 
-`git push origin fix/results-open-when-the-round-closes:main` — the owner's
-action. A deploy check is worth doing after it: this branch changes runtime
-behaviour, so `/dashboard` on the deployed alias should show a locked map for
-any round that is still collecting.
+None. The work is landed as `66707ae`, deployed and verified there; this file is
+archived. The one open question above is a product question for the owner, not a
+step in this task.
