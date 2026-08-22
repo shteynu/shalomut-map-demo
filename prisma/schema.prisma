@@ -306,7 +306,12 @@ model QuestionAnswer {
 
   // A response answers each question once. Aggregates average over these rows,
   // so a duplicate would silently reweight a dimension rather than fail.
+  //
+  // This is also the index every lookup by `responseId` uses, cascade delete
+  // included, because `responseId` leads it. A separate `@@index([responseId])`
+  // stood here until 2026-08-22 and answered no read the composite could not:
+  // on the largest table in the schema it only made each written answer cost
+  // one more index.
   @@unique([responseId, questionId])
-  @@index([responseId])
   @@map("question_answers")
 }
