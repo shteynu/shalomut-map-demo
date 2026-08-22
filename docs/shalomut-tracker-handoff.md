@@ -120,9 +120,17 @@ Verified 2026-08-22, in this worktree and on the deployed endpoint:
   plan is an index scan on
   `question_answers_response_id_question_id_key`, 3 buffers. The cost comparison
   was made locally, where the table has 4576 rows.
-- **The AI service correctly did not rebuild** and still serves `e69a5eb`.
-  Nothing in this push touches its `buildFilter` paths, so a service commit
-  behind Core's is the expected resting state here, not a missed deploy.
+- **The AI service still serves `e69a5eb`, and the next landing will rebuild
+  it.** Until 2026-08-22 nothing had touched its `buildFilter` paths, so a
+  service commit behind Core's was the expected resting state rather than a
+  missed deploy. The dependency lock changes `Dockerfile` and
+  `ai-analytics-service/**`, which are two of those paths — so whichever push
+  lands it triggers a Render build, and on the free plan the old container stops
+  before the new one answers. Expect a few minutes of `502` and an uptime-monitor
+  alert, and read `/health` afterwards for a commit that is no longer `e69a5eb`.
+  The image was built locally on that lock and the whole service suite ran
+  inside it, so the build itself is not the risk; the downtime window is
+  ordinary for this plan.
 - **Phase 5 is deployed and the signed-in path was walked there.** That walk
   used the password door, which Production no longer has; it stands as evidence
   for renewal, not as a way in. Signed in as `admin@shalomut.edu.il`

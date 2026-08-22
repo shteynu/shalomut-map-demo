@@ -20,6 +20,16 @@ inside it.
   promising the map after N more answers. Closed and archived rounds publish
   exactly as before.
 
+- **The AI service runs the packages it was tested with.** Since 2026-08-22 its
+  Python dependencies are a generated lock — the whole transitive tree at exact
+  versions, every distribution hashed — and the container Render builds, both CI
+  gates and the documented local setup install from it with `--require-hashes`.
+  Before this they were four `>=` lines with no lockfile, so each rebuild
+  accepted whatever the index served that day and the three environments drifted
+  apart silently; an untested release or a hijacked package reached the paid
+  analysis pipeline simply by being current. `npm run lint:python-deps` keeps
+  the declaration, the locks and the install commands in agreement.
+
 - **The deployed database is verified, not merely encrypted.** Since 2026-08-22
   every connection to it — the serverless runtime and every administrative
   script — checks the certificate against Supabase's own root, which the
