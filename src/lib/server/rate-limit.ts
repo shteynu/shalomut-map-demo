@@ -85,6 +85,32 @@ export const RATE_LIMITS = {
     limit: 60,
     windowSeconds: 300,
   },
+  /**
+   * The funnel beacon, and the loosest bucket here by an order of magnitude.
+   *
+   * Until 2026-08-22 it had none, and unlike the submission it accepts any
+   * well-formed token hash — so a holder of a share code could write unbounded
+   * `survey_attempt` rows at a stage of their choosing, inflating the table and
+   * bending the manager's drop-off curve into whatever shape they wanted,
+   * including a fabricated "people usually give up at question N".
+   *
+   * Six hundred per five minutes, and the number comes from the legitimate side
+   * rather than the attacker's. One session fires `opened`, `consented`, and a
+   * `progress` per backgrounding — call it five for a teacher who switches apps
+   * a few times. A hundred and twenty people answering inside the same five
+   * minutes is already a more synchronized staff meeting than any school has
+   * had here, and it fits.
+   *
+   * Being refused costs a funnel row and never an answer: the questionnaire and
+   * the submission have their own buckets, and this endpoint answers `204`
+   * either way, so a respondent who trips it does not learn that they did and
+   * does not lose their place.
+   */
+  surveyAttemptBeacon: {
+    name: "survey-attempt-beacon",
+    limit: 600,
+    windowSeconds: 300,
+  },
 } as const satisfies Record<string, RateLimitPolicy>;
 
 export type RateLimitDecision = {

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { resolveCoreRepositories } from '@/lib/composition-root';
+import { consumeRateLimit, RATE_LIMITS } from '@/lib/server/rate-limit';
 import { RoundService, SurveyFunnelService } from '@/lib/services';
 
 /**
@@ -28,6 +29,16 @@ export async function POST(
 ) {
   try {
     const { shareCode } = await params;
+
+    // Refused the same way as everything else here: silently, with the same
+    // `204`. A 429 would tell a caller probing the funnel exactly where the
+    // ceiling is, and the real client does not read the reply at all.
+    const decision = await consumeRateLimit(
+      request.headers,
+      RATE_LIMITS.surveyAttemptBeacon,
+    );
+    if (!decision.allowed) return accepted();
+
     const body = (await request.json().catch(() => null)) as {
       anonymousTokenHash?: unknown;
       stage?: unknown;
