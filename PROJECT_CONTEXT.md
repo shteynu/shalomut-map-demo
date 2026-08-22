@@ -1136,6 +1136,61 @@ for this reason — an active one holding the share link and a closed one whose
 map opens — because one round can no longer demonstrate both halves of the
 product.
 
+### ADR-031: The deployed build applies its own migrations, or it does not ship
+
+2026-08-22. Until this day no deploy path applied migrations. `npm run build`
+ran `prisma generate` and never `prisma migrate deploy`; the manual CI job ran
+`vercel deploy --prod` with no migration step; and Vercel builds every push to
+`main` on its own, which is how nearly every deployment here happens. So the
+schema was moved by a person remembering to move it, and the code was moved by a
+push. A schema change that reached the code first left every read of the changed
+table answering 500 — Prisma selects the model's columns by name and does not
+fall back — until somebody ran the command. That cost a broken deployment on
+2026-08-04 and a hand step after every schema change since, the most recent of
+them earlier today.
+
+**The build is the only place that covers every path**, because every path ends
+in a Vercel build: the git integration, the manual CI job and a developer's
+`vercel deploy` alike. `scripts/deploy-migrate.mjs` is therefore the first step
+of `npm run build`, before `prisma generate` and before `next build`, and a
+migration that cannot be applied fails the build. A failed build ships nothing
+and the previous deployment keeps serving, which is the outcome to want: the
+alternative to a failed build is not a working deployment, it is a deployment
+against a schema nobody migrated.
+
+**It runs only where it should.** The step is keyed on `VERCEL_ENV === 'production'`,
+not on an opt-in variable of ours — an opt-in is one more switch that can sit in
+the off position, which is the shape of the defect being closed. A local
+`npm run build`, which `npm run verify:core` runs, migrates nothing: a
+verification command that writes to a database is not a verification command. A
+preview build migrates nothing either, because previews share the one deployed
+database and an unmerged branch has no business moving its schema.
+
+**It needs `DIRECT_URL` on the deployment, and says so rather than guessing.**
+`prisma migrate` takes an advisory lock, which does not survive the
+transaction-mode pooler that `DATABASE_URL` points at. With `DIRECT_URL` unset
+the build fails with that sentence; with `DIRECT_URL` set to the pooled string —
+the same database and the same credentials, differing only in port — it fails
+naming the port, because otherwise the error a person meets is about a lock
+rather than about a variable.
+
+**The consequence, which is a real cost and not a footnote: the schema now moves
+ahead of the alias.** The build finishes before the new deployment starts
+serving, so between migration and cutover the *previous* code runs against the
+*new* schema. An additive migration is safe there; a destructive one — a dropped
+or renamed column the old code still selects — breaks the deployment that is
+still serving. That is the old failure with its two sides swapped, and it is a
+smaller window than the old one, which lasted until a person noticed. Additive
+first, destructive in a later deployment, is now a rule of this repository rather
+than a preference. Dropping an index is exempt in practice: Prisma names columns
+and never names an index.
+
+**What this does not do** is notice a schema that has drifted for some other
+reason — a migration applied out of band, or a deployment made by a tool that
+skipped the build. The audit's suggestion of a startup `migrate status` that
+puts the app into maintenance instead of answering 500 per query is not built
+here, and is not implied by this decision.
+
 ## Environments
 
 The project supports exactly two environments:

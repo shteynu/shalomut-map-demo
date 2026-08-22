@@ -136,10 +136,12 @@ inside it.
   produces it. The unset configuration default remains rollback-safe `5.0`. A
   published version may gain an optional additive field under ADR-002's stated
   rule; a changed meaning still needs a new version.
-- Eleven repository migrations, the newest being `survey_definition_versions`,
-  are applied to both the deployed database and the local test database. The
-  build command runs `prisma generate` and never `prisma migrate deploy`, so
-  every schema change is a hand step — `docs/shalomut-tracker-handoff.md` owns
+- **A deployed build applies its own migrations** as of 2026-08-22, and fails
+  rather than shipping when it cannot. It was a hand step before that, which
+  cost a broken deployment on 2026-08-04 and one manual command after every
+  schema change since; ADR-031 records the decision, its `DIRECT_URL`
+  requirement and the ordering rule it introduces — additive first, because the
+  schema now moves ahead of the alias. `docs/shalomut-tracker-handoff.md` owns
   the current deployed reading and the evidence for it.
 - Verification is a checkpoint fact, not an evergreen expectation. At `8be73a6`:
   844 TypeScript tests. At `e14e3ac`: 826 TypeScript tests, 32 PostgreSQL tests and 11 Playwright tests. Earlier, at

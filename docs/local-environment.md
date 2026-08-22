@@ -124,9 +124,11 @@ alongside the AI service — but nothing in the daily loop needs that.
   only `.env`. A `DATABASE_URL` in `.env.local` therefore moves the app to one
   database while migrations keep going to another, silently. Keep the database
   in `.env` and nowhere else.
-- **Migrating the deployed database.** `prisma migrate` targets whatever `.env`
-  says, which is now the local container. To migrate the deployed database,
-  pass its URL explicitly — a real environment variable outranks the file:
+- **Migrating the deployed database.** Since 2026-08-22 the deployed build does
+  this itself (ADR-031), so this is the manual path for an out-of-band case
+  rather than the normal one. `prisma migrate` targets whatever `.env` says,
+  which is the local container. To migrate the deployed database, pass its URL
+  explicitly — a real environment variable outranks the file:
 
   ```bash
   DIRECT_URL="postgresql://…supabase…" npx prisma migrate deploy

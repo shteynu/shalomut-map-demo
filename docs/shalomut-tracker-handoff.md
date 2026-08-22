@@ -161,9 +161,23 @@ The owner picked the two cheap ones on 2026-08-22 and both are closed —
 appeared in it three times. The Prisma client now caches on `globalThis` rather
 than per module graph, its pool is bounded at two connections with a finite wait,
 the three scripts build their pools from the same function, and the duplicate
-index on `question_answers` is gone. Forty-five entries remain open. One owner item is still
-open and blocks nothing: rotating `GEMINI_API_KEY` before any paid round. The
-unused Google client secret was deleted on 2026-08-21 and is no longer one.
+index on `question_answers` is gone.
+
+Then the migrations one, which is why the hand step above existed at all: a
+deployed build now applies its pending migrations before it builds anything and
+fails rather than shipping when it cannot (ADR-031). Forty-four entries remain
+open, six of them high.
+
+**Owner items, both outside the repository.** Rotating `GEMINI_API_KEY` before
+any paid round blocks nothing and is still open. The new one does block
+something: **`DIRECT_URL` has to be set on the Vercel project before the
+migrations commit reaches `main`.** The step is deliberately fail-closed, so a
+production build without it refuses — the previous deployment keeps serving and
+nothing is lost, but nothing new ships either until the variable exists. The
+value is the `DIRECT_URL` already in `.env.deployed.local`, and it is not
+`DATABASE_URL`: the build refuses a `6543` pooled string by port, naming it,
+because that mistake otherwise surfaces as an advisory-lock error. The unused
+Google client secret was deleted on 2026-08-21 and is no longer an item.
 
 Two coverage gaps were found while reviewing what the multi-tenancy work is
 tested by, and **both are closed.** The first: `npm run lint:tenant-chokepoints`
@@ -316,14 +330,25 @@ applied that day *after* the push carrying its code, which is safe only because
 it drops an index; the 2026-08-19 migration before it was applied *ahead of* its
 push, which is the order every column change needs.
 
-**Migrations are a hand step, every time.** The build command runs
-`prisma generate` and never `prisma migrate deploy`. A schema change must reach
-the deployed database before or immediately after its push; in between, Prisma
-selects the model's columns by name and every read of the changed table fails
-rather than falling back. The discriminating symptom, when it happens: the
-previous deployment's own URL still answers correctly while the Production alias
-returns 500 — same database, so the difference is the schema the new build
-expects. This cost a broken deployment on 2026-08-04.
+**Migrations were a hand step, every time, until 2026-08-22.** `npm run build`
+now begins with `scripts/deploy-migrate.mjs`, so every Vercel build applies
+pending migrations first and fails instead of shipping when it cannot — ADR-031.
+**This is armed only once `DIRECT_URL` is set on the Vercel project**, and it
+was not set as of the last reading of that dashboard; until it is, a production
+build refuses with that sentence and the previous deployment keeps serving.
+Nothing else needs changing, and no other deploy path needs its own step,
+because every path ends in a Vercel build.
+
+What the old behaviour cost is worth keeping, because the new rule is shaped by
+it. A schema change had to reach the deployed database before or immediately
+after its push; in between, Prisma selects the model's columns by name and every
+read of the changed table fails rather than falling back. The discriminating
+symptom: the previous deployment's own URL still answers correctly while the
+Production alias returns 500 — same database, so the difference is the schema
+the new build expects. This cost a broken deployment on 2026-08-04. The window
+now runs the other way and is shorter — the schema moves ahead of the alias, so
+the *previous* code briefly meets the *new* schema — which is why additive-first
+is a rule now.
 
 **`npm run db:migrate:deploy` targets the local database**, not the deployed one:
 it reads `.env`, which points at local PostgreSQL on purpose. The deployed
