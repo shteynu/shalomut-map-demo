@@ -140,9 +140,13 @@ test('activating a round through the service satisfies the index', async () => {
 
   const activation = await RoundService.activateRound(next.id, roundRepo);
 
-  assert.strictEqual(activation?.round.status, 'active');
+  assert.strictEqual(activation.ok, true);
+  assert.strictEqual(
+    activation.ok ? activation.round.status : null,
+    'active',
+  );
   assert.deepStrictEqual(
-    activation?.closedRounds.map((entry) => entry.id),
+    activation.closedRounds.map((entry) => entry.id),
     [running.id],
   );
   assert.strictEqual((await roundRepo.findById(running.id))?.status, 'closed');
@@ -169,6 +173,45 @@ test('creating a live round through the service satisfies the index', async () =
   assert.deepStrictEqual(active.map((entry) => entry.id), [created.id]);
 });
 
+test('a status write applies only from the status it expected', async () => {
+  // The conditional write, against the database that has to honour it. A unit
+  // test can only ask a mock whether it passed the clause along; whether
+  // PostgreSQL matches no row when the status has moved is decided here.
+  const created = await roundRepo.create(roundRecord('draft'));
+  await roundRepo.updateStatus(created.id, 'archived', 'draft');
+
+  const stale = await roundRepo.updateStatus(created.id, 'active', 'draft');
+
+  assert.strictEqual(stale.outcome, 'status_changed');
+  assert.strictEqual(
+    stale.outcome === 'status_changed' ? stale.current : null,
+    'archived',
+  );
+  assert.strictEqual(
+    (await roundRepo.findById(created.id))?.status,
+    'archived',
+  );
+});
+
+test('the index refusal arrives as the round the school is running', async () => {
+  // The one outcome no unit test can establish. The `P2002` shape depends on
+  // how the client reached the database, and this suite uses the adapter-backed
+  // runtime — so if the constraint name ever stops arriving where the
+  // repository reads it, this is what notices, and the manager stops being told
+  // a real refusal is an unknown write failure.
+  const running = await roundRepo.create(roundRecord('active'));
+  const waiting = await roundRepo.create(roundRecord('draft'));
+
+  const write = await roundRepo.updateStatus(waiting.id, 'active', 'draft');
+
+  assert.strictEqual(write.outcome, 'another_round_is_active');
+  assert.strictEqual(
+    write.outcome === 'another_round_is_active' ? write.activeRound?.id : null,
+    running.id,
+  );
+  assert.strictEqual((await roundRepo.findById(waiting.id))?.status, 'draft');
+});
+
 /**
  * `updated_at` is Prisma's `@updatedAt`, which the in-memory repository can
  * only imitate. Whether PostgreSQL actually receives a new value on every write
@@ -183,7 +226,9 @@ test('every write stamps when the round reached the database', async () => {
   assert.ok(edited.updatedAt.getTime() >= created.updatedAt!.getTime());
 
   // Activation is a write of its own, so it moves the time the builder shows.
-  const activated = await roundRepo.updateStatus(created.id, 'active');
+  const write = await roundRepo.updateStatus(created.id, 'active', 'draft');
+  assert.strictEqual(write.outcome, 'written');
+  const activated = write.outcome === 'written' ? write.round : null;
   assert.ok(activated?.updatedAt instanceof Date);
   assert.ok(activated.updatedAt.getTime() >= edited.updatedAt.getTime());
 

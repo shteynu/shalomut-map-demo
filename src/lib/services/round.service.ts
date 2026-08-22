@@ -1,4 +1,7 @@
-import { IRoundRepository } from '../repositories/interfaces';
+import {
+  IRoundRepository,
+  RoundStatusWrite,
+} from '../repositories/interfaces';
 import { isRoundTransitionAllowed } from '../rounds/round-status';
 import {
   CreateRoundInput,
@@ -12,6 +15,23 @@ import {
   isActivatableSurveyDefinition,
   parseSurveyDefinition,
 } from '../survey-definition';
+
+/**
+ * What `activateRound` did.
+ *
+ * The failure branch carries both the reason and the rounds the attempt had
+ * already closed on its way there, because those two facts together are the
+ * school's actual situation: no round is running, and here is which one
+ * stopped. Answering `null` — as this did until 2026-08-22 — let the builder
+ * report a save that went live when nothing had.
+ */
+export type RoundActivation =
+  | { ok: true; round: SurveyRound; closedRounds: SurveyRound[] }
+  | {
+      ok: false;
+      failure: Exclude<RoundStatusWrite, { outcome: 'written' }>;
+      closedRounds: SurveyRound[];
+    };
 
 export class RoundService {
   /**
@@ -170,9 +190,11 @@ export class RoundService {
   public static async activateRound(
     roundId: string,
     roundRepo: IRoundRepository,
-  ): Promise<{ round: SurveyRound; closedRounds: SurveyRound[] } | null> {
+  ): Promise<RoundActivation> {
     const round = await roundRepo.findById(roundId);
-    if (!round) return null;
+    if (!round) {
+      return { ok: false, failure: { outcome: 'not_found' }, closedRounds: [] };
+    }
 
     // The previous round is closed before this one goes live, not after: the
     // database now refuses two active rounds of one school, so the other order
@@ -181,21 +203,32 @@ export class RoundService {
     // school is left with no running round rather than two.
     const closedRounds = await this.closeOtherActiveRounds(round, roundRepo);
 
-    const activated = await roundRepo.updateStatus(roundId, 'active');
-    if (!activated) return null;
+    const activated = await roundRepo.updateStatus(roundId, 'active', round.status);
+    if (activated.outcome !== 'written') {
+      // The rounds this attempt already closed travel with the failure. They
+      // are the part the school will notice — it has no running round now —
+      // and a caller that could not name them would have to report the loss as
+      // nothing having happened.
+      return { ok: false, failure: activated, closedRounds };
+    }
 
-    return { round: activated, closedRounds };
+    return { ok: true, round: activated.round, closedRounds };
   }
 
   /**
    * Close every other active round of the same school, and report which ones.
    *
    * These are separate writes rather than one transaction: the repository
-   * interface has no transaction primitive, and a deployment has one manager,
-   * so nothing else is activating rounds concurrently. The rule itself is now
-   * durable — the partial unique index `survey_rounds_one_active_per_organization`
-   * refuses a second active round — and this method is what keeps the ordinary
-   * path from running into it.
+   * interface has no transaction primitive. The rule itself is durable — the
+   * partial unique index `survey_rounds_one_active_per_organization` refuses a
+   * second active round — and this method is what keeps the ordinary path from
+   * running into it.
+   *
+   * A sibling that could not be closed is left out of the returned list and is
+   * deliberately not raised here. It still holds the school's one active slot,
+   * so the activation that follows meets the index and comes back as
+   * `another_round_is_active` — one report, from the write that actually
+   * failed, instead of two descriptions of the same jam.
    */
   public static async closeOtherActiveRounds(
     round: SurveyRound,
@@ -207,8 +240,8 @@ export class RoundService {
     for (const sibling of siblings) {
       if (sibling.id === round.id || sibling.status !== 'active') continue;
 
-      const result = await roundRepo.updateStatus(sibling.id, 'closed');
-      if (result) closed.push(result);
+      const result = await roundRepo.updateStatus(sibling.id, 'closed', 'active');
+      if (result.outcome === 'written') closed.push(result.round);
     }
 
     return closed;

@@ -519,8 +519,18 @@ export function SurveyBuilder({
 
     if (!response?.ok) {
       const payload = response
-        ? ((await response.json().catch(() => null)) as { error?: string } | null)
+        ? ((await response.json().catch(() => null)) as {
+            error?: string;
+            closedRoundTitles?: string[];
+          } | null)
         : null;
+      // A save that stored the questionnaire but could not start the round has
+      // already closed the round the school was running. That half is shown
+      // even though the request failed, because it is the half the manager has
+      // to act on — the school is not collecting anything right now.
+      setClosedRoundTitles(
+        Array.isArray(payload?.closedRoundTitles) ? payload.closedRoundTitles : [],
+      );
       setSaveError(
         localizeSurveyDefinitionSaveError(payload?.error, response?.status),
       );

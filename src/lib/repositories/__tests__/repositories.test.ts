@@ -53,8 +53,12 @@ test('InMemoryRoundRepository handles lookup by share code and status updates', 
   assert.strictEqual(found?.id, DEMO_ROUND.id);
 
   // Status update
-  const updated = await repo.updateStatus(DEMO_ROUND.id, 'closed');
-  assert.strictEqual(updated?.status, 'closed');
+  const updated = await repo.updateStatus(DEMO_ROUND.id, 'closed', 'active');
+  assert.strictEqual(updated.outcome, 'written');
+  assert.strictEqual(
+    updated.outcome === 'written' ? updated.round.status : null,
+    'closed',
+  );
 
   const afterUpdate = await repo.findById(DEMO_ROUND.id);
   assert.strictEqual(afterUpdate?.status, 'closed');
@@ -199,7 +203,7 @@ test('End-to-End Workflow: Round creation -> 10 submissions -> Analytics Unlocki
   assert.deepStrictEqual(analytics?.dimensionScores, {});
 
   // 5. Close the round -> the numbers are published
-  await roundRepo.updateStatus(round.id, 'closed');
+  await roundRepo.updateStatus(round.id, 'closed', 'active');
 
   analytics = await AnalyticsService.getAnalyticsForRound(
     round.id,

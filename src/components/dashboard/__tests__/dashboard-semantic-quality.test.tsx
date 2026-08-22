@@ -203,6 +203,17 @@ test("survey builder never exposes raw API validation errors to managers", () =>
     409,
   );
   assert.match(immutableSnapshotError, /לאחר שהתקבלה תשובה/);
+
+  // A save that stored the questionnaire but could not start the round is also
+  // a 409, and it is not the one above. Without its own branch the manager was
+  // told their questionnaire had been refused, when it had been saved.
+  const refusedActivation = localizeSurveyDefinitionSaveError(
+    "The questionnaire was saved, but the round could not be started. This school is already running 'רבעון א׳'. Close that round before starting another.",
+    409,
+  );
+  assert.match(refusedActivation, /השאלון נשמר/);
+  assert.match(refusedActivation, /כבר רץ סבב אחר/);
+  assert.doesNotMatch(refusedActivation, /לאחר שהתקבלה תשובה/);
   assert.match(immutableSnapshotError, /סבב או גרסה חדשה/);
   assert.doesNotMatch(immutableSnapshotError, /snapshot|responses/i);
 });

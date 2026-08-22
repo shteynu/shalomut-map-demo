@@ -12,6 +12,10 @@ import {
 import { getArchivedRoundGuardResponse } from "@/lib/server/archived-round-guard";
 import { getDurableWriteGuardResponse } from "@/lib/server/durable-write-guard";
 import { recordRoundAuditEvent } from "@/lib/server/manager-audit";
+import {
+  describeRefusedStatusWrite,
+  type RefusedStatusWrite,
+} from "@/lib/server/round-status-write";
 import { authorizeManagerRound } from "@/lib/server/manager-scope";
 
 interface RouteParams {
@@ -145,15 +149,24 @@ export async function PUT(request: Request, { params }: RouteParams) {
     // Activation writes the round again, so it, and not the definition write,
     // is then the moment the round last reached the database.
     let savedRound = updated;
+    // An activation that was refused is reported rather than absorbed. This
+    // path had already closed the school's running round by the time it failed,
+    // so answering `success: true` left the school with no live round, a
+    // builder saying it had gone live, and an empty `closedRoundTitles` — the
+    // one field that would have said which round stopped.
+    let activationFailure: RefusedStatusWrite | null = null;
     if (
       updated &&
       updated.status === 'draft' &&
       isActivatableSurveyDefinition(nextDefinition)
     ) {
       const activation = await RoundService.activateRound(roundId, roundRepo);
-      closedRoundTitles =
-        activation?.closedRounds.map((round) => round.title) ?? [];
-      savedRound = activation?.round ?? updated;
+      closedRoundTitles = activation.closedRounds.map((round) => round.title);
+      if (activation.ok) {
+        savedRound = activation.round;
+      } else {
+        activationFailure = activation.failure;
+      }
     }
 
     if (!updated) {
@@ -177,6 +190,29 @@ export async function PUT(request: Request, { params }: RouteParams) {
         closedRoundTitles,
       },
     );
+
+    if (activationFailure) {
+      const refusal = describeRefusedStatusWrite(activationFailure);
+      if (activationFailure.outcome === 'write_failed') {
+        console.error(
+          'Starting a round from the builder failed:',
+          activationFailure.reason,
+        );
+      }
+
+      // The questionnaire is saved and the closed rounds are named, because
+      // both are true and both are what the manager has to act on: the work is
+      // not lost, and the school is not running anything.
+      return NextResponse.json(
+        {
+          error: `The questionnaire was saved, but the round could not be started. ${refusal.error}`,
+          savedAt: savedRound?.updatedAt?.toISOString(),
+          definition: updated.surveyDefinition,
+          closedRoundTitles,
+        },
+        { status: refusal.status },
+      );
+    }
 
     return NextResponse.json({
       success: true,

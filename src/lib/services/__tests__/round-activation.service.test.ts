@@ -34,9 +34,10 @@ test('activating a round closes the round the school was running', async () => {
 
   const activation = await RoundService.activateRound('next', repo);
 
-  assert.strictEqual(activation?.round.status, 'active');
+  assert.strictEqual(activation.ok, true);
+  assert.strictEqual(activation.ok ? activation.round.status : null, 'active');
   assert.deepStrictEqual(
-    activation?.closedRounds.map((entry) => entry.id),
+    activation.closedRounds.map((entry) => entry.id),
     ['running'],
   );
   assert.strictEqual((await repo.findById('running'))?.status, 'closed');
@@ -90,7 +91,7 @@ test('closed and archived rounds are left as they are', async () => {
 
   const activation = await RoundService.activateRound('next', repo);
 
-  assert.deepStrictEqual(activation?.closedRounds, []);
+  assert.deepStrictEqual(activation.closedRounds, []);
   assert.strictEqual((await repo.findById('closed'))?.status, 'closed');
   assert.strictEqual((await repo.findById('archived'))?.status, 'archived');
 });

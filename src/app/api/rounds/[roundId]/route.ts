@@ -4,6 +4,7 @@ import { RoundService } from "@/lib/services";
 import { getDurableWriteGuardResponse } from "@/lib/server/durable-write-guard";
 import { recordRoundAuditEvent } from "@/lib/server/manager-audit";
 import { authorizeManagerRound } from "@/lib/server/manager-scope";
+import { refusedStatusWriteResponse } from "@/lib/server/round-status-write";
 import { enqueueAiAnalyticsOnClosure } from "@/lib/server/trigger-ai-analytics";
 import type { RoundStatus } from "@/lib/types/backend";
 import {
@@ -76,7 +77,32 @@ export async function PATCH(
       }
     }
 
-    const updated = await roundRepo.updateStatus(roundId, targetStatus);
+    /*
+     * The status the transition was validated against travels into the write,
+     * so the database applies it only if the round is still there. Two managers
+     * who both read `active` therefore produce one close and one 409, rather
+     * than one close and one write landing on top of a round that had already
+     * moved — including onto an `archived` one, which no transition allows.
+     */
+    const write = await roundRepo.updateStatus(
+      roundId,
+      targetStatus,
+      round.status,
+    );
+
+    /*
+     * Everything below is a consequence of the write, so nothing below runs
+     * unless the write happened. Until 2026-08-22 the audit event and the
+     * analysis dispatch ran unconditionally: a refused activation was recorded
+     * as a transition that never occurred, and a failed `active → closed` still
+     * queued the closing analysis — producing a map for a round that was still
+     * collecting, which is exactly what the 2026-08-17 decision removed.
+     */
+    if (write.outcome !== "written") {
+      return refusedStatusWriteResponse(write);
+    }
+
+    const updated = write.round;
 
     await recordRoundAuditEvent(
       auditLogRepo,

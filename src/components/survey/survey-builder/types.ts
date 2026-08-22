@@ -326,6 +326,19 @@ export function localizeSurveyDefinitionSaveError(
     return error!.trim();
   }
 
+  /*
+   * The questionnaire was stored and the round did not start. Both halves have
+   * to reach the manager: told only that the save failed they would redo work
+   * that is already saved, and told only that it succeeded they would not
+   * notice the school has no running round. This sits above the checks below
+   * because a 409 here is not the immutable-snapshot 409 they answer.
+   */
+  if (normalized.includes("could not be started")) {
+    return normalized.includes("already running")
+      ? "השאלון נשמר, אך הסבב לא הופעל: בבית הספר כבר רץ סבב אחר. יש לסגור אותו ואז להפעיל מחדש."
+      : "השאלון נשמר, אך הסבב לא הופעל. רעננו את הדף ונסו להפעיל שוב.";
+  }
+
   if (normalized.includes("unique") || normalized.includes("duplicate")) {
     return "לא ניתן לשמור: לכל שאלה חייב להיות מזהה קבוע וייחודי.";
   }

@@ -31,13 +31,54 @@ export interface IOrganizationRepository {
   update(id: string, input: UpdateOrganizationInput): Promise<Organization | null>;
 }
 
+/**
+ * What a status write did — not merely whether it returned a row.
+ *
+ * `updateStatus` used to answer `SurveyRound | null`, and `null` stood for
+ * every failure at once: the round was gone, the partial unique index refused a
+ * second active round, a concurrent request had already moved the status, or
+ * the connection dropped. Callers could not tell those apart, so they treated
+ * `null` as nothing worth reporting and went on writing audit events and
+ * dispatching analysis for writes that never happened. That was the fail-open
+ * cluster of the 2026-08-21 audit; naming the outcomes is what closes it.
+ */
+export type RoundStatusWrite =
+  | { outcome: 'written'; round: SurveyRound }
+  | { outcome: 'not_found' }
+  /** Someone else moved the round first; `current` is what it holds now. */
+  | { outcome: 'status_changed'; current: RoundStatus }
+  /**
+   * One school runs one round at a time (owner decision 2026-08-03). The
+   * school's running round is named when it can be read, because a manager
+   * whose activation was refused needs to know which round refused it.
+   */
+  | { outcome: 'another_round_is_active'; activeRound: SurveyRound | null }
+  | { outcome: 'write_failed'; reason: string };
+
 export interface IRoundRepository {
   create(round: SurveyRound): Promise<SurveyRound>;
   findById(id: string): Promise<SurveyRound | null>;
   findByShareCode(shareCode: string): Promise<SurveyRound | null>;
   findByOrganizationId(organizationId: string): Promise<SurveyRound[]>;
   update(id: string, input: UpdateRoundInput): Promise<SurveyRound | null>;
-  updateStatus(id: string, status: RoundStatus): Promise<SurveyRound | null>;
+  /**
+   * Move a round from `expectedCurrent` to `status`, and only from there.
+   *
+   * The expected status is the `WHERE` of the write rather than a hint, so a
+   * transition validated against a read taken moments earlier cannot be applied
+   * on top of whatever happened since. Two concurrent requests that both read
+   * `active` therefore produce one write and one `status_changed`, instead of
+   * two writes of which the second silently wins.
+   *
+   * Required rather than optional: an omitted expectation is exactly the
+   * unconditional write this replaces, and a parameter that may be left out is
+   * one that will be.
+   */
+  updateStatus(
+    id: string,
+    status: RoundStatus,
+    expectedCurrent: RoundStatus,
+  ): Promise<RoundStatusWrite>;
 }
 
 /**

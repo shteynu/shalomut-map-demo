@@ -1,5 +1,5 @@
 import { RoundStatus, SurveyRound, UpdateRoundInput } from '../../types/backend';
-import { IRoundRepository } from '../interfaces';
+import { IRoundRepository, RoundStatusWrite } from '../interfaces';
 
 function cloneRound(round: SurveyRound): SurveyRound {
   return {
@@ -78,13 +78,38 @@ export class InMemoryRoundRepository implements IRoundRepository {
 
   public async updateStatus(
     id: string,
-    status: RoundStatus
-  ): Promise<SurveyRound | null> {
+    status: RoundStatus,
+    expectedCurrent: RoundStatus,
+  ): Promise<RoundStatusWrite> {
     const round = this.rounds.get(id);
-    if (!round) return null;
+    if (!round) return { outcome: 'not_found' };
+
+    if (round.status !== expectedCurrent) {
+      return { outcome: 'status_changed', current: round.status };
+    }
+
+    // The deployed database refuses a school's second active round through the
+    // partial unique index `survey_rounds_one_active_per_organization`. This
+    // class enforces the same rule rather than being the one place the
+    // invariant does not hold — nearly every test of a refused activation runs
+    // against the in-memory repository, and one that cannot refuse would prove
+    // the handling works by never reaching it.
+    if (status === 'active') {
+      for (const sibling of this.rounds.values()) {
+        if (sibling.id === id) continue;
+        if (sibling.organizationId !== round.organizationId) continue;
+        if (sibling.status !== 'active') continue;
+
+        return {
+          outcome: 'another_round_is_active',
+          activeRound: cloneRound(sibling),
+        };
+      }
+    }
+
     const updated: SurveyRound = { ...round, status, updatedAt: new Date() };
     this.rounds.set(id, updated);
-    return cloneRound(updated);
+    return { outcome: 'written', round: cloneRound(updated) };
   }
 
   public clear(): void {

@@ -197,8 +197,16 @@ test('PrismaRoundRepository creates rounds and updates status', async () => {
   const byCode = await roundRepo.findByShareCode('SHALOM-PRISMA');
   assert.strictEqual(byCode?.id, 'round_prisma_1');
 
-  const updated = await roundRepo.updateStatus('round_prisma_1', 'closed');
-  assert.strictEqual(updated?.status, 'closed');
+  const updated = await roundRepo.updateStatus(
+    'round_prisma_1',
+    'closed',
+    'active',
+  );
+  assert.strictEqual(updated.outcome, 'written');
+  assert.strictEqual(
+    updated.outcome === 'written' ? updated.round.status : null,
+    'closed',
+  );
 
   const configured = await roundRepo.update('round_prisma_1', {
     backgroundContext: {
