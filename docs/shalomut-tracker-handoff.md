@@ -18,11 +18,12 @@ and in Git; what was durable in them is below.
 
 Verified 2026-08-22, in this worktree and on the deployed endpoint:
 
-- **`origin/main` is `66707ae`** and `GET /api/health/` answers
-  `commit: 66707ae`; the Vercel production deployment reports `● Ready` with
-  `gitSource.sha` `66707ae14d313c…` on `main` and all three aliases on it. The
-  deployed endpoint is the pushed tip. The only modified file is
-  `next-env.d.ts`, which is generated and belongs to the owner.
+- **`origin/main` is `d72e76b`** and `GET /api/health/` answers
+  `commit: d72e76b`, so the deployed endpoint is the pushed tip. The last
+  commit that changed runtime is `66707ae`, whose deployment was walked
+  before `d72e76b` — a documentation commit — was pushed on top of it. The only
+  modified file is `next-env.d.ts`, which is generated and belongs to the
+  owner.
 - **A collecting round no longer publishes its numbers, on the deployment too.**
   `648465c..66707ae` closed the critical finding of the 2026-08-21 audit: an
   open round republished its full per-question aggregates on every read, so two

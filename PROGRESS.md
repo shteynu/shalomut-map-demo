@@ -8,6 +8,18 @@ inside it.
 
 ## Current state
 
+- **A round publishes its numbers once, when it closes.** Since 2026-08-22 a
+  round that is still collecting shows its response count and nothing derived
+  from the answers — no map, no dimension scores, no per-question numbers, no
+  breakdown. Until then every read of an open round republished the full
+  aggregates, so two reads taken either side of one submission could be
+  subtracted to recover that respondent's answer sheet; the audit of 2026-08-21
+  found it and `PROJECT_CONTEXT.md` ADR-030 records the rule, which extends
+  ADR-022 from "one basis per manager choice" to "one basis, on the clock too".
+  The cost is the live map during collection, and the screens say so rather than
+  promising the map after N more answers. Closed and archived rounds publish
+  exactly as before.
+
 - **A manager is a person the database knows, and their password is nobody's.**
   Since 2026-08-20 `managers` and `organization_memberships` are tables: a
   session is built from rows rather than assembled per login from environment
@@ -373,7 +385,11 @@ inside it.
   Upstash variables move that counter into shared Redis, which is what makes it
   hold on serverless.
 - Ten is the default and minimum privacy threshold; managers can only raise it.
-- Total and per-question privacy gates prevent partial unlocked analysis.
+- Total and per-question privacy gates prevent partial unlocked analysis, and a
+  round is withheld while it is still collecting whatever its counts say
+  (ADR-030). All three conditions live in `calculateDynamicRoundAnalytics`, so
+  every consumer — dashboard, home, breakdown, comparison, the analytics route,
+  the MCP route and the AI callback verifier — inherits one verdict.
 - Core owns deterministic aggregates, statuses and callback evidence checks.
 - Dashboard, round and detail routes show honest locked, queued/running, ready,
   failed, missing and refresh states without exposing service internals.
