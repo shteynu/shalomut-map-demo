@@ -4,6 +4,36 @@ import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, BookOpen, FileText } from 'lucide-react';
 
+/**
+ * Swagger UI is the only third-party code this application executes at
+ * runtime, and it runs inside the manager's authenticated origin.
+ *
+ * The version was pinned from the start; the bytes were not. Until 2026-08-22
+ * whatever unpkg answered with was executed — so a compromised CDN response,
+ * or anything able to answer for one, could have made same-origin calls to
+ * every destructive API on this deployment using the reader's own session.
+ *
+ * `integrity` is what closes that: the browser hashes what it received and
+ * refuses to run it unless the hash matches. `crossOrigin` is not optional
+ * beside it — without it a cross-origin response is opaque, the browser cannot
+ * hash what it cannot read, and the subresource is blocked rather than checked.
+ *
+ * The digests are of the files in `swagger-ui-dist@5.11.0` as published to the
+ * npm registry, which is what unpkg serves. Recompute them from the registry
+ * tarball rather than from the CDN when the version moves — taking the hash
+ * from the same place the risk comes from proves nothing:
+ *
+ *   npm pack swagger-ui-dist@<version>
+ *   openssl dgst -sha384 -binary <file> | openssl base64 -A
+ */
+const SWAGGER_UI_VERSION = '5.11.0';
+const SWAGGER_UI_INTEGRITY = {
+  script:
+    'sha384-qn5tagrAjZi8cSmvZ+k3zk4+eDEEUcP9myuR2J6V+/H6rne++v6ChO7EeHAEzqxQ',
+  stylesheet:
+    'sha384-+yyzNgM3K92sROwsXxYCxaiLWxWJ0G+v/9A+qIZ2rgefKgkdcmJI+L601cqPD/Ut',
+} as const;
+
 export default function ApiDocsPage() {
   useEffect(() => {
     // Dynamically inject Swagger UI CSS and JS
@@ -12,7 +42,9 @@ export default function ApiDocsPage() {
       const link = document.createElement('link');
       link.id = cssId;
       link.rel = 'stylesheet';
-      link.href = 'https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui.css';
+      link.href = `https://unpkg.com/swagger-ui-dist@${SWAGGER_UI_VERSION}/swagger-ui.css`;
+      link.integrity = SWAGGER_UI_INTEGRITY.stylesheet;
+      link.crossOrigin = 'anonymous';
       document.head.appendChild(link);
     }
 
@@ -44,7 +76,9 @@ export default function ApiDocsPage() {
     if (!document.getElementById(scriptId)) {
       const script = document.createElement('script');
       script.id = scriptId;
-      script.src = 'https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui-bundle.js';
+      script.src = `https://unpkg.com/swagger-ui-dist@${SWAGGER_UI_VERSION}/swagger-ui-bundle.js`;
+      script.integrity = SWAGGER_UI_INTEGRITY.script;
+      script.crossOrigin = 'anonymous';
       script.async = true;
       script.onload = initSwagger;
       document.body.appendChild(script);
