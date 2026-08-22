@@ -53,7 +53,7 @@ jobs:
         with:
           python-version: "3.11"
           cache: pip
-          cache-dependency-path: ai-analytics-service/pyproject.toml
+          cache-dependency-path: ai-analytics-service/requirements-dev.txt
 
       - name: Install Node.js dependencies
         run: npm ci
@@ -68,7 +68,7 @@ jobs:
       # newcomer is told to follow still works.
       - name: Create the AI service virtualenv
         working-directory: ai-analytics-service
-        run: python3 -m venv .venv && .venv/bin/python -m pip install -e ".[dev]"
+        run: python3 -m venv .venv && .venv/bin/python -m pip install --require-hashes -r requirements-dev.txt && .venv/bin/python -m pip install --no-deps -e .
 
       # No DATABASE_URL, deliberately, matching the rule `deploy-vercel.yml`
       # states for its own build: nothing in this gate may reach a database.

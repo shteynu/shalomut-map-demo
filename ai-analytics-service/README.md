@@ -168,12 +168,53 @@ Python 3.11 or newer is required.
 cd ai-analytics-service
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install -e ".[dev]"
+python -m pip install --require-hashes -r requirements-dev.txt
+python -m pip install --no-deps -e .
 ```
 
-The `[dev]` extra is what puts `pytest` in the virtualenv. A plain
-`pip install -e .` runs the service but answers `No module named pytest` to
+`requirements-dev.txt` is what puts `pytest` in the virtualenv. Installing only
+`requirements.txt` runs the service but answers `No module named pytest` to
 every verification command.
+
+## Dependencies: what is declared and what is installed
+
+`pyproject.toml` declares intent — the four direct dependencies and the version
+floors this code needs. Nothing installs from it.
+
+`requirements.txt` and `requirements-dev.txt` are generated locks: every
+transitive package at one exact version, with the hashes of every distribution
+PyPI may serve for it. The `Dockerfile` Render builds, both CI gates and the
+setup above all install from a lock with `--require-hashes`, so the packages
+this suite passes against are the packages the deployment runs. The editable
+install of the service itself is a separate command with `--no-deps`, because
+`--require-hashes` refuses to install anything unhashed and the service is
+source on the path rather than a dependency to resolve.
+
+Until 2026-08-22 there was no lock. `requirements.txt` was four `>=` lines, so
+every rebuild of the Render image silently accepted whatever PyPI served that
+day, and a local virtualenv created months apart from a CI runner held
+different packages with nothing recording the difference.
+
+Regenerate both after changing a dependency in `pyproject.toml` — and only
+then, or deliberately as an upgrade:
+
+```bash
+uv pip compile pyproject.toml --universal --generate-hashes -o requirements.txt
+uv pip compile pyproject.toml --extra dev --universal --generate-hashes -o requirements-dev.txt
+```
+
+`--universal` resolves across every platform and every Python from the
+`requires-python` floor up, so one lock serves macOS development, the Linux CI
+runner and the `python:3.11-slim` image. `npm run lint:python-deps` checks that
+the locks still cover what `pyproject.toml` declares and that every requirement
+carries hashes; it cannot check freshness, which is a decision rather than a
+fact.
+
+**Cadence.** These versions move when somebody moves them: on a dependency
+change, on a security advisory, and otherwise on a deliberate upgrade pass
+where the regenerated lock has to go through the full suite before it lands.
+There is no automatic bump, and that is the point — an unreviewed upgrade
+reaching a paid pipeline is the failure this replaced.
 
 Export the required variables in your shell. Use
 [`./.env.example`](./.env.example) as the list of supported settings. For a
@@ -568,6 +609,18 @@ path.
 ```bash
 docker build -t shalomut-ai-analytics ..
 docker run --rm -p 8000:8000 -e ENV=development shalomut-ai-analytics
+```
+
+The build is also the only place the lock is exercised on the interpreter the
+deployment uses, since the image is `python:3.11-slim` and a development
+machine is usually something newer. To run the suite there too — the image
+carries no test dependencies and `.dockerignore` keeps `tests/` out of it, so
+both arrive through a bind mount:
+
+```bash
+docker run --rm -v "$PWD/..:/src" -w /src/ai-analytics-service --user root \
+  shalomut-ai-analytics sh -c \
+  "pip install --no-cache-dir --require-hashes -r requirements-dev.txt && python -m pytest -q"
 ```
 
 ## Verification

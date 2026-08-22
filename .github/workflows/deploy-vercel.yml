@@ -63,17 +63,21 @@ jobs:
           cache: pip
           cache-dependency-path: |
             ai-analytics-service/requirements.txt
-            ai-analytics-service/pyproject.toml
+            ai-analytics-service/requirements-dev.txt
 
       - name: Install Node.js dependencies
         run: npm ci
 
+      # The same two commands as `verify-core.yml` and
+      # `docs/local-environment.md`, and the same lock the `Dockerfile`
+      # installs: this gate has to run the packages Render will run, or it
+      # gates a different service than the one that deploys.
       - name: Create Python virtual environment
         run: python -m venv ai-analytics-service/.venv
 
       - name: Install Python dependencies
         working-directory: ai-analytics-service
-        run: .venv/bin/python -m pip install -r requirements.txt -e '.[dev]'
+        run: .venv/bin/python -m pip install --require-hashes -r requirements-dev.txt && .venv/bin/python -m pip install --no-deps -e .
 
       - name: Run canonical verification
         run: npm run verify

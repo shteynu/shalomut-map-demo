@@ -56,6 +56,7 @@ privacy, auth, persistence, contracts или deployment.
 | `docs/openapi.yaml` или API contract | `npm run openapi:generate`, OpenAPI integrity tests, сверка route/schema changes с реальными handlers |
 | Versioned AI manifest, `contracts/capabilities.json` или AI TypeScript | `npm run lint:contract-refusals` — новая версия обязана получить suite отрицательных тестов; contract/registry/client/view-model tests, `npm test`, Python tests и local boundary E2E |
 | `ai-analytics-service` | `.venv/bin/python -m pytest` из `ai-analytics-service` — полный набор, включая contract suites |
+| Python-зависимости: `pyproject.toml`, `requirements*.txt`, `Dockerfile`, python-шаги в workflows | `npm run lint:python-deps`; локи регенерируются командами из `ai-analytics-service/README.md`, а не правятся руками. Развёрнутый интерпретатор — 3.11, и на машине разработки его обычно нет, поэтому доказательство одно: `docker build` и прогон набора в этом образе. Команда — в разделе `Local container check` того же README |
 | Auth, secrets или authorization | Unauthorized/missing-secret/organization-isolation tests и security-focused diff review |
 | Deploy, env или runtime config | Полный local suite, deployed source/build/health/status/logs и безопасный read-only browser smoke |
 

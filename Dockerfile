@@ -14,8 +14,19 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app/ai-analytics-service
 
+# `requirements.txt` is a generated lock, not a list of intentions: exact
+# versions for the whole transitive tree, each with the hashes of every
+# distribution PyPI may serve for it. `--require-hashes` is what makes it a
+# lock rather than a suggestion — it refuses to install anything unhashed, so a
+# dependency that quietly appears cannot ride in, and a version that appears at
+# the same number with different bytes is refused rather than installed.
+#
+# Until 2026-08-22 this line installed four `>=` bounds and no lockfile, so
+# every rebuild of this image silently accepted whatever PyPI served that day.
+# Regenerate with the command at the top of the lock; `ai-analytics-service/
+# README.md` says when.
 COPY ai-analytics-service/requirements.txt ./requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --require-hashes -r requirements.txt
 
 COPY contracts /app/contracts
 COPY ai-analytics-service/pyproject.toml ./pyproject.toml

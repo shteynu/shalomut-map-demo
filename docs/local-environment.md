@@ -14,10 +14,19 @@ fails closed on the same misconfiguration the deployment fails on.
 
 ```bash
 npm install
-cd ai-analytics-service && python3 -m venv .venv && .venv/bin/python -m pip install -e ".[dev]" && cd ..
+cd ai-analytics-service && python3 -m venv .venv && .venv/bin/python -m pip install --require-hashes -r requirements-dev.txt && .venv/bin/python -m pip install --no-deps -e . && cd ..
 npm run local                             # brings the database up on its own
 npm run db:seed:local                     # one active round with twelve responses
 ```
+
+The Python half installs from `requirements-dev.txt`, which is a generated
+lock: exact versions for the whole transitive tree with the hashes of every
+distribution, so this machine, the CI gate and the image Render builds all run
+the same packages. `--require-hashes` refuses anything unhashed, which is why
+the editable install of the service itself is a second command with `--no-deps`
+— it is source on the path, not a dependency to resolve. `pyproject.toml`
+remains where a dependency is *declared*; the lock is what any of the three
+actually installs. Regenerating it is in `ai-analytics-service/README.md`.
 
 `.env` holds both halves' configuration; `.env.example` documents every key.
 The three shared secrets are required — the local AI service enforces them
