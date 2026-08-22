@@ -125,13 +125,25 @@ Verified 2026-08-22, in this worktree and on the deployed endpoint:
   contract or the Python service.
 
 **Next concrete step:** ask the owner for the methodologist's item-to-dimension
-mapping, because without it there is no substantial product work an agent can
+mapping, because without it there is no substantial *product* work an agent can
 start. This branch is finished — the multi-tenancy plan is closed, the
 deployment signs in with Google, and the one defect the sign-in walk found is
 fixed, deployed and proved there. The standing alternative,
 [`product-behaviour-backlog.md`](product-behaviour-backlog.md) §12, is not
 startable: its machinery landed on 2026-08-15 and both halves that remain — the
-126 items and contract `7.0` — wait on that mapping. One owner item is still
+126 items and contract `7.0` — wait on that mapping.
+
+Engineering work, unlike product work, is no longer blocked, and that changed on
+2026-08-22: the 2026-08-21 audit is in the repository as
+[`critical-audit-2026-08-21.md`](critical-audit-2026-08-21.md). It had existed
+only in a session and a private artifact, and what the repository held of it was
+one sentence naming a count. Forty-nine of its fifty findings are open, seven of
+them high and re-read on `0a56f8c` — analytics recomputed on every manager
+screen, the administrator overview at ~3 sequential queries per school, a
+heartbeat blip that terminally fails a paid run, three write paths that report
+success on a failed write, a re-analysis that hides an already-saved map, and no
+deploy path that applies migrations. None has an owner decision behind it, so
+picking one is a conversation before it is a branch. One owner item is still
 open and blocks nothing: rotating `GEMINI_API_KEY` before any paid round. The
 unused Google client secret was deleted on 2026-08-21 and is no longer one.
 

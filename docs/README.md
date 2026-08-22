@@ -153,6 +153,16 @@ under "Live plans" above:
   1–7 round whose twelve midpoint answers are published as twelve "yellow".
   **Not for implementation**: three options with no winner declared, and a
   recommendation that is the agent's rather than an owner decision;
+- [`critical-audit-2026-08-21.md`](critical-audit-2026-08-21.md) — dated
+  read-only audit of scale, resilience, architecture and security, by six
+  independent readers with an adversarial pass over every finding. Fifty
+  findings survive in it, of which **one is closed** — the privacy leak
+  `648465c..66707ae` fixed — and the seven high ones were re-read on `0a56f8c`
+  and still hold. Written in Russian, because that is the language it was
+  produced in; restored into the repository on 2026-08-22 from a private
+  artifact that was its only copy. **Not for implementation**: no owner
+  decision has been taken from any finding, three are flagged as unverified by
+  the completeness critic, and every medium and low anchor is as of 2026-08-21;
 - [`scientific-evidence-layer-research-2026-08-09.md`](scientific-evidence-layer-research-2026-08-09.md)
   — dated read-only study of where the AI pipeline lacks scientific evidence and
   which extension points exist. **Not for implementation**: material for a
