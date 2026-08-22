@@ -84,6 +84,14 @@ Verified 2026-08-22, in this worktree and on the deployed endpoint:
   for the same administrator and school, which is the fifteen-minute window
   being process-local across two instances — documented behaviour, and the log
   holding a visit twice rather than missing it.
+- **One migration is written and not yet applied to the deployed database.**
+  `20260822120000_one_index_per_lookup_on_question_answers` drops the redundant
+  `question_answers_response_id_idx`. Unlike a column change it cannot break a
+  running deployment in either order — Prisma selects columns by name and never
+  names an index — so the usual race does not apply here, and the step is
+  outstanding rather than urgent. It runs against the deployed database by
+  passing `DIRECT_URL` from `.env.deployed.local` as `DATABASE_URL`, as every
+  migration here does.
 - **The AI service correctly did not rebuild** and still serves `e69a5eb`.
   Nothing in this push touches its `buildFilter` paths, so a service commit
   behind Core's is the expected resting state here, not a missed deploy.
@@ -143,7 +151,14 @@ screen, the administrator overview at ~3 sequential queries per school, a
 heartbeat blip that terminally fails a paid run, three write paths that report
 success on a failed write, a re-analysis that hides an already-saved map, and no
 deploy path that applies migrations. None has an owner decision behind it, so
-picking one is a conversation before it is a branch. One owner item is still
+picking one is a conversation before it is a branch.
+
+The owner picked the two cheap ones on 2026-08-22 and both are closed —
+`f7da423` and `4392c34`, four of the audit's fifty entries, since the pool
+appeared in it three times. The Prisma client now caches on `globalThis` rather
+than per module graph, its pool is bounded at two connections with a finite wait,
+the three scripts build their pools from the same function, and the duplicate
+index on `question_answers` is gone. Forty-five entries remain open. One owner item is still
 open and blocks nothing: rotating `GEMINI_API_KEY` before any paid round. The
 unused Google client secret was deleted on 2026-08-21 and is no longer one.
 
