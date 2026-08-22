@@ -220,8 +220,25 @@ because the planner was asked rather than because the finding said "unscannable"
 school's rounds from 0.50 ms to 0.034 ms, which is the per-school read every
 manager screen makes. **The second half of that entry stays open and is an owner
 decision**: the console still renders every school with no pagination and no
-server-side search. **Thirty-nine entries remain open; none of them is a high
-finding still open in full.**
+server-side search.
+
+Then the breakdown's cell privacy, the first of the mediums. A group past the
+size threshold was publishing a dimension average for every dimension it
+answered at all, and analytic questions may be optional — so a group of twenty
+could bring four people to one dimension and print their average beside a group
+size that said nothing about it. Cells now go through the same
+`suppressFrequency` as the group sizes, computed across the row because the
+round's own map publishes each dimension's average and a lone blank is
+recoverable from it by subtraction, and every published cell states how many
+people it stands on (ADR-037). No migration; Core only.
+
+Two more entries were closed in the same pass without new code. The dashboard
+comparison's four full response loads per render were closed by ADR-035 — the
+path never changed, but three closed candidates now cost three row reads. And
+the missing `survey_rounds(organization_id)` index was closed in its index half
+by ADR-036, with its summary-read half still open for `findByOrganizationId`.
+**Thirty-seven entries remain open; none of them is a high finding still open in
+full.**
 
 **The remaining entries were re-checked against current code on 2026-08-22**,
 after the owner suspected some had been fixed in passing. Twelve anchors were
@@ -233,7 +250,9 @@ database, the shared secret's fail-open branch, the unlimited attempt beacon,
 the share-code alphabet, `clear-db.ts`, and Swagger's unpinned unpkg script.
 None had closed on its own; the code at each anchor is what the audit described.
 The entries marked `ЗАКРЫТА` in the file are the closed ones, and they are the
-only ones.
+only ones. Breakdown cell suppression, one of the twelve, has since been closed
+by the slice above; the dashboard comparison and the index half were closed
+after that re-check by work that had already landed.
 
 **One owner item, outside the repository.** Rotating `GEMINI_API_KEY` before any
 paid round blocks nothing and is still open. The unused Google client secret was

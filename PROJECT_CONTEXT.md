@@ -1466,6 +1466,47 @@ school with no pagination and no server-side search. That is the second half of
 the audit's entry and it is not closed here: how many schools to a page, and what
 searching them means, is the owner's call rather than a refactor.
 
+### ADR-037: The threshold protects a cell, not only a column
+
+2026-08-22. `/breakdown` gated a group on its size and then published a dimension
+average for every dimension that group answered at all. The two are not the same
+number. Analytic questions may be optional, so a group of twenty can bring four
+people to one dimension and twenty to the next — and the printed average was
+those four people's, beside a group size of twenty that said nothing about it.
+At one respondent it is that person's own answers, published under the
+methodology's own `k ≥ 10` invariant.
+
+**A cell is suppressed by the same function as a group size.** `suppressFrequency`
+over the respondents each category contributed to that dimension. Not a fresh
+`count < threshold` test: the rule that matters is the second one this module
+already enforces — the hidden entries of a line together account for nothing or
+for at least the threshold — and a hand-written comparison enforces only the
+first.
+
+**Computed across the groups, not inside each.** The round's own map publishes
+each dimension's average and the answers behind it, so a dimension whose groups
+are all published save one has published that one too, by subtraction. The
+suppression has to see the whole row to close it, which is why the cells are
+built once for the table rather than per group.
+
+**A respondent is one person however many questions they answered.** Three
+answers to the three questions of one dimension are one person, and the threshold
+protects people. Counting answers would have published a cell standing on four
+teachers as though twelve stood behind it, which is the arithmetic this rule
+exists to refuse.
+
+**The published cell carries its own count, on screen.** `respondentCount`
+alongside `answerCount`, rendered under the number in every cell rather than
+surfaced only when it looks alarming — a count that appears conditionally is one
+nobody learns to read. It is not the column's group size and it is not meant to
+be.
+
+**Three unlike blanks stay unlike.** A dimension the questionnaire never asked
+about is absent — there is nothing there to hide. A suppressed group has no cells
+at all. A withheld cell inside a published group says which of the two reasons it
+is, and the table's footnote explains the blanks it contains, because otherwise
+they read as a rendering fault.
+
 ## Environments
 
 The project supports exactly two environments:

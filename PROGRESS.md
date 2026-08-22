@@ -20,6 +20,17 @@ inside it.
   promising the map after N more answers. Closed and archived rounds publish
   exactly as before.
 
+- **A group's dimension score says how many people are behind it, or it is not
+  shown.** Since 2026-08-22 the breakdown table gates each cell as well as each
+  column. A group large enough to name is no guarantee about any one of its
+  dimensions — analytic questions may be optional, so a group of twenty can
+  bring four people to one dimension — and the printed average was those four
+  people's, beside a group size that said nothing about it. Cells now go
+  through the same suppression as the group sizes, computed across the row so a
+  lone blank cannot be recovered by subtraction from the round's own average,
+  and every published cell prints the number of respondents it stands on.
+  `PROJECT_CONTEXT.md` ADR-037 records it; the audit of 2026-08-21 found it.
+
 - **A manager is a person the database knows, and their password is nobody's.**
   Since 2026-08-20 `managers` and `organization_memberships` are tables: a
   session is built from rows rather than assembled per login from environment
