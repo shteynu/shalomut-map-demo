@@ -18,12 +18,13 @@ and in Git; what was durable in them is below.
 
 Verified 2026-08-22, in this worktree and on the deployed endpoint:
 
-- **`GET /api/health/` answers `commit: f8dda5d`**, read 2026-08-22, which is
-  `origin/main` — so the deployed endpoint is the pushed tip and carries both of
-  the day's runtime changes, the bounded connection pool and the dropped index.
-  Read the endpoint again rather than this line whenever the tip matters. The
-  only modified file in this worktree is `next-env.d.ts`, which is generated and
-  belongs to the owner.
+- **`GET /api/health/` answers `commit: b4f9b50`**, read 2026-08-22 after the
+  redeploy that restarted the pipeline, and that is `origin/main` — so the
+  deployed endpoint is the pushed tip and carries every runtime change of the
+  day: the bounded connection pool, the dropped index, and the build that
+  applies its own migrations. Read the endpoint again rather than this line
+  whenever the tip matters. The only modified file in this worktree is
+  `next-env.d.ts`, which is generated and belongs to the owner.
 - **A collecting round no longer publishes its numbers, on the deployment too.**
   `648465c..66707ae` closed the critical finding of the 2026-08-21 audit: an
   open round republished its full per-question aggregates on every read, so two
@@ -168,24 +169,21 @@ deployed build now applies its pending migrations before it builds anything and
 fails rather than shipping when it cannot (ADR-031). Forty-four entries remain
 open, six of them high.
 
-**Owner items, both outside the repository.** Rotating `GEMINI_API_KEY` before
-any paid round blocks nothing and is still open. The other one is blocking right
-now: **`DIRECT_URL` is not set on the Vercel project, and the deployment
-pipeline is therefore stopped.** Confirmed 2026-08-22 on the dashboard —
-filtering the project's variables by `URL` returns `DATABASE_URL` and
-`AI_SERVICE_URL` and nothing else — and by the build itself: Vercel built
-`342606c` and it failed in 7 s with `[deploy-migrate] refusing to build:
-DIRECT_URL is not set on this deployment…`, with `prisma generate` and
-`next build` never reached. The Production alias stayed on `bb4163c` and the
-product is unaffected; what has stopped is shipping anything new.
-
-Two details that decide whether the fix works first time. The value is the
-`DIRECT_URL` already in `.env.deployed.local`, port `5432` — not `DATABASE_URL`,
-whose `6543` pooled string the build refuses by port, on purpose, because that
-mistake otherwise surfaces as an advisory-lock error about the database. And
-**adding the variable rebuilds nothing**: the failed deployment has to be
-redeployed, or another commit pushed. The unused Google client secret was
+**One owner item, outside the repository.** Rotating `GEMINI_API_KEY` before any
+paid round blocks nothing and is still open. The unused Google client secret was
 deleted on 2026-08-21 and is no longer an item.
+
+**`DIRECT_URL` has been set on the Vercel project since 2026-08-22**, so the
+pipeline that stopped for a few hours that day is running again. It was added
+scoped to Production *and* Preview, which is wider than the step needs and
+harmless: the step keys on `VERCEL_ENV === 'production'`, so a preview build
+skips it and never touches the deployed schema. Two details are worth keeping,
+because both are how that afternoon actually went. The value is the `5432`
+string, not `DATABASE_URL`, whose `6543` pooled string the build refuses by port
+on purpose — that mistake otherwise surfaces as an advisory-lock error about the
+database rather than as a wrong variable. And **adding the variable rebuilds
+nothing**: two pushes had already failed by the time it existed, and each had to
+be redeployed by hand from the dashboard.
 
 Two coverage gaps were found while reviewing what the multi-tenancy work is
 tested by, and **both are closed.** The first: `npm run lint:tenant-chokepoints`
@@ -341,12 +339,13 @@ push, which is the order every column change needs.
 **Migrations were a hand step, every time, until 2026-08-22.** `npm run build`
 now begins with `scripts/deploy-migrate.mjs`, so every Vercel build applies
 pending migrations first and fails instead of shipping when it cannot — ADR-031.
-**This is armed only once `DIRECT_URL` is set on the Vercel project**, and as of
-2026-08-22 it is not: the first build after the push refused in 7 s and the
-previous deployment kept serving. The mechanism is therefore proved in its
-refusing direction on the real deployment, and unproved in its migrating one.
-Nothing else needs changing, and no other deploy path needs its own step,
-because every path ends in a Vercel build.
+**Both directions are proved on the real deployment**, on the same day and in
+that order. Without `DIRECT_URL` the build refused in 7 s and the previous
+deployment kept serving. With it, the build logged `19 migrations found in
+prisma/migrations` against `…pooler.supabase.com:5432` — the direct port, not the
+`6543` one — then `No pending migrations to apply.`, and went on to build and
+alias in 53 s. Nothing else needs changing, and no other deploy path needs its
+own step, because every path ends in a Vercel build.
 
 What the old behaviour cost is worth keeping, because the new rule is shaped by
 it. A schema change had to reach the deployed database before or immediately

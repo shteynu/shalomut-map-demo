@@ -6,11 +6,11 @@
 - Base branch: `fix/one-pool-per-process-and-one-index-per-lookup`, itself on
   `main`
 - Base commit: `bb4163c`
-- Landed as: `e1da436` and `342606c`, both on `origin/main`, whose tip is
-  `342606c`
+- Landed as: `e1da436` and `342606c`, plus `b4f9b50`, all on `origin/main`,
+  whose tip is `b4f9b50`
 - Current HEAD: the commit carrying this file
-- Status: code done, pushed and **proved on the real deployment by refusing**;
-  blocked on one owner action before anything new can ship
+- Status: **done and proved on the real deployment in both directions** —
+  refusing without `DIRECT_URL`, migrating with it. No gate left.
 - Last updated: 2026-08-22
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -109,7 +109,9 @@ branch's own parent.
 - ~~`DIRECT_URL` is not currently set on the Vercel project.~~ **Confirmed on
   2026-08-22**, on the dashboard and by the failed build. Filtering the
   project's variables by `URL` returns `DATABASE_URL` and `AI_SERVICE_URL` and
-  nothing else, both scoped Production and Preview.
+  nothing else, both scoped Production and Preview. The owner then added it the
+  same day, scoped Production *and* Preview — wider than needed and harmless,
+  because a preview build skips the step on `VERCEL_ENV`.
 
 ## Completed
 
@@ -173,6 +175,17 @@ Not this task's: `next-env.d.ts` is generated and belongs to the owner.
   The Production alias stayed on `bb4163c`, and `GET /api/health/` answers
   `commit: bb4163c`: a stopped pipeline, not a broken product, which is exactly
   the intended failure mode.
+- **The migrating path then ran on Vercel too**, once the owner had added the
+  variable and the failed deployment was redeployed. Build log: `[deploy-migrate]
+  applying pending migrations before the build`, then `Datasource "db":
+  PostgreSQL database "postgres" … at "aws-1-ap-northeast-2.pooler.supabase.com:
+  5432"` — the direct port, which is what proves `DIRECT_URL` and not
+  `DATABASE_URL` reached the child — then `19 migrations found in
+  prisma/migrations` and `No pending migrations to apply.`, then `prisma
+  generate` and `next build` as usual. Ready in **53 s**, Production, and
+  `GET /api/health/` answered `commit: 342606c`, so the alias moved. `b4f9b50`
+  had failed the same way while the variable was still missing and was redeployed
+  after it, which is how the tip of `main` came to be serving again.
 
 ### Failed
 
@@ -180,10 +193,9 @@ None.
 
 ### Blocked or not run
 
-- **The success path has not run on Vercel**, and cannot until `DIRECT_URL`
-  exists there. The refusal path has — see Passed.
-- Adding the variable was not done by this agent: it is a database credential,
-  and entering one is not something this agent does. It is the owner's step.
+Nothing. Adding `DIRECT_URL` was not done by this agent — it is a database
+credential, and entering one is not something this agent does — but the owner
+did it on 2026-08-22 and the success path then ran; see Passed.
 
 ### Environment
 
@@ -193,14 +205,14 @@ created and dropped on the same server. `GEMINI_API_KEY` was stripped from the
 
 ### Residual risk
 
-**This is no longer a risk but an open state:** the push happened before the
-variable, so the pipeline is stopped now. Recoverable in one dashboard edit plus
-one redeploy — and the redeploy is required, because adding a variable does not
-rebuild anything on its own.
+One, and it is the cost ADR-031 names rather than a defect: the schema now moves
+ahead of the alias, so a destructive migration would break the deployment that is
+still serving. ADR-031 states additive-first as a rule; nothing enforces it.
 
-Second, smaller: the schema now moves ahead of the alias, so a destructive
-migration would break the deployment still serving. ADR-031 states additive-first
-as a rule; nothing enforces it.
+The stopped pipeline is no longer a risk — it lasted one afternoon and both
+failed deployments were redeployed. What it taught is worth keeping, and is now
+in the handoff: adding a variable rebuilds nothing, so every deployment that
+failed on the missing gate has to be redeployed by hand.
 
 ## Failed approaches
 
@@ -216,9 +228,10 @@ mean a verification command writing to a developer's database.
 
 ## Approval gates
 
-- **`DIRECT_URL` on the Vercel project.** The owner's, because it is a database
-  credential and this agent may not enter one. The value is the `DIRECT_URL`
-  already in `.env.deployed.local`.
+- ~~**`DIRECT_URL` on the Vercel project.**~~ Cleared 2026-08-22 by the owner.
+  It was theirs to do, because it is a database credential and this agent may
+  not enter one — asked to add it through the browser, this agent declined and
+  supplied the value to the clipboard instead of printing it.
 
 ## Questions requiring an owner decision
 
@@ -226,12 +239,6 @@ None. Which audit finding comes next is a question, not a blocker.
 
 ## Next concrete step
 
-The owner adds `DIRECT_URL` to the Vercel project — Settings → Environment
-Variables → Add Environment Variable, scope Production, value the `DIRECT_URL`
-line of `.env.deployed.local` (port `5432`, not the `6543` one; the build
-refuses the `6543` string by port if they are confused).
-
-Then **redeploy `342606c`**, because adding a variable rebuilds nothing by
-itself: the failed deployment's Redeploy button, or any new push. The build
-should then log `No pending migrations to apply.` and go on to build, and
-`GET /api/health/` should answer `commit: 342606c`.
+None for this task — it is finished and this file is being archived. The owner
+pushes the documentation commit that closes it, and the next task picks an entry
+from `docs/critical-audit-2026-08-21.md`: 44 of 50 are open, six of them high.
