@@ -194,20 +194,28 @@ Then the worker's resilience entry: a heartbeat that could not be sent is
 retried, the lease Core granted — not the beat — decides when to stop analysing,
 and a run the worker has to let go is released for its remaining attempts rather
 than failed terminally. The same rule covers a finished map whose delivery ran
-out of attempts against an unreachable Core (ADR-034). **Forty entries remain
-open, two of them high** — the per-screen analytics recompute and the
-administrator overview's N+1.
+out of attempts against an unreachable Core (ADR-034).
 
-This one changes the AI service, not Core. Pushing it rebuilds Core on Vercel and
+That one changes the AI service, not Core. Pushing it rebuilds Core on Vercel and
 changes nothing about the running worker: `ai-analytics-service` deploys on
 Render on its own, so until that service is redeployed the deployed run loop
 still fails a paid run on the first blip.
 
+Then the per-screen analytics recompute, the audit's oldest high finding. A round
+that is still collecting now reads no answer rows at all, and a round that has
+stopped collecting keeps the numbers it published in a new
+`survey_rounds.published_analytics` column and is read back from it while its
+basis of calculation is unchanged (ADR-035). **This one carries a migration** —
+`20260822180000_a_closed_round_keeps_the_numbers_it_published` — which a deployed
+build applies on its own since ADR-031; nothing to do by hand, but the first
+build after this push is the one that adds the column. **Thirty-nine entries
+remain open, one of them high** — the administrator overview's N+1.
+
 **The remaining entries were re-checked against current code on 2026-08-22**,
 after the owner suspected some had been fixed in passing. Twelve anchors were
-opened and read — the per-screen analytics recompute, the administrator
-overview's N+1, the worker's missing retry (closed since, above), the unpinned
-Python dependencies,
+opened and read — the per-screen analytics recompute (closed since, above), the
+administrator overview's N+1, the worker's missing retry (closed since, above),
+the unpinned Python dependencies,
 breakdown cell suppression, the login open redirect, the unverified TLS to the
 database, the shared secret's fail-open branch, the unlimited attempt beacon,
 the share-code alphabet, `clear-db.ts`, and Swagger's unpinned unpkg script.

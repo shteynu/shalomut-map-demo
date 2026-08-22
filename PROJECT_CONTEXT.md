@@ -1357,6 +1357,66 @@ provider calls are spent again, bounded by the three attempts after which
 the lease before it can happen, because the worker cannot tell Core to expire it
 early — Core has no endpoint for that, and adding one is not this change.
 
+### ADR-035: A round derives its numbers as rarely as it honestly can
+
+2026-08-22. `getAnalyticsForRound` read every `SurveyResponse` of the round with
+all of its `QuestionAnswer` rows and aggregated them in Node, every time anyone
+asked. `loadManagerContext` is the entrance to eight manager screens and asked on
+every render; the dashboard asked up to four more times for its comparison; the
+MCP tool asked again for every AI request. At 300 staff on the 126-question
+instrument that is some 38 000 rows per page view, from a database this code
+itself places ~180 ms away.
+
+**A round that is still collecting reads no answers at all.** Its result is
+locked whatever they say — that is ADR-030, one basis of calculation per round —
+and the only thing the locked payload takes from the responses is how many there
+are, which is a `COUNT(*)`. `lockedRoundAnalytics` builds the same payload the
+full calculation would, from the round's questionnaire and that count, and a
+test runs both paths and compares them because two ways of producing one payload
+is how they drift.
+
+**A round that has stopped collecting keeps what it published.** The analytics
+go into `survey_rounds.published_analytics` on the way out of the first read and
+are read back afterwards, so the numbers are derived once rather than per
+reader. `calculatedAt` is stored with them: a published round was calculated at
+one moment, and a later reader is being told about that moment rather than
+about theirs.
+
+**The stored copy is used only while the basis is unchanged.** Same round, same
+school, same number of responses, same privacy threshold, same measurement
+snapshot hash. Anything else and it is ignored and replaced. The measurement
+hash alone, not both hashes: it is computed from the same questions plus
+`scaleId` and `polarity`, so it moves whenever `surveyDefinitionHash` does — a
+test pins that relation, because the day the projections stop overlapping this
+check would quietly stop noticing a rewritten question.
+
+**A reset clears it outright.** The basis check would catch most of a reset on
+its own, but a re-collection that ends at the same count with the same
+questionnaire matches it exactly, and would republish the erased round's numbers
+as the new round's result.
+
+**The school context is not stored with them.** It is what a manager typed about
+the school rather than something the answers produced, and it stays editable
+after the round closed. It is read from the round on every read, which is where
+the calculation reads it from too.
+
+**The callback verifier reads through the same path.** It used to recompute the
+round to check the AI's payload against it. The MCP tool that handed those
+numbers out reads the stored copy, so verifying against a second calculation was
+both the expensive way to ask and the way to disagree with ourselves.
+
+**Why this sits on `IRoundRepository`.** The other JSON column of the same table
+belongs to `IAiInsightsRepository`, and the symmetry argues for a repository of
+its own. This one is read on the way to every manager screen, so a separate
+collaborator would have to be passed in by every caller, and a caller that
+forgets it gets the slow path with nothing to say so — the argument ADR-032 made
+about `expectedCurrent`.
+
+**What is left.** Two screens still read every response of a round, once each:
+the demographic breakdown, which partitions the responses themselves, and the
+filling report, which needs per-respondent timing. Neither is on the path every
+screen takes.
+
 ## Environments
 
 The project supports exactly two environments:

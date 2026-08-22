@@ -136,6 +136,15 @@ inside it.
   produces it. The unset configuration default remains rollback-safe `5.0`. A
   published version may gain an optional additive field under ADR-002's stated
   rule; a changed meaning still needs a new version.
+- **A round's numbers are derived once, not once per screen** as of
+  2026-08-22. A round that is still collecting reads no answer rows at all —
+  its result is locked whatever they say, and the locked payload needs only a
+  count — and a round that has stopped collecting keeps what it published and
+  is read back from it. Before this, every manager screen, every dashboard
+  comparison and every AI request aggregated every response of the round with
+  all its answers in Node: some 38 000 rows for 300 staff on the 126-question
+  instrument, per page view. ADR-035 records it, including what still reads
+  responses in full and why.
 - **A blip between the worker and Core no longer burns a paid run** as of
   2026-08-22. A heartbeat that could not be sent is retried, and the worker
   keeps analysing until the lease Core granted has actually run out; a run it
