@@ -277,9 +277,42 @@ function validateAllocationGroups(
   return undefined;
 }
 
+/**
+ * What a questionnaire may weigh when somebody saves one — and why only then.
+ *
+ * `parseSurveyDefinition` is the read gate as well as the write gate: the
+ * repository parses every stored definition back through it, and so do the
+ * public answer page, submission, analytics and result verification. A limit
+ * that applied on the way out would take a school's questionnaire off the wire
+ * over a row that is already there, which is a worse failure than the one being
+ * prevented. So the limits are opt-in, and the one caller that opts in is the
+ * one place a definition arrives from a browser.
+ *
+ * Both numbers are deliberately far above any real questionnaire. The default
+ * research instrument is 126 items and serialises to roughly 32 KB, so 300
+ * items and 512 KB leave a manager building something twice the size of
+ * anything the product has ever shipped, and still refuse the script that
+ * multiplies it by a thousand. Vercel cuts the request body at about 4.5 MB,
+ * which is a ceiling on one request rather than on what a round then carries
+ * into every respondent payload and every paid prompt.
+ */
+export const MAXIMUM_SURVEY_QUESTIONS = 300;
+export const MAXIMUM_SURVEY_DEFINITION_BYTES = 512 * 1024;
+
+/**
+ * The stored size of a definition, measured on what would actually be stored.
+ *
+ * Deliberately not the length of the request body: this function rebuilds from
+ * a whitelist, so the body can carry fields that never reach the column, and
+ * measuring the rebuilt value is what makes the number mean the column.
+ */
+function surveyDefinitionByteLength(definition: SurveyDefinition): number {
+  return new TextEncoder().encode(JSON.stringify(definition)).length;
+}
+
 export function parseSurveyDefinition(
   value: unknown,
-  options?: { allowIncomplete?: boolean },
+  options?: { allowIncomplete?: boolean; enforceWriteLimits?: boolean },
 ):
   | { ok: true; value: SurveyDefinition }
   | { ok: false; error: string } {
@@ -338,6 +371,18 @@ export function parseSurveyDefinition(
 
   if (!Array.isArray(questions)) {
     return { ok: false, error: "Survey questions are required." };
+  }
+
+  // Before the loop, so a body carrying a hundred thousand questions is refused
+  // by its length rather than parsed one question at a time first.
+  if (
+    options?.enforceWriteLimits &&
+    questions.length > MAXIMUM_SURVEY_QUESTIONS
+  ) {
+    return {
+      ok: false,
+      error: `A survey may hold at most ${MAXIMUM_SURVEY_QUESTIONS} questions.`,
+    };
   }
 
   const validDimensionIds = new Set(
@@ -404,25 +449,39 @@ export function parseSurveyDefinition(
     }
   }
 
-  return {
-    ok: true,
-    value: {
-      title: title.trim(),
-      audience: audience.trim(),
-      estimatedMinutes,
-      minimumResponses: enforcedMinimumResponses,
-      introText: introText.trim(),
-      anonymityText: anonymityText.trim(),
-      questions: parsedQuestions,
-      // This function rebuilds from a whitelist rather than spreading its
-      // input, so a field it does not name is dropped — which is why
-      // provenance had to be added here to survive a single database read,
-      // not only to be written.
-      ...(parsedInstrumentId === undefined
-        ? {}
-        : { instrumentId: parsedInstrumentId }),
-    },
+  const parsedDefinition: SurveyDefinition = {
+    title: title.trim(),
+    audience: audience.trim(),
+    estimatedMinutes,
+    minimumResponses: enforcedMinimumResponses,
+    introText: introText.trim(),
+    anonymityText: anonymityText.trim(),
+    questions: parsedQuestions,
+    // This function rebuilds from a whitelist rather than spreading its
+    // input, so a field it does not name is dropped — which is why
+    // provenance had to be added here to survive a single database read,
+    // not only to be written.
+    ...(parsedInstrumentId === undefined
+      ? {}
+      : { instrumentId: parsedInstrumentId }),
   };
+
+  // The question count is not the only way to inflate this. Three hundred
+  // questions whose text is a megabyte each pass the count and land in every
+  // round row, every respondent payload and every paid prompt just the same.
+  if (
+    options?.enforceWriteLimits &&
+    surveyDefinitionByteLength(parsedDefinition) > MAXIMUM_SURVEY_DEFINITION_BYTES
+  ) {
+    return {
+      ok: false,
+      error: `A survey may be at most ${Math.floor(
+        MAXIMUM_SURVEY_DEFINITION_BYTES / 1024,
+      )} KB once stored.`,
+    };
+  }
+
+  return { ok: true, value: parsedDefinition };
 }
 
 /**

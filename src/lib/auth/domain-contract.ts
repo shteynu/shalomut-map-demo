@@ -101,9 +101,71 @@ export interface ISessionProvider {
   revokeSession(token: string): Promise<void>;
 }
 
+/**
+ * Where a page of the log ends and the next one starts.
+ *
+ * The cursor is the last event of the page just read, not an offset: an audit
+ * log is written to while it is being read, and an offset would skip or repeat
+ * whatever arrived in between. Both halves are needed because two events can
+ * share a timestamp — the log is written by whoever is acting, and two
+ * administrators act at once.
+ */
+export interface AuditLogCursor {
+  timestamp: Date;
+  id: string;
+}
+
+export interface AuditLogPage {
+  /** Events at most. Absent means the default; above the maximum is clamped. */
+  limit?: number;
+  /** The last event of the previous page. Absent means start at the newest. */
+  after?: AuditLogCursor;
+}
+
+/** A page nobody sized, and the largest one anybody may ask for. */
+export const DEFAULT_AUDIT_LOG_PAGE_SIZE = 50;
+export const MAXIMUM_AUDIT_LOG_PAGE_SIZE = 200;
+
+/**
+ * The size a page actually gets, resolved in one place for both stores.
+ *
+ * A caller asking for nothing, for a fraction, for zero or for ten thousand
+ * gets a bounded answer, because the table this reads grows with every mutation
+ * every school makes and never shrinks. Left to each repository, the clamp
+ * would be two clamps that could disagree, and the one nobody runs tests
+ * against would be the one serving the deployed screen.
+ */
+export function auditLogPageSize(requested?: number): number {
+  if (requested === undefined || !Number.isInteger(requested) || requested < 1) {
+    return DEFAULT_AUDIT_LOG_PAGE_SIZE;
+  }
+  return Math.min(requested, MAXIMUM_AUDIT_LOG_PAGE_SIZE);
+}
+
+/** Newest first, ties broken by id, so a cursor can always point past one row. */
+export function compareAuditEventsNewestFirst(
+  left: AuditEvent,
+  right: AuditEvent,
+): number {
+  const byTime = right.timestamp.getTime() - left.timestamp.getTime();
+  return byTime !== 0 ? byTime : right.id.localeCompare(left.id);
+}
+
 export interface IAuditLogRepository {
   recordEvent(event: AuditEvent): Promise<AuditEvent>;
-  findByOrganizationId(organizationId: string): Promise<AuditEvent[]>;
+  /**
+   * One page of a school's log, newest first.
+   *
+   * Bounded before anything renders it rather than after. `audit_events` takes
+   * a row from every mutation of every school and has no retention, so the
+   * unbounded version of this read was a query whose cost was the age of the
+   * platform — and the moment a screen calls it is the moment that stops being
+   * theoretical.
+   */
+  findByOrganizationId(
+    organizationId: string,
+    page?: AuditLogPage,
+  ): Promise<AuditEvent[]>;
 }
 
 export class InMemoryManagerRepository implements IManagerRepository {
@@ -268,8 +330,30 @@ export class InMemoryAuditLogRepository implements IAuditLogRepository {
     return event;
   }
 
-  async findByOrganizationId(organizationId: string): Promise<AuditEvent[]> {
-    return this.events.filter((e) => e.organizationId === organizationId);
+  /**
+   * The same page the durable store returns, including the order.
+   *
+   * This used to hand back insertion order, which is not what PostgreSQL was
+   * returning — the two stores disagreed about the log, and the one no test
+   * runs against was the durable one. Sorting here is cheap and the divergence
+   * was not.
+   */
+  async findByOrganizationId(
+    organizationId: string,
+    page?: AuditLogPage,
+  ): Promise<AuditEvent[]> {
+    const after = page?.after;
+    return this.events
+      .filter((event) => event.organizationId === organizationId)
+      .filter(
+        (event) =>
+          !after ||
+          event.timestamp.getTime() < after.timestamp.getTime() ||
+          (event.timestamp.getTime() === after.timestamp.getTime() &&
+            event.id.localeCompare(after.id) < 0),
+      )
+      .sort(compareAuditEventsNewestFirst)
+      .slice(0, auditLogPageSize(page?.limit));
   }
 }
 

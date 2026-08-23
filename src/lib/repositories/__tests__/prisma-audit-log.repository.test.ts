@@ -4,7 +4,20 @@ import { PrismaAuditLogRepository } from "..";
 import type { MinimalPrismaClient } from "../prisma/prisma-client";
 import type { AuditEvent } from "../../auth/types";
 
-/** Enough of a Prisma client to answer the two questions this repository asks. */
+/**
+ * Enough of a Prisma client to answer the two questions this repository asks.
+ *
+ * It imitates the query the repository actually sends, ordering array and page
+ * size included. A fake that ignored either would keep passing while the
+ * repository stopped ordering or stopped bounding — which is how a fake starts
+ * asserting its own opinion of the query instead of the query.
+ *
+ * What it deliberately does **not** interpret is the cursor's `OR`. Reproducing
+ * a compound predicate here would be this file's reading of it, and the reading
+ * that matters is PostgreSQL's:
+ * `__dbtests__/postgres-audit-log-pages.test.ts` walks it against a real one.
+ * So a cursor arriving here is refused rather than quietly ignored.
+ */
 function createAuditClient() {
   const rows = new Map<string, any>();
 
@@ -19,16 +32,26 @@ function createAuditClient() {
         rows.set(row.id, row);
         return row;
       },
-      findMany: async ({ where, orderBy }: any) => {
+      findMany: async ({ where, orderBy, take }: any) => {
+        assert.strictEqual(
+          where.OR,
+          undefined,
+          "cursor paging is asserted against real PostgreSQL, not against this fake",
+        );
+        assert.deepStrictEqual(
+          orderBy,
+          [{ timestamp: "desc" }, { id: "desc" }],
+          "the log is read newest first, with the tie-break the cursor needs",
+        );
+
         const found = Array.from(rows.values()).filter(
           (row) => row.organizationId === where.organizationId,
         );
-        found.sort((a, b) =>
-          orderBy?.timestamp === "desc"
-            ? b.timestamp - a.timestamp
-            : a.timestamp - b.timestamp,
+        found.sort(
+          (a, b) =>
+            b.timestamp - a.timestamp || String(b.id).localeCompare(String(a.id)),
         );
-        return found;
+        return typeof take === "number" ? found.slice(0, take) : found;
       },
       count: async () => rows.size,
       deleteMany: async () => {

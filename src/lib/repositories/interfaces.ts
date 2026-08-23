@@ -211,11 +211,31 @@ export interface IAiAnalysisRunRepository {
     roundId: string,
   ): Promise<Record<string, unknown> | null>;
   /**
-   * Every run the round has had, oldest first. The dispatch policy needs the
-   * history rather than the latest row: the request key of the run a closing
-   * is about to queue counts the closings before it, so that two requests
-   * racing on one close compute the same key and collapse on the unique
-   * constraint. The newest run cannot answer that on its own.
+   * How many runs of one kind the round has had.
+   *
+   * The dispatch policy needs the history rather than the latest row: the
+   * request key of the run a closing is about to queue counts the closings
+   * before it, so that two requests racing on one close compute the same key
+   * and collapse on the unique constraint. The newest run cannot answer that
+   * on its own.
+   *
+   * What it needs is that one number, and it used to get it by loading every
+   * run the round had ever had — each successful one carrying a whole Stone
+   * Map in its `result` column — and reading a length off the array. Closing a
+   * round is on this path, so the cost of closing grew with how often the
+   * round had been closed before.
+   */
+  countByTrigger(
+    roundId: string,
+    trigger: AiAnalysisRun['trigger'],
+  ): Promise<number>;
+  /**
+   * Every run the round has had, oldest first, `result` columns and all.
+   *
+   * No product path calls this: the dispatch that used to is on `countByTrigger`
+   * above. It stays for the test suites, which read a round's whole history to
+   * assert on it against a store holding two or three rows. A screen that ever
+   * wants this list needs a bounded read written for it first, not this.
    */
   findByRoundId(roundId: string): Promise<AiAnalysisRun[]>;
   deleteByRoundId(roundId: string): Promise<void>;

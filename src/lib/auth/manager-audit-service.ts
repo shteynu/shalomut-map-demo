@@ -1,4 +1,4 @@
-import type { IAuditLogRepository } from "./domain-contract";
+import type { AuditLogPage, IAuditLogRepository } from "./domain-contract";
 import type { AuditEvent, ManagerSession } from "./types";
 
 /**
@@ -58,18 +58,25 @@ export class ManagerAuditService {
   }
 
   /**
-   * One school's log, to whoever may read it.
+   * One page of a school's log, to whoever may read it.
    *
    * An administrator may read any school's, which is the same reach they have
    * over everything else and is what makes their own visits reviewable at all.
    * Whether a school's own user should see the visits made to it is deliberately
    * still open — it is a question for the administrators rather than for this
    * function, and today nothing renders either answer.
+   *
+   * The page is passed through rather than resolved here: a caller that asks
+   * for nothing gets the newest `DEFAULT_AUDIT_LOG_PAGE_SIZE` events, which is
+   * the answer a screen wants and is bounded whichever store is behind it. The
+   * whole log is deliberately not obtainable in one call — it is the one read
+   * this table has, and it is the read that grows forever.
    */
   public static async getOrganizationAuditLogs(
     auditRepo: IAuditLogRepository,
     session: ManagerSession,
     targetOrganizationId: string,
+    page?: AuditLogPage,
   ): Promise<AuditEvent[]> {
     const mayRead =
       session.isPlatformAdministrator ||
@@ -78,6 +85,6 @@ export class ManagerAuditService {
       // Hiding foreign organization audit logs
       return [];
     }
-    return auditRepo.findByOrganizationId(targetOrganizationId);
+    return auditRepo.findByOrganizationId(targetOrganizationId, page);
   }
 }

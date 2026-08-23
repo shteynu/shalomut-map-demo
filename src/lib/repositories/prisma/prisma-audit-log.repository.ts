@@ -1,4 +1,8 @@
-import type { IAuditLogRepository } from '../../auth/domain-contract';
+import {
+  auditLogPageSize,
+  type AuditLogPage,
+  type IAuditLogRepository,
+} from '../../auth/domain-contract';
 import type { AuditEvent } from '../../auth/types';
 import { MinimalPrismaClient } from './prisma-client';
 
@@ -74,13 +78,40 @@ export class PrismaAuditLogRepository implements IAuditLogRepository {
     return toAuditEvent(saved);
   }
 
-  /** One school's log, newest first — the order anybody reading it wants. */
+  /**
+   * One page of a school's log, newest first — the order anybody reading it
+   * wants, and the direction a cursor has to walk.
+   *
+   * Bounded rather than whole. This table takes a row from every mutation of
+   * every school and nothing prunes it, so an unbounded read is a query that
+   * gets slower for as long as the platform stays up. The bound is here before
+   * a screen exists rather than after one does.
+   *
+   * The `[organizationId, timestamp]` index carries both the filter and the
+   * order, so a page costs the page and not the history behind it. The tie-break
+   * on `id` is what keeps the cursor from stepping over an event that shares a
+   * timestamp with the last one read — and two do, whenever two administrators
+   * act in the same millisecond.
+   */
   public async findByOrganizationId(
     organizationId: string,
+    page?: AuditLogPage,
   ): Promise<AuditEvent[]> {
+    const after = page?.after;
     const rows = await this.events.findMany({
-      where: { organizationId },
-      orderBy: { timestamp: 'desc' },
+      where: {
+        organizationId,
+        ...(after
+          ? {
+              OR: [
+                { timestamp: { lt: after.timestamp } },
+                { AND: [{ timestamp: after.timestamp }, { id: { lt: after.id } }] },
+              ],
+            }
+          : {}),
+      },
+      orderBy: [{ timestamp: 'desc' }, { id: 'desc' }],
+      take: auditLogPageSize(page?.limit),
     });
     return rows.map(toAuditEvent);
   }

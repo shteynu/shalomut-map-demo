@@ -75,8 +75,13 @@ export async function PUT(request: Request, { params }: RouteParams) {
     );
     if (!authorization.ok) return authorization.response;
 
+    // The one place a questionnaire arrives from a browser, and therefore the
+    // one place the size limits apply. Everywhere else this parser runs it is
+    // reading a definition the product already stored, where refusing would
+    // take an existing round's screens down over a row that is already there.
     const parsed = parseSurveyDefinition(await request.json(), {
       allowIncomplete: true,
+      enforceWriteLimits: true,
     });
 
     if (!parsed.ok) {

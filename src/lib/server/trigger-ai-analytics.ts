@@ -59,11 +59,16 @@ export async function enqueueAiAnalyticsOnClosure(
     return 'below_threshold';
   }
 
-  const runs = await aiAnalysisRunRepo.findByRoundId(roundId);
-  const closureRuns = runs.filter((run) => run.trigger === 'closure');
+  // Counted rather than loaded. The number of closings this round has already
+  // had is all the key needs, and every successful run in that history carries
+  // a whole Stone Map in its `result` column.
+  const previousClosures = await aiAnalysisRunRepo.countByTrigger(
+    roundId,
+    'closure',
+  );
 
   const enqueued = await aiAnalysisRunRepo.enqueue(roundId, {
-    requestKey: closureRequestKey(closureRuns.length + 1),
+    requestKey: closureRequestKey(previousClosures + 1),
     trigger: 'closure',
   });
   if (enqueued.outcome === 'enqueued') {

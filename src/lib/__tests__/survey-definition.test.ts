@@ -8,6 +8,8 @@ import {
   createCanonicalSurveyDefinition,
   createEmptyDraftSurveyDefinition,
   hasSameQuestionSnapshot,
+  MAXIMUM_SURVEY_DEFINITION_BYTES,
+  MAXIMUM_SURVEY_QUESTIONS,
   MINIMUM_PRIVACY_THRESHOLD,
   parseSurveyDefinition,
 } from "@/lib/survey-definition";
@@ -420,5 +422,98 @@ test("provenance is outside the hash, so recording it moves no round's identity"
   assert.strictEqual(
     createSurveyDefinitionHash(definition.questions),
     createSurveyDefinitionHash(withoutProvenance.questions),
+  );
+});
+
+/**
+ * A definition of an asked-for size, built out of the canonical one so it stays
+ * a questionnaire the rest of the parser accepts.
+ */
+function definitionOfSize(questionCount: number, textLength = 40) {
+  const definition = createCanonicalSurveyDefinition("סבב גדול", 10);
+  const template = definition.questions[0];
+  definition.questions = Array.from({ length: questionCount }, (_, index) => ({
+    ...template,
+    id: `grown-question-${index + 1}`,
+    // Hebrew, because the limit is in bytes and this product's text is not
+    // ASCII: a cap measured in characters would be nearly twice as generous
+    // here as the number says.
+    text: "ש".repeat(textLength),
+    dimensionId:
+      surveyInstrument.dimensions[index % surveyInstrument.dimensions.length].id,
+  }));
+  return definition;
+}
+
+test("a questionnaire above the question ceiling is refused on the write path", () => {
+  const refused = parseSurveyDefinition(
+    definitionOfSize(MAXIMUM_SURVEY_QUESTIONS + 1),
+    { enforceWriteLimits: true },
+  );
+
+  assert.strictEqual(refused.ok, false);
+  if (!refused.ok) {
+    assert.match(refused.error, new RegExp(String(MAXIMUM_SURVEY_QUESTIONS)));
+  }
+});
+
+test("a questionnaire at the question ceiling is still accepted", () => {
+  // The negative control. A cap that refuses the size it names would be a cap
+  // one off from the number in every document that quotes it.
+  const accepted = parseSurveyDefinition(
+    definitionOfSize(MAXIMUM_SURVEY_QUESTIONS),
+    { enforceWriteLimits: true },
+  );
+
+  assert.strictEqual(accepted.ok, true);
+});
+
+test("the count is not the only ceiling: a few enormous questions are refused too", () => {
+  // Ten questions, each carrying a hundred kilobytes of text, pass any limit
+  // written as a number of questions — and land in every round row, every
+  // respondent payload and every paid prompt exactly the same.
+  const definition = definitionOfSize(10, 60_000);
+
+  const refused = parseSurveyDefinition(definition, { enforceWriteLimits: true });
+
+  assert.strictEqual(refused.ok, false);
+  if (!refused.ok) {
+    assert.match(refused.error, /KB/);
+  }
+  assert.ok(
+    JSON.stringify(definition).length < 4.5 * 1024 * 1024,
+    "this body would have passed the platform request limit, which is why the " +
+      "product needs its own",
+  );
+});
+
+test("the limits are the write path's, so a stored definition still reads back", () => {
+  // `parseSurveyDefinition` is the read gate for the public answer page, for
+  // submission and for analytics. If the limits applied there too, a round
+  // saved before they existed would take its own school's questionnaire off
+  // the wire — a worse failure than the one being prevented, over a row that
+  // is already stored.
+  const oversized = definitionOfSize(MAXIMUM_SURVEY_QUESTIONS + 50);
+
+  assert.strictEqual(parseSurveyDefinition(oversized).ok, true);
+  assert.strictEqual(
+    parseSurveyDefinition(oversized, { allowIncomplete: true }).ok,
+    true,
+  );
+});
+
+test("the size is measured on what would be stored, not on what was sent", () => {
+  // The parser rebuilds from a whitelist, so a body can carry fields that never
+  // reach the column. Measuring the request would refuse a questionnaire for
+  // weight the product was about to drop.
+  const definition = definitionOfSize(20);
+  const padded = {
+    ...definition,
+    unknownField: "x".repeat(MAXIMUM_SURVEY_DEFINITION_BYTES),
+  };
+
+  assert.strictEqual(
+    parseSurveyDefinition(padded, { enforceWriteLimits: true }).ok,
+    true,
   );
 });

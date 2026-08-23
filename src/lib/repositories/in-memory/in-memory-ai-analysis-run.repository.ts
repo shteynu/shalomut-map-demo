@@ -238,6 +238,15 @@ export class InMemoryAiAnalysisRunRepository
     return latest?.result ? structuredClone(latest.result) : null;
   }
 
+  async countByTrigger(
+    roundId: string,
+    trigger: AiAnalysisRun['trigger'],
+  ): Promise<number> {
+    return [...this.runs.values()].filter(
+      (run) => run.roundId === roundId && run.trigger === trigger,
+    ).length;
+  }
+
   async findByRoundId(roundId: string): Promise<AiAnalysisRun[]> {
     return [...this.runs.values()]
       .filter((run) => run.roundId === roundId)

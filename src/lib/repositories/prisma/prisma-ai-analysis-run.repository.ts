@@ -309,6 +309,19 @@ export class PrismaAiAnalysisRunRepository
       : null;
   }
 
+  /*
+   * Counted in the database, on the `[roundId, queuedAt]` index this table
+   * already carries. The answer is one integer whatever the round's history
+   * weighs, which is the point: the rows being counted hold whole analysis
+   * results, and the caller wants none of them.
+   */
+  async countByTrigger(
+    roundId: string,
+    trigger: AiAnalysisRun['trigger'],
+  ): Promise<number> {
+    return this.delegate.count({ where: { roundId, trigger } });
+  }
+
   async findByRoundId(roundId: string): Promise<AiAnalysisRun[]> {
     const runs = await this.delegate.findMany({
       where: { roundId },

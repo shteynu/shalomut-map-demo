@@ -196,3 +196,57 @@ test('a refusal below the threshold is not counted as a queued job', async () =>
     setOperationalMetricSinkForTests(null);
   }
 });
+
+/**
+ * A repository that answers exactly as before and says which methods were asked.
+ *
+ * Counting calls rather than timing them: the defect here is not that the load
+ * was slow on three rows, it is that the dispatch asked for rows at all, and
+ * only a caller-level assertion can hold that once the numbers agree.
+ */
+function counting<T extends object>(target: T): [T, Record<string, number>] {
+  const calls: Record<string, number> = {};
+  const watched = new Proxy(target, {
+    get(base, key) {
+      const value = Reflect.get(base, key, base);
+      if (typeof value !== 'function') return value;
+      return (...args: unknown[]) => {
+        calls[String(key)] = (calls[String(key)] ?? 0) + 1;
+        return (value as (...rest: unknown[]) => unknown).apply(base, args);
+      };
+    },
+  });
+  return [watched, calls];
+}
+
+test('closing a round counts its history instead of loading it', async () => {
+  // The request key needs one number — how many closings came before this one.
+  // It used to get it by loading every run the round had ever had and reading a
+  // length off the array, and every succeeded run in that history carries a
+  // whole Stone Map in its `result` column. Closing is on this path, so the
+  // cost of closing grew with how often the round had been closed before.
+  const { close, aiAnalysisRunRepo } = harness('round-closure-9');
+  await close();
+  await finishQueuedRun(aiAnalysisRunRepo, { state: 'succeeded' });
+
+  const [watched, calls] = counting(aiAnalysisRunRepo);
+  const outcome = await enqueueAiAnalyticsOnClosure(
+    'round-closure-9',
+    THRESHOLD,
+    watched,
+    surveyRepoWith(THRESHOLD),
+  );
+
+  assert.equal(outcome, 'enqueued');
+  assert.equal(calls.countByTrigger, 1);
+  assert.equal(
+    calls.findByRoundId,
+    undefined,
+    'the dispatch must not read the round\'s runs, results and all',
+  );
+  assert.equal(
+    (await aiAnalysisRunRepo.findByRoundId('round-closure-9'))[1].requestKey,
+    'closure:2',
+    'and the key it computed from the count must be the one it computed before',
+  );
+});
