@@ -107,6 +107,12 @@ Direct system, developer and user instructions take precedence over this file.
   from configuration, and only for those. It says nothing about prose that
   describes behaviour, so a passing check is not evidence that a document
   survived a change — read it.
+- `npm run lint:audit-count` does the same for one document that counts itself:
+  `docs/critical-audit-2026-08-21.md` re-derives how many of its findings are
+  closed from the status line of each record, and the check fails when its
+  summary disagrees. Mark a finding `ЗАКРЫТА`, `ЗАКРЫТА В ЧАСТИ …` — naming the
+  remainder in the record — or `ОТКРЫТА …`, and update the `Счёт` section in the
+  same task.
 - Do not rewrite dated plans or archived task files as if they were current.
   Preserve them as historical evidence and point readers to the living source.
 - Keep `PROGRESS.md` to concise product-level milestones and keep

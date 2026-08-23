@@ -44,8 +44,12 @@ Verified on 2026-08-23, in this worktree and on both deployed endpoints:
   page of schools instead of the platform (ADR-052). **None of the five was
   walked on the deployment** — each was proved locally against a disposable
   PostgreSQL, and three of them are invisible from outside because what changed
-  is how much a query returns, not what a screen says. The audit's open count is
-  **7 of 50**, counted from the `ЗАКРЫТА` marks in the records themselves.
+  is how much a query returns, not what a screen says. **The audit's count now
+  lives in the audit and is checked by `npm run lint:audit-count`**: 50
+  findings, 41 closed, 8 closed in part with the remainder named in each, and
+  one open — the temporary password door, which is an owner decision. Do not
+  quote a number here that the document can contradict; read its `Счёт`
+  section.
 - **The AI worker's pace is a share of one quota, and both halves are
   deployed.** `c6635ea` and `a56132d`, landed as part of `8760e62`. Read over
   HTTPS on 2026-08-23 after the push: `GET
@@ -87,9 +91,17 @@ Verified on 2026-08-23, in this worktree and on both deployed endpoints:
   verbatim. **None of the six was walked on the deployment** — each was proved
   locally, and the one that could be walked there would cost six hundred
   fabricated funnel rows to watch the six hundred and first be refused. The
-  seventh, the temporary password door, stays open and needs an owner decision:
-  harden it on `fix/manager-password-must-be-strong`, or remove it because
-  identity comes from Google since 2026-08-20.
+  seventh, the temporary password door, stays open and needs an owner decision.
+  **It is the audit's one fully open finding, and "identity comes from Google"
+  does not close it** — that was checked on 2026-08-23 rather than assumed. The
+  four `OIDC_*` variables are scoped to Production only, because a preview
+  URL is generated per build and cannot be registered with Google, so Production
+  refuses a password before reading it and **Preview still opens on
+  `MANAGER_ADMIN_PASSWORD` with no strength requirement at all**. The decision
+  is therefore narrower than it looks: require strength on Preview — the code is
+  written, unpushed, on the local branch `fix/manager-password-must-be-strong` —
+  or take the password door off Preview and accept that preview builds have no
+  way into the manager screens.
 - **`npm run db:clear` has not been run since it was rewritten.** The table
   list is derived from Prisma's model metadata and tested against the schema,
   but the script itself has never printed its new closing message. Someone
