@@ -81,11 +81,11 @@ test("two hundred codes collide zero times", () => {
 test("a persisted round never reuses a code the repository already holds", async () => {
   const roundRepo = new InMemoryRoundRepository();
 
-  const first = await RoundService.createAndSaveRound(
+  const { round: first } = await RoundService.createAndSaveRound(
     { organizationId: "org-1", title: "סבב ראשון" },
     roundRepo,
   );
-  const second = await RoundService.createAndSaveRound(
+  const { round: second } = await RoundService.createAndSaveRound(
     { organizationId: "org-1", title: "סבב שני" },
     roundRepo,
   );

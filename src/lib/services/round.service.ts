@@ -190,12 +190,17 @@ export class RoundService {
   }
 
   /**
-   * Create and persist a new round in the given repository
+   * Create and persist a new round in the given repository.
+   *
+   * Reports the rounds it closed for the same reason `activateRound` does: a
+   * round born active supersedes whichever round the school was running, and
+   * the caller is the one that can ask for that round's analysis. Answering
+   * with the new round alone left that close invisible to everything above it.
    */
   public static async createAndSaveRound(
     input: CreateRoundInput,
     roundRepo: IRoundRepository
-  ): Promise<SurveyRound> {
+  ): Promise<{ round: SurveyRound; closedRounds: SurveyRound[] }> {
     // The code is replaced rather than generated inside `createRound`, which
     // stays synchronous: only the persisting path can ask the repository
     // whether a candidate is already taken.
@@ -209,11 +214,12 @@ export class RoundService {
     // replaces has to be closed first. The partial unique index refuses a
     // second active round, and this row does not exist yet to be excluded from
     // the closing sweep.
-    if (round.status === 'active') {
-      await this.closeOtherActiveRounds(round, roundRepo);
-    }
+    const closedRounds =
+      round.status === 'active'
+        ? await this.closeOtherActiveRounds(round, roundRepo)
+        : [];
 
-    return roundRepo.create(round);
+    return { round: await roundRepo.create(round), closedRounds };
   }
 
   /**

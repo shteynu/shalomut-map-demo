@@ -15,6 +15,7 @@
 import assert from 'node:assert/strict';
 import test, { after, before, beforeEach } from 'node:test';
 
+import { POST as createRound } from '../rounds/route';
 import { PUT as saveSurveyDefinition } from '../rounds/[roundId]/survey-definition/route';
 import {
   InMemoryAiAnalysisRunRepository,
@@ -182,4 +183,52 @@ test('an activation that was refused still analyses the round it closed', async 
   const runs = await aiAnalysisRunRepo.findByRoundId(RUNNING_ID);
   assert.equal(runs.length, 1);
   assert.equal(runs[0].trigger, 'closure');
+});
+
+/*
+ * The other door. A round arriving with its questionnaire already complete is
+ * born active, so `createAndSaveRound` closes the school's running round before
+ * the new row exists. No screen walks this path — the manager's own new-round
+ * screen passes no questionnaire on purpose, so its round is a draft — but the
+ * API is published, and the round it closes is closed just as thoroughly.
+ */
+test('a round that is live from the start analyses the one it replaced', async () => {
+  const response = await createRound(
+    new Request('http://localhost/api/rounds', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        organizationId: DEMO_ORGANIZATION.id,
+        title: 'רבעון ג׳',
+        surveyDefinition: DEFINITION,
+      }),
+    }),
+  );
+  const body = await response.json();
+
+  assert.equal(response.status, 201);
+  assert.equal(body.round.status, 'active');
+  assert.equal((await roundRepo.findById(RUNNING_ID))?.status, 'closed');
+
+  const runs = await aiAnalysisRunRepo.findByRoundId(RUNNING_ID);
+  assert.equal(runs.length, 1);
+  assert.equal(runs[0].trigger, 'closure');
+});
+
+test('a round created as a draft closes nothing and analyses nothing', async () => {
+  const response = await createRound(
+    new Request('http://localhost/api/rounds', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        organizationId: DEMO_ORGANIZATION.id,
+        title: 'עדיין נבנה',
+      }),
+    }),
+  );
+  const body = await response.json();
+
+  assert.equal(body.round.status, 'draft');
+  assert.equal((await roundRepo.findById(RUNNING_ID))?.status, 'active');
+  assert.deepEqual(await aiAnalysisRunRepo.findByRoundId(RUNNING_ID), []);
 });

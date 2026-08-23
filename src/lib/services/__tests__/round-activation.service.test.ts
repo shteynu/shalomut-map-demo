@@ -47,7 +47,7 @@ test('a round created live closes the previous one as well', async () => {
   const running = round('running', 'active');
   const repo = new InMemoryRoundRepository([running]);
 
-  const created = await RoundService.createAndSaveRound(
+  const { round: created } = await RoundService.createAndSaveRound(
     {
       organizationId: 'org-1',
       title: 'ready from the start',
@@ -64,7 +64,7 @@ test('a new draft leaves the running round alone', async () => {
   const running = round('running', 'active');
   const repo = new InMemoryRoundRepository([running]);
 
-  const created = await RoundService.createAndSaveRound(
+  const { round: created } = await RoundService.createAndSaveRound(
     { organizationId: 'org-1', title: 'still being built' },
     repo,
   );

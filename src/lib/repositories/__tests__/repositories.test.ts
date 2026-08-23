@@ -133,7 +133,7 @@ test('End-to-End Workflow: Round creation -> 10 submissions -> Analytics Unlocki
   const surveyRepo = new InMemorySurveyRepository();
 
   // 1. Create a new round
-  const round = await RoundService.createAndSaveRound(
+  const { round } = await RoundService.createAndSaveRound(
     {
       organizationId: 'org_test_100',
       title: 'סקר סוף שנה',

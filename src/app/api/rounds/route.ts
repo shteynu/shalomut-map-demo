@@ -7,6 +7,7 @@ import {
 } from '@/lib/services';
 import { getDurableWriteGuardResponse } from '@/lib/server/durable-write-guard';
 import { recordRoundAuditEvent } from '@/lib/server/manager-audit';
+import { enqueueAiAnalyticsForSupersededRounds } from '@/lib/server/trigger-ai-analytics';
 import {
   authorizeManagerRound,
   getManagerMemberSchools,
@@ -71,7 +72,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const { auditLogRepo, orgRepo, roundRepo } = resolveCoreRepositories();
+    const { aiAnalysisRunRepo, auditLogRepo, orgRepo, roundRepo, surveyRepo } =
+      resolveCoreRepositories();
     const organizationId = await ManagerScopeService.resolveOrganizationId(
       orgRepo,
       getManagerOrganizationId(request),
@@ -90,7 +92,21 @@ export async function POST(request: Request) {
       );
     }
 
-    const round = await RoundService.createAndSaveRound(body, roundRepo);
+    const { round, closedRounds } = await RoundService.createAndSaveRound(
+      body,
+      roundRepo,
+    );
+
+    // A round brought in with a complete questionnaire is live the moment it
+    // exists, so it closes the round the school was running — and a closed
+    // round is what asks for its analysis (owner decision 2026-08-17). The
+    // same wiring the builder's activation path has, at the other door.
+    await enqueueAiAnalyticsForSupersededRounds(
+      closedRounds,
+      aiAnalysisRunRepo,
+      surveyRepo,
+    );
+
     await recordRoundAuditEvent(
       auditLogRepo,
       request,

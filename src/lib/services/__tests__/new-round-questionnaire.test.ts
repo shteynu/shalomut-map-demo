@@ -49,7 +49,7 @@ test("that questionnaire is ready to go live, and the round still is not", () =>
 
 test("opening a round does not close the one the school is collecting on", async () => {
   const roundRepo = new InMemoryRoundRepository();
-  const running = await RoundService.createAndSaveRound(
+  const { round: running } = await RoundService.createAndSaveRound(
     {
       organizationId: "org-1",
       title: "הסבב הרץ",

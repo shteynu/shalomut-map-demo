@@ -105,7 +105,7 @@ export class ManagerSetupService {
             ),
       });
     } else {
-      round = await RoundService.createAndSaveRound(
+      ({ round } = await RoundService.createAndSaveRound(
         {
           organizationId: organization.id,
           title: input.round.title,
@@ -121,7 +121,7 @@ export class ManagerSetupService {
           backgroundContext: input.round.backgroundContext,
         },
         roundRepo,
-      );
+      ));
     }
 
     if (!round) {

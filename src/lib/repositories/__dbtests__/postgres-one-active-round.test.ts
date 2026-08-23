@@ -155,7 +155,7 @@ test('activating a round through the service satisfies the index', async () => {
 test('creating a live round through the service satisfies the index', async () => {
   const running = await roundRepo.create(roundRecord('active'));
 
-  const created = await RoundService.createAndSaveRound(
+  const { round: created } = await RoundService.createAndSaveRound(
     {
       organizationId,
       title: 'סבב שנולד פעיל',
