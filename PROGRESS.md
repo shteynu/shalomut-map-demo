@@ -8,6 +8,18 @@ inside it.
 
 ## Current state
 
+- **A manager screen no longer pays for a map it does not draw.** Since
+  2026-08-23 the context every screen loads computes the round's analysis only
+  for the three screens that render it. Eight callers now decline it — the
+  documented `GET /api/rounds`, which the 2026-08-21 audit filed because it was
+  paying a full analysis to return one round object, plus the goals, setup,
+  questionnaire, round and three dimension screens. On a closed round whose
+  questionnaire had been edited, that analysis meant loading every response,
+  recomputing and **storing** the result while answering a read; that write is
+  gone from those eight. The declined field is removed from the type rather than
+  nulled, so a screen that later starts reading it fails to compile instead of
+  quietly rendering an empty map. `PROJECT_CONTEXT.md` ADR-045 records it.
+
 - **The share code is the only thing standing between a stranger and a school's
   questionnaire, and now it actually is.** Until 2026-08-23 the public lookup
   compared it with `ILIKE`, which reads `%` and `_` in the value as wildcards, so

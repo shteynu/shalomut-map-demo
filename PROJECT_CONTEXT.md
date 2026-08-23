@@ -1901,6 +1901,47 @@ it now models `findUnique` on both of the table's unique keys, because a double
 that keeps imitating a query nobody makes is how the next defect gets a passing
 test.
 
+### ADR-045: The manager context computes an analysis only for a caller that reads one
+
+2026-08-23. `ManagerContextService.load` is the one door every manager screen and
+`GET /api/rounds` come through, and it computed
+`AnalyticsService.getAnalyticsForRound` for all of them. Most never rendered it.
+The 2026-08-21 audit filed the loudest case — the rounds endpoint answers with a
+single round object and was paying a full analysis to produce it — but seven of
+the eleven screens were doing the same.
+
+What that cost is not uniform. At best it is a second lookup of a round `load` is
+already holding, a count, and a read of the published copy. At worst — a closed
+round whose basis of calculation has moved, which is exactly what happens after
+the questionnaire is edited — it is every response of the round, a recompute,
+and a **write**, performed while answering a read.
+
+**The analysis is now declined, not requested.** `{ withAnalytics: false }` is
+the only option and its only useful value, because computing it is what the
+default does. Eight callers decline: the rounds endpoint, and the goals, setup,
+survey, round and three dimension screens. The three that render the map — home,
+dashboard, breakdown — are unchanged.
+
+**The field is removed from the returned type, not set to `null`.** `null`
+already means "this round has no numbers", so a screen that later starts reading
+`analytics` after opting out would be handed a value that looks like an answer
+and would render an empty map. `Omit` makes reading it a compile error, which is
+the only mechanism that keeps an opt-in true after the screen that carries it is
+edited by somebody who never read this note. `responseCount` stays and is
+counted directly; it is the same number either way, because every analytics path
+sets `totalResponses` from the responses of that one round.
+
+**It stays one entrypoint.** A separate `loadManagerContextWithoutAnalytics`
+would have been simpler to type and would have created a second way into the
+screens — and `loadManagerContext` is a tenant chokepoint whose whole job is to
+record the administrator's visit, guarded by `check-tenant-chokepoints.mjs`. A
+second door is a second place to forget the record.
+
+This is the argument the separate loaders in `manager-context.ts` already made
+for the funnel, the filling times, the goals and the school list, each with a
+comment saying that every other manager screen would otherwise pay for a query
+it never renders. The analysis was the one read that had been folded in anyway.
+
 ## Environments
 
 The project supports exactly two environments:
