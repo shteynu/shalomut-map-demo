@@ -8,6 +8,17 @@ inside it.
 
 ## Current state
 
+- **An error a manager sees says what happened, not where.** Since 2026-08-23
+  no API handler puts the text of a caught error in its response — the
+  2026-08-21 audit had counted twenty-one that did, sending database errors and
+  constraint names across the boundary, on the sign-in endpoint to anyone at all
+  and on the MCP endpoint to whoever holds the shared secret. The detail now
+  goes to the error report instead, which matters because these failures were
+  invisible to the product's error tracking entirely: it only sees what escapes
+  a handler, and these were caught. A fitness check refuses the next one.
+  `PROJECT_CONTEXT.md` ADR-048 records it, including why the audit's own count
+  was low.
+
 - **An administrative change nobody could record does not stand.** Owner
   decision of 2026-08-23: the audit of an administrative write is mandatory, not
   best effort. Creating a school, inviting an administrator, inviting a school's

@@ -2028,6 +2028,47 @@ from a form and which `jsonb` refuses. The route tests prove the reporting and
 with no database calls the work with the ephemeral repositories, and a `Map` has
 nothing to roll back.
 
+### ADR-048: A response body says what happened, never where
+
+2026-08-23. The 2026-08-21 audit counted twenty-one handlers under
+`src/app/api` interpolating a raw `error.message` into what they sent back. What
+surfaces there is a database error, a Prisma constraint name or a configuration
+string. On `/api/auth/login` it reaches anyone at all; on `/api/mcp` it reaches
+whoever holds the shared secret.
+
+**Every body is now a constant, and the detail goes to `reportRouteFailure`.**
+The second half is not a courtesy. `onRequestError` fires only for what
+*escapes* a handler, so every one of these `catch` blocks was invisible to the
+product's error tracking and the response body was the only trace of the failure
+that existed. Removing the message without adding the report would have traded a
+leak for a silence.
+
+**The audit's count was low, and the reason is the lesson.** `error?.message` in
+the reset route and `(error as Error).message` are the same leak in spellings no
+`error.message` search finds. So `scripts/check-error-bodies.mjs` refuses the
+*identifier* inside a `NextResponse.json(...)` argument rather than any spelling
+of reading from it, and requires a `catch` to bind the name `error` — an
+identifier rule is only as good as the identifier, and `catch (e)` would walk
+straight past it.
+
+Together that is one house rule: **inside a route handler the name `error` means
+a caught throw and nothing else.** Two places used it for the product's own
+refusal wording (`refuse(code, error)` on the submit route, and a local holding
+`result.error`) and were renamed rather than exempted. An exemption is a place
+the next leak can hide.
+
+**The check was planted against before it was trusted.** Its first version
+matched `error.message` as a shape and let a deliberately reintroduced
+`(error as Error).message` straight through. Its own suite now pins every
+spelling, both false positives it must not raise — `produced.error` is a field
+of our own result object, `{ error: 'Internal error' }` is our own wording — and
+the gap it genuinely has: a body assembled into a variable before it is passed.
+That gap is stated in the script rather than left to be discovered, and closing
+it means a parser, not a wider regular expression.
+
+Eight `error.message` references remain under `src/app/api`. All are inside
+`console.*` calls, which is where the audit asked for them to be.
+
 ## Environments
 
 The project supports exactly two environments:
