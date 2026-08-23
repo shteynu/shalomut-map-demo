@@ -4,6 +4,7 @@ import type {
 } from '@/lib/repositories/interfaces';
 import { effectivePrivacyThreshold } from '@/lib/survey-definition';
 import { recordAiJobQueued } from '@/lib/server/ai-operational-metrics';
+import type { SurveyRound } from '@/lib/types/backend';
 
 export type ClosureEnqueueOutcome =
   | 'below_threshold'
@@ -70,4 +71,60 @@ export async function enqueueAiAnalyticsOnClosure(
   }
 
   return enqueued.outcome;
+}
+
+/** What one superseded round's dispatch came to. */
+export interface SupersededRoundDispatch {
+  roundId: string;
+  outcome: ClosureEnqueueOutcome | 'not_dispatched';
+}
+
+/**
+ * Dispatch the analysis of the rounds an activation closed on its way through.
+ *
+ * One school runs one round at a time (owner decision 2026-08-03), so starting
+ * a round closes whichever round was running. Until 2026-08-23 that close was
+ * the one kind that asked for nothing: `enqueueAiAnalyticsOnClosure` had a
+ * single caller, the PATCH route, so a round the manager closed by hand was
+ * analysed and a round the manager closed by publishing its successor was not
+ * — and never would be, because closing is the only thing that asks and that
+ * round can no longer be closed again. The school lost the map of a completed
+ * round to an action it took on a different one.
+ *
+ * A failure here is swallowed per round for the same reason it is swallowed in
+ * the PATCH route: the close already happened, the round it belongs to is
+ * already live, and the re-analysis button is the way back. Refusing the
+ * activation because a queue row could not be written would undo a round the
+ * manager did start to recover a map they did not ask for yet.
+ *
+ * Sequential rather than concurrent: in practice this list holds one round —
+ * the partial unique index allows one active round per school — and one queue
+ * write at a time is what keeps a longer list from arriving as a burst.
+ */
+export async function enqueueAiAnalyticsForSupersededRounds(
+  supersededRounds: readonly SurveyRound[],
+  aiAnalysisRunRepo: IAiAnalysisRunRepository,
+  surveyRepo: ISurveyRepository,
+): Promise<SupersededRoundDispatch[]> {
+  const dispatches: SupersededRoundDispatch[] = [];
+
+  for (const round of supersededRounds) {
+    try {
+      const outcome = await enqueueAiAnalyticsOnClosure(
+        round.id,
+        round.privacyThreshold,
+        aiAnalysisRunRepo,
+        surveyRepo,
+      );
+      dispatches.push({ roundId: round.id, outcome });
+    } catch (error) {
+      console.error(
+        `Dispatching the analysis for superseded round ${round.id} failed:`,
+        error instanceof Error ? error.message : 'unknown error',
+      );
+      dispatches.push({ roundId: round.id, outcome: 'not_dispatched' });
+    }
+  }
+
+  return dispatches;
 }

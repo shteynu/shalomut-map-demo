@@ -17,6 +17,7 @@ import {
   type RefusedStatusWrite,
 } from "@/lib/server/round-status-write";
 import { authorizeManagerRound } from "@/lib/server/manager-scope";
+import { enqueueAiAnalyticsForSupersededRounds } from "@/lib/server/trigger-ai-analytics";
 
 interface RouteParams {
   params: Promise<{ roundId: string }>;
@@ -55,8 +56,14 @@ export async function PUT(request: Request, { params }: RouteParams) {
     if (unavailable) return unavailable;
 
     const { roundId } = await params;
-    const { auditLogRepo, orgRepo, roundRepo, surveyDefinitionVersionRepo, surveyRepo } =
-      resolveCoreRepositories();
+    const {
+      aiAnalysisRunRepo,
+      auditLogRepo,
+      orgRepo,
+      roundRepo,
+      surveyDefinitionVersionRepo,
+      surveyRepo,
+    } = resolveCoreRepositories();
     const authorization = await authorizeManagerRound(
       request,
       roundId,
@@ -162,6 +169,17 @@ export async function PUT(request: Request, { params }: RouteParams) {
     ) {
       const activation = await RoundService.activateRound(roundId, roundRepo);
       closedRoundTitles = activation.closedRounds.map((round) => round.title);
+      // A round the school stopped running is a closed round, and closing is
+      // what asks for the analysis (owner decision 2026-08-17). Asked here
+      // rather than inside `activateRound`, which is a Core domain service and
+      // is handed round repositories only. Asked before the failure is
+      // reported, because those rounds were closed whether or not the round
+      // that replaced them went live.
+      await enqueueAiAnalyticsForSupersededRounds(
+        activation.closedRounds,
+        aiAnalysisRunRepo,
+        surveyRepo,
+      );
       if (activation.ok) {
         savedRound = activation.round;
       } else {
