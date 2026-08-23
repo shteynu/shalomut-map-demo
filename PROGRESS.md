@@ -8,6 +8,18 @@ inside it.
 
 ## Current state
 
+- **A paid analysis is not thrown away because a write failed.** Since
+  2026-08-23 the AI callback closes the durable run and writes the round's
+  stored copy in one transaction, so the two can no longer disagree about the
+  same analysis — and a refused write answers `500` instead of `404`. The
+  status is the expensive half: the AI service treats `404` as a verdict about
+  the payload and stops, so a transient database error used to discard an
+  analysis that was correct and had been paid for. It now retries, and the
+  rollback means the run is still leased and waiting for it. Verdicts about the
+  callback itself — an unknown run, a stale lease — keep their `404` and `409`.
+  `PROJECT_CONTEXT.md` ADR-043 records it, including the one window it does not
+  close: a lease that expires during the worker's backoff.
+
 - **A school user reads; every action on a round is the administrator's.** Since
   2026-08-23 the `manager` role can hand out the anonymous link, watch the answer
   count and read the map, and nothing else: no questionnaire builder, no round

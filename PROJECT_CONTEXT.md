@@ -266,7 +266,14 @@ There is a second way to resolve the wiring, added 2026-08-23:
 client instead of over the pool, so writes that span several repositories are
 one write as far as anything reading the database is concerned. It is a
 resolution, so the entrypoint rule applies to it identically and the same lint
-enforces it under both names. Where no transaction client exists — the in-memory
+enforces it under both names. Two callers: the round reset, and the AI
+callback that finishes a paid run — where the second caller made the shape of
+the seam explicit. A route may hand a service a *runner* rather than a
+repository set, so the service decides what goes inside the transaction and the
+entrypoint still owns the resolving. The AI callback needs that because
+everything it reads, validates and recomputes must stay outside: the lock is
+opened on the way back from a model call, and holding it across
+`AnalyticsService` would be a lock held for the length of a computation. Where no transaction client exists — the in-memory
 wiring — the work runs against the ordinary set, which is not a downgrade: one
 process mutating a `Map` has no half-applied state to protect against. The
 observability sinks are deliberately not re-pointed at a transactional store,
@@ -1782,6 +1789,49 @@ The browser suite is what found it. `e2e/tenant-boundary.spec.ts` held the only
 `manager`-role membership in the repository, and its first test drove that
 session to `/setup/` — which the redirect above had just closed. The API tests
 asserted the 403 and could not see the door.
+
+### ADR-043: A callback that cannot store its result asks to be repeated
+
+2026-08-23. Finishing a paid analysis was two writes: the durable run was closed,
+and then the round's legacy `aiInsights` column was written separately. A
+dropped connection between them left a run marked `succeeded` beside a column
+still holding the map it was meant to replace — each half internally valid, and
+nothing downstream able to tell. The 2026-08-21 audit named it.
+
+Worse than the divergence was how the second write failed. `save` collapses
+every reason into `false`, and `false` was reported as `round_not_found`. That
+is a `404`, and `result_sink.py` classifies `404` as a verdict about the payload
+— `_is_transient_status` retries `408`, `429` and every `5xx` and nothing else —
+so the worker stopped. A transient database error therefore discarded an
+analysis that was correct and had been paid for.
+
+**Both writes now go into one transaction, and a refused write answers `500`.**
+The round was read at the top of the callback, so a `false` from `save` is a
+failed write far more often than a vanished round; a round that really did
+vanish is caught by that read on the retry, which answers the `404` from the
+place that actually knows. The rollback means the retry finds the run still
+`running` with its lease, so the second callback finishes it.
+
+**A verdict is returned from inside the transaction; a failure is thrown.**
+`run_not_found` and `lease_stale` are answers about this analysis and keep their
+`404` and `409` — the worker knows to stop on them, and nothing has been written
+when they are decided. Only the write failure throws, in its own error class so
+the `catch` cannot relabel an unrelated bug as retriable.
+
+**The metrics moved after the commit.** They used to be recorded between the two
+writes. Observability may not run inside a transaction (ADR-041), and a counter
+saying a job completed is a claim that, until the commit, was not yet true.
+
+The rollback is proved on PostgreSQL in
+`src/lib/repositories/__dbtests__/postgres-ai-callback-atomicity.test.ts`, with
+the same callback and the same injected failure run without a transaction as the
+negative control — it reproduces the divergence exactly.
+
+**One window stays open and is not closed by this.** If the lease expires during
+the worker's backoff, the retry is refused as `stale` and the run waits for the
+lease reaper to requeue it. That is the existing lease design, not something
+this change makes worse, and closing it means lengthening the lease or renewing
+it on a refused callback — neither of which was paid for here.
 
 ## Environments
 

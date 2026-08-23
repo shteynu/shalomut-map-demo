@@ -1757,7 +1757,7 @@
           "AI Integration"
         ],
         "summary": "Persist the AI service callback",
-        "description": "Validates the versioned payload and persists it. Durable workers send both identity headers; Core atomically completes only the currently leased run and treats an identical retry as idempotent. Omitting both remains the legacy rollback path.",
+        "description": "Validates the versioned payload and persists it. Durable workers send both identity headers; Core atomically completes only the currently leased run and treats an identical retry as idempotent. Omitting both remains the legacy rollback path. Closing the run and writing the round's stored copy happen in one transaction, so a caller never sees one without the other.",
         "security": [
           {
             "bearerAuth": []
@@ -1803,10 +1803,13 @@
             "description": "Missing or invalid configured callback secret"
           },
           "404": {
-            "description": "Survey round not found"
+            "description": "The survey round, or the run named by `X-AI-Analysis-Run-Id`, does not exist. A verdict about this callback: repeating it repeats the verdict."
+          },
+          "409": {
+            "description": "The lease is stale or superseded, or the run belongs to a different round. Also a verdict; retrying does not change it."
           },
           "500": {
-            "description": "Failed to persist AI insights"
+            "description": "The analysis could not be stored. Nothing was written — the run is unchanged and still leased — so **repeating the callback is the correct response**, unlike the `4xx` above. This is what a refused write answers; it used to answer `404`, which stopped the retry and discarded a valid analysis."
           },
           "503": {
             "description": "Persistent storage is not configured for this deployment"
