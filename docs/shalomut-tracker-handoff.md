@@ -18,9 +18,9 @@ and in Git; what was durable in them is below.
 
 Verified on 2026-08-23, in this worktree and on both deployed endpoints:
 
-- **`origin/main` is `27ce0bb`, Core answers it, and the AI service answers
+- **`origin/main` is `124f661`, Core answers it, and the AI service answers
   `2b88fa5` — that gap is correct.** Read over HTTPS on 2026-08-23:
-  `GET https://shalomut-map-demo.vercel.app/api/health/` → `commit: 27ce0bb`,
+  `GET https://shalomut-map-demo.vercel.app/api/health/` → `commit: 124f661`,
   and `GET https://shalomut-ai-analytics.onrender.com/health` → `commit:
   2b88fa5`, `jobPollingEnabled: true`. Core auto-deploys every push; the AI
   service rebuilds only when a push touches its `buildFilter` paths —
@@ -274,11 +274,10 @@ to serialise it against something a manager does by hand. Not paid. **If real
 respondents arrive, this is the entry to re-open**, and it is written down in
 that branch's task file rather than only here.
 
-**Three of those four branches are on `main` and deployed; the reset one is
-not.** `origin/main` is `34e6755` on 2026-08-23 and `GET /api/health/` answers
-with that same commit, read over HTTPS the same day. Only
-`fix/the-reset-stops-collecting-before-it-erases` is unpushed, and it
-fast-forwards from `origin/main`.
+**All four of those branches are now on `main` and deployed.** `origin/main`
+is `124f661` on 2026-08-23 and `GET /api/health/` answers with that same commit,
+read over HTTPS the same day. The reset branch, unpushed when the sentence above
+was first written, landed the same day.
 
 The migration arrived with them: `GET /api/health/observability/` answers
 `{"status":"ok","alerting":[]}` anonymously on the deployment, which it could
@@ -291,6 +290,21 @@ An earlier version of this paragraph said all three branches were unpushed. It
 was written from the task files and never checked against the remote, and it was
 wrong the moment it was written. Branches reach `origin` without this worktree
 hearing about it: ask `git fetch` before writing down what is unpushed.
+
+**A school user reads, and nothing on the deployment can show it yet
+(2026-08-23).** Phase 6 of the multi-tenancy plan is implemented on
+`feat/a-school-user-may-only-read`, which is **committed and unpushed** — three
+commits fast-forwarding from `124f661`. A `manager`-role session gets four tabs
+instead of seven and a `403` on every write; an administrator sees no change.
+The deployed runtime holds one administrator session and no school user, so
+**the change is invisible there by construction** and there is nothing to walk
+on the deployment until a school user exists. It was walked locally against a
+real session on `:3000`. `PROJECT_CONTEXT.md` ADR-042 owns the reasoning.
+
+That closes the last of the multi-tenancy plan's phases. What still blocks the
+deployment is unchanged and outside the code: the Google OAuth client and its
+four `OIDC_*` values are the owner's to create, and until they exist the
+deployment keeps the password screen.
 
 **The AI service will analyse three rounds at once, not one (2026-08-23).**
 `AI_JOB_POOL_SIZE` moves from `1` to `3` in `render.yaml`, so a burst of ten

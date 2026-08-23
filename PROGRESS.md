@@ -8,6 +8,20 @@ inside it.
 
 ## Current state
 
+- **A school user reads; every action on a round is the administrator's.** Since
+  2026-08-23 the `manager` role can hand out the anonymous link, watch the answer
+  count and read the map, and nothing else: no questionnaire builder, no round
+  setup, no starting or closing or resetting or archiving a round, no goals, no
+  re-running the analysis and no AI question suggestion. It is the owner's answer
+  to a question the multi-tenancy plan had recorded as deliberately undecided
+  since 2026-08-20, and it closes that plan's last phase. The refusal is a `403`
+  at the routes — carried into every round-scoped route by the same chokepoint
+  that already resolves the school — and the screens leave the controls out
+  rather than disabling them, so nobody presses a button whose only outcome is a
+  refusal. `PROJECT_CONTEXT.md` ADR-042 records it, including why this one
+  refusal says `403` where the product otherwise says `404`. Nothing changes for
+  the deployed runtime, which holds one administrator.
+
 - **A round publishes its numbers once, when it closes.** Since 2026-08-22 a
   round that is still collecting shows its response count and nothing derived
   from the answers — no map, no dimension scores, no per-question numbers, no

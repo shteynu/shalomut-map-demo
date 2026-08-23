@@ -434,6 +434,9 @@
               }
             }
           },
+          "403": {
+            "description": "A school user may not do this. Every action on a round belongs to a school administrator (`code` is `FORBIDDEN_FOR_ROLE`, and `action` names the refused action)."
+          },
           "404": {
             "description": "Organization not found in the manager scope"
           },
@@ -498,6 +501,9 @@
           "400": {
             "description": "Invalid manager setup payload"
           },
+          "403": {
+            "description": "A school user may not do this. Every action on a round belongs to a school administrator (`code` is `FORBIDDEN_FOR_ROLE`, and `action` names the refused action)."
+          },
           "404": {
             "description": "Organization or survey round not found in the manager scope"
           },
@@ -548,6 +554,9 @@
           },
           "401": {
             "description": "Manager authentication required"
+          },
+          "403": {
+            "description": "A school user may not do this. Every action on a round belongs to a school administrator (`code` is `FORBIDDEN_FOR_ROLE`, and `action` names the refused action)."
           },
           "503": {
             "description": "The suggestion service is unavailable, refused the answer, or replied with copy no model wrote. `reason` distinguishes the cases.",
@@ -969,6 +978,9 @@
           "400": {
             "description": "Invalid status"
           },
+          "403": {
+            "description": "A school user may not do this. Every action on a round belongs to a school administrator (`code` is `FORBIDDEN_FOR_ROLE`, and `action` names the refused action)."
+          },
           "404": {
             "description": "Survey round not found"
           },
@@ -1032,7 +1044,7 @@
             }
           },
           "403": {
-            "description": "Manager organization scope is required"
+            "description": "Manager organization scope is required, or A school user may not do this. Every action on a round belongs to a school administrator (`code` is `FORBIDDEN_FOR_ROLE`, and `action` names the refused action)."
           },
           "404": {
             "description": "Survey round not found"
@@ -1152,7 +1164,7 @@
             "description": "The request names an unknown dimension or carries empty or oversized text"
           },
           "403": {
-            "description": "Manager organization scope is required"
+            "description": "Manager organization scope is required, or A school user may not do this. Every action on a round belongs to a school administrator (`code` is `FORBIDDEN_FOR_ROLE`, and `action` names the refused action)."
           },
           "404": {
             "description": "Survey round not found"
@@ -1258,7 +1270,7 @@
             "description": "Unknown goal status"
           },
           "403": {
-            "description": "Manager organization scope is required"
+            "description": "Manager organization scope is required, or A school user may not do this. Every action on a round belongs to a school administrator (`code` is `FORBIDDEN_FOR_ROLE`, and `action` names the refused action)."
           },
           "404": {
             "description": "Survey round or goal not found"
@@ -1306,7 +1318,7 @@
             }
           },
           "403": {
-            "description": "Manager organization scope is required"
+            "description": "Manager organization scope is required, or A school user may not do this. Every action on a round belongs to a school administrator (`code` is `FORBIDDEN_FOR_ROLE`, and `action` names the refused action)."
           },
           "404": {
             "description": "Survey round or goal not found"
@@ -1418,6 +1430,9 @@
           },
           "400": {
             "description": "Invalid survey definition"
+          },
+          "403": {
+            "description": "A school user may not do this. Every action on a round belongs to a school administrator (`code` is `FORBIDDEN_FOR_ROLE`, and `action` names the refused action)."
           },
           "404": {
             "description": "Survey round not found"
@@ -1857,6 +1872,9 @@
           },
           "400": {
             "description": "`dimensionIds` is not an array of strings, or names something that is not a wellbeing dimension"
+          },
+          "403": {
+            "description": "A school user may not do this. Every action on a round belongs to a school administrator (`code` is `FORBIDDEN_FOR_ROLE`, and `action` names the refused action)."
           },
           "404": {
             "description": "Survey round not found in the manager scope"

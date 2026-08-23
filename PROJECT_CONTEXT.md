@@ -1720,6 +1720,54 @@ The thresholds, the windows and why each was chosen are in
 [`docs/observability.md`](docs/observability.md), which
 `npm run lint:doc-numbers` holds to the constants.
 
+### ADR-042: A school user reads; every action on a round is the administrator's
+
+2026-08-23. Phase 6 of the multi-tenancy plan was recorded on 2026-08-20 as
+deliberately undecided — the restrictions existed in principle and their content
+did not. The owner decided it in one sentence: a school user may not build a
+questionnaire, start a round or analyse one, and every action on a round belongs
+to the administrator. Goals, resetting a round and the AI question suggestion
+were each confirmed administrator-only when asked separately.
+
+So the school user is a reader, and what they keep is what a school actually
+does with a round: hand out the anonymous link, watch the answer count come in,
+and read the map. `RolePermissionService` had defined the two roles since
+slice 3 and had **zero production callers**; it now has them, with three actions
+added for the writes it had no name for.
+
+**The gate is the chokepoint, not the routes.** `requireManagerPermission` is
+called from inside `authorizeManagerRound`, which every round-scoped route
+already goes through to resolve its school — so fifteen call sites across
+thirteen route files gained the role check by naming their action, and no route
+gained a branch it could forget. The
+three writes with no round to resolve yet — creating a round, the setup screen,
+the question suggestion — call it directly, which is visible in the diff as the
+exception it is.
+
+**It answers `403`, not this product's usual `404`.** Non-disclosure exists so a
+manager cannot learn that another school's round exists; this refusal is about a
+round the reader is fully entitled to see, and calling it "not found" would be a
+lie told to the one person it is not protecting anyone from. The check runs
+*after* the round resolves, so a foreign round still answers `404` first and the
+role refusal cannot be used to probe for rounds.
+
+**The screens leave controls out rather than disabling them.** `setup`,
+`surveyBuilder` and `goals` are administrator-only: the middleware redirects and
+the navigation does not render their tabs. `round`, `dashboard` and `breakdown`
+stay with their write controls absent. A disabled button is an invitation to
+find out why, and the reason is not something the school can fix.
+
+The role travels the way the school already does: the middleware computes it and
+sets `x-shalomut-manager-role` on the forwarded request, deleting any inbound
+header of that name first (ADR-009). `getManagerRole` reads an absent or
+unrecognised value as `admin`, because that means the middleware did not run —
+a route outside the gate entirely, not a school user who slipped past it.
+
+**Cost:** the root layout became `async` to read the role, so `/api-docs` and
+`/_not-found` are rendered on demand instead of statically. Only `/icon.svg` is
+still static. This was chosen over fetching the role in the browser, which would
+have rendered the full navigation and then taken tabs away in front of the user.
+
 ## Environments
 
 The project supports exactly two environments:

@@ -411,18 +411,67 @@ from the database.
 
 ### Phase 6 — what a school user may not do
 
-Deliberately deferred by the owner on 2026-08-20: the restrictions exist in
-principle and their content is undecided. Recorded as a phase so that "we will
-decide later" stays visible instead of becoming an assumption that no
-restrictions were ever wanted.
+**Implemented 2026-08-23** on `feat/a-school-user-may-only-read`, which had not
+reached `main` when this line was written. The content the phase was waiting for
+was decided by the owner on the same day, in one sentence: *a school user may
+not build a questionnaire, start a round or analyse one; every action on a round
+belongs to the administrator.* Goals, reset and the AI question suggestion were
+each confirmed administrator-only when asked separately.
 
-The machinery is already written and unused: `RolePermissionService` defines nine
-actions across `admin` and `manager` (`src/lib/auth/roles-and-permissions.ts:3`)
-and has **zero production callers** — its only consumer is
-`slice-3-roles-audit-membership.test.ts`. The session carries `role`, and it is
-echoed back by `/api/auth/me` and the login response and used as an audit label,
-never as a gate. Whatever is decided, the place to enforce it is the chokepoint
-phases 0 and 1 already use.
+That makes the school user a reader. Nothing in the product is *added* to their
+role — the phase is entirely about what stops being offered — and the three
+things they keep are the three the school actually does: hand out the anonymous
+link, watch the answer count, and read the map.
+
+Where it is enforced, in three layers that each stand alone:
+
+- **The routes.** `requireManagerPermission` (`src/lib/server/manager-permission.ts`)
+  answers `403` with `code: "FORBIDDEN_FOR_ROLE"` and the action that was
+  refused. It is called from inside `authorizeManagerRound`, so every route that
+  already resolved a round through the chokepoint gained the role check without
+  gaining a branch — fifteen call sites across thirteen route files, each
+  naming its action — and the three writes with no round to resolve yet
+  (creating a round, the setup screen, the question suggestion) call it
+  directly.
+- **The screens.** `setup`, `surveyBuilder` and `goals` are administrator-only
+  screens: the middleware redirects a school user away from them, and
+  `mainNavItemsForRound` does not render their tabs. `round`, `dashboard` and
+  `breakdown` stay, with their write controls left out rather than disabled.
+- **The copy.** Two states of the round screen used to end in "press re-run
+  analysis". For a reader that named a button which is not on their screen, so
+  they are told what happened to the round and who runs the analysis instead.
+
+The order matters: the routes are the gate, and the screens and copy exist so
+nobody is handed a control whose only outcome is a refusal.
+
+Two deliberate choices worth naming, because both differ from what the codebase
+does elsewhere:
+
+- **`403`, not the product's usual `404`.** Non-disclosure is about rounds that
+  belong to another school; this refusal is about a round the reader is entitled
+  to see. Saying "not found" about their own round would be a lie, and the
+  screens tell them the same thing anyway.
+- **The check runs after the round resolves**, so a foreign round still answers
+  `404` and a school user cannot use the role refusal to learn that some other
+  school's round exists.
+
+The machinery this phase was told to expect was already written and unused:
+`RolePermissionService` (`src/lib/auth/roles-and-permissions.ts`) had **zero
+production callers**. It now has them, with three actions added to it —
+`write:reset-round`, `write:goals` and `write:question-suggestion` — for the
+three writes it had no name for.
+
+The role reaches the server the way the school does: the middleware computes it
+and sets `x-shalomut-manager-role` on the request it forwards, deleting any
+inbound header of that name first. `getManagerRole` reads it, and treats an
+absent or unrecognised value as `admin` — meaning the middleware did not run,
+which is a route that is not behind the gate at all rather than a school user
+who slipped past it.
+
+**Behaviour is unchanged for the deployed runtime today**, which holds one
+administrator session. The change is visible the moment a school user exists,
+and locally it is visible now: signing in as `manager@shalomut.edu.il` shows four
+tabs instead of seven.
 
 ## 5. What this supersedes
 
@@ -459,7 +508,10 @@ together, in the phase that makes each untrue — not all at once, and not befor
    phase 2 then shipped without it, because an entitlement needs no delivery. It
    buys a notification rather than a mechanism, so it is now a convenience and
    not a blocker for anything.
-3. **What a school user may not do** — phase 6, deferred on purpose.
+3. ~~**What a school user may not do** — phase 6, deferred on purpose.~~
+   Answered by the owner on 2026-08-23 and implemented the same day: a school
+   user reads, and every action on a round belongs to the administrator. See
+   phase 6.
 
 **Own passwords or an identity provider** was the question that blocked phase 1,
 and the owner answered it on 2026-08-20: the identity provider, with no passwords

@@ -295,6 +295,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        "403":
+          description: A school user may not do this. Every action on a round belongs to a school administrator (`code` is `FORBIDDEN_FOR_ROLE`, and `action` names the refused action).
         "404":
           description: Organization not found in the manager scope
         "500":
@@ -337,6 +339,8 @@ paths:
           description: Invalid manager setup payload
         "404":
           description: Organization or survey round not found in the manager scope
+        "403":
+          description: A school user may not do this. Every action on a round belongs to a school administrator (`code` is `FORBIDDEN_FOR_ROLE`, and `action` names the refused action).
         "500":
           description: Failed to save manager setup
         "503":
@@ -373,6 +377,8 @@ paths:
           description: Missing payload, or a dimension outside the canonical eight
         "401":
           description: Manager authentication required
+        "403":
+          description: A school user may not do this. Every action on a round belongs to a school administrator (`code` is `FORBIDDEN_FOR_ROLE`, and `action` names the refused action).
         "503":
           description: >-
             The suggestion service is unavailable, refused the answer, or replied
@@ -693,6 +699,8 @@ paths:
                     enum: [enqueued, below_threshold, already_active, duplicate, not_dispatched]
         "400":
           description: Invalid status
+        "403":
+          description: A school user may not do this. Every action on a round belongs to a school administrator (`code` is `FORBIDDEN_FOR_ROLE`, and `action` names the refused action).
         "404":
           description: Survey round not found
         "409":
@@ -733,7 +741,7 @@ paths:
                   round:
                     $ref: '#/components/schemas/SurveyRound'
         "403":
-          description: Manager organization scope is required
+          description: Manager organization scope is required, or A school user may not do this. Every action on a round belongs to a school administrator (`code` is `FORBIDDEN_FOR_ROLE`, and `action` names the refused action).
         "404":
           description: Survey round not found
         "409":
@@ -807,7 +815,7 @@ paths:
         "400":
           description: The request names an unknown dimension or carries empty or oversized text
         "403":
-          description: Manager organization scope is required
+          description: Manager organization scope is required, or A school user may not do this. Every action on a round belongs to a school administrator (`code` is `FORBIDDEN_FOR_ROLE`, and `action` names the refused action).
         "404":
           description: Survey round not found
         "409":
@@ -872,7 +880,7 @@ paths:
         "400":
           description: Unknown goal status
         "403":
-          description: Manager organization scope is required
+          description: Manager organization scope is required, or A school user may not do this. Every action on a round belongs to a school administrator (`code` is `FORBIDDEN_FOR_ROLE`, and `action` names the refused action).
         "404":
           description: Survey round or goal not found
         "500":
@@ -904,7 +912,7 @@ paths:
                   goalId:
                     type: string
         "403":
-          description: Manager organization scope is required
+          description: Manager organization scope is required, or A school user may not do this. Every action on a round belongs to a school administrator (`code` is `FORBIDDEN_FOR_ROLE`, and `action` names the refused action).
         "404":
           description: Survey round or goal not found
         "500":
@@ -973,6 +981,8 @@ paths:
                       type: string
         "400":
           description: Invalid survey definition
+        "403":
+          description: A school user may not do this. Every action on a round belongs to a school administrator (`code` is `FORBIDDEN_FOR_ROLE`, and `action` names the refused action).
         "404":
           description: Survey round not found
         "409":
@@ -1249,6 +1259,8 @@ paths:
           description: Analysis run persisted in `queued` state
         "400":
           description: '`dimensionIds` is not an array of strings, or names something that is not a wellbeing dimension'
+        "403":
+          description: A school user may not do this. Every action on a round belongs to a school administrator (`code` is `FORBIDDEN_FOR_ROLE`, and `action` names the refused action).
         "404":
           description: Survey round not found in the manager scope
         "409":

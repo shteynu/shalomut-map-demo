@@ -108,12 +108,13 @@ on, and a historical one explicitly is not.
 - [`multi-tenancy-plan-2026-08-20.md`](multi-tenancy-plan-2026-08-20.md) —
   about four platform administrators who see everything, one user per school who
   sees only their own, and invitations issued by an administrator. Seven owner
-  decisions taken on 2026-08-20; three questions open, and only one of them
-  blocks anything. Phase 0 — the tenant boundary starting to consult memberships
-  instead of the list of all schools — is unblocked and deliberately lands before
-  any identity work, because it costs nothing to verify while there is still one
-  manager. **Not yet implemented**: every living document still describes one
-  manager per deployment, because that is what the code does.
+  decisions taken on 2026-08-20, and phase 6's content decided on 2026-08-23.
+  **Phases 0 through 6 are implemented**, each marked with its date and branch in
+  the plan itself; the phases are the readable record of what landed and in what
+  order, so read them rather than assuming the plan is still a proposal. What is
+  still open is listed in the plan's own §6, and the one thing that blocks the
+  deployed runtime is outside the code: the Google OAuth client and its four
+  `OIDC_*` values are the owner's to create.
 - [`default-research-instrument-plan-2026-08-14.md`](default-research-instrument-plan-2026-08-14.md)
   — replacing the default 24-question template with the owner's 126-item
   research instrument. Six phases, three owner decisions taken and five open.
