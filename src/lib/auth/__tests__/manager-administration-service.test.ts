@@ -43,8 +43,12 @@ test("an invitation creates the person and an entitlement nobody has used yet", 
   assert.strictEqual(result.value.manager.email, "principal@school.ac.il");
   assert.strictEqual(result.value.manager.isPlatformAdministrator, false);
   assert.strictEqual(result.value.membership.status, "invited");
-  // Everything today's manager does, inside one school.
-  assert.strictEqual(result.value.membership.role, "admin");
+  // A reader. This used to be `admin` — everything today's manager does inside
+  // one school — and the owner decided otherwise on 2026-08-23 (ADR-042). This
+  // is the only place a school membership is created, so the value here is what
+  // decides whether phase 6's gate has anyone to refuse: with `admin` it had
+  // nobody, and the whole restriction was unreachable.
+  assert.strictEqual(result.value.membership.role, "manager");
 });
 
 test("an invited person signs in, and the invitation becomes the school", async () => {

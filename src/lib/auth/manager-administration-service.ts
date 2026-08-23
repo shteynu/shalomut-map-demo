@@ -273,10 +273,21 @@ export class ManagerAdministrationService {
    * is how it is accepted. It also means the screen can tell an invitation that
    * was never used from a person who is actually working.
    *
-   * The role is `admin` and not `manager`: the owner's model gives a school one
-   * person who does everything today's manager does, and `manager` is the
-   * read-only half of `RolePermissionService`. The word collides with platform
-   * administrator and means something narrower — everything inside one school.
+   * The role is `manager`, the read-only half of `RolePermissionService`.
+   *
+   * It used to be `admin`, on the reading that a school gets one person who
+   * does everything today's manager does. The owner decided otherwise on
+   * 2026-08-23 (ADR-042): a school user hands out the anonymous link, watches
+   * the count and reads the map, and every action on a round belongs to the
+   * administrator. Under the old value that decision reached nobody — this is
+   * the only place a school membership is created, so every school user was an
+   * `admin` and the gate phase 6 installed had no one to refuse.
+   *
+   * "Administrator" in that decision is the platform administrator, the role
+   * above the tenant. `admin` on a membership means something narrower —
+   * everything inside one school — and nothing in the product creates one now.
+   * The value stays in the type because the column is `String` and rows written
+   * before this change still carry it.
    */
   public static async inviteSchoolUser(
     managerRepo: IManagerRepository,
@@ -307,7 +318,7 @@ export class ManagerAdministrationService {
       id: crypto.randomUUID(),
       managerId: manager.id,
       organizationId: organization.id,
-      role: "admin" as ManagerRole,
+      role: "manager" as ManagerRole,
       status: "invited",
       createdAt: new Date(),
     });

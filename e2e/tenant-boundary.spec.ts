@@ -25,11 +25,17 @@ import {
  * never asks for another, so until this file existed the boundary had no
  * end-to-end evidence at all.
  *
- * `/setup/` is the screen throughout, for one reason: it names the school it is
- * showing, in a field with a label, whether or not that school has a round.
- * `/` needs a round before it says anything identifying, and giving the second
- * school one would put it into the one-active-round-per-school rule that the
- * other specs' school is already in.
+ * The administrator specs use `/setup/`, for one reason: it names the school it
+ * is showing, in a field with a label, whether or not that school has a round.
+ *
+ * The school user's spec cannot. Since 2026-08-23 `/setup/` is an
+ * administrator-only screen (ADR-042) and a school user is redirected off it,
+ * so that session is asked for `/` instead. The home screen names the school in
+ * its eyebrow when the session has a round — the first school does — and hands
+ * the name to `ManagerOnboarding` when it does not, which is the second
+ * school's state. So both outcomes are legible on the same screen, and the
+ * refusal is asserted against the whole page rather than one field: if the
+ * boundary broke, the second school's name would render in the onboarding.
  *
  * Both sessions are minted rather than signed in, and this file runs against a
  * server of its own — `playwright.config.ts` explains why at `TENANT_PORT`. The
@@ -55,14 +61,15 @@ test.describe('the tenant boundary', () => {
     // The whole attack, such as it is: type another school's id into the URL.
     // The middleware refuses the choice and falls back to the one school this
     // session is a member of, so the screen must still be the manager's own.
-    await page.goto(`/setup/?school=${SECOND_SCHOOL.id}`);
+    await page.goto(`/?school=${SECOND_SCHOOL.id}`);
 
-    await expect(page.getByLabel(SCHOOL_NAME_FIELD)).toHaveValue(
+    await expect(page.locator('body')).toContainText(
       await schoolName(FIRST_SCHOOL_ID),
     );
-    await expect(page.getByLabel(SCHOOL_NAME_FIELD)).not.toHaveValue(
-      SECOND_SCHOOL.name,
-    );
+    // The second school has no round, so honouring the choice would land on the
+    // onboarding screen with its name on it. Asserting against the whole page
+    // catches that as well as a rendered dashboard for the wrong school.
+    await expect(page.locator('body')).not.toContainText(SECOND_SCHOOL.name);
 
     // A refused choice must not be remembered either. Writing the cookie would
     // make the refusal a one-page event and the next navigation a second
@@ -85,6 +92,28 @@ test.describe('the tenant boundary', () => {
     // Turned away rather than shown an empty console: the area is about every
     // school, so there is nothing in it a school user may see.
     await expect(page).not.toHaveURL(/\/admin/u);
+  });
+
+  test('a school user is turned away from the screens that act on a round', async ({
+    page,
+    context,
+  }) => {
+    // The redirect that broke this file's first test when it landed. Nothing in
+    // the browser suite covered it, so a change to `administratorOnlyScreens` or
+    // to the middleware's role branch could quietly reopen all three and no
+    // spec would notice — the API tests assert the 403, not the door.
+    await signInAsMember(context);
+
+    for (const screen of ['/setup/', '/survey/', '/goals/']) {
+      await page.goto(screen);
+      await expect(page).toHaveURL(/\/(\?.*)?$/u);
+    }
+
+    // The reader's own screens are the negative control: if the redirect were
+    // catching everything, the loop above would pass while the product was
+    // unusable.
+    await page.goto('/round/');
+    await expect(page).toHaveURL(/\/round/u);
   });
 
   test('an administrator may open a school they do not belong to, and it is written down', async ({

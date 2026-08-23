@@ -473,6 +473,13 @@ administrator session. The change is visible the moment a school user exists,
 and locally it is visible now: signing in as `manager@shalomut.edu.il` shows four
 tabs instead of seven.
 
+**Corrected on 2026-08-23, same day.** As first landed the phase restricted
+nobody: `inviteSchoolUser` granted `role: "admin"`, and it is the only place a
+school membership is created. Phase 2 had chosen that value on the reading that
+a school's one person does everything a manager does — a reading this phase's
+own decision replaced. The invitation now grants `manager`. Nothing else in the
+enforcement changed; what changed is that it now has someone to apply to.
+
 ## 5. What this supersedes
 
 Four documents jointly declare "one manager per deployment" a deliberate decision

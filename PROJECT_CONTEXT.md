@@ -1768,6 +1768,21 @@ a route outside the gate entirely, not a school user who slipped past it.
 still static. This was chosen over fetching the role in the browser, which would
 have rendered the full navigation and then taken tabs away in front of the user.
 
+**Amended the next day, because the rule reached nobody.** `inviteSchoolUser`
+granted `role: "admin"` — the reading, recorded on 2026-08-22, that a school gets
+one person who does everything today's manager does. It is the only place a
+school membership is created, so every school user was an `admin` and the gate
+above had no one to refuse; the restriction was live and unreachable at the same
+time. The invitation now grants `manager`. "Administrator" in the owner's
+sentence is the platform administrator, the role above the tenant; `admin` on a
+membership means everything inside one school, and nothing creates one now. The
+value stays in the type because the column is `String` and older rows carry it.
+
+The browser suite is what found it. `e2e/tenant-boundary.spec.ts` held the only
+`manager`-role membership in the repository, and its first test drove that
+session to `/setup/` — which the redirect above had just closed. The API tests
+asserted the 403 and could not see the door.
+
 ## Environments
 
 The project supports exactly two environments:

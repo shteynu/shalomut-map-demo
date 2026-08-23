@@ -19,8 +19,12 @@ inside it.
   that already resolves the school — and the screens leave the controls out
   rather than disabling them, so nobody presses a button whose only outcome is a
   refusal. `PROJECT_CONTEXT.md` ADR-042 records it, including why this one
-  refusal says `403` where the product otherwise says `404`. Nothing changes for
-  the deployed runtime, which holds one administrator.
+  refusal says `403` where the product otherwise says `404`. **`manager` is also
+  what an invitation now grants** — it granted `admin` for the first hours of
+  that day, which is the only place a school membership is created, so the rule
+  was live and reached nobody until the browser suite found it. Nothing changes
+  for the deployed runtime, which holds one administrator and no invited school
+  user.
 
 - **A round publishes its numbers once, when it closes.** Since 2026-08-22 a
   round that is still collecting shows its response count and nothing derived
