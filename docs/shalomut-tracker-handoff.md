@@ -232,6 +232,36 @@ the shared secret is the one the queue endpoint already uses. Until a monitor
 points at it the alert is exactly as unread as the queue's, which is the same
 half-finding twice.
 
+**A round closed by its successor is analysed after all (2026-08-23).** That is
+the audit's medium on the dispatch, closed on the branch
+`fix/a-superseded-round-still-gets-its-analysis`. «One active round per school»
+was quietly eating a result: activating a new round closed the previous one
+without asking for its analysis, and a closed round cannot ask twice, so the map
+of a finished round disappeared because of an action taken on a different round.
+Both doors that close a round implicitly now dispatch, and they dispatch from
+the route handlers rather than from the service, because the composition root
+says only entrypoints resolve repositories. No endpoint, no secret, no
+migration.
+
+**A manager's scope stopped reading the organizations table (2026-08-23).** That
+is the audit's medium on the cheapest finding it had, closed on the branch
+`perf/the-scope-asks-for-the-schools-it-needs`. Both authorization chokepoints
+went through `resolveOrganizationId`, and it began with `findAll()`: a manager of
+one school paid for every school in the system on every screen and every API
+call, and the bill grew with each school onboarded. The organization port gained
+two bounded reads, the resolver asks for the session's own schools by id, and the
+setup screen's switcher narrows in the query instead of in memory. Nothing about
+the product's behaviour changes — the fourteen scope tests are unedited — so
+there is nothing to walk on the deployment and nothing for an operator to do.
+No endpoint, no secret, no migration.
+
+**Three branches are stacked and none is pushed.** In order:
+`fix/a-superseded-round-still-gets-its-analysis`, then
+`fix/the-counters-reach-a-place-that-can-warn-someone`, then
+`perf/the-scope-asks-for-the-schools-it-needs`, each based on the one before it.
+Landing them out of order will not apply. `git push` is the owner's, and the
+middle one carries the migration that Vercel's build applies on arrival.
+
 **The AI service will analyse three rounds at once, not one (2026-08-23).**
 `AI_JOB_POOL_SIZE` moves from `1` to `3` in `render.yaml`, so a burst of ten
 closures drains in about ten minutes instead of about thirty. Pushing it
@@ -270,11 +300,15 @@ screen was walked on the deployment** — the behaviour was proved locally, in
 Playwright, because the Browser pane reports its own tab as hidden and the watch
 correctly pauses there.
 
-**Next concrete step:** ask the owner for the methodologist's item-to-dimension
-mapping, because without it there is no substantial *product* work an agent can
-start. This branch is finished — the multi-tenancy plan is closed, the
-deployment signs in with Google, and the one defect the sign-in walk found is
-fixed, deployed and proved there. The standing alternative,
+**Next concrete step:** push the three stacked branches above, oldest first,
+then take the fourth finding the owner listed — the round reset's six sequential
+writes without a transaction, which races with an in-flight submission. For
+*product* work the answer is unchanged: ask the owner for the methodologist's
+item-to-dimension mapping, because without it there is no substantial product
+work an agent can start. The identity work that used to stand in its way is
+finished — the multi-tenancy plan is closed, the deployment signs in with
+Google, and the one defect the sign-in walk found is fixed, deployed and proved
+there. The standing alternative,
 [`product-behaviour-backlog.md`](product-behaviour-backlog.md) §12, is not
 startable: its machinery landed on 2026-08-15 and both halves that remain — the
 126 items and contract `7.0` — wait on that mapping.

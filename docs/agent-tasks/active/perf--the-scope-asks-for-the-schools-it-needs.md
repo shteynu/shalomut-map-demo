@@ -6,7 +6,8 @@
 - Base branch: `fix/the-counters-reach-a-place-that-can-warn-someone` (itself
   stacked on `fix/a-superseded-round-still-gets-its-analysis`, itself on `main`)
 - Base commit: `524eac6`
-- Current HEAD: the documentation commit at the tip of this branch
+- Current HEAD: the handoff commit at the tip of this branch, whose parent is
+  `d32933d`
 - Status: implemented and verified locally; nothing pushed
 - Last updated: 2026-08-23
 - Last agent/tool: Claude Code (Opus 5)
@@ -125,7 +126,10 @@ narrowing what was *read*.
   thousand rows whether the scope read uses the key.
 - Documentation: the audit entry marked `ЗАКРЫТА` with its closure-log line
   (31 → 30 open), `PROJECT_CONTEXT.md`'s manager-gate paragraph, and the dated
-  note in the live multi-tenancy plan.
+  note in the live multi-tenancy plan. The handoff gained a paragraph for this
+  finding and for the superseded-round one, which had none, plus the fact that
+  matters most to whoever pushes: three branches are stacked and will not apply
+  out of order.
 
 ## In progress
 
@@ -147,6 +151,7 @@ Modified:
 - `PROJECT_CONTEXT.md`
 - `docs/critical-audit-2026-08-21.md`
 - `docs/multi-tenancy-plan-2026-08-20.md`
+- `docs/shalomut-tracker-handoff.md`
 
 Added:
 
