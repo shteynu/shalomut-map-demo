@@ -8,6 +8,16 @@ inside it.
 
 ## Current state
 
+- **The round screen stopped reading a round's answers to time its filling.**
+  Since 2026-08-23 the fill-time report asks for the three columns it reads
+  instead of whole responses, which had been joining every answer row of the
+  round — 6.4 MB and 57 ms for a 300-person round on the 126-item instrument,
+  now 74 KB and 1.4 ms. The funnel beside it shares the same reads rather than
+  repeating them, so the screen makes two queries where it made four.
+  `PROJECT_CONTEXT.md` ADR-050 records it, including the half of the audit's
+  record that stays open on the breakdown screen and the one condition it
+  narrowed to.
+
 - **Nothing that only grows is read whole any more.** Since 2026-08-23 closing a
   round asks the database how many closings came before it instead of loading
   every analysis run the round ever had; the audit log is read in pages with a

@@ -2124,6 +2124,51 @@ runs, and whether audit rows are ever deleted, are questions about what the
 product keeps rather than about how it reads — and an audit trail's value is
 that it is still there later. The audit's rows stay open on that half.
 
+### ADR-050: A report about the collection does not read the collection's answers
+
+2026-08-23. The 2026-08-21 audit recorded the round and breakdown screens as
+loading responses and attempts twice per render. Reopening it found half of that
+still true and the other half worse than the record said.
+
+**Still true.** The round screen renders a funnel and a fill-time report side by
+side, and each fetched the round's attempts for itself — one query, twice, on
+one render.
+
+**Worse.** `RoundFillingService` reads three scalar columns off each response —
+`submittedAt`, `anonymousTokenHash`, `visibleSeconds` — and a count. It asked
+for the responses *whole*, and the whole response joins every
+`question_answers` row of the round. At the size the audit itself named — three
+hundred staff on the 126-item instrument, 37,800 answer rows — that read is
+**6.4 MB and 56.9 ms median** against a database on the same machine. Narrowed
+to the columns it reads: **73.5 KB and 1.4 ms**. The deployed database is not on
+the same continent as the process reading it, so the local millisecond figure is
+a lower bound and the byte figure is the one that travels.
+
+**`findResponseTimingsByRoundId` returns `Omit<SurveyResponseRecord, 'answers'>`.**
+Removed from the type rather than emptied: a consumer that reaches for the
+answers does not compile, which is the same guarantee ADR-045 gave the manager
+context when it stopped computing analytics nobody read.
+
+**Both services became functions of what they report on.** `getRoundFunnel` and
+`getRoundFilling` took repositories and did their own reading; they now take the
+attempts and the timings. The reads moved to `loadRoundActivity`, an entrypoint,
+which is where the composition root says they belong (ADR-008) and which is the
+only place that could have noticed the duplication. They stopped being async on
+the way, which is what a report over data should have been.
+
+The funnel's `completed` is now the length of the read that just happened rather
+than its own `COUNT(*)`. Same number — it is still counted from stored responses
+rather than from completion beacons, for the reason `getRoundFunnel` documents —
+and one query fewer.
+
+**The breakdown screen's half of that audit record is left open, narrowed.** It
+reads the round's responses after the manager context has already computed the
+round's analytics, so it double-reads only when the context recomputes: a closed
+round whose basis of calculation changed. A collecting round reads no responses
+at all (ADR-030) and a closed round reads its stored aggregate (ADR-035). Closing
+the remainder means passing responses out of `ManagerContextService.load`, which
+would widen a seam seven other screens use, for a case that is now conditional.
+
 ## Environments
 
 The project supports exactly two environments:
