@@ -12,6 +12,7 @@ import { describePlannedEnd } from "@/lib/rounds/planned-end";
 import { toRoundSwitcherOptions } from "@/lib/rounds/round-options";
 import {
   loadManagerContext,
+  loadManagerRole,
   loadRoundFilling,
   loadRoundFunnel,
   loadSchoolChoices,
@@ -31,7 +32,10 @@ export default async function RoundPage({
   searchParams: Promise<{ round?: string | string[] }>;
 }) {
   const requestedRound = readRoundParam(await searchParams);
-  const context = await loadManagerContext(requestedRound);
+  const [context, role] = await Promise.all([
+    loadManagerContext(requestedRound),
+    loadManagerRole(),
+  ]);
 
   if (!context.organization || !context.selectedRound) {
     return (
@@ -121,6 +125,7 @@ export default async function RoundPage({
         minimumResponses={selectedRound.privacyThreshold}
         status={selectedRound.status}
         isSuperseded={isSelectedRoundSuperseded(context)}
+        mayAct={role === "admin"}
       />
 
       <RoundFunnel funnel={funnel} expectedResponses={organization.totalStaffCount} />
@@ -133,6 +138,7 @@ export default async function RoundPage({
         responseCount={responseCount}
         minimumResponses={selectedRound.privacyThreshold}
         isCollecting={selectedRound.status === "active"}
+        mayAct={role === "admin"}
       />
     </div>
   );

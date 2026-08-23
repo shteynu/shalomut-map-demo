@@ -29,11 +29,19 @@ export function DashboardDimensionPage({
   roundId,
   organizationName,
   roundTitle,
+  mayAct,
 }: {
   dimension: DimensionPresentation;
   roundId: string;
   organizationName: string;
   roundTitle: string;
+  /**
+   * Whether the reader may ask for this dimension to be analysed again. A
+   * school user reads the map and does not re-run it (owner decision,
+   * 2026-08-23); the note explaining that the text is deterministic stays,
+   * because it is true whoever is reading.
+   */
+  mayAct: boolean;
 }) {
   const { state, reload, watch } = useAiInsights(roundId);
   const stone =
@@ -92,6 +100,7 @@ export function DashboardDimensionPage({
       watch={watch}
       onRerunQueued={reload}
       blobRefs={{ containerRef, contentRef }}
+      mayAct={mayAct}
     />
   );
 }
@@ -139,6 +148,7 @@ export function DashboardDimensionDetail({
   watch,
   onRerunQueued,
   blobRefs,
+  mayAct = true,
 }: {
   dimension: DimensionPresentation;
   stone: DashboardStone;
@@ -146,6 +156,8 @@ export function DashboardDimensionDetail({
   organizationName: string;
   roundTitle: string;
   watch?: AiInsightsWatchStatus;
+  /** See `DashboardDimensionPage`. */
+  mayAct?: boolean;
   /** Read the round again, so the queued re-run becomes a watched one. */
   onRerunQueued?: () => void;
   blobRefs?: {
@@ -188,11 +200,13 @@ export function DashboardDimensionDetail({
                     ידי המודל. הן אינן מוסיפות סיבה או פרשנות מעבר למספרים,
                     ואפשר להפעיל ניתוח מחדש לממד הזה כדי לקבל קריאה מלאה.
                   </p>
-                  <DashboardDimensionRerun
-                    roundId={roundId}
-                    dimensionId={dimension.id}
-                    onQueued={onRerunQueued}
-                  />
+                  {mayAct ? (
+                    <DashboardDimensionRerun
+                      roundId={roundId}
+                      dimensionId={dimension.id}
+                      onQueued={onRerunQueued}
+                    />
+                  ) : null}
                 </>
               ) : null}
             </>

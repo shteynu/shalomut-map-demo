@@ -2,9 +2,10 @@
 
 import { usePathname } from "next/navigation";
 import { AppHeader } from "@/components/layout/app-header";
+import type { ManagerRole } from "@/lib/auth/types";
 import { navigationLabels, shouldHideGlobalHeader } from "@/lib/navigation";
 
-export function HeaderGate() {
+export function HeaderGate({ role }: { role: ManagerRole }) {
   const pathname = usePathname();
 
   if (shouldHideGlobalHeader(pathname)) {
@@ -22,7 +23,7 @@ export function HeaderGate() {
       <a className="skip-link" href="#main-content">
         {navigationLabels.skipToContent}
       </a>
-      <AppHeader />
+      <AppHeader role={role} />
     </>
   );
 }

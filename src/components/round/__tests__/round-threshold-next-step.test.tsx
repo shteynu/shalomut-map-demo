@@ -37,6 +37,7 @@ function renderState(
   state: Parameters<typeof RoundThresholdNextStepContent>[0]["state"],
   responseCount = 10,
   isCollecting = true,
+  mayAct = true,
 ) {
   return renderToStaticMarkup(
     <RoundThresholdNextStepContent
@@ -44,6 +45,7 @@ function renderState(
       responseCount={responseCount}
       minimumResponses={10}
       isCollecting={isCollecting}
+      mayAct={mayAct}
     />,
   );
 }
@@ -176,4 +178,46 @@ test("the map link opens the round the band is about, not the newest one", () =>
   );
 
   assert.match(html, /href="\/dashboard\?round=round-previous"/);
+});
+
+test("a school user is told what happened, not to press a button they do not have", () => {
+  // The two states whose next step is the re-run button. A school user has no
+  // such button on the screen (owner decision, 2026-08-23), so the anchor would
+  // scroll to nothing and the instruction would be false.
+  const missing = renderState({ status: "not-found" }, 10, false, false);
+  const failed = renderState(
+    { status: "error", error: "provider-secret-must-not-render" },
+    10,
+    true,
+    false,
+  );
+
+  for (const html of [missing, failed]) {
+    assert.doesNotMatch(html, /href="#refresh-round-analysis"/);
+    assert.doesNotMatch(html, /רענון ניתוח/);
+    assert.match(html, /פנו למנהל המערכת/);
+    assert.match(
+      html,
+      /נשמרו/,
+      "what happened to the answers is a reading, and a reader still gets it",
+    );
+  }
+  assert.match(missing, /עדיין לא נוצר ניתוח/);
+  assert.match(failed, /לא ניתן היה להשלים את הניתוח/);
+  assert.doesNotMatch(failed, /provider-secret-must-not-render/);
+});
+
+test("a school user still gets the map link, the lock notice and the open-round state", () => {
+  // Only the instruction changes with the role. Everything the band reports
+  // about the round itself is a reading, and reading is the whole of what a
+  // school user is here for.
+  const ready = renderState({ status: "ready", value: readyResult }, 10, false, false);
+  const locked = renderState({ status: "locked", value: lockedResult }, 10, false, false);
+  const collecting = renderState({ status: "not-found" }, 10, true, false);
+
+  assert.match(ready, /המפה מוכנה/);
+  assert.match(ready, /href="\/dashboard/);
+  assert.match(locked, /הניתוח עדיין נעול/);
+  assert.match(collecting, /הסבב אוסף תשובות/);
+  assert.doesNotMatch(collecting, /פנו למנהל המערכת/);
 });

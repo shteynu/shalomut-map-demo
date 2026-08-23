@@ -8,6 +8,7 @@ import {
 import { readRoundParam } from "@/lib/navigation";
 import {
   loadManagerContext,
+  loadManagerRole,
   loadSchoolChoices,
 } from "@/lib/server/manager-context";
 
@@ -27,7 +28,10 @@ export default async function DimensionPage({
   const { dimension } = await params;
   const entry = getDimensionPresentation(dimension);
   const requestedRound = readRoundParam(await searchParams);
-  const context = await loadManagerContext(requestedRound);
+  const [context, role] = await Promise.all([
+    loadManagerContext(requestedRound),
+    loadManagerRole(),
+  ]);
 
   if (!entry) {
     notFound();
@@ -50,6 +54,7 @@ export default async function DimensionPage({
       roundId={context.selectedRound.id}
       organizationName={context.organization.name}
       roundTitle={context.selectedRound.title}
+      mayAct={role === "admin"}
     />
   );
 }

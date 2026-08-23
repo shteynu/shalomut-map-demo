@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { headers } from "next/headers";
 import localFont from "next/font/local";
 import "./globals.css";
 import { HeaderGate } from "@/components/layout/header-gate";
+import { getManagerRole } from "@/lib/server/manager-scope";
 import { SessionRenewal } from "@/components/layout/session-renewal";
 import { HelpBadgeGate } from "@/components/layout/help-badge-gate";
 
@@ -52,15 +54,17 @@ export const metadata: Metadata = {
   description: "מפת שלומות ארגונית בבתי ספר",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: ReactNode;
 }>) {
+  const role = getManagerRole({ headers: await headers() });
+
   return (
     <html lang="he" dir="rtl" className={notoSansHebrew.variable}>
       <body>
-        <HeaderGate />
+        <HeaderGate role={role} />
         {/* `tabIndex={-1}` so the skip link can actually land focus here;
             without it the browser moves the scroll position and leaves focus
             behind in the navigation. */}

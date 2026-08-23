@@ -16,6 +16,7 @@ import {
   type MainNavItemId,
 } from "@/lib/navigation";
 import { ManagerUserBar } from "@/components/layout/manager-user-bar";
+import type { ManagerRole } from "@/lib/auth/types";
 
 const navIcons: Record<MainNavItemId, LucideIcon> = {
   home: Home,
@@ -27,7 +28,7 @@ const navIcons: Record<MainNavItemId, LucideIcon> = {
   goals: Target,
 };
 
-export function AppHeader() {
+export function AppHeader({ role }: { role: ManagerRole }) {
   return (
     // `.site-header` already lays this out: flex, centred, space-between, 1rem
     // gap. The utilities that used to be here restated all four and lost to it
@@ -41,8 +42,8 @@ export function AppHeader() {
          * the same navigation without a round, which is what a manager on the
          * school's current round gets anyway.
          */}
-        <Suspense fallback={<HeaderNavigation roundId={undefined} />}>
-          <RoundAwareHeaderNavigation />
+        <Suspense fallback={<HeaderNavigation roundId={undefined} role={role} />}>
+          <RoundAwareHeaderNavigation role={role} />
         </Suspense>
       </div>
 
@@ -57,17 +58,23 @@ export function AppHeader() {
   );
 }
 
-function RoundAwareHeaderNavigation() {
+function RoundAwareHeaderNavigation({ role }: { role: ManagerRole }) {
   // `navigationRoundId` is what keeps `round=new` out of these links; it says
   // why there rather than here, next to the parameter it is about.
   const roundId = navigationRoundId(
     useSearchParams()?.get(DASHBOARD_ROUND_PARAM) ?? undefined,
   );
 
-  return <HeaderNavigation roundId={roundId} />;
+  return <HeaderNavigation roundId={roundId} role={role} />;
 }
 
-function HeaderNavigation({ roundId }: { roundId: string | undefined }) {
+function HeaderNavigation({
+  roundId,
+  role,
+}: {
+  roundId: string | undefined;
+  role: ManagerRole;
+}) {
   const pathname = usePathname() ?? "";
 
   return (
@@ -87,7 +94,7 @@ function HeaderNavigation({ roundId }: { roundId: string | undefined }) {
       </Link>
 
       <nav className="top-nav" aria-label="ניווט ראשי">
-        {mainNavItemsForRound(roundId).map((item) => (
+        {mainNavItemsForRound(roundId, role).map((item) => (
           <HeaderNavigationItem key={item.id} item={item} pathname={pathname} />
         ))}
       </nav>

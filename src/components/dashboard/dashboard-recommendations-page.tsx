@@ -81,11 +81,19 @@ export function DashboardRecommendationsPage({
   roundId,
   organizationName,
   roundTitle,
+  mayAct,
 }: {
   dimension: DimensionPresentation;
   roundId: string;
   organizationName: string;
   roundTitle: string;
+  /**
+   * Whether the reader may record a goal. A school user reads the
+   * recommendations and does not choose from them (owner decision,
+   * 2026-08-23), so the board below is left out rather than shown with buttons
+   * the route refuses.
+   */
+  mayAct: boolean;
 }) {
   const { state, reload, watch } = useAiInsights(roundId);
   const stone =
@@ -140,6 +148,7 @@ export function DashboardRecommendationsPage({
       organizationName={organizationName}
       roundTitle={roundTitle}
       watch={watch}
+      mayAct={mayAct}
     />
   );
 }
@@ -155,6 +164,7 @@ export function DashboardRecommendationsStage({
   organizationName,
   roundTitle,
   watch,
+  mayAct = true,
 }: {
   dimension: DimensionPresentation;
   stone: DashboardStone;
@@ -162,6 +172,8 @@ export function DashboardRecommendationsStage({
   organizationName: string;
   roundTitle: string;
   watch?: AiInsightsWatchStatus;
+  /** See `DashboardRecommendationsPage`. */
+  mayAct?: boolean;
 }) {
   const recommendations = getDisplayRecommendations(stone);
   const isFiveItemLayout = recommendations.length >= 5;
@@ -235,12 +247,14 @@ export function DashboardRecommendationsStage({
         </p>
       ) : null}
 
-      <DashboardGoalsPanel
-        roundId={roundId}
-        dimensionId={dimension.id}
-        dimensionLabel={dimension.conceptLabel}
-        recommendations={recommendations}
-      />
+      {mayAct ? (
+        <DashboardGoalsPanel
+          roundId={roundId}
+          dimensionId={dimension.id}
+          dimensionLabel={dimension.conceptLabel}
+          recommendations={recommendations}
+        />
+      ) : null}
 
       <DashboardCtaRow
         center

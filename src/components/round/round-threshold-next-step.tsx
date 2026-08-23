@@ -37,6 +37,14 @@ type RoundThresholdNextStepContentProps = {
    * open, or hide a round that closed and never got its map.
    */
   isCollecting?: boolean;
+  /**
+   * Whether the reader may run the analysis themselves. A school user cannot
+   * (owner decision, 2026-08-23), so the two states whose next step is that
+   * button say who does it instead of naming a control that is not on their
+   * screen. What happened to the round is reported to them either way — the
+   * band is a reading, and only its instruction changes.
+   */
+  mayAct?: boolean;
 };
 
 type NextStepCopy = {
@@ -51,6 +59,7 @@ function getNextStepCopy({
   responseCount,
   minimumResponses,
   isCollecting = true,
+  mayAct = true,
 }: RoundThresholdNextStepContentProps): NextStepCopy {
   if (state.status === "below-threshold") {
     const remaining = Math.max(minimumResponses - responseCount, 0);
@@ -126,17 +135,21 @@ function getNextStepCopy({
 
     return {
       title: "עדיין לא נוצר ניתוח",
-      body: "הסבב נסגר אך המפה לא נוצרה. הפעילו רענון ניתוח כדי ליצור אותה מהתשובות שנשמרו.",
+      body: mayAct
+        ? "הסבב נסגר אך המפה לא נוצרה. הפעילו רענון ניתוח כדי ליצור אותה מהתשובות שנשמרו."
+        : "הסבב נסגר אך המפה לא נוצרה. התשובות שנאספו נשמרו. פנו למנהל המערכת להפעלת הניתוח.",
       icon: <Sparkles size={24} aria-hidden="true" />,
-      action: "refresh",
+      action: mayAct ? "refresh" : undefined,
     };
   }
 
   return {
     title: "לא ניתן היה להשלים את הניתוח",
-    body: "התשובות שנאספו נשמרו. אפשר להפעיל רענון ניתוח ולנסות שוב מאוחר יותר.",
+    body: mayAct
+      ? "התשובות שנאספו נשמרו. אפשר להפעיל רענון ניתוח ולנסות שוב מאוחר יותר."
+      : "התשובות שנאספו נשמרו. פנו למנהל המערכת להפעלת הניתוח מחדש.",
     icon: <AlertTriangle size={24} aria-hidden="true" />,
-    action: "refresh",
+    action: mayAct ? "refresh" : undefined,
   };
 }
 
@@ -175,11 +188,14 @@ function ThresholdReachedNextStep({
   responseCount,
   minimumResponses,
   isCollecting,
+  mayAct,
 }: {
   roundId: string;
   responseCount: number;
   minimumResponses: number;
   isCollecting: boolean;
+  /** See `RoundThresholdNextStepContent`. */
+  mayAct?: boolean;
 }) {
   const { state } = useAiInsights(roundId);
 
@@ -190,6 +206,7 @@ function ThresholdReachedNextStep({
       minimumResponses={minimumResponses}
       roundId={roundId}
       isCollecting={isCollecting}
+      mayAct={mayAct}
     />
   );
 }
@@ -199,11 +216,14 @@ export function RoundThresholdNextStep({
   responseCount,
   minimumResponses,
   isCollecting,
+  mayAct,
 }: {
   roundId: string;
   responseCount: number;
   minimumResponses: number;
   isCollecting: boolean;
+  /** See `RoundThresholdNextStepContent`. */
+  mayAct?: boolean;
 }) {
   if (responseCount < minimumResponses) {
     return (
@@ -213,6 +233,7 @@ export function RoundThresholdNextStep({
         minimumResponses={minimumResponses}
         roundId={roundId}
         isCollecting={isCollecting}
+        mayAct={mayAct}
       />
     );
   }
@@ -223,6 +244,7 @@ export function RoundThresholdNextStep({
       responseCount={responseCount}
       minimumResponses={minimumResponses}
       isCollecting={isCollecting}
+      mayAct={mayAct}
     />
   );
 }

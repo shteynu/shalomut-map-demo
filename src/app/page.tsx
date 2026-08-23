@@ -9,6 +9,7 @@ import { calculatePercentage } from "@/lib/utils/math";
 import {
   getNavigationAction,
   homeActionRouteIds,
+  isScreenOpenTo,
   readRoundParam,
   roundSwitcherAction,
   routeHrefForRound,
@@ -18,6 +19,7 @@ import { toRoundSwitcherOptions } from "@/lib/rounds/round-options";
 import { isRoundCollecting } from "@/lib/rounds/round-status";
 import {
   loadManagerContext,
+  loadManagerRole,
   loadSchoolChoices,
 } from "@/lib/server/manager-context";
 import type { WellbeingStatus } from "@/lib/shalomut-source";
@@ -37,7 +39,10 @@ export default async function HomePage({
   searchParams: Promise<{ round?: string | string[] }>;
 }) {
   const requestedRound = readRoundParam(await searchParams);
-  const context = await loadManagerContext(requestedRound);
+  const [context, role] = await Promise.all([
+    loadManagerContext(requestedRound),
+    loadManagerRole(),
+  ]);
 
   if (!context.organization || !context.selectedRound) {
     return (
@@ -84,11 +89,24 @@ export default async function HomePage({
           <p className="home-hero-subtitle">תמונת סבב האבחון מחוברת לנתוני בית הספר.</p>
         </div>
         <div className="intro-actions">
-          <Link className="primary-button" href={startSetupAction.href}>
-            {startSetupAction.label}
-            <ArrowLeft size={18} aria-hidden="true" />
-          </Link>
-          <Link className="secondary-button" href={openDashboardAction.href}>
+          {/*
+           * Opening a round is an administrator's action, so a school user gets
+           * the map as their primary button rather than a door that refuses
+           * them. The screen keeps one call to action either way; it just stops
+           * being the one they cannot take.
+           */}
+          {isScreenOpenTo("setup", role) && (
+            <Link className="primary-button" href={startSetupAction.href}>
+              {startSetupAction.label}
+              <ArrowLeft size={18} aria-hidden="true" />
+            </Link>
+          )}
+          <Link
+            className={
+              isScreenOpenTo("setup", role) ? "secondary-button" : "primary-button"
+            }
+            href={openDashboardAction.href}
+          >
             {openDashboardAction.label}
             <Map size={18} aria-hidden="true" />
           </Link>
@@ -147,7 +165,9 @@ export default async function HomePage({
       </section>
 
       <section className="home-action-grid" aria-label="זרימת העבודה">
-        {homeActionRouteIds.map((routeId) => {
+        {homeActionRouteIds
+          .filter((routeId) => isScreenOpenTo(routeId, role))
+          .map((routeId) => {
           const action = routeMetadata[routeId];
           const Icon = actionIcons[routeId];
           return (

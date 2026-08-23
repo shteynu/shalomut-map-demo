@@ -13,11 +13,13 @@ import {
   SurveyFunnelService,
 } from "@/lib/services";
 import type { ManagerContext } from "@/lib/services";
+import type { ManagerRole } from "@/lib/auth/types";
 import type { SurveyRound } from "@/lib/types/backend";
 import { UNRECORDABLE_VISIT_MESSAGE } from "@/lib/server/manager-audit";
 import {
   getManagerMemberSchools,
   getManagerOrganizationId,
+  getManagerRole,
   recordManagerScreenVisit,
 } from "@/lib/server/manager-scope";
 import {
@@ -59,6 +61,23 @@ export async function loadManagerContext(roundId?: string) {
   if (!recorded) throw new Error(UNRECORDABLE_VISIT_MESSAGE);
 
   return context;
+}
+
+/**
+ * What this session may do in the school it is reading.
+ *
+ * The screens' half of the role gate. It reads the same server-owned header the
+ * round routes read, so a tab and the route behind it cannot disagree about who
+ * may open it — which is the whole reason the middleware decides the role
+ * rather than each screen deriving one.
+ *
+ * The screens use it to *not offer* what the routes would refuse. It is not the
+ * boundary: `requireManagerPermission` is, on every write route, and it holds
+ * whether or not a screen ever renders.
+ */
+export async function loadManagerRole(): Promise<ManagerRole> {
+  await connection();
+  return getManagerRole({ headers: await headers() });
 }
 
 /**

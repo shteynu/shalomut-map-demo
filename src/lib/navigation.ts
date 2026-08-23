@@ -1,3 +1,4 @@
+import type { ManagerRole } from "@/lib/auth/types";
 import { HELP_LOCALE_PARAM } from "@/lib/help/locales";
 
 export const routes = {
@@ -148,6 +149,53 @@ export const mainNavItems: MainNavItem[] = mainNavOrder.map((id) => ({
   href: routeMetadata[id].href,
   label: routeMetadata[id].navLabel,
 }));
+
+/**
+ * The screens whose whole purpose is a write, and which therefore do not exist
+ * for a school user.
+ *
+ * Owner decision, 2026-08-23: every action on a round belongs to an
+ * administrator. `setup` opens a round, `surveyBuilder` writes its
+ * questionnaire and `goals` records what the school decided to do — all three
+ * offer nothing else, so leaving them in the navigation would be offering three
+ * doors that answer `403`.
+ *
+ * `round` is not here on purpose. Strip its controls and what remains is the
+ * anonymous link and the count of answers, which is a read and the one thing a
+ * school needs while collection is open. `dashboard` and `breakdown` are the
+ * results themselves.
+ */
+const administratorOnlyScreens: ReadonlySet<MainNavItemId> = new Set([
+  "setup",
+  "surveyBuilder",
+  "goals",
+]);
+
+/** Whether this screen is one a school user has any business opening. */
+export function isScreenOpenTo(id: MainNavItemId, role: ManagerRole): boolean {
+  return role === "admin" || !administratorOnlyScreens.has(id);
+}
+
+/**
+ * The same three screens, asked by path rather than by id.
+ *
+ * The middleware uses this to turn a typed URL away, and the header uses the
+ * set above to leave the tab out. Both read one list on purpose: a tab that is
+ * hidden and a path that still renders is the bug this shape exists to prevent.
+ */
+export function isAdministratorOnlyScreen(pathname: string): boolean {
+  const normalized =
+    pathname.length > 1 && pathname.endsWith("/")
+      ? pathname.slice(0, -1)
+      : pathname;
+
+  for (const id of administratorOnlyScreens) {
+    const href = routes[id];
+    if (normalized === href || normalized.startsWith(`${href}/`)) return true;
+  }
+
+  return false;
+}
 
 export const homeActionRouteIds = [
   "setup",
@@ -529,12 +577,17 @@ export function routeHrefForRound(id: AppRouteId, roundId?: string): string {
  * round it is the plain navigation, which is what a manager on the school's
  * current round gets: the parameter would only repeat the default.
  */
-export function mainNavItemsForRound(roundId?: string): MainNavItem[] {
+export function mainNavItemsForRound(
+  roundId?: string,
+  role: ManagerRole = "admin",
+): MainNavItem[] {
+  const items = mainNavItems.filter((item) => isScreenOpenTo(item.id, role));
+
   if (!roundId) {
-    return mainNavItems;
+    return items;
   }
 
-  return mainNavItems.map((item) => ({
+  return items.map((item) => ({
     ...item,
     href: routeHrefForRound(item.id, roundId),
   }));

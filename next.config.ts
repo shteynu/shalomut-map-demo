@@ -21,9 +21,15 @@ const isDevelopment = process.env.NODE_ENV === "development";
  * Next's App Router serves the RSC payload as inline `self.__next_f.push(...)`
  * script tags on every page. The only way to allow those and nothing else is a
  * per-request nonce, which Next reads from the request's CSP header and stamps
- * on its own scripts — and a per-request nonce makes every page dynamic, which
- * this build is not: `/login`, `/_not-found` and `/api-docs` are statically
- * rendered, and `/login` is the screen a manager meets first.
+ * on its own scripts — and a per-request nonce makes every page dynamic.
+ *
+ * That used to be the argument against it: `/login`, `/_not-found` and
+ * `/api-docs` were statically rendered. It is no longer, and the reason is
+ * worth knowing rather than discovering. Since 2026-08-23 the root layout reads
+ * the manager's role from a server-owned header to decide which navigation tabs
+ * exist, so every page but `/icon.svg` is rendered per request already. The
+ * follow-up below therefore costs nothing it did not cost before, and the only
+ * reason it has not been done is that it is its own piece of work.
  *
  * So this policy does not claim to stop inline injection. What it does stop is
  * everything an injected string would want next: loading a script from another

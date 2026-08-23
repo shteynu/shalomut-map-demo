@@ -1,7 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { Archive, CheckCircle2, Clipboard, History, Loader2, Lock, Map, RotateCcw, Sparkles } from "lucide-react";
+import {
+  Archive,
+  CheckCircle2,
+  Clipboard,
+  History,
+  Loader2,
+  Lock,
+  Map,
+  RotateCcw,
+  Sparkles,
+} from "lucide-react";
 import type { CSSProperties } from "react";
 import { useRef, useState } from "react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -25,6 +35,12 @@ type RoundControlsProps = {
    * rewrites its answers or its analysis.
    */
   isSuperseded?: boolean;
+  /**
+   * Whether the person reading this may act on the round at all. False for a
+   * school user, whose every write the routes refuse — so the buttons are not
+   * offered rather than offered and refused.
+   */
+  mayAct?: boolean;
 };
 
 /**
@@ -58,6 +74,7 @@ export function RoundControls({
   minimumResponses,
   status,
   isSuperseded = false,
+  mayAct = true,
 }: RoundControlsProps) {
   const [closed, setClosed] = useState(status === "closed");
   const [closing, setClosing] = useState(false);
@@ -84,6 +101,9 @@ export function RoundControls({
    * refuses them at the route with 409, and a superseded one is a measurement
    * the school has already answered, so neither is offered a button that
    * should not be pressed.
+   *
+   * About the round, not about the reader. `mayAct` is the other question and
+   * it is asked one level up, around every action rather than around these two.
    */
   const readOnly = archived || isSuperseded;
   /**
@@ -110,14 +130,11 @@ export function RoundControls({
     setClosing(true);
     setCloseError(null);
 
-    const response = await fetch(
-      `/api/rounds/${encodeURIComponent(roundId)}`,
-      {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "closed" }),
-      },
-    ).catch(() => null);
+    const response = await fetch(`/api/rounds/${encodeURIComponent(roundId)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "closed" }),
+    }).catch(() => null);
 
     if (!response?.ok) {
       setCloseError(closeFailureMessage(response?.status));
@@ -139,14 +156,11 @@ export function RoundControls({
     setArchiving(true);
     setCloseError(null);
 
-    const response = await fetch(
-      `/api/rounds/${encodeURIComponent(roundId)}`,
-      {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "archived" }),
-      },
-    ).catch(() => null);
+    const response = await fetch(`/api/rounds/${encodeURIComponent(roundId)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "archived" }),
+    }).catch(() => null);
 
     if (!response?.ok) {
       // The route answers a refused transition in English prose. Managers get
@@ -171,7 +185,9 @@ export function RoundControls({
     ).catch(() => null);
 
     if (!response) {
-      setCloseError("לא ניתן היה לפנות לשירות הניתוח. בדקו את החיבור ונסו שוב.");
+      setCloseError(
+        "לא ניתן היה לפנות לשירות הניתוח. בדקו את החיבור ונסו שוב.",
+      );
       setAnalyzing(false);
       return;
     }
@@ -242,11 +258,17 @@ export function RoundControls({
         aria-valuemax={expectedResponses}
         aria-valuetext={`${responseCount} מתוך ${expectedResponses} תשובות`}
       >
-        <div className="progress-ring" style={{ "--progress": `${progress}%` } as CSSProperties}>
+        <div
+          className="progress-ring"
+          style={{ "--progress": `${progress}%` } as CSSProperties}
+        >
           <strong>{responseCount}</strong>
           <span>מתוך {expectedResponses}</span>
         </div>
-        <p>התוצאות יוצגו רק אחרי לפחות {minimumResponses} תשובות, ללא שמות או פרטי זיהוי.</p>
+        <p>
+          התוצאות יוצגו רק אחרי לפחות {minimumResponses} תשובות, ללא שמות או
+          פרטי זיהוי.
+        </p>
       </div>
 
       <div className="share-panel">
@@ -259,7 +281,12 @@ export function RoundControls({
             value={shareUrl}
             aria-label="לינק אנונימי לשאלון"
           />
-          <button className="icon-button" type="button" onClick={copyShareUrl} aria-label="העתקת לינק">
+          <button
+            className="icon-button"
+            type="button"
+            onClick={copyShareUrl}
+            aria-label="העתקת לינק"
+          >
             <Clipboard size={18} aria-hidden="true" />
           </button>
         </div>
@@ -269,91 +296,119 @@ export function RoundControls({
         />
 
         <div className="round-actions">
-          {readOnly ? null : (
+          {/*
+           * Every button below writes something, and a school user writes
+           * nothing (owner decision, 2026-08-23) — so none of them is offered.
+           * The progress ring and the share link above stay: watching the count
+           * and handing out the anonymous link is the school's own work during
+           * collection, and neither touches the round.
+           *
+           * The dashboard link at the end is outside this, because reading the
+           * map is exactly what a school user is here for.
+           */}
+          {mayAct ? (
             <>
-              {/*
+              {readOnly ? null : (
+                <>
+                  {/*
                 Re-running is a second opinion on a round already closed. While
                 a round is still collecting, the first opinion has not been
                 asked for yet — closing is what asks — and pressing this would
                 put a map in front of the school built from a sample that is
                 still moving.
               */}
-              <button
-                id="refresh-round-analysis"
-                className="secondary-button"
-                type="button"
-                disabled={
-                  analyzing ||
-                  !closed ||
-                  responseCount < minimumResponses
-                }
-                onClick={refreshAnalysis}
-                title={
-                  !closed
-                    ? "הניתוח יופעל בסגירת הסבב. אחריה אפשר להפעיל אותו מחדש"
-                    : responseCount < minimumResponses
-                      ? `הניתוח יופעל לאחר ${minimumResponses} תשובות לפחות`
-                      : "הפעלת ניתוח מחדש על כל התשובות שהתקבלו עד כה"
-                }
-              >
-                {analyzing ? (
-                  <Loader2 size={18} className="animate-spin" aria-hidden="true" />
-                ) : (
-                  <Sparkles size={18} aria-hidden="true" />
-                )}
-                {analyzing ? "מפעיל ניתוח..." : "רענון ניתוח"}
-              </button>
-              <button
-                className="secondary-button"
-                type="button"
-                disabled={resetting}
-                onClick={() => setPendingAction("reset")}
-                title="מחיקת תשובות והחזרה לעריכת שאלון"
-              >
-                {resetting ? (
-                  <Loader2 size={18} className="animate-spin" aria-hidden="true" />
-                ) : (
-                  <RotateCcw size={18} aria-hidden="true" />
-                )}
-                {resetting ? "מאפס..." : "איפוס נתונים"}
-              </button>
-            </>
-          )}
-          <button
-            className="secondary-button"
-            type="button"
-            disabled={closed || closing || !closable}
-            data-round-id={roundId}
-            onClick={closeRound}
-            title={
-              closable
-                ? "סימון הסבב כסגור ועצירת איסוף התשובות"
-                : "סגירה ידנית אפשרית רק לסבב שאוסף תשובות"
-            }
-          >
-            {closing ? (
-              <Loader2 size={18} className="animate-spin" aria-hidden="true" />
-            ) : (
-              <Lock size={18} aria-hidden="true" />
-            )}
-            {closing ? "סוגר..." : "סגירת סבב אבחון ידנית"}
-          </button>
-          {closed && !archived ? (
-            <button
-              className="secondary-button"
-              type="button"
-              disabled={archiving}
-              data-round-id={roundId}
-              onClick={() => setPendingAction("archive")}
-              title="הוצאת הסבב מרשימת הסבבים, בלי למחוק אותו"
-            >
-              {archiving ? (
-                <Loader2 size={18} className="animate-spin" aria-hidden="true" />
-              ) : (
-                <Archive size={18} aria-hidden="true" />
+                  <button
+                    id="refresh-round-analysis"
+                    className="secondary-button"
+                    type="button"
+                    disabled={
+                      analyzing || !closed || responseCount < minimumResponses
+                    }
+                    onClick={refreshAnalysis}
+                    title={
+                      !closed
+                        ? "הניתוח יופעל בסגירת הסבב. אחריה אפשר להפעיל אותו מחדש"
+                        : responseCount < minimumResponses
+                          ? `הניתוח יופעל לאחר ${minimumResponses} תשובות לפחות`
+                          : "הפעלת ניתוח מחדש על כל התשובות שהתקבלו עד כה"
+                    }
+                  >
+                    {analyzing ? (
+                      <Loader2
+                        size={18}
+                        className="animate-spin"
+                        aria-hidden="true"
+                      />
+                    ) : (
+                      <Sparkles size={18} aria-hidden="true" />
+                    )}
+                    {analyzing ? "מפעיל ניתוח..." : "רענון ניתוח"}
+                  </button>
+                  <button
+                    className="secondary-button"
+                    type="button"
+                    disabled={resetting}
+                    onClick={() => setPendingAction("reset")}
+                    title="מחיקת תשובות והחזרה לעריכת שאלון"
+                  >
+                    {resetting ? (
+                      <Loader2
+                        size={18}
+                        className="animate-spin"
+                        aria-hidden="true"
+                      />
+                    ) : (
+                      <RotateCcw size={18} aria-hidden="true" />
+                    )}
+                    {resetting ? "מאפס..." : "איפוס נתונים"}
+                  </button>
+                </>
               )}
-              {archiving ? "מעביר לארכיון..." : "העברה לארכיון"}
-            </button>
+              <button
+                className="secondary-button"
+                type="button"
+                disabled={closed || closing || !closable}
+                data-round-id={roundId}
+                onClick={closeRound}
+                title={
+                  closable
+                    ? "סימון הסבב כסגור ועצירת איסוף התשובות"
+                    : "סגירה ידנית אפשרית רק לסבב שאוסף תשובות"
+                }
+              >
+                {closing ? (
+                  <Loader2
+                    size={18}
+                    className="animate-spin"
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <Lock size={18} aria-hidden="true" />
+                )}
+                {closing ? "סוגר..." : "סגירת סבב אבחון ידנית"}
+              </button>
+              {closed && !archived ? (
+                <button
+                  className="secondary-button"
+                  type="button"
+                  disabled={archiving}
+                  data-round-id={roundId}
+                  onClick={() => setPendingAction("archive")}
+                  title="הוצאת הסבב מרשימת הסבבים, בלי למחוק אותו"
+                >
+                  {archiving ? (
+                    <Loader2
+                      size={18}
+                      className="animate-spin"
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <Archive size={18} aria-hidden="true" />
+                  )}
+                  {archiving ? "מעביר לארכיון..." : "העברה לארכיון"}
+                </button>
+              ) : null}
+            </>
           ) : null}
           <Link className="primary-button" href={openDashboardAction.href}>
             <Map size={18} aria-hidden="true" />
