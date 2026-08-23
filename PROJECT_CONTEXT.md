@@ -2267,6 +2267,58 @@ school switcher a platform administrator sees on `setup`. Bounding it means a
 search field instead of a `<select>`, which is a different screen rather than a
 different query.
 
+### ADR-053: The provider's pace is a share of one quota, not a whole per process
+
+2026-08-23. `provider_rate_limiter` is a module-level object behind a lock, so
+it paces one process. The provider counts its quota per key, so two processes
+kept two private counters and together sent at twice the configured rate. The
+2026-08-21 audit called this the reason the AI worker could not scale past one
+process; it was also true of two situations nobody chooses — a `WEB_CONCURRENCY`
+above one, and the overlap of an old and a new container during a zero-downtime
+deploy.
+
+**Core answers who is sending, because Core is the only thing both processes can
+see.** The service has no database of its own, and the alternative — a shared
+counter in a third-party store consulted before every provider call — would put
+a network hop in front of each of a round's twenty-eight calls. Core already
+records `ai_analysis_runs.worker_id` and `lease_expires_at`, so
+`readLiveWorkerIds` is a `GROUP BY` on the index `claimNext` already needs: no
+schema, no migration, and one short string per live lane.
+
+**It rides the claim and the heartbeat rather than an endpoint of its own.** The
+claim, because the first provider call of a round follows within seconds. The
+heartbeat, because a worker mid-round never claims again — which is exactly the
+container being replaced by a deploy — and a renewal is the only news it gets.
+Once per heartbeat interval is soon enough for a share.
+
+**Divided, not refused.** The audit offered either, and refusing a second sender
+would have made a zero-downtime deploy — where two containers overlap by design
+— into a container that refuses to start. Dividing also buys what the finding
+was about: a round is about eleven calls a minute against a configured thirty,
+so two processes at fifteen each still finish two rounds faster than one process
+finishes them in sequence.
+
+**Observed, not declared.** A fleet-size environment variable is one more number
+to keep true, and it is blind to the deploy overlap, which nobody configures.
+
+**Ids travel, not a count.** `worker_id_for_slot` writes `base:lane`, so three
+lanes of one container are three ids and one sender; a count computed in Core
+would divide the pace by the very number `AI_JOB_POOL_SIZE` was raised to use.
+Core stores what it was handed and the worker collapses its own naming — only a
+trailing run of digits is a lane, so an operator's `render:frankfurt` survives.
+
+**What it does not do.** Two processes claiming in the same instant can each see
+only themselves and both run at full pace until the next heartbeat, which the
+transport's existing `Retry-After` handling absorbs. A peer that dies is still
+counted until its lease expires, so this process runs slower than it could for
+up to ninety seconds — the safe direction. `provider_health` and the concurrency
+semaphore stay per-process: the quota is what a second process overspends, and
+health is an opinion each process may hold on its own.
+
+**Consumer-first.** The field is additive on both routes and its absence leaves
+a worker pacing alone, which is what every worker did before it existed and what
+a fleet of one is anyway.
+
 ## Environments
 
 The project supports exactly two environments:

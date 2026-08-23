@@ -47,6 +47,18 @@ Verified on 2026-08-23, in this worktree and on both deployed endpoints:
   PostgreSQL, and three of them are invisible from outside because what changed
   is how much a query returns, not what a screen says. The audit's open count is
   **7 of 50**, counted from the `ЗАКРЫТА` marks in the records themselves.
+- **The AI worker's pace became a share of one quota, and it is not deployed
+  yet.** `c6635ea` and `a56132d` on
+  `fix/the-quota-is-shared-by-every-live-worker`, not on `main` and not on
+  either endpoint at the time of writing. Core answers the claim and the
+  heartbeat with `liveWorkerIds`, and each worker process divides the configured
+  pace by how many processes those ids stand for. It changes nothing about
+  today's runtime, which is one process dividing by one — the change is what
+  happens when a second one exists. **When it does land, the AI service will
+  need a rebuild to get its half**: `ai-analytics-service/**` is in Render's
+  `buildFilter`, so unlike the last five landings this one is not a
+  Core-only push and the resting gap between the two commits will close.
+
 - **Two retention questions are the owner's and are not decided.** Both surfaced
   while `eb46b87` put ceilings on the tables that only grow, and both were left
   rather than invented: whether `audit_events` rows are ever deleted, and whether
@@ -1051,12 +1063,23 @@ without a code change; that, more than the number, is what changed.
 9. **How many rounds the deployed service should analyse at once, 2026-08-18.**
    `AI_JOB_POOL_SIZE` is `1` in `render.yaml`, which is the behaviour the service
    had before the setting existed. A round is about 28 calls over three minutes,
-   near 11 a minute against the configured 60, so **4–5 is the useful range at
-   today's pace** — but the real provider tier is the actual ceiling and nothing
-   here can read it. And a second Render instance is **not** the next step after
-   raising it: `provider_rate_limiter` is per-process, so two containers would
-   keep two private counters and together exceed the quota, which is the `429`
-   that killed every early live round.
+   near 11 a minute, so **three is the useful ceiling at the deployment's real
+   pace of 30** — read it off `requests_per_minute_for`, not off
+   `LLM_MAX_REQUESTS_PER_MINUTE`, because `render.yaml` points `LLM_MODEL_HEAVY`
+   at the fast model and the stricter tier then applies to the whole round. The
+   real provider tier is the actual ceiling and nothing here can read it.
+
+   **A second Render instance stopped being forbidden on 2026-08-23**, and that
+   is a change of fact rather than of advice. It used to be unsafe because
+   `provider_rate_limiter` was per-process, so two containers kept two private
+   counters and together exceeded the quota — the `429` that killed every early
+   live round. Core now names every worker holding a live lease and each process
+   divides the pace by how many processes those ids stand for (ADR-053), so two
+   containers spend one quota. Lanes are still the cheaper knob, because they
+   share a queue instead of dividing it; a second instance buys resilience and a
+   second cold start, not more provider throughput. Neither number has been
+   changed on the deployment by this: `AI_JOB_POOL_SIZE` is still `1` and there
+   is still one instance.
 
 **Standing rule:** explicit bounded approval is required before changing secrets,
 credentials, authentication configuration or deployment aliases.

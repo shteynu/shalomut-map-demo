@@ -8,6 +8,16 @@ inside it.
 
 ## Current state
 
+- **Two AI workers can now share one provider quota instead of doubling it.**
+  Since 2026-08-23 Core names every worker holding a live lease — on the claim
+  and on every heartbeat — and each worker process divides the configured pace
+  by how many processes those ids stand for. Pool lanes of one container
+  collapse to one sender, so the knob that shares a queue is unaffected. One
+  process paces exactly as it always did, which is the deployment today; what
+  changes is that a second container stops being a quota bug. That was the last
+  fully open medium of the 2026-08-21 audit. `PROJECT_CONTEXT.md` ADR-053
+  records it, including why the count is observed rather than configured.
+
 - **The administrator console lists a page of schools instead of the platform.**
   Since 2026-08-23 it reads twenty schools at a time through `?q=` and `?page=`,
   with a search that matches a name or a city in the database rather than in the
@@ -890,7 +900,21 @@ unrequested; `docs/shalomut-tracker-handoff.md` carries it.
 
 ### Architecture
 
-Nothing open. Mutant classification closed on 2026-08-03, and on 2026-08-07 the
+**The AI worker's pace stopped being a private number, 2026-08-23.** Everything
+that protects the paid provider quota lived in one process's memory, so a second
+process — a second Render instance, a `WEB_CONCURRENCY` above one, or the
+overlap of an old and a new container during a deploy — kept a second counter
+and the two together sent at twice the configured rate against a quota counted
+once per key. Core now names every worker holding a live lease, on the claim and
+on every heartbeat, and each process divides the pace by how many processes
+those ids stand for. One worker paces exactly as before; two send at the rate
+one used to. That closes the last fully open medium of the 2026-08-21 audit and
+removes the reason a second container was forbidden — what remains there is how
+many rounds the deployment should analyse at once, which is the owner's number
+rather than a defect. `PROJECT_CONTEXT.md` ADR-053 records it, including the two
+things it deliberately leaves per-process.
+
+Nothing else is open. Mutant classification closed on 2026-08-03, and on 2026-08-07 the
 contracts `1.0`–`3.0`, `5.0` and finally `6.0` got the refusing half of their
 tests — what the classification had called a missing-fixture problem. `4.0`
 needed no slice: it validates through the `3.0` path. Widening mutation scope
