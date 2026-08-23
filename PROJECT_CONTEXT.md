@@ -429,6 +429,21 @@ route became the second opinion rather than the exception: it refuses a round
 that is not `closed` with `round_not_closed`, and refuses one below its privacy
 threshold with `below_privacy_threshold`. A submission dispatches nothing.
 
+Every close asks, not only the one a manager pressed. A school runs one round
+at a time (ADR-014), so starting the next round closes the previous one, and
+until 2026-08-23 that close was silent: `enqueueAiAnalyticsOnClosure` had a
+single caller, the PATCH route. The superseded round could never ask again
+either — `closed → closed` is not an allowed transition — so a school that
+started its next round the ordinary way lost the map of the round that had
+just finished. The dispatch is wired at the two entrypoints that cause an
+implicit close, `PUT /api/rounds/:id/survey-definition` and `POST /api/rounds`,
+rather than inside `RoundService`: the service is a Core domain service handed
+round repositories only, and by ADR-008 just the entrypoint resolves
+repositories. A queue write that fails is swallowed per superseded round — the
+close already happened and the new round is already live, so undoing a round
+the manager did start, to recover a map they had not asked for yet, would be
+the worse trade.
+
 The reason is what a round means while it is open. A durable run reads the
 round's aggregates when it starts, and Core re-verifies the callback against
 aggregates recalculated when it arrives; a response landing in between made a

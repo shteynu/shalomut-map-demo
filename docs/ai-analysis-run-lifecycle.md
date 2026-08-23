@@ -28,6 +28,7 @@ sequenceDiagram
     participant G as Gemini
 
     M->>C: PATCH /api/rounds/… — close the round
+    Note over M,C: starting the next round closes the previous one too,<br/>and the builder's save and POST /api/rounds<br/>dispatch for it the same way
     C->>C: responseCount against privacyThreshold
     Note over C: below the threshold — below_threshold,<br/>no run is created at all
     C->>DB: INSERT · state=queued · trigger=closure
