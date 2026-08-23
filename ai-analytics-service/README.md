@@ -251,7 +251,14 @@ lifespan. `AI_JOB_POLL_INTERVAL_SECONDS` is how soon a worker with work asks
 again, and `AI_JOB_POLL_MAX_INTERVAL_SECONDS` is how far that wait drifts out
 while the queue answers `204`: it doubles after every empty poll and resets on
 the first claim, so an idle day costs Core thousands of invocations rather than
-tens of thousands. Each slot of `AI_JOB_POOL_SIZE` backs off on its own.
+tens of thousands. Each slot of `AI_JOB_POOL_SIZE` backs off on its own, which
+is also what makes the pool cost Core proportionally: three lanes idle at the
+ceiling are three claims every thirty seconds, not one.
+
+`AI_JOB_POOL_SIZE` is how many rounds one process analyses at once, each with
+its own lease, heartbeat and poll loop. It defaults to `1` and the deployment
+runs `3` — see the pace discussion below for why three and not more, and
+`render.yaml` for the evidence next to the value.
 `AI_JOB_HEARTBEAT_INTERVAL_SECONDS` must remain comfortably below Core's
 90-second lease. The switch is explicit so Core can deploy the durable routes
 and migration before the worker begins claiming them.
@@ -294,7 +301,8 @@ free tier counts the minute. That is what every live round had been failing on �
 
 The rate belongs to a model, not to the service: Google counts per model, so
 `LLM_MAX_REQUESTS_PER_MINUTE` and `LLM_MODEL_FAST` have to move together.
-`render.yaml` carries both — `gemini-3.5-flash-lite` at `60` since 2026-08-05.
+`render.yaml` carries both — `gemini-3.5-flash` at `60`; the pace is from
+2026-08-05 and the model replaced `gemini-3.5-flash-lite` on 2026-08-09.
 It was `14` for as long as the key was a free one, where the tier allowed `15`
 per minute and the missing fifteenth was not caution for its own sake: evenly
 spaced sends arrive every `60/R` seconds, so at exactly `15` they arrive every
@@ -316,6 +324,16 @@ was nearly three times what `gemini-3.5-flash` allowed — the original `429`,
 moved into the path that only opens once the round is already in trouble. Unset
 it defaults to `5` rather than to the fast pace, because inheriting would
 rebuild the defect the next time the fast number was raised.
+
+**Neither number is necessarily the pace a round runs at.** The queue is keyed
+by model *name*, and `requests_per_minute_for` takes the stricter tier when one
+name is configured on both — naming one model twice must not buy twice the
+quota. The deployment sets `LLM_MODEL_HEAVY` to the same `gemini-3.5-flash`, so
+its effective pace is `30`, not `60`. A single round never notices, because it
+asks for about eleven a minute. What notices is `AI_JOB_POOL_SIZE`: the useful
+number of lanes is the effective pace over ~11, which is three rather than five.
+Read the pace off `requests_per_minute_for` before sizing a pool, not off
+`LLM_MAX_REQUESTS_PER_MINUTE`.
 
 Both values assume the billed key is the one on the Render dashboard, which
 `render.yaml` cannot check because `GEMINI_API_KEY` is `sync: false`. On a free

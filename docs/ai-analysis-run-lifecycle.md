@@ -260,10 +260,29 @@ quota — which is why more lanes come before more instances, and why a shared
 limiter is a prerequisite for ever adding one.
 
 What the lanes buy is idle quota rather than more quota. A round is roughly 28
-provider calls over about three minutes, near 11 a minute against a configured
-pace of 60, so a single lane leaves most of the paid rate unspent. Past about
-`60/11` the pace becomes the binding limit and further lanes only queue behind
-it; `config.py` caps the setting at 10 for that reason.
+provider calls over about three minutes, near 11 a minute, so a single lane
+leaves most of the paid rate unspent: ten rounds closing together take about
+half an hour on one lane and about ten minutes on three. The deployment runs
+three since 2026-08-23.
+
+**Three, and the reason is a number that is not where it looks.** The pace is
+counted per model *name*, and `requests_per_minute_for` takes the stricter tier
+when one name is configured on both — naming one model twice must not buy twice
+the quota. The deployment sets `LLM_MODEL_HEAVY` to the same
+`gemini-3.5-flash` as the fast tier, so its real pace is the heavy 30 rather
+than the fast 60, and the binding arithmetic is `30/11` rather than `60/11`. A
+fourth lane would queue behind the pace while still holding a lease to keep
+alive and a poll loop of its own. Anyone wanting more than three should read
+`requests_per_minute_for` rather than `LLM_MAX_REQUESTS_PER_MINUTE`, and change
+the model or the heavy pace — not this setting. `config.py` still clamps it at
+10, which is a guardrail against a typo rather than a recommendation.
+
+One cost worth naming, because it only appears at a full pace. A first send
+waits for its turn outside the retry budget, but a *retry* books with what the
+budget has left, so at saturation a turn the queue quotes too far out is
+declined and the attempt stops. Three lanes make that slightly more likely than
+one; it turns a transient provider failure into a deterministic fallback
+sooner, which is disclosed on screen either way.
 
 Two things the pool does not change. The queue stays globally first-in
 first-out — `claimNext` orders by `sequence asc` with no fairness between
@@ -278,7 +297,7 @@ the same one it was with a single lane.
 | Poll interval | 2 s | `AI_JOB_POLL_INTERVAL_SECONDS` | `ai-analytics-service/src/config.py` |
 | Idle poll ceiling | 30 s | `AI_JOB_POLL_MAX_INTERVAL_SECONDS` | `ai-analytics-service/src/config.py` |
 | Heartbeat interval | 30 s | `AI_JOB_HEARTBEAT_INTERVAL_SECONDS` | `ai-analytics-service/src/config.py` |
-| Concurrent rounds per process | 1, up to 10 | `AI_JOB_POOL_SIZE` | `ai-analytics-service/src/config.py` |
+| Concurrent rounds per process | 1 by default, 3 deployed, clamped to 10 | `AI_JOB_POOL_SIZE` | `ai-analytics-service/src/config.py`, `render.yaml` |
 | Lease length | 90 s | `AI_ANALYSIS_JOB_LEASE_MS` | `src/lib/server/ai-analysis-worker.ts` |
 | Attempt ceiling | 3 | `AI_ANALYSIS_JOB_MAX_ATTEMPTS` | `src/lib/server/ai-analysis-worker.ts` |
 | Delivery retries | 4, ≈7 s | `CALLBACK_MAX_ATTEMPTS` | `ai-analytics-service/src/services/result_sink.py` |

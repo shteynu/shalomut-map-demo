@@ -163,9 +163,9 @@ class Settings:
         # finish, claim again — so fifty schools closing together queued behind
         # one another for hours, while the account's paid quota sat mostly idle.
         # A round is about 28 provider calls over roughly three minutes, near
-        # 11 a minute against a pace of 60, so the process spends most of a
-        # round waiting on an answer rather than on its own rate limit. The
-        # slots that wait are what this fills.
+        # 11 a minute, so the process spends most of a round waiting on an
+        # answer rather than on its own rate limit. The slots that wait are what
+        # this fills.
         #
         # Raising it is safe because the pace is charged per process, not per
         # round: `provider_rate_limiter` is one module-level object behind a
@@ -175,10 +175,21 @@ class Settings:
         # counters and together exceed the quota — which is why this knob comes
         # before that one.
         #
-        # The ceiling is 10 rather than unbounded: past roughly 60/11 the pace
-        # is the binding limit and further slots only queue behind it, and each
-        # concurrent round also holds a lease Core must keep alive. The default
-        # stays 1 so a deployment changes behaviour only when it says so.
+        # **The useful ceiling is the configured pace over ~11, and the pace is
+        # not always the number that looks like it.** `requests_per_minute_for`
+        # counts per model name and takes the stricter tier when one name is
+        # configured on both, so a deployment that points `LLM_MODEL_HEAVY` at
+        # the fast model runs the whole round at the heavy pace. The deployment
+        # does exactly that (`render.yaml`), which makes its real pace 30 rather
+        # than 60 and its useful ceiling three rather than five. Read the pace
+        # off `requests_per_minute_for`, never off `LLM_MAX_REQUESTS_PER_MINUTE`
+        # alone.
+        #
+        # The hard cap of 10 is a guardrail against a typo rather than a
+        # recommendation: past the useful ceiling further slots only queue
+        # behind the pace, and each one still holds a lease Core must keep alive
+        # and polls on its own. The default stays 1 so a deployment changes
+        # behaviour only when it says so.
         self.ai_job_pool_size: int = max(
             1,
             min(10, int(os.getenv("AI_JOB_POOL_SIZE", "1"))),

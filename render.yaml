@@ -55,23 +55,42 @@ services:
       - key: AI_JOB_POLLING_ENABLED
         value: "true"
       # How many rounds this container analyses at once, each holding its own
-      # lease. Left at the default of one until a deployment actually needs
-      # more: raising it is safe but it is a throughput decision, and the
-      # number belongs next to the evidence for it rather than in a dashboard.
+      # lease. Three since 2026-08-23, and the number is chosen rather than
+      # rounded: it is the smallest pool that keeps this account's pace fully
+      # spent, and one more would buy nothing.
       #
-      # What it buys, and why it comes before a second instance: a round is
-      # about 28 provider calls over roughly three minutes — near 11 a minute
-      # against the pace of 60 set below — so one round leaves most of the paid
-      # quota unspent, and fifty schools closing together queue behind one
-      # another for hours. Extra slots spend that idle quota instead. They are
-      # safe to add because the pace is charged per process by one shared
-      # limiter; two containers would keep two private counters and together
-      # exceed the quota, which is the failure this knob exists to avoid.
+      # What it buys: a round is about 28 provider calls over roughly three
+      # minutes, near 11 a minute, so one lane leaves most of the pace unspent
+      # and fifty schools closing together queue behind one another for hours.
+      # Ten rounds closing at once take about half an hour on one lane and
+      # about ten minutes on three. Extra lanes are safe because the pace is
+      # charged per process by one shared limiter; two containers would keep two
+      # private counters and together exceed the quota, which is the failure
+      # this knob exists to avoid, and the reason more lanes come before more
+      # instances.
       #
-      # Past roughly 60/11 the pace becomes the binding limit and further slots
-      # only queue behind it, so `config.py` caps this at 10.
+      # **Three, not five, and the reason is two settings below.** The pace
+      # this service may actually use is not the 60 set for the fast model: the
+      # limiter counts per model *name*, `LLM_MODEL_HEAVY` is the same
+      # `gemini-3.5-flash`, and one name means one queue at the stricter of the
+      # two paces — 30, not 60. That rule is deliberate (`config.py`
+      # `requests_per_minute_for`, and the test named
+      # `two_tiers_on_one_model_share_one_queue`): naming one model twice must
+      # not buy twice the quota. So the binding arithmetic is 30/11, not 60/11,
+      # and a fourth lane would only queue behind the pace while still holding
+      # a lease Core has to keep alive and running a poll loop of its own.
+      #
+      # Which also names the lever for anyone who wants more than three: it is
+      # not this knob. It is either a distinct model for the heavy tier or a
+      # heavy pace that is not stricter than the fast one — and the 30 below was
+      # measured for that tier on 2026-08-05, so raising it is its own decision
+      # with its own evidence, not a side effect of wanting a bigger pool.
+      #
+      # `config.py` still caps this at 10. The cap is a guardrail against a
+      # typo, not a recommendation; the useful ceiling is whatever the
+      # configured pace divided by ~11 comes to, and today that is three.
       - key: AI_JOB_POOL_SIZE
-        value: "1"
+        value: "3"
       # The ceiling on one dimension's answer, and it was the default — 2048 in
       # `config.py` — until 2026-08-09, when a local run of the real pipeline
       # over a 24-question round showed what that costs: every call came back
