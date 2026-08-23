@@ -316,6 +316,15 @@ one analysis never compete for one map.
 - **A failed order is kept, not cleared.** It is the evidence of what happened.
   Asking again is a deliberate act by the principal.
 
+**And somebody watches the board itself.** Every mechanism above assumes there
+is a worker coming. If there is not — the service died, or was never woken —
+the orders simply sit there, because the thing that tidies up abandoned orders
+is the same worker that stopped coming. So the board answers one more question
+out loud: is anybody taking the work? It is not a queue-length alarm, which
+would go off on any busy afternoon; it is the combination of work that has
+waited too long *and* nobody currently holding a ticket. A monitor can read that
+answer without a password, and it reads as a failure the moment it is one.
+
 The same mechanics with real endpoint names, status codes and constants are in
 [`ai-analysis-run-lifecycle.md`](ai-analysis-run-lifecycle.md).
 

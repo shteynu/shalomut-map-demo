@@ -190,6 +190,22 @@ Verified 2026-08-22, in this worktree and on the deployed endpoint:
   `lint:fixtures` were not run, because nothing in this work touched the AI
   contract or the Python service.
 
+**The queue now says when nobody is consuming it (2026-08-23).** That is the
+audit's medium on liveness, and it closed on the branch
+`feat/a-stalled-queue-says-so` rather than as the audit proposed: an age
+threshold alone cannot tell a dead worker from a busy one, so the verdict needs
+takeable work past the threshold *and* no live lease. `GET /api/health/ai-queue`
+is anonymous, carries no numbers and answers `503` on `stalled` so a free
+monitor can alert on it; `GET /api/ai-analysis-runs/queue` carries the depth and
+the wait behind `AI_CALLBACK_SECRET`. No migration, no write, no new secret.
+
+Two operational consequences. **Nothing watches the new path yet** — the
+UptimeRobot account has one keyword monitor on the Python service's `/health`,
+and until a second one points at Core's queue endpoint the stall is readable but
+unread, which is half the finding. And the branch is **unpushed**, so none of
+this exists on the deployment; `origin/main` is `57c9e58` and two commits sit
+locally ahead of it.
+
 **Next concrete step:** ask the owner for the methodologist's item-to-dimension
 mapping, because without it there is no substantial *product* work an agent can
 start. This branch is finished — the multi-tenancy plan is closed, the
