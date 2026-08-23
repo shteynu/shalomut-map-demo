@@ -871,7 +871,7 @@
             }
           },
           "429": {
-            "description": "Too many submissions from one address inside the window (RATE_LIMITED). The limit is deliberately loose, because a whole staffroom answers from one school network; `Retry-After` carries the seconds until the window resets.",
+            "description": "Too many submissions from one address inside the window (RATE_LIMITED). The limit is deliberately loose, because a whole staffroom answers from one school network: it is sized so that a school within the product's audience meets ROUND_FULL — its own round's ceiling — before it meets this. `Retry-After` carries the seconds until the window resets.",
             "headers": {
               "Retry-After": {
                 "description": "Seconds until the window resets.",

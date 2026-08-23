@@ -78,8 +78,9 @@ export async function POST(
      * The only unauthenticated write in the product, so it is the one a script
      * can point at. The number is loose on purpose — a whole staffroom answers
      * from one school address, and refusing them would be a worse failure than
-     * the one being prevented. `RATE_LIMITS.surveySubmission` carries the
-     * reasoning.
+     * the one being prevented; it is sized so that the round's own ceiling
+     * below is what refuses an honest school first.
+     * `RATE_LIMITS.surveySubmission` carries the derivation.
      */
     const limited = await getRateLimitResponse(
       request.headers,

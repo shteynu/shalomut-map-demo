@@ -4,6 +4,7 @@ import type { NextRequest } from 'next/server';
 import { POST as login } from '../auth/login/route';
 import { POST as submit } from '../survey/[shareCode]/submit/route';
 import { RATE_LIMITS, resetRateLimitStore } from '@/lib/server/rate-limit';
+import { responseCeiling } from '@/lib/survey/response-ceiling';
 
 /**
  * The unit tests next to the limiter prove the counting. These prove the two
@@ -89,9 +90,13 @@ test('the respondent submission is limited too, and far more loosely', async () 
       { params: Promise.resolve({ shareCode: 'SHALOM-RATE' }) },
     );
 
-  // A staffroom's worth of answers must pass. Forty is more than a school of
-  // this size sends in five minutes, and it is well inside the limit.
-  for (let attempt = 0; attempt < 40; attempt++) {
+  /*
+   * A large school's staff meeting must pass. A hundred and fifty is the burst
+   * the 2026-08-21 audit named, and until 2026-08-23 the sixtieth of them was
+   * refused — one address, one staffroom, and a limiter firing at the moment
+   * the product was working.
+   */
+  for (let attempt = 0; attempt < 150; attempt++) {
     assert.notStrictEqual((await send()).status, 429, `answer ${attempt + 1} was refused`);
   }
 
@@ -106,4 +111,37 @@ test('the respondent submission is limited too, and far more loosely', async () 
   assert.strictEqual((await send()).status, 429);
 
   resetRateLimitStore(null);
+});
+
+/*
+ * The relation the number was derived from, rather than the number.
+ *
+ * A round stores at most `responseCeiling(totalStaffCount)` answers, and that
+ * ceiling is the bound the product reasons about: it knows the school's own
+ * size, and the address bucket does not. So the bucket must not be the first
+ * refusal for a school the product is built for — even in the extreme where a
+ * whole round's worth of answers arrives from one address inside a single
+ * five-minute window.
+ *
+ * Two hundred staff is where the guarantee is drawn, and it is drawn here
+ * rather than left implicit: a school past it is bounded by the address bucket
+ * before its own ceiling, and whoever raises that boundary should raise this
+ * limit with it.
+ */
+test('the address bucket never refuses an honest school before its round ceiling does', () => {
+  const largestSchoolThisIsSizedFor = 200;
+
+  for (const staff of [1, 20, 60, 150, largestSchoolThisIsSizedFor]) {
+    assert.ok(
+      responseCeiling(staff) <= RATE_LIMITS.surveySubmission.limit,
+      `a school of ${staff} would be refused by the address bucket first`,
+    );
+  }
+
+  // And the boundary is real rather than decorative: past it, the bucket is
+  // the tighter of the two.
+  assert.ok(
+    responseCeiling(largestSchoolThisIsSizedFor + 1) >
+      RATE_LIMITS.surveySubmission.limit,
+  );
 });

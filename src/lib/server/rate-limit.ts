@@ -48,26 +48,48 @@ export const RATE_LIMITS = {
     windowSeconds: 300,
   },
   /**
-   * Sixty submissions per five minutes, which is deliberately loose.
+   * Six hundred submissions per five minutes, and the number comes from the
+   * legitimate side.
    *
    * A staffroom answers from one school network, so every teacher in the
-   * building shares one address. The realistic burst — a staff meeting where
-   * the link goes out and forty people answer — must not look like abuse, and
-   * a limit tuned for a scripted attack would refuse exactly the moment the
-   * product is working. Forty answers inside five minutes is already faster
-   * than the questionnaire can be read; sixty leaves room and still stops a
-   * script writing thousands of rows.
+   * building shares one address, and the burst this has to survive is a staff
+   * meeting: the link goes out, everybody starts together, and everybody
+   * finishes within a few minutes of each other. Sixty stood here while that
+   * burst was imagined as forty people. **A school of 150 was refused at its
+   * sixtieth answer** — the 2026-08-21 audit's finding, and the worst kind,
+   * because the limiter fired exactly when the product was working.
+   *
+   * Six hundred is the response ceiling of a school of two hundred
+   * (`survey/response-ceiling.ts`, `3 × totalStaffCount`). That is the relation
+   * worth keeping rather than the constant: **for any school up to that size,
+   * the round's own ceiling is what refuses first**, even in the extreme where
+   * a whole round's worth of answers arrives from one address inside a single
+   * window. A bucket that refused earlier would be deciding how many honest
+   * answers a round may take, using a number that knows nothing about the
+   * school.
    *
    * This is not the defence against stuffing, and it never was. The line that
    * stood here said the attempt token hash was — but that value is computed in
    * the respondent's own browser and rotating it costs nothing, so refusing a
    * repeat of one stops a double click and not a script. What bounds a round
    * since 2026-08-22 is the ceiling in `survey/response-ceiling.ts`, which is
-   * honest about bounding the rows rather than the ratio.
+   * honest about bounding the rows rather than the ratio. What this bucket
+   * still buys is that the product's only unauthenticated write cannot be
+   * hammered from one address: past six hundred in five minutes there is no
+   * school behind the requests.
+   *
+   * **Not keyed by share code, and the audit's second suggestion is why it is
+   * worth saying.** Keying the bucket by address *and* round would separate two
+   * schools behind one address — but this guard runs before the share code has
+   * been validated, and validating it is the database read the guard exists to
+   * prevent. A bucket keyed on an unvalidated URL segment is no bucket: a
+   * caller who varies the code draws a fresh allowance every time. The same
+   * answer applies to sizing the quota from `totalStaffCount`, which is another
+   * read in front of the guard.
    */
   surveySubmission: {
     name: "survey-submission",
-    limit: 60,
+    limit: 600,
     windowSeconds: 300,
   },
   /**
@@ -75,10 +97,16 @@ export const RATE_LIMITS = {
    *
    * Sharing would let a flood of reports refuse a real submission, which
    * inverts the whole point: the report is the disposable half of the pair and
-   * the answers are not. The number matches the submission limit because a
-   * client fires at most one report per submission and only when the first
-   * attempt threw, so a staffroom cannot reach it without the submissions
-   * having been refused first.
+   * the answers are not.
+   *
+   * Sixty, and it deliberately no longer matches the submission limit — the
+   * mismatch is the right way round. Every accepted report writes an
+   * `operational_events` row (ADR-041) from an unauthenticated caller, which is
+   * the one thing here that costs the database, while a refused one costs a
+   * diagnostic and never an answer: the client fires it after the outcome is
+   * already decided and this route answers `204` either way. A staffroom on a
+   * bad network can exceed sixty reports and lose the tail of them, and losing
+   * the tail of a measurement is the cheapest failure on this page.
    */
   surveyDeliveryReport: {
     name: "survey-delivery-report",
