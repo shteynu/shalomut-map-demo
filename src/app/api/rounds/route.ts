@@ -37,6 +37,11 @@ export async function GET(request?: Request) {
       return NextResponse.json({ round: authorization.round });
     }
 
+    // This answers with one round object and nothing derived from it, so it
+    // declines the analysis. It used to pay for one on every call: a second
+    // lookup of the round, a count, a read of the published copy, and — when
+    // the basis of calculation had changed — every response of the round, a
+    // recompute, and a write, from a GET.
     const context = await ManagerContextService.load(
       orgRepo,
       roundRepo,
@@ -44,6 +49,7 @@ export async function GET(request?: Request) {
       request ? getManagerOrganizationId(request) : undefined,
       undefined,
       request ? getManagerMemberSchools(request) : undefined,
+      { withAnalytics: false },
     );
     if (context.state === 'scope-required') {
       return NextResponse.json(

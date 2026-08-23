@@ -14,7 +14,9 @@ export default async function SurveyPage({
   searchParams: Promise<{ round?: string | string[] }>;
 }) {
   const requestedRound = readRoundParam(await searchParams);
-  const context = await loadManagerContext(requestedRound);
+  const context = await loadManagerContext(requestedRound, {
+    withAnalytics: false,
+  });
 
   if (!context.organization || !context.selectedRound) {
     return (

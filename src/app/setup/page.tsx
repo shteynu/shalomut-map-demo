@@ -39,7 +39,9 @@ export default async function SetupPage({
   // context anyway is what keeps the switcher — and the way back to the school
   // the manager came from — on the screen while the new one is filled in.
   const [context, schools] = await Promise.all([
-    loadManagerContext(isNewRound || isNewSchool ? undefined : requestedRound),
+    loadManagerContext(isNewRound || isNewSchool ? undefined : requestedRound, {
+      withAnalytics: false,
+    }),
     loadSchools(),
   ]);
 

@@ -38,6 +38,31 @@ export interface ManagerContext {
   analytics: CanonicalRoundAnalytics | null;
 }
 
+/**
+ * The same context, for a caller that said it does not read the analysis.
+ *
+ * The field is removed rather than set to `null`, and that is the whole point:
+ * `null` already means "this round has no numbers", so a caller that opted out
+ * and then read the field would be handed a value that looks like an answer.
+ * Omitting it makes reading it a compile error instead, which is the only way
+ * an opt-in like this stays true after the screen that uses it is edited.
+ *
+ * `responseCount` stays, and is counted directly rather than taken from an
+ * analysis nobody asked for.
+ */
+export type ManagerContextWithoutAnalytics = Omit<ManagerContext, "analytics">;
+
+/**
+ * What a caller of `ManagerContextService.load` is willing to pay for.
+ *
+ * There is one option and it only has one useful value: `withAnalytics: false`.
+ * The analysis is what the default does, so asking for it is not a request —
+ * declining it is.
+ */
+export interface ManagerContextLoadOptions {
+  readonly withAnalytics?: false;
+}
+
 const roundStatusPriority: Record<SurveyRound["status"], number> = {
   active: 0,
   draft: 1,
@@ -91,7 +116,9 @@ const supersedableStatuses: ReadonlySet<SurveyRound["status"]> = new Set([
  * is ahead of the school, not behind it. Only a round whose own status says the
  * school is finished with it can be superseded.
  */
-export function isSelectedRoundSuperseded(context: ManagerContext): boolean {
+export function isSelectedRoundSuperseded(
+  context: ManagerContextWithoutAnalytics,
+): boolean {
   const { selectedRound } = context;
   if (!selectedRound) return false;
 
@@ -102,6 +129,28 @@ export function isSelectedRoundSuperseded(context: ManagerContext): boolean {
 }
 
 export class ManagerContextService {
+  /**
+   * The school, its rounds, the one on screen, and its numbers.
+   *
+   * The analysis is the expensive part and most callers never render it. Six of
+   * the eleven screens that enter here read neither `analytics` nor
+   * `responseCount` — the goals and setup screens and the three dimension
+   * screens — and `GET /api/rounds` returns one round object. They were each
+   * paying `AnalyticsService.getAnalyticsForRound`, which is a second lookup of
+   * a round this method is already holding, a count, and a read of the
+   * published copy; and when the basis of calculation changed underneath it, a
+   * load of every response, a recompute, and a **write** — from a GET.
+   *
+   * So the caller says. `{ withAnalytics: false }` returns a context with the
+   * field removed, not nulled, so a screen that later starts reading it fails
+   * to compile rather than rendering an empty map.
+   *
+   * This is the same argument the separate loaders in `manager-context.ts`
+   * already make for the funnel, the filling times, the goals and the school
+   * list — every other manager screen would pay for a query it never renders,
+   * on a database that is not in the same continent as its users. The analysis
+   * was the one read that had been folded in anyway.
+   */
   public static async load(
     orgRepo: IOrganizationRepository,
     roundRepo: IRoundRepository,
@@ -109,7 +158,25 @@ export class ManagerContextService {
     requestedOrganizationId?: string,
     requestedRoundId?: string,
     memberOrganizationIds?: readonly string[],
-  ): Promise<ManagerContext> {
+  ): Promise<ManagerContext>;
+  public static async load(
+    orgRepo: IOrganizationRepository,
+    roundRepo: IRoundRepository,
+    surveyRepo: ISurveyRepository,
+    requestedOrganizationId: string | undefined,
+    requestedRoundId: string | undefined,
+    memberOrganizationIds: readonly string[] | undefined,
+    options: { readonly withAnalytics: false },
+  ): Promise<ManagerContextWithoutAnalytics>;
+  public static async load(
+    orgRepo: IOrganizationRepository,
+    roundRepo: IRoundRepository,
+    surveyRepo: ISurveyRepository,
+    requestedOrganizationId?: string,
+    requestedRoundId?: string,
+    memberOrganizationIds?: readonly string[],
+    options: ManagerContextLoadOptions = {},
+  ): Promise<ManagerContext | ManagerContextWithoutAnalytics> {
     let organizationId: string | null;
     try {
       organizationId = await ManagerScopeService.resolveOrganizationId(
@@ -182,6 +249,20 @@ export class ManagerContextService {
     }
 
     const selectedRound = requestedRound ?? rounds[0];
+
+    if (options.withAnalytics === false) {
+      // The count is asked for directly instead of being read off an analysis.
+      // It is one indexed count against the round; the analysis it used to come
+      // from is a lookup of `selectedRound` all over again, that same count, and
+      // a read of the published copy at minimum.
+      return {
+        state: "round-ready",
+        organization,
+        selectedRound,
+        rounds,
+        responseCount: await surveyRepo.getResponseCount(selectedRound.id),
+      };
+    }
 
     const analytics = await AnalyticsService.getAnalyticsForRound(
       selectedRound.id,

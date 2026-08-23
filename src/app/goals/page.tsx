@@ -16,7 +16,7 @@ import {
  * question it answers is what the school is working on now.
  */
 export default async function GoalsPage() {
-  const context = await loadManagerContext();
+  const context = await loadManagerContext(undefined, { withAnalytics: false });
 
   if (!context.organization) {
     return (

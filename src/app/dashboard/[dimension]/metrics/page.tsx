@@ -27,7 +27,9 @@ export default async function DimensionMetricsPage({
   const { dimension } = await params;
   const entry = getDimensionPresentation(dimension);
   const requestedRound = readRoundParam(await searchParams);
-  const context = await loadManagerContext(requestedRound);
+  const context = await loadManagerContext(requestedRound, {
+    withAnalytics: false,
+  });
 
   if (!entry) {
     notFound();

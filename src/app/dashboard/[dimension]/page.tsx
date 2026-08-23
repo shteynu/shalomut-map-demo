@@ -29,7 +29,7 @@ export default async function DimensionPage({
   const entry = getDimensionPresentation(dimension);
   const requestedRound = readRoundParam(await searchParams);
   const [context, role] = await Promise.all([
-    loadManagerContext(requestedRound),
+    loadManagerContext(requestedRound, { withAnalytics: false }),
     loadManagerRole(),
   ]);
 

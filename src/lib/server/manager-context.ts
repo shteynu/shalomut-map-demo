@@ -12,7 +12,11 @@ import {
   RoundFillingService,
   SurveyFunnelService,
 } from "@/lib/services";
-import type { ManagerContext } from "@/lib/services";
+import type {
+  ManagerContext,
+  ManagerContextLoadOptions,
+  ManagerContextWithoutAnalytics,
+} from "@/lib/services";
 import type { ManagerRole } from "@/lib/auth/types";
 import type { SurveyRound } from "@/lib/types/backend";
 import { UNRECORDABLE_VISIT_MESSAGE } from "@/lib/server/manager-audit";
@@ -27,20 +31,57 @@ import {
   type SchoolChoices,
 } from "@/lib/schools/school-options";
 
-export async function loadManagerContext(roundId?: string) {
+/**
+ * The one door every manager screen comes through.
+ *
+ * A screen that renders neither the map nor the response count passes
+ * `{ withAnalytics: false }` and gets a context with the `analytics` field
+ * removed — see `ManagerContextService.load` for why it is removed rather than
+ * nulled. It is one entrypoint either way, deliberately: the audit record below
+ * is what makes this a chokepoint, and a second function to skip a query would
+ * be a second place for a screen to enter without one.
+ */
+export async function loadManagerContext(
+  roundId?: string,
+): Promise<ManagerContext>;
+export async function loadManagerContext(
+  roundId: string | undefined,
+  options: { readonly withAnalytics: false },
+): Promise<ManagerContextWithoutAnalytics>;
+export async function loadManagerContext(
+  roundId?: string,
+  options?: ManagerContextLoadOptions,
+): Promise<ManagerContext | ManagerContextWithoutAnalytics> {
   await connection();
   const { auditLogRepo, orgRepo, roundRepo, surveyRepo } =
     resolveCoreRepositories();
   const requestHeaders = await headers();
 
-  const context = await ManagerContextService.load(
-    orgRepo,
-    roundRepo,
-    surveyRepo,
-    getManagerOrganizationId({ headers: requestHeaders }),
-    roundId?.trim() || undefined,
-    getManagerMemberSchools({ headers: requestHeaders }),
-  );
+  const organizationId = getManagerOrganizationId({ headers: requestHeaders });
+  const memberSchools = getManagerMemberSchools({ headers: requestHeaders });
+  const requestedRoundId = roundId?.trim() || undefined;
+
+  // Spelled out twice rather than passed through, because the two calls have
+  // two different return types and that is the point of the option.
+  const context =
+    options?.withAnalytics === false
+      ? await ManagerContextService.load(
+          orgRepo,
+          roundRepo,
+          surveyRepo,
+          organizationId,
+          requestedRoundId,
+          memberSchools,
+          { withAnalytics: false },
+        )
+      : await ManagerContextService.load(
+          orgRepo,
+          roundRepo,
+          surveyRepo,
+          organizationId,
+          requestedRoundId,
+          memberSchools,
+        );
 
   // The screens' half of the same chokepoint the round routes have in
   // `authorizeManagerRound`: eight manager pages enter here, so an
@@ -131,7 +172,7 @@ const statesNeedingASchool: ReadonlySet<ManagerContext["state"]> = new Set([
 ]);
 
 export async function loadSchoolChoices(
-  context: ManagerContext,
+  context: ManagerContextWithoutAnalytics,
   requestedRoundId?: string,
 ): Promise<SchoolChoices | null> {
   if (!statesNeedingASchool.has(context.state)) return null;
@@ -212,7 +253,7 @@ export async function loadRoundResponses(roundId: string) {
  * the context, which resolved them inside the manager's own organization, so a
  * goal is still never reached without naming a round the manager owns.
  */
-export async function loadSchoolGoals(context: ManagerContext) {
+export async function loadSchoolGoals(context: ManagerContextWithoutAnalytics) {
   if (context.rounds.length === 0) return [];
 
   const { roundGoalRepo } = resolveCoreRepositories();
