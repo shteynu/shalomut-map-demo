@@ -423,3 +423,74 @@ def test_requests_per_minute_comes_from_the_environment(monkeypatch):
 
     monkeypatch.setenv("LLM_MAX_REQUESTS_PER_MINUTE", "-1")
     assert Settings().llm_max_requests_per_minute == 0.0
+
+
+def test_a_second_sending_process_halves_this_one_s_pace(monkeypatch):
+    """Two processes on one key send at the rate one process would.
+
+    The quota is counted per key, so before this the second process was pure
+    overspend: two private queues, each certain it was the whole account's
+    traffic. The test measures it where it matters — the gap between two sends
+    of *this* process, which has to double when it learns it is one of two.
+    """
+    interval = _configure_pace(monkeypatch, 120.0)
+    provider_rate_limiter.set_sending_processes(2)
+    sent_at = []
+
+    def fake_urlopen(*_args, **_kwargs):
+        sent_at.append(monotonic())
+        return FakeLLMResponse(ACCEPTED_HEBREW)
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+    for _ in range(3):
+        llm_provider_service.generate_psychological_interpretation(
+            "certainty",
+            "ודאות",
+            42.0,
+            "red",
+        )
+
+    assert min(_gaps(sent_at)) >= 2 * interval - 0.02
+
+
+def test_one_process_paces_exactly_as_it_always_did(monkeypatch):
+    """A fleet of one divides by one, which is the deployment today.
+
+    Worth its own test because the division is now on the path of every send:
+    a bug that read "one sender" as "no senders" or as "one extra" would slow
+    every ordinary round, and nothing else here would notice.
+    """
+    alone_interval, alone = _send_times(monkeypatch, 120.0)
+    provider_rate_limiter.set_sending_processes(1)
+    declared_interval, declared = _send_times(monkeypatch, 120.0)
+
+    assert declared_interval == alone_interval
+    assert abs(max(_gaps(declared)) - max(_gaps(alone))) < 0.05
+
+
+def test_a_count_below_one_is_read_as_one(monkeypatch):
+    """Nobody sending is a failure to count, not a licence to flood.
+
+    Zero senders would make the interval zero — an unpaced process, which is
+    the exact failure this whole module exists to prevent — so the floor is
+    part of the invariant rather than defensive habit.
+    """
+    interval = _configure_pace(monkeypatch, 120.0)
+    provider_rate_limiter.set_sending_processes(0)
+
+    first = provider_rate_limiter.book(model=settings.llm_model_fast)
+    second = provider_rate_limiter.book(model=settings.llm_model_fast)
+
+    assert first == 0.0
+    # The tolerance is the microseconds between the two bookings, not slack in
+    # the rule: a floor read as zero senders would have made this exactly 0.0.
+    assert second >= interval - 0.02
+
+
+def test_an_unpaced_tier_stays_unpaced_however_many_processes_send(monkeypatch):
+    """Zero means "no limit", and no limit divided is still no limit."""
+    _configure_two_paces(monkeypatch, fast_rate=0.0, heavy_rate=5.0)
+    provider_rate_limiter.set_sending_processes(4)
+
+    assert provider_rate_limiter.book(model=settings.llm_model_fast) == 0.0
+    assert provider_rate_limiter.book(model=settings.llm_model_fast) == 0.0

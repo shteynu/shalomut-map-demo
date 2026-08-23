@@ -4,7 +4,7 @@ import os
 import uuid
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import Optional
+from typing import Callable, Iterable, Optional
 from urllib.parse import urlsplit
 
 import httpx
@@ -12,6 +12,7 @@ import httpx
 from src.application.ports import AnalysisRunner, JobStore
 from src.config import settings
 from src.services.analytics_runner import analytics_runner_service
+from src.services.provider_rate_limit import provider_rate_limiter
 from src.services.result_sink import CallbackDeliveryError
 
 logger = logging.getLogger(__name__)
@@ -84,6 +85,60 @@ def is_worth_another_attempt(error: BaseException) -> bool:
     return isinstance(error, CallbackDeliveryError) and error.transient
 
 
+def process_base_of(worker_id: str) -> str:
+    """The process behind one worker id, with its pool slot taken off.
+
+    `worker_id_for_slot` composes `base:slot`, so three lanes of one container
+    are three ids and one sender. Only a trailing run of digits after the last
+    `:` is treated as a slot — an operator who sets `AI_JOB_WORKER_ID` to
+    `render:frankfurt` keeps both halves of their own name.
+    """
+    base, separator, suffix = worker_id.rpartition(":")
+    if separator and suffix.isdigit():
+        return base
+    return worker_id
+
+
+def count_sending_processes(worker_ids: Iterable[str]) -> int:
+    """How many distinct processes the ids stand for, never less than one.
+
+    One, and not zero, for an empty list: the caller asking this question is
+    itself holding a lease, so a count of nobody is a Core that answered
+    without the field rather than a fleet that has stopped.
+    """
+    return max(1, len({process_base_of(worker_id) for worker_id in worker_ids}))
+
+
+def observe_live_workers(worker_ids: Optional[Iterable[str]]) -> None:
+    """Take Core's list of live leases as the pace this process may spend.
+
+    `None` — the field absent — leaves the pace alone. That is the
+    consumer-first window: a worker deployed before Core sends the field runs
+    exactly as it did before, alone with the whole quota, which is also what it
+    is on a fleet of one.
+    """
+    if worker_ids is None:
+        return
+    provider_rate_limiter.set_sending_processes(
+        count_sending_processes(worker_ids)
+    )
+
+
+def live_worker_ids_in(payload: object) -> Optional[list[str]]:
+    """The `liveWorkerIds` of a Core response, or `None` when it has none.
+
+    Defensive about the shape rather than about the values: this runs on every
+    heartbeat, and a body that is not what we expect must cost the round
+    nothing at all.
+    """
+    if not isinstance(payload, dict):
+        return None
+    value = payload.get("liveWorkerIds")
+    if not isinstance(value, list):
+        return None
+    return [item for item in value if isinstance(item, str)]
+
+
 class CoreJobClient:
     def __init__(
         self,
@@ -92,11 +147,18 @@ class CoreJobClient:
         callback_secret: str,
         protection_bypass: str = "",
         timeout_seconds: float = 10.0,
+        on_live_workers: Callable[[Optional[Iterable[str]]], None] = (
+            observe_live_workers
+        ),
     ):
         self.base_url = core_job_api_base(callback_base)
         self.callback_secret = callback_secret
         self.protection_bypass = protection_bypass
         self.timeout_seconds = timeout_seconds
+        # Injected so a test can watch what was observed without reaching into
+        # the module-level limiter, and so the transport reports an observation
+        # rather than deciding what it is worth.
+        self.on_live_workers = on_live_workers
 
     def _headers(self) -> dict[str, str]:
         headers = {"Content-Type": "application/json"}
@@ -119,6 +181,7 @@ class CoreJobClient:
             return None
         response.raise_for_status()
         payload = response.json()
+        self.on_live_workers(live_worker_ids_in(payload))
         run = payload["run"]
         return JobLease(
             run_id=run["id"],
@@ -141,6 +204,14 @@ class CoreJobClient:
         if response.status_code in {404, 409}:
             return False
         response.raise_for_status()
+        # A renewal is the only news a mid-round worker gets, so it is also
+        # where it learns that a second process started sending. A body that
+        # cannot be read is not worth a renewed lease: the pace stays as it is.
+        try:
+            payload = response.json()
+        except ValueError:
+            payload = None
+        self.on_live_workers(live_worker_ids_in(payload))
         return True
 
     async def fail(

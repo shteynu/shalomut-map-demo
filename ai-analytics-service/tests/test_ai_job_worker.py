@@ -10,9 +10,13 @@ from src.config import Settings, settings
 from src.services.ai_job_worker import (
     CORE_LEASE_SECONDS,
     AiAnalysisJobWorker,
+    CoreJobClient,
     JobLease,
     LeaseLostError,
     core_job_api_base,
+    count_sending_processes,
+    live_worker_ids_in,
+    process_base_of,
     worker_id_for_slot,
 )
 from src.services.result_sink import CallbackDeliveryError
@@ -653,3 +657,203 @@ def test_the_heartbeat_cadence_leaves_room_for_a_missed_renewal():
     that claim, asserted: a lease has to outlast at least two beats, or a
     single missed renewal would end the run whatever the retrying did."""
     assert settings.ai_job_heartbeat_interval_seconds * 2 <= CORE_LEASE_SECONDS
+
+
+# --- How many processes are spending the provider's quota -------------------
+#
+# The pace lives in module state, so it reaches exactly one process. Two of
+# them — a second Render instance, a `WEB_CONCURRENCY` above one, or an old and
+# a new container overlapping during a deploy — used to keep two private
+# counters against one key and together send at twice the configured rate.
+# Core now names every worker holding a live lease, and these are the tests of
+# what this side does with that list.
+
+
+class _FakeResponse:
+    """Just enough of `httpx.Response` for the two calls that read one."""
+
+    def __init__(self, status_code, payload, *, body_is_json=True):
+        self.status_code = status_code
+        self._payload = payload
+        self._body_is_json = body_is_json
+
+    def json(self):
+        if not self._body_is_json:
+            raise ValueError("body is not JSON")
+        return self._payload
+
+    def raise_for_status(self):
+        return None
+
+
+def _fake_transport(monkeypatch, response):
+    """Answer the next Core request with `response`, and record the URL."""
+    calls = []
+
+    class _FakeAsyncClient:
+        def __init__(self, *_args, **_kwargs):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_args):
+            return False
+
+        async def post(self, url, **kwargs):
+            calls.append((url, kwargs.get("json")))
+            return response
+
+    monkeypatch.setattr(
+        "src.services.ai_job_worker.httpx.AsyncClient",
+        _FakeAsyncClient,
+    )
+    return calls
+
+
+def _client_reporting_into(observed, **overrides):
+    return CoreJobClient(
+        callback_base="https://core.example/api/ai-analytics/callback",
+        callback_secret="secret",
+        on_live_workers=observed.append,
+        **overrides,
+    )
+
+
+def test_pool_lanes_of_one_container_are_one_sender():
+    """Three lanes are three leases, three worker ids and one process.
+
+    The whole point of `AI_JOB_POOL_SIZE` is that its lanes share one queue, so
+    counting them as separate senders would divide the pace by the very number
+    that was raised to use more of it — the pool would slow itself down exactly
+    as much as it sped itself up.
+    """
+    lanes = ["worker-abc:1", "worker-abc:2", "worker-abc:3"]
+
+    assert count_sending_processes(lanes) == 1
+    assert count_sending_processes(lanes + ["worker-def:1"]) == 2
+
+
+def test_an_operator_named_worker_keeps_both_halves_of_its_name():
+    """Only a trailing number is a lane, because only a lane is written as one.
+
+    `AI_JOB_WORKER_ID` is an operator's to choose and Core's charset allows a
+    colon, so `render:frankfurt` and `render:oregon` are two names a person
+    might reasonably pick — and reading the second half as a slot would collapse
+    two continents into one sender.
+    """
+    assert process_base_of("worker-abc:2") == "worker-abc"
+    assert process_base_of("render:frankfurt") == "render:frankfurt"
+    assert process_base_of("worker-abc") == "worker-abc"
+    assert count_sending_processes(["render:frankfurt", "render:oregon"]) == 2
+
+
+def test_a_body_without_the_field_is_not_an_observation():
+    """An absent field leaves the pace alone; an empty list never lowers it.
+
+    This is the consumer-first window: a worker deployed before the Core that
+    answers with `liveWorkerIds` has to keep running exactly as it did, alone
+    with the whole quota — which is also the truth on a fleet of one.
+    """
+    assert live_worker_ids_in({"status": "running"}) is None
+    assert live_worker_ids_in(None) is None
+    assert live_worker_ids_in({"liveWorkerIds": "worker-abc"}) is None
+    assert live_worker_ids_in({"liveWorkerIds": ["a", 7, "b"]}) == ["a", "b"]
+    assert count_sending_processes([]) == 1
+
+
+@pytest.mark.asyncio
+async def test_a_claim_reports_who_else_is_sending(monkeypatch):
+    """The first provider call follows the claim within seconds.
+
+    So the count has to arrive with the lease rather than at the first
+    heartbeat — by then a round has already spent a whole interval's worth of
+    calls at the wrong pace.
+    """
+    observed = []
+    _fake_transport(
+        monkeypatch,
+        _FakeResponse(
+            200,
+            {
+                "run": {"id": "run-1", "roundId": "round-1", "attemptCount": 1},
+                "leaseToken": "lease-token-1",
+                "liveWorkerIds": ["worker-a:1", "worker-a:2", "worker-b"],
+            },
+        ),
+    )
+
+    lease = await _client_reporting_into(observed).claim("worker-a:1")
+
+    assert lease is not None and lease.run_id == "run-1"
+    assert count_sending_processes(observed[0]) == 2
+
+
+@pytest.mark.asyncio
+async def test_a_heartbeat_reports_a_process_that_started_mid_round(
+    monkeypatch,
+):
+    """A deploy overlap reaches the old container only through its renewal.
+
+    It has a lease and will never claim again, so the claim response cannot
+    tell it anything. Once per heartbeat interval is soon enough: the pace it
+    should be taking is a share, and the overshoot is bounded by that interval.
+    """
+    observed = []
+    _fake_transport(
+        monkeypatch,
+        _FakeResponse(
+            200,
+            {
+                "status": "running",
+                "runId": "run-1",
+                "liveWorkerIds": ["worker-old", "worker-new"],
+            },
+        ),
+    )
+
+    renewed = await _client_reporting_into(observed).heartbeat(
+        "run-1",
+        "lease-token-1",
+    )
+
+    assert renewed is True
+    assert count_sending_processes(observed[0]) == 2
+
+
+@pytest.mark.asyncio
+async def test_a_refused_renewal_says_nothing_about_the_fleet(monkeypatch):
+    """A 409 means this lease is gone, and its body is not a worker list."""
+    observed = []
+    _fake_transport(monkeypatch, _FakeResponse(409, {"error": "stale"}))
+
+    renewed = await _client_reporting_into(observed).heartbeat(
+        "run-1",
+        "lease-token-1",
+    )
+
+    assert renewed is False
+    assert observed == []
+
+
+@pytest.mark.asyncio
+async def test_a_renewal_with_an_unreadable_body_still_renews(monkeypatch):
+    """The lease is what a heartbeat is for; the count is a passenger.
+
+    A body that cannot be parsed must cost the round nothing — losing a
+    three-minute paid analysis over a response this side could not read would
+    be a far worse bug than the one being fixed.
+    """
+    observed = []
+    _fake_transport(
+        monkeypatch,
+        _FakeResponse(200, None, body_is_json=False),
+    )
+
+    renewed = await _client_reporting_into(observed).heartbeat(
+        "run-1",
+        "lease-token-1",
+    )
+
+    assert renewed is True
+    assert observed == [None]

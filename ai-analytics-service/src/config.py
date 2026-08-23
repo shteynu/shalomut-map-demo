@@ -170,10 +170,14 @@ class Settings:
         # Raising it is safe because the pace is charged per process, not per
         # round: `provider_rate_limiter` is one module-level object behind a
         # lock, so every concurrent round books turns from the same queue and
-        # the account's quota is spent once. That is exactly what a second
-        # container would *not* give — two processes would keep two private
-        # counters and together exceed the quota — which is why this knob comes
-        # before that one.
+        # the account's quota is spent once.
+        #
+        # A second container used to be the unsafe version of the same idea —
+        # two processes, two private counters, one quota — and since 2026-08-23
+        # it is not: Core names every worker holding a live lease, and each
+        # process divides the pace by how many of them there are. Lanes are
+        # still the cheaper knob (they share one queue rather than dividing
+        # it), but they are no longer the only safe one.
         #
         # **The useful ceiling is the configured pace over ~11, and the pace is
         # not always the number that looks like it.** `requests_per_minute_for`

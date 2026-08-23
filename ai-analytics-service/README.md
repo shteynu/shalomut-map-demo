@@ -346,10 +346,8 @@ dimensions it named, and the parts of them it named — so repairing one refused
 stone costs one heavy request rather than seventeen of the twenty the tier
 allows in a day. That was the residual risk no pace could address.
 
-There is one queue per model and one set of them per process. Per process,
-because the quota is counted per key rather than per round, and Render runs the
-service with `WEB_CONCURRENCY=1`. Per model, because that is the unit the
-provider counts in — and because a single queue would have to run at the
+There is one queue per model and one set of them per process. Per model, because
+that is the unit the provider counts in — and because a single queue would have to run at the
 strictest tier on the key, which would slow every ordinary round for the sake of
 a replay that never happens in most of them. Two model names mean two buckets;
 the same name on both tiers means one bucket at the stricter of the two paces,
@@ -359,6 +357,18 @@ seconds apart used to spend themselves inside the minute that had just refused
 them. A `Retry-After` the provider sends outranks the interval when it asks for
 longer, and the retry budget declines a wait it cannot hold instead of
 shortening it.
+
+The set is per process because a lock reaches no further, and since 2026-08-23
+that is a fact rather than an assumption. The quota is counted per key, so two
+processes used to keep two private queues and together send at twice the
+configured pace — a second Render instance, a `WEB_CONCURRENCY` above one, or
+an old and a new container overlapping during a deploy. Core now names every
+worker holding a live lease in its claim and heartbeat answers, and each
+process divides the pace by how many processes those ids stand for (pool lanes
+of one container collapse to one sender). One worker divides by one and paces
+exactly as before. Two processes that claim in the same instant can each see
+only themselves and overshoot until the next heartbeat corrects them, which the
+transport's `Retry-After` handling already absorbs.
 
 At fourteen per minute a round takes a little over a minute; at five it takes
 about three and a half. The respondent/manager request does not wait: it only
