@@ -41,40 +41,59 @@ export class ManagerScopeService {
     memberOrganizationIds?: readonly string[],
   ): Promise<string | null> {
     const scopedOrganizationId = requestedOrganizationId?.trim();
-    const existingOrganizations = await orgRepo.findAll();
-    const existingSchools = (
-      memberOrganizationIds
-        ? existingOrganizations.filter((organization) =>
-            memberOrganizationIds.includes(organization.id),
-          )
-        : existingOrganizations
-    ).map((organization) => organization.id);
 
-    // The schools this request can end up inside. Normally the ones that exist;
-    // when none of them does, the memberships themselves — a session whose
-    // school has no row yet is the empty deployment naming the id its first
-    // school will be created with.
-    const schools =
-      existingSchools.length > 0 ? existingSchools : memberOrganizationIds ?? [];
+    if (memberOrganizationIds) {
+      // A session asks about its own schools and nothing else, so the question
+      // put to the store is exactly that list. It used to read every row and
+      // throw away all but these, which made a manager's every screen cost the
+      // whole organizations table.
+      const existingSchools = (
+        await orgRepo.findByIds(memberOrganizationIds)
+      ).map((organization) => organization.id);
+
+      // The schools this request can end up inside. Normally the ones that
+      // exist; when none of them does, the memberships themselves — a session
+      // whose school has no row yet is the empty deployment naming the id its
+      // first school will be created with.
+      const schools =
+        existingSchools.length > 0 ? existingSchools : [...memberOrganizationIds];
+
+      if (scopedOrganizationId && schools.includes(scopedOrganizationId)) {
+        return scopedOrganizationId;
+      }
+
+      if (schools.length > 1) {
+        throw new ManagerScopeRequiredError();
+      }
+
+      return schools[0] ?? null;
+    }
+
+    // No memberships: every school in the system is the population. That is a
+    // platform administrator, a script or a test, and it is still not a reason
+    // to read the table — the two questions it actually asks are "does this one
+    // exist" and "is there more than one", and both have bounded answers.
+    if (scopedOrganizationId && (await orgRepo.findById(scopedOrganizationId))) {
+      return scopedOrganizationId;
+    }
+
+    // Two ids is everything the rest of this decision can use: one to land on,
+    // and a second to prove there was a choice to make.
+    const firstSchools = await orgRepo.listIds(2);
 
     // An empty system with nothing said about memberships is the one case where
     // any id is taken at its word, and it is how the very first school was
     // always created. A session says which schools are its own, so it never
     // needs this.
-    const adoptsAnyId = existingSchools.length === 0 && !memberOrganizationIds;
-
-    if (
-      scopedOrganizationId &&
-      (adoptsAnyId || schools.includes(scopedOrganizationId))
-    ) {
+    if (scopedOrganizationId && firstSchools.length === 0) {
       return scopedOrganizationId;
     }
 
-    if (schools.length > 1) {
+    if (firstSchools.length > 1) {
       throw new ManagerScopeRequiredError();
     }
 
-    return schools[0] ?? null;
+    return firstSchools[0] ?? null;
   }
 
   public static async findRound(

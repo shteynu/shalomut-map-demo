@@ -71,20 +71,24 @@ export async function loadManagerContext(roundId?: string) {
  *
  * The list is narrowed to the session's memberships, and that is a disclosure
  * boundary rather than a nicety: a school the manager cannot open would still
- * have its name and its city on the switcher. The filter is applied here rather
- * than in the query because the repository is the one place that legitimately
- * knows about every school — the setup screen is not.
+ * have its name and its city on the switcher. The narrowing is now the query
+ * itself. It used to be a filter applied to every row the table had, on the
+ * argument that the repository is the one place that legitimately knows about
+ * every school — but asking it for named schools does not ask it to forget
+ * that, and reading a hundred rows to render one is a cost with no reader.
+ *
+ * A session with no memberships is a platform administrator, and every school
+ * is genuinely what their switcher shows.
  */
 export async function loadSchools() {
   await connection();
   const { orgRepo } = resolveCoreRepositories();
   const requestHeaders = await headers();
   const memberSchools = getManagerMemberSchools({ headers: requestHeaders });
-  const schools = await orgRepo.findAll();
 
   return memberSchools
-    ? schools.filter((school) => memberSchools.includes(school.id))
-    : schools;
+    ? await orgRepo.findByIds(memberSchools)
+    : await orgRepo.findAll();
 }
 
 /**
