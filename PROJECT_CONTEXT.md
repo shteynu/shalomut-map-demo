@@ -2169,6 +2169,47 @@ at all (ADR-030) and a closed round reads its stored aggregate (ADR-035). Closin
 the remainder means passing responses out of `ManagerContextService.load`, which
 would widen a seam seven other screens use, for a case that is now conditional.
 
+### ADR-051: A school's round list is a list
+
+2026-08-23. `findByOrganizationId` selects every column, so every entry in a
+school's round list arrived carrying that round's whole questionnaire and whole
+Stone Map — on the way to every manager screen, all of which render titles from
+it and one of which renders the questionnaire.
+
+Measured on eight rounds of the 126-item instrument: **292.7 KB and 3.81 ms** for
+the list, against **25.5 KB and 2.24 ms** for summaries plus the one round on
+screen. Local, same machine; the deployed database is on another continent,
+where the 267 KB weigh more than the milliseconds.
+
+**The read already existed.** `findSummariesByOrganizationIds` was written for
+the administrator console listing many schools, and one school's own list is the
+same projection. It gained `startDate` — the comparison walk orders rounds by
+when the school ran them, not by when the row was created.
+
+**`ManagerContext.rounds` is `SurveyRoundSummary[]`.** The type is the guarantee,
+as in ADR-045: a screen that starts reading a questionnaire off a list entry does
+not compile. Four consumers were narrowed to what they actually read — the round
+switcher, the goals view, the comparison walk and the manager ordering, which is
+now generic over the two fields it sorts by.
+
+**`AnalyticsService.getAnalyticsForLoadedRound`.** The round on screen is read
+whole exactly once, by `load`. Passing its id to `getAnalyticsForRound` would
+have made the analysis look it up again — the duplicate ADR-045 removed,
+reappearing from the other side the moment the list stopped carrying whole
+rounds. So the analysis takes the round when the caller has one. The test that
+guards ADR-045 was restated rather than deleted: it used to assert `findById`
+was never reached, and now asserts it is reached exactly once, with and without
+the analysis.
+
+**The trade, stated rather than buried.** A school with exactly one round now
+pays two queries for what was one — 2.56 ms against 2.82 ms locally — and saves
+nothing, because there was nothing to save. Reading the list and the round in
+parallel would remove that, and was declined: the selected round is only known
+after the list is ordered, and the version that speculates on `?round=` would
+fire a read for an id the tenant check has not yet approved. One round-trip is
+not worth putting a speculative read in front of the boundary that keeps schools
+apart.
+
 ## Environments
 
 The project supports exactly two environments:

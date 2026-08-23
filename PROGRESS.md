@@ -8,6 +8,14 @@ inside it.
 
 ## Current state
 
+- **A school's round list stopped carrying every questionnaire it ever ran.**
+  Since 2026-08-23 the list every manager screen loads is seven scalar columns
+  per round instead of whole rounds — 25 KB instead of 293 KB for a school with
+  eight rounds on the 126-item instrument — and the round on screen is read
+  whole exactly once. The type says so, so a screen cannot read a questionnaire
+  off a list entry by accident. `PROJECT_CONTEXT.md` ADR-051 records it, with
+  the one case it costs rather than saves.
+
 - **The round screen stopped reading a round's answers to time its filling.**
   Since 2026-08-23 the fill-time report asks for the three columns it reads
   instead of whole responses, which had been joining every answer row of the
