@@ -38,7 +38,17 @@ const ENTRYPOINT_PATTERNS = [
  */
 const WIRING_EXCEPTIONS = [];
 
-const RESOLVE_CALL = /\bresolveCoreRepositories\s*\(/;
+/**
+ * The two ways to obtain the wiring, and rule 1 applies to both. `runInTransaction`
+ * hands `work` a full repository set built over a transaction client — a
+ * resolution by any other name — so a service allowed to call it would be a
+ * service that resolves its own dependencies through the back door.
+ */
+const RESOLVE_CALLS = [
+  'resolveCoreRepositories',
+  'runInTransaction',
+];
+const RESOLVE_CALL = new RegExp(`\\b(${RESOLVE_CALLS.join('|')})\\s*\\(`);
 const CONSTRUCTS_REPOSITORY = /\bnew\s+(?:Prisma|InMemory)\w*Repository\s*\(/;
 
 function isTestFile(filePath) {
@@ -68,9 +78,10 @@ export function findBoundaryViolations(source, filePath) {
   lines.forEach((line, index) => {
     const at = `${normalized}:${index + 1}`;
 
-    if (RESOLVE_CALL.test(line) && !isEntrypoint(normalized)) {
+    const resolves = RESOLVE_CALL.exec(line);
+    if (resolves && !isEntrypoint(normalized)) {
       errors.push(
-        `${at}: Only an entrypoint may call resolveCoreRepositories(); ` +
+        `${at}: Only an entrypoint may call ${resolves[1]}(); ` +
           'take the repositories as a parameter instead.',
       );
     }

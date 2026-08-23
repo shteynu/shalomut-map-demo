@@ -3,6 +3,23 @@ import { resolvePoolConfig } from './pool-options';
 
 // Type definitions for minimal Prisma Client interface contract to ensure decouple execution
 export interface MinimalPrismaClient {
+  /**
+   * An interactive transaction, and the one member of this interface that is
+   * not a table.
+   *
+   * Optional because a test double is a handful of model objects and has no
+   * transaction to offer; `composition-root.ts` is the only caller and treats
+   * its absence as "this store cannot tear", which is true of the in-memory
+   * wiring — one process, one `Map`, no half-applied write to protect against.
+   *
+   * The callback's client is the same shape minus this member. Prisma types it
+   * that way too, and it is what makes it safe to build a second repository set
+   * over it: those repositories write inside the transaction and nowhere else.
+   */
+  $transaction?: <T>(
+    work: (tx: MinimalPrismaClient) => Promise<T>,
+    options?: { timeout?: number; maxWait?: number },
+  ) => Promise<T>;
   organization: {
     create: (args: any) => Promise<any>;
     findUnique: (args: any) => Promise<any>;

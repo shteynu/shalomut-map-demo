@@ -172,6 +172,53 @@ export function resolveCoreRepositories(
 }
 
 /**
+ * How long one transaction may hold a connection, and how long a caller waits
+ * to get one.
+ *
+ * The pool is bounded at two connections (`pool-options.ts`), so a transaction
+ * that runs long is not just slow — it is one half of the deployment's ability
+ * to answer anything. Twenty seconds is generous for the only caller there is,
+ * a reset erasing one round's rows, and short enough that a stuck transaction
+ * fails rather than parks a connection until the function times out.
+ */
+export const TRANSACTION_TIMEOUT_MS = 20_000;
+export const TRANSACTION_MAX_WAIT_MS = 5_000;
+
+/**
+ * Runs `work` against a repository set whose writes all land or none do.
+ *
+ * This is a resolution of the wiring, like `resolveCoreRepositories`, and the
+ * same rule applies: only an entrypoint may call it, and
+ * `scripts/check-composition-root.mjs` enforces that for both names. What it
+ * adds is that the repositories handed to `work` are built over a transaction
+ * client rather than over the pool, so five deletes across five repositories
+ * are one write as far as anything reading the database is concerned.
+ *
+ * Without a transaction client — the in-memory wiring, or a double — `work`
+ * runs against the ordinary set. That is not a silent downgrade: a single
+ * process mutating a `Map` has no half-applied state for a transaction to
+ * protect against, and the store that does have one always brings a
+ * `$transaction`.
+ *
+ * The observability sinks are deliberately *not* re-pointed here. A counter
+ * written inside a transaction that later rolls back would vanish along with
+ * the work it was recording — and the sink would be left holding a client that
+ * is finished the moment the transaction commits.
+ */
+export async function runInTransaction<T>(
+  work: (repositories: CoreRepositories) => Promise<T>,
+  prisma: MinimalPrismaClient | null = getPrismaClient(),
+): Promise<T> {
+  if (!prisma) return work({ ...ephemeralRepositories });
+  if (!prisma.$transaction) return work(createPersistentRepositories(prisma));
+
+  return prisma.$transaction(
+    (transaction) => work(createPersistentRepositories(transaction)),
+    { timeout: TRANSACTION_TIMEOUT_MS, maxWait: TRANSACTION_MAX_WAIT_MS },
+  );
+}
+
+/**
  * Composition seam for tests and local scripts: installs doubles that the next
  * `resolveCoreRepositories()` will hand out. Route handlers are called directly
  * in tests, so there is no argument to pass them through — this is the one

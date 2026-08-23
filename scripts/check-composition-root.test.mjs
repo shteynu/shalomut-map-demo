@@ -14,6 +14,28 @@ test('a service reaching for the wiring is a violation', () => {
   assert.match(errors[0], /Only an entrypoint/);
 });
 
+test('a transaction is a resolution, and the same rule applies to it', () => {
+  // `runInTransaction` hands `work` a full repository set. A service allowed to
+  // call it would be resolving its own dependencies through the back door, and
+  // the message has to name the call the author actually wrote.
+  const inTransaction = 'return runInTransaction(async (repositories) => {';
+
+  const errors = findBoundaryViolations(
+    inTransaction,
+    'src/lib/services/round.service.ts',
+  );
+  assert.strictEqual(errors.length, 1);
+  assert.match(errors[0], /Only an entrypoint may call runInTransaction\(\)/);
+
+  assert.deepStrictEqual(
+    findBoundaryViolations(
+      inTransaction,
+      'src/app/api/rounds/[roundId]/reset/route.ts',
+    ),
+    [],
+  );
+});
+
 test('route handlers, pages and the server-component loader may resolve', () => {
   for (const file of [
     'src/app/api/rounds/route.ts',

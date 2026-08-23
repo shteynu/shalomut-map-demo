@@ -6,6 +6,9 @@ import {
   overrideCoreRepositories,
   resetCoreRepositories,
   resolveCoreRepositories,
+  runInTransaction,
+  TRANSACTION_MAX_WAIT_MS,
+  TRANSACTION_TIMEOUT_MS,
 } from '../composition-root';
 import { InMemoryRoundRepository } from '../repositories';
 import { PrismaRoundRepository } from '../repositories/prisma/prisma-round.repository';
@@ -117,4 +120,69 @@ test('the factories build a whole set without reading the environment', () => {
   assert.ok(ephemeral.roundRepo instanceof InMemoryRoundRepository);
   // Two calls must not share state, or a test could leak into the next one.
   assert.notStrictEqual(ephemeral.roundRepo, createEphemeralRepositories().roundRepo);
+});
+
+test('a transaction hands the work a set built over the transaction client', async () => {
+  // The point of the seam: what `work` writes through goes to the transaction
+  // and not to the pool, which is what makes five deletes across five
+  // repositories one write.
+  const transactionClient = {} as MinimalPrismaClient;
+  const calls: { options?: unknown }[] = [];
+  const client = {
+    $transaction: async (
+      work: (tx: MinimalPrismaClient) => Promise<unknown>,
+      options?: unknown,
+    ) => {
+      calls.push({ options });
+      return work(transactionClient);
+    },
+  } as unknown as MinimalPrismaClient;
+
+  const seen = await runInTransaction(
+    async (repositories) => repositories.roundRepo,
+    client,
+  );
+
+  assert.strictEqual(calls.length, 1);
+  assert.deepStrictEqual(calls[0].options, {
+    timeout: TRANSACTION_TIMEOUT_MS,
+    maxWait: TRANSACTION_MAX_WAIT_MS,
+  });
+  assert.ok(seen instanceof PrismaRoundRepository);
+});
+
+test('a store with no transaction to offer still runs the work', async () => {
+  // The in-memory wiring, and a double. Not a silent downgrade: one process
+  // mutating a `Map` has no half-applied state for a transaction to protect
+  // against, and the store that does have one always brings a `$transaction`.
+  await withoutDatabase(async () => {
+    const local = await runInTransaction(
+      async (repositories) => repositories.roundRepo,
+      null,
+    );
+    assert.ok(local instanceof InMemoryRoundRepository);
+
+    const stubbed = await runInTransaction(
+      async (repositories) => repositories.roundRepo,
+      STUB_CLIENT,
+    );
+    assert.ok(stubbed instanceof PrismaRoundRepository);
+  });
+});
+
+test('a transaction sees the doubles a test installed', async () => {
+  // Without this the seam would be untestable from a route test: the route
+  // resolves once for authorization and again for the erasure, and both have to
+  // land on the same installed store.
+  await withoutDatabase(async () => {
+    const roundRepo = new InMemoryRoundRepository([DEMO_ROUND]);
+    overrideCoreRepositories({ roundRepo });
+
+    const seen = await runInTransaction(
+      async (repositories) => repositories.roundRepo,
+      null,
+    );
+
+    assert.strictEqual(seen, roundRepo);
+  });
 });
