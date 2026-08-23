@@ -55,15 +55,29 @@ function createMockPrismaClient(): MinimalPrismaClient {
         rounds.set(data.id, { ...data });
         return data;
       },
-      findUnique: async ({ where }: any) => rounds.get(where.id) || null,
+      // Both of this table's unique keys, because the repository reaches for
+      // each of them. The share code is matched exactly and case-sensitively,
+      // which is what PostgreSQL does with `findUnique` — this double used to
+      // fold case here, modelling the `ILIKE` the repository asked for until
+      // 2026-08-23, and a double that keeps modelling a query nobody makes is
+      // how the next defect gets a passing test.
+      findUnique: async ({ where }: any) => {
+        if (where.id !== undefined) return rounds.get(where.id) || null;
+        if (where.shareCode !== undefined) {
+          for (const r of rounds.values()) {
+            if (r.shareCode === where.shareCode) return r;
+          }
+        }
+        return null;
+      },
       findFirst: async ({ where }: any) => {
         for (const r of rounds.values()) {
-          if (
-            where.shareCode?.equals &&
-            r.shareCode.toLowerCase() === where.shareCode.equals.toLowerCase()
-          ) {
-            return r;
+          if (where?.organizationId && r.organizationId !== where.organizationId) {
+            continue;
           }
+          if (where?.status && r.status !== where.status) continue;
+          if (where?.id?.not !== undefined && r.id === where.id.not) continue;
+          return r;
         }
         return null;
       },

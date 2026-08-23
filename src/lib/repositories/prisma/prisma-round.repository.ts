@@ -182,14 +182,32 @@ export class PrismaRoundRepository implements IRoundRepository {
     return found ? this.mapToDomain(found) : null;
   }
 
+  /**
+   * The one lookup an unauthenticated stranger can reach, so it is exact.
+   *
+   * It used to ask for `equals` with `mode: 'insensitive'`, which Prisma
+   * compiles to `ILIKE` on PostgreSQL — and `ILIKE` reads `%` and `_` in the
+   * *value* as wildcards. `GET /api/survey/%` therefore returned a school's
+   * round to someone holding no share code at all, and a run of underscores at
+   * the right length did the same. Confirmed over HTTP on 2026-08-23 before it
+   * was changed. The 2026-08-21 audit recorded this line as a missed index; the
+   * index was the smaller half.
+   *
+   * Case-insensitivity was the point of that mode and it is kept, on this side:
+   * the code is read off a slide and typed by hand, so what a respondent sends
+   * is normalized and then compared for equality. Every generated code is
+   * uppercase — `SHARE_CODE_ALPHABET` has no lowercase in it — and migration
+   * `20260823160000_share_codes_are_stored_the_way_they_are_generated` makes
+   * that true of rows written before this. The in-memory repository has always
+   * matched this way, which is why its suite never saw the defect.
+   *
+   * Exactness is also what lets the query use `survey_rounds_share_code_key`:
+   * an `ILIKE` cannot, so the product's most exposed path was a sequential scan
+   * on its largest-growing table.
+   */
   public async findByShareCode(shareCode: string): Promise<SurveyRound | null> {
-    const found = await this.prisma.surveyRound.findFirst({
-      where: {
-        shareCode: {
-          equals: shareCode.trim(),
-          mode: 'insensitive',
-        },
-      },
+    const found = await this.prisma.surveyRound.findUnique({
+      where: { shareCode: shareCode.trim().toUpperCase() },
     });
     return found ? this.mapToDomain(found) : null;
   }
