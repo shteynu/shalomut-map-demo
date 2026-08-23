@@ -8,6 +8,17 @@ inside it.
 
 ## Current state
 
+- **The administrator console lists a page of schools instead of the platform.**
+  Since 2026-08-23 it reads twenty schools at a time through `?q=` and `?page=`,
+  with a search that matches a name or a city in the database rather than in the
+  browser. The part worth knowing is what paging broke: "who has no school" and
+  "who is an administrator" used to be derived by subtracting the loaded
+  memberships from every manager, which stops being true the moment the screen
+  holds only a page — so both are asked of the store now, and the one query that
+  returned every person who may sign in is gone. `PROJECT_CONTEXT.md` ADR-052
+  records it, including the one unbounded read that is left and why it is a
+  different screen rather than a different query.
+
 - **A school's round list stopped carrying every questionnaire it ever ran.**
   Since 2026-08-23 the list every manager screen loads is seven scalar columns
   per round instead of whole rounds — 25 KB instead of 293 KB for a school with

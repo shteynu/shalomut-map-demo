@@ -2210,6 +2210,63 @@ fire a read for an id the tenant check has not yet approved. One round-trip is
 not worth putting a speculative read in front of the boundary that keeps schools
 apart.
 
+### ADR-052: The administrator console asks for a page, not for the platform
+
+2026-08-23. The console listed every school as a card, and the 2026-08-21 audit
+called it the last screen with no ceiling on it. An earlier fix (ADR-036) made
+the number of queries constant, which removed the timeout and left the size of
+every answer exactly where it was: every school, every manager, every membership,
+in one response. **A constant number of unbounded queries is the same screen with
+a slower failure.**
+
+**Schools arrive twenty at a time, through the URL.** `?q=` and `?page=` rather
+than component state, for two reasons: the rows a client would page are not in
+the client, and `router.refresh()` — which every mutation on this screen calls —
+re-runs the server read with the same page and the same search, so inviting
+somebody does not throw the administrator back to the top of the list. Everything
+else is asked about that page: the memberships name the page's schools, the
+managers are the people those memberships point at.
+
+**The interesting part is what paging breaks.** Two of the three lists on the
+screen were derived by subtraction — everybody, minus everybody the loaded
+memberships accounted for — and subtraction is only correct while both operands
+are complete. With twenty schools on screen, a person attached to a school on
+page four is indistinguishable from a person attached to nothing. So
+`findManagersWithoutStandingMembership` and `findPlatformAdministrators` ask the
+store, which can still see all of the rows; the first is a `NOT EXISTS` over
+memberships.
+
+**`findAllManagers` is deleted rather than deprecated.** It was the only query in
+the product that returned every person who may sign in, it had exactly one
+caller, and leaving it would leave the cheapest way to write the next screen that
+enumerates everybody.
+
+**The search escapes `%`, `_` and `\`.** Prisma's `contains` compiles to
+`ILIKE '%value%'` and escapes nothing inside `value` — the same reading of
+`ILIKE` that ADR-044 found underneath the share code, arriving here as a wrong
+answer rather than as a way past a gate: the caller is already an administrator
+and every school is theirs to see, which is exactly why it would have gone
+unnoticed.
+
+**`ORDER BY created_at DESC, id DESC`.** The tie-break is not decoration: the
+seed creates schools in the same millisecond, and `OFFSET` over a sort that does
+not determine a total order may show a school twice and hide another. Pinning it
+took a test that writes between two page reads — PostgreSQL moves an updated row
+to the end of the heap — because forty-five untouched rows come back the same way
+twice whether the tie-break is there or not. That was measured: the tie-break was
+removed and the first version of the test still passed.
+
+**The two people lists are capped at fifty and say when they were cut.** Not
+paged. Administrators are a handful by design and `unattached` should be empty;
+the honest answer to a hundred people with no school is that something needs
+cleaning up, not a second page of them. One extra row is read to detect the tail
+and is not rendered.
+
+**One unbounded read is left, and named.** `orgRepo.findAll` still backs the
+school switcher a platform administrator sees on `setup`. Bounding it means a
+search field instead of a `<select>`, which is a different screen rather than a
+different query.
+
 ## Environments
 
 The project supports exactly two environments:
