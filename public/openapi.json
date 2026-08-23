@@ -181,6 +181,93 @@
         }
       }
     },
+    "/api/health/observability": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Whether any operational counter has crossed its threshold",
+        "description": "A verdict and nothing else, for a monitor that cannot send a header. Every counter in this product exists to catch a failure nobody watches — a submission lost before the function ran, a paid provider that stopped answering while its rounds still report success, a payload the published contract refuses — and until 2026-08-23 all of them were console lines with no retention and no reader. Four thresholds are checked here, and `alerting` names the breached ones by id so a monitor's mail says where to look. Answers 503 on `alerting`, which any uptime monitor treats as an alert, and 503 on `unknown` when the events cannot be read at all — a deployment recording nothing and a deployment with nothing to record look identical from outside. Deliberately carries no count, ratio or window: those are behind the shared secret on /api/observability.",
+        "responses": {
+          "200": {
+            "description": "No threshold is breached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "alerting",
+                    "commit"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    },
+                    "alerting": {
+                      "type": "array",
+                      "description": "Empty when the status is `ok`.",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "commit": {
+                      "type": "string",
+                      "example": "a3dd4fe"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "A threshold is breached, or the events could not be read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "commit"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "alerting",
+                        "unknown"
+                      ]
+                    },
+                    "alerting": {
+                      "type": "array",
+                      "description": "The breached threshold ids. Absent on `unknown`, which is not the same as none being breached.",
+                      "items": {
+                        "type": "string",
+                        "example": "submission_lost"
+                      }
+                    },
+                    "commit": {
+                      "type": "string"
+                    },
+                    "reason": {
+                      "type": "string",
+                      "description": "Why no verdict could be given. Never echoes a database error to an anonymous caller.",
+                      "enum": [
+                        "no_durable_storage",
+                        "events_unreadable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/health/ai-queue": {
       "get": {
         "tags": [
@@ -1942,6 +2029,113 @@
           },
           "409": {
             "description": "Lease expired or belongs to another worker"
+          }
+        }
+      }
+    },
+    "/api/observability": {
+      "get": {
+        "tags": [
+          "AI Integration"
+        ],
+        "summary": "The counters behind the public observability verdict",
+        "description": "Every threshold with its window, its limit and what the window actually held, so the verdict on /api/health/observability can be checked rather than trusted. Behind the shared secret for the reason the queue's depth is: how many analyses failed and how many submissions were lost says how much measuring is happening and how badly it is going. Returns no event's contents — stored request errors carry messages and stacks, and those are reachable with the database and through no endpoint. Reads only; the retention sweep belongs to the public sibling, which is what something actually calls on a schedule.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Every threshold, as it reads right now",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "alerting",
+                    "readings",
+                    "observedAt"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok",
+                        "alerting"
+                      ]
+                    },
+                    "alerting": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "readings": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "metric",
+                          "reading",
+                          "windowMinutes",
+                          "limit",
+                          "observed",
+                          "samples",
+                          "breached"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "example": "submission_lost"
+                          },
+                          "metric": {
+                            "type": "string",
+                            "example": "survey_submission_lost_after_retries"
+                          },
+                          "reading": {
+                            "type": "string",
+                            "enum": [
+                              "count",
+                              "mean"
+                            ]
+                          },
+                          "windowMinutes": {
+                            "type": "integer"
+                          },
+                          "limit": {
+                            "type": "number"
+                          },
+                          "observed": {
+                            "type": "number",
+                            "nullable": true,
+                            "description": "What the window held, or null when nothing measurable was in it — no events, or fewer samples than a mean needs. Null is not zero."
+                          },
+                          "samples": {
+                            "type": "integer"
+                          },
+                          "breached": {
+                            "type": "boolean"
+                          }
+                        }
+                      }
+                    },
+                    "observedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid callback/worker secret"
+          },
+          "503": {
+            "description": "Persistent storage is not configured"
           }
         }
       }

@@ -385,6 +385,7 @@ An endpoint the code has and this table does not is what happened on
 | worker → Core | `POST /api/rounds/:roundId/ai-insights` | `AI_CALLBACK_SECRET` | 200 · 400 |
 | worker → Core | `POST /api/mcp` | `MCP_SHARED_SECRET` | 200 |
 | operator → Core | `GET /api/ai-analysis-runs/queue` | `AI_CALLBACK_SECRET` | 200 · 401 · 503 |
+| operator → Core | `GET /api/observability` | `AI_CALLBACK_SECRET` | 200 · 401 · 503 |
 | public | `GET /health` | none | 200 |
 | public | `GET /api/v1/provider-status` | none | 200 |
 | public | `GET /api/v1/fallback-status` | none | 200 |

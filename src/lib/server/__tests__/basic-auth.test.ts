@@ -72,21 +72,56 @@ test("reading AI insights stays behind the manager gate", () => {
   );
 });
 
-test("an uptime monitor reaches the health endpoint, and only by reading", () => {
-  assert.strictEqual(isPublicOperationalRoute("/api/health", "GET"), true);
-  assert.strictEqual(isPublicOperationalRoute("/api/health/", "GET"), true);
-  assert.strictEqual(isPublicOperationalRoute("/api/health", "HEAD"), true);
+test("an uptime monitor reaches the health endpoints, and only by reading", () => {
+  // All three verdicts a free monitor watches. The queue's and the counters'
+  // are the ones that matter here: a detector nobody can reach is the failure
+  // each of them was built to end, and the manager gate is what would make it
+  // unreachable. Route tests call the handler directly and would pass on a
+  // route the middleware answers with 401.
+  for (const pathname of [
+    "/api/health",
+    "/api/health/",
+    "/api/health/ai-queue",
+    "/api/health/ai-queue/",
+    "/api/health/observability",
+    "/api/health/observability/",
+  ]) {
+    for (const method of ["GET", "HEAD"]) {
+      assert.strictEqual(
+        isPublicOperationalRoute(pathname, method),
+        true,
+        `expected ${method} ${pathname} to be reachable by a monitor`,
+      );
+    }
+  }
 
-  // A monitor never writes, and the endpoint has no other method today. The
+  // A monitor never writes, and these endpoints have no other method today. The
   // day one is added it must be decided on, not inherited.
   assert.strictEqual(isPublicOperationalRoute("/api/health", "POST"), false);
   assert.strictEqual(isPublicOperationalRoute("/api/health", "DELETE"), false);
+  assert.strictEqual(
+    isPublicOperationalRoute("/api/health/observability", "POST"),
+    false,
+  );
+});
+
+test("the counters' numbers are machine-authenticated, and read-only", () => {
+  // The public sibling publishes a word and a list of ids; the counts sit here,
+  // behind the same shared secret the queue's depth does.
+  for (const pathname of ["/api/observability", "/api/observability/"]) {
+    assert.strictEqual(isMachineAuthenticatedRoute(pathname, "GET"), true);
+    assert.strictEqual(isMachineAuthenticatedRoute(pathname, "HEAD"), true);
+    assert.strictEqual(isMachineAuthenticatedRoute(pathname, "POST"), false);
+    // And it is not anonymous, which is the whole of the split.
+    assert.strictEqual(isPublicOperationalRoute(pathname, "GET"), false);
+  }
 });
 
 test("nothing else is opened by the operational bypass", () => {
   for (const pathname of [
     "/api/healthz",
     "/api/health/detail",
+    "/api/observability",
     "/api/rounds",
     "/api/mcp",
     "/",

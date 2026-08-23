@@ -365,9 +365,12 @@ export function recordDeterministicMetricNarrativeSample(input: {
  * is alive — it would add cardinality to every series to answer a question
  * nobody has asked.
  *
- * What this does not do is notice. It puts the failure where the product's other
- * counters land — since 2026-08-23 that is a durable table as well as a
- * `console.info` line. Whether anybody is told is the next commit's question.
+ * This used to end by saying the counter made the failure countable rather than
+ * noticed, because who collected these lines was an open owner decision. It was
+ * answered on 2026-08-23: the lines reach `operational_events`, and this counter
+ * is one of the four with a threshold on it — three failures in six hours put
+ * `/api/health/observability` into `503`, which is what a depleted provider
+ * account looks like from here.
  */
 export function recordQuestionSuggestionOutcome(
   input:

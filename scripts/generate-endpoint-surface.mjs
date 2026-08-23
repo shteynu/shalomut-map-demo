@@ -87,6 +87,15 @@ const DECLARATIONS = {
     direction: 'operator → Core',
     answers: '200 · 401 · 503',
   },
+  'GET /api/observability': {
+    // The counters behind the public verdict, and it sits beside the queue's
+    // numbers for the same reason: an operator reads it with the same shared
+    // secret, and the anonymous half — `GET /api/health/observability`, a word
+    // and a list of breached threshold ids — carries no secret and so is not
+    // part of this boundary.
+    direction: 'operator → Core',
+    answers: '200 · 401 · 503',
+  },
   'GET /health': {
     direction: 'public',
     answers: '200',

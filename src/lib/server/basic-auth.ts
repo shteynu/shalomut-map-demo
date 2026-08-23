@@ -50,7 +50,14 @@ export function isPublicOperationalRoute(pathname: string, method: string) {
      * wait stay behind the shared secret on `/api/ai-analysis-runs/queue`.
      */
     pathname === "/api/health/ai-queue" ||
-    pathname === "/api/health/ai-queue/"
+    pathname === "/api/health/ai-queue/" ||
+    /*
+     * The operational counters' verdict, public on the same terms: a word, a
+     * list of breached threshold ids and a status code. The counts and the
+     * ratios behind them stay behind the shared secret on `/api/observability`.
+     */
+    pathname === "/api/health/observability" ||
+    pathname === "/api/health/observability/"
   );
 }
 
@@ -67,6 +74,14 @@ const AI_ANALYSIS_RUN_WORKER_PATH =
 const AI_ANALYSIS_RUN_QUEUE_PATH = /^\/api\/ai-analysis-runs\/queue\/?$/;
 
 /**
+ * The counters' numbers, read by an operator with the same shared secret and
+ * for the same reason: a monitor watches the public verdict, a person reads
+ * this. Named apart for the reason the queue's path is — folding it into an
+ * expression that also matches worker `POST` paths widens those instead.
+ */
+const OBSERVABILITY_PATH = /^\/api\/observability\/?$/;
+
+/**
  * Routes that the external AI service calls with their own shared secret. They
  * carry no browser session, so a manager redirect would only break them. The
  * GET on the AI insights path returns manager analytics and stays behind the
@@ -76,7 +91,8 @@ export function isMachineAuthenticatedRoute(pathname: string, method: string) {
   if (pathname === "/api/mcp" || pathname === "/api/mcp/") return true;
   if (
     (method === "GET" || method === "HEAD") &&
-    AI_ANALYSIS_RUN_QUEUE_PATH.test(pathname)
+    (AI_ANALYSIS_RUN_QUEUE_PATH.test(pathname) ||
+      OBSERVABILITY_PATH.test(pathname))
   ) {
     return true;
   }
