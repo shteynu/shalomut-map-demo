@@ -7,6 +7,7 @@ import {
   SurveyAttemptClientStage,
   SurveyAttemptRecord,
   SurveyResponseRecord,
+  SurveyResponseTiming,
   SurveyRound,
   UpdateOrganizationInput,
   UpdateRoundInput,
@@ -392,6 +393,18 @@ export interface ISurveyAttemptRepository {
 export interface ISurveyRepository {
   saveResponse(response: SurveyResponseRecord): Promise<SurveyResponseRecord>;
   findResponsesByRoundId(roundId: string): Promise<SurveyResponseRecord[]>;
+  /**
+   * The same responses without their answers, for the readers that measure the
+   * collection rather than score it.
+   *
+   * `findResponsesByRoundId` above joins every `question_answers` row of the
+   * round, which is what the map is computed from and is the right read for it.
+   * The fill-time report reads three scalar columns off each response and a
+   * count — and paid for all thirty-eight thousand answer rows of a
+   * three-hundred-person round to do it. The return type has `answers` removed
+   * rather than emptied, so nothing can drift into reading them from here.
+   */
+  findResponseTimingsByRoundId(roundId: string): Promise<SurveyResponseTiming[]>;
   hasTokenSubmitted(roundId: string, tokenHash: string): Promise<boolean>;
   getResponseCount(roundId: string): Promise<number>;
   /**

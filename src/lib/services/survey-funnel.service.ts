@@ -1,7 +1,4 @@
-import type {
-  ISurveyAttemptRepository,
-  ISurveyRepository,
-} from '../repositories/interfaces';
+import type { ISurveyAttemptRepository } from '../repositories/interfaces';
 import {
   RoundResponseFunnel,
   SURVEY_ATTEMPT_CLIENT_STAGES,
@@ -68,17 +65,17 @@ export class SurveyFunnelService {
    * table existed has responses with no session behind them. Reporting the
    * attempt count as completions there would show a school fewer submissions
    * than it has.
+   *
+   * Takes what it counts rather than the repositories to count it from. The
+   * only screen that renders this funnel renders the fill-time report beside
+   * it, and both were reading the round's attempts — the same query, twice, on
+   * one render. Reads belong to the entrypoint (ADR-008), and this became a
+   * function of its inputs on the way.
    */
-  public static async getRoundFunnel(
-    roundId: string,
-    attemptRepo: ISurveyAttemptRepository,
-    surveyRepo: ISurveyRepository,
-  ): Promise<RoundResponseFunnel> {
-    const [attempts, completed] = await Promise.all([
-      attemptRepo.findByRoundId(roundId),
-      surveyRepo.getResponseCount(roundId),
-    ]);
-
+  public static getRoundFunnel(
+    attempts: readonly SurveyAttemptRecord[],
+    completed: number,
+  ): RoundResponseFunnel {
     const consentedAttempts = attempts.filter(
       (attempt) => attempt.consentAcceptedAt,
     );

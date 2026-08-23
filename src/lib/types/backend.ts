@@ -231,6 +231,19 @@ export interface SurveyResponseRecord {
 }
 
 /**
+ * One response without the answers it carries.
+ *
+ * `answers` is removed from the type rather than left empty, so a consumer that
+ * reaches for it does not compile instead of quietly reading nothing. The
+ * report this exists for — how long a questionnaire took to fill — needs three
+ * scalar columns and a count, and asking for the answers alongside them means
+ * every `question_answers` row of the round: three hundred staff on the
+ * 126-item instrument is thirty-eight thousand rows fetched to compute a
+ * median.
+ */
+export type SurveyResponseTiming = Omit<SurveyResponseRecord, "answers">;
+
+/**
  * The stages one filling session can report, in the order they can happen.
  *
  * `completed` is deliberately absent from what a client may send: it is written

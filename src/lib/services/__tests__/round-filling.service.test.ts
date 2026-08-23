@@ -119,10 +119,34 @@ function sessions(minutes: readonly number[]) {
 /** Ten unremarkable sessions, to carry a round over its privacy threshold. */
 const ORDINARY = Array.from({ length: 10 }, () => 10);
 
+/**
+ * The reads the round screen does, then the pure function over them.
+ *
+ * `getRoundFilling` stopped taking repositories for two reasons, and the
+ * second is the expensive one: the round screen was reading this round's
+ * attempts twice per render — once here and once for the funnel beside it —
+ * and this report was asking for responses *whole*, which joins every
+ * `question_answers` row of the round to read three scalar columns.
+ *
+ * The seeding below still goes through the real in-memory stores, so this
+ * helper is the seam the screen has and not a fake.
+ */
+async function fillingReport(
+  round: Pick<SurveyRound, "id" | "privacyThreshold" | "surveyDefinition">,
+  attemptRepo: InMemorySurveyAttemptRepository,
+  surveyRepo: InMemorySurveyRepository,
+) {
+  return RoundFillingService.getRoundFilling(
+    round,
+    await attemptRepo.findByRoundId(round.id),
+    await surveyRepo.findResponseTimingsByRoundId(round.id),
+  );
+}
+
 test("a round with no questionnaire is not measured against the canonical one", async () => {
   const { attemptRepo, surveyRepo } = sessions(ORDINARY);
 
-  const report = await RoundFillingService.getRoundFilling(
+  const report = await fillingReport(
     round({ surveyDefinition: undefined }),
     attemptRepo,
     surveyRepo,
@@ -134,7 +158,7 @@ test("a round with no questionnaire is not measured against the canonical one", 
 test("a round below its privacy threshold reports nothing about how it was filled", async () => {
   const { attemptRepo, surveyRepo } = sessions([1, 1, 1, 1, 1]);
 
-  const report = await RoundFillingService.getRoundFilling(
+  const report = await fillingReport(
     round(),
     attemptRepo,
     surveyRepo,
@@ -150,7 +174,7 @@ test("a round below its privacy threshold reports nothing about how it was fille
 test("a raised threshold raises the gate with it", async () => {
   const { attemptRepo, surveyRepo } = sessions(ORDINARY);
 
-  const report = await RoundFillingService.getRoundFilling(
+  const report = await fillingReport(
     round({ privacyThreshold: 15 }),
     attemptRepo,
     surveyRepo,
@@ -162,7 +186,7 @@ test("a raised threshold raises the gate with it", async () => {
 test("the estimate is computed from the questions the round asks", async () => {
   const { attemptRepo, surveyRepo } = sessions(ORDINARY);
 
-  const report = await RoundFillingService.getRoundFilling(
+  const report = await fillingReport(
     round(),
     attemptRepo,
     surveyRepo,
@@ -180,7 +204,7 @@ test("a disabled question does not lengthen the estimate a respondent was shown"
     enabled: index < 12,
   }));
 
-  const report = await RoundFillingService.getRoundFilling(
+  const report = await fillingReport(
     round({
       // The stored field still claims the full questionnaire's four minutes;
       // half the questions are switched off, and the respondent was shown two.
@@ -201,7 +225,7 @@ test("fast sessions are counted against the questionnaire's own estimate", async
     0.5, 0.8, 1.2, 5, 6, 7, 8, 9, 10, 11,
   ]);
 
-  const report = await RoundFillingService.getRoundFilling(
+  const report = await fillingReport(
     round(),
     attemptRepo,
     surveyRepo,
@@ -219,7 +243,7 @@ test("fast sessions are counted against the questionnaire's own estimate", async
 test("a round nobody rushed says so rather than saying nothing", async () => {
   const { attemptRepo, surveyRepo } = sessions(ORDINARY);
 
-  const report = await RoundFillingService.getRoundFilling(
+  const report = await fillingReport(
     round(),
     attemptRepo,
     surveyRepo,
@@ -238,7 +262,7 @@ test("one fast session is bounded rather than counted", async () => {
     0.5, 5, 6, 7, 8, 9, 10, 11, 12, 13,
   ]);
 
-  const report = await RoundFillingService.getRoundFilling(
+  const report = await fillingReport(
     round(),
     attemptRepo,
     surveyRepo,
@@ -263,7 +287,7 @@ test("a response with no session token is named, not counted as fast", async () 
     response(99, { withoutToken: true }),
   ]);
 
-  const report = await RoundFillingService.getRoundFilling(
+  const report = await fillingReport(
     round(),
     attemptRepo,
     surveyRepo,
@@ -296,7 +320,7 @@ test("a response whose session was never recorded is named separately", async ()
     ),
   );
 
-  const report = await RoundFillingService.getRoundFilling(
+  const report = await fillingReport(
     round(),
     attemptRepo,
     surveyRepo,
@@ -322,7 +346,7 @@ test("a session that ends before it begins is counted, never fed to the median",
     ),
   );
 
-  const report = await RoundFillingService.getRoundFilling(
+  const report = await fillingReport(
     round(),
     attemptRepo,
     surveyRepo,
@@ -350,7 +374,7 @@ test("the session ends at the response, so a lost completion beacon costs nothin
 
   assert.ok(attempts.every((row) => row.completedAt === undefined));
 
-  const report = await RoundFillingService.getRoundFilling(
+  const report = await fillingReport(
     round(),
     attemptRepo,
     surveyRepo,
@@ -367,7 +391,7 @@ test("no report names a respondent, a token or one session's length", async () =
     0.5, 0.6, 0.7, 5, 6, 7, 8, 9, 10, 11,
   ]);
 
-  const report = await RoundFillingService.getRoundFilling(
+  const report = await fillingReport(
     round(),
     attemptRepo,
     surveyRepo,
@@ -395,7 +419,7 @@ test("a response that carries its own measurement is used instead of the session
     ),
   );
 
-  return RoundFillingService.getRoundFilling(
+  return fillingReport(
     round(),
     attemptRepo,
     surveyRepo,
@@ -420,7 +444,7 @@ test("a round mixing both measures counts how many were precise", async () => {
     ),
   );
 
-  const report = await RoundFillingService.getRoundFilling(
+  const report = await fillingReport(
     round(),
     attemptRepo,
     surveyRepo,
@@ -442,7 +466,7 @@ test("a browser measurement needs no attempt row and no token behind it", async 
     ),
   );
 
-  const report = await RoundFillingService.getRoundFilling(
+  const report = await fillingReport(
     round(),
     attemptRepo,
     surveyRepo,
@@ -473,7 +497,7 @@ test("a fast questionnaire measured in the browser is counted as fast", async ()
     ),
   );
 
-  const report = await RoundFillingService.getRoundFilling(
+  const report = await fillingReport(
     round(),
     attemptRepo,
     surveyRepo,

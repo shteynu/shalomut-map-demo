@@ -1,4 +1,8 @@
-import { QuestionAnswerRecord, SurveyResponseRecord } from '../../types/backend';
+import {
+  QuestionAnswerRecord,
+  SurveyResponseRecord,
+  SurveyResponseTiming,
+} from '../../types/backend';
 import { DuplicateResponseError } from '../errors';
 import { ISurveyRepository } from '../interfaces';
 import { MinimalPrismaClient } from './prisma-client';
@@ -116,6 +120,40 @@ export class PrismaSurveyRepository implements ISurveyRepository {
       }
       throw error;
     }
+  }
+
+  /**
+   * Three scalar columns and no join.
+   *
+   * `select` rather than `include: false`: naming the columns is what keeps a
+   * future column off this read by default, and what makes the absent join
+   * visible at the call site rather than inferred from what is missing.
+   */
+  public async findResponseTimingsByRoundId(
+    roundId: string,
+  ): Promise<SurveyResponseTiming[]> {
+    const rows = await this.prisma.surveyResponse.findMany({
+      where: { roundId },
+      select: {
+        id: true,
+        roundId: true,
+        anonymousTokenHash: true,
+        submittedAt: true,
+        visibleSeconds: true,
+      },
+    });
+
+    // The same null-versus-undefined boundary `mapToDomain` settles, for the
+    // two columns that survive the narrowing.
+    return rows.map((row: any) => ({
+      id: row.id,
+      roundId: row.roundId,
+      anonymousTokenHash: row.anonymousTokenHash || undefined,
+      submittedAt: new Date(row.submittedAt),
+      ...(row.visibleSeconds == null
+        ? {}
+        : { visibleSeconds: row.visibleSeconds }),
+    }));
   }
 
   public async findResponsesByRoundId(

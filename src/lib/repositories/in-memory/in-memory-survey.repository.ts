@@ -1,4 +1,4 @@
-import { SurveyResponseRecord } from '../../types/backend';
+import { SurveyResponseRecord, SurveyResponseTiming } from '../../types/backend';
 import { DuplicateResponseError } from '../errors';
 import { ISurveyRepository } from '../interfaces';
 
@@ -31,6 +31,24 @@ export class InMemorySurveyRepository implements ISurveyRepository {
     const copy = { ...response };
     this.responses.set(copy.id, copy);
     return copy;
+  }
+
+  /**
+   * The same rows the durable store returns for this call — answers dropped
+   * here rather than never fetched, because this store has no query to narrow.
+   * What both stores must agree on is the shape and the contents, and that is
+   * what `postgres-response-timings.test.ts` compares.
+   */
+  public async findResponseTimingsByRoundId(
+    roundId: string,
+  ): Promise<SurveyResponseTiming[]> {
+    const timings: SurveyResponseTiming[] = [];
+    for (const res of this.responses.values()) {
+      if (res.roundId !== roundId) continue;
+      const { answers: _answers, ...timing } = res;
+      timings.push({ ...timing });
+    }
+    return timings;
   }
 
   public async findResponsesByRoundId(

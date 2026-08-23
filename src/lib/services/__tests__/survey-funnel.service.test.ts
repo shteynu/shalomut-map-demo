@@ -43,6 +43,24 @@ function response(id: string, anonymousTokenHash?: string): SurveyResponseRecord
   };
 }
 
+/**
+ * The reads the round screen does, then the pure function over them.
+ *
+ * `getRoundFunnel` stopped taking repositories when the round screen stopped
+ * reading the same attempts twice — once for this funnel and once for the
+ * fill-time report beside it. These suites keep seeding through the real
+ * in-memory stores, so this helper is the seam and not a fake.
+ */
+async function roundFunnel(
+  attemptRepo: InMemorySurveyAttemptRepository,
+  surveyRepo: InMemorySurveyRepository,
+) {
+  return SurveyFunnelService.getRoundFunnel(
+    await attemptRepo.findByRoundId(ROUND),
+    (await surveyRepo.findResponseTimingsByRoundId(ROUND)).length,
+  );
+}
+
 test("an opened session that never consents is counted, and is not a response", async () => {
   const { attemptRepo, surveyRepo } = repositories();
 
@@ -51,11 +69,7 @@ test("an opened session that never consents is counted, and is not a response", 
     attemptRepo,
   );
 
-  const funnel = await SurveyFunnelService.getRoundFunnel(
-    ROUND,
-    attemptRepo,
-    surveyRepo,
-  );
+  const funnel = await roundFunnel(attemptRepo, surveyRepo);
 
   assert.strictEqual(funnel.opened, 1);
   assert.strictEqual(funnel.consented, 0);
@@ -74,11 +88,7 @@ test("one session reloading twice is one opening, not three teachers", async () 
     );
   }
 
-  const funnel = await SurveyFunnelService.getRoundFunnel(
-    ROUND,
-    attemptRepo,
-    surveyRepo,
-  );
+  const funnel = await roundFunnel(attemptRepo, surveyRepo);
   assert.strictEqual(funnel.opened, 1);
 });
 
@@ -97,11 +107,7 @@ test("a late 'opened' beacon does not un-consent a session", async () => {
     attemptRepo,
   );
 
-  const funnel = await SurveyFunnelService.getRoundFunnel(
-    ROUND,
-    attemptRepo,
-    surveyRepo,
-  );
+  const funnel = await roundFunnel(attemptRepo, surveyRepo);
   assert.strictEqual(funnel.consented, 1);
 });
 
@@ -141,11 +147,7 @@ test("completions are counted from responses, not from a client's claim", async 
     response("r2"),
   ]);
 
-  const funnel = await SurveyFunnelService.getRoundFunnel(
-    ROUND,
-    attemptRepo,
-    surveyRepo,
-  );
+  const funnel = await roundFunnel(attemptRepo, surveyRepo);
 
   assert.strictEqual(funnel.completed, 2);
   assert.strictEqual(funnel.completedWithoutAttempt, 2);
@@ -162,11 +164,7 @@ test("a submitted session leaves the abandoned count alone", async () => {
   );
   await attemptRepo.markCompleted(ROUND, hash);
 
-  const funnel = await SurveyFunnelService.getRoundFunnel(
-    ROUND,
-    attemptRepo,
-    surveyRepo,
-  );
+  const funnel = await roundFunnel(attemptRepo, surveyRepo);
 
   assert.strictEqual(funnel.consented, 1);
   assert.strictEqual(funnel.completed, 1);
@@ -190,11 +188,7 @@ test("where people stop is withheld until it describes more than one of them", a
     );
   }
 
-  const withheld = await SurveyFunnelService.getRoundFunnel(
-    ROUND,
-    attemptRepo,
-    surveyRepo,
-  );
+  const withheld = await roundFunnel(attemptRepo, surveyRepo);
   assert.strictEqual(withheld.abandoned, ABANDON_DETAIL_MINIMUM - 1);
   assert.strictEqual(withheld.medianAbandonedAtQuestion, undefined);
 
@@ -208,11 +202,7 @@ test("where people stop is withheld until it describes more than one of them", a
     attemptRepo,
   );
 
-  const shown = await SurveyFunnelService.getRoundFunnel(
-    ROUND,
-    attemptRepo,
-    surveyRepo,
-  );
+  const shown = await roundFunnel(attemptRepo, surveyRepo);
   assert.strictEqual(shown.abandoned, ABANDON_DETAIL_MINIMUM);
   // Indices 4, 4, 10 — the median is the middle one.
   assert.strictEqual(shown.medianAbandonedAtQuestion, 4);

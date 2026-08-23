@@ -187,46 +187,45 @@ export async function loadSchoolChoices(
 }
 
 /**
- * What happened to the people who received one round's link.
+ * What happened to the people who received one round's link, and how long it
+ * took the ones who answered.
  *
- * One extra read, and only the round screen asks for it — the same reason the
- * school list and the goals are loaded separately rather than folded into
- * `ManagerContextService.load`. Every other manager screen would pay for a
- * query it never renders, on a database that is not in the same continent as
- * its users.
+ * Two reports and two reads, where there used to be two reports and four. The
+ * round screen renders both, and each used to fetch the round's attempts for
+ * itself — the same query, twice, on one render. They are one loader now
+ * because they are one screen's worth of the same collection, not because the
+ * reports are related: the funnel is about who arrived, the filling report
+ * about who stayed.
+ *
+ * Still separate from `ManagerContextService.load`, for the reason the school
+ * list and the goals are: only this screen asks, and every other manager screen
+ * would pay for a query it never renders, on a database that is not on the same
+ * continent as its users.
+ *
+ * The round is passed rather than its id, because the filling report needs the
+ * stored questionnaire and the privacy threshold from it — and because the
+ * caller is then holding a round from the manager's own context, which is what
+ * keeps this from becoming a way to read another school's collection.
+ *
+ * `completed` in the funnel is the number of stored responses, which is now
+ * `responses.length` rather than its own `COUNT(*)`. Same number, one query
+ * fewer, and it stays counted from responses rather than from completion
+ * beacons for the reason `getRoundFunnel` documents.
  */
-export async function loadRoundFunnel(roundId: string) {
-  const { surveyAttemptRepo, surveyRepo } = resolveCoreRepositories();
-
-  return SurveyFunnelService.getRoundFunnel(
-    roundId,
-    surveyAttemptRepo,
-    surveyRepo,
-  );
-}
-
-/**
- * How long one round's questionnaires took to fill.
- *
- * A separate read for the same reason as `loadRoundFunnel` above: only the
- * round screen asks for it, and folding it into `ManagerContextService.load`
- * would charge every other manager screen for a query it never renders.
- *
- * The round is passed rather than its id, because the service needs the stored
- * questionnaire and the privacy threshold from it — and because the caller is
- * then holding a round from the manager's own context, which is what keeps this
- * from becoming a way to read another school's collection.
- */
-export async function loadRoundFilling(
+export async function loadRoundActivity(
   round: Pick<SurveyRound, 'id' | 'privacyThreshold' | 'surveyDefinition'>,
 ) {
   const { surveyAttemptRepo, surveyRepo } = resolveCoreRepositories();
 
-  return RoundFillingService.getRoundFilling(
-    round,
-    surveyAttemptRepo,
-    surveyRepo,
-  );
+  const [attempts, responses] = await Promise.all([
+    surveyAttemptRepo.findByRoundId(round.id),
+    surveyRepo.findResponseTimingsByRoundId(round.id),
+  ]);
+
+  return {
+    funnel: SurveyFunnelService.getRoundFunnel(attempts, responses.length),
+    filling: RoundFillingService.getRoundFilling(round, attempts, responses),
+  };
 }
 
 /**

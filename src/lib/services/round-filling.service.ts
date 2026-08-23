@@ -2,13 +2,13 @@ import {
   summariseFillingDurations,
   type FillingDurationSummary,
 } from '../analytics/filling-duration';
-import type {
-  ISurveyAttemptRepository,
-  ISurveyRepository,
-} from '../repositories/interfaces';
 import { effectivePrivacyThreshold } from '../survey-definition';
 import { estimateMinutesForQuestionnaire } from '../survey/survey-duration';
-import type { SurveyRound } from '../types/backend';
+import type {
+  SurveyAttemptRecord,
+  SurveyResponseTiming,
+  SurveyRound,
+} from '../types/backend';
 
 const MILLISECONDS_PER_MINUTE = 60_000;
 
@@ -122,18 +122,25 @@ export type RoundFillingReport =
  * `resolveCoreRepositories` left to entrypoints.
  */
 export class RoundFillingService {
-  public static async getRoundFilling(
+  /**
+   * Takes the collection rather than the repositories to read it from.
+   *
+   * Two reasons, and the second is the expensive one. The round screen renders
+   * this report beside the funnel, and both were reading the round's attempts —
+   * one query, twice, on one render. And what this needs of a response is
+   * `submittedAt`, `anonymousTokenHash` and `visibleSeconds`; it used to ask
+   * for the responses whole, which joins every `question_answers` row of the
+   * round. Three hundred staff on the 126-item instrument is thirty-eight
+   * thousand rows fetched to compute a median fill time. The parameter type has
+   * `answers` removed, so that read cannot come back by habit.
+   */
+  public static getRoundFilling(
     round: Pick<SurveyRound, 'id' | 'privacyThreshold' | 'surveyDefinition'>,
-    attemptRepo: ISurveyAttemptRepository,
-    surveyRepo: ISurveyRepository,
-  ): Promise<RoundFillingReport> {
+    attempts: readonly SurveyAttemptRecord[],
+    responses: readonly SurveyResponseTiming[],
+  ): RoundFillingReport {
     const definition = round.surveyDefinition;
     if (!definition) return { status: 'no-questionnaire' };
-
-    const [responses, attempts] = await Promise.all([
-      surveyRepo.findResponsesByRoundId(round.id),
-      attemptRepo.findByRoundId(round.id),
-    ]);
 
     const threshold = effectivePrivacyThreshold(round.privacyThreshold);
     if (responses.length < threshold) {

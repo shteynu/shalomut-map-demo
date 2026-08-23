@@ -13,8 +13,7 @@ import { toRoundSwitcherOptions } from "@/lib/rounds/round-options";
 import {
   loadManagerContext,
   loadManagerRole,
-  loadRoundFilling,
-  loadRoundFunnel,
+  loadRoundActivity,
   loadSchoolChoices,
 } from "@/lib/server/manager-context";
 import { isSelectedRoundSuperseded } from "@/lib/services";
@@ -48,12 +47,10 @@ export default async function RoundPage({
   }
 
   const { organization, selectedRound, responseCount } = context;
-  // Two reads, run together: they are independent, they are both only wanted by
-  // this screen, and the database is not on the same continent as its users.
-  const [funnel, filling] = await Promise.all([
-    loadRoundFunnel(selectedRound.id),
-    loadRoundFilling(selectedRound),
-  ]);
+  // Two reads for two reports, run together and shared between them: both
+  // reports are about this round's collection, only this screen wants either,
+  // and the database is not on the same continent as its users.
+  const { funnel, filling } = await loadRoundActivity(selectedRound);
   // The date closes nothing, so the card is careful about what it claims. See
   // `planned-end.ts`: this used to be labelled `סגירה` over a date that had
   // passed while the questionnaire was still accepting answers.
