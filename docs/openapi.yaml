@@ -706,7 +706,7 @@ paths:
     post:
       tags: [Rounds]
       summary: Reset survey round responses and set status back to draft
-      description: Clears all collected anonymous survey responses for the given round and resets its status to draft so questions can be edited. Also drops any persisted AI result, any durable analysis run and every tracked goal of the round, and records a ROUND_RESET audit event. The questionnaire's version history is deliberately kept. An archived round is refused, because writing `draft` would take it back out of the archive, which has no transition out.
+      description: Clears all collected anonymous survey responses for the given round and resets its status to draft so questions can be edited. Also drops any persisted AI result, any durable analysis run and every tracked goal of the round, and records a ROUND_RESET audit event. The questionnaire's version history is deliberately kept. An archived round is refused, because writing `draft` would take it back out of the archive, which has no transition out. The status is written first and the erasure runs as one transaction, so the round stops accepting submissions before anything is deleted and a refusal at that first step means nothing was erased; the audited counts are the rows that actually went.
       security:
         - managerSession: []
       parameters:
@@ -739,7 +739,7 @@ paths:
         "409":
           description: The round is archived and read-only (`code` is `round_archived`)
         "500":
-          description: Failed to reset round responses
+          description: The reset did not complete. `error` says which half happened — the round could not be returned to draft and nothing was erased, or it was returned to draft and the erasure failed. A retry is safe in both cases.
         "503":
           description: Persistent storage is not configured for this deployment
 

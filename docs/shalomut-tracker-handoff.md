@@ -255,12 +255,29 @@ the product's behaviour changes — the fourteen scope tests are unedited — so
 there is nothing to walk on the deployment and nothing for an operator to do.
 No endpoint, no secret, no migration.
 
-**Two of those three branches are on `main` and deployed; the third is not.**
-`origin/main` is `524eac6` on 2026-08-23 — the tip of
-`fix/the-counters-reach-a-place-that-can-warn-someone`, which sits on
-`fix/a-superseded-round-still-gets-its-analysis` — and
-`GET /api/health/` answers with that same commit. Only
-`perf/the-scope-asks-for-the-schools-it-needs` is still unpushed, and it
+**A reset erases nothing until the round has stopped collecting (2026-08-23).**
+That is the audit's medium on the reset's six sequential writes, closed on the
+branch `fix/the-reset-stops-collecting-before-it-erases` — the last of the four
+the owner picked that day, and the only one of them about data integrity rather
+than cost or observability. The status write moved to the front and commits
+before anything is deleted, so the share code refuses submissions first; the five
+deletes became one transaction through a new composition-root seam,
+`runInTransaction`, which the composition lint now guards under the same
+entrypoint rule as `resolveCoreRepositories`. No endpoint, no secret, no
+migration.
+
+**One window is left, deliberately.** A submission already past its status check
+can still commit beside the erasure; one idempotent sweep catches the ordinary
+case, and closing it completely needs a share lock on the round row inside the
+respondent's write — a transaction on the product's only unauthenticated write,
+to serialise it against something a manager does by hand. Not paid. **If real
+respondents arrive, this is the entry to re-open**, and it is written down in
+that branch's task file rather than only here.
+
+**Three of those four branches are on `main` and deployed; the reset one is
+not.** `origin/main` is `34e6755` on 2026-08-23 and `GET /api/health/` answers
+with that same commit, read over HTTPS the same day. Only
+`fix/the-reset-stops-collecting-before-it-erases` is unpushed, and it
 fast-forwards from `origin/main`.
 
 The migration arrived with them: `GET /api/health/observability/` answers
@@ -313,9 +330,12 @@ screen was walked on the deployment** — the behaviour was proved locally, in
 Playwright, because the Browser pane reports its own tab as hidden and the watch
 correctly pauses there.
 
-**Next concrete step:** push `perf/the-scope-asks-for-the-schools-it-needs`,
-the one branch above that is not on `main`, then take the fourth finding the owner listed — the round reset's six sequential
-writes without a transaction, which races with an in-flight submission. For
+**Next concrete step:** push
+`fix/the-reset-stops-collecting-before-it-erases`, the one branch above that is
+not on `main`. All four findings the owner picked on 2026-08-23 are then closed
+and deployed, and the next engineering step is a conversation rather than a
+branch: twenty-nine audit records remain open and none has an owner decision
+behind it. For
 *product* work the answer is unchanged: ask the owner for the methodologist's
 item-to-dimension mapping, because without it there is no substantial product
 work an agent can start. The identity work that used to stand in its way is

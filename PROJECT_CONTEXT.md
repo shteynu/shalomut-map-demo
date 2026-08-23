@@ -261,6 +261,17 @@ exceptions: the one it carried — the process-local audit log in
 `src/lib/server/manager-audit.ts` — went away with the durable audit table
 (ADR-026).
 
+There is a second way to resolve the wiring, added 2026-08-23:
+`runInTransaction(work)` hands `work` a repository set built over a transaction
+client instead of over the pool, so writes that span several repositories are
+one write as far as anything reading the database is concerned. It is a
+resolution, so the entrypoint rule applies to it identically and the same lint
+enforces it under both names. Where no transaction client exists — the in-memory
+wiring — the work runs against the ordinary set, which is not a downgrade: one
+process mutating a `Map` has no half-applied state to protect against. The
+observability sinks are deliberately not re-pointed at a transactional store,
+because a counter recording work that later rolls back would vanish with it.
+
 ### ADR-009: Manager UI requires server runtime and server-owned scope
 
 Manager UI/API uses application-level session authentication. Unauthenticated
