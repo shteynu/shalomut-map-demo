@@ -1,4 +1,4 @@
-import type { RoundStatus, SurveyRound } from "../types/backend";
+import type { RoundStatus, SurveyRoundSummary } from "../types/backend";
 
 /**
  * What a screen needs to offer the school's rounds, and nothing more.
@@ -43,7 +43,9 @@ export const roundStatusLabels: Record<RoundStatus, string> = {
  * list, marked `בארכיון`, so the current position is announced.
  */
 export function toRoundSwitcherOptions(
-  rounds: SurveyRound[],
+  // A summary, because a switcher renders a title and a status label. It used
+  // to take whole rounds and the list arrived carrying every questionnaire.
+  rounds: readonly SurveyRoundSummary[],
   selectedRoundId: string,
 ): RoundSwitcherOptions {
   const options = rounds.map((round) => ({

@@ -146,6 +146,7 @@ export class InMemoryRoundRepository implements IRoundRepository {
         title: round.title,
         status: round.status,
         privacyThreshold: round.privacyThreshold,
+        startDate: round.startDate,
         createdAt: round.createdAt,
       }));
   }

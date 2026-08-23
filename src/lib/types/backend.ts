@@ -442,12 +442,27 @@ export interface UpdateOrganizationInput {
  * administrator overview needs none of it to say that a school is running a
  * round called this, with that many responses.
  */
+/**
+ * A round as a list entry: what a screen needs to name it, order it and offer
+ * it, and nothing that has to be parsed.
+ *
+ * The two columns deliberately absent are the expensive ones. `surveyDefinition`
+ * is a whole questionnaire — 126 items on the default instrument, about 32 KB —
+ * and `aiInsights` is a whole Stone Map. A list of a school's rounds needs
+ * neither, and a type that carried them would let a screen read one by accident
+ * and never say so.
+ *
+ * `startDate` is here rather than only `createdAt` because the comparison walk
+ * orders rounds by when the school ran them, not by when somebody created the
+ * row.
+ */
 export interface SurveyRoundSummary {
   id: string;
   organizationId: string;
   title: string;
   status: RoundStatus;
   privacyThreshold: number;
+  startDate: Date;
   createdAt: Date;
 }
 

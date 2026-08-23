@@ -541,6 +541,27 @@ export class AnalyticsService {
     const round = await roundRepo.findById(roundId);
     if (!round) return null;
 
+    return this.getAnalyticsForLoadedRound(round, roundRepo, surveyRepo);
+  }
+
+  /**
+   * The same analysis, for a caller that is already holding the round.
+   *
+   * `ManagerContextService.load` reads the school's rounds as summaries and
+   * then reads the one on screen whole, so by the time it asks for numbers the
+   * round is in its hand. Passing the id back would make this look it up again
+   * — which is the duplicate ADR-045 removed, reappearing from the other side
+   * once the list stopped carrying whole rounds.
+   *
+   * `roundRepo` is still needed: the published copy is read through it, and the
+   * recompute writes through it.
+   */
+  public static async getAnalyticsForLoadedRound(
+    round: SurveyRound,
+    roundRepo: IRoundRepository,
+    surveyRepo: ISurveyRepository,
+  ): Promise<CanonicalRoundAnalytics | null> {
+    const roundId = round.id;
     const totalResponses = await surveyRepo.getResponseCount(roundId);
     if (isRoundCollecting(round.status)) {
       return this.lockedRoundAnalytics(round, totalResponses);

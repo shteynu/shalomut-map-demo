@@ -1,6 +1,6 @@
 import { dimensionPresentations } from "../dashboard/dimension-presentation";
 import type { RoundGoal, RoundGoalStatus } from "../types/round-goal";
-import type { SurveyRound } from "../types/backend";
+import type { SurveyRound, SurveyRoundSummary } from "../types/backend";
 
 export interface SchoolGoalRow {
   id: string;
@@ -45,7 +45,8 @@ const DIMENSION_LABELS = new Map(
  * rounds in everywhere else.
  */
 export function buildSchoolGoalsView(
-  rounds: SurveyRound[],
+  // Summaries: this reads a title, a status and the order they arrive in.
+  rounds: readonly SurveyRoundSummary[],
   goals: RoundGoal[],
 ): SchoolGoalsView {
   const roundsById = new Map(rounds.map((round) => [round.id, round]));

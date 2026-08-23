@@ -3,10 +3,14 @@
  *
  * The point of `findSummariesByOrganizationIds` is the projection: a round
  * carries its whole questionnaire — 126 questions on the default instrument —
- * and a list of schools needs none of it. That cannot be seen in what the
- * repository returns, because it maps every row into the summary shape either
- * way; a query that selected everything would look identical from the outside
- * while pulling megabytes to show six fields. So this reads the query.
+ * and its whole Stone Map, and a list of rounds needs neither. That cannot be
+ * seen in what the repository returns, because it maps every row into the
+ * summary shape either way; a query that selected everything would look
+ * identical from the outside while pulling megabytes to show seven fields. So
+ * this reads the query.
+ *
+ * Two callers now: the administrator console it was written for, and every
+ * manager screen, whose own school's round list runs through it since ADR-051.
  */
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
@@ -25,7 +29,7 @@ function clientRecording(calls: any[]): MinimalPrismaClient {
   } as unknown as MinimalPrismaClient;
 }
 
-test('a round summary is six scalar columns, and the questionnaire is not one', async () => {
+test('a round summary is seven scalar columns, and the questionnaire is not one', async () => {
   const calls: any[] = [];
   const repo = new PrismaRoundRepository(clientRecording(calls));
 
@@ -37,9 +41,19 @@ test('a round summary is six scalar columns, and the questionnaire is not one', 
     'id',
     'organizationId',
     'privacyThreshold',
+    // Added with ADR-051: the comparison walk orders rounds by when the school
+    // ran them, not by when somebody created the row.
+    'startDate',
     'status',
     'title',
   ]);
+  assert.equal(
+    calls[0].select.surveyDefinition,
+    undefined,
+    'the questionnaire is the reason this method exists',
+  );
+  assert.equal(calls[0].select.aiInsights, undefined);
+  assert.equal(calls[0].include, undefined);
   assert.deepEqual(calls[0].where, {
     organizationId: { in: ['org-1', 'org-2'] },
   });

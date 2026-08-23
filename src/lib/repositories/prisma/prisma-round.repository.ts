@@ -298,14 +298,15 @@ export class PrismaRoundRepository implements IRoundRepository {
 
     const rows = await this.prisma.surveyRound.findMany({
       where: { organizationId: { in: [...organizationIds] } },
-      // The whole point of the method: six scalar columns instead of every
-      // round's questionnaire.
+      // The whole point of the method: seven scalar columns instead of every
+      // round's questionnaire and every round's map.
       select: {
         id: true,
         organizationId: true,
         title: true,
         status: true,
         privacyThreshold: true,
+        startDate: true,
         createdAt: true,
       },
       orderBy: { createdAt: 'asc' },
@@ -317,6 +318,7 @@ export class PrismaRoundRepository implements IRoundRepository {
       title: row.title,
       status: row.status as RoundStatus,
       privacyThreshold: row.privacyThreshold,
+      startDate: new Date(row.startDate),
       createdAt: new Date(row.createdAt),
     }));
   }

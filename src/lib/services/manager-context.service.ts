@@ -3,7 +3,11 @@ import type {
   IRoundRepository,
   ISurveyRepository,
 } from "../repositories";
-import type { Organization, SurveyRound } from "../types/backend";
+import type {
+  Organization,
+  SurveyRound,
+  SurveyRoundSummary,
+} from "../types/backend";
 import type { CanonicalRoundAnalytics } from "../types/canonical-analytics";
 import { AnalyticsService } from "./analytics.service";
 import {
@@ -32,8 +36,15 @@ export interface ManagerContext {
    * Every round this school has, newest work first, so a screen can offer the
    * history without a second query. Empty whenever there is no organization to
    * scope it to.
+   *
+   * Summaries, not rounds. Every entry used to arrive with its whole
+   * questionnaire and its whole map in tow — eight rounds on the 126-item
+   * instrument is a quarter of a megabyte parsed on the way to a screen that
+   * renders a list of titles. The one round a screen works on is
+   * `selectedRound`, and it is read whole; the type is what keeps the
+   * difference true after the next edit.
    */
-  rounds: SurveyRound[];
+  rounds: SurveyRoundSummary[];
   responseCount: number;
   analytics: CanonicalRoundAnalytics | null;
 }
@@ -63,6 +74,13 @@ export interface ManagerContextLoadOptions {
   readonly withAnalytics?: false;
 }
 
+/**
+ * The two fields this order is made of, named so that the order works on a
+ * round and on a summary alike. Both are lists of the same rounds; only one of
+ * them carries the questionnaire.
+ */
+type OrderableRound = Pick<SurveyRound, "status" | "createdAt">;
+
 const roundStatusPriority: Record<SurveyRound["status"], number> = {
   active: 0,
   draft: 1,
@@ -75,7 +93,9 @@ const roundStatusPriority: Record<SurveyRound["status"], number> = {
  * draft, then the newest closed one. This is what a manager lands on when they
  * have not asked for a particular round.
  */
-export function selectActiveRound(rounds: SurveyRound[]): SurveyRound | null {
+export function selectActiveRound<T extends OrderableRound>(
+  rounds: T[],
+): T | null {
   return orderRoundsForManager(rounds)[0] ?? null;
 }
 
@@ -85,7 +105,9 @@ export function selectActiveRound(rounds: SurveyRound[]): SurveyRound | null {
  * default selection use the same order so the first entry is always the round
  * the manager would have landed on anyway.
  */
-export function orderRoundsForManager(rounds: SurveyRound[]): SurveyRound[] {
+export function orderRoundsForManager<T extends OrderableRound>(
+  rounds: T[],
+): T[] {
   return [...rounds].sort((left, right) => {
     const statusDifference =
       roundStatusPriority[left.status] - roundStatusPriority[right.status];
@@ -212,8 +234,15 @@ export class ManagerContextService {
       };
     }
 
-    const rounds = orderRoundsForManager(
-      await roundRepo.findByOrganizationId(organization.id),
+    // Summaries, then the one round that is worked on. A school's list used to
+    // arrive as whole rounds — each with its questionnaire and its map — on the
+    // way to every manager screen, and every screen but one renders titles from
+    // it.
+    const rounds: SurveyRoundSummary[] = orderRoundsForManager(
+      // The read the administrator console already had. It was written for a
+      // screen listing many schools and is exactly the projection one school's
+      // own list wants; the ordering is this manager's own and is applied here.
+      await roundRepo.findSummariesByOrganizationIds([organization.id]),
     );
 
     if (rounds.length === 0) {
@@ -248,7 +277,27 @@ export class ManagerContextService {
       };
     }
 
-    const selectedRound = requestedRound ?? rounds[0];
+    // The second query, and the reason this is a net win rather than a trade:
+    // it reads one round whole where the list used to read all of them whole.
+    // A school with a single round pays two queries for what was one, which is
+    // the case where there was nothing to save anyway.
+    const selectedSummary = requestedRound ?? rounds[0];
+    const selectedRound = await roundRepo.findById(selectedSummary.id);
+
+    if (!selectedRound) {
+      // The row was there a moment ago and is not now — a reset or a delete
+      // landing between the two reads. Reported as the round not being found
+      // rather than as an empty school, because the school is real and the
+      // manager asked for a round it no longer has.
+      return {
+        state: "round-not-found",
+        organization,
+        selectedRound: null,
+        rounds,
+        responseCount: 0,
+        analytics: null,
+      };
+    }
 
     if (options.withAnalytics === false) {
       // The count is asked for directly instead of being read off an analysis.
@@ -264,8 +313,9 @@ export class ManagerContextService {
       };
     }
 
-    const analytics = await AnalyticsService.getAnalyticsForRound(
-      selectedRound.id,
+    // The round is in hand, so it is handed over rather than looked up again.
+    const analytics = await AnalyticsService.getAnalyticsForLoadedRound(
+      selectedRound,
       roundRepo,
       surveyRepo,
     );

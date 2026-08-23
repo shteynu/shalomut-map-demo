@@ -115,7 +115,7 @@ test("a caller that declines the analysis is not handed one", async () => {
   assert.equal("analytics" in context, false);
 });
 
-test("declining the analysis does not read the round twice, or its published copy", async () => {
+test("declining the analysis reads the round once, and nothing about its numbers", async () => {
   const { orgRepo, roundRepo, roundCalls, surveyRepo, surveyCalls } = stores();
 
   await ManagerContextService.load(
@@ -128,9 +128,18 @@ test("declining the analysis does not read the round twice, or its published cop
     { withAnalytics: false },
   );
 
-  // The round is already in hand: `load` selected it out of the school's own
-  // rounds. `getAnalyticsForRound` looked it up again by id, every time.
-  assert.equal(roundCalls.findById, undefined);
+  /*
+   * One whole-round read, and it is the only one.
+   *
+   * This assertion used to say `undefined`, because the school's round list
+   * arrived as whole rounds and `load` picked the selected one out of it —
+   * making `getAnalyticsForRound`'s own lookup a duplicate, which is what
+   * ADR-045 removed. ADR-051 made the list summaries, so the round on screen is
+   * now read deliberately and exactly once. The duplicate is still refused:
+   * `getAnalyticsForLoadedRound` takes the round rather than looking it up
+   * again, which the negative control below pins.
+   */
+  assert.equal(roundCalls.findById, 1);
   assert.equal(roundCalls.findPublishedAnalytics, undefined);
   assert.equal(surveyCalls.findResponsesByRoundId, undefined);
   // One indexed count, which is the whole remaining cost.
@@ -199,6 +208,9 @@ test("asking for the analysis still gets the analysis", async () => {
 
   assert.equal(context.analytics?.roundId, closedRound.id);
   assert.equal(context.responseCount, 3);
+  // Still one, with the analysis. The round is read once by `load` and handed
+  // to the analysis rather than looked up a second time — if this ever reads 2,
+  // the duplicate ADR-045 removed has come back.
   assert.equal(roundCalls.findById, 1);
   assert.equal(surveyCalls.findResponsesByRoundId, 1);
 });

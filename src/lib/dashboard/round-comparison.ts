@@ -1,4 +1,4 @@
-import type { SurveyRound } from "@/lib/types/backend";
+import type { SurveyRound, SurveyRoundSummary } from "@/lib/types/backend";
 import type { CanonicalRoundAnalytics } from "@/lib/types/canonical-analytics";
 import {
   responseScale,
@@ -145,9 +145,9 @@ const comparableStatuses: ReadonlySet<SurveyRound["status"]> = new Set([
  * result, which is why the comparison always names the round it used.
  */
 export function comparableRoundsBefore(
-  selected: SurveyRound,
-  rounds: SurveyRound[],
-): SurveyRound[] {
+  selected: Pick<SurveyRound, 'id' | 'startDate'>,
+  rounds: readonly SurveyRoundSummary[],
+): SurveyRoundSummary[] {
   const selectedStart = selected.startDate.getTime();
 
   return rounds
@@ -179,7 +179,9 @@ function averageScore(analytics: CanonicalRoundAnalytics): number {
  */
 export function toRoundComparison(
   current: CanonicalRoundAnalytics,
-  previousRound: SurveyRound | null,
+  // Named on screen, so an id and a title. The analytics beside it are read
+  // from the database by id, not off this object.
+  previousRound: Pick<SurveyRound, 'id' | 'title'> | null,
   previous: CanonicalRoundAnalytics | null,
 ): RoundComparison | null {
   if (!previousRound || !previous) return null;
