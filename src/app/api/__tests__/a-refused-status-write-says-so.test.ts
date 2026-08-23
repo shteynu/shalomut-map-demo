@@ -52,6 +52,7 @@ const SIBLING_ID = 'round-the-school-is-running';
 let aiAnalysisRunRepo: InMemoryAiAnalysisRunRepository;
 let auditLogRepo: InMemoryAuditLogRepository;
 let roundRepo: InMemoryRoundRepository;
+let surveyRepo: InMemorySurveyRepository;
 let previousDatabaseUrl: string | undefined;
 
 function responses(count: number): SurveyResponseRecord[] {
@@ -85,6 +86,7 @@ function install({
     { ...DEMO_ROUND, status, surveyDefinition: definition },
     ...siblings,
   ]);
+  surveyRepo = new InMemorySurveyRepository(responses(responseCount));
 
   overrideCoreRepositories({
     aiAnalysisRunRepo,
@@ -93,7 +95,7 @@ function install({
     orgRepo: new InMemoryOrganizationRepository([DEMO_ORGANIZATION]),
     roundRepo,
     roundGoalRepo: new InMemoryRoundGoalRepository(),
-    surveyRepo: new InMemorySurveyRepository(responses(responseCount)),
+    surveyRepo,
     surveyDefinitionVersionRepo: new InMemorySurveyDefinitionVersionRepository(),
   });
 }
@@ -230,7 +232,12 @@ test('a builder that could not start the round says so, and names what it closed
   assert.equal((await roundRepo.findById(ROUND_ID))?.status, 'draft');
 });
 
-test('a reset that could not return the round to draft reports both halves', async () => {
+test('a reset that could not stop the round erases nothing', async () => {
+  // Until 2026-08-23 the status write was the *last* of six, so a refusal here
+  // arrived after the responses were already gone and the answer had to carry
+  // the count of what it had destroyed. The write is first now, which turns the
+  // worst case into the ordinary one: the round is untouched and a retry is a
+  // retry rather than a second deletion.
   install({ status: 'active', responseCount: 3 });
   refuseTheWrite('write_failed');
 
@@ -243,8 +250,18 @@ test('a reset that could not return the round to draft reports both halves', asy
   const body = await response.json();
 
   assert.equal(response.status, 500);
-  // The erasure really happened, so the count travels with the refusal rather
-  // than leaving the manager to retry a deletion that already succeeded.
-  assert.match(body.error, /responses were erased/);
-  assert.equal(body.deletedResponseCount, 3);
+  assert.equal(body.error, 'The round status could not be saved.');
+  assert.equal(body.deletedResponseCount, undefined);
+
+  // The three that would have been destroyed by the old ordering.
+  assert.equal(await surveyRepo.getResponseCount(ROUND_ID), 3);
+  assert.equal((await roundRepo.findById(ROUND_ID))?.status, 'active');
+  const events = await auditLogRepo.findByOrganizationId(
+    DEMO_ROUND.organizationId,
+  );
+  assert.equal(
+    events.some((event) => event.action === 'ROUND_RESET'),
+    false,
+    'a reset that erased nothing must not be audited as one that did',
+  );
 });

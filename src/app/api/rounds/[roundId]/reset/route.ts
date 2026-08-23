@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
-import { resolveCoreRepositories } from "@/lib/composition-root";
+import {
+  resolveCoreRepositories,
+  runInTransaction,
+} from "@/lib/composition-root";
 import { getArchivedRoundGuardResponse } from "@/lib/server/archived-round-guard";
 import { getDurableWriteGuardResponse } from "@/lib/server/durable-write-guard";
 import { authorizeManagerRound } from "@/lib/server/manager-scope";
 import { recordRoundAuditEvent } from "@/lib/server/manager-audit";
-import { describeRefusedStatusWrite } from "@/lib/server/round-status-write";
+import { refusedStatusWriteResponse } from "@/lib/server/round-status-write";
+import { RoundResetService, type RoundErasure } from "@/lib/services";
 
 export async function POST(
   request: Request,
@@ -15,16 +19,8 @@ export async function POST(
     if (unavailable) return unavailable;
 
     const { roundId } = await params;
-    const {
-      aiAnalysisRunRepo,
-      aiInsightsRepo,
-      auditLogRepo,
-      orgRepo,
-      roundGoalRepo,
-      roundRepo,
-      surveyAttemptRepo,
-      surveyRepo,
-    } = resolveCoreRepositories();
+    const { auditLogRepo, orgRepo, roundRepo, surveyRepo } =
+      resolveCoreRepositories();
 
     const authorization = await authorizeManagerRound(
       request,
@@ -41,86 +37,116 @@ export async function POST(
     const archived = getArchivedRoundGuardResponse(authorization.round);
     if (archived) return archived;
 
-    // Reset is irreversible, so the number of responses about to be destroyed
-    // is captured before the delete and recorded in the audit trail.
-    const deletedResponseCount = await surveyRepo.getResponseCount(roundId);
-
-    // Delete all survey responses associated with this round
-    await surveyRepo.deleteByRoundId(roundId);
-
-    // The funnel describes how those responses were arrived at, so it goes with
-    // them. A reset that kept the openings would show a school twelve sessions
-    // and zero answers and call it a collection problem, when what happened is
-    // that a manager erased the collection.
-    await surveyAttemptRepo.deleteByRoundId(roundId);
-
-    // A persisted analysis describes responses that no longer exist.
-    await aiInsightsRepo.deleteByRoundId(roundId);
-    // So do the numbers the round published. The basis check would catch most
-    // of this on its own — but a re-collection that ends at the same count with
-    // the same questionnaire matches it exactly, and would republish the
-    // erased round's numbers as the new round's result.
-    await roundRepo.clearPublishedAnalytics(roundId);
-    // Pending and terminal runs describe the same deleted response snapshot.
-    // Removing them also releases the stable `automatic` request key so a new
-    // collection cycle can enqueue once it reaches the threshold again.
-    await aiAnalysisRunRepo.deleteByRoundId(roundId);
-    // Goals normally outlive an analysis — that is the point of copying the
-    // recommendation text into them. Reset is the exception: it does not re-run
-    // the analysis, it declares that this round measured nothing, and a goal
-    // chosen from an erased measurement has nothing left to track.
-    const deletedGoalCount = await roundGoalRepo.deleteByRoundId(roundId);
-
-    // The questionnaire's version history is deliberately left alone. Reset
-    // erases what was measured, not what was written, and it hands the round
-    // back for re-editing — which is exactly when an earlier questionnaire is
-    // worth being able to return to.
-
-    // Re-set round status to draft to allow question re-editing. Conditional on
-    // the status this request read, like every other status write: a reset that
-    // raced a manager archiving the same round would otherwise pull it back out
-    // of `archived`, a transition nothing allows.
+    /*
+     * The round stops collecting before anything is erased, and this is the
+     * order rather than an implementation detail.
+     *
+     * It used to be the other way round: five deletes, then `draft` last, so
+     * the round advertised itself as active for the whole duration of its own
+     * erasure and a respondent submitting in that window wrote answers into a
+     * round that had just declared it measured nothing. Writing the status
+     * first and letting it commit means the share code is refused
+     * (`ROUND_NOT_ACTIVE`) before the first delete runs.
+     *
+     * Conditional on the status this request read, like every other status
+     * write. And refused cleanly: nothing has been erased yet, so there is no
+     * half-done reset to explain — which is exactly why this step is first.
+     */
     const write = await roundRepo.updateStatus(
       roundId,
       "draft",
       authorization.round.status,
     );
+    if (write.outcome !== "written") return refusedStatusWriteResponse(write);
 
-    // Recorded either way, because the erasure above is what this event is
-    // about and it has already happened. The status write is the last step and
-    // the only one that can still miss.
+    /*
+     * Five deletes across five repositories, and either all of them land or
+     * none does. Before the transaction a crash in the middle left a round
+     * whose saved analysis described responses that no longer existed — an
+     * inconsistency nothing downstream could detect, because each half was
+     * internally valid.
+     */
+    let erasure: RoundErasure | null = null;
+    try {
+      erasure = await runInTransaction((repositories) =>
+        RoundResetService.eraseCollectedData(repositories, roundId),
+      );
+
+      /*
+       * One sweep, for the submission that was already past its status check
+       * when the round left `active`.
+       *
+       * That request read `active` a few milliseconds ago and is still on its
+       * way to an insert; the status write above cannot reach it, and the
+       * transaction cannot either — under `READ COMMITTED` a row inserted and
+       * committed beside our transaction is simply not there to delete. So the
+       * count is read again once the erasure has committed, and a straggler is
+       * erased by running the same idempotent work a second time. It cannot be
+       * followed by a third: the round has been `draft` for the whole duration
+       * of the first transaction, so nothing new can have passed the check.
+       *
+       * What this is not: a lock. Closing the window completely means the
+       * respondent's write taking a share lock on the round row and this one
+       * taking it exclusively, which puts a transaction on the product's only
+       * unauthenticated write in order to serialise it against an action a
+       * manager takes by hand. That trade is not worth making here, and saying
+       * so is better than implying the window is gone.
+       */
+      if ((await surveyRepo.getResponseCount(roundId)) > 0) {
+        const swept = await runInTransaction((repositories) =>
+          RoundResetService.eraseCollectedData(repositories, roundId),
+        );
+        erasure = {
+          deletedResponseCount:
+            erasure.deletedResponseCount + swept.deletedResponseCount,
+          deletedGoalCount: erasure.deletedGoalCount + swept.deletedGoalCount,
+        };
+      }
+    } catch (error) {
+      /*
+       * Caught here rather than by the handler's outer catch, which also covers
+       * the steps before the status write, where either sentence below would be
+       * a lie. Which one is true depends on whether the first transaction
+       * committed, and that is the difference between "nothing happened" and
+       * "almost everything did" — a manager deciding whether to retry needs it.
+       *
+       * A retry is free either way: every step is a delete by round id, and the
+       * round is already out of `active`. That is the failure this ordering was
+       * chosen for.
+       */
+      console.error(
+        "Erasing a round's collected data failed:",
+        error instanceof Error ? error.message : "unknown error",
+      );
+
+      return NextResponse.json(
+        {
+          error: erasure
+            ? "The round was returned to draft and its responses were erased, but the final check did not finish. Run the reset once more."
+            : "The round was returned to draft and is no longer collecting, but erasing its responses failed. Nothing was deleted — try again.",
+        },
+        { status: 500 },
+      );
+    }
+
     await recordRoundAuditEvent(
       auditLogRepo,
       request,
       "ROUND_RESET",
       roundId,
       authorization.round.organizationId,
-      { deletedResponseCount, deletedGoalCount },
+      { ...erasure },
     );
 
-    if (write.outcome !== "written") {
-      const refusal = describeRefusedStatusWrite(write);
-      if (write.outcome === "write_failed") {
-        console.error("Returning a reset round to draft failed:", write.reason);
-      }
-
-      // The counts travel with the refusal. The responses really are gone, and
-      // a manager told only that something conflicted would reasonably retry a
-      // deletion that already succeeded.
-      return NextResponse.json(
-        {
-          error: `The round's responses were erased, but the round could not be returned to draft. ${refusal.error}`,
-          deletedResponseCount,
-          deletedGoalCount,
-        },
-        { status: refusal.status },
-      );
-    }
+    // Re-read rather than answering with the round the status write returned:
+    // that row was fetched before the erasure and still carries the published
+    // analytics this request has since cleared.
+    const round = await roundRepo.findById(roundId);
 
     return NextResponse.json({
       success: true,
       message: "Round data reset successfully.",
-      round: write.round,
+      round: round ?? write.round,
     });
   } catch (error: any) {
     return NextResponse.json(
