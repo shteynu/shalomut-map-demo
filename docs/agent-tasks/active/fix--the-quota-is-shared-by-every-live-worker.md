@@ -5,7 +5,7 @@
 - Branch: `fix/the-quota-is-shared-by-every-live-worker`
 - Base branch: `main`
 - Base commit: `819a3fa`
-- Current HEAD: `a56132d` (docs commit pending)
+- Current HEAD: the tip of `fix/the-quota-is-shared-by-every-live-worker`; last substantive commit `412edb4`, with only this file's own bookkeeping after it
 - Status: implemented and verified locally; not on `main`, not deployed
 - Last updated: 2026-08-23
 - Last agent/tool: Claude Opus 5 (Claude Code)
