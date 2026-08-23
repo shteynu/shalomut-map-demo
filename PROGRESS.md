@@ -8,6 +8,18 @@ inside it.
 
 ## Current state
 
+- **A staffroom answering at once stopped looking like a flood.** Since
+  2026-08-23 the submission rate limit is 600 per five minutes per address
+  rather than 60, which was sized for forty people — a school of 150 answering
+  straight after a staff meeting was refused at its sixtieth answer, from the
+  one address the whole building shares. The new number is derived rather than
+  chosen: it is the response ceiling of a school of 200, so for any school up to
+  that size the round's own ceiling is what refuses first, and a test holds that
+  relation and names the boundary. What was deliberately not done is keying the
+  bucket by address and share code: the guard runs before the share code is
+  validated, and a bucket keyed on an unvalidated URL segment hands a fresh
+  allowance to anyone who varies it.
+
 - **Two AI workers can now share one provider quota instead of doubling it.**
   Since 2026-08-23 Core names every worker holding a live lease — on the claim
   and on every heartbeat — and each worker process divides the configured pace
