@@ -8,6 +8,30 @@ import type {
 } from './types';
 import { absoluteDeadlineFrom, ttlSecondsWithin } from './session-lifetime';
 
+/**
+ * A school already has somebody standing, and the store refused a second.
+ *
+ * Thrown by `saveMembership` rather than returned, because it is the answer to
+ * a question the caller believed it had already asked. Both callers read the
+ * school's memberships and refuse a second standing one; this is what happens
+ * when two of them read before either writes, which no amount of reading can
+ * prevent. The database is the only thing that can refuse it atomically — the
+ * partial unique index
+ * `organization_memberships_one_standing_per_organization` — and this is that
+ * refusal, in the domain's own words rather than as a `P2002`.
+ *
+ * Both implementations raise it, so the in-memory suite and PostgreSQL agree
+ * about what the product does. The in-memory one cannot reproduce the race, and
+ * that is not what it is for: it is there so no caller can be written against a
+ * store that quietly allows two.
+ */
+export class SchoolAlreadyHasSomebodyError extends Error {
+  constructor(public readonly organizationId: string) {
+    super(`This school already has a standing membership: ${organizationId}`);
+    this.name = 'SchoolAlreadyHasSomebodyError';
+  }
+}
+
 export interface IManagerRepository {
   findById(id: string): Promise<Manager | null>;
   findByEmail(email: string): Promise<Manager | null>;
@@ -141,6 +165,23 @@ export class InMemoryManagerRepository implements IManagerRepository {
   }
 
   async saveMembership(membership: OrganizationMembership): Promise<OrganizationMembership> {
+    // The same rule PostgreSQL holds through its partial unique index. Kept
+    // here so the two stores answer alike; a `Map` cannot reproduce the race
+    // that makes the index necessary, and does not need to.
+    if (membership.status === 'active' || membership.status === 'invited') {
+      const conflicting = Array.from(this.memberships.values())
+        .flat()
+        .some(
+          (row) =>
+            row.organizationId === membership.organizationId &&
+            row.id !== membership.id &&
+            (row.status === 'active' || row.status === 'invited'),
+        );
+      if (conflicting) {
+        throw new SchoolAlreadyHasSomebodyError(membership.organizationId);
+      }
+    }
+
     const existing = this.memberships.get(membership.managerId) ?? [];
     const index = existing.findIndex((m) => m.id === membership.id);
     if (index >= 0) {

@@ -4,8 +4,59 @@ import type {
   MembershipStatus,
   OrganizationMembership,
 } from '../../auth/types';
-import type { IManagerRepository } from '../../auth/domain-contract';
+import {
+  SchoolAlreadyHasSomebodyError,
+  type IManagerRepository,
+} from '../../auth/domain-contract';
 import { MinimalPrismaClient } from './prisma-client';
+
+/**
+ * The partial unique index a second standing membership collides with.
+ *
+ * Which constraint a `P2002` names depends on how the client reached the
+ * database. The runtime here is adapter-backed (`@prisma/adapter-pg`), and that
+ * path carries the detail under `meta.driverAdapterError.cause.constraint` and
+ * leaves `meta.target` undefined; a non-adapter client reports `meta.target`
+ * instead, as either the index name or the column list. All of them are read.
+ *
+ * The column list is checked against the index name too, because a partial
+ * index on one column is indistinguishable by columns alone from the plain
+ * `(organization_id)` index beside it — so an unrecognised constraint stays an
+ * unhandled error rather than being answered with a reassuring refusal.
+ */
+const ONE_STANDING_MEMBERSHIP_INDEX =
+  'organization_memberships_one_standing_per_organization';
+
+function namesTheOneStandingMembershipIndex(candidate: unknown): boolean {
+  if (typeof candidate === 'string') {
+    return candidate.includes(ONE_STANDING_MEMBERSHIP_INDEX);
+  }
+
+  if (Array.isArray(candidate)) {
+    return candidate.map(String).includes(ONE_STANDING_MEMBERSHIP_INDEX);
+  }
+
+  return false;
+}
+
+function violatesTheOneStandingMembershipIndex(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  if ((error as { code?: unknown }).code !== 'P2002') return false;
+
+  const meta = (error as { meta?: Record<string, any> }).meta;
+  if (!meta) return false;
+
+  if (namesTheOneStandingMembershipIndex(meta.target)) return true;
+
+  const cause = meta.driverAdapterError?.cause;
+  if (!cause) return false;
+
+  return (
+    namesTheOneStandingMembershipIndex(cause.originalMessage) ||
+    namesTheOneStandingMembershipIndex(cause.constraint?.index) ||
+    namesTheOneStandingMembershipIndex(cause.constraint?.fields)
+  );
+}
 
 interface ManagerRow {
   id: string;
@@ -160,12 +211,23 @@ export class PrismaManagerRepository implements IManagerRepository {
       status: membership.status,
     };
 
-    const saved = await this.memberships.upsert({
-      where: { id: membership.id },
-      create: { id: membership.id, ...data, createdAt: membership.createdAt },
-      update: data,
-    });
-    return toMembership(saved);
+    try {
+      const saved = await this.memberships.upsert({
+        where: { id: membership.id },
+        create: { id: membership.id, ...data, createdAt: membership.createdAt },
+        update: data,
+      });
+      return toMembership(saved);
+    } catch (error) {
+      // The refusal both callers already know how to report, arriving from the
+      // one place that can decide it atomically. Anything else is re-thrown:
+      // answering an unrecognised constraint with "this school already has
+      // somebody" would turn a real defect into a plausible message.
+      if (violatesTheOneStandingMembershipIndex(error)) {
+        throw new SchoolAlreadyHasSomebodyError(membership.organizationId);
+      }
+      throw error;
+    }
   }
 
   public async countPlatformAdministrators(): Promise<number> {

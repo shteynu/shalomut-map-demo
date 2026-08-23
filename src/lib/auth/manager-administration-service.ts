@@ -8,7 +8,10 @@ import type {
   RoundStatus,
   SurveyRoundSummary,
 } from "../types/backend";
-import type { IManagerRepository } from "./domain-contract";
+import {
+  SchoolAlreadyHasSomebodyError,
+  type IManagerRepository,
+} from "./domain-contract";
 import type { Manager, ManagerRole, OrganizationMembership } from "./types";
 
 export type AdministrationRefusal =
@@ -102,6 +105,28 @@ function normalizeEmail(email: string): string | null {
  * invitation, and issuing a second one would mean two people arriving into a
  * product that gives a school exactly one.
  */
+/**
+ * Runs a membership write and turns the store's refusal into this module's own.
+ *
+ * `SchoolAlreadyHasSomebodyError` is what the partial unique index says when
+ * two requests both passed a read that said there was room. It is the same
+ * situation the read refuses, so it gets the same reason and the screens need
+ * to know nothing about it — the only difference is who decided, and by then
+ * the answer is no either way.
+ */
+async function refusingASecondStandingMembership(
+  write: () => Promise<OrganizationMembership>,
+): Promise<AdministrationResult<OrganizationMembership>> {
+  try {
+    return { ok: true, value: await write() };
+  } catch (error) {
+    if (error instanceof SchoolAlreadyHasSomebodyError) {
+      return { ok: false, reason: "SCHOOL_ALREADY_HAS_SOMEBODY" };
+    }
+    throw error;
+  }
+}
+
 function stands(membership: OrganizationMembership): boolean {
   return membership.status === "active" || membership.status === "invited";
 }
@@ -314,16 +339,22 @@ export class ManagerAdministrationService {
     }
 
     const manager = await this.findOrCreateManager(managerRepo, email, input.name);
-    const membership = await managerRepo.saveMembership({
-      id: crypto.randomUUID(),
-      managerId: manager.id,
-      organizationId: organization.id,
-      role: "manager" as ManagerRole,
-      status: "invited",
-      createdAt: new Date(),
-    });
+    // The check above is a read, and two administrators inviting at once both
+    // pass it. The store refuses the second, and that refusal is this same
+    // answer — so the screen shows one message whichever of the two decided it.
+    const membership = await refusingASecondStandingMembership(() =>
+      managerRepo.saveMembership({
+        id: crypto.randomUUID(),
+        managerId: manager.id,
+        organizationId: organization.id,
+        role: "manager" as ManagerRole,
+        status: "invited",
+        createdAt: new Date(),
+      }),
+    );
+    if (!membership.ok) return membership;
 
-    return { ok: true, value: { manager, membership } };
+    return { ok: true, value: { manager, membership: membership.value } };
   }
 
   /**
@@ -383,10 +414,12 @@ export class ManagerAdministrationService {
       return { ok: false, reason: "SCHOOL_ALREADY_HAS_SOMEBODY" };
     }
 
-    return {
-      ok: true,
-      value: await managerRepo.saveMembership({ ...membership, status }),
-    };
+    // Restoring is the other way a school can end up with two standing people:
+    // the read above says there is room, and an invitation issued in between
+    // takes it. Same refusal, decided by the store.
+    return refusingASecondStandingMembership(() =>
+      managerRepo.saveMembership({ ...membership, status }),
+    );
   }
 
   private static async findOrCreateManager(

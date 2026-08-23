@@ -71,6 +71,17 @@ model OrganizationMembership {
   // "what may they do here", and the session reads whichever came back first.
   @@unique([managerId, organizationId])
   @@index([organizationId])
+
+  // And one school has one standing person, enforced by the partial unique
+  // index `organization_memberships_one_standing_per_organization` on
+  // `(organization_id) where status in ('active','invited')`. Prisma cannot
+  // express a partial index here, so it is owned by migration
+  // `20260823140000_one_standing_membership_per_organization` and changed by
+  // writing another migration rather than by editing this model — the same
+  // arrangement `survey_rounds` uses for its one-active-round rule.
+  //
+  // 'suspended' is deliberately outside it: a school changes hands by
+  // revoke-then-invite, and the revoked rows are what the audit log points at.
   @@map("organization_memberships")
 }
 
