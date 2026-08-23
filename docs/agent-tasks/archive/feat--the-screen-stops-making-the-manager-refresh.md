@@ -5,8 +5,9 @@
 - Branch: `feat/the-screen-stops-making-the-manager-refresh`
 - Base branch: `main`
 - Base commit: `2b88fa5`
-- Current HEAD: the commit carrying this work
-- Status: complete and verified locally; awaiting the owner's push
+- Current HEAD: `27ce0bb`; the work is `a93c535` (code) and `27ce0bb` (docs)
+- Status: complete, landed on `main`, deployed and checked there; archived
+  2026-08-23
 - Last updated: 2026-08-23
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -192,6 +193,13 @@ failure mode; it stays a recommendation against, not a plan.
 - The Browser pane reports `document.hidden: true` for its tab, and the watch
   correctly paused there — an accidental but real check of the `paused` branch
   against a browser.
+- **On the deployment, after the owner pushed** (2026-08-23, both read over
+  HTTPS): `GET /api/health/` answers `commit: 27ce0bb`, so this work is live;
+  `GET /api/health/ai-queue` answers `{"status":"idle","commit":"27ce0bb"}`,
+  which is also the first confirmation that yesterday's anonymous monitor
+  endpoint works there. The AI service answers `commit: 2b88fa5` and
+  `jobPollingEnabled: true` — correct and not a missed deploy, because this push
+  touched none of its `buildFilter` paths.
 
 ### Failed
 
@@ -201,7 +209,12 @@ None.
 
 - Playwright screenshots timed out twice at the font-loading step. Evidence is
   the DOM text instead, read from the live page.
-- Nothing was verified on the deployed environment; this branch is unpushed.
+- **No walk of the deployed screens.** The manager screens are behind sign-in,
+  and the watch was proved locally rather than there. The two health reads above
+  establish which commit is serving, not what the screen does.
+- **The three deployed lanes are still unconfirmed.** `/health` does not report
+  `AI_JOB_POOL_SIZE`; the proof is Render's log line *"Polling with 3 concurrent
+  slot(s)"*, which needs the dashboard and so belongs to the owner.
 
 ### Environment
 
@@ -247,4 +260,7 @@ None.
 
 ## Next concrete step
 
-Push the branch: `git push origin feat/the-screen-stops-making-the-manager-refresh:main`.
+Nothing in this task; it is finished, pushed and serving. The next session's
+step is the one the handoff names — ask the owner for the methodologist's
+item-to-dimension mapping, because no substantial *product* work can start
+without it.

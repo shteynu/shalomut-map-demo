@@ -16,27 +16,25 @@ and in Git; what was durable in them is below.
 
 ## Now
 
-Verified 2026-08-22 in this worktree and on the deployed endpoints, and
-re-read in Git on 2026-08-23. Where a line names a deployment check, the
-date of that check is on the line:
+Verified on 2026-08-23, in this worktree and on both deployed endpoints:
 
-- **`origin/main` is `2b88fa5`,** read from Git in this worktree on 2026-08-23.
-  It carries the queue-liveness endpoints and the three-lane pool. **Neither
-  deployed endpoint was queried after that push**, so what each half answers is
-  unknown rather than stale-but-known. Two rules for whoever checks. Core
-  auto-deploys every push, so it should answer `2b88fa5`. The AI service rebuilds
-  only when a push touches its `buildFilter` paths —
-  `ai-analytics-service/**`, `contracts/**`, `Dockerfile`, `render.yaml` — and
-  `ce6d1b0` touches `render.yaml` and `ai-analytics-service/`, so this push
-  *should* have rebuilt it; the previous answer was `262583a`. **A service
-  commit behind Core's is otherwise the expected resting state, not a missed
-  deploy.** The endpoints:
-  `GET https://shalomut-map-demo.vercel.app/api/health/` and
-  `GET https://shalomut-ai-analytics.onrender.com/health`. Render's log line
-  *"Polling with 3 concurrent slot(s)"* is the proof the pool arrived. The only unrelated
-  modified file in this worktree is `next-env.d.ts`, which is generated,
-  belongs to the owner, and flips between `.next/dev/types` and `.next/types`
-  depending on whether `next dev` or `next build` ran last.
+- **`origin/main` is `27ce0bb`, Core answers it, and the AI service answers
+  `2b88fa5` — that gap is correct.** Read over HTTPS on 2026-08-23:
+  `GET https://shalomut-map-demo.vercel.app/api/health/` → `commit: 27ce0bb`,
+  and `GET https://shalomut-ai-analytics.onrender.com/health` → `commit:
+  2b88fa5`, `jobPollingEnabled: true`. Core auto-deploys every push; the AI
+  service rebuilds only when a push touches its `buildFilter` paths —
+  `ai-analytics-service/**`, `contracts/**`, `Dockerfile`, `render.yaml`. The
+  last push to touch them was `ce6d1b0`, which is why the service sits at
+  `2b88fa5` and why the three-lane pool did reach it. **A service commit behind
+  Core's is the expected resting state, not a missed deploy**; compare the two
+  endpoints against that rule rather than against each other. Still unconfirmed
+  on the deployment: that the pool is actually running three lanes. `/health`
+  does not report `AI_JOB_POOL_SIZE`, and the proof is Render's log line
+  *"Polling with 3 concurrent slot(s)"*, which needs the dashboard. The only
+  unrelated modified file in this worktree is `next-env.d.ts`, which is
+  generated, belongs to the owner, and flips between `.next/dev/types` and
+  `.next/types` depending on whether `next dev` or `next build` ran last.
 - **Six of the seven hygiene findings of the 2026-08-21 audit are on `main` and
   in the deployed tree** as of `57c9e58`, which `2b88fa5` descends from: the share code's uniformity claim,
   a rate limit on the funnel beacon, one `isDeployedRuntime` behind the
@@ -205,11 +203,13 @@ is anonymous, carries no numbers and answers `503` on `stalled` so a free
 monitor can alert on it; `GET /api/ai-analysis-runs/queue` carries the depth and
 the wait behind `AI_CALLBACK_SECRET`. No migration, no write, no new secret.
 
-One operational consequence stands: **nothing watches the new path yet** — the
-UptimeRobot account has one keyword monitor on the Python service's `/health`,
-and until a second one points at Core's queue endpoint the stall is readable but
-unread, which is half the finding. The code itself is deployed: `origin/main` is
-`2b88fa5`, which carries both this and the pool below.
+The endpoints are live: `GET /api/health/ai-queue` on the deployment answered
+`{"status":"idle","commit":"27ce0bb"}` on 2026-08-23, anonymously, which is the
+first proof the monitor path works there. One operational consequence stands
+anyway: **nothing watches it yet** — the UptimeRobot account has one keyword
+monitor on the Python service's `/health`, and until a second one points at
+Core's queue endpoint the stall is readable but unread, which is half the
+finding.
 
 **The AI service will analyse three rounds at once, not one (2026-08-23).**
 `AI_JOB_POOL_SIZE` moves from `1` to `3` in `render.yaml`, so a burst of ten
@@ -243,6 +243,11 @@ Two things this deliberately is not. It is **not a notification** — no e-mail,
 no browser permission prompt, nothing that needs an address — because the owner
 chose in-app self-refresh and that keeps the privacy model untouched. And it
 does **not** help a manager who closed the tab; nothing here pretends to.
+
+It is on `main` as `a93c535` and `27ce0bb` and Core serves it, but **no manager
+screen was walked on the deployment** — the behaviour was proved locally, in
+Playwright, because the Browser pane reports its own tab as hidden and the watch
+correctly pauses there.
 
 **Next concrete step:** ask the owner for the methodologist's item-to-dimension
 mapping, because without it there is no substantial *product* work an agent can
