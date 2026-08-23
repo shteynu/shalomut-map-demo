@@ -58,8 +58,9 @@ a round whose map arrives late, partly model-written, or not at all.
 
 - No shared external store (Upstash or otherwise) for the limiter. The service
   has no database of its own and Core is the only thing both processes can see.
-- No change to `AI_JOB_POOL_SIZE`'s deployed value — how many rounds the
-  deployment analyses at once stays the owner's decision (blocker 9).
+- No change to `AI_JOB_POOL_SIZE`'s deployed value, which is `3` since
+  `ce6d1b0` — the handoff's blocker 9 still said `1` while this was written and
+  was corrected afterwards.
 - `provider_health` and the concurrency semaphore stay per-process. The quota is
   what a second process actually overspends; health is an opinion each process
   is entitled to form on its own.

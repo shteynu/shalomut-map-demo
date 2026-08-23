@@ -18,20 +18,19 @@ and in Git; what was durable in them is below.
 
 Verified on 2026-08-23, in this worktree and on both deployed endpoints:
 
-- **`origin/main` is `bad1f75`, Core answers it, and the AI service answers
-  `2b88fa5` — that gap is correct.** Read over HTTPS on 2026-08-23:
-  `GET https://shalomut-map-demo.vercel.app/api/health/` → `commit: bad1f75`,
-  and `GET https://shalomut-ai-analytics.onrender.com/health` → `commit:
-  2b88fa5`, `jobPollingEnabled: true`. Core auto-deploys every push; the AI
-  service rebuilds only when a push touches its `buildFilter` paths —
-  `ai-analytics-service/**`, `contracts/**`, `Dockerfile`, `render.yaml`. The
-  last push to touch them was `ce6d1b0`, which is why the service sits at
-  `2b88fa5` and why the three-lane pool did reach it. **A service commit behind
-  Core's is the expected resting state, not a missed deploy**; compare the two
-  endpoints against that rule rather than against each other. Still unconfirmed
-  on the deployment: that the pool is actually running three lanes. `/health`
-  does not report `AI_JOB_POOL_SIZE`, and the proof is Render's log line
-  *"Polling with 3 concurrent slot(s)"*, which needs the dashboard. The only
+- **`origin/main` is `8760e62` and both endpoints answer it.** Read over HTTPS
+  on 2026-08-23, after the push that carried the worker-pace change. The
+  matching commits are the exception rather than the rule, and the rule is what
+  to compare against next time: Core auto-deploys every push; the AI service
+  rebuilds only when a push touches its `buildFilter` paths —
+  `ai-analytics-service/**`, `contracts/**`, `Dockerfile`, `render.yaml`. This
+  push touched the first of those, which is why the two commits match today.
+  **A service commit behind Core's is the expected resting state, not a missed
+  deploy**; compare the two endpoints against that rule rather than against each
+  other. Still unconfirmed on the deployment: that the pool is actually running
+  its three lanes. `/health` does not report `AI_JOB_POOL_SIZE`, and the proof
+  is Render's log line *"Polling with 3 concurrent slot(s)"*, which needs the
+  dashboard. The only
   unrelated modified file in this worktree is `next-env.d.ts`, which is
   generated, belongs to the owner, and flips between `.next/dev/types` and
   `.next/types` depending on whether `next dev` or `next build` ran last.
@@ -47,17 +46,23 @@ Verified on 2026-08-23, in this worktree and on both deployed endpoints:
   PostgreSQL, and three of them are invisible from outside because what changed
   is how much a query returns, not what a screen says. The audit's open count is
   **7 of 50**, counted from the `ЗАКРЫТА` marks in the records themselves.
-- **The AI worker's pace became a share of one quota, and it is not deployed
-  yet.** `c6635ea` and `a56132d` on
-  `fix/the-quota-is-shared-by-every-live-worker`, not on `main` and not on
-  either endpoint at the time of writing. Core answers the claim and the
-  heartbeat with `liveWorkerIds`, and each worker process divides the configured
-  pace by how many processes those ids stand for. It changes nothing about
-  today's runtime, which is one process dividing by one — the change is what
-  happens when a second one exists. **When it does land, the AI service will
-  need a rebuild to get its half**: `ai-analytics-service/**` is in Render's
-  `buildFilter`, so unlike the last five landings this one is not a
-  Core-only push and the resting gap between the two commits will close.
+- **The AI worker's pace is a share of one quota, and both halves are
+  deployed.** `c6635ea` and `a56132d`, landed as part of `8760e62`. Read over
+  HTTPS on 2026-08-23 after the push: `GET
+  https://shalomut-map-demo.vercel.app/api/health/` → `commit: 8760e62`, and
+  `GET https://shalomut-ai-analytics.onrender.com/health` → `commit: 8760e62`,
+  `jobPollingEnabled: true`. **The two endpoints are at the same commit, which
+  is unusual and expected here**: the push touched `ai-analytics-service/**`, so
+  Render rebuilt rather than staying at its resting gap. Core answered the old
+  commit for a few minutes first — Vercel builds before it swaps, and the AI
+  service takes longer still, so a health read taken immediately after a push
+  reports the previous commit rather than a failure.
+
+  What is *not* proved by that: nothing about the division itself, which needs
+  two processes to be visible at all. The deployment runs one, so its behaviour
+  is unchanged — one worker divides by one. The first thing that would exercise
+  it is a second instance — the pool's three lanes share one limiter inside one
+  process and always did — and no instance was added.
 
 - **Two retention questions are the owner's and are not decided.** Both surfaced
   while `eb46b87` put ceilings on the tables that only grow, and both were left
@@ -1060,14 +1065,22 @@ without a code change; that, more than the number, is what changed.
    strategy sweep, and the wording of its axis 1 (Chief Scientist directive) and
    axis 7 (fair-use commitment, and how small a staff room is too small to measure
    safely). Both are legal and editorial judgement, not engineering.
-9. **How many rounds the deployed service should analyse at once, 2026-08-18.**
-   `AI_JOB_POOL_SIZE` is `1` in `render.yaml`, which is the behaviour the service
-   had before the setting existed. A round is about 28 calls over three minutes,
-   near 11 a minute, so **three is the useful ceiling at the deployment's real
-   pace of 30** — read it off `requests_per_minute_for`, not off
-   `LLM_MAX_REQUESTS_PER_MINUTE`, because `render.yaml` points `LLM_MODEL_HEAVY`
-   at the fast model and the stricter tier then applies to the whole round. The
-   real provider tier is the actual ceiling and nothing here can read it.
+9. **How many rounds the deployed service analyses at once — answered in the
+   code, and what is left of it is the provider tier.** This entry said
+   `AI_JOB_POOL_SIZE` was `1` until 2026-08-23; it has been `3` in `render.yaml`
+   since `ce6d1b0` the same day, and the entry was simply stale — the `Now`
+   section above knew about the three-lane pool while this one still described
+   the world before it. Three is not a guess: a round is about 28 calls over
+   three minutes, near 11 a minute, and the deployment's real pace is **30, not
+   60**, because `render.yaml` points `LLM_MODEL_HEAVY` at the fast model and
+   one name means one queue at the stricter tier. 30/11 is three. Read the pace
+   off `requests_per_minute_for`, never off `LLM_MAX_REQUESTS_PER_MINUTE`.
+
+   **What is still the owner's:** whether the real provider tier allows more
+   than 30 a minute. Nothing in the repository can read it, and it is the
+   ceiling above every number here. Raising the pool past three without raising
+   the pace buys nothing — a fourth lane queues behind the pace while still
+   holding a lease and polling on its own.
 
    **A second Render instance stopped being forbidden on 2026-08-23**, and that
    is a change of fact rather than of advice. It used to be unsafe because
@@ -1075,11 +1088,10 @@ without a code change; that, more than the number, is what changed.
    counters and together exceeded the quota — the `429` that killed every early
    live round. Core now names every worker holding a live lease and each process
    divides the pace by how many processes those ids stand for (ADR-053), so two
-   containers spend one quota. Lanes are still the cheaper knob, because they
-   share a queue instead of dividing it; a second instance buys resilience and a
-   second cold start, not more provider throughput. Neither number has been
-   changed on the deployment by this: `AI_JOB_POOL_SIZE` is still `1` and there
-   is still one instance.
+   containers spend one quota. Lanes remain the cheaper knob, because they share
+   one queue where instances divide it: a second instance buys resilience and a
+   second cold start, not more provider throughput. Nothing about the deployment
+   was changed by that work — three lanes, one instance, before and after.
 
 **Standing rule:** explicit bounded approval is required before changing secrets,
 credentials, authentication configuration or deployment aliases.

@@ -5,7 +5,7 @@
 - Branch: `fix/a-staffroom-is-not-a-flood`
 - Base branch: `main`
 - Base commit: `8760e62`
-- Current HEAD: `b024d27`
+- Current HEAD: the tip of `fix/a-staffroom-is-not-a-flood`; last substantive commit `a7c7e1d`, with documentation after it
 - Status: implemented and verified locally; not on `main`, not deployed
 - Last updated: 2026-08-23
 - Last agent/tool: Claude Opus 5 (Claude Code)
