@@ -25,6 +25,19 @@ export class InMemoryOrganizationRepository implements IOrganizationRepository {
     return Array.from(this.organizations.values()).map((o) => ({ ...o }));
   }
 
+  public async findByIds(ids: readonly string[]): Promise<Organization[]> {
+    if (ids.length === 0) return [];
+    const wanted = new Set(ids);
+    return Array.from(this.organizations.values())
+      .filter((organization) => wanted.has(organization.id))
+      .map((o) => ({ ...o }));
+  }
+
+  public async listIds(limit: number): Promise<string[]> {
+    if (limit <= 0) return [];
+    return Array.from(this.organizations.keys()).slice(0, limit);
+  }
+
   public async update(
     id: string,
     input: UpdateOrganizationInput

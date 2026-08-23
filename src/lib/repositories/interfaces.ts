@@ -30,7 +30,30 @@ import type {
 export interface IOrganizationRepository {
   create(org: Organization): Promise<Organization>;
   findById(id: string): Promise<Organization | null>;
+  /**
+   * Every school there is. Two callers legitimately want that — the
+   * administrator's overview and the platform's own bootstrap — and neither is
+   * on a manager's path. Resolving a manager's scope used to call it on every
+   * authenticated request, which is the read this pair replaced.
+   */
   findAll(): Promise<Organization[]>;
+  /**
+   * The schools among these ids that exist, in `findAll`'s order.
+   *
+   * An empty list asks the database nothing and answers with nothing, which is
+   * the honest reading of "none of no schools exists" and keeps a session with
+   * no memberships from costing a query.
+   */
+  findByIds(ids: readonly string[]): Promise<Organization[]>;
+  /**
+   * At most `limit` school ids, in `findAll`'s order.
+   *
+   * The caller that needs this needs to know whether the system holds none, one
+   * or more than one school, and which the one is — a question `limit: 2`
+   * answers without the answer growing with the platform. The order cannot
+   * change any of those three readings.
+   */
+  listIds(limit: number): Promise<string[]>;
   update(id: string, input: UpdateOrganizationInput): Promise<Organization | null>;
 }
 

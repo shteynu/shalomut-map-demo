@@ -2,6 +2,17 @@ import { Organization, UpdateOrganizationInput } from '../../types/backend';
 import { IOrganizationRepository } from '../interfaces';
 import { MinimalPrismaClient } from './prisma-client';
 
+function toDomain(row: any): Organization {
+  return {
+    id: row.id,
+    name: row.name,
+    city: row.city,
+    schoolType: row.schoolType,
+    totalStaffCount: row.totalStaffCount,
+    createdAt: new Date(row.createdAt),
+  };
+}
+
 export class PrismaOrganizationRepository implements IOrganizationRepository {
   constructor(private prisma: MinimalPrismaClient) {}
 
@@ -16,43 +27,45 @@ export class PrismaOrganizationRepository implements IOrganizationRepository {
         createdAt: org.createdAt,
       },
     });
-    return {
-      id: created.id,
-      name: created.name,
-      city: created.city,
-      schoolType: created.schoolType,
-      totalStaffCount: created.totalStaffCount,
-      createdAt: new Date(created.createdAt),
-    };
+    return toDomain(created);
   }
 
   public async findById(id: string): Promise<Organization | null> {
     const found = await this.prisma.organization.findUnique({
       where: { id },
     });
-    if (!found) return null;
-    return {
-      id: found.id,
-      name: found.name,
-      city: found.city,
-      schoolType: found.schoolType,
-      totalStaffCount: found.totalStaffCount,
-      createdAt: new Date(found.createdAt),
-    };
+    return found ? toDomain(found) : null;
   }
 
   public async findAll(): Promise<Organization[]> {
     const list = await this.prisma.organization.findMany({
       orderBy: { createdAt: 'desc' },
     });
-    return list.map((item) => ({
-      id: item.id,
-      name: item.name,
-      city: item.city,
-      schoolType: item.schoolType,
-      totalStaffCount: item.totalStaffCount,
-      createdAt: new Date(item.createdAt),
-    }));
+    return list.map(toDomain);
+  }
+
+  public async findByIds(ids: readonly string[]): Promise<Organization[]> {
+    // No ids, no query. `IN ()` is not a smaller question than `IN (x)` — it is
+    // a different one, and a session with no memberships would otherwise pay a
+    // round trip to be told what its own header already said.
+    if (ids.length === 0) return [];
+
+    const list = await this.prisma.organization.findMany({
+      where: { id: { in: [...ids] } },
+      orderBy: { createdAt: 'desc' },
+    });
+    return list.map(toDomain);
+  }
+
+  public async listIds(limit: number): Promise<string[]> {
+    if (limit <= 0) return [];
+
+    const list = await this.prisma.organization.findMany({
+      select: { id: true },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
+    return list.map((item) => item.id as string);
   }
 
   public async update(
@@ -64,14 +77,7 @@ export class PrismaOrganizationRepository implements IOrganizationRepository {
         where: { id },
         data: input,
       });
-      return {
-        id: updated.id,
-        name: updated.name,
-        city: updated.city,
-        schoolType: updated.schoolType,
-        totalStaffCount: updated.totalStaffCount,
-        createdAt: new Date(updated.createdAt),
-      };
+      return toDomain(updated);
     } catch {
       return null;
     }
