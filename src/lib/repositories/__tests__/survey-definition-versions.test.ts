@@ -4,7 +4,10 @@ import {
   DEFINITION_VERSION_RETENTION,
   InMemorySurveyDefinitionVersionRepository,
 } from '../index';
-import { toVersionSummaries } from '@/lib/survey-definition-versions';
+import {
+  markCurrentVersion,
+  toVersionSummaries,
+} from '@/lib/survey-definition-versions';
 import { createCanonicalSurveyDefinition } from '@/lib/survey-definition';
 import type { SurveyDefinition } from '@/lib/types/backend';
 
@@ -106,4 +109,43 @@ test('a summary counts the questionnaire it holds, and names the current one', a
 
   assert.strictEqual(previous.isCurrent, false);
   assert.strictEqual(previous.enabledQuestionCount, previous.questionCount - 1);
+});
+
+test('the summary read answers exactly what summarising the whole list answers', async () => {
+  // The list route reads summaries and never the definitions. The two stores
+  // compute them differently — this one in JavaScript, the durable one in SQL
+  // over the `jsonb` column — so the standard both are held to is stated here,
+  // in terms of the read that was replaced rather than in restated numbers.
+  const repo = new InMemorySurveyDefinitionVersionRepository();
+  await repo.record(ROUND_ID, definition('ישן', true), new Date('2026-08-05T10:00:00Z'));
+  await repo.record(ROUND_ID, definition('נוכחי'), new Date('2026-08-05T11:00:00Z'));
+  await repo.record('round-other', definition('של בית ספר אחר'));
+
+  assert.deepStrictEqual(
+    markCurrentVersion(await repo.findSummariesByRoundId(ROUND_ID)),
+    toVersionSummaries(await repo.findByRoundId(ROUND_ID)),
+  );
+});
+
+test('a summary carries no questionnaire', async () => {
+  // The point of the method. Without this the store could satisfy every
+  // assertion above by reading everything and deleting a field on the way out.
+  const repo = new InMemorySurveyDefinitionVersionRepository();
+  await repo.record(ROUND_ID, definition('נוכחי'));
+
+  const [summary] = await repo.findSummariesByRoundId(ROUND_ID);
+  assert.deepStrictEqual(Object.keys(summary).sort(), [
+    'enabledQuestionCount',
+    'id',
+    'questionCount',
+    'savedAt',
+    'title',
+  ]);
+});
+
+test('the summary of a round with no history is empty, not the other round\'s', async () => {
+  const repo = new InMemorySurveyDefinitionVersionRepository();
+  await repo.record('round-other', definition('של בית ספר אחר'));
+
+  assert.deepStrictEqual(await repo.findSummariesByRoundId(ROUND_ID), []);
 });

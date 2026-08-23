@@ -20,6 +20,28 @@ export interface MinimalPrismaClient {
     work: (tx: MinimalPrismaClient) => Promise<T>,
     options?: { timeout?: number; maxWait?: number },
   ) => Promise<T>;
+  /**
+   * A parameterized query, and the second member here that is not a table.
+   *
+   * One repository needs it: the questionnaire history summarises a `jsonb`
+   * column, and the title and the two counts it shows live *inside* that
+   * column. No `select` can reach them, so the alternative to computing them in
+   * SQL is shipping every version's whole definition out of the database to
+   * count its questions in JavaScript. `PrismaSurveyDefinitionVersionRepository`
+   * is the only caller and says so at the call site.
+   *
+   * Only the tagged-template form is exposed. `$queryRawUnsafe` takes a string,
+   * and a repository that can build SQL from a string is a repository somebody
+   * will eventually build it from a request with. The dbtests reach past this
+   * interface for `EXPLAIN`, which is theirs to do.
+   *
+   * Optional for the same reason `$transaction` is: a test double is a handful
+   * of model objects and has no query engine to offer.
+   */
+  $queryRaw?: <T = unknown>(
+    query: TemplateStringsArray,
+    ...values: unknown[]
+  ) => Promise<T>;
   organization: {
     create: (args: any) => Promise<any>;
     findUnique: (args: any) => Promise<any>;

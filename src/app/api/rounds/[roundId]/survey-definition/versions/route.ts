@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { resolveCoreRepositories } from "@/lib/composition-root";
 import { authorizeManagerRound } from "@/lib/server/manager-scope";
-import { toVersionSummaries } from "@/lib/survey-definition-versions";
+import { markCurrentVersion } from "@/lib/survey-definition-versions";
 
 interface RouteParams {
   params: Promise<{ roundId: string }>;
@@ -14,6 +14,10 @@ interface RouteParams {
  * recognise which save to go back to, and shipping twenty full questionnaires
  * to render a list of dates would be paying for nineteen nobody opens. The one
  * they choose is fetched by id.
+ *
+ * That used to be true of the response and not of the query: the definitions
+ * were read out of the database in full and then discarded here. The store now
+ * summarises them where they are.
  */
 export async function GET(request: Request, { params }: RouteParams) {
   try {
@@ -30,8 +34,9 @@ export async function GET(request: Request, { params }: RouteParams) {
     );
     if (!authorization.ok) return authorization.response;
 
-    const versions = await surveyDefinitionVersionRepo.findByRoundId(roundId);
-    return NextResponse.json({ versions: toVersionSummaries(versions) });
+    const versions =
+      await surveyDefinitionVersionRepo.findSummariesByRoundId(roundId);
+    return NextResponse.json({ versions: markCurrentVersion(versions) });
   } catch {
     return NextResponse.json(
       { error: "Failed to fetch the questionnaire history." },

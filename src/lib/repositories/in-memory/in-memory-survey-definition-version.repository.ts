@@ -1,6 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import type { SurveyDefinition } from '../../types/backend';
-import type { SurveyDefinitionVersion } from '../../types/survey-definition-version';
+import type {
+  SurveyDefinitionVersion,
+  SurveyDefinitionVersionSummaryRow,
+} from '../../types/survey-definition-version';
+import { summariseVersion } from '../../survey-definition-versions';
 import {
   DEFINITION_VERSION_RETENTION,
   ISurveyDefinitionVersionRepository,
@@ -52,6 +56,18 @@ export class InMemorySurveyDefinitionVersionRepository
 
   public async findByRoundId(roundId: string): Promise<SurveyDefinitionVersion[]> {
     return this.byRound(roundId).map(clone);
+  }
+
+  /**
+   * The same list, summarised. There is nothing to save here — the definitions
+   * are already in this process — so it is `summariseVersion` over the rows,
+   * which is exactly the answer the durable store computes in SQL and the
+   * standard its result is checked against.
+   */
+  public async findSummariesByRoundId(
+    roundId: string,
+  ): Promise<SurveyDefinitionVersionSummaryRow[]> {
+    return this.byRound(roundId).map(summariseVersion);
   }
 
   public async findById(

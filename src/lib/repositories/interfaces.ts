@@ -19,7 +19,10 @@ import type {
   FinishAiAnalysisRunResult,
 } from '../types/ai-analysis-run';
 import type { CanonicalRoundAnalytics } from '../types/canonical-analytics';
-import type { SurveyDefinitionVersion } from '../types/survey-definition-version';
+import type {
+  SurveyDefinitionVersion,
+  SurveyDefinitionVersionSummaryRow,
+} from '../types/survey-definition-version';
 import type {
   CreateRoundGoalInput,
   CreateRoundGoalResult,
@@ -287,8 +290,33 @@ export interface ISurveyDefinitionVersionRepository {
     definition: SurveyDefinition,
     savedAt?: Date,
   ): Promise<SurveyDefinitionVersion>;
-  /** Newest first. The first entry is the questionnaire as it stands now. */
+  /**
+   * Newest first. The first entry is the questionnaire as it stands now.
+   *
+   * Every row carries its whole definition, so this is the expensive read and
+   * it has no caller on the list path. Use `findSummariesByRoundId` to render
+   * the history; use this only when the definitions themselves are wanted.
+   */
   findByRoundId(roundId: string): Promise<SurveyDefinitionVersion[]>;
+  /**
+   * The same list, in the same order, as the three values a history line shows.
+   *
+   * The list exists so a manager can recognise which save to go back to, and
+   * the one they choose is then fetched by id. Reading it through
+   * `findByRoundId` meant shipping twenty full questionnaires out of the store
+   * to render twenty dates, all but one of which nobody opens. Measured on
+   * twenty versions: 132 KB of result for today's 24-question instrument and
+   * 640 KB for the 126-question one, against 2.4 KB either way for this. The
+   * 2026-08-21 audit filed it.
+   *
+   * The title and the two counts live *inside* the definition, so a durable
+   * store cannot answer this by selecting fewer columns; it has to compute them
+   * where the JSON already is. Whatever it does, the answer must equal
+   * `summariseVersion` applied to the same row.
+   */
+  findSummariesByRoundId(
+    roundId: string,
+  ): Promise<SurveyDefinitionVersionSummaryRow[]>;
   findById(
     roundId: string,
     versionId: string,

@@ -33,3 +33,17 @@ export interface SurveyDefinitionVersionSummary {
   /** True for the version the round is currently on, which is the newest one. */
   isCurrent: boolean;
 }
+
+/**
+ * One history row as a store can produce it, before the list knows which entry
+ * is current.
+ *
+ * `isCurrent` is a fact about position in an ordered list, not about a row, and
+ * a store that computed it would be answering a question about the list it was
+ * asked to produce. `markCurrentVersion` adds it, and the argument for why the
+ * newest row is the one in force lives there with it.
+ */
+export type SurveyDefinitionVersionSummaryRow = Omit<
+  SurveyDefinitionVersionSummary,
+  "isCurrent"
+>;
