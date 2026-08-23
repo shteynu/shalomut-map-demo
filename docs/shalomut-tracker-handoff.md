@@ -255,12 +255,25 @@ the product's behaviour changes — the fourteen scope tests are unedited — so
 there is nothing to walk on the deployment and nothing for an operator to do.
 No endpoint, no secret, no migration.
 
-**Three branches are stacked and none is pushed.** In order:
-`fix/a-superseded-round-still-gets-its-analysis`, then
-`fix/the-counters-reach-a-place-that-can-warn-someone`, then
-`perf/the-scope-asks-for-the-schools-it-needs`, each based on the one before it.
-Landing them out of order will not apply. `git push` is the owner's, and the
-middle one carries the migration that Vercel's build applies on arrival.
+**Two of those three branches are on `main` and deployed; the third is not.**
+`origin/main` is `524eac6` on 2026-08-23 — the tip of
+`fix/the-counters-reach-a-place-that-can-warn-someone`, which sits on
+`fix/a-superseded-round-still-gets-its-analysis` — and
+`GET /api/health/` answers with that same commit. Only
+`perf/the-scope-asks-for-the-schools-it-needs` is still unpushed, and it
+fast-forwards from `origin/main`.
+
+The migration arrived with them: `GET /api/health/observability/` answers
+`{"status":"ok","alerting":[]}` anonymously on the deployment, which it could
+not do if `operational_events` were missing — the tally would throw and the
+verdict would be `unknown` with a `503`. That is the first proof the counters'
+path works there. **The monitor is still not pointed at it**, so the alert
+remains readable and unread, exactly like the queue's.
+
+An earlier version of this paragraph said all three branches were unpushed. It
+was written from the task files and never checked against the remote, and it was
+wrong the moment it was written. Branches reach `origin` without this worktree
+hearing about it: ask `git fetch` before writing down what is unpushed.
 
 **The AI service will analyse three rounds at once, not one (2026-08-23).**
 `AI_JOB_POOL_SIZE` moves from `1` to `3` in `render.yaml`, so a burst of ten
@@ -300,8 +313,8 @@ screen was walked on the deployment** — the behaviour was proved locally, in
 Playwright, because the Browser pane reports its own tab as hidden and the watch
 correctly pauses there.
 
-**Next concrete step:** push the three stacked branches above, oldest first,
-then take the fourth finding the owner listed — the round reset's six sequential
+**Next concrete step:** push `perf/the-scope-asks-for-the-schools-it-needs`,
+the one branch above that is not on `main`, then take the fourth finding the owner listed — the round reset's six sequential
 writes without a transaction, which races with an in-flight submission. For
 *product* work the answer is unchanged: ask the owner for the methodologist's
 item-to-dimension mapping, because without it there is no substantial product

@@ -8,7 +8,7 @@
 - Base commit: `524eac6`
 - Current HEAD: the handoff commit at the tip of this branch, whose parent is
   `d32933d`
-- Status: implemented and verified locally; nothing pushed
+- Status: implemented and verified locally; this branch not yet on `main`
 - Last updated: 2026-08-23
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -128,8 +128,8 @@ narrowing what was *read*.
   (31 → 30 open), `PROJECT_CONTEXT.md`'s manager-gate paragraph, and the dated
   note in the live multi-tenancy plan. The handoff gained a paragraph for this
   finding and for the superseded-round one, which had none, plus the fact that
-  matters most to whoever pushes: three branches are stacked and will not apply
-  out of order.
+  matters most to whoever pushes — which branches are actually on `main`, read
+  from the remote rather than from these task files.
 
 ## In progress
 
@@ -137,7 +137,9 @@ Nothing.
 
 ## Remaining
 
-Nothing on this branch. The three stacked branches are all unpushed.
+Nothing on this branch. It is the only one of the three that is not on `main`;
+`origin/main` is `524eac6`, the tip of the branch this one is based on, and the
+deployment answers with that commit.
 
 ## Changed files
 
@@ -201,7 +203,13 @@ answer in `findAll`'s order in both adapters.
 
 ## Failed approaches
 
-None on this branch.
+- **Writing down what was unpushed without asking the remote.** The handoff and
+  this file both claimed three branches were stacked and none had landed. Two
+  were already on `main` and deployed, and the owner found out when
+  `git push` refused the first one as non-fast-forward — the branch tip was
+  *behind* `origin/main`, not ahead of it. The task files are a record of this
+  worktree, not of `origin`; a claim about `origin` needs `git fetch` behind
+  it.
 
 ## Known risks
 
@@ -212,9 +220,8 @@ None on this branch.
 
 ## Approval gates
 
-- `git push` is the owner's. Three branches are stacked and unpushed:
-  `fix/a-superseded-round-still-gets-its-analysis`,
-  `fix/the-counters-reach-a-place-that-can-warn-someone`, and this one.
+- `git push` is the owner's. This branch fast-forwards from `origin/main`; the
+  two it is stacked on are already there.
 
 ## Questions requiring an owner decision
 
@@ -222,7 +229,7 @@ None.
 
 ## Next concrete step
 
-Push the three stacked branches to `main`, oldest first, or say which of the
-remaining audit findings to take next — the owner's list had a fourth: the round
-reset's six sequential writes without a transaction, which races with an
-in-flight submission.
+Push this branch to `main` (it fast-forwards), or say which of the remaining
+audit findings to take next — the owner's list had a fourth: the round reset's
+six sequential writes without a transaction, which races with an in-flight
+submission.
