@@ -2069,6 +2069,61 @@ it means a parser, not a wider regular expression.
 Eight `error.message` references remain under `src/app/api`. All are inside
 `console.*` calls, which is where the audit asked for them to be.
 
+### ADR-049: What grows without a ceiling is counted, paged, or refused
+
+2026-08-23. Three of the 2026-08-21 audit's rows are the same shape: a read
+whose cost is the age of the platform, and a write with nothing to stop it
+inflating one.
+
+**Closing a round counted its own history instead of loading it.**
+`enqueueAiAnalyticsOnClosure` needs one number — how many closings came before
+this one, because the request key is derived from it so that two requests racing
+on one close collapse on the unique index instead of queueing twice. It obtained
+that number by loading every run the round had ever had and reading a length off
+the array, and every succeeded run carries a whole Stone Map in its `result`
+column. `countByTrigger` asks the database for the integer. `findByRoundId`
+survives for the test suites and says so in its own doc comment; no product path
+calls it.
+
+**The audit log is read in pages, before a screen exists to read it.**
+`audit_events` takes a row from every mutation of every school and nothing
+prunes it, and its only reader was a `findMany` with no `take`, no cursor and no
+time bound. Nothing renders it today, which is the argument for bounding it now
+rather than later: the alternative is a screen written against an unbounded
+call, shipped, and then discovered by whoever opens the log of the busiest
+school. The cursor is the last event of the page and carries an id as well as a
+timestamp — `timestamp < last` alone steps over whatever shares that timestamp,
+which is precisely the busiest instant in the log. `[organizationId, timestamp]`
+already existed, so a page costs the page and not the history behind it, and no
+migration was needed.
+
+The clamp lives in `auditLogPageSize` rather than in each repository, because
+two clamps can disagree and the one nobody runs tests against is the one behind
+the deployed screen. The in-memory store also stopped returning insertion order:
+it had been disagreeing with PostgreSQL about what "the log" is.
+
+**A questionnaire has a ceiling on the way in, and only on the way in.**
+`parseSurveyDefinition` is the read gate as much as the write gate — the round
+repository parses every stored definition back through it, and so do the public
+answer page, submission, analytics and result verification. A limit applied
+there would take a school's questionnaire off the wire over a row that is
+already stored, which is worse than the inflation it prevents. So the limits are
+opt-in (`enforceWriteLimits`), and the single caller that opts in is the builder
+save — the one place a definition arrives from a browser.
+
+Two limits, not one: `MAXIMUM_SURVEY_QUESTIONS` (300) and
+`MAXIMUM_SURVEY_DEFINITION_BYTES` (512 KB). A count alone is passed by ten
+questions carrying a megabyte of text each, which lands in every round row,
+every respondent payload and every paid prompt just the same. The size is
+measured on the value this parser rebuilds from its whitelist, not on the
+request body, so it means the column. Both are far above anything real: the
+default research instrument is 126 items and about 32 KB.
+
+**Retention itself is not decided here.** Nulling the `result` of superseded
+runs, and whether audit rows are ever deleted, are questions about what the
+product keeps rather than about how it reads — and an audit trail's value is
+that it is still there later. The audit's rows stay open on that half.
+
 ## Environments
 
 The project supports exactly two environments:

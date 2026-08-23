@@ -8,6 +8,17 @@ inside it.
 
 ## Current state
 
+- **Nothing that only grows is read whole any more.** Since 2026-08-23 closing a
+  round asks the database how many closings came before it instead of loading
+  every analysis run the round ever had; the audit log is read in pages with a
+  cursor rather than in full; and a questionnaire saved from the builder is
+  refused above 300 questions or 512 KB. The last of those applies on the way in
+  only — the same parser is the read gate for the public answer page, so a limit
+  there would take a school's questionnaire off the wire over a row that is
+  already stored. `PROJECT_CONTEXT.md` ADR-049 records all three, and what was
+  deliberately left undecided: whether the product ever deletes an audit row or
+  an old analysis result.
+
 - **An error a manager sees says what happened, not where.** Since 2026-08-23
   no API handler puts the text of a caught error in its response — the
   2026-08-21 audit had counted twenty-one that did, sending database errors and
