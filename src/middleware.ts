@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { describeSessionSecretSource } from "@/lib/auth/jwt-session-provider";
-import { NEW_SCHOOL_PARAM, SETUP_SCHOOL_PARAM } from "@/lib/navigation";
+import {
+  isAdministratorOnlyScreen,
+  NEW_SCHOOL_PARAM,
+  routes,
+  SETUP_SCHOOL_PARAM,
+} from "@/lib/navigation";
 import {
   isMachineAuthenticatedRoute,
   isPublicOperationalRoute,
@@ -12,7 +17,7 @@ import {
   MANAGER_SCHOOL_COOKIE,
   createScopedManagerHeaders,
 } from "@/lib/server/manager-scope";
-import type { ManagerSession } from "@/lib/auth/types";
+import type { ManagerRole, ManagerSession } from "@/lib/auth/types";
 import {
   SESSION_COOKIE_NAME,
   describeSessionProviderFailure,
@@ -164,10 +169,50 @@ export async function middleware(request: NextRequest) {
     const defaultSchool =
       sessionSchool && mayOpen(sessionSchool) ? sessionSchool : schools[0];
 
+    /*
+     * What the session may do in the school it is about to read, decided here
+     * for the same reason the school itself is: this is the only place holding
+     * the session, and the role that matters is the one on the membership for
+     * *that* school. The token's own `role` claim names the school the session
+     * last landed on, which is a different question the moment somebody is an
+     * administrator of one school and a user of another.
+     *
+     * A platform administrator is outside the membership system and may act in
+     * any school they open. A session holding no active membership for the
+     * school it reached is entitled to nothing, so it reads and writes nothing
+     * — `manager` is the safe word for that, not `admin`.
+     */
+    const readSchool = honouredSchool?.id ?? defaultSchool;
+    const role: ManagerRole = isAdministrator
+      ? "admin"
+      : (managerSession.memberships.find(
+          (membership) =>
+            membership.organizationId === readSchool &&
+            membership.status === "active",
+        )?.role ?? "manager");
+
+    /*
+     * The three screens whose whole purpose is a write — opening a round,
+     * writing its questionnaire, recording the goals chosen from it. A school
+     * user has nothing to do on any of them (owner decision, 2026-08-23), so
+     * the URL is turned away here rather than rendered into a page of buttons
+     * that all refuse.
+     *
+     * Home, and not `403`: the person is signed in and entitled to their own
+     * school, they simply asked for a screen that is not theirs. The same
+     * answer the administrator area gives to everybody else, for the same
+     * reason. The API routes behind these screens refuse separately and are the
+     * boundary; this is the door.
+     */
+    if (role === "manager" && isAdministratorOnlyScreen(pathname)) {
+      return NextResponse.redirect(new URL(routes.home, request.url));
+    }
+
     const headers = createScopedManagerHeaders(
       request.headers,
-      honouredSchool?.id ?? defaultSchool,
+      readSchool,
       isAdministrator ? EVERY_SCHOOL : schools,
+      role,
     );
     const response = NextResponse.next({ request: { headers } });
 

@@ -86,6 +86,7 @@ export async function POST(request: Request, { params }: RouteParams) {
       orgRepo,
       roundRepo,
       auditLogRepo,
+      "write:trigger-ai",
     );
     if (!authorization.ok) return authorization.response;
 

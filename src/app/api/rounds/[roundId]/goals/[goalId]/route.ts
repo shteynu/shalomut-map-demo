@@ -32,6 +32,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       orgRepo,
       roundRepo,
       auditLogRepo,
+      "write:goals",
     );
     if (!authorization.ok) return authorization.response;
 
@@ -75,6 +76,7 @@ export async function DELETE(request: Request, { params }: RouteParams) {
       orgRepo,
       roundRepo,
       auditLogRepo,
+      "write:goals",
     );
     if (!authorization.ok) return authorization.response;
 

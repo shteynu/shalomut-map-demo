@@ -6,10 +6,12 @@ import { JwtSessionProvider } from "@/lib/auth/jwt-session-provider";
 import {
   MANAGER_MEMBER_SCHOOLS_HEADER,
   MANAGER_ORGANIZATION_HEADER,
+  MANAGER_ROLE_HEADER,
   MANAGER_SCHOOL_COOKIE,
 } from "../manager-scope";
 import type {
   Manager,
+  ManagerRole,
   MembershipStatus,
   OrganizationMembership,
 } from "@/lib/auth/types";
@@ -29,12 +31,13 @@ const manager: Manager = {
 function membership(
   organizationId: string,
   status: MembershipStatus = "active",
+  role: ManagerRole = "admin",
 ): OrganizationMembership {
   return {
     id: `mbs-${organizationId}`,
     managerId: manager.id,
     organizationId,
-    role: "manager",
+    role,
     status,
     createdAt: new Date("2026-07-01T00:00:00.000Z"),
   };
@@ -44,6 +47,11 @@ function membership(
  * A manager of two schools, which is the only session that can exercise the
  * switcher at all. The deployment has one membership per session today; the
  * boundary is about what happens when it does not.
+ *
+ * `admin` in both, because since 2026-08-23 the switcher lives on a screen a
+ * school user cannot open — these tests are about which school a request is
+ * scoped to, and a session that gets redirected away is scoped to nothing at
+ * all. The role gate has its own tests below.
  */
 async function sessionCookie(
   memberships: OrganizationMembership[] = [
@@ -323,4 +331,82 @@ test("a platform administrator reaches the area, and reaches it unscoped", async
 
   assert.strictEqual(response.status, 200);
   assert.strictEqual(injectedMemberSchools(response), "*");
+});
+
+/**
+ * The screens a school user has no business opening (owner decision,
+ * 2026-08-23: every action on a round is an administrator's).
+ *
+ * Turned away at the same place the administrator area is, and with the same
+ * answer: home. The person is signed in and entitled to their own school; they
+ * asked for a screen that is not theirs, not for somebody else's data.
+ */
+async function schoolUserCookie() {
+  const provider = new JwtSessionProvider();
+  const { token } = await provider.createSession(manager, SESSION_SCHOOL, [
+    membership(SESSION_SCHOOL, "active", "manager"),
+  ]);
+
+  return `shalomut_session=${token}`;
+}
+
+test("the three write screens are not there for a school user", async () => {
+  const cookie = await schoolUserCookie();
+
+  for (const path of ["/setup", "/survey", "/goals"]) {
+    const response = await middleware(
+      new NextRequest(`http://localhost:3000${path}`, { headers: { cookie } }),
+    );
+
+    assert.strictEqual(response.status, 307, path);
+    assert.strictEqual(
+      new URL(response.headers.get("location")!).pathname,
+      "/",
+      path,
+    );
+  }
+});
+
+test("the screens a school user reads are still theirs", async () => {
+  const cookie = await schoolUserCookie();
+
+  for (const path of ["/", "/dashboard", "/breakdown", "/round", "/help"]) {
+    const response = await middleware(
+      new NextRequest(`http://localhost:3000${path}`, { headers: { cookie } }),
+    );
+
+    assert.strictEqual(response.status, 200, path);
+    assert.strictEqual(injectedSchool(response), SESSION_SCHOOL, path);
+  }
+});
+
+test("an administrator of the school still opens all three", async () => {
+  const cookie = await sessionCookie();
+
+  for (const path of ["/setup", "/survey", "/goals"]) {
+    const response = await middleware(
+      new NextRequest(`http://localhost:3000${path}`, { headers: { cookie } }),
+    );
+
+    assert.strictEqual(response.status, 200, path);
+  }
+});
+
+test("the role travels with the request, and cannot be sent by the caller", async () => {
+  const response = await middleware(
+    new NextRequest("http://localhost:3000/dashboard", {
+      headers: {
+        cookie: await schoolUserCookie(),
+        // The forgery the header stripping exists for: a school user claiming
+        // to be an administrator of their own school.
+        [MANAGER_ROLE_HEADER]: "admin",
+      },
+    }),
+  );
+
+  assert.strictEqual(
+    response.headers.get(`x-middleware-request-${MANAGER_ROLE_HEADER}`) ??
+      response.headers.get(MANAGER_ROLE_HEADER),
+    "manager",
+  );
 });

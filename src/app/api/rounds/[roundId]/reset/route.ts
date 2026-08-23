@@ -28,6 +28,7 @@ export async function POST(
       orgRepo,
       roundRepo,
       auditLogRepo,
+      "write:reset-round",
     );
     if (!authorization.ok) return authorization.response;
 

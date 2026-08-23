@@ -75,6 +75,7 @@ export async function GET(request: Request, { params }: RouteParams) {
       repositories.orgRepo,
       repositories.roundRepo,
       repositories.auditLogRepo,
+      "read:analytics",
     );
     if (!authorization.ok) return authorization.response;
 

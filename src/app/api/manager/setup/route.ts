@@ -8,6 +8,7 @@ import {
 } from "@/lib/services";
 import { getDurableWriteGuardResponse } from "@/lib/server/durable-write-guard";
 import { recordRoundAuditEvent } from "@/lib/server/manager-audit";
+import { requireManagerPermission } from "@/lib/server/manager-permission";
 import { resolveManagerSessionFromHeaders } from "@/lib/server/session-auth";
 import { MINIMUM_PRIVACY_THRESHOLD } from "@/lib/survey-definition";
 import {
@@ -156,6 +157,12 @@ export async function PUT(request: Request) {
     const unavailable = getDurableWriteGuardResponse();
     if (unavailable) return unavailable;
 
+    // Before the payload is even read: opening a round is an administrator's
+    // action whatever the body says, and a school user's request should not be
+    // answered with "your numbers disagree" for a round they may not open.
+    const permission = requireManagerPermission(request, "write:setup");
+    if (!permission.ok) return permission.response;
+
     const body = await request.json();
     const input = parsePayload(body);
     if (!input) {
@@ -246,6 +253,7 @@ export async function PUT(request: Request) {
         orgRepo,
         roundRepo,
         auditLogRepo,
+        "write:setup",
       );
       if (!authorization.ok) return authorization.response;
     }

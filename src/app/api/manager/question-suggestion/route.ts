@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { recordQuestionSuggestionOutcome } from '@/lib/server/ai-operational-metrics';
+import { requireManagerPermission } from '@/lib/server/manager-permission';
 import { requestQuestionSuggestion } from '@/lib/server/request-question-suggestion';
 import { surveyInstrument } from '@/lib/shalomut-source';
 
@@ -10,6 +11,11 @@ import { surveyInstrument } from '@/lib/shalomut-source';
  * `401` before this handler runs. Nothing here reads or writes a round — the
  * request is about a draft in the browser, so it needs no round id, no
  * repository and no durable-write guard.
+ *
+ * Administrator-only all the same. It writes nothing, and it spends a paid
+ * provider call on behalf of somebody who could not save the questionnaire it
+ * drafts for — which makes it a cost with no possible outcome rather than a
+ * harmless read.
  *
  * The response says where the text came from. A suggestion may only be labelled
  * `ai` when the model actually wrote it; when the service cannot answer, this
@@ -35,6 +41,9 @@ function parseTexts(value: unknown): string[] {
 }
 
 export async function POST(request: Request) {
+  const permission = requireManagerPermission(request, 'write:question-suggestion');
+  if (!permission.ok) return permission.response;
+
   const payload: unknown = await request.json().catch(() => null);
 
   if (!payload || typeof payload !== 'object') {

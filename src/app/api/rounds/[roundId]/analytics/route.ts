@@ -17,6 +17,7 @@ export async function GET(
       orgRepo,
       roundRepo,
       auditLogRepo,
+      "read:analytics",
     );
     if (!authorization.ok) return authorization.response;
 

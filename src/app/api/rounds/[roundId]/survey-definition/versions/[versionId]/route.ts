@@ -27,6 +27,7 @@ export async function GET(request: Request, { params }: RouteParams) {
       orgRepo,
       roundRepo,
       auditLogRepo,
+      "read:survey-definition",
     );
     if (!authorization.ok) return authorization.response;
 

@@ -6,6 +6,7 @@ import {
   RoundService,
 } from '@/lib/services';
 import { getDurableWriteGuardResponse } from '@/lib/server/durable-write-guard';
+import { requireManagerPermission } from '@/lib/server/manager-permission';
 import { recordRoundAuditEvent } from '@/lib/server/manager-audit';
 import { enqueueAiAnalyticsForSupersededRounds } from '@/lib/server/trigger-ai-analytics';
 import {
@@ -29,6 +30,7 @@ export async function GET(request?: Request) {
         orgRepo,
         roundRepo,
         auditLogRepo,
+        "read:round-status",
       );
       if (!authorization.ok) return authorization.response;
 
@@ -63,6 +65,12 @@ export async function POST(request: Request) {
   try {
     const unavailable = getDurableWriteGuardResponse();
     if (unavailable) return unavailable;
+
+    // No round to authorize against yet, so the role is asked directly. The
+    // school is still the middleware's to decide and is checked below, the way
+    // it always was.
+    const permission = requireManagerPermission(request, 'write:create-round');
+    if (!permission.ok) return permission.response;
 
     const body = (await request.json()) as CreateRoundInput;
     if (!body.organizationId || !body.title) {

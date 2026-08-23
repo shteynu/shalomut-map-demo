@@ -36,6 +36,7 @@ export async function PATCH(
       orgRepo,
       roundRepo,
       auditLogRepo,
+      "write:update-round-status",
     );
     if (!authorization.ok) return authorization.response;
 

@@ -23,6 +23,7 @@ export async function GET(request: Request, { params }: RouteParams) {
       orgRepo,
       roundRepo,
       auditLogRepo,
+      "read:analytics",
     );
     if (!authorization.ok) return authorization.response;
 
@@ -50,6 +51,7 @@ export async function POST(request: Request, { params }: RouteParams) {
       orgRepo,
       roundRepo,
       auditLogRepo,
+      "write:goals",
     );
     if (!authorization.ok) return authorization.response;
 

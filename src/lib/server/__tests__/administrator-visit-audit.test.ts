@@ -210,6 +210,7 @@ test("a round route records the administrator's visit before it answers", async 
     new InMemoryOrganizationRepository([DEMO_ORGANIZATION]),
     new InMemoryRoundRepository([DEMO_ROUND]),
     auditRepo,
+    "read:analytics",
   );
 
   assert.strictEqual(authorization.ok, true);
@@ -227,6 +228,7 @@ test("a round route refuses the read when the visit cannot be recorded", async (
     new InMemoryOrganizationRepository([DEMO_ORGANIZATION]),
     new InMemoryRoundRepository([DEMO_ROUND]),
     brokenAuditRepo,
+    "read:analytics",
   );
 
   assert.strictEqual(authorization.ok, false);
@@ -242,6 +244,7 @@ test("a school user's own round is answered even when the audit store is broken"
     new InMemoryOrganizationRepository([DEMO_ORGANIZATION]),
     new InMemoryRoundRepository([DEMO_ROUND]),
     brokenAuditRepo,
+    "read:analytics",
   );
 
   assert.strictEqual(authorization.ok, true);
