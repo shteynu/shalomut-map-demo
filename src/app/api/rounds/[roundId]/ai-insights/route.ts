@@ -10,6 +10,7 @@ import { getDurableWriteGuardResponse } from '@/lib/server/durable-write-guard';
 import { hasConfiguredSharedSecret } from '@/lib/server/shared-secret';
 import { authorizeManagerRound } from '@/lib/server/manager-scope';
 import type { AiAnalysisRun } from '@/lib/types/ai-analysis-run';
+import { reportRouteFailure } from '@/lib/server/request-error-report';
 
 interface RouteParams {
   params: Promise<{
@@ -104,9 +105,10 @@ export async function GET(request: Request, { params }: RouteParams) {
       },
       { status: 404 },
     );
-  } catch (error: any) {
+  } catch (error) {
+    reportRouteFailure(error, request);
     return NextResponse.json(
-      { error: `Failed to fetch AI insights: ${error.message}` },
+      { error: 'Failed to fetch AI insights' },
       { status: 500 }
     );
   }
@@ -207,9 +209,10 @@ export async function POST(request: Request, { params }: RouteParams) {
           duplicate: result.duplicate,
         });
     }
-  } catch (error: any) {
+  } catch (error) {
+    reportRouteFailure(error, request);
     return NextResponse.json(
-      { error: `Failed to save AI insights: ${error.message}` },
+      { error: 'Failed to save AI insights' },
       { status: 500 }
     );
   }

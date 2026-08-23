@@ -4,6 +4,7 @@ import { encodeAnalyticsInput } from '@/lib/analytics-encoder';
 import { resolveCoreRepositories } from '@/lib/composition-root';
 import { validateRoundAnalyticsPayload } from '@/lib/round-analytics-payload';
 import { hasConfiguredSharedSecret } from '@/lib/server/shared-secret';
+import { reportRouteFailure } from '@/lib/server/request-error-report';
 
 // The handler authenticates every call by reading the Authorization header, so
 // it must stay dynamic. Under `force-static` — left over from the static export
@@ -160,11 +161,15 @@ export async function POST(request: Request) {
       id,
       error: { code: -32601, message: `Method not found: ${method}` },
     }, { status: 404 });
-  } catch (error: any) {
+  } catch (error) {
+    // The audit named this one as the worst of them: the caller here holds the
+    // shared secret rather than a manager session, so the message went to
+    // whatever is on the other end of that credential.
+    reportRouteFailure(error, request);
     return NextResponse.json({
       jsonrpc: '2.0',
       id: null,
-      error: { code: -32603, message: `Internal error: ${error.message}` },
+      error: { code: -32603, message: 'Internal error' },
     }, { status: 500 });
   }
 }

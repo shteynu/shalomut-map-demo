@@ -4,6 +4,7 @@ import { ManagerAuditService } from "@/lib/auth/manager-audit-service";
 import { runInTransaction } from "@/lib/composition-root";
 import { requirePlatformAdministrator } from "@/lib/server/admin-area";
 import { getDurableWriteGuardResponse } from "@/lib/server/durable-write-guard";
+import { reportRouteFailure } from "@/lib/server/request-error-report";
 
 /**
  * Takes a school's person away, or gives them back.
@@ -90,11 +91,10 @@ export async function PATCH(
     // The message is a constant. What went wrong here is a database error or a
     // constraint name, and the caller of this endpoint is a browser: it can act
     // on "this did not happen" and cannot act on the rest. The detail goes to
-    // the log, where an administrator can reach it and a stranger cannot.
-    console.error(
-      "Changing a membership failed:",
-      error instanceof Error ? error.message : "unknown error",
-    );
+    // the error report, where an administrator can reach it and a stranger
+    // cannot — `onRequestError` never sees this one, because the handler caught
+    // it itself.
+    reportRouteFailure(error, request);
     return NextResponse.json(
       { error: "Failed to change the membership." },
       { status: 500 },

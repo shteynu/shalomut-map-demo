@@ -128,3 +128,35 @@ export function reportRequestError(
   }
   return record;
 }
+
+/**
+ * A failure a route handler caught itself.
+ *
+ * `onRequestError` only fires for what escapes a handler, so every one of these
+ * `catch` blocks was invisible to the product's error tracking: the sole trace
+ * was whatever the handler chose to put in the response body, which for a while
+ * was the raw `error.message` — a database error, a Prisma constraint name or a
+ * configuration string, crossing the API boundary to a browser (2026-08-21
+ * audit). Taking that out of the body would have left nothing at all, so it
+ * goes here instead, where the digest a manager reads and the caught failures
+ * end up in the same place.
+ *
+ * `path` is parsed rather than taken, because `Request.url` is the only thing a
+ * handler holds and a report that throws while describing a failure is worse
+ * than one field missing.
+ */
+export function reportRouteFailure(error: unknown, request?: Request): void {
+  let path: string | undefined;
+  try {
+    if (request) path = new URL(request.url).pathname;
+  } catch {
+    path = undefined;
+  }
+
+  reportRequestError(error, {
+    path,
+    method: request?.method,
+    routerKind: 'App Router',
+    routeType: 'route',
+  });
+}

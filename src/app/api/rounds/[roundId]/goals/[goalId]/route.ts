@@ -7,6 +7,7 @@ import {
   toRoundGoalResponse,
 } from "@/lib/server/round-goals";
 import { RoundGoalService } from "@/lib/services/round-goal.service";
+import { reportRouteFailure } from '@/lib/server/request-error-report';
 
 interface RouteParams {
   params: Promise<{ roundId: string; goalId: string }>;
@@ -48,9 +49,10 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     if (!updated) return goalNotFound(roundId, goalId);
 
     return NextResponse.json({ goal: toRoundGoalResponse(updated) });
-  } catch (error: any) {
+  } catch (error) {
+    reportRouteFailure(error, request);
     return NextResponse.json(
-      { error: `Failed to update round goal: ${error.message}` },
+      { error: 'Failed to update round goal' },
       { status: 500 },
     );
   }
@@ -88,9 +90,10 @@ export async function DELETE(request: Request, { params }: RouteParams) {
     if (!removed) return goalNotFound(roundId, goalId);
 
     return NextResponse.json({ deleted: true, roundId, goalId });
-  } catch (error: any) {
+  } catch (error) {
+    reportRouteFailure(error, request);
     return NextResponse.json(
-      { error: `Failed to delete round goal: ${error.message}` },
+      { error: 'Failed to delete round goal' },
       { status: 500 },
     );
   }

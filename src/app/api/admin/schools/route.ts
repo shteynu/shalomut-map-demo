@@ -4,6 +4,7 @@ import { runInTransaction } from "@/lib/composition-root";
 import { requirePlatformAdministrator } from "@/lib/server/admin-area";
 import { getDurableWriteGuardResponse } from "@/lib/server/durable-write-guard";
 import type { Organization } from "@/lib/types/backend";
+import { reportRouteFailure } from "@/lib/server/request-error-report";
 
 interface CreateSchoolBody {
   name?: unknown;
@@ -79,10 +80,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, organization }, { status: 201 });
   } catch (error) {
-    console.error(
-      "Creating a school failed:",
-      error instanceof Error ? error.message : "unknown error",
-    );
+    reportRouteFailure(error, request);
     return NextResponse.json(
       { error: "Failed to create a school." },
       { status: 500 },

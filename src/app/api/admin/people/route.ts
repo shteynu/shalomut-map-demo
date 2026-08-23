@@ -7,6 +7,7 @@ import {
 import { runInTransaction } from "@/lib/composition-root";
 import { requirePlatformAdministrator } from "@/lib/server/admin-area";
 import { getDurableWriteGuardResponse } from "@/lib/server/durable-write-guard";
+import { reportRouteFailure } from "@/lib/server/request-error-report";
 
 /** What each refusal means to a caller, and what it is worth saying out loud. */
 const REFUSALS: Record<string, { status: number; error: string }> = {
@@ -121,10 +122,7 @@ export async function POST(request: Request) {
       { status: 201 },
     );
   } catch (error) {
-    console.error(
-      "Inviting somebody failed:",
-      error instanceof Error ? error.message : "unknown error",
-    );
+    reportRouteFailure(error, request);
     return NextResponse.json(
       { error: "Failed to invite anybody." },
       { status: 500 },

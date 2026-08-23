@@ -4,6 +4,7 @@ import { JwtSessionProvider } from "@/lib/auth/jwt-session-provider";
 import { ManagerAuthenticationService } from "@/lib/auth/manager-auth-service";
 import { setSessionCookie } from "@/lib/server/session-auth";
 import { getRateLimitResponse, RATE_LIMITS } from "@/lib/server/rate-limit";
+import { reportRouteFailure } from "@/lib/server/request-error-report";
 
 export async function POST(request: NextRequest) {
   try {
@@ -99,12 +100,13 @@ export async function POST(request: NextRequest) {
 
     return setSessionCookie(response, token, request);
   } catch (error) {
+    // `details` used to carry the raw message. On this route of all of them:
+    // it is the one endpoint an unauthenticated caller can reach, so whatever
+    // the sign-in path threw — a database string, a JWT configuration error —
+    // was being handed to whoever asked.
+    reportRouteFailure(error, request);
     return NextResponse.json(
-      {
-        ok: false,
-        error: "שגיאת שרת פנימית בעת ניסיון ההתחברות",
-        details: error instanceof Error ? error.message : String(error),
-      },
+      { ok: false, error: "שגיאת שרת פנימית בעת ניסיון ההתחברות" },
       { status: 500 },
     );
   }

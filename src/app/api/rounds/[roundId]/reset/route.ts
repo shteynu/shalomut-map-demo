@@ -9,6 +9,7 @@ import { authorizeManagerRound } from "@/lib/server/manager-scope";
 import { recordRoundAuditEvent } from "@/lib/server/manager-audit";
 import { refusedStatusWriteResponse } from "@/lib/server/round-status-write";
 import { RoundResetService, type RoundErasure } from "@/lib/services";
+import { reportRouteFailure } from "@/lib/server/request-error-report";
 
 export async function POST(
   request: Request,
@@ -149,9 +150,12 @@ export async function POST(
       message: "Round data reset successfully.",
       round: round ?? write.round,
     });
-  } catch (error: any) {
+  } catch (error) {
+    // `error?.message` — the optional-chaining spelling, which is why counting
+    // `error.message` occurrences undercounted this family.
+    reportRouteFailure(error, request);
     return NextResponse.json(
-      { error: error?.message || "Failed to reset round responses." },
+      { error: "Failed to reset round responses." },
       { status: 500 },
     );
   }

@@ -17,6 +17,7 @@ import {
   getManagerOrganizationId,
   getManagerScopeErrorResponse,
 } from "@/lib/server/manager-scope";
+import { reportRouteFailure } from "@/lib/server/request-error-report";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -293,13 +294,9 @@ export async function PUT(request: Request) {
     const scopeResponse = getManagerScopeErrorResponse(error);
     if (scopeResponse) return scopeResponse;
 
+    reportRouteFailure(error, request);
     return NextResponse.json(
-      {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Failed to save manager setup.",
-      },
+      { error: "Failed to save manager setup." },
       { status: 500 },
     );
   }

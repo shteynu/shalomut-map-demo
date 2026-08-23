@@ -7,6 +7,7 @@ import { recordAiJobQueued } from '@/lib/server/ai-operational-metrics';
 import { recordRoundAuditEvent } from '@/lib/server/manager-audit';
 import { authorizeManagerRound } from '@/lib/server/manager-scope';
 import { getPrivacyThresholdGuardResponse } from '@/lib/server/privacy-threshold-guard';
+import { reportRouteFailure } from '@/lib/server/request-error-report';
 
 interface RouteParams {
   params: Promise<{
@@ -201,9 +202,10 @@ export async function POST(request: Request, { params }: RouteParams) {
       },
       { status: 202 },
     );
-  } catch (error: any) {
+  } catch (error) {
+    reportRouteFailure(error, request);
     return NextResponse.json(
-      { error: `Failed to trigger AI analytics: ${error.message}` },
+      { error: 'Failed to trigger AI analytics' },
       { status: 500 }
     );
   }

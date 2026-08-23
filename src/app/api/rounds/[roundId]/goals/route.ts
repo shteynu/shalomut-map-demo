@@ -7,6 +7,7 @@ import {
   toRoundGoalResponse,
 } from "@/lib/server/round-goals";
 import { RoundGoalService } from "@/lib/services/round-goal.service";
+import { reportRouteFailure } from '@/lib/server/request-error-report';
 
 interface RouteParams {
   params: Promise<{ roundId: string }>;
@@ -29,9 +30,10 @@ export async function GET(request: Request, { params }: RouteParams) {
 
     const goals = await RoundGoalService.listGoals(roundId, roundGoalRepo);
     return NextResponse.json({ roundId, goals: goals.map(toRoundGoalResponse) });
-  } catch (error: any) {
+  } catch (error) {
+    reportRouteFailure(error, request);
     return NextResponse.json(
-      { error: `Failed to read round goals: ${error.message}` },
+      { error: 'Failed to read round goals' },
       { status: 500 },
     );
   }
@@ -82,9 +84,10 @@ export async function POST(request: Request, { params }: RouteParams) {
       { goal: toRoundGoalResponse(result.goal) },
       { status: 201 },
     );
-  } catch (error: any) {
+  } catch (error) {
+    reportRouteFailure(error, request);
     return NextResponse.json(
-      { error: `Failed to create round goal: ${error.message}` },
+      { error: 'Failed to create round goal' },
       { status: 500 },
     );
   }

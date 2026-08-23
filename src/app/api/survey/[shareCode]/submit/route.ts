@@ -22,9 +22,11 @@ import { responseCeiling } from '@/lib/survey/response-ceiling';
  * comes from the shared table rather than from this handler, so the route and
  * `docs/openapi.yaml` cannot drift into disagreeing about what a duplicate is.
  */
-function refuse(code: SurveySubmissionErrorCode, error: string) {
+function refuse(code: SurveySubmissionErrorCode, reason: string) {
+  // `reason` and not `error`: in a route handler that name belongs to a caught
+  // throw, and this is the product's own wording for a refusal it decided on.
   return NextResponse.json(
-    { error, code },
+    { error: reason, code },
     { status: SURVEY_SUBMISSION_ERROR_STATUS[code] },
   );
 }
@@ -152,13 +154,13 @@ export async function POST(
     );
 
     if (!result.success) {
-      const error = result.error || 'Submission failed';
+      const reason = result.error || 'Submission failed';
 
       // A refusal the service could not name stays a plain 400 without a code:
       // inventing one would tell the client a story the server does not know.
       return result.code
-        ? refuse(result.code, error)
-        : NextResponse.json({ error }, { status: 400 });
+        ? refuse(result.code, reason)
+        : NextResponse.json({ error: reason }, { status: 400 });
     }
 
     /*

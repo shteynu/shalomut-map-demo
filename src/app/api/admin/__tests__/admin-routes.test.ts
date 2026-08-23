@@ -13,6 +13,10 @@ import {
   resetCoreRepositories,
 } from "@/lib/composition-root";
 import { InMemoryOrganizationRepository } from "@/lib/repositories";
+import {
+  setRequestErrorSinkForTests,
+  type RequestErrorRecord,
+} from "@/lib/server/request-error-report";
 import type { Organization } from "@/lib/types/backend";
 import { POST as createSchool } from "../schools/route";
 import { POST as invite } from "../people/route";
@@ -364,16 +368,32 @@ test("an administrative write nobody could record answers that it failed", async
     ],
   ];
 
-  for (const [what, attempt] of attempts) {
-    install(true);
-    const response = await attempt();
-    assert.strictEqual(response.status, 500, what);
+  const reported: RequestErrorRecord[] = [];
+  setRequestErrorSinkForTests((record) => reported.push(record));
 
-    const { error } = await response.json();
-    // The constant, and only the constant. The thrown message names a table and
-    // a connection state, and the caller of this endpoint is a browser: it can
-    // act on "this did not happen" and cannot act on the rest.
-    assert.doesNotMatch(error, /connection terminated|audit_events/, what);
+  try {
+    for (const [what, attempt] of attempts) {
+      install(true);
+      const response = await attempt();
+      assert.strictEqual(response.status, 500, what);
+
+      const { error } = await response.json();
+      // The constant, and only the constant. The thrown message names a table
+      // and a connection state, and the caller of this endpoint is a browser:
+      // it can act on "this did not happen" and cannot act on the rest.
+      assert.doesNotMatch(error, /connection terminated|audit_events/, what);
+    }
+  } finally {
+    setRequestErrorSinkForTests(null);
+  }
+
+  // And the detail is not simply gone. Returning a constant without this would
+  // trade a leak for a silence, and `onRequestError` never sees these — the
+  // handler caught them.
+  assert.strictEqual(reported.length, attempts.length);
+  for (const record of reported) {
+    assert.match(record.message, /connection terminated/);
+    assert.match(record.path ?? "", /^\/api\/admin\//);
   }
 });
 

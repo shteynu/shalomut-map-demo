@@ -3,6 +3,7 @@ import test from 'node:test';
 import {
   describeRequestError,
   reportRequestError,
+  reportRouteFailure,
   setRequestErrorSinkForTests,
   type RequestErrorRecord,
 } from '../request-error-report';
@@ -79,4 +80,56 @@ test('the default sink writes one parseable line', () => {
   const parsed = JSON.parse(lines[0]) as RequestErrorRecord;
   assert.strictEqual(parsed.observability, 'shalomut_request_error');
   assert.strictEqual(parsed.path, '/api/rounds');
+});
+
+test('a failure a handler caught itself still reaches the report', () => {
+  // `onRequestError` only fires for what escapes a handler, so before
+  // `reportRouteFailure` existed every `catch` in a route was invisible here —
+  // the only trace was whatever the handler put in the response body, which is
+  // the thing the 2026-08-21 audit asked to stop doing. Taking the message out
+  // of the body without this would have left no trace at all.
+  const written: RequestErrorRecord[] = [];
+  setRequestErrorSinkForTests((record) => written.push(record));
+
+  try {
+    reportRouteFailure(
+      new Error('duplicate key value violates unique constraint'),
+      new Request('http://localhost/api/rounds/r-1/goals?round=r-1', {
+        method: 'POST',
+      }),
+    );
+  } finally {
+    setRequestErrorSinkForTests(null);
+  }
+
+  assert.equal(written.length, 1);
+  const [record] = written;
+  // The detail the body no longer carries, in the one place that should have it.
+  assert.match(record.message, /unique constraint/);
+  // The path without the query: a share code or a round id is enough to find
+  // the route, and a query string is where identifiers travel.
+  assert.equal(record.path, '/api/rounds/r-1/goals');
+  assert.equal(record.method, 'POST');
+  assert.equal(record.routeType, 'route');
+});
+
+test('a report is still made when there is no request to describe', () => {
+  // Some handlers take an optional `Request`. A report that threw while
+  // describing a failure would replace the failure with itself.
+  const written: RequestErrorRecord[] = [];
+  setRequestErrorSinkForTests((record) => written.push(record));
+
+  try {
+    reportRouteFailure('a thrown string', undefined);
+    reportRouteFailure(new Error('bad url'), { url: 'not a url', method: 'GET' } as Request);
+  } finally {
+    setRequestErrorSinkForTests(null);
+  }
+
+  assert.equal(written.length, 2);
+  assert.equal(written[0].message, 'a thrown string');
+  assert.equal(written[0].path, undefined);
+  // The unparseable URL costs the path and nothing else.
+  assert.equal(written[1].path, undefined);
+  assert.equal(written[1].method, 'GET');
 });
