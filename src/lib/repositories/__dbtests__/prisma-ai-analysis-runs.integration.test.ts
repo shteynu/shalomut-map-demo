@@ -304,3 +304,95 @@ test(
     }
   },
 );
+
+test(
+  'PostgreSQL names the workers whose leases are alive and forgets the rest',
+  { skip: !connectionString },
+  async () => {
+    assert.ok(prisma);
+    const suffix = globalThis.crypto.randomUUID();
+    const alive = `worker-alive-${suffix}`;
+    const stopped = `worker-stopped-${suffix}`;
+    // Two schools rather than two rounds of one: a school may hold exactly one
+    // active round, and two workers analysing at once is by definition two
+    // schools closing together.
+    const organizationIds = [`org-ai-fleet-a-${suffix}`, `org-ai-fleet-b-${suffix}`];
+    const roundIds = [`round-ai-fleet-a-${suffix}`, `round-ai-fleet-b-${suffix}`];
+    for (const [index, organizationId] of organizationIds.entries()) {
+      await prisma.organization.create({
+        data: {
+          id: organizationId,
+          name: `AI fleet integration test ${index}`,
+          city: 'local',
+          schoolType: 'test',
+          totalStaffCount: 10,
+        },
+      });
+      await prisma.surveyRound.create({
+        data: {
+          id: roundIds[index],
+          organizationId,
+          title: `Fleet ${index}`,
+          status: 'active',
+          shareCode: `AI-FLEET-${index}-${suffix}`,
+          privacyThreshold: 10,
+        },
+      });
+    }
+
+    try {
+      const repo = new PrismaAiAnalysisRunRepository(prisma as any);
+      for (const roundId of roundIds) {
+        await repo.enqueue(roundId, {
+          requestKey: 'automatic',
+          trigger: 'automatic',
+        });
+      }
+      const first = await repo.claimNext({ workerId: alive, leaseMs: 60_000 });
+      const second = await repo.claimNext({
+        workerId: stopped,
+        leaseMs: 60_000,
+      });
+      assert.ok(first && second);
+
+      // Only the ids this test created: the read is deliberately platform-wide
+      // — every worker on the key is a sender, whatever school it is analysing
+      // — so a suite that shares a database must narrow the answer itself.
+      const mine = async () =>
+        (await repo.readLiveWorkerIds(32))
+          .filter((workerId) => workerId.endsWith(suffix))
+          .sort();
+
+      assert.deepStrictEqual(await mine(), [alive, stopped].sort());
+
+      // The second worker stops without saying so, which is what a killed
+      // container looks like from here: the row stays `running` and only the
+      // lease runs out.
+      await prisma.aiAnalysisRun.update({
+        where: { id: second.run.id },
+        data: { leaseExpiresAt: new Date(Date.now() - 1_000) },
+      });
+      assert.deepStrictEqual(
+        await mine(),
+        [alive],
+        'a worker is only counted while its lease is alive',
+      );
+
+      // A finished run releases its worker id, so a process between rounds is
+      // not counted as one that is sending.
+      assert.strictEqual(
+        await repo.finish(first.run.id, {
+          state: 'failed',
+          leaseToken: first.leaseToken,
+          failureCode: 'worker_error',
+        }),
+        'transitioned',
+      );
+      assert.deepStrictEqual(await mine(), []);
+    } finally {
+      await prisma.organization.deleteMany({
+        where: { id: { in: organizationIds } },
+      });
+    }
+  },
+);

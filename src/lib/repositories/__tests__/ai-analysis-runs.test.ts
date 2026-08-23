@@ -276,3 +276,69 @@ test('reset invalidates every queued, running or completed run for the round', a
   });
   assert.strictEqual(fresh.outcome, 'enqueued');
 });
+
+/*
+ * Who is spending the provider's quota right now.
+ *
+ * The worker's pace is module state in one process, so two processes used to
+ * keep two private counters against a quota counted once per key. This read is
+ * how a worker learns it is not alone; what it must never do is name a worker
+ * that has stopped, because a phantom peer makes every remaining worker send
+ * slower than the account has paid for.
+ */
+test('the live lease holders are named, and an expired lease names nobody', async () => {
+  let timestamp = Date.parse('2026-08-23T09:00:00.000Z');
+  const repository = new InMemoryAiAnalysisRunRepository({
+    now: () => new Date(timestamp),
+  });
+  await repository.enqueue('round-live-a', {
+    requestKey: 'automatic',
+    trigger: 'automatic',
+  });
+  await repository.enqueue('round-live-b', {
+    requestKey: 'automatic',
+    trigger: 'automatic',
+  });
+
+  assert.deepStrictEqual(
+    await repository.readLiveWorkerIds(32),
+    [],
+    'a queued run is nobody sending',
+  );
+
+  const first = await repository.claimNext({
+    leaseMs: 60_000,
+    workerId: 'worker-a:1',
+  });
+  const second = await repository.claimNext({
+    leaseMs: 60_000,
+    workerId: 'worker-b:1',
+  });
+  assert.ok(first && second);
+  assert.deepStrictEqual(await repository.readLiveWorkerIds(32), [
+    'worker-a:1',
+    'worker-b:1',
+  ]);
+
+  // The second worker keeps its lease alive; the first one stops.
+  timestamp += 30_000;
+  assert.strictEqual(
+    await repository.heartbeat(second.run.id, second.leaseToken, {
+      leaseMs: 60_000,
+    }),
+    true,
+  );
+  timestamp += 31_000;
+  assert.deepStrictEqual(
+    await repository.readLiveWorkerIds(32),
+    ['worker-b:1'],
+    'a lease that ran out is not a worker that is still sending',
+  );
+
+  assert.deepStrictEqual(
+    await repository.readLiveWorkerIds(1),
+    ['worker-b:1'],
+    'the cap bounds the answer rather than changing which rows qualify',
+  );
+  assert.deepStrictEqual(await repository.readLiveWorkerIds(0), []);
+});

@@ -70,6 +70,12 @@ export interface MinimalPrismaClient {
     deleteMany: (args?: any) => Promise<any>;
     /** Queue depth, for the stall detector. Counted rather than fetched. */
     count: (args?: any) => Promise<number>;
+    /**
+     * The distinct worker ids behind live leases, grouped in the database. A
+     * `findMany` with `distinct` would answer the same question by carrying
+     * one row per lease across the wire to throw most of them away.
+     */
+    groupBy: (args: any) => Promise<any[]>;
   };
   roundGoal?: {
     create: (args: any) => Promise<any>;

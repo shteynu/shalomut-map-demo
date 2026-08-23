@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { resolveCoreRepositories } from '@/lib/composition-root';
 import {
   AI_ANALYSIS_JOB_LEASE_MS,
+  AI_ANALYSIS_LIVE_WORKER_ID_LIMIT,
   isValidLeaseToken,
 } from '@/lib/server/ai-analysis-worker';
 import { getDurableWriteGuardResponse } from '@/lib/server/durable-write-guard';
@@ -37,5 +38,17 @@ export async function POST(
       { status: 409 },
     );
   }
-  return NextResponse.json({ status: 'running', runId });
+  /*
+   * The renewal is also where a worker finds out it stopped being alone.
+   *
+   * A zero-downtime deploy overlaps an old container with a new one, and the
+   * old one is mid-round: it never claims again, so the claim response cannot
+   * reach it and this is the only place left to tell it. Once every heartbeat
+   * interval is soon enough — the pace it should be taking is a share, and the
+   * overshoot until it hears is bounded by that interval.
+   */
+  const liveWorkerIds = await aiAnalysisRunRepo.readLiveWorkerIds(
+    AI_ANALYSIS_LIVE_WORKER_ID_LIMIT,
+  );
+  return NextResponse.json({ status: 'running', runId, liveWorkerIds });
 }

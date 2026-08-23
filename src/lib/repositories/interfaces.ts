@@ -289,6 +289,28 @@ export interface IAiAnalysisRunRepository {
    * it runs only when the thing it would report on is alive.
    */
   readQueueSnapshot(): Promise<AiAnalysisQueueSnapshot>;
+  /**
+   * The worker ids holding a live lease at this instant, at most `limit` of
+   * them, in no particular order.
+   *
+   * It answers one question, and it is not about the queue: which processes
+   * could be reaching the paid provider right now. The provider counts its
+   * quota per key rather than per process, so a worker that knows how many
+   * peers are sending can take its share of the pace instead of spending the
+   * whole of it privately — which is what two processes did until this
+   * existed, and what every early live round died of.
+   *
+   * Ids rather than a number, because the shape of an id belongs to the
+   * worker: one process runs `AI_JOB_POOL_SIZE` lanes and gives each its own
+   * `worker-<uuid>:<lane>`, so counting distinct ids here would read one
+   * three-lane process as three senders. Core stores what it was handed and
+   * lets the worker collapse its own naming.
+   *
+   * A run whose lease has expired is not counted: it is takeable work, and
+   * whatever was analysing it either died or is about to discover it lost the
+   * lease. Read-only, like the snapshot above, and for the same reason.
+   */
+  readLiveWorkerIds(limit: number): Promise<string[]>;
 }
 
 /**

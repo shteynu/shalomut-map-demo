@@ -185,3 +185,62 @@ test('an ordinary run names no dimensions and is sent no previous map', async ()
   assert.deepStrictEqual(payload.run.regenerateDimensionIds, []);
   assert.strictEqual(payload.previousResult, null);
 });
+
+/*
+ * The answer that lets two workers share one paid quota.
+ *
+ * The worker's rate limiter is module state, so it protects one process. Core
+ * is the only thing both processes can see, and it already knows who holds a
+ * lease — so it says so, on the two round-trips a worker already makes. The
+ * ids travel rather than a count because the `base:lane` shape belongs to the
+ * worker: collapsing three lanes of one container into one sender is its job,
+ * not Core's.
+ */
+test('a claim and a heartbeat both name the workers holding a live lease', async () => {
+  await repository.enqueue('round-fleet-a', {
+    requestKey: 'automatic',
+    trigger: 'automatic',
+  });
+  await repository.enqueue('round-fleet-b', {
+    requestKey: 'automatic',
+    trigger: 'automatic',
+  });
+
+  const first = await claimJob(
+    workerRequest('http://localhost/api/ai-analysis-runs/claim', {
+      workerId: 'worker-a:1',
+    }),
+  );
+  const firstPayload = await first.json();
+  assert.deepStrictEqual(
+    firstPayload.liveWorkerIds,
+    ['worker-a:1'],
+    'a worker that has just claimed is one of the live senders itself',
+  );
+
+  const second = await claimJob(
+    workerRequest('http://localhost/api/ai-analysis-runs/claim', {
+      workerId: 'worker-b:1',
+    }),
+  );
+  const secondPayload = await second.json();
+  assert.deepStrictEqual(secondPayload.liveWorkerIds, [
+    'worker-a:1',
+    'worker-b:1',
+  ]);
+
+  // The first worker never claims again — it is mid-round. Its renewal is the
+  // only place left to tell it that a second process started sending.
+  const renewed = await heartbeatJob(
+    workerRequest(
+      `http://localhost/api/ai-analysis-runs/${firstPayload.run.id}/heartbeat`,
+      { leaseToken: firstPayload.leaseToken },
+    ),
+    { params: Promise.resolve({ runId: firstPayload.run.id }) },
+  );
+  assert.strictEqual(renewed.status, 200);
+  assert.deepStrictEqual((await renewed.json()).liveWorkerIds, [
+    'worker-a:1',
+    'worker-b:1',
+  ]);
+});

@@ -1900,7 +1900,7 @@
           "AI Integration"
         ],
         "summary": "Lease the next durable AI analysis run",
-        "description": "Atomically claims the oldest queued job or an abandoned running job whose lease expired. The 90-second lease is renewed through the heartbeat route; work is failed after three abandoned attempts. A run that names dimensions to rewrite is answered with `previousResult`, the stored map it amends; an ordinary whole-round run names none and is sent none.",
+        "description": "Atomically claims the oldest queued job or an abandoned running job whose lease expired. The 90-second lease is renewed through the heartbeat route; work is failed after three abandoned attempts. A run that names dimensions to rewrite is answered with `previousResult`, the stored map it amends; an ordinary whole-round run names none and is sent none. The answer also carries `liveWorkerIds` — every worker holding a live lease, this one included — so that processes sharing one provider key can divide the pace between them instead of each spending the whole of it.",
         "security": [
           {
             "bearerAuth": []
@@ -1926,7 +1926,7 @@
         },
         "responses": {
           "200": {
-            "description": "A job lease with run metadata and an opaque lease token. `run.regenerateDimensionIds` is empty on an ordinary run, and `previousResult` is then null."
+            "description": "A job lease with run metadata and an opaque lease token. `run.regenerateDimensionIds` is empty on an ordinary run, and `previousResult` is then null. `liveWorkerIds` names at most 32 live lease holders; a worker that ignores it paces itself as if it were alone."
           },
           "204": {
             "description": "No job is currently due"
@@ -1949,6 +1949,7 @@
           "AI Integration"
         ],
         "summary": "Renew an active AI analysis lease",
+        "description": "Extends the lease by another 90 seconds. The answer repeats `liveWorkerIds`, which is the only way a worker already holding a lease learns that a second process started sending against the same provider key.",
         "security": [
           {
             "bearerAuth": []
@@ -1984,7 +1985,7 @@
         },
         "responses": {
           "200": {
-            "description": "Lease renewed"
+            "description": "Lease renewed, with the current `liveWorkerIds`"
           },
           "401": {
             "description": "Missing or invalid callback/worker secret"

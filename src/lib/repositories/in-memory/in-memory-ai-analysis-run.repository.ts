@@ -299,6 +299,24 @@ export class InMemoryAiAnalysisRunRepository
     };
   }
 
+  async readLiveWorkerIds(limit: number): Promise<string[]> {
+    if (limit <= 0) return [];
+    const observedAt = this.now();
+    const live = new Set<string>();
+    for (const run of this.runs.values()) {
+      if (run.state !== 'running') continue;
+      if (run.workerId === undefined) continue;
+      if (
+        run.leaseExpiresAt === undefined ||
+        run.leaseExpiresAt.getTime() <= observedAt.getTime()
+      ) {
+        continue;
+      }
+      live.add(run.workerId);
+    }
+    return [...live].sort().slice(0, limit);
+  }
+
   clear(): void {
     this.runs.clear();
     this.nextSequence = 1;

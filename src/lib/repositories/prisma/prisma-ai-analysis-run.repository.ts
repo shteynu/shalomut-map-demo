@@ -397,4 +397,34 @@ export class PrismaAiAnalysisRunRepository
         : null,
     };
   }
+
+  async readLiveWorkerIds(limit: number): Promise<string[]> {
+    if (limit <= 0) return [];
+
+    /*
+     * A `GROUP BY` on the same `[state, leaseExpiresAt, queuedAt]` index the
+     * claim already needs, so this adds no schema and no migration. It runs on
+     * every claim and every heartbeat, which is why it must not be a read of
+     * rows: what comes back is one short string per live lane, never a lease
+     * row and never a `result` column.
+     *
+     * `limit` is a guard against a pathological fleet rather than a policy: a
+     * caller that sees the cap divides the pace by the cap, which is the safe
+     * direction to be wrong in.
+     */
+    const groups = await this.delegate.groupBy({
+      by: ['workerId'],
+      where: {
+        state: 'running',
+        leaseExpiresAt: { gt: this.now() },
+        workerId: { not: null },
+      },
+      orderBy: { workerId: 'asc' },
+      take: limit,
+    });
+
+    return groups
+      .map((group: { workerId?: unknown }) => group.workerId)
+      .filter((workerId: unknown): workerId is string => typeof workerId === 'string');
+  }
 }
