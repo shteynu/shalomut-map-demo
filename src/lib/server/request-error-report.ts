@@ -17,6 +17,13 @@
  * Deliberately no third party and no dependency. Wiring Sentry or an equivalent
  * means replacing the sink below and nothing else — which is the point of it
  * being a sink.
+ *
+ * Since 2026-08-23 there is a second sink beside the line: the composition root
+ * points it at `operational_events`, so a digest a manager reads off the screen
+ * can still be found next month rather than only for as long as a deployment
+ * keeps its log. The line stays, and not out of caution — this family's worst
+ * case is an error *caused by* the database, and then the durable copy is the
+ * one write that cannot land.
  */
 
 export interface RequestErrorRecord {
@@ -42,8 +49,20 @@ const defaultSink: RequestErrorSink = (record) => {
 
 let sink: RequestErrorSink = defaultSink;
 
+/**
+ * The durable receiver, installed by the composition root beside the metrics
+ * one. The console line stays: this family's worst case is an error *caused by*
+ * the database, and the row describing it is then the one write that cannot
+ * land. That case is exactly why the line above is not replaced.
+ */
+let durableSink: RequestErrorSink | null = null;
+
 export function setRequestErrorSinkForTests(next: RequestErrorSink | null) {
   sink = next ?? defaultSink;
+}
+
+export function setDurableRequestErrorSink(next: RequestErrorSink | null) {
+  durableSink = next;
 }
 
 /**
@@ -97,5 +116,15 @@ export function reportRequestError(
 ): RequestErrorRecord {
   const record = describeRequestError(error, context);
   sink(record);
+  if (durableSink) {
+    // The report of a failure must not become a second failure. Whatever the
+    // durable half cannot do, the line above has already done.
+    try {
+      durableSink(record);
+    } catch {
+      // Deliberately silent: the console line already carries this record, and
+      // an error raised here would surface as a second `onRequestError`.
+    }
+  }
   return record;
 }

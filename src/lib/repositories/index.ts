@@ -2,6 +2,7 @@
 // runs against is decided in `src/lib/composition-root.ts`, the only module
 // that constructs a repository.
 export * from './interfaces';
+export * from './in-memory/in-memory-operational-event.repository';
 export * from './in-memory/in-memory-organization.repository';
 export * from './in-memory/in-memory-ai-analysis-run.repository';
 export * from './in-memory/in-memory-ai-insights.repository';
@@ -13,6 +14,7 @@ export * from './in-memory/in-memory-survey-definition-version.repository';
 export * from './prisma/prisma-client';
 export * from './prisma/prisma-audit-log.repository';
 export * from './prisma/prisma-manager.repository';
+export * from './prisma/prisma-operational-event.repository';
 export * from './prisma/prisma-organization.repository';
 export * from './prisma/prisma-ai-analysis-run.repository';
 export * from './prisma/prisma-ai-insights.repository';

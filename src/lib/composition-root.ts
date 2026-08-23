@@ -1,6 +1,7 @@
 import {
   InMemoryAiAnalysisRunRepository,
   InMemoryAiInsightsRepository,
+  InMemoryOperationalEventRepository,
   InMemoryOrganizationRepository,
   InMemoryRoundGoalRepository,
   InMemoryRoundRepository,
@@ -11,6 +12,7 @@ import {
   PrismaAiInsightsRepository,
   PrismaAuditLogRepository,
   PrismaManagerRepository,
+  PrismaOperationalEventRepository,
   PrismaOrganizationRepository,
   PrismaRoundGoalRepository,
   PrismaRoundRepository,
@@ -27,6 +29,7 @@ import {
 import type {
   IAiAnalysisRunRepository,
   IAiInsightsRepository,
+  IOperationalEventRepository,
   IOrganizationRepository,
   IRoundGoalRepository,
   IRoundRepository,
@@ -38,6 +41,7 @@ import {
   getPrismaClient,
   type MinimalPrismaClient,
 } from '@/lib/repositories/prisma/prisma-client';
+import { installObservabilitySinks } from '@/lib/server/observability-sinks';
 
 /**
  * The composition root of Core.
@@ -66,6 +70,13 @@ export interface CoreRepositories {
    * decides which store the application is really talking to.
    */
   managerRepo: IManagerRepository;
+  /**
+   * Where the counters and the caught errors are kept. It is a repository like
+   * the others so that the durable sink is chosen in the same place every other
+   * store is, and so that an observability write in a test lands somewhere a
+   * test can read.
+   */
+  operationalEventRepo: IOperationalEventRepository;
   orgRepo: IOrganizationRepository;
   roundGoalRepo: IRoundGoalRepository;
   roundRepo: IRoundRepository;
@@ -74,7 +85,7 @@ export interface CoreRepositories {
   surveyDefinitionVersionRepo: ISurveyDefinitionVersionRepository;
 }
 
-/** The durable wiring: one Prisma client, ten repositories over it. */
+/** The durable wiring: one Prisma client, eleven repositories over it. */
 export function createPersistentRepositories(
   prisma: MinimalPrismaClient,
 ): CoreRepositories {
@@ -83,6 +94,7 @@ export function createPersistentRepositories(
     aiInsightsRepo: new PrismaAiInsightsRepository(prisma),
     auditLogRepo: new PrismaAuditLogRepository(prisma),
     managerRepo: new PrismaManagerRepository(prisma),
+    operationalEventRepo: new PrismaOperationalEventRepository(prisma),
     orgRepo: new PrismaOrganizationRepository(prisma),
     roundGoalRepo: new PrismaRoundGoalRepository(prisma),
     roundRepo: new PrismaRoundRepository(prisma),
@@ -106,6 +118,7 @@ export function createEphemeralRepositories(): CoreRepositories {
     aiInsightsRepo: new InMemoryAiInsightsRepository(roundRepo),
     auditLogRepo: new InMemoryAuditLogRepository(),
     managerRepo: new InMemoryManagerRepository(),
+    operationalEventRepo: new InMemoryOperationalEventRepository(),
     orgRepo: new InMemoryOrganizationRepository(),
     roundGoalRepo: new InMemoryRoundGoalRepository(),
     roundRepo,
@@ -136,9 +149,26 @@ globalForRepositories.shalomutRepositoryState = ephemeralRepositories;
 export function resolveCoreRepositories(
   prisma: MinimalPrismaClient | null = getPrismaClient(),
 ): CoreRepositories {
-  if (prisma) return createPersistentRepositories(prisma);
+  const repositories = prisma
+    ? createPersistentRepositories(prisma)
+    : { ...ephemeralRepositories };
 
-  return { ...ephemeralRepositories };
+  /*
+   * The observability sinks are pointed at a store here rather than by each
+   * entrypoint, because this is the module that knows which store there is. The
+   * two modules that emit — `ai-operational-metrics.ts` and
+   * `request-error-report.ts` — are below the composition edge and take no
+   * repository argument on purpose: a counter is emitted from the middle of the
+   * product's actual work, and threading a repository to every emit site would
+   * put observability in the signature of everything it watches.
+   *
+   * Installing on each invocation is an assignment, not a connection, and it is
+   * what keeps a test's replaced wiring from being observed by the previous
+   * test's store.
+   */
+  installObservabilitySinks(repositories.operationalEventRepo);
+
+  return repositories;
 }
 
 /**
@@ -176,6 +206,10 @@ export function overrideCoreRepositories(
   }
   if (repositories.managerRepo) {
     ephemeralRepositories.managerRepo = repositories.managerRepo;
+  }
+  if (repositories.operationalEventRepo) {
+    ephemeralRepositories.operationalEventRepo =
+      repositories.operationalEventRepo;
   }
   if (repositories.surveyRepo) {
     ephemeralRepositories.surveyRepo = repositories.surveyRepo;

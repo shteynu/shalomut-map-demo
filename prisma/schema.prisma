@@ -327,3 +327,51 @@ model QuestionAnswer {
   @@unique([responseId, questionId])
   @@map("question_answers")
 }
+
+/**
+ * Where an operational counter or a caught error goes to be found later.
+ *
+ * Both families were `console` lines and nothing else. The counters exist to
+ * catch failures nobody watches — a submission lost before the function ran, a
+ * paid provider that stopped answering, a payload the contract rejected — and a
+ * counter that lands in a log scrollback with no retention and no query cannot
+ * warn anyone. The audit of 2026-08-21 named that, and this table is the
+ * answer's durable half.
+ *
+ * One table for two families rather than two, with `kind` telling them apart.
+ * They are read together — "what happened around the time this broke" is one
+ * question — and the alert query scans one index instead of unioning two.
+ *
+ * No foreign keys, for the reason `audit_events` has none: an event about a
+ * round has to outlive the round. A cascade would delete the evidence of the
+ * thing worth investigating, and a write that could fail on a stale id would
+ * make observability able to break what it observes.
+ *
+ * Retention is a cutoff rather than a per-key cap: rows are swept on the same
+ * read the monitor already makes, so the table is bounded by time without the
+ * project owning a scheduler.
+ */
+model OperationalEvent {
+  id         String   @id @default(uuid())
+  observedAt DateTime @default(now()) @map("observed_at")
+  /// `metric` or `request_error`.
+  kind       String
+  /// The metric's name, or the error's class for a request error.
+  name       String
+  /// Null for an error: it counts once and measures nothing.
+  value      Float?
+  /// `count`, `milliseconds` or `ratio_sample`. Null for an error.
+  unit       String?
+  labels     Json?
+  runId      String?  @map("run_id")
+  roundId    String?  @map("round_id")
+  /// Everything an error record carries beyond the columns above — digest,
+  /// message, stack, route. Null for a metric.
+  detail     Json?
+
+  /// The alert's own query: one name over a recent window.
+  @@index([name, observedAt])
+  /// The retention sweep, and reading what happened around a moment.
+  @@index([observedAt])
+  @@map("operational_events")
+}

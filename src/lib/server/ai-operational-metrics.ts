@@ -42,14 +42,50 @@ const defaultSink: OperationalMetricSink = (metric) => {
 
 let metricSink: OperationalMetricSink = defaultSink;
 
+/**
+ * The durable receiver, installed by the composition root when there is a
+ * database to write to.
+ *
+ * A second slot rather than a replacement of the one above, and the difference
+ * matters twice. The console line is what a person tailing a local process or
+ * a deployment's log reads, and it stays — the durable store answers "did this
+ * start happening" and the line answers "what is happening right now". And the
+ * slot above is a test seam: a test that installs one to watch what an action
+ * recorded must not, by doing so, silence the durable write it is checking, nor
+ * be silenced by any wiring a route it calls performs.
+ */
+let durableSink: OperationalMetricSink | null = null;
+
 export function setOperationalMetricSinkForTests(
   sink: OperationalMetricSink | null,
 ) {
   metricSink = sink ?? defaultSink;
 }
 
+export function setDurableOperationalMetricSink(
+  sink: OperationalMetricSink | null,
+) {
+  durableSink = sink;
+}
+
 function emit(metric: OperationalMetric) {
   metricSink(metric);
+  if (!durableSink) return;
+  /*
+   * Observability may not break what it observes. Every caller of these
+   * functions is in the middle of doing the product's actual work — queueing a
+   * run, storing a response — and none of them is prepared for a counter to
+   * throw. The sink itself schedules the write off the request path; this
+   * catch is for whatever it fails to do before it gets there.
+   */
+  try {
+    durableSink(metric);
+  } catch (error) {
+    console.error(
+      'Recording an operational metric failed:',
+      error instanceof Error ? error.message : 'unknown error',
+    );
+  }
 }
 
 function correlation(run: AiAnalysisRun) {
@@ -330,9 +366,8 @@ export function recordDeterministicMetricNarrativeSample(input: {
  * nobody has asked.
  *
  * What this does not do is notice. It puts the failure where the product's other
- * counters land, which today is a `console.info` line; who collects those lines
- * remains an open owner decision, and until it is answered this makes the
- * failure countable rather than noticed.
+ * counters land — since 2026-08-23 that is a durable table as well as a
+ * `console.info` line. Whether anybody is told is the next commit's question.
  */
 export function recordQuestionSuggestionOutcome(
   input:

@@ -335,3 +335,63 @@ export interface ISurveyRepository {
   ): Promise<Map<string, number>>;
   deleteByRoundId(roundId: string): Promise<void>;
 }
+
+/**
+ * How long an operational event is kept.
+ *
+ * Thirty days answers the question these rows exist for — "did this start
+ * happening, and when" — and stops well short of the table becoming a second
+ * copy of the product's history. It is a cutoff rather than a per-name cap
+ * because the failure being watched for is a burst of one name, and a cap would
+ * discard exactly that burst while keeping a quiet month of another.
+ */
+export const OPERATIONAL_EVENT_RETENTION_DAYS = 30;
+
+export interface OperationalEventInput {
+  kind: 'metric' | 'request_error';
+  name: string;
+  value?: number;
+  unit?: string;
+  labels?: Record<string, string>;
+  runId?: string;
+  roundId?: string;
+  detail?: Record<string, unknown>;
+}
+
+/**
+ * One metric name's readings over a window.
+ *
+ * `sum` is carried beside `count` so a ratio sample can be averaged without
+ * fetching the rows: the deterministic-fallback ratios are the sharpest signal
+ * this product has that a paid provider stopped answering, and their mean is
+ * `sum / count`. For a plain counter `sum` is the total incremented, which for
+ * every counter here equals `count`.
+ */
+export interface OperationalEventTally {
+  name: string;
+  count: number;
+  sum: number;
+}
+
+/**
+ * The durable half of observability.
+ *
+ * Writes here must never be able to break what they observe: `record` is
+ * called from the sink, off the request's critical path, and its failure is
+ * swallowed by the caller. Nothing in the product reads a metric to make a
+ * product decision — the only reader is the alert.
+ */
+export interface IOperationalEventRepository {
+  record(event: OperationalEventInput): Promise<void>;
+  /**
+   * Counts and sums for these names since `since`, one query. A name with no
+   * events is absent rather than present as zero, the same reading
+   * `countResponsesByRoundIds` uses.
+   */
+  tally(
+    names: readonly string[],
+    since: Date,
+  ): Promise<Map<string, OperationalEventTally>>;
+  /** Drops everything older than the cutoff. Returns how many rows went. */
+  prune(before: Date): Promise<number>;
+}

@@ -37,6 +37,12 @@ export interface MinimalPrismaClient {
     updateMany: (args: any) => Promise<{ count: number }>;
     deleteMany: (args?: any) => Promise<{ count: number }>;
   };
+  operationalEvent?: {
+    create: (args: any) => Promise<any>;
+    /** One `GROUP BY name` for the alert, instead of a query per threshold. */
+    groupBy: (args: any) => Promise<any[]>;
+    deleteMany: (args?: any) => Promise<{ count: number }>;
+  };
   surveyDefinitionVersion?: {
     create: (args: any) => Promise<any>;
     findFirst: (args: any) => Promise<any>;
