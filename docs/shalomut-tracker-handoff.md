@@ -206,6 +206,23 @@ unread, which is half the finding. And the branch is **unpushed**, so none of
 this exists on the deployment; `origin/main` is `57c9e58` and two commits sit
 locally ahead of it.
 
+**The AI service will analyse three rounds at once, not one (2026-08-23).**
+`AI_JOB_POOL_SIZE` moves from `1` to `3` in `render.yaml`, so a burst of ten
+closures drains in about ten minutes instead of about thirty. Pushing it
+rebuilds the Python service — `render.yaml` is in its own `buildFilter` — and
+the deployed proof is one line in Render's log: *"Polling with 3 concurrent
+slot(s)"*.
+
+**And the pace this deployment actually runs at is 30 a minute, not 60.** The
+limiter counts per model name and takes the stricter tier when one name sits on
+both, and `LLM_MODEL_HEAVY` is the same `gemini-3.5-flash` as the fast model.
+Every document had said the useful ceiling was `60/11 ≈ 5` lanes; it is
+`30/11 ≈ 2.7`, which is why the pool is three. Four files were corrected. The
+only lever for more than three lanes is separating the two tiers, and that is an
+owner decision about the heavy pace, not a config bump. **Nothing enforces the
+agreement between those four files and the dashboard** — repointing
+`LLM_MODEL_HEAVY` there would make all four wrong at once.
+
 **Next concrete step:** ask the owner for the methodologist's item-to-dimension
 mapping, because without it there is no substantial *product* work an agent can
 start. This branch is finished — the multi-tenancy plan is closed, the
