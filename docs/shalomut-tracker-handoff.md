@@ -291,6 +291,21 @@ was written from the task files and never checked against the remote, and it was
 wrong the moment it was written. Branches reach `origin` without this worktree
 hearing about it: ask `git fetch` before writing down what is unpushed.
 
+**The deployed runtime has been serving a bypassable share code, and the fix is
+unpushed (2026-08-23).** `GET /api/survey/%` returns a school's round to anyone
+— the public lookup compared the code with `ILIKE`, which reads `%` and `_` in
+the value as wildcards. Reproduced over HTTP locally; **not** reproduced against
+the deployment, deliberately, because doing so means opening a real school's
+questionnaire. The deployed database holds one round, so the exposure there is
+one school's questionnaire and the anonymous submissions someone could post into
+it, not a fleet.
+
+The fix is on `perf/the-share-code-finds-its-own-index` and is **the reason to
+push sooner rather than at the end of the day**. It carries a migration that
+normalizes stored codes; on the deployed database that touches nothing — 1
+round, 0 not uppercase, 0 collisions, read before writing this. `PROJECT_CONTEXT.md`
+ADR-044 owns the reasoning.
+
 **A school user reads, and nothing on the deployment can show it yet
 (2026-08-23).** Phase 6 of the multi-tenancy plan is implemented on
 `feat/a-school-user-may-only-read`, which is **committed and unpushed** — three

@@ -8,6 +8,20 @@ inside it.
 
 ## Current state
 
+- **The share code is the only thing standing between a stranger and a school's
+  questionnaire, and now it actually is.** Until 2026-08-23 the public lookup
+  compared it with `ILIKE`, which reads `%` and `_` in the value as wildcards, so
+  `GET /api/survey/%` returned a school's round to somebody holding no code —
+  and so did a run of underscores at the right length. It was found while
+  closing what the 2026-08-21 audit had filed as a missed database index, and
+  confirmed over HTTP before and after the fix. The lookup is now an exact match
+  on a normalized value: case and stray whitespace are still forgiven, because
+  the code is read off a slide and typed by hand, but they are forgiven on our
+  side rather than by asking the database to compare loosely. The index the
+  audit was actually about follows from the same change.
+  `PROJECT_CONTEXT.md` ADR-044 records it, including why nothing in the suite
+  everyone runs could have caught it.
+
 - **"One school, one person" is a rule the database holds.** Since 2026-08-23 a
   partial unique index refuses a second standing membership, so two
   administrators inviting the same school at the same moment can no longer both

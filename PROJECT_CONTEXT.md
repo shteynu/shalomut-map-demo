@@ -1864,6 +1864,43 @@ lease reaper to requeue it. That is the existing lease design, not something
 this change makes worse, and closing it means lengthening the lease or renewing
 it on a refused callback — neither of which was paid for here.
 
+### ADR-044: The share code is compared as a value, never as a pattern
+
+2026-08-23. `findByShareCode` asked Prisma for `equals` with
+`mode: 'insensitive'`. On PostgreSQL that compiles to `ILIKE`, and `ILIKE` reads
+`%` and `_` **in the value** as wildcards. So `GET /api/survey/%` returned a
+school's round to someone holding no share code at all, as did a run of
+underscores at the right length. Confirmed over HTTP against a running server
+before the change.
+
+This file calls the share code "the only thing standing between a stranger and a
+school's questionnaire" (`round.service.ts`). It was not standing there. The
+2026-08-21 audit recorded this same line as a lookup that could not use its
+unique index, which it also could not — but that was the smaller half, and it is
+worth saying plainly that a performance finding was hiding an access one.
+
+**The lookup is now `findUnique` on an exact, normalized value.** Case
+insensitivity was the point of that mode and it is kept, on this side: the code
+is read off a slide in a staff meeting and typed by hand, so the input is
+trimmed and upper-cased and then compared for equality. `SHARE_CODE_ALPHABET` is
+uppercase, so every generated code already matches; migration
+`20260823160000_share_codes_are_stored_the_way_they_are_generated` makes it true
+of rows nobody generated, and skips any row that would collide rather than
+failing halfway.
+
+No shape validation was added at the route. One mechanism that is exactly right
+beats two that each half-cover it, and a length-or-alphabet check would have to
+be kept in step with the generator forever.
+
+**The in-memory repository was never wrong**: it has always normalized and
+compared for equality. That is precisely why nothing caught this — the two
+stores disagreed, and the suite everybody runs exercises the one that was
+correct. The regression test is therefore in `__dbtests__`, and the fake Prisma
+client in `__tests__/prisma.test.ts` was folding case to imitate the old query;
+it now models `findUnique` on both of the table's unique keys, because a double
+that keeps imitating a query nobody makes is how the next defect gets a passing
+test.
+
 ## Environments
 
 The project supports exactly two environments:
