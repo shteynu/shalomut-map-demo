@@ -26,6 +26,20 @@ const tree = ({ ceiling = '30.0', label = 'раз в 2–30 с' } = {}) => ({
     'export const WATCH_FIRST_DELAY_MS = 5_000;\n' +
     'export const WATCH_MAX_DELAY_MS = 30_000;\n' +
     'export const WATCH_CEILING_MS = 20 * 60_000;\n',
+  'src/lib/repositories/interfaces.ts':
+    'export const OPERATIONAL_EVENT_RETENTION_DAYS = 30;\n',
+  'src/lib/server/observability-alerts.ts':
+    'export const OBSERVABILITY_COUNT_WINDOW_MINUTES = 360;\n' +
+    'export const OBSERVABILITY_RATIO_WINDOW_MINUTES = 1440;\n',
+  // The observability document states each window twice — once in the
+  // thresholds table and once in the retention table — which is exactly the
+  // shape a number drifts in, so both are claimed.
+  'docs/observability.md':
+    '| `submission_lost` | `survey_submission_lost_after_retries` | count | 360 min | 1 |\n' +
+    '| `analysis_written_without_the_model` | `ai_deterministic_summary_ratio_sample` | mean over 2 samples | 1440 min | 0.5 |\n' +
+    '| Retention | 30 days | `OPERATIONAL_EVENT_RETENTION_DAYS` |\n' +
+    '| Count window | 360 min | `OBSERVABILITY_COUNT_WINDOW_MINUTES` |\n' +
+    '| Ratio window | 1440 min | `OBSERVABILITY_RATIO_WINDOW_MINUTES` |\n',
   'docs/ai-analysis-run-lifecycle.md':
     '| Poll interval | 2 s | `AI_JOB_POLL_INTERVAL_SECONDS` | x |\n' +
     '| Idle poll ceiling | 30 s | `AI_JOB_POLL_MAX_INTERVAL_SECONDS` | x |\n' +

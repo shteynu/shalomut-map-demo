@@ -24,6 +24,7 @@ These files must stay aligned with `main`:
 | [`ai-analysis-jobs.html`](ai-analysis-jobs.html) | The job queue between Core and the AI service in detail — claim, lease, heartbeat, retries and every failure branch, as mermaid diagrams and a settings table |
 | [`how-shalomut-works.html`](how-shalomut-works.html) | The whole platform explained without code, in twelve chapters with diagrams; the illustrated companion to [`platform-handbook.md`](platform-handbook.md) |
 | [`platform-handbook.md`](platform-handbook.md) | What the whole platform does, in language a non-developer reads; the source text every translated snapshot is released from |
+| [`observability.md`](observability.md) | What this product counts, where those counts go, which four cross a threshold and who is told when they do |
 | [`shalomut-tracker-handoff.md`](shalomut-tracker-handoff.md) | Current deployed/operational state, external blockers and approval gates |
 | [`data-flow-and-subprocessors.md`](data-flow-and-subprocessors.md) | Who receives respondent data, what crosses each boundary and where it is hosted; the factual basis every future legal document rests on |
 | [`../ai-analytics-service/README.md`](../ai-analytics-service/README.md) | Python service runtime, configuration and verification |

@@ -209,7 +209,28 @@ first proof the monitor path works there. One operational consequence stands
 anyway: **nothing watches it yet** — the UptimeRobot account has one keyword
 monitor on the Python service's `/health`, and until a second one points at
 Core's queue endpoint the stall is readable but unread, which is half the
-finding.
+finding. The same sentence now applies to a second Core endpoint, below.
+
+**The counters reach a table, and four of them can now alert (2026-08-23).**
+That is the audit's medium on telemetry going to an uncollected stdout, closed
+on the branch `fix/the-counters-reach-a-place-that-can-warn-someone`. The
+receiver was an owner decision and the owner took it: this product's own
+Postgres rather than Sentry or an equivalent — no account, no secret, no first
+third-party SDK — with the store left as a sink so that choice can be revisited
+in one function. Both families, the eighteen operational counters and every
+caught request error, now write to `operational_events` alongside the `console`
+lines, which stay because the error family's worst case is a failure caused by
+the database itself.
+
+**This one carries a migration and an owner action.** The migration
+(`20260823120000_the_counters_reach_a_place_that_can_be_read`) is applied by the
+Vercel build itself (ADR-031), so pushing is enough; the owner action is the
+monitor. `GET /api/health/observability` answers `503` on a breached threshold
+and names which, anonymously, and `GET /api/observability` carries the numbers
+behind `AI_CALLBACK_SECRET`. No new secret and no new environment variable —
+the shared secret is the one the queue endpoint already uses. Until a monitor
+points at it the alert is exactly as unread as the queue's, which is the same
+half-finding twice.
 
 **The AI service will analyse three rounds at once, not one (2026-08-23).**
 `AI_JOB_POOL_SIZE` moves from `1` to `3` in `render.yaml`, so a burst of ten
@@ -651,8 +672,10 @@ it in **46s**, each incident keeping the response body as its own evidence.
   either a transient timeout or a slept container paying its own cold start. Do
   not upgrade it to a known sleep.
 
-**Still the owner's to create: a monitor on Core's `/api/health`.** The route was
-opened anonymously for exactly this and nothing walks through it yet.
+**Still the owner's to create: monitors on Core's anonymous endpoints.** There
+are three of them now — `/api/health`, `/api/health/ai-queue` and, since
+2026-08-23, `/api/health/observability`. Each was opened anonymously for exactly
+this, and nothing walks through any of them yet.
 
 The free plan's fifteen-minute sleep timer is reset by an inbound `GET /health`,
 which the service's own outbound polling does not do — scale-to-zero alone is not
@@ -873,11 +896,20 @@ without a code change; that, more than the number, is what changed.
    deployed endpoint for the first time: one school, its round named and its
    status shown, `12 תשובות · התוצאות פתוחות`, and the platform-administrator
    list naming the bootstrapped row.
-4. **Create an uptime monitor on Core's `/api/health`.**
-5. **Decide where the structured observability lines land** — a log sink or an
-   error tracker, and with which alert. Every counter the product emits still
-   lands in a `console.info` line that expires with the platform's log window.
-   Countable is not noticed.
+4. **Create uptime monitors on Core's three anonymous endpoints** —
+   `/api/health`, `/api/health/ai-queue` and `/api/health/observability`. All
+   three were opened anonymously for exactly this, and nothing walks through any
+   of them yet. The third is the one that grew teeth on 2026-08-23: it answers
+   `503` when a submission was lost, when the suggestion button keeps failing,
+   when analyses are being written without the model, or when the AI service
+   returns a payload the contract refuses.
+5. **Decided 2026-08-23, and what is left of it is item 4.** Where the
+   observability lines land was an open question on this list; the answer is
+   this product's own Postgres rather than a third party, and both the counters
+   and the caught errors now reach `operational_events` with a thirty-day
+   retention (ADR-041, `docs/observability.md`). What that does not do is
+   notice — the `503` is the notification, and it reaches nobody until a monitor
+   is pointed at the endpoint.
 6. **The copyright line in `NOTICE`.** It reads `Copyright (c) 2026 Maxim
    Berenshtein`, taken from the Git author of 692 of 806 commits; 88 commits
    between 2026-06-16 and 2026-07-25 were authored from a `zoominfo.com` address —

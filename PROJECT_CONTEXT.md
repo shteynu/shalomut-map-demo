@@ -1651,6 +1651,56 @@ port it uses is not reachable from the environment this change was made in, so
 the fix could not be run even once — and an unverified change there fails the
 build rather than one request.
 
+### ADR-041: A counter that cannot warn anyone is a counter that does not exist
+
+2026-08-23. Eighteen operational counters and the whole of this product's error
+tracking were `console` lines and nothing else. Each of them was written to
+catch a failure nobody is watching for — a submission lost before the function
+ran, a paid provider that stopped answering while its rounds still report
+success, a payload the published contract refuses — and each landed in a
+scrollback with no retention, no query and no reader. The audit of 2026-08-21
+named it; `ai-operational-metrics.ts` had already named it about itself and
+called the receiver an open owner decision.
+
+**The receiver is this product's own Postgres**, decided with the owner. It
+costs no account, no secret and no first third-party SDK in a dependency list
+that has none, and it puts the answer where every other durable fact here
+already lives. The alternative — Sentry or an equivalent — buys real retention
+and survives the database being the thing that broke, and it stays one function
+away: the store is a sink and nothing above it knows what the sink is.
+
+`operational_events` holds both families with a `kind` telling them apart, and
+carries no foreign keys for the reason `audit_events` carries none (ADR-026): an
+event about a round must outlive the round. Retention is a thirty-day cutoff
+swept on the way past the public health endpoint, because that is the one thing
+this deployment is called on a schedule and the project owns no scheduler.
+
+**The sinks are installed by the composition root**, not passed to the emit
+sites. Every emit happens in the middle of the product's real work, and a
+repository parameter would put observability in the signature of everything it
+watches. The write is scheduled with `after()` so it never runs in front of a
+response, and a failure is swallowed to a log line at three depths: nothing here
+may break what it observes. The `console` lines stay, and not as belt and
+braces — the error family's worst case is a failure *caused by* the database,
+and then the durable copy is the one write that cannot land.
+
+**Being stored is not being noticed**, so four thresholds turn into an HTTP
+status the way `GET /api/health/ai-queue` already does for the queue's
+liveness — a free uptime monitor cannot send a header, and a detector nobody
+watches is the failure being fixed rather than a fix. `GET
+/api/health/observability` is anonymous and answers `503` on `alerting` and on
+`unknown`, because a deployment recording nothing and a deployment with nothing
+to record look identical from outside. It publishes the breached threshold ids —
+an id is what makes a monitor's mail actionable — and no numbers; those are on
+`GET /api/observability` behind `AI_CALLBACK_SECRET`, because a count of failed
+analyses says how much measuring is happening even though it names no school.
+Neither returns a stored event's contents: request errors carry messages and
+stacks, and a development-build message can hold row contents.
+
+The thresholds, the windows and why each was chosen are in
+[`docs/observability.md`](docs/observability.md), which
+`npm run lint:doc-numbers` holds to the constants.
+
 ## Environments
 
 The project supports exactly two environments:

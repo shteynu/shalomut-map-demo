@@ -66,6 +66,18 @@ export const SOURCES = {
     file: 'src/lib/dashboard/ai-insights-watch.ts',
     pattern: /WATCH_CEILING_MS = (\d+) \* 60_000/,
   },
+  OPERATIONAL_EVENT_RETENTION_DAYS: {
+    file: 'src/lib/repositories/interfaces.ts',
+    pattern: /OPERATIONAL_EVENT_RETENTION_DAYS = (\d+)/,
+  },
+  OBSERVABILITY_COUNT_WINDOW_MINUTES: {
+    file: 'src/lib/server/observability-alerts.ts',
+    pattern: /OBSERVABILITY_COUNT_WINDOW_MINUTES = (\d+)/,
+  },
+  OBSERVABILITY_RATIO_WINDOW_MINUTES: {
+    file: 'src/lib/server/observability-alerts.ts',
+    pattern: /OBSERVABILITY_RATIO_WINDOW_MINUTES = (\d+)/,
+  },
 };
 
 /**
@@ -90,6 +102,33 @@ const markdownRowNamingSetting = (setting) =>
  * a paragraph, and only one of them is usually wrong.
  */
 export const CLAIMS = [
+  // docs/observability.md — the retention table, whose third cell names the
+  // constant. The thresholds table above it states the same two windows in
+  // its own rows, and those are claimed separately: a window quoted in two
+  // places is a window that can disagree with itself.
+  ...['OPERATIONAL_EVENT_RETENTION_DAYS', 'OBSERVABILITY_COUNT_WINDOW_MINUTES',
+    'OBSERVABILITY_RATIO_WINDOW_MINUTES'].map((setting) => ({
+    document: 'docs/observability.md',
+    setting,
+    where: 'the retention table',
+    pattern: new RegExp(
+      `\\|\\s*([\\d.,]+) (?:days|min)\\s*\\|\\s*\`${setting}\``,
+    ),
+  })),
+  {
+    document: 'docs/observability.md',
+    setting: 'OBSERVABILITY_COUNT_WINDOW_MINUTES',
+    where: 'the thresholds table, row `submission_lost`',
+    pattern: /\| `submission_lost` \|[^|]+\|[^|]+\| ([\d.,]+) min \|/,
+  },
+  {
+    document: 'docs/observability.md',
+    setting: 'OBSERVABILITY_RATIO_WINDOW_MINUTES',
+    where: 'the thresholds table, row `analysis_written_without_the_model`',
+    pattern:
+      /\| `analysis_written_without_the_model` \|[^|]+\|[^|]+\| ([\d.,]+) min \|/,
+  },
+
   // docs/ai-analysis-run-lifecycle.md — the numbers table.
   ...['AI_JOB_POLL_INTERVAL_SECONDS', 'AI_JOB_POLL_MAX_INTERVAL_SECONDS',
     'AI_JOB_HEARTBEAT_INTERVAL_SECONDS', 'AI_ANALYSIS_JOB_LEASE_MS'].map(
