@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { ManagerAuditService } from "@/lib/auth/manager-audit-service";
-import { resolveCoreRepositories } from "@/lib/composition-root";
+import { runInTransaction } from "@/lib/composition-root";
 import { requirePlatformAdministrator } from "@/lib/server/admin-area";
 import { getDurableWriteGuardResponse } from "@/lib/server/durable-write-guard";
 import type { Organization } from "@/lib/types/backend";
@@ -53,28 +53,38 @@ export async function POST(request: Request) {
       );
     }
 
-    const { auditLogRepo, orgRepo } = resolveCoreRepositories();
-    const organization = await orgRepo.create({
-      id: crypto.randomUUID(),
-      ...input,
-      createdAt: new Date(),
-    });
+    // One transaction, for the reason recorded on the membership route: the
+    // owner decided on 2026-08-23 that these administrative audits are
+    // mandatory. A school that exists and has no record of being created is a
+    // school nobody can be asked about.
+    const organization = await runInTransaction(
+      async ({ auditLogRepo, orgRepo }) => {
+        const created = await orgRepo.create({
+          id: crypto.randomUUID(),
+          ...input,
+          createdAt: new Date(),
+        });
 
-    await ManagerAuditService.logEvent(
-      auditLogRepo,
-      { ...authorization.session, activeOrganizationId: organization.id },
-      "SCHOOL_CREATED",
-      undefined,
-      { name: organization.name, city: organization.city },
+        await ManagerAuditService.logEvent(
+          auditLogRepo,
+          { ...authorization.session, activeOrganizationId: created.id },
+          "SCHOOL_CREATED",
+          undefined,
+          { name: created.name, city: created.city },
+        );
+
+        return created;
+      },
     );
 
     return NextResponse.json({ success: true, organization }, { status: 201 });
   } catch (error) {
+    console.error(
+      "Creating a school failed:",
+      error instanceof Error ? error.message : "unknown error",
+    );
     return NextResponse.json(
-      {
-        error:
-          error instanceof Error ? error.message : "Failed to create a school.",
-      },
+      { error: "Failed to create a school." },
       { status: 500 },
     );
   }

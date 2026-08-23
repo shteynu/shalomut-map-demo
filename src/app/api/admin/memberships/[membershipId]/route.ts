@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { ManagerAdministrationService } from "@/lib/auth/manager-administration-service";
 import { ManagerAuditService } from "@/lib/auth/manager-audit-service";
-import { resolveCoreRepositories } from "@/lib/composition-root";
+import { runInTransaction } from "@/lib/composition-root";
 import { requirePlatformAdministrator } from "@/lib/server/admin-area";
 import { getDurableWriteGuardResponse } from "@/lib/server/durable-write-guard";
 
@@ -43,13 +43,35 @@ export async function PATCH(
       );
     }
 
-    const { auditLogRepo, managerRepo } = resolveCoreRepositories();
-    const result = await ManagerAdministrationService.setMembershipStatus(
-      managerRepo,
-      organizationId,
-      membershipId,
-      status,
-    );
+    // The change and its record commit together, because the owner's decision
+    // of 2026-08-23 is that this audit is mandatory rather than best effort.
+    // Until then the record was written after the change and outside any
+    // transaction, so an audit insert that failed left the membership changed,
+    // answered 500, and left nothing behind saying who changed it — the worst
+    // of the three possible outcomes, because the administrator reads a failure
+    // and the row disagrees with them.
+    //
+    // A refusal is returned rather than thrown: nothing was written, so there
+    // is nothing to roll back and nothing to record.
+    const result = await runInTransaction(async ({ auditLogRepo, managerRepo }) => {
+      const outcome = await ManagerAdministrationService.setMembershipStatus(
+        managerRepo,
+        organizationId,
+        membershipId,
+        status,
+      );
+      if (!outcome.ok) return outcome;
+
+      await ManagerAuditService.logEvent(
+        auditLogRepo,
+        { ...authorization.session, activeOrganizationId: organizationId },
+        status === "active" ? "MEMBER_RESTORED" : "MEMBER_REVOKED",
+        undefined,
+        { managerId: outcome.value.managerId },
+      );
+
+      return outcome;
+    });
 
     if (!result.ok) {
       return NextResponse.json(
@@ -63,23 +85,18 @@ export async function PATCH(
       );
     }
 
-    await ManagerAuditService.logEvent(
-      auditLogRepo,
-      { ...authorization.session, activeOrganizationId: organizationId },
-      status === "active" ? "MEMBER_RESTORED" : "MEMBER_REVOKED",
-      undefined,
-      { managerId: result.value.managerId },
-    );
-
     return NextResponse.json({ success: true, membership: result.value });
   } catch (error) {
+    // The message is a constant. What went wrong here is a database error or a
+    // constraint name, and the caller of this endpoint is a browser: it can act
+    // on "this did not happen" and cannot act on the rest. The detail goes to
+    // the log, where an administrator can reach it and a stranger cannot.
+    console.error(
+      "Changing a membership failed:",
+      error instanceof Error ? error.message : "unknown error",
+    );
     return NextResponse.json(
-      {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Failed to change the membership.",
-      },
+      { error: "Failed to change the membership." },
       { status: 500 },
     );
   }

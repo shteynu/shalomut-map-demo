@@ -4,7 +4,7 @@ import {
   ManagerAuditService,
   PLATFORM_SCOPE,
 } from "@/lib/auth/manager-audit-service";
-import { resolveCoreRepositories } from "@/lib/composition-root";
+import { runInTransaction } from "@/lib/composition-root";
 import { requirePlatformAdministrator } from "@/lib/server/admin-area";
 import { getDurableWriteGuardResponse } from "@/lib/server/durable-write-guard";
 
@@ -53,22 +53,36 @@ export async function POST(request: Request) {
         ? body.organizationId.trim()
         : null;
 
-    const { auditLogRepo, managerRepo, orgRepo } = resolveCoreRepositories();
-
+    // Both invitations write and then record, and both do it in one
+    // transaction, for the reason recorded on the membership route: the owner
+    // decided on 2026-08-23 that these administrative audits are mandatory. An
+    // invitation is an entitlement (ADR-027), so an invitation nobody recorded
+    // is somebody holding access that the log cannot account for.
+    //
+    // A refusal is returned rather than thrown — nothing was written, so there
+    // is nothing to roll back — and turned into a response outside, where the
+    // transaction is already closed.
     if (!organizationId) {
-      const result = await ManagerAdministrationService.inviteAdministrator(
-        managerRepo,
-        { email, name },
+      const result = await runInTransaction(
+        async ({ auditLogRepo, managerRepo }) => {
+          const outcome = await ManagerAdministrationService.inviteAdministrator(
+            managerRepo,
+            { email, name },
+          );
+          if (!outcome.ok) return outcome;
+
+          await ManagerAuditService.logEvent(
+            auditLogRepo,
+            { ...authorization.session, activeOrganizationId: PLATFORM_SCOPE },
+            "ADMINISTRATOR_INVITED",
+            undefined,
+            { email: outcome.value.email },
+          );
+
+          return outcome;
+        },
       );
       if (!result.ok) return refuse(result.reason);
-
-      await ManagerAuditService.logEvent(
-        auditLogRepo,
-        { ...authorization.session, activeOrganizationId: PLATFORM_SCOPE },
-        "ADMINISTRATOR_INVITED",
-        undefined,
-        { email: result.value.email },
-      );
 
       return NextResponse.json(
         { success: true, manager: result.value },
@@ -76,20 +90,27 @@ export async function POST(request: Request) {
       );
     }
 
-    const result = await ManagerAdministrationService.inviteSchoolUser(
-      managerRepo,
-      orgRepo,
-      { email, name, organizationId },
+    const result = await runInTransaction(
+      async ({ auditLogRepo, managerRepo, orgRepo }) => {
+        const outcome = await ManagerAdministrationService.inviteSchoolUser(
+          managerRepo,
+          orgRepo,
+          { email, name, organizationId },
+        );
+        if (!outcome.ok) return outcome;
+
+        await ManagerAuditService.logEvent(
+          auditLogRepo,
+          { ...authorization.session, activeOrganizationId: organizationId },
+          "MEMBER_INVITED",
+          undefined,
+          { email: outcome.value.manager.email },
+        );
+
+        return outcome;
+      },
     );
     if (!result.ok) return refuse(result.reason);
-
-    await ManagerAuditService.logEvent(
-      auditLogRepo,
-      { ...authorization.session, activeOrganizationId: organizationId },
-      "MEMBER_INVITED",
-      undefined,
-      { email: result.value.manager.email },
-    );
 
     return NextResponse.json(
       {
@@ -100,11 +121,12 @@ export async function POST(request: Request) {
       { status: 201 },
     );
   } catch (error) {
+    console.error(
+      "Inviting somebody failed:",
+      error instanceof Error ? error.message : "unknown error",
+    );
     return NextResponse.json(
-      {
-        error:
-          error instanceof Error ? error.message : "Failed to invite anybody.",
-      },
+      { error: "Failed to invite anybody." },
       { status: 500 },
     );
   }

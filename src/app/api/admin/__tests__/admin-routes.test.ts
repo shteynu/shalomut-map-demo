@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import test, { after, before } from "node:test";
-import { InMemoryAuditLogRepository, InMemoryManagerRepository } from "@/lib/auth/domain-contract";
+import {
+  InMemoryAuditLogRepository,
+  InMemoryManagerRepository,
+  type IAuditLogRepository,
+} from "@/lib/auth/domain-contract";
 import { JwtSessionProvider } from "@/lib/auth/jwt-session-provider";
 import { PLATFORM_SCOPE } from "@/lib/auth/manager-audit-service";
 import type { Manager } from "@/lib/auth/types";
@@ -72,12 +76,48 @@ async function cookieFor(manager: Manager, organizationId: string | null) {
   return `shalomut_session=${token}`;
 }
 
-function install() {
-  const auditLogRepo = new InMemoryAuditLogRepository();
+/**
+ * What the database does when it cannot take the record: it says so, and the
+ * write that was supposed to be recorded with it must not stand.
+ *
+ * A `Proxy` rather than a spread of the repository, because these repositories
+ * carry their methods on a prototype and spreading one yields an object with
+ * none of them.
+ */
+function refusingToRecord(base: IAuditLogRepository): IAuditLogRepository {
+  return new Proxy(base, {
+    get(target, key) {
+      if (key === "recordEvent") {
+        return () => {
+          throw new Error("audit_events is unreachable: connection terminated");
+        };
+      }
+      const value = Reflect.get(target, key, target);
+      return typeof value === "function" ? value.bind(target) : value;
+    },
+  }) as IAuditLogRepository;
+}
+
+function install(auditFails = false) {
+  const recorded = new InMemoryAuditLogRepository();
+  const auditLogRepo = auditFails ? refusingToRecord(recorded) : recorded;
   const managerRepo = new InMemoryManagerRepository([administrator]);
   const orgRepo = new InMemoryOrganizationRepository([SCHOOL]);
   overrideCoreRepositories({ auditLogRepo, managerRepo, orgRepo });
-  return { auditLogRepo, managerRepo, orgRepo };
+  // `recorded` and not `auditLogRepo`: a test that made the recording fail
+  // still needs to read what did get through, which is nothing.
+  return { auditLogRepo: recorded, managerRepo, orgRepo };
+}
+
+function patch(membershipId: string, body: unknown, cookie: string) {
+  return changeMembership(
+    new Request(`http://localhost/api/admin/memberships/${membershipId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", cookie },
+      body: JSON.stringify(body),
+    }),
+    { params: Promise.resolve({ membershipId }) },
+  );
 }
 
 function post(url: string, body: unknown, cookie?: string) {
@@ -274,4 +314,162 @@ test("a membership change that does not name its school is refused", async () =>
   );
 
   assert.strictEqual(response.status, 400);
+});
+
+test("an administrative write nobody could record answers that it failed", async () => {
+  // The owner's decision of 2026-08-23: these audits are mandatory. Until then
+  // each of these three routes wrote first and recorded afterwards, so a failing
+  // audit insert left the write standing and answered 500 — the administrator
+  // read a failure while the row disagreed with them.
+  const cookie = await cookieFor(administrator, null);
+
+  const attempts: Array<[string, () => Promise<Response>]> = [
+    [
+      "opening a school",
+      async () =>
+        createSchool(
+          post(
+            "http://localhost/api/admin/schools",
+            {
+              name: "בית ספר חדש",
+              city: "ירושלים",
+              schoolType: "תיכון",
+              totalStaffCount: 45,
+            },
+            cookie,
+          ),
+        ),
+    ],
+    [
+      "inviting a school's user",
+      async () =>
+        invite(
+          post(
+            "http://localhost/api/admin/people",
+            { email: "principal@school.ac.il", organizationId: SCHOOL.id },
+            cookie,
+          ),
+        ),
+    ],
+    [
+      "inviting an administrator",
+      async () =>
+        invite(
+          post(
+            "http://localhost/api/admin/people",
+            { email: "second@shalomut.example" },
+            cookie,
+          ),
+        ),
+    ],
+  ];
+
+  for (const [what, attempt] of attempts) {
+    install(true);
+    const response = await attempt();
+    assert.strictEqual(response.status, 500, what);
+
+    const { error } = await response.json();
+    // The constant, and only the constant. The thrown message names a table and
+    // a connection state, and the caller of this endpoint is a browser: it can
+    // act on "this did not happen" and cannot act on the rest.
+    assert.doesNotMatch(error, /connection terminated|audit_events/, what);
+  }
+});
+
+test("a membership change nobody could record answers that it failed", async () => {
+  const cookie = await cookieFor(administrator, null);
+  // Invited while the recording still works, so the change below is the only
+  // thing the failing audit is being asked about.
+  install();
+  const invited = await (
+    await invite(
+      post(
+        "http://localhost/api/admin/people",
+        { email: "principal@school.ac.il", organizationId: SCHOOL.id },
+        cookie,
+      ),
+    )
+  ).json();
+
+  // Only the audit store is swapped. A second `install` would replace the
+  // manager store too, and the change would be refused as "not found" — a 404
+  // that looks like this test passing for the wrong reason.
+  overrideCoreRepositories({
+    auditLogRepo: refusingToRecord(new InMemoryAuditLogRepository()),
+  });
+
+  const response = await patch(
+    invited.membership.id,
+    { organizationId: SCHOOL.id, status: "suspended" },
+    cookie,
+  );
+
+  assert.strictEqual(response.status, 500);
+  assert.doesNotMatch(
+    (await response.json()).error,
+    /connection terminated|audit_events/,
+  );
+});
+
+test("a refusal is not a failed audit: it keeps its own status and records nothing", async () => {
+  // The refusals return out of the transaction rather than throwing, because
+  // nothing was written and there is nothing to roll back or to record. Were
+  // they thrown, every "not found" would arrive as a 500.
+  const { auditLogRepo } = install();
+  const cookie = await cookieFor(administrator, null);
+
+  const missing = await patch(
+    "mbs-nobody-has",
+    { organizationId: SCHOOL.id, status: "suspended" },
+    cookie,
+  );
+  assert.strictEqual(missing.status, 404);
+
+  await invite(
+    post(
+      "http://localhost/api/admin/people",
+      { email: "first@school.ac.il", organizationId: SCHOOL.id },
+      cookie,
+    ),
+  );
+  const second = await invite(
+    post(
+      "http://localhost/api/admin/people",
+      { email: "second@school.ac.il", organizationId: SCHOOL.id },
+      cookie,
+    ),
+  );
+  assert.strictEqual(second.status, 409);
+
+  // Exactly one event: the invitation that succeeded. Neither refusal wrote one.
+  const actions = (await auditLogRepo.findByOrganizationId(SCHOOL.id)).map(
+    (event) => event.action,
+  );
+  assert.deepStrictEqual(actions, ["MEMBER_INVITED"]);
+});
+
+test("the in-memory wiring reports the failure but cannot undo the write", async () => {
+  // Deliberately asserting the divergence rather than hiding it. `runInTransaction`
+  // with no database calls the work with the ephemeral repositories, and a `Map`
+  // has nothing to roll back — so here the school exists despite the 500. That
+  // is the whole reason the rollback is proved against PostgreSQL instead, in
+  // `src/lib/repositories/__dbtests__/postgres-administrative-audit.test.ts`.
+  const { orgRepo } = install(true);
+
+  const response = await createSchool(
+    post(
+      "http://localhost/api/admin/schools",
+      {
+        name: "בית ספר שנוצר בכל זאת",
+        city: "ירושלים",
+        schoolType: "תיכון",
+        totalStaffCount: 45,
+      },
+      await cookieFor(administrator, null),
+    ),
+  );
+
+  assert.strictEqual(response.status, 500);
+  assert.strictEqual((await orgRepo.findAll()).length, 2);
 });
