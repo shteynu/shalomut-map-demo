@@ -70,15 +70,121 @@ export interface SchoolWithPeople {
   currentRound: CurrentRoundSummary | null;
 }
 
+/**
+ * How many schools one screenful is, and the widest one an address bar may ask
+ * for.
+ *
+ * The maximum exists because `page` and `q` come off the URL, and an
+ * administrator who edits `?size=100000` would otherwise reinstate the query
+ * this whole change removed — from the outside, on purpose, and with a
+ * plausible-looking link.
+ */
+export const DEFAULT_SCHOOL_PAGE_SIZE = 20;
+export const MAXIMUM_SCHOOL_PAGE_SIZE = 100;
+
+/**
+ * The bound on the two people lists beside the schools.
+ *
+ * Neither is paged. Administrators are a handful by design, and `unattached`
+ * should be empty in a healthy platform — it is people whose school was deleted
+ * or whose membership was revoked. A cap rather than a page because the honest
+ * answer to a hundred unattached people is not a second page of them, it is
+ * that something needs cleaning up; the screen says so.
+ */
+export const MAXIMUM_LISTED_PEOPLE = 50;
+
+/** Which schools the console is asking about. */
+export interface AdministrationPageQuery {
+  /** Matched as a case-insensitive substring of the name or the city. */
+  readonly search?: string;
+  /** One-based, the way the address bar spells it. */
+  readonly page?: number;
+  readonly pageSize?: number;
+}
+
+/** Where the schools on screen sit in the whole list. */
+export interface AdministrationPage {
+  /** Echoed back normalized, so the screen renders what the server read. */
+  search: string;
+  /** One-based. */
+  page: number;
+  pageSize: number;
+  /** Schools matching the search, not schools on this page. */
+  total: number;
+  pageCount: number;
+}
+
+/** A bounded list, and whether the bound cut anything off. */
+export interface BoundedPeople {
+  people: Manager[];
+  /**
+   * True when the store had more than `MAXIMUM_LISTED_PEOPLE` to give. Read
+   * from one extra row rather than a second `count`, because the screen needs
+   * to say "and more" and not how many more.
+   */
+  truncated: boolean;
+}
+
 export interface AdministrationOverview {
   schools: SchoolWithPeople[];
-  administrators: Manager[];
+  /** Where `schools` sits in the whole list, which is what the pager renders. */
+  page: AdministrationPage;
+  administrators: BoundedPeople;
   /**
    * People with a row and nothing to open: an invitation to a school that was
    * later deleted, or a revoked membership and no other. Listed because the
    * alternative is a row nobody can see and nobody can clean up.
    */
-  unattached: Manager[];
+  unattached: BoundedPeople;
+}
+
+/**
+ * Turns whatever the address bar carries into a page the store can be asked
+ * for.
+ *
+ * Everything is clamped rather than refused: a URL is not a form, and a
+ * mistyped `?page=0` should show the first page instead of an error screen.
+ * The one thing it will not do is widen the page past the maximum.
+ */
+export function readAdministrationPageQuery(params: {
+  q?: string | string[];
+  page?: string | string[];
+}): AdministrationPageQuery {
+  const first = (value?: string | string[]) =>
+    Array.isArray(value) ? value[0] : value;
+
+  const page = Number.parseInt(first(params.page) ?? "", 10);
+
+  return {
+    search: (first(params.q) ?? "").trim(),
+    page: Number.isFinite(page) && page > 0 ? page : 1,
+  };
+}
+
+function resolvePage(query: AdministrationPageQuery): {
+  search: string;
+  page: number;
+  pageSize: number;
+} {
+  const requested = query.pageSize ?? DEFAULT_SCHOOL_PAGE_SIZE;
+  const pageSize = Math.min(
+    MAXIMUM_SCHOOL_PAGE_SIZE,
+    Math.max(1, Math.trunc(requested)),
+  );
+  const page = Math.max(1, Math.trunc(query.page ?? 1));
+
+  return { search: query.search?.trim() ?? "", page, pageSize };
+}
+
+/**
+ * Reads one more row than will be shown and reports the overflow.
+ *
+ * The extra row is discarded rather than rendered: showing 51 people when the
+ * cap says 50 would make the cap a suggestion, and the next reader would not be
+ * able to tell which number was the rule.
+ */
+function bounded(rows: Manager[], limit: number): BoundedPeople {
+  return { people: rows.slice(0, limit), truncated: rows.length > limit };
 }
 
 /**
@@ -183,16 +289,26 @@ function groupBy<T>(
  */
 export class ManagerAdministrationService {
   /**
-   * Every school, everyone in it, everyone who is not in one, and whether
-   * anything is happening in each.
+   * One page of schools, everyone in those, everyone who is in none, and
+   * whether anything is happening in each.
    *
-   * Five queries for the whole screen, whatever the number of schools: the
-   * schools, the people, every membership among them, every round of them as a
-   * summary, and one grouped count of the responses to the rounds the screen
-   * actually names. It used to ask three per school inside a loop, each one
-   * awaited before the next — some 180 ms apiece against the deployed database,
-   * so a hundred schools was around 300 round trips in sequence and a function
-   * that timed out before it answered.
+   * Seven queries for the whole screen, whatever the number of schools — and,
+   * since 2026-08-23, whatever the size of the platform. It already asked a
+   * constant number: before that it asked three per school inside a loop, some
+   * 180 ms apiece against the deployed database, so a hundred schools was
+   * around 300 round trips in sequence and a function that timed out before it
+   * answered. But constant is not the same as bounded. Every one of those seven
+   * read the whole table — every school, every manager, every membership, every
+   * round summary — and rendered all of it into one page of cards. The audit
+   * called it the last screen with no ceiling on it.
+   *
+   * Now the schools arrive one page at a time and everything else is asked
+   * about that page: the memberships name the page's schools, the managers are
+   * the ones those memberships point at, the round summaries are the page's.
+   * The two lists that are not about schools — administrators, and people with
+   * no school — are asked for directly rather than derived, because deriving
+   * them needs every manager and every membership in hand, which is precisely
+   * what stopped being true.
    *
    * The rounds arrive as summaries because a round carries its whole
    * questionnaire, and a list of schools needs none of it. Response counts are
@@ -205,19 +321,39 @@ export class ManagerAdministrationService {
     managerRepo: IManagerRepository,
     roundRepo: IRoundRepository,
     surveyRepo: ISurveyRepository,
+    query: AdministrationPageQuery = {},
   ): Promise<AdministrationOverview> {
-    const [organizations, managers] = await Promise.all([
-      orgRepo.findAll(),
-      managerRepo.findAllManagers(),
+    const { search, page, pageSize } = resolvePage(query);
+
+    // One extra row on each people list, which is how `bounded` knows there is
+    // a tail without paying for a second `count`.
+    const [organizationPage, administrators, unattached] = await Promise.all([
+      orgRepo.findPage({
+        search,
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      managerRepo.findPlatformAdministrators(MAXIMUM_LISTED_PEOPLE + 1),
+      managerRepo.findManagersWithoutStandingMembership(
+        MAXIMUM_LISTED_PEOPLE + 1,
+      ),
     ]);
-    const byId = new Map(managers.map((manager) => [manager.id, manager]));
-    const attached = new Set<string>();
+
+    const organizations = organizationPage.organizations;
     const organizationIds = organizations.map((organization) => organization.id);
 
     const [memberships, roundSummaries] = await Promise.all([
       managerRepo.findMembershipsByOrganizationIds(organizationIds),
       roundRepo.findSummariesByOrganizationIds(organizationIds),
     ]);
+
+    // Only the people this page's memberships name. A membership whose manager
+    // was deleted names nobody, and the card below skips that row rather than
+    // failing over it.
+    const managers = await managerRepo.findManagersByIds(
+      Array.from(new Set(memberships.map((membership) => membership.managerId))),
+    );
+    const byId = new Map(managers.map((manager) => [manager.id, manager]));
 
     const membershipsByOrganization = groupBy(
       memberships,
@@ -248,7 +384,6 @@ export class ManagerAdministrationService {
         // A membership naming a manager who is gone is a row worth not
         // rendering rather than a crash: the audit log keeps what happened.
         if (!manager) continue;
-        if (stands(membership)) attached.add(manager.id);
         people.push({ manager, membership });
       }
 
@@ -278,13 +413,18 @@ export class ManagerAdministrationService {
 
     return {
       schools,
-      administrators: managers.filter(
-        (manager) => manager.isPlatformAdministrator,
-      ),
-      unattached: managers.filter(
-        (manager) =>
-          !manager.isPlatformAdministrator && !attached.has(manager.id),
-      ),
+      page: {
+        search,
+        page,
+        pageSize,
+        total: organizationPage.total,
+        // A platform with no schools still has one page, and an empty one is
+        // what the screen has a sentence for. Zero pages would make the pager
+        // render "page 1 of 0".
+        pageCount: Math.max(1, Math.ceil(organizationPage.total / pageSize)),
+      },
+      administrators: bounded(administrators, MAXIMUM_LISTED_PEOPLE),
+      unattached: bounded(unattached, MAXIMUM_LISTED_PEOPLE),
     };
   }
 

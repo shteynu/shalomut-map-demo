@@ -7068,6 +7068,64 @@ body:has(.setup-form-save-bar) .help-badge > summary span {
   color: var(--status-red-text, #93412f);
 }
 
+/* The search box sits on the same row as its button, and reuses the invite
+   form's field styling below rather than growing a second one. */
+.admin-search {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem;
+  margin-bottom: 0.9rem;
+}
+
+.admin-search label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  flex: 1 1 16rem;
+  font-size: 0.85rem;
+  color: var(--text-muted, #6f665e);
+}
+
+.admin-search input {
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--stone-border, rgba(120, 105, 90, 0.3));
+  border-radius: 9px;
+  background: var(--surface, #fffdfa);
+  font: inherit;
+  color: inherit;
+}
+
+.admin-search-clear {
+  align-self: center;
+  font-size: 0.85rem;
+  color: var(--text-muted, #6f665e);
+}
+
+/* Three columns so the position stays centred whichever end of the list this
+   is: at the first page there is no previous link, and a two-item flex row
+   would slide the wording across as soon as one appeared. */
+.admin-pager {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.admin-pager > :first-child {
+  justify-self: start;
+}
+
+.admin-pager > :last-child {
+  justify-self: end;
+}
+
+.admin-pager .admin-note {
+  margin: 0;
+  text-align: center;
+}
+
 .admin-invite,
 .admin-new-school-grid {
   display: flex;

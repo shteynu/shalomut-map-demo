@@ -213,7 +213,12 @@ test("something that is not an address is refused before anything is written", a
     assert.deepStrictEqual(result, { ok: false, reason: "INVALID_EMAIL" }, email);
   }
 
-  assert.deepStrictEqual(await managerRepo.findAllManagers(), []);
+  // No manager row was created by any of those, which is the point: an address
+  // the product will not accept must not leave a person behind.
+  assert.deepStrictEqual(
+    await managerRepo.findManagersWithoutStandingMembership(10),
+    [],
+  );
 });
 
 test("an administrator is invited without a school, and is one immediately", async () => {
@@ -287,8 +292,8 @@ test("the overview names every school, its people, and the people with nowhere t
   );
   assert.strictEqual(before.schools.length, 1);
   assert.strictEqual(before.schools[0].people.length, 1);
-  assert.strictEqual(before.administrators.length, 1);
-  assert.deepStrictEqual(before.unattached, []);
+  assert.strictEqual(before.administrators.people.length, 1);
+  assert.deepStrictEqual(before.unattached.people, []);
 
   await ManagerAdministrationService.setMembershipStatus(
     managerRepo,
@@ -307,7 +312,7 @@ test("the overview names every school, its people, and the people with nowhere t
   // who had it — and is also named as somebody who can no longer sign in.
   assert.strictEqual(after.schools[0].people[0].membership.status, "suspended");
   assert.deepStrictEqual(
-    after.unattached.map((manager) => manager.email),
+    after.unattached.people.map((manager) => manager.email),
     ["principal@school.ac.il"],
   );
 });

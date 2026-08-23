@@ -45,10 +45,10 @@ import { defineConfig, devices } from '@playwright/test';
 const PORT = Number(process.env.SMOKE_PORT ?? 3100);
 
 /**
- * A second server, for the one spec the first cannot host.
+ * A second server, for the specs the first cannot host.
  *
- * `tenant-boundary.spec.ts` needs a platform administrator, and the smoke
- * server cannot have one. With no identity provider configured, the directory
+ * `tenant-boundary.spec.ts` and `administrator-console.spec.ts` both need a
+ * platform administrator, and the smoke server cannot have one. With no identity provider configured, the directory
  * *is* the password accounts — `SessionRenewalService.readDirectory` reads
  * `ManagerAuthenticationService.findAccountById`, not the database — and every
  * account it assembles is a member of one school and an administrator of
@@ -83,8 +83,8 @@ export const TENANT_BASE_URL = `http://127.0.0.1:${TENANT_PORT}`;
  */
 export const SMOKE_PASSWORD = process.env.SMOKE_PASSWORD ?? 'smoke-run-password';
 /**
- * Exported for the same reason `SMOKE_PASSWORD` is: `tenant-boundary.spec.ts`
- * mints a platform administrator's session itself, because the password door
+ * Exported for the same reason `SMOKE_PASSWORD` is: the two specs on that
+ * server mint a platform administrator's session themselves, because the door
  * cannot issue one — every account it assembles is a member of one school and
  * an administrator of none. A token signed with a different secret than the
  * server verifies with would be rejected as an expired session, which reads
@@ -116,13 +116,13 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
-      // The tenant boundary has a server of its own; see TENANT_PORT above.
-      testIgnore: /tenant-boundary\.spec\.ts/u,
+      // Two specs need the server with no password door; see TENANT_PORT above.
+      testIgnore: /(tenant-boundary|administrator-console)\.spec\.ts/u,
     },
     {
       name: 'tenant-boundary',
       use: { ...devices['Desktop Chrome'], baseURL: TENANT_BASE_URL },
-      testMatch: /tenant-boundary\.spec\.ts/u,
+      testMatch: /(tenant-boundary|administrator-console)\.spec\.ts/u,
     },
     /*
      * The respondent path, again, on a phone.

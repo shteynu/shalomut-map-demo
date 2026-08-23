@@ -201,9 +201,30 @@ test("each school is counted on its own, and nothing is summed across them", asy
   const keys = Object.keys(result);
   assert.deepStrictEqual(
     keys.sort(),
-    ["administrators", "schools", "unattached"],
+    ["administrators", "page", "schools", "unattached"],
     "the overview gained a platform-wide field; a total across schools is refused",
   );
+
+  /*
+   * `page` is the one platform-wide object here, and it is admitted on the
+   * narrow ground that a school is not a person. It says how many schools
+   * matched a search and which slice of them is on screen — the same
+   * cardinality the heading has always shown, now correct on page two. Nothing
+   * on it is derived from anybody's answers, which is what the limit is about.
+   *
+   * Named field by field rather than by its type, because the type is where the
+   * next field would arrive: a `page` that one day carried `totalResponses`
+   * would be the object this whole test refuses, arriving inside the one field
+   * that was allowed to be about the platform.
+   */
+  assert.deepStrictEqual(Object.keys(result.page).sort(), [
+    "page",
+    "pageCount",
+    "pageSize",
+    "search",
+    "total",
+  ]);
+  assert.strictEqual(result.page.total, 2);
 });
 
 test("the summary carries no score, and no field that could hold one", async () => {

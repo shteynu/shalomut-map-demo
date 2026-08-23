@@ -8,7 +8,10 @@ import {
   SETUP_SCHOOL_PARAM,
   routes,
 } from "@/lib/navigation";
-import type { CurrentRoundSummary } from "@/lib/auth/manager-administration-service";
+import type {
+  AdministrationPage,
+  CurrentRoundSummary,
+} from "@/lib/auth/manager-administration-service";
 
 export interface AdminPerson {
   membershipId: string;
@@ -53,14 +56,26 @@ const ROUND_STATUS_LABEL: Record<CurrentRoundSummary["status"], string> = {
   archived: "בארכיון",
 };
 
+/** A list the server bounded, and whether the bound cut anything off. */
+export interface AdminPeopleList<T> {
+  people: T[];
+  truncated: boolean;
+}
+
 export function AdminConsole({
   schools,
+  page,
   administrators,
   unattached,
 }: {
   schools: AdminSchool[];
-  administrators: { email: string; name: string; isSelf: boolean }[];
-  unattached: { email: string; name: string }[];
+  page: AdministrationPage;
+  administrators: AdminPeopleList<{
+    email: string;
+    name: string;
+    isSelf: boolean;
+  }>;
+  unattached: AdminPeopleList<{ email: string; name: string }>;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
@@ -116,11 +131,20 @@ export function AdminConsole({
          * It is the only platform-wide figure on this screen, and the only kind
          * there will be: a total of responses or a mean of scores across
          * schools is the object the k-anonymity limit refuses.
+         *
+         * The number is the total of what matched, not the length of this page.
+         * A heading that counted the cards would say "20" on every page of a
+         * platform with two hundred schools.
          */}
-        <h2>בתי ספר {schools.length > 0 ? `(${schools.length})` : null}</h2>
+        <h2>בתי ספר {page.total > 0 ? `(${page.total})` : null}</h2>
+
+        <SchoolSearch page={page} />
+
         {schools.length === 0 ? (
           <p className="admin-empty">
-            עדיין אין בתי ספר. הוסיפו את הראשון למעלה, ואז הזמינו אליו משתמש.
+            {page.search
+              ? `אין בית ספר שתואם ל“${page.search}”.`
+              : "עדיין אין בתי ספר. הוסיפו את הראשון למעלה, ואז הזמינו אליו משתמש."}
           </p>
         ) : null}
 
@@ -219,6 +243,8 @@ export function AdminConsole({
             )}
           </article>
         ))}
+
+        <SchoolPager page={page} />
       </section>
 
       <section className="admin-section">
@@ -228,7 +254,7 @@ export function AdminConsole({
           שאינו שלו נרשמת ביומן.
         </p>
         <ul className="admin-people">
-          {administrators.map((administrator) => (
+          {administrators.people.map((administrator) => (
             <li key={administrator.email}>
               <span className="admin-person-identity">
                 <strong>{administrator.email}</strong>
@@ -239,6 +265,7 @@ export function AdminConsole({
             </li>
           ))}
         </ul>
+        <TruncationNote truncated={administrators.truncated} />
         <InviteForm
           label="הזמנת מנהל פלטפורמה"
           busy={busy === "administrator"}
@@ -248,7 +275,7 @@ export function AdminConsole({
         />
       </section>
 
-      {unattached.length > 0 ? (
+      {unattached.people.length > 0 ? (
         <section className="admin-section">
           <h2>ללא בית ספר</h2>
           <p className="admin-note">
@@ -256,7 +283,7 @@ export function AdminConsole({
             שנמחק. הן אינן יכולות להתחבר.
           </p>
           <ul className="admin-people">
-            {unattached.map((manager) => (
+            {unattached.people.map((manager) => (
               <li key={manager.email}>
                 <span className="admin-person-identity">
                   <strong>{manager.email}</strong>
@@ -264,9 +291,97 @@ export function AdminConsole({
               </li>
             ))}
           </ul>
+          <TruncationNote truncated={unattached.truncated} />
         </section>
       ) : null}
     </div>
+  );
+}
+
+/**
+ * The search box, and it is a plain `GET` form on purpose.
+ *
+ * Submitting it replaces the query string with this one field, which drops
+ * `page` — so a new search always starts at the first page instead of landing
+ * on page four of a shorter list. It also means the search works with the
+ * form's own navigation rather than through `router.push`, which is the same
+ * reason the list itself is rendered on the server: what is being searched is
+ * the database, not an array in this component.
+ */
+function SchoolSearch({ page }: { page: AdministrationPage }) {
+  return (
+    <form className="admin-search" method="get" role="search">
+      <label>
+        <span>חיפוש בית ספר</span>
+        <input
+          type="search"
+          name="q"
+          defaultValue={page.search}
+          placeholder="שם או עיר"
+        />
+      </label>
+      <button type="submit" className="secondary-button">
+        חיפוש
+      </button>
+      {page.search ? (
+        <a className="admin-search-clear" href="?">
+          ניקוי
+        </a>
+      ) : null}
+    </form>
+  );
+}
+
+/** Where this page sits, and the two links out of it. */
+function SchoolPager({ page }: { page: AdministrationPage }) {
+  if (page.pageCount <= 1) return null;
+
+  const href = (target: number) => {
+    const params = new URLSearchParams();
+    if (page.search) params.set("q", page.search);
+    if (target > 1) params.set("page", String(target));
+    const query = params.toString();
+    return query ? `?${query}` : "?";
+  };
+
+  return (
+    <nav className="admin-pager" aria-label="דפדוף בין בתי ספר">
+      {page.page > 1 ? (
+        <a className="secondary-button" href={href(page.page - 1)}>
+          הקודם
+        </a>
+      ) : (
+        <span className="admin-pager-edge" aria-hidden="true" />
+      )}
+      <span className="admin-note">
+        עמוד {page.page} מתוך {page.pageCount}
+      </span>
+      {page.page < page.pageCount ? (
+        <a className="secondary-button" href={href(page.page + 1)}>
+          הבא
+        </a>
+      ) : (
+        <span className="admin-pager-edge" aria-hidden="true" />
+      )}
+    </nav>
+  );
+}
+
+/**
+ * What a bounded list says when it was cut short.
+ *
+ * Neither people list is paged, so this is the whole of the honesty about it:
+ * a screen that silently showed the first fifty would read as a platform with
+ * fifty of them.
+ */
+function TruncationNote({ truncated }: { truncated: boolean }) {
+  if (!truncated) return null;
+
+  return (
+    <p className="admin-note">
+      הרשימה נחתכה. מוצגים הראשונים בלבד — אם יש כאן יותר מכמה עשרות, זה סימן
+      שמשהו דורש טיפול ולא שצריך עמוד נוסף.
+    </p>
   );
 }
 

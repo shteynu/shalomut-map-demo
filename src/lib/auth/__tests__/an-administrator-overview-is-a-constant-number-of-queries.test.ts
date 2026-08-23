@@ -1,5 +1,6 @@
 /**
- * How many times the administrator overview asks the database anything.
+ * How many times the administrator overview asks the database anything, and how
+ * much each of those questions is allowed to bring back.
  *
  * It used to ask three questions per school inside a loop, each awaited before
  * the next: the school's memberships, the school's rounds, and a response count.
@@ -7,9 +8,15 @@
  * around 300 round trips in sequence — some 54 seconds, past the function
  * timeout, on the only administration screen there is.
  *
- * So this test counts calls rather than measuring time. What the screen says is
+ * Fixing that made the count constant. It did not make the answers bounded:
+ * every one of those constant queries still read a whole table — every school,
+ * every manager, every membership — and rendered all of it into one page. So
+ * these tests now pin both halves. A constant number of unbounded queries is
+ * the same screen with a slower failure.
+ *
+ * They count calls rather than measuring time. What the screen says is
  * `administrator-school-overview.test.ts`; that it still says it while asking a
- * fixed number of questions is here.
+ * fixed number of bounded questions is here.
  */
 import assert from "node:assert/strict";
 import test from "node:test";
@@ -19,13 +26,18 @@ import {
   InMemoryRoundRepository,
   InMemorySurveyRepository,
 } from "@/lib/repositories";
+import type { OrganizationPageQuery } from "@/lib/repositories/interfaces";
 import type {
   Organization,
   SurveyResponseRecord,
   SurveyRound,
 } from "@/lib/types/backend";
 import { InMemoryManagerRepository } from "../domain-contract";
-import { ManagerAdministrationService } from "../manager-administration-service";
+import {
+  DEFAULT_SCHOOL_PAGE_SIZE,
+  ManagerAdministrationService,
+  type AdministrationPageQuery,
+} from "../manager-administration-service";
 
 /** Every repository call the overview makes, in order. */
 let calls: string[] = [];
@@ -39,11 +51,32 @@ class CountingOrganizationRepository extends InMemoryOrganizationRepository {
   async findAll() {
     return record("orgRepo.findAll", await super.findAll());
   }
+
+  async findPage(query: OrganizationPageQuery) {
+    return record("orgRepo.findPage", await super.findPage(query));
+  }
 }
 
 class CountingManagerRepository extends InMemoryManagerRepository {
-  async findAllManagers() {
-    return record("managerRepo.findAllManagers", await super.findAllManagers());
+  async findManagersByIds(ids: readonly string[]) {
+    return record(
+      "managerRepo.findManagersByIds",
+      await super.findManagersByIds(ids),
+    );
+  }
+
+  async findPlatformAdministrators(limit: number) {
+    return record(
+      "managerRepo.findPlatformAdministrators",
+      await super.findPlatformAdministrators(limit),
+    );
+  }
+
+  async findManagersWithoutStandingMembership(limit: number) {
+    return record(
+      "managerRepo.findManagersWithoutStandingMembership",
+      await super.findManagersWithoutStandingMembership(limit),
+    );
   }
 
   async findMembershipsByOrganizationId(organizationId: string) {
@@ -126,7 +159,10 @@ function responsesFor(roundId: string, count: number): SurveyResponseRecord[] {
   }));
 }
 
-async function overviewOf(schoolCount: number) {
+async function overviewOf(
+  schoolCount: number,
+  query: AdministrationPageQuery = {},
+) {
   const organizations = Array.from({ length: schoolCount }, (_, index) =>
     school(index),
   );
@@ -141,6 +177,7 @@ async function overviewOf(schoolCount: number) {
     new CountingManagerRepository(),
     new CountingRoundRepository(rounds),
     new CountingSurveyRepository(responses),
+    query,
   );
 
   return { overview, calls: [...calls] };
@@ -148,10 +185,45 @@ async function overviewOf(schoolCount: number) {
 
 test("the number of queries does not grow with the number of schools", async () => {
   const one = await overviewOf(1);
-  const many = await overviewOf(25);
+  const many = await overviewOf(300);
 
   assert.deepEqual(many.calls, one.calls);
-  assert.equal(many.overview.schools.length, 25);
+});
+
+test("neither does the number of schools on the screen", async () => {
+  const { overview } = await overviewOf(300);
+
+  // The half the constant-query fix did not address. Three hundred schools used
+  // to be three hundred cards in one response.
+  assert.equal(overview.schools.length, DEFAULT_SCHOOL_PAGE_SIZE);
+  // And the heading still says how many there are, which is why the count is
+  // asked for separately rather than read off the page.
+  assert.equal(overview.page.total, 300);
+  assert.equal(overview.page.pageCount, 15);
+});
+
+test("the last page is short and is still the last page", async () => {
+  const { overview } = await overviewOf(25, { page: 2 });
+
+  assert.equal(overview.schools.length, 5);
+  assert.equal(overview.page.page, 2);
+  assert.equal(overview.page.pageCount, 2);
+});
+
+test("a page past the end is empty rather than an error", async () => {
+  // `page` comes off the address bar, so a number nobody offered is reachable
+  // by typing. An empty page is the honest answer; a throw here would be a 500
+  // on a URL an administrator can produce with the keyboard.
+  const { overview } = await overviewOf(25, { page: 9 });
+
+  assert.equal(overview.schools.length, 0);
+  assert.equal(overview.page.total, 25);
+});
+
+test("a page cannot be widened past the maximum from the outside", async () => {
+  const { overview } = await overviewOf(300, { pageSize: 100_000 });
+
+  assert.equal(overview.schools.length, 100);
 });
 
 test("nothing is asked about one school at a time", async () => {
@@ -173,12 +245,19 @@ test("nothing is asked about one school at a time", async () => {
   }
 
   assert.deepEqual(made.slice().sort(), [
-    "managerRepo.findAllManagers",
+    "managerRepo.findManagersByIds",
+    "managerRepo.findManagersWithoutStandingMembership",
     "managerRepo.findMembershipsByOrganizationIds",
-    "orgRepo.findAll",
+    "managerRepo.findPlatformAdministrators",
+    "orgRepo.findPage",
     "roundRepo.findSummariesByOrganizationIds",
     "surveyRepo.countResponsesByRoundIds",
   ]);
+
+  // The one that is gone rather than replaced. `findAll` returned every school
+  // in the platform to render twenty of them, and it is still on the repository
+  // for the seed and the scripts.
+  assert.equal(made.includes("orgRepo.findAll"), false);
 });
 
 test("a school with nothing open still costs nothing extra", async () => {
@@ -195,5 +274,9 @@ test("a school with nothing open still costs nothing extra", async () => {
 
   assert.equal(overview.schools.length, 2);
   assert.equal(overview.schools[0].currentRound, null);
-  assert.equal(calls.length, 5);
+  // Seven is the ceiling, not seven round trips: `findManagersByIds` and
+  // `countResponsesByRoundIds` are both handed an empty list here and the
+  // durable repositories return without asking the database. The call is
+  // counted anyway, because what this test defends is the shape of the read.
+  assert.equal(calls.length, 7);
 });

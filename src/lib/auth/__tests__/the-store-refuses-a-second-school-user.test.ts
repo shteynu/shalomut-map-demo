@@ -124,7 +124,11 @@ function alwaysRefusing(base: IManagerRepository): IManagerRepository {
       base.findMembershipsByOrganizationId(id),
     findMembershipsByOrganizationIds: (ids) =>
       base.findMembershipsByOrganizationIds(ids),
-    findAllManagers: () => base.findAllManagers(),
+    findManagersByIds: (ids) => base.findManagersByIds(ids),
+    findPlatformAdministrators: (limit) =>
+      base.findPlatformAdministrators(limit),
+    findManagersWithoutStandingMembership: (limit) =>
+      base.findManagersWithoutStandingMembership(limit),
     saveManager: (manager) => base.saveManager(manager),
     countPlatformAdministrators: () => base.countPlatformAdministrators(),
     saveMembership: async () => {

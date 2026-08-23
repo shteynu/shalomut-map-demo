@@ -3,7 +3,10 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { AdminConsole } from "@/components/admin";
 import { PageIntro } from "@/components/ui";
-import { ManagerAdministrationService } from "@/lib/auth/manager-administration-service";
+import {
+  ManagerAdministrationService,
+  readAdministrationPageQuery,
+} from "@/lib/auth/manager-administration-service";
 import { resolveCoreRepositories } from "@/lib/composition-root";
 import { resolveManagerSessionFromHeaders } from "@/lib/server/session-auth";
 
@@ -15,8 +18,14 @@ import { resolveManagerSessionFromHeaders } from "@/lib/server/session-auth";
  * is not a visit to any of them. Opening one of these schools is, and that is
  * recorded when the administrator follows a link into it.
  */
-export default async function AdminPage() {
+export default async function AdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   await connection();
+
+  const params = await searchParams;
 
   const session = await resolveManagerSessionFromHeaders({
     headers: await headers(),
@@ -28,11 +37,21 @@ export default async function AdminPage() {
 
   const { managerRepo, orgRepo, roundRepo, surveyRepo } =
     resolveCoreRepositories();
+  // The address bar is the state. A page rendered on the server cannot be
+  // paged by a `useState` in the client — the rows it would page are not there
+  // — and putting it in the URL is also what keeps `router.refresh()` working
+  // after an invitation: the refresh re-runs this read with the same page and
+  // the same search, so acting on a school does not throw the administrator
+  // back to the top of the list.
   const overview = await ManagerAdministrationService.loadOverview(
     orgRepo,
     managerRepo,
     roundRepo,
     surveyRepo,
+    readAdministrationPageQuery({
+      q: params.q,
+      page: params.page,
+    }),
   );
 
   return (
@@ -62,15 +81,22 @@ export default async function AdminPage() {
             status: membership.status,
           })),
         }))}
-        administrators={overview.administrators.map((manager) => ({
-          email: manager.email,
-          name: manager.name,
-          isSelf: manager.id === session.managerId,
-        }))}
-        unattached={overview.unattached.map((manager) => ({
-          email: manager.email,
-          name: manager.name,
-        }))}
+        page={overview.page}
+        administrators={{
+          truncated: overview.administrators.truncated,
+          people: overview.administrators.people.map((manager) => ({
+            email: manager.email,
+            name: manager.name,
+            isSelf: manager.id === session.managerId,
+          })),
+        }}
+        unattached={{
+          truncated: overview.unattached.truncated,
+          people: overview.unattached.people.map((manager) => ({
+            email: manager.email,
+            name: manager.name,
+          })),
+        }}
       />
     </div>
   );
