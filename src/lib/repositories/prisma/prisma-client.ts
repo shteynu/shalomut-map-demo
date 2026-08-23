@@ -27,6 +27,8 @@ export interface MinimalPrismaClient {
     update: (args: any) => Promise<any>;
     updateMany: (args: any) => Promise<{ count: number }>;
     deleteMany: (args?: any) => Promise<any>;
+    /** Queue depth, for the stall detector. Counted rather than fetched. */
+    count: (args?: any) => Promise<number>;
   };
   roundGoal?: {
     create: (args: any) => Promise<any>;

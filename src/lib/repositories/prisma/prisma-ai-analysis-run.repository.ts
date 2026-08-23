@@ -1,5 +1,6 @@
 import type { IAiAnalysisRunRepository } from '../interfaces';
 import type {
+  AiAnalysisQueueSnapshot,
   AiAnalysisRun,
   AiAnalysisRunLease,
   EnqueueAiAnalysisRunResult,
@@ -318,5 +319,69 @@ export class PrismaAiAnalysisRunRepository
 
   async deleteByRoundId(roundId: string): Promise<void> {
     await this.delegate.deleteMany({ where: { roundId } });
+  }
+
+  async readQueueSnapshot(): Promise<AiAnalysisQueueSnapshot> {
+    const observedAt = this.now();
+
+    /*
+     * Four reads rather than one, and every one of them is an index seek on
+     * `[state, leaseExpiresAt, queuedAt]` — the index `claimNext` already
+     * needs, so this adds no schema and no migration. Counting in the database
+     * rather than fetching rows matters here: the answer must not get slower as
+     * the table grows, since the case worth reading it in is the one where runs
+     * have been piling up.
+     *
+     * Nothing sweeps and nothing writes. A detector that repaired what it found
+     * would be a second claimer racing the first, and this has to be safe to
+     * call from a monitor every minute.
+     */
+    const [queuedCount, runningCount, leasedCount, oldestQueued, oldestAbandoned] =
+      await Promise.all([
+        this.delegate.count({ where: { state: 'queued' } }),
+        this.delegate.count({ where: { state: 'running' } }),
+        this.delegate.count({
+          where: { state: 'running', leaseExpiresAt: { gt: observedAt } },
+        }),
+        this.delegate.findFirst({
+          where: { state: 'queued' },
+          orderBy: { queuedAt: 'asc' },
+          select: { queuedAt: true },
+        }),
+        this.delegate.findFirst({
+          where: { state: 'running', leaseExpiresAt: { lte: observedAt } },
+          orderBy: { leaseExpiresAt: 'asc' },
+          select: { leaseExpiresAt: true },
+        }),
+      ]);
+
+    /*
+     * The abandoned run is measured from its expiry rather than from
+     * `queuedAt`: it became takeable again when its lease ran out, and dating
+     * it from the beginning would report a run that started promptly and died
+     * an hour later as having waited an hour.
+     *
+     * `attemptCount` is deliberately not filtered on. A run that has exhausted
+     * its attempts is still work sitting in the table with nobody touching it,
+     * and `claimNext` marks it `lease_exhausted` — which is itself something
+     * only a live worker does. Excluding it here would hide the stall in the
+     * exact case where the queue's last three rows are all terminal-but-unmarked.
+     */
+    const claimableSince = [
+      oldestQueued?.queuedAt ?? null,
+      oldestAbandoned?.leaseExpiresAt ?? null,
+    ]
+      .filter((value): value is Date | string | number => value != null)
+      .map((value) => new Date(value).getTime());
+
+    return {
+      observedAt,
+      queuedCount,
+      runningCount,
+      leasedCount,
+      oldestClaimableSince: claimableSince.length
+        ? new Date(Math.min(...claimableSince))
+        : null,
+    };
   }
 }

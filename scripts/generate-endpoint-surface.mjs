@@ -78,6 +78,15 @@ const DECLARATIONS = {
     direction: 'worker → Core',
     answers: '200',
   },
+  'GET /api/ai-analysis-runs/queue': {
+    // Not part of a run's life, which is why it sits after the four rows that
+    // are: nothing on this path claims, renews or finishes anything. It answers
+    // whether the rows above are being consumed at all, and the public half of
+    // that answer — a verdict with no numbers — is `GET /api/health/ai-queue`,
+    // which carries no shared secret and so is not part of this boundary.
+    direction: 'operator → Core',
+    answers: '200 · 401 · 503',
+  },
   'GET /health': {
     direction: 'public',
     answers: '200',

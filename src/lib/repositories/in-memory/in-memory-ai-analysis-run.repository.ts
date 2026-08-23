@@ -1,5 +1,6 @@
 import type { IAiAnalysisRunRepository } from '../interfaces';
 import type {
+  AiAnalysisQueueSnapshot,
   AiAnalysisRun,
   AiAnalysisRunLease,
   EnqueueAiAnalysisRunResult,
@@ -248,6 +249,45 @@ export class InMemoryAiAnalysisRunRepository
     for (const [runId, run] of this.runs) {
       if (run.roundId === roundId) this.runs.delete(runId);
     }
+  }
+
+  async readQueueSnapshot(): Promise<AiAnalysisQueueSnapshot> {
+    const observedAt = this.now();
+    const runs = [...this.runs.values()];
+
+    const running = runs.filter((run) => run.state === 'running');
+    const leased = running.filter(
+      (run) =>
+        run.leaseExpiresAt !== undefined &&
+        run.leaseExpiresAt.getTime() > observedAt.getTime(),
+    );
+
+    // A queued run has waited since it was queued; an abandoned one since its
+    // lease expired. Same rule as the Prisma repository, and the reason it is
+    // written twice rather than shared is that both are translations of one
+    // definition into what their store can express.
+    const claimableSince = [
+      ...runs
+        .filter((run) => run.state === 'queued')
+        .map((run) => run.queuedAt.getTime()),
+      ...running
+        .filter(
+          (run) =>
+            run.leaseExpiresAt !== undefined &&
+            run.leaseExpiresAt.getTime() <= observedAt.getTime(),
+        )
+        .map((run) => run.leaseExpiresAt!.getTime()),
+    ];
+
+    return {
+      observedAt,
+      queuedCount: runs.filter((run) => run.state === 'queued').length,
+      runningCount: running.length,
+      leasedCount: leased.length,
+      oldestClaimableSince: claimableSince.length
+        ? new Date(Math.min(...claimableSince))
+        : null,
+    };
   }
 
   clear(): void {

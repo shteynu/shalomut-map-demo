@@ -39,12 +39,32 @@ export function isRespondentRoute(pathname: string) {
  */
 export function isPublicOperationalRoute(pathname: string, method: string) {
   if (method !== "GET" && method !== "HEAD") return false;
-  return pathname === "/api/health" || pathname === "/api/health/";
+  return (
+    pathname === "/api/health" ||
+    pathname === "/api/health/" ||
+    /*
+     * The queue's liveness verdict, and it is public for the same reason and
+     * with the same discipline: a free uptime monitor cannot hold a session or
+     * send a header, and a detector nobody can watch is the failure it was
+     * built to end. It publishes a word and a status code — the depth and the
+     * wait stay behind the shared secret on `/api/ai-analysis-runs/queue`.
+     */
+    pathname === "/api/health/ai-queue" ||
+    pathname === "/api/health/ai-queue/"
+  );
 }
 
 const AI_INSIGHTS_PATH = /^\/api\/rounds\/[^/]+\/ai-insights\/?$/;
 const AI_ANALYSIS_RUN_WORKER_PATH =
   /^\/api\/ai-analysis-runs\/(?:claim|[^/]+\/(?:heartbeat|fail))\/?$/;
+/**
+ * The queue's numbers, read by an operator rather than written by a worker —
+ * so it is a `GET` and it is named apart from the three paths above rather
+ * than folded into their expression. Widening that regex to both methods would
+ * have opened `claim`, `heartbeat` and `fail` to a `GET` as well, which is a
+ * larger change than this endpoint asked for.
+ */
+const AI_ANALYSIS_RUN_QUEUE_PATH = /^\/api\/ai-analysis-runs\/queue\/?$/;
 
 /**
  * Routes that the external AI service calls with their own shared secret. They
@@ -54,6 +74,12 @@ const AI_ANALYSIS_RUN_WORKER_PATH =
  */
 export function isMachineAuthenticatedRoute(pathname: string, method: string) {
   if (pathname === "/api/mcp" || pathname === "/api/mcp/") return true;
+  if (
+    (method === "GET" || method === "HEAD") &&
+    AI_ANALYSIS_RUN_QUEUE_PATH.test(pathname)
+  ) {
+    return true;
+  }
   return (
     method === "POST" &&
     (AI_INSIGHTS_PATH.test(pathname) ||

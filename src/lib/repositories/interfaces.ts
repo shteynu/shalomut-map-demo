@@ -12,6 +12,7 @@ import {
   UpdateRoundInput,
 } from '../types/backend';
 import type {
+  AiAnalysisQueueSnapshot,
   AiAnalysisRun,
   AiAnalysisRunLease,
   EnqueueAiAnalysisRunResult,
@@ -192,6 +193,16 @@ export interface IAiAnalysisRunRepository {
    */
   findByRoundId(roundId: string): Promise<AiAnalysisRun[]>;
   deleteByRoundId(roundId: string): Promise<void>;
+  /**
+   * The queue as it stands, for the one question nothing else can answer: is
+   * anybody taking the work?
+   *
+   * Read-only and deliberately outside `claimNext`. Every other reader of this
+   * table is a worker, and a worker is exactly what may have stopped — so the
+   * sweep that expires abandoned leases cannot double as the detector, because
+   * it runs only when the thing it would report on is alive.
+   */
+  readQueueSnapshot(): Promise<AiAnalysisQueueSnapshot>;
 }
 
 /**

@@ -67,3 +67,36 @@ export type FinishAiAnalysisRunResult =
   | 'duplicate'
   | 'stale'
   | 'not_found';
+
+/**
+ * What the queue looks like at one instant, in the four facts a verdict needs.
+ *
+ * Counts and timestamps rather than a status, because the reading is not the
+ * database's to make: `assessAiAnalysisQueue` owns the thresholds, this owns
+ * what is true. Keeping them apart is what lets the verdict be tested without a
+ * database and the query be tested without a clock.
+ */
+export interface AiAnalysisQueueSnapshot {
+  /** The instant every field below was read against. */
+  observedAt: Date;
+  /** Runs waiting to be started for the first time. */
+  queuedCount: number;
+  /** Runs in `running`, whether or not their lease is still alive. */
+  runningCount: number;
+  /**
+   * Running runs whose lease has not expired — the one proof Core has that a
+   * consumer is alive. A busy worker holds exactly one per lane; a dead one
+   * holds none within ninety seconds of dying.
+   */
+  leasedCount: number;
+  /**
+   * When the oldest run a worker could take right now became takeable, or
+   * `null` when nothing is takeable.
+   *
+   * Two different clocks, deliberately: a queued run became takeable when it
+   * was queued, and an abandoned running one when its lease expired. Measuring
+   * the second from `queuedAt` would report a run that was picked up promptly
+   * and later abandoned as having waited from the beginning.
+   */
+  oldestClaimableSince: Date | null;
+}

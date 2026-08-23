@@ -123,6 +123,58 @@ paths:
                         type: array
                         items:
                           type: string
+  /api/health/ai-queue:
+    get:
+      tags: [Health]
+      summary: Whether the AI analysis queue is being consumed
+      description: >-
+        A verdict and nothing else, for a monitor that cannot send a header.
+        Core cannot otherwise tell a stopped consumer from a busy one: the sweep
+        that expires abandoned leases runs inside the claim endpoint, which only
+        a live worker calls, so a worker that dies leaves its runs queued for
+        ever with nothing to say so. The reading needs two facts together —
+        takeable work that has waited past the threshold, *and* no live lease
+        anywhere. A backlog under a live lease is the queue working however long
+        it is, so `draining` covers both a short wait and ten rounds queued
+        behind one that is genuinely being analysed. Answers 503 on `stalled`,
+        which any uptime monitor already treats as an alert, and 503 on
+        `unknown` when the queue cannot be read at all — an empty queue and an
+        unreachable one look identical and mean opposite things. Deliberately
+        carries no depth, no wait and no round: those are behind the shared
+        secret on /api/ai-analysis-runs/queue.
+      responses:
+        "200":
+          description: Nothing is waiting (`idle`), or what waits has a taker (`draining`)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, commit]
+                properties:
+                  status:
+                    type: string
+                    enum: [idle, draining]
+                  commit:
+                    type: string
+                    example: a3dd4fe
+        "503":
+          description: The queue has stalled, or its state could not be read
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, commit]
+                properties:
+                  status:
+                    type: string
+                    enum: [stalled, unknown]
+                  commit:
+                    type: string
+                  reason:
+                    type: string
+                    description: >-
+                      Present only on `unknown`, and never the underlying error.
+                    enum: [no_durable_storage, queue_unreadable]
   /api/rounds:
     get:
       tags: [Rounds]
@@ -1234,6 +1286,68 @@ paths:
           description: Analysis run not found
         "409":
           description: Lease expired or belongs to another worker
+
+  /api/ai-analysis-runs/queue:
+    get:
+      tags: [AI Integration]
+      summary: Queue depth and the age of the oldest waiting run
+      description: >-
+        The numbers behind the public verdict on /api/health/ai-queue, behind
+        the shared secret for the reason the counts on the AI service's
+        /api/v1/provider-health are: a depth says how many schools are measuring
+        right now. Nothing here identifies a round, a school or a respondent.
+        Reads only — the sweep that marks exhausted leases belongs to the claim
+        endpoint, where a worker is doing something about them, so this is safe
+        to call every minute forever.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: The queue as it stands
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - status
+                  - waitingCount
+                  - leasedCount
+                  - oldestWaitSeconds
+                  - stallAfterSeconds
+                  - observedAt
+                properties:
+                  status:
+                    type: string
+                    enum: [idle, draining, stalled]
+                  waitingCount:
+                    type: integer
+                    description: >-
+                      Runs a worker could take right now: queued, plus running
+                      ones whose lease expired without anybody reclaiming them.
+                  leasedCount:
+                    type: integer
+                    description: >-
+                      Runs under a live lease. Above zero is the only proof Core
+                      has that a consumer is alive.
+                  oldestWaitSeconds:
+                    type: integer
+                    nullable: true
+                    description: >-
+                      How long the oldest takeable run has been takeable — since
+                      it was queued, or since its lease expired. Null when
+                      nothing is waiting, which is not the same as zero.
+                  stallAfterSeconds:
+                    type: integer
+                    description: >-
+                      The threshold this verdict was judged against, published
+                      so it can be checked rather than trusted.
+                  observedAt:
+                    type: string
+                    format: date-time
+        "401":
+          description: Missing or invalid callback/worker secret
+        "503":
+          description: Persistent storage is not configured
 
 components:
   securitySchemes:

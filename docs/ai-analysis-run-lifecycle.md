@@ -184,6 +184,64 @@ lease becoming eligible again. Expiring the exhausted ones is part of claiming
 rather than a separate collector — every `claim` first marks `lease_exhausted`
 on whatever ran out of attempts, then looks for its own work. There is no cron.
 
+## Whether anybody is taking the work
+
+Everything above assumes a consumer. Nothing above notices when there isn't
+one — and that was the shape of the defect the audit of 2026-08-21 found. The
+sweep in the previous paragraph runs inside `claim`, so the only thing that
+repairs an abandoned run is the same thing that may have stopped; a worker that
+dies leaves its rows `queued` for ever, and Core had no way to say so. The
+queue's liveness rested entirely on an external uptime monitor knocking on the
+Python service every five minutes, which is one third-party account away from
+nothing.
+
+Two endpoints answer it now, and neither writes anything.
+
+| Path | Reader | Answers |
+| --- | --- | --- |
+| `GET /api/health/ai-queue` | anonymous, for a monitor | `idle` · `draining` → 200; `stalled` · `unknown` → 503 |
+| `GET /api/ai-analysis-runs/queue` | operator, `AI_CALLBACK_SECRET` | the verdict plus `waitingCount`, `leasedCount`, `oldestWaitSeconds` |
+
+The split is the one the AI service already makes between
+`/api/v1/provider-status` and `/api/v1/provider-health`: the verdict is public
+because a free monitor cannot send a header and a detector nobody watches is the
+failure being fixed, and the numbers are not because a depth says how many
+schools are measuring right now. It is a sibling of `/api/health` rather than a
+field in it — that endpoint deliberately touches no database, so it keeps
+answering when the database is what broke.
+
+**The reading needs two facts, not one.** "The oldest queued run is older than
+N" cannot tell a dead consumer from a busy one: ten rounds closing together
+legitimately leave the tenth waiting half an hour, and a detector that cried
+stall on a busy afternoon would be switched off within a week. What separates
+them is the lease — a worker that is merely busy is holding one, and a worker
+that has died stops holding any within ninety seconds. So `stalled` requires
+takeable work that has waited past the threshold **and** no live lease anywhere.
+
+```mermaid
+stateDiagram-v2
+    [*] --> idle: nothing takeable
+    idle --> draining: a run is queued, or a lease expired
+    draining --> idle: the queue empties
+    draining --> stalled: no live lease, and the wait passed the threshold
+    stalled --> draining: somebody claims
+```
+
+Two definitions worth knowing, because both are places a simpler version would
+be wrong. A running run whose lease expired counts as **waiting**, not as
+running: its worker is gone by definition, and counting it as running would
+report the exact failure this exists to catch as healthy. And its wait is
+measured from the expiry rather than from `queuedAt`, so a run that started
+promptly and was abandoned an hour later is not reported as having waited an
+hour.
+
+The threshold is generous on purpose. A live worker is at most one idle poll
+late, but the free Render plan sleeps after fifteen minutes without *inbound*
+traffic and the worker's own polling is outbound — so a sleeping consumer waits
+for the monitor's five-minute knock and about a minute of cold start before it
+can poll at all. Six and a half minutes is a legitimately slow start;
+`AI_ANALYSIS_QUEUE_STALL_AFTER_MS` sits above it.
+
 ## How many rounds run at once
 
 One worker loop holds one lease: `run_forever` awaits `process_once`, so a
@@ -228,6 +286,7 @@ the same one it was with a single lane.
 | MCP timeout | 5 s | `MCP_REQUEST_TIMEOUT_SECONDS` | `ai-analytics-service/src/mcp_client/client.py` |
 | Repair passes | up to 3 | `retry_count` | `ai-analytics-service/src/agents/graph.py` |
 | Claim contention retries | 5 | `claimNext` | `src/lib/repositories/prisma/prisma-ai-analysis-run.repository.ts` |
+| Queue stall threshold | 600 s | `AI_ANALYSIS_QUEUE_STALL_AFTER_MS` | `src/lib/server/ai-analysis-worker.ts` |
 
 ## The surface between the two runtimes
 
@@ -247,6 +306,7 @@ An endpoint the code has and this table does not is what happened on
 | worker → Core | `POST /api/ai-analysis-runs/:runId/fail` | `AI_CALLBACK_SECRET` | 200 · 404 · 409 |
 | worker → Core | `POST /api/rounds/:roundId/ai-insights` | `AI_CALLBACK_SECRET` | 200 · 400 |
 | worker → Core | `POST /api/mcp` | `MCP_SHARED_SECRET` | 200 |
+| operator → Core | `GET /api/ai-analysis-runs/queue` | `AI_CALLBACK_SECRET` | 200 · 401 · 503 |
 | public | `GET /health` | none | 200 |
 | public | `GET /api/v1/provider-status` | none | 200 |
 | public | `GET /api/v1/fallback-status` | none | 200 |
