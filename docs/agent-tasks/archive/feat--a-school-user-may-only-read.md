@@ -5,8 +5,9 @@
 - Branch: `feat/a-school-user-may-only-read`
 - Base branch: `main`
 - Base commit: `124f661`
-- Current HEAD: see **Exact Git state** — three commits above `124f661`
-- Status: implementation and documentation complete, verified, uncommitted
+- Current HEAD: `c929d9c`, an ancestor of `main`. The branch is `5089fb2`, `c054bf3`, `c929d9c`,
+  oldest first.
+- Status: complete, landed on `main`; archived 2026-08-23
 - Last updated: 2026-08-23
 - Last agent/tool: Claude Code (Opus 5)
 

@@ -6,9 +6,9 @@
 - Base branch: `fix/the-counters-reach-a-place-that-can-warn-someone` (itself
   stacked on `fix/a-superseded-round-still-gets-its-analysis`, itself on `main`)
 - Base commit: `524eac6`
-- Current HEAD: the handoff commit at the tip of this branch, whose parent is
-  `d32933d`
-- Status: implemented and verified locally; this branch not yet on `main`
+- Current HEAD: `34e6755`, an ancestor of `main`. The branch is `cd8c12e`, `6a12438`, `d32933d`, `f45cb26`, `34e6755`,
+  oldest first.
+- Status: complete, landed on `main`; archived 2026-08-23
 - Last updated: 2026-08-23
 - Last agent/tool: Claude Code (Opus 5)
 

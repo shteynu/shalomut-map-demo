@@ -5,8 +5,9 @@
 - Branch: `perf/the-history-list-stops-reading-every-questionnaire`
 - Base branch: `main`
 - Base commit: `36b9fd0`
-- Current HEAD: see **Exact Git state**
-- Status: complete and verified
+- Current HEAD: `7b2d93c`, an ancestor of `main`. The branch is `558b4b3`, `7b2d93c`,
+  oldest first.
+- Status: complete, landed on `main`; archived 2026-08-23
 - Last updated: 2026-08-23
 - Last agent/tool: Claude Code (Opus 5)
 

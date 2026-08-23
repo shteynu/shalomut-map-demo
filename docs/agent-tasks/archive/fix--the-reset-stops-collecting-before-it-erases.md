@@ -5,8 +5,9 @@
 - Branch: `fix/the-reset-stops-collecting-before-it-erases`
 - Base branch: `main`
 - Base commit: `34e6755`
-- Current HEAD: the documentation commit at the tip of this branch
-- Status: implemented and verified locally; this branch not yet on `main`
+- Current HEAD: `124f661`, an ancestor of `main`. The branch is `d259732`, `5186ba3`, `124f661`,
+  oldest first.
+- Status: complete, landed on `main`; archived 2026-08-23
 - Last updated: 2026-08-23
 - Last agent/tool: Claude Code (Opus 5)
 

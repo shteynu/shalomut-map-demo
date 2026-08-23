@@ -6,8 +6,9 @@
 - Base branch: `fix/the-invitation-creates-the-reader-it-promised` (`b1cea03`),
   which fast-forwards from `origin/main` at `c929d9c`
 - Base commit: `b1cea03`
-- Current HEAD: see **Exact Git state**
-- Status: complete and verified, uncommitted at the time of writing
+- Current HEAD: `3eada84`, an ancestor of `main`. The branch is `169dd32`, `3eada84`,
+  oldest first.
+- Status: complete, landed on `main`; archived 2026-08-23
 - Last updated: 2026-08-23
 - Last agent/tool: Claude Code (Opus 5)
 

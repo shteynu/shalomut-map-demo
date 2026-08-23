@@ -5,8 +5,9 @@
 - Branch: `fix/the-database-refuses-a-second-school-user`
 - Base branch: `main`
 - Base commit: `3eada84`
-- Current HEAD: see **Exact Git state**
-- Status: complete and verified, uncommitted at the time of writing
+- Current HEAD: `9b9382b`, an ancestor of `main`. The branch is `90777ac`, `9b9382b`,
+  oldest first.
+- Status: complete, landed on `main`; archived 2026-08-23
 - Last updated: 2026-08-23
 - Last agent/tool: Claude Code (Opus 5)
 

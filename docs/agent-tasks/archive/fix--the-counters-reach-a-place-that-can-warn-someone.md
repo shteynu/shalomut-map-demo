@@ -6,10 +6,9 @@
 - Base branch: `fix/a-superseded-round-still-gets-its-analysis` (which is
   `main` plus three commits — see **Git state** below)
 - Base commit: `a596e80`
-- Current HEAD: the documentation commit at the tip of this branch, which
-  follows `977ffce`, `81a76a2` and `b8570e2`. A commit cannot name its own
-  hash, so read the tip from Git.
-- Status: implementation and local verification complete; not pushed
+- Current HEAD: `524eac6`, an ancestor of `main`. The branch is `977ffce`, `81a76a2`, `b8570e2`, `524eac6`,
+  oldest first.
+- Status: complete, landed on `main`; archived 2026-08-23
 - Last updated: 2026-08-23
 - Last agent/tool: Claude Opus 5 (Claude Code)
 

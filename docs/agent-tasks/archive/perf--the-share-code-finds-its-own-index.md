@@ -5,8 +5,9 @@
 - Branch: `perf/the-share-code-finds-its-own-index`
 - Base branch: `main`
 - Base commit: `9b9382b`
-- Current HEAD: see **Exact Git state**
-- Status: complete and verified, uncommitted at the time of writing
+- Current HEAD: `96c2e52`, an ancestor of `main`. The branch is `dfdbddf`, `96c2e52`,
+  oldest first.
+- Status: complete, landed on `main`; archived 2026-08-23
 - Last updated: 2026-08-23
 - Last agent/tool: Claude Code (Opus 5)
 
