@@ -1942,6 +1942,47 @@ for the funnel, the filling times, the goals and the school list, each with a
 comment saying that every other manager screen would otherwise pay for a query
 it never renders. The analysis was the one read that had been folded in anyway.
 
+### ADR-046: One read is written as SQL, because its answer is inside a JSON column
+
+2026-08-23. The questionnaire history list shows four things per line: when a
+version was saved, its title, how many questions it had and how many were
+enabled. It was produced by reading every version's whole definition and
+discarding it — the 2026-08-21 audit's finding.
+
+Three of those four values live *inside* the `definition` `jsonb` column, so no
+`select` can reach them. The alternatives were to store the counts in columns at
+write time, which the summariser's own comment already refused because the
+numbers should describe the definition as it is read back, or to compute them
+where the JSON is. `findSummariesByRoundId` does the second, and it is the only
+hand-written SQL in the product's repositories.
+
+**The saving is not where the audit assumed, and that is worth recording.** The
+new query makes PostgreSQL do *more* work — `jsonb_array_elements` expands every
+question of every version, and the plan touches two orders of magnitude more
+buffers than the plain read. It wins on total time anyway, because what dominates
+is serialising twenty definitions and shipping them to the process that asked.
+Measured locally over twenty versions, warm, forty runs averaged: **2.6 ms
+against 1.6 ms** at today's 24 questions per version, **7.0 ms against 3.4 ms**
+at the 126-question instrument, with the result shrinking from **132 KB and
+640 KB to 2.4 KB**. The deployed database is not in the same continent as the
+process reading it, so the local figure is a floor rather than the benefit.
+A `jsonpath` formulation of the same query was measured too and was slower.
+
+**`MinimalPrismaClient` gained `$queryRaw`, tagged-template form only.**
+`$queryRawUnsafe` takes a string, and a repository that can build SQL from a
+string is a repository somebody will eventually build one from a request with.
+The dbtests reach past the interface for `EXPLAIN`, which is theirs to do. The
+member is optional like `$transaction`, and the repository throws a sentence
+naming what is missing rather than failing inside the Prisma runtime.
+
+**Two stores now compute the same summary by different rules**, which is exactly
+the arrangement that let the share-code defect (ADR-044) live for months. So the
+PostgreSQL tests do not restate the expected numbers: they compare
+`findSummariesByRoundId` against `summariseVersion` applied to the same rows,
+including a question that carries no `enabled` key — where SQL drops it because
+`(q->>'enabled')::boolean` is `NULL` and JavaScript drops it because `undefined`
+is falsy. Same answer, different reasons, so it is pinned.
+
 ## Environments
 
 The project supports exactly two environments:

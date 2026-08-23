@@ -8,6 +8,17 @@ inside it.
 
 ## Current state
 
+- **The questionnaire's history list stops reading the questionnaires.** Since
+  2026-08-23 the builder's version list is summarised inside the database: a
+  date, a title and two question counts per line, instead of twenty whole
+  definitions read out and thrown away — the 2026-08-21 audit's finding. The
+  three values it shows live inside a JSON column, so this is the one read in
+  the product written as SQL rather than built by Prisma. Measured over twenty
+  versions, the answer shrinks from 132 KB to 2.4 KB on today's questionnaire
+  and from 640 KB to 2.4 KB on the 126-item instrument that is due to replace
+  it. `PROJECT_CONTEXT.md` ADR-046 records it, including the part the audit had
+  backwards: the new query costs the database more and still wins.
+
 - **A manager screen no longer pays for a map it does not draw.** Since
   2026-08-23 the context every screen loads computes the round's analysis only
   for the three screens that render it. Eight callers now decline it — the
