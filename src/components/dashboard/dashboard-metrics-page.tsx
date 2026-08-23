@@ -7,9 +7,15 @@ import {
   type DashboardStone,
 } from "@/lib/dashboard/dashboard-insights";
 import { getDimensionActionPresentation } from "@/lib/ai-insights-view-model";
-import { useAiInsights } from "@/lib/hooks/use-ai-insights";
+import {
+  useAiInsights,
+  type AiInsightsWatchStatus,
+} from "@/lib/hooks/use-ai-insights";
 import { getDashboardMetricsActions, navigationLabels } from "@/lib/navigation";
-import { DashboardAiInsightsState } from "./dashboard-ai-insights-state";
+import {
+  DashboardAiArrivedNotice,
+  DashboardAiInsightsState,
+} from "./dashboard-ai-insights-state";
 import { DashboardCtaRow } from "./dashboard-cta-row";
 import { DashboardHeading } from "./dashboard-heading";
 import { DimensionIdentityChip } from "./dimension-identity-chip";
@@ -30,7 +36,7 @@ export function DashboardMetricsPage({
   organizationName: string;
   roundTitle: string;
 }) {
-  const { state, reload } = useAiInsights(roundId);
+  const { state, reload, watch } = useAiInsights(roundId);
   const stone =
     state.status === "ready"
       ? getDashboardStone(state.value, dimension.id)
@@ -44,7 +50,12 @@ export function DashboardMetricsPage({
           organizationName={organizationName}
           roundTitle={roundTitle}
         />
-        <DashboardAiInsightsState state={state} onRetry={reload} roundId={roundId} />
+        <DashboardAiInsightsState
+          state={state}
+          onRetry={reload}
+          roundId={roundId}
+          watch={watch}
+        />
         <DashboardCtaRow
           actions={getDashboardMetricsActions(dimension.id, roundId)}
         />
@@ -76,6 +87,7 @@ export function DashboardMetricsPage({
       roundId={roundId}
       organizationName={organizationName}
       roundTitle={roundTitle}
+      watch={watch}
     />
   );
 }
@@ -90,12 +102,14 @@ export function DashboardMetricsStage({
   roundId,
   organizationName,
   roundTitle,
+  watch,
 }: {
   dimension: DimensionPresentation;
   stone: DashboardStone;
   roundId: string;
   organizationName: string;
   roundTitle: string;
+  watch?: AiInsightsWatchStatus;
 }) {
   const metrics = getDisplayedMetrics(stone);
   const actionPresentation = getDimensionActionPresentation(stone.status);
@@ -114,6 +128,7 @@ export function DashboardMetricsStage({
         roundTitle={roundTitle}
       />
       <DimensionIdentityChip dimension={dimension} status={stone.status} />
+      <DashboardAiArrivedNotice watch={watch} />
 
       <section className="dashboard-metrics-stage" aria-label={`${navigationLabels.highlightedMetrics} עבור ${dimension.conceptLabel}`}>
         {metrics.map((metric, index) => (

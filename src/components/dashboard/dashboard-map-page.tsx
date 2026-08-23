@@ -10,9 +10,13 @@ import {
 } from "@/lib/dashboard/round-comparison";
 import type { RoundSwitcherOptions } from "@/lib/rounds/round-options";
 import type { AiInsightsUiState } from "@/lib/hooks/use-ai-insights";
-import { useAiInsights } from "@/lib/hooks/use-ai-insights";
+import {
+  useAiInsights,
+  type AiInsightsWatchStatus,
+} from "@/lib/hooks/use-ai-insights";
 import type { WellbeingDimensionId, WellbeingStatus } from "@/lib/shalomut-source";
 import {
+  DashboardAiArrivedNotice,
   DashboardAiInsightsState,
   DashboardAiRefreshNotice,
 } from "./dashboard-ai-insights-state";
@@ -119,10 +123,12 @@ export function DashboardOverviewSummary({
   state,
   onRetry,
   roundId,
+  watch,
 }: {
   state: AiInsightsUiState;
   onRetry: () => void;
   roundId?: string;
+  watch?: AiInsightsWatchStatus;
 }) {
   if (state.status !== "ready") {
     return (
@@ -130,6 +136,7 @@ export function DashboardOverviewSummary({
         state={state}
         onRetry={onRetry}
         roundId={roundId}
+        watch={watch}
       />
     );
   }
@@ -175,7 +182,7 @@ function DashboardMapReady({
   divisions,
   responseCount,
 }: Omit<DashboardMapPageProps, "isLocked" | "isCollecting">) {
-  const { state, reload } = useAiInsights(roundId);
+  const { state, reload, watch } = useAiInsights(roundId);
 
   /*
    * How many colours this round could have chosen either way.
@@ -242,6 +249,7 @@ function DashboardMapReady({
           <DashboardOverviewSummary
             state={state}
             onRetry={reload}
+            watch={watch}
             roundId={roundId}
           />
 
@@ -249,13 +257,21 @@ function DashboardMapReady({
               this analysis, and the sidebar is where the analysis is read.
               The re-analysis note joins it for the same reason, and only here:
               every dashboard screen is reached through this one, and the same
-              sentence repeated on four of them would be read on none. */}
+              standing sentence repeated on four of them would be read on none.
+
+              The arrival notice does not follow that rule, and is repeated on
+              the detail screens on purpose. It is not a standing fact about
+              the analysis but a report of a change that happened on the screen
+              in front of the reader — and the reader who waited on a dimension
+              screen is exactly the one it is for. */}
           {state.status === "ready" ? (
             <>
               <DashboardAiRefreshNotice
                 refresh={state.refresh}
                 onRetry={reload}
+                watch={watch}
               />
+              <DashboardAiArrivedNotice watch={watch} />
               <DashboardPartialMapNotice
                 gaps={state.value.gapsByReason}
                 deterministicSummaries={

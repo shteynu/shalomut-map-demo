@@ -13,17 +13,22 @@ import type { WellbeingDimensionId } from "@/lib/shalomut-source";
  * manager had to leave the screen, find it, and pay for seven dimensions
  * nobody had complained about. This asks for the one they are looking at.
  *
- * Deliberately not a promise about when. The run is queued, a worker claims
- * it, and the paragraphs appear on the next read; the button says the request
- * landed and nothing more, because a spinner that pretends to track a
- * background job is a spinner that lies as soon as the tab is closed.
+ * `onQueued` is how the screen learns to start watching. It was once right for
+ * this button to promise nothing about when — the run is queued, a worker
+ * claims it, and a spinner that pretends to track a background job lies the
+ * moment the tab is closed. The screen can now genuinely follow the run and
+ * says so only while it is following, so telling the caller a run exists is
+ * both true and the useful thing to do. Without the callback the old sentence
+ * stands, because then nothing is watching.
  */
 export function DashboardDimensionRerun({
   roundId,
   dimensionId,
+  onQueued,
 }: {
   roundId: string;
   dimensionId: WellbeingDimensionId;
+  onQueued?: () => void;
 }) {
   const [status, setStatus] = useState<
     "idle" | "sending" | "queued" | "busy" | "gone" | "error"
@@ -53,14 +58,21 @@ export function DashboardDimensionRerun({
       return setStatus(code === "no_previous_analysis" ? "gone" : "busy");
     }
 
-    setStatus(response.ok ? "queued" : "error");
+    if (!response.ok) return setStatus("error");
+
+    setStatus("queued");
+    // Read again straight away: the run is now `queued`, so this is what turns
+    // the screen from one that has an answer into one that is waiting for a
+    // better one — and the waiting is what the watch follows.
+    onQueued?.();
   }
 
   if (status === "queued") {
     return (
       <p className="dashboard-blob-provenance" role="status">
-        הבקשה נקלטה. הניתוח של הממד הזה ייכתב מחדש ברקע, ויופיע כאן בכניסה הבאה
-        למסך.
+        {onQueued
+          ? "הבקשה נקלטה. הניתוח של הממד הזה נכתב מחדש כעת, והמסך יתעדכן מעצמו בסיומו."
+          : "הבקשה נקלטה. הניתוח של הממד הזה ייכתב מחדש ברקע, ויופיע כאן בכניסה הבאה למסך."}
       </p>
     );
   }

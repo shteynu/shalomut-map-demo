@@ -8,7 +8,10 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import type { AiInsightsRefreshState } from "@/lib/ai-insights-client";
-import type { AiInsightsUiState } from "@/lib/hooks/use-ai-insights";
+import type {
+  AiInsightsUiState,
+  AiInsightsWatchStatus,
+} from "@/lib/hooks/use-ai-insights";
 
 /**
  * Lets the manager start the analysis from the screen where its absence is
@@ -23,9 +26,11 @@ import type { AiInsightsUiState } from "@/lib/hooks/use-ai-insights";
 function GenerateAnalysisButton({
   roundId,
   label,
+  onQueued,
 }: {
   roundId: string;
   label: string;
+  onQueued?: () => void;
 }) {
   const [running, setRunning] = useState(false);
   const [note, setNote] = useState<string | null>(null);
@@ -80,11 +85,20 @@ function GenerateAnalysisButton({
       return;
     }
 
-    // The service acknowledges the dispatch and analyses the round afterwards,
-    // so an immediate reload would only show the same empty state again. The
-    // manager gets the expected wait and re-checks with the button below.
-    setNote("הניתוח הופעל. התוצאות יתעדכנו במפה בתוך דקות ספורות.");
+    /*
+     * Reading again immediately used to show the same empty state, because the
+     * service only acknowledges the dispatch — so the button promised minutes
+     * and left the manager to count them. The run is durable now and the read
+     * comes back `running`, which is the state the screen watches; the reload
+     * is what starts that watch, and the sentence changes with it.
+     */
+    setNote(
+      onQueued
+        ? "הניתוח הופעל. אין צורך לרענן — המסך יתעדכן מעצמו כשהמפה תהיה מוכנה."
+        : "הניתוח הופעל. התוצאות יתעדכנו במפה בתוך דקות ספורות.",
+    );
     setRunning(false);
+    onQueued?.();
   }
 
   return (
@@ -130,13 +144,20 @@ function GenerateAnalysisButton({
  *
  * `role="status"` and not `alert`: nothing is broken on this screen. The map is
  * readable and the numbers in it are real.
+ *
+ * `watch` says whether the screen is checking on its own. The sentence changes
+ * with it rather than being written once for both, because "the map will
+ * update in a few minutes" and "the map will update by itself" ask different
+ * things of the reader — the first one asks them to come back.
  */
 export function DashboardAiRefreshNotice({
   refresh,
   onRetry,
+  watch,
 }: {
   refresh: AiInsightsRefreshState | undefined;
   onRetry?: () => void;
+  watch?: AiInsightsWatchStatus;
 }) {
   if (!refresh) return null;
 
@@ -149,8 +170,11 @@ export function DashboardAiRefreshNotice({
           aria-hidden="true"
         />
         <span>
-          מוצג הניתוח האחרון שהושלם. ניתוח מחדש פועל כעת, והמפה תתעדכן בתוך דקות
-          ספורות.
+          {watch?.gaveUp
+            ? "מוצג הניתוח האחרון שהושלם. הניתוח מחדש נמשך יותר מהצפוי, והמסך הפסיק לבדוק מעצמו."
+            : watch?.watching
+              ? "מוצג הניתוח האחרון שהושלם. ניתוח מחדש פועל כעת, והמפה תתעדכן מעצמה בסיומו."
+              : "מוצג הניתוח האחרון שהושלם. ניתוח מחדש פועל כעת, והמפה תתעדכן בתוך דקות ספורות."}
         </span>
         {onRetry ? (
           <button type="button" className="secondary-button" onClick={onRetry}>
@@ -176,10 +200,12 @@ export function DashboardAiInsightsState({
   state,
   onRetry,
   roundId,
+  watch,
 }: {
   state: Exclude<AiInsightsUiState, { status: "ready" }>;
   onRetry: () => void;
   roundId?: string;
+  watch?: AiInsightsWatchStatus;
 }) {
   if (state.status === "loading") {
     return (
@@ -204,6 +230,11 @@ export function DashboardAiInsightsState({
   }
 
   if (state.status === "running") {
+    /*
+     * The button stays even while the screen checks on its own. It is the only
+     * way on once the watch has given up, and a manager who does not trust a
+     * page to keep its word should not have to.
+     */
     return (
       <section className="dashboard-ai-state" aria-live="polite">
         <LoaderCircle
@@ -213,7 +244,11 @@ export function DashboardAiInsightsState({
         />
         <h2>הניתוח בעבודה</h2>
         <p>
-          שירות הניתוח עובד על הסבב הזה. התוצאות יופיעו במפה בתוך דקות ספורות.
+          {watch?.gaveUp
+            ? "הניתוח נמשך יותר מהצפוי. המסך הפסיק לבדוק מעצמו, ואפשר לבדוק שוב עכשיו."
+            : watch?.watching
+              ? "שירות הניתוח עובד על הסבב הזה. אין צורך לרענן — המסך יתעדכן מעצמו כשהמפה תהיה מוכנה."
+              : "שירות הניתוח עובד על הסבב הזה. התוצאות יופיעו במפה בתוך דקות ספורות."}
         </p>
         <button type="button" className="secondary-button" onClick={onRetry}>
           בדיקה חוזרת
@@ -232,7 +267,11 @@ export function DashboardAiInsightsState({
           כבר נסגר אפשר להפעיל אותו כאן.
         </p>
         {roundId ? (
-          <GenerateAnalysisButton roundId={roundId} label="יצירת ניתוח עכשיו" />
+          <GenerateAnalysisButton
+            roundId={roundId}
+            label="יצירת ניתוח עכשיו"
+            onQueued={onRetry}
+          />
         ) : null}
         <button type="button" className="secondary-button" onClick={onRetry}>
           בדיקה חוזרת
@@ -254,11 +293,41 @@ export function DashboardAiInsightsState({
         הניתוח מחדש בעוד מספר דקות.
       </p>
       {roundId ? (
-        <GenerateAnalysisButton roundId={roundId} label="הפעלת ניתוח מחדש" />
+        <GenerateAnalysisButton
+          roundId={roundId}
+          label="הפעלת ניתוח מחדש"
+          onQueued={onRetry}
+        />
       ) : null}
       <button type="button" className="secondary-button" onClick={onRetry}>
         ניסיון נוסף
       </button>
     </section>
+  );
+}
+
+/**
+ * The map on screen is one this page watched arrive.
+ *
+ * Shown only after a run the manager waited through, never on a round that was
+ * already finished when the screen opened: the point is to explain a map that
+ * changed under them, and a map that was there all along changed nothing.
+ *
+ * It stays rather than fading. A manager who stepped away for two minutes and
+ * came back to a different map is exactly the reader this sentence is for, and
+ * a notice that had already dismissed itself would have told them nothing.
+ */
+export function DashboardAiArrivedNotice({
+  watch,
+}: {
+  watch: AiInsightsWatchStatus | undefined;
+}) {
+  if (!watch?.arrived) return null;
+
+  return (
+    <p className="dashboard-ai-refresh-note" role="status">
+      <Sparkles size={18} aria-hidden="true" />
+      <span>הניתוח הושלם, והמפה שמוצגת כאן היא התוצאה שלו.</span>
+    </p>
   );
 }

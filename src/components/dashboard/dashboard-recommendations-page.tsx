@@ -10,9 +10,15 @@ import {
 } from "@/lib/dashboard/dashboard-insights";
 import { useBlobFit } from "@/lib/hooks/use-blob-fit";
 import { getDimensionActionPresentation } from "@/lib/ai-insights-view-model";
-import { useAiInsights } from "@/lib/hooks/use-ai-insights";
+import {
+  useAiInsights,
+  type AiInsightsWatchStatus,
+} from "@/lib/hooks/use-ai-insights";
 import { getDashboardRecommendationsActions, navigationLabels } from "@/lib/navigation";
-import { DashboardAiInsightsState } from "./dashboard-ai-insights-state";
+import {
+  DashboardAiArrivedNotice,
+  DashboardAiInsightsState,
+} from "./dashboard-ai-insights-state";
 import { DashboardCtaRow } from "./dashboard-cta-row";
 import { DashboardGoalsPanel } from "./dashboard-goals-panel";
 import { DashboardHeading } from "./dashboard-heading";
@@ -81,7 +87,7 @@ export function DashboardRecommendationsPage({
   organizationName: string;
   roundTitle: string;
 }) {
-  const { state, reload } = useAiInsights(roundId);
+  const { state, reload, watch } = useAiInsights(roundId);
   const stone =
     state.status === "ready"
       ? getDashboardStone(state.value, dimension.id)
@@ -95,7 +101,12 @@ export function DashboardRecommendationsPage({
           organizationName={organizationName}
           roundTitle={roundTitle}
         />
-        <DashboardAiInsightsState state={state} onRetry={reload} roundId={roundId} />
+        <DashboardAiInsightsState
+          state={state}
+          onRetry={reload}
+          roundId={roundId}
+          watch={watch}
+        />
         <DashboardCtaRow
           center
           actions={getDashboardRecommendationsActions(roundId)}
@@ -128,6 +139,7 @@ export function DashboardRecommendationsPage({
       roundId={roundId}
       organizationName={organizationName}
       roundTitle={roundTitle}
+      watch={watch}
     />
   );
 }
@@ -142,12 +154,14 @@ export function DashboardRecommendationsStage({
   roundId,
   organizationName,
   roundTitle,
+  watch,
 }: {
   dimension: DimensionPresentation;
   stone: DashboardStone;
   roundId: string;
   organizationName: string;
   roundTitle: string;
+  watch?: AiInsightsWatchStatus;
 }) {
   const recommendations = getDisplayRecommendations(stone);
   const isFiveItemLayout = recommendations.length >= 5;
@@ -172,6 +186,7 @@ export function DashboardRecommendationsStage({
         roundTitle={roundTitle}
       />
       <DimensionIdentityChip dimension={dimension} status={stone.status} />
+      <DashboardAiArrivedNotice watch={watch} />
 
       <section
         className={`dashboard-recommendations-stage${isFiveItemLayout ? " is-five-items" : " is-generic-items"}`}

@@ -10,9 +10,15 @@ import {
   type InterpretationGapReason,
 } from "@/lib/dashboard/dashboard-insights";
 import { getDimensionActionPresentation } from "@/lib/ai-insights-view-model";
-import { useAiInsights } from "@/lib/hooks/use-ai-insights";
+import {
+  useAiInsights,
+  type AiInsightsWatchStatus,
+} from "@/lib/hooks/use-ai-insights";
 import { getDashboardDetailActions } from "@/lib/navigation";
-import { DashboardAiInsightsState } from "./dashboard-ai-insights-state";
+import {
+  DashboardAiArrivedNotice,
+  DashboardAiInsightsState,
+} from "./dashboard-ai-insights-state";
 import { DashboardCtaRow } from "./dashboard-cta-row";
 import { DashboardDimensionRerun } from "./dashboard-dimension-rerun";
 import { DashboardHeading } from "./dashboard-heading";
@@ -29,7 +35,7 @@ export function DashboardDimensionPage({
   organizationName: string;
   roundTitle: string;
 }) {
-  const { state, reload } = useAiInsights(roundId);
+  const { state, reload, watch } = useAiInsights(roundId);
   const stone =
     state.status === "ready"
       ? getDashboardStone(state.value, dimension.id)
@@ -49,6 +55,7 @@ export function DashboardDimensionPage({
         <DashboardAiInsightsState
           state={state}
           onRetry={reload}
+          watch={watch}
           roundId={roundId}
         />
         <DashboardCtaRow
@@ -82,6 +89,8 @@ export function DashboardDimensionPage({
       roundId={roundId}
       organizationName={organizationName}
       roundTitle={roundTitle}
+      watch={watch}
+      onRerunQueued={reload}
       blobRefs={{ containerRef, contentRef }}
     />
   );
@@ -127,6 +136,8 @@ export function DashboardDimensionDetail({
   roundId,
   organizationName,
   roundTitle,
+  watch,
+  onRerunQueued,
   blobRefs,
 }: {
   dimension: DimensionPresentation;
@@ -134,6 +145,9 @@ export function DashboardDimensionDetail({
   roundId: string;
   organizationName: string;
   roundTitle: string;
+  watch?: AiInsightsWatchStatus;
+  /** Read the round again, so the queued re-run becomes a watched one. */
+  onRerunQueued?: () => void;
   blobRefs?: {
     containerRef: RefObject<HTMLElement | null>;
     contentRef: RefObject<HTMLElement | null>;
@@ -150,6 +164,7 @@ export function DashboardDimensionDetail({
         roundTitle={roundTitle}
       />
       <DimensionIdentityChip dimension={dimension} status={stone.status} />
+      <DashboardAiArrivedNotice watch={watch} />
 
       <article
         ref={blobRefs?.containerRef as any}
@@ -176,6 +191,7 @@ export function DashboardDimensionDetail({
                   <DashboardDimensionRerun
                     roundId={roundId}
                     dimensionId={dimension.id}
+                    onQueued={onRerunQueued}
                   />
                 </>
               ) : null}
