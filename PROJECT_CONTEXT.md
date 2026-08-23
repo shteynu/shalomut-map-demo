@@ -1014,7 +1014,9 @@ became a notification rather than a delivery mechanism.
 
 **A school has one user, enforced.** A second invitation is refused while a
 standing one exists — `active` or `invited` — and replacing somebody is
-revoke-then-invite rather than a transfer. Revocation is a status and never a
+revoke-then-invite rather than a transfer. Enforced by the database since
+2026-08-23, and by the application alone before that; the amendment below says
+why the difference matters. Revocation is a status and never a
 delete, because the audit log's `manager_id` points at that row. It takes effect
 within a quarter of an hour rather than immediately, and phase 5 is why it is a
 quarter of an hour rather than a day: the token still carries its memberships and
@@ -1033,6 +1035,35 @@ offers it and `/api/manager/setup` refuses it with a reason.
 administrator because it is the floor under every privacy threshold the school
 can later choose; the first round is the school user's own first act rather than
 an administrator guessing at a quarter.
+
+**Amended 2026-08-23: the refusal moved into the database.** Both writers —
+`inviteSchoolUser` and `setMembershipStatus` — read the school's memberships,
+looked for one that stands, and refused if they found one. That is
+check-then-write, and two requests that read before either writes both pass: the
+school ends up with two standing memberships and two answers to "who is this
+school's person". The 2026-08-21 audit named it, and this model's own schema
+comment had already said that only the database can refuse it atomically.
+
+The partial unique index `organization_memberships_one_standing_per_organization`
+now holds it, on `(organization_id) where status in ('active','invited')` —
+`suspended` deliberately outside, because a handover leaves revoked rows behind
+and the audit log points at them. It is the second index of this shape here, and
+it is owned by its migration rather than by `schema.prisma`, which cannot express
+a partial index; the first is `survey_rounds_one_active_per_organization`
+(ADR-014).
+
+**Both stores raise the same refusal.** The Prisma adapter translates that one
+`P2002` into `SchoolAlreadyHasSomebodyError` and re-throws anything else, and the
+in-memory repository enforces the rule directly. So the unit suite and PostgreSQL
+agree about what the product does, and no caller can be written against a store
+that quietly allows two. Both service methods map the error back to
+`SCHOOL_ALREADY_HAS_SOMEBODY` — the reason the read already gives — so the screen
+shows one message whichever of the two decided it, which is correct: by then the
+answer is no either way.
+
+The read stays. It is not redundant: it refuses without a write on the ordinary
+path, and it is the only one of the two that can say no before a person row is
+created.
 
 ### ADR-028: The session is short, and renewal is where the database is re-read
 

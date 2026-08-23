@@ -8,6 +8,17 @@ inside it.
 
 ## Current state
 
+- **"One school, one person" is a rule the database holds.** Since 2026-08-23 a
+  partial unique index refuses a second standing membership, so two
+  administrators inviting the same school at the same moment can no longer both
+  succeed — which is what the two read-then-write paths, invitation and
+  restoration, allowed until now. Revoked rows stay outside the rule, because a
+  school changes hands by revoke-then-invite and those rows are what the audit
+  log points at. The refusal is the message the screen already showed, whichever
+  of the two decided it. `PROJECT_CONTEXT.md` ADR-027 records it as an
+  amendment; it is the second index of this shape, after the one that keeps a
+  school to one active round.
+
 - **A paid analysis is not thrown away because a write failed.** Since
   2026-08-23 the AI callback closes the durable run and writes the round's
   stored copy in one transaction, so the two can no longer disagree about the
