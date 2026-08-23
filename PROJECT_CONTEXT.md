@@ -278,6 +278,14 @@ session, and it sends the session's own schools along in a second server-owned
 header so the scope service and the school switcher reason about those schools
 rather than about every school in the system.
 
+Since 2026-08-23 they also *ask* for those schools and no others. Resolving the
+scope used to read the organizations table on every authenticated request and
+discard all but the session's own rows, so the cost of the authorization
+chokepoint grew with each school onboarded. The organization port now carries
+two bounded reads — `findByIds(ids)` and `listIds(limit)` — and `findAll`
+belongs to the administrator overview and the platform bootstrap, where "every
+school" is the question being asked.
+
 Behaviour is unchanged while each session carries exactly one membership, which
 is the point: the rule is in place before a second one exists.
 

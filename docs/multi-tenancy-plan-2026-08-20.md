@@ -86,6 +86,14 @@ A second, quieter leak sits beside it: `loadSchools()`
 setup screen's switcher. Under (c) that lists every tenant's school name and
 city, which is a disclosure even when no round data follows.
 
+**Both `findAll` calls are gone as of 2026-08-23** (`perf/the-scope-asks-for-the-schools-it-needs`,
+not on `main` when this line was written). Phase 0 closed the disclosure by
+filtering the list after reading it; this closed the read itself. The resolver
+now asks `findByIds` for the session's own schools, or — with no memberships —
+`findById` and `listIds(2)`, and `loadSchools` narrows in the query rather than
+in memory. The diagnosis above is why the boundary had to move and stands as
+written; the cost it describes is no longer there.
+
 ### What is already right, and it is most of it
 
 ADR-020 built this layer for exactly this moment and says so: *"When memberships
