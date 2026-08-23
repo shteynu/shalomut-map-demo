@@ -284,11 +284,69 @@ declined and the attempt stops. Three lanes make that slightly more likely than
 one; it turns a transient provider failure into a deterministic fallback
 sooner, which is disclosed on screen either way.
 
-Two things the pool does not change. The queue stays globally first-in
+One thing the pool does not change: the queue stays globally first-in
 first-out — `claimNext` orders by `sequence asc` with no fairness between
 schools, so more lanes drain the queue faster without changing whose round goes
-first. And nothing here tells a manager their analysis finished; that gap is
-the same one it was with a single lane.
+first.
+
+## What the manager's screen does while it waits
+
+None of the above reaches the person who ordered the analysis. Core has no
+channel to a browser — no websocket, no push — and the round screens are static
+pages behind a session, so a finished map used to sit there until the manager
+guessed to look again. The screen said "in a few minutes" and offered a
+`בדיקה חוזרת` button, which asked the reader for the one thing they could not
+supply: the moment the minutes were up.
+
+The screens now do the asking. `useAiInsights` reads `run.state` out of the
+`ai-insights` envelope — `queued` and `running` both mean in flight, whether the
+round has no map yet or is having one rewritten — and while it is in flight the
+hook re-reads on a widening interval. `planAiInsightsWatch` in
+`src/lib/dashboard/ai-insights-watch.ts` owns the whole decision, which is why
+it can be tested without a browser or a clock.
+
+| What | Value | Name |
+| --- | --- | --- |
+| First re-check | 5 s | `WATCH_FIRST_DELAY_MS` |
+| Where the interval settles | 30 s | `WATCH_MAX_DELAY_MS` |
+| Visible time before it gives up | 20 min | `WATCH_CEILING_MS` |
+
+Four properties are worth stating, because each is a place a simpler version
+would be wrong.
+
+- **A hidden tab does not poll.** `document.hidden` pauses the ladder and the
+  `visibilitychange` listener resumes it by reading *immediately* rather than
+  waiting out a fresh interval, because time passed while it could not look.
+- **Only visible time counts toward the ceiling.** A tab left open over lunch
+  has not been watching, and coming back to a page that gave up while nobody was
+  looking would answer a question nobody asked.
+- **Twenty minutes is sized against the queue, not against one round.** Three
+  lanes and ten simultaneous closures leave the last round about ten minutes for
+  a lane plus three for itself; a ceiling inside that would make the feature
+  worse than the button it replaces. Past twenty the honest sentence is that
+  this is not a normal wait — and the operator has `/api/health/ai-queue` for
+  exactly that, which is why the page does not have to keep asking on their
+  behalf.
+- **A re-check keeps the map it already has.** The hook reports `loading` only
+  when it has nothing for this round; a re-read of a round already on screen
+  keeps the previous value. Otherwise every check would replace the map with a
+  spinner for a moment, and unmount whatever the manager had just clicked.
+
+When a run the screen was watching settles, the screen says so —
+`DashboardAiArrivedNotice`, on the overview and on the three detail screens
+alike. The standing notices live only on the overview, because a sentence
+repeated on five screens is read on none; the arrival is the exception, because
+it reports a change that happened in front of the reader and the reader who
+waited on a dimension screen is the one it is for. A round that was already
+finished when the screen opened announces nothing, and a new run retires the
+previous announcement rather than leaving it over a map that is once again the
+old one.
+
+The two buttons that order a run now hand the screen a reason to start
+watching: `trigger-ai` returns, the page re-reads, the read comes back `queued`,
+and the watch takes over. That is also why their copy changed — "the results
+will appear in a few minutes" asked the reader to come back, and the screen no
+longer needs them to.
 
 ## The numbers everything rests on
 

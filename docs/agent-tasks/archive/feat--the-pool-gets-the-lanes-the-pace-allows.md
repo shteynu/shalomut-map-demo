@@ -4,9 +4,9 @@
 
 - Branch: `feat/the-pool-gets-the-lanes-the-pace-allows`
 - Base branch: `feat/a-stalled-queue-says-so`, itself based on `main`
-- Base commit: `960e8dd` (unpushed; `origin/main` is `57c9e58`)
-- Current HEAD: the commit carrying this work
-- Status: done locally; awaiting the owner's push
+- Base commit: `960e8dd`
+- Current HEAD: `2b88fa5`; the work is `ce6d1b0` and `2b88fa5`
+- Status: complete, landed on `main`, archived 2026-08-23
 - Last updated: 2026-08-23
 - Last agent/tool: Claude Code (Opus 5)
 

@@ -16,23 +16,29 @@ and in Git; what was durable in them is below.
 
 ## Now
 
-Verified 2026-08-22, in this worktree and on the deployed endpoint:
+Verified 2026-08-22 in this worktree and on the deployed endpoints, and
+re-read in Git on 2026-08-23. Where a line names a deployment check, the
+date of that check is on the line:
 
-- **`origin/main` is `57c9e58`. Core answers it; the AI service answers
-  `262583a`, and that gap is correct.** Read 2026-08-23. The two halves are
-  level with `main` only when a push touches the AI service's `buildFilter`
-  paths — `ai-analytics-service/**`, `contracts/**`, `Dockerfile`,
-  `render.yaml` — and `57c9e58` touches none of them, so Render did not rebuild
-  and its container still runs the tree from `262583a`. **A service commit
-  behind Core's is the expected resting state here, not a missed deploy**;
-  compare the two endpoints against that rule rather than against each other:
+- **`origin/main` is `2b88fa5`,** read from Git in this worktree on 2026-08-23.
+  It carries the queue-liveness endpoints and the three-lane pool. **Neither
+  deployed endpoint was queried after that push**, so what each half answers is
+  unknown rather than stale-but-known. Two rules for whoever checks. Core
+  auto-deploys every push, so it should answer `2b88fa5`. The AI service rebuilds
+  only when a push touches its `buildFilter` paths —
+  `ai-analytics-service/**`, `contracts/**`, `Dockerfile`, `render.yaml` — and
+  `ce6d1b0` touches `render.yaml` and `ai-analytics-service/`, so this push
+  *should* have rebuilt it; the previous answer was `262583a`. **A service
+  commit behind Core's is otherwise the expected resting state, not a missed
+  deploy.** The endpoints:
   `GET https://shalomut-map-demo.vercel.app/api/health/` and
-  `GET https://shalomut-ai-analytics.onrender.com/health`. The only unrelated
+  `GET https://shalomut-ai-analytics.onrender.com/health`. Render's log line
+  *"Polling with 3 concurrent slot(s)"* is the proof the pool arrived. The only unrelated
   modified file in this worktree is `next-env.d.ts`, which is generated,
   belongs to the owner, and flips between `.next/dev/types` and `.next/types`
   depending on whether `next dev` or `next build` ran last.
 - **Six of the seven hygiene findings of the 2026-08-21 audit are on `main` and
-  in the deployed tree** as of `57c9e58`: the share code's uniformity claim,
+  in the deployed tree** as of `57c9e58`, which `2b88fa5` descends from: the share code's uniformity claim,
   a rate limit on the funnel beacon, one `isDeployedRuntime` behind the
   machine-to-machine door plus a constant-time comparison, `db:clear` covering
   the whole schema, subresource integrity on the Swagger UI bundle, and a
@@ -199,12 +205,11 @@ is anonymous, carries no numbers and answers `503` on `stalled` so a free
 monitor can alert on it; `GET /api/ai-analysis-runs/queue` carries the depth and
 the wait behind `AI_CALLBACK_SECRET`. No migration, no write, no new secret.
 
-Two operational consequences. **Nothing watches the new path yet** — the
+One operational consequence stands: **nothing watches the new path yet** — the
 UptimeRobot account has one keyword monitor on the Python service's `/health`,
 and until a second one points at Core's queue endpoint the stall is readable but
-unread, which is half the finding. And the branch is **unpushed**, so none of
-this exists on the deployment; `origin/main` is `57c9e58` and two commits sit
-locally ahead of it.
+unread, which is half the finding. The code itself is deployed: `origin/main` is
+`2b88fa5`, which carries both this and the pool below.
 
 **The AI service will analyse three rounds at once, not one (2026-08-23).**
 `AI_JOB_POOL_SIZE` moves from `1` to `3` in `render.yaml`, so a burst of ten
@@ -222,6 +227,22 @@ only lever for more than three lanes is separating the two tiers, and that is an
 owner decision about the heavy pace, not a config bump. **Nothing enforces the
 agreement between those four files and the dashboard** — repointing
 `LLM_MODEL_HEAVY` there would make all four wrong at once.
+
+**And the manager's screen now waits instead of the manager (2026-08-23).**
+That closes the last stretch of the same queue: everything from closure to
+callback was durable, retried and monitored, and none of it reached the browser.
+While a run is in flight the dashboard re-reads on a widening ladder — 5 s, 10,
+20, then every 30 — pauses on a hidden tab, looks immediately when the tab comes
+back, and announces the map when it lands. It gives up after twenty minutes of
+*visible* waiting and says so, which it can afford to do because the operator
+now has the stall detector above. There is no push channel and no plan for one;
+this is polling from the page, and it is the only channel Vercel-hosted static
+screens have. No endpoint, no secret, no migration.
+
+Two things this deliberately is not. It is **not a notification** — no e-mail,
+no browser permission prompt, nothing that needs an address — because the owner
+chose in-app self-refresh and that keeps the privacy model untouched. And it
+does **not** help a manager who closed the tab; nothing here pretends to.
 
 **Next concrete step:** ask the owner for the methodologist's item-to-dimension
 mapping, because without it there is no substantial *product* work an agent can

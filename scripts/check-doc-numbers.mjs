@@ -44,6 +44,28 @@ export const SOURCES = {
     file: 'src/lib/server/ai-analysis-worker.ts',
     pattern: /AI_ANALYSIS_JOB_MAX_ATTEMPTS = (\d+)/,
   },
+  AI_ANALYSIS_QUEUE_STALL_AFTER_MS: {
+    file: 'src/lib/server/ai-analysis-worker.ts',
+    pattern: /AI_ANALYSIS_QUEUE_STALL_AFTER_MS = ([\d_]+)/,
+    divideBy: 1000,
+  },
+  WATCH_FIRST_DELAY_MS: {
+    file: 'src/lib/dashboard/ai-insights-watch.ts',
+    pattern: /WATCH_FIRST_DELAY_MS = ([\d_]+)/,
+    divideBy: 1000,
+  },
+  WATCH_MAX_DELAY_MS: {
+    file: 'src/lib/dashboard/ai-insights-watch.ts',
+    pattern: /WATCH_MAX_DELAY_MS = ([\d_]+)/,
+    divideBy: 1000,
+  },
+  // Written as minutes times a minute, and read as the minutes. Capturing the
+  // left factor is what lets the document say `20 min` without the check
+  // having to know that a minute is sixty thousand of anything.
+  WATCH_CEILING_MS: {
+    file: 'src/lib/dashboard/ai-insights-watch.ts',
+    pattern: /WATCH_CEILING_MS = (\d+) \* 60_000/,
+  },
 };
 
 /**
@@ -78,6 +100,34 @@ export const CLAIMS = [
       pattern: markdownRowNamingSetting(setting),
     }),
   ),
+
+  {
+    document: 'docs/ai-analysis-run-lifecycle.md',
+    setting: 'AI_ANALYSIS_QUEUE_STALL_AFTER_MS',
+    where: 'the numbers table, row «Queue stall threshold»',
+    pattern: /\| Queue stall threshold \| ([\d.,]+) s \|/,
+  },
+
+  // docs/ai-analysis-run-lifecycle.md — the watch table, whose rows name the
+  // constant in their third cell rather than a settings name.
+  {
+    document: 'docs/ai-analysis-run-lifecycle.md',
+    setting: 'WATCH_FIRST_DELAY_MS',
+    where: 'the watch table, row «First re-check»',
+    pattern: /\| First re-check \| ([\d.,]+) s \|/,
+  },
+  {
+    document: 'docs/ai-analysis-run-lifecycle.md',
+    setting: 'WATCH_MAX_DELAY_MS',
+    where: 'the watch table, row «Where the interval settles»',
+    pattern: /\| Where the interval settles \| ([\d.,]+) s \|/,
+  },
+  {
+    document: 'docs/ai-analysis-run-lifecycle.md',
+    setting: 'WATCH_CEILING_MS',
+    where: 'the watch table, row «Visible time before it gives up»',
+    pattern: /\| Visible time before it gives up \| ([\d.,]+) min \|/,
+  },
 
   // docs/ai-analysis-jobs.html — the settings table.
   ...['AI_JOB_POLL_INTERVAL_SECONDS', 'AI_JOB_POLL_MAX_INTERVAL_SECONDS',

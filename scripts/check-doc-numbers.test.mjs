@@ -20,12 +20,21 @@ const tree = ({ ceiling = '30.0', label = 'раз в 2–30 с' } = {}) => ({
     `                float(os.getenv("AI_JOB_HEARTBEAT_INTERVAL_SECONDS", "30.0")),\n`,
   'src/lib/server/ai-analysis-worker.ts':
     'export const AI_ANALYSIS_JOB_MAX_ATTEMPTS = 3;\n' +
-    'export const AI_ANALYSIS_JOB_LEASE_MS = 90_000;\n',
+    'export const AI_ANALYSIS_JOB_LEASE_MS = 90_000;\n' +
+    'export const AI_ANALYSIS_QUEUE_STALL_AFTER_MS = 600_000;\n',
+  'src/lib/dashboard/ai-insights-watch.ts':
+    'export const WATCH_FIRST_DELAY_MS = 5_000;\n' +
+    'export const WATCH_MAX_DELAY_MS = 30_000;\n' +
+    'export const WATCH_CEILING_MS = 20 * 60_000;\n',
   'docs/ai-analysis-run-lifecycle.md':
     '| Poll interval | 2 s | `AI_JOB_POLL_INTERVAL_SECONDS` | x |\n' +
     '| Idle poll ceiling | 30 s | `AI_JOB_POLL_MAX_INTERVAL_SECONDS` | x |\n' +
     '| Heartbeat interval | 30 s | `AI_JOB_HEARTBEAT_INTERVAL_SECONDS` | x |\n' +
-    '| Lease length | 90 s | `AI_ANALYSIS_JOB_LEASE_MS` | x |\n',
+    '| Lease length | 90 s | `AI_ANALYSIS_JOB_LEASE_MS` | x |\n' +
+    '| Queue stall threshold | 600 s | `AI_ANALYSIS_QUEUE_STALL_AFTER_MS` | x |\n' +
+    '| First re-check | 5 s | `WATCH_FIRST_DELAY_MS` |\n' +
+    '| Where the interval settles | 30 s | `WATCH_MAX_DELAY_MS` |\n' +
+    '| Visible time before it gives up | 20 min | `WATCH_CEILING_MS` |\n',
   'docs/ai-analysis-jobs.html':
     '<td class="num">2 с</td><td class="src">AI_JOB_POLL_INTERVAL_SECONDS</td>' +
     '<td class="num">30 с</td><td class="src">AI_JOB_POLL_MAX_INTERVAL_SECONDS</td>' +

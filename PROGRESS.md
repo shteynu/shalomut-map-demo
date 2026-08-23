@@ -553,6 +553,13 @@ inside it.
   the V6 summary and metric nodes tell a refused answer which gate it hit
   instead of re-sending the same prompt, and a real round through the real
   chain returns eight model-written stones on the first attempt.
+- **The manager waits for a map without refreshing for it (2026-08-23).** While
+  an analysis is being written the dashboard re-reads on its own — soon at
+  first, then every half minute — pauses on a hidden tab, and says so when the
+  map lands. After twenty minutes of visible waiting it stops and admits it
+  stopped, leaving the manual check. There is no push channel from Core to a
+  browser and no plan for one; the screen asks, which is what a static page
+  behind a session can do.
 
 ### Architecture and verification
 

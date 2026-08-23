@@ -325,6 +325,19 @@ would go off on any busy afternoon; it is the combination of work that has
 waited too long *and* nobody currently holding a ticket. A monitor can read that
 answer without a password, and it reads as a failure the moment it is one.
 
+**And the manager's screen waits instead of the manager.** Everything above is
+about the order reaching a worker. The last stretch is the person who ordered
+it, and until now that stretch was theirs to walk: the screen said the results
+would appear in a few minutes and offered a button, so the one thing a manager
+cannot do — know when three minutes are up — was the thing being asked of them.
+Now, while a run is in flight, the screen looks again on its own: soon at first,
+then less often, and not at all while the tab is hidden, because a tab nobody is
+looking at is not waiting. When the map lands it says so in a sentence, on the
+screen where the change happened. And it stops after about twenty minutes and
+admits it stopped, because a page that promised to keep watching forever would
+be lying the moment the queue really was stuck — which is the case the board's
+own alarm above is for.
+
 The same mechanics with real endpoint names, status codes and constants are in
 [`ai-analysis-run-lifecycle.md`](ai-analysis-run-lifecycle.md).
 

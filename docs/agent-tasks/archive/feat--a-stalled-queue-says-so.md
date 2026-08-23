@@ -4,9 +4,9 @@
 
 - Branch: `feat/a-stalled-queue-says-so`
 - Base branch: `fix/the-hygiene-findings-of-the-audit`, itself based on `main`
-- Base commit: `026ae50` (unpushed; `origin/main` is `57c9e58`)
-- Current HEAD: the commit carrying this work
-- Status: done locally; awaiting the owner's push
+- Base commit: `026ae50`
+- Current HEAD: `960e8dd`; the work is `cea594f` and `960e8dd`
+- Status: complete, landed on `main`, archived 2026-08-23
 - Last updated: 2026-08-23
 - Last agent/tool: Claude Code (Opus 5)
 
