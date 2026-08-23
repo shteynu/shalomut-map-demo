@@ -8,6 +8,18 @@ inside it.
 
 ## Current state
 
+- **An administrative change nobody could record does not stand.** Owner
+  decision of 2026-08-23: the audit of an administrative write is mandatory, not
+  best effort. Creating a school, inviting an administrator, inviting a school's
+  user and changing a membership now each commit the change and its record
+  together — until then all four wrote first and recorded afterwards, so a
+  failing audit insert left the row changed, answered 500, and left nothing
+  saying who changed it. The 2026-08-21 audit named one of the four and proposed
+  the opposite fix; the owner's decision settles it the other way.
+  `PROJECT_CONTEXT.md` ADR-047 records it, including what the decision does not
+  reach. The same three handlers stopped putting raw error text in their
+  responses; fourteen other files still do.
+
 - **The questionnaire's history list stops reading the questionnaires.** Since
   2026-08-23 the builder's version list is summarised inside the database: a
   date, a title and two question counts per line, instead of twenty whole

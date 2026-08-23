@@ -1983,6 +1983,51 @@ including a question that carries no `enabled` key — where SQL drops it becaus
 `(q->>'enabled')::boolean` is `NULL` and JavaScript drops it because `undefined`
 is falsy. Same answer, different reasons, so it is pinned.
 
+### ADR-047: An administrative change nobody recorded did not happen
+
+2026-08-23, owner decision. The audit of an administrative write is **mandatory**
+rather than best effort, so the change and its record commit together or neither
+does.
+
+The repository had been carrying both policies at once and had never had to
+choose. `recordManagerScreenVisit` already treats an unrecordable read as a hard
+failure — "there is no honest screen for 'we are showing you this school but
+nobody will ever know we did'". `recordRoundAuditEvent` beside it swallows and
+warns. The four administrative writes did neither on purpose: they wrote, then
+recorded, outside any transaction, so a failing audit insert left the school
+created or the membership changed, answered `500`, and left nothing behind
+saying who did it. That is the worst of the three available outcomes — the
+administrator reads a failure while the row disagrees with them, and nothing
+downstream can tell the two apart.
+
+The 2026-08-21 audit named the membership route. It was one defect in four
+places sharing one mechanism: creating a school, inviting an administrator,
+inviting a school's user, changing a membership. All four now run inside
+`runInTransaction`, which is the third caller of that seam after ADR-043.
+
+**A refusal is returned out of the transaction rather than thrown.** Nothing was
+written, so there is nothing to roll back and nothing to record — and a thrown
+refusal would turn every "membership not found" into a `500`. This is the same
+shape ADR-043 settled for the AI callback.
+
+**The reach of the decision is administrative writes.** It does not reopen
+`recordRoundAuditEvent`, whose swallow-and-warn covers a different case: a round
+already updated by a route whose own transaction has closed. Whether that one
+should change too is a question the owner has not been asked.
+
+**The same three `catch` blocks stopped putting `error.message` in the response
+body.** What surfaces there is a database error or a constraint name, and the
+caller is a browser: it can act on "this did not happen" and cannot act on the
+rest. The message is a constant and the detail goes to the log. Fourteen other
+files under `src/app/api` still do this and are their own task.
+
+The rollback is proved against PostgreSQL rather than asserted, with the audit
+insert failing the way a real one would — a NUL byte in `details`, which arrives
+from a form and which `jsonb` refuses. The route tests prove the reporting and
+**assert the in-memory divergence rather than hiding it**: `runInTransaction`
+with no database calls the work with the ephemeral repositories, and a `Map` has
+nothing to roll back.
+
 ## Environments
 
 The project supports exactly two environments:
