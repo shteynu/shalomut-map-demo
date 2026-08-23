@@ -31,14 +31,41 @@ import type {
   RoundGoalStatus,
 } from '../types/round-goal';
 
+/**
+ * One page of the school list, as the console asks for it.
+ *
+ * `search` matches a school's name or its city, case-insensitively. It is a
+ * substring match rather than a prefix one because an administrator looking for
+ * a school types the part of the name they remember, which is rarely the start.
+ */
+export interface OrganizationPageQuery {
+  readonly search?: string;
+  readonly skip: number;
+  readonly take: number;
+}
+
+export interface OrganizationPage {
+  readonly organizations: Organization[];
+  /** Schools matching the search, not schools on this page. */
+  readonly total: number;
+}
+
 export interface IOrganizationRepository {
   create(org: Organization): Promise<Organization>;
   findById(id: string): Promise<Organization | null>;
   /**
-   * Every school there is. Two callers legitimately want that — the
-   * administrator's overview and the platform's own bootstrap — and neither is
-   * on a manager's path. Resolving a manager's scope used to call it on every
-   * authenticated request, which is the read this pair replaced.
+   * Every school there is, which is now a smaller claim than it was.
+   *
+   * Resolving a manager's scope used to call it on every authenticated request;
+   * `findByIds` replaced that. The administrator console called it to render
+   * every school as a card; `findPage` replaced that.
+   *
+   * What is left is the platform bootstrap, the scripts, and one screen: the
+   * school switcher a platform administrator sees on `setup`, which is a
+   * `<select>` of every school and still grows without a ceiling. That one is
+   * named here rather than fixed, because bounding it means a search field
+   * instead of a dropdown, and that is a different screen rather than a
+   * different query.
    */
   findAll(): Promise<Organization[]>;
   /**
@@ -49,6 +76,18 @@ export interface IOrganizationRepository {
    * no memberships from costing a query.
    */
   findByIds(ids: readonly string[]): Promise<Organization[]>;
+  /**
+   * One page of schools, and how many there are behind it.
+   *
+   * The administrator console is the only screen that lists schools it does not
+   * belong to, and it used to render every one of them. `findAll` stays for the
+   * bootstrap, which asks a question about the platform rather than about a
+   * page.
+   *
+   * The total is what the pager needs and is counted with the same `where`, so
+   * "showing 20 of 340" cannot disagree with the rows above it.
+   */
+  findPage(query: OrganizationPageQuery): Promise<OrganizationPage>;
   /**
    * At most `limit` school ids, in `findAll`'s order.
    *

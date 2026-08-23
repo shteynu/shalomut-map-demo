@@ -46,6 +46,8 @@ export interface MinimalPrismaClient {
     create: (args: any) => Promise<any>;
     findUnique: (args: any) => Promise<any>;
     findMany: (args: any) => Promise<any[]>;
+    /** How many schools a search matches, for the console's pager. */
+    count: (args?: any) => Promise<number>;
     update: (args: any) => Promise<any>;
     deleteMany: (args?: any) => Promise<any>;
   };

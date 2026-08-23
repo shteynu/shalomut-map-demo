@@ -58,6 +58,13 @@ function violatesTheOneStandingMembershipIndex(error: unknown): boolean {
   );
 }
 
+/**
+ * The two statuses that mean a school is taken. The same pair
+ * `ManagerAdministrationService.stands` uses, spelled again here because this
+ * one has to reach the database as a value rather than a predicate.
+ */
+const STANDING_STATUSES = ['active', 'invited'] as const;
+
 interface ManagerRow {
   id: string;
   email: string;
@@ -180,8 +187,42 @@ export class PrismaManagerRepository implements IManagerRepository {
     return rows.map(toMembership);
   }
 
-  public async findAllManagers(): Promise<Manager[]> {
-    const rows = await this.managers.findMany({ orderBy: { createdAt: 'asc' } });
+  public async findManagersByIds(ids: readonly string[]): Promise<Manager[]> {
+    if (ids.length === 0) return [];
+
+    const rows = await this.managers.findMany({
+      where: { id: { in: [...ids] } },
+    });
+    return rows.map(toManager);
+  }
+
+  public async findPlatformAdministrators(limit: number): Promise<Manager[]> {
+    if (limit <= 0) return [];
+
+    const rows = await this.managers.findMany({
+      where: { isPlatformAdministrator: true },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: limit,
+    });
+    return rows.map(toManager);
+  }
+
+  public async findManagersWithoutStandingMembership(
+    limit: number,
+  ): Promise<Manager[]> {
+    if (limit <= 0) return [];
+
+    const rows = await this.managers.findMany({
+      // `none` is the whole point of asking the database rather than the
+      // screen: it is a `NOT EXISTS` over this person's memberships, and it
+      // stays correct while the schools themselves arrive one page at a time.
+      where: {
+        isPlatformAdministrator: false,
+        memberships: { none: { status: { in: STANDING_STATUSES } } },
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: limit,
+    });
     return rows.map(toManager);
   }
 

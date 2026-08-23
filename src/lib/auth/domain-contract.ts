@@ -58,13 +58,44 @@ export interface IManagerRepository {
     organizationIds: readonly string[],
   ): Promise<OrganizationMembership[]>;
   /**
-   * Every person who may sign in.
+   * The people a page of the console is about, named by the memberships on it.
    *
-   * Only the administrator area calls this, and it is the reason that area is
-   * gated rather than merely unlinked: this is the one query that returns a
-   * list of named people.
+   * This replaced `findAllManagers`, which returned every person who may sign
+   * in and was the only query in the product that did. The console read it to
+   * fill in the names beside each school's membership — a whole directory to
+   * label twenty rows — and there is no second caller to keep it for. The
+   * method is gone rather than deprecated: leaving it would leave the cheapest
+   * way to write the next screen that enumerates everybody.
    */
-  findAllManagers(): Promise<Manager[]>;
+  findManagersByIds(ids: readonly string[]): Promise<Manager[]>;
+  /**
+   * The platform administrators, newest first, at most `limit` of them.
+   *
+   * A list rather than `countPlatformAdministrators`'s number, because the
+   * console names them; the count above stays separate because the bootstrap
+   * must not be able to answer its question by reading people.
+   *
+   * `limit` is a bound and not a page. Nothing pages this list — the product
+   * has a handful of administrators and a screen that needs to page them is a
+   * different screen — so the caller asks for one more row than it will show
+   * and says "and more" rather than pretending the tail does not exist.
+   */
+  findPlatformAdministrators(limit: number): Promise<Manager[]>;
+  /**
+   * People with a row and no school: at most `limit` of them, newest first.
+   *
+   * The console used to derive this by subtracting every membership it had
+   * loaded from every manager it had loaded, which only works while it holds
+   * both in full. Once the schools arrive a page at a time, the memberships in
+   * hand are the page's, and a person attached to a school on page four would
+   * read as attached to nothing. So the question moves to the store, which can
+   * still see all of the rows.
+   *
+   * Platform administrators are excluded here, the way the screen lists them
+   * separately: an administrator has no membership by design and is not a
+   * person who has lost their school.
+   */
+  findManagersWithoutStandingMembership(limit: number): Promise<Manager[]>;
   saveManager(manager: Manager): Promise<Manager>;
   saveMembership(membership: OrganizationMembership): Promise<OrganizationMembership>;
   /**
@@ -217,8 +248,54 @@ export class InMemoryManagerRepository implements IManagerRepository {
       .filter((membership) => wanted.has(membership.organizationId));
   }
 
-  async findAllManagers(): Promise<Manager[]> {
-    return Array.from(this.managers.values());
+  async findManagersByIds(ids: readonly string[]): Promise<Manager[]> {
+    const wanted = new Set(ids);
+    return Array.from(this.managers.values()).filter((manager) =>
+      wanted.has(manager.id),
+    );
+  }
+
+  async findPlatformAdministrators(limit: number): Promise<Manager[]> {
+    return this.newestFirst(
+      Array.from(this.managers.values()).filter(
+        (manager) => manager.isPlatformAdministrator,
+      ),
+      limit,
+    );
+  }
+
+  async findManagersWithoutStandingMembership(limit: number): Promise<Manager[]> {
+    const standing = new Set(
+      Array.from(this.memberships.values())
+        .flat()
+        .filter((membership) => membership.status === 'active' || membership.status === 'invited')
+        .map((membership) => membership.managerId),
+    );
+
+    return this.newestFirst(
+      Array.from(this.managers.values()).filter(
+        (manager) =>
+          !manager.isPlatformAdministrator && !standing.has(manager.id),
+      ),
+      limit,
+    );
+  }
+
+  /**
+   * The order the durable store returns, applied here so the two agree. A
+   * `Map` hands back insertion order, which is close enough to be mistaken for
+   * this and wrong the moment a row is rewritten.
+   */
+  private newestFirst(managers: Manager[], limit: number): Manager[] {
+    if (limit <= 0) return [];
+
+    return managers
+      .sort(
+        (left, right) =>
+          right.createdAt.getTime() - left.createdAt.getTime() ||
+          right.id.localeCompare(left.id),
+      )
+      .slice(0, limit);
   }
 
   async saveManager(manager: Manager): Promise<Manager> {

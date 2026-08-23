@@ -48,6 +48,21 @@ function createMockPrismaClient(): MinimalPrismaClient {
         orgs.set(where.id, updated);
         return updated;
       },
+      // How many schools a search matches. This double does not read the
+      // search — `findMany` above already ignores `where`, and teaching both of
+      // them a reading of `ILIKE` would make this file's opinion of the query
+      // the thing under test. `findPage`'s matching, ordering and paging are
+      // asserted against a real PostgreSQL in
+      // `__dbtests__/postgres-organization-pages.test.ts`, so a search arriving
+      // here is refused rather than silently answered with the whole table.
+      count: async (args?: any) => {
+        assert.strictEqual(
+          args?.where?.OR,
+          undefined,
+          'a searched count is asserted against real PostgreSQL, not against this fake'
+        );
+        return orgs.size;
+      },
       deleteMany: async (args?: any) => deleteMatching(orgs, args?.where),
     },
     surveyRound: {
