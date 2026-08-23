@@ -46,6 +46,14 @@ test('fitness gate exempts the contract package and tests, and nothing else', ()
   assert.strictEqual(isAllowedFile('src/lib/contract-registry.ts'), true);
   assert.strictEqual(isAllowedFile('src/lib/types/backend.ts'), true);
   assert.strictEqual(isAllowedFile('src/lib/__tests__/ai-contract.test.ts'), true);
+  // A database test is a test. The three sibling gates spell both directories,
+  // and this one spelled only the first until a db test needed a version.
+  assert.strictEqual(
+    isAllowedFile(
+      'src/lib/repositories/__dbtests__/postgres-ai-callback-atomicity.test.ts',
+    ),
+    true,
+  );
 
   // A domain service is where a version literal does the most damage, so it is
   // the last place that should be exempt from the check.

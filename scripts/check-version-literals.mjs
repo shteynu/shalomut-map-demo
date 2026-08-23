@@ -26,7 +26,14 @@ const VERSION_IDENTIFIER =
 const COMPARISON = /===|!==|==|!=|\.includes\s*\(/;
 
 export function isAllowedFile(filePath) {
-  if (filePath.includes('__tests__')) return true;
+  // `__dbtests__` alongside `__tests__`, the way the composition-root, runtime
+  // fixture and tenant-chokepoint gates already spell it. Both are test
+  // directories; only the second needs a database. Until 2026-08-23 no
+  // database test had named a contract version, so the omission cost nothing
+  // and was invisible.
+  if (filePath.includes('__tests__') || filePath.includes('__dbtests__')) {
+    return true;
+  }
   return ALLOWED_FILES.some((allowed) => filePath.endsWith(allowed));
 }
 

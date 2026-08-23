@@ -36,6 +36,31 @@ export interface AiCallbackIdentity {
 }
 
 /**
+ * The two stores a finished callback writes, and nothing else.
+ *
+ * Narrow on purpose: these two writes go into one transaction, and a
+ * transaction is a lock held on the way back from a paid analysis. Everything
+ * the callback reads, validates and recomputes happens before it opens.
+ */
+export interface AiCallbackWriteStores {
+  aiAnalysisRunRepo: IAiAnalysisRunRepository;
+  aiInsightsRepo: IAiInsightsRepository;
+}
+
+/**
+ * How the two writes below are run together.
+ *
+ * The caller supplies it because only an entrypoint may resolve the wiring
+ * (ADR-008), and a transaction is a second resolution — `runInTransaction` in
+ * the composition root. The default runs the work against the repositories this
+ * service was already handed, which is what an in-memory test wants and what a
+ * deployment with no database configured falls back to.
+ */
+export type AiCallbackWriteRunner = <T>(
+  work: (stores: AiCallbackWriteStores) => Promise<T>,
+) => Promise<T>;
+
+/**
  * The map a manager gets, and what the round's newest run is doing.
  *
  * Both halves travel together on purpose. The map is the newest result the
@@ -58,6 +83,7 @@ export type AiInsightsCallbackResult =
   | { outcome: 'contract_invalid'; error: string }
   | { outcome: 'round_mismatch'; error: string }
   | { outcome: 'lease_stale'; runId: string }
+  | { outcome: 'write_failed' }
   | { outcome: 'persisted'; duplicate: boolean };
 
 /**
@@ -97,6 +123,21 @@ export async function readAiInsights(
 }
 
 /**
+ * The legacy column would not take the write.
+ *
+ * Thrown rather than returned so the transaction around both writes rolls back
+ * — a run closed beside a column that refused the map is the divergence this
+ * whole seam exists to prevent. Its own class so the `catch` cannot swallow a
+ * bug from somewhere else and report it as a retriable write failure.
+ */
+class AiInsightsWriteFailed extends Error {
+  constructor(roundId: string) {
+    super(`The round's stored analysis could not be written: ${roundId}`);
+    this.name = 'AiInsightsWriteFailed';
+  }
+}
+
+/**
  * Everything the callback does once the request itself is understood: resolve
  * the round and the leased run, judge the payload against the contract and
  * against Core's own analytics, close the durable run and persist the result.
@@ -110,6 +151,7 @@ export async function applyAiInsightsCallback(
   identity: AiCallbackIdentity,
   payload: unknown,
   repositories: AiInsightsRepositories,
+  runWrites: AiCallbackWriteRunner = (work) => work(repositories),
 ): Promise<AiInsightsCallbackResult> {
   const { runId, leaseToken } = identity;
 
@@ -204,46 +246,124 @@ export async function applyAiInsightsCallback(
     validation.value.status === 'success' ||
     validation.value.status === 'locked_error';
 
-  let completionOutcome: 'transitioned' | 'duplicate' | undefined;
-  if (runId && leaseToken) {
-    const succeeded = payloadCarriesAResult;
-    const failureCode =
-      'failureReason' in validation.value &&
-      typeof validation.value.failureReason === 'string'
-        ? validation.value.failureReason
-        : 'analysis_validation_failed';
-    const result = structuredClone(validation.value) as unknown as Record<
-      string,
-      unknown
-    >;
-    const outcome = await repositories.aiAnalysisRunRepo.finish(
-      runId,
-      succeeded
-        ? {
-            state: 'succeeded',
-            leaseToken,
-            result,
-            callbackReceivedAt: new Date(),
-          }
-        : {
-            state: 'failed',
-            leaseToken,
-            result,
-            failureCode,
-            callbackReceivedAt: new Date(),
-          },
-    );
-    if (outcome === 'not_found') {
-      return { outcome: 'run_not_found', runId };
-    }
-    if (outcome === 'stale') {
-      return { outcome: 'lease_stale', runId };
-    }
-    completionOutcome = outcome;
-    if (outcome === 'transitioned') {
-      const completed = await repositories.aiAnalysisRunRepo.findById(runId);
-      if (completed) recordAiJobCompleted(completed);
-    }
+  /*
+   * Both writes, together or neither.
+   *
+   * They used to be two: the durable run was closed, and then the round's
+   * legacy `aiInsights` column was written separately. A crash or a dropped
+   * connection between them left a run marked `succeeded` beside a column
+   * holding the map it was meant to replace — the two stores disagreeing about
+   * the same analysis, with nothing to notice it. The audit of 2026-08-21 named
+   * it; `runInTransaction` (ADR-041's neighbour, built for the round reset)
+   * is what the route hands in.
+   *
+   * Nothing is read, validated or recomputed in here. This is the whole reason
+   * the seam is this narrow: the transaction opens on the way back from a paid
+   * analysis, and holding it across `AnalyticsService` would be a lock held for
+   * the length of a computation.
+   */
+  type WriteOutcome =
+    | { kind: 'done'; completion?: 'transitioned' | 'duplicate' }
+    | { kind: 'refused'; result: AiInsightsCallbackResult };
+
+  let writeOutcome: WriteOutcome;
+  try {
+    writeOutcome = await runWrites(async (stores): Promise<WriteOutcome> => {
+      let completion: 'transitioned' | 'duplicate' | undefined;
+
+      if (runId && leaseToken) {
+        const succeeded = payloadCarriesAResult;
+        const failureCode =
+          'failureReason' in validation.value &&
+          typeof validation.value.failureReason === 'string'
+            ? validation.value.failureReason
+            : 'analysis_validation_failed';
+        const result = structuredClone(validation.value) as unknown as Record<
+          string,
+          unknown
+        >;
+        const outcome = await stores.aiAnalysisRunRepo.finish(
+          runId,
+          succeeded
+            ? {
+                state: 'succeeded',
+                leaseToken,
+                result,
+                callbackReceivedAt: new Date(),
+              }
+            : {
+                state: 'failed',
+                leaseToken,
+                result,
+                failureCode,
+                callbackReceivedAt: new Date(),
+              },
+        );
+        /*
+         * A verdict about this callback, not a failure of the write. Returned
+         * rather than thrown so the transaction commits nothing and the route
+         * still answers the specific 404 or 409 the worker knows how to stop
+         * on. There is nothing to roll back at this point either way.
+         */
+        if (outcome === 'not_found') {
+          return { kind: 'refused', result: { outcome: 'run_not_found', runId } };
+        }
+        if (outcome === 'stale') {
+          return { kind: 'refused', result: { outcome: 'lease_stale', runId } };
+        }
+        completion = outcome;
+      }
+
+      /*
+       * Dual-write during rollout keeps the legacy reader/rollback path viable
+       * — for results. A failure payload is not one.
+       *
+       * This used to write whatever validated, so a re-run that failed
+       * overwrote the round's rollback copy of the map it was meant to replace.
+       * The durable run keeps the failure with its own row and its
+       * `failureCode`; the column is the copy someone falls back to, and a
+       * fallback to a failure is not a fallback.
+       */
+      if (payloadCarriesAResult) {
+        const saved = await stores.aiInsightsRepo.save(
+          roundId,
+          validation.value,
+        );
+        /*
+         * `save` collapses every reason into `false`, and this used to be
+         * reported as `round_not_found` — a 404, which the worker reads as a
+         * verdict about the payload and stops on. A dropped connection then
+         * threw away a paid analysis that was correct.
+         *
+         * The round was read at the top of this function, so `false` here is a
+         * failed write far more often than a vanished round — and a round that
+         * really did vanish is caught by that read on the retry, which answers
+         * the 404 from the place that actually knows. So this throws: the
+         * transaction rolls back, the run goes back to `running` with its
+         * lease, and the route answers a 500 the worker will try again.
+         */
+        if (!saved) throw new AiInsightsWriteFailed(roundId);
+      }
+
+      return { kind: 'done', completion };
+    });
+  } catch (error) {
+    if (!(error instanceof AiInsightsWriteFailed)) throw error;
+    return { outcome: 'write_failed' };
+  }
+
+  if (writeOutcome.kind === 'refused') return writeOutcome.result;
+  const completionOutcome = writeOutcome.completion;
+
+  /*
+   * Recorded after the writes are durable, not between them. Observability may
+   * not run inside a transaction (ADR-041) and a metric about a completed job
+   * is a claim that the completion happened — which, until the commit, it had
+   * not.
+   */
+  if (runId && completionOutcome === 'transitioned') {
+    const completed = await repositories.aiAnalysisRunRepo.findById(runId);
+    if (completed) recordAiJobCompleted(completed);
   }
 
   if (!runId || completionOutcome === 'transitioned') {
@@ -268,26 +388,6 @@ export async function applyAiInsightsCallback(
       roundId,
       runId: runId ?? undefined,
     });
-  }
-
-  /*
-   * Dual-write during rollout keeps the legacy reader/rollback path viable —
-   * for results. A failure payload is not one.
-   *
-   * This used to write whatever validated, so a re-run that failed overwrote
-   * the round's rollback copy of the map it was meant to replace. The durable
-   * run keeps the failure with its own row and its `failureCode`; the column is
-   * the copy someone falls back to, and a fallback to a failure is not a
-   * fallback.
-   */
-  if (payloadCarriesAResult) {
-    const saved = await repositories.aiInsightsRepo.save(
-      roundId,
-      validation.value,
-    );
-    if (!saved) {
-      return { outcome: 'round_not_found' };
-    }
   }
 
   return { outcome: 'persisted', duplicate: completionOutcome === 'duplicate' };

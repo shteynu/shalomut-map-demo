@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { resolveCoreRepositories } from '@/lib/composition-root';
+import { resolveCoreRepositories, runInTransaction } from '@/lib/composition-root';
 import { isValidLeaseToken } from '@/lib/server/ai-analysis-worker';
 import {
   applyAiInsightsCallback,
@@ -131,11 +131,23 @@ export async function POST(request: Request, { params }: RouteParams) {
     }
 
     const payload: unknown = await request.json();
+    /*
+     * The two writes that finish a paid analysis go into one transaction, so
+     * the durable run and the round's legacy copy cannot disagree about it.
+     * Opened here rather than inside the service because a transaction is a
+     * resolution of the wiring and only an entrypoint may resolve (ADR-008);
+     * the service asks for it as a parameter and never for the root.
+     *
+     * Everything before the writes — the round, the lease, the contract, Core's
+     * own analytics — happens outside, on purpose. This lock is held on the way
+     * back from a model call and has no business waiting on a recomputation.
+     */
     const result = await applyAiInsightsCallback(
       roundId,
       identity.identity,
       payload,
       resolveCoreRepositories(),
+      (work) => runInTransaction((repositories) => work(repositories)),
     );
 
     switch (result.outcome) {
@@ -168,6 +180,23 @@ export async function POST(request: Request, { params }: RouteParams) {
             runId: result.runId,
           },
           { status: 409 },
+        );
+      case 'write_failed':
+        /*
+         * A 500, deliberately, and the one status change this fix is about.
+         * The store refused the write; the analysis itself is fine and was paid
+         * for. This used to answer 404 — which `result_sink.py` reads as a
+         * verdict on the payload and stops retrying on — so a dropped
+         * connection threw away a correct map. `_is_transient_status` retries
+         * every 5xx, and the transaction means the run is back to `running`
+         * with its lease for that retry to finish.
+         */
+        return NextResponse.json(
+          {
+            error: "The analysis could not be stored. The run is unchanged and the callback can be repeated.",
+            roundId,
+          },
+          { status: 500 },
         );
       case 'persisted':
         return NextResponse.json({
