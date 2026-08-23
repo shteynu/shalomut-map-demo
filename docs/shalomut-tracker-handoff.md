@@ -18,9 +18,9 @@ and in Git; what was durable in them is below.
 
 Verified on 2026-08-23, in this worktree and on both deployed endpoints:
 
-- **`origin/main` is `124f661`, Core answers it, and the AI service answers
+- **`origin/main` is `bad1f75`, Core answers it, and the AI service answers
   `2b88fa5` — that gap is correct.** Read over HTTPS on 2026-08-23:
-  `GET https://shalomut-map-demo.vercel.app/api/health/` → `commit: 124f661`,
+  `GET https://shalomut-map-demo.vercel.app/api/health/` → `commit: bad1f75`,
   and `GET https://shalomut-ai-analytics.onrender.com/health` → `commit:
   2b88fa5`, `jobPollingEnabled: true`. Core auto-deploys every push; the AI
   service rebuilds only when a push touches its `buildFilter` paths —
@@ -35,6 +35,32 @@ Verified on 2026-08-23, in this worktree and on both deployed endpoints:
   unrelated modified file in this worktree is `next-env.d.ts`, which is
   generated, belongs to the owner, and flips between `.next/dev/types` and
   `.next/types` depending on whether `next dev` or `next build` ran last.
+- **Six scale findings of the 2026-08-21 audit landed on `main` on 2026-08-23**,
+  in the order `99a896c → eb46b87 → 23180d5 → 75d6e7b → bad1f75`, and all of them
+  are deployed by the reading above. In sequence: error bodies stopped carrying
+  internal messages (ADR-048); retention ceilings on the two tables that only
+  grow (ADR-049); a fill-time report that asks for three columns instead of
+  every answer (ADR-050); a school's round list that stopped carrying every
+  questionnaire it ever ran (ADR-051); and the administrator console reading a
+  page of schools instead of the platform (ADR-052). **None of the five was
+  walked on the deployment** — each was proved locally against a disposable
+  PostgreSQL, and three of them are invisible from outside because what changed
+  is how much a query returns, not what a screen says. The audit's open count is
+  **7 of 50**, counted from the `ЗАКРЫТА` marks in the records themselves.
+- **Two retention questions are the owner's and are not decided.** Both surfaced
+  while `eb46b87` put ceilings on the tables that only grow, and both were left
+  rather than invented: whether `audit_events` rows are ever deleted, and whether
+  a superseded AI run's stored `result` is nulled once a newer successful run for
+  the same round exists. The reading side is bounded either way — the log is
+  paged with a cursor and no product path loads every run — so this is a question
+  about disk and about how long a record should live, not about a screen that
+  breaks. `operationalEventRepo.prune` off the observability endpoint is the
+  existing precedent for a runner if the answer is yes.
+- **`e2e/administrator-console.spec.ts` leaves 25 schools in whatever database
+  the browser suite runs against**, with fixed ids so repeated runs reuse them
+  rather than adding 25 more. It targets the local Playwright server only.
+  Anyone reading a local `/admin` and wondering where the schools came from is
+  reading those.
 - **Six of the seven hygiene findings of the 2026-08-21 audit are on `main` and
   in the deployed tree** as of `57c9e58`, which `2b88fa5` descends from: the share code's uniformity claim,
   a rate limit on the funnel beacon, one `isDeployedRuntime` behind the
@@ -1129,8 +1155,10 @@ branch task file. Both halves are one anonymous request each; the rules for
 reading the service's commit without raising a false alarm are under
 **Deployed state** above.
 
-The last such comparison was made on 2026-08-20 and both halves matched the tip
-at `e69a5eb`. What has changed since is documentation only — see **Last read**.
+The last such comparison was made on 2026-08-23, immediately after `bad1f75` was
+pushed: Core answered `bad1f75` and the service `2b88fa5`, which is the expected
+resting gap rather than a missed deploy — nothing since `ce6d1b0` has touched the
+service's `buildFilter` paths.
 
 ## Published documents
 

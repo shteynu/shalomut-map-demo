@@ -7,6 +7,7 @@
 - Base commit: `23180d5`
 - Current HEAD: see **Exact Git state**
 - Status: complete and verified
+- Landed on `main` as `75d6e7b`, pushed by the owner 2026-08-23
 - Last updated: 2026-08-23
 - Last agent/tool: Claude Code (Opus 5)
 

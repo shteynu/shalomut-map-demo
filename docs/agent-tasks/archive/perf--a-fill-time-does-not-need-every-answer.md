@@ -7,6 +7,7 @@
 - Base commit: `eb46b87` — **which is the previous task's branch, not `origin/main`**
 - Current HEAD: see **Exact Git state**
 - Status: complete and verified
+- Landed on `main` as `23180d5`, pushed by the owner 2026-08-23
 - Last updated: 2026-08-23
 - Last agent/tool: Claude Code (Opus 5)
 
