@@ -221,6 +221,26 @@ The gate `lint:audit-count` also learned that a Russian verb agrees with its
 number: the summary now reads "**0** открыты целиком", and the singular-only
 patterns would have failed on the day the last open finding closed.
 
+## Verification that actually ran, 2026-08-24
+
+- `npm run verify:core` — exit 0. 1622 unit and API tests, plus every lint and
+  fitness gate and the production build. `lint:audit-count` reports 50 findings:
+  41 closed, 9 closed in part, 0 open.
+- `npm run test:e2e` — 26 passed, 1 failed, and **the failure is not this
+  change**. `administrator-console.spec.ts:68` ("a platform larger than a
+  screenful arrives one page at a time") fails against a freshly reset local
+  database, and it fails the same way on `0ded0bf` with no part of this branch
+  applied: checked out detached, rebuilt, re-run. Against a database that
+  already holds other specs' schools it passes on both. It runs on the tenant
+  server, whose directory is the database because a provider is configured, so
+  no password path is involved at all.
+- Local database: three pending migrations were applied
+  (`20260823120000`, `20260823140000`, `20260823160000`) and
+  `scripts/seed-local.ts --reset` re-seeded it. `db:clear` was not run.
+- The deployed `MANAGER_ADMIN_PASSWORD` was **not** read or measured. It is not
+  in `.env` or `.env.deployed.local`, and the dashboard value is the owner's to
+  open.
+
 ## Next concrete step
 
 **Read `MANAGER_ADMIN_PASSWORD` in the Vercel dashboard for the Preview scope
