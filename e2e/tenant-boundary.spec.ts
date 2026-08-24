@@ -94,17 +94,22 @@ test.describe('the tenant boundary', () => {
     await expect(page).not.toHaveURL(/\/admin/u);
   });
 
-  test('a school user is turned away from the screens that act on a round', async ({
+  test('a school user is turned away from the screens that act on a round, and from the log', async ({
     page,
     context,
   }) => {
     // The redirect that broke this file's first test when it landed. Nothing in
     // the browser suite covered it, so a change to `administratorOnlyScreens` or
-    // to the middleware's role branch could quietly reopen all three and no
+    // to the middleware's role branch could quietly reopen all four and no
     // spec would notice — the API tests assert the 403, not the door.
+    //
+    // `/activity/` is the fourth and is refused for a different reason from the
+    // other three: it is a read, and what it reads includes the record of an
+    // administrator opening this school. It has no API route to refuse in its
+    // place, so this door is the only one it has.
     await signInAsMember(context);
 
-    for (const screen of ['/setup/', '/survey/', '/goals/']) {
+    for (const screen of ['/setup/', '/survey/', '/goals/', '/activity/']) {
       await page.goto(screen);
       await expect(page).toHaveURL(/\/(\?.*)?$/u);
     }
@@ -137,6 +142,24 @@ test.describe('the tenant boundary', () => {
     const after = await administratorVisitsTo(SECOND_SCHOOL.id);
     expect(after.length).toBeGreaterThan(before.length);
     expect(after.map((visit) => visit.managerId)).toContain(ADMINISTRATOR.id);
+  });
+
+  test('the log shows the administrator the visit they just made', async ({
+    page,
+    context,
+  }) => {
+    // The end of the loop the audit was missing: the write is recorded, the
+    // record is read, and the reading is itself recorded. Opening this screen
+    // over a school the administrator does not belong to writes a visit, so the
+    // page cannot be empty — which is why this asserts the row rather than
+    // merely that the screen renders.
+    await signInAsAdministrator(context);
+    await page.goto(`/activity/?school=${SECOND_SCHOOL.id}`);
+
+    await expect(page).toHaveURL(/\/activity/u);
+    await expect(
+      page.getByRole('listitem').filter({ hasText: 'צפייה בבית הספר' }).first(),
+    ).toContainText(ADMINISTRATOR.email);
   });
 
   test('an administrator reading a school is not the same as belonging to it', async ({
