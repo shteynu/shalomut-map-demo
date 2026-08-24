@@ -5,8 +5,8 @@
 - Branch: `feat/the-audit-log-gets-a-reader`
 - Base branch: `main`
 - Base commit: `fcfe20f`
-- Current HEAD: `93a2aba`
-- Status: complete, unpushed
+- Current HEAD: `f0d35b6`
+- Status: complete; the first four commits are on `main` and deployed, the last three are not
 - Last updated: 2026-08-24
 - Last agent/tool: Claude Opus 5 / Claude Code
 
@@ -128,6 +128,12 @@ paths.
   `?after=<millis>.<id>`, the next page renders, and `חזרה לפעולות האחרונות` is
   offered there and not on the newest page. The 30 seeded rows were deleted
   afterwards.
+- Deployed, read-only, 2026-08-24 after the owner pushed the first four commits:
+  `GET https://shalomut-map-demo.vercel.app/api/health/` answers
+  `commit: c1e8373`, so the school's log is on the deployed runtime, and
+  `GET /activity/` answers `307` to an anonymous caller — the middleware's
+  redirect to `/login`, which is the refusal that route is supposed to give
+  before any handler runs. Nothing signed-in was walked there.
 - Browser, local: screenshots of both screens with real rows written by the real
   routes — a `ROUND_CREATED` row naming the round beside visit rows, and three
   `ADMINISTRATOR_INVITED` rows each naming the address invited. The probe
@@ -152,8 +158,9 @@ paths.
 
 ### Residual risk
 
-- The deployed runtime has never rendered either screen. Nothing about them is
-  environment-dependent — no migration, no variable, no endpoint — so the risk
+- The deployed runtime has never rendered either screen for a signed-in
+  administrator; what was read there is the anonymous refusal. Nothing about
+  them is environment-dependent — no migration, no variable, no endpoint — so the risk
   is a render failure rather than a behaviour difference. The deployed platform
   log has one row to show: the bootstrapped administrator was created by the
   bootstrap rather than invited, so `ADMINISTRATOR_INVITED` may well be empty
@@ -184,9 +191,12 @@ paths.
 
 ## Visibility of this handoff
 
-Committed on `feat/the-audit-log-gets-a-reader`, three commits ahead of
-`origin/main` at `fcfe20f`, **not pushed**. Another worktree on this machine can
-read it from the branch; another checkout or machine cannot until it is pushed.
+`origin/main` moved to `c1e8373` while the second slice was being written — the
+owner pushed the school's log, and Vercel deployed it. This branch is now three
+commits ahead of that: `23958f6`, `93a2aba`, `f0d35b6`, the platform log and its
+documents, **not pushed**. It is a fast-forward, so no rebase is needed. Another
+worktree on this machine can read them from the branch; another checkout or
+machine cannot until they are pushed.
 
 ## Next concrete step
 
