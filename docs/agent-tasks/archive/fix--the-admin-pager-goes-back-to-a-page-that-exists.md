@@ -5,8 +5,8 @@
 - Branch: `fix/the-admin-pager-goes-back-to-a-page-that-exists`
 - Base branch: `main`
 - Base commit: `0f3af25`
-- Current HEAD: see `git log -1`
-- Status: implemented and verified locally, waiting on a push
+- Current HEAD: `5912772`, which is `origin/main`
+- Status: **closed** — landed on `main` as `5912772` on 2026-08-24, archived
 - Last updated: 2026-08-24
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -121,5 +121,5 @@ the page snapshot at the moment of failure, and later runs delete it.
 
 ## Next concrete step
 
-Push `fix/the-admin-pager-goes-back-to-a-page-that-exists` to `main` and move
-this file to `docs/agent-tasks/archive/`.
+None. The branch landed and this file is archived. If the spec fails again on
+the same line, see Known risks above — keep the artefacts before re-running.

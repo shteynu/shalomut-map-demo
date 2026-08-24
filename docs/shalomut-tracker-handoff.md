@@ -19,17 +19,19 @@ and in Git; what was durable in them is below.
 Verified on 2026-08-23, in this worktree and on both deployed endpoints, except
 where a later date says otherwise:
 
-- **`origin/main` is `bd3fae4`; Core answers it and the AI service answers
-  `8760e62`.** Read over HTTPS on 2026-08-24: `GET /api/health/` →
-  `commit: bd3fae4`, `GET https://shalomut-ai-analytics.onrender.com/health` →
-  `commit: 8760e62`. The gap is the resting state rather than a missed deploy —
-  nothing pushed since has touched the service's `buildFilter` paths. Eight
-  commits landed that day and **none of the eight was walked on the
-  deployment**; each was proved locally, and the two that changed runtime
-  behaviour cannot be walked there at all (the manager password floor is
-  Preview's door, and the migration step runs in a build). The reading below
-  describes `8760e62` and the rule it established, which still holds; the commit
-  it names does not.
+- **`origin/main` is `5912772`.** Core answered `bd3fae4` and the AI service
+  answered `8760e62` when both were read over HTTPS on 2026-08-24; one commit
+  has landed since, and it touches only a Playwright spec and an archived task
+  file, so neither endpoint's behaviour moved. The gap between the two is the
+  resting state rather than a missed deploy — nothing pushed since has touched
+  the service's `buildFilter` paths. Ten commits landed that day and **none was
+  walked on the deployment**; each was proved locally, and the two that changed
+  runtime behaviour cannot be walked there at all — the manager password floor
+  is Preview's door, and the migration step runs inside a build, where it *was*
+  observed: the build of `bd3fae4` carries `[deploy-migrate] applying pending
+  migrations before the build` … `No pending migrations to apply.` in its own
+  log. The reading below describes `8760e62` and the rule it established, which
+  still holds; the commit it names does not.
 - **`origin/main` was `8760e62` and both endpoints answered it.** Read over
   HTTPS on 2026-08-23, after the push that carried the worker-pace change. The
   matching commits are the exception rather than the rule, and the rule is what
@@ -1225,6 +1227,19 @@ credentials, authentication configuration or deployment aliases.
   file.
 - **A stale dev server can fake a layout bug.** Verify signed-in screens against a
   production build on its own port rather than against `next dev`.
+- **A TLS parameter a library does not recognise is silently ignored, not
+  refused.** Prisma's PostgreSQL connector accepts only `prefer`, `disable` and
+  `require` for `sslmode`, so `verify-full` — which Supabase's own documentation
+  suggests — falls back to `prefer` and connects happily to a decoy authority.
+  `sslrootcert` and `sslcert` are read by nothing. A "fix" written from the
+  documentation alone would have shipped as a placebo that reads as verification.
+  Prove a security parameter from both sides — with the right certificate and
+  with a wrong one — or it proves nothing.
+- **A Playwright read is not a Playwright assertion.** `toHaveURL` resolves when
+  the address bar agrees, not when the new document has rendered, and
+  `allInnerTexts()` does not retry. Three assertions in the administrator-console
+  spec read the page in that gap and failed once every several runs. Assert
+  through a locator; `expect(await …)` in an e2e spec is the shape to look for.
 - **Every worktree needs its own `ai-analytics-service/.venv`**, created with
   `pip install -e ".[dev]"` — plain `-e .` installs no pytest. `npm test` drives
   the real Python pipeline through it, and `npm run lint:interpreter` fails on a
@@ -1238,10 +1253,24 @@ branch task file. Both halves are one anonymous request each; the rules for
 reading the service's commit without raising a false alarm are under
 **Deployed state** above.
 
-The last such comparison was made on 2026-08-23, immediately after `bad1f75` was
-pushed: Core answered `bad1f75` and the service `2b88fa5`, which is the expected
-resting gap rather than a missed deploy — nothing since `ce6d1b0` has touched the
-service's `buildFilter` paths.
+The last such comparison was made on 2026-08-24, immediately after `bd3fae4`
+reached `Ready`: Core answered `bd3fae4` and the service `8760e62`, which is the
+expected resting gap rather than a missed deploy — nothing since `ce6d1b0` has
+touched the service's `buildFilter` paths.
+
+**What an agent starting here should know about what is left.** As of 2026-08-24
+`docs/agent-tasks/active/` is empty and the 2026-08-21 audit has no fully open
+record: fifty findings, forty-two closed and eight closed in part. Every one of
+the eight names its own remainder, and **none of the eight remainders is
+engineering work waiting to be done** — each is either an owner decision (what
+the product retains, what a respondent flow costs, whether Upstash goes on), an
+environment scope only the owner can change, a product feature gated on the
+first pilot school (bulk onboarding), or a considered hold recorded as such (the
+breakdown's second read). The one large product outcome — replacing the default
+questionnaire with the owner's research instrument — has its machinery built
+through phase 4 and waits on the methodologist's item-to-dimension mapping. So
+the honest next step is not on this list: it is a decision or an external input,
+and picking work here means picking which of those to ask for.
 
 ## Published documents
 
