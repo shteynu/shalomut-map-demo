@@ -53,9 +53,24 @@ async function ensurePagedSchools(): Promise<void> {
   }
 }
 
+/**
+ * The school-name headings, as a locator rather than as text.
+ *
+ * Every assertion below goes through this rather than through `cardNames`,
+ * because a locator assertion retries and a read does not. That distinction is
+ * the whole of this file's history with flakiness: these pages are reached by
+ * following a link or submitting a `GET` form, so each step is a real document
+ * navigation, and `toHaveURL` resolves when the address bar agrees — not when
+ * the new document has rendered. Reading the cards in the instant between the
+ * two returns the empty list, once every several runs.
+ */
+function cards(page: Page) {
+  return page.locator('article.admin-school h3');
+}
+
 /** The school names rendered as cards, in the order they appear. */
 async function cardNames(page: Page): Promise<string[]> {
-  return page.locator('article.admin-school h3').allInnerTexts();
+  return cards(page).allInnerTexts();
 }
 
 test.describe('the administrator console', () => {
@@ -85,6 +100,10 @@ test.describe('the administrator console', () => {
 
     await pager.getByRole('link', { name: 'הבא' }).click();
     await expect(page).toHaveURL(/page=2/u);
+    // Waits for the second document to be the one on screen, and does it by
+    // asserting the property rather than by sleeping: page two opens with a
+    // school page one did not have.
+    await expect(cards(page).first()).not.toHaveText(first[0]);
 
     const second = await cardNames(page);
     expect(second.length).toBeGreaterThan(0);
@@ -95,7 +114,7 @@ test.describe('the administrator console', () => {
     }
 
     await pager.getByRole('link', { name: 'הקודם' }).click();
-    expect(await cardNames(page)).toEqual(first);
+    await expect(cards(page)).toHaveText(first);
   });
 
   test('a search narrows the list to the school that was asked for', async ({
@@ -103,12 +122,13 @@ test.describe('the administrator console', () => {
   }) => {
     await page.goto('/admin/');
     await expect(page.locator('article.admin-school').first()).toBeVisible();
+    const unsearched = await cardNames(page);
 
     await page.getByRole('searchbox', { name: 'חיפוש בית ספר' }).fill(RARE);
     await page.getByRole('button', { name: 'חיפוש' }).click();
 
     await expect(page).toHaveURL(new RegExp(`q=${encodeURIComponent(RARE)}`, 'u'));
-    expect(await cardNames(page)).toEqual([`בית ספר ${RARE}`]);
+    await expect(cards(page)).toHaveText([`בית ספר ${RARE}`]);
 
     // A search short enough to fit on one page has no pager, and a page-two
     // link left over from before the search would be a link to nothing.
@@ -116,8 +136,11 @@ test.describe('the administrator console', () => {
       page.getByRole('navigation', { name: 'דפדוף בין בתי ספר' }),
     ).toHaveCount(0);
 
+    // Clearing returns the page the search was started from, so the assertion
+    // is that list rather than "more than one" — which a stale document still
+    // showing the pre-search page would also satisfy.
     await page.getByRole('link', { name: 'ניקוי' }).click();
-    expect((await cardNames(page)).length).toBeGreaterThan(1);
+    await expect(cards(page)).toHaveText(unsearched);
   });
 
   test('a search that matches nothing says so, rather than showing everything', async ({

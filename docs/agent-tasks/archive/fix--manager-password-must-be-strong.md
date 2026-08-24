@@ -228,12 +228,18 @@ patterns would have failed on the day the last open finding closed.
   41 closed, 9 closed in part, 0 open.
 - `npm run test:e2e` — 26 passed, 1 failed, and **the failure is not this
   change**. `administrator-console.spec.ts:68` ("a platform larger than a
-  screenful arrives one page at a time") fails against a freshly reset local
-  database, and it fails the same way on `0ded0bf` with no part of this branch
-  applied: checked out detached, rebuilt, re-run. Against a database that
-  already holds other specs' schools it passes on both. It runs on the tenant
-  server, whose directory is the database because a provider is configured, so
-  no password path is involved at all.
+  screenful arrives one page at a time") failed the same way on `0ded0bf` with
+  no part of this branch applied: checked out detached, rebuilt, re-run. It runs
+  on the tenant server, whose directory is the database because a provider is
+  configured, so no password path is involved at all.
+  **Correction, later the same day.** This entry attributed the failure to "a
+  freshly reset local database", because it had failed twice in a row after a
+  reset and passed against a database holding other specs' leftovers. That
+  reproduction did not hold — twenty-four runs on a fresh database passed. It is
+  a race between a document navigation and an unguarded read, fixed on
+  `fix/the-admin-pager-goes-back-to-a-page-that-exists`; the archived task file
+  of that branch has the diagnosis. The part of this entry that stands is the
+  part that mattered here: the failure was not caused by this branch.
 - Local database: three pending migrations were applied
   (`20260823120000`, `20260823140000`, `20260823160000`) and
   `scripts/seed-local.ts --reset` re-seeded it. `db:clear` was not run.
