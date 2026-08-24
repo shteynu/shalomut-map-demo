@@ -256,7 +256,26 @@ export class ManagerAuthenticationService {
     const configuredAdminPassword = process.env.MANAGER_ADMIN_PASSWORD?.trim();
 
     if (isDeployedRuntime()) {
-      if (!configuredAdminPassword) {
+      /*
+       * The same rule as the sign-in gate, applied where the account is
+       * assembled rather than where a password is offered.
+       *
+       * `isUnconfigured` closes the door a password walks through, and this
+       * closes the one a session walks through: `findAccountById` reaches here
+       * on renewal, with no password to check, and would otherwise keep
+       * vouching for a session minted before the rule existed. The renewal
+       * path in `SessionRenewalService` already refuses password sessions once
+       * a provider appears, for the same reason — the directory that knew them
+       * stopped being the one being asked.
+       *
+       * `managerPasswordWeakness` rather than `hasUnusablePassword`, because
+       * the log line belongs to the sign-in attempt that a person is watching,
+       * not to every background renewal.
+       */
+      if (
+        !configuredAdminPassword ||
+        managerPasswordWeakness(configuredAdminPassword)
+      ) {
         return [];
       }
       return [

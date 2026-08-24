@@ -81,6 +81,14 @@ export const TENANT_BASE_URL = `http://127.0.0.1:${TENANT_PORT}`;
  * of which die with the run, and they are overridable for anyone who wants to
  * point the smoke somewhere else.
  */
+/*
+ * It also has to clear the deployed-runtime password floor, because
+ * `next start` is a deployed runtime as far as the code is concerned: sixteen
+ * characters, eight distinct, and not a value this repository published. This
+ * one has eighteen and thirteen. Shorten it and every spec on the smoke server
+ * fails at sign-in with `503 UNCONFIGURED`, which reads like a broken login
+ * screen rather than a fixture that stopped meeting a rule.
+ */
 export const SMOKE_PASSWORD = process.env.SMOKE_PASSWORD ?? 'smoke-run-password';
 /**
  * Exported for the same reason `SMOKE_PASSWORD` is: the two specs on that

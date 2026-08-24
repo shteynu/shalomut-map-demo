@@ -4,10 +4,13 @@
 
 - Branch: `fix/manager-password-must-be-strong`
 - Base branch: `main`
-- Base commit: `3491ba8`
+- Base commit: `0ded0bf` (rebased there on 2026-08-24; the original base was
+  `3491ba8` of 2026-08-10, and the branch sat unmerged for two weeks waiting on
+  the owner's approval of an authentication-configuration change)
 - Current HEAD: see `git log -1`
-- Status: implementation complete, verified locally, waiting on a push
-- Last updated: 2026-08-10
+- Status: implementation complete, verified locally with `verify:core` green,
+  approved by the owner on 2026-08-24, waiting on a push
+- Last updated: 2026-08-24
 - Last agent/tool: Claude Code (Opus 5)
 
 ## Objective
@@ -204,8 +207,31 @@ happening now rather than an extra step.
 - None outstanding. Sixteen characters is a judgement and can be moved with one
   constant if the owner wants a different floor.
 
+## What the rebase added, 2026-08-24
+
+The branch was rebased onto `0ded0bf` and one gap was closed that the August
+version did not have. `isUnconfigured()` guards the door a password walks
+through; `findAccountById` is the door a *session* walks through, and it
+assembles the same account from the same variables with no password to check.
+A deployment that received this rule with a weak password already set would have
+refused new sign-ins and kept renewing whoever was already in. `defaultAccounts`
+now applies the same rule on a deployed runtime, and a test walks both halves.
+
+The gate `lint:audit-count` also learned that a Russian verb agrees with its
+number: the summary now reads "**0** открыты целиком", and the singular-only
+patterns would have failed on the day the last open finding closed.
+
 ## Next concrete step
 
-Confirm the deployed `MANAGER_ADMIN_PASSWORD` is a generated value of at least
-sixteen characters — replacing it if not, which is the rotation that was due —
-and only then push `fix/manager-password-must-be-strong` to `main`.
+**Read `MANAGER_ADMIN_PASSWORD` in the Vercel dashboard for the Preview scope
+before pushing, and rotate it if it is under sixteen characters.** This change
+fails closed: a Preview deployment whose password does not clear the floor
+answers `503 UNCONFIGURED` on every manager sign-in until the value is replaced
+with `openssl rand -hex 32`. Production is unaffected either way — its four
+`OIDC_*` variables mean `authenticateCredentials` returns `PROVIDER_REQUIRED`
+before it ever reaches the strength check. The value is not on this machine:
+neither `.env` nor `.env.deployed.local` carries the variable, so this is the
+owner's read, not an agent's.
+
+Then push `fix/manager-password-must-be-strong` to `main` and move this file to
+`docs/agent-tasks/archive/`.

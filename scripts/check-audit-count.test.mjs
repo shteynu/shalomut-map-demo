@@ -91,6 +91,18 @@ test('the old spelling of a partial closure is refused', () => {
   assert.ok(errors[0].includes('ЗАКРЫТА В ЧАСТИ'));
 });
 
+test('the verb agreeing with the number does not fail the gate', () => {
+  // Russian agreement: one finding is "закрыта", nine are "закрыты", and zero
+  // takes the plural too. The document reaches all three as records close, and
+  // a gate that only knew the singular would fail on the day the last open
+  // finding closed — which is the day it matters most that it still runs.
+  const plural =
+    '## Счёт\n\nНа сегодня, из **4** записей: **2** закрыты, ' +
+    '**1** закрыты в части, и **1** открыты целиком.\n\n';
+
+  assert.deepStrictEqual(check(tree(plural + BODY)), []);
+});
+
 test('a document nothing is recognised in fails rather than passes empty', () => {
   const errors = check(tree('# Ничего похожего на находку\n'));
 

@@ -49,12 +49,18 @@ const SEVERITY_LINE = new RegExp(
  * The four numbers the summary states. Written as digits inside bold, because
  * a summary that spells "одна" reads better and cannot be checked, and an
  * unchecked number here is the whole reason this file exists.
+ *
+ * The verb agrees with the number in Russian, so each pattern accepts both
+ * endings: "**1** открыта целиком" and "**0** открыты целиком" are the same
+ * claim, and a gate that only knew the singular would fail the day a count
+ * stopped being one. `закрыт[аы]` refuses to swallow "закрыты в части", which
+ * is a different number in the same sentence.
  */
 export const SUMMARY_CLAIMS = {
   total: /из \*\*(\d+)\*\* записей/u,
-  closed: /\*\*(\d+)\*\* закрыта/u,
-  partial: /\*\*(\d+)\*\* закрыты в части/u,
-  open: /\*\*(\d+)\*\* открыта целиком/u,
+  closed: /\*\*(\d+)\*\* закрыт[аы](?! в части)/u,
+  partial: /\*\*(\d+)\*\* закрыт[аы] в части/u,
+  open: /\*\*(\d+)\*\* открыт[аы] целиком/u,
 };
 
 /**

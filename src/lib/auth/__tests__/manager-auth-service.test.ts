@@ -427,6 +427,46 @@ test("ManagerAuthenticationService: a weak password leaves a deployed runtime un
   }
 });
 
+test("ManagerAuthenticationService: a session minted before the gate stops renewing", async () => {
+  // The gate has two doors and this is the quieter one. `isUnconfigured`
+  // refuses a password being offered; renewal offers none — it holds a session
+  // this runtime signed and asks whether the account is still there. A
+  // deployment that gets this rule with a weak password already set would
+  // otherwise keep renewing whoever was let in before it.
+  await withEnv(
+    {
+      NODE_ENV: "production",
+      VERCEL_ENV: "production",
+      NEXT_PHASE: undefined,
+      SESSION_SECRET: "test-secret-12345678901234567890",
+      MANAGER_ADMIN_PASSWORD: "strong-enough-password-47",
+      MANAGER_ORGANIZATION_ID: "be9f184a-dee8-4d72-9805-c0f4e45f6d40",
+    },
+    async () => {
+      const account =
+        await ManagerAuthenticationService.findAccountById("mgr-admin-001");
+      assert.ok(account, "a usable password still vouches for its session");
+    },
+  );
+
+  await withEnv(
+    {
+      NODE_ENV: "production",
+      VERCEL_ENV: "production",
+      NEXT_PHASE: undefined,
+      SESSION_SECRET: "test-secret-12345678901234567890",
+      MANAGER_ADMIN_PASSWORD: "admin123",
+      MANAGER_ORGANIZATION_ID: "be9f184a-dee8-4d72-9805-c0f4e45f6d40",
+    },
+    async () => {
+      assert.strictEqual(
+        await ManagerAuthenticationService.findAccountById("mgr-admin-001"),
+        null,
+      );
+    },
+  );
+});
+
 test("ManagerAuthenticationService: local development is untouched by the gate", async () => {
   await withEnv(
     {

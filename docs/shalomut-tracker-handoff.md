@@ -82,40 +82,34 @@ Verified on 2026-08-23, in this worktree and on both deployed endpoints:
   rather than adding 25 more. It targets the local Playwright server only.
   Anyone reading a local `/admin` and wondering where the schools came from is
   reading those.
-- **Six of the seven hygiene findings of the 2026-08-21 audit are on `main` and
-  in the deployed tree** as of `57c9e58`, which `2b88fa5` descends from: the share code's uniformity claim,
-  a rate limit on the funnel beacon, one `isDeployedRuntime` behind the
-  machine-to-machine door plus a constant-time comparison, `db:clear` covering
-  the whole schema, subresource integrity on the Swagger UI bundle, and a
-  warning under the background-note field saying the text reaches the model
-  verbatim. **None of the six was walked on the deployment** — each was proved
-  locally, and the one that could be walked there would cost six hundred
-  fabricated funnel rows to watch the six hundred and first be refused. The
-  seventh, the temporary password door, stays open and needs an owner decision.
-  **It is the audit's one fully open finding, and "identity comes from Google"
-  does not close it** — that was checked on 2026-08-23 rather than assumed. The
-  four `OIDC_*` variables are scoped to Production only, because a preview
-  URL is generated per build and cannot be registered with Google, so Production
-  refuses a password before reading it and **Preview still opens on
-  `MANAGER_ADMIN_PASSWORD` with no strength requirement at all**. The decision
-  is therefore narrower than it looks: require strength on Preview — the code is
-  written, unpushed, on the local branch `fix/manager-password-must-be-strong` —
-  or take the password door off Preview and accept that preview builds have no
-  way into the manager screens. **On 2026-08-24 the scopes were read in the
-  dashboard rather than inferred, and they say the door is real but not
-  public.** Preview carries `SESSION_SECRET`, `MANAGER_ADMIN_PASSWORD` and
-  `MANAGER_ORGANIZATION_ID`, carries no `OIDC_*` in either the Project or the
-  Shared tab, and does not carry `MANAGER_ADMIN_EMAIL` — so the account e-mail
-  there is the `admin@shalomut.edu.il` published in this repository. In front of
-  it stands Vercel Authentication, "Require Log In" on the legacy pre-production
-  scope, and that was checked from outside with no session: `GET /login` answers
-  `302` to `vercel.com/sso-api` and `POST /`, `/api/health` and
-  `/api/auth/login` answer `401`, so the application never runs. What keeps the
-  finding open is the Protection Bypass for Automation secret this project has
-  had since 2026-08-02, handed to every deployment as
-  `VERCEL_AUTOMATION_BYPASS_SECRET` and accepted as a query parameter as well as
-  a header. The door is one leaked string from public, which is the layer the
-  strength requirement would add.
+- **All seven hygiene findings of the 2026-08-21 audit are on `main`, and the
+  audit has no fully open record left.** Six landed by `57c9e58`: the share
+  code's uniformity claim, a rate limit on the funnel beacon, one
+  `isDeployedRuntime` behind the machine-to-machine door plus a constant-time
+  comparison, `db:clear` covering the whole schema, subresource integrity on the
+  Swagger UI bundle, and a warning under the background-note field saying the
+  text reaches the model verbatim. **None of the six was walked on the
+  deployment** — each was proved locally, and the one that could be walked there
+  would cost six hundred fabricated funnel rows to watch the six hundred and
+  first be refused. The seventh, the temporary password door, closed on
+  2026-08-24 with the owner's approval: a deployed runtime now refuses a
+  password under 16 characters, with fewer than 8 distinct ones, or on a value
+  this repository published, and answers `503 UNCONFIGURED` instead. Local
+  development keeps `admin123`.
+- **The password-door record is closed in part, and the remainder is
+  configuration, not code.** The door exists only on Preview, because all four
+  `OIDC_*` variables are scoped to Production; that was read in the dashboard on
+  2026-08-24, not inferred. Two things are still true there and both are env
+  scopes the owner owns: `MANAGER_ADMIN_EMAIL` is Production-only, so the
+  Preview login e-mail is the `admin@shalomut.edu.il` this repository publishes,
+  and OIDC is not mandated on a deployment. Neither is worth much against a
+  generated password. Preview itself sits behind Vercel Authentication —
+  verified from outside with no session: `GET /login` answers `302` to
+  `vercel.com/sso-api`, and `POST /`, `/api/health` and `/api/auth/login` answer
+  `401` — with one caveat worth remembering: the Protection Bypass for
+  Automation secret this project has held since 2026-08-02 is handed to every
+  deployment as `VERCEL_AUTOMATION_BYPASS_SECRET` and is accepted as a query
+  parameter as well as a header.
 - **`npm run db:clear` has not been run since it was rewritten.** The table
   list is derived from Prisma's model metadata and tested against the schema,
   but the script itself has never printed its new closing message. Someone

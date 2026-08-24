@@ -926,6 +926,19 @@ many rounds the deployment should analyse at once, which is the owner's number
 rather than a defect. `PROJECT_CONTEXT.md` ADR-053 records it, including the two
 things it deliberately leaves per-process.
 
+**A deployed runtime stopped accepting a guessable manager password,
+2026-08-24.** `MANAGER_ADMIN_PASSWORD` was checked for being non-empty and
+nothing else, and with one manager account per deployment that password is the
+entire search space. It now has a floor — 16 characters, 8 distinct, and not one
+of the values this repository itself published — and a deployment that breaks it
+answers `503 UNCONFIGURED` on every sign-in, naming the rule in the server log
+and nowhere a caller can read it. The same rule closed a second way in that the
+sign-in gate could not see: session renewal assembles the account from the same
+variables with no password to check, so a session minted before the rule existed
+would have kept renewing. Local development is untouched — `admin123` still
+signs in on `next dev`. This is the audit's last record with an open half; the
+remainder named in it is env scope rather than code.
+
 Nothing else is open. Mutant classification closed on 2026-08-03, and on 2026-08-07 the
 contracts `1.0`–`3.0`, `5.0` and finally `6.0` got the refusing half of their
 tests — what the classification had called a missing-fixture problem. `4.0`
