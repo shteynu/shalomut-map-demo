@@ -7,6 +7,7 @@ import {
   DASHBOARD_ROUND_PARAM,
   SETUP_SCHOOL_PARAM,
   routes,
+  schoolActivityRoute,
 } from "@/lib/navigation";
 import type {
   AdministrationPage,
@@ -175,6 +176,13 @@ export function AdminConsole({
                   href={`${routes.setup}?${SETUP_SCHOOL_PARAM}=${encodeURIComponent(school.id)}`}
                 >
                   פתיחת בית הספר
+                </a>
+                {/* Reading the log is itself a visit to the school, recorded
+                    like every other one — which is why this link goes through
+                    the same `?school=` door as the two beside it rather than to
+                    a page inside the administrator area. */}
+                <a className="secondary-button" href={schoolActivityRoute(school.id)}>
+                  יומן פעולות
                 </a>
               </div>
             </header>

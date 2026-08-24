@@ -6962,9 +6962,9 @@ body:has(.setup-form-save-bar) .help-badge > summary span {
   color: var(--text-muted, #6f665e);
 }
 
-/* Two ways into one school — its map and its settings. They wrap together
-   rather than separately, so a narrow screen never leaves one stranded on a
-   line of its own. */
+/* Three ways into one school — its map, its settings and its log. They wrap
+   together rather than separately, so a narrow screen never leaves one stranded
+   on a line of its own. */
 .admin-school-actions {
   display: flex;
   flex-wrap: wrap;
@@ -7166,4 +7166,102 @@ body:has(.setup-form-save-bar) .help-badge > summary span {
 .manager-user-bar-admin-link:hover,
 .manager-user-bar-admin-link:focus-visible {
   text-decoration: underline;
+}
+
+/* The school's log. Rows rather than a table: every entry holds a different
+   number of recorded fields, and a table would have to invent a column for the
+   union of them and leave most cells empty. */
+.activity-log {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.activity-entries {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.activity-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.85rem 1.05rem;
+  border: 1px solid var(--stone-border, rgba(120, 105, 90, 0.22));
+  border-radius: 14px;
+  background: var(--stone-surface, rgba(255, 253, 250, 0.72));
+}
+
+.activity-entry-head {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.activity-entry-head strong {
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+/* The time is quieter than the action but not fainter than the muted text
+   elsewhere: it is the second thing a reader of a log looks for. */
+.activity-entry-head time {
+  font-size: 0.85rem;
+  color: var(--text-muted, #6f665e);
+  font-variant-numeric: tabular-nums;
+}
+
+.activity-entry-actor,
+.activity-entry-round {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--text-muted, #6f665e);
+}
+
+.activity-entry-details {
+  list-style: none;
+  margin: 0.15rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.5rem;
+}
+
+.activity-entry-details li {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--stone-border, rgba(120, 105, 90, 0.22));
+  font-size: 0.8rem;
+}
+
+.activity-entry-details code {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.75rem;
+  color: var(--text-muted, #6f665e);
+}
+
+.activity-empty {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--text-muted, #6f665e);
+}
+
+/* Forward and back, and neither is a page number: the log is appended to while
+   it is read, so the pager offers the next set of rows and the way home. */
+.activity-pager {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.75rem;
 }

@@ -19,7 +19,15 @@ import type {
 } from "@/lib/services";
 import type { ManagerRole } from "@/lib/auth/types";
 import type { SurveyRound } from "@/lib/types/backend";
+import {
+  buildActivityLog,
+  type ActivityLogEntry,
+} from "@/lib/audit/activity-log-view";
+import { takeAuditLogPage } from "@/lib/audit/audit-log-cursor";
+import { ManagerAuditService } from "@/lib/auth/manager-audit-service";
+import type { AuditLogCursor } from "@/lib/auth/domain-contract";
 import { UNRECORDABLE_VISIT_MESSAGE } from "@/lib/server/manager-audit";
+import { resolveManagerSessionFromHeaders } from "@/lib/server/session-auth";
 import {
   getManagerMemberSchools,
   getManagerOrganizationId,
@@ -257,6 +265,88 @@ export async function loadSchoolGoals(context: ManagerContextWithoutAnalytics) {
 
   const { roundGoalRepo } = resolveCoreRepositories();
   return roundGoalRepo.findByRoundIds(context.rounds.map((round) => round.id));
+}
+
+/**
+ * Thrown when the log cannot be read because the reader cannot be identified.
+ * Exported so a test can assert the refusal rather than match its prose.
+ */
+export const UNREADABLE_ACTIVITY_MESSAGE =
+  "The activity log cannot be read without a session naming who is reading it.";
+
+/**
+ * How many events one page of the school's log holds.
+ *
+ * Well under `MAXIMUM_AUDIT_LOG_PAGE_SIZE`, because this number is a screenful
+ * rather than a limit: the ceiling in the repository exists so no caller can
+ * ask for the history, and this one exists so a reader is handed a page they
+ * can actually read.
+ */
+export const ACTIVITY_LOG_PAGE_SIZE = 25;
+
+export interface SchoolActivityPage {
+  entries: ActivityLogEntry[];
+  /** Where the next page starts, absent when this one is the end of the log. */
+  nextCursor?: AuditLogCursor;
+}
+
+/**
+ * One page of what was done in this school, and who did it.
+ *
+ * Two extra reads, and only the activity screen asks for them — the same rule
+ * the goals and the round activity follow. The second read is the names: the
+ * log stores who acted as an id, and the ids in a page are known only once the
+ * page has been read, so they are resolved once per page here rather than once
+ * per row from inside a component.
+ *
+ * The page is asked for one event more than it shows. That extra row is never
+ * rendered; it is the answer to "is there a next page", which is otherwise
+ * either a second query counting the rest of the log — the unbounded read this
+ * table is not allowed to have — or a link that leads to an empty page.
+ *
+ * The read goes through `ManagerAuditService`, which is where "who may read a
+ * school's log" is decided. The middleware has already scoped the request to a
+ * school this session may open, so the service's check is a second lock on the
+ * same door rather than the first — and it is the reason the screen cannot
+ * become a way to read a log by naming a school.
+ */
+export async function loadSchoolActivity(
+  context: ManagerContextWithoutAnalytics,
+  after?: AuditLogCursor,
+): Promise<SchoolActivityPage> {
+  if (!context.organization) return { entries: [] };
+
+  const { auditLogRepo, managerRepo } = resolveCoreRepositories();
+  const session = await resolveManagerSessionFromHeaders({
+    headers: await headers(),
+  });
+  // The middleware verified a session before this screen rendered at all, so
+  // there is no honest empty page to show here: "nothing was recorded" and "we
+  // could not tell who is asking" are different answers, and only one of them
+  // is a log.
+  if (!session) throw new Error(UNREADABLE_ACTIVITY_MESSAGE);
+
+  const events = await ManagerAuditService.getOrganizationAuditLogs(
+    auditLogRepo,
+    session,
+    context.organization.id,
+    { limit: ACTIVITY_LOG_PAGE_SIZE + 1, after },
+  );
+
+  const { page, nextCursor } = takeAuditLogPage(events, ACTIVITY_LOG_PAGE_SIZE);
+  const actors = await managerRepo.findManagersByIds([
+    ...new Set(page.map((event) => event.managerId)),
+  ]);
+
+  return {
+    entries: buildActivityLog(page, {
+      actorsById: new Map(actors.map((actor) => [actor.id, actor.email])),
+      roundTitlesById: new Map(
+        context.rounds.map((round) => [round.id, round.title]),
+      ),
+    }),
+    ...(nextCursor ? { nextCursor } : {}),
+  };
 }
 
 /**

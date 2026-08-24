@@ -11,6 +11,12 @@ export const routes = {
   dashboard: "/dashboard",
   breakdown: "/breakdown",
   goals: "/goals",
+  /**
+   * What was done in this school, and by whom. Administrator-only, and about
+   * the school rather than about one round — like the goals, and unlike
+   * everything between them.
+   */
+  activity: "/activity",
   help: "/help",
   /**
    * Outside `MainNavItemId` on purpose: the main navigation is the eight
@@ -27,7 +33,8 @@ export type MainNavItemId =
   | "surveyBuilder"
   | "dashboard"
   | "breakdown"
-  | "goals";
+  | "goals"
+  | "activity";
 
 export type AppRouteId = keyof typeof routes;
 
@@ -115,6 +122,14 @@ export const routeMetadata = {
     actionBody: "כל היעדים שנבחרו, מכל סבבי האבחון, עם המצב שלהם.",
     actionGlow: "var(--pastel-peach)",
   },
+  activity: {
+    id: "activity",
+    href: routes.activity,
+    navLabel: "יומן פעולות",
+    actionTitle: "יומן פעולות",
+    actionBody: "מי פתח, שינה או אתחל סבב אבחון בבית הספר הזה, ומתי.",
+    actionGlow: "var(--pastel-lilac)",
+  },
   admin: {
     id: "admin",
     href: routes.admin,
@@ -142,6 +157,7 @@ const mainNavOrder: MainNavItemId[] = [
   "dashboard",
   "breakdown",
   "goals",
+  "activity",
 ];
 
 export const mainNavItems: MainNavItem[] = mainNavOrder.map((id) => ({
@@ -151,14 +167,16 @@ export const mainNavItems: MainNavItem[] = mainNavOrder.map((id) => ({
 }));
 
 /**
- * The screens whose whole purpose is a write, and which therefore do not exist
- * for a school user.
+ * The screens a school user has no business opening.
  *
- * Owner decision, 2026-08-23: every action on a round belongs to an
- * administrator. `setup` opens a round, `surveyBuilder` writes its
+ * Three of them are writes. Owner decision, 2026-08-23: every action on a round
+ * belongs to an administrator. `setup` opens a round, `surveyBuilder` writes its
  * questionnaire and `goals` records what the school decided to do — all three
  * offer nothing else, so leaving them in the navigation would be offering three
  * doors that answer `403`.
+ *
+ * The fourth, `activity`, is a read, and it is here on the disclosure argument
+ * below rather than on that one.
  *
  * `round` is not here on purpose. Strip its controls and what remains is the
  * anonymous link and the count of answers, which is a read and the one thing a
@@ -169,6 +187,12 @@ const administratorOnlyScreens: ReadonlySet<MainNavItemId> = new Set([
   "setup",
   "surveyBuilder",
   "goals",
+  // The fourth is a read rather than a write, and it is here for a different
+  // reason: the log records that an administrator opened a school, so handing
+  // it to the school would tell them when they were being looked at. Whether
+  // they should see that is the owner's question, and until it is asked the
+  // narrower answer is the one that cannot leak.
+  "activity",
 ]);
 
 /** Whether this screen is one a school user has any business opening. */
@@ -502,6 +526,31 @@ export function breakdownRoute(roundId?: string, questionId?: string) {
 
 /** Which background question the breakdown screen is grouping by. */
 export const BREAKDOWN_QUESTION_PARAM = "question";
+
+/**
+ * Where the activity screen continues the log from.
+ *
+ * One opaque value rather than a page number, because the log is written to
+ * while it is being read: a numbered page names a different set of rows every
+ * time it is asked for. `formatAuditLogCursor` produces what goes in here and
+ * `parseAuditLogCursor` reads it; neither belongs in a module about routes.
+ */
+export const ACTIVITY_AFTER_PARAM = "after";
+
+/**
+ * The activity screen, optionally continued from a cursor. A cursor-less link
+ * is the newest page, which is where every entry point into this screen leads.
+ */
+export function activityRoute(after?: string): string {
+  return after
+    ? `${routes.activity}?${ACTIVITY_AFTER_PARAM}=${encodeURIComponent(after)}`
+    : routes.activity;
+}
+
+/** The activity screen of one named school, for the administrator area. */
+export function schoolActivityRoute(schoolId: string): string {
+  return `${routes.activity}?${SETUP_SCHOOL_PARAM}=${encodeURIComponent(schoolId)}`;
+}
 
 /**
  * Read the background question out of the breakdown screen's search params. A

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import { Activity, ClipboardList, Home, Layers, Map, Send, Target, type LucideIcon } from "lucide-react";
+import { Activity, ClipboardList, Home, Layers, Map, ScrollText, Send, Target, type LucideIcon } from "lucide-react";
 import {
   DASHBOARD_ROUND_PARAM,
   homeRoute,
@@ -26,6 +26,7 @@ const navIcons: Record<MainNavItemId, LucideIcon> = {
   dashboard: Map,
   breakdown: Layers,
   goals: Target,
+  activity: ScrollText,
 };
 
 export function AppHeader({ role }: { role: ManagerRole }) {

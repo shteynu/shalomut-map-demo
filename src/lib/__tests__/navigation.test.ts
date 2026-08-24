@@ -1,6 +1,7 @@
 import assert from "node:assert";
 import { test } from "node:test";
 import {
+  activityRoute,
   breakdownRoute,
   isNewRoundParam,
   newRoundSetupRoute,
@@ -20,8 +21,10 @@ import {
   getDashboardRecommendationsActions,
   getNavigationAction,
   helpRoute,
+  isAdministratorOnlyScreen,
   isMainNavItemActive,
   isPathWithin,
+  schoolActivityRoute,
   mainNavItems,
   mainNavItemsForRound,
   navigationRoundId,
@@ -94,12 +97,17 @@ test("getDashboardDetailActions and metrics actions return correct links", () =>
   assert.strictEqual(recActions[0].href, "/dashboard");
 });
 
-test("mainNavItems follows exact product workflow order: home, setup, surveyBuilder, round, dashboard, breakdown, goals", () => {
+test("mainNavItems follows exact product workflow order, with the log after it", () => {
   const ids = mainNavItems.map((item) => item.id);
-  // Goals come last because they come after the map in the work as well: the
-  // school reads the picture, then decides what to do about it. The breakdown
-  // sits between the two: it is a second reading of the same measurement, and
-  // a school looks at the whole staff room before splitting it into groups.
+  // Goals come last of the workflow because they come after the map in the work
+  // as well: the school reads the picture, then decides what to do about it. The
+  // breakdown sits between the two: it is a second reading of the same
+  // measurement, and a school looks at the whole staff room before splitting it
+  // into groups.
+  //
+  // The activity log is after all of them and is not part of that sequence at
+  // all — it is a record of the work rather than a step in it, and it is the one
+  // item here that a school user never sees.
   assert.deepStrictEqual(ids, [
     "home",
     "setup",
@@ -108,6 +116,7 @@ test("mainNavItems follows exact product workflow order: home, setup, surveyBuil
     "dashboard",
     "breakdown",
     "goals",
+    "activity",
   ]);
 });
 
@@ -365,4 +374,44 @@ test("the guide ignores a round, the way the goals screen does", () => {
   // round in the URL would promise a scoping that does not exist.
   assert.strictEqual(routeHrefForRound("help", "round-7"), routes.help);
   assert.strictEqual(routeHrefForRound("help"), routes.help);
+});
+
+test("the activity log is an administrator's screen, by tab and by path alike", () => {
+  // Two enforcements of one list, and the test asserts both because the pair is
+  // the point: a tab that is hidden while the path still renders is exactly the
+  // bug the shared set exists to prevent.
+  assert.ok(
+    mainNavItemsForRound(undefined, "admin").some((item) => item.id === "activity"),
+  );
+  assert.ok(
+    !mainNavItemsForRound(undefined, "manager").some(
+      (item) => item.id === "activity",
+    ),
+  );
+
+  assert.strictEqual(isAdministratorOnlyScreen("/activity"), true);
+  assert.strictEqual(isAdministratorOnlyScreen("/activity/"), true);
+  assert.strictEqual(isAdministratorOnlyScreen("/activity?after=1.audit-1"), false);
+});
+
+test("a school user is left the three screens they read, and no log", () => {
+  assert.deepStrictEqual(
+    mainNavItemsForRound(undefined, "manager").map((item) => item.id),
+    ["home", "round", "dashboard", "breakdown"],
+  );
+});
+
+test("the log's links carry a cursor or a school, and never both", () => {
+  // The two entry points are different questions. A cursor continues the log of
+  // the school already being read; a school opens the newest page of another
+  // one, which is a fresh read and never a continuation of somebody else's.
+  assert.strictEqual(activityRoute(), "/activity");
+  assert.strictEqual(
+    activityRoute("1756025700123.audit-a"),
+    "/activity?after=1756025700123.audit-a",
+  );
+  assert.strictEqual(
+    schoolActivityRoute("org 1/2"),
+    "/activity?school=org%201%2F2",
+  );
 });
