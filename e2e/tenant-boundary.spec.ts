@@ -87,11 +87,16 @@ test.describe('the tenant boundary', () => {
   }) => {
     await signInAsMember(context);
 
-    await page.goto('/admin/');
+    for (const screen of ['/admin/', '/admin/activity/']) {
+      await page.goto(screen);
 
-    // Turned away rather than shown an empty console: the area is about every
-    // school, so there is nothing in it a school user may see.
-    await expect(page).not.toHaveURL(/\/admin/u);
+      // Turned away rather than shown an empty console: the area is about every
+      // school, so there is nothing in it a school user may see. The log is the
+      // second page in it and is refused by the same gate — asserted rather
+      // than assumed, because the gate is a prefix match and a page added
+      // outside it would look identical from the console.
+      await expect(page).not.toHaveURL(/\/admin/u);
+    }
   });
 
   test('a school user is turned away from the screens that act on a round, and from the log', async ({

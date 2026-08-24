@@ -2,6 +2,7 @@
 import './local-database-url';
 import { expect, test, type Page } from '@playwright/test';
 import { resolveCoreRepositories } from '../src/lib/composition-root';
+import { getPrismaClient } from '../src/lib/repositories/prisma/prisma-client';
 import { ensurePeople, signInAsAdministrator } from './tenant-fixtures';
 
 /**
@@ -152,5 +153,84 @@ test.describe('the administrator console', () => {
 
     await expect(page.locator('article.admin-school')).toHaveCount(0);
     await expect(page.locator('.admin-empty').first()).toBeVisible();
+  });
+});
+
+/**
+ * The platform's own log, which no school's log can show.
+ *
+ * Inviting a platform administrator is the one recorded action with no school
+ * to file it under, so it is written under `PLATFORM_SCOPE` and excluded from
+ * every school's log by definition. Before `/admin/activity` existed the
+ * product recorded who had been granted the right to open every school and
+ * could not say it anywhere.
+ *
+ * The invitation is made through the real route rather than seeded, so the row
+ * on screen is a row the product wrote.
+ */
+const INVITED = 'platform-log-probe@shalomut.test';
+
+/**
+ * Forgets the probe, so the invitation below is a first invitation every run.
+ *
+ * The alternative — a fixed address invited once and reused, the way the paged
+ * schools are — does not work here: a second invitation of the same address is
+ * refused, no row is written, and the row from the first run sinks down the log
+ * as later runs push events on top of it until it is off the page. The account
+ * and its rows are this spec's own leavings, so removing them leaves the
+ * database as the run found it rather than a little dirtier each time.
+ */
+async function forgetTheProbe(): Promise<void> {
+  // The client is nullable because a runtime without `DATABASE_URL` has none.
+  // This file already imports `./local-database-url`, so an absent client here
+  // is a broken run rather than a case to handle quietly.
+  const prisma = getPrismaClient();
+  if (!prisma) throw new Error('No database to forget the probe in.');
+
+  await prisma.auditEvent?.deleteMany({
+    where: { details: { path: ['email'], equals: INVITED } },
+  });
+  await prisma.organizationMembership?.deleteMany({
+    where: { manager: { email: INVITED } },
+  });
+  await prisma.manager?.deleteMany({ where: { email: INVITED } });
+}
+
+test.describe('the platform log', () => {
+  test.beforeEach(async ({ context }) => {
+    await ensurePeople();
+    await forgetTheProbe();
+    await signInAsAdministrator(context);
+  });
+
+  test.afterAll(forgetTheProbe);
+
+  test('an invitation to the platform is written down, and read back', async ({
+    page,
+  }) => {
+    const created = await page.request.post('/api/admin/people/', {
+      data: { email: INVITED },
+    });
+    expect(created.ok()).toBe(true);
+
+    await page.goto('/admin/activity/');
+
+    // The newest row, not "a row somewhere": the invitation was made seconds
+    // ago and nothing else writes to this scope, so anything above it would
+    // mean the log is not in the order it claims.
+    await expect(
+      page.getByRole('listitem').first(),
+    ).toContainText('הזמנת מנהל פלטפורמה');
+    await expect(page.getByRole('listitem').first()).toContainText(INVITED);
+  });
+
+  test('the console links to it, and the log links back', async ({ page }) => {
+    await page.goto('/admin/');
+    await page.getByRole('link', { name: 'יומן הפלטפורמה' }).click();
+
+    await expect(page).toHaveURL(/\/admin\/activity/u);
+
+    await page.getByRole('link', { name: 'חזרה לבתי הספר ולמשתמשים' }).click();
+    await expect(page).toHaveURL(/\/admin\/?(\?.*)?$/u);
   });
 });
