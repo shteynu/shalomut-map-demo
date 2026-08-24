@@ -5,9 +5,9 @@
 - Branch: `fix/the-migration-path-verifies-the-database-certificate`
 - Base branch: `main`
 - Base commit: `9a1d5f8`
-- Current HEAD: see `git log -1`
-- Status: implemented, verified against the deployed database in a Linux
-  container, waiting on a push
+- Current HEAD: `bd3fae4`, which is `origin/main`
+- Status: **closed** — landed on `main` as `72f92aa` and `bd3fae4` on
+  2026-08-24, and the production build that followed ran the new step; archived
 - Last updated: 2026-08-24
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -113,6 +113,23 @@ one to run the new step.
   deployed database with a decoy authority configured, and reports the schema up
   to date.
 
+### Passed on the deployment, after landing
+
+The build of `bd3fae4` was watched rather than assumed. It reached `Ready` in
+40 s, and its own log carries the step:
+
+```
+12:17:10.385  [deploy-migrate] applying pending migrations before the build
+12:17:11.283  Datasource "db": PostgreSQL … at "aws-1-ap-northeast-2.pooler.supabase.com:5432"
+12:17:13.322  24 migrations found in prisma/migrations
+12:17:15.973  No pending migrations to apply.
+```
+
+So the verified handshake happened on Vercel's own image and not only in a
+container that resembles it. `GET /api/health/` answers `commit: bd3fae4`; the
+AI service still answers `8760e62`, which is the resting state — nothing in this
+push touches its `buildFilter` paths.
+
 ### Blocked or not run
 
 - Verification on macOS is impossible by construction, and the script now says
@@ -131,11 +148,11 @@ one to run the new step.
 
 ## Known risks
 
-**The first production build is the first real run.** Everything above was
-proven in a container that matches the build's platform and reaches the same
-database, but not in Vercel's own image. If that build fails, the failure is
-this step, the symptom is `P1011` before the build starts, and
-`npm run db:migrate:deploy` is the manual path while it is diagnosed.
+**Retired.** The risk on this branch was that the first production build would
+be the first real run; it ran, and the log above is what it said. What remains
+is ordinary: a future build fails here if the pooler's authority rotates before
+this repository does, and the fix is `DATABASE_CA_CERT` or a new pinned root.
+`npm run db:migrate:deploy` is the manual path while that is diagnosed.
 
 ## Approval gates
 
@@ -144,6 +161,4 @@ what a connection is willing to accept.
 
 ## Next concrete step
 
-Push `fix/the-migration-path-verifies-the-database-certificate` to `main`, watch
-the production build that follows, and move this file to
-`docs/agent-tasks/archive/`.
+None. The branch landed, the build ran it, and this file is archived.

@@ -19,12 +19,17 @@ and in Git; what was durable in them is below.
 Verified on 2026-08-23, in this worktree and on both deployed endpoints, except
 where a later date says otherwise:
 
-- **`origin/main` moved past `8760e62` on 2026-08-24** and neither endpoint has
-  been read since. Six commits landed that day — the staffroom ceiling, the
-  audit's own count, the Preview door read, the manager password floor and its
-  renewal half, and the migration step's certificate — and none of them was
-  walked on the deployment. The reading below describes `8760e62` and the rule it
-  established, which still holds; the commit it names does not.
+- **`origin/main` is `bd3fae4`; Core answers it and the AI service answers
+  `8760e62`.** Read over HTTPS on 2026-08-24: `GET /api/health/` →
+  `commit: bd3fae4`, `GET https://shalomut-ai-analytics.onrender.com/health` →
+  `commit: 8760e62`. The gap is the resting state rather than a missed deploy —
+  nothing pushed since has touched the service's `buildFilter` paths. Eight
+  commits landed that day and **none of the eight was walked on the
+  deployment**; each was proved locally, and the two that changed runtime
+  behaviour cannot be walked there at all (the manager password floor is
+  Preview's door, and the migration step runs in a build). The reading below
+  describes `8760e62` and the rule it established, which still holds; the commit
+  it names does not.
 - **`origin/main` was `8760e62` and both endpoints answered it.** Read over
   HTTPS on 2026-08-23, after the push that carried the worker-pace change. The
   matching commits are the exception rather than the rule, and the rule is what
@@ -127,9 +132,12 @@ where a later date says otherwise:
   is an OpenSSL lever: on any platform that is not Linux the step refuses to
   migrate rather than migrating unverified. Proven in a Linux container against
   the deployed database — pinned root applies, decoy root refused, missing
-  certificate refused before connecting. **The next production build is the
-  first one to run it**, so watch that build: a failure there is this step, and
-  `npm run db:migrate:deploy` is the manual path while it is diagnosed.
+  certificate refused before connecting — and then **run for real by the build
+  of `bd3fae4`**, which reached `Ready` in 40 s with `[deploy-migrate] applying
+  pending migrations before the build` … `No pending migrations to apply.` in its
+  own log. What can still fail here is the authority rotating before this
+  repository does; the fix is `DATABASE_CA_CERT` or a new pinned root, and
+  `npm run db:migrate:deploy` is the manual path while that is diagnosed.
 - **`npm run db:clear` has not been run since it was rewritten.** The table
   list is derived from Prisma's model metadata and tested against the schema,
   but the script itself has never printed its new closing message. Someone
