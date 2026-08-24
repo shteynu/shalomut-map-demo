@@ -16,16 +16,17 @@ inside it.
   called it; `getOrganizationAuditLogs` had no production caller until now. The
   screen is administrator-only and offers no control of any kind: the log holds
   the record of an administrator opening a school, so showing it to the school
-  is a question for the owner rather than for a screen, and a log a reader can
-  edit is not evidence. Opening it is itself a visit, so the first row an
-  administrator sees over a foreign school is their own arrival.
+  would tell the school when it was being looked at — the owner was asked and
+  answered no on 2026-08-24 — and a log a reader can edit is not evidence.
+  Opening it is itself a visit, so the first row an administrator sees over a
+  foreign school is their own arrival.
   The platform's own log is beside it on `/admin/activity`: inviting a platform
   administrator is the one recorded action with no school to be filed under, so
   it was written to a scope every school's log excludes and nothing read it —
   the product recorded who had been granted the right to open every school and
   could say it nowhere. `PROJECT_CONTEXT.md` ADR-054 records both, including why
   the pages walk by cursor rather than by number and why the two logs are two
-  screens.
+  screens; ADR-055 records the owner's answer and the permission it removed.
 
 - **A staffroom answering at once stopped looking like a flood.** Since
   2026-08-23 the submission rate limit is 600 per five minutes per address

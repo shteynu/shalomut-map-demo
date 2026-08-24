@@ -990,10 +990,11 @@ would want to reconstruct — so a cascade would delete the record of the deleti
 `manager_id` may also read `unknown`, for an action that reached the server
 without a manager session.
 
-**Who may read the log is deliberately still open.** `getOrganizationAuditLogs`
-lets an administrator read any school's and a school user their own, and nothing
-renders either: no screen and no endpoint exposes the log yet. Whether a school
-should see the visits made to it is a question for the administrators.
+**Who may read the log was left open here and answered in ADR-055.**
+`getOrganizationAuditLogs` originally let an administrator read any school's and
+a school user their own, and nothing rendered either. ADR-054 gave the log two
+screens, and on 2026-08-24 the owner answered the remaining question: a school
+does not read its own log. The read now permits administrators only.
 
 ### ADR-027: A school is opened by the platform, and its person is invited into it
 
@@ -2352,9 +2353,10 @@ the write happened only to whoever opens a database console.
 **Administrator-only, and that is a narrowing rather than an omission.** The log
 holds `ADMINISTRATOR_SCHOOL_VISIT`, so handing it to a school would tell that
 school when it was being looked at. Whether it should is a fair question and it
-is the owner's, not a screen's — so the screen takes the answer that cannot leak
-while the question is open. `ManagerAuditService` still permits a member to read
-their own school's log; what has no caller is that half.
+is the owner's, not a screen's — so the screen took the answer that cannot leak
+while the question was open. `ManagerAuditService` still permitted a member to
+read their own school's log; what had no caller was that half. ADR-055 records
+the owner's answer and removes it.
 
 **A manager screen, not a page inside the administrator area.** It is about one
 school, so it enters through `loadManagerContext` like the other seven — which
@@ -2395,6 +2397,38 @@ creation records the title it was given, so the two commonest rows each carried
 the same string twice. The rule is equality, not the field name: the moment the
 recorded value and the current one differ — a renamed account, a renamed round —
 both appear, which is the case a reader of an audit log is looking for.
+
+### ADR-055: A school does not read its own log
+
+2026-08-24. ADR-054 shipped both screens administrator-only and said so as a
+holding position: the question — may a school read the log of its own school? —
+was the owner's, and the narrower answer was the one that could not leak while
+it was unanswered. The owner answered it on 2026-08-24: **no.**
+
+**What the answer is about.** A school's log is not only a record of what the
+school did. It holds `ADMINISTRATOR_SCHOOL_VISIT`, so it is also the record of
+every time the platform looked at that school. Handing the log to the school
+therefore decides a second thing that was never the question's subject: whether
+a school is told when it is being looked at. The owner decided it is not.
+
+**The permission is removed, not merely left uncalled.**
+`ManagerAuditService.getOrganizationAuditLogs` compared the session's active
+organization with the school being asked for, which let a school user read their
+own school's log — a branch no caller ever reached. That shape is worse than
+either answer: the next screen that wants a log gets the permissive behaviour by
+default, from a service whose comment says the question is open. The check is
+now `session.isPlatformAdministrator` alone, and every other session — the
+school's own included — reads an empty page. Two assertions that encoded the old
+answer now assert this one.
+
+**What did not change.** No screen, no route and no navigation entry: `activity`
+has been in `administratorOnlyScreens` since ADR-054, the middleware turns a
+school user away from `/activity` before any handler runs, and a Playwright path
+has covered that since then. This is the service agreeing with the three locks
+in front of it.
+
+**Still open, and untouched by this.** Retention — whether an `audit_events` row
+is ever deleted — remains the owner's, recorded in ADR-049.
 
 ## Environments
 

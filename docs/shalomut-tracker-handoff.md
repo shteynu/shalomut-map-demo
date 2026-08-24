@@ -31,20 +31,31 @@ where a later date says otherwise:
   service answers `8760e62`, which is the resting gap rather than a missed
   deploy: nothing pushed since `ce6d1b0` has touched its `buildFilter` paths —
   `ai-analytics-service/**`, `contracts/**`, `Dockerfile`, `render.yaml` — and
-  this push touched none of them either. **The two new screens have not been
-  walked signed in on the deployment.** What was read there is the anonymous
-  refusal both give and both are supposed to give: `GET /activity/` and
-  `GET /admin/activity/` answer `307` to `/login`, carrying `next=%2Factivity`
-  and `next=%2Fadmin%2Factivity`. Signing in there needs the owner's own Google
-  session — both connected Chrome browsers were checked on 2026-08-24 and
-  neither held one — so this is an owner walk rather than an agent one.
-- **The audit log has readers on the deployment, and one of them may be empty
-  there.** `/activity` shows a school's log; `/admin/activity` shows the
-  `PLATFORM_SCOPE` log, whose only action is `ADMINISTRATOR_INVITED`. The
-  deployed platform administrator was created by the bootstrap rather than
-  invited, so that screen may honestly hold nothing until a second
-  administrator is invited — an empty screen there is not evidence of a defect.
-  ADR-054 records both screens.
+  this push touched none of them either. **Both screens were walked signed in on
+  the deployment on 2026-08-24**, in the connected Chrome named `Browser 2`,
+  which did hold a platform administrator's Google session — an earlier check
+  the same day found none in either browser, so an absent session is worth
+  re-reading rather than inheriting. Core answered `0b57ec3` at the time of the
+  walk and the AI service `8760e62`, the same resting gap. The anonymous refusal
+  was read first and is unchanged: `GET /activity/` and `GET /admin/activity/`
+  answer `307` to `/login`, carrying `next=%2Factivity` and
+  `next=%2Fadmin%2Factivity`. What the walk found is in the next entry.
+- **The audit log has readers on the deployment, and both had rows to show.**
+  Walked signed in on 2026-08-24. `/activity` on `בית ספר הדגמה` rendered 22
+  rows — all `ADMINISTRATOR_SCHOOL_VISIT`, newest first, the top one being the
+  visit that opening the page had just recorded, two of them naming
+  `סבב הדגמה`. That is fewer than the page size, so no pager link appeared,
+  which is correct and means **the pager is still proven only locally**, where it
+  was walked with 30 seeded rows. `/admin/activity` was **not** empty: it holds
+  one `ADMINISTRATOR_INVITED` row — `klyachkina.sasha@gmail.com`, invited by
+  `shteynumaks@gmail.com` on 21 באוג׳ 2026 at 17:07 — and the console lists both
+  addresses as platform administrators. The earlier expectation that the
+  bootstrapped administrator would leave that log empty was wrong: a second
+  administrator had in fact been invited through the route. Both links between
+  the console and the platform log were followed in both directions, and
+  `/activity/?after=not-a-cursor` rendered the newest page rather than an error.
+  ADR-054 records both screens; ADR-055 records that a school may not read its
+  own.
 - **Ten commits landed on 2026-08-24 before those, and none was walked on the
   deployment.** Each was proved locally, and the two that changed runtime
   behaviour cannot be walked there at all — the manager password floor is
@@ -1273,14 +1284,15 @@ branch task file. Both halves are one anonymous request each; the rules for
 reading the service's commit without raising a false alarm are under
 **Deployed state** above.
 
-The last such comparison was made on 2026-08-24, after `561c9f9` reached
-`Ready`: Core answered `561c9f9` and the service `8760e62`, which is the
-expected resting gap rather than a missed deploy — nothing since `ce6d1b0` has
+The last such comparison was made on 2026-08-24, before the signed-in walk of
+the two audit-log screens: Core answered `0b57ec3` — the head of `main` at the
+time, so the deployment was current — and the service `8760e62`, which is the
+expected resting gap rather than a missed deploy: nothing since `ce6d1b0` has
 touched the service's `buildFilter` paths.
 
 **What an agent starting here should know about what is left.** As of 2026-08-24
-`docs/agent-tasks/active/` is empty and the 2026-08-21 audit has no fully open
-record: fifty findings, forty-two closed and eight closed in part. Every one of
+`docs/agent-tasks/active/` holds one file — the branch that closes the owner's
+audit-log question — and the 2026-08-21 audit has no fully open record: fifty findings, forty-two closed and eight closed in part. Every one of
 the eight names its own remainder, and **none of the eight remainders is
 engineering work waiting to be done** — each is either an owner decision (what
 the product retains, what a respondent flow costs, whether Upstash goes on), an
