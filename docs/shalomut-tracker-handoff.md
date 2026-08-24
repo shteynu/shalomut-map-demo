@@ -19,8 +19,15 @@ and in Git; what was durable in them is below.
 Verified on 2026-08-23, in this worktree and on both deployed endpoints, except
 where a later date says otherwise:
 
-- **`origin/main` is `561c9f9`, and Core answers it.** Read over HTTPS on
-  2026-08-24 after the push that carried the audit log's two screens. The AI
+- **The last commit that changed deployed behaviour is `561c9f9`**, the audit
+  log's two screens, and Core answered it over HTTPS on 2026-08-24. It answered
+  `0cc39c2` half an hour later, which is this paragraph's own commit and the one
+  above it — documentation, no runtime change. Both readings are recorded on
+  purpose: **a commit here going stale is not news, a behaviour change is**, and
+  this entry has twice been rewritten because it chased the hash instead of
+  naming what moved. If Core answers something later than `561c9f9`, ask
+  `git log 561c9f9..` what landed rather than assuming a deploy was missed. The
+  AI
   service answers `8760e62`, which is the resting gap rather than a missed
   deploy: nothing pushed since `ce6d1b0` has touched its `buildFilter` paths —
   `ai-analytics-service/**`, `contracts/**`, `Dockerfile`, `render.yaml` — and
