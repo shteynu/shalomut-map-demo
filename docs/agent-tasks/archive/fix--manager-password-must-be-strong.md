@@ -7,9 +7,9 @@
 - Base commit: `0ded0bf` (rebased there on 2026-08-24; the original base was
   `3491ba8` of 2026-08-10, and the branch sat unmerged for two weeks waiting on
   the owner's approval of an authentication-configuration change)
-- Current HEAD: see `git log -1`
-- Status: implementation complete, verified locally with `verify:core` green,
-  approved by the owner on 2026-08-24, waiting on a push
+- Current HEAD: `c7fac94`, which is `origin/main`
+- Status: **closed** — landed on `main` as `66b0cba`, `c80f323`, `c7fac94` on
+  2026-08-24, archived
 - Last updated: 2026-08-24
 - Last agent/tool: Claude Code (Opus 5)
 
