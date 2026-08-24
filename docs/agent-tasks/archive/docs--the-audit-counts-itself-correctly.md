@@ -5,9 +5,9 @@
 - Branch: `docs/the-audit-counts-itself-correctly`
 - Base branch: `main`
 - Base commit: `d407eb4`
-- Current HEAD: the tip of `docs/the-audit-counts-itself-correctly`
-- Status: implemented and verified locally; not on `main`
-- Last updated: 2026-08-23
+- Current HEAD: `69429e8`, which is `origin/main`
+- Status: **closed** — landed on `main` as `69429e8`, archived
+- Last updated: 2026-08-24
 - Last agent/tool: Claude Opus 5 (Claude Code)
 
 ## Objective

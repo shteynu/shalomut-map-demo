@@ -101,7 +101,21 @@ Verified on 2026-08-23, in this worktree and on both deployed endpoints:
   is therefore narrower than it looks: require strength on Preview — the code is
   written, unpushed, on the local branch `fix/manager-password-must-be-strong` —
   or take the password door off Preview and accept that preview builds have no
-  way into the manager screens.
+  way into the manager screens. **On 2026-08-24 the scopes were read in the
+  dashboard rather than inferred, and they say the door is real but not
+  public.** Preview carries `SESSION_SECRET`, `MANAGER_ADMIN_PASSWORD` and
+  `MANAGER_ORGANIZATION_ID`, carries no `OIDC_*` in either the Project or the
+  Shared tab, and does not carry `MANAGER_ADMIN_EMAIL` — so the account e-mail
+  there is the `admin@shalomut.edu.il` published in this repository. In front of
+  it stands Vercel Authentication, "Require Log In" on the legacy pre-production
+  scope, and that was checked from outside with no session: `GET /login` answers
+  `302` to `vercel.com/sso-api` and `POST /`, `/api/health` and
+  `/api/auth/login` answer `401`, so the application never runs. What keeps the
+  finding open is the Protection Bypass for Automation secret this project has
+  had since 2026-08-02, handed to every deployment as
+  `VERCEL_AUTOMATION_BYPASS_SECRET` and accepted as a query parameter as well as
+  a header. The door is one leaked string from public, which is the layer the
+  strength requirement would add.
 - **`npm run db:clear` has not been run since it was rewritten.** The table
   list is derived from Prisma's model metadata and tested against the schema,
   but the script itself has never printed its new closing message. Someone
