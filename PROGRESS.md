@@ -8,6 +8,20 @@ inside it.
 
 ## Current state
 
+- **The audit log has a reader.** Since 2026-08-24 a platform administrator
+  opens `יומן פעולות` on any school and reads what was done in it — the action,
+  the person, the time and the round, newest first, twenty-five at a time. Every
+  administrative write had been recorded since the audit became mandatory on
+  2026-08-23 and the read had been bounded and cursor-paged before anything
+  called it; `getOrganizationAuditLogs` had no production caller until now. The
+  screen is administrator-only and offers no control of any kind: the log holds
+  the record of an administrator opening a school, so showing it to the school
+  is a question for the owner rather than for a screen, and a log a reader can
+  edit is not evidence. Opening it is itself a visit, so the first row an
+  administrator sees over a foreign school is their own arrival.
+  `PROJECT_CONTEXT.md` ADR-054 records it, including why the page walks by
+  cursor rather than by number.
+
 - **A staffroom answering at once stopped looking like a flood.** Since
   2026-08-23 the submission rate limit is 600 per five minutes per address
   rather than 60, which was sized for forty people — a school of 150 answering
@@ -261,7 +275,8 @@ inside it.
   password screen until it has one, and never both at once. An administrator
   opens a school and invites its person from `/admin`, and every manager action
   — including an administrator reading a school they are not a member of — is a
-  row in `audit_events`, which nothing renders yet. The row names the school the
+  row in `audit_events`, which an administrator reads on `יומן פעולות` since
+  2026-08-24. The row names the school the
   screen was answered with rather than the one the request asked for: most
   requests ask for none, and a deployment with one school hands that school back
   to all of them.

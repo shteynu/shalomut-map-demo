@@ -2341,6 +2341,50 @@ health is an opinion each process may hold on its own.
 a worker pacing alone, which is what every worker did before it existed and what
 a fleet of one is anyway.
 
+### ADR-054: The audit log is read by the administrators, one school at a time
+
+2026-08-24. Every administrative write had been recorded since the owner made
+the audit mandatory on 2026-08-23, and the read had been bounded, cursor-paged
+and tested since ADR-049 — but `getOrganizationAuditLogs` had no production
+caller at all. A record nobody can read is half of a mandatory audit: it proves
+the write happened only to whoever opens a database console.
+
+**Administrator-only, and that is a narrowing rather than an omission.** The log
+holds `ADMINISTRATOR_SCHOOL_VISIT`, so handing it to a school would tell that
+school when it was being looked at. Whether it should is a fair question and it
+is the owner's, not a screen's — so the screen takes the answer that cannot leak
+while the question is open. `ManagerAuditService` still permits a member to read
+their own school's log; what has no caller is that half.
+
+**A manager screen, not a page inside the administrator area.** It is about one
+school, so it enters through `loadManagerContext` like the other seven — which
+means opening it records the visit, and the first row of the log an
+administrator opens over a foreign school is their own arrival. The
+administrator area is about every school and has no school to be inside; a page
+there would have had to record the visit some other way, and
+`npm run lint:tenant-chokepoints` exists to refuse exactly that.
+
+**A cursor in the address bar, not a page number.** An audit log is appended to
+while it is being read, so «page 3» names a different set of rows every time it
+is asked for. The cursor is the last event of the page — timestamp *and* id,
+because two administrators act in the same millisecond — carried as one opaque
+parameter so it cannot arrive half-formed. The repository is asked for one row
+more than is rendered, and that extra row is the whole answer to "is there a
+next page": the alternative is a second query counting the rest of the log,
+which is the unbounded read this table is not allowed to have.
+
+**The screen has no controls, deliberately.** Not disabled ones — none. An audit
+log a reader can edit is not evidence, and whether a row is ever deleted is a
+retention decision that belongs to the owner and to a job, not to whoever has
+the page open. That decision is still open; ADR-049 records it.
+
+**A recorded field that repeats what the line already says is not shown twice.**
+A visit records the administrator's address as it was at the time, and a round's
+creation records the title it was given, so the two commonest rows each carried
+the same string twice. The rule is equality, not the field name: the moment the
+recorded value and the current one differ — a renamed account, a renamed round —
+both appear, which is the case a reader of an audit log is looking for.
+
 ## Environments
 
 The project supports exactly two environments:
