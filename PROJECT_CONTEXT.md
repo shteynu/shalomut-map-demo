@@ -2378,6 +2378,17 @@ log a reader can edit is not evidence, and whether a row is ever deleted is a
 retention decision that belongs to the owner and to a job, not to whoever has
 the page open. That decision is still open; ADR-049 records it.
 
+**The platform's log is a second screen, not a second section.** One action has
+no school to be filed under — inviting a platform administrator — so it is
+recorded under `PLATFORM_SCOPE`, which every school's log excludes by
+definition. `/admin/activity` reads that scope with the same component and the
+same cursor. It is a page of its own because `/admin` already keeps a search and
+a page number in the address bar, and a second cursor beside them would be two
+pagers whose every link has to carry the other's state or silently reset it. It
+does not enter through `loadManagerContext`, and that is what
+`PLATFORM_SCOPE` means: no school is being opened, so there is no visit to
+record. `check-tenant-chokepoints.mjs` holds the claim by name.
+
 **A recorded field that repeats what the line already says is not shown twice.**
 A visit records the administrator's address as it was at the time, and a round's
 creation records the title it was given, so the two commonest rows each carried

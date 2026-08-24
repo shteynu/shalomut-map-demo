@@ -19,8 +19,13 @@ inside it.
   is a question for the owner rather than for a screen, and a log a reader can
   edit is not evidence. Opening it is itself a visit, so the first row an
   administrator sees over a foreign school is their own arrival.
-  `PROJECT_CONTEXT.md` ADR-054 records it, including why the page walks by
-  cursor rather than by number.
+  The platform's own log is beside it on `/admin/activity`: inviting a platform
+  administrator is the one recorded action with no school to be filed under, so
+  it was written to a scope every school's log excludes and nothing read it —
+  the product recorded who had been granted the right to open every school and
+  could say it nowhere. `PROJECT_CONTEXT.md` ADR-054 records both, including why
+  the pages walk by cursor rather than by number and why the two logs are two
+  screens.
 
 - **A staffroom answering at once stopped looking like a flood.** Since
   2026-08-23 the submission rate limit is 600 per five minutes per address
