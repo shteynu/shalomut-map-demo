@@ -1,5 +1,6 @@
 import { spawnSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -30,13 +31,35 @@ import { fileURLToPath } from 'node:url';
 const TRANSACTION_POOLER_PORT = '6543';
 
 /**
+ * Where the pinned certificate authority is written down, once.
+ *
+ * The runtime pool reads it from this module as a TypeScript constant; this
+ * script cannot, because it is plain ESM run by `node` during a Vercel build
+ * with no TypeScript loader in front of it. Copying the PEM here would make two
+ * sources of truth for a value whose whole point is that it was checked, so the
+ * certificate is extracted from that file's text instead. A second certificate
+ * appearing there, or none, is an error rather than a guess.
+ */
+const CERTIFICATE_SOURCE = path.join(
+  'src',
+  'lib',
+  'repositories',
+  'prisma',
+  'supabase-root-ca.ts',
+);
+
+const CERTIFICATE_PATTERN =
+  /-----BEGIN CERTIFICATE-----[\s\S]*?-----END CERTIFICATE-----/g;
+
+
+/**
  * Whether this build should migrate, and with which connection string.
  *
  * Keyed on `VERCEL_ENV` rather than on an opt-in variable of our own. An
  * opt-in would be one more switch that can sit quietly in the off position,
  * which is the shape of the defect this replaces.
  */
-export function resolveMigrationPlan(env) {
+export function resolveMigrationPlan(env, platform = process.platform) {
   if (env.VERCEL_ENV !== 'production') {
     return {
       run: false,
@@ -66,7 +89,100 @@ export function resolveMigrationPlan(env) {
     return { run: false, fatal: true, reason: misread };
   }
 
-  return { run: true, url };
+  const unverifiable = describeUnverifiablePlatform(platform);
+  if (unverifiable) {
+    return { run: false, fatal: true, reason: unverifiable };
+  }
+
+  return { run: true, url: hardenConnectionString(url) };
+}
+
+/**
+ * Why this refuses to migrate from a Mac, and why that is not a limitation
+ * anyone will meet.
+ *
+ * Prisma's migration engine does not read `sslrootcert` — that was measured
+ * rather than assumed, on both platforms and in both directions: with the right
+ * certificate, with a decoy, and with a path that does not exist, the outcome
+ * never changed. `sslmode=verify-full` is worse than useless: the connector
+ * accepts only `prefer`, `disable` and `require`, so an unrecognised value
+ * silently falls back to `prefer` and the connection is *less* verified than
+ * the operator believes. What does work is replacing the trust store for the
+ * one child process, which OpenSSL reads from `SSL_CERT_FILE` — and only
+ * OpenSSL. On macOS the engine goes through Security.framework, which ignores
+ * that variable, so verification cannot be turned on there at all.
+ *
+ * A build runs on Linux, and this script runs only in a build (`VERCEL_ENV`
+ * above). So the refusal is a statement about what this script can promise
+ * rather than a step anybody has to work around: `npm run db:migrate:deploy` is
+ * the unverified path and stays available for a developer's own database.
+ */
+export function describeUnverifiablePlatform(platform) {
+  if (platform === 'linux') return null;
+
+  return (
+    `This script cannot verify the database certificate on ${platform}: ` +
+    'Prisma reaches TLS through the platform trust store, and only the ' +
+    'OpenSSL one can be replaced for a single process (`SSL_CERT_FILE`). ' +
+    'Migrating unverified is what this refusal exists to prevent. A ' +
+    'deployed build runs on Linux; for a local database use ' +
+    '`npm run db:migrate:deploy`.'
+  );
+}
+
+/**
+ * The two parameters that turn verification on, on a connection string that
+ * may already carry others.
+ *
+ * `sslmode=require` says TLS is not optional, and `sslaccept=strict` says the
+ * certificate is checked rather than accepted — the default is
+ * `accept_invalid_certs`, which is the whole finding. Neither says *against
+ * what*: that is `SSL_CERT_FILE`, set on the child process below.
+ */
+export function hardenConnectionString(url) {
+  const parsed = new URL(url);
+  parsed.searchParams.set('sslmode', 'require');
+  parsed.searchParams.set('sslaccept', 'strict');
+  return parsed.toString();
+}
+
+/**
+ * The certificate this connection is allowed to end at.
+ *
+ * The same rule the runtime pool follows, including the escape hatch:
+ * `DATABASE_CA_CERT` replaces the pinned root for the day Supabase rotates its
+ * authority before this repository does, and a value that is not a PEM is
+ * ignored rather than quietly turning verification into a connection to nobody
+ * in particular. There is no way to switch verification off.
+ */
+export function resolveCertificateAuthority(env, readFile) {
+  const configured = env.DATABASE_CA_CERT?.trim();
+  if (configured?.includes('-----BEGIN CERTIFICATE-----')) return configured;
+
+  return readPinnedCertificate(readFile);
+}
+
+/**
+ * The pinned root, read out of the module that owns it and its provenance.
+ *
+ * Exactly one certificate, because two would mean the file gained a second
+ * authority that nobody decided between, and none would mean this script is
+ * reading the wrong file — both of which are worth a failed build rather than a
+ * connection verified against something unexamined.
+ */
+export function readPinnedCertificate(readFile) {
+  const source = readFile(CERTIFICATE_SOURCE);
+  const found = source.match(CERTIFICATE_PATTERN) ?? [];
+
+  if (found.length !== 1) {
+    throw new Error(
+      `${CERTIFICATE_SOURCE} holds ${found.length} certificates; this script ` +
+        'needs exactly one. If the pinned authority changed, change it there ' +
+        'and let this read it.',
+    );
+  }
+
+  return `${found[0]}\n`;
 }
 
 /**
@@ -120,11 +236,47 @@ function main() {
     return;
   }
 
+  /*
+   * The trust store for this one child, and nothing else in the build.
+   *
+   * `SSL_CERT_FILE` replaces the authorities OpenSSL would otherwise accept,
+   * rather than adding to them, which is the property wanted here: this
+   * connection has exactly one known peer, so a certificate for the pooler
+   * signed by any other authority — a public one included — is refused. The
+   * scope is the spawned process, so nothing else the build talks to changes.
+   */
+  let certificatePath;
+  try {
+    const certificateDirectory = mkdtempSync(
+      path.join(os.tmpdir(), 'shalomut-db-ca-'),
+    );
+    certificatePath = path.join(certificateDirectory, 'root.pem');
+    writeFileSync(
+      certificatePath,
+      resolveCertificateAuthority(process.env, (file) =>
+        readFileSync(file, 'utf-8'),
+      ),
+    );
+  } catch (error) {
+    // Named rather than thrown, because the stack trace of a build step says
+    // nothing about which of two files a person has to open.
+    console.error(
+      `[deploy-migrate] refusing to build: ${error.message}\n` +
+        '[deploy-migrate] migrating without a certificate to verify against ' +
+        'is the defect this step exists to close.',
+    );
+    process.exit(1);
+  }
+
   console.log('[deploy-migrate] applying pending migrations before the build');
 
   const result = spawnSync(prismaBinary(), ['migrate', 'deploy'], {
     stdio: 'inherit',
-    env: { ...process.env, DIRECT_URL: plan.url },
+    env: {
+      ...process.env,
+      DIRECT_URL: plan.url,
+      SSL_CERT_FILE: certificatePath,
+    },
   });
 
   if (result.error) {

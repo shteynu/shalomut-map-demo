@@ -1700,13 +1700,35 @@ encrypted and verified, including a connection string that does not parse. A
 test asserts the property rather than the three examples: no connection string
 produces an encrypted-but-unverified pool.
 
-**What is not closed.** `prisma migrate deploy`, which the Vercel build runs
-through `scripts/deploy-migrate.mjs`, connects through Prisma's own engine on
-`DIRECT_URL` rather than through this pool, and still does not verify. It
-carries the same credentials. It is left open deliberately: the session-mode
-port it uses is not reachable from the environment this change was made in, so
-the fix could not be run even once — and an unverified change there fails the
-build rather than one request.
+**The migration path was closed on 2026-08-24**, and it needed a different
+mechanism. `prisma migrate deploy` connects through Prisma's own engine on
+`DIRECT_URL` rather than through this pool, carrying the same credentials, and
+none of the connection-string parameters that look like the answer are one.
+Measured on both platforms, with the right certificate, with a decoy, and with a
+path that does not exist:
+
+- `sslrootcert` and `sslcert` change nothing. The outcome is identical whether
+  the file is correct, wrong, or absent, so Prisma is not reading it.
+- `sslmode=verify-full` is worse than a no-op. The connector accepts only
+  `prefer`, `disable` and `require`, so an unrecognised value falls back to
+  `prefer` — the connection is *less* verified than the string says, and it
+  connects happily to a decoy authority. This is what Supabase's own
+  documentation suggests, and it would have shipped as a placebo.
+- `sslaccept=strict` does turn verification on, against the platform trust
+  store and nothing else — which cannot hold a private root.
+
+So the trust store itself is replaced, for the one spawned process:
+`SSL_CERT_FILE` pointed at the same pinned root, written to a temporary file by
+the script. That is an OpenSSL variable, so it works on Linux and not on macOS,
+where the engine goes through Security.framework. A build runs on Linux, and
+this script runs only in a build — so on any other platform it now refuses to
+migrate rather than migrating unverified, and `npm run db:migrate:deploy` stays
+the unverified path for a developer's own database.
+
+Verified in a Linux container against the deployed database, in three
+directions: with the pinned root it applies migrations; with a decoy root in
+`DATABASE_CA_CERT` the handshake is refused; and with the certificate missing
+from its source file the build is refused before a connection is opened.
 
 ### ADR-041: A counter that cannot warn anyone is a counter that does not exist
 

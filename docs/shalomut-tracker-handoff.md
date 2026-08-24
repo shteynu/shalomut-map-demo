@@ -110,6 +110,19 @@ Verified on 2026-08-23, in this worktree and on both deployed endpoints:
   Automation secret this project has held since 2026-08-02 is handed to every
   deployment as `VERCEL_AUTOMATION_BYPASS_SECRET` and is accepted as a query
   parameter as well as a header.
+- **Every connection to the deployed database verifies its certificate, the
+  build's migration step included.** The runtime pool has since 2026-08-22;
+  `prisma migrate deploy` followed on 2026-08-24, and it needed a different
+  mechanism because Prisma ignores `sslrootcert` and silently downgrades an
+  unrecognised `sslmode` — `verify-full` connects to a decoy authority without
+  complaint. `scripts/deploy-migrate.mjs` now writes the pinned root to a
+  temporary file and points the spawned process's `SSL_CERT_FILE` at it, which
+  is an OpenSSL lever: on any platform that is not Linux the step refuses to
+  migrate rather than migrating unverified. Proven in a Linux container against
+  the deployed database — pinned root applies, decoy root refused, missing
+  certificate refused before connecting. **The next production build is the
+  first one to run it**, so watch that build: a failure there is this step, and
+  `npm run db:migrate:deploy` is the manual path while it is diagnosed.
 - **`npm run db:clear` has not been run since it was rewritten.** The table
   list is derived from Prisma's model metadata and tested against the schema,
   but the script itself has never printed its new closing message. Someone

@@ -939,6 +939,21 @@ would have kept renewing. Local development is untouched — `admin123` still
 signs in on `next dev`. This is the audit's last record with an open half; the
 remainder named in it is env scope rather than code.
 
+**The migration path stopped trusting whoever answers, 2026-08-24.** The
+runtime pool has verified the deployed database's certificate since 2026-08-22,
+but `prisma migrate deploy` — which the Vercel build runs before it builds —
+went through Prisma's own engine with the same credentials and verified nothing.
+It was left that way because the port it uses was unreachable from here and an
+unverified fix there fails the whole build; the port is reachable now, so the
+fix could finally be run. It needed a different mechanism than the pool's: none
+of Prisma's TLS parameters do what they look like they do, and `verify-full` —
+which Supabase's own documentation suggests — is silently ignored, leaving a
+connection that reads as verified and is not. The trust store is replaced for
+the one spawned process instead, and on a platform where it cannot be, the step
+refuses to migrate rather than migrating unverified. `PROJECT_CONTEXT.md`
+ADR-040 records what was measured. The audit's transport finding is now closed
+whole rather than in part.
+
 Nothing else is open. Mutant classification closed on 2026-08-03, and on 2026-08-07 the
 contracts `1.0`–`3.0`, `5.0` and finally `6.0` got the refusing half of their
 tests — what the classification had called a missing-fixture problem. `4.0`
