@@ -19,19 +19,32 @@ and in Git; what was durable in them is below.
 Verified on 2026-08-23, in this worktree and on both deployed endpoints, except
 where a later date says otherwise:
 
-- **`origin/main` is `5912772`.** Core answered `bd3fae4` and the AI service
-  answered `8760e62` when both were read over HTTPS on 2026-08-24; one commit
-  has landed since, and it touches only a Playwright spec and an archived task
-  file, so neither endpoint's behaviour moved. The gap between the two is the
-  resting state rather than a missed deploy — nothing pushed since has touched
-  the service's `buildFilter` paths. Ten commits landed that day and **none was
-  walked on the deployment**; each was proved locally, and the two that changed
-  runtime behaviour cannot be walked there at all — the manager password floor
-  is Preview's door, and the migration step runs inside a build, where it *was*
+- **`origin/main` is `561c9f9`, and Core answers it.** Read over HTTPS on
+  2026-08-24 after the push that carried the audit log's two screens. The AI
+  service answers `8760e62`, which is the resting gap rather than a missed
+  deploy: nothing pushed since `ce6d1b0` has touched its `buildFilter` paths —
+  `ai-analytics-service/**`, `contracts/**`, `Dockerfile`, `render.yaml` — and
+  this push touched none of them either. **The two new screens have not been
+  walked signed in on the deployment.** What was read there is the anonymous
+  refusal both give and both are supposed to give: `GET /activity/` and
+  `GET /admin/activity/` answer `307` to `/login`, carrying `next=%2Factivity`
+  and `next=%2Fadmin%2Factivity`. Signing in there needs the owner's own Google
+  session — both connected Chrome browsers were checked on 2026-08-24 and
+  neither held one — so this is an owner walk rather than an agent one.
+- **The audit log has readers on the deployment, and one of them may be empty
+  there.** `/activity` shows a school's log; `/admin/activity` shows the
+  `PLATFORM_SCOPE` log, whose only action is `ADMINISTRATOR_INVITED`. The
+  deployed platform administrator was created by the bootstrap rather than
+  invited, so that screen may honestly hold nothing until a second
+  administrator is invited — an empty screen there is not evidence of a defect.
+  ADR-054 records both screens.
+- **Ten commits landed on 2026-08-24 before those, and none was walked on the
+  deployment.** Each was proved locally, and the two that changed runtime
+  behaviour cannot be walked there at all — the manager password floor is
+  Preview's door, and the migration step runs inside a build, where it *was*
   observed: the build of `bd3fae4` carries `[deploy-migrate] applying pending
   migrations before the build` … `No pending migrations to apply.` in its own
-  log. The reading below describes `8760e62` and the rule it established, which
-  still holds; the commit it names does not.
+  log.
 - **`origin/main` was `8760e62` and both endpoints answered it.** Read over
   HTTPS on 2026-08-23, after the push that carried the worker-pace change. The
   matching commits are the exception rather than the rule, and the rule is what
@@ -1253,8 +1266,8 @@ branch task file. Both halves are one anonymous request each; the rules for
 reading the service's commit without raising a false alarm are under
 **Deployed state** above.
 
-The last such comparison was made on 2026-08-24, immediately after `bd3fae4`
-reached `Ready`: Core answered `bd3fae4` and the service `8760e62`, which is the
+The last such comparison was made on 2026-08-24, after `561c9f9` reached
+`Ready`: Core answered `561c9f9` and the service `8760e62`, which is the
 expected resting gap rather than a missed deploy — nothing since `ce6d1b0` has
 touched the service's `buildFilter` paths.
 

@@ -5,8 +5,8 @@
 - Branch: `feat/the-audit-log-gets-a-reader`
 - Base branch: `main`
 - Base commit: `fcfe20f`
-- Current HEAD: `f0d35b6`
-- Status: complete; the first four commits are on `main` and deployed, the last three are not
+- Current HEAD: `561c9f9`
+- Status: complete, landed on `main` and deployed
 - Last updated: 2026-08-24
 - Last agent/tool: Claude Opus 5 / Claude Code
 
@@ -128,12 +128,16 @@ paths.
   `?after=<millis>.<id>`, the next page renders, and `חזרה לפעולות האחרונות` is
   offered there and not on the newest page. The 30 seeded rows were deleted
   afterwards.
-- Deployed, read-only, 2026-08-24 after the owner pushed the first four commits:
+- Deployed, read-only, 2026-08-24 after the owner pushed the whole branch:
   `GET https://shalomut-map-demo.vercel.app/api/health/` answers
-  `commit: c1e8373`, so the school's log is on the deployed runtime, and
-  `GET /activity/` answers `307` to an anonymous caller — the middleware's
-  redirect to `/login`, which is the refusal that route is supposed to give
-  before any handler runs. Nothing signed-in was walked there.
+  `commit: 561c9f9`, so both screens are on the deployed runtime.
+  `GET /activity/` and `GET /admin/activity/` each answer `307` to
+  `/login`, carrying `next=%2Factivity` and `next=%2Fadmin%2Factivity` — the
+  refusal both routes are supposed to give before any handler runs. `/admin/`
+  and `/goals/` answer the same way, and `GET /api/health/observability/` and
+  `GET /api/health/ai-queue/` still answer `200`, so the anonymous endpoints did
+  not move. The AI service answers `8760e62`, the expected resting gap: this
+  push touches none of its `buildFilter` paths.
 - Browser, local: screenshots of both screens with real rows written by the real
   routes — a `ROUND_CREATED` row naming the round beside visit rows, and three
   `ADMINISTRATOR_INVITED` rows each naming the address invited. The probe
@@ -191,14 +195,11 @@ paths.
 
 ## Visibility of this handoff
 
-`origin/main` moved to `c1e8373` while the second slice was being written — the
-owner pushed the school's log, and Vercel deployed it. This branch is now three
-commits ahead of that: `23958f6`, `93a2aba`, `f0d35b6`, the platform log and its
-documents, **not pushed**. It is a fast-forward, so no rebase is needed. Another
-worktree on this machine can read them from the branch; another checkout or
-machine cannot until they are pushed.
+All seven commits are on `origin/main` at `561c9f9` and deployed. Nothing is
+local to this worktree.
 
 ## Next concrete step
 
-Land it: `git push origin feat/the-audit-log-gets-a-reader:main`, which is the
-owner's to run.
+Walk both screens signed in on the deployment, which needs the owner's Google
+session and is therefore theirs to do. Everything else about this task is
+finished.
