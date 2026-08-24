@@ -58,13 +58,16 @@ export class ManagerAuditService {
   }
 
   /**
-   * One page of a school's log, to whoever may read it.
+   * One page of a school's log, to the administrators and to nobody else.
    *
    * An administrator may read any school's, which is the same reach they have
    * over everything else and is what makes their own visits reviewable at all.
-   * Whether a school's own user should see the visits made to it is deliberately
-   * still open — it is a question for the administrators rather than for this
-   * function, and today nothing renders either answer.
+   * A school may not read its own: the log records administrators opening the
+   * school, so giving it to the school tells the school when it was being
+   * looked at, and the owner answered that question `no` on 2026-08-24. The
+   * comparison against the active organization that used to permit it is gone
+   * rather than merely uncalled — a permission with no caller is a door left
+   * open for whoever adds the next one.
    *
    * The page is passed through rather than resolved here: a caller that asks
    * for nothing gets the newest `DEFAULT_AUDIT_LOG_PAGE_SIZE` events, which is
@@ -78,11 +81,8 @@ export class ManagerAuditService {
     targetOrganizationId: string,
     page?: AuditLogPage,
   ): Promise<AuditEvent[]> {
-    const mayRead =
-      session.isPlatformAdministrator ||
-      session.activeOrganizationId === targetOrganizationId;
-    if (!mayRead) {
-      // Hiding foreign organization audit logs
+    if (!session.isPlatformAdministrator) {
+      // Every other session, whether it belongs to this school or another one
       return [];
     }
     return auditRepo.findByOrganizationId(targetOrganizationId, page);

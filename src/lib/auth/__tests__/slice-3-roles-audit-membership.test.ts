@@ -109,13 +109,14 @@ test("ManagerAuditService records audit log events and enforces tenant isolation
   assert.strictEqual(event1.organizationId, "org-school-a");
   assert.strictEqual(event1.action, "SETUP_SAVED");
 
+  // The school that the event belongs to reads nothing, and neither does any
+  // other school: since 2026-08-24 the log answers to administrators alone.
   const logsSchoolA = await ManagerAuditService.getOrganizationAuditLogs(
     auditRepo,
     sessionAdminSchoolA,
     "org-school-a",
   );
-  assert.strictEqual(logsSchoolA.length, 1);
-  assert.strictEqual(logsSchoolA[0].action, "SETUP_SAVED");
+  assert.strictEqual(logsSchoolA.length, 0);
 
   const logsForeign = await ManagerAuditService.getOrganizationAuditLogs(
     auditRepo,
@@ -182,7 +183,7 @@ test("MembershipService allows admin to add member and denies non-admins", async
   assert.strictEqual(addedByManager, null); // Manager role cannot add members
 });
 
-test("a platform administrator may read any school's log, and a school user only their own", async () => {
+test("a platform administrator may read any school's log, and a school user none", async () => {
   const auditRepo = new InMemoryAuditLogRepository();
   await ManagerAuditService.logEvent(
     auditRepo,
@@ -218,4 +219,15 @@ test("a platform administrator may read any school's log, and a school user only
     "org-school-a",
   );
   assert.strictEqual(readByOutsider.length, 0);
+
+  // The case the owner decided on 2026-08-24: the school whose own log it is.
+  // The log records administrators opening that school, so reading it would
+  // tell the school when it was looked at.
+  const readByTheSchoolItself =
+    await ManagerAuditService.getOrganizationAuditLogs(
+      auditRepo,
+      sessionAdminSchoolA,
+      "org-school-a",
+    );
+  assert.strictEqual(readByTheSchoolItself.length, 0);
 });

@@ -203,9 +203,9 @@ const administratorOnlyScreens: ReadonlySet<MainNavItemId> = new Set([
   "goals",
   // The fourth is a read rather than a write, and it is here for a different
   // reason: the log records that an administrator opened a school, so handing
-  // it to the school would tell them when they were being looked at. Whether
-  // they should see that is the owner's question, and until it is asked the
-  // narrower answer is the one that cannot leak.
+  // it to the school would tell them when they were being looked at. The owner
+  // was asked whether they should see that and answered no on 2026-08-24, so
+  // this entry is now the decision rather than the safe side of a question.
   "activity",
 ]);
 
