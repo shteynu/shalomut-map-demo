@@ -58,6 +58,7 @@ export default async function ActivityPage({
 
       <ActivityLog
         entries={entries}
+        emptyText="עדיין לא נרשמה פעולה בבית הספר הזה."
         nextHref={
           nextCursor ? activityRoute(formatAuditLogCursor(nextCursor)) : undefined
         }

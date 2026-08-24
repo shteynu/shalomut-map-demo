@@ -24,6 +24,13 @@ export const routes = {
    * them. It is reached from the identity bar, by the people who have it.
    */
   admin: "/admin",
+  /**
+   * The log of what happened above every school: an administrator invited,
+   * and nothing that belongs to a school. It sits inside the administrator
+   * area because that is the only part of the product that is about the
+   * platform rather than about one school.
+   */
+  adminActivity: "/admin/activity",
 } as const;
 
 export type MainNavItemId =
@@ -136,6 +143,13 @@ export const routeMetadata = {
     navLabel: "ניהול פלטפורמה",
     actionTitle: "ניהול פלטפורמה",
     actionBody: "בתי הספר במערכת, ומי מגיע לכל אחד מהם.",
+  },
+  adminActivity: {
+    id: "adminActivity",
+    href: routes.adminActivity,
+    navLabel: "יומן הפלטפורמה",
+    actionTitle: "יומן הפלטפורמה",
+    actionBody: "פעולות שנעשו מעל בתי הספר, ולא בתוך אחד מהם.",
   },
   help: {
     id: "help",
@@ -545,6 +559,20 @@ export function activityRoute(after?: string): string {
   return after
     ? `${routes.activity}?${ACTIVITY_AFTER_PARAM}=${encodeURIComponent(after)}`
     : routes.activity;
+}
+
+/**
+ * The platform's own log, optionally continued from a cursor.
+ *
+ * A separate screen from `/admin` rather than a section on it, and the reason
+ * is the address bar: the console already keeps its search and its page there,
+ * and a second cursor beside them would mean two pagers whose links each have
+ * to carry the other's state or silently reset it.
+ */
+export function adminActivityRoute(after?: string): string {
+  return after
+    ? `${routes.adminActivity}?${ACTIVITY_AFTER_PARAM}=${encodeURIComponent(after)}`
+    : routes.adminActivity;
 }
 
 /** The activity screen of one named school, for the administrator area. */

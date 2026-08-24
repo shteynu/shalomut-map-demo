@@ -48,6 +48,13 @@ const PAGES_ABOUT_NO_SINGLE_SCHOOL = {
   // nothing for a per-school visit to name.
   'src/app/admin/page.tsx':
     'the administrator area, which is about every school rather than one',
+  // The platform's own log. Every row in it is filed under `PLATFORM_SCOPE`,
+  // which is the scope an event has when there is no school to file it under —
+  // so there is no school being opened here and no visit for a chokepoint to
+  // record. A school's log is the opposite and is a manager screen: `/activity`
+  // enters through `loadManagerContext` and is recorded like every other one.
+  'src/app/admin/activity/page.tsx':
+    'the platform log, whose every row is scoped above all schools',
 };
 
 const ROUND_ROUTE_DIRECTORY = 'src/app/api/rounds';

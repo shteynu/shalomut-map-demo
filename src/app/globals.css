@@ -7257,6 +7257,12 @@ body:has(.setup-form-save-bar) .help-badge > summary span {
   color: var(--text-muted, #6f665e);
 }
 
+/* The way out of a log and back to what it is a log of. Its own rule only for
+   the margin: the link inside it is the same button the pager uses. */
+.activity-back {
+  margin: 0;
+}
+
 /* Forward and back, and neither is a page number: the log is appended to while
    it is read, so the pager offers the next set of rows and the way home. */
 .activity-pager {

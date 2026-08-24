@@ -2,6 +2,7 @@ import assert from "node:assert";
 import { test } from "node:test";
 import {
   activityRoute,
+  adminActivityRoute,
   breakdownRoute,
   isNewRoundParam,
   newRoundSetupRoute,
@@ -414,4 +415,29 @@ test("the log's links carry a cursor or a school, and never both", () => {
     schoolActivityRoute("org 1/2"),
     "/activity?school=org%201%2F2",
   );
+});
+
+test("the platform log is inside the administrator area and out of the school navigation", () => {
+  // Inside `/admin`, so the area's own gate covers it and no second rule has to
+  // be written. Out of the main navigation, because that menu is the screens of
+  // one school and this is the one log that belongs to none.
+  assert.ok(adminActivityRoute().startsWith(`${routes.admin}/`));
+  assert.ok(!mainNavItems.some((item) => item.href.startsWith(routes.admin)));
+
+  assert.strictEqual(adminActivityRoute(), "/admin/activity");
+  assert.strictEqual(
+    adminActivityRoute("1756025700123.audit-a"),
+    "/admin/activity?after=1756025700123.audit-a",
+  );
+});
+
+test("the two logs are two screens, so neither pager can land on the other", () => {
+  // They share a parameter name and nothing else. A cursor from one log names
+  // an event the other cannot hold, so the paths have to differ — and the
+  // administrator-only rule applies to the school's log alone, because the
+  // platform's is behind the area gate instead.
+  const cursor = "1756025700123.audit-a";
+
+  assert.notStrictEqual(activityRoute(cursor), adminActivityRoute(cursor));
+  assert.strictEqual(isAdministratorOnlyScreen(routes.adminActivity), false);
 });

@@ -19,6 +19,14 @@ export interface ActivityLogProps {
   nextHref?: string;
   /** The newest page, offered only when this one is not it. */
   newestHref?: string;
+  /**
+   * What an empty first page says. It names what this log is a log *of* — a
+   * school, or the platform above every school — and the two are different
+   * enough that a shared sentence would be wrong on one of them. The other
+   * empty state, the end of a walk, says the same thing either way: there is
+   * nothing older.
+   */
+  emptyText: string;
 }
 
 /**
@@ -35,14 +43,17 @@ export interface ActivityLogProps {
  * time it is asked for, and «page 3» would quietly skip whatever arrived since
  * page 2.
  */
-export function ActivityLog({ entries, nextHref, newestHref }: ActivityLogProps) {
+export function ActivityLog({
+  entries,
+  nextHref,
+  newestHref,
+  emptyText,
+}: ActivityLogProps) {
   return (
     <section className="activity-log" dir="rtl">
       {entries.length === 0 ? (
         <p className="activity-empty">
-          {newestHref
-            ? "אין פעולות ישנות יותר להצגה."
-            : "עדיין לא נרשמה פעולה בבית הספר הזה."}
+          {newestHref ? "אין פעולות ישנות יותר להצגה." : emptyText}
         </p>
       ) : (
         <ol className="activity-entries">

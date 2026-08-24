@@ -281,6 +281,20 @@ export function AdminConsole({
             send("administrator", "/api/admin/people", "POST", { email })
           }
         />
+        {/* Beside the form that writes the rows it holds. An invitation to the
+            platform is the one action with no school to file it under, so it is
+            the one action no school's log can show.
+
+            A button rather than a link in the sentence: `globals.css` strips
+            underlines and colour from every anchor, so a link inside prose is
+            indistinguishable from the prose. */}
+        <p className="admin-note">
+          הזמנה לנהל את הפלטפורמה נרשמת ביומן שלה, מפני שאין בית ספר לרשום אותה
+          תחתיו.
+        </p>
+        <a className="secondary-button" href={routes.adminActivity}>
+          יומן הפלטפורמה
+        </a>
       </section>
 
       {unattached.people.length > 0 ? (
