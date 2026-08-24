@@ -501,14 +501,16 @@ together, in the phase that makes each untrue — not all at once, and not befor
 
 ## 6. Still open
 
-1. **The OAuth client itself.** Phase 1 is written and verified against a
-   stand-in provider; the deployed runtime signs in through Google only once a
-   Web application client exists in Google Cloud Console and its four `OIDC_*`
-   values are set, with
-   `https://<deployment>/api/auth/oidc/callback` listed verbatim as an
-   authorized redirect URI. Until then the deployment keeps the password screen.
-   This is the owner's to create, and it falls under the standing approval gate
-   on authentication configuration.
+1. ~~**The OAuth client itself.**~~ Created by the owner, and the four `OIDC_*`
+   variables have been set **on Production** since 2026-08-21: sign-in there is
+   Google, and `authenticateCredentials` refuses a password with
+   `PROVIDER_REQUIRED` before reading it. The scopes were read in the dashboard
+   on 2026-08-24 rather than inferred, and they add the half this item did not
+   anticipate: **Preview carries none of the four**, because a preview URL is
+   generated per build and cannot be registered with Google, so preview
+   deployments keep the password screen. That is not a gap waiting on this item —
+   it is what a preview deployment is — and since 2026-08-24 the password it
+   accepts has to clear a strength floor.
 2. **Which e-mail provider**, given it becomes a subprocessor that sees a school
    staff member's address. Less urgent than it was twice over: with sign-in on
    the identity provider, e-mail carries an invitation and not a credential — and

@@ -16,10 +16,17 @@ and in Git; what was durable in them is below.
 
 ## Now
 
-Verified on 2026-08-23, in this worktree and on both deployed endpoints:
+Verified on 2026-08-23, in this worktree and on both deployed endpoints, except
+where a later date says otherwise:
 
-- **`origin/main` is `8760e62` and both endpoints answer it.** Read over HTTPS
-  on 2026-08-23, after the push that carried the worker-pace change. The
+- **`origin/main` moved past `8760e62` on 2026-08-24** and neither endpoint has
+  been read since. Six commits landed that day — the staffroom ceiling, the
+  audit's own count, the Preview door read, the manager password floor and its
+  renewal half, and the migration step's certificate — and none of them was
+  walked on the deployment. The reading below describes `8760e62` and the rule it
+  established, which still holds; the commit it names does not.
+- **`origin/main` was `8760e62` and both endpoints answered it.** Read over
+  HTTPS on 2026-08-23, after the push that carried the worker-pace change. The
   matching commits are the exception rather than the rule, and the rule is what
   to compare against next time: Core auto-deploys every push; the AI service
   rebuilds only when a push touches its `buildFilter` paths —
