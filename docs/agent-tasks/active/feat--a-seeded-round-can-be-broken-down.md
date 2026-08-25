@@ -5,9 +5,8 @@
 - Branch: `feat/a-seeded-round-can-be-broken-down`
 - Base branch: `main`
 - Base commit: `31a4b3c`
-- Current HEAD: this file's own commit, on top of `31a4b3c`
-- Status: in progress — the local half is done and verified; the deployed
-  administrator console still waits on the owner's sign-in
+- Current HEAD: this file's own commit, on top of `92f724b`
+- Status: done, unpushed. Both halves of the objective are reached.
 - Last updated: 2026-08-25
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -17,6 +16,9 @@ Reach the two screens the previous branch recorded as unreachable: the
 breakdown and the goals, which had never been read with data in them, and the
 administrator console on the deployment, which needs a live administrator
 session.
+
+The administrator walk is what found the second defect, and it is not an
+administrator defect: the header is the same element on every manager screen.
 
 ## User-visible outcome
 
@@ -42,7 +44,8 @@ groups of six and the whole table comes back blanked.
 - `scripts/seed-local.ts`: two background questions on the closed round, thirty
   responses, three goals, and a tenure effect on one dimension.
 - The one defect the new content exposed, in `src/app/globals.css`.
-- An end-to-end guard for both.
+- The one the deployed administrator walk exposed, in the same file.
+- An end-to-end guard for each.
 
 ## Non-goals
 
@@ -109,6 +112,8 @@ groups of six and the whole table comes back blanked.
 - The mobile overflow defect found on `/breakdown`, fixed and guarded.
 - `/breakdown` (both questions), `/goals`, `/dashboard` and the dimension
   recommendations screen walked at 1440px and 390px.
+- `/admin/` and `/admin/activity/` walked signed in on the deployment at
+  1560px, which found the sticky-header slot; fixed and guarded.
 
 ## In progress
 
@@ -116,14 +121,27 @@ Nothing.
 
 ## Remaining
 
-- The administrator console on the deployment. Blocked below.
+Nothing this branch set out to do. Two things it deliberately did not:
+
+- **The header is narrower than the content on two screens.** `.site-header`
+  and `.page` agree at 1180px while two other containers use 1240px, so on a
+  wide window the page slides past both sides of the card. The new band covers
+  the slot at full viewport width, which is why it is 100vw and not the card's
+  width, but beside the card the page still shows. Aligning the two widths is a
+  layout decision, not a defect fix.
+- **The disabled submit on `/admin/` reads at about 2.1:1.** `.primary-button`
+  carries `opacity: 0.58` when disabled, which is the ordinary way to draw a
+  disabled control and is exempt from the contrast rule — recorded because it
+  was measured, not because it is a finding.
 
 ## Changed files
 
 - `scripts/seed-local.ts` — two background questions, thirty responses, three
   goals, the tenure effect, the dead dimension branch.
-- `src/app/globals.css` — `position: relative` on `.breakdown-table-scroll`.
+- `src/app/globals.css` — `position: relative` on `.breakdown-table-scroll`, and
+  a `.site-header::before` band over the slot above the sticky header.
 - `e2e/breakdown.spec.ts` — new, two tests.
+- `e2e/smoke.spec.ts` — one test, hit-testing the slot above the header.
 - `docs/agent-tasks/active/feat--a-seeded-round-can-be-broken-down.md` — this
   file.
 
@@ -136,13 +154,28 @@ Nothing.
   spec existed, and 36 with it, the respondent walk on the active round among
   them, which is this change's main risk.
 - `npx playwright test e2e/breakdown.spec.ts` — 2 passed.
+- `npm run test:e2e` after the header fix — 37 passed. An earlier run of the
+  same tree failed `submit-retry-is-recorded.spec.ts` at its first line, passed
+  on its own immediately after, and passed again in the full re-run: a flake,
+  recorded rather than explained.
 - `npm run lint:skills`, `npm run lint:doc-numbers`, `npm run lint:audit-count`
   — all clean.
+- Negative check of the header guard: with the band removed and the app
+  rebuilt, `the page does not show through the slot above the sticky header`
+  fails naming what it found — `main at 20,0, div at 60,0, rect at 100,0, input
+  at 140,0`.
 - Negative check of the overflow guard: with `position: relative` removed and
   the app rebuilt, `the breakdown table scrolls on a phone without taking the
   page with it` fails with `Expected: <= 0, Received: 3`. The first attempt at
   this check passed and proved nothing — `npx playwright test` serves the
   existing `.next`, so the reverted stylesheet was never built.
+- Walked signed in on the deployment (`GET /api/health/` answered `31a4b3c`,
+  the branch this one is based on): `/admin/` and `/admin/activity/` at 1560px,
+  zero page overflow, zero escaping elements, one `ADMINISTRATOR_INVITED` row
+  on the platform log and both administrators listed on the console. Scrolled
+  rather than only screenshotted, which is what found the slot — a full-page
+  screenshot cannot show a sticky element's behaviour, which is why five
+  earlier sweeps of these screens missed it.
 - Walked signed in against a production build on port 3210: `/breakdown` by
   tenure (two groups published at 10, two blanked) and by stage (three
   published at 10), `/goals` (two open, one done), `/dashboard`, and
@@ -159,10 +192,11 @@ None.
 
 ### Blocked or not run
 
-- **The administrator console on the deployment.** `GET /admin/` still answers
-  with `/login/?next=%2Fadmin`, and the deployed login offers only the
-  organizational Google account. The owner has to sign in in the connected
-  Chrome; the tab opened for it is `741623090`.
+- **The administrator console at a phone width, on the deployment.** The
+  connected Chrome reported `innerWidth: 1560` after being resized to 520, with
+  `outerWidth: 784` — the window chrome resized and the viewport did not, so
+  the measurement would have been a fiction. Both admin screens were walked at
+  390px locally in the previous branch's sweep.
 - **The remove control on a goal** (`הסרה מהיעדים`). It lives on
   `dashboard-goals-panel.tsx`, and the dimension recommendations page returns
   the "no analysis yet" card before that panel renders — so seeding goals does
@@ -203,6 +237,5 @@ None.
 
 ## Next concrete step
 
-Ask the owner to sign in to `https://shalomut-map-demo.vercel.app/login/` in the
-connected Chrome tab `741623090`, then walk `/admin/` and `/admin/activity/`
-there at 1560px and 500px and record what the walk found.
+Hand the branch to the owner to push. Nothing here is deployed, and the header
+band is the first change of this batch that every manager screen shows.
