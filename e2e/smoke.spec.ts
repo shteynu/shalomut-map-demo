@@ -207,6 +207,87 @@ test('the privacy tooltip reads as prose, and the stone it sits on still shouts'
     stoneNumberPx,
     'the headline number on the stat stone shrank to tooltip size',
   ).toBeGreaterThan(30);
+
+  // And the third way this panel can fail, which no measurement of its own box
+  // can see: it renders at full size, in the right place, underneath the page.
+  // A `.stat-stone` is rotated, and a transform makes a stacking context, so
+  // the panel's own `z-index` is spent inside the stone; the action cards below
+  // the grid come later in the document and painted over its lower two thirds.
+  // `elementFromPoint` asks the only question that matters — if a manager
+  // clicked where the last bullet is, would they hit the bullet?
+  const readable = await panel.evaluate((node) => {
+    const box = node.getBoundingClientRect();
+    // The panel's own foot sits below a 720px fold, as the note above says, and
+    // `elementFromPoint` answers nothing at all for a point outside the
+    // viewport. So this asks about the lowest row of it that is on screen —
+    // which is the row the action cards used to cover, because those cards
+    // begin immediately below the stone grid.
+    const y = Math.min(box.bottom - 8, window.innerHeight - 12);
+    const topmost = document.elementFromPoint(box.left + box.width / 2, y);
+
+    return { y, inside: y > box.top, covering: Boolean(topmost && node.contains(topmost)) };
+  });
+
+  expect(
+    readable.inside,
+    'the open tooltip starts below the fold, so nothing about it was measured',
+  ).toBe(true);
+
+  expect(
+    readable.covering,
+    `something on the page paints over the open privacy tooltip at y=${readable.y}`,
+  ).toBe(true);
+});
+
+/**
+ * The manager header, on a phone.
+ *
+ * `playwright.config.ts` runs the manager screens at desktop size on purpose,
+ * and that reasoning still holds for their content — a school reads the map on
+ * a laptop. The header is the exception the owner asked for on 2026-08-25: it
+ * is the same component on every screen, it is the first thing a phone shows,
+ * and it was failing there in two ways at once. Eight destinations wrapped
+ * into a two-column grid that broke every label of more than one word across
+ * three lines, and the identity chip beside them overflowed the viewport by
+ * 30px — which gave every manager screen a sideways scrollbar, not just this
+ * one.
+ *
+ * Resizing inside the desktop project rather than adding a mobile project: the
+ * config's objection to the latter is the minutes it costs, and this is
+ * seconds.
+ */
+test('the manager header holds one line of navigation on a phone', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await signIn(page, '/');
+
+  const navigation = page.getByRole('navigation', { name: 'ניווט ראשי' });
+  await expect(navigation).toBeVisible();
+
+  const rows = await navigation.evaluate((node) => {
+    const tops = [...node.querySelectorAll('a')].map((link) =>
+      Math.round(link.getBoundingClientRect().top),
+    );
+
+    return new Set(tops).size;
+  });
+
+  expect(
+    rows,
+    'the header navigation stacked into rows instead of scrolling sideways',
+  ).toBe(1);
+
+  const geometry = await page.evaluate(() => ({
+    scrollWidth: document.documentElement.scrollWidth,
+    clientWidth: document.documentElement.clientWidth,
+  }));
+
+  expect(
+    geometry.scrollWidth,
+    `the page is ${geometry.scrollWidth - geometry.clientWidth}px wider than the ` +
+      'phone it is being read on',
+  ).toBeLessThanOrEqual(geometry.clientWidth + 1);
 });
 
 test('the dashboard renders a map or says why it is locked', async ({ page }) => {
