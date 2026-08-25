@@ -51,6 +51,15 @@
   --radius-panel-organic: 18px 24px 16px 22px / 22px 16px 20px 18px;
   --radius-organic-mobile: 18px;
   --radius-header: 24px 38px 24px 38px / 32px 24px 32px 24px;
+  /*
+   * The shell: how wide the floating header card and the content below it are,
+   * and how much room is left beside them. One pair of tokens because they were
+   * four declarations in three media blocks before, and nobody had compared
+   * them — on a phone the page stuck out two pixels past the header on each
+   * side, and four below 430px. The gutter is the total of both sides.
+   */
+  --shell-width: 1180px;
+  --shell-gutter: 2rem;
   --z-base: 0;
   --z-raised: 1;
   --z-sticky: 20;
@@ -224,7 +233,7 @@ main:focus-visible {
   display: grid;
   gap: 0.5rem;
   margin: 1rem auto 0;
-  width: min(1180px, calc(100% - 2rem));
+  width: min(var(--shell-width), calc(100% - var(--shell-gutter)));
   padding: 0.7rem 1.25rem 0.75rem;
   background: rgba(251, 244, 221, 0.94);
   border: 1px solid rgba(56, 56, 56, 0.1);
@@ -397,7 +406,7 @@ body:has(> .site-header) #main-content::before {
 }
 
 .page {
-  width: min(1180px, calc(100% - 2rem));
+  width: min(var(--shell-width), calc(100% - var(--shell-gutter)));
   margin: 0 auto;
   padding: clamp(1.4rem, 3vw, 3.5rem) 0 4rem;
 }
@@ -2640,7 +2649,11 @@ textarea {
    wrong, not while writing questions, and a list that can hold twenty entries
    would crowd a column that already carries the share link. */
 .survey-builder-history-slot {
-  width: min(1240px, calc(100% - 2rem));
+  /* Full width of `.page`, which is what it has always been a child of. Its
+     own `min(1240px, ...)` could never reach 1240 from inside an 1180px
+     parent; all it did was subtract a gutter a second time and leave the list
+     inset sixteen pixels from the two columns above it. */
+  width: 100%;
   margin: 1.25rem auto 0;
 }
 
@@ -4112,6 +4125,23 @@ p.dashboard-blob-provenance {
   }
 }
 
+/* The shell's gutter on a phone. It sits at 768px because that is where the
+   header's own mobile rule already lived; both now read the same number. */
+@media (max-width: 768px) {
+  :root {
+    --shell-gutter: 1rem;
+  }
+}
+
+/* The smallest screens keep the widest cards, which is what `.page` already
+   did here on its own. The header now follows it instead of staying at the
+   768px step and finishing four pixels a side inside the content. */
+@media (max-width: 430px) {
+  :root {
+    --shell-gutter: 0.75rem;
+  }
+}
+
 @media (max-width: 760px) {
   .site-header {
     position: static;
@@ -4144,7 +4174,6 @@ p.dashboard-blob-provenance {
   }
 
   .page {
-    width: min(100% - 1rem, 1180px);
     padding-top: 1rem;
   }
 
@@ -4381,10 +4410,6 @@ p.dashboard-blob-provenance {
 
   .top-nav a {
     min-height: 2.55rem;
-  }
-
-  .page {
-    width: min(100% - 0.75rem, 1180px);
   }
 
   .page-intro h1,
@@ -4939,7 +4964,6 @@ p.dashboard-blob-provenance {
     border-radius: var(--radius-organic-mobile);
     margin: 0.5rem auto;
     padding: 0.6rem 1rem;
-    width: calc(100% - 1.25rem);
     top: 0.5rem;
   }
 
