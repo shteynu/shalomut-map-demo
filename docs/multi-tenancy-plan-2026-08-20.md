@@ -378,12 +378,18 @@ reconstructed is a role nobody can defend having granted.
   `AI_TRIGGERED` now record where they happen. The two membership actions wait
   for the phase 2 screens that raise them.
 - Who may read the log, and whether a school can see the visits made to it, is
-  worth deciding with the administrators rather than later. **Still open, and
-  deliberately.** `getOrganizationAuditLogs` lets an administrator read any
-  school's log and a school user their own, and nothing renders either: there is
-  no screen and no endpoint. Reading the log today means reading the table.
+  worth deciding with the administrators rather than later. **Answered
+  2026-08-24, after this line was written.** When the phase shipped,
+  `getOrganizationAuditLogs` let an administrator read any school's log and a
+  school user their own, and nothing rendered either: there was no screen and no
+  endpoint. ADR-054 then gave the log its two administrator-only screens, and the
+  owner answered the question itself — a school does not read its own log
+  (ADR-055), so the permission the service carried for that case is gone.
 
 ### Phase 4 — what the administrator can see about every school
+
+**Implemented 2026-08-21** (`2576b99`); `PROJECT_CONTEXT.md` ADR-029 records what
+it decided, including the one thing this section said had to be designed in.
 
 The fuller half of the owner's description: how many schools, how many rounds
 each has, and the results of any school's round.
@@ -396,6 +402,14 @@ each has, and the results of any school's round.
   designed in rather than checked afterwards.
 
 ### Phase 5 — the session gets short
+
+**Implemented 2026-08-21** (`85d5676`). The interval this section told the next
+agent to pick is `SESSION_TTL_SECONDS` in `src/lib/auth/session-lifetime.ts`, and
+the idle-logout worry it names was answered by silent renewal rather than by the
+number: a tab that is being read renews, and a token without the deadline claim
+is refused. What stays open is the last window — a token already in a revoked
+person's browser outlives the revocation until it expires, which needs a
+revocation list and was not what this phase asked for.
 
 The 2026-08-20 revocation decision. The 24-hour stateless session
 (`login/route.ts:103`) becomes a short one with silent renewal, and the renewal

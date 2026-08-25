@@ -431,9 +431,8 @@ round, 0 not uppercase, 0 collisions, read before writing this. `PROJECT_CONTEXT
 ADR-044 owns the reasoning.
 
 **A school user reads, and nothing on the deployment can show it yet
-(2026-08-23).** Phase 6 of the multi-tenancy plan is implemented on
-`feat/a-school-user-may-only-read`, which is **committed and unpushed** — three
-commits fast-forwarding from `124f661`. A `manager`-role session gets four tabs
+(2026-08-23).** Phase 6 of the multi-tenancy plan is implemented and on `main`
+as `5089fb2`. A `manager`-role session gets four tabs
 instead of seven and a `403` on every write; an administrator sees no change.
 The deployed runtime holds one administrator session and no school user, so
 **the change is invisible there by construction** and there is nothing to walk
@@ -616,8 +615,13 @@ and an unverified change there fails the whole build rather than one request. No
 migration and no environment variable; `DATABASE_CA_CERT` exists as an override
 and is deliberately unset.
 
-**Thirty-five entries remain open; none of them is a high finding still open in
-full.**
+**The count is not kept here.** It is re-derived from the status line of each
+record by `npm run lint:audit-count`, which fails when the audit's own summary
+disagrees with its records — precisely so that a second ledger in this document
+cannot go stale unnoticed, which is what the sentence this replaces had done. As
+of 2026-08-24 the audit holds fifty records: forty-two closed, eight closed in
+part, none open in full. Every one of the eight names its own remainder, and none
+of the eight remainders is engineering work waiting to be picked up.
 
 **The remaining entries were re-checked against current code on 2026-08-22**,
 after the owner suspected some had been fixed in passing. Twelve anchors were
@@ -684,12 +688,14 @@ reads — the price of naming the school that was actually read.
 **Every phase of
 [`multi-tenancy-plan-2026-08-20.md`](multi-tenancy-plan-2026-08-20.md) that was
 not deferred is now written and deployed** — 0, 1, 2, 3, 4 and 5. Phase 6, what a
-school user may not do, was deferred on purpose by the owner and its content is
-undecided. Phase 2 needed no e-mail provider in the end: an invitation is an
-entitlement, so the administrator tells the invitee out of band and they sign in.
-Who may read `audit_events`, and whether a school sees the visits made to it, is
-the one product question these phases deliberately left open, and it has no
-addressee until there are real schools. With the plan closed, the next
+school user may not do, was the one the owner had deferred; he decided it on
+2026-08-23 — a school user reads, and every action on a round belongs to the
+administrator — and it was implemented the same day (`5089fb2`). Phase 2 needed
+no e-mail provider in the end: an invitation is an entitlement, so the
+administrator tells the invitee out of band and they sign in. Who may read
+`audit_events`, and whether a school sees the visits made to it, was the one
+product question these phases deliberately left open; the owner answered it on
+2026-08-24 and ADR-055 records the answer as no. With the plan closed, the next
 substantial work is no longer in it —
 [`product-behaviour-backlog.md`](product-behaviour-backlog.md) §12, the research
 instrument, is the standing alternative.

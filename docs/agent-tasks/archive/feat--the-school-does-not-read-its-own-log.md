@@ -9,7 +9,7 @@
   file's own commit above it. `git log --oneline 0b57ec3..` names both; the
   second hash is deliberately not written here, because a document cannot hold
   the hash of the commit that adds it.
-- Status: implementation complete and verified; unpushed
+- Status: complete, verified and landed on `main` as `04f63a4`
 - Last updated: 2026-08-24
 - Last agent/tool: Claude Opus 5 / Claude Code
 
@@ -166,12 +166,9 @@ Everything listed under Scope.
 
 ## Visibility of this handoff
 
-Local to this worktree until the branch is pushed. Nothing is on `origin`.
+Archived. The branch was pushed to `main` and `origin/main` carries both commits,
+`6314479` and `04f63a4`.
 
 ## Next concrete step
 
-Push the branch (owner's action):
-
-```
-git push origin feat/the-school-does-not-read-its-own-log:main
-```
+None. This task is closed.

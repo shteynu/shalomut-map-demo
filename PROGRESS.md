@@ -992,7 +992,18 @@ successor to ADR-013, whose argument about the password hash turned out to end
 with the hash being deleted rather than replaced; ADR-026 records why an
 administrator's read of a school they do not belong to is refused when it cannot
 be written down; ADR-027 records why an invitation is an entitlement that needs
-no e-mail to deliver it. Phases 4, 5 and 6 remain, and the plan holds them.
+no e-mail to deliver it.
+
+**The plan is finished.** Phases 4 and 5 landed on 2026-08-21 — the administrator's
+screen says what is happening in each school and never adds the schools together
+(ADR-029), and the twenty-four-hour session became fifteen minutes with silent
+renewal, which is where memberships, the administrator flag and a suspended
+account are re-read (`85d5676`). Phase 6 landed on 2026-08-23 (`5089fb2`): a
+school user reads, and every action on a round belongs to the administrator,
+refused in the routes and left off the screens. The one question the phases
+deliberately left open — whether a school is told when it is looked at — the
+owner answered on 2026-08-24, and ADR-055 records the answer as no. What is left
+of the multi-tenant work is not in the plan: it is the research instrument above.
 
 ## Durable references
 
