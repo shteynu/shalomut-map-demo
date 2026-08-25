@@ -929,7 +929,9 @@ gap was worth closing because on `6.0` a silent provider does not raise: all
 three per-dimension generators fall back and label themselves, so the overview
 banner, which fires on `unavailable`, stays quiet through the failure that is
 actually common. Whether that banner should fire on a fallback too is open and
-unrequested; `docs/shalomut-tracker-handoff.md` carries it.
+unrequested. The reasoning is this paragraph; `docs/open-decisions.md` lists it,
+which it did not until 2026-08-25 — the sentence here named the operational
+handoff, and that document had never carried the question.
 
 ### Architecture
 

@@ -1040,6 +1040,13 @@ without a code change; that, more than the number, is what changed.
 
 ## External blockers and approval gates
 
+This section owns the operational ones — secrets, monitors, provider account,
+deployment configuration — and the reasoning for each stays here.
+[`open-decisions.md`](open-decisions.md) indexes these together with the product
+decisions and methodology questions that live in other documents, so that "what
+is waiting on a human" can be read in one place. It copies no reasoning from
+here; when the two disagree, this section wins.
+
 **Open, and the owner's own hands:**
 
 1. **Rotate `GEMINI_API_KEY`, 2026-08-20.** It was printed in full into an agent
@@ -1146,9 +1153,12 @@ without a code change; that, more than the number, is what changed.
    now reports as one contributor without rewriting anything. Whether personal
    ownership is the correct claim depends on an employment agreement no agent can
    read. It is a one-line change to a public file.
-7. **The methodologist's item-to-dimension mapping**, which blocks phases 3, 5 and
-   6 of `docs/default-research-instrument-plan-2026-08-14.md`. The questions are
-   written and ready to send in both languages —
+7. **The methodologist's item-to-dimension mapping**, which blocks phases 5 and 6
+   of `docs/default-research-instrument-plan-2026-08-14.md`. It blocked phase 3
+   too until 2026-08-15, when the respondent gained every widget the new
+   instrument needs; the plan still marks that phase as waiting and is a dated
+   plan, so it is `PROGRESS.md` that says what shipped. The questions are written
+   and ready to send in both languages —
    `docs/methodologist-questions-2026-08-15-{ru,he}.md`, six of them since
    2026-08-17. Its machinery exists and its content does not.
 8. **Naming a pilot school with a date**, which is what still gates the 2026-08-10

@@ -26,6 +26,7 @@ These files must stay aligned with `main`:
 | [`platform-handbook.md`](platform-handbook.md) | What the whole platform does, in language a non-developer reads; the source text every translated snapshot is released from |
 | [`observability.md`](observability.md) | What this product counts, where those counts go, which four cross a threshold and who is told when they do |
 | [`shalomut-tracker-handoff.md`](shalomut-tracker-handoff.md) | Current deployed/operational state, external blockers and approval gates |
+| [`open-decisions.md`](open-decisions.md) | Every open owner decision and external input, in one index. Carries no reasoning — each entry points at the document that owns it, and the source wins on any disagreement |
 | [`data-flow-and-subprocessors.md`](data-flow-and-subprocessors.md) | Who receives respondent data, what crosses each boundary and where it is hosted; the factual basis every future legal document rests on |
 | [`../ai-analytics-service/README.md`](../ai-analytics-service/README.md) | Python service runtime, configuration and verification |
 | [`../design.md`](../design.md) | Design-system tokens, typography and component rules the UI is built from |
