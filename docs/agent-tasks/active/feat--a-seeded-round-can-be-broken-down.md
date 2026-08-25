@@ -5,9 +5,9 @@
 - Branch: `feat/a-seeded-round-can-be-broken-down`
 - Base branch: `main`
 - Base commit: `31a4b3c`
-- Current HEAD: this file's own commit, on top of `8430a6a`
-- Status: done. `b9bbd39` and everything under it is on `main` and deployed;
-  `8430a6a` and this update are not.
+- Current HEAD: this file's own commit, on top of `0ddc721`
+- Status: done and deployed. Everything through `0ddc721` is on `main` and
+  served; only this file's own update is not.
 - Last updated: 2026-08-25
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -212,6 +212,25 @@ counts the scrollbar, so the document measured seven pixels wider than the
 window. `8430a6a` moves the band to `#main-content` and fixes it against the
 window instead, which is the version this file's evidence above describes.
 
+`0ddc721` — `8430a6a` plus this file — was pushed to `main` and Vercel served
+it: `GET /api/health/` answered `0ddc721` thirty seconds after the push, all
+four workflows are green on that commit, and the stylesheet it serves,
+`/_next/static/chunks/3ltr42fvu8w_n.css`, is byte-for-byte the local build of
+it. Deployed `/login/` answers `{ hasHeader: false, band: "none" }`, so the
+`:has(> .site-header)` scoping keeps the band off the screens that have no
+header.
+
+Walked signed in on the deployed `/round/`, scrolled to `scrollY: 329`, with the
+window 1728 wide and the document 1713 — a real fifteen-pixel scrollbar, which
+is the condition the first implementation failed under:
+
+- `documentElement.scrollWidth − clientWidth` is **0**. It was 7 before this
+  commit, and that number is the whole reason the commit exists.
+- 1376 hit tests across every pixel row of the sixteen-pixel slot, the full
+  width of the window: **zero** elements answer that are not `#main-content`,
+  the body, the document, or inside the header. The header rests at `top: 16`
+  and the band above it computes `position: fixed`, `block-size: 16px`.
+
 ### Blocked or not run
 
 - **The administrator console at a phone width, on the deployment.** The
@@ -259,5 +278,6 @@ None.
 
 ## Next concrete step
 
-Hand the branch to the owner to push. Nothing here is deployed, and the header
-band is the first change of this batch that every manager screen shows.
+Nothing is left on this branch. Hand this last documentation commit to the
+owner to push, and close the branch — the two readings the expired session had
+blocked are taken, and both are in the Deployed section above.
