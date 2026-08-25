@@ -6,7 +6,7 @@
 - Base branch: `main`
 - Base commit: `04f63a4`
 - Current HEAD: `96ab5b4`, three commits on `04f63a4` — `bf1b2c1`, `8d59f3b`, `96ab5b4`
-- Status: all three delivered and verified; unpushed
+- Status: complete, verified and landed on `main` as `2c2f5da`
 - Last updated: 2026-08-25
 - Last agent/tool: Claude Opus 5 / Claude Code
 
@@ -151,6 +151,14 @@ All three.
 - The sweep test was proved to bite: reverting the one service line to
   `findByOrganizationId` fails `activating a round sweeps the school with
   summaries, not with its history`, and restoring it passes.
+- **On `main`, 2026-08-25.** All four workflows green at `2c2f5da`: `Core
+  verification` — which now carries `lint:docs-publish` — `Browser smoke`,
+  `Vercel Deployment & Pipeline Checks` and `CodeQL Security Analysis`. Browser
+  smoke matters here because `verify:core` does not run Playwright and nothing
+  local had walked a screen.
+- **Deployed, anonymous, 2026-08-25.** `GET /api/health/` → `commit: 2c2f5da`,
+  so the deployment is level with `main`; `GET /api/health/observability/` →
+  `200` with `alerting: []`.
 
 ### Failed
 
@@ -162,10 +170,10 @@ All three.
   changed; the one runtime change is a repository read behind an existing
   service method, and `verify:core` does not walk Playwright.
 - `npm run test:mutation:ai-contract` — not run; no mutated file was touched.
-- **Nothing was walked on the deployment**, and nothing here is visible there:
-  two commits are repository-only, and the third changes which columns one query
-  selects. The deployed endpoints were not read this session, so this task adds
-  no fresh deployed evidence.
+- **No signed-in walk of the deployment.** Nothing here is visible there: three
+  commits are repository-only, and the fourth changes which columns one query
+  selects on a path that renders nothing new. The two anonymous health endpoints
+  were read and are recorded above; no screen was opened.
 - **The two published pages still carry the duplicated `<style>`.** The script
   removes the runtime block whole, so their next republish ends it; republishing
   is a separate action and was not taken.
@@ -202,12 +210,8 @@ All three.
 
 ## Visibility of this handoff
 
-Local to this worktree. Nothing is on `origin`.
+Archived. `origin/main` carries all four commits, `bf1b2c1` through `2c2f5da`.
 
 ## Next concrete step
 
-Push the branch (owner's action):
-
-```
-git push origin chore/three-small-debts-the-repository-owed-itself:main
-```
+None. This task is closed.

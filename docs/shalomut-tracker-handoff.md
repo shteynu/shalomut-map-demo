@@ -22,7 +22,10 @@ where a later date says otherwise:
 - **The last commit that changed deployed behaviour is `561c9f9`**, the audit
   log's two screens, and Core answered it over HTTPS on 2026-08-24. It answered
   `0cc39c2` half an hour later, which is this paragraph's own commit and the one
-  above it — documentation, no runtime change. Both readings are recorded on
+  above it — documentation, no runtime change. On 2026-08-25 it answers
+  `2c2f5da`: three of those four commits touch no runtime at all, and the fourth
+  changes which columns one query selects on the way to closing a school's
+  previous round — a cheaper read of the same rows, invisible from outside. Both readings are recorded on
   purpose: **a commit here going stale is not news, a behaviour change is**, and
   this entry has twice been rewritten because it chased the hash instead of
   naming what moved. If Core answers something later than `561c9f9`, ask
@@ -1297,8 +1300,9 @@ expected resting gap rather than a missed deploy: nothing since `ce6d1b0` has
 touched the service's `buildFilter` paths.
 
 **What an agent starting here should know about what is left.** As of 2026-08-25
-`docs/agent-tasks/active/` holds one file — three small debts the repository owed
-itself, delivered and unpushed — and the 2026-08-21 audit has no fully open
+`docs/agent-tasks/active/` holds nothing — the last file, three small debts the
+repository owed itself, landed on `main` as `2c2f5da` and is archived — and the 2026-08-21
+audit has no fully open
 record: fifty findings, forty-two closed and eight closed in part. Every one of
 the eight names its own remainder, and **none of the eight remainders is
 engineering work waiting to be done** — each is either an owner decision (what
