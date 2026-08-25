@@ -29,44 +29,85 @@ const navIcons: Record<MainNavItemId, LucideIcon> = {
   activity: ScrollText,
 };
 
+/**
+ * Two tiers, not one row.
+ *
+ * The header carries three things that do not compete for the same space: who
+ * the manager is, which school and product they are in, and the eight screens
+ * they can reach. Laid on one row those eight destinations did not fit, so the
+ * nav wrapped into three ragged rows and the sticky header grew to 130px of
+ * mostly empty cream — on every screen, above every page. The identity row and
+ * the destination strip are now separate bands: the first stays one line
+ * because it holds two short things, and the second stays one line because it
+ * scrolls sideways when a narrow viewport cannot hold all eight.
+ */
 export function AppHeader({ role }: { role: ManagerRole }) {
   return (
-    // `.site-header` already lays this out: flex, centred, space-between, 1rem
-    // gap. The utilities that used to be here restated all four and lost to it
-    // anyway, since Tailwind's utilities are layered and the stylesheet is not.
     <header className="site-header">
-      <div className="flex items-center gap-6">
+      <div className="site-header-top">
         {/*
          * The round the manager is reading lives in the URL, and reading it
          * needs a Suspense boundary: without one a statically rendered route
          * would have to become dynamic to render the header. The fallback is
          * the same navigation without a round, which is what a manager on the
          * school's current round gets anyway.
+         *
+         * Two boundaries rather than one wrapping both tiers, so the identity
+         * bar — which fetches its own session on mount — is never inside a
+         * fallback that is about to be replaced.
          */}
-        <Suspense fallback={<HeaderNavigation roundId={undefined} role={role} />}>
-          <RoundAwareHeaderNavigation role={role} />
+        <Suspense fallback={<HeaderBrand roundId={undefined} />}>
+          <RoundAwareHeaderBrand />
         </Suspense>
+
+        {/*
+         * No guide link here. It sat beside the identity until 2026-08-18, and
+         * the floating badge — which reaches the dashboard too, where this
+         * header does not render at all — made it a second door to one room, in
+         * the corner of the screen a manager reads first.
+         */}
+        <ManagerUserBar />
       </div>
 
-      {/*
-       * No guide link here. It sat beside the identity until 2026-08-18, and the
-       * floating badge — which reaches the dashboard too, where this header does
-       * not render at all — made it a second door to one room, in the corner of
-       * the screen a manager reads first.
-       */}
-      <ManagerUserBar />
+      <Suspense fallback={<HeaderNavigation roundId={undefined} role={role} />}>
+        <RoundAwareHeaderNavigation role={role} />
+      </Suspense>
     </header>
   );
 }
 
-function RoundAwareHeaderNavigation({ role }: { role: ManagerRole }) {
-  // `navigationRoundId` is what keeps `round=new` out of these links; it says
-  // why there rather than here, next to the parameter it is about.
-  const roundId = navigationRoundId(
+// `navigationRoundId` is what keeps `round=new` out of these links; it says why
+// there rather than here, next to the parameter it is about.
+function useNavigationRoundId(): string | undefined {
+  return navigationRoundId(
     useSearchParams()?.get(DASHBOARD_ROUND_PARAM) ?? undefined,
   );
+}
 
-  return <HeaderNavigation roundId={roundId} role={role} />;
+function RoundAwareHeaderBrand() {
+  return <HeaderBrand roundId={useNavigationRoundId()} />;
+}
+
+function RoundAwareHeaderNavigation({ role }: { role: ManagerRole }) {
+  return <HeaderNavigation roundId={useNavigationRoundId()} role={role} />;
+}
+
+function HeaderBrand({ roundId }: { roundId: string | undefined }) {
+  return (
+    <Link
+      href={homeRoute(roundId)}
+      className="brand-mark"
+      aria-label={navigationLabels.homeAria}
+    >
+      <span className="brand-symbol" aria-hidden="true">
+        מ
+      </span>
+      <span>
+        <strong>{navigationLabels.productName}</strong>
+        <small>{navigationLabels.productSubtitle}</small>
+      </span>
+    </Link>
+  );
 }
 
 function HeaderNavigation({
@@ -79,27 +120,11 @@ function HeaderNavigation({
   const pathname = usePathname() ?? "";
 
   return (
-    <>
-      <Link
-        href={homeRoute(roundId)}
-        className="brand-mark"
-        aria-label={navigationLabels.homeAria}
-      >
-        <span className="brand-symbol" aria-hidden="true">
-          מ
-        </span>
-        <span>
-          <strong>{navigationLabels.productName}</strong>
-          <small>{navigationLabels.productSubtitle}</small>
-        </span>
-      </Link>
-
-      <nav className="top-nav" aria-label="ניווט ראשי">
-        {mainNavItemsForRound(roundId, role).map((item) => (
-          <HeaderNavigationItem key={item.id} item={item} pathname={pathname} />
-        ))}
-      </nav>
-    </>
+    <nav className="top-nav" aria-label="ניווט ראשי">
+      {mainNavItemsForRound(roundId, role).map((item) => (
+        <HeaderNavigationItem key={item.id} item={item} pathname={pathname} />
+      ))}
+    </nav>
   );
 }
 

@@ -94,6 +94,10 @@ export function ManagerUserBar() {
         disabled={isLoggingOut}
         className="manager-user-bar-logout"
         aria-label="התנתקות מהמערכת"
+        // The word beside the icon is hidden on narrow screens, where the
+        // pointer that would read this is a finger — but a desktop reader who
+        // shrinks the window gets the name back on hover.
+        title="התנתקות מהמערכת"
       >
         {isLoggingOut ? (
           <>
