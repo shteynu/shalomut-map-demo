@@ -5,8 +5,8 @@
 - Branch: `chore/three-small-debts-the-repository-owed-itself`
 - Base branch: `main`
 - Base commit: `04f63a4`
-- Current HEAD: see `git log --oneline 04f63a4..`
-- Status: in progress
+- Current HEAD: `96ab5b4`, three commits on `04f63a4` — `bf1b2c1`, `8d59f3b`, `96ab5b4`
+- Status: all three delivered and verified; unpushed
 - Last updated: 2026-08-25
 - Last agent/tool: Claude Opus 5 / Claude Code
 
@@ -81,22 +81,48 @@ that needs no one else.
 2. **The handoff stops keeping its own count of audit records.** It now names
    `npm run lint:audit-count` as the authority instead of carrying a second
    ledger, which is the thing that went stale.
+3. **The publishing script refuses rather than repairs.** A body still pointing
+   at `vendor/`, a second page skeleton or a missing `<title>` are each a
+   question about the document, not something to paper over on the way out.
+4. **The two mermaid hazards are reported, not refused.** A `;` in a label and a
+   real `<br/>` are legal HTML; a page could want either. What they must not be
+   is invisible.
+5. **`lint:docs-publish` joined `verify:core`.** The transformation itself takes
+   an argument, so it cannot be a gate; its tests can, and they are what notices
+   a document that has stopped publishing.
+6. **`findByOrganizationId` was removed, not left uncalled.** Moving the sweep
+   onto the summary read left it with no production caller. ADR-055 — the commit
+   this branch sits on — took the same decision about an uncalled permission for
+   the same reason, and it applies to a read that costs a quarter of a megabyte.
+7. **No dedicated `WHERE status = 'active'` read.** It would be one row instead
+   of a handful of scalar ones. The projection already exists, and the partial
+   unique index is what enforces the rule either way.
 
 ## Assumptions
 
-- None yet.
+- None. Every claim about what the documents said was read at its anchor, and
+  every claim about the code was read in the code.
 
 ## Completed
 
-- Item (3): the four documents above.
+All three.
+
+- `bf1b2c1` — the documents. `PROGRESS.md`, three superseded facts in the
+  operational handoff, two annotations in the multi-tenancy plan and the
+  archived task file.
+- `8d59f3b` — `scripts/publish-doc.mjs`, its test, `docs:publish` and the
+  `lint:docs-publish` gate, plus the rule in `docs/README.md` and the handoff's
+  publishing section.
+- `96ab5b4` — `closeOtherActiveRounds` reads summaries;
+  `IRoundRepository.findByOrganizationId` is gone; ADR-051 records the close.
 
 ## In progress
 
-- Item (1): the publishing script.
+- Nothing.
 
 ## Remaining
 
-- Item (2): `closeOtherActiveRounds`.
+- Nothing in this task. The three commits are unpushed; pushing is the owner's.
 
 ## Changed files
 
@@ -106,7 +132,25 @@ that needs no one else.
 
 ### Passed
 
-- Nothing yet.
+- `npm run verify:core` — exit `0`, read from a redirected log rather than
+  through a pipe. **1826 node tests passed, 0 failed**; the Python suite 587
+  passed; all fifteen fitness/lint gates including the new `lint:docs-publish`,
+  then `typecheck`, `lint` and `build`.
+- `npm run verify:db` — exit `0`, **108 passed**, against the disposable
+  PostgreSQL on `127.0.0.1:5433`. Run because
+  `__dbtests__/postgres-one-active-round.test.ts` moved off the removed read;
+  the one-active-round rule is a database behaviour and this is where it is
+  proved.
+- `node --test scripts/publish-doc.test.mjs` — 10 passed, including one that
+  transforms the three real documents in `docs/` and asserts each keeps its
+  title and reports no hazard.
+- The script was run for real on all three documents. Each output starts with
+  its `<title>` and contains no occurrence of `vendor/`,
+  `claude-mermaid-runtime`, `<body` or `<html`; 61590 → 58770, 26880 → 23908 and
+  148037 → 145757 bytes.
+- The sweep test was proved to bite: reverting the one service line to
+  `findByOrganizationId` fails `activating a round sweeps the school with
+  summaries, not with its history`, and restoring it passes.
 
 ### Failed
 
@@ -114,7 +158,17 @@ that needs no one else.
 
 ### Blocked or not run
 
-- Not yet reached.
+- `npm run test:e2e` — not run. No screen, route, navigation or middleware
+  changed; the one runtime change is a repository read behind an existing
+  service method, and `verify:core` does not walk Playwright.
+- `npm run test:mutation:ai-contract` — not run; no mutated file was touched.
+- **Nothing was walked on the deployment**, and nothing here is visible there:
+  two commits are repository-only, and the third changes which columns one query
+  selects. The deployed endpoints were not read this session, so this task adds
+  no fresh deployed evidence.
+- **The two published pages still carry the duplicated `<style>`.** The script
+  removes the runtime block whole, so their next republish ends it; republishing
+  is a separate action and was not taken.
 
 ### Environment
 
@@ -122,7 +176,13 @@ that needs no one else.
 
 ### Residual risk
 
-- Not yet assessed.
+- Low, and concentrated in the third commit. `findByOrganizationId` is gone from
+  `IRoundRepository`, so a caller that wanted a school's rounds whole now has to
+  say so — the compiler names any that appears. The behaviour of the sweep is
+  unchanged: it filtered on `id` and `status` before and after, and both are on
+  the summary.
+- The publishing script writes into `tmp/published/`, which is gitignored, so it
+  cannot produce a second copy of a document that drifts from the first.
 
 ## Failed approaches
 
@@ -140,7 +200,14 @@ that needs no one else.
 
 - None in this task.
 
+## Visibility of this handoff
+
+Local to this worktree. Nothing is on `origin`.
+
 ## Next concrete step
 
-Write the `docs/*.html` publishing script under `scripts/`, with a unit test
-beside it in the style of the other `scripts/*.test.mjs`.
+Push the branch (owner's action):
+
+```
+git push origin chore/three-small-debts-the-repository-owed-itself:main
+```

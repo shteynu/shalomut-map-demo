@@ -1296,9 +1296,10 @@ time, so the deployment was current — and the service `8760e62`, which is the
 expected resting gap rather than a missed deploy: nothing since `ce6d1b0` has
 touched the service's `buildFilter` paths.
 
-**What an agent starting here should know about what is left.** As of 2026-08-24
-`docs/agent-tasks/active/` holds one file — the branch that closes the owner's
-audit-log question — and the 2026-08-21 audit has no fully open record: fifty findings, forty-two closed and eight closed in part. Every one of
+**What an agent starting here should know about what is left.** As of 2026-08-25
+`docs/agent-tasks/active/` holds one file — three small debts the repository owed
+itself, delivered and unpushed — and the 2026-08-21 audit has no fully open
+record: fifty findings, forty-two closed and eight closed in part. Every one of
 the eight names its own remainder, and **none of the eight remainders is
 engineering work waiting to be done** — each is either an owner decision (what
 the product retains, what a respondent flow costs, whether Upstash goes on), an
@@ -1309,6 +1310,12 @@ questionnaire with the owner's research instrument — has its machinery built
 through phase 4 and waits on the methodologist's item-to-dimension mapping. So
 the honest next step is not on this list: it is a decision or an external input,
 and picking work here means picking which of those to ask for.
+
+That was tested on 2026-08-25 by looking for work that needed nobody, and it
+held: what turned up was three small items and no fourth — documents that had
+outrun the code, a publishing transformation nobody had written down, and the one
+caller ADR-051 had missed. All three are done. The answer to "what is left to do
+in code" is still a question for the owner or the methodologist.
 
 ## Published documents
 
