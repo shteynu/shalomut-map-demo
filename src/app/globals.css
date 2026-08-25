@@ -239,31 +239,39 @@ main:focus-visible {
  *
  * `top: 1rem` keeps the stuck header exactly where the resting one sits, so it
  * never appears to jump. It also leaves a 16px slot between the viewport edge
- * and the card, and the page scrolls through that slot in full: on the round
+ * and the card, and the page scrolled through that slot in full: on the round
  * screen the share link — a whole legible line of text — slid across the top of
  * the window above the header. This paints the slot with the page's own colour,
  * so the same design keeps its gap and the gap stops being a window.
  *
+ * It hangs off `main` rather than off the header, which took three attempts to
+ * arrive at. The header carries `backdrop-filter`, which makes it the
+ * containing block for anything fixed inside it, so a fixed band there resolves
+ * against the card instead of the window. An absolute band there is bounded by
+ * the card, and the card is narrower than the page: the metric stones overhang
+ * it by a few pixels and the survey builder's history slot by thirty. Widening
+ * that band to `100vw` covered them and cost seven pixels of horizontal
+ * overflow on any browser whose scrollbar has a width, because `100vw` counts
+ * the scrollbar and the document then measures wider than the window — the
+ * exact reading this batch has twice been fixing. Fixed to `main`, which no
+ * filter contains, `left: 0; right: 0` is the window's own content width and
+ * nothing overflows.
+ *
+ * `:has()` because the header is conditional — the dashboard renders without
+ * it, and so do the questionnaire and the sign-in screen. A band painted over
+ * the top of those would cover sixteen pixels of a page that has nothing
+ * floating above them.
+ *
  * The colour is the body gradient's first stop over the cream beneath it. The
- * band is never taller than that 1rem, and over 1rem of a gradient that spans
- * the whole document the colour does not move, so one stop is the whole of it.
+ * band is never taller than 1rem, and over 1rem of a gradient that spans the
+ * whole document the colour does not move, so one stop is the whole of it.
  */
-.site-header::before {
+body:has(> .site-header) #main-content::before {
   content: "";
-  position: absolute;
-  /* Offsets resolve against the padding box, so the border is a pixel this has
-     to reach back over — without it a one-pixel line of the page still ran
-     across the top of the window. */
-  inset-block-start: calc(-1rem - 1px);
-  block-size: calc(1rem + 1px);
-  /* The whole viewport rather than the header's own width: two screens lay
-     their content out at 1240px while the header stops at 1180px, so a band
-     that ended where the card ends would leave the slot open at both sides.
-     Physical `left` on purpose — the page is RTL, and `inset-inline-start`
-     would anchor this to the right edge and carry it off the screen. */
-  left: 50%;
-  inline-size: 100vw;
-  transform: translateX(-50%);
+  position: fixed;
+  inset: 0 0 auto;
+  block-size: 1rem;
+  z-index: var(--z-sticky);
   background:
     linear-gradient(rgba(255, 250, 240, 0.86), rgba(255, 250, 240, 0.86)),
     var(--cream);

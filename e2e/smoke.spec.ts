@@ -422,24 +422,46 @@ test('the page does not show through the slot above the sticky header', async ({
   ).toBeGreaterThan(200);
 
   const intruders = await page.evaluate(() => {
+    const main = document.getElementById('main-content')!;
     const box = document
       .querySelector('.site-header')!
       .getBoundingClientRect();
     const found: string[] = [];
 
     // Every pixel row of the slot, across the window rather than across the
-    // card: two screens lay their content out wider than the header does.
+    // card: the metric stones overhang the header by a few pixels and the
+    // survey builder's history slot by thirty, so a check that stopped at the
+    // card's edges would not be checking the part that leaks last.
+    //
+    // `main` and `body` are allowed answers. The band is `#main-content`'s own
+    // `::before`, and hit-testing a pseudo-element reports the element that
+    // generated it; a bare `main` where the band is absent means empty
+    // container, which is also nothing showing through. What may never answer
+    // is a piece of the page — the check below is what keeps that from being
+    // vacuous.
     for (let y = 0; y < Math.floor(box.top); y += 2) {
       for (let x = 20; x < window.innerWidth - 20; x += 40) {
         const element = document.elementFromPoint(x, y);
-        if (element && !element.closest('.site-header')) {
+        if (
+          element &&
+          element !== main &&
+          element !== document.body &&
+          element !== document.documentElement &&
+          !element.closest('.site-header')
+        ) {
           found.push(`${element.tagName.toLowerCase()} at ${x},${y}`);
         }
       }
     }
 
-    return { top: box.top, found: found.slice(0, 6), count: found.length };
+    return {
+      top: box.top,
+      band: getComputedStyle(main, '::before').backgroundImage,
+      found: found.slice(0, 6),
+      count: found.length,
+    };
   });
+
 
   expect(
     intruders.top,
@@ -451,4 +473,13 @@ test('the page does not show through the slot above the sticky header', async ({
     intruders.count,
     `the page shows through the slot above the header: ${intruders.found.join(', ')}`,
   ).toBe(0);
+
+  // Read second because the count above is the behaviour and this is how it is
+  // achieved — but read at all, because an unpainted band hit-tests exactly
+  // like a painted one and would leave the count green over a visible leak.
+  expect(
+    intruders.band,
+    'nothing paints the slot, so what the page shows there is whatever happens ' +
+      'to be behind it',
+  ).not.toBe('none');
 });
