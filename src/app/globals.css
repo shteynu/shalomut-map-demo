@@ -3293,6 +3293,14 @@ textarea {
   text-align: right;
 }
 
+/* Grid items stretch by default, which turned the one control in here — the
+   re-run button — into a 48rem bar running clean through both curved sides of
+   the blob it sits in. A button takes its own width and centres in the
+   narrowing foot of the shape; the paragraphs still fill the measure. */
+.dashboard-single-blob-copy > button {
+  justify-self: center;
+}
+
 .dashboard-single-blob-copy p {
   margin: 0;
   font-size: clamp(1.05rem, 1.35vw, 1.35rem);
@@ -5110,6 +5118,19 @@ p.dashboard-blob-provenance {
 .metric-card:hover,
 .metric-card:focus-within,
 .metric-card:has(.custom-tooltip-wrapper.is-open) {
+  z-index: var(--z-popover);
+}
+
+/* And the same for the home screen's pebbles, where the rule above never
+   reached. `.stat-stone` is a stacking context of its own — it is rotated, and
+   a transform makes one — so the tooltip's `z-index` is spent inside the stone
+   and cannot lift the panel over anything outside it. The six action cards
+   below the grid come later in the document, so they painted straight over the
+   lower two thirds of the explanation. Raising the stone raises the panel with
+   it. */
+.stat-stone:hover,
+.stat-stone:focus-within,
+.stat-stone:has(.custom-tooltip-wrapper.is-open) {
   z-index: var(--z-popover);
 }
 
