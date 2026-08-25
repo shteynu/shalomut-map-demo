@@ -4,9 +4,9 @@
 
 - Branch: `docs/what-still-needs-a-human`
 - Base branch: `main`
-- Base commit: `100d9b9` — which is **not** on `origin`; see Visibility.
-- Current HEAD: see `git log --oneline 2c2f5da..`
-- Status: in progress
+- Base commit: `100d9b9`
+- Current HEAD: `ecb388c`
+- Status: complete, verified and landed on `main` as `ecb388c`
 - Last updated: 2026-08-25
 - Last agent/tool: Claude Opus 5 / Claude Code
 
@@ -86,7 +86,7 @@ respondent does see a completion screen, and there is no `LICENSE` file while
 
 ## Remaining
 
-- Nothing in this task. Unpushed; pushing is the owner's.
+- Nothing.
 
 ## Changed files
 
@@ -104,6 +104,10 @@ respondent does see a completion screen, and there is no `LICENSE` file while
 - `npm run lint:audit-count` — exit `0`; 50 findings, 42 closed, 8 in part, 0
   open, which is the count the register quotes.
 - `git diff --check` — clean.
+- **On `main`, 2026-08-25.** All four workflows green at `ecb388c`: `Core
+  verification`, `Browser smoke`, `Vercel Deployment & Pipeline Checks` and
+  `CodeQL Security Analysis`. `GET /api/health/` then answered `commit: ecb388c`,
+  so the deployment is level with `main`.
 - Three claims verified against code rather than prose:
   `dashboard-map-page.tsx:284` is `window.print()`; `survey-flow.tsx:687`
   renders a completion screen; no `LICENSE` exists and `NOTICE` states the
@@ -154,14 +158,9 @@ respondent does see a completion screen, and there is no `LICENSE` file while
 
 ## Visibility of this handoff
 
-Local to this worktree, and this branch also carries `100d9b9` from the previous
-task — the archival commit whose push did not reach `origin`. `origin/main` is
-`2c2f5da`. Pushing this branch delivers both commits.
+Archived. `origin/main` carries `ecb388c`, and the `100d9b9` this branch also
+held arrived with it.
 
 ## Next concrete step
 
-Push the branch (owner's action). It carries `100d9b9` as well:
-
-```
-git push origin docs/what-still-needs-a-human:main
-```
+None. This task is closed.

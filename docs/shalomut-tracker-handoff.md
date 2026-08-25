@@ -1309,11 +1309,13 @@ time, so the deployment was current — and the service `8760e62`, which is the
 expected resting gap rather than a missed deploy: nothing since `ce6d1b0` has
 touched the service's `buildFilter` paths.
 
-**What an agent starting here should know about what is left.** As of 2026-08-25
-`docs/agent-tasks/active/` holds nothing — the last file, three small debts the
-repository owed itself, landed on `main` as `2c2f5da` and is archived — and the 2026-08-21
-audit has no fully open
-record: fifty findings, forty-two closed and eight closed in part. Every one of
+**What an agent starting here should know about what is left.** Read
+[`open-decisions.md`](open-decisions.md) first: since 2026-08-25 it indexes every
+open owner decision and external input, and this paragraph is the argument for
+why that index is where the answer lives rather than here. As of 2026-08-25
+`docs/agent-tasks/active/` holds nothing — the last file, the index itself,
+landed on `main` as `ecb388c` and is archived — and the 2026-08-21 audit has no
+fully open record: fifty findings, forty-two closed and eight closed in part. Every one of
 the eight names its own remainder, and **none of the eight remainders is
 engineering work waiting to be done** — each is either an owner decision (what
 the product retains, what a respondent flow costs, whether Upstash goes on), an
