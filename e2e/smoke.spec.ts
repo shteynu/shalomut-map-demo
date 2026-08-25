@@ -307,3 +307,75 @@ test('the dashboard renders a map or says why it is locked', async ({ page }) =>
   });
   await expect(page.locator('body')).not.toContainText('Application error');
 });
+
+/**
+ * The caret on the round switcher, which was pointing at nothing.
+ *
+ * It is drawn without an image: two square tiles, each filled diagonally by a
+ * `linear-gradient`, sitting side by side so their hypotenuses meet into a
+ * downward triangle. A 45deg gradient fills its tile's top-right corner and a
+ * 135deg one fills the top-left, so the 45deg tile has to be the inline-start
+ * half. Reversed, the two halves meet at their *outer* corners instead and the
+ * control wears an M — two peaks with a valley between them, at the size of a
+ * pair of quotation marks. It shipped that way on every screen that switches
+ * rounds, schools or breakdowns.
+ *
+ * Asserted as the order of the two halves rather than as pixels, because a
+ * pixel baseline for a 10px mark would be a screenshot to maintain forever and
+ * this is the whole of the rule. The trap is worth naming too: the recipe this
+ * came from anchors both tiles on `right`, where the same order is correct.
+ * Anchored on `left`, as an RTL product does, the order flips.
+ */
+test('the round switcher wears a caret and not an M', async ({ page }) => {
+  await signIn(page, '/');
+
+  const switcher = page.locator('#round-switcher-select');
+  await expect(switcher).toBeVisible({ timeout: 15_000 });
+
+  const caret = await switcher.evaluate((node) => {
+    const style = getComputedStyle(node);
+
+    // The image list is not split on commas: every gradient carries `rgba(...)`
+    // stops with commas of their own. Two gradients is the whole of this
+    // recipe, so where each angle appears in the string is the order they are
+    // painted in, and the positions — which carry no parentheses — do split.
+    const image = style.backgroundImage;
+    const positions = style.backgroundPosition
+      .split(',')
+      .map((one) => one.trim());
+    const fortyFive = image.indexOf('(45deg');
+    const oneThirtyFive = image.indexOf('(135deg');
+
+    return {
+      positions,
+      halves: positions.length,
+      bothAngles: fortyFive >= 0 && oneThirtyFive >= 0,
+      fortyFiveFirst: fortyFive < oneThirtyFive,
+      offsets: positions.map((one) => Number.parseFloat(one)),
+    };
+  });
+
+  expect(
+    caret.halves === 2 && caret.bothAngles,
+    'the caret is no longer two diagonal gradients; this guard needs rewriting ' +
+      'for whatever draws it now',
+  ).toBe(true);
+
+  const [start, end] = caret.fortyFiveFirst
+    ? [caret.offsets[0], caret.offsets[1]]
+    : [caret.offsets[1], caret.offsets[0]];
+
+  expect(
+    Number.isFinite(start) && Number.isFinite(end),
+    `the caret's offsets no longer read as lengths (${caret.positions.join(', ')}), ` +
+      'so which half is inline-start is the thing to re-derive here',
+  ).toBe(true);
+
+  expect(
+    start,
+    'the two halves of the caret do not meet: the 45deg tile fills its own ' +
+      'top-right corner, so it has to be the inline-start half, or the pair ' +
+      'joins at its outer corners and the control wears an M ' +
+      `(45deg at ${start}px, 135deg at ${end}px)`,
+  ).toBeLessThan(end);
+});
