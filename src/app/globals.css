@@ -234,6 +234,41 @@ main:focus-visible {
   transition: box-shadow 150ms ease;
 }
 
+/*
+ * The band the header floats above.
+ *
+ * `top: 1rem` keeps the stuck header exactly where the resting one sits, so it
+ * never appears to jump. It also leaves a 16px slot between the viewport edge
+ * and the card, and the page scrolls through that slot in full: on the round
+ * screen the share link — a whole legible line of text — slid across the top of
+ * the window above the header. This paints the slot with the page's own colour,
+ * so the same design keeps its gap and the gap stops being a window.
+ *
+ * The colour is the body gradient's first stop over the cream beneath it. The
+ * band is never taller than that 1rem, and over 1rem of a gradient that spans
+ * the whole document the colour does not move, so one stop is the whole of it.
+ */
+.site-header::before {
+  content: "";
+  position: absolute;
+  /* Offsets resolve against the padding box, so the border is a pixel this has
+     to reach back over — without it a one-pixel line of the page still ran
+     across the top of the window. */
+  inset-block-start: calc(-1rem - 1px);
+  block-size: calc(1rem + 1px);
+  /* The whole viewport rather than the header's own width: two screens lay
+     their content out at 1240px while the header stops at 1180px, so a band
+     that ended where the card ends would leave the slot open at both sides.
+     Physical `left` on purpose — the page is RTL, and `inset-inline-start`
+     would anchor this to the right edge and carry it off the screen. */
+  left: 50%;
+  inline-size: 100vw;
+  transform: translateX(-50%);
+  background:
+    linear-gradient(rgba(255, 250, 240, 0.86), rgba(255, 250, 240, 0.86)),
+    var(--cream);
+}
+
 .site-header:hover {
   box-shadow: var(--shadow-raised);
 }

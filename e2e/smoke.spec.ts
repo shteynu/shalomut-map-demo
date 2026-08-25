@@ -379,3 +379,76 @@ test('the round switcher wears a caret and not an M', async ({ page }) => {
       `(45deg at ${start}px, 135deg at ${end}px)`,
   ).toBeLessThan(end);
 });
+
+/**
+ * The slot between the top of the window and the sticky header.
+ *
+ * The header floats: `top: 1rem` when stuck, `margin-top: 1rem` at rest, so it
+ * never appears to move. What the two have in common is a 16px slot above the
+ * card, and until this guard existed the page scrolled through that slot in
+ * full — on this screen the share link, a whole legible line of text, slid
+ * across the top of the window above the header.
+ *
+ * The test hit-tests rather than looks: what is wrong is that something *other
+ * than the header* answers at those coordinates, and no screenshot comparison
+ * states that as directly as asking the document who is there. It runs on the
+ * round screen because that is where the leak was worst, and the header is the
+ * same element on every manager screen.
+ */
+test('the page does not show through the slot above the sticky header', async ({
+  page,
+}) => {
+  // Short on purpose: the guard needs the page to scroll, and the round screen
+  // fits inside a tall enough window with nothing left over to pass behind.
+  await page.setViewportSize({ width: 1280, height: 560 });
+  await signIn(page, '/round');
+
+  const header = page.locator('.site-header');
+  await expect(header).toBeVisible({ timeout: 15_000 });
+  // The screen's own content, not just its header: the document is barely
+  // taller than the window until the round's panel has rendered into it.
+  await expect(
+    page.getByRole('region', { name: 'נתוני סבב אבחון' }),
+  ).toBeVisible({ timeout: 15_000 });
+
+  const room = await page.evaluate(() => {
+    window.scrollTo(0, 600);
+    return document.documentElement.scrollHeight - window.innerHeight;
+  });
+
+  expect(
+    room,
+    'the round screen no longer scrolls, so nothing can pass behind the header',
+  ).toBeGreaterThan(200);
+
+  const intruders = await page.evaluate(() => {
+    const box = document
+      .querySelector('.site-header')!
+      .getBoundingClientRect();
+    const found: string[] = [];
+
+    // Every pixel row of the slot, across the window rather than across the
+    // card: two screens lay their content out wider than the header does.
+    for (let y = 0; y < Math.floor(box.top); y += 2) {
+      for (let x = 20; x < window.innerWidth - 20; x += 40) {
+        const element = document.elementFromPoint(x, y);
+        if (element && !element.closest('.site-header')) {
+          found.push(`${element.tagName.toLowerCase()} at ${x},${y}`);
+        }
+      }
+    }
+
+    return { top: box.top, found: found.slice(0, 6), count: found.length };
+  });
+
+  expect(
+    intruders.top,
+    'the header no longer floats below the top of the window, so this guard ' +
+      'needs rewriting for whatever holds it now',
+  ).toBeGreaterThan(0);
+
+  expect(
+    intruders.count,
+    `the page shows through the slot above the header: ${intruders.found.join(', ')}`,
+  ).toBe(0);
+});
