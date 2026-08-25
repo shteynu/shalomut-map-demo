@@ -3283,11 +3283,20 @@ textarea {
 
 .dashboard-single-blob {
   display: grid;
-  width: min(68rem, 100%);
-  min-height: auto;
+  /* Narrow enough to stay a stone. At the container's full width three short
+     paragraphs made a 3.7:1 lens with the copy in a thin band down the middle
+     and empty fill either side; the width now answers to the shape rather than
+     to the screen. The inline padding is a share of that width for the same
+     reason it is on the metric cards: a fixed step lets a long analysis reach
+     the curve, where the line ends before the fill does. */
+  width: min(46rem, 100%);
+  /* A floor, so that a short analysis gets a stone rather than a lens: three
+     paragraphs are barely taller than their own padding, and without this the
+     shape is decided by how much the model had to say. */
+  min-height: 18rem;
   place-items: center;
   margin: 2.2rem auto 0;
-  padding: clamp(2.5rem, 5vw, 4.5rem);
+  padding: clamp(2.5rem, 5vw, 4.5rem) 15%;
   border: 1px solid rgba(56, 56, 56, 0.1);
   border-radius: 36% 64% 40% 60% / 28% 28% 72% 72%;
   color: var(--ink);
