@@ -6493,6 +6493,16 @@ label .custom-tooltip-wrapper:hover .custom-tooltip-icon {
    scroll sideways. */
 .breakdown-table-scroll {
   overflow-x: auto;
+  /*
+   * `position: relative` is what makes the scrolling actually contain what it
+   * scrolls. The suppressed cells carry a `.visually-hidden` span, which is
+   * `position: absolute` — and with nothing positioned between it and the page,
+   * its containing block was the page, so it was neither clipped by this box
+   * nor moved by its scrolling. On a phone, where the table is wider than the
+   * screen, those spans sat three pixels past the inline edge and the whole
+   * document scrolled sideways by three pixels to reach them.
+   */
+  position: relative;
 }
 
 .breakdown-table {
