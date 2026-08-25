@@ -70,16 +70,6 @@ export class InMemoryRoundRepository implements IRoundRepository {
     return null;
   }
 
-  public async findByOrganizationId(organizationId: string): Promise<SurveyRound[]> {
-    const results: SurveyRound[] = [];
-    for (const round of this.rounds.values()) {
-      if (round.organizationId === organizationId) {
-        results.push(cloneRound(round));
-      }
-    }
-    return results;
-  }
-
   public async update(
     id: string,
     input: UpdateRoundInput

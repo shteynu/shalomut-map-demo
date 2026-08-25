@@ -95,13 +95,6 @@ class CountingManagerRepository extends InMemoryManagerRepository {
 }
 
 class CountingRoundRepository extends InMemoryRoundRepository {
-  async findByOrganizationId(organizationId: string) {
-    return record(
-      "roundRepo.findByOrganizationId",
-      await super.findByOrganizationId(organizationId),
-    );
-  }
-
   async findSummariesByOrganizationIds(organizationIds: readonly string[]) {
     return record(
       "roundRepo.findSummariesByOrganizationIds",

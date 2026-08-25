@@ -129,7 +129,7 @@ test("ManagerSetupService updates the existing records without creating duplicat
 
   assert.strictEqual((await orgRepo.findAll()).length, 1);
   assert.strictEqual(
-    (await roundRepo.findByOrganizationId(created.organization.id)).length,
+    (await roundRepo.findSummariesByOrganizationIds([created.organization.id])).length,
     1,
   );
   assert.strictEqual(updated.organization.totalStaffCount, 32);

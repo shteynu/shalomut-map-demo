@@ -128,14 +128,19 @@ export interface IRoundRepository {
   create(round: SurveyRound): Promise<SurveyRound>;
   findById(id: string): Promise<SurveyRound | null>;
   findByShareCode(shareCode: string): Promise<SurveyRound | null>;
-  findByOrganizationId(organizationId: string): Promise<SurveyRound[]>;
   /**
-   * Every round of many schools, without the questionnaires.
+   * Every round of one or many schools, without the questionnaires.
    *
    * A list of schools needs each school's rounds to count them and to name the
    * current one; it needs no `surveyDefinition`, and reading one per round is
    * how a screen that shows six fields pulls megabytes. Named ids rather than
    * "all of them" so a paged console asks about its page.
+   *
+   * This is the only read of a school's rounds. `findByOrganizationId` selected
+   * every column and was removed on 2026-08-25 rather than left with no caller
+   * — an uncalled read is the answer the next caller inherits, and this one
+   * costs a quarter of a megabyte on eight rounds of the 126-item instrument.
+   * A caller that needs one round whole asks `findById` for it.
    */
   findSummariesByOrganizationIds(
     organizationIds: readonly string[],

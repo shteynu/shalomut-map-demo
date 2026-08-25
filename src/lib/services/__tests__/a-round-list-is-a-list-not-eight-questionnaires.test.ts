@@ -12,6 +12,11 @@
  * console listing many schools — and one school's own list is the same
  * projection. So this suite watches which read the context reaches for, and
  * pins the one full-round read that stays: the round on screen.
+ *
+ * One caller was left behind by that pass and closed on 2026-08-25: the sweep
+ * that closes a school's other active round when a round is activated. It reads
+ * two fields of each sibling and was paying the same quarter of a megabyte for
+ * them, on a write path rather than a render.
  */
 import assert from 'node:assert/strict';
 import test from 'node:test';
@@ -22,6 +27,7 @@ import {
   InMemorySurveyRepository,
 } from '@/lib/repositories';
 import { ManagerContextService } from '@/lib/services/manager-context.service';
+import { RoundService } from '@/lib/services/round.service';
 import { createCanonicalSurveyDefinition } from '@/lib/survey-definition';
 import type { Organization, SurveyRound } from '@/lib/types/backend';
 
@@ -159,4 +165,33 @@ test('a round asked for by an id the school does not have is still refused', asy
     undefined,
     'and the refusal costs no read at all',
   );
+});
+
+test('activating a round sweeps the school with summaries, not with its history', async () => {
+  const repos = stores();
+  const rounds = history();
+  const draft = { ...rounds[0], id: 'round-0', status: 'draft' as const };
+
+  const closed = await RoundService.closeOtherActiveRounds(draft, repos.roundRepo);
+
+  // Round 7 is the school's active one, and it is what the sweep closes.
+  assert.deepEqual(
+    closed.map((round) => round.id),
+    ['round-7'],
+  );
+  assert.equal(repos.roundCalls.findSummariesByOrganizationIds, 1);
+  assert.equal(
+    repos.roundCalls.findByOrganizationId,
+    undefined,
+    'the sweep reads two fields per sibling; that read selects every column',
+  );
+});
+
+test('the sweep leaves the round being activated alone', async () => {
+  const repos = stores();
+  const active = history()[7];
+
+  const closed = await RoundService.closeOtherActiveRounds(active, repos.roundRepo);
+
+  assert.deepEqual(closed, [], 'a round does not close itself on its way to active');
 });

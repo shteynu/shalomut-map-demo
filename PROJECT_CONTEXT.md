@@ -2233,6 +2233,17 @@ fire a read for an id the tenant check has not yet approved. One round-trip is
 not worth putting a speculative read in front of the boundary that keeps schools
 apart.
 
+**The last caller closed on 2026-08-25, and the read went with it.** Four
+consumers were narrowed here; the fifth was not a screen and was missed —
+`RoundService.closeOtherActiveRounds`, which asks each of the school's rounds
+whether it is a different round and whether it is active, and was paying the same
+quarter of a megabyte for two fields on the write path that activates a round.
+It reads summaries now, which left `IRoundRepository.findByOrganizationId` with
+no production caller at all. It was removed rather than kept: an uncalled read is
+the answer the next caller inherits, which is the reasoning ADR-055 had just
+applied to an uncalled permission. A caller that needs one round whole asks
+`findById`.
+
 ### ADR-052: The administrator console asks for a page, not for the platform
 
 2026-08-23. The console listed every school as a card, and the 2026-08-21 audit

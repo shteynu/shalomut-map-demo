@@ -212,14 +212,6 @@ export class PrismaRoundRepository implements IRoundRepository {
     return found ? this.mapToDomain(found) : null;
   }
 
-  public async findByOrganizationId(organizationId: string): Promise<SurveyRound[]> {
-    const list = await this.prisma.surveyRound.findMany({
-      where: { organizationId },
-      orderBy: { createdAt: 'desc' },
-    });
-    return list.map((r) => this.mapToDomain(r));
-  }
-
   public async update(
     id: string,
     input: UpdateRoundInput

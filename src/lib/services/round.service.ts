@@ -272,12 +272,22 @@ export class RoundService {
    * so the activation that follows meets the index and comes back as
    * `another_round_is_active` — one report, from the write that actually
    * failed, instead of two descriptions of the same jam.
+   *
+   * The sweep reads summaries. It asks one question of each of the school's
+   * rounds — is this a different round, and is it active — and the full read it
+   * used to call selects every column, so activating a round pulled every
+   * questionnaire and every Stone Map the school has ever produced across the
+   * wire to answer it. ADR-051 moved the manager screens off that read and this
+   * caller was the one it did not reach; it is the last one. A dedicated
+   * `WHERE status = 'active'` read would be one row rather than a handful of
+   * scalar ones, and was not added: the projection already exists, and the
+   * partial unique index behind the rule is what actually enforces it.
    */
   public static async closeOtherActiveRounds(
     round: SurveyRound,
     roundRepo: IRoundRepository,
   ): Promise<SurveyRound[]> {
-    const siblings = await roundRepo.findByOrganizationId(round.organizationId);
+    const siblings = await roundRepo.findSummariesByOrganizationIds([round.organizationId]);
     const closed: SurveyRound[] = [];
 
     for (const sibling of siblings) {

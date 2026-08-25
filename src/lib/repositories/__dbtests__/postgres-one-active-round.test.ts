@@ -118,7 +118,7 @@ test('a school may hold any number of draft, closed and archived rounds', async 
   await roundRepo.create(roundRecord('closed'));
   await roundRepo.create(roundRecord('archived'));
 
-  const stored = await roundRepo.findByOrganizationId(organizationId);
+  const stored = await roundRepo.findSummariesByOrganizationIds([organizationId]);
   assert.strictEqual(stored.length, 5);
 });
 
@@ -167,7 +167,7 @@ test('creating a live round through the service satisfies the index', async () =
   assert.strictEqual(created.status, 'active');
   assert.strictEqual((await roundRepo.findById(running.id))?.status, 'closed');
 
-  const active = (await roundRepo.findByOrganizationId(organizationId)).filter(
+  const active = (await roundRepo.findSummariesByOrganizationIds([organizationId])).filter(
     (entry) => entry.status === 'active',
   );
   assert.deepStrictEqual(active.map((entry) => entry.id), [created.id]);
