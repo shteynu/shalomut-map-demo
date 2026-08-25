@@ -5,8 +5,9 @@
 - Branch: `feat/a-seeded-round-can-be-broken-down`
 - Base branch: `main`
 - Base commit: `31a4b3c`
-- Current HEAD: this file's own commit, on top of `92f724b`
-- Status: done, unpushed. Both halves of the objective are reached.
+- Current HEAD: this file's own commit, on top of `8430a6a`
+- Status: done. `b9bbd39` and everything under it is on `main` and deployed;
+  `8430a6a` and this update are not.
 - Last updated: 2026-08-25
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -123,12 +124,13 @@ Nothing.
 
 Nothing this branch set out to do. Two things it deliberately did not:
 
-- **The header is narrower than the content on two screens.** `.site-header`
-  and `.page` agree at 1180px while two other containers use 1240px, so on a
-  wide window the page slides past both sides of the card. The new band covers
-  the slot at full viewport width, which is why it is 100vw and not the card's
-  width, but beside the card the page still shows. Aligning the two widths is a
-  layout decision, not a defect fix.
+- **The header is narrower than the content.** `.site-header` and `.page` agree
+  at 1180px; `.survey-builder-history-slot` uses 1240px, and the metric stones
+  and stat stones overhang the card by three or four pixels on their own. The
+  band spans the window, so the slot above is closed regardless — but beside
+  the card, below the band, the page still shows. `.dashboard-page` also uses
+  1240px and does not matter here: the dashboard renders without a header.
+  Aligning the widths is a layout decision, not a defect fix.
 - **The disabled submit on `/admin/` reads at about 2.1:1.** `.primary-button`
   carries `opacity: 0.58` when disabled, which is the ordinary way to draw a
   disabled control and is exempt from the contrast rule — recorded because it
@@ -139,7 +141,8 @@ Nothing this branch set out to do. Two things it deliberately did not:
 - `scripts/seed-local.ts` — two background questions, thirty responses, three
   goals, the tenure effect, the dead dimension branch.
 - `src/app/globals.css` — `position: relative` on `.breakdown-table-scroll`, and
-  a `.site-header::before` band over the slot above the sticky header.
+  a band over the slot above the sticky header, hung off `#main-content` and
+  guarded by `body:has(> .site-header)`.
 - `e2e/breakdown.spec.ts` — new, two tests.
 - `e2e/smoke.spec.ts` — one test, hit-testing the slot above the header.
 - `docs/agent-tasks/active/feat--a-seeded-round-can-be-broken-down.md` — this
@@ -154,10 +157,13 @@ Nothing this branch set out to do. Two things it deliberately did not:
   spec existed, and 36 with it, the respondent walk on the active round among
   them, which is this change's main risk.
 - `npx playwright test e2e/breakdown.spec.ts` — 2 passed.
-- `npm run test:e2e` after the header fix — 37 passed. An earlier run of the
-  same tree failed `submit-retry-is-recorded.spec.ts` at its first line, passed
-  on its own immediately after, and passed again in the full re-run: a flake,
-  recorded rather than explained.
+- `npm run test:e2e` after each header fix — 37 passed both times.
+  `submit-retry-is-recorded.spec.ts` failed twice across six runs, both times
+  while a build and a second server were running beside it, and the failure is
+  a thirty-second test timeout inside `locator.inputValue()` on an element the
+  same call had just found visible. It passed alone, and passed in a full run
+  with nothing else on the machine. Recorded as contention rather than
+  explained: nothing was changed for it.
 - `npm run lint:skills`, `npm run lint:doc-numbers`, `npm run lint:audit-count`
   — all clean.
 - Negative check of the header guard: with the band removed and the app
@@ -189,6 +195,22 @@ Nothing this branch set out to do. Two things it deliberately did not:
 ### Failed
 
 None.
+
+### Deployed
+
+`b9bbd39` was pushed to `main` and Vercel served it: `GET /api/health/` answers
+`b9bbd39`, all four workflows are green on that commit, and the stylesheet it
+serves — `/_next/static/chunks/2xshsj3zru-89.css` — is byte-for-byte the local
+build of it. Walked signed in on `/round/`: the header rests at `top: 16`, and
+no page element answers anywhere in the slot above it. The breakdown fix cannot
+be *seen* there — the deployed round has no background question, so that screen
+is still its empty state — and the reading for it is the stylesheet's bytes and
+`Browser smoke`.
+
+That walk is also what found the cost of the first implementation: `100vw`
+counts the scrollbar, so the document measured seven pixels wider than the
+window. `8430a6a` moves the band to `#main-content` and fixes it against the
+window instead, which is the version this file's evidence above describes.
 
 ### Blocked or not run
 
