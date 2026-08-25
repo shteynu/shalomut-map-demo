@@ -2749,11 +2749,18 @@ textarea {
   border: 1.5px solid rgba(159, 101, 0, 0.35);
   border-radius: 999px;
   background-color: rgba(255, 250, 240, 0.85);
+  /* The caret is two triangles that have to meet along their hypotenuses. A
+     45deg gradient fills its tile's top-right corner and a 135deg one fills the
+     top-left, so the 45deg tile has to be the left half and the 135deg tile the
+     right half; the pair was the other way round, which draws two peaks with a
+     valley between them — an M where the control promised a caret. The recipe
+     this came from anchors on `right`, where the same order is correct, and
+     the caret here is anchored on `left`. */
   background-image: linear-gradient(45deg, transparent 50%, var(--accent-dark) 50%),
     linear-gradient(135deg, var(--accent-dark) 50%, transparent 50%);
   background-position:
-    left 1.05rem top 55%,
-    left 0.75rem top 55%;
+    left 0.75rem top 55%,
+    left 1.05rem top 55%;
   background-size: 0.3rem 0.3rem;
   background-repeat: no-repeat;
   color: var(--accent-dark);
