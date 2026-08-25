@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, ClipboardList, Layers, LockKeyhole, Map, Send, Settings2, Target, TrendingUp, TriangleAlert, Users } from "lucide-react";
+import { ArrowLeft, ClipboardList, Layers, LockKeyhole, Map, Send, Settings2, ShieldCheck, Target, TrendingUp, TriangleAlert, Users } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { ManagerOnboarding } from "@/components/manager";
 import { RoundSwitcher } from "@/components/round";
@@ -131,7 +131,7 @@ export default async function HomePage({
           shape={1}
           tint="var(--pastel-lavender)"
           rotate={-2}
-          corner={<Users size={22} aria-hidden="true" />}
+          mark={<Users size={22} aria-hidden="true" />}
         />
         <StatStone
           value={`${selectedRound.privacyThreshold}`}
@@ -140,7 +140,8 @@ export default async function HomePage({
           shape={2}
           tint="var(--pastel-sky)"
           rotate={3}
-          corner={<PrivacyTooltip minimumResponses={selectedRound.privacyThreshold} />}
+          mark={<ShieldCheck size={22} aria-hidden="true" />}
+          labelNote={<PrivacyTooltip minimumResponses={selectedRound.privacyThreshold} />}
         />
         <StatStone
           value={treatmentStone.value}
@@ -150,7 +151,7 @@ export default async function HomePage({
           shape={3}
           tint="var(--pastel-pink)"
           rotate={-4}
-          corner={<TriangleAlert size={22} aria-hidden="true" />}
+          mark={<TriangleAlert size={22} aria-hidden="true" />}
         />
         <StatStone
           value={strengthStone.value}
@@ -160,7 +161,7 @@ export default async function HomePage({
           shape={4}
           tint="var(--pastel-green)"
           rotate={1}
-          corner={<TrendingUp size={22} aria-hidden="true" />}
+          mark={<TrendingUp size={22} aria-hidden="true" />}
         />
       </section>
 

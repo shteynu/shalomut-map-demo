@@ -1213,7 +1213,11 @@ textarea {
   justify-content: center;
   align-items: center;
   text-align: center;
-  padding: 1.3rem 1.15rem;
+  /* Inline padding as a share of the card, not a fixed step. The card is drawn
+     as a stone, and a rectangle inscribed in an ellipse is about 70% of it
+     across — copy that filled the box to within 1.15rem sat outside the fill
+     on both sides while measuring, correctly, as "inside the element". */
+  padding: 1.3rem 15%;
 }
 
 .survey-builder-metric-stone {
@@ -1266,6 +1270,16 @@ textarea {
 .stone-page .metric-card > strong {
   font-size: clamp(2.3rem, 4vw, 2.7rem);
   line-height: 1;
+}
+
+/* A count keeps the full size; a phrase or a date steps down to the width the
+   stone actually has. `metric-card.tsx` owns which is which. */
+.stone-page .metric-card.metric-card-value-medium > strong {
+  font-size: clamp(1.9rem, 3.1vw, 2.2rem);
+}
+
+.stone-page .metric-card.metric-card-value-long > strong {
+  font-size: clamp(1.45rem, 2.4vw, 1.75rem);
 }
 
 .survey-builder-metric-stone > span,
@@ -4857,7 +4871,6 @@ p.dashboard-blob-provenance {
   .stone-page .next-step-band,
   .stone-page .round-progress,
   .stone-page .share-panel,
-  .stone-page .progress-ring,
   .stone-page .legend-row .legend-card,
   .stone-page .question-card,
   .stone-page .survey-complete {
@@ -4895,8 +4908,18 @@ p.dashboard-blob-provenance {
 
 /* Shorter Metric Cards */
 .stone-page .metric-card {
-  min-height: 9rem;
-  padding: 0.9rem 1rem;
+  /* Taller than the copy needs, so the copy sits near the middle of the shape.
+     A stone this wide and this flat loses width fast away from its waist, and
+     the helper line — the lowest row — was the one that ran out over the
+     curve. */
+  min-height: 10.5rem;
+  /* Inline padding as a share of the card, for the reason given where these
+     cards are first shaped: they are drawn as stones, a rectangle inscribed in
+     an ellipse is about 70% of it across, and a date filling the box to within
+     1rem sat outside the fill on both sides while measuring, correctly, as
+     "inside the element". This block is the one that decides — it repeats the
+     selector later in the file. */
+  padding: 0.9rem 15%;
 }
 
 .stone-page .metric-card > strong {
@@ -5405,18 +5428,35 @@ label .custom-tooltip-wrapper:hover .custom-tooltip-icon {
   font-size: 1.05rem;
 }
 
+/* Keeps the privacy tooltip's trigger on the label's own line, the way
+   `.metric-card > span` does on the round screen. */
+.stat-stone-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .stat-stone small {
   /* --muted is only 4.45:1 on pastel-green; this deeper olive is 7:1+ on all pastels */
   color: var(--pastel-ink);
   font-size: 0.85rem;
-  max-width: 15rem;
+  /* A rectangle inscribed in an ellipse is about 70% of it in each direction,
+     and these stones are close enough to ellipses that the number holds: copy
+     wider than that reads as text spilling onto the cream even while it sits
+     well inside the element's box. */
+  max-width: min(15rem, 82%);
 }
 
-.stat-stone-corner {
-  position: absolute;
-  top: 1.3rem;
-  inset-inline-start: 1.5rem;
+/* Leads the column instead of hanging in a bounding-box corner. Absolute
+   positioning put every one of these marks on the cream outside its own stone:
+   an `organic-shape-*` radius hollows the corners out, so the one place a
+   corner offset is guaranteed to miss is the shape. In flow it is centred over
+   the number, inside the fill at every width, and it carries the privacy
+   tooltip's trigger with it — the panel still opens below, now anchored to the
+   middle of the stone rather than to its edge. */
+.stat-stone-mark {
   display: inline-flex;
+  margin-block-end: 0.15rem;
   color: rgba(56, 56, 56, 0.55);
 }
 
