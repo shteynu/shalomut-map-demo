@@ -35,6 +35,13 @@ export type DimensionPresentation = {
    * Where the hover "+" sits inside the concept stone. Each stone is a
    * different organic shape, so the mark is placed per dimension rather than
    * by one rule; the numbers were tuned by eye against the shapes above.
+   *
+   * Inside is the rule, and it is checked: the whole 30px mark has to land
+   * within the stone's border-radius, not merely within its bounding box, and
+   * `dashboard-map.spec.ts` recomputes that from the radius of every stone.
+   * The two are far apart — a corner of the box is a place where the shape has
+   * already curved away — so a mark that looks placed can still be a fifth of
+   * itself out on the page behind the stone.
    */
   plusPosition: {
     top: string;
@@ -85,7 +92,7 @@ const dimensionMapPlacements: Record<
       rotate: 0,
       radius: "44% 56% 52% 48% / 48% 38% 62% 52%",
     },
-    plusPosition: { top: "1.4rem", left: "2.0rem" },
+    plusPosition: { top: "1.6rem", left: "2.2rem" },
     conceptColor: "#24bf10",
   },
   "professional-competence": {

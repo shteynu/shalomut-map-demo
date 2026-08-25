@@ -3072,11 +3072,15 @@ textarea {
   will-change: transform;
 }
 
+/* Both marks on a stone are inset far enough to land on the fill.
+   A corner of the bounding box is not a corner of the shape: at the top of an
+   organic border-radius the paint has already curved away, so 1rem from the
+   edge put this badge — and the plus below — on the page behind the stone. */
 .dashboard-map-blob::after {
   content: attr(data-stone-index);
   position: absolute;
-  top: 1rem;
-  right: 1.2rem;
+  top: 1.4rem;
+  right: 2.4rem;
   display: grid;
   min-width: 2rem;
   height: 2rem;
@@ -3172,10 +3176,14 @@ textarea {
   transform: rotate(var(--blob-counter-rotate));
 }
 
+/* `--plus-top` and `--plus-left` vary per stone so the mark does not sit at
+   the same spot on all eight. They were shipped on every blob and read only by
+   the stacked layout below; here the fixed pair won, which is both uniform and
+   outside the fill. The fallbacks keep a stone without them placed. */
 .dashboard-map-blob-plus {
   position: absolute;
-  top: 0.9rem;
-  left: 1.2rem;
+  top: var(--plus-top, 0.9rem);
+  left: var(--plus-left, 1.2rem);
   opacity: 0.6;
 }
 
@@ -3881,9 +3889,18 @@ p.dashboard-blob-provenance {
     transform: none;
   }
 
+  /* Stacked, a stone is the full width of the column and barely taller than
+     its copy, so the top corners fall away far sooner than they do on the map.
+     The inline inset is a share of the width for that reason, and the per-stone
+     variation is dropped: eight identical shapes want one placement. */
   .dashboard-map-blob-plus {
-    top: var(--plus-top) !important;
-    left: var(--plus-left) !important;
+    top: 2rem !important;
+    left: 13% !important;
+  }
+
+  .dashboard-map-blob::after {
+    top: 2.2rem;
+    right: 15%;
   }
 
   .dashboard-metrics-stage {
