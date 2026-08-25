@@ -19,17 +19,31 @@ and in Git; what was durable in them is below.
 Verified on 2026-08-23, in this worktree and on both deployed endpoints, except
 where a later date says otherwise:
 
-- **The last commit that changed deployed behaviour is `561c9f9`**, the audit
-  log's two screens, and Core answered it over HTTPS on 2026-08-24. It answered
-  `0cc39c2` half an hour later, which is this paragraph's own commit and the one
-  above it — documentation, no runtime change. On 2026-08-25 it answers
-  `2c2f5da`: three of those four commits touch no runtime at all, and the fourth
-  changes which columns one query selects on the way to closing a school's
-  previous round — a cheaper read of the same rows, invisible from outside. Both readings are recorded on
-  purpose: **a commit here going stale is not news, a behaviour change is**, and
-  this entry has twice been rewritten because it chased the hash instead of
-  naming what moved. If Core answers something later than `561c9f9`, ask
-  `git log 561c9f9..` what landed rather than assuming a deploy was missed. The
+- **The last commit that changed deployed behaviour is `434a255`**, the third of
+  three that put the manager screens' copy back inside the shapes drawing it,
+  and Core answered `f495977` — that commit's branch tip — over HTTPS on
+  2026-08-25. This is a *visible* change and the first one in a while: stone
+  marks that floated outside their stone, a privacy panel painted over by the
+  cards below it, a date running past the curve of the stone holding it, a
+  re-run button drawn through both sides of its blob, a progress ring flattened
+  into a square on a phone, a header three ragged rows tall, and a 30px
+  sideways scrollbar on every manager screen at 390px. Before it, `561c9f9`
+  held this line — the audit log's two screens — through four commits that
+  touched no runtime and one that only made a query cheaper. Both kinds of
+  reading are recorded on purpose: **a commit here going stale is not news, a
+  behaviour change is**, and this entry has twice been rewritten because it
+  chased the hash instead of naming what moved. If Core answers something later
+  than `434a255`, ask `git log 434a255..` what landed rather than assuming a
+  deploy was missed.
+
+  The deployment was proved by identity and by content, not by a signed-in
+  walk: `GET /api/health/` answered `f495977`, and the stylesheet it serves —
+  `/_next/static/chunks/0m0sm90xujvof.css` — is byte-for-byte the local build
+  of that commit. **The manager screens themselves have not been walked on the
+  deployment since this landed.** They are behind the organizational account
+  there, so that walk needs the owner's Google session in the connected
+  Chrome; the anonymous half was read and is clean — `/login/` renders at
+  1440px and 390px with no console error and no sideways scroll. The
   AI
   service answers `8760e62`, which is the resting gap rather than a missed
   deploy: nothing pushed since `ce6d1b0` has touched its `buildFilter` paths —
@@ -93,11 +107,11 @@ where a later date says otherwise:
   walked on the deployment** — each was proved locally against a disposable
   PostgreSQL, and three of them are invisible from outside because what changed
   is how much a query returns, not what a screen says. **The audit's count now
-  lives in the audit and is checked by `npm run lint:audit-count`**: 50
-  findings, 41 closed, 8 closed in part with the remainder named in each, and
-  one open — the temporary password door, which is an owner decision. Do not
-  quote a number here that the document can contradict; read its `Счёт`
-  section.
+  lives in the audit and is checked by `npm run lint:audit-count`** — read its
+  `Счёт` section for the four numbers. This bullet used to carry them too, and
+  went stale within days: it still said one finding was open after the password
+  door closed on 2026-08-24. A number quoted in two documents is a number one of
+  them will contradict.
 - **The AI worker's pace is a share of one quota, and both halves are
   deployed.** `c6635ea` and `a56132d`, landed as part of `8760e62`. Read over
   HTTPS on 2026-08-23 after the push: `GET

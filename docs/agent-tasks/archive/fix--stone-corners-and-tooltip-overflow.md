@@ -5,8 +5,8 @@
 - Branch: `fix/stone-corners-and-tooltip-overflow`
 - Base branch: `origin/main`
 - Base commit: `eb11073`
-- Current HEAD: see `git log -1`; the work is on this branch's commits
-- Status: implementation and verification complete; awaiting commit and push
+- Current HEAD: `f495977`, which is also `origin/main`
+- Status: landed on `main` and deployed; archived
 - Last updated: 2026-08-25
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -121,7 +121,11 @@ Nothing.
 
 ## Remaining
 
-Hand the push over — `git push` is an owner action here.
+One walk, and it needs the owner: the manager screens on the deployment are
+behind the organizational account, so seeing the new header and the stones
+there means a Google session in the connected Chrome. Nothing depends on it —
+the deployed stylesheet is provably the one these commits produced — but a
+visible change deserves a pair of eyes on the thing itself.
 
 ## Changed files
 
@@ -141,6 +145,14 @@ Hand the push over — `git push` is an owner action here.
 - `npm test` — 1654 pass, 0 fail.
 - `npm run lint` — clean.
 - `npm run test:e2e` — 31 passed, on a build made after the last edit.
+- CI on `f495977`, all four green: `Core verification` (the full
+  `npm run verify:core`, which was not run locally), `Browser smoke`, `CodeQL
+  Security Analysis`, `Vercel Deployment & Pipeline Checks`.
+- Deployed, 2026-08-25, anonymous: `GET
+  https://shalomut-map-demo.vercel.app/api/health/` → `commit: f495977`, and
+  the stylesheet it serves, `/_next/static/chunks/0m0sm90xujvof.css`, is
+  byte-for-byte identical to the local build of that commit (`cmp`). `/login/`
+  renders at 1440px and 390px with no console error and no sideways scroll.
 - Negative check on the two new guards: with `.stat-stone`'s raise, the
   identity bar's `flex: 0 1 auto` and `.top-nav`'s `nowrap` temporarily
   removed and the app rebuilt, both fail with the message they promise
@@ -166,9 +178,11 @@ None.
 
 ### Blocked or not run
 
-- `npm run verify:core` in full was not run: this diff is CSS, component TSX
-  and one e2e spec, and the rows it selects are covered above. `npm run build`
-  runs inside `npm run test:e2e`.
+- `npm run verify:core` in full was not run locally: this diff is CSS,
+  component TSX and one e2e spec, and the rows it selects are covered above.
+  `npm run build` runs inside `npm run test:e2e`, and CI ran the full gate on
+  `f495977` anyway.
+- The deployed manager screens were not walked signed in; see `Remaining`.
 - The dimension blob was never rendered from a stored analysis, for the reason
   in `Assumptions`.
 
@@ -210,5 +224,7 @@ None.
 
 ## Next concrete step
 
-Ask the owner to run `git push origin fix/stone-corners-and-tooltip-overflow:main`.
-Nothing else is outstanding on this branch.
+Nothing on this branch. When the owner next has a Google session in the
+connected Chrome, walk `/`, `/round/` and a dimension screen on the deployment
+at desktop and at 390px, and record what the header and the stones look like
+there.
