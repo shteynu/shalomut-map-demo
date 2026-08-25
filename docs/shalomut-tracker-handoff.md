@@ -19,9 +19,31 @@ and in Git; what was durable in them is below.
 Verified on 2026-08-23, in this worktree and on both deployed endpoints, except
 where a later date says otherwise:
 
-- **The last commit that changed deployed behaviour is `c16f834`**, and Core
-  answered `fafc50a` — that branch's tip — over HTTPS on 2026-08-25, fifty
-  seconds after the push. It swaps two `background-position` values: the caret
+- **The last commit that changed deployed behaviour is `7ad7b81`**, and Core
+  answered it over HTTPS on 2026-08-25, forty-five seconds after the push. The
+  floating header card and the content below it are now sized by one pair of
+  tokens, `--shell-width` and `--shell-gutter`, instead of four declarations in
+  three media blocks: on a phone the content used to finish two pixels outside
+  the header on each side, and four below 430px. The survey builder's history
+  list, which sat sixteen pixels inside the columns above it, joins them. **The
+  edges were not compared on the deployment** — every screen with a header is
+  behind sign-in and the session had expired — so the reading there is the
+  stylesheet's bytes and `Browser smoke`, which now runs the four measuring
+  tests in `e2e/shell-width.spec.ts` against a production build.
+
+  Before it, `0ddc721`. A sixteen-pixel slot sits between the top of the window
+  and the sticky header, and the page scrolled through it in full — on the round
+  screen the share link slid across the top of the window above the header. A
+  band fixed to `main` paints it in the page's own colour. Read on the
+  deployment, signed in, scrolled: 1376 hit tests across that slot returned
+  nothing, and `scrollWidth − clientWidth` is 0 where the first attempt at the
+  fix had made it 7 by measuring in `100vw`, which counts the scrollbar. That
+  batch also gave the local seed two background questions, thirty responses and
+  three goals, so `/breakdown` and `/goals` can be read with content in them for
+  the first time, and fixed a 3px sideways scroll the new content exposed.
+
+  Before those, `c16f834`, and Core answered `fafc50a` — that branch's tip —
+  over HTTPS on 2026-08-25, fifty seconds after the push. It swaps two `background-position` values: the caret
   on every round, school and breakdown switcher was drawn from two diagonal
   gradients put the wrong way round, so its halves met at their outer corners
   and the control wore an M the size of a pair of quotation marks. The sweep

@@ -5,8 +5,9 @@
 - Branch: `fix/one-width-for-the-header-and-the-page`
 - Base branch: `main`
 - Base commit: `a2c2b98`
-- Current HEAD: this file's own commit, on top of `33858f6`
-- Status: done locally. Nothing is pushed.
+- Current HEAD: this file's own commit, on top of `7ad7b81`
+- Status: done and deployed. Everything through `7ad7b81` is on `main` and
+  served; only this file's closing update is not.
 - Last updated: 2026-08-25
 - Last agent/tool: Claude Code (Opus 5)
 
@@ -142,9 +143,32 @@ naming the exact numbers this branch exists to remove — `the header starts at
 header starts at 130 and the history at 146` on the builder. Rebuilding turned
 all four green. The same trap cost the previous branch a session; here it paid.
 
+### Deployed
+
+`7ad7b81` was pushed to `main` and Vercel served it: `GET /api/health/` answered
+`7ad7b81` forty-five seconds after the push, and all four workflows are green on
+that commit — `Browser smoke` among them, which now runs the four tests in
+`e2e/shell-width.spec.ts`, so the alignment itself is measured in CI and not
+only on this machine.
+
+The stylesheet the deployment serves, `/_next/static/chunks/2rtqbbhj0g3hz.css`,
+is byte-for-byte the local build of it: 130,180 bytes, `cmp` clean. On the live
+document `--shell-width` computes to `1180px` and `--shell-gutter` to `2rem`,
+and `.page` on `/login/` measures 274 → 1454 in a 1728px window — `min(1180px,
+calc(100% - 2rem))` exactly, with no horizontal overflow.
+
 ### Blocked or not run
 
-Nothing on the deployment. The branch is not pushed.
+**The header-against-content reading on the deployment.** It needs a screen that
+has a header, and every one of those is behind sign-in; the session in the
+owner's browser expired again and `/round/` answered `/login/`, which is
+header-less by `headerlessRoutes` and so has nothing to compare. What stands in
+its place is `Browser smoke` measuring those same edges against a production
+build of this commit, whose stylesheet the deployment serves byte-for-byte.
+
+**Every width below 1728px on the deployment.** The connected Chrome resizes its
+window and not its viewport, which the previous branch established by
+measurement, so the 768px and 430px steps were read locally and not there.
 
 ### Environment
 
@@ -180,4 +204,7 @@ screen family that is 60px wider than the rest of the product.
 
 ## Next concrete step
 
-Hand the branch to the owner to push.
+Nothing on this branch. Hand this closing commit to the owner to push. The one
+question it leaves is in *Questions requiring an owner decision* above:
+`.dashboard-page` is still 1240px, and the dashboard is the only screen family
+that is sixty pixels wider than the rest of the product.
