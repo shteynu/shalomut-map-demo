@@ -5,8 +5,8 @@
 - Branch: `fix/round-switcher-caret`
 - Base branch: `main`
 - Base commit: `d4a0354`
-- Current HEAD: this file's own commit
-- Status: in progress
+- Current HEAD: `fafc50a` on `main`; this file's move to `archive/` follows it
+- Status: landed on `main` at `fafc50a`, deployed
 - Last updated: 2026-08-25
 - Last agent/tool: Claude Opus 5 (Claude Code)
 
@@ -102,6 +102,14 @@ Nothing on the branch. The push is the owner's.
   12px)"*.
 - The caret photographed from the built stylesheet at device scale 6 and at 1:
   a downward triangle in both. Before the fix, at 6, two peaks with a valley.
+- On the deployment after the push, 2026-08-25: `GET /api/health/` answers
+  `commit: fafc50a` fifty seconds after it, and
+  `/_next/static/chunks/100equl93fm62.css` is byte-identical to a local build of
+  that commit, carrying `background-position:.75rem 55%,1.05rem 55%` — the
+  45deg tile first, which is the whole of the fix. Four workflows green,
+  `Browser smoke` among them, which is where the guard actually runs against a
+  production build. **The caret was not looked at on the deployment**: the only
+  selects that wear it are behind the manager door, and the session had expired.
 
 ### The sweep behind this branch, and what it cleared
 
@@ -193,5 +201,7 @@ Two observations from the sweep, neither a UI defect and neither acted on:
 
 ## Next concrete step
 
-Push `fix/round-switcher-caret` to `main` and confirm the deployment answers the
-new commit.
+None on this branch. The unreached screens above are the next thing worth a
+walk, and each needs something this session did not have: a live administrator
+session on the deployment, a seeded background question and goal, and one paid
+analysis.

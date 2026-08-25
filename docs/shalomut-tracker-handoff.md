@@ -19,9 +19,22 @@ and in Git; what was durable in them is below.
 Verified on 2026-08-23, in this worktree and on both deployed endpoints, except
 where a later date says otherwise:
 
-- **The last commit that changed deployed behaviour is `56ea232`**, and Core
-  answered `90ed6a2` — that branch's tip — over HTTPS on 2026-08-25, twenty
-  seconds after the push. Two visible changes, on the two screens the batch
+- **The last commit that changed deployed behaviour is `c16f834`**, and Core
+  answered `fafc50a` — that branch's tip — over HTTPS on 2026-08-25, fifty
+  seconds after the push. It swaps two `background-position` values: the caret
+  on every round, school and breakdown switcher was drawn from two diagonal
+  gradients put the wrong way round, so its halves met at their outer corners
+  and the control wore an M the size of a pair of quotation marks. The sweep
+  that found it walked every manager screen at three widths and the respondent
+  questionnaire at two, and returned that one defect; eleven things that look
+  like defects to a script and are not are written down in the archived task
+  file, so the next sweep does not spend a session on them again. **The caret
+  itself was not seen on the deployment** — the only selects wearing it are
+  behind the manager door and the session had expired — so the reading there is
+  the stylesheet's bytes and `Browser smoke`, where the guard runs against a
+  production build.
+
+  Before it, `56ea232`. Two visible changes, on the two screens the batch
   before it could not reach: on the שלומות map every stone's ordinal badge and
   "+" now land on the stone instead of on the page behind it, and a dimension's
   blob is a stone rather than a 3.7:1 lens with the text in a thin band down
@@ -34,7 +47,7 @@ where a later date says otherwise:
   of reading are recorded on purpose: **a commit here going stale is not news,
   a behaviour change is**, and this entry has three times been rewritten
   because it chased the hash instead of naming what moved. If Core answers
-  something later than `56ea232`, ask `git log 56ea232..` what landed rather
+  something later than `c16f834`, ask `git log c16f834..` what landed rather
   than assuming a deploy was missed.
 
   **The manager screens were walked on the deployment, signed in, on
