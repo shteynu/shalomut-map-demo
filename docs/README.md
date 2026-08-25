@@ -209,6 +209,15 @@ Branch-local in-progress state belongs only in
   changes the behaviour. Their published copies on claude.ai are snapshots —
   republish from these files when a link is needed, never edit a published copy
   and expect the repository to follow.
+- **Publish with `npm run docs:publish -- docs/<page>.html`**, never by hand. A
+  publishing platform supplies its own page skeleton and its own mermaid, so it
+  wants the body without the runtime this repository ships for the offline case;
+  the script takes it out whole, refuses a body that still reaches for
+  `vendor/`, carries a second skeleton or has lost its `<title>`, and leaves the
+  result in `tmp/published/`. The hand version of this cost something real:
+  the 2026-08-20 pass removed the two `vendor/` script tags and left the
+  `<style>` between the same markers, so two published pages carry that rule
+  twice. Republishing them through the script is what removes it.
 - Keep exact numbers out of `how-shalomut-works.html`. It is the non-developer
   overview, and a figure repeated there is a second truth that goes stale in
   silence; name the order of magnitude or point at the living source.

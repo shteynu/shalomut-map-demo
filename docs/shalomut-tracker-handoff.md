@@ -1317,13 +1317,17 @@ were republished from their repository sources on **2026-08-20**, which is the
 last date the two sides are known to have been level; that stops being true the
 moment a document changes without a republish. `docs/README.md` owns the rule.
 
-**Publishing is an undocumented hand transformation**, and that is the defect
-rather than an inconvenience. A repository document is a whole HTML page; the
-platform wraps content in its own skeleton and injects its own mermaid, so
-publishing means stripping `<!doctype>`/`<html>`/`<head>`/`<body>`, dropping the
-`vendor/` script tags and keeping `<title>` inside the first 8 KB. Nothing in the
-repository performs it, so the next person derives it again. The 2026-08-20 pass
-left the `claude-mermaid-runtime` marker block in the published body of two
-pages, which now carry that small `<style>` twice — identical rules, nothing
-renders differently, and it is the symptom rather than the defect. One script
-beside the other checks in `scripts/` would end both.
+**Publishing is `npm run docs:publish -- docs/<page>.html` since 2026-08-25**,
+and was an undocumented hand transformation before that. A repository document is
+a whole HTML page; the platform wraps content in its own skeleton and injects its
+own mermaid, so publishing means handing over the body alone, without
+`<!doctype>`/`<html>`/`<head>`/`<body>`, without the `claude-mermaid-runtime`
+block, and with `<title>` inside the first 8 KB. The script does that and refuses
+the three ways it can go wrong; `scripts/publish-doc.test.mjs` is a gate in
+`verify:core`, so a document that stops publishing fails before anyone tries.
+
+**What the hand version left behind is still in the published copies.** The
+2026-08-20 pass dropped the two `vendor/` script tags but not the `<style>`
+between the same markers, so two published pages carry that small rule twice —
+identical rules, nothing renders differently. The script removes the block whole,
+so the next republish of those two pages ends it; nothing else will.
