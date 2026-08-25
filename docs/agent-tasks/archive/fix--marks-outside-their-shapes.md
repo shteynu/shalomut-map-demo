@@ -5,8 +5,8 @@
 - Branch: `fix/marks-outside-their-shapes`
 - Base branch: `main`
 - Base commit: `1f75ff4`
-- Current HEAD: this file's own commit, on top of `cef3220`
-- Status: in progress
+- Current HEAD: `90ed6a2` on `main`; this file's move to `archive/` follows it
+- Status: landed on `main` at `90ed6a2`, deployed and walked
 - Last updated: 2026-08-25
 - Last agent/tool: Claude Opus 5 (Claude Code)
 
@@ -141,6 +141,15 @@ Nothing on the branch. The push is the owner's.
   stylesheet with the candidate rules injected, and photographed before and
   after — the map at four widths, the dimension blob with the seeded copy and
   with a long analysis pasted in.
+- After the push, on the deployment itself and signed in, 2026-08-25:
+  `GET /api/health/` → `commit: 90ed6a2`, twenty seconds after the push, and
+  `/_next/static/chunks/0p7fzeacfbziu.css` is byte-identical to a local build
+  of that commit. Four workflows green at `90ed6a2`, `Browser smoke` among them
+  — which is the one that now runs the two specs above.
+- The same geometry the spec asserts, re-run in the deployed page: eight stones
+  and zero stray corners at 1560px, eight stones, zero stray corners and no
+  sideways scroll at 500px. The dimension blob is 736×398 where it used to be
+  1088×294, and 469×352 on the narrow layout.
 
 ### Failed
 
@@ -184,5 +193,7 @@ None.
 
 ## Next concrete step
 
-Push `fix/marks-outside-their-shapes` to `main` and confirm the deployment
-answers the new commit.
+None on this branch. The next dimension screen worth looking at is one with a
+real analysis in it: every reading of that blob so far — here and on the branch
+before it — has been of the seeded three paragraphs or of a long text pasted in
+by hand, because producing a real one is a paid provider call.

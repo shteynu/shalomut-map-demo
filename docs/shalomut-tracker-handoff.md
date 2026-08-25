@@ -19,31 +19,37 @@ and in Git; what was durable in them is below.
 Verified on 2026-08-23, in this worktree and on both deployed endpoints, except
 where a later date says otherwise:
 
-- **The last commit that changed deployed behaviour is `434a255`**, the third of
-  three that put the manager screens' copy back inside the shapes drawing it,
-  and Core answered `f495977` — that commit's branch tip — over HTTPS on
-  2026-08-25. This is a *visible* change and the first one in a while: stone
-  marks that floated outside their stone, a privacy panel painted over by the
-  cards below it, a date running past the curve of the stone holding it, a
-  re-run button drawn through both sides of its blob, a progress ring flattened
-  into a square on a phone, a header three ragged rows tall, and a 30px
-  sideways scrollbar on every manager screen at 390px. Before it, `561c9f9`
-  held this line — the audit log's two screens — through four commits that
-  touched no runtime and one that only made a query cheaper. Both kinds of
-  reading are recorded on purpose: **a commit here going stale is not news, a
-  behaviour change is**, and this entry has twice been rewritten because it
-  chased the hash instead of naming what moved. If Core answers something later
-  than `434a255`, ask `git log 434a255..` what landed rather than assuming a
-  deploy was missed.
+- **The last commit that changed deployed behaviour is `56ea232`**, and Core
+  answered `90ed6a2` — that branch's tip — over HTTPS on 2026-08-25, twenty
+  seconds after the push. Two visible changes, on the two screens the batch
+  before it could not reach: on the שלומות map every stone's ordinal badge and
+  "+" now land on the stone instead of on the page behind it, and a dimension's
+  blob is a stone rather than a 3.7:1 lens with the text in a thin band down
+  its middle. Both are the same defect as the batch before — a decoration
+  anchored to the corner of a bounding box, which is a place an organic
+  `border-radius` has already curved away from — and both were found by the
+  walk that batch recorded as the one thing it could not do. That batch ended
+  at `434a255` and is deployed; it fixed the KPI stones, the privacy panel, the
+  header, the progress ring and a 30px sideways scrollbar at 390px. Both kinds
+  of reading are recorded on purpose: **a commit here going stale is not news,
+  a behaviour change is**, and this entry has three times been rewritten
+  because it chased the hash instead of naming what moved. If Core answers
+  something later than `56ea232`, ask `git log 56ea232..` what landed rather
+  than assuming a deploy was missed.
 
-  The deployment was proved by identity and by content, not by a signed-in
-  walk: `GET /api/health/` answered `f495977`, and the stylesheet it serves —
-  `/_next/static/chunks/0m0sm90xujvof.css` — is byte-for-byte the local build
-  of that commit. **The manager screens themselves have not been walked on the
-  deployment since this landed.** They are behind the organizational account
-  there, so that walk needs the owner's Google session in the connected
-  Chrome; the anonymous half was read and is clean — `/login/` renders at
-  1440px and 390px with no console error and no sideways scroll. The
+  **The manager screens were walked on the deployment, signed in, on
+  2026-08-25** — home, round, map, dimension, survey builder, setup, breakdown,
+  goals and activity, at 1560px and at 500px, which is as narrow as a Chrome
+  window goes. No console errors, no sideways scroll anywhere, and the
+  geometry the new spec asserts re-run in the deployed page: eight stones, zero
+  stray corners, at both layouts. Identity and content agree with it: `GET
+  /api/health/` answers `90ed6a2` and the stylesheet it serves —
+  `/_next/static/chunks/0p7fzeacfbziu.css` — is byte-for-byte the local build
+  of that commit. Two things that walk still cannot see. A phone: the window
+  floors at 500px, so 390px is Playwright's to prove and it does, in `Browser
+  smoke`. And a dimension screen with a *real* analysis — every reading of that
+  blob so far has been of the seeded three paragraphs or of a long text pasted
+  in by hand, because producing a real one is a paid provider call. The
   AI
   service answers `8760e62`, which is the resting gap rather than a missed
   deploy: nothing pushed since `ce6d1b0` has touched its `buildFilter` paths —
