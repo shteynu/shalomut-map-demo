@@ -22,8 +22,14 @@ end up applying the same rules.
 - Verifying, testing, proving a fix, checking readiness, reviewing evidence, or
   about to claim a substantive change is complete →
   `.agents/skills/shalomut-verification/SKILL.md`.
+- Diagnosing a failed repository gate, or adding, changing, weakening or
+  removing one — `scripts/check-*.mjs`, a `lint:*` command, its place in
+  `verify:core`, or a generated artifact and its `--check` mode →
+  `.agents/skills/shalomut-guardrails/SKILL.md`.
 - When several match, use `shalomut-tracker` first to establish state,
-  `shalomut-map` for implementation and `shalomut-verification` for evidence.
+  `shalomut-map` for implementation, `shalomut-guardrails` when the change is
+  to a gate rather than to product behaviour, and `shalomut-verification` for
+  evidence.
 
 Read the always-in-force part before substantial work and open the rest when its
 condition actually holds. Loading a section is cheap and skipping a rule is not,
@@ -42,6 +48,11 @@ so when a condition is ambiguous, open the section.
   both copies then claim to be canonical.
 - A skill's `references/` files are part of that skill. Add them beside their
   `SKILL.md`, never in a client-specific location.
+- `npm run lint:gate-inventory` checks the gates themselves: that every `lint:*`
+  command is a step of `verify:core`, runs its own test before the check it
+  guards, and is named in the inventory the `shalomut-guardrails` skill carries.
+  A gate outside that chain runs nowhere, and one the inventory omits is a
+  failure message with no route back to its rule.
 - `npm run lint:skills` checks what a reader cannot: that no skill copy sits
   outside `.agents/skills/`, that every `references/` file is linked from its own
   skill and every link resolves, that each skill's frontmatter name matches its

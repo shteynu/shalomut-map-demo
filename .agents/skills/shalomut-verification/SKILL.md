@@ -46,6 +46,7 @@ privacy, auth, persistence, contracts или deployment.
 | Изменённая область | Обязательный минимум |
 | --- | --- |
 | Только Markdown, instructions или skills | Frontmatter/links, `git diff --check`, релевантная structural validation; для `AGENTS.md`, клиентских адаптеров и `.agents/skills/**` — `npm run lint:skills` |
+| Гейт репозитория: `scripts/check-*.mjs`, команда `lint:*`, её место в `verify:core` или инвентарь гейтов | Парный `node --test` и сам гейт, `npm run lint:gate-inventory`, а при правке `.agents/skills/**` ещё и `npm run lint:skills`. Ослабление проверки — изменение правила: обнови doc-comment и тесты обеих сторон по `../shalomut-guardrails/SKILL.md` |
 | Мутируемые файлы (`src/lib/ai-contract.ts`, `src/lib/scoring-bands.ts`), их tests или mutation config | `npm run lint:mutation-config`, Stryker dry run; полный mutation run, если задача меняет mutation evidence или просит оценить test strength. Детали — [references/mutation-testing.md](references/mutation-testing.md) |
 | `src/components`, page TSX, CSS | Targeted tests, `npm run lint`, `npm run build`; browser smoke для user-visible flow |
 | Шрифты: `src/app/fonts/**`, `next/font` или font stack в `globals.css` | `npm run lint:fonts`, `npm run build` и browser smoke с `document.fonts` — сравни `.next/static/media/*.woff2` с файлом в репозитории и убедись, что ни один resource entry не уходит на Google |

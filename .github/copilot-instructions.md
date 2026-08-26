@@ -8,7 +8,9 @@ The canonical Agent Skills are:
 - `.agents/skills/shalomut-tracker/SKILL.md` for session continuity, status,
   progress and handoff;
 - `.agents/skills/shalomut-verification/SKILL.md` for tests, runtime evidence
-  and readiness checks.
+  and readiness checks;
+- `.agents/skills/shalomut-guardrails/SKILL.md` for the repository's fitness
+  gates — `scripts/check-*.mjs`, the `lint:*` commands and `verify:core`.
 
 Read the applicable skill before substantial work even when the active Copilot
 client does not expose automatic Agent Skills discovery. `AGENTS.md` owns the
