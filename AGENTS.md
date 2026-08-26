@@ -61,6 +61,13 @@ Hebrew product copy is product content, not instructions, and is unaffected.
   both copies then claim to be canonical.
 - A skill's `references/` files are part of that skill. Add them beside their
   `SKILL.md`, never in a client-specific location.
+- `.claude/settings.json` is the one file under `.claude/` that Git tracks, and
+  `.gitignore` un-ignores exactly it. It holds no rules of its own: it registers
+  a `PostToolUse` hook that runs `scripts/gate-hook.mjs`, which maps the file
+  just edited to the gates that could refuse it and runs them there and then.
+  The rules stay in `scripts/check-*.mjs`, where every client and CI read them;
+  the hook only makes Claude Code hear them earlier, and a path it does not map
+  is still covered by `verify:core`.
 - `npm run lint:gate-inventory` checks the gates themselves: that every `lint:*`
   command is a step of `verify:core`, runs its own test before the check it
   guards, and is named in the inventory the `shalomut-guardrails` skill carries.

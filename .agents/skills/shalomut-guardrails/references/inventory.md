@@ -37,6 +37,10 @@ They are not part of the `lint:*` family and live by their own rules:
 - `npm run lint` (ESLint), `npm run typecheck`, `npm test`, `npm run build` and
   `npm run verify:ai` — ordinary steps of `verify:core`, not fitness checks on
   the shape of the repository.
+- `scripts/gate-hook.mjs` — not a check but a dispatcher: Claude Code's
+  `PostToolUse` hook (`.claude/settings.json`) hands it the file just written,
+  and it runs the gates that path maps to so a violation surfaces at the edit
+  rather than at CI. It refuses nothing of its own.
 - `npm run verify:db`, `npm run test:e2e` and Stryker — environment and
   evidence; when they are mandatory is decided by the matrix in
   [../../shalomut-verification/SKILL.md](../../shalomut-verification/SKILL.md).

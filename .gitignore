@@ -21,7 +21,11 @@ yarn-error.log*
 .pnpm-debug.log*
 .playwright-cli/
 .playwright-mcp/
-.claude/
+.claude/*
+# The project hook is a repository rule, so it is the one thing in `.claude/`
+# that Git must see. A directory pattern is never re-entered, so the negation
+# only works with the `/*` form above.
+!.claude/settings.json
 .impeccable/
 
 # env

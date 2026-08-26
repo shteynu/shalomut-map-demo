@@ -1,4 +1,4 @@
-# A skill for the repository's fitness gates, and one language for the skills
+# A skill for the repository's fitness gates, one language, and a hook that runs them early
 
 ## Metadata
 
@@ -43,6 +43,9 @@ in no skill and no living document.
   `shalomut-verification`.
 - Translation of all four `SKILL.md` files and all three `references/` files
   into English, with the `Language` rule recorded in `AGENTS.md`.
+- A `PostToolUse` hook: `.claude/settings.json` (un-ignored in `.gitignore`) and
+  `scripts/gate-hook.mjs` with its test, so an edited path runs the gates it
+  maps to immediately instead of at CI.
 
 ## Non-goals
 
@@ -88,6 +91,16 @@ None touched. The change is agent instructions plus one repository-shape check.
 - `READING_MAP_HEADING` in `check-agent-skills.mjs` became
   `How to read this skill`, so the reading-map rule follows the skills into
   English; its fixtures moved with it.
+- `.gitignore` had to become `.claude/*` plus `!.claude/settings.json`: Git
+  never re-enters a directory excluded by a directory pattern, so the negation
+  is inert without the `/*` form. Everything else under `.claude/` — worktrees
+  included — stays ignored.
+- The hook runs the *check* half of a gate command, not its `node --test` half.
+  The first version ran `npm run <gate>` and buried a one-line violation under
+  sixty lines of passing TAP. Proving a check can fail stays CI's job.
+- `lint:literals` is deliberately not dispatched by the hook: its Python half
+  needs `ai-analytics-service/.venv`, and a missing local environment must not
+  read to an agent as a violation.
 
 ## Assumptions
 
@@ -104,6 +117,15 @@ None touched. The change is agent instructions plus one repository-shape check.
 - All seven skill files translated to English; no Cyrillic remains under
   `.agents/skills/` or in the two gate scripts and their tests.
 - `AGENTS.md` gained a `Language` section stating the rule and its exceptions.
+- `scripts/gate-hook.mjs` and `scripts/gate-hook.test.mjs`; the test is chained
+  into `lint:gate-inventory`, so it runs inside `verify:core` rather than
+  nowhere.
+- `.claude/settings.json` registering the `PostToolUse` hook on
+  `Edit|Write|MultiEdit|NotebookEdit`, and the `.gitignore` change that lets Git
+  see that one file.
+- The hook is described where it will be looked for: `AGENTS.md`, the
+  `A red gate` and `Wiring a gate in` sections of the guardrails skill, and the
+  non-gates list of the inventory.
 
 ## In progress
 
@@ -136,12 +158,20 @@ English batch that follows them translates the four `SKILL.md` files and three
   failed on three sections whose names the map wrapped across a line break
   (`Product and UI`, `Role or model escalation`,
   `Browser and runtime scenarios`); the map lines were rewrapped and it passed.
-- Every other `lint:*` gate that needs no dependencies: `lint:literals`,
-  `lint:interpreter`, `lint:composition`, `lint:deploy-migrations`,
-  `lint:tenant-chokepoints`, `lint:fixtures`, `lint:mutation-config`,
-  `lint:contract-refusals`, `lint:fonts`, `lint:doc-numbers`,
-  `lint:audit-count`, `lint:error-bodies`, `lint:python-deps`,
-  `lint:docs-publish`.
+- Every other `lint:*` gate that needs no dependencies, each run individually
+  and checked by exit code: `lint:interpreter`, `lint:composition`,
+  `lint:deploy-migrations`, `lint:tenant-chokepoints`, `lint:fixtures`,
+  `lint:mutation-config`, `lint:contract-refusals`, `lint:fonts`,
+  `lint:doc-numbers`, `lint:audit-count`, `lint:error-bodies`,
+  `lint:python-deps`, `lint:docs-publish`.
+- `node --test scripts/gate-hook.test.mjs` — 15/15, and through
+  `npm run lint:gate-inventory` (27 tests) as it now runs in `verify:core`.
+- The hook end to end, by piping a real `PostToolUse` payload: an unmapped path
+  is silent and exits 0; a mapped path prints the gates it ran and exits 0; a
+  deliberately unmapped section appended to `shalomut-map/SKILL.md` produced
+  exit 2 with the gate's own message and the pointer to `A red gate`; the file
+  was restored and the gate is green again. Three gates on `package.json` take
+  0.37s in total.
 - `git diff --check`.
 
 ### Failed
@@ -152,7 +182,14 @@ None.
 
 `npm run verify:core` as a whole, and the steps needing dependencies:
 `typecheck`, `npm test`, `npm run lint`, `npm run build`, `verify:ai`. This
-container has no `node_modules` and no `.venv`. The diff touches no `.ts`,
+container has no `node_modules` and no `.venv`.
+
+`lint:literals` is `failed` here, not `passed`, and an earlier version of this
+file recorded it wrongly: its TypeScript half passes and its Python half exits 1
+because `ai-analytics-service/.venv` does not exist in this container. The same
+failure reproduces on the branch with every change of this task stashed, so it
+is the environment, not the diff. It is also why the hook does not dispatch that
+gate. The diff touches no `.ts`,
 `.tsx` or Python file; `package.json` changed only by one script line and one
 `verify:core` step, and `lint:deploy-migrations` — the gate that reads those
 strings — passed. Every `lint:*` gate ran individually, which is `verify:core`
@@ -182,6 +219,11 @@ None.
   would be silent. The archived task files still quote the Russian section
   names, which is correct — they are historical records of what the skills said
   then.
+- The hook's mapping is a third place a gate's name appears. Its test refuses a
+  name `package.json` does not define, but nothing checks that a *new* gate was
+  added to the mapping — a gap the skill states rather than hides.
+- `.claude/settings.json` is now a tracked file a client executes. It runs one
+  repository script and nothing else; anything beyond that belongs in review.
 
 ## Approval gates
 

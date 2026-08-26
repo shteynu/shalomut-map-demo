@@ -23,7 +23,7 @@
     "lint:tenant-chokepoints": "node --test scripts/check-tenant-chokepoints.test.mjs && node scripts/check-tenant-chokepoints.mjs",
     "lint:fixtures": "node --test scripts/check-runtime-fixtures.test.mjs && node scripts/check-runtime-fixtures.mjs",
     "lint:skills": "node --test scripts/check-agent-skills.test.mjs && node scripts/check-agent-skills.mjs",
-    "lint:gate-inventory": "node --test scripts/check-gate-inventory.test.mjs && node scripts/check-gate-inventory.mjs",
+    "lint:gate-inventory": "node --test scripts/check-gate-inventory.test.mjs scripts/gate-hook.test.mjs && node scripts/check-gate-inventory.mjs",
     "lint:mutation-config": "node --test scripts/check-mutation-config.test.mjs && node scripts/check-mutation-config.mjs",
     "lint:contract-refusals": "node --test scripts/check-contract-refusal-suites.test.mjs && node scripts/check-contract-refusal-suites.mjs",
     "lint:fonts": "node --test scripts/check-local-fonts.test.mjs && node scripts/check-local-fonts.mjs",

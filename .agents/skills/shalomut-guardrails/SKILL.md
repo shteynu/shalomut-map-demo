@@ -50,6 +50,11 @@ rule out of prose that can go unread and into a refusal that cannot be missed.
    after it did not run; do not report them as passed.
 6. If a gate really is wrong, state which behaviour it must let through, add a
    test for that side, and change the check itself rather than only its message.
+7. A refusal that arrives immediately after an edit came from the same gate
+   through `.claude/settings.json` — `scripts/gate-hook.mjs` runs the checks that
+   the edited path maps to. It is the gate speaking earlier, not a second rule,
+   so everything above applies unchanged. Its message names the gate; run
+   `npm run <gate>` to see the gate with its own tests.
 
 ## What deserves a gate
 
@@ -118,6 +123,15 @@ Every existing check has the same shape, and it is worth keeping:
 After editing any file under `.agents/skills/**`, run `npm run lint:skills`: it
 checks frontmatter, that every link resolves, that no `references/` file is
 orphaned, and that every section is classified by the reading map.
+
+A new gate is also worth a line in `scripts/gate-hook.mjs`, which maps an edited
+path to the gates that could refuse it and runs them from Claude Code's
+`PostToolUse` hook. That mapping is a convenience and never a claim of coverage:
+a path nobody mapped runs no gate at edit time and is still caught by
+`verify:core`, and the hook exists in Claude Code only, which is precisely why
+the rule itself lives in the check script. Its own test — run by
+`lint:gate-inventory` — refuses a mapping that names a gate `package.json` no
+longer defines.
 
 ## Generated artifacts
 
