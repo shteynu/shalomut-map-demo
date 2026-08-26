@@ -89,7 +89,7 @@ const NEVER_SCAN = new Set(['.git', '.agents', 'node_modules']);
 
 const FRONTMATTER = /^---\r?\n([\s\S]*?)\r?\n---/;
 const MARKDOWN_LINK = /\[[^\]]*\]\(([^)\s]+)\)/g;
-const READING_MAP_HEADING = 'Как читать этот скилл';
+const READING_MAP_HEADING = 'How to read this skill';
 
 /**
  * Sections a skill's reading map must classify, and the map itself, which

@@ -1,19 +1,21 @@
-# A skill for the repository's fitness gates
+# A skill for the repository's fitness gates, and one language for the skills
 
 ## Metadata
 
 - Branch: `claude/useful-repo-skill-wfad6a`
 - Base branch: `main`
 - Base commit: `24ed8bc`
-- Current HEAD: `b679fc3`
+- Current HEAD: see `git log -1` — the English-language batch follows `8cde693`
 - Status: implementation complete, awaiting review
 - Last updated: 2026-08-26
 - Last agent/tool: Claude Code (remote session)
 
 ## Objective
 
-Add the skill the repository was missing: the one that owns how a rule becomes
-a gate, and make the new inventory of gates enforceable rather than prose.
+Add the skill the repository was missing — the one that owns how a rule becomes
+a gate — make its inventory enforceable rather than prose, and then, at the
+owner's decision, move every skill to English so a rule is stated in one
+language.
 
 ## User-visible outcome
 
@@ -39,6 +41,8 @@ in no skill and no living document.
   paired test, chained into `verify:core`.
 - Routing in `AGENTS.md`, the Copilot adapter, and a matrix row in
   `shalomut-verification`.
+- Translation of all four `SKILL.md` files and all three `references/` files
+  into English, with the `Language` rule recorded in `AGENTS.md`.
 
 ## Non-goals
 
@@ -46,6 +50,10 @@ in no skill and no living document.
 - Documenting `openapi:check` / `docs:endpoints:check` as `lint:*` gates; they
   belong to their generators and the inventory says so in prose.
 - Product, UI or contract behaviour: nothing under `src/` changed.
+- Rewriting dated documents. `docs/critical-audit-2026-08-21.md`, the archived
+  plans and the archived task files keep their Russian, and the audit's Russian
+  status vocabulary stays the input `lint:audit-count` reads. Hebrew product
+  copy is untouched.
 
 ## Acceptance criteria
 
@@ -73,7 +81,13 @@ None touched. The change is agent instructions plus one repository-shape check.
 - The gate checks the `lint:*` family only. Membership in `verify:core` is
   matched per `&&` step, not by substring, so `lint:doc` cannot pass on
   `lint:doc-numbers`.
-- The skill is written in Russian, like its three siblings.
+- The skills moved to English rather than the guardrails skill staying Russian
+  for consistency with its siblings. The deciding argument: the same rule was
+  stated in English in `AGENTS.md` and in Russian in a skill, and no gate
+  compares two translations of one rule.
+- `READING_MAP_HEADING` in `check-agent-skills.mjs` became
+  `How to read this skill`, so the reading-map rule follows the skills into
+  English; its fixtures moved with it.
 
 ## Assumptions
 
@@ -87,6 +101,9 @@ None touched. The change is agent instructions plus one repository-shape check.
 - `package.json`: `lint:gate-inventory` added and chained after `lint:skills`.
 - Routing in `AGENTS.md` and `.github/copilot-instructions.md`; matrix row in
   `.agents/skills/shalomut-verification/SKILL.md`.
+- All seven skill files translated to English; no Cyrillic remains under
+  `.agents/skills/` or in the two gate scripts and their tests.
+- `AGENTS.md` gained a `Language` section stating the rule and its exceptions.
 
 ## In progress
 
@@ -94,23 +111,37 @@ None.
 
 ## Remaining
 
-Review of the inventory's prose: the gate proves each row exists, never that the
-row describes its check truthfully.
+Two reviews the gates cannot do: whether each inventory row describes its check
+truthfully, and whether the English translation preserved every rule's meaning.
+Both are read-only review questions, not code.
 
 ## Changed files
 
-Committed in `b679fc3`; nothing staged, unstaged or untracked apart from this
-task file.
+Two batches. `b679fc3` — the guardrails skill, its inventory, the
+`lint:gate-inventory` gate and its wiring; `8cde693` — this task file. The
+English batch that follows them translates the four `SKILL.md` files and three
+`references/` files, updates `READING_MAP_HEADING` and its fixtures in
+`scripts/check-agent-skills{,.test}.mjs`, the Russian fixture lines in
+`scripts/check-gate-inventory.test.mjs`, and `AGENTS.md`.
 
 ## Verification evidence
 
 ### Passed
 
 - `node --test scripts/check-gate-inventory.test.mjs` — 12/12.
+- `node --test scripts/check-agent-skills.test.mjs` — 28/28 after the fixtures
+  moved to English.
 - `npm run lint:gate-inventory` — 16 gates, each listed, chained and tested.
-- `npm run lint:skills` — 4 canonical skills, 4 declared entrypoints.
-- `npm run lint:deploy-migrations`, `lint:doc-numbers`, `lint:audit-count`,
-  `lint:fixtures`, `lint:error-bodies`, `lint:composition`, `lint:interpreter`.
+- `npm run lint:skills` — 4 canonical skills, 4 declared entrypoints. It first
+  failed on three sections whose names the map wrapped across a line break
+  (`Product and UI`, `Role or model escalation`,
+  `Browser and runtime scenarios`); the map lines were rewrapped and it passed.
+- Every other `lint:*` gate that needs no dependencies: `lint:literals`,
+  `lint:interpreter`, `lint:composition`, `lint:deploy-migrations`,
+  `lint:tenant-chokepoints`, `lint:fixtures`, `lint:mutation-config`,
+  `lint:contract-refusals`, `lint:fonts`, `lint:doc-numbers`,
+  `lint:audit-count`, `lint:error-bodies`, `lint:python-deps`,
+  `lint:docs-publish`.
 - `git diff --check`.
 
 ### Failed
@@ -119,14 +150,13 @@ None.
 
 ### Blocked or not run
 
-`npm run verify:core` as a whole, and every step needing dependencies —
-`typecheck`, `npm test`, `lint`, `build`, `verify:ai`, `lint:literals`,
-`lint:python-deps`, `lint:fonts`, `lint:mutation-config`,
-`lint:contract-refusals`, `lint:tenant-chokepoints`, `lint:docs-publish`. This
+`npm run verify:core` as a whole, and the steps needing dependencies:
+`typecheck`, `npm test`, `npm run lint`, `npm run build`, `verify:ai`. This
 container has no `node_modules` and no `.venv`. The diff touches no `.ts`,
 `.tsx` or Python file; `package.json` changed only by one script line and one
 `verify:core` step, and `lint:deploy-migrations` — the gate that reads those
-strings — passed.
+strings — passed. Every `lint:*` gate ran individually, which is `verify:core`
+minus those five steps.
 
 ### Environment
 
@@ -134,9 +164,11 @@ local (remote session container, dependencies not installed)
 
 ### Residual risk
 
-Low. CI runs the full `verify:core` on this branch. The unverified half is
-prose: whether each inventory row describes its gate correctly is a review
-question no check can answer.
+Low for the mechanism, moderate for the prose. CI runs the full `verify:core` on
+this branch. What no check can answer: whether each inventory row describes its
+gate correctly, and whether a translated rule still says exactly what the
+Russian said. Both are read-only reviews of text that no longer has a second
+copy to compare against.
 
 ## Failed approaches
 
@@ -144,8 +176,12 @@ None.
 
 ## Known risks
 
-The inventory is a second place a gate's name appears, so a rename now touches
-two files. `lint:gate-inventory` fails rather than lets them drift.
+- The inventory is a second place a gate's name appears, so a rename now touches
+  two files. `lint:gate-inventory` fails rather than lets them drift.
+- The translation is a large diff with no behavioural change: a lost nuance
+  would be silent. The archived task files still quote the Russian section
+  names, which is correct — they are historical records of what the skills said
+  then.
 
 ## Approval gates
 
@@ -159,6 +195,6 @@ them where they are — described in prose and enforced by their generators.
 
 ## Next concrete step
 
-Read `.agents/skills/shalomut-guardrails/references/inventory.md` row by row
-against each `scripts/check-*.mjs` doc-comment and correct any description that
-does not match the check it names.
+Read the four translated `SKILL.md` files against `git show 8cde693^:<path>` for
+each, confirming that no rule changed meaning in translation, and correct
+anything that drifted.

@@ -1,215 +1,224 @@
 ---
 name: shalomut-tracker
-description: Управляй контекстом, продолжением работы и handoff проекта shalomut-map-demo. Используй, когда пользователь просит начать или продолжить Shalomut, узнать статус или следующие шаги, сохранить прогресс, подготовить handoff или завершить сессию. Не запускай полный session ritual только из-за случайного упоминания Shalomut в конкретной задаче.
+description: Manage context, continuation of work and handoff for the shalomut-map-demo project. Use when the user asks to start or continue Shalomut, to report status or next steps, to save progress, to prepare a handoff or to close a session. Do not run the full session ritual merely because a specific task happens to mention Shalomut.
 ---
 
 # Shalomut Tracker
 
-## Как читать этот скилл
+## How to read this skill
 
-Всегда в силе: `Приоритет источников` — без него агент доверяет устаревшей прозе
-вместо кода; `Инварианты проекта` — privacy threshold, восемь измерений,
-неизменность опубликованных контрактов, fail-closed.
+Always in force: `Source precedence` — without it an agent trusts stale prose
+over code; `Project invariants` — the privacy threshold, the eight dimensions,
+the immutability of published contracts, fail-closed.
 
-По условию: `Старт работы` и `Маршрутизация контекста` — начало или
-возобновление сессии; `Работа и проверка` — перед фиксацией результата;
-`Сохранение прогресса` и `Границы памяти` — запрос сохранить прогресс или
-handoff; `Параллельная работа` — несколько веток, worktrees или агентов;
-`Эскалация роли или модели` — молчит, пока не сработал trigger из её списка, а
-процедура вынесена в [references/escalation.md](references/escalation.md).
+On condition: `Starting work` and `Context routing` — a session begins or
+resumes; `Work and verification` — before recording a result; `Saving progress`
+and `Memory boundaries` — the user asks to save progress or hand off;
+`Parallel work` — several branches, worktrees or agents;
+`Role or model escalation` — silent until a trigger from its own list fires, and
+the procedure lives in [references/escalation.md](references/escalation.md).
 
-## Приоритет источников
+## Source precedence
 
-При расхождениях используй следующий порядок:
+On any disagreement, use this order:
 
-1. Текущий запрос пользователя.
-2. Актуальный код, `git status`, история Git и результаты реально выполненных
-   проверок.
-3. Активный task document текущей ветки в `docs/agent-tasks/active/`.
-4. `docs/shalomut-tracker-handoff.md` — operational snapshot, blockers и
+1. The user's current request.
+2. Current code, `git status`, Git history and the results of checks that
+   actually ran.
+3. The active task document for the current branch in `docs/agent-tasks/active/`.
+4. `docs/shalomut-tracker-handoff.md` — operational snapshot, blockers and
    approval gates.
-5. `PROJECT_CONTEXT.md` — устойчивые архитектурные решения.
-6. `PROGRESS.md` — краткие product-level milestones и крупные завершённые
-   возможности.
-7. `PRODUCT.md`, `design.md` и специализированные документы.
+5. `PROJECT_CONTEXT.md` — stable architectural decisions.
+6. `PROGRESS.md` — concise product-level milestones and major completed
+   capabilities.
+7. `PRODUCT.md`, `design.md` and the specialised documents.
 
-Не считай устаревший пункт в документации более надёжным, чем текущий код или
-проверяемое состояние.
+Never treat a stale line in documentation as more reliable than current code or
+verifiable state.
 
-## Старт работы
+## Starting work
 
-1. Определи корень репозитория через `git rev-parse --show-toplevel` и текущую
-   ветку через Git.
-2. Запусти `npm run agent:context` или воспроизведи его read-only Git-проверки,
-   если команда недоступна.
-3. Построй путь task-файла, заменив каждый `/` в имени ветки на `--`:
+1. Determine the repository root with `git rev-parse --show-toplevel` and the
+   current branch through Git.
+2. Run `npm run agent:context`, or reproduce its read-only Git checks if the
+   command is unavailable.
+3. Build the task-file path by replacing every `/` in the branch name with `--`:
    `docs/agent-tasks/active/<branch-name>.md`.
-4. Прочитай task-файл, если он существует. Если пользователь начал новую
-   существенную задачу и файла нет, создай его из
-   `docs/agent-tasks/TEMPLATE.md`. Не создавай task-файл для маленького вопроса,
-   read-only объяснения или случайного поиска по документации.
-5. Загрузи только проектные документы и разделы, релевантные задаче, по
-   маршрутизации ниже. Сначала найди нужный раздел по заголовкам или поиском;
-   не читай длинный глобальный документ целиком, если задача не требует всего
-   его содержимого. Глобальный operational handoff нужен только при
-   затрагивании его состояния или содержащихся в нём gates.
-6. Проверь `git status --short`, полный текущий diff, недавние commits, а также
-   доступное локально состояние upstream/remote refs.
-7. Продолжай с раздела `Next concrete step`. Не переоткрывай принятые решения
-   без конкретного противоречащего evidence и сохраняй unrelated changes.
-8. Если task-файла нет и пользователь сказал только «продолжаем», предложи
-   ближайший безопасный незаблокированный шаг из глобального контекста.
-9. Задавай вопрос только при необходимом продуктовом решении, внешней
-   зависимости или approval gate.
+4. Read the task file if it exists. If the user has started a new substantial
+   task and no file exists, create one from `docs/agent-tasks/TEMPLATE.md`. Do
+   not create a task file for a small question, a read-only explanation or an
+   incidental search through documentation.
+5. Load only the project documents and sections relevant to the task, following
+   the routing below. Find the section you need by heading or search first; do
+   not read a long global document end to end unless the task needs all of it.
+   The global operational handoff is needed only when the work touches the state
+   it holds or the gates it names.
+6. Check `git status --short`, the full current diff, recent commits and the
+   locally available state of upstream/remote refs.
+7. Continue from the `Next concrete step` section. Do not reopen settled
+   decisions without concrete contradicting evidence, and preserve unrelated
+   changes.
+8. If there is no task file and the user only said "continue", propose the
+   nearest safe unblocked step from the global context.
+9. Ask a question only for a genuine product decision, an external dependency or
+   an approval gate.
 
-## Маршрутизация контекста
+## Context routing
 
-Загружай только документы, нужные текущей задаче:
+Load only the documents the current task needs:
 
-- UI/UX: `PRODUCT.md`, `design.md` и релевантные компоненты.
-- Методология и опрос: `docs/source-of-truth.md` и
+- UI/UX: `PRODUCT.md`, `design.md` and the relevant components.
+- Methodology and the survey: `docs/source-of-truth.md` and
   `src/lib/shalomut-source.ts`.
-- Runtime, API и persistence: task-файл и релевантный код в первую очередь;
-  конкретные разделы `PROJECT_CONTEXT.md` — только когда нужен устойчивый
-  архитектурный контекст; конкретные разделы operational handoff — при
-  deployment, миграциях, смене environment configuration или alias, а также
-  когда работа зависит от внешнего состояния. Условие названо классом задачи, а
-  не «трогает ли она blocker»: существует ли blocker, из diff не видно.
+- Runtime, API and persistence: the task file and the relevant code first;
+  specific sections of `PROJECT_CONTEXT.md` only when stable architectural
+  context is needed; specific sections of the operational handoff on deployment,
+  migrations, a change of environment configuration or alias, and whenever the
+  work depends on external state. The condition is stated as a class of task,
+  not as "does it touch a blocker": whether a blocker exists is not visible from
+  the diff.
 - AI analytics: `docs/ai-contract-version-matrix.md`,
-  `contracts/capabilities.json`, релевантный versioned manifest и
-  `ai-analytics-service/README.md`. `docs/ai-analytics-handoff.md` даёт
-  cross-service overview; archived rollout details не являются current state.
-- Deployment и migrations: operational handoff, environment configuration и
-  migration state.
-- Documentation audit: `docs/README.md`, фактические commands/configuration и
-  только те living docs, владельцы которых затронуты найденным расхождением.
-- «Что осталось сделать» и выбор следующей работы: `docs/open-decisions.md` —
-  индекс всего, что ждёт человека, будь то решение владельца или внешний вход.
-  Он не хранит обоснований и указывает на документ-владелец каждого пункта; при
-  расхождении прав источник. Не отвечай на этот вопрос по одному лишь
-  `PROGRESS.md`: он называет milestones, а не то, что заблокировано.
+  `contracts/capabilities.json`, the relevant versioned manifest and
+  `ai-analytics-service/README.md`. `docs/ai-analytics-handoff.md` gives the
+  cross-service overview; archived rollout details are not current state.
+- Deployment and migrations: the operational handoff, environment configuration
+  and migration state.
+- Documentation audit: `docs/README.md`, the actual commands/configuration, and
+  only those living documents whose owned state the discrepancy touches.
+- "What is left to do" and choosing the next piece of work:
+  `docs/open-decisions.md` — the index of everything waiting on a person,
+  whether an owner decision or an external input. It carries no reasoning and
+  points at the document that owns each entry; on any disagreement the source
+  wins. Do not answer this question from `PROGRESS.md` alone: it names
+  milestones, not what is blocked.
 
-Когда работа переходит от статуса или handoff к реализации, прочитай и соблюдай
+When work moves from status or handoff to implementation, read and follow
 `../shalomut-map/SKILL.md`.
 
-## Инварианты проекта
+## Project invariants
 
-- Оставляй пустую persistence пустой; не используй demo fixtures как скрытый
-  runtime fallback.
-- Не раскрывай личность респондента или результаты ниже настроенного privacy
-  threshold. Не допускай partial unlocked dynamic-questionnaire result: любой
-  анализируемый вопрос ниже threshold блокирует все detailed metrics/stones.
-- Сохраняй восемь измерений как стабильную Dashboard taxonomy. Канонические 24
-  вопроса — default/legacy template, а не обязательный runtime-инструмент:
-  вопросы конкретного раунда могут иметь другие ID, количество и формулировки,
-  если они persisted, привязаны к восьми dimensions и проходят privacy gate.
-- Не меняй молча семантику опубликованных contracts `1.0`–`6.0`. Capability
-  policy находится в `contracts/capabilities.json`, а runtime status — в
-  `docs/ai-contract-version-matrix.md`. Новая несовместимая семантика требует
-  новой versioned manifest и consumer-first rollout.
-- Соблюдай RTL-first, WCAG AA и тёплую дизайн-систему.
-- Сохраняй границу между Core Data Layer и внешним AI analytics service.
-- Обеспечивай fail-closed поведение AI transport и persistence.
-- Проект на стадии проектирования: production data нет, содержимое базы
-  расходное. Не заводи approval gate на очистку, reseed и миграции; явное
-  ограниченное подтверждение нужно только для secrets, credentials,
-  authentication configuration и переключения deployment aliases.
-- Не выполняй reset, clean, checkout поверх, discard, rebase, force-push или
-  amend чужого commit без явного запроса пользователя. Правило живёт здесь, а не
-  среди правил параллельной работы: чужие незакоммиченные изменения бывают в
-  рабочем каталоге и когда агент один.
-- Делай изменения небольшими проверяемыми порциями и для предметной реализации
-  используй `../shalomut-map/SKILL.md`. Оба правила действуют с первой правки, а
-  не в момент сдачи результата.
+- Leave empty persistence empty; never use demo fixtures as a hidden runtime
+  fallback.
+- Never expose respondent identity or results below the configured privacy
+  threshold. Never allow a partially unlocked dynamic-questionnaire result: one
+  analysed question below the threshold locks every detailed metric and stone.
+- Keep the eight dimensions as the stable Dashboard taxonomy. The canonical 24
+  questions are a default/legacy template, not a mandatory runtime instrument: a
+  given round's questions may differ in ID, count and wording as long as they
+  are persisted, bound to the eight dimensions and pass the privacy gate.
+- Do not silently change the semantics of published contracts `1.0`–`6.0`.
+  Capability policy lives in `contracts/capabilities.json` and runtime status in
+  `docs/ai-contract-version-matrix.md`. Incompatible new semantics require a new
+  versioned manifest and a consumer-first rollout.
+- Keep RTL-first, WCAG AA and the warm design system.
+- Preserve the boundary between the Core Data Layer and the external AI
+  analytics service.
+- Keep AI transport and persistence fail-closed.
+- The project is at the design stage: there is no production data and database
+  contents are disposable. Do not put an approval gate on clearing, reseeding or
+  migrating; explicit bounded confirmation is needed only for secrets,
+  credentials, authentication configuration and repointing deployment aliases.
+- Never reset, clean, check out over, discard, rebase, force-push or amend
+  somebody else's commit without an explicit user request. The rule lives here
+  rather than among the parallel-work rules: somebody else's uncommitted changes
+  can sit in the working tree while a single agent works alone.
+- Work in small verifiable increments, and use `../shalomut-map/SKILL.md` for
+  domain implementation. Both rules apply from the first edit, not at the moment
+  a result is delivered.
 
-## Работа и проверка
+## Work and verification
 
-- Перед фиксацией результата или handoff используй
+- Before recording a result or handing off, use
   `../shalomut-verification/SKILL.md`.
-- Сохраняй только фактически полученное verification evidence.
+- Record only verification evidence that was actually produced.
 
-## Эскалация роли или модели
+## Role or model escalation
 
-По умолчанию продолжай текущим агентом и моделью, не обсуждая их выбор. Не
-эскалируй из-за размера задачи, локальной или документационной правки, ясного
-исправления теста, механического рефакторинга либо большой задачи, уже разбитой
-на проверяемые шаги.
+By default continue with the current agent and model without discussing the
+choice. Do not escalate because a task is large, because an edit is local or
+documentation-only, because a test fix is clear, because a refactor is
+mechanical, or because a big task has already been broken into verifiable steps.
 
-Рассматривай эскалацию только если:
+Consider escalation only when:
 
-- изменение проходит через несколько архитектурных или сервисных границ либо
-  требует проследить большой cross-service flow;
-- затронута безопасность privacy, auth, authorization, persistence, contracts,
-  migrations или deployment;
-- repository evidence противоречиво или два разумных подхода уже не сработали;
-- агент теряет установленный контекст либо оставшегося контекста или видимого
-  usage limit недостаточно для безопасной реализации и проверки;
-- важному архитектурному или security-sensitive diff нужен независимый review.
+- the change crosses several architectural or service boundaries, or requires
+  following a large cross-service flow;
+- the safety of privacy, auth, authorization, persistence, contracts,
+  migrations or deployment is at stake;
+- repository evidence contradicts itself, or two reasonable approaches have
+  already failed;
+- the agent is losing established context, or the remaining context or visible
+  usage limit is not enough to implement and verify safely;
+- an important architectural or security-sensitive diff needs independent
+  review.
 
-Политика молчит, пока trigger не сработал. Если сработал — открой
-[references/escalation.md](references/escalation.md): там процедура, формат
-вывода и блок для task-файла. Не переключай модель автоматически и не утверждай
-её доступность, превосходство или оставшийся usage без evidence из клиента.
+The policy stays silent until a trigger fires. When one does, open
+[references/escalation.md](references/escalation.md): it holds the procedure,
+the output format and the block for the task file. Never switch model
+automatically, and never assert a model's availability, superiority or remaining
+usage without evidence from the client.
 
-## Параллельная работа
+## Parallel work
 
-- Одна независимо поставляемая задача использует одну ветку и один task-файл.
-- Два агента не работают одновременно в одном worktree. Для параллельной
-  работы используй отдельные Git worktrees или отдельные checkouts, разные
-  ветки и разные task-файлы.
-- Перед продолжением проверяй локальное и доступное remote/upstream состояние.
-- Перед передачей незакоммиченной работы точно запиши в task-файле, что
-  committed, staged, unstaged и untracked.
+- One independently deliverable task uses one branch and one task file.
+- Two agents never work in the same worktree at once. For parallel work use
+  separate Git worktrees or separate checkouts, different branches and different
+  task files.
+- Check local and available remote/upstream state before continuing.
+- Before handing off uncommitted work, record in the task file exactly what is
+  committed, staged, unstaged and untracked.
 
-Запрет на reset, clean, discard, rebase, force-push и amend чужого commit
-находится в `Инварианты проекта`, потому что действует и на одиночной работе.
+The ban on reset, clean, discard, rebase, force-push and amending somebody
+else's commit lives in `Project invariants`, because it holds for solo work too.
 
-## Границы памяти
+## Memory boundaries
 
-- Active task document — текущее implementation state одной ветки или задачи.
-- `docs/shalomut-tracker-handoff.md` — только cross-task operational state,
-  deployed state, внешние blockers и approval gates.
-- `PROJECT_CONTEXT.md` — стабильная архитектура, продуктовые инварианты и
-  долгоживущие решения.
-- `PROGRESS.md` — краткие product-level milestones и крупные завершённые
-  возможности.
-- `docs/README.md` — lifecycle-index: какие документы живые, какие фиксируют
-  реализованный контракт, а какие являются историческими планами.
+- The active task document — current implementation state of one branch or task.
+- `docs/shalomut-tracker-handoff.md` — cross-task operational state, deployed
+  state, external blockers and approval gates, and nothing else.
+- `PROJECT_CONTEXT.md` — stable architecture, product invariants and long-lived
+  decisions.
+- `PROGRESS.md` — concise product-level milestones and major completed
+  capabilities.
+- `docs/README.md` — the lifecycle index: which documents are living, which
+  freeze an implemented contract and which are historical plans.
 
-Task-файл — текущий snapshot, а не append-only журнал сессий. При обновлении
-заменяй устаревшее состояние, удаляй уже неактуальные подробности и ссылайся на
-commits или файлы вместо копирования больших diff. Если task-файл вырос больше
-примерно 12 KB, сожми завершённую историю до коротких итогов до handoff.
+A task file is a current snapshot, not an append-only session journal. When
+updating it, replace stale state, delete detail that no longer applies, and
+point at commits or files instead of copying large diffs. If a task file grows
+past roughly 12 KB, compress its finished history into short summaries before
+handing off.
 
-Не размножай обычные детали сессии по всем глобальным документам. Обновляй
-глобальный документ только когда изменилось состояние, которым он владеет.
+Do not spread ordinary session detail across every global document. Update a
+global document only when the state it owns has changed.
 
-## Сохранение прогресса
+## Saving progress
 
-Не изменяй project-memory файлы автоматически после каждой задачи. Обновляй их,
-когда пользователь явно просит сохранить прогресс или когда handoff входит в
-задачу:
+Do not modify project-memory files automatically after every task. Update them
+when the user explicitly asks to save progress, or when a handoff is part of the
+task:
 
-1. Проверь полный текущий diff, `git status`, commits и выбери проверки через
-   `../shalomut-verification/SKILL.md`; затем выполни их.
-2. Сначала обнови активный task-файл. Запиши только реально выполненные
-   проверки, completed и remaining work, решения, assumptions, failed
-   approaches, risks и approval gates.
-3. Оставь ровно один ясный `Next concrete step`. Запиши текущий HEAD и точное
-   состояние committed, staged, unstaged и untracked; не называй worktree
-   чистым без проверки.
-4. Обнови `PROGRESS.md` только если изменился product-level milestone или
-   крупная завершённая возможность.
-5. Обнови `docs/shalomut-tracker-handoff.md` только если изменился cross-task
-   operational/deployment state, внешний blocker или approval boundary.
-6. Изменяй `PROJECT_CONTEXT.md` только при изменении устойчивой архитектуры или
-   долгоживущего решения.
-7. Не дублируй существующую историю и не записывай секреты, chat transcripts
-   или private AI session URLs.
-8. Если owned state глобального документа не изменился, не редактируй его.
-9. Явно назови границу видимости handoff: незакоммиченное состояние доступно
-   только в том же worktree; другой worktree увидит commit в ветке; другой
-   checkout или машина — только опубликованную ветку после push. Не выполняй
-   commit или push без запроса пользователя, но и не называй незакоммиченный
-   handoff меж-worktree или межмашинным.
-10. Предложи commit message только при наличии реального diff.
+1. Inspect the full current diff, `git status` and commits, choose the checks
+   through `../shalomut-verification/SKILL.md`, and then run them.
+2. Update the active task file first. Record only checks that actually ran,
+   completed and remaining work, decisions, assumptions, failed approaches,
+   risks and approval gates.
+3. Leave exactly one clear `Next concrete step`. Record the current HEAD and the
+   exact committed, staged, unstaged and untracked state; never call a worktree
+   clean without checking.
+4. Update `PROGRESS.md` only if a product-level milestone or a major completed
+   capability changed.
+5. Update `docs/shalomut-tracker-handoff.md` only if cross-task
+   operational/deployment state, an external blocker or an approval boundary
+   changed.
+6. Change `PROJECT_CONTEXT.md` only when stable architecture or a long-lived
+   decision changed.
+7. Do not duplicate existing history, and never record secrets, chat transcripts
+   or private AI session URLs.
+8. If a global document's owned state did not change, leave it alone.
+9. State the handoff's visibility boundary explicitly: uncommitted state is
+   available only in the same worktree; another worktree sees a commit on the
+   branch; another checkout or machine sees only a published branch after a
+   push. Do not commit or push without the user asking, and do not call an
+   uncommitted handoff cross-worktree or cross-machine.
+10. Propose a commit message only when a real diff exists.

@@ -1,144 +1,142 @@
 ---
 name: shalomut-guardrails
-description: Работай с fitness-гейтами репозитория shalomut-map-demo — скриптами `scripts/check-*.mjs`, командами `lint:*` и цепочкой `verify:core`. Используй, когда упал один из гейтов и нужно понять, какое правило он защищает; когда правило пора сделать проверяемым, а не прозой; когда добавляешь, меняешь, ослабляешь или удаляешь проверку либо генерируемый артефакт.
+description: Work on the repository's fitness gates in shalomut-map-demo — the `scripts/check-*.mjs` scripts, the `lint:*` commands and the `verify:core` chain. Use when one of the gates has failed and the rule it defends has to be understood; when a rule should become checkable rather than prose; when adding, changing, weakening or removing a check or a generated artifact.
 ---
 
 # Shalomut Guardrails
 
-## Как читать этот скилл
+## How to read this skill
 
-Всегда в силе: `Назначение` — что этот скилл решает и куда уходит остальное;
-`Красный гейт` — самый частый вход сюда, и именно здесь правило чаще всего
-теряют, «починив» проверку; `Что заслуживает гейта` — граница между обычным
-тестом, гейтом и прозой.
+Always in force: `Purpose` — what this skill decides and where the rest goes;
+`A red gate` — the most common way in here, and the place a rule is most often
+lost by "fixing" the check; `What deserves a gate` — the boundary between an
+ordinary test, a gate and prose.
 
-По условию: `Форма гейта` — пишешь или правишь `scripts/check-*.mjs`;
-`Подключение гейта` — добавляешь, переименовываешь или удаляешь гейт;
-`Генерируемые артефакты` — задача трогает пару «редактируемый источник →
-сгенерированная копия»; `Инвентарь` и
-[references/inventory.md](references/inventory.md) — нужно узнать, какой гейт
-владеет правилом или существует ли он уже.
+On condition: `The shape of a gate` — you are writing or editing a
+`scripts/check-*.mjs`; `Wiring a gate in` — you are adding, renaming or removing
+a gate; `Generated artifacts` — the task touches a pair of editable source and
+generated copy; `Inventory` and
+[references/inventory.md](references/inventory.md) — you need to know which gate
+owns a rule, or whether one already exists.
 
-## Назначение
+## Purpose
 
-Этот скилл про механизм: как правило репозитория становится проверяемым и какую
-форму принимает. Какие проверки запускать под конкретный diff, решает
-`../shalomut-verification/SKILL.md`; какие инварианты у продукта —
-`../shalomut-map/SKILL.md`; состояние ветки и handoff —
+This skill is about the mechanism: how a repository rule becomes checkable and
+what shape it takes. Which checks to run for a given diff is decided by
+`../shalomut-verification/SKILL.md`; what the product's invariants are by
+`../shalomut-map/SKILL.md`; branch state and handoff by
 `../shalomut-tracker/SKILL.md`.
 
-Сегодня в репозитории шестнадцать команд `lint:*`, все входят в `verify:core`, и
-почти у каждой есть скрипт `scripts/check-*.mjs` с парным тестом. Это не
-случайный набор линтеров, а способ, которым проект переводит правило из прозы,
-которую можно не прочитать, в отказ, который нельзя пропустить.
+The repository currently has sixteen `lint:*` commands, all of them steps of
+`verify:core`, and almost every one is a `scripts/check-*.mjs` with a paired
+test. This is not an accidental pile of linters but the way the project moves a
+rule out of prose that can go unread and into a refusal that cannot be missed.
 
-## Красный гейт
+## A red gate
 
-1. Прочитай doc-comment в шапке самого `scripts/check-*.mjs`. Он формулирует
-   правило, обычно называет конкретный инцидент, из-за которого правило
-   появилось, и часто честно перечисляет, чего проверка не видит. Это точнее
-   любого пересказа, включая [references/inventory.md](references/inventory.md).
-2. Считай нарушение настоящим, пока не доказано обратное. Сообщение называет
-   файл и правило; ищи, чем diff это правило нарушил.
-3. Ослабление проверки, добавление файла в список исключений, сужение области
-   обхода или удаление шага — это изменение правила, а не починка сборки. Делай
-   так только осознанно: обнови doc-comment и тесты гейта так, чтобы новое
-   правило было сформулировано и проверялось с обеих сторон.
-4. Никогда не приводи тест гейта в соответствие с текущим поведением, чтобы
-   стало зелено. Тест гейта — это и есть запись правила.
-5. `verify:core` — цепочка через `&&`: она останавливается на первом упавшем
-   шаге. Шаги после него не выполнялись; не отчитывайся о них как о пройденных.
-6. Если гейт действительно неверен, сформулируй, какое поведение он обязан
-   пропускать, добавь тест на эту сторону и меняй саму проверку, а не только её
-   сообщение.
+1. Read the doc-comment at the top of the `scripts/check-*.mjs` itself. It
+   states the rule, usually names the specific incident that produced it, and
+   often lists honestly what the check cannot see. That beats any retelling,
+   [references/inventory.md](references/inventory.md) included.
+2. Treat the violation as real until proven otherwise. The message names the
+   file and the rule; look for how the diff broke it.
+3. Weakening a check, adding a file to an exemption list, narrowing its scope or
+   dropping a step is a change to the rule, not a fix to the build. Do it only
+   deliberately: update the gate's doc-comment and its tests so that the new
+   rule is stated and checked from both sides.
+4. Never bring a gate's test into line with current behaviour to make things
+   green. The gate's test is the record of the rule.
+5. `verify:core` is an `&&` chain: it stops at the first failing step. The steps
+   after it did not run; do not report them as passed.
+6. If a gate really is wrong, state which behaviour it must let through, add a
+   test for that side, and change the check itself rather than only its message.
 
-## Что заслуживает гейта
+## What deserves a gate
 
-- Правило живёт внутри модуля и выражается через его API → обычный тест в
-  `src/**/__tests__`. Гейт для этого не нужен.
-- Правило про форму репозитория — что нельзя импортировать, где может стоять
-  литерал, какой интерпретатор запускается, какая копия документа
-  генерируемая, где лежат скиллы — обычным тестом не выражается: нарушение
-  добавляют в новый файл, которого тест не знает. Это случай для
-  `scripts/check-*.mjs`.
-- Есть редактируемый источник и производная копия → режим `--check` у самого
-  генератора, а не вторая проверка равенства. См. `Генерируемые артефакты`.
-- Правило, которое машина проверить не может — верность архитектурного решения,
-  смысл абзаца, действительно ли запись аудита закрыта, — остаётся прозой в
-  `AGENTS.md` или в скилле. Тогда напиши об этом в doc-comment гейта прямо, как
-  это делают `check-doc-numbers.mjs` и `check-audit-count.mjs`: зелёный гейт не
-  должен читаться как доказательство того, чего он не проверял.
-- Главный признак того, что гейт нужен: нарушение молчит. Тесты зелёные, сборка
-  проходит, ревьюер ничего не видит — и правило уже нарушено. Если нарушение и
-  так роняет suite, хватит теста.
+- A rule that lives inside a module and is expressed through its API → an
+  ordinary test in `src/**/__tests__`. No gate needed.
+- A rule about the shape of the repository — what may not be imported, where a
+  literal may stand, which interpreter runs, which copy of a document is
+  generated, where skills live — cannot be expressed by an ordinary test: the
+  violation arrives in a new file the test does not know about. That is the case
+  for a `scripts/check-*.mjs`.
+- An editable source with a derived copy → a `--check` mode on the generator
+  itself, not a second equality check. See `Generated artifacts`.
+- A rule a machine cannot check — whether an architectural decision is right,
+  what a paragraph means, whether an audit record is genuinely closed — stays
+  prose in `AGENTS.md` or in a skill. Then say so plainly in the gate's
+  doc-comment, the way `check-doc-numbers.mjs` and `check-audit-count.mjs` do: a
+  green gate must not read as proof of what it never checked.
+- The main sign that a gate is needed: the violation is silent. Tests are green,
+  the build passes, a reviewer sees nothing — and the rule is already broken. If
+  a violation fails the suite anyway, a test is enough.
 
-## Форма гейта
+## The shape of a gate
 
-Форма одинакова у всех существующих проверок, и её стоит держать:
+Every existing check has the same shape, and it is worth keeping:
 
-- ESM-файл `scripts/check-<subject>.mjs`, запускаемый из корня репозитория.
-- Doc-comment в шапке: правило, почему оно существует и чего проверка не видит.
-  Пиши только то, что действительно было; выдуманный инцидент хуже его
-  отсутствия.
-- Чистые экспортируемые функции: принимают текст или структуру, возвращают
-  массив сообщений о нарушениях. Чтение файлов и `process.exit` — только в
-  `main()`.
-- `main()` вызывается лишь как entrypoint:
-  `if (process.argv[1] === fileURLToPath(import.meta.url)) main();` — иначе тест
-  не сможет импортировать модуль.
-- Провал: `console.error('<Subject> check failed:')`, затем по строке на
-  нарушение, затем `process.exit(1)`. Сообщение называет файл, правило и что
-  делать вместо этого.
-- Успех: одна строка `<Subject> check passed: …` с тем, сколько именно было
-  проверено. Молчаливый успех неотличим от проверки, которая ничего не прочла.
-- Парный `scripts/check-<subject>.test.mjs` на `node:test` и
-  `node:assert/strict`, проверяющий обе стороны: что ловится, что законно
-  пропускается и какой слепой участок признан. Проверка, которая никогда не
-  падала намеренно, — проверка неизвестной формы. Тонкая обёртка вроде
-  `check-version-literals-python.mjs`, которая лишь запускает checker на другом
-  языке, собственного теста не имеет и запускается из `lint:literals`.
+- An ESM file `scripts/check-<subject>.mjs`, run from the repository root.
+- A doc-comment at the top: the rule, why it exists and what the check cannot
+  see. Write only what actually happened; an invented incident is worse than
+  none.
+- Pure exported functions: they take text or a structure and return an array of
+  violation messages. Reading files and `process.exit` belong in `main()` only.
+- `main()` is called only as an entrypoint:
+  `if (process.argv[1] === fileURLToPath(import.meta.url)) main();` — otherwise
+  the test cannot import the module.
+- On failure: `console.error('<Subject> check failed:')`, then one line per
+  violation, then `process.exit(1)`. The message names the file, the rule and
+  what to do instead.
+- On success: one `<Subject> check passed: …` line stating how much was actually
+  checked. A silent success is indistinguishable from a check that read nothing.
+- A paired `scripts/check-<subject>.test.mjs` on `node:test` and
+  `node:assert/strict` that exercises both sides: what is caught, what is
+  legitimately let through, and which blind spot is accepted. A check that has
+  never failed on purpose is a check whose shape nobody knows. A thin wrapper
+  such as `check-version-literals-python.mjs`, which only runs a checker written
+  in another language, has no test of its own and is run from `lint:literals`.
 
-## Подключение гейта
+## Wiring a gate in
 
 1. `package.json`:
    `"lint:<name>": "node --test scripts/check-<subject>.test.mjs && node scripts/check-<subject>.mjs"`.
-   Тест гейта идёт первым: сначала доказываем, что проверка работает, потом ей
-   верим.
-2. Добавь шаг в `verify:core`. Гейт вне этой цепочки не запускает ни CI
-   (`.github/workflows/verify-core.yml`), ни человек локально, и он мгновенно
-   становится прозой с лишним файлом.
-3. Внеси строку в [references/inventory.md](references/inventory.md).
-   `npm run lint:gate-inventory` требует, чтобы каждая команда `lint:*` была в
-   инвентаре, входила в `verify:core` и запускала существующий собственный тест,
-   а инвентарь не называл несуществующих гейтов.
-4. Если гейт защищает правило, которое агент читает как продуктовое или
-   процедурное, назови его там, где правило сформулировано: `AGENTS.md`,
-   `Канонические границы` в `../shalomut-map/SKILL.md` или матрица выбора в
+   The gate's test comes first: prove the check works, then trust it.
+2. Add the step to `verify:core`. A gate outside that chain is run neither by CI
+   (`.github/workflows/verify-core.yml`) nor by a person locally, and it becomes
+   prose with an extra file attached.
+3. Add a row to [references/inventory.md](references/inventory.md).
+   `npm run lint:gate-inventory` requires every `lint:*` command to be in the
+   inventory, to be a step of `verify:core` and to run an existing test of its
+   own, and requires the inventory to name no gate that does not exist.
+4. If the gate defends a rule an agent reads as a product or process rule, name
+   it where that rule is stated: `AGENTS.md`, `Canonical boundaries` in
+   `../shalomut-map/SKILL.md`, or the selection matrix in
    `../shalomut-verification/SKILL.md`.
-5. Удаление или переименование — снятие во всех этих местах одним изменением.
+5. Removing or renaming a gate means removing or renaming it in all of those
+   places in one change.
 
-После правки любого файла в `.agents/skills/**` запускай `npm run lint:skills`:
-он проверяет frontmatter, разрешимость ссылок, что ни один `references/` файл не
-осиротел и что каждый раздел классифицирован картой чтения.
+After editing any file under `.agents/skills/**`, run `npm run lint:skills`: it
+checks frontmatter, that every link resolves, that no `references/` file is
+orphaned, and that every section is classified by the reading map.
 
-## Генерируемые артефакты
+## Generated artifacts
 
-- `docs/openapi.yaml` — единственный редактируемый источник API-описания;
-  `public/openapi.json` генерируется командой `npm run openapi:generate`, а
-  `npm run openapi:check` сравнивает документ целиком (его запускает
+- `docs/openapi.yaml` is the single editable source of the API description;
+  `public/openapi.json` is produced by `npm run openapi:generate`, and
+  `npm run openapi:check` compares the whole document (it is run by
   `src/app/api/__tests__/openapi.test.ts`).
-- `npm run docs:endpoints` и `npm run docs:endpoints:check` — то же для
-  документированной поверхности эндпоинтов.
-- Ручная правка сгенерированного файла — это drift, а не изменение. Правь
-  источник и перегенерируй.
-- Для новой такой пары давай генератору флаг `--check`, вместо того чтобы писать
-  отдельный скрипт сравнения: один код строит артефакт и сверяет его, поэтому
-  «сгенерировано» и «проверено» не могут разойтись.
+- `npm run docs:endpoints` and `npm run docs:endpoints:check` do the same for
+  the documented endpoint surface.
+- Editing a generated file by hand is drift, not a change. Edit the source and
+  regenerate.
+- For a new pair of this kind, give the generator a `--check` flag instead of
+  writing a separate comparison script: one piece of code builds the artifact
+  and verifies it, so "generated" and "checked" cannot drift apart.
 
-## Инвентарь
+## Inventory
 
-[references/inventory.md](references/inventory.md) — таблица всех гейтов: что
-каждый отказывает и где сформулировано его правило. Открывай её, когда гейт
-упал и нужен маршрут от сообщения к правилу, или когда решаешь, не существует ли
-проверка для правила уже. Doc-comment самого скрипта всегда точнее строки
-таблицы.
+[references/inventory.md](references/inventory.md) is the table of every gate:
+what each one refuses and where its rule is stated. Open it when a gate has
+failed and you need the route from the message to the rule, or when deciding
+whether a rule already has a check. The script's own doc-comment is always more
+accurate than a row of the table.

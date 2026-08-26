@@ -32,18 +32,18 @@ const discover = (dirs, files) => {
 };
 
 const SKILL = (name) =>
-  `---\nname: ${name}\ndescription: Делай что-то полезное в этом репозитории.\n---\n\n# Title\n`;
+  `---\nname: ${name}\ndescription: Do something useful in this repository.\n---\n\n# Title\n`;
 
 /** A skill whose map classifies every section it contains. */
 const MAPPED = (name, extra = '') =>
   `${SKILL(name)}
-## Как читать этот скилл
+## How to read this skill
 
-Всегда в силе: \`Границы\`. По условию: \`Старт\` — начало работы.
+Always in force: \`Boundaries\`. On condition: \`Start\` — work begins.
 
-## Границы
+## Boundaries
 
-## Старт
+## Start
 ${extra}`;
 
 const entries = (spec) =>
@@ -252,22 +252,22 @@ test('a map that classifies every section passes', () => {
 });
 
 test('a section in neither half of the map is unreachable', () => {
-  const problems = findUnmappedSections(`${MAPPED('a-skill')}\n## Забытый\n`);
+  const problems = findUnmappedSections(`${MAPPED('a-skill')}\n## Forgotten\n`);
 
   assert.strictEqual(problems.length, 1);
-  assert.match(problems[0], /`Забытый` is in neither half/);
+  assert.match(problems[0], /`Forgotten` is in neither half/);
 });
 
 test('a skill with sections but no map at all fails', () => {
-  const problems = findUnmappedSections(`${SKILL('a-skill')}\n## Границы\n`);
+  const problems = findUnmappedSections(`${SKILL('a-skill')}\n## Boundaries\n`);
 
   assert.strictEqual(problems.length, 1);
-  assert.match(problems[0], /no `Как читать этот скилл` section/);
+  assert.match(problems[0], /no `How to read this skill` section/);
 });
 
 test('the map check is wired into the directory check', () => {
   const files = {
-    '.agents/skills/a-skill/SKILL.md': `${MAPPED('a-skill')}\n## Забытый\n`,
+    '.agents/skills/a-skill/SKILL.md': `${MAPPED('a-skill')}\n## Forgotten\n`,
   };
   const errors = checkSkillDirectory('.agents/skills/a-skill', files);
 

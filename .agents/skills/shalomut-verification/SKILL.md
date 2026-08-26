@@ -1,199 +1,207 @@
 ---
 name: shalomut-verification
-description: Проверяй изменения и runtime-поведение проекта shalomut-map-demo. Используй, когда нужно доказать корректность bugfix или feature, выбрать tests по diff, проверить готовность к merge, выполнить lint/build/Prisma/Python/OpenAPI/AI E2E/browser smoke, проверить deployed environment или зафиксировать verification evidence без неподтверждённых claims.
+description: Verify changes and runtime behaviour of the shalomut-map-demo project. Use when a bugfix or feature has to be proven correct, when tests must be chosen from a diff, when checking readiness to merge, when running lint/build/Prisma/Python/OpenAPI/AI E2E/browser smoke, when checking a deployed environment, or when recording verification evidence without unproven claims.
 ---
 
 # Shalomut Verification
 
-## Как читать этот скилл
+## How to read this skill
 
-Всегда в силе: `Назначение` — пропорциональность риску; `Preflight` — без него
-нельзя определить строки матрицы; `Матрица выбора` — обязательный минимум по
-затронутой области; `Обработка результатов` и `Формат evidence` — что считается
-пройденной проверкой и как о ней отчитаться.
+Always in force: `Purpose` — proportionality to risk; `Preflight` — without it
+the matrix rows cannot be chosen; `Selection matrix` — the mandatory minimum per
+area touched; `Handling results` and `Evidence format` — what counts as a passed
+check and how to report it.
 
-По условию, после того как матрица выбрала строки: `Команды проекта` — подраздел
-под каждую выбранную строку, а не весь раздел; `Browser и runtime scenarios` —
-diff меняет user-visible flow;
-[references/mutation-testing.md](references/mutation-testing.md) — сработала
-строка про mutation config или мутируемые файлы либо нужно доказать силу тестов.
+On condition, once the matrix has selected rows: `Project commands` — the
+subsection under each selected row, not the whole section;
+`Browser and runtime scenarios` — the diff changes a user-visible flow;
+[references/mutation-testing.md](references/mutation-testing.md) — the row about
+mutation config or mutated files fired, or the strength of the tests has to be
+proven.
 
-## Назначение
+## Purpose
 
-Выбирай минимальный набор проверок, который доказывает изменённое поведение, а
-затем расширяй его пропорционально риску. Не запускай полный suite механически
-для docs-only изменений и не ограничивайся одним targeted test для изменений
-privacy, auth, persistence, contracts или deployment.
+Choose the smallest set of checks that proves the changed behaviour, then widen
+it in proportion to risk. Do not run the full suite mechanically for a
+docs-only change, and do not stop at one targeted test for a change to privacy,
+auth, persistence, contracts or deployment.
 
 ## Preflight
 
-1. Определи корень репозитория через `git rev-parse --show-toplevel`.
-2. Прочитай `AGENTS.md`, `package.json`, релевантный source и ближайшие tests.
-3. Проверь `git status --short`, staged/unstaged diff и список изменённых файлов.
-4. Определи затронутые слои: UI, API, services, persistence, Prisma, survey
-   methodology, OpenAPI, AI contract, Python service, auth/security или deploy.
-5. Зафиксируй контекст evidence: local, test или deployed. `test` обозначает
-   изолированную проверку, а не третье продуктовое окружение. Не
-   смешивай evidence из разных environments без явного обозначения.
-6. Против deployed по умолчанию действует read-only smoke: не создавай данные,
-   не вызывай webhook и не меняй alias без разрешения, соответствующего
-   environment. Правило стоит здесь, а не среди сценариев, потому что проверка
-   callback или AI boundary тоже уходит в deployed, не будучи user-visible flow.
-7. `npm run dev` запускает runtime, но сам по себе не является evidence.
+1. Determine the repository root with `git rev-parse --show-toplevel`.
+2. Read `AGENTS.md`, `package.json`, the relevant source and the nearest tests.
+3. Check `git status --short`, the staged/unstaged diff and the list of changed
+   files.
+4. Identify the layers touched: UI, API, services, persistence, Prisma, survey
+   methodology, OpenAPI, AI contract, the Python service, auth/security or
+   deployment.
+5. Record the evidence context: local, test or deployed. `test` denotes an
+   isolated check, not a third product environment. Do not mix evidence from
+   different environments without labelling it.
+6. Against deployed, a read-only smoke is the default: do not create data, do
+   not fire a webhook and do not change an alias without permission appropriate
+   to that environment. The rule sits here rather than among the scenarios
+   because checking a callback or the AI boundary also reaches deployed without
+   being a user-visible flow.
+7. `npm run dev` starts a runtime but is not evidence by itself.
 
-## Матрица выбора
+## Selection matrix
 
-| Изменённая область | Обязательный минимум |
+| Area changed | Mandatory minimum |
 | --- | --- |
-| Только Markdown, instructions или skills | Frontmatter/links, `git diff --check`, релевантная structural validation; для `AGENTS.md`, клиентских адаптеров и `.agents/skills/**` — `npm run lint:skills` |
-| Гейт репозитория: `scripts/check-*.mjs`, команда `lint:*`, её место в `verify:core` или инвентарь гейтов | Парный `node --test` и сам гейт, `npm run lint:gate-inventory`, а при правке `.agents/skills/**` ещё и `npm run lint:skills`. Ослабление проверки — изменение правила: обнови doc-comment и тесты обеих сторон по `../shalomut-guardrails/SKILL.md` |
-| Мутируемые файлы (`src/lib/ai-contract.ts`, `src/lib/scoring-bands.ts`), их tests или mutation config | `npm run lint:mutation-config`, Stryker dry run; полный mutation run, если задача меняет mutation evidence или просит оценить test strength. Детали — [references/mutation-testing.md](references/mutation-testing.md) |
-| `src/components`, page TSX, CSS | Targeted tests, `npm run lint`, `npm run build`; browser smoke для user-visible flow |
-| Шрифты: `src/app/fonts/**`, `next/font` или font stack в `globals.css` | `npm run lint:fonts`, `npm run build` и browser smoke с `document.fonts` — сравни `.next/static/media/*.woff2` с файлом в репозитории и убедись, что ни один resource entry не уходит на Google |
-| `src/app/api`, services, hooks, utilities | Ближайшие API/unit tests, затем `npm test` и `npm run build` |
-| Repositories или server guards | Repository/API regression tests, `npm test`, `npm run lint`, `npm run build` |
-| `prisma/schema.prisma` или migrations | `npx prisma validate`, `npx prisma generate`, repository tests; status/migration только по правилам ниже |
-| Survey source, scoring или privacy | Survey-definition/math/API tests, `npm test`, respondent и locked/ready browser states |
-| `docs/openapi.yaml` или API contract | `npm run openapi:generate`, OpenAPI integrity tests, сверка route/schema changes с реальными handlers |
-| Versioned AI manifest, `contracts/capabilities.json` или AI TypeScript | `npm run lint:contract-refusals` — новая версия обязана получить suite отрицательных тестов; contract/registry/client/view-model tests, `npm test`, Python tests и local boundary E2E |
-| `ai-analytics-service` | `.venv/bin/python -m pytest` из `ai-analytics-service` — полный набор, включая contract suites |
-| Python-зависимости: `pyproject.toml`, `requirements*.txt`, `Dockerfile`, python-шаги в workflows | `npm run lint:python-deps`; локи регенерируются командами из `ai-analytics-service/README.md`, а не правятся руками. Развёрнутый интерпретатор — 3.11, и на машине разработки его обычно нет, поэтому доказательство одно: `docker build` и прогон набора в этом образе. Команда — в разделе `Local container check` того же README |
-| Auth, secrets или authorization | Unauthorized/missing-secret/organization-isolation tests и security-focused diff review |
-| Deploy, env или runtime config | Полный local suite, deployed source/build/health/status/logs и безопасный read-only browser smoke |
+| Markdown, instructions or skills only | Frontmatter/links, `git diff --check`, the relevant structural validation; for `AGENTS.md`, the client adapters and `.agents/skills/**` — `npm run lint:skills` |
+| A repository gate: `scripts/check-*.mjs`, a `lint:*` command, its place in `verify:core` or the gate inventory | The paired `node --test` and the gate itself, `npm run lint:gate-inventory`, plus `npm run lint:skills` when `.agents/skills/**` is edited. Weakening a check is changing a rule: update the doc-comment and the tests for both sides, per `../shalomut-guardrails/SKILL.md` |
+| Mutated files (`src/lib/ai-contract.ts`, `src/lib/scoring-bands.ts`), their tests or the mutation config | `npm run lint:mutation-config`, a Stryker dry run; a full mutation run if the task changes mutation evidence or asks for test strength. Details in [references/mutation-testing.md](references/mutation-testing.md) |
+| `src/components`, page TSX, CSS | Targeted tests, `npm run lint`, `npm run build`; browser smoke for a user-visible flow |
+| Fonts: `src/app/fonts/**`, `next/font` or the font stack in `globals.css` | `npm run lint:fonts`, `npm run build` and a browser smoke with `document.fonts` — compare `.next/static/media/*.woff2` against the file in the repository and confirm that no resource entry goes to Google |
+| `src/app/api`, services, hooks, utilities | The nearest API/unit tests, then `npm test` and `npm run build` |
+| Repositories or server guards | Repository/API regression tests, `npm test`, `npm run lint`, `npm run build` |
+| `prisma/schema.prisma` or migrations | `npx prisma validate`, `npx prisma generate`, repository tests; status/migration only under the rules below |
+| Survey source, scoring or privacy | Survey-definition/math/API tests, `npm test`, respondent and locked/ready browser states |
+| `docs/openapi.yaml` or the API contract | `npm run openapi:generate`, OpenAPI integrity tests, and a comparison of route/schema changes against the real handlers |
+| A versioned AI manifest, `contracts/capabilities.json` or AI TypeScript | `npm run lint:contract-refusals` — a new version must get a suite of negative tests; contract/registry/client/view-model tests, `npm test`, Python tests and the local boundary E2E |
+| `ai-analytics-service` | `.venv/bin/python -m pytest` from `ai-analytics-service` — the full set, contract suites included |
+| Python dependencies: `pyproject.toml`, `requirements*.txt`, `Dockerfile`, python steps in workflows | `npm run lint:python-deps`; locks are regenerated by the commands in `ai-analytics-service/README.md`, never edited by hand. The deployed interpreter is 3.11 and a development machine usually does not have it, so there is one proof: `docker build` and running the suite in that image. The command is in the `Local container check` section of the same README |
+| Auth, secrets or authorization | Unauthorized/missing-secret/organization-isolation tests and a security-focused diff review |
+| Deployment, env or runtime config | The full local suite, deployed source/build/health/status/logs and a safe read-only browser smoke |
 
-Если diff затрагивает несколько строк таблицы, объедини проверки и устрани
-дубликаты.
+If a diff touches several rows of the table, merge their checks and remove
+duplicates.
 
-Одна проверка не привязана к строке: `npm run typecheck` — обязательный минимум
-для любого изменения `.ts`/`.tsx`. `npm run build` типизирует только граф
-приложения и не видит ошибки в `__tests__`, а `npm run lint` типы не проверяет
-вообще, поэтому ни одна строка выше его не заменяет.
+One check belongs to no row: `npm run typecheck` is the mandatory minimum for
+any `.ts`/`.tsx` change. `npm run build` types only the application graph and
+cannot see an error in `__tests__`, and `npm run lint` does not check types at
+all, so no row above replaces it.
 
-## Команды проекта
+## Project commands
 
-### TypeScript и Next.js
+### TypeScript and Next.js
 
-- Запускай ближайший test напрямую через `npx tsx --test <test-file>`.
-- Запускай полный TypeScript suite через `npm test`. `tsx` стирает типы и не
-  проверяет их, поэтому зелёный `npm test` ничего не говорит о типах.
-- Проверяй типы всего проекта, включая tests, через `npm run typecheck`
-  (`next typegen && tsc --noEmit`). Это обязательный минимум для любого
-  изменения `.ts`/`.tsx`: `npm run build` типизирует только граф приложения и
-  не видит ошибки в `__tests__`, а `npm run lint` типы не проверяет вообще.
-- Проверяй lint через `npm run lint`.
-- Проверяй production compilation и App Router boundaries через
-  `npm run build`.
-- `npm run lint:fonts`, входящий в `verify:core`, не даёт шрифту вернуться в
-  сеть: gate падает на `next/font/google`, на Google font host в коде или CSS и
-  на `next/font/local` источнике, которого нет на диске. Правило не
-  декоративное: до 2026-08-12 `next build` качал пять `.woff2` с
-  `fonts.gstatic.com`, и 12 августа раннеру достался устаревший stylesheet — все
-  пять ответили 404, Turbopack записал это как warning и уронил build
-  сообщением, в котором нет ни слова про шрифт или сеть. Тот же коммит собрался
-  в соседней job, так что gate был не красным, а случайным.
+- Run the nearest test directly with `npx tsx --test <test-file>`.
+- Run the full TypeScript suite with `npm test`. `tsx` strips types without
+  checking them, so a green `npm test` says nothing about types.
+- Type-check the whole project, tests included, with `npm run typecheck`
+  (`next typegen && tsc --noEmit`). It is the mandatory minimum for any
+  `.ts`/`.tsx` change: `npm run build` types only the application graph and
+  cannot see an error in `__tests__`, and `npm run lint` does not check types at
+  all.
+- Check lint with `npm run lint`.
+- Check production compilation and App Router boundaries with `npm run build`.
+- `npm run lint:fonts`, part of `verify:core`, keeps a font from going back to
+  the network: the gate fails on `next/font/google`, on a Google font host in
+  code or CSS, and on a `next/font/local` source that is not on disk. The rule
+  is not decorative: until 2026-08-12 `next build` downloaded five `.woff2`
+  files from `fonts.gstatic.com`, and on 12 August a runner received a stale
+  stylesheet — all five answered 404, Turbopack recorded that as a warning and
+  failed the build with a message that mentions neither fonts nor the network.
+  The same commit built cleanly in the neighbouring job, so the gate had become
+  a coin toss rather than a red light.
 
 ### Mutation testing
 
-Правила, команды и история этого слоя вынесены в
-[references/mutation-testing.md](references/mutation-testing.md). Открывай файл,
-когда сработала строка матрицы про mutation config или мутируемые файлы, либо
-когда пользователь просит доказать силу тестов.
+The rules, commands and history of this layer live in
+[references/mutation-testing.md](references/mutation-testing.md). Open the file
+when the matrix row about mutation config or mutated files fires, or when the
+user asks for proof of test strength.
 
-Обе связанные проверки уже названы в матрице, потому что входят в `verify:core`
-и роняют CI: `npm run lint:mutation-config` выводит `tap.testFiles` заново из
-репозитория, а `npm run lint:contract-refusals` требует, чтобы каждый путь
-валидации камня был упомянут в каком-нибудь `*-refusals.test.ts`. Не правь
-`stryker.config.mjs` и не добавляй версию контракта, не прогнав их.
+Both related checks are already named in the matrix because they are part of
+`verify:core` and fail CI: `npm run lint:mutation-config` re-derives
+`tap.testFiles` from the repository, and `npm run lint:contract-refusals`
+requires every stone-validation path to be exercised by some `*-refusals.test.ts`.
+Do not edit `stryker.config.mjs` or add a contract version without running them.
 
-### Prisma и persistence
+### Prisma and persistence
 
-- Проверяй schema через `npx prisma validate`.
-- Проверяй client generation через `npx prisma generate`.
-- Запускай repository и API tests после schema/repository changes.
-- Перед `npm run db:status`, `db:migrate:*`, `db:clear` и другими writes
-  проверяй, на какой database environment они уйдут. Данные расходные, поэтому
-  backup/rollback boundary и отдельное подтверждение не требуются — важна
-  только правильность target.
+- Validate the schema with `npx prisma validate`.
+- Check client generation with `npx prisma generate`.
+- Run repository and API tests after schema/repository changes.
+- Before `npm run db:status`, `db:migrate:*`, `db:clear` and other writes, check
+  which database environment they will reach. The data is disposable, so no
+  backup/rollback boundary and no separate confirmation are required — only the
+  correctness of the target matters.
 
-### Python и AI boundary
+### Python and the AI boundary
 
-- Запускай полный suite из `ai-analytics-service`: `.venv/bin/python -m pytest`.
-  Это единственная команда, покрывающая и contract suites в `tests/`. Именно
-  интерпретатор из `.venv`, а не `python3`: зависимости стоят только в venv, а
-  оболочка агента не сохраняет `source .venv/bin/activate` между вызовами, так
-  что `python3 -m pytest` отвечает `No module named pytest`. Если `.venv` нет,
-  создай его по `docs/local-environment.md` — с extra `[dev]`, иначе pytest в
-  venv не появится.
-- То же правило для Node-вызовов проверяет `npm run lint:interpreter`, входящий
-  в `verify:core`. Интерпретатор резолвит `scripts/ai-service-python.mjs`; gate
-  падает на `python3` в позиции команды в `scripts/`, `src/`, `e2e/`,
-  `package.json` и `.github/workflows/`. Разрешён только `python3 -m venv`.
-  Правило не декоративное: `npm test` поднимает реальный Python pipeline, и до
-  2026-08-12 он брал `python3` из PATH — на macOS это 3.9, который не проходит
-  `requires-python = ">=3.11"` и роняет три cross-service теста ImportError'ом
-  из середины сервиса, а вместе с ними и весь `verify:core`.
-- `run_tests.py` — только совместимость: он делегирует в ту же команду. Не
-  ссылайся на него как на отдельное evidence.
-- После contract, MCP, webhook или callback changes запускай соответствующие
-  TypeScript tests и local Next.js → Python → callback boundary test через
-  `npm test`.
-- Не считай mock MCP доказательством реального deployed transport.
+- Run the full suite from `ai-analytics-service`: `.venv/bin/python -m pytest`.
+  It is the only command that covers the contract suites in `tests/` as well.
+  The interpreter must be the one from `.venv`, not `python3`: the dependencies
+  are installed only in the venv, and an agent's shell does not keep
+  `source .venv/bin/activate` between calls, so `python3 -m pytest` answers
+  `No module named pytest`. If there is no `.venv`, create it per
+  `docs/local-environment.md` — with the `[dev]` extra, or pytest never appears
+  in the venv.
+- The same rule for Node callers is checked by `npm run lint:interpreter`, part
+  of `verify:core`. The interpreter is resolved by
+  `scripts/ai-service-python.mjs`; the gate fails on `python3` in command
+  position in `scripts/`, `src/`, `e2e/`, `package.json` and
+  `.github/workflows/`. Only `python3 -m venv` is allowed. The rule is not
+  decorative: `npm test` starts a real Python pipeline, and until 2026-08-12 it
+  took `python3` from PATH — on macOS that is 3.9, which does not satisfy
+  `requires-python = ">=3.11"` and fails three cross-service tests with an
+  ImportError from the middle of the service, taking all of `verify:core` with
+  it.
+- `run_tests.py` exists for compatibility only: it delegates to the same
+  command. Do not cite it as separate evidence.
+- After contract, MCP, webhook or callback changes, run the corresponding
+  TypeScript tests and the local Next.js → Python → callback boundary test
+  through `npm test`.
+- Do not treat a mock MCP as proof of real deployed transport.
 
 ### OpenAPI
 
-- `docs/openapi.yaml` — единственный редактируемый источник. После правки
-  запускай `npm run openapi:generate` и коммить сгенерированный
-  `public/openapi.json`. Ручная правка JSON — не изменение, а drift.
-- Запускай `src/app/api/__tests__/openapi.test.ts` после route/schema changes.
-  Он включает `npm run openapi:check`, который сравнивает весь документ.
-- Проверяй совпадение status codes, authentication requirements, payload
-  schemas и versioned contract semantics с реальными handlers. Это то, чего
-  генератор проверить не может: он гарантирует идентичность артефактов, а не
-  их правдивость.
+- `docs/openapi.yaml` is the single editable source. After editing it run
+  `npm run openapi:generate` and commit the generated `public/openapi.json`.
+  Editing the JSON by hand is drift, not a change.
+- Run `src/app/api/__tests__/openapi.test.ts` after route/schema changes. It
+  includes `npm run openapi:check`, which compares the whole document.
+- Check that status codes, authentication requirements, payload schemas and
+  versioned contract semantics match the real handlers. That is what the
+  generator cannot check: it guarantees the artefacts are identical, not that
+  they are truthful.
 
-## Browser и runtime scenarios
+## Browser and runtime scenarios
 
-Проверяй только релевантные сценарию states:
+Check only the states the scenario needs:
 
-- пустая persistence: нет выдуманной школы или раунда;
-- manager onboarding и round setup;
-- respondent flow по реальному share code;
-- below-threshold privacy lock;
-- ready analytics и восемь canonical dimensions;
-- loading, not-found, upstream error и unauthorized;
-- RTL reading order, keyboard access, responsive layout и reduced motion для UI
-  changes.
+- empty persistence: no invented school or round;
+- manager onboarding and round setup;
+- the respondent flow through a real share code;
+- the below-threshold privacy lock;
+- ready analytics and the eight canonical dimensions;
+- loading, not-found, upstream error and unauthorized;
+- RTL reading order, keyboard access, responsive layout and reduced motion for
+  UI changes.
 
-Один путь из этого списка автоматизирован: `npm run test:e2e` собирает проект и
-прогоняет `e2e/smoke.spec.ts` — вход менеджера, экран сбора, ссылка для
-респондента и дашборд. Playwright сам поднимает сервер на порту 3100 и сам
-выдаёт ему `SESSION_SECRET`, `MANAGER_ADMIN_PASSWORD` и
-`MANAGER_ORGANIZATION_ID`, поэтому реальные секреты не нужны ни локально, ни в
-CI. Нужна база с раундом: локально это dev-база, в CI шаг сам применяет
-миграции и сид. Smoke отвечает на вопрос «приложение стоит?», а не «правила
-верны» — остальные проверки не заменяет.
+One path from that list is automated: `npm run test:e2e` builds the project and
+runs `e2e/smoke.spec.ts` — manager sign-in, the collection screen, the
+respondent link and the dashboard. Playwright starts the server on port 3100
+itself and supplies `SESSION_SECRET`, `MANAGER_ADMIN_PASSWORD` and
+`MANAGER_ORGANIZATION_ID`, so no real secrets are needed locally or in CI. A
+database with a round is needed: locally the dev database, in CI a step that
+applies migrations and seeds. The smoke answers "is the application standing?",
+not "are the rules correct", and replaces no other check.
 
-Для local UI используй `playwright` или `playwright-interactive`, если они
-доступны. Для deployed environment действует read-only правило из `Preflight`.
+For local UI use `playwright` or `playwright-interactive` when available. For a
+deployed environment the read-only rule from `Preflight` applies.
 
-## Обработка результатов
+## Handling results
 
-- Считай проверку прошедшей только при фактическом exit code `0` или
-  подтверждённом ожидаемом runtime результате.
-- Разделяй `passed`, `failed`, `blocked` и `not run`.
-- При failure сохрани точную команду и полезный фрагмент ошибки; не маскируй
-  проблему fallback-успехом.
-- Не исправляй unrelated failure без расширения scope. Определи, существовал ли
-  он до текущего diff, если это можно проверить безопасно.
-- После исправления повтори сначала упавшую проверку, затем затронутый suite.
-- Если diff затрагивает privacy, authentication, authorization, contracts,
-  deployment или границу Core/AI и остаточный риск требует независимого review,
-  верни tracker короткий сигнал `Independent review recommended.`; итоговую
-  model recommendation формирует tracker.
+- Count a check as passed only on an actual exit code `0` or a confirmed
+  expected runtime result.
+- Separate `passed`, `failed`, `blocked` and `not run`.
+- On a failure, keep the exact command and a useful fragment of the error; do
+  not mask the problem with a fallback success.
+- Do not fix an unrelated failure without widening scope. Establish whether it
+  predates the current diff, when that can be checked safely.
+- After a fix, re-run the failing check first, then the affected suite.
+- If the diff touches privacy, authentication, authorization, contracts,
+  deployment or the Core/AI boundary and the residual risk needs independent
+  review, return the short signal `Independent review recommended.` to the
+  tracker; the tracker forms the final model recommendation.
 
-## Формат evidence
+## Evidence format
 
-Перед завершением сообщи:
+Before finishing, report:
 
 ```text
 Verification:
@@ -204,8 +212,8 @@ Verification:
 - Residual risk: <what remains unverified>
 ```
 
-Если существует активный branch task document и готовится handoff, до передачи
-обнови в нём `Verification evidence`: `Passed`, `Failed`, `Blocked or not run`,
-`Environment` и `Residual risk`. Не записывай проверки, которые не выполнялись,
-и не копируй обычное task evidence в `PROGRESS.md` или global operational
-handoff, если оно не меняет project-wide или deployed state.
+If an active branch task document exists and a handoff is being prepared, update
+its `Verification evidence` before handing over: `Passed`, `Failed`, `Blocked or
+not run`, `Environment` and `Residual risk`. Do not record checks that did not
+run, and do not copy ordinary task evidence into `PROGRESS.md` or the global
+operational handoff unless it changes project-wide or deployed state.

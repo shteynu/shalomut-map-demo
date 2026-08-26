@@ -1,42 +1,42 @@
-# Инвентарь гейтов
+# The gate inventory
 
-Каждая строка — одна команда `lint:*` из `package.json`. Все они входят в
-`verify:core`, и каждая сначала прогоняет собственный тест, а потом саму
-проверку. Соответствие таблицы и `package.json` проверяет
-`npm run lint:gate-inventory`.
+Each row is one `lint:*` command from `package.json`. All of them are steps of
+`verify:core`, and each runs its own test before running the check itself.
+`npm run lint:gate-inventory` checks that this table and `package.json` agree.
 
-Таблица — маршрут от упавшего сообщения к правилу, а не его формулировка.
-Правило целиком написано в doc-comment соответствующего скрипта, и на любом
-расхождении прав он.
+The table is the route from a failing message to its rule, not the statement of
+the rule. The rule is written in full in the doc-comment of the corresponding
+script, and on any disagreement the script wins.
 
-| Гейт | Что отказывает | Где сформулировано правило |
+| Gate | What it refuses | Where the rule is stated |
 | --- | --- | --- |
-| `lint:literals` | Литерал версии контракта вне контрактного пакета, wire-типов и тестов — в Core и в Python-сервисе | `scripts/check-version-literals.mjs`, `scripts/check-version-literals-python.mjs` |
-| `lint:interpreter` | `python3` из PATH в позиции команды в `scripts/`, `src/`, `e2e/`, `package.json`, workflows; разрешён только `python3 -m venv` | `scripts/check-python-interpreter.mjs` |
-| `lint:composition` | Резолв composition root не из entrypoint и конструирование репозитория вне composition root | `scripts/check-composition-root.mjs` |
-| `lint:deploy-migrations` | Сборку деплоя, которая больше не применяет миграции, — включая обход через `vercel-build` | `scripts/check-deploy-migrations.mjs` |
-| `lint:tenant-chokepoints` | Путь менеджера к данным школы мимо `loadManagerContext` и `authorizeManagerRound` | `scripts/check-tenant-chokepoints.mjs`, `Канонические границы` в `../../shalomut-map/SKILL.md` |
-| `lint:fixtures` | Достижимость демо-фикстур (`DEMO_ORGANIZATION`, `DEMO_ROUND`, `SHALOM-DEMO`) из runtime-модулей | `scripts/check-runtime-fixtures.mjs` |
-| `lint:skills` | Копию скилла вне `.agents/skills/`, битую или осиротевшую `references/`-ссылку, неклассифицированный раздел, адаптер клиента, который никуда не маршрутизирует | `scripts/check-agent-skills.mjs`, `AGENTS.md` |
-| `lint:mutation-config` | `tap.testFiles`, разошедшийся с репозиторием: знаменатель mutation score выводится заново | `scripts/check-mutation-config.mjs`, [../../shalomut-verification/references/mutation-testing.md](../../shalomut-verification/references/mutation-testing.md) |
-| `lint:contract-refusals` | Путь валидации callback-payload, для которого нет suite отрицательных тестов | `scripts/check-contract-refusal-suites.mjs` |
-| `lint:fonts` | Возврат шрифта в сеть: `next/font/google`, Google-хост в коде или CSS, отсутствующий локальный источник | `scripts/check-local-fonts.mjs` |
-| `lint:doc-numbers` | Число, процитированное документом из конфигурации и разошедшееся с ней | `scripts/check-doc-numbers.mjs`, `AGENTS.md` |
-| `lint:audit-count` | Счёт в `docs/critical-audit-2026-08-21.md`, не совпадающий со статусами его же записей | `scripts/check-audit-count.mjs`, `AGENTS.md` |
-| `lint:error-bodies` | Пойманный `error` в теле ответа route handler — деталь уходит в `reportRouteFailure`, а не наружу | `scripts/check-error-bodies.mjs` |
-| `lint:python-deps` | Расхождение `pyproject.toml` с локами, потерянные хеши, установку не из лока | `scripts/check-python-deps.mjs`, `ai-analytics-service/README.md` |
-| `lint:docs-publish` | Регрессию публикации документов: гейт состоит из одного набора тестов `scripts/publish-doc.test.mjs` | `scripts/publish-doc.mjs` |
-| `lint:gate-inventory` | Гейт вне `verify:core`, гейт, не названный в этой таблице, строку таблицы без гейта и команду `lint:*`, которая не прогоняет собственный тест | `scripts/check-gate-inventory.mjs`, `../SKILL.md` |
+| `lint:literals` | A contract-version literal outside the contract package, the wire types and the tests — in Core and in the Python service | `scripts/check-version-literals.mjs`, `scripts/check-version-literals-python.mjs` |
+| `lint:interpreter` | `python3` from PATH in command position in `scripts/`, `src/`, `e2e/`, `package.json` and the workflows; only `python3 -m venv` is allowed | `scripts/check-python-interpreter.mjs` |
+| `lint:composition` | Resolving the composition root outside an entrypoint, and constructing a repository outside the composition root | `scripts/check-composition-root.mjs` |
+| `lint:deploy-migrations` | A deployed build that no longer applies migrations — including the bypass through `vercel-build` | `scripts/check-deploy-migrations.mjs` |
+| `lint:tenant-chokepoints` | A manager path to a school's data that goes around `loadManagerContext` and `authorizeManagerRound` | `scripts/check-tenant-chokepoints.mjs`, `Canonical boundaries` in `../../shalomut-map/SKILL.md` |
+| `lint:fixtures` | Reachability of the demo fixtures (`DEMO_ORGANIZATION`, `DEMO_ROUND`, `SHALOM-DEMO`) from runtime modules | `scripts/check-runtime-fixtures.mjs` |
+| `lint:skills` | A copy of a skill outside `.agents/skills/`, a broken or orphaned `references/` link, an unclassified section, a client adapter that routes nowhere | `scripts/check-agent-skills.mjs`, `AGENTS.md` |
+| `lint:mutation-config` | A `tap.testFiles` that has drifted from the repository: the denominator of the mutation score is re-derived | `scripts/check-mutation-config.mjs`, [../../shalomut-verification/references/mutation-testing.md](../../shalomut-verification/references/mutation-testing.md) |
+| `lint:contract-refusals` | A callback-payload validation path with no suite of negative tests | `scripts/check-contract-refusal-suites.mjs` |
+| `lint:fonts` | A font going back to the network: `next/font/google`, a Google host in code or CSS, a missing local source | `scripts/check-local-fonts.mjs` |
+| `lint:doc-numbers` | A number a document quotes from configuration that has drifted from it | `scripts/check-doc-numbers.mjs`, `AGENTS.md` |
+| `lint:audit-count` | A count in `docs/critical-audit-2026-08-21.md` that disagrees with the statuses of its own records | `scripts/check-audit-count.mjs`, `AGENTS.md` |
+| `lint:error-bodies` | A caught `error` in a route handler's response body — the detail goes to `reportRouteFailure`, not outward | `scripts/check-error-bodies.mjs` |
+| `lint:python-deps` | A `pyproject.toml` that disagrees with the locks, lost hashes, an install that is not from the lock | `scripts/check-python-deps.mjs`, `ai-analytics-service/README.md` |
+| `lint:docs-publish` | A regression in document publishing: this gate is one set of tests, `scripts/publish-doc.test.mjs` | `scripts/publish-doc.mjs` |
+| `lint:gate-inventory` | A gate outside `verify:core`, a gate this table does not name, a row with no gate behind it, and a `lint:*` command that does not run its own test | `scripts/check-gate-inventory.mjs`, `../SKILL.md` |
 
-## Проверки, которых в этой таблице нет
+## Checks that are not in this table
 
-Они не относятся к семейству `lint:*` и живут по своим правилам:
+They are not part of the `lint:*` family and live by their own rules:
 
-- `npm run openapi:check` и `npm run docs:endpoints:check` — режим `--check` у
-  генератора; их запускают тесты и `docs`-команды, а не `verify:core` напрямую.
-- `npm run lint` (ESLint), `npm run typecheck`, `npm test`, `npm run build`,
-  `npm run verify:ai` — обычные шаги `verify:core`, не fitness-проверки формы
-  репозитория.
-- `npm run verify:db`, `npm run test:e2e`, Stryker — окружение и evidence;
-  когда они обязательны, решает матрица в
+- `npm run openapi:check` and `npm run docs:endpoints:check` — the `--check`
+  mode of a generator; they are run by tests and by the `docs` commands, not by
+  `verify:core` directly.
+- `npm run lint` (ESLint), `npm run typecheck`, `npm test`, `npm run build` and
+  `npm run verify:ai` — ordinary steps of `verify:core`, not fitness checks on
+  the shape of the repository.
+- `npm run verify:db`, `npm run test:e2e` and Stryker — environment and
+  evidence; when they are mandatory is decided by the matrix in
   [../../shalomut-verification/SKILL.md](../../shalomut-verification/SKILL.md).

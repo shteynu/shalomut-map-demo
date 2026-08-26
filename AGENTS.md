@@ -7,7 +7,7 @@ agent guidance. Do not prefer user-local or ignored copies of the same skills.
 ## Required skill routing
 
 Match the task to a skill, open that skill, and follow the reading map in its
-own `Как читать этот скилл` section. Every skill states there which of its
+own `How to read this skill` section. Every skill states there which of its
 sections are always in force and which are opened only when a named condition
 holds. That map — not this file — decides how much of a skill a task needs, so
 that a client with automatic discovery and a client reading the file directly
@@ -34,6 +34,19 @@ end up applying the same rules.
 Read the always-in-force part before substantial work and open the rest when its
 condition actually holds. Loading a section is cheap and skipping a rule is not,
 so when a condition is ambiguous, open the section.
+
+### Language
+
+Repository instructions are written in English: `AGENTS.md`, the client
+adapters, every skill under `.agents/skills/`, the doc-comments of the gates and
+the branch task files. One language keeps a rule stated once — the same rule
+used to exist in English here and in Russian in a skill, and nothing compares
+two translations of it.
+
+Dated documents are not rewritten for this. `docs/critical-audit-2026-08-21.md`
+and the archived plans and task files stay as they were written, and the audit's
+Russian status vocabulary stays the input `npm run lint:audit-count` reads.
+Hebrew product copy is product content, not instructions, and is unaffected.
 
 ### One canonical set for every agent
 

@@ -1,38 +1,38 @@
-# Эскалация роли или модели — процедура
+# Role or model escalation — the procedure
 
-Открывай этот файл только когда сработал trigger из раздела
-`Эскалация роли или модели` в [../SKILL.md](../SKILL.md). Пока trigger не
-сработал, политика молчит, и открывать файл незачем.
+Open this file only when a trigger from the `Role or model escalation` section
+of [../SKILL.md](../SKILL.md) has fired. Until one does, the policy is silent
+and there is nothing here to read.
 
-## Порядок действий
+## What to do
 
-1. Сначала заверши безопасный ограниченный шаг. Незавершённый шаг делает
-   рекомендацию бесполезной: следующий агент не знает, где ты остановился.
-2. Обнови task-файл: findings, остаточный риск и один `Next concrete step`.
-3. Порекомендуй ровно одно действие:
-   - продолжить текущим агентом;
-   - привлечь роль `strong reasoning model`;
-   - привлечь роль `independent reviewer`;
-   - разделить независимую работу по разным веткам или worktrees.
+1. Finish a safe bounded step first. An unfinished step makes the
+   recommendation useless: the next agent does not know where you stopped.
+2. Update the task file: findings, residual risk and one `Next concrete step`.
+3. Recommend exactly one action:
+   - continue with the current agent;
+   - bring in the `strong reasoning model` role;
+   - bring in the `independent reviewer` role;
+   - split independent work across separate branches or worktrees.
 
-Не переключай модель автоматически. Не утверждай её доступность, превосходство
-или оставшийся usage без evidence из клиента.
+Never switch model automatically. Never assert a model's availability,
+superiority or remaining usage without evidence from the client.
 
-## Формат вывода
+## Output format
 
-Не добавляй complexity scores, token estimates, model tables или сравнения
-коммерческих моделей. Они выглядят как измерение, но ни одно из них здесь не
-измерено. Выведи только:
+Do not add complexity scores, token estimates, model tables or comparisons of
+commercial models. They look like measurement, and none of them is measured
+here. Output only:
 
 ```text
-Model recommendation: <одно действие>.
-Reason: <одно предложение>.
-Handoff: <task-файл и следующий шаг>.
+Model recommendation: <one action>.
+Reason: <one sentence>.
+Handoff: <task file and next step>.
 ```
 
-## Блок в task-файле
+## The block in the task file
 
-Только при реальной эскалации добавь:
+Only on a real escalation, add:
 
 ```md
 ## Agent recommendation

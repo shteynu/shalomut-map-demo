@@ -1,59 +1,60 @@
-# Mutation testing — правила и команды
+# Mutation testing — rules and commands
 
-Открывай этот файл, когда сработала строка матрицы `Mutation config или tests
-для мутируемых файлов` в [../SKILL.md](../SKILL.md), либо когда пользователь
-просит оценить силу тестов. В остальных случаях достаточно двух следствий,
-названных в самом скилле: `lint:mutation-config` и `lint:contract-refusals`
-входят в `verify:core` и роняют CI сами.
+Open this file when the matrix row about mutation config or mutated files in
+[../SKILL.md](../SKILL.md) fires, or when the user asks for an assessment of
+test strength. Otherwise the two consequences named in the skill itself are
+enough: `lint:mutation-config` and `lint:contract-refusals` are part of
+`verify:core` and fail CI on their own.
 
 ## Scope
 
-- Текущий mutation scope — opt-in pilot для `src/lib/ai-contract.ts` и
-  `src/lib/scoring-bands.ts`, куда переехало правило валидатора «score и status
-  обязаны сходиться»; конфигурация находится в `stryker.config.mjs`.
-- Если продуктовое правило уезжает из мутируемого файла в новый модуль, веди
-  `mutate` за ним в том же изменении. Рефакторинг не должен молча выносить
-  правило из измерения.
+- The current mutation scope is an opt-in pilot for `src/lib/ai-contract.ts` and
+  `src/lib/scoring-bands.ts`, which is where the validator rule "score and
+  status must agree" moved; the configuration lives in `stryker.config.mjs`.
+- If a product rule moves out of a mutated file into a new module, take `mutate`
+  with it in the same change. A refactor must not silently carry a rule out of
+  measurement.
 
-## Список тестов
+## The list of tests
 
-- `tap.testFiles` должен содержать каждый test-файл, предметом которого является
-  мутируемый файл, включая тесты вне `src/lib/__tests__`. Пропущенный файл не
-  занижает score честно: он показывает как survivor мутант, который реальный
-  тест убил бы. Так до 2026-08-03 правило Hebrew-only выглядело непокрытым при
-  существующем `hebrew-only-corpus.test.ts`.
-- Список больше не ведётся вручную: `npm run lint:mutation-config` выводит его
-  заново из репозитория и падает в обе стороны — на пропущенном файле и на
-  оставшемся в списке файле, который больше ничего не вызывает. Проверка входит
-  в `verify:core`, поэтому CI выполняет её на каждом pull request. Не правь
-  `tap.testFiles`, не прогнав её.
+- `tap.testFiles` must contain every test file whose subject is a mutated file,
+  including tests outside `src/lib/__tests__`. A missing file does not lower the
+  score honestly: it reports as a survivor a mutant a real test would kill. That
+  is how, until 2026-08-03, the Hebrew-only rule looked untested while
+  `hebrew-only-corpus.test.ts` already existed.
+- The list is no longer maintained by hand: `npm run lint:mutation-config`
+  re-derives it from the repository and fails in both directions — on a missing
+  file and on a file left in the list that no longer calls anything. The check
+  is part of `verify:core`, so CI runs it on every pull request. Do not edit
+  `tap.testFiles` without running it.
 
-## Отрицательные тесты новой версии контракта
+## Negative tests for a new contract version
 
-Новая версия контракта обязана получить suite отрицательных тестов.
-`npm run lint:contract-refusals` группирует версии из
-`contracts/capabilities.json` по тем capability-флагам, на которых
-`validateStoneMapResult` выбирает валидатор камня, и падает, если какой-то путь
-валидации не упомянут ни в одном `*-refusals.test.ts`. Версия, которая идёт по
-уже покрытому пути, своего suite не требует: так `4.0` проходит через валидатор
-`3.0`. Набор флагов выводится из самого `ai-contract.ts`, поэтому ветвление по
-новому флагу тоже роняет проверку. Проверка входит в `verify:core`. Она
-доказывает существование suite, а не его полноту: силу тестов по-прежнему
-показывает только полный mutation run.
+A new contract version must get a suite of negative tests.
+`npm run lint:contract-refusals` groups the versions in
+`contracts/capabilities.json` by the capability flags on which
+`validateStoneMapResult` picks a stone validator, and fails if some validation
+path is named in no `*-refusals.test.ts`. A version that travels an
+already-covered path needs no suite of its own: that is how `4.0` goes through
+the `3.0` validator. The set of flags is derived from `ai-contract.ts` itself,
+so branching on a new flag fails the check too. The check is part of
+`verify:core`. It proves that a suite exists, not that it is complete: only a
+full mutation run still shows the strength of the tests.
 
-## Запуск
+## Running it
 
-- Проверяй wiring без полного прогона через
-  `npm run test:mutation:ai-contract -- --dryRunOnly`. То же самое CI выполняет
-  отдельным шагом после `npm run verify`.
-- Полный `npm run test:mutation:ai-contract` запускай, когда изменён сам
-  validator, mutation config/набор тестов либо пользователь просит доказать
-  силу тестов. Он не входит в `npm run verify` и не является blocking CI gate:
-  score двигают перенос функции между файлами и появление test-файла в списке,
-  то есть изменения, не относящиеся к силе тестов.
+- Check the wiring without a full run with
+  `npm run test:mutation:ai-contract -- --dryRunOnly`. CI runs the same thing as
+  a separate step after `npm run verify`.
+- Run the full `npm run test:mutation:ai-contract` when the validator itself,
+  the mutation config or the set of tests changed, or when the user asks for
+  proof of test strength. It is not part of `npm run verify` and is not a
+  blocking CI gate: the score is moved by a function migrating between files and
+  by a test file appearing in the list — changes that have nothing to do with
+  the strength of the tests.
 
-## Отчётность
+## Reporting
 
-Не обещай repository-wide mutation coverage. Разделяй killed, survived,
-no-coverage и runtime-error mutants; HTML/JSON reports под `reports/mutation/`
-являются локальным ignored evidence.
+Do not promise repository-wide mutation coverage. Separate killed, survived,
+no-coverage and runtime-error mutants; the HTML/JSON reports under
+`reports/mutation/` are local ignored evidence.

@@ -29,8 +29,8 @@ test('gates are the `lint:*` scripts, sorted', () => {
 
 test('the inventory is read as the code spans it names', () => {
   const source = [
-    '| `lint:fonts` | шрифт из сети | `scripts/check-local-fonts.mjs` |',
-    'Обычный `npm run lint` сюда не относится.',
+    '| `lint:fonts` | a font from the network | `scripts/check-local-fonts.mjs` |',
+    'A plain `npm run lint` does not belong here.',
   ].join('\n');
 
   assert.deepEqual(parseInventoryGates(source), ['lint:fonts']);
