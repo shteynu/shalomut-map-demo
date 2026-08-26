@@ -5,8 +5,9 @@
 - Branch: `claude/useful-repo-skill-wfad6a`
 - Base branch: `main`
 - Base commit: `24ed8bc`
-- Current HEAD: see `git log -1` — the English-language batch follows `8cde693`
-- Status: implementation complete, awaiting review
+- Current HEAD: `32b21bf`, the last code commit of the branch; `main` was
+  fast-forwarded onto this branch, so its four commits are `main` verbatim
+- Status: landed. Archived on 2026-08-26
 - Last updated: 2026-08-26
 - Last agent/tool: Claude Code (remote session)
 
@@ -237,6 +238,8 @@ them where they are — described in prose and enforced by their generators.
 
 ## Next concrete step
 
-Read the four translated `SKILL.md` files against `git show 8cde693^:<path>` for
-each, confirming that no rule changed meaning in translation, and correct
-anything that drifted.
+None: the branch landed. One follow-up is left for a future task, and it is a
+read, not a fix — compare the four translated `SKILL.md` files against
+`git show 8cde693^:<path>` for each and confirm that no rule changed meaning in
+translation. Nothing checks that, and there is no second copy to compare
+against any more.
