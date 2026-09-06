@@ -538,6 +538,21 @@ test('2.0 provenance must name exactly the canonical questions of its dimension'
     STONE_REFUSED,
   );
 
+  // One wrong ID that still sorts last, so the two IDs before it keep their
+  // positions. The `meaning-1` case above sorts to the front and shifts every
+  // position instead, which a comparison asking "do all of them differ?" would
+  // refuse just as readily — and that comparison is wrong. Only a partial
+  // mismatch tells the two apart.
+  assert.match(
+    v2Refusal((payload) => {
+      const provenance = firstStone(payload).generationProvenance;
+      const ids = [...provenance.sourceQuestionIds];
+      ids[ids.length - 1] = `${ids[ids.length - 1]}-not-a-question`;
+      provenance.sourceQuestionIds = ids;
+    }),
+    STONE_REFUSED,
+  );
+
   const reordered = createValidV2Payload();
   const reorderedProvenance = firstStone(reordered).generationProvenance;
   reorderedProvenance.sourceQuestionIds = [

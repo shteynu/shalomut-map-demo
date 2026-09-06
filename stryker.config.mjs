@@ -61,6 +61,10 @@ const config = {
       // And for `5.0`: the distribution, the adaptation outcome and the
       // partial map, which had accepting tests only.
       'src/lib/__tests__/ai-contract-v5-refusals.test.ts',
+      // The accepting side of one rule that spans three versions: the question
+      // IDs a stone reports are a set, so a provider may list them in any
+      // order. Every other fixture happens to build them already sorted.
+      'src/lib/__tests__/ai-contract-question-id-order.test.ts',
       // A validator test does not have to live beside the validator. This one
       // walks a 3.0 payload through the staging dry run and asserts both the
       // accepted and the privacy-locked outcome, so it kills mutants no file
