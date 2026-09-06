@@ -5,8 +5,9 @@
 - Branch: `test/question-id-order-is-not-a-rule`
 - Base branch: `main`
 - Base commit: `2048f42`
-- Current HEAD: `b780cc2`
-- Status: ready to land
+- Current HEAD: `169f280`, the task-file commit of the branch; `main` was
+  fast-forwarded onto it, so both commits are `main` verbatim
+- Status: landed. Archived on 2026-09-06
 - Last updated: 2026-09-06
 - Last agent/tool: Claude Opus 5 / Claude Code
 
@@ -127,9 +128,8 @@ None. The branch is ready to land.
 
 ## Changed files
 
-All three are committed in `b780cc2`; nothing is staged or unstaged for this
-task, and `next-env.d.ts` carries an unrelated local modification that belongs
-to no commit here.
+All three are committed in `b780cc2`, which is on `main`. `next-env.d.ts`
+carries an unrelated local modification that belongs to no commit here.
 
 - `src/lib/__tests__/ai-contract-question-id-order.test.ts` (new)
 - `src/lib/__tests__/ai-contract-legacy-refusals.test.ts` (modified)
@@ -192,6 +192,12 @@ None.
 
 ## Next concrete step
 
-Land the branch: `git push origin test/question-id-order-is-not-a-rule:main`.
-That command is the owner's to run. Until it does, this work is visible only in
-this worktree's branch — the branch has never been pushed.
+None: the branch landed on 2026-09-06, and Core verification, Browser smoke and
+CodeQL all passed on `169f280`.
+
+One thing is left for a future task, and it is a decision, not a fix. Three
+survivors on the duplicate-metric guard and one on the `2.0` canonical sort are
+recorded above as equivalent, with the reasoning that makes them unkillable.
+That reasoning holds only while the provenance rules stay as strict as they are
+now. If they are ever loosened, those mutants become killable — and nobody will
+be told; the next full mutation run is the only place it would show.
