@@ -4,15 +4,17 @@
 
 - Branch: `claude/methodology-questions-analysis-gvh18u`
 - Base branch: `main` at `f47959e`
-- Current HEAD: the commit carrying this file, on top of `455e33e`
-- Status: complete on the branch — six commits, all pushed, nothing
-  uncommitted. Nothing is deployed
+- Current HEAD: the commit carrying this file, on top of the counter commit
+  that follows `98fb6ea`
+- Status: complete on the branch — every commit pushed, nothing uncommitted.
+  Nothing is deployed
 - Last updated: 2026-09-12
 - Last agent/tool: Claude Code
 
 ## Objective
 
-One branch, five steps each named as "the next step" by the one before it:
+One branch, five steps each named as "the next step" by the one before it,
+and one small follow-up the owner asked for after the save:
 
 1. `9813c44` — proposed answers to the six methodologist questions of
    `docs/methodologist-questions-2026-08-15-ru.md`, for the methodologist to
@@ -25,12 +27,15 @@ One branch, five steps each named as "the next step" by the one before it:
 4. `150c335` — the shared callback corpus judges `7.0` on both sides.
 5. `455e33e` — the swap: the instrument is the questionnaire a round is born
    with, the owner's "Да"; ADR-004 as amended.
+6. The commit after `98fb6ea` — the builder's «שאלות פעילות» stone counts
+   items, not stored rows.
 
 ## User-visible outcome
 
 A new round is born with the research instrument, `טעינת תבנית` loads it, the
-builder's template suggestions come from it, and the consent screen counts its
-126 items rather than 150 stored rows. A respondent meets 16 background
+builder's template suggestions come from it, and the consent screen and the
+builder's summary stone both count its 126 items rather than 150 stored rows,
+with «מתוכן 77 שאלות חובה» counted the same way. A respondent meets 16 background
 screens, two 13-row grids and 13 statement blocks with the 30 unscored
 statements as optional rows inside their blocks. Rounds created before the swap
 keep their questionnaire; a round persisted without a snapshot is still served
@@ -68,7 +73,8 @@ manager screens still read the round; only its AI analysis waits.
   the builder's template button and `templateSuggestionForDimension`;
   `createCanonicalSurveyDefinition` / `canonicalSurveyQuestions` keep the 24
   behind every fallback and the backfill. `countQuestionnaireItems` in
-  `survey-steps.ts` counts a grid once. `encodeAnalyticsInput` refuses a
+  `survey-steps.ts` counts a grid once, for the consent screen, the template
+  dialog and the builder's summary stone alike. `encodeAnalyticsInput` refuses a
   non-colour questionnaire under a version without `carriesAnswerScale`.
   Documents moved with it: `source-of-truth.md`, `PRODUCT.md`,
   `platform-handbook.md` §4, ADR-004 amendment, `docs/README.md` (the plan is
@@ -103,9 +109,9 @@ manager screens still read the round; only its AI analysis waits.
 
 ### Passed
 
-- `npm run verify:core` — exit 0 on the final tree (`455e33e`): fifteen
-  gates, typecheck, `npm test` 1686/1686, `verify:ai` 601 passed, lint,
-  build. Intermediate runs found and fixed: the mutation config missing the
+- `npm run verify:core` — exit 0 on the tree of step 6: fifteen gates,
+  typecheck, `npm test` 1687/1687, `verify:ai` 610 passed, lint, build. The
+  same chain was exit 0 on `455e33e` (1686 and 601 then). Intermediate runs found and fixed: the mutation config missing the
   two `7.0` suites; three tests using `7.0` as an unknown version; five tests
   pinning "a new round is born with 24"; one doubled comma.
 - `ai-e2e.test.ts` — 4 pass, including a mixed-scale, reverse-scored round
@@ -118,7 +124,8 @@ manager screens still read the round; only its AI analysis waits.
     right on both scales;
   - the swap: sign-in, `/setup?round=new` → a draft round with 150 stored
     questions and the instrument's `instrumentId`; the builder on it reads
-    «150 שאלות פעילות, מתוכן 77 שאלות חובה»; «שמירה והכנה להפצה» activates
+    «150 שאלות פעילות, מתוכן 77 שאלות חובה» (before step 6; it is 126 now,
+    by the unit test, not re-walked); «שמירה והכנה להפצה» activates
     it; the share link as a stranger shows «126 שאלות, כ־23 דקות» and 31
     steps. A first attempt against a stale `.next` produced a 24-question
     round; the evidence is from the rebuilt server.
@@ -149,8 +156,11 @@ afterwards. No deployed write of any kind.
 - The mapping is the agent's, accepted by the owner, not the methodologist's.
 - `scaleMatchingOptions` compares anchor labels; a changed anchor text would
   turn unscored rows of persisted rounds back into standalone screens.
-- The builder's counter counts stored rows («150 שאלות פעילות») while the
-  consent screen and the template dialog count items (126).
+- The builder's history list still counts stored rows («150 שאלות פעילות
+  מתוך 150»): its numbers come from a SQL summary in
+  `prisma-survey-definition-version.repository.ts` that must agree with
+  `summariseVersion`, so moving it to items is a change to both plus the
+  database test, and was left out of step 6.
 - A `balance` stone on the instrument has 36 metrics; that screen has not
   been looked at in a browser.
 - Landing this branch with `AI_ANALYTICS_CONTRACT_VERSION` still `6.0` makes
@@ -161,7 +171,7 @@ afterwards. No deployed write of any kind.
 ## Git state
 
 Committed and pushed: `9813c44`, `8d8d4e0`, `7674f73`, `150c335`, `23b6f72`,
-`455e33e` and this file's commit, all on
+`455e33e`, `98fb6ea`, the counter commit and this file's commit, all on
 `origin/claude/methodology-questions-analysis-gvh18u`. Nothing staged,
 unstaged or untracked. `main` is still `f47959e`; landing the branch is the
 owner's.

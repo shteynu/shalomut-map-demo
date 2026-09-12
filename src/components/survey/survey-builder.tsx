@@ -283,11 +283,17 @@ export function SurveyBuilder({
    */
   const newQuestionScaleId = scaleForNewQuestion(questions, targetDimensionId);
 
+  /*
+   * Counted as the consent screen and the template dialog count: a grid is one
+   * item, not one per row. This stone said «150 שאלות פעילות» for the 126-item
+   * instrument while the share link promised «126 שאלות», and the manager was
+   * left to reconcile the two.
+   */
   const summaryStones = [
     {
-      value: enabledQuestions.length,
+      value: countQuestionnaireItems(enabledQuestions),
       label: "שאלות פעילות",
-      helper: `מתוכן ${requiredQuestions.length} שאלות חובה`,
+      helper: `מתוכן ${countQuestionnaireItems(requiredQuestions)} שאלות חובה`,
       className: "stone-variant-navy",
     },
     {

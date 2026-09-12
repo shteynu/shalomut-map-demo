@@ -423,4 +423,24 @@ describe('counting items', () => {
       3,
     );
   });
+
+  it('counts the required subset the same way, so a grid of optional rows adds nothing', async () => {
+    const { countQuestionnaireItems } = await import('../survey-steps');
+    const { researchInstrumentQuestions } = await import('../../research-instrument');
+
+    // The builder's «מתוכן N שאלות חובה» is this number over the required
+    // questions. On the instrument every grid row is optional, so the 77 stays
+    // 77 whether rows or items are counted; the mixed case below is where a
+    // row count and an item count part.
+    const required = researchInstrumentQuestions().filter((question) => question.required);
+    assert.equal(countQuestionnaireItems(required), 77);
+    assert.equal(
+      countQuestionnaireItems([
+        analytic('q1'),
+        allocationRow('a1', 'load', true),
+        allocationRow('a2', 'load', true),
+      ]),
+      2,
+    );
+  });
 });
