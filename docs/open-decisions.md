@@ -58,6 +58,10 @@ do them and nothing in it can verify them either.
    → [`methodologist-questions-2026-08-15-ru.md`](methodologist-questions-2026-08-15-ru.md),
    [`-he.md`](methodologist-questions-2026-08-15-he.md),
    [instrument plan](default-research-instrument-plan-2026-08-14.md) §7.1.
+   A proposed answer exists since 2026-09-12 — a full table with polarity and
+   confidence per item, for the methodologist to confirm or correct rather than
+   compose — and it does not close this entry: the mapping is owner-supplied.
+   → [`methodologist-questions-analysis-2026-09-12.md`](methodologist-questions-analysis-2026-09-12.md) §2.
 7. **Name a pilot school, with a date.** It converts half the 2026-08-10 strategy
    sweep from theory into a schedule. Two wordings travel with it and are
    editorial rather than engineering: the Chief Scientist directive (axis 1) and
@@ -130,11 +134,18 @@ These four travel with item 6 and are listed separately because answering the
 mapping does not answer them.
 
 18. **Do the scoring bands stay as they are** once answers are normalised Likert
-    values? → [instrument plan](default-research-instrument-plan-2026-08-14.md) §7.3.
-19. **Do background (demographic) items cross the AI boundary?** → §7.4.
+    values? → [instrument plan](default-research-instrument-plan-2026-08-14.md) §7.3;
+    proposed answer (keep them, absolute, revisit on pilot data) in the
+    [analysis](methodologist-questions-analysis-2026-09-12.md) §3.
+19. **Do background (demographic) items cross the AI boundary?** → §7.4. The
+    code already answers no (ADR-004 as amended 2026-08-14); what is open is
+    recording it as a decision rather than a state — analysis §8.
 20. **Are the allocation grids analysed at all**, or collected and shown without
-    reaching a stone? → §7.5.
-21. **The six defects in the source document.** → §7.2 and §4.
+    reaching a stone? → §7.5; proposed answer (descriptive, the paired
+    difference is the diagnostic) in the analysis §4.
+21. **The six defects in the source document.** → §7.2 and §4; a proposed
+    resolution for each, and six more found on reading the instrument, in the
+    analysis §7.
 
 ## Operational, and an agent can do it with one input
 

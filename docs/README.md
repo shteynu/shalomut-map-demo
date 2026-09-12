@@ -134,6 +134,16 @@ on, and a historical one explicitly is not.
   specification**: nothing here may be implemented from, because every line of
   it is a question. Keep the two files in step — an answer that arrives against
   one version applies to both.
+- [`methodologist-questions-analysis-2026-09-12.md`](methodologist-questions-analysis-2026-09-12.md)
+  — the agent's proposed answers to those six questions, written in Russian
+  because that is the letter's language. It reads the instrument itself for the
+  first time and carries a full item-to-dimension table for the 108 Likert
+  items with polarity and a confidence mark on every row, a reading of the
+  scoring bands against the 1–5 and 1–7 anchors, and twelve source-document
+  defects with a proposed resolution each. **A proposal, not a decision**: the
+  mapping stays owner-supplied (instrument plan §2, decision 3), nothing may be
+  implemented from it until the owner accepts it, and `open-decisions.md` keeps
+  item 6 waiting until then.
 
 ## Historical plans and evidence
 
