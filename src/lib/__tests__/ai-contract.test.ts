@@ -90,6 +90,7 @@ test('AI analytics contract uses the canonical survey dimension IDs', () => {
     '4.0',
     '5.0',
     '6.0',
+    '7.0',
   ]);
 });
 

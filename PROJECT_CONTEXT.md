@@ -17,7 +17,7 @@ and privacy-safe aggregates become an eight-dimension organic Stone Map.
 - AI analytics: separate Python 3.11+ FastAPI service.
 - Styling: Tailwind CSS 4, CSS variables and warm organic tokens.
 - Deployment shape: Vercel Core, Render Python service, Supabase PostgreSQL.
-- Contracts: JSON manifests `1.0`–`6.0`, shared capability registry and an
+- Contracts: JSON manifests `1.0`–`7.0`, shared capability registry and an
   OpenAPI specification with one editable source.
 
 The documentation lifecycle and owners are indexed in `docs/README.md`.
@@ -38,7 +38,7 @@ explicit, provenance-labelled boundaries, not simulated provider output.
 
 ### ADR-002: Versioned contracts and consumer-first rollout
 
-Published contracts `1.0`–`6.0` retain their released semantics. Their machine
+Published contracts `1.0`–`7.0` retain their released semantics. Their machine
 sources live under `contracts/`; cross-version policy lives in
 `contracts/capabilities.json`, and current produced/supported status lives in
 `docs/ai-contract-version-matrix.md`.
@@ -72,7 +72,7 @@ are the reason it does: `supportsPartialMaps` and
 `generationProvenance.unavailableReason`. Both meet every condition above, and
 ADR-007 owns their behaviour.
 
-Core currently can produce `3.0`–`6.0`. An unset
+Core currently can produce `3.0`–`7.0`. An unset
 `AI_ANALYTICS_CONTRACT_VERSION` resolves to rollback-safe `5.0`; the deployed
 environment explicitly selects `6.0`. Unknown values fail closed. A new
 incompatible exchange requires a new manifest and a consumer-first sequence:
@@ -2408,6 +2408,37 @@ creation records the title it was given, so the two commonest rows each carried
 the same string twice. The rule is equality, not the field name: the moment the
 recorded value and the current one differ — a renamed account, a renamed round —
 both appear, which is the case a reader of an audit log is looking for.
+
+### ADR-056: Contract `7.0` names the scale and drops the metric narrative
+
+2026-09-12. The research instrument (`src/lib/research-instrument.ts`) answers
+on 1–5 and 1–7 scales, reverse-scores its demands, and asks over a hundred
+statements. Contract `6.0` cannot carry it, and not by a margin an amendment
+closes: its distribution counts chosen colours, and its metric coverage
+requires a 300–500 character narrative on every question aggregate.
+
+`7.0` keeps everything `6.0` says about a dimension — three paragraphs, five
+recommendations, the round summary, partial maps, provenance — and changes two
+meanings. Every question aggregate carries `scaleId` and `polarity`, and every
+metric echoes them for `verify-ai-result.ts` to check against the persisted
+questionnaire, as it checks the distribution; the average stays normalised with
+the polarity applied, so a high number is good on every question, and the
+prompts tell the model so. Metrics carry no `insightText`, and a stone no
+`metricInsightsOutcome`: the paragraphs are the reading of the questions.
+
+Two decisions inside that. The capability that names the change is
+`carriesAnswerScale`, false on every earlier version, so a consumer written
+before it branches on a flag rather than a version number, as the fitness gates
+require. And the refusal-suite gate now groups versions by
+`usesNarrativeMetrics` too: `7.0` differs from `6.0` on exactly that flag, and a
+gate that grouped by the four earlier flags would have reported `7.0` as
+covered by `6.0`'s suite.
+
+Rollout is consumer-first as the matrix prescribes and, as of this record,
+stops before any deployment: both runtimes accept and produce `7.0` in `main`,
+Core lists it as producible, the unset default stays `5.0`, and the deployed
+services still speak `6.0`. Selecting `7.0` is a per-deployment choice for a
+round on the instrument, made after the Python service reports it.
 
 ### ADR-055: A school does not read its own log
 

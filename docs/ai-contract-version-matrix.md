@@ -4,14 +4,14 @@
 
 | Boundary | Source of supported versions | Current result |
 | --- | --- | --- |
-| Shared capability registry | `contracts/capabilities.json` | `1.0`–`6.0` capability metadata |
-| Core callback validators | `AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS` | `1.0`–`6.0` |
-| Core producer | `PRODUCIBLE_ANALYTICS_CONTRACT_VERSIONS` | `3.0`–`6.0`; unset defaults to `5.0`; deployed Production explicitly selects `6.0` |
+| Shared capability registry | `contracts/capabilities.json` | `1.0`–`7.0` capability metadata |
+| Core callback validators | `AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS` | `1.0`–`7.0` in `main` since 2026-09-12; deployed Core still `1.0`–`6.0` |
+| Core producer | `PRODUCIBLE_ANALYTICS_CONTRACT_VERSIONS` | `3.0`–`7.0` in `main`; unset defaults to `5.0`; deployed Production explicitly selects `6.0` |
 | Core health | producer resolver + callback list | reports produced/producible/supported separately |
-| Core MCP/OpenAPI | registry plus OpenAPI discriminator integrity tests | callback output `1.0`–`6.0`; deployed round analytics are produced as `6.0` |
-| Python parser and pipeline | Python supported-version tuple plus shared capabilities | `1.0`–`6.0`; V6 structured summary, narrative metrics and top-five recommendations are implemented in `main` |
-| Python health | `AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS` | deployed health reports `1.0`–`6.0`; deployed source includes `97f0641` |
-| Shared golden corpus | `contracts/fixtures/golden_corpus.json` | positive/negative cases for `1.0`, `3.0`, `4.0`, `5.0`, `6.0` |
+| Core MCP/OpenAPI | registry plus OpenAPI discriminator integrity tests | callback output `1.0`–`7.0` in `main`; deployed round analytics are produced as `6.0` |
+| Python parser and pipeline | Python supported-version tuple plus shared capabilities | `1.0`–`7.0` in `main` since 2026-09-12; V7 answer scales, no metric narrative |
+| Python health | `AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS` | deployed health reports `1.0`–`6.0`; deployed source includes `97f0641`; `7.0` is not deployed |
+| Shared golden corpus | `contracts/fixtures/golden_corpus.json` | positive/negative cases for `1.0`, `3.0`, `4.0`, `5.0`, `6.0`, `7.0` |
 
 ## Contract `6.0`
 
@@ -65,6 +65,45 @@ ask the model for this sentence at all, and the field would describe a choice
 those versions do not make), and is absent on rounds analysed before it
 existed.
 
+## Contract `7.0`
+
+Published 2026-09-12 as `contracts/ai-analytics-v7.json`, for the research
+instrument that `6.0` cannot carry. It is `6.0` in its overview — three
+paragraphs per stone, five adapted recommendations, a two-to-four-sentence
+round summary, partial maps, the same provenance — with two changes of
+meaning:
+
+- **Every question aggregate names its answer scale and its polarity**
+  (`scaleId`, `polarity: positive | negative`), and every metric echoes both
+  back for Core to verify the way `5.0` echoes the distribution. The average
+  is already normalised to 0–100 with the polarity applied, so a high number is
+  good for the dimension on every question; the fields say what the respondent
+  was shown, and the prompts say so to the model. `scoreDistribution` keeps its
+  shape and gains its definition: the count of normalised answer scores in each
+  band, which on the colour scale is the count of chosen colours.
+- **Metrics carry no narrative.** `insightText` is forbidden on a metric and
+  `metricInsightsOutcome` on a stone: with over a hundred statements a round,
+  a narrative per metric is over a hundred narratives, and the dimension's
+  paragraphs are the reading of its questions. The screens render a `7.0`
+  metric as the numeric evidence they render for `5.0`.
+
+The capability manifest says this as `usesNarrativeMetrics: false` and a new
+flag, `carriesAnswerScale: true`; every earlier version declares the flag
+false. The refusal-suite gate now groups versions by `usesNarrativeMetrics` as
+well, so `7.0` has its own validation path and its own refusal suite.
+
+**Rollout state, 2026-09-12: steps 1 and 4 of the sequence below are done,
+steps 2, 3 and 5 are not.** The manifest and capability entry are published;
+the Python parser, pipeline and outgoing gate accept and produce `7.0`; Core
+validates, verifies, persists and renders it; `7.0` is in Core's producible
+list with the unset default unmoved at `5.0`; and a complete local round on a
+mixed-scale questionnaire has crossed MCP → the shipping Python pipeline →
+callback verification → the Dashboard DTO under `AI_ANALYTICS_CONTRACT_VERSION=7.0`.
+What has not happened is any deployment: Python health still reports
+`1.0`–`6.0` and Production still produces `6.0`. Deploying Python first, then
+Core, then selecting `7.0` on a round that uses the instrument, is the owner's
+sequence, and it is not urgent until such a round exists.
+
 ## Amending a published version
 
 `supportsPartialMaps`, `generationProvenance.unavailableReason`,
@@ -83,15 +122,15 @@ under `contracts/`, this document, and the ADR that owns the behaviour.
 
 ## Adding a real next version
 
-**A `7.0` is planned and not started, as of 2026-08-14.** The instrument
-replacement in `docs/default-research-instrument-plan-2026-08-14.md` cannot be
-carried by an amendment to `6.0`, and the reason is worth stating so nobody
-tries: `scoreDistribution` is `{green, yellow, red}` and required from `5.0`,
-which cannot describe a 1–7 item; and `metricCoverage` — exactly every input
-question aggregate, each with a 300–500 character `insightText` — would mean 108
-narratives per round. Both are changed meanings rather than optional additions,
-so the amendment rule in the section above does not apply and the sequence below
-does. Nothing about `1.0`–`6.0` changes.
+`7.0` followed this sequence in 2026-09 (see *Contract `7.0`* above for where
+it stands). The reasoning that made it a version rather than an amendment is
+kept here because the next one will face it again: `scoreDistribution` was
+`{green, yellow, red}` of chosen colours, which cannot describe a 1–7 item, and
+`metricCoverage` — exactly every input question aggregate, each with a 300–500
+character `insightText` — would have meant 108 narratives per round. Both were
+changed meanings rather than optional additions, so the amendment rule in the
+section above did not apply and the sequence below did. Nothing about
+`1.0`–`6.0` changed.
 
 The rollout remains consumer-first:
 

@@ -37,7 +37,7 @@ def check_python_source(source, filepath="<source>"):
         def visit_Constant(self, node):
             if (
                 isinstance(node.value, str)
-                and re.fullmatch(r"[1-6]\.0", node.value)
+                and re.fullmatch(r"[1-7]\.0", node.value)
                 and int(node.value.split(".")[0]) >= 3
             ):
                 errors.append(

@@ -100,7 +100,7 @@ test('produced and supported versions are reported separately', async () => {
 });
 
 test('a misconfigured version answers 503 and names the problem', async () => {
-  const { response, body } = await callHealth('7.0');
+  const { response, body } = await callHealth('8.0');
 
   assert.strictEqual(response.status, 503);
   assert.strictEqual(body.status, 'misconfigured');
@@ -153,7 +153,7 @@ test('a deployment with no commit variable says unknown rather than omitting it'
 test('a misconfigured deployment still names its commit', async () => {
   // The case where it matters most: the answer to "which revision broke it"
   // must not depend on the deployment being healthy enough to answer.
-  const { response, body } = await callHealth('7.0', SHA);
+  const { response, body } = await callHealth('8.0', SHA);
 
   assert.strictEqual(response.status, 503);
   assert.strictEqual(body.status, 'misconfigured');

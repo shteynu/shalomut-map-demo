@@ -19,6 +19,7 @@
  * reads it from too.
  */
 import type { WellbeingDimensionId } from '../shalomut-source';
+import { COLOUR_SCALE_ID, isAnswerScaleId } from '../survey/answer-scales';
 import type {
   MeasurementSnapshotHash,
   RoundDimensionScore,
@@ -100,6 +101,11 @@ function readQuestionAggregate(
       yellow: distribution.yellow,
       red: distribution.red,
     },
+    // A round published before the scale was recorded answered on the one
+    // scale that then existed — the same default `parseQuestionKind` gives a
+    // persisted question with no `kind`. Written on every publication since.
+    scaleId: isAnswerScaleId(value.scaleId) ? value.scaleId : COLOUR_SCALE_ID,
+    polarity: value.polarity === 'negative' ? 'negative' : 'positive',
   };
 }
 

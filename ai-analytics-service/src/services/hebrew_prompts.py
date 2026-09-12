@@ -348,6 +348,31 @@ def overall_summary_prompt(
     )
 
 
+# The one sentence a model needs before it reads a `7.0` aggregate. The average
+# is already normalised and already points the right way: on a reverse-scored
+# statement ("time pressure") a high average means the pressure is felt
+# little, and a model reading "average 20" beside that text would otherwise
+# write about mild pressure when the staff room reports the opposite.
+ANSWER_SCALE_RULE = (
+    "בכל שאלה, averageScore הוא ממוצע מנורמל בין אפס למאה שכבר מתחשב "
+    "בכיוון ההיגד: ערך גבוה תמיד טוב לממד, גם בהיגד שמתאר עומס או קושי "
+    "(polarity שלילי). scaleId אומר על איזה סולם ענו; אל תצטט/י את ערכי "
+    "הסולם עצמם."
+)
+
+
+def answer_scale_section(
+    question_aggregates: list[Dict[str, Any]],
+) -> str:
+    """The rule above, only when the aggregates actually carry a scale."""
+    if any(
+        isinstance(aggregate, dict) and "polarity" in aggregate
+        for aggregate in question_aggregates
+    ):
+        return " " + ANSWER_SCALE_RULE
+    return ""
+
+
 def v6_structured_summary_prompt(
     *,
     dim_hebrew: str,
@@ -377,6 +402,7 @@ def v6_structured_summary_prompt(
         "ארגוני לבדיקה או לשיחה. כל פסקה בעברית בלבד, שלמה, מסתיימת "
         "בסימן פיסוק, ואינה כוללת ספרות, אחוזים, אבחנות או מידע על אדם. "
         + GROUNDED_LANGUAGE_RULES
+        + answer_scale_section(question_aggregates)
         + repair_section(repair_critique)
     )
 
@@ -518,6 +544,7 @@ def v6_intervention_batch_prompt(
         "ספרות או אחוזים, והחזר/י actionable_steps באותו מספר ובאותו סדר "
         "רעיוני. אל תמציא/י סיבות, אבחנות, אנשים או נתונים חדשים. "
         + GROUNDED_LANGUAGE_RULES
+        + answer_scale_section(question_aggregates)
         + repair_section(repair_critique)
     )
 

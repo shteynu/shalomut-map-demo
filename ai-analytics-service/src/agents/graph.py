@@ -327,6 +327,8 @@ def format_stone_map_output_node(state: AnalyticsState) -> AnalyticsState:
                     average_score=aggregate.average_score,
                     response_count=aggregate.response_count,
                     score_distribution=aggregate.score_distribution,
+                    scale_id=aggregate.scale_id,
+                    polarity=aggregate.polarity,
                     insight_text=metric_insights.get(dimension_id, {}).get(
                         aggregate.question_id,
                         "",

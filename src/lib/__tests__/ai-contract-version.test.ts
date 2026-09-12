@@ -52,7 +52,7 @@ test('every producible version resolves to itself', () => {
 });
 
 test('an unknown version does not silently become the default', () => {
-  for (const value of ['7.0', '5', 'five', '5.0.0', '4,0']) {
+  for (const value of ['8.0', '5', 'five', '5.0.0', '4,0']) {
     const resolved = resolveProducedAnalyticsContractVersion(value);
     assert.ok(!resolved.ok, `'${value}' must not resolve`);
   }
@@ -87,7 +87,7 @@ test('the getter throws on an unknown version instead of returning one', () => {
   assert.throws(
     () =>
       getProducedAnalyticsContractVersion({
-        [PRODUCER_CONTRACT_VERSION_ENV]: '7.0',
+        [PRODUCER_CONTRACT_VERSION_ENV]: '8.0',
       }),
     (error: unknown) => {
       assert.ok(error instanceof UnsupportedProducerContractVersionError);

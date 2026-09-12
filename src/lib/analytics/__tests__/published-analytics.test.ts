@@ -45,6 +45,8 @@ const ANALYTICS: CanonicalRoundAnalytics = {
       averageScore: 82,
       responseCount: 12,
       scoreDistribution: { green: 9, yellow: 2, red: 1 },
+      scaleId: 'wellbeing-colour',
+      polarity: 'positive',
     },
   },
   calculatedAt: new Date('2026-08-02T10:00:00.000Z'),

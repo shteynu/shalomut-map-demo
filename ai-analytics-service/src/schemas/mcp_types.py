@@ -291,6 +291,9 @@ class RoundAnalyticsResult:
                             "yellow": int(aggregate["scoreDistribution"]["yellow"]),
                             "red": int(aggregate["scoreDistribution"]["red"]),
                         }
+                    if get_capabilities(contract_version).carriesAnswerScale:
+                        q_item["scaleId"] = aggregate["scaleId"]
+                        q_item["polarity"] = aggregate["polarity"]
                     question_aggregates[question_id] = q_item
                 else:
                     question_aggregates[question_id] = {
@@ -490,6 +493,22 @@ class RoundAnalyticsResult:
             if score_dist["green"] + score_dist["yellow"] + score_dist["red"] != raw_response_count:
                 raise ValueError(
                     f"Question aggregate '{map_key}' scoreDistribution sum must equal responseCount"
+                )
+
+        # 7.0: the instrument mixes scales and reverse-scored statements, so a
+        # normalised average no longer says what the respondent was shown. The
+        # scale is named rather than validated against a registry this service
+        # does not hold; the polarity is one of two words and nothing else.
+        if get_capabilities(contract_version).carriesAnswerScale:
+            scale_id = aggregate.get("scaleId")
+            if not isinstance(scale_id, str) or not scale_id.strip():
+                raise ValueError(
+                    f"Question aggregate '{map_key}' requires scaleId"
+                )
+            if aggregate.get("polarity") not in ("positive", "negative"):
+                raise ValueError(
+                    f"Question aggregate '{map_key}' polarity must be "
+                    "positive or negative"
                 )
 
     @staticmethod

@@ -18,7 +18,12 @@ import {
 import { overrideCoreRepositories, resetCoreRepositories } from '@/lib/composition-root';
 import { surveyInstrument } from '@/lib/shalomut-source';
 import { DEFAULT_PRODUCED_ANALYTICS_CONTRACT_VERSION } from '@/lib/ai-contract-version';
-import { AI_ANALYTICS_V6_CONTRACT_VERSION } from '@/lib/ai-contract';
+import {
+  AI_ANALYTICS_V6_CONTRACT_VERSION,
+  AI_ANALYTICS_V7_CONTRACT_VERSION,
+} from '@/lib/ai-contract';
+import { toDashboardInsights } from '@/lib/ai-insights-view-model';
+import { scoreForAnswer } from '@/lib/survey/answer-scales';
 import {
   setOperationalMetricSinkForTests,
   type OperationalMetric,
@@ -697,5 +702,181 @@ test('one below-threshold dynamic question locks the whole cross-service pipelin
     resetCoreRepositories();
     if (previousDatabaseUrl === undefined) delete process.env.DATABASE_URL;
     else process.env.DATABASE_URL = previousDatabaseUrl;
+  }
+});
+
+/**
+ * The instrument-scale round: statements on 1–5 and 1–7, some of them
+ * reverse-scored, and one background question that must never reach the
+ * wire. This is the shape `7.0` exists for, walked across the real boundary —
+ * Core encodes it, the shipping Python pipeline (provider calls answered
+ * locally, everything else real) returns a `7.0` map, and Core verifies the
+ * scale and the polarity it gets back the way it verifies the distribution.
+ */
+test('a 7.0 round carries its answer scales to Python and back under Core verification', async () => {
+  const previousDatabaseUrl = process.env.DATABASE_URL;
+  const previousContractVersion = process.env.AI_ANALYTICS_CONTRACT_VERSION;
+  delete process.env.DATABASE_URL;
+  process.env.AI_ANALYTICS_CONTRACT_VERSION = AI_ANALYTICS_V7_CONTRACT_VERSION;
+
+  const instrumentQuestions: AnalyticSurveyQuestion[] =
+    surveyInstrument.dimensions.map((dimension, index) => ({
+      id: `instrument-${dimension.id}`,
+      dimensionId: dimension.id,
+      text: `היגד מחקרי בממד ${dimension.label}.`,
+      required: true,
+      enabled: true,
+      kind: 'analytic' as const,
+      sectionId: 'משאבים בעבודה',
+      scaleId: index % 3 === 0 ? ('likert-7-frequency' as const) : ('likert-5-extent' as const),
+      // The demands read the other way: a high answer is bad for the stone.
+      polarity:
+        dimension.id === 'balance' || dimension.id === 'certainty'
+          ? ('negative' as const)
+          : ('positive' as const),
+    }));
+  const fixture: DynamicRoundFixture = {
+    roundId: 'round_cross_service_v7',
+    organizationId: 'org_cross_service_v7',
+    definition: {
+      ...definitionFromQuestions('סבב שאלון המחקר', instrumentQuestions),
+      questions: [
+        ...instrumentQuestions,
+        {
+          id: 'instrument-tenure',
+          kind: 'background',
+          text: 'כמה שנים את/ה עובד/ת בבית הספר?',
+          required: false,
+          enabled: true,
+          answerMode: 'single-choice',
+          options: [
+            { value: 'new', label: 'עד שנה' },
+            { value: 'veteran', label: 'יותר משנה' },
+          ],
+        },
+      ],
+    },
+  };
+
+  try {
+    // Every respondent answers the top of the scale, so a reverse-scored
+    // statement lands at zero and a direct one at a hundred: the polarity is
+    // visible in the number itself, not only in the field beside it.
+    const responses: SurveyResponseRecord[] = Array.from(
+      { length: 10 },
+      (_, responseIndex) => ({
+        id: `${fixture.roundId}_response_${responseIndex}`,
+        roundId: fixture.roundId,
+        submittedAt: new Date('2026-09-12T12:00:00.000Z'),
+        answers: [
+          ...instrumentQuestions.map((candidate) => {
+            const value = candidate.scaleId === 'likert-7-frequency' ? '7' : '5';
+            return {
+              questionId: candidate.id,
+              dimensionId: candidate.dimensionId,
+              value,
+              score: scoreForAnswer(candidate.scaleId, value, candidate.polarity)!,
+            };
+          }),
+          { questionId: 'instrument-tenure', value: responseIndex % 2 ? 'new' : 'veteran' },
+        ],
+      }),
+    );
+    configureFixture(fixture, responses);
+
+    const analytics = await fetchMcpAnalytics(fixture.roundId);
+    assert.strictEqual(analytics.contractVersion, AI_ANALYTICS_V7_CONTRACT_VERSION);
+    assert.strictEqual(analytics.isLocked, false);
+    assert.deepStrictEqual(
+      Object.keys(analytics.questionAggregates).sort(),
+      instrumentQuestions.map((candidate) => candidate.id).sort(),
+      'a background question never crosses the AI boundary',
+    );
+    for (const candidate of instrumentQuestions) {
+      const aggregate = analytics.questionAggregates[candidate.id];
+      assert.strictEqual(aggregate.scaleId, candidate.scaleId);
+      assert.strictEqual(aggregate.polarity, candidate.polarity);
+      assert.strictEqual(
+        aggregate.averageScore,
+        candidate.polarity === 'negative' ? 0 : 100,
+      );
+      assert.deepStrictEqual(
+        aggregate.scoreDistribution,
+        candidate.polarity === 'negative'
+          ? { green: 0, yellow: 0, red: 10 }
+          : { green: 10, yellow: 0, red: 0 },
+        'the distribution counts bands of normalised scores, not raw answers',
+      );
+    }
+
+    const stoneMap = runPythonPipeline(analytics);
+    assert.strictEqual(stoneMap.status, 'success', stoneMap.errorMessage);
+    assert.strictEqual(stoneMap.contractVersion, AI_ANALYTICS_V7_CONTRACT_VERSION);
+    for (const candidate of instrumentQuestions) {
+      const metric = stoneMap.stones[candidate.dimensionId].metrics.find(
+        (item: { questionId: string }) => item.questionId === candidate.id,
+      );
+      assert.ok(metric, candidate.id);
+      assert.strictEqual(metric.scaleId, candidate.scaleId);
+      assert.strictEqual(metric.polarity, candidate.polarity);
+      assert.strictEqual('insightText' in metric, false);
+    }
+
+    // A scale that comes back different from the one the staff answered on
+    // is refused, exactly as a distribution that comes back different is.
+    const tampered = structuredClone(stoneMap);
+    tampered.stones.balance.metrics[0].polarity = 'positive';
+    const rejection = await postInsightsHandler(
+      new Request(
+        `http://localhost:3000/api/rounds/${fixture.roundId}/ai-insights`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(tampered),
+        },
+      ),
+      { params: Promise.resolve({ roundId: fixture.roundId }) },
+    );
+    assert.strictEqual(rejection.status, 400);
+
+    const accepted = await postInsightsHandler(
+      new Request(
+        `http://localhost:3000/api/rounds/${fixture.roundId}/ai-insights`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(stoneMap),
+        },
+      ),
+      { params: Promise.resolve({ roundId: fixture.roundId }) },
+    );
+    assert.strictEqual(accepted.status, 200, JSON.stringify(await accepted.clone().json()));
+
+    const getResponse = await getInsightsHandler(
+      new Request(`http://localhost:3000/api/rounds/${fixture.roundId}/ai-insights`),
+      { params: Promise.resolve({ roundId: fixture.roundId }) },
+    );
+    assert.strictEqual(getResponse.status, 200);
+    const persisted = (await getResponse.json()).result;
+    assert.strictEqual(persisted.contractVersion, AI_ANALYTICS_V7_CONTRACT_VERSION);
+
+    // What the manager's screen makes of it: evidence per question, the
+    // overview per stone, and no narrative-only metric anywhere.
+    const insights = toDashboardInsights(persisted);
+    for (const stone of Object.values(insights.stones)) {
+      assert.strictEqual(stone.summary.length, 3);
+      for (const metric of stone.metrics) {
+        assert.strictEqual(metric.narrativeOnly, undefined);
+      }
+    }
+  } finally {
+    resetCoreRepositories();
+    if (previousDatabaseUrl === undefined) delete process.env.DATABASE_URL;
+    else process.env.DATABASE_URL = previousDatabaseUrl;
+    if (previousContractVersion === undefined) {
+      delete process.env.AI_ANALYTICS_CONTRACT_VERSION;
+    } else {
+      process.env.AI_ANALYTICS_CONTRACT_VERSION = previousContractVersion;
+    }
   }
 });

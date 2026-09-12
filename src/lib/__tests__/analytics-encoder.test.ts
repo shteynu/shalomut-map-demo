@@ -30,6 +30,8 @@ function canonical(
         averageScore: 80,
         responseCount: 10,
         scoreDistribution: { green: 5, yellow: 3, red: 2 },
+        scaleId: 'likert-5-extent',
+        polarity: 'negative',
       },
     },
     backgroundContext: {
@@ -63,6 +65,18 @@ test('a version without distributions drops them and keeps every other number', 
   );
   assert.equal(withoutDistribution.questionAggregates['q-1'].averageScore, 80);
   assert.equal(withoutDistribution.questionAggregates['q-1'].responseCount, 10);
+});
+
+test('the answer scale crosses only on a version that carries it', () => {
+  const on7 = encodeRoundAnalytics(canonical(), '7.0');
+  assert.strictEqual(on7.questionAggregates['q-1'].scaleId, 'likert-5-extent');
+  assert.strictEqual(on7.questionAggregates['q-1'].polarity, 'negative');
+
+  // 6.0 rounds keep the exact payload they always had: a field that was not
+  // on the wire before is not on it now.
+  const on6 = encodeRoundAnalytics(canonical(), '6.0');
+  assert.strictEqual('scaleId' in on6.questionAggregates['q-1'], false);
+  assert.strictEqual('polarity' in on6.questionAggregates['q-1'], false);
 });
 
 test('the encoded distribution cannot be edited through the canonical analytics', () => {

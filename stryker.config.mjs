@@ -61,6 +61,10 @@ const config = {
       // And for `5.0`: the distribution, the adaptation outcome and the
       // partial map, which had accepting tests only.
       'src/lib/__tests__/ai-contract-v5-refusals.test.ts',
+      // `7.0`: the metric with a scale and no narrative, accepting side and
+      // refusing side, on the structured-stone validator it shares with `6.0`.
+      'src/lib/__tests__/ai-contract-v7.test.ts',
+      'src/lib/__tests__/ai-contract-v7-refusals.test.ts',
       // The accepting side of one rule that spans three versions: the question
       // IDs a stone reports are a set, so a provider may list them in any
       // order. Every other fixture happens to build them already sorted.

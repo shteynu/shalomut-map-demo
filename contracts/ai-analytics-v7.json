@@ -1,0 +1,132 @@
+{
+  "version": "7.0",
+  "previousVersions": ["1.0", "2.0", "3.0", "4.0", "5.0", "6.0"],
+  "breakingChange": "Carry the research instrument: every question aggregate names its answer scale and polarity, scoreDistribution is defined as the bands of normalised answer scores rather than of chosen colours, and metrics carry no per-question narrative — the three summary paragraphs and five recommendations of 6.0 are the whole of the model's copy for a dimension.",
+  "questionnaire": {
+    "sourceOfTruth": "SurveyRound.surveyDefinition",
+    "minimumEnabledQuestionsPerDimension": 1,
+    "stableQuestionIdsRequired": true,
+    "uniqueQuestionIdsRequired": true,
+    "explicitDimensionMappingRequired": true,
+    "backgroundQuestionsCrossTheBoundary": false,
+    "snapshotIdentity": {
+      "field": "surveyDefinitionHash",
+      "algorithm": "sha256",
+      "prefix": "sha256:",
+      "projection": ["questionId", "dimensionId", "questionText"],
+      "ordering": "questionId ascending by Unicode code point",
+      "serialization": "UTF-8 compact JSON array with the projection keys in the documented order, non-ASCII characters unescaped, and no whitespace normalization"
+    }
+  },
+  "privacy": {
+    "defaultThreshold": 10,
+    "minimumThreshold": 10,
+    "unlockedPolicy": "total-and-every-question-at-or-above-threshold",
+    "lockedAggregatePolicy": "empty",
+    "partialUnlockedAnalysis": false,
+    "providerInvokedWhenLocked": false
+  },
+  "statuses": [
+    { "id": "green", "minScore": 75, "maxScore": 100 },
+    { "id": "yellow", "minScore": 50, "maxScore": 74 },
+    { "id": "red", "minScore": 0, "maxScore": 49 }
+  ],
+  "dimensions": [
+    { "id": "self-expression", "nameHebrew": "ביטוי עצמי" },
+    { "id": "professional-competence", "nameHebrew": "מסוגלות מקצועית" },
+    { "id": "social-resource", "nameHebrew": "קשרים חברתיים" },
+    { "id": "balance", "nameHebrew": "איזון" },
+    { "id": "management-support", "nameHebrew": "עורף מקצועי" },
+    { "id": "certainty", "nameHebrew": "ודאות" },
+    { "id": "organizational-climate", "nameHebrew": "אקלים ארגוני" },
+    { "id": "meaning", "nameHebrew": "משמעות" }
+  ],
+  "input": {
+    "inherits": "6.0",
+    "required": [
+      "contractVersion",
+      "roundId",
+      "organizationId",
+      "surveyDefinitionHash",
+      "dimensionScores",
+      "questionAggregates",
+      "calculatedAt",
+      "totalResponses",
+      "privacyThreshold",
+      "isLocked"
+    ],
+    "optional": ["backgroundContext"],
+    "dimensionScoreCountWhenUnlocked": 8,
+    "questionAggregateFields": [
+      "questionId",
+      "dimensionId",
+      "questionText",
+      "averageScore",
+      "responseCount",
+      "scoreDistribution",
+      "scaleId",
+      "polarity"
+    ],
+    "answerScale": {
+      "scaleIdField": "scaleId",
+      "polarityField": "polarity",
+      "polarities": ["positive", "negative"],
+      "averageScoreMeaning": "the mean of answers normalised to 0-100 with the question's polarity applied, so that a higher averageScore is better for the dimension on every question, whatever the respondent was shown",
+      "scoreDistributionMeaning": "how many normalised answer scores fall in each status band; on the colour scale this is the count of chosen colours, on a Likert scale it is the band of each answer's normalised, polarity-applied score"
+    }
+  },
+  "output": {
+    "stoneCountWhenSuccessful": 8,
+    "dynamicMetrics": true,
+    "metricCoverage": "exactly every input question aggregate in its persisted dimension",
+    "coreOwnedFields": ["score", "status", "dimensionId", "averageScore", "responseCount", "scoreDistribution", "scaleId", "polarity"],
+    "hebrewUserFacingText": true,
+    "dimensionSummary": {
+      "field": "summary",
+      "paragraphCount": 3,
+      "psychologicalInterpretationFieldForbidden": true
+    },
+    "metricInsight": {
+      "field": "insightText",
+      "forbidden": true,
+      "reason": "108 statements per round would mean 108 narratives; the dimension summary is the reading of its questions",
+      "provenanceField": "metricInsightsOutcome",
+      "provenanceForbidden": true
+    },
+    "recommendations": {
+      "countPerDimension": 5,
+      "adaptationOutcomeRequired": true,
+      "bodyMinCharacters": 300,
+      "bodyMaxCharacters": 500
+    },
+    "overallPsychologicalSummary": {
+      "sentencesMin": 2,
+      "sentencesMax": 4,
+      "language": "Hebrew",
+      "provenanceField": "overallSummaryOutcome",
+      "provenanceOutcomes": ["llm", "deterministic_fallback"],
+      "provenanceOptional": true
+    },
+    "partialMap": {
+      "generationOutcomes": ["llm", "deterministic_fallback", "unavailable"],
+      "unavailableSummaryIsEmpty": true,
+      "declaredIn": "dimensionsWithoutInterpretation",
+      "declaredOnlyWhenPartial": true,
+      "mustMatchUnavailableStonesExactly": true,
+      "allEightUnavailableIsAFailedRound": true,
+      "scoreMetricsAndInterventionsStillPresent": true,
+      "unavailableReasons": ["provider_unavailable", "validation_rejected"]
+    },
+    "provenanceFields": [
+      "outcome",
+      "attempts",
+      "retryCount",
+      "sourceQuestionIds",
+      "surveyDefinitionHash",
+      "backgroundContextIncluded",
+      "distributionIncluded",
+      "crossDimensionContextIncluded",
+      "unavailableReason"
+    ]
+  }
+}

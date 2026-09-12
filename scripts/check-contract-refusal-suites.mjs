@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url';
  * again on the day a contract `7.0` arrives.
  *
  * The check is deliberately about a validation *path*, not about a version
- * number. `validateStoneMapResult` dispatches on four capability flags, and
+ * number. `validateStoneMapResult` dispatches on five capability flags, and
  * two versions that answer them identically run the same code — `4.0` reaches
  * the stone validator `3.0` reaches, so it needs no suite of its own. What
  * must never happen is a path that no refusal suite exercises at all.
@@ -39,6 +39,7 @@ const REFUSAL_FILE_PATTERN = /refusals?\.test\.tsx?$/u;
 const DISPATCH_FLAGS = [
   'isSemanticContract',
   'usesStructuredDimensionSummary',
+  'usesNarrativeMetrics',
   'supportsScoreDistribution',
   'supportsDynamicQuestions',
 ];
@@ -115,6 +116,7 @@ function versionsMentionedInCode(source, versions) {
     '4.0': 'AI_ANALYTICS_V4_CONTRACT_VERSION',
     '5.0': 'AI_ANALYTICS_V5_CONTRACT_VERSION',
     '6.0': 'AI_ANALYTICS_V6_CONTRACT_VERSION',
+    '7.0': 'AI_ANALYTICS_V7_CONTRACT_VERSION',
   };
 
   return versions.filter((version) => {

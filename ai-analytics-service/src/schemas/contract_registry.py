@@ -14,6 +14,9 @@ class ContractCapabilities:
     usesStructuredDimensionSummary: bool
     usesNarrativeMetrics: bool
     hasOverallSummarySentenceLimit: bool
+    # Every question aggregate names its answer scale and polarity and echoes
+    # both on its metric. `7.0` and up, for the research instrument.
+    carriesAnswerScale: bool
     stoneInterpretationSentenceLimit: Literal["2", "2-5"]
 
 

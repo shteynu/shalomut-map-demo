@@ -24,6 +24,8 @@ function question(
       (distribution.green * 100 + distribution.yellow * 60) / responseCount,
     responseCount,
     scoreDistribution: distribution,
+    scaleId: 'wellbeing-colour',
+    polarity: 'positive',
   };
 }
 

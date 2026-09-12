@@ -31,6 +31,10 @@ class CanonicalQuestionAggregate:
     average_score: float
     response_count: int
     score_distribution: Optional[Dict[str, int]] = None
+    # 7.0: which scale the statement was answered on and which way it points.
+    # Both are Core's, echoed back on the metric for Core to verify.
+    scale_id: Optional[str] = None
+    polarity: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -107,6 +111,16 @@ class CanonicalAnalysisInput:
                     if isinstance(aggregate.get("scoreDistribution"), dict)
                     else None
                 ),
+                scale_id=(
+                    aggregate["scaleId"]
+                    if isinstance(aggregate.get("scaleId"), str)
+                    else None
+                ),
+                polarity=(
+                    aggregate["polarity"]
+                    if isinstance(aggregate.get("polarity"), str)
+                    else None
+                ),
             )
             for aggregate, dimension_id in ordered
         ]
@@ -147,6 +161,8 @@ class CanonicalMetric:
     average_score: Optional[float] = None
     response_count: Optional[int] = None
     score_distribution: Optional[Dict[str, int]] = None
+    scale_id: Optional[str] = None
+    polarity: Optional[str] = None
     insight_text: str = ""
 
 

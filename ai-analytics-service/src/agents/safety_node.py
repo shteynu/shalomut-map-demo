@@ -93,7 +93,12 @@ def agent_safety_validator_node(state: AnalyticsState) -> AnalyticsState:
                 dim_id,
             )
             narratives = metric_insights.get(dim_id, {})
+            # `7.0` carries no metric narrative, so there is nothing of the
+            # kind to hold the dimension to; the summary and the
+            # recommendations are the whole of its copy.
             metric_copy_valid = (
+                not capabilities.usesNarrativeMetrics
+            ) or (
                 set(narratives)
                 == {item["questionId"] for item in expected_metrics}
                 and all(

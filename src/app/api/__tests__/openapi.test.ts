@@ -152,20 +152,24 @@ describe('OpenAPI Specification Integrity', () => {
     assert.ok(schemas.StoneMapResultV4, 'Must include StoneMapResultV4 schema');
     assert.ok(schemas.StoneMapResultV5, 'Must include StoneMapResultV5 schema');
     assert.ok(schemas.StoneMapResultV6, 'Must include StoneMapResultV6 schema');
+    assert.ok(schemas.StoneMapResultV7, 'Must include StoneMapResultV7 schema');
     assert.ok(schemas.StoneDetail, 'Must include StoneDetail schema');
     assert.ok(schemas.StoneDetailV4, 'Must include StoneDetailV4 schema');
     assert.ok(schemas.StoneDetailV5, 'Must include StoneDetailV5 schema');
     assert.ok(schemas.StoneDetailV6, 'Must include StoneDetailV6 schema');
+    assert.ok(schemas.StoneDetailV7, 'Must include StoneDetailV7 schema');
     assert.strictEqual(schemas.StoneMapResultV1.properties.contractVersion.example, '1.0');
     assert.strictEqual(schemas.StoneMapResultV2.properties.contractVersion.example, '2.0');
     assert.strictEqual(schemas.StoneMapResultV3.properties.contractVersion.example, '3.0');
     assert.strictEqual(schemas.StoneMapResultV4.properties.contractVersion.example, '4.0');
     assert.strictEqual(schemas.StoneMapResultV5.properties.contractVersion.example, '5.0');
     assert.strictEqual(schemas.StoneMapResultV6.properties.contractVersion.example, '6.0');
+    assert.strictEqual(schemas.StoneMapResultV7.properties.contractVersion.example, '7.0');
     assert.strictEqual(schemas.RoundAnalyticsResultV2.properties.contractVersion.example, '2.0');
     assert.strictEqual(schemas.RoundAnalyticsResultV3.properties.contractVersion.example, '3.0');
     assert.strictEqual(schemas.RoundAnalyticsResultV4.properties.contractVersion.example, '4.0');
     assert.strictEqual(schemas.RoundAnalyticsResultV5.properties.contractVersion.example, '5.0');
+    assert.strictEqual(schemas.RoundAnalyticsResultV7.properties.contractVersion.example, '7.0');
     assert.deepStrictEqual(
       schemas.RoundAnalyticsResult.oneOf.map((entry: { $ref: string }) => entry.$ref),
       [
@@ -173,6 +177,7 @@ describe('OpenAPI Specification Integrity', () => {
         '#/components/schemas/RoundAnalyticsResultV3',
         '#/components/schemas/RoundAnalyticsResultV4',
         '#/components/schemas/RoundAnalyticsResultV5',
+        '#/components/schemas/RoundAnalyticsResultV7',
       ],
     );
     assert.deepStrictEqual(
@@ -184,6 +189,7 @@ describe('OpenAPI Specification Integrity', () => {
         '#/components/schemas/StoneMapResultV4',
         '#/components/schemas/StoneMapResultV5',
         '#/components/schemas/StoneMapResultV6',
+        '#/components/schemas/StoneMapResultV7',
       ],
     );
   });

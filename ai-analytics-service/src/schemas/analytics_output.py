@@ -45,6 +45,11 @@ def _encode_metric(
     # against.
     if capabilities.supportsScoreDistribution and metric.score_distribution:
         encoded["scoreDistribution"] = dict(metric.score_distribution)
+    # 7.0 echoes the scale and the polarity the way 5.0 echoes the
+    # distribution: Core's numbers, sent back so Core can check them.
+    if capabilities.carriesAnswerScale and metric.question_id is not None:
+        encoded["scaleId"] = metric.scale_id
+        encoded["polarity"] = metric.polarity
     # Only a metric that stands for a real question can carry an insight; the
     # three fixed lines a dimension falls back to have no question to speak of.
     if capabilities.usesNarrativeMetrics and metric.question_id is not None:

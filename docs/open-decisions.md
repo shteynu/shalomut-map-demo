@@ -63,7 +63,9 @@ do them and nothing in it can verify them either.
    `src/lib/research-instrument.ts`. What this entry still waits for is the
    methodologist's confirmation or correction of that table — a correction is
    an edit to one row and to the module beside it — and it no longer blocks
-   authoring. **Unblocks now:** phase 5, contract `7.0`.
+   authoring. Contract `7.0` exists in `main` since 2026-09-12 (ADR-056), so
+   what a confirmed table unblocks now is the swap of the default questionnaire
+   and the owner's deployment of `7.0`.
    → [`methodologist-questions-analysis-2026-09-12.md`](methodologist-questions-analysis-2026-09-12.md) §2.
 7. **Name a pilot school, with a date.** It converts half the 2026-08-10 strategy
    sweep from theory into a schedule. Two wordings travel with it and are

@@ -124,6 +124,17 @@ export function verifyAiResultAgainstRound(
           return 'The AI result distributions do not match the Core analytics.';
         }
       }
+      // On 7.0 the scale and the polarity travel the same way, and are
+      // checked the same way: they are Core's, and the round the manager
+      // reads must describe the questionnaire the staff actually answered.
+      if (
+        capabilities.carriesAnswerScale &&
+        (!('scaleId' in metric) ||
+          metric.scaleId !== expectedAggregate.scaleId ||
+          metric.polarity !== expectedAggregate.polarity)
+      ) {
+        return 'The AI result answer scales do not match the Core analytics.';
+      }
       seenQuestionIds.add(expected.id);
     }
   }

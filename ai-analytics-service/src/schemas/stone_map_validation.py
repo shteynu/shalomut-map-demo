@@ -112,6 +112,23 @@ def _refusal_for_stone(
             return "v6_summary_shape"
         for metric in stone.get("metrics") or ():
             insight = metric.get("insightText") if isinstance(metric, dict) else None
+            if not caps.usesNarrativeMetrics:
+                # 7.0: a narrative on a metric is copy the contract does not
+                # carry, and a metric without its scale is one Core cannot
+                # verify — both are refused here rather than at the callback.
+                if insight is not None:
+                    return "v7_metric_insight_forbidden"
+                if (
+                    caps.carriesAnswerScale
+                    and isinstance(metric, dict)
+                    and metric.get("questionId") is not None
+                    and (
+                        not isinstance(metric.get("scaleId"), str)
+                        or metric.get("polarity") not in ("positive", "negative")
+                    )
+                ):
+                    return "v7_answer_scale_missing"
+                continue
             if not isinstance(insight, str) or not is_v6_qualitative_narrative(
                 insight,
             ):

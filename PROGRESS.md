@@ -845,10 +845,15 @@ rows — under the mapping proposed in
 owner as the working one: 78 statements scored, 30 collected on the block's own
 anchors and never scored, mixed polarity, the SMBM burnout block on `balance`.
 It parses strict, activates, estimates 23 minutes and is walkable locally with
-`seed-breakdown-round.ts --respondent --research`. What is left is phase 5, the
-`7.0` contract, and the swap that depends on it: the default questionnaire a
-manager gets is still the canonical 24, and nothing offers the instrument to a
-manager yet. The eight-branch stack **landed on `main` on 2026-08-15** as one
+`seed-breakdown-round.ts --respondent --research`. **Contract `7.0` carries it**
+since the same day (ADR-056, `contracts/ai-analytics-v7.json`): every aggregate
+names its answer scale and polarity, metrics carry no per-question narrative,
+and both runtimes accept and produce it in `main` — a mixed-scale round has
+crossed MCP → the shipping Python pipeline → callback verification → the
+Dashboard DTO under `AI_ANALYTICS_CONTRACT_VERSION=7.0`. Neither service is
+deployed with it yet, and the unset producer default stays `5.0`. What is left
+is that deployment and the swap: the default questionnaire a manager gets is
+still the canonical 24, and nothing offers the instrument to a manager yet. The eight-branch stack **landed on `main` on 2026-08-15** as one
 fast-forward, so the capabilities above are the ones in the repository.
 
 That decision also closes the answer-scale question the two items below were

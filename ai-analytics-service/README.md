@@ -58,8 +58,8 @@ each one is responsible for:
 
 ## Contract
 
-Runtime input/output support spans `1.0` through `6.0`. Python health advertises
-that range, Core can produce `3.0`–`6.0`, and the deployed Core explicitly
+Runtime input/output support spans `1.0` through `7.0`. Python health advertises
+that range, Core can produce `3.0`–`7.0`, and the deployed Core explicitly
 produces `6.0`; an unset Core setting remains rollback-safe `5.0`. See
 [`../docs/ai-contract-version-matrix.md`](../docs/ai-contract-version-matrix.md).
 

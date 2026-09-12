@@ -6,7 +6,10 @@ round questionnaires and from demo result data.
 > Deployed contract `6.0` is what Core produces; `3.0` introduced dynamic round
 > questionnaires, `4.0` added the school background context and `5.0` added
 > per-question score distributions, while `6.0` adds three-part summaries,
-> qualitative question insights and five recommendations per stone. Immutable
+> qualitative question insights and five recommendations per stone, and `7.0`
+> — published 2026-09-12, accepted by both runtimes in `main` and deployed by
+> neither — carries the research instrument: every aggregate names its answer
+> scale and polarity, and metrics carry no per-question narrative. Immutable
 > contract `2.0`
 > continues to describe the exact default 24-question legacy exchange. The
 > consumer-first boundary is described in
@@ -53,7 +56,7 @@ round questionnaires and from demo result data.
   privacy-safe aggregates, then return the fixed eight-stone Dashboard output.
   It must not substitute canonical question text or silently ignore additional
   configured questions.
-- Published AI contracts `1.0`–`6.0` keep their released semantics. Contract
+- Published AI contracts `1.0`–`7.0` keep their released semantics. Contract
   `3.0` introduced dynamic questions; later versions add capabilities without
   making the default 24-question template mandatory again. Any new
   incompatible exchange requires a new manifest and consumer-first rollout.
@@ -81,7 +84,7 @@ round questionnaires and from demo result data.
 - `SurveyRound.surveyDefinition`: exact versioned questionnaire snapshot for a
   runtime round.
 - `contracts/capabilities.json`: shared cross-runtime capability policy for
-  versions `1.0`–`6.0`.
+  versions `1.0`–`7.0`.
 - `contracts/ai-analytics-v3.json`: dynamic-questionnaire foundation.
 - `contracts/ai-analytics-v6.json`: currently deployed structured summary,
   narrative-metric and five-recommendation output boundary.

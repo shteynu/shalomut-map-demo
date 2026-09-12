@@ -1220,8 +1220,12 @@ here; when the two disagree, this section wins.
    accepted its §2 mapping as the working one, so the instrument is authored in
    `src/lib/research-instrument.ts` under it. The methodologist's confirmation
    is still wanted and no longer blocks authoring; what it would change is a
-   row of that table and the module beside it. Phase 5 (contract `7.0`) is what
-   now stands between the instrument and a manager.
+   row of that table and the module beside it. Contract `7.0` — the one
+   `6.0` could not be amended into — is published and accepted by both
+   runtimes in `main` since 2026-09-12 (ADR-056), with a complete local round
+   proven across the boundary; what stands between the instrument and a
+   manager is now deployment (Python first, then Core, then selecting `7.0`
+   for a round on the instrument) and the swap of the default questionnaire.
 8. **Naming a pilot school with a date**, which is what still gates the 2026-08-10
    strategy sweep, and the wording of its axis 1 (Chief Scientist directive) and
    axis 7 (fair-use commitment, and how small a staff room is too small to measure

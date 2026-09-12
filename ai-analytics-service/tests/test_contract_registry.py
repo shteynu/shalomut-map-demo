@@ -23,3 +23,24 @@ def test_published_six_contract_exposes_narrative_capabilities():
     assert registry["6.0"].supportsDynamicQuestions is True
     assert registry["6.0"].usesStructuredDimensionSummary is True
     assert registry["6.0"].usesNarrativeMetrics is True
+    assert registry["6.0"].carriesAnswerScale is False
+
+
+def test_published_seven_contract_carries_the_answer_scale_and_no_metric_narrative():
+    manifest_path = (
+        Path(__file__).resolve().parents[2] / "contracts" / "capabilities.json"
+    )
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    assert "7.0" in manifest["versions"]
+    registry = load_contract_registry(manifest)
+
+    assert "7.0" in AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS
+    assert registry["7.0"].usesStructuredDimensionSummary is True
+    assert registry["7.0"].usesNarrativeMetrics is False
+    assert registry["7.0"].carriesAnswerScale is True
+    # Every version before it answers on one scale and says so by omission.
+    assert all(
+        registry[version].carriesAnswerScale is False
+        for version in registry
+        if version != "7.0"
+    )

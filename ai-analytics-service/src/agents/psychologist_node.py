@@ -249,7 +249,11 @@ async def agent_psychologist_node(
 
     background_context = _background_context_for_prompt(round_data)
     metric_insights = dict(previous_metric_insights)
-    if structured:
+    # A version with a structured summary and no narrative metrics — `7.0`,
+    # written for an instrument of over a hundred statements — is not asked
+    # for a narrative per question at all: eight batches of copy the contract
+    # forbids would be paid for and then refused by the encoder.
+    if structured and get_capabilities(eff_version).usesNarrativeMetrics:
         metric_targets = []
         metric_generations = []
         metric_slots = _provider_slots()

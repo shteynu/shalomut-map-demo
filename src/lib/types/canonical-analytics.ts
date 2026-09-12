@@ -1,4 +1,5 @@
 import type { WellbeingDimensionId } from '../shalomut-source';
+import type { AnswerPolarity, AnswerScaleId } from '../survey/answer-scales';
 import type {
   MeasurementSnapshotHash,
   RoundBackgroundContext,
@@ -22,6 +23,12 @@ export interface CanonicalQuestionAggregate {
     yellow: number;
     red: number;
   };
+  /**
+   * Always here, like the distribution: the question knows its scale and its
+   * polarity, and whether the AI service is told is `7.0`'s question.
+   */
+  scaleId: AnswerScaleId;
+  polarity: AnswerPolarity;
 }
 
 /**

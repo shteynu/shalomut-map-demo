@@ -4,6 +4,7 @@ import {
   AI_ANALYTICS_V4_CONTRACT_VERSION,
   AI_ANALYTICS_V5_CONTRACT_VERSION,
   AI_ANALYTICS_V6_CONTRACT_VERSION,
+  AI_ANALYTICS_V7_CONTRACT_VERSION,
 } from './ai-contract';
 
 /**
@@ -34,10 +35,11 @@ export type ProducedAnalyticsContractVersion =
   | '3.0'
   | '4.0'
   | '5.0'
-  | '6.0';
+  | '6.0'
+  | '7.0';
 
 export const PRODUCIBLE_ANALYTICS_CONTRACT_VERSIONS: readonly ProducedAnalyticsContractVersion[] =
-  Object.freeze(['3.0', '4.0', '5.0', '6.0'] as const);
+  Object.freeze(['3.0', '4.0', '5.0', '6.0', '7.0'] as const);
 
 {
   const fromManifests = [
@@ -45,6 +47,7 @@ export const PRODUCIBLE_ANALYTICS_CONTRACT_VERSIONS: readonly ProducedAnalyticsC
     AI_ANALYTICS_V4_CONTRACT_VERSION,
     AI_ANALYTICS_V5_CONTRACT_VERSION,
     AI_ANALYTICS_V6_CONTRACT_VERSION,
+    AI_ANALYTICS_V7_CONTRACT_VERSION,
   ];
   const declared = PRODUCIBLE_ANALYTICS_CONTRACT_VERSIONS.join(', ');
   if (fromManifests.join(', ') !== declared) {

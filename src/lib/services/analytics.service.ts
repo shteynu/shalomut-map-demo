@@ -447,6 +447,8 @@ export class AnalyticsService {
             averageScore: average(scores),
             responseCount: scores.length,
             scoreDistribution: { ...dist },
+            scaleId: question.scaleId,
+            polarity: question.polarity,
           };
           return [question.id, aggregate];
         }),

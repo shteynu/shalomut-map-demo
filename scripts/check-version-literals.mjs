@@ -20,7 +20,7 @@ const ALLOWED_FILES = [
   'src/lib/contract-registry.ts',
 ];
 
-const VERSION_LITERAL = /["']([1-6]\.0)["']/g;
+const VERSION_LITERAL = /["']([1-7]\.0)["']/g;
 const VERSION_IDENTIFIER =
   /AI_ANALYTICS_(?:V\d+_|DYNAMIC_|SUPPORTED_)?CONTRACT_VERSIONS?/;
 const COMPARISON = /===|!==|==|!=|\.includes\s*\(/;

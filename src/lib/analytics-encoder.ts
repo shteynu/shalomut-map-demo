@@ -34,6 +34,10 @@ export function encodeRoundAnalytics(
         if (capabilities.supportsScoreDistribution) {
           encoded.scoreDistribution = { ...aggregate.scoreDistribution };
         }
+        if (capabilities.carriesAnswerScale) {
+          encoded.scaleId = aggregate.scaleId;
+          encoded.polarity = aggregate.polarity;
+        }
         return [id, encoded];
       }),
     );

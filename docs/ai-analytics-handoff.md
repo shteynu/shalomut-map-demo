@@ -67,9 +67,9 @@ Neither side sends or stores respondent identity in the AI exchange.
   recommendations per stone; successful output returns all eight stones.
 
 Shared capability policy is `../contracts/capabilities.json`. Core can produce
-`3.0`–`6.0`; an unset producer setting means rollback-safe `5.0`, while the
+`3.0`–`7.0`; an unset producer setting means rollback-safe `5.0`, while the
 deployed environment explicitly selects `6.0`. Both runtimes accept the
-versions required by `1.0`–`6.0` callback/parser compatibility.
+versions required by `1.0`–`7.0` callback/parser compatibility.
 
 Published versions are not edited silently. A new incompatible exchange gets a
 new manifest and rolls out consumer-first.

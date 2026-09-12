@@ -14,7 +14,7 @@ The repository contains two runtimes:
 Current product capabilities include persisted round setup, a dynamic survey
 builder, anonymous respondent links, application-level manager sessions,
 database-enforced response idempotency, lifecycle-aware AI jobs, contracts
-`1.0`–`6.0`, AI-assisted question suggestions and the V6 narrative Dashboard.
+`1.0`–`7.0`, AI-assisted question suggestions and the V6 narrative Dashboard.
 
 ## Local development
 

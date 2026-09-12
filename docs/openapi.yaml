@@ -2103,6 +2103,37 @@ components:
           example: 12
         scoreDistribution:
           $ref: '#/components/schemas/ScoreDistribution'
+    QuestionAggregateV7:
+      type: object
+      description: A 7.0 question aggregate — the 5.0 shape plus the scale the statement was answered on and its polarity. The average is normalised to 0-100 with the polarity applied, so a high value is good for the dimension on every question; the distribution counts normalised answer scores per band.
+      required: [questionId, dimensionId, questionText, averageScore, responseCount, scoreDistribution, scaleId, polarity]
+      properties:
+        questionId:
+          type: string
+          example: demands-01
+        dimensionId:
+          $ref: '#/components/schemas/WellbeingDimensionId'
+        questionText:
+          type: string
+          example: לחץ זמן
+        averageScore:
+          type: number
+          minimum: 0
+          maximum: 100
+          example: 40
+        responseCount:
+          type: integer
+          minimum: 1
+          example: 12
+        scoreDistribution:
+          $ref: '#/components/schemas/ScoreDistribution'
+        scaleId:
+          type: string
+          example: likert-5-extent
+        polarity:
+          type: string
+          enum: [positive, negative]
+          example: negative
     RoundAnalyticsResultV4:
       type: object
       description: Input contract 4.0. Identical to 3.0 plus optional aggregated school background context. The context is school-level only and carries no respondent attribute.
@@ -2197,13 +2228,61 @@ components:
         calculatedAt:
           type: string
           format: date-time
+    RoundAnalyticsResultV7:
+      type: object
+      description: Input contract 7.0, the instrument-scale exchange. The 5.0 shape with every question aggregate naming its answer scale and polarity; 6.0 input is the 5.0 shape unchanged.
+      required: [contractVersion, roundId, organizationId, surveyDefinitionHash, totalResponses, privacyThreshold, isLocked, dimensionScores, questionAggregates, calculatedAt]
+      properties:
+        contractVersion:
+          type: string
+          enum: ["7.0"]
+          example: "7.0"
+        roundId:
+          type: string
+          format: uuid
+          example: 4f88af95-0ec4-4872-85ac-67466c3cd8f2
+        organizationId:
+          type: string
+          format: uuid
+          example: c93f8832-8d0d-43cb-b8d2-cdd6e45683af
+        surveyDefinitionHash:
+          type: string
+          pattern: '^sha256:[a-f0-9]{64}$'
+        totalResponses:
+          type: integer
+          minimum: 0
+          example: 18
+        privacyThreshold:
+          type: integer
+          minimum: 10
+          example: 10
+        isLocked:
+          type: boolean
+          example: false
+        dimensionScores:
+          type: object
+          minProperties: 0
+          maxProperties: 8
+          additionalProperties:
+            $ref: '#/components/schemas/RoundDimensionScore'
+        questionAggregates:
+          type: object
+          description: One uniquely keyed aggregate for every enabled analytic question when unlocked; background questions never appear; empty when privacy locked.
+          additionalProperties:
+            $ref: '#/components/schemas/QuestionAggregateV7'
+        backgroundContext:
+          $ref: '#/components/schemas/RoundBackgroundContext'
+        calculatedAt:
+          type: string
+          format: date-time
     RoundAnalyticsResult:
-      description: Consumer-first input compatibility union. Consumers accept immutable 2.0, dynamic 3.0, 4.0 and the current 5.0 during rollout.
+      description: Consumer-first input compatibility union. Consumers accept immutable 2.0, dynamic 3.0, 4.0, the deployed 5.0 shape (which 6.0 shares) and the instrument-scale 7.0.
       oneOf:
         - $ref: '#/components/schemas/RoundAnalyticsResultV2'
         - $ref: '#/components/schemas/RoundAnalyticsResultV3'
         - $ref: '#/components/schemas/RoundAnalyticsResultV4'
         - $ref: '#/components/schemas/RoundAnalyticsResultV5'
+        - $ref: '#/components/schemas/RoundAnalyticsResultV7'
       discriminator:
         propertyName: contractVersion
         mapping:
@@ -2211,6 +2290,7 @@ components:
           "3.0": '#/components/schemas/RoundAnalyticsResultV3'
           "4.0": '#/components/schemas/RoundAnalyticsResultV4'
           "5.0": '#/components/schemas/RoundAnalyticsResultV5'
+          "7.0": '#/components/schemas/RoundAnalyticsResultV7'
     McpJsonRpcRequest:
       type: object
       required: [jsonrpc, id, method]
@@ -2940,8 +3020,151 @@ components:
           maxProperties: 8
           additionalProperties:
             $ref: '#/components/schemas/StoneDetailV6'
+    StoneMetricV7:
+      type: object
+      description: >-
+        A 7.0 metric. Core-owned evidence and nothing else: the average, the
+        response count, the distribution, and — new on 7.0 — the scale the
+        statement was answered on and its polarity, echoed back for Core to
+        verify. No insightText: the research instrument has over a hundred
+        statements, and the dimension's summary is the reading of its questions.
+      required: [questionId, label, value, averageScore, responseCount, scoreDistribution, scaleId, polarity]
+      properties:
+        questionId:
+          type: string
+        label:
+          type: string
+        value:
+          type: string
+        averageScore:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: Normalised to 0-100 with the polarity applied, so higher is better on every question.
+        responseCount:
+          type: integer
+          minimum: 1
+        trend:
+          type: string
+        scoreDistribution:
+          $ref: '#/components/schemas/ScoreDistribution'
+        scaleId:
+          type: string
+          description: The answer scale of the persisted question, e.g. likert-5-extent or likert-7-frequency.
+        polarity:
+          type: string
+          enum: [positive, negative]
+          description: Whether a high raw answer is good (positive) or bad (negative) for the dimension; the average already accounts for it.
+    StoneGenerationProvenanceV7:
+      type: object
+      description: >-
+        7.0 provenance: 6.0's without `metricInsightsOutcome`, because 7.0
+        carries no metric narrative for it to describe.
+      required: [outcome, attempts, retryCount, sourceQuestionIds, surveyDefinitionHash]
+      properties:
+        outcome:
+          type: string
+          enum: [llm, deterministic_fallback, unavailable]
+        unavailableReason:
+          type: string
+          enum: [provider_unavailable, validation_rejected]
+        attempts:
+          type: integer
+          minimum: 0
+        retryCount:
+          type: integer
+          minimum: 0
+        sourceQuestionIds:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            type: string
+        surveyDefinitionHash:
+          type: string
+          pattern: '^sha256:[a-f0-9]{64}$'
+        backgroundContextIncluded:
+          type: boolean
+        distributionIncluded:
+          type: boolean
+        crossDimensionContextIncluded:
+          type: boolean
+    StoneDetailV7:
+      type: object
+      description: A 7.0 stone — 6.0's three overview paragraphs and five recommendations over evidence-only metrics.
+      required: [dimensionId, dimensionNameHebrew, status, score, summary, recommendedInterventions, metrics, generationProvenance]
+      properties:
+        dimensionId:
+          $ref: '#/components/schemas/WellbeingDimensionId'
+        dimensionNameHebrew:
+          type: string
+        status:
+          $ref: '#/components/schemas/WellbeingStatus'
+        score:
+          type: number
+          minimum: 0
+          maximum: 100
+        summary:
+          type: array
+          minItems: 3
+          maxItems: 3
+          items:
+            type: string
+            minLength: 1
+        recommendedInterventions:
+          type: array
+          minItems: 5
+          maxItems: 5
+          items:
+            $ref: '#/components/schemas/StoneInterventionV6'
+        metrics:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/StoneMetricV7'
+        generationProvenance:
+          $ref: '#/components/schemas/StoneGenerationProvenanceV7'
+    StoneMapResultV7:
+      type: object
+      description: Consumer-side output contract 7.0, the instrument-scale exchange. Core accepts and verifies this shape; the producer selects it per deployment only once the Python service reports it.
+      required: [contractVersion, roundId, surveyDefinitionHash, isLocked, status]
+      properties:
+        contractVersion:
+          type: string
+          enum: ["7.0"]
+          example: "7.0"
+        roundId:
+          type: string
+        surveyDefinitionHash:
+          type: string
+          pattern: '^sha256:[a-f0-9]{64}$'
+        processedAt:
+          type: string
+          format: date-time
+        isLocked:
+          type: boolean
+        status:
+          type: string
+          enum: [success, locked_error, validation_failed]
+        errorMessage:
+          type: string
+        overallPsychologicalSummary:
+          type: string
+        overallSummaryOutcome:
+          type: string
+          enum: [llm, deterministic_fallback]
+        dimensionsWithoutInterpretation:
+          type: array
+          items:
+            $ref: '#/components/schemas/WellbeingDimensionId'
+        stones:
+          type: object
+          minProperties: 8
+          maxProperties: 8
+          additionalProperties:
+            $ref: '#/components/schemas/StoneDetailV7'
     StoneMapResult:
-      description: Consumer-first compatibility union. Core accepts immutable 1.0/2.0, dynamic 3.0/4.0/5.0 and narrative output 6.0.
+      description: Consumer-first compatibility union. Core accepts immutable 1.0/2.0, dynamic 3.0/4.0/5.0, narrative output 6.0 and the instrument-scale 7.0.
       oneOf:
         - $ref: '#/components/schemas/StoneMapResultV1'
         - $ref: '#/components/schemas/StoneMapResultV2'
@@ -2949,6 +3172,7 @@ components:
         - $ref: '#/components/schemas/StoneMapResultV4'
         - $ref: '#/components/schemas/StoneMapResultV5'
         - $ref: '#/components/schemas/StoneMapResultV6'
+        - $ref: '#/components/schemas/StoneMapResultV7'
       discriminator:
         propertyName: contractVersion
         mapping:
@@ -2958,6 +3182,7 @@ components:
           "4.0": '#/components/schemas/StoneMapResultV4'
           "5.0": '#/components/schemas/StoneMapResultV5'
           "6.0": '#/components/schemas/StoneMapResultV6'
+          "7.0": '#/components/schemas/StoneMapResultV7'
     ErrorResponse:
       type: object
       properties:

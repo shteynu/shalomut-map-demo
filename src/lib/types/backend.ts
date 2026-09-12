@@ -354,6 +354,14 @@ export interface DynamicQuestionAggregate {
     yellow: number;
     red: number;
   };
+  /**
+   * 7.0 and up: which scale the statement was answered on and which way it
+   * points. The average above is already normalised and already has the
+   * polarity applied — higher is better on every question — so these say what
+   * the respondent was shown, not how to read the number.
+   */
+  scaleId?: AnswerScaleId;
+  polarity?: AnswerPolarity;
 }
 
 export interface RoundAnalyticsV2Result {
@@ -369,7 +377,7 @@ export interface RoundAnalyticsV2Result {
 
 export interface RoundAnalyticsV3Result {
   // Later contracts keep this Core-owned aggregate shape while changing AI copy.
-  contractVersion: '3.0' | '4.0' | '5.0' | '6.0';
+  contractVersion: '3.0' | '4.0' | '5.0' | '6.0' | '7.0';
   roundId: string;
   organizationId: string;
   surveyDefinitionHash: SurveyDefinitionHash;

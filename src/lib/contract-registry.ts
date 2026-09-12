@@ -10,6 +10,13 @@ export interface ContractCapabilities {
   usesStructuredDimensionSummary: boolean;
   usesNarrativeMetrics: boolean;
   hasOverallSummarySentenceLimit: boolean;
+  /**
+   * Every question aggregate names the scale it was answered on and its
+   * polarity, and echoes both back on its metric. `7.0` and up: the research
+   * instrument mixes 1–5, 1–7 and reverse-scored statements, so a normalised
+   * average alone no longer says what the respondent was shown.
+   */
+  carriesAnswerScale: boolean;
   stoneInterpretationSentenceLimit: '2' | '2-5';
 }
 
@@ -23,6 +30,7 @@ const BOOLEAN_CAPABILITY_FIELDS = [
   'usesStructuredDimensionSummary',
   'usesNarrativeMetrics',
   'hasOverallSummarySentenceLimit',
+  'carriesAnswerScale',
 ] as const;
 
 export function loadContractRegistry(

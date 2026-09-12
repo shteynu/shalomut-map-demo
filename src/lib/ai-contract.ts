@@ -4,6 +4,7 @@ import dynamicContractManifest from '../../contracts/ai-analytics-v3.json';
 import v4ContractManifest from '../../contracts/ai-analytics-v4.json';
 import v5ContractManifest from '../../contracts/ai-analytics-v5.json';
 import v6ContractManifest from '../../contracts/ai-analytics-v6.json';
+import v7ContractManifest from '../../contracts/ai-analytics-v7.json';
 import { getCapabilities, type ContractCapabilities } from './contract-registry';
 // The bands a payload's status is checked against are the ones Core scores
 // with and the ones Python validates its own output with.
@@ -12,6 +13,7 @@ import type {
   WellbeingDimensionId,
   WellbeingStatus,
 } from './shalomut-source';
+import type { AnswerPolarity, AnswerScaleId } from './survey/answer-scales';
 
 export const AI_ANALYTICS_V1_CONTRACT_VERSION = legacyContractManifest.version;
 export const AI_ANALYTICS_CONTRACT_VERSION = contractManifest.version;
@@ -20,6 +22,7 @@ export const AI_ANALYTICS_DYNAMIC_CONTRACT_VERSION =
 export const AI_ANALYTICS_V4_CONTRACT_VERSION = v4ContractManifest.version;
 export const AI_ANALYTICS_V5_CONTRACT_VERSION = v5ContractManifest.version;
 export const AI_ANALYTICS_V6_CONTRACT_VERSION = v6ContractManifest.version;
+export const AI_ANALYTICS_V7_CONTRACT_VERSION = v7ContractManifest.version;
 
 export const AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS = Object.freeze([
   AI_ANALYTICS_V1_CONTRACT_VERSION,
@@ -28,6 +31,7 @@ export const AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS = Object.freeze([
   AI_ANALYTICS_V4_CONTRACT_VERSION,
   AI_ANALYTICS_V5_CONTRACT_VERSION,
   AI_ANALYTICS_V6_CONTRACT_VERSION,
+  AI_ANALYTICS_V7_CONTRACT_VERSION,
 ]);
 
 export type AiAnalyticsContractVersion =
@@ -93,6 +97,23 @@ export interface StoneMetric {
 export interface StoneMetricV6 extends StoneMetric {
   /** Qualitative Hebrew copy shown instead of Core-owned numeric evidence. */
   insightText: string;
+}
+
+/**
+ * A 7.0 metric: Core-owned evidence and nothing written by the model.
+ *
+ * The research instrument has over a hundred statements, so a narrative per
+ * metric — 6.0's `insightText` — would be over a hundred narratives a round;
+ * 7.0 forbids the field and lets the dimension's three paragraphs be the
+ * reading of its questions. What the metric gains is the scale it was
+ * answered on and its polarity, echoed back the way 5.0 echoes the
+ * distribution: numbers Core owns, sent round so Core can check them.
+ */
+export interface StoneMetricV7 extends StoneMetric {
+  questionId: string;
+  scaleId: AnswerScaleId;
+  polarity: AnswerPolarity;
+  insightText?: never;
 }
 
 export interface StoneIntervention {
@@ -188,7 +209,12 @@ export interface StoneDetailV6 {
   generationProvenance: StoneGenerationProvenance;
 }
 
-export type AnyStoneDetail = StoneDetail | StoneDetailV6;
+/** A 7.0 stone: 6.0's overview and recommendations over evidence-only metrics. */
+export interface StoneDetailV7 extends Omit<StoneDetailV6, 'metrics'> {
+  metrics: StoneMetricV7[];
+}
+
+export type AnyStoneDetail = StoneDetail | StoneDetailV6 | StoneDetailV7;
 
 export interface StoneMapResult {
   contractVersion: AiAnalyticsKnownContractVersion;
@@ -553,6 +579,27 @@ function isValidV6QuestionMetric(value: unknown): value is StoneMetricV6 {
   );
 }
 
+const ANSWER_POLARITIES = new Set<string>(['positive', 'negative']);
+
+/**
+ * A 7.0 metric is a 5.0 metric that names its scale and its polarity and
+ * carries no narrative. The scale is checked for shape here and for identity
+ * in `verify-ai-result.ts`, which holds the round's questionnaire and can say
+ * whether `likert-7-frequency` is what this statement was actually answered
+ * on; a narrative is refused outright, because it is copy the contract does
+ * not carry rather than copy that happens to be too short.
+ */
+function isValidV7QuestionMetric(value: unknown): value is StoneMetricV7 {
+  if (!isValidV5QuestionMetric(value)) return false;
+  const record = value as unknown as Record<string, unknown>;
+  return (
+    record.insightText === undefined &&
+    typeof record.scaleId === 'string' &&
+    record.scaleId.length > 0 &&
+    ANSWER_POLARITIES.has(String(record.polarity))
+  );
+}
+
 function isValidV3GenerationProvenance(
   value: unknown,
   metricQuestionIds: string[],
@@ -806,11 +853,19 @@ function isValidV5Stone(
   );
 }
 
-function isValidV6Stone(
+/**
+ * The shape 6.0 and 7.0 share: three overview paragraphs, five adapted
+ * recommendations, a metric per question. What differs is the metric —
+ * 6.0 writes a narrative on each, 7.0 forbids one — so the metric guard is
+ * the parameter and everything else is stated once.
+ */
+function isValidStructuredStone(
   value: unknown,
   dimensionId: WellbeingDimensionId,
   surveyDefinitionHash: string,
-): value is StoneDetailV6 {
+  isValidMetric: (metric: unknown) => metric is StoneMetric,
+  narrativeMetrics: boolean,
+): value is StoneDetailV6 | StoneDetailV7 {
   if (
     !isRecord(value) ||
     value.dimensionId !== dimensionId ||
@@ -825,7 +880,7 @@ function isValidV6Stone(
     value.psychologicalInterpretation !== undefined ||
     !Array.isArray(value.metrics) ||
     value.metrics.length < 1 ||
-    !value.metrics.every(isValidV6QuestionMetric) ||
+    !value.metrics.every(isValidMetric) ||
     !Array.isArray(value.recommendedInterventions) ||
     value.recommendedInterventions.length !== 5
   ) {
@@ -833,7 +888,7 @@ function isValidV6Stone(
   }
 
   const status = value.status as WellbeingStatus;
-  const metrics = value.metrics as StoneMetricV6[];
+  const metrics = value.metrics as StoneMetric[];
   const metricQuestionIds = metrics.map((metric) => metric.questionId!);
   const interventions = value.recommendedInterventions as StoneIntervention[];
   const provenance = value.generationProvenance;
@@ -861,9 +916,37 @@ function isValidV6Stone(
       provenance,
       metricQuestionIds,
       surveyDefinitionHash,
-      true,
+      narrativeMetrics,
     ) &&
     isRecord(provenance)
+  );
+}
+
+function isValidV6Stone(
+  value: unknown,
+  dimensionId: WellbeingDimensionId,
+  surveyDefinitionHash: string,
+): value is StoneDetailV6 {
+  return isValidStructuredStone(
+    value,
+    dimensionId,
+    surveyDefinitionHash,
+    isValidV6QuestionMetric,
+    true,
+  );
+}
+
+function isValidV7Stone(
+  value: unknown,
+  dimensionId: WellbeingDimensionId,
+  surveyDefinitionHash: string,
+): value is StoneDetailV7 {
+  return isValidStructuredStone(
+    value,
+    dimensionId,
+    surveyDefinitionHash,
+    isValidV7QuestionMetric,
+    false,
   );
 }
 
@@ -1077,11 +1160,17 @@ export function validateStoneMapResult(
     const isValidStone = !caps.isSemanticContract
       ? isValidLegacyStone(payload.stones[dimensionId], dimensionId)
       : caps.usesStructuredDimensionSummary
-        ? isValidV6Stone(
-            payload.stones[dimensionId],
-            dimensionId,
-            payload.surveyDefinitionHash as string,
-          )
+        ? caps.usesNarrativeMetrics
+          ? isValidV6Stone(
+              payload.stones[dimensionId],
+              dimensionId,
+              payload.surveyDefinitionHash as string,
+            )
+          : isValidV7Stone(
+              payload.stones[dimensionId],
+              dimensionId,
+              payload.surveyDefinitionHash as string,
+            )
         : caps.supportsScoreDistribution
           ? isValidV5Stone(
               payload.stones[dimensionId],

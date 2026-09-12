@@ -106,7 +106,7 @@ When work moves from status or handoff to implementation, read and follow
   questions are a default/legacy template, not a mandatory runtime instrument: a
   given round's questions may differ in ID, count and wording as long as they
   are persisted, bound to the eight dimensions and pass the privacy gate.
-- Do not silently change the semantics of published contracts `1.0`–`6.0`.
+- Do not silently change the semantics of published contracts `1.0`–`7.0`.
   Capability policy lives in `contracts/capabilities.json` and runtime status in
   `docs/ai-contract-version-matrix.md`. Incompatible new semantics require a new
   versioned manifest and a consumer-first rollout.

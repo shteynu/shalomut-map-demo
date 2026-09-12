@@ -92,6 +92,15 @@ export function validateRoundAnalyticsPayload(
         return { ok: false, error: `Invalid score distribution: ${questionId}` };
       }
     }
+    if (capabilities.carriesAnswerScale) {
+      if (
+        typeof aggregate.scaleId !== 'string' ||
+        !aggregate.scaleId ||
+        !['positive', 'negative'].includes(String(aggregate.polarity))
+      ) {
+        return { ok: false, error: `Invalid answer scale: ${questionId}` };
+      }
+    }
   }
 
   return { ok: true, value };
