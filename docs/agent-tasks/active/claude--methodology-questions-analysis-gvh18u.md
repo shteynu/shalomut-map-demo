@@ -4,10 +4,10 @@
 
 - Branch: `claude/methodology-questions-analysis-gvh18u`
 - Base branch: `main` at `f47959e`
-- Current HEAD: the commit carrying this file, on top of the history-list
-  commit that follows `60b8873`
-- Status: complete on the branch — every commit pushed, nothing uncommitted.
-  Nothing is deployed
+- Current HEAD: the commit carrying this file, on top of `7075de9`, the last
+  commit that changes anything but this file
+- Status: complete on the branch and the session closed — every commit
+  pushed, nothing uncommitted. Nothing is deployed
 - Last updated: 2026-09-12
 - Last agent/tool: Claude Code
 
@@ -29,8 +29,8 @@ and two small follow-ups the owner asked for after the save:
    with, the owner's "Да"; ADR-004 as amended.
 6. `60b8873` — the builder's «שאלות פעילות» stone counts items, not stored
    rows.
-7. The commit after `60b8873` — the history list counts items too, in
-   `summariseVersion` and in the SQL summary alike.
+7. `7075de9` — the history list counts items too, in `summariseVersion` and
+   in the SQL summary alike.
 
 ## User-visible outcome
 
@@ -179,11 +179,12 @@ removed afterwards. No deployed write of any kind.
 ## Git state
 
 Committed and pushed: `9813c44`, `8d8d4e0`, `7674f73`, `150c335`, `23b6f72`,
-`455e33e`, `98fb6ea`, `60b8873`, the history-list commit and this file's
-commit, all on
-`origin/claude/methodology-questions-analysis-gvh18u`. Nothing staged,
-unstaged or untracked. `main` is still `f47959e`; landing the branch is the
-owner's.
+`455e33e`, `98fb6ea`, `60b8873`, `7075de9` and this file's commit, all on
+`origin/claude/methodology-questions-analysis-gvh18u` — checked with
+`git status` and `git log origin/main..HEAD` at session close. Nothing
+staged, unstaged or untracked. `origin/main` is still `f47959e`, fetched at
+close; landing the branch is the owner's. The handoff is portable to any
+checkout or machine: everything it describes is on the pushed branch.
 
 ## Approval gates
 
