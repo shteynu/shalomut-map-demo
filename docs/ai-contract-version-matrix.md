@@ -12,6 +12,7 @@
 | Python parser and pipeline | Python supported-version tuple plus shared capabilities | `1.0`–`7.0` in `main` since 2026-09-12; V7 answer scales, no metric narrative |
 | Python health | `AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS` | deployed health reports `1.0`–`6.0`; deployed source includes `97f0641`; `7.0` is not deployed |
 | Shared golden corpus | `contracts/fixtures/golden_corpus.json` | positive/negative cases for `1.0`, `3.0`, `4.0`, `5.0`, `6.0`, `7.0` |
+| Shared callback corpus | `contracts/fixtures/callback_corpus.json` | accepted payloads `1.0`–`7.0`, refused mutations both runtimes judge by the same rule; `7.0` since 2026-09-12 |
 
 ## Contract `6.0`
 

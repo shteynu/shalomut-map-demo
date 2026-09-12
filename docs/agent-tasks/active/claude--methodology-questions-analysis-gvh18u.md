@@ -226,6 +226,11 @@ Step 3:
   question never appears, the shipping Python pipeline returns `7.0`, a metric
   whose polarity was tampered is refused with 400, the untampered map is
   accepted, persisted as `7.0` and renders with no narrative-only metric.
+- The shared callback corpus gained `7.0`: one accepted map (mixed scales,
+  no narrative) and four refused mutations — a narrative on a metric, a
+  metric without its polarity, one without its scale, and
+  `metricInsightsOutcome` on a stone — judged by the same rule name on both
+  sides (Python 55 passed, Core parity suite passed).
 - `lint:contract-refusals`: 4 suites cover 6 validation paths across 7
   versions. `lint:literals`, `openapi:check`, the OpenAPI integrity tests
   (documented versions = supported versions) — passed.
@@ -280,6 +285,9 @@ removed. No deployed write of any kind.
 
 ### Residual risk
 
+- The overall-summary prompt lists dimension scores and summed distributions
+  only, never per-question averages, so it needs no polarity rule; checked
+  2026-09-12 rather than assumed.
 - `7.0` has never been produced by a real provider call, only by the fallback
   path and the local stub. The prompts gained one sentence about polarity;
   whether a model honours it is an eval question, not a contract one, and the
