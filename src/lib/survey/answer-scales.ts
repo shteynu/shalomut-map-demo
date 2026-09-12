@@ -1,4 +1,5 @@
 import { responseScale } from "@/lib/shalomut-source";
+import type { SurveyQuestionOption } from "@/lib/types/backend";
 
 /**
  * The scales a question can be answered on.
@@ -211,4 +212,55 @@ export function isValueOnScale(scaleId: AnswerScaleId, value: string): boolean {
   return answerScales[scaleId].points.some(
     (point) => point.value === value,
   );
+}
+
+/**
+ * A Likert scale's points as the options of a background single-choice
+ * question.
+ *
+ * This is how a statement the instrument asks but no stone reads is written: a
+ * background question whose options are the scale's own anchors, value for
+ * value. `buildSurveySteps` recognises the shape through `scaleMatchingOptions`
+ * and seats the question in the block beside the scored statements, so the
+ * respondent sees one legend and one list of rows and never learns which of
+ * them count. The colour scale is refused: its stones are the analytic
+ * experience, not a list of anchors.
+ */
+export function optionsForScale(scaleId: AnswerScaleId): SurveyQuestionOption[] {
+  if (scaleId === COLOUR_SCALE_ID) {
+    throw new Error("The colour scale is not an option list.");
+  }
+
+  return answerScales[scaleId].points.map((point) => ({
+    value: point.value,
+    label: point.label,
+  }));
+}
+
+/**
+ * The Likert scale whose points these options are, or `undefined` when they
+ * are an ordinary option list.
+ *
+ * Exact on value and label alike: a manager who wrote five options of their
+ * own that happen to be numbered 1–5 has not written a Likert block, and the
+ * anchors are what the legend would show above the rows.
+ */
+export function scaleMatchingOptions(
+  options: readonly SurveyQuestionOption[] | undefined,
+): AnswerScaleId | undefined {
+  if (!options) return undefined;
+
+  return ANSWER_SCALE_IDS.find((scaleId) => {
+    if (scaleId === COLOUR_SCALE_ID) return false;
+    const points = answerScales[scaleId].points;
+
+    return (
+      points.length === options.length &&
+      points.every(
+        (point, index) =>
+          point.value === options[index].value &&
+          point.label === options[index].label,
+      )
+    );
+  });
 }

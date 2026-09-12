@@ -1,11 +1,10 @@
 import {
-  AnalyticSurveyQuestion,
   BackgroundSurveyQuestion,
   SurveyDefinitionQuestion,
   isAnalyticQuestion,
   isBackgroundQuestion,
 } from "../types/backend";
-import type { AnswerScaleId } from "./answer-scales";
+import { scaleMatchingOptions, type AnswerScaleId } from "./answer-scales";
 
 /**
  * What a respondent is shown at one position in the questionnaire.
@@ -31,7 +30,15 @@ export type SurveyStep =
       readonly kind: "block";
       readonly sectionId: string;
       readonly scaleId: AnswerScaleId;
-      readonly questions: readonly AnalyticSurveyQuestion[];
+      /**
+       * Analytic statements on the block's scale, and beside them any
+       * background single-choice question of the same section whose options
+       * are that scale's anchors — a statement the instrument collects and no
+       * stone reads. Both answer on the same legend; the kind says which
+       * ones count, and `required` — shown as `(רשות)` — says which may be
+       * skipped.
+       */
+      readonly questions: readonly SurveyDefinitionQuestion[];
     };
 
 /** Every question a step asks about, whichever shape the step is. */
@@ -62,15 +69,35 @@ type GroupedQuestion =
   | {
       readonly key: string;
       readonly step: Extract<SurveyStep, { kind: "block" }>;
-      readonly question: AnalyticSurveyQuestion;
+      readonly question: SurveyDefinitionQuestion;
     };
+
+function blockFor(
+  question: SurveyDefinitionQuestion,
+  scaleId: AnswerScaleId,
+): GroupedQuestion | undefined {
+  const sectionId = question.sectionId?.trim();
+  if (!sectionId || scaleId === "wellbeing-colour") return undefined;
+
+  return {
+    // The scale is part of the key, not only the section: a block states one
+    // set of anchors, so a section mixing a 1–5 and a 1–7 scale is two blocks.
+    key: `block:${sectionId}:${scaleId}`,
+    step: { kind: "block", sectionId, scaleId, questions: [question] },
+    question,
+  };
+}
 
 function groupFor(
   question: SurveyDefinitionQuestion,
 ): GroupedQuestion | undefined {
-  if (isBackgroundQuestion(question)) {
+  if (isAnalyticQuestion(question)) {
+    return blockFor(question, question.scaleId);
+  }
+
+  if (question.answerMode === "allocation-100") {
     const groupId = question.allocationGroupId;
-    if (question.answerMode !== "allocation-100" || !groupId) return undefined;
+    if (!groupId) return undefined;
 
     return {
       key: `allocation:${groupId}`,
@@ -79,21 +106,14 @@ function groupFor(
     };
   }
 
-  const sectionId = question.sectionId?.trim();
-  if (!sectionId || question.scaleId === "wellbeing-colour") return undefined;
+  // A single-choice question whose options are a Likert scale's anchors is a
+  // statement the instrument collects and does not score. It reads as a row of
+  // its section's block, on the block's legend, rather than as a screen of its
+  // own between two blocks — which is what thirty of them would otherwise be.
+  if (question.answerMode !== "single-choice") return undefined;
+  const scaleId = scaleMatchingOptions(question.options);
 
-  return {
-    // The scale is part of the key, not only the section: a block states one
-    // set of anchors, so a section mixing a 1–5 and a 1–7 scale is two blocks.
-    key: `block:${sectionId}:${question.scaleId}`,
-    step: {
-      kind: "block",
-      sectionId,
-      scaleId: question.scaleId,
-      questions: [question],
-    },
-    question,
-  };
+  return scaleId ? blockFor(question, scaleId) : undefined;
 }
 
 /**
@@ -130,7 +150,7 @@ export function buildSurveySteps(
     const step = steps[existing];
     if (step.kind === "allocation" && isBackgroundQuestion(question)) {
       steps[existing] = { ...step, questions: [...step.questions, question] };
-    } else if (step.kind === "block" && isAnalyticQuestion(question)) {
+    } else if (step.kind === "block") {
       steps[existing] = { ...step, questions: [...step.questions, question] };
     }
   }

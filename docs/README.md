@@ -140,10 +140,11 @@ on, and a historical one explicitly is not.
   first time and carries a full item-to-dimension table for the 108 Likert
   items with polarity and a confidence mark on every row, a reading of the
   scoring bands against the 1–5 and 1–7 anchors, and twelve source-document
-  defects with a proposed resolution each. **A proposal, not a decision**: the
-  mapping stays owner-supplied (instrument plan §2, decision 3), nothing may be
-  implemented from it until the owner accepts it, and `open-decisions.md` keeps
-  item 6 waiting until then.
+  defects with a proposed resolution each. **A proposal the owner accepted as
+  the working mapping on 2026-09-12**: `src/lib/research-instrument.ts` is
+  authored from its §2 table, the methodologist may still correct any row, and
+  `open-decisions.md` item 6 now waits for that confirmation rather than for
+  the table.
 
 ## Historical plans and evidence
 

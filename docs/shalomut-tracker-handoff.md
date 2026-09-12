@@ -1215,7 +1215,13 @@ here; when the two disagree, this section wins.
    plan, so it is `PROGRESS.md` that says what shipped. The questions are written
    and ready to send in both languages —
    `docs/methodologist-questions-2026-08-15-{ru,he}.md`, six of them since
-   2026-08-17. Its machinery exists and its content does not.
+   2026-08-17. Since 2026-09-12 a proposed answer to all six exists —
+   `docs/methodologist-questions-analysis-2026-09-12.md` — and the owner
+   accepted its §2 mapping as the working one, so the instrument is authored in
+   `src/lib/research-instrument.ts` under it. The methodologist's confirmation
+   is still wanted and no longer blocks authoring; what it would change is a
+   row of that table and the module beside it. Phase 5 (contract `7.0`) is what
+   now stands between the instrument and a manager.
 8. **Naming a pilot school with a date**, which is what still gates the 2026-08-10
    strategy sweep, and the wording of its axis 1 (Chief Scientist directive) and
    axis 7 (fair-use commitment, and how small a staff room is too small to measure

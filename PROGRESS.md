@@ -838,12 +838,18 @@ for. A published table now blanks out either nobody or at least the threshold,
 which is also the property that holds when a manager opens the round's next
 background question.
 
-What is left is phase 5 and the instrument's own content, both of which wait on
-the methodologist's item-to-dimension mapping — the machinery exists and the 126
-items do not. The eight-branch stack **landed on `main` on 2026-08-15** as one
-fast-forward, so the capabilities above are the ones in the repository — but the
-default questionnaire a manager gets is still the canonical 24, because
-replacing it is what the missing mapping would do.
+The instrument's content exists since 2026-09-12: `src/lib/research-instrument.ts`
+authors all 126 items as data — 150 stored questions, since a grid is thirteen
+rows — under the mapping proposed in
+`docs/methodologist-questions-analysis-2026-09-12.md` §2 and accepted by the
+owner as the working one: 78 statements scored, 30 collected on the block's own
+anchors and never scored, mixed polarity, the SMBM burnout block on `balance`.
+It parses strict, activates, estimates 23 minutes and is walkable locally with
+`seed-breakdown-round.ts --respondent --research`. What is left is phase 5, the
+`7.0` contract, and the swap that depends on it: the default questionnaire a
+manager gets is still the canonical 24, and nothing offers the instrument to a
+manager yet. The eight-branch stack **landed on `main` on 2026-08-15** as one
+fast-forward, so the capabilities above are the ones in the repository.
 
 That decision also closes the answer-scale question the two items below were
 waiting with. The cheap-wins list of

@@ -16,6 +16,7 @@ import {
   questionsInStep,
   submissionBlocker,
 } from '../survey-steps';
+import { optionsForScale } from '../answer-scales';
 import type {
   BackgroundSurveyQuestion,
   SurveyDefinitionQuestion,
@@ -84,7 +85,73 @@ function allocationRow(
   };
 }
 
+function unscoredStatement(
+  id: string,
+  sectionId: string,
+  options: { value: string; label: string }[] = optionsForScale('likert-5-extent'),
+): SurveyDefinitionQuestion {
+  return {
+    id,
+    kind: 'background',
+    text: `היגד ${id}`,
+    required: false,
+    enabled: true,
+    sectionId,
+    answerMode: 'single-choice',
+    options,
+  };
+}
+
 describe('building steps', () => {
+  it('seats a background statement on the scale anchors in its section block', () => {
+    // A statement the instrument collects and does not score is written as a
+    // background single-choice question whose options are the anchors. The
+    // respondent must meet it as a row of the block, not as a screen between
+    // two blocks.
+    const steps = buildSurveySteps([
+      likert('q1', 'משאבים'),
+      unscoredStatement('u1', 'משאבים'),
+      likert('q2', 'משאבים'),
+    ]);
+
+    assert.equal(steps.length, 1);
+    assert.equal(steps[0].kind, 'block');
+    assert.deepEqual(
+      questionsInStep(steps[0]).map((question) => question.id),
+      ['q1', 'u1', 'q2'],
+    );
+  });
+
+  it('keeps an ordinary single-choice question out of the block even inside a section', () => {
+    // Five options a manager wrote themselves are not a Likert scale, whatever
+    // the section says; the legend above the block would not describe them.
+    const steps = buildSurveySteps([
+      likert('q1', 'משאבים'),
+      unscoredStatement('u1', 'משאבים', [
+        { value: '1', label: 'א' },
+        { value: '2', label: 'ב' },
+        { value: '3', label: 'ג' },
+        { value: '4', label: 'ד' },
+        { value: '5', label: 'ה' },
+      ]),
+    ]);
+
+    assert.deepEqual(
+      steps.map((step) => step.kind),
+      ['block', 'question'],
+    );
+  });
+
+  it('opens a block on the scale a background statement carries when it comes first', () => {
+    const steps = buildSurveySteps([
+      unscoredStatement('u1', 'שחיקה', optionsForScale('likert-7-frequency')),
+      likert('q1', 'שחיקה', 'likert-7-frequency'),
+    ]);
+
+    assert.equal(steps.length, 1);
+    assert.equal(steps[0].kind === 'block' ? steps[0].scaleId : '', 'likert-7-frequency');
+  });
+
   it('gives every ordinary question a step of its own', () => {
     const steps = buildSurveySteps([analytic('q1'), choice('b1')]);
 

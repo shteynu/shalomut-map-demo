@@ -21,6 +21,7 @@
  *   npx tsx scripts/seed-breakdown-round.ts --locked
  *   npx tsx scripts/seed-breakdown-round.ts --lopsided
  *   npx tsx scripts/seed-breakdown-round.ts --respondent
+ *   npx tsx scripts/seed-breakdown-round.ts --respondent --research
  *   npx tsx scripts/seed-breakdown-round.ts --respondent --allow-remote
  *
  * `--locked` writes the same questionnaire with four responses instead of
@@ -45,6 +46,12 @@
  * allocation grid — because the respondent screen now asks them, and a walk that
  * only meets one widget proves only one widget.
  *
+ * `--respondent --research` opens the same active round on the owner's 126-item
+ * research instrument instead — `src/lib/research-instrument.ts` — which is the
+ * only way to walk that instrument until something offers it to a manager. The
+ * two-block questionnaire below stays the default walk because it is short
+ * enough to reach every widget in a minute.
+ *
  * Loopback by default, for the same reason `seed-local.ts` is: a seeded school
  * on the deployed dashboard would be a fake school on a real screen.
  *
@@ -58,6 +65,7 @@
 import 'dotenv/config';
 import { resolveCoreRepositories } from '@/lib/composition-root';
 import { createCanonicalSurveyDefinition } from '@/lib/survey-definition';
+import { createResearchInstrumentDefinition } from '@/lib/research-instrument';
 import { resolveManagerOrganizationId } from '@/lib/auth/manager-auth-service';
 import {
   isAnalyticQuestion,
@@ -285,6 +293,7 @@ async function main() {
   const isLocked = process.argv.includes('--locked');
   const isLopsided = process.argv.includes('--lopsided');
   const isRespondentWalk = process.argv.includes('--respondent');
+  const isResearchWalk = isRespondentWalk && process.argv.includes('--research');
   const cohorts = isRespondentWalk
     ? []
     : isLocked
@@ -324,25 +333,27 @@ async function main() {
           : 'סבב פילוח מקומי',
     10,
   );
-  const definition = {
-    ...canonical,
-    questions: [
-      // The respondent walk keeps one analytic question per dimension rather
-      // than all twenty-four. It exists to reach the background widgets, and
-      // sixteen extra colour taps before the first of them is a worse test, not
-      // a fuller one. It cannot go below eight: the submit route parses the
-      // definition with the activation rules, which require every dimension to
-      // be covered, and a shorter questionnaire is refused with
-      // `DEFINITION_INVALID` at the end of the walk.
-      ...(isRespondentWalk
-        ? onePerDimension(canonical.questions)
-        : canonical.questions),
-      ...(isRespondentWalk ? [...RESOURCE_BLOCK, ...BURNOUT_BLOCK] : []),
-      TENURE_QUESTION,
-      ROLE_QUESTION,
-      ...(isRespondentWalk ? [HOURS_QUESTION, ...LOAD_GRID] : []),
-    ],
-  };
+  const definition = isResearchWalk
+    ? createResearchInstrumentDefinition('סבב מענה על שאלון המחקר', 10)
+    : {
+        ...canonical,
+        questions: [
+          // The respondent walk keeps one analytic question per dimension rather
+          // than all twenty-four. It exists to reach the background widgets, and
+          // sixteen extra colour taps before the first of them is a worse test, not
+          // a fuller one. It cannot go below eight: the submit route parses the
+          // definition with the activation rules, which require every dimension to
+          // be covered, and a shorter questionnaire is refused with
+          // `DEFINITION_INVALID` at the end of the walk.
+          ...(isRespondentWalk
+            ? onePerDimension(canonical.questions)
+            : canonical.questions),
+          ...(isRespondentWalk ? [...RESOURCE_BLOCK, ...BURNOUT_BLOCK] : []),
+          TENURE_QUESTION,
+          ROLE_QUESTION,
+          ...(isRespondentWalk ? [HOURS_QUESTION, ...LOAD_GRID] : []),
+        ],
+      };
   const analyticQuestions = definition.questions
     .filter((question) => question.enabled)
     .filter(isAnalyticQuestion);
@@ -423,7 +434,12 @@ async function main() {
           `    ${(cohort.categoryId ?? 'no answer').padEnd(10)} ${cohort.count}`,
       ),
       '',
-      isRespondentWalk
+      isResearchWalk
+        ? `Open /answer/${shareCode} and answer it. The 126-item research ` +
+          'instrument: sixteen background questions, two thirteen-row ' +
+          'allocation grids and thirteen statement blocks, thirty of whose ' +
+          'rows are collected without being scored.'
+        : isRespondentWalk
         ? `Open /answer/${shareCode} and answer it. Eight colour questions, ` +
           'then an eight-statement block on the 1–5 scale, a three-statement ' +
           'block on the 1–7 one, two single-choice questions, a numeric field ' +

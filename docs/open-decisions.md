@@ -58,9 +58,12 @@ do them and nothing in it can verify them either.
    → [`methodologist-questions-2026-08-15-ru.md`](methodologist-questions-2026-08-15-ru.md),
    [`-he.md`](methodologist-questions-2026-08-15-he.md),
    [instrument plan](default-research-instrument-plan-2026-08-14.md) §7.1.
-   A proposed answer exists since 2026-09-12 — a full table with polarity and
-   confidence per item, for the methodologist to confirm or correct rather than
-   compose — and it does not close this entry: the mapping is owner-supplied.
+   Since 2026-09-12 a proposed answer exists and the owner accepted it as the
+   working mapping, so the instrument is authored under it in
+   `src/lib/research-instrument.ts`. What this entry still waits for is the
+   methodologist's confirmation or correction of that table — a correction is
+   an edit to one row and to the module beside it — and it no longer blocks
+   authoring. **Unblocks now:** phase 5, contract `7.0`.
    → [`methodologist-questions-analysis-2026-09-12.md`](methodologist-questions-analysis-2026-09-12.md) §2.
 7. **Name a pilot school, with a date.** It converts half the 2026-08-10 strategy
    sweep from theory into a schedule. Two wordings travel with it and are

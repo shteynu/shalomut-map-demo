@@ -72,7 +72,7 @@ round questionnaires and from demo result data.
 | `מיזם ״מפת שלומות״` (owner-held PDF) | One-page initiative narrative: positioning, AI framing, partners, and founder context. |
 | `שלומות לאירה` (owner-held PDF) | Workshop/storytelling deck: journey metaphor and the 8-dimension map narrative. |
 | `המרחב האנושי דרכא` (owner-held PDF) | Hebrew workshop deck: burnout framing, wellbeing framing, 8 dimensions, scale language, and reflection prompts. |
-| Research instrument (owner-held Google Doc `1W7bQhdo0oyJ-WL73MmrsZB3XJqNDo_lE`) | **Planned, not in use.** Designated replacement for the default template: 16 demographic items, 2 sum-to-100 allocation grids and 108 Likert statements on 1–5 and 1–7 scales. Nothing in the code reads it yet; see the plan linked at the top of this file. |
+| Research instrument (owner-held Google Doc `1W7bQhdo0oyJ-WL73MmrsZB3XJqNDo_lE`) | **Authored as data, not the default.** Designated replacement for the default template: 16 demographic items, 2 sum-to-100 allocation grids and 108 Likert statements on 1–5 and 1–7 scales. Since 2026-09-12 `src/lib/research-instrument.ts` holds all of it — 150 stored questions, mapped to the eight dimensions per [`methodologist-questions-analysis-2026-09-12.md`](methodologist-questions-analysis-2026-09-12.md) §2, with 30 statements collected and never scored — reachable only by name (the local seed's `--research` walk). The default a manager gets is still the 24 below until contract `7.0` exists; see the plan linked at the top of this file. |
 
 ## Current Code Map
 
