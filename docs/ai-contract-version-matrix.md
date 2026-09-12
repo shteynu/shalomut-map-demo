@@ -102,8 +102,10 @@ mixed-scale questionnaire has crossed MCP → the shipping Python pipeline →
 callback verification → the Dashboard DTO under `AI_ANALYTICS_CONTRACT_VERSION=7.0`.
 What has not happened is any deployment: Python health still reports
 `1.0`–`6.0` and Production still produces `6.0`. Deploying Python first, then
-Core, then selecting `7.0` on a round that uses the instrument, is the owner's
-sequence, and it is not urgent until such a round exists.
+Core, then selecting `7.0`, is the owner's sequence — and since the swap of
+2026-09-12 (ADR-004 as amended) every new round is on the instrument, so until
+Core produces `7.0` such a round is refused analysis by `encodeAnalyticsInput`
+at the MCP boundary rather than analysed under `6.0`.
 
 ## Amending a published version
 

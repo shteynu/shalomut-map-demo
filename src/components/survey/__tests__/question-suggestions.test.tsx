@@ -2,6 +2,10 @@ import assert from "node:assert";
 import test, { afterEach } from "node:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import { surveyInstrument } from "@/lib/shalomut-source";
+import { defaultSurveyQuestions } from "@/lib/survey-definition";
+import { isAnalyticQuestion } from "@/lib/types/backend";
+
+const templateQuestions = defaultSurveyQuestions().filter(isAnalyticQuestion);
 import { QuestionEditDialog } from "../survey-builder/question-edit-dialog";
 import { SurveyBuilderQuestions } from "../survey-builder/survey-builder-questions";
 import {
@@ -74,7 +78,7 @@ test("the template half covers all eight dimensions, which the old library did n
 });
 
 test("a template item the draft already holds is not offered again", () => {
-  const [first, second] = surveyInstrument.questions.filter(
+  const [first, second] = templateQuestions.filter(
     (question) => question.dimensionId === "certainty",
   );
 
@@ -87,7 +91,7 @@ test("a template item the draft already holds is not offered again", () => {
   ]);
   assert.strictEqual(afterSpacing?.text, second.text);
 
-  const all = surveyInstrument.questions
+  const all = templateQuestions
     .filter((question) => question.dimensionId === "certainty")
     .map((question) => question.text);
   assert.strictEqual(templateSuggestionForDimension("certainty", all), null);

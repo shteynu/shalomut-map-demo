@@ -292,3 +292,31 @@ function hasAnswer(
 ): boolean {
   return (answers[questionId] ?? "").trim().length > 0;
 }
+
+/**
+ * How many things the questionnaire asks, counted the way a respondent would.
+ *
+ * A grid is one item with thirteen rows, not thirteen questions: the consent
+ * screen said «150 שאלות» for the 126-item instrument because it counted stored
+ * questions, and a teacher deciding whether to start counts what they will be
+ * asked. Blocks are not collapsed — each statement in one is a thing to
+ * answer — so this is neither the question count nor the step count.
+ */
+export function countQuestionnaireItems(
+  questions: readonly SurveyDefinitionQuestion[],
+): number {
+  const grids = new Set<string>();
+  let items = 0;
+  for (const question of questions) {
+    if (
+      isBackgroundQuestion(question) &&
+      question.answerMode === "allocation-100" &&
+      question.allocationGroupId
+    ) {
+      grids.add(question.allocationGroupId);
+      continue;
+    }
+    items += 1;
+  }
+  return items + grids.size;
+}

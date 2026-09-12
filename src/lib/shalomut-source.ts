@@ -80,6 +80,14 @@ export const sourceMaterials: SourceMaterial[] = [
     retrievedAt: "2026-07-02",
   },
   {
+    id: "research-instrument-2026",
+    title: "שאלון המחקר",
+    kind: "pdf",
+    role: "The default questionnaire since 2026-09-12: 16 background items, 2 allocation grids and 108 Likert statements in 13 blocks, authored as data in src/lib/research-instrument.ts under the mapping of docs/methodologist-questions-analysis-2026-09-12.md.",
+    url: "https://docs.google.com/document/d/1W7bQhdo0oyJ-WL73MmrsZB3XJqNDo_lE",
+    retrievedAt: "2026-09-12",
+  },
+  {
     id: "adobe-xd-map-concept",
     title: "מפת השלומות",
     kind: "design",
@@ -232,8 +240,10 @@ function question(id: string, dimensionId: WellbeingDimensionId, text: string): 
  * Which questions ask about which dimension. The words a reader sees for the
  * dimension itself are in `contracts/wellbeing-dimensions.json`; what stays
  * here is the part that is about the questionnaire rather than about the
- * model. When the research instrument replaces these 24, this record is what
- * gets replaced — the manifest beside it does not move.
+ * model. Since 2026-09-12 these 24 are the legacy template — what a round
+ * persisted without a snapshot is served — and the default a new round is
+ * born with is `src/lib/research-instrument.ts`. The manifest beside it did
+ * not move.
  */
 const questionsByDimension: Record<WellbeingDimensionId, SurveyQuestion[]> = {
   "self-expression": [

@@ -2,6 +2,8 @@ import {
   surveyInstrument,
   type WellbeingDimensionId,
 } from "@/lib/shalomut-source";
+import { defaultSurveyQuestions } from "@/lib/survey-definition";
+import { isAnalyticQuestion } from "@/lib/types/backend";
 import type { BuilderQuestion } from "./types";
 
 /**
@@ -29,18 +31,22 @@ function normalize(text: string) {
  * This is the template half of the flow, and it replaces the three hardcoded
  * questions the library used to cycle through: those covered three dimensions of
  * eight, so a manager building a round about the other five had nothing to start
- * from. The canonical questionnaire covers all eight by construction, and it is
- * already the source of truth for the taxonomy.
+ * from. The default questionnaire — the research instrument since 2026-09-12 —
+ * covers all eight by construction; only its scored statements are offered,
+ * because a background item is not a wellbeing statement.
  */
 export function templateSuggestionForDimension(
   dimensionId: WellbeingDimensionId,
   existingTexts: string[] = [],
 ): QuestionSuggestion | null {
   const used = new Set(existingTexts.map(normalize));
-  const candidate = surveyInstrument.questions.find(
-    (question) =>
-      question.dimensionId === dimensionId && !used.has(normalize(question.text)),
-  );
+  const candidate = defaultSurveyQuestions()
+    .filter(isAnalyticQuestion)
+    .find(
+      (question) =>
+        question.dimensionId === dimensionId &&
+        !used.has(normalize(question.text)),
+    );
 
   return candidate
     ? { dimensionId, text: candidate.text, source: "template" }

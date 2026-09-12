@@ -517,3 +517,25 @@ test("the size is measured on what would be stored, not on what was sent", () =>
     true,
   );
 });
+
+test("the default questionnaire is the research instrument and the canonical 24 are the legacy template", async () => {
+  const { RESEARCH_INSTRUMENT_ID } = await import("../research-instrument");
+  const {
+    createDefaultSurveyDefinition,
+    defaultSurveyQuestions,
+    isActivatableSurveyDefinition,
+  } = await import("../survey-definition");
+  const { surveyInstrument } = await import("../shalomut-source");
+
+  const fresh = createDefaultSurveyDefinition("סבב חדש", 10);
+  assert.strictEqual(fresh.instrumentId, RESEARCH_INSTRUMENT_ID);
+  assert.strictEqual(fresh.questions.length, defaultSurveyQuestions().length);
+  assert.strictEqual(fresh.questions.length, 150);
+  assert.strictEqual(isActivatableSurveyDefinition(fresh), true);
+
+  // The legacy factory did not move: a round persisted without a snapshot is
+  // still served, scored and backfilled with exactly the 24.
+  const legacy = createCanonicalSurveyDefinition("סבב ותיק", 10);
+  assert.strictEqual(legacy.instrumentId, surveyInstrument.id);
+  assert.strictEqual(legacy.questions.length, 24);
+});

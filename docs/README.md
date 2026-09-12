@@ -116,11 +116,6 @@ on, and a historical one explicitly is not.
   still open is listed in the plan's own §6, and the one thing that blocks the
   deployed runtime is outside the code: the Google OAuth client and its four
   `OIDC_*` values are the owner's to create.
-- [`default-research-instrument-plan-2026-08-14.md`](default-research-instrument-plan-2026-08-14.md)
-  — replacing the default 24-question template with the owner's 126-item
-  research instrument. Six phases, three owner decisions taken and five open.
-  **Not yet implemented**: every living document still describes the
-  24-question default, because that is what the code does.
 - [`methodologist-questions-2026-08-15-ru.md`](methodologist-questions-2026-08-15-ru.md)
   and [`methodologist-questions-2026-08-15-he.md`](methodologist-questions-2026-08-15-he.md)
   — the same six questions in Russian and Hebrew, written to be sent outside
@@ -158,6 +153,13 @@ under "Live plans" above:
   [`ai-insights-distribution-ui-proposal-2026-07-27.md`](ai-insights-distribution-ui-proposal-2026-07-27.md),
   which carries no `plan` in its name and so is named here rather than caught
   by the pattern above;
+- [`default-research-instrument-plan-2026-08-14.md`](default-research-instrument-plan-2026-08-14.md)
+  — the six phases that replaced the 24-question default with the owner's
+  126-item research instrument. **Delivered 2026-09-12**: phases 1–4 landed in
+  August, phase 5 is contract `7.0` (ADR-056) and phase 6 the swap (ADR-004 as
+  amended). Its §4 defects and §7 open questions were answered in
+  [`methodologist-questions-analysis-2026-09-12.md`](methodologist-questions-analysis-2026-09-12.md);
+  its line citations are as of 2026-08-14 and have moved;
 - [`questionnaire-modularity-audit-2026-08-16.md`](questionnaire-modularity-audit-2026-08-16.md)
   — dated read-only audit of whether a different questionnaire, several default
   templates, a Likert scale or a different dimension set cost data or code.

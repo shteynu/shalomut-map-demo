@@ -6,6 +6,7 @@ import {
 } from "@/lib/repositories";
 import { ManagerSetupService } from "@/lib/services/manager-setup.service";
 import { surveyInstrument } from "@/lib/shalomut-source";
+import { defaultSurveyQuestions } from "@/lib/survey-definition";
 
 function setupInput() {
   return {
@@ -45,10 +46,11 @@ test("ManagerSetupService creates an organization and a draft round with the sta
   assert.strictEqual((await orgRepo.findAll()).length, 1);
   assert.strictEqual(result.round.organizationId, result.organization.id);
   // The round opens with the standard questionnaire rather than an empty one,
-  // so the manager reads and edits it instead of building from nothing.
+  // so the manager reads and edits it instead of building from nothing. The
+  // standard one is the research instrument since 2026-09-12.
   assert.strictEqual(
     result.round.surveyDefinition?.questions.length,
-    surveyInstrument.questions.length,
+    defaultSurveyQuestions().length,
   );
   // Still a draft. This screen did not choose the questionnaire — it was
   // seeded — and a round that went live here would close the round the school

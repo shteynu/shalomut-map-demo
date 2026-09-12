@@ -32,12 +32,13 @@ import type {
  * scale's own anchors, so a respondent answers them inside the same block (as its
  * optional rows) and no stone ever reads them.
  *
- * What this module deliberately is not: the default. `createCanonicalSurveyDefinition`
- * still builds the 24, because contract `6.0` cannot carry 108 metric
- * narratives and a three-colour distribution does not describe a 1–7 item
- * (plan §5, phase 5). Until `7.0` exists, this instrument is reachable only by
- * name — the local seed's `--research` walk — and nothing offers it to a
- * manager.
+ * Since 2026-09-12 this is the default: `createDefaultSurveyDefinition` in
+ * `survey-definition.ts` is a new round's questionnaire and the builder's
+ * template, both built here. The canonical 24 stay behind
+ * `createCanonicalSurveyDefinition` as the legacy template a round persisted
+ * without a snapshot is served. Analysing a round on this instrument needs
+ * contract `7.0`: `encodeAnalyticsInput` refuses to send it under a version
+ * that cannot carry its scales.
  */
 export const RESEARCH_INSTRUMENT_ID = "shalomut-research-instrument-2026-09";
 

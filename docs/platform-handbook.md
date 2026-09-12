@@ -144,8 +144,13 @@ own words and its own number. One requirement stands: every scored question must
 belong to one of the eight sides, and all eight must be covered by at least one
 question. Until that holds, the round stays a draft and issues no link.
 
-The default offered is a set of **24 statements** — three per side, answered on
-one three-colour scale. It is a starting point, not an allowlist.
+The default offered is the **research instrument**: 126 items — sixteen
+background questions, two grids where a day's time and a day's load are each
+split into 100 percent, and 108 statements in thirteen blocks answered on
+five- or seven-point scales, some of them reverse-scored. Thirty of the
+statements are collected and never scored. It is a starting point, not an
+allowlist; the original 24 three-colour statements survive as the legacy
+questionnaire of rounds created before it.
 
 | Kind of question | What it does |
 | --- | --- |

@@ -2,9 +2,10 @@ import assert from "node:assert";
 import test from "node:test";
 import { InMemoryRoundRepository } from "@/lib/repositories";
 import { RoundService } from "@/lib/services";
-import { surveyInstrument } from "@/lib/shalomut-source";
+import { RESEARCH_INSTRUMENT_ID } from "@/lib/research-instrument";
 import {
   createCanonicalSurveyDefinition,
+  defaultSurveyQuestions,
   isActivatableSurveyDefinition,
 } from "@/lib/survey-definition";
 
@@ -21,9 +22,13 @@ import {
  * is activatable — would have made every new round go live the moment it was
  * created, closing the round the school was still collecting answers on, with a
  * questionnaire nobody had read. The round is a draft until someone saves it.
+ *
+ * Since 2026-09-12 the standard questionnaire is the research instrument, and
+ * the round says so in its provenance. The canonical 24 are what a round
+ * persisted without a snapshot is served, and no new round is.
  */
 
-test("a new round arrives with the standard questionnaire", () => {
+test("a new round arrives with the standard questionnaire, which is the instrument", () => {
   const round = RoundService.createRound({
     organizationId: "org-1",
     title: "סבב חדש",
@@ -31,9 +36,15 @@ test("a new round arrives with the standard questionnaire", () => {
 
   assert.strictEqual(
     round.surveyDefinition?.questions.length,
-    surveyInstrument.questions.length,
+    defaultSurveyQuestions().length,
   );
+  assert.strictEqual(round.surveyDefinition?.instrumentId, RESEARCH_INSTRUMENT_ID);
   assert.ok(round.surveyDefinition?.questions.every((q) => q.enabled));
+  // Not the legacy 24: they are the fallback for old rounds, not a template.
+  assert.notStrictEqual(
+    round.surveyDefinition?.questions.length,
+    createCanonicalSurveyDefinition("x", 10).questions.length,
+  );
 });
 
 test("that questionnaire is ready to go live, and the round still is not", () => {

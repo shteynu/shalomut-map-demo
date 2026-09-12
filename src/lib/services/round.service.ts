@@ -11,7 +11,7 @@ import {
 import { resolveAudienceLabel } from '../audience';
 import {
   DEFAULT_PRIVACY_THRESHOLD,
-  createCanonicalSurveyDefinition,
+  createDefaultSurveyDefinition,
   isActivatableSurveyDefinition,
   parseSurveyDefinition,
 } from '../survey-definition';
@@ -139,14 +139,16 @@ export class RoundService {
     // A caller who did not bring a questionnaire gets the standard one, so a
     // new round opens with something to read instead of an empty builder. Until
     // 2026-08-09 it was seeded empty, and "a questionnaire is generated for the
-    // new round" was not true of any creation path.
+    // new round" was not true of any creation path. Since 2026-09-12 the
+    // standard one is the research instrument; the canonical 24 are what a
+    // round persisted without a snapshot is served, and nothing new.
     const definitionCandidate = input.surveyDefinition
       ? {
           ...input.surveyDefinition,
           minimumResponses: privacyThreshold,
         }
       : {
-          ...createCanonicalSurveyDefinition(input.title, privacyThreshold),
+          ...createDefaultSurveyDefinition(input.title, privacyThreshold),
           // The audience belongs to the round, and the questionnaire shows it
           // to respondents. Taking it from here is what keeps the two screens
           // from disagreeing about who was asked.

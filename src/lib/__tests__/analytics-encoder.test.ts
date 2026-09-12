@@ -30,8 +30,8 @@ function canonical(
         averageScore: 80,
         responseCount: 10,
         scoreDistribution: { green: 5, yellow: 3, red: 2 },
-        scaleId: 'likert-5-extent',
-        polarity: 'negative',
+        scaleId: 'wellbeing-colour',
+        polarity: 'positive',
       },
     },
     backgroundContext: {
@@ -67,14 +67,28 @@ test('a version without distributions drops them and keeps every other number', 
   assert.equal(withoutDistribution.questionAggregates['q-1'].responseCount, 10);
 });
 
+/** The fixture's question answered on a Likert scale, reverse-scored. */
+function likertCanonical(): CanonicalRoundAnalytics {
+  const base = canonical();
+  return canonical({
+    questionAggregates: {
+      'q-1': {
+        ...base.questionAggregates['q-1'],
+        scaleId: 'likert-5-extent',
+        polarity: 'negative',
+      },
+    },
+  });
+}
+
 test('the answer scale crosses only on a version that carries it', () => {
-  const on7 = encodeRoundAnalytics(canonical(), '7.0');
+  const on7 = encodeRoundAnalytics(likertCanonical(), '7.0');
   assert.strictEqual(on7.questionAggregates['q-1'].scaleId, 'likert-5-extent');
   assert.strictEqual(on7.questionAggregates['q-1'].polarity, 'negative');
 
   // 6.0 rounds keep the exact payload they always had: a field that was not
   // on the wire before is not on it now.
-  const on6 = encodeRoundAnalytics(canonical(), '6.0');
+  const on6 = encodeRoundAnalytics(likertCanonical(), '6.0');
   assert.strictEqual('scaleId' in on6.questionAggregates['q-1'], false);
   assert.strictEqual('polarity' in on6.questionAggregates['q-1'], false);
 });
@@ -108,4 +122,26 @@ test('the analytics input carries the timestamp as a string', () => {
   const payload = encodeAnalyticsInput(canonical(), '5.0');
 
   assert.equal(payload.calculatedAt, CALCULATED_AT.toISOString());
+});
+
+test('the AI wire refuses a questionnaire the produced version cannot carry', async () => {
+  const { ContractCannotCarryQuestionnaireError } = await import(
+    '../analytics-encoder'
+  );
+  // A question on likert-5-extent: 6.0 would hand the model its
+  // polarity-adjusted average as a colour count and ask for a narrative.
+  assert.throws(
+    () => encodeAnalyticsInput(likertCanonical(), '6.0'),
+    ContractCannotCarryQuestionnaireError,
+  );
+  // 7.0 carries it; a colour questionnaire is carried by every version; a
+  // locked round has no aggregates to refuse.
+  assert.doesNotThrow(() => encodeAnalyticsInput(likertCanonical(), '7.0'));
+  assert.doesNotThrow(() => encodeAnalyticsInput(canonical(), '6.0'));
+  assert.doesNotThrow(() =>
+    encodeAnalyticsInput(
+      canonical({ isLocked: true, questionAggregates: {} }),
+      '6.0',
+    ),
+  );
 });

@@ -18,21 +18,22 @@ round questionnaires and from demo result data.
 > Production explicitly selects `6.0` after the completed consumer-first
 > rollout.
 
-> **A replacement for the default questionnaire is planned and not built.**
-> Owner decision 2026-08-14: a 126-item research instrument replaces the 24
-> statements as the default template, with mixed-polarity 1–5 and 1–7 scales,
-> demographic items that score nothing and k-anonymous cross-tabulation. Every
-> sentence in this document describes the shipped 24-question default and stays
-> accurate until the phases of
-> [`default-research-instrument-plan-2026-08-14.md`](default-research-instrument-plan-2026-08-14.md)
-> land. Do not read that plan as current behaviour, and do not update this
-> document ahead of the code.
+> **The default questionnaire is the 126-item research instrument since
+> 2026-09-12** (owner decision 2026-08-14, delivered through the six phases of
+> [`default-research-instrument-plan-2026-08-14.md`](default-research-instrument-plan-2026-08-14.md)):
+> mixed-polarity 1–5 and 1–7 scales, demographic items that score nothing,
+> k-anonymous cross-tabulation, and contract `7.0` to carry it. The canonical
+> 24 statements are the **legacy template**: what a round persisted without a
+> questionnaire snapshot is served and scored against, and what the backfill
+> writes onto such a round. No new round is born with them.
 
 ## Canonical Decisions
 
-- The Google Form is the canonical default/legacy questionnaire source for v1:
-  8 dimensions, 24 statements, and one shared green/yellow/red response scale.
-  Those 24 questions are a template, not the mandatory runtime questionnaire.
+- The research instrument (`src/lib/research-instrument.ts`, from the
+  owner-held Google Doc) is the default questionnaire: what a new round is born
+  with and what `טעינת תבנית` loads. The Google Form is the legacy source of the
+  canonical 24, which remain the fallback for rounds persisted without a
+  snapshot. Neither is the mandatory runtime questionnaire.
 - The Adobe XD file is a visual reference for the organic stone map and dashboard flow. It has 4 web artboards and was last modified on 2025-06-17.
 - The eight wellbeing dimensions are the stable Dashboard output taxonomy.
   A round may use different product-domain question IDs, text, and counts, but
@@ -68,19 +69,22 @@ round questionnaires and from demo result data.
 
 | Source | Role |
 | --- | --- |
-| [Google Form: מפת שלומות](https://docs.google.com/forms/d/e/1FAIpQLSdoDKUwm_tcRD_mOp4_1t1Zn-3LFE-hOkiEx9Ejey91GuPelQ/viewform) | Default/legacy survey template: dimensions, 24 initial questions, required state, and response scale. |
+| [Google Form: מפת שלומות](https://docs.google.com/forms/d/e/1FAIpQLSdoDKUwm_tcRD_mOp4_1t1Zn-3LFE-hOkiEx9Ejey91GuPelQ/viewform) | Legacy survey template: dimensions, the canonical 24 questions, required state, and the three-colour response scale. The fallback for rounds persisted without a snapshot; not what a new round is born with since 2026-09-12. |
 | [Adobe XD: מפת השלומות](https://xd.adobe.com/view/29896c9d-096a-4259-88bb-1dfb621f1131-7cda/grid/) | Visual reference for map composition, stone shapes, detail screens, metric screens, and recommendations screens. |
 | `הסבר מפורט: פלטורפמת מפת שלומות` (owner-held PDF) | MVP/product requirements: roles, organizations, rounds, anonymous survey, scoring, dashboard, permissions, privacy threshold, and future recommendations. |
 | `Teachers' Wellbeing Map` by Sasha Klyachkina (owner-held PDF) | Research and strategy context: rationale, wellbeing definitions, pilot plan, theory of change, and success measures. |
 | `מיזם ״מפת שלומות״` (owner-held PDF) | One-page initiative narrative: positioning, AI framing, partners, and founder context. |
 | `שלומות לאירה` (owner-held PDF) | Workshop/storytelling deck: journey metaphor and the 8-dimension map narrative. |
 | `המרחב האנושי דרכא` (owner-held PDF) | Hebrew workshop deck: burnout framing, wellbeing framing, 8 dimensions, scale language, and reflection prompts. |
-| Research instrument (owner-held Google Doc `1W7bQhdo0oyJ-WL73MmrsZB3XJqNDo_lE`) | **Authored as data, not the default.** Designated replacement for the default template: 16 demographic items, 2 sum-to-100 allocation grids and 108 Likert statements on 1–5 and 1–7 scales. Since 2026-09-12 `src/lib/research-instrument.ts` holds all of it — 150 stored questions, mapped to the eight dimensions per [`methodologist-questions-analysis-2026-09-12.md`](methodologist-questions-analysis-2026-09-12.md) §2, with 30 statements collected and never scored — reachable only by name (the local seed's `--research` walk). The default a manager gets is still the 24 below until contract `7.0` exists; see the plan linked at the top of this file. |
+| Research instrument (owner-held Google Doc `1W7bQhdo0oyJ-WL73MmrsZB3XJqNDo_lE`) | **The default questionnaire since 2026-09-12.** 16 demographic items, 2 sum-to-100 allocation grids and 108 Likert statements on 1–5 and 1–7 scales; `src/lib/research-instrument.ts` holds all of it — 150 stored questions, mapped to the eight dimensions per [`methodologist-questions-analysis-2026-09-12.md`](methodologist-questions-analysis-2026-09-12.md) §2, with 30 statements collected and never scored. A new round is born with it and the builder's template loads it; analysing a round on it needs contract `7.0`, and `encodeAnalyticsInput` refuses to send it under an earlier version. |
 
 ## Current Code Map
 
+- `src/lib/research-instrument.ts`: the default questionnaire, built by
+  `createDefaultSurveyDefinition` in `src/lib/survey-definition.ts`.
 - `src/lib/shalomut-source.ts`: canonical source metadata, response scale,
-  scoring thresholds, status labels, eight dimensions, and the default 24-question template.
+  scoring thresholds, status labels, eight dimensions, and the legacy
+  24-question template behind `createCanonicalSurveyDefinition`.
 - `SurveyRound.surveyDefinition`: exact versioned questionnaire snapshot for a
   runtime round.
 - `contracts/capabilities.json`: shared cross-runtime capability policy for

@@ -15,8 +15,9 @@ School principals, wellbeing coordinators, and district supervisors in Hebrew-sp
 Survey questions are configurable round content, not a fixed product-wide
 questionnaire. Managers may use different wellbeing questions, wording, IDs,
 and question counts as long as each analyzed question belongs to one of the
-eight dashboard dimensions. The original 24 questions remain the default and
-legacy template. AI must interpret the exact persisted questions and their
+eight dashboard dimensions. The default template is the 126-item research
+instrument; the original 24 questions remain as the legacy template a round
+persisted without a questionnaire snapshot is served. AI must interpret the exact persisted questions and their
 privacy-safe aggregates while returning the same eight-stone Dashboard result
 shape; it must never replace round questions with the default template.
 

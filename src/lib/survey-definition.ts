@@ -1,4 +1,8 @@
 import { surveyInstrument } from "@/lib/shalomut-source";
+import {
+  createResearchInstrumentDefinition,
+  researchInstrumentQuestions,
+} from "./research-instrument";
 import { isAnswerScaleId } from "@/lib/survey/answer-scales";
 import { estimateMinutesForQuestionnaire } from "@/lib/survey/survey-duration";
 import {
@@ -631,10 +635,17 @@ export function createEmptyDraftSurveyDefinition(
 }
 
 /**
- * The canonical questionnaire's questions, as a round would persist them.
+ * The legacy questionnaire's questions — the canonical 24 — as a round would
+ * persist them.
  *
- * The one construction of the default, and it is exported for that reason
- * rather than for convenience. There used to be three — this factory, the
+ * Since 2026-09-12 this is not what a new round is born with; see
+ * `defaultSurveyQuestions` below. It is what a round persisted with no
+ * questionnaire snapshot has always been served, what the backfill writes onto
+ * such a round, and what `SurveyService` and `AnalyticsService` fall back to,
+ * so it stays exactly what it was: changing it would change those rounds.
+ *
+ * The one construction of the legacy template, and it is exported for that
+ * reason rather than for convenience. There used to be three — this factory, the
  * builder's own `loadDefaultTemplate`, and `canonicalExpectedQuestions` in
  * `services/survey.service.ts` — each independently re-typing `scaleId` and
  * `polarity` next to the same `surveyInstrument.questions.map`. Three copies of
@@ -661,6 +672,27 @@ export function canonicalSurveyQuestions(): AnalyticSurveyQuestion[] {
   }));
 }
 
+/**
+ * What a new round is born with, and what `טעינת תבנית` loads: the research
+ * instrument (owner decision 2026-08-14, delivered 2026-09-12).
+ *
+ * Kept apart from the legacy factory below rather than replacing it, because
+ * the two answer different questions. This one answers "what does the product
+ * ask a school today"; the legacy one answers "what was a round without a
+ * snapshot always scored against", and the second must not move when the
+ * first does.
+ */
+export function defaultSurveyQuestions(): SurveyDefinitionQuestion[] {
+  return researchInstrumentQuestions();
+}
+
+export function createDefaultSurveyDefinition(
+  title: string,
+  minimumResponses: number,
+): SurveyDefinition {
+  return createResearchInstrumentDefinition(title, minimumResponses);
+}
+
 export function createCanonicalSurveyDefinition(
   title: string,
   minimumResponses: number,
@@ -677,10 +709,8 @@ export function createCanonicalSurveyDefinition(
     anonymityText:
       "לא נאספים שם, כתובת מייל או פרטים מזהים. רק הנהלת בית הספר רואה תמונת מצב מצרפית.",
     questions,
-    // The one place a round can honestly claim a provenance, because this is
-    // the one place a questionnaire is actually built from the instrument.
-    // `surveyInstrument.id` has been declared since the source file was written
-    // and had no reader anywhere in the repository until this line.
+    // The legacy template's own provenance. `surveyInstrument.id` had no
+    // reader anywhere in the repository until this line.
     instrumentId: surveyInstrument.id,
   };
 }

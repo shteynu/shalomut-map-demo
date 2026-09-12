@@ -15,7 +15,8 @@ import { getNavigationAction } from "@/lib/navigation";
 import type { RoundSwitcherOptions } from "@/lib/rounds/round-options";
 import { useShareUrl } from "@/lib/use-share-url";
 import type { SurveyDefinition } from "@/lib/types/backend";
-import { canonicalSurveyQuestions } from "@/lib/survey-definition";
+import { defaultSurveyQuestions } from "@/lib/survey-definition";
+import { countQuestionnaireItems } from "@/lib/survey/survey-steps";
 import type { AnswerScaleId } from "@/lib/survey/answer-scales";
 import { estimateMinutesForQuestionnaire } from "@/lib/survey/survey-duration";
 import {
@@ -130,7 +131,9 @@ type SurveyBuilderProps = {
  * dialog and the questions the button loads cannot come apart — the manager is
  * being asked to discard their draft on the strength of this figure.
  */
-const CANONICAL_QUESTION_COUNT = canonicalSurveyQuestions().length;
+const DEFAULT_TEMPLATE_ITEM_COUNT = countQuestionnaireItems(
+  defaultSurveyQuestions(),
+);
 
 export function SurveyBuilder({
   organizationName,
@@ -369,7 +372,7 @@ export function SurveyBuilder({
    */
   function loadDefaultTemplate() {
     setPendingRemoval(null);
-    const defaultQuestions: BuilderQuestion[] = canonicalSurveyQuestions().map(
+    const defaultQuestions: BuilderQuestion[] = defaultSurveyQuestions().map(
       (question, idx) => ({
         ...question,
         draftKey: createDraftId(`default-${idx}`),
@@ -877,7 +880,7 @@ export function SurveyBuilder({
       <ConfirmDialog
         isOpen={pendingRemoval?.kind === "loadTemplate"}
         title="טעינת תבנית השאלון"
-        body={`תבנית ${CANONICAL_QUESTION_COUNT} השאלות תחליף את ${questions.length} השאלות שבטיוטה, כולל ניסוחים שנערכו. השאלון שנשמר אחרון נשאר בהיסטוריית הגרסאות.`}
+        body={`תבנית ${DEFAULT_TEMPLATE_ITEM_COUNT} הפריטים תחליף את ${countQuestionnaireItems(questions)} הפריטים שבטיוטה, כולל ניסוחים שנערכו. השאלון שנשמר אחרון נשאר בהיסטוריית הגרסאות.`}
         confirmLabel="טעינת התבנית"
         isDestructive
         onConfirm={loadDefaultTemplate}

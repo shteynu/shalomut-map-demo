@@ -123,6 +123,18 @@ counted an optional question about commute time, and reading it as if it did
 would let one skipped demographic item take a school's whole result away.
 Background answers are aggregated and suppressed separately — see ADR-005.
 
+**Amended 2026-09-12.** The default/legacy template split into two. The
+*default* — what a new round is born with and what the builder's template
+button loads — is the 126-item research instrument
+(`createDefaultSurveyDefinition`). The *legacy* template is the canonical 24
+(`createCanonicalSurveyDefinition`), served to and scored for a round persisted
+without a questionnaire snapshot, and written onto it by the backfill; no new
+round is born with it. Analysing a round on the instrument needs contract
+`7.0` (ADR-056): `encodeAnalyticsInput` refuses to send a questionnaire
+answered on a Likert scale under a version without `carriesAnswerScale`, so a
+deployment still producing `6.0` fails such a run closed at the boundary
+rather than paying for a hundred narratives it would then refuse.
+
 ### ADR-005: Privacy is a product invariant
 
 Ten respondents is both the default and minimum configurable threshold; a

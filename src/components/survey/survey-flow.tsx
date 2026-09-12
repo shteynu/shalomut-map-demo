@@ -19,6 +19,7 @@ import {
 } from "@/lib/survey/visible-time";
 import {
   buildSurveySteps,
+  countQuestionnaireItems,
   isStepComplete,
   questionIndexForStep,
   questionsInStep,
@@ -649,7 +650,7 @@ export function SurveyFlow({
         introText={introText}
         anonymityText={anonymityText}
         estimatedMinutes={estimatedMinutes}
-        questionCount={surveyQuestions.length}
+        questionCount={countQuestionnaireItems(surveyQuestions)}
         onAccept={acceptConsent}
         onDecline={() => setPhase("declined")}
       />

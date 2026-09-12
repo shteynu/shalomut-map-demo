@@ -24,7 +24,10 @@ import { AnalyticsService } from '@/lib/services/analytics.service';
 import { InMemoryAuditLogRepository } from '@/lib/auth/domain-contract';
 import { JwtSessionProvider } from '@/lib/auth/jwt-session-provider';
 import { surveyInstrument } from '@/lib/shalomut-source';
-import { createCanonicalSurveyDefinition } from '@/lib/survey-definition';
+import {
+  createCanonicalSurveyDefinition,
+  defaultSurveyQuestions,
+} from '@/lib/survey-definition';
 import {
   isAnalyticQuestion,
   type QuestionAnswerInput,
@@ -550,12 +553,12 @@ test('API Route PUT /api/manager/setup persists the first organization and round
     assert.strictEqual(response.status, 200);
     const payload = await response.json();
     assert.strictEqual(payload.success, true);
-    // Setup persists the standard questionnaire, and persists it as a draft:
-    // the manager reads and edits it, and saving it in the builder is what puts
-    // the round live.
+    // Setup persists the standard questionnaire — the research instrument
+    // since 2026-09-12 — and persists it as a draft: the manager reads and
+    // edits it, and saving it in the builder is what puts the round live.
     assert.strictEqual(
       payload.round.surveyDefinition.questions.length,
-      surveyInstrument.questions.length,
+      defaultSurveyQuestions().length,
     );
     assert.strictEqual(payload.round.status, 'draft');
   } finally {

@@ -1,8 +1,11 @@
 # Plan: the research instrument becomes the default questionnaire
 
-Dated 2026-08-14. **Live plan, not a historical one** — it is the current task
-queue for this change and moves to the historical section of
-[`README.md`](README.md) when it is delivered or abandoned.
+Dated 2026-08-14. **Delivered 2026-09-12** and now a historical plan: phases
+1–4 landed in August 2026, phase 5 is contract `7.0` (`PROJECT_CONTEXT.md`
+ADR-056) and phase 6 the swap (ADR-004 as amended 2026-09-12). The §4 defects
+and §7 questions were answered in
+[`methodologist-questions-analysis-2026-09-12.md`](methodologist-questions-analysis-2026-09-12.md).
+Nothing below was rewritten; its line citations are as of 2026-08-14.
 
 Owner decisions of 2026-08-14 are recorded in §2 and are settled unless the
 owner reopens them. Nothing in this plan is implemented. Every statement about

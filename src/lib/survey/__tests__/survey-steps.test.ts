@@ -403,3 +403,24 @@ describe('the running total', () => {
     assert.equal(allocationTotal(rows, {}), 0);
   });
 });
+
+describe('counting items', () => {
+  it('counts a grid once and everything else per question', async () => {
+    const { countQuestionnaireItems } = await import('../survey-steps');
+    const { researchInstrumentQuestions } = await import('../../research-instrument');
+    const { canonicalSurveyQuestions } = await import('../../survey-definition');
+
+    // The source document's own count: 16 + 2 grids + 108, not 150 rows.
+    assert.equal(countQuestionnaireItems(researchInstrumentQuestions()), 126);
+    assert.equal(countQuestionnaireItems(canonicalSurveyQuestions()), 24);
+    assert.equal(
+      countQuestionnaireItems([
+        analytic('q1'),
+        allocationRow('a1', 'load'),
+        allocationRow('a2', 'load'),
+        choice('b1'),
+      ]),
+      3,
+    );
+  });
+});

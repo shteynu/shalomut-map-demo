@@ -12,6 +12,7 @@ import {
   DEFAULT_PRIVACY_THRESHOLD,
   MINIMUM_PRIVACY_THRESHOLD,
   createCanonicalSurveyDefinition,
+  defaultSurveyQuestions,
 } from '../../survey-definition';
 import { RoundService } from '../round.service';
 import { SurveyService } from '../survey.service';
@@ -155,7 +156,7 @@ test('RoundService gives a round with no questionnaire the standard one, as a dr
   // a new round found an empty builder.
   assert.strictEqual(
     round.surveyDefinition?.questions.length,
-    surveyInstrument.questions.length,
+    defaultSurveyQuestions().length,
   );
   // Complete, and still a draft: nobody has read it, and a round born active
   // would close the round the school is still collecting answers on. Saving the

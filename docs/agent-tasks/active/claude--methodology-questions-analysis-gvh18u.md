@@ -4,10 +4,9 @@
 
 - Branch: `claude/methodology-questions-analysis-gvh18u`
 - Base branch: `main` at `f47959e`
-- Current HEAD: the commit carrying this file, on top of `150c335`
-- Status: four commits landed on the branch and pushed; the branch is four
-  commits ahead of `main` and nothing is uncommitted. Consumer-side work on
-  `7.0` is complete and verified; nothing is deployed
+- Current HEAD: the commit carrying this file, on top of `23b6f72`
+- Status: five steps on the branch; the fifth — the swap of the default
+  questionnaire — is in this commit. Nothing is deployed
 - Last updated: 2026-09-12
 - Last agent/tool: Claude Code
 
@@ -24,15 +23,23 @@ One branch, four "next steps" each named by the previous one:
 3. Contract `7.0`, the instrument-scale exchange, consumer-first as far as a
    container without deployment access can take it — `7674f73`, ADR-056.
 4. The shared callback corpus judging `7.0` on both sides — `150c335`.
+5. The swap: the instrument is the default questionnaire, the owner's "Да" to
+   the question the task file left open — this commit, ADR-004 as amended.
 
 ## User-visible outcome
 
-None for a manager yet: the default questionnaire is still the canonical 24,
-nothing offers the instrument, and the deployed services speak `6.0`. A
-respondent on a round built from `createResearchInstrumentDefinition` (the
-local seed's `--respondent --research` walk) meets the whole instrument: 16
-background screens, two 13-row grids, 13 statement blocks with the 30 unscored
-statements as optional rows inside their blocks.
+A new round is born with the research instrument, `טעינת תבנית` in the builder
+loads it, the builder's template suggestions come from it, and the consent
+screen counts its 126 items rather than 150 stored rows. A respondent meets 16
+background screens, two 13-row grids and 13 statement blocks with the 30
+unscored statements as optional rows inside their blocks. Rounds created
+before the swap keep their questionnaire; a round persisted without a snapshot
+is still served the canonical 24.
+
+Until the deployment produces `7.0`, closing a round on the instrument fails
+its analysis closed at the MCP boundary (`ContractCannotCarryQuestionnaireError`
+names the variable to change) instead of analysing it under `6.0`. The manager
+screens still read the round; only its AI analysis waits.
 
 ## Where things are
 
@@ -76,6 +83,22 @@ statements as optional rows inside their blocks.
 - **Corpora** — golden corpus and callback corpus both carry `7.0`; the
   callback corpus's four refused mutations are judged by the same rule name
   in both runtimes.
+- **The swap** — `createDefaultSurveyDefinition` / `defaultSurveyQuestions` in
+  `survey-definition.ts` build the instrument and are what `RoundService.createRound`,
+  the builder's template button and `templateSuggestionForDimension` read;
+  `createCanonicalSurveyDefinition` / `canonicalSurveyQuestions` keep the 24
+  as the legacy template behind every fallback (respondent route, submit,
+  survey-definition route, answer page, verifier, analytics, backfill, the
+  manager-setup legacy branch). `countQuestionnaireItems` in `survey-steps.ts`
+  counts a grid once, for the consent screen and the template dialog.
+  `encodeAnalyticsInput` refuses a non-colour questionnaire under a version
+  without `carriesAnswerScale`. Documents: `source-of-truth.md` (header note,
+  decisions, source roles, code map), `PRODUCT.md`, `platform-handbook.md` §4,
+  ADR-004 amendment, `docs/README.md` (the plan moves to historical, marked
+  delivered), the plan's own header, `PROGRESS.md`, the handoff,
+  `open-decisions.md`, both skills, `.env.example`, the version matrix,
+  `shalomut-source.ts` (a source-material entry for the instrument) and the
+  provenance comment in `types/backend.ts`.
 
 ## Decisions made
 
@@ -87,6 +110,15 @@ statements as optional rows inside their blocks.
   "unscored until an outcome index exists" alternative is recorded beside it.
 - The overall-summary prompt needs no polarity rule: it lists dimension
   scores and summed distributions, never per-question averages (checked).
+- The legacy factory keeps its name and its 24. Renaming `canonical*` would
+  have touched every fallback and every fixture for a word; a second, named
+  factory for the default says which question each answers, and the
+  manager-setup legacy branch — which persists what an old round has in fact
+  been running — deliberately stays on the legacy one.
+- Fail closed, at the wire, not at dispatch: the closure dispatch knows only
+  a threshold and a count, and the MCP tool is the one place every analysis
+  run passes through. A refusal there fails the run before a provider call is
+  paid for; the manager API and the callback verifier do not go through it.
 - Answered in chat, not in a document: whether questionnaires and service
   boundaries can become configuration. Questions, scales, polarity and
   contract capabilities already are; templates would take a registry or a
@@ -98,6 +130,34 @@ statements as optional rows inside their blocks.
 ## Verification evidence
 
 ### Passed
+
+Step 5, the swap:
+
+- `npm run verify:core` — exit 0 on the final tree: fifteen gates, typecheck,
+  `npm test` 1686/1686, `verify:ai` 601 passed, lint, build. Two
+  earlier runs found four tests that pinned "a new round is born with 24"
+  (`new-round-questionnaire`, `manager-setup.service`, `api.test`,
+  `analytics.service.test`) and the suggestion test reading the legacy
+  template; all repointed at `defaultSurveyQuestions()`. New tests: the
+  default factory is the instrument and the legacy one still the 24, the item
+  count (126 for the instrument, 24 for the legacy, a grid once), and the
+  encoder refusing a Likert questionnaire under `6.0`/`5.0`/`4.0` while
+  accepting it under `7.0`, a colour questionnaire under any, and a locked
+  round under any.
+- **Browser walk of the swap, production build on `127.0.0.1:3210`** against
+  a throwaway PostgreSQL 16 seeded with `seed-local.ts`, as the manager and
+  then as a respondent: sign-in, `/setup?round=new`, a new round
+  «סבב על שאלון המחקר» created through `PUT /api/manager/setup` — 200,
+  **draft, 150 stored questions, `instrumentId` of the instrument**; the
+  builder on that round reads «150 שאלות פעילות, מתוכן 77 שאלות חובה» (78
+  scored minus the optional harassment item) and the section
+  «משאבים בעבודה»; «שמירה והכנה להפצה» — 200, the round is `active`; the share
+  link as a stranger shows «126 שאלות, כ־23 דקות» and the first of 31 steps.
+  The first attempt of this walk ran against the previous build and produced
+  a 24-question round, which is how the stale `.next` was noticed; the
+  evidence above is from the rebuilt server.
+
+Steps 1–4:
 
 - `npm run verify:core` — exit 0 on the tree of `7674f73`: fifteen gates,
   typecheck, `npm test` 1683/1683, `verify:ai` 601 passed, lint, build. Two
@@ -127,7 +187,11 @@ None attributable to this branch.
 
 ### Environment
 
-Remote container. The AI service virtualenv was created here
+Remote container. For the swap walk a throwaway PostgreSQL 16 was started
+under `/var/lib/postgresql/shalomut-walk` (the scratchpad's permissions were
+being reset from outside and killed the first instance), a `.env` with the
+local database, `MANAGER_ADMIN_EMAIL` and the smoke password was created, and
+all three were removed afterwards. The AI service virtualenv was created here
 (`python3.11 -m venv .venv`, `pip install -e ".[dev]"`; git-ignored). A
 throwaway PostgreSQL 16 was started for the step-2 walk and stopped. No
 deployed write of any kind.
@@ -145,6 +209,15 @@ deployed write of any kind.
   thirteen rows; pre-existing, now visible at scale.
 - A `balance` stone on the instrument has 36 metrics; nobody has looked at
   that screen in a browser.
+- The builder's own counter still counts stored rows («150 שאלות פעילות»)
+  while the consent screen and the template dialog count items (126). Both
+  are true; a manager reading both screens sees two numbers for one
+  questionnaire.
+- A deployment that lands this branch with `AI_ANALYTICS_CONTRACT_VERSION`
+  still at `6.0` refuses to analyse every new round (closed, with the reason
+  in the run's failure) until the variable moves to `7.0`. Intended, and
+  written in `.env.example` and the matrix, but it is the one way this branch
+  can surprise the owner on deploy.
 
 ## Git state
 
@@ -160,14 +233,14 @@ configuration and sending the analysis to the methodologist are the owner's.
 
 ## Questions requiring an owner decision
 
-- Whether the analysis goes to the methodologist as a draft reply.
-- Whether the instrument becomes the default questionnaire (the swap); the
-  contract no longer blocks it.
+- Whether the analysis goes to the methodologist as a draft reply — an action
+  outside the repository.
 
 ## Next concrete step
 
 Owner: land the branch on `main`, deploy the AI service and confirm its
-`GET /api/health` reports `7.0`, then deploy Core; leave
-`AI_ANALYTICS_CONTRACT_VERSION` at `6.0` until a round exists on the
-instrument. The next engineering step after that is the swap of the default
-questionnaire, once the owner decides it.
+`GET /api/health` reports `7.0`, then deploy Core with
+`AI_ANALYTICS_CONTRACT_VERSION=7.0` — in that order, because after this branch
+every new round is on the instrument and a Core still producing `6.0` refuses
+to analyse it. No engineering step is queued behind that; the methodologist's
+corrections to the mapping, if any, are edits to the table and the module.

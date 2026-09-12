@@ -102,10 +102,11 @@ When work moves from status or handoff to implementation, read and follow
 - Never expose respondent identity or results below the configured privacy
   threshold. Never allow a partially unlocked dynamic-questionnaire result: one
   analysed question below the threshold locks every detailed metric and stone.
-- Keep the eight dimensions as the stable Dashboard taxonomy. The canonical 24
-  questions are a default/legacy template, not a mandatory runtime instrument: a
-  given round's questions may differ in ID, count and wording as long as they
-  are persisted, bound to the eight dimensions and pass the privacy gate.
+- Keep the eight dimensions as the stable Dashboard taxonomy. The research
+  instrument is the default template and the canonical 24 the legacy one; neither
+  is a mandatory runtime instrument: a given round's questions may differ in ID,
+  count and wording as long as they are persisted, bound to the eight dimensions
+  and pass the privacy gate.
 - Do not silently change the semantics of published contracts `1.0`–`7.0`.
   Capability policy lives in `contracts/capabilities.json` and runtime status in
   `docs/ai-contract-version-matrix.md`. Incompatible new semantics require a new

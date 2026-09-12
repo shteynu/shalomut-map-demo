@@ -123,7 +123,8 @@ export interface SurveyDefinition {
   questions: SurveyDefinitionQuestion[];
   /**
    * Which instrument this questionnaire was started from —
-   * `surveyInstrument.id` for one built by the canonical factory.
+   * `RESEARCH_INSTRUMENT_ID` for one built by the default factory,
+   * `surveyInstrument.id` for one built by the legacy one.
    *
    * Absent means the provenance is unknown, and that is a real answer rather
    * than a gap to fill in: a round that stored a questionnaire before this

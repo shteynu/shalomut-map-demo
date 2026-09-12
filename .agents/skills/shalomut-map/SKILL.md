@@ -68,8 +68,9 @@ task requires all of it, such as an audit of the document itself.
   and the loader refuses a manifest that has reordered, shortened or extended
   it. The actual source of questions for a given round must be the persisted
   `SurveyRound.surveyDefinition` snapshot.
-- Treat the Google Form as the upstream source of the default/v1 questionnaire
-  template and Adobe XD as a visual reference, per `docs/source-of-truth.md`.
+- Treat the owner's research instrument as the default questionnaire
+  (`src/lib/research-instrument.ts`), the Google Form as the source of the
+  legacy 24, and Adobe XD as a visual reference, per `docs/source-of-truth.md`.
 - Never use `DEMO_ORGANIZATION`, `DEMO_ROUND` or `SHALOM-DEMO` as a hidden
   runtime fallback; they are admissible only as explicit test fixtures.
   `src/lib/demo-data.ts` has been deleted — do not bring demo analytics back
@@ -84,10 +85,11 @@ task requires all of it, such as an audit of the document itself.
 - Leave empty or unavailable persistence empty; deployed writes without
   `DATABASE_URL` must fail closed.
 - Keep the eight wellbeing dimensions as the stable output taxonomy of the
-  Dashboard Stone Map. Do not treat the canonical 24 questions as a mandatory
-  runtime set: they are a default/legacy template, and a round's survey may hold
-  a different number, different IDs and different wordings of product-relevant
-  questions.
+  Dashboard Stone Map. Do not treat any template as a mandatory runtime set:
+  the research instrument is the default a new round is born with, the
+  canonical 24 are the legacy template of rounds persisted without a snapshot,
+  and a round's survey may hold a different number, different IDs and
+  different wordings of product-relevant questions.
 - Every analysed question must have a stable round-scoped ID, its exact
   persisted text and an explicit binding to one of the eight dimensions. AI
   input, question metrics, fallback and provenance must all use that round's

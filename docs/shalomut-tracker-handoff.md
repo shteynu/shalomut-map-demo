@@ -1223,9 +1223,11 @@ here; when the two disagree, this section wins.
    row of that table and the module beside it. Contract `7.0` — the one
    `6.0` could not be amended into — is published and accepted by both
    runtimes in `main` since 2026-09-12 (ADR-056), with a complete local round
-   proven across the boundary; what stands between the instrument and a
-   manager is now deployment (Python first, then Core, then selecting `7.0`
-   for a round on the instrument) and the swap of the default questionnaire.
+   proven across the boundary; the swap landed 2026-09-12 (ADR-004 as
+   amended): every new round is born with the instrument. What stands between
+   it and a school is deployment — Python first, then Core, then
+   `AI_ANALYTICS_CONTRACT_VERSION=7.0`, without which a round on the instrument
+   is refused analysis at the boundary rather than analysed wrongly.
 8. **Naming a pilot school with a date**, which is what still gates the 2026-08-10
    strategy sweep, and the wording of its axis 1 (Chief Scientist directive) and
    axis 7 (fair-use commitment, and how small a staff room is too small to measure
