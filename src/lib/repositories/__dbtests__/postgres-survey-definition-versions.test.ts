@@ -29,7 +29,11 @@ import {
   PrismaSurveyDefinitionVersionRepository,
 } from '..';
 import { MinimalPrismaClient } from '../prisma/prisma-client';
-import { createCanonicalSurveyDefinition } from '../../survey-definition';
+import {
+  createCanonicalSurveyDefinition,
+  createDefaultSurveyDefinition,
+} from '../../survey-definition';
+import { isBackgroundQuestion } from '../../types/backend';
 import { summariseVersion } from '../../survey-definition-versions';
 import type { SurveyDefinition } from '../../types/backend';
 
@@ -215,6 +219,41 @@ test('the summary read answers what summarising the whole list answers', async (
   // And the fixture is one the comparison can fail on: without this, two
   // stores that both counted every question would look like agreement.
   assert.notStrictEqual(summaries[1].enabledQuestionCount, summaries[1].questionCount);
+});
+
+test('a grid is one item to both, and half a grid is still one', async () => {
+  // The instrument stores 150 questions for 126 items; the SQL collapses a
+  // grid by distinct group id where JavaScript collapses it by a Set. Disabling
+  // some rows of one grid is the case that tells "distinct among enabled rows"
+  // from "distinct rows, if enabled": the grid must still count once, not zero
+  // and not per surviving row.
+  const instrument = createDefaultSurveyDefinition('כלי המחקר', 10);
+  let disabledRows = 0;
+  const halfAGrid = {
+    ...instrument,
+    questions: instrument.questions.map((question) => {
+      const isGridRow =
+        isBackgroundQuestion(question) && question.answerMode === 'allocation-100';
+      if (isGridRow && disabledRows < 5) {
+        disabledRows += 1;
+        return { ...question, enabled: false };
+      }
+      return question;
+    }),
+  };
+  assert.strictEqual(disabledRows, 5);
+
+  await versionRepo.record(roundId, instrument, new Date('2026-09-01T08:00:00.000Z'));
+  await versionRepo.record(roundId, halfAGrid, new Date('2026-09-01T09:00:00.000Z'));
+
+  const summaries = await versionRepo.findSummariesByRoundId(roundId);
+  const whole = await versionRepo.findByRoundId(roundId);
+
+  assert.deepStrictEqual(summaries, whole.map(summariseVersion));
+  assert.strictEqual(summaries[1].questionCount, 126);
+  assert.strictEqual(summaries[1].enabledQuestionCount, 126);
+  assert.strictEqual(summaries[0].enabledQuestionCount, 126);
+  assert.notStrictEqual(summaries[1].questionCount, instrument.questions.length);
 });
 
 test('a question with no enabled key is counted the same by both', async () => {

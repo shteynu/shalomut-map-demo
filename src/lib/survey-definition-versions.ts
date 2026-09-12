@@ -1,3 +1,4 @@
+import { countQuestionnaireItems } from "@/lib/survey/survey-steps";
 import type {
   SurveyDefinitionVersion,
   SurveyDefinitionVersionSummary,
@@ -10,6 +11,11 @@ import type {
  * The counts are computed here rather than stored, so a version recorded before
  * a question shape changed still summarises correctly: the numbers describe the
  * definition as it is read back, not as it was counted at write time.
+ *
+ * They count items, not stored questions — a grid once, whatever its rows —
+ * the way the consent screen and the builder's summary stone count. A history
+ * line said «150 שאלות פעילות מתוך 150» for the 126-item instrument while the
+ * stone above it said 126.
  *
  * A durable store does not have to come through here. `findSummariesByRoundId`
  * computes the same three values in the database precisely so that twenty full
@@ -24,10 +30,10 @@ export function summariseVersion(
     id: version.id,
     savedAt: version.savedAt,
     title: version.definition.title,
-    questionCount: version.definition.questions.length,
-    enabledQuestionCount: version.definition.questions.filter(
-      (question) => question.enabled,
-    ).length,
+    questionCount: countQuestionnaireItems(version.definition.questions),
+    enabledQuestionCount: countQuestionnaireItems(
+      version.definition.questions.filter((question) => question.enabled),
+    ),
   };
 }
 

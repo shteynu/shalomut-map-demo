@@ -8,7 +8,10 @@ import {
   markCurrentVersion,
   toVersionSummaries,
 } from '@/lib/survey-definition-versions';
-import { createCanonicalSurveyDefinition } from '@/lib/survey-definition';
+import {
+  createCanonicalSurveyDefinition,
+  createDefaultSurveyDefinition,
+} from '@/lib/survey-definition';
 import type { SurveyDefinition } from '@/lib/types/backend';
 
 const ROUND_ID = 'round-1';
@@ -109,6 +112,20 @@ test('a summary counts the questionnaire it holds, and names the current one', a
 
   assert.strictEqual(previous.isCurrent, false);
   assert.strictEqual(previous.enabledQuestionCount, previous.questionCount - 1);
+});
+
+test('a summary counts items, so a grid is one however many rows it stores', async () => {
+  // The instrument stores 150 questions for 126 items. The history line sat
+  // under a summary stone saying 126 and said 150, until both counted alike.
+  const repo = new InMemorySurveyDefinitionVersionRepository();
+  const instrument = createDefaultSurveyDefinition('כלי המחקר', 10);
+  await repo.record(ROUND_ID, instrument);
+
+  const [summary] = toVersionSummaries(await repo.findByRoundId(ROUND_ID));
+
+  assert.strictEqual(summary.questionCount, 126);
+  assert.strictEqual(summary.enabledQuestionCount, 126);
+  assert.notStrictEqual(summary.questionCount, instrument.questions.length);
 });
 
 test('the summary read answers exactly what summarising the whole list answers', async () => {

@@ -22,7 +22,8 @@ export interface SurveyDefinitionVersion {
 /**
  * One line in the builder's history list. It carries what a manager needs to
  * recognise a version — when it was saved and how big the questionnaire was —
- * without shipping every version's full definition to the browser.
+ * without shipping every version's full definition to the browser. Size is in
+ * items, a grid counted once, as everywhere else the product states one.
  */
 export interface SurveyDefinitionVersionSummary {
   id: string;

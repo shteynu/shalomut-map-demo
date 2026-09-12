@@ -1034,8 +1034,10 @@ paths:
                           type: string
                         questionCount:
                           type: integer
+                          description: Items in the version, an allocation grid counted once however many rows it stores.
                         enabledQuestionCount:
                           type: integer
+                          description: Of those, the items with at least one enabled question.
                         isCurrent:
                           type: boolean
                           description: True for the newest version, which is the questionnaire in force.
