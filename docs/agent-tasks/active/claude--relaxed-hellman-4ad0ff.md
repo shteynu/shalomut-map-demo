@@ -8,10 +8,10 @@
   `origin/main` at `f47959e`). See *Decisions made* for why the branch pointer
   has not been moved there yet, and for what `ccf76e1` is.
 - Base commit: `ccf76e1`, the tip of the `7.0` branch
-- Current HEAD: `ccf76e1`, fast-forwarded by the owner on 2026-09-13; the
-  reconciled eval work is applied and uncommitted
-- Status: implemented, verified in this worktree, ready to commit; the two
-  missing cases wait on provider credit
+- Current HEAD: `75d1b87`, the owner's commit of the reconciled eval work on
+  `ccf76e1`, plus the commit carrying this file
+- Status: committed on the branch, not pushed; the two missing cases wait on
+  provider credit, which the owner will top up later, not now
 - Last updated: 2026-09-13
 - Last agent/tool: Claude Code (Fable 5.1)
 
@@ -207,9 +207,9 @@ Nothing.
 
 ## Changed files
 
-All uncommitted, all in this worktree, applied on `ccf76e1` from
-`.claude/evals-on-ccf76e1.patch` (the baseline hunk skipped, because the file
-was already in place untracked and byte-identical):
+All in `75d1b87`, applied on `ccf76e1` from `.claude/evals-on-ccf76e1.patch`
+(the baseline hunk skipped, because the file was already in place untracked
+and byte-identical):
 
 - `ai-analytics-service/evals/corpus.py` (modified)
 - `ai-analytics-service/evals/graders.py` (modified)
@@ -291,9 +291,7 @@ local; provider calls go to the configured Gemini project.
 
 ## Next concrete step
 
-Owner: commit the nine files — `git add ai-analytics-service/evals
-ai-analytics-service/tests/test_evals.py PROGRESS.md
-docs/shalomut-tracker-handoff.md
-docs/agent-tasks/active/claude--relaxed-hellman-4ad0ff.md` — on this branch,
-then push it. After that, once the account has credit, run the two missing
-cases as the first item under *Remaining*.
+Owner: push this branch, then land it together with the `7.0` branch it sits
+on. The two missing cases are deferred by the owner until the Gemini account
+is topped up — not scheduled — and then run as the first item under
+*Remaining*. No engineering step is queued before that.
