@@ -169,6 +169,19 @@ under "Live plans" above:
   1–7 round whose twelve midpoint answers are published as twelve "yellow".
   **Not for implementation**: three options with no winner declared, and a
   recommendation that is the agent's rather than an owner decision;
+- [`organizational-domain-modules-research-2026-09-13.md`](organizational-domain-modules-research-2026-09-13.md)
+  — dated read-only study, in Russian, of whether eight "organizational
+  domain" modules — delivery risk, team overload, bottlenecks, organizational
+  friction, onboarding, knowledge concentration, attrition indicators,
+  wellbeing — can be built on the architecture as of `1cd6591`. Continues the
+  modularity audit: prices three shapes of "module" (a block inside the eight
+  dimensions, an index beside the map, a pluggable taxonomy) and establishes
+  by executing both runtimes that the eight-dimension taxonomy is enforced at
+  parse, activation, manifest load, payload and callback. Five of the eight
+  fit an anonymous self-report under k ≥ 10, three do not. **Not for
+  implementation**: the ranked recommendation is the agent's, five owner
+  decisions are open, and the external evidence in its §4–§5 is labelled
+  `[по исследованию]` and unconfirmed here;
 - [`critical-audit-2026-08-21.md`](critical-audit-2026-08-21.md) — dated
   read-only audit of scale, resilience, architecture and security, by six
   independent readers with an adversarial pass over every finding. Fifty

@@ -81,7 +81,8 @@ do them and nothing in it can verify them either.
 
 ## Product decisions that are holding code
 
-Each of these has an implementation waiting behind it. None can be guessed.
+Each of these has an implementation waiting behind it — item 23 a research
+document waiting for a direction. None can be guessed.
 
 9. **Retention.** How long do `audit_events` rows, the full result JSON in
    `ai_analysis_runs`, and answer rows after a round closes actually live? The
@@ -133,6 +134,19 @@ Each of these has an implementation waiting behind it. None can be guessed.
     `MANAGER_ADMIN_EMAIL` still defaults to a well-known address. This is
     environment scope, not code. **Unblocks:** the last half of that record.
     → audit record *«Временная дверь-пароль на деплое»*.
+23. **Is "Organizational Domain" a second audience or a set of modules for
+    schools?** A second audience means a pluggable taxonomy beside the eight
+    dimensions — contract `8.0`, both runtimes, a catalog and prompts per
+    domain, and the eight-dimension invariant revoked in six documents. A set
+    of modules for schools means indexes computed in Core beside the map
+    (burnout, intent to leave, demands, constraints) under the same threshold,
+    with no contract change. Two smaller decisions ride on it: whether Core may
+    publish a number beside the map that is not a stone, and whether intent
+    to leave is shown as a group share at all. **Unblocks:** nothing built yet,
+    and nothing should be until the answer exists; the first index is one
+    slice on its own branch once it does.
+    → [`organizational-domain-modules-research-2026-09-13.md`](organizational-domain-modules-research-2026-09-13.md)
+    §2, §6, §7.
 
 ## Methodology, for the owner together with the methodologist
 
