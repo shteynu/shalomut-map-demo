@@ -725,8 +725,9 @@ inside it.
   metrics screen says when its sentences were derived even if the interpretation
   above them was the model's.
 - `ai-analytics-service/evals/` measures whether generated Hebrew is any good —
-  eight synthetic rounds and five deterministic graders. It scored real
-  provider output for the first time on 2026-08-05, once a paid key existed.
+  nine synthetic rounds on contract `7.0` and six deterministic graders. It
+  scored real provider output for the first time on 2026-08-05, once a paid key
+  existed, and `7.0` output for the first time on 2026-09-12.
 - **The map is written by the model again, and on 2026-08-09 it had stopped
   being.** Two settings nobody had chosen did it: the answer ceiling was the
   service default of 2048, which truncated every dimension, and the fast model
@@ -948,6 +949,17 @@ actually common. Whether that banner should fire on a fallback too is open and
 unrequested. The reasoning is this paragraph; `docs/open-decisions.md` lists it,
 which it did not until 2026-08-25 — the sentence here named the operational
 handoff, and that document had never carried the question.
+
+Closed 2026-09-12: the eval corpus runs on contract `7.0` — a demand statement
+in every dimension, both Likert scales on both polarities, no metric narrative
+— and a sixth grader, `polarity_reading`, catches a model that reads a
+reverse-scored statement backwards, "little time pressure" when `לחץ זמן`
+averages 22. The first `7.0` report from a model
+(`evals/baselines/2026-09-12-gemini-3.5-flash-contract-7-0.json`) reads five
+demand statements the way their numbers point and scores where the `6.0`
+reports did; it covers six of the eight unlocked cases, because the prepayment
+credit ran out during the run, and the case built around the trap is the one
+still to be run.
 
 ### Architecture
 

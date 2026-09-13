@@ -1019,8 +1019,8 @@ waits 90 inside 300, which can only widen the gap.
 **Two caveats on that number.** The single-round cost figures came from
 `local-unlocked-pipeline.ts` while it still pinned contract `5.0`, so they
 describe a round whose adaptation was failing on every dimension rather than the
-round the deployment produces; the quality half is unaffected, because the eval
-corpus runs `6.0`. **A `6.0` cost run is still unmade**, and it should be taken
+round the deployment produces; the quality half is measured separately, on
+the eval corpus, which runs `7.0` since 2026-09-12. **A `6.0` cost run is still unmade**, and it should be taken
 off a round run for some other reason, after the key is rotated.
 
 ## Contract and AI runtime

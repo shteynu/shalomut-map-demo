@@ -14,15 +14,19 @@ import pytest
 from evals.corpus import (
     CASES,
     CASES_BY_ID,
-    COLOUR_SCALE_ID,
+    CORPUS_CONTRACT_VERSION,
+    LIKERT_5,
+    LIKERT_7,
     QUESTION_TEXTS_HEBREW,
+    QUESTIONS_HEBREW,
     case_for_round_id,
-    question_texts_for,
+    questions_for,
 )
 from evals.graders import (
     grade_distinctness,
     grade_evidence_specificity,
     grade_no_overreach,
+    grade_polarity_reading,
     grade_recommendation_fit,
     grade_summary_grounding,
 )
@@ -35,6 +39,7 @@ from src.schemas.mcp_types import RoundAnalyticsResult
 
 HEALTHY = CASES_BY_ID["uniformly-healthy"]
 CONTRADICTORY = CASES_BY_ID["contradictory"]
+REVERSED = CASES_BY_ID["reversed-demands"]
 
 GENERIC_SENTENCE = (
     "התמונה מצביעה על מגמה כללית ומומלץ להמשיך לעקוב אחריה יחד עם הצוות."
@@ -65,7 +70,7 @@ def stone_map(case, *, summary="סיכום.", narrative_for=None, interventions_
             ),
         }
     return {
-        "contractVersion": "6.0",
+        "contractVersion": CORPUS_CONTRACT_VERSION,
         "roundId": f"eval-{case.case_id}",
         "status": "success",
         "isLocked": False,
@@ -86,62 +91,57 @@ def test_every_case_parses_as_contract_input(case):
 
 
 @pytest.mark.parametrize("case", CASES, ids=[case.case_id for case in CASES])
-def test_under_7_0_every_aggregate_names_its_scale(case):
-    # The contract requires both fields on every aggregate, and the prompt's
-    # polarity rule is only attached when they are there.
-    payload = case.to_analysis_input("7.0")
-    for aggregate in payload["questionAggregates"].values():
-        assert aggregate["scaleId"]
-        assert aggregate["polarity"] in ("positive", "negative")
-
-
-def test_the_corpus_still_speaks_6_0_for_a_diff_against_its_baselines():
-    healthy = CASES_BY_ID["uniformly-healthy"].to_analysis_input("6.0")
-    parsed = RoundAnalyticsResult.from_dict(healthy)
-    assert parsed.contractVersion == "6.0"
-    assert all(
-        "scaleId" not in aggregate and "polarity" not in aggregate
-        for aggregate in healthy["questionAggregates"].values()
-    )
-
-
-def test_a_reverse_scored_case_cannot_be_sent_under_6_0():
-    # 6.0 has nowhere to say which way a statement points, so sending the
-    # case would measure the prompts on evidence they were never shown.
-    case = CASES_BY_ID["reverse-scored"]
-    assert case.expressible_in("7.0")
-    assert not case.expressible_in("6.0")
-    with pytest.raises(ValueError, match="needs 7.0"):
-        case.to_analysis_input("6.0")
-
-
-def test_the_reverse_scored_case_turns_two_dimensions_and_reads_as_strain():
-    case = CASES_BY_ID["reverse-scored"]
-    payload = case.to_analysis_input()
-    turned = {
-        aggregate["dimensionId"]
-        for aggregate in payload["questionAggregates"].values()
-        if aggregate["polarity"] == "negative"
-    }
-    assert turned == {"balance", "certainty"}
-    for dimension_id in turned:
-        for aggregate in payload["questionAggregates"].values():
-            if aggregate["dimensionId"] == dimension_id:
-                assert aggregate["scaleId"] == "likert-5-extent"
-                assert aggregate["scaleId"] != COLOUR_SCALE_ID
-    # The two point opposite ways on purpose: red by agreeing with the
-    # strain, green by not — the pair an analysis that reads the statement
-    # text alone will get backwards.
-    assert payload["dimensionScores"]["balance"]["computedStatus"] == "red"
-    assert payload["dimensionScores"]["certainty"]["computedStatus"] == "green"
-    # And the graders read the case's own statements, not the shared ones.
-    assert question_texts_for(case, "balance") != list(QUESTION_TEXTS_HEBREW["balance"])
-    assert question_texts_for(case, "meaning") == list(QUESTION_TEXTS_HEBREW["meaning"])
-
-
-@pytest.mark.parametrize("case", CASES, ids=[case.case_id for case in CASES])
 def test_every_case_covers_the_eight_dimensions(case):
     assert set(case.dimensions) == set(AI_ANALYTICS_DIMENSION_IDS)
+
+
+@pytest.mark.parametrize(
+    "case",
+    [case for case in CASES if not case.locked],
+    ids=[case.case_id for case in CASES if not case.locked],
+)
+def test_every_unlocked_case_names_a_scale_and_a_polarity_on_every_statement(case):
+    aggregates = case.to_analysis_input()["questionAggregates"].values()
+    assert aggregates
+    assert all(a["scaleId"] in (LIKERT_5, LIKERT_7) for a in aggregates)
+    assert all(a["polarity"] in ("positive", "negative") for a in aggregates)
+
+
+def test_the_corpus_mixes_both_scales_and_both_polarities():
+    """`7.0` exists for an instrument that mixes them, so the corpus must too.
+
+    Both scales carry a demand and both carry a resource: a corpus where every
+    seven-point statement was a demand would let a model that reads the scale
+    instead of the polarity score as if it had read the polarity.
+    """
+    shapes = {
+        (question.scale_id, question.polarity)
+        for questions in QUESTIONS_HEBREW.values()
+        for question in questions
+    }
+    assert shapes == {
+        (LIKERT_5, "positive"),
+        (LIKERT_5, "negative"),
+        (LIKERT_7, "positive"),
+        (LIKERT_7, "negative"),
+    }
+
+
+def test_every_demand_statement_names_what_it_is_about():
+    # A demand with no subject is one `polarity_reading` cannot read.
+    for questions in QUESTIONS_HEBREW.values():
+        for question in questions:
+            if question.polarity == "negative":
+                assert question.subjects, question.text
+
+
+def test_the_reversed_demands_case_puts_a_demand_in_every_red_dimension():
+    for dimension_id, spec in REVERSED.dimensions.items():
+        if spec.score < 50:
+            assert any(
+                question.polarity == "negative"
+                for question in questions_for(REVERSED, dimension_id)
+            ), dimension_id
 
 
 def test_a_locked_case_carries_no_detail():
@@ -413,6 +413,177 @@ def test_five_copies_of_one_recommendation_are_caught():
     assert result.score < 0.25
 
 
+# --- polarity reading -------------------------------------------------------
+
+BALANCE_DEMAND = "לחץ זמן"  # the reverse-scored statement in `balance`
+
+
+def _balance_narrative(sentence):
+    return lambda dimension_id: (
+        sentence if dimension_id == "balance" else GENERIC_SENTENCE
+    )
+
+
+def test_a_demand_read_the_way_its_number_points_is_not_a_finding():
+    # `balance` averages 22 on a reverse-scored statement: heavy pressure.
+    payload = stone_map(
+        REVERSED,
+        narrative_for=_balance_narrative(
+            "לחץ הזמן בצוות גבוה, והתשובות מצביעות על עומס מתמשך."
+        ),
+    )
+    result = grade_polarity_reading(payload, REVERSED)
+    assert result.score == 1.0
+    assert result.measured["readings"] == 1
+    assert result.findings == ()
+
+
+def test_reading_a_low_average_on_a_demand_as_little_pressure_is_caught():
+    """The failure `7.0` invites and no runtime rule refuses.
+
+    The average is normalised with the polarity applied, so 22 beside "time
+    pressure" means the pressure is felt strongly. Prose saying it is low is
+    valid Hebrew of the right shape, consistent with a red status in every
+    way the validator checks — and wrong about the round.
+    """
+    payload = stone_map(
+        REVERSED,
+        narrative_for=_balance_narrative("לחץ הזמן בצוות נמוך יחסית."),
+    )
+    result = grade_polarity_reading(payload, REVERSED)
+    assert result.score == 0.0
+    assert result.measured == {
+        "readings": 1,
+        "reversed": 1,
+        "perDimension": {"balance": {"readings": 1, "reversed": 1}},
+    }
+    assert "reads לחץ as little" in result.findings[0]
+    assert "means much" in result.findings[0]
+
+
+@pytest.mark.parametrize(
+    "reversed_sentence",
+    [
+        "אין כמעט לחץ זמן בצוות.",  # negation before the subject
+        "הצוות אינו חש לחץ זמן.",  # negation two words back
+        "יש מעט לחץ זמן בעבודה.",  # a small quantifier
+        "הלחץ בנושא הזמן זניח.",  # a glued article, an adjective after
+    ],
+    ids=["negation", "negation-two-back", "quantifier", "glued-article"],
+)
+def test_the_reversed_reading_is_found_in_its_hebrew_forms(reversed_sentence):
+    payload = stone_map(REVERSED, narrative_for=_balance_narrative(reversed_sentence))
+    result = grade_polarity_reading(payload, REVERSED)
+    assert result.measured["reversed"] == 1, result.measured
+
+
+def test_reading_a_high_average_on_a_demand_as_heavy_pressure_is_caught_too():
+    # The other direction: `uniformly-healthy` averages 84 on the demand, so
+    # time pressure is felt little, and "high pressure" reverses that.
+    payload = stone_map(
+        HEALTHY, narrative_for=_balance_narrative("לחץ הזמן על הצוות גבוה.")
+    )
+    result = grade_polarity_reading(payload, HEALTHY)
+    assert result.measured["reversed"] == 1
+    assert "means little" in result.findings[0]
+
+
+def test_a_proposal_is_not_a_reading():
+    """The 2026-09-12 run, `uniformly-weak`, `social-resource`.
+
+    The third paragraph proposed "a space that encourages asking for help,
+    without fear of competition or rivalry" on a stone where rivalry is felt
+    strongly. That is what the school should build, not what the model read;
+    the same goes for a recommendation. Only the two descriptive paragraphs
+    are read.
+    """
+
+    def three_paragraphs(dimension_id):
+        return GENERIC_SENTENCE
+
+    payload = stone_map(REVERSED, narrative_for=three_paragraphs)
+    payload["stones"]["balance"]["summary"] = [
+        GENERIC_SENTENCE,
+        GENERIC_SENTENCE,
+        "מומלץ ליצור שגרה שבה יש מעט לחץ זמן.",
+    ]
+    payload["stones"]["balance"]["recommendedInterventions"] = [
+        {
+            "id": "balance-1",
+            "dimensionId": "balance",
+            "status": "red",
+            "title": "מהלך צוותי",
+            "summary": "מאחר שלחץ הזמן נמוך, אפשר להתמקד בשגרות הקיימות.",
+        }
+    ]
+    result = grade_polarity_reading(payload, REVERSED)
+    assert result.measured["readings"] == 0
+
+
+@pytest.mark.parametrize(
+    "sentence, expected_reading",
+    [
+        # `contradictory`, `management-support`, 2026-09-12: the adjective
+        # after the conjunction belongs to the feeling, not the tension.
+        ("עולה תמונה של מתח מדווח ביחסים ותחושה נמוכה של גיבוי.", None),
+        # `uniformly-healthy`, `meaning`, 2026-09-12: absence outranks the
+        # adjective that follows.
+        ("עולה תמונה מעודדת של היעדר תסכול משמעותי בנוגע להכרה.", "little"),
+    ],
+    ids=["conjunction-closes-the-window", "absence-outranks-the-adjective"],
+)
+def test_readings_the_first_provider_run_taught(sentence, expected_reading):
+    from evals.graders import _reading_around, _words
+
+    words = _words(sentence)
+    subject = next(
+        index for index, word in enumerate(words) if word in ("מתח", "תסכול")
+    )
+    assert _reading_around(words, subject, 1) == expected_reading
+
+
+def test_a_yellow_dimension_could_be_read_either_way_and_is_not_measured():
+    # `mixed-middle` is yellow everywhere; "moderate pressure" is fair there.
+    middle = CASES_BY_ID["mixed-middle"]
+    payload = stone_map(middle, narrative_for=_balance_narrative("לחץ הזמן נמוך."))
+    result = grade_polarity_reading(payload, middle)
+    assert result.measured["readings"] == 0
+    assert result.score == 1.0
+
+
+def test_a_narrative_that_never_names_the_demand_is_not_measured():
+    result = grade_polarity_reading(stone_map(REVERSED), REVERSED)
+    assert result.measured["readings"] == 0
+    assert result.score == 1.0
+
+
+@pytest.mark.parametrize(
+    "innocent",
+    [
+        # A negated inference, not a negated demand.
+        "אין להסיק שהלחץ קשור לממוצע בלבד.",
+        # Both readings in one clause: ambiguity is not a finding.
+        "לחץ הזמן גבוה אצל חלק ונמוך אצל אחרים.",
+        # The adjective belongs to another sentence.
+        "התשובות נוגעות ללחץ זמן. הפיזור נמוך.",
+    ],
+    ids=["negated-inference", "both-readings", "next-sentence"],
+)
+def test_words_that_only_look_like_a_reading_are_left_alone(innocent):
+    payload = stone_map(REVERSED, narrative_for=_balance_narrative(innocent))
+    result = grade_polarity_reading(payload, REVERSED)
+    assert result.measured["reversed"] == 0, result.findings
+
+
+def test_a_dimension_declared_with_one_statement_carries_no_demand_to_read():
+    # `dynamic-questionnaire` gives `balance` a single statement — the
+    # positive one — so a narrative about pressure there is unmeasurable.
+    dynamic = CASES_BY_ID["dynamic-questionnaire"]
+    assert [q.polarity for q in questions_for(dynamic, "balance")] == ["positive"]
+    payload = stone_map(dynamic, narrative_for=_balance_narrative("לחץ הזמן נמוך."))
+    assert grade_polarity_reading(payload, dynamic).measured["readings"] == 0
+
+
 # --- the report -------------------------------------------------------------
 
 
@@ -456,7 +627,7 @@ def test_emitting_inputs_writes_one_file_per_case(tmp_path, capsys):
 
 
 def test_the_shared_callback_fixture_is_scored_as_the_filler_it_is():
-    """The V6 fixture in `contracts/fixtures` repeats one sentence everywhere.
+    """The V7 fixture in `contracts/fixtures` repeats one sentence everywhere.
 
     It is a contract fixture, so it is deliberately not good Hebrew analysis —
     which makes it the honest check that these graders fire on a payload that
@@ -472,7 +643,7 @@ def test_the_shared_callback_fixture_is_scored_as_the_filler_it_is():
     payload = next(
         case["payload"]
         for case in corpus["accepted"]
-        if case["contractVersion"] == "6.0"
+        if case["contractVersion"] == CORPUS_CONTRACT_VERSION
     )
 
     # Any case will do as the evidence side; what is being checked is that the

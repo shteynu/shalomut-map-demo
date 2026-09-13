@@ -32,6 +32,7 @@ asserting something the numbers do not support.
 | `evidence_specificity` | A paragraph that would read identically for any school, measured as overlap with the round's own question texts. |
 | `distinctness` | One paragraph written eight times. Each stone can pass its own validation while the map says one thing. |
 | `recommendation_fit` | A recommendation carrying another dimension's id, aimed at a status the stone is not in, or repeated five times. |
+| `polarity_reading` | "Little time pressure" when a reverse-scored `לחץ זמן` averages 22. Since `7.0` the average is normalised with the polarity applied, so a low number on a demand means the demand is felt strongly; the prompts say so in one sentence, and nothing at runtime checks whether the model heard it. Read from the words around the statement's subject in the two descriptive paragraphs of the stone — the third proposes, and a proposed "space without rivalry" is not a reading of how much rivalry there is; a yellow stone, an unnamed demand or a clause carrying both readings goes unmeasured rather than wrong. |
 
 A score runs 0.0 to 1.0 and is only ever a summary of `measured`. Read
 `findings` — the score says how much, the findings say what.
@@ -43,30 +44,25 @@ respondent, school or real answer is represented, and none can be. Each case
 carries a `challenge` line saying what an analysis of it has to get right;
 read that first when a grader fires.
 
+The corpus is contract `7.0` input since 2026-09-12 (`6.0` before that). Every
+dimension carries one statement worded the way the dimension is good and one
+worded the way the research instrument words its demands — `לחץ זמן`, `אי
+ודאות לגבי המשך העסקה` — with `polarity: negative` and an average that has
+already been reversed. Both scales the instrument answers on appear on both
+polarities, so a model that reads the scale instead of the polarity cannot
+score as if it had read the polarity. `7.0` asks for no metric narrative, so
+a run is eight structured summaries, eight adaptation batches and one round
+summary per unlocked case.
+
+`reversed-demands` is the case built around what `7.0` changed: healthy
+resources, red `balance` and `certainty`, and in each red stone a demand
+statement at a low normalised average — heavy pressure, real uncertainty.
+Reading that number as "little pressure" reverses the round while producing
+prose every runtime rule accepts.
+
 `mixed-middle` and `polarized` are a deliberate pair: identical dimension
 averages, opposite distributions. An analysis that reads averages and stops
 will say the same thing about both, and that is the point of having them.
-
-`reverse-scored` exists for contract `7.0` alone. Two dimensions are asked
-through statements about strain on a five-point extent scale with negative
-polarity, and the scores are already turned so that high is good: balance is
-red because the staff agree with the strain, certainty is green because they
-do not. The prompts carry one sentence about this (`ANSWER_SCALE_RULE` in
-`src/services/hebrew_prompts.py`), and this is the case that says whether a
-model reads it. No grader can settle that — a green certainty described as
-"contradictory instructions" is well-formed Hebrew of the right length — so
-read the two stones.
-
-### Contract version
-
-The corpus speaks `7.0` by default: every aggregate names its `scaleId` and
-`polarity`, and no stone carries a metric narrative, so a case is fewer
-provider calls than it was under `6.0`. `to_analysis_input("6.0")` and
-`run_corpus --contract 6.0` still produce the older input, for a diff against
-the baselines that were made on it; `reverse-scored` cannot be expressed
-without a scale and is skipped by name under `6.0`. A `7.0` report and a
-`6.0` report differ by the contract as well as by the prompts, so the first
-`7.0` run is a new baseline rather than a point on the old series.
 
 The cases are declared compactly and expanded into contract input rather than
 committed as expanded JSON — the spec is what a person reads and changes.
@@ -169,6 +165,45 @@ two runs, four cases and then three, because the account ran out of credit in
 between; the cases are independent and the report carries no timestamp, which
 is what makes that legitimate.
 
+`2026-09-12-gemini-3.5-flash-contract-7-0.json` is the first report on
+contract `7.0` — the first time a model, rather than the fallback or the local
+stub, produced it — and the first with the `polarity_reading` grader, so its
+mean averages six graders where every earlier file averages five; the older
+files are not rescored, because their payloads were not kept. Same model, same
+8192-token cap, reasoning effort unset, on the deployment's configuration from
+the repository root `.env`. Mean 0.9664, three findings, all asserted causes
+(`גורמים ל`, `נובעת מ` twice); `distinctness` 0.8501 and `no_overreach`
+0.9486 sit where the `6.0` reports left them. `polarity_reading` read five
+demand statements across four dimensions and found every one written the way
+its number points, so on that evidence the one sentence
+`ANSWER_SCALE_RULE` adds is heard — evidence that is thin on purpose, and
+thinner than planned:
+
+- **It covers six of the eight unlocked cases.** The prepayment credit ran out
+  during the sixth case (`workload-pressure`: all eight stones and the round
+  summary by the model, 35 of 40 adaptations from the fallback), and the seventh
+  and eighth came back as fallback copy on every stone. A second run of those
+  three cases an hour later billed nothing — every request a `429` whose body
+  says the credits are depleted — so `reversed-demands`, the case built around
+  the trap `7.0` sets, and `dynamic-questionnaire` are not in the file. Scoring
+  their fallback payloads would have filed the service's own boilerplate as a
+  measurement, which is what the provenance check above exists to prevent. Once
+  the account has credit, run `--cases reversed-demands,dynamic-questionnaire`
+  and re-score the nine payloads together; the cases are independent and the
+  report carries no timestamp, which is what makes joining them legitimate.
+- **The grader learned three rules from this run** before the report was
+  filed, and the payloads were re-scored for free: an adjective after a
+  conjunction belongs to the next noun (`מתח מדווח ותחושה נמוכה`), an absence
+  before the subject outranks the adjective after it (`היעדר תסכול משמעותי`),
+  and the third paragraph of a summary proposes rather than reads (`ללא חשש
+  מתחרות` as the space to build, on a stone where rivalry is felt strongly).
+  Each is pinned in `tests/test_evals.py`. Before those rules the same
+  payloads scored `polarity_reading` at 0.8591 with three findings, none of
+  them a reversed reading.
+- **The `6.0` cost pattern held on `7.0`.** Ninety-nine billed answers for the
+  six cases the model wrote, 572,050 total tokens; four adaptation batches hit
+  the 8192-token cap and were retried. No `TimeoutError`.
+
 Both 2026-08-05 files are rescorings rather than first drafts. `summary_grounding` read
 every "18 green *answers*" as a claim about dimensions and scored the first run
 at 0.375; the grader was fixed and the same payloads rescored, which is exactly
@@ -195,26 +230,12 @@ prompts and keep the report; do it again after a prompt or model change and
 diff the two; and only then decide whether any grader deserves to become a
 threshold.
 
-No `7.0` run has been made yet. The corpus has produced `7.0` input and the
-pipeline has returned a `7.0` map on it keyless — so the shape is known to
-pass the graders — but every stone of that map was `deterministic_fallback`,
-which is exactly the report the provenance check above says not to file. The
-first real run is:
-
-```bash
-.venv/bin/python -m evals.run_corpus --env-file ../.env --out /tmp/eval-7.0
-.venv/bin/python -m evals.report /tmp/eval-7.0/*.json \
-  > evals/baselines/<date>-<model>-contract-7.0.json
-```
-
-Read `reverse-scored` first.
-
 ## Provider quota
 
-A full corpus run under `7.0` is roughly 80 provider requests — eight
-dimension summaries, plus the overall summary and the intervention adaptation,
-for each of the eight unlocked cases. Under `6.0` it was roughly 140: the
-metric narrative was a second call per dimension, on seven unlocked cases.
+A full corpus run is roughly 140 provider requests — eight dimension
+summaries, eight adaptation batches and the overall summary for each of the
+eight unlocked cases, before retries. On `6.0` it was the same number for a
+different reason: seven cases, each also asking eight metric narratives.
 
 The Gemini free tier allows **20 requests per day per model**
 (`GenerateRequestsPerDayPerProjectPerModel-FreeTier`), so a full run needs a

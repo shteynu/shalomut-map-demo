@@ -3,13 +3,14 @@
 Every case is aggregate-only and invented: no respondent, no school, no real
 answer is represented here, and none can be. What varies between cases is the
 shape of the evidence — how the scores sit against each other, how the answers
-spread inside one question, how many questions a dimension has — because that
-is what a summary or an interpretation has to get right.
+spread inside one question, how many questions a dimension has, and since
+contract `7.0` which scale a statement was answered on and which way it points
+— because that is what a summary or an interpretation has to get right.
 
 The cases are declared compactly and expanded into contract input, rather than
 committed as expanded JSON. The spec is the part a person reads and changes;
 the expansion is derivable, and a thousand lines of generated aggregates in Git
-would hide the eight decisions that matter. If Core ever needs the same cases,
+would hide the nine decisions that matter. If Core ever needs the same cases,
 this is the point to emit shared JSON under `contracts/fixtures/`.
 """
 
@@ -23,52 +24,123 @@ from src.contracts import (
     AI_ANALYTICS_DIMENSION_NAMES_HEBREW,
 )
 
-# The contract the corpus speaks by default. `7.0` names the answer scale and
-# polarity on every aggregate and carries no metric narrative, so it is fewer
-# provider calls per case than `6.0` and the only version under which a
-# reverse-scored statement can be put in front of the prompts at all. `6.0` is
-# still producible for a diff against the baselines that were made on it.
+# `7.0` since 2026-09-12. Until then the corpus ran on `6.0`, so every report
+# in `baselines/` before that date measured prompts that had never seen a
+# scale or a polarity, and none of them had the `polarity_reading` grader.
 CORPUS_CONTRACT_VERSION = "7.0"
-CORPUS_CONTRACT_VERSIONS = ("6.0", "7.0")
 PRIVACY_THRESHOLD = 10
-COLOUR_SCALE_ID = "wellbeing-colour"
+
+# The two scales the research instrument answers on. The colour scale is
+# deliberately absent: a corpus on it would measure the questionnaire the
+# product no longer starts a round with.
+LIKERT_5 = "likert-5-extent"
+LIKERT_7 = "likert-7-frequency"
+
+
+@dataclass(frozen=True)
+class QuestionSpec:
+    """One statement of the questionnaire, as `7.0` describes it.
+
+    `subjects` names the thing a reverse-scored statement is about — the
+    demand a respondent was asked how much of they feel — in every surface
+    form a narrative might use for it. It is what `polarity_reading` looks
+    for: a statement with no subject is one the grader cannot read, and goes
+    unmeasured rather than wrong.
+    """
+
+    text: str
+    scale_id: str = LIKERT_5
+    polarity: str = "positive"
+    subjects: Tuple[str, ...] = ()
+
 
 # A questionnaire's own words are what a grounded interpretation can echo, so
-# each dimension gets question texts that are actually about that dimension.
-# Deliberately plain: the corpus measures the analysis, not the questionnaire.
-QUESTION_TEXTS_HEBREW: Dict[str, Tuple[str, ...]] = {
+# each dimension gets statements that are actually about that dimension: one
+# worded the way the dimension is good — agreeing is good — and one worded the
+# way the instrument words its demands — agreeing is bad, and the average the
+# model reads has already been reversed to say so. Deliberately plain: the
+# corpus measures the analysis, not the questionnaire. The demand statements
+# are the instrument's own phrasing where it has one.
+QUESTIONS_HEBREW: Dict[str, Tuple[QuestionSpec, ...]] = {
     "self-expression": (
-        "אני יכולה להביע את דעתי בישיבות הצוות.",
-        "ההצעות שלי נשמעות ומשפיעות על ההחלטות.",
+        QuestionSpec("אני יכולה להביע את דעתי בישיבות הצוות."),
+        QuestionSpec(
+            "חשש להביע דעה שונה משל ההנהלה",
+            polarity="negative",
+            subjects=("חשש", "חששות"),
+        ),
     ),
     "professional-competence": (
-        "יש לי את הכלים המקצועיים שנדרשים לתפקיד.",
-        "אני מרגישה בטוחה בהוראה שלי בכיתה.",
+        QuestionSpec("יש לי את הכלים המקצועיים שנדרשים לתפקיד."),
+        QuestionSpec(
+            "קושי להתמודד עם תלמידים מאתגרים",
+            scale_id=LIKERT_7,
+            polarity="negative",
+            subjects=("קושי", "קשיים"),
+        ),
     ),
     "social-resource": (
-        "יש לי עמיתים בבית הספר שאני יכולה לפנות אליהם.",
-        "אני מרגישה שייכות לצוות המורים.",
+        QuestionSpec("יש לי עמיתים בבית הספר שאני יכולה לפנות אליהם."),
+        QuestionSpec(
+            "יחסים מתוחים בין עובדים (כמו יריבות, תחרות)",
+            polarity="negative",
+            subjects=("מתח", "מתיחות", "יריבות", "תחרות", "יחסים מתוחים"),
+        ),
     ),
     "balance": (
-        "העומס בעבודה מאפשר לי לסיים את המשימות בזמן.",
-        "נשאר לי זמן למנוחה אחרי יום העבודה.",
+        QuestionSpec("נשאר לי זמן למנוחה אחרי יום העבודה."),
+        QuestionSpec(
+            "לחץ זמן",
+            polarity="negative",
+            subjects=("לחץ", "לחצים"),
+        ),
     ),
     "management-support": (
-        "ההנהלה מגבה אותי מול קשיים עם תלמידים והורים.",
-        "אני מקבלת מענה מההנהלה כשאני מבקשת עזרה.",
+        QuestionSpec("ההנהלה מגבה אותי מול קשיים עם תלמידים והורים."),
+        QuestionSpec(
+            "יחסים מתוחים בין עובדים להנהלה",
+            polarity="negative",
+            subjects=("מתח", "מתיחות", "יחסים מתוחים"),
+        ),
     ),
     "certainty": (
-        "אני יודעת מה מצופה ממני בתפקיד.",
-        "השינויים בבית הספר מוסברים לי מראש.",
+        QuestionSpec("אני יודעת מה מצופה ממני בתפקיד."),
+        QuestionSpec(
+            "אי ודאות לגבי המשך העסקה",
+            polarity="negative",
+            subjects=(
+                "אי ודאות", "אי הוודאות", "אי-ודאות", "אי־ודאות",
+                "חוסר ודאות", "חוסר הוודאות",
+            ),
+        ),
     ),
     "organizational-climate": (
-        "האווירה בחדר המורים נעימה לי.",
-        "היחס בין אנשי הצוות בבית הספר מכבד.",
+        QuestionSpec("האווירה בחדר המורים נעימה לי."),
+        QuestionSpec(
+            "יחס פוגעני כלפיי במילים או בהתנהגות",
+            scale_id=LIKERT_7,
+            polarity="negative",
+            subjects=("יחס פוגעני", "פגיעה", "פגיעות", "התנהגות פוגענית"),
+        ),
     ),
     "meaning": (
-        "העבודה שלי בבית הספר מרגישה לי חשובה.",
-        "אני רואה את ההשפעה שלי על התלמידים.",
+        QuestionSpec(
+            "אני חוזרת הביתה בתחושה שעשיתי משהו חשוב.",
+            scale_id=LIKERT_7,
+        ),
+        QuestionSpec(
+            "תסכול מכך שהעבודה אינה זוכה להכרה",
+            polarity="negative",
+            subjects=("תסכול", "תסכולים"),
+        ),
     ),
+}
+
+# The texts alone, for the graders that echo them and the tests that write
+# narratives out of them.
+QUESTION_TEXTS_HEBREW: Dict[str, Tuple[str, ...]] = {
+    dimension_id: tuple(question.text for question in questions)
+    for dimension_id, questions in QUESTIONS_HEBREW.items()
 }
 
 
@@ -109,28 +181,19 @@ def survey_definition_hash(
 
 @dataclass(frozen=True)
 class DimensionSpec:
-    """One dimension's evidence: its score and how the answers spread."""
+    """One dimension's evidence: its score and how the answers spread.
+
+    The score is the `7.0` average — normalised to 0–100 with the polarity
+    already applied, so it means the same thing on every statement of the
+    dimension: high is good. On a demand statement a low score is a demand
+    felt strongly.
+    """
 
     score: float
     # green/yellow/red counts per question. A spread that sums to the response
     # count but sits at the two ends is the polarization an average hides.
-    # On a Likert scale it is the band of each answer's normalised,
-    # polarity-applied score, which is what the contract says it is.
     spread: Tuple[int, int, int]
     question_count: int = 2
-    # How the questions were answered. The score is already normalised and
-    # turned by the polarity — a high score is good for the dimension on every
-    # question — so these change what the prompt is told, not the arithmetic.
-    scale_id: str = COLOUR_SCALE_ID
-    polarity: str = "positive"
-    # The dimension's own statements when the shared ones will not do: a
-    # negative-polarity question has to read as one, or the case measures
-    # nothing.
-    question_texts: Optional[Tuple[str, ...]] = None
-
-    @property
-    def carries_answer_scale(self) -> bool:
-        return self.scale_id != COLOUR_SCALE_ID or self.polarity != "positive"
 
 
 @dataclass(frozen=True)
@@ -144,32 +207,8 @@ class CorpusCase:
     locked: bool = False
     background: Optional[Dict[str, object]] = field(default=None)
 
-    def expressible_in(self, contract_version: str) -> bool:
-        """Whether the case can be put in front of this contract at all.
-
-        `6.0` carries no scale, so an aggregate answered on anything but the
-        colour scale, or turned by a negative polarity, has no place to say so
-        — sending it anyway would measure the prompts on evidence they were
-        never shown.
-        """
-        if contract_version == "7.0":
-            return True
-        return not any(spec.carries_answer_scale for spec in self.dimensions.values())
-
-    def to_analysis_input(
-        self, contract_version: str = CORPUS_CONTRACT_VERSION
-    ) -> Dict[str, object]:
+    def to_analysis_input(self) -> Dict[str, object]:
         """The case as contract input, in the shape Core would have sent."""
-        if contract_version not in CORPUS_CONTRACT_VERSIONS:
-            raise ValueError(
-                f"{self.case_id}: the corpus speaks {CORPUS_CONTRACT_VERSIONS}, "
-                f"not {contract_version!r}"
-            )
-        if not self.expressible_in(contract_version):
-            raise ValueError(
-                f"{self.case_id}: answered on a scale contract "
-                f"{contract_version} cannot carry; needs 7.0"
-            )
         dimension_scores: Dict[str, object] = {}
         question_aggregates: Dict[str, object] = {}
         questions: List[Tuple[str, str, str]] = []
@@ -189,31 +228,29 @@ class CorpusCase:
                 "computedStatus": status_for(spec.score),
                 "responseCount": self.total_responses,
             }
-            texts = spec.question_texts or QUESTION_TEXTS_HEBREW[dimension_id]
-            for index in range(spec.question_count):
+            for index, question in enumerate(questions_for(self, dimension_id)):
                 question_id = f"{dimension_id}-q{index + 1}"
                 green, yellow, red = spec.spread
-                questions.append(
-                    (question_id, dimension_id, texts[index % len(texts)])
-                )
+                questions.append((question_id, dimension_id, question.text))
                 question_aggregates[question_id] = {
                     "questionId": question_id,
                     "dimensionId": dimension_id,
-                    "questionText": texts[index % len(texts)],
+                    "questionText": question.text,
                     "averageScore": spec.score,
                     "responseCount": self.total_responses,
+                    # `7.0` defines this as the bands of normalised answer
+                    # scores, which is what the spread has always declared.
                     "scoreDistribution": {
                         "green": green,
                         "yellow": yellow,
                         "red": red,
                     },
+                    "scaleId": question.scale_id,
+                    "polarity": question.polarity,
                 }
-                if contract_version == "7.0":
-                    question_aggregates[question_id]["scaleId"] = spec.scale_id
-                    question_aggregates[question_id]["polarity"] = spec.polarity
 
         payload: Dict[str, object] = {
-            "contractVersion": contract_version,
+            "contractVersion": CORPUS_CONTRACT_VERSION,
             "roundId": f"eval-{self.case_id}",
             "totalResponses": self.total_responses,
             "privacyThreshold": PRIVACY_THRESHOLD,
@@ -323,6 +360,26 @@ CASES: Tuple[CorpusCase, ...] = (
         },
     ),
     CorpusCase(
+        case_id="reversed-demands",
+        challenge=(
+            "The trap `7.0` sets. The resources are fine and the demands are "
+            "not: balance and certainty are red, and the evidence there is a "
+            "reverse-scored statement — time pressure, job uncertainty — at a "
+            "low normalised average, which means the demand is felt strongly. "
+            "A narrative that reads the low number as little pressure has "
+            "reversed the round; so has one that reads the healthy "
+            "dimensions' low demands as heavy ones."
+        ),
+        dimensions=_scores(
+            78.0,
+            (8, 2, 0),
+            {
+                "balance": DimensionSpec(score=22.0, spread=(0, 2, 8)),
+                "certainty": DimensionSpec(score=38.0, spread=(0, 3, 7)),
+            },
+        ),
+    ),
+    CorpusCase(
         case_id="dynamic-questionnaire",
         challenge=(
             "Not the default questionnaire: dimensions carry one or three "
@@ -345,45 +402,6 @@ CASES: Tuple[CorpusCase, ...] = (
             },
         ),
         total_responses=14,
-    ),
-    CorpusCase(
-        case_id="reverse-scored",
-        challenge=(
-            "Two dimensions are asked through statements about strain — "
-            "overload, unclear demands — on a five-point extent scale with "
-            "negative polarity, and the scores are already turned so that "
-            "high is good. Balance is red because the staff agree with the "
-            "strain; certainty is green because they do not. An analysis "
-            "that reads the statement and calls the green dimension a "
-            "problem, or the red one agreement, has misread the contract; "
-            "one that quotes the scale's points has ignored it."
-        ),
-        dimensions=_scores(
-            64.0,
-            (2, 7, 1),
-            {
-                "balance": DimensionSpec(
-                    score=38.0,
-                    spread=(0, 3, 7),
-                    scale_id="likert-5-extent",
-                    polarity="negative",
-                    question_texts=(
-                        "העומס בעבודה לא מאפשר לי לסיים את המשימות בזמן.",
-                        "אני לוקחת עבודה הביתה כמעט בכל ערב.",
-                    ),
-                ),
-                "certainty": DimensionSpec(
-                    score=79.0,
-                    spread=(8, 2, 0),
-                    scale_id="likert-5-extent",
-                    polarity="negative",
-                    question_texts=(
-                        "ההנחיות שאני מקבלת סותרות זו את זו.",
-                        "אני לא יודעת מה מצופה ממני בתפקיד.",
-                    ),
-                ),
-            },
-        ),
     ),
     CorpusCase(
         case_id="locked-below-threshold",
@@ -412,7 +430,18 @@ def dimension_name_hebrew(dimension_id: str) -> str:
     return AI_ANALYTICS_DIMENSION_NAMES_HEBREW[dimension_id]
 
 
-def question_texts_for(case: CorpusCase, dimension_id: str) -> List[str]:
+def questions_for(case: CorpusCase, dimension_id: str) -> List[QuestionSpec]:
+    """The statements a dimension carries in this case, in question order.
+
+    A dimension declared with more statements than the bank holds repeats the
+    bank from the start, which is how `dynamic-questionnaire` gets its third
+    question; one declared with a single statement keeps only the first — the
+    positive one — and carries no demand for `polarity_reading` to read.
+    """
     spec = case.dimensions[dimension_id]
-    texts = spec.question_texts or QUESTION_TEXTS_HEBREW[dimension_id]
-    return [texts[index % len(texts)] for index in range(spec.question_count)]
+    bank = QUESTIONS_HEBREW[dimension_id]
+    return [bank[index % len(bank)] for index in range(spec.question_count)]
+
+
+def question_texts_for(case: CorpusCase, dimension_id: str) -> List[str]:
+    return [question.text for question in questions_for(case, dimension_id)]

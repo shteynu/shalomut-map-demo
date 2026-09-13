@@ -14,9 +14,15 @@ other. A score is a measurement to look at, not a threshold to pass.
 
 import re
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Sequence, Tuple
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
-from evals.corpus import CorpusCase, dimension_name_hebrew, question_texts_for
+from evals.corpus import (
+    CorpusCase,
+    dimension_name_hebrew,
+    question_texts_for,
+    questions_for,
+    status_for,
+)
 
 # Hebrew cardinals as they appear next to a counted noun, feminine and
 # masculine. Written out because a summary says "שלושה ממדים", not "3 ממדים".
@@ -185,8 +191,6 @@ def _stone_narrative(stone: Dict[str, Any]) -> str:
 
 
 def _actual_status_counts(case: CorpusCase) -> Dict[str, int]:
-    from evals.corpus import status_for
-
     counts = {"green": 0, "yellow": 0, "red": 0}
     for spec in case.dimensions.values():
         counts[status_for(spec.score)] += 1
@@ -484,6 +488,212 @@ def grade_recommendation_fit(
     )
 
 
+# --- reading a reverse-scored statement the way its number points ------------
+#
+# `7.0` hands the model a normalised average with the polarity already applied,
+# and one sentence saying so (`hebrew_prompts.ANSWER_SCALE_RULE`). On a demand
+# statement — "time pressure" — an average of 20 therefore means the pressure is
+# felt strongly, and a model that reads 20 as "little" has reversed the round
+# while producing prose every runtime rule accepts. Nothing below refuses it;
+# this is the measurement of whether the one sentence is enough.
+#
+# The reading is taken from the words around the statement's subject. Hebrew
+# puts the adjective after the noun — "לחץ זמן גבוה" — and the negation or the
+# quantifier before it — "אין לחץ", "מעט לחץ" — so the two windows are
+# different sizes and read different lists.
+
+# The demand is felt little. Adjectives after the subject.
+_LITTLE_AFTER: frozenset = frozenset(
+    """
+    נמוך נמוכה נמוכים נמוכות מועט מועטה מועטים מועטות קל קלה קלים קלות
+    זניח זניחה זניחים זניחות מינימלי מינימלית נדיר נדירה נדירים נדירות
+    מוגבל מוגבלת מוגבלים מוגבלות
+    """.split()
+)
+# Negations and small quantifiers before the subject. "היעדר" — absence —
+# is here because the 2026-09-12 run wrote "היעדר תסכול משמעותי", the absence
+# of significant frustration, and the adjective alone reads as much.
+_LITTLE_BEFORE: frozenset = frozenset(
+    "לא אין אינו אינה אינם אינן ללא בלי מעט קצת מיעוט היעדר העדר".split()
+)
+# The demand is felt strongly. Adjectives after the subject.
+_MUCH_AFTER: frozenset = frozenset(
+    """
+    גבוה גבוהה גבוהים גבוהות רב רבה רבים רבות כבד כבדה כבדים כבדות
+    ניכר ניכרת ניכרים ניכרות משמעותי משמעותית משמעותיים משמעותיות
+    מוגבר מוגברת מוגברים מוגברות חזק חזקה חזקים חזקות קשה קשים קשות
+    בולט בולטת בולטים בולטות מתמשך מתמשכת מתמשכים מתמשכות עז עזה
+    מכביד מכבידה מכבידים מכבידות תכוף תכופה תכופים תכופות
+    שכיח שכיחה שכיחים שכיחות
+    """.split()
+)
+# Large quantifiers before the subject.
+_MUCH_BEFORE: frozenset = frozenset("הרבה ריבוי".split())
+
+# Everything Hebrew glues onto the front of a word: conjunction, article,
+# prepositions, relative pronoun. Two at most — "שהלחץ" is "ש" + "ה" + "לחץ".
+_GLUED_PREFIX_LETTERS = "והבלמכש"
+# "לחץ הזמן על הצוות גבוה" puts the adjective four words after the subject.
+_AFTER_WINDOW = 4
+_BEFORE_WINDOW = 2
+
+
+def _unglued(word: str) -> Tuple[str, ...]:
+    """The word and the forms it has once its glued prefixes come off."""
+    forms = [word]
+    stripped = word
+    for _ in range(2):
+        if len(stripped) > 2 and stripped[0] in _GLUED_PREFIX_LETTERS:
+            stripped = stripped[1:]
+            forms.append(stripped)
+        else:
+            break
+    return tuple(forms)
+
+
+def _subject_at(words: Sequence[str], index: int, subject: Tuple[str, ...]) -> bool:
+    """Does the subject phrase start at this word, prefixes allowed on the first?"""
+    if index + len(subject) > len(words):
+        return False
+    if subject[0] not in _unglued(words[index]):
+        return False
+    return all(
+        words[index + offset] == part or f"ה{part}" == words[index + offset]
+        for offset, part in enumerate(subject[1:], start=1)
+    )
+
+
+def _reading_around(
+    words: Sequence[str], start: int, length: int
+) -> Optional[str]:
+    """`little`, `much`, or None when the words around a subject say neither.
+
+    A negation two words back counts only when the word between is not an
+    infinitive: "לא חשים לחץ" negates the pressure, "אין להסיק שהלחץ" negates
+    an inference about it. What stands before the subject outranks what
+    follows it — "היעדר תסכול משמעותי" is the absence of frustration, not a
+    lot of it. The window after the subject closes at a conjunction, because
+    "מתח מדווח ותחושה נמוכה" hangs "נמוכה" on the feeling, not the tension.
+    Both readings on one side at once is ambiguity, not a finding.
+    """
+    before_readings = set()
+    before = words[max(0, start - _BEFORE_WINDOW) : start]
+    for distance, word in enumerate(reversed(before), start=1):
+        if distance == 2 and before[-1].startswith("ל"):
+            break
+        if word in _LITTLE_BEFORE:
+            before_readings.add("little")
+        if word in _MUCH_BEFORE:
+            before_readings.add("much")
+    if before_readings:
+        return before_readings.pop() if len(before_readings) == 1 else None
+
+    after_readings = set()
+    for word in words[start + length : start + length + _AFTER_WINDOW]:
+        if word.startswith("ו") and len(word) > 2:
+            break
+        forms = _unglued(word)
+        if any(form in _LITTLE_AFTER for form in forms):
+            after_readings.add("little")
+        if any(form in _MUCH_AFTER for form in forms):
+            after_readings.add("much")
+    if len(after_readings) == 1:
+        return after_readings.pop()
+    return None
+
+
+def _descriptive_paragraphs(stone: Dict[str, Any]) -> List[str]:
+    """The part of a stone that reads the evidence, not the part that proposes.
+
+    A `7.0` summary is three paragraphs by prompt: the state, the patterns, and
+    a focus to take to the staff. The third is a proposal, and so are the
+    recommendations — "a space without fear of rivalry" is a wish, not a
+    reading of how much rivalry there is, and the 2026-09-12 run wrote exactly
+    that on a red stone. Only the first two are read; an older single-string
+    interpretation is read whole.
+    """
+    summary = stone.get("summary")
+    if isinstance(summary, list):
+        return [str(part) for part in summary[:2]]
+    return [_stone_narrative(stone)]
+
+
+def grade_polarity_reading(
+    payload: Dict[str, Any],
+    case: CorpusCase,
+) -> GraderResult:
+    """Is a reverse-scored statement read the way its number points?
+
+    Only a stone whose score settles the direction is measured: red means every
+    demand in it is felt strongly, green that every demand is felt little. A
+    yellow stone could fairly be written either way and is skipped, and so is a
+    statement whose subject the text never names — a narrative may read a
+    dimension without naming its demand, and that is not a reversed reading.
+    Read from the two descriptive paragraphs only; see `_descriptive_paragraphs`.
+    """
+    findings: List[str] = []
+    readings = 0
+    reversed_count = 0
+    per_dimension: Dict[str, Dict[str, int]] = {}
+
+    for dimension_id, stone in sorted(_stones(payload).items()):
+        if dimension_id not in case.dimensions:
+            continue
+        status = status_for(case.dimensions[dimension_id].score)
+        if status == "yellow":
+            continue
+        expected = "much" if status == "red" else "little"
+        subjects = [
+            tuple(subject.split())
+            for question in questions_for(case, dimension_id)
+            if question.polarity == "negative"
+            for subject in question.subjects
+        ]
+        if not subjects:
+            continue
+
+        counted = {"readings": 0, "reversed": 0}
+        for text in _descriptive_paragraphs(stone):
+            for clause in _CLAUSE_BOUNDARY.split(text):
+                words = _words(clause)
+                for index in range(len(words)):
+                    matched = next(
+                        (s for s in subjects if _subject_at(words, index, s)),
+                        None,
+                    )
+                    if matched is None:
+                        continue
+                    reading = _reading_around(words, index, len(matched))
+                    if reading is None:
+                        continue
+                    counted["readings"] += 1
+                    if reading != expected:
+                        counted["reversed"] += 1
+                        findings.append(
+                            f"{dimension_id}: “{clause.strip()}” reads "
+                            f"{' '.join(matched)} as {reading}, but the "
+                            f"normalised average "
+                            f"{case.dimensions[dimension_id].score:g} on a "
+                            f"reverse-scored statement means {expected}"
+                        )
+        if counted["readings"]:
+            per_dimension[dimension_id] = counted
+            readings += counted["readings"]
+            reversed_count += counted["reversed"]
+
+    score = 1.0 if not readings else max(0.0, 1.0 - reversed_count / readings)
+    return GraderResult(
+        name="polarity_reading",
+        score=score,
+        findings=tuple(findings),
+        measured={
+            "readings": readings,
+            "reversed": reversed_count,
+            "perDimension": per_dimension,
+        },
+    )
+
+
 Grader = Callable[[Dict[str, Any], CorpusCase], GraderResult]
 
 GRADERS: Tuple[Grader, ...] = (
@@ -492,6 +702,7 @@ GRADERS: Tuple[Grader, ...] = (
     grade_evidence_specificity,
     grade_distinctness,
     grade_recommendation_fit,
+    grade_polarity_reading,
 )
 
 
