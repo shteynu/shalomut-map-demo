@@ -38,7 +38,7 @@ A score runs 0.0 to 1.0 and is only ever a summary of `measured`. Read
 
 ## The corpus
 
-Eight synthetic rounds in `corpus.py`, aggregate-only and invented. No
+Nine synthetic rounds in `corpus.py`, aggregate-only and invented. No
 respondent, school or real answer is represented, and none can be. Each case
 carries a `challenge` line saying what an analysis of it has to get right;
 read that first when a grader fires.
@@ -46,6 +46,27 @@ read that first when a grader fires.
 `mixed-middle` and `polarized` are a deliberate pair: identical dimension
 averages, opposite distributions. An analysis that reads averages and stops
 will say the same thing about both, and that is the point of having them.
+
+`reverse-scored` exists for contract `7.0` alone. Two dimensions are asked
+through statements about strain on a five-point extent scale with negative
+polarity, and the scores are already turned so that high is good: balance is
+red because the staff agree with the strain, certainty is green because they
+do not. The prompts carry one sentence about this (`ANSWER_SCALE_RULE` in
+`src/services/hebrew_prompts.py`), and this is the case that says whether a
+model reads it. No grader can settle that — a green certainty described as
+"contradictory instructions" is well-formed Hebrew of the right length — so
+read the two stones.
+
+### Contract version
+
+The corpus speaks `7.0` by default: every aggregate names its `scaleId` and
+`polarity`, and no stone carries a metric narrative, so a case is fewer
+provider calls than it was under `6.0`. `to_analysis_input("6.0")` and
+`run_corpus --contract 6.0` still produce the older input, for a diff against
+the baselines that were made on it; `reverse-scored` cannot be expressed
+without a scale and is skipped by name under `6.0`. A `7.0` report and a
+`6.0` report differ by the contract as well as by the prompts, so the first
+`7.0` run is a new baseline rather than a point on the old series.
 
 The cases are declared compactly and expanded into contract input rather than
 committed as expanded JSON — the spec is what a person reads and changes.
@@ -174,11 +195,26 @@ prompts and keep the report; do it again after a prompt or model change and
 diff the two; and only then decide whether any grader deserves to become a
 threshold.
 
+No `7.0` run has been made yet. The corpus has produced `7.0` input and the
+pipeline has returned a `7.0` map on it keyless — so the shape is known to
+pass the graders — but every stone of that map was `deterministic_fallback`,
+which is exactly the report the provenance check above says not to file. The
+first real run is:
+
+```bash
+.venv/bin/python -m evals.run_corpus --env-file ../.env --out /tmp/eval-7.0
+.venv/bin/python -m evals.report /tmp/eval-7.0/*.json \
+  > evals/baselines/<date>-<model>-contract-7.0.json
+```
+
+Read `reverse-scored` first.
+
 ## Provider quota
 
-A full corpus run is roughly 140 provider requests — eight dimensions times a
-dimension summary and a metric narrative, plus the overall summary and the
-intervention adaptation, for each of the seven unlocked cases.
+A full corpus run under `7.0` is roughly 80 provider requests — eight
+dimension summaries, plus the overall summary and the intervention adaptation,
+for each of the eight unlocked cases. Under `6.0` it was roughly 140: the
+metric narrative was a second call per dimension, on seven unlocked cases.
 
 The Gemini free tier allows **20 requests per day per model**
 (`GenerateRequestsPerDayPerProjectPerModel-FreeTier`), so a full run needs a

@@ -23,8 +23,15 @@ from src.contracts import (
     AI_ANALYTICS_DIMENSION_NAMES_HEBREW,
 )
 
-CORPUS_CONTRACT_VERSION = "6.0"
+# The contract the corpus speaks by default. `7.0` names the answer scale and
+# polarity on every aggregate and carries no metric narrative, so it is fewer
+# provider calls per case than `6.0` and the only version under which a
+# reverse-scored statement can be put in front of the prompts at all. `6.0` is
+# still producible for a diff against the baselines that were made on it.
+CORPUS_CONTRACT_VERSION = "7.0"
+CORPUS_CONTRACT_VERSIONS = ("6.0", "7.0")
 PRIVACY_THRESHOLD = 10
+COLOUR_SCALE_ID = "wellbeing-colour"
 
 # A questionnaire's own words are what a grounded interpretation can echo, so
 # each dimension gets question texts that are actually about that dimension.
@@ -107,8 +114,23 @@ class DimensionSpec:
     score: float
     # green/yellow/red counts per question. A spread that sums to the response
     # count but sits at the two ends is the polarization an average hides.
+    # On a Likert scale it is the band of each answer's normalised,
+    # polarity-applied score, which is what the contract says it is.
     spread: Tuple[int, int, int]
     question_count: int = 2
+    # How the questions were answered. The score is already normalised and
+    # turned by the polarity — a high score is good for the dimension on every
+    # question — so these change what the prompt is told, not the arithmetic.
+    scale_id: str = COLOUR_SCALE_ID
+    polarity: str = "positive"
+    # The dimension's own statements when the shared ones will not do: a
+    # negative-polarity question has to read as one, or the case measures
+    # nothing.
+    question_texts: Optional[Tuple[str, ...]] = None
+
+    @property
+    def carries_answer_scale(self) -> bool:
+        return self.scale_id != COLOUR_SCALE_ID or self.polarity != "positive"
 
 
 @dataclass(frozen=True)
@@ -122,8 +144,32 @@ class CorpusCase:
     locked: bool = False
     background: Optional[Dict[str, object]] = field(default=None)
 
-    def to_analysis_input(self) -> Dict[str, object]:
+    def expressible_in(self, contract_version: str) -> bool:
+        """Whether the case can be put in front of this contract at all.
+
+        `6.0` carries no scale, so an aggregate answered on anything but the
+        colour scale, or turned by a negative polarity, has no place to say so
+        — sending it anyway would measure the prompts on evidence they were
+        never shown.
+        """
+        if contract_version == "7.0":
+            return True
+        return not any(spec.carries_answer_scale for spec in self.dimensions.values())
+
+    def to_analysis_input(
+        self, contract_version: str = CORPUS_CONTRACT_VERSION
+    ) -> Dict[str, object]:
         """The case as contract input, in the shape Core would have sent."""
+        if contract_version not in CORPUS_CONTRACT_VERSIONS:
+            raise ValueError(
+                f"{self.case_id}: the corpus speaks {CORPUS_CONTRACT_VERSIONS}, "
+                f"not {contract_version!r}"
+            )
+        if not self.expressible_in(contract_version):
+            raise ValueError(
+                f"{self.case_id}: answered on a scale contract "
+                f"{contract_version} cannot carry; needs 7.0"
+            )
         dimension_scores: Dict[str, object] = {}
         question_aggregates: Dict[str, object] = {}
         questions: List[Tuple[str, str, str]] = []
@@ -143,7 +189,7 @@ class CorpusCase:
                 "computedStatus": status_for(spec.score),
                 "responseCount": self.total_responses,
             }
-            texts = QUESTION_TEXTS_HEBREW[dimension_id]
+            texts = spec.question_texts or QUESTION_TEXTS_HEBREW[dimension_id]
             for index in range(spec.question_count):
                 question_id = f"{dimension_id}-q{index + 1}"
                 green, yellow, red = spec.spread
@@ -162,9 +208,12 @@ class CorpusCase:
                         "red": red,
                     },
                 }
+                if contract_version == "7.0":
+                    question_aggregates[question_id]["scaleId"] = spec.scale_id
+                    question_aggregates[question_id]["polarity"] = spec.polarity
 
         payload: Dict[str, object] = {
-            "contractVersion": CORPUS_CONTRACT_VERSION,
+            "contractVersion": contract_version,
             "roundId": f"eval-{self.case_id}",
             "totalResponses": self.total_responses,
             "privacyThreshold": PRIVACY_THRESHOLD,
@@ -298,6 +347,45 @@ CASES: Tuple[CorpusCase, ...] = (
         total_responses=14,
     ),
     CorpusCase(
+        case_id="reverse-scored",
+        challenge=(
+            "Two dimensions are asked through statements about strain — "
+            "overload, unclear demands — on a five-point extent scale with "
+            "negative polarity, and the scores are already turned so that "
+            "high is good. Balance is red because the staff agree with the "
+            "strain; certainty is green because they do not. An analysis "
+            "that reads the statement and calls the green dimension a "
+            "problem, or the red one agreement, has misread the contract; "
+            "one that quotes the scale's points has ignored it."
+        ),
+        dimensions=_scores(
+            64.0,
+            (2, 7, 1),
+            {
+                "balance": DimensionSpec(
+                    score=38.0,
+                    spread=(0, 3, 7),
+                    scale_id="likert-5-extent",
+                    polarity="negative",
+                    question_texts=(
+                        "העומס בעבודה לא מאפשר לי לסיים את המשימות בזמן.",
+                        "אני לוקחת עבודה הביתה כמעט בכל ערב.",
+                    ),
+                ),
+                "certainty": DimensionSpec(
+                    score=79.0,
+                    spread=(8, 2, 0),
+                    scale_id="likert-5-extent",
+                    polarity="negative",
+                    question_texts=(
+                        "ההנחיות שאני מקבלת סותרות זו את זו.",
+                        "אני לא יודעת מה מצופה ממני בתפקיד.",
+                    ),
+                ),
+            },
+        ),
+    ),
+    CorpusCase(
         case_id="locked-below-threshold",
         challenge=(
             "One respondent short of the threshold. There is nothing to "
@@ -326,5 +414,5 @@ def dimension_name_hebrew(dimension_id: str) -> str:
 
 def question_texts_for(case: CorpusCase, dimension_id: str) -> List[str]:
     spec = case.dimensions[dimension_id]
-    texts = QUESTION_TEXTS_HEBREW[dimension_id]
+    texts = spec.question_texts or QUESTION_TEXTS_HEBREW[dimension_id]
     return [texts[index % len(texts)] for index in range(spec.question_count)]

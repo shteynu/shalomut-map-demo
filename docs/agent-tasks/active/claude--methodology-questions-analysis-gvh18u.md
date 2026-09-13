@@ -4,17 +4,17 @@
 
 - Branch: `claude/methodology-questions-analysis-gvh18u`
 - Base branch: `main` at `f47959e`
-- Current HEAD: the commit carrying this file, on top of `7075de9`, the last
-  commit that changes anything but this file
-- Status: complete on the branch and the session closed — every commit
-  pushed, nothing uncommitted. Nothing is deployed
-- Last updated: 2026-09-12
+- Current HEAD: the commit carrying this file and step 8 together
+- Status: complete on the branch — every commit pushed, nothing uncommitted.
+  Nothing is deployed, and the `7.0` eval run waits on a provider key this
+  environment does not hold
+- Last updated: 2026-09-13
 - Last agent/tool: Claude Code
 
 ## Objective
 
 One branch, five steps each named as "the next step" by the one before it,
-and two small follow-ups the owner asked for after the save:
+and three follow-ups the owner asked for after the save:
 
 1. `9813c44` — proposed answers to the six methodologist questions of
    `docs/methodologist-questions-2026-08-15-ru.md`, for the methodologist to
@@ -31,6 +31,11 @@ and two small follow-ups the owner asked for after the save:
    rows.
 7. `7075de9` — the history list counts items too, in `summariseVersion` and
    in the SQL summary alike.
+8. The commit carrying this file — the eval corpus speaks `7.0`: every
+   aggregate names its scale and polarity, `run_corpus --contract` keeps
+   `6.0` producible for a diff against the old baselines, and a ninth case,
+   `reverse-scored`, puts negative-polarity Likert statements in front of the
+   prompts. The owner asked for the run itself; it could not be made here.
 
 ## User-visible outcome
 
@@ -104,6 +109,11 @@ manager screens still read the round; only its AI analysis waits.
   call. The manager API and the callback verifier are not behind it.
 - The overall-summary prompt needs no polarity rule: it lists dimension
   scores and summed distributions only (checked).
+- The eval corpus defaults to `7.0` rather than following the deployed
+  producer: the owner asked to measure `7.0`, the deployment is meant to move
+  to it, and `6.0` stays one flag away. `reverse-scored` is refused under
+  `6.0` by name rather than sent without its scale, because a colour-scale
+  rendering of it would measure the prompts on evidence they were not shown.
 - Answered in chat only: whether questionnaires and service boundaries can be
   configuration. Questions, scales, polarity and capabilities already are;
   templates would take a registry or catalogue (audit 2026-08-16, A/B); the
@@ -114,9 +124,10 @@ manager screens still read the round; only its AI analysis waits.
 
 ### Passed
 
-- `npm run verify:core` — exit 0 on the tree of step 7: fifteen gates,
-  typecheck, `npm test` 1688/1688, `verify:ai` 610 passed, lint, build. The
-  same chain was exit 0 on `455e33e` (1686 and 601 then).
+- `npm run verify:core` — exit 0 on the tree of step 8: fifteen gates,
+  typecheck, `npm test` 1688/1688, `verify:ai` 624 passed, lint, build. The
+  same chain was exit 0 on step 7 (610 in `verify:ai`) and on `455e33e`
+  (1686 and 601).
 - `npm run verify:db` — 109 pass, 0 fail, on the tree of step 7 against a
   throwaway PostgreSQL 16 on `127.0.0.1:5433`, including the new case that
   compares the SQL summary with `summariseVersion` on the instrument. Intermediate runs found and fixed: the mutation config missing the
@@ -142,8 +153,21 @@ manager screens still read the round; only its AI analysis waits.
 
 None attributable to this branch.
 
+- Keyless shape check of the `7.0` corpus, 2026-09-13: `evals.report
+  --emit-inputs` wrote nine `7.0` inputs; `reverse-scored` through
+  `src.pipeline_cli` came back `success` on `7.0` with every metric carrying
+  `scaleId` and `polarity` and no `insightText`; `evals.report` scored it.
+  Every stone was `deterministic_fallback`, so the report is not evidence
+  about the prompts and was not kept. `run_corpus` refused to run keyless,
+  as it should.
+
 ### Blocked or not run
 
+- **The `7.0` eval run against a provider** — the thing the owner asked for.
+  This environment holds no `GEMINI_API_KEY`, `LLM_API_KEY` or `.env`, and
+  `run_corpus` refuses without one. The command is in `evals/README.md`
+  under "What is not automated"; it needs the deployment's `../.env` and
+  roughly 80 requests of quota. Read `reverse-scored` first.
 - Deployed health evidence from either service: nothing deployed.
 - `verify:db` was not run on steps 1–6; there was no schema change and no SQL
   change until step 7.
@@ -161,8 +185,9 @@ removed afterwards. No deployed write of any kind.
 ### Residual risk
 
 - `7.0` has never been produced by a real provider call, only by the fallback
-  path and the local stub; the eval corpus still runs `6.0`, so the polarity
-  sentence in the prompts is unmeasured on a model.
+  path and the local stub. The eval corpus can now ask the question — the
+  `reverse-scored` case is built for the polarity sentence — but until the
+  owner runs it with a key the sentence is unmeasured on a model.
 - The mapping is the agent's, accepted by the owner, not the methodologist's.
 - `scaleMatchingOptions` compares anchor labels; a changed anchor text would
   turn unscored rows of persisted rounds back into standalone screens.
@@ -179,12 +204,13 @@ removed afterwards. No deployed write of any kind.
 ## Git state
 
 Committed and pushed: `9813c44`, `8d8d4e0`, `7674f73`, `150c335`, `23b6f72`,
-`455e33e`, `98fb6ea`, `60b8873`, `7075de9` and this file's commit, all on
+`455e33e`, `98fb6ea`, `60b8873`, `7075de9`, `4ae0375` and the commit
+carrying step 8 and this file, all on
 `origin/claude/methodology-questions-analysis-gvh18u` — checked with
-`git status` and `git log origin/main..HEAD` at session close. Nothing
-staged, unstaged or untracked. `origin/main` is still `f47959e`, fetched at
-close; landing the branch is the owner's. The handoff is portable to any
-checkout or machine: everything it describes is on the pushed branch.
+`git status` and `git log origin/main..HEAD`. Nothing staged, unstaged or
+untracked. `origin/main` is still `f47959e`; landing the branch is the
+owner's. The handoff is portable to any checkout or machine: everything it
+describes is on the pushed branch.
 
 ## Approval gates
 
@@ -198,8 +224,12 @@ configuration and sending the analysis to the methodologist are the owner's.
 
 ## Next concrete step
 
-Owner: land the branch on `main`; deploy the AI service and confirm its
-`GET /api/health` reports `7.0`; then deploy Core with
-`AI_ANALYTICS_CONTRACT_VERSION=7.0` — in that order, because every new round
-is now on the instrument and a Core producing `6.0` refuses to analyse it. No
-engineering step is queued behind that.
+Owner, on a machine that holds the deployment's `.env`: run the `7.0` eval
+corpus — `cd ai-analytics-service && .venv/bin/python -m evals.run_corpus
+--env-file ../.env --out /tmp/eval-7.0`, check the provenance, score with
+`evals.report` into `evals/baselines/<date>-<model>-contract-7.0.json`, and
+read the two turned stones of `reverse-scored`. Then land the branch on
+`main`; deploy the AI service and confirm its `GET /api/health` reports
+`7.0`; then deploy Core with `AI_ANALYTICS_CONTRACT_VERSION=7.0` — in that
+order, because every new round is now on the instrument and a Core producing
+`6.0` refuses to analyse it.

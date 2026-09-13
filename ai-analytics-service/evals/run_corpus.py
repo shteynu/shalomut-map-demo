@@ -52,11 +52,11 @@ def load_env_file(path: Path) -> List[str]:
     return names
 
 
-async def run_case(case, out_dir: Path) -> dict:
+async def run_case(case, out_dir: Path, contract_version: str) -> dict:
     from src.pipeline_cli import run_pipeline
 
     started = time.monotonic()
-    payload = await run_pipeline(case.to_analysis_input())
+    payload = await run_pipeline(case.to_analysis_input(contract_version))
     elapsed = time.monotonic() - started
 
     target = out_dir / f"{case.case_id}.json"
@@ -73,7 +73,9 @@ async def run_case(case, out_dir: Path) -> dict:
     }
 
 
-async def run(cases: List, out_dir: Path, skip_existing: bool) -> int:
+async def run(
+    cases: List, out_dir: Path, skip_existing: bool, contract_version: str
+) -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
     failures = 0
 
@@ -85,7 +87,7 @@ async def run(cases: List, out_dir: Path, skip_existing: bool) -> int:
 
         print(f"[{index}/{len(cases)}] {case.case_id}: running…", flush=True)
         try:
-            outcome = await run_case(case, out_dir)
+            outcome = await run_case(case, out_dir, contract_version)
         except Exception as error:  # noqa: BLE001 - the report is the product
             failures += 1
             # The message, not the traceback: a provider error can carry a URL
@@ -132,6 +134,14 @@ def main(argv: Optional[List[str]] = None) -> int:
         default=".env",
         help="env file to load before running; existing variables win",
     )
+    parser.add_argument(
+        "--contract",
+        default=None,
+        help=(
+            "contract version to send the cases under; the corpus default "
+            "unless a diff against an older baseline needs the older one"
+        ),
+    )
     args = parser.parse_args(argv)
 
     # The service logs what each answer cost at INFO, and nothing here
@@ -145,7 +155,21 @@ def main(argv: Optional[List[str]] = None) -> int:
               f"{', '.join(sorted(loaded))}")
 
     # Imported only now, with the environment already in place.
-    from evals.corpus import CASES, CASES_BY_ID
+    from evals.corpus import (
+        CASES,
+        CASES_BY_ID,
+        CORPUS_CONTRACT_VERSION,
+        CORPUS_CONTRACT_VERSIONS,
+    )
+
+    contract_version = args.contract or CORPUS_CONTRACT_VERSION
+    if contract_version not in CORPUS_CONTRACT_VERSIONS:
+        print(
+            f"unknown contract {contract_version!r}; the corpus speaks "
+            f"{', '.join(CORPUS_CONTRACT_VERSIONS)}",
+            file=sys.stderr,
+        )
+        return 2
 
     if args.cases:
         try:
@@ -155,6 +179,17 @@ def main(argv: Optional[List[str]] = None) -> int:
             return 2
     else:
         cases = list(CASES)
+
+    # Loud, not silent: a case the contract cannot carry is left out by name,
+    # so a 6.0 run never reads as a full corpus.
+    for case in [case for case in cases if not case.expressible_in(contract_version)]:
+        print(
+            f"skipping {case.case_id}: answered on a scale contract "
+            f"{contract_version} cannot carry",
+            file=sys.stderr,
+        )
+        cases.remove(case)
+    print(f"contract {contract_version}, {len(cases)} case(s)")
 
     from src.config import settings
 
@@ -174,7 +209,9 @@ def main(argv: Optional[List[str]] = None) -> int:
         )
         return 2
 
-    failures = asyncio.run(run(cases, Path(args.out), args.skip_existing))
+    failures = asyncio.run(
+        run(cases, Path(args.out), args.skip_existing, contract_version)
+    )
     if failures:
         print(f"{failures} of {len(cases)} case(s) did not come back successful")
     return 0

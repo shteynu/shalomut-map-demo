@@ -14,8 +14,10 @@ import pytest
 from evals.corpus import (
     CASES,
     CASES_BY_ID,
+    COLOUR_SCALE_ID,
     QUESTION_TEXTS_HEBREW,
     case_for_round_id,
+    question_texts_for,
 )
 from evals.graders import (
     grade_distinctness,
@@ -78,9 +80,63 @@ def stone_map(case, *, summary="סיכום.", narrative_for=None, interventions_
 @pytest.mark.parametrize("case", CASES, ids=[case.case_id for case in CASES])
 def test_every_case_parses_as_contract_input(case):
     parsed = RoundAnalyticsResult.from_dict(case.to_analysis_input())
-    assert parsed.contractVersion == "6.0"
+    assert parsed.contractVersion == "7.0"
     assert parsed.roundId == f"eval-{case.case_id}"
     assert case_for_round_id(parsed.roundId) is case
+
+
+@pytest.mark.parametrize("case", CASES, ids=[case.case_id for case in CASES])
+def test_under_7_0_every_aggregate_names_its_scale(case):
+    # The contract requires both fields on every aggregate, and the prompt's
+    # polarity rule is only attached when they are there.
+    payload = case.to_analysis_input("7.0")
+    for aggregate in payload["questionAggregates"].values():
+        assert aggregate["scaleId"]
+        assert aggregate["polarity"] in ("positive", "negative")
+
+
+def test_the_corpus_still_speaks_6_0_for_a_diff_against_its_baselines():
+    healthy = CASES_BY_ID["uniformly-healthy"].to_analysis_input("6.0")
+    parsed = RoundAnalyticsResult.from_dict(healthy)
+    assert parsed.contractVersion == "6.0"
+    assert all(
+        "scaleId" not in aggregate and "polarity" not in aggregate
+        for aggregate in healthy["questionAggregates"].values()
+    )
+
+
+def test_a_reverse_scored_case_cannot_be_sent_under_6_0():
+    # 6.0 has nowhere to say which way a statement points, so sending the
+    # case would measure the prompts on evidence they were never shown.
+    case = CASES_BY_ID["reverse-scored"]
+    assert case.expressible_in("7.0")
+    assert not case.expressible_in("6.0")
+    with pytest.raises(ValueError, match="needs 7.0"):
+        case.to_analysis_input("6.0")
+
+
+def test_the_reverse_scored_case_turns_two_dimensions_and_reads_as_strain():
+    case = CASES_BY_ID["reverse-scored"]
+    payload = case.to_analysis_input()
+    turned = {
+        aggregate["dimensionId"]
+        for aggregate in payload["questionAggregates"].values()
+        if aggregate["polarity"] == "negative"
+    }
+    assert turned == {"balance", "certainty"}
+    for dimension_id in turned:
+        for aggregate in payload["questionAggregates"].values():
+            if aggregate["dimensionId"] == dimension_id:
+                assert aggregate["scaleId"] == "likert-5-extent"
+                assert aggregate["scaleId"] != COLOUR_SCALE_ID
+    # The two point opposite ways on purpose: red by agreeing with the
+    # strain, green by not — the pair an analysis that reads the statement
+    # text alone will get backwards.
+    assert payload["dimensionScores"]["balance"]["computedStatus"] == "red"
+    assert payload["dimensionScores"]["certainty"]["computedStatus"] == "green"
+    # And the graders read the case's own statements, not the shared ones.
+    assert question_texts_for(case, "balance") != list(QUESTION_TEXTS_HEBREW["balance"])
+    assert question_texts_for(case, "meaning") == list(QUESTION_TEXTS_HEBREW["meaning"])
 
 
 @pytest.mark.parametrize("case", CASES, ids=[case.case_id for case in CASES])
