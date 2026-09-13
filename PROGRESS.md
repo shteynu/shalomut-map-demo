@@ -851,15 +851,18 @@ since the same day (ADR-056, `contracts/ai-analytics-v7.json`): every aggregate
 names its answer scale and polarity, metrics carry no per-question narrative,
 and both runtimes accept and produce it in `main` — a mixed-scale round has
 crossed MCP → the shipping Python pipeline → callback verification → the
-Dashboard DTO under `AI_ANALYTICS_CONTRACT_VERSION=7.0`. Neither service is
-deployed with it yet, and the unset producer default stays `5.0`. **The swap
+Dashboard DTO under `AI_ANALYTICS_CONTRACT_VERSION=7.0`. **Both services are
+deployed with it since 2026-09-13** — the service serves `effd7b1`, Core
+`a0e245d` with the variable switched to `7.0` — and the unset producer default
+stays `5.0`. **The swap
 landed the same day** (ADR-004 as amended): a new round is born with the
 instrument, `טעינת תבנית` loads it, the builder's suggestions come from it,
 and the consent screen counts its 126 items rather than 150 rows. The
 canonical 24 remain the legacy template of rounds persisted without a
-snapshot. Until the deployment produces `7.0`, `encodeAnalyticsInput` refuses
+snapshot. While the deployment produced `6.0`, `encodeAnalyticsInput` refused
 to analyse a round on the instrument — closed, at the boundary, naming the
-variable to change. The eight-branch stack **landed on `main` on 2026-08-15** as one
+variable to change; it produces `7.0` now, and the first analysed round on
+the instrument waits on the provider credit. The eight-branch stack **landed on `main` on 2026-08-15** as one
 fast-forward, so the capabilities above are the ones in the repository.
 
 That decision also closes the answer-scale question the two items below were

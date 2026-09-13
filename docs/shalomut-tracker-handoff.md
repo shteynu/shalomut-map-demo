@@ -830,19 +830,24 @@ intention, not a fact.
 
 ### Last read
 
-**Both halves served `e69a5eb`, read anonymously on 2026-08-20** — Core
-`status: ok`, `producedContractVersion: 6.0`; the service `env: production`,
-`jobPollingEnabled: true`.
+**Both halves serve contract `7.0`, read anonymously on 2026-09-13.** Core
+answers `commit: a0e245d` — the tip of `origin/main` — with
+`producedContractVersion: 7.0`, source `configured`, and
+`producibleContractVersions` `3.0`–`7.0`. The service answers
+`commit: effd7b1`, `env: production`, `jobPollingEnabled: true`, and lists
+`7.0` among `supportedContractVersions`. `effd7b1` is not stale: the two
+commits after it on `main` touch only `docs/`, which the `buildFilter` ignores.
 
-Since then `origin/main` moved to `136a752` over seventeen commits. Sixteen touch
-only `docs/`, the root documents, `package.json`, `eslint.config.mjs`,
-`.gitattributes` and two new scripts; the seventeenth changes one line of
-`src/lib/server/request-question-suggestion.ts`, and that line is a comment. No
-`ai-analytics-service/`, no `prisma/`. So Core is *expected* to have rebuilt and
-to be serving `136a752` with unchanged behaviour, and the service is *expected*
-to have stayed on `e69a5eb` — neither has been read since, and both are
-inferences from the rules above rather than readings. `GET /api/health/` settles
-the Core half in one anonymous request whenever it matters.
+The switch was made the same day in the owner's signed-in Chrome:
+`AI_ANALYTICS_CONTRACT_VERSION` went from `6.0` to `7.0` on the Production
+entry and on the Preview entry (values are write-only secrets on that project,
+so the old value was not read, it was known from `/api/health/`), and
+Production was redeployed from the dashboard because a variable change does
+not rebuild on its own. The health reading above is that redeploy. **No round
+on the instrument has been analysed through the deployment yet** — the
+provider's prepayment credit was found depleted on 2026-09-12 (see *Provider
+account*), so a round now would return the deterministic fallback with real
+provenance saying so, which proves the `7.0` handshake but not the prose.
 
 **The idle poll backoff was read in Render's logs at the moment it changed**, on
 2026-08-20 (times GMT+3). The outgoing instance `6tl48` posted
@@ -1224,10 +1229,10 @@ here; when the two disagree, this section wins.
    `6.0` could not be amended into — is published and accepted by both
    runtimes in `main` since 2026-09-12 (ADR-056), with a complete local round
    proven across the boundary; the swap landed 2026-09-12 (ADR-004 as
-   amended): every new round is born with the instrument. What stands between
-   it and a school is deployment — Python first, then Core, then
-   `AI_ANALYTICS_CONTRACT_VERSION=7.0`, without which a round on the instrument
-   is refused analysis at the boundary rather than analysed wrongly.
+   amended): every new round is born with the instrument. Deployed 2026-09-13:
+   both runtimes serve `7.0` and Core produces it (*Last read* above). What
+   stands between it and a school is now one analysed round on the instrument
+   through the deployment, which waits on the provider credit top-up.
 8. **Naming a pilot school with a date**, which is what still gates the 2026-08-10
    strategy sweep, and the wording of its axis 1 (Chief Scientist directive) and
    axis 7 (fair-use commitment, and how small a staff room is too small to measure
@@ -1370,11 +1375,10 @@ branch task file. Both halves are one anonymous request each; the rules for
 reading the service's commit without raising a false alarm are under
 **Deployed state** above.
 
-The last such comparison was made on 2026-08-24, before the signed-in walk of
-the two audit-log screens: Core answered `0b57ec3` — the head of `main` at the
-time, so the deployment was current — and the service `8760e62`, which is the
-expected resting gap rather than a missed deploy: nothing since `ce6d1b0` has
-touched the service's `buildFilter` paths.
+The last such comparison was made on 2026-09-13, after the contract `7.0`
+switch: Core answered `a0e245d` — the head of `main`, so the deployment was
+current — and the service `effd7b1`, the expected resting gap rather than a
+missed deploy: the two commits after it touch only `docs/`.
 
 **What an agent starting here should know about what is left.** Read
 [`open-decisions.md`](open-decisions.md) first: since 2026-08-25 it indexes every
