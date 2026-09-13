@@ -8,10 +8,12 @@
   `origin/main` at `f47959e`). See *Decisions made* for why the branch pointer
   has not been moved there yet, and for what `ccf76e1` is.
 - Base commit: `ccf76e1`, the tip of the `7.0` branch
-- Current HEAD: `75d1b87`, the owner's commit of the reconciled eval work on
-  `ccf76e1`, plus the commit carrying this file
-- Status: committed on the branch, not pushed; the two missing cases wait on
-  provider credit, which the owner will top up later, not now
+- Current HEAD: `75d1b87` (the eval work), `effd7b1` (this file's previous
+  state) and the commit that archives it
+- Status: archived 2026-09-13 — landed on `main` that day as `effd7b1`,
+  carrying the `7.0` branch's eleven commits with it; only this archive
+  commit is behind. The two missing eval cases wait on provider credit, which
+  the owner will top up later, not now
 - Last updated: 2026-09-13
 - Last agent/tool: Claude Code (Fable 5.1)
 
@@ -291,7 +293,8 @@ local; provider calls go to the configured Gemini project.
 
 ## Next concrete step
 
-Owner: push this branch, then land it together with the `7.0` branch it sits
-on. The two missing cases are deferred by the owner until the Gemini account
-is topped up — not scheduled — and then run as the first item under
-*Remaining*. No engineering step is queued before that.
+None on this branch. With `main` at `effd7b1`, the `7.0` deployment
+sequence is the owner's — AI service first, its `/health` reporting `7.0`;
+then Core with `AI_ANALYTICS_CONTRACT_VERSION=7.0` set in the Vercel dashboard
+at the same deploy; then one real round on the instrument. The two missing
+eval cases follow the credit top-up, as the first item under *Remaining*.

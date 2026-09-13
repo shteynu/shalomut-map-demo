@@ -5,9 +5,9 @@
 - Branch: `claude/methodology-questions-analysis-gvh18u`
 - Base branch: `main` at `f47959e`
 - Current HEAD: the commit carrying this file and step 8 together
-- Status: complete on the branch — every commit pushed, nothing uncommitted.
-  Nothing is deployed, and the `7.0` eval run waits on a provider key this
-  environment does not hold
+- Status: archived 2026-09-13 — landed on `main` that day, carried verbatim
+  by `claude/relaxed-hellman-4ad0ff`, which sits on `ccf76e1`; `origin/main`
+  is `effd7b1`. Nothing is deployed
 - Last updated: 2026-09-13
 - Last agent/tool: Claude Code
 
@@ -184,10 +184,12 @@ removed afterwards. No deployed write of any kind.
 
 ### Residual risk
 
-- `7.0` has never been produced by a real provider call, only by the fallback
-  path and the local stub. The eval corpus can now ask the question — the
-  `reverse-scored` case is built for the polarity sentence — but until the
-  owner runs it with a key the sentence is unmeasured on a model.
+- `7.0` was produced by a real provider for the first time on 2026-09-12, on
+  the sibling branch that supersedes step 8's corpus (`75d1b87`: both scales
+  on both polarities, a `polarity_reading` grader, `reverse-scored` replaced
+  by `reversed-demands`). The polarity sentence held on five readings across
+  six cases; the case built for it was not reached before the provider
+  credit ran out. See `archive/claude--relaxed-hellman-4ad0ff.md`.
 - The mapping is the agent's, accepted by the owner, not the methodologist's.
 - `scaleMatchingOptions` compares anchor labels; a changed anchor text would
   turn unscored rows of persisted rounds back into standalone screens.
@@ -224,12 +226,10 @@ configuration and sending the analysis to the methodologist are the owner's.
 
 ## Next concrete step
 
-Owner, on a machine that holds the deployment's `.env`: run the `7.0` eval
-corpus — `cd ai-analytics-service && .venv/bin/python -m evals.run_corpus
---env-file ../.env --out /tmp/eval-7.0`, check the provenance, score with
-`evals.report` into `evals/baselines/<date>-<model>-contract-7.0.json`, and
-read the two turned stones of `reverse-scored`. Then land the branch on
-`main`; deploy the AI service and confirm its `GET /api/health` reports
-`7.0`; then deploy Core with `AI_ANALYTICS_CONTRACT_VERSION=7.0` — in that
-order, because every new round is now on the instrument and a Core producing
-`6.0` refuses to analyse it.
+The eval run named here was made on the sibling branch on 2026-09-12, and
+the branch landed on `main` on 2026-09-13. What is left is the owner's
+deployment sequence: deploy the AI service and confirm its `/health`
+reports `7.0`; then deploy Core with `AI_ANALYTICS_CONTRACT_VERSION=7.0` set
+in the Vercel dashboard at the same deploy — in that order, because every new
+round is now on the instrument and a Core producing `6.0` refuses to analyse
+it; then one real round on the instrument through the deployed pipeline.
