@@ -178,10 +178,13 @@ under "Live plans" above:
   dimensions, an index beside the map, a pluggable taxonomy) and establishes
   by executing both runtimes that the eight-dimension taxonomy is enforced at
   parse, activation, manifest load, payload and callback. Five of the eight
-  fit an anonymous self-report under k ≥ 10, three do not. **Not for
-  implementation**: the ranked recommendation is the agent's, five owner
-  decisions are open, and the external evidence in its §4–§5 is labelled
-  `[по исследованию]` and unconfirmed here;
+  fit an anonymous self-report under k ≥ 10, three do not. §9, added
+  2026-09-14, prices the same question for a commercial audience: the
+  taxonomy is not the barrier there either — the content pack, the
+  organizational model and the language are. **Not for implementation**: the
+  ranked recommendation is the agent's, the decisions it raises are items 23
+  and 24 of [`open-decisions.md`](open-decisions.md), and the external
+  evidence in its §4–§5 is labelled `[по исследованию]` and unconfirmed here;
 - [`critical-audit-2026-08-21.md`](critical-audit-2026-08-21.md) — dated
   read-only audit of scale, resilience, architecture and security, by six
   independent readers with an adversarial pass over every finding. Fifty

@@ -81,8 +81,8 @@ do them and nothing in it can verify them either.
 
 ## Product decisions that are holding code
 
-Each of these has an implementation waiting behind it — item 23 a research
-document waiting for a direction. None can be guessed.
+Each of these has an implementation waiting behind it — items 23 and 24 a
+research document waiting for a direction. None can be guessed.
 
 9. **Retention.** How long do `audit_events` rows, the full result JSON in
    `ai_analysis_runs`, and answer rows after a round closes actually live? The
@@ -147,6 +147,22 @@ document waiting for a direction. None can be guessed.
     slice on its own branch once it does.
     → [`organizational-domain-modules-research-2026-09-13.md`](organizational-domain-modules-research-2026-09-13.md)
     §2, §6, §7.
+24. **A commercial audience: whether, when, in which language, and under which
+    threshold.** The eight dimensions are not the barrier — their texts and the
+    canonical 24 carry no school word — so a commercial version is a content
+    pack (instrument, persona, catalog, lexicon, round context), an
+    organizational model with departments and scoped managers, and a language
+    decision, on the same pipeline. Four sub-decisions: Hebrew only or English
+    too, the largest cost after the organizational model; keep the threshold
+    at 10 as the differentiator or make it per-organization above a floor;
+    department as an anonymous background question or attributes from an
+    HRIS, which the market does and which stores identifiable data at the
+    vendor; and timing against the school pilot, which the owner set as the
+    binding goal on 2026-08-10. **Unblocks:** nothing yet, and nothing should
+    start before the pilot; when it does, the first slice is a per-deployment
+    content pack, which needs no contract change.
+    → [`organizational-domain-modules-research-2026-09-13.md`](organizational-domain-modules-research-2026-09-13.md)
+    §9.
 
 ## Methodology, for the owner together with the methodologist
 

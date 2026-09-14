@@ -5,11 +5,12 @@
 - Branch: `docs/organizational-domain-modules-research`
 - Base branch: `main`
 - Base commit: `1cd6591`
-- Current HEAD: `1cd6591` is the base; this task is one commit on top of it,
-  the first on the branch (`git log origin/main..HEAD`), not pushed
+- Current HEAD: `1cd6591` is the base; this task is two commits on top of
+  it — `a3ae60f` the document, then the one carrying §9 and item 24
+  (`git log origin/main..HEAD`) — not pushed
 - Status: done on the agent's side — the document is complete and committed;
   what remains is the owner's reading and the push
-- Last updated: 2026-09-13
+- Last updated: 2026-09-14
 - Last agent/tool: Claude Code (Claude Fable 5.1)
 
 ## Objective
@@ -112,6 +113,14 @@ One dated, read-only research document under `docs/`, indexed in
   management support — the strongest lever in the evidence — is already a
   stone with five items).
 - Index entry in `docs/README.md`; item 23 in `docs/open-decisions.md`.
+- 2026-09-14, on the owner's follow-up «а если коммерческая организация»:
+  §9 added to the document, measured on the same snapshot — school words in
+  the dimension texts and the canonical 24 (none), in the instrument (~20 of
+  150 questions plus grid rows), prompts (11 lines, Hebrew-only validators),
+  catalog (60 of 192), round context fields, 40 of 224 UI files, the flat
+  `Organization`/`OrganizationMembership` model, the hard-coded `lang="he"`,
+  the threshold floor; the payload of `7.0` carries no audience marker. Item
+  24 in `docs/open-decisions.md`; the README entry names §9 and both items.
 
 ## In progress
 
@@ -162,6 +171,10 @@ by the last Next command, is not part of this task and was left unstaged.
   claims across 4 documents; this document quotes no configured number the
   gate registers).
 - `git diff --check` — exit 0 after every edit.
+- 2026-09-14, after §9: `git diff --check` exit 0; link check — 100 links in
+  the document, every relative one resolves, README and open-decisions links
+  resolve; every table has a consistent column count; `npm run
+  lint:doc-numbers` passed (26 claims across 4 documents).
 
 ### Failed
 
@@ -200,6 +213,6 @@ by the last Next command, is not part of this task and was left unstaged.
 ## Next concrete step
 
 Owner: read `docs/organizational-domain-modules-research-2026-09-13.md`
-(the short answer and §6–§7 are enough to decide), answer item 23 in
-`docs/open-decisions.md`, and push the branch. Nothing on this branch needs an
-agent.
+(the short answer, §6–§7 and §9 are enough to decide), answer items 23 and 24
+in `docs/open-decisions.md`, and push the branch. Nothing on this branch needs
+an agent.
