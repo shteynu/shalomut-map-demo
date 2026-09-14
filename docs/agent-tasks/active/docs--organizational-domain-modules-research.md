@@ -5,9 +5,9 @@
 - Branch: `docs/organizational-domain-modules-research`
 - Base branch: `main`
 - Base commit: `1cd6591`
-- Current HEAD: `1cd6591` is the base; this task is three commits on top of
-  it — `a3ae60f` the document, `b60cb5d` §9 and item 24, then the one
-  carrying §10 (`git log origin/main..HEAD`) — not pushed
+- Current HEAD: `1cd6591` is the base; this task is four commits on top of
+  it — `a3ae60f` the document, `b60cb5d` §9 and item 24, `0d6fb85` §10, then
+  the one carrying item 25 (`git log origin/main..HEAD`) — not pushed
 - Status: done on the agent's side — the document is complete and committed;
   what remains is the owner's reading and the push
 - Last updated: 2026-09-14
@@ -127,9 +127,10 @@ One dated, read-only research document under `docs/`, indexed in
   service accepts, no scheduler, no third-party token storage, the catalog
   without an owner), the five signal families, an effort table in
   person-weeks, where the cost really is, and what to do instead. The README
-  entry names §10. The decision it raises — whether the product ever reads a
-  client's systems — is named in §10.6 and is **not yet** an item in
-  `docs/open-decisions.md`; the owner has not asked for one.
+  entry names §10.
+- 2026-09-14, on the owner's «да, добавь пункт 25»: the decision §10 raises —
+  whether the product ever reads a client's systems — is item 25 in
+  `docs/open-decisions.md`; §10.6 and the README entry now point at it.
 
 ## In progress
 
@@ -187,6 +188,8 @@ by the last Next command, is not part of this task and was left unstaged.
 - 2026-09-14, after §10: the same four checks — `git diff --check` exit 0,
   103 links with every relative one resolving, even tables, `lint:doc-numbers`
   passed.
+- 2026-09-14, after item 25: `git diff --check` exit 0; links in the three
+  documents resolve; `lint:doc-numbers` passed.
 
 ### Failed
 
@@ -226,6 +229,5 @@ by the last Next command, is not part of this task and was left unstaged.
 
 Owner: read `docs/organizational-domain-modules-research-2026-09-13.md`
 (the short answer, §6–§7, §9 and §10 are enough to decide), answer items 23
-and 24 in `docs/open-decisions.md`, say whether §10's question — does the
-product ever read a client's systems — should become item 25, and push the
-branch. Nothing else on this branch needs an agent.
+to 25 in `docs/open-decisions.md`, and push the branch. Nothing else on this
+branch needs an agent.

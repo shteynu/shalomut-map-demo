@@ -186,7 +186,7 @@ under "Live plans" above:
   the AI service: months, and the cost is the privacy model, not the code.
   **Not for implementation**: the
   ranked recommendation is the agent's, the decisions it raises are items 23
-  and 24 of [`open-decisions.md`](open-decisions.md), and the external
+  to 25 of [`open-decisions.md`](open-decisions.md), and the external
   evidence in its §4–§5 is labelled `[по исследованию]` and unconfirmed here;
 - [`critical-audit-2026-08-21.md`](critical-audit-2026-08-21.md) — dated
   read-only audit of scale, resilience, architecture and security, by six

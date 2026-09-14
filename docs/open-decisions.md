@@ -81,7 +81,7 @@ do them and nothing in it can verify them either.
 
 ## Product decisions that are holding code
 
-Each of these has an implementation waiting behind it — items 23 and 24 a
+Each of these has an implementation waiting behind it — items 23 to 25 a
 research document waiting for a direction. None can be guessed.
 
 9. **Retention.** How long do `audit_events` rows, the full result JSON in
@@ -163,6 +163,24 @@ research document waiting for a direction. None can be guessed.
     content pack, which needs no contract change.
     → [`organizational-domain-modules-research-2026-09-13.md`](organizational-domain-modules-research-2026-09-13.md)
     §9.
+25. **Does the product ever read a client's systems?** Reading Jira, Git, CI,
+    an HRIS or a calendar means holding the first identifiable record the
+    vendor has ever held: the events are per person by nature, the access
+    token stays with the service even when only team aggregates are kept,
+    and the product changes legal category — from an anonymous survey to
+    employee monitoring under Amendment 13. The AI service accepts exactly
+    one payload shape, so sending signals is contract `8.0` at minimum; Core
+    has no scheduler and no storage for a third party's tokens. All five
+    signal families are 20–30 engineering weeks plus content, a first slice
+    10–15; no meta-analysis links system signals to wellbeing or leaving.
+    "No" is compatible with everything in items 23 and 24; "yes" is
+    narrowest as one family, the task tracker, aggregated on ingest with no
+    raw rows kept, never bus factor or calendar, and only after the school
+    pilot for a client who asked. **Unblocks:** nothing — an answer of "no"
+    closes the question; an answer of "yes" opens an ADR that revokes the
+    no-identifiable-record promise before the first connector is written.
+    → [`organizational-domain-modules-research-2026-09-13.md`](organizational-domain-modules-research-2026-09-13.md)
+    §10.
 
 ## Methodology, for the owner together with the methodologist
 
