@@ -181,7 +181,10 @@ under "Live plans" above:
   fit an anonymous self-report under k ≥ 10, three do not. §9, added
   2026-09-14, prices the same question for a commercial audience: the
   taxonomy is not the barrier there either — the content pack, the
-  organizational model and the language are. **Not for implementation**: the
+  organizational model and the language are. §10, same day, estimates an
+  integration module that reads a client's systems and sends the signals to
+  the AI service: months, and the cost is the privacy model, not the code.
+  **Not for implementation**: the
   ranked recommendation is the agent's, the decisions it raises are items 23
   and 24 of [`open-decisions.md`](open-decisions.md), and the external
   evidence in its §4–§5 is labelled `[по исследованию]` and unconfirmed here;

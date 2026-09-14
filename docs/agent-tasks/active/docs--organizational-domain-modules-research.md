@@ -5,9 +5,9 @@
 - Branch: `docs/organizational-domain-modules-research`
 - Base branch: `main`
 - Base commit: `1cd6591`
-- Current HEAD: `1cd6591` is the base; this task is two commits on top of
-  it — `a3ae60f` the document, then the one carrying §9 and item 24
-  (`git log origin/main..HEAD`) — not pushed
+- Current HEAD: `1cd6591` is the base; this task is three commits on top of
+  it — `a3ae60f` the document, `b60cb5d` §9 and item 24, then the one
+  carrying §10 (`git log origin/main..HEAD`) — not pushed
 - Status: done on the agent's side — the document is complete and committed;
   what remains is the owner's reading and the push
 - Last updated: 2026-09-14
@@ -121,6 +121,15 @@ One dated, read-only research document under `docs/`, indexed in
   `Organization`/`OrganizationMembership` model, the hard-coded `lang="he"`,
   the threshold floor; the payload of `7.0` carries no audience marker. Item
   24 in `docs/open-decisions.md`; the README entry names §9 and both items.
+- 2026-09-14, on the owner's next question «насколько долго и затратно …
+  интеграционный модуль»: §10 added — a plain-language summary, a calibration
+  table from the repository (the `7.0` rollout in Git, the one shape the AI
+  service accepts, no scheduler, no third-party token storage, the catalog
+  without an owner), the five signal families, an effort table in
+  person-weeks, where the cost really is, and what to do instead. The README
+  entry names §10. The decision it raises — whether the product ever reads a
+  client's systems — is named in §10.6 and is **not yet** an item in
+  `docs/open-decisions.md`; the owner has not asked for one.
 
 ## In progress
 
@@ -175,6 +184,9 @@ by the last Next command, is not part of this task and was left unstaged.
   the document, every relative one resolves, README and open-decisions links
   resolve; every table has a consistent column count; `npm run
   lint:doc-numbers` passed (26 claims across 4 documents).
+- 2026-09-14, after §10: the same four checks — `git diff --check` exit 0,
+  103 links with every relative one resolving, even tables, `lint:doc-numbers`
+  passed.
 
 ### Failed
 
@@ -213,6 +225,7 @@ by the last Next command, is not part of this task and was left unstaged.
 ## Next concrete step
 
 Owner: read `docs/organizational-domain-modules-research-2026-09-13.md`
-(the short answer, §6–§7 and §9 are enough to decide), answer items 23 and 24
-in `docs/open-decisions.md`, and push the branch. Nothing on this branch needs
-an agent.
+(the short answer, §6–§7, §9 and §10 are enough to decide), answer items 23
+and 24 in `docs/open-decisions.md`, say whether §10's question — does the
+product ever read a client's systems — should become item 25, and push the
+branch. Nothing else on this branch needs an agent.
