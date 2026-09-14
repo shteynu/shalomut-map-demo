@@ -5,11 +5,14 @@
 - Branch: `docs/organizational-domain-modules-research`
 - Base branch: `main`
 - Base commit: `1cd6591`
-- Current HEAD: `1cd6591` is the base; this task is four commits on top of
-  it — `a3ae60f` the document, `b60cb5d` §9 and item 24, `0d6fb85` §10, then
-  the one carrying item 25 (`git log origin/main..HEAD`) — not pushed
-- Status: done on the agent's side — the document is complete and committed;
-  what remains is the owner's reading and the push
+- Current HEAD: the commit carrying this archive move, fifth on top of
+  `1cd6591` — `a3ae60f` the document, `b60cb5d` §9 and item 24, `0d6fb85`
+  §10, `1ec663c` item 25, then this move. `origin/main` is `1cd6591` and the
+  branch fast-forwards onto it (`git merge-base --is-ancestor` confirmed
+  after a fetch on 2026-09-14)
+- Status: ready to land — archived 2026-09-14 as the branch goes to `main`.
+  The push is the owner's; until it runs, this work is visible only in this
+  worktree, because the branch was never pushed
 - Last updated: 2026-09-14
 - Last agent/tool: Claude Code (Claude Fable 5.1)
 
@@ -138,18 +141,24 @@ One dated, read-only research document under `docs/`, indexed in
 
 ## Remaining
 
-- Owner: read the document, answer `docs/open-decisions.md` item 23, push the
-  branch. No agent work is left on it.
+- Owner: land the branch with
+  `git push origin docs/organizational-domain-modules-research:main`, then
+  read the document and answer items 23 to 25 in `docs/open-decisions.md`.
+  No agent work is left on it.
 
 ## Changed files
 
-- `docs/agent-tasks/active/docs--organizational-domain-modules-research.md` (new)
-- `docs/organizational-domain-modules-research-2026-09-13.md` (new)
+- `docs/agent-tasks/archive/docs--organizational-domain-modules-research.md`
+  (new; lived under `active/` until this move)
+- `docs/organizational-domain-modules-research-2026-09-13.md` (new; §1–§8 on
+  2026-09-13, §9 and §10 on 2026-09-14)
 - `docs/README.md` — index entry under *Historical plans and evidence*
-- `docs/open-decisions.md` — item 23 under *Product decisions that are holding code*
+- `docs/open-decisions.md` — items 23 to 25 under *Product decisions that are
+  holding code*
 
-All four travel in the one commit on this branch; `next-env.d.ts` is modified
-by the last Next command, is not part of this task and was left unstaged.
+All of it is committed on this branch in the five commits named above; nothing
+is staged or unstaged for this task. `next-env.d.ts` is modified by the last
+Next command, is not part of this task and was left unstaged.
 
 ## Verification evidence
 
@@ -227,7 +236,10 @@ by the last Next command, is not part of this task and was left unstaged.
 
 ## Next concrete step
 
-Owner: read `docs/organizational-domain-modules-research-2026-09-13.md`
-(the short answer, §6–§7, §9 and §10 are enough to decide), answer items 23
-to 25 in `docs/open-decisions.md`, and push the branch. Nothing else on this
-branch needs an agent.
+Owner: `git push origin docs/organizational-domain-modules-research:main`.
+That command is the owner's to run — the agent's attempt was refused by the
+permission classifier on 2026-09-14. Vercel builds every push to `main`; this
+one is Markdown only, so the build changes nothing a respondent or a manager
+sees. After landing: read `docs/organizational-domain-modules-research-2026-09-13.md`
+(the short answer, §6–§7, §9 and §10 are enough to decide) and answer items
+23 to 25 in `docs/open-decisions.md`.
