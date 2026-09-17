@@ -1461,9 +1461,11 @@ in code" is still a question for the owner or the methodologist.
 ## Published documents
 
 The three HTML documents under `docs/` also exist as artifacts on claude.ai. They
-were republished from their repository sources on **2026-08-20**, which is the
-last date the two sides are known to have been level; that stops being true the
-moment a document changes without a republish. `docs/README.md` owns the rule.
+were republished through the script below on **2026-09-17**, the last date the
+two sides are known to have been level, from the pages as committed in `42abc5b`
+on `docs/html-pages-catch-up`; that stops being true the moment a document
+changes without a republish. The branch was not on `main` when it was published,
+so until it lands `main` holds the older pages. `docs/README.md` owns the rule.
 
 **Publishing is `npm run docs:publish -- docs/<page>.html` since 2026-08-25**,
 and was an undocumented hand transformation before that. A repository document is
@@ -1474,8 +1476,17 @@ block, and with `<title>` inside the first 8 KB. The script does that and refuse
 the three ways it can go wrong; `scripts/publish-doc.test.mjs` is a gate in
 `verify:core`, so a document that stops publishing fails before anyone tries.
 
-**What the hand version left behind is still in the published copies.** The
+**The 2026-09-17 republish ended what the hand version left behind.** The
 2026-08-20 pass dropped the two `vendor/` script tags but not the `<style>`
-between the same markers, so two published pages carry that small rule twice —
-identical rules, nothing renders differently. The script removes the block whole,
-so the next republish of those two pages ends it; nothing else will.
+between the same markers, so two published pages carried that rule twice. Read
+back after the republish, each of those two pages carries one runtime block, the
+platform's own. The hand version also opened each body with a comment naming the
+page's repository file and warning that an edit made on claude.ai is lost. The
+script does not write that comment, so the published copies no longer say where
+their source lives.
+
+**The platform's mermaid is not the repository's.** Read from the stored pages on
+2026-09-17, it loads mermaid `11.16.1` where `docs/vendor/` ships `11.15.0`, takes
+each diagram's text, so an escaped `<br/>` arrives as a line break, and draws
+without waiting for web fonts. The last is why a page that looks right from disk
+can clip labels once published; `docs/README.md` carries the rule that follows.

@@ -249,8 +249,14 @@ Branch-local in-progress state belongs only in
   `vendor/`, carries a second skeleton or has lost its `<title>`, and leaves the
   result in `tmp/published/`. The hand version of this cost something real:
   the 2026-08-20 pass removed the two `vendor/` script tags and left the
-  `<style>` between the same markers, so two published pages carry that rule
-  twice. Republishing them through the script is what removes it.
+  `<style>` between the same markers, so two published pages carried that rule
+  twice until the script republished them on 2026-09-17.
+- Give a diagram label that mermaid draws as HTML, a flowchart's or a state
+  diagram's, a font the reader already has. The publishing platform draws the
+  diagrams without waiting for web fonts, a label's box is sized in the font
+  present at that moment, and a label drawn later in a wider web font is clipped
+  by that box. The pages set `.nodeLabel, .edgeLabel` to the local fallback of
+  their body font.
 - Keep exact numbers out of `how-shalomut-works.html`. It is the non-developer
   overview, and a figure repeated there is a second truth that goes stale in
   silence; name the order of magnitude or point at the living source.
