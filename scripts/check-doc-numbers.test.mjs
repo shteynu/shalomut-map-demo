@@ -55,6 +55,7 @@ const tree = ({ ceiling = '30.0', label = 'раз в 2–30 с' } = {}) => ({
     '<td class="num">30 с</td><td class="src">AI_JOB_HEARTBEAT_INTERVAL_SECONDS</td>' +
     '<td class="num">90 с</td><td class="src">AI_ANALYSIS_JOB_LEASE_MS</td>' +
     '<td class="num">3</td><td class="src">AI_ANALYSIS_JOB_MAX_ATTEMPTS</td>' +
+    '<td class="num">600 с</td><td class="src">AI_ANALYSIS_QUEUE_STALL_AFTER_MS</td>' +
     '\n    loop поллинг: 2 с, до 30 с на простое\n',
   [DOCUMENT]:
     '<td>Интервал опроса</td><td class="num">2 с</td>' +

@@ -21,14 +21,15 @@ changes a run's state only through Core's HTTP endpoints.
 ```mermaid
 sequenceDiagram
     autonumber
-    actor M as Manager
+    actor S as School user
+    actor A as Administrator
     participant C as Core (Next.js)
     participant DB as ai_analysis_runs
     participant W as AI service (worker)
     participant G as Gemini
 
-    M->>C: PATCH /api/rounds/… — close the round
-    Note over M,C: starting the next round closes the previous one too,<br/>and the builder's save and POST /api/rounds<br/>dispatch for it the same way
+    A->>C: PATCH /api/rounds/… — close the round
+    Note over A,C: starting the next round closes the previous one too,<br/>and the builder's save and POST /api/rounds<br/>dispatch for it the same way
     C->>C: responseCount against privacyThreshold
     Note over C: below the threshold — below_threshold,<br/>no run is created at all
     C->>DB: INSERT · state=queued · trigger=closure
@@ -64,11 +65,11 @@ sequenceDiagram
     C->>C: identity first, then contract validation
     C->>DB: finish · state=succeeded · result
     C-->>W: 200
-    M->>C: GET /api/rounds/…/ai-insights
-    C-->>M: the Stone Map
+    S->>C: GET /api/rounds/…/ai-insights
+    C-->>S: the Stone Map
 ```
 
-The order at step 21 is deliberate. Identity is resolved before the payload is
+The order at step 20 is deliberate. Identity is resolved before the payload is
 validated — otherwise a callback aimed at the wrong round could mark a healthy
 leased run as failed.
 
@@ -80,8 +81,9 @@ table that gains a row per run, but it is also a serverless invocation, and a
 flat two seconds spends about 43 000 of them a day — per slot — to be told
 there is nothing to do. Backing off to 30 s spends about 2 900. What it costs
 is up to half a minute before the first round of a quiet stretch begins, which
-is nothing against an analysis of roughly three minutes that nothing notifies
-the manager about anyway.
+is small against an analysis of roughly three minutes, and the same half minute
+the screen waiting for that analysis settles on between its own re-checks
+(*What the manager's screen does while it waits*).
 
 Two consequences worth knowing. A worker that cannot reach Core backs off on
 the same curve, so an outage is not also a hammering. And an idle service is
@@ -150,21 +152,34 @@ sequenceDiagram
     W->>W: bounded retry inside the transport
 
     alt the transport gave up
-        W->>C: POST /…/ai-insights · provider_unavailable_http_429
+        W->>W: the copy that call was for is written without the model
+        W->>C: POST /…/ai-insights · status=success
+        C->>DB: finish · state=succeeded
+        Note over C: the screens mark the copy<br/>the model did not write
+    else the analysis itself threw
+        W->>C: POST /…/ai-insights · service_error
         C->>DB: finish · state=failed
-        Note over C: the manager reads a Hebrew sentence,<br/>not an empty screen
-    else an exception inside the worker
+    else the worker threw outside the analysis, reading MCP for one
         W->>C: POST /…/fail · worker_error
         C->>DB: finish · state=failed
-    else the process died silently
-        Note over DB: heartbeats stop,<br/>the lease expires on its own
+    else nothing was sent
+        Note over W,DB: the process died, a delivery ran out of attempts on the network,<br/>or Core stayed unreachable for a whole lease
     end
 
-    Note over DB: attemptCount below 3 — the next claim takes it again<br/>attemptCount at 3 — lease_exhausted, terminal
+    Note over DB: an expired lease below 3 attempts — the next claim takes it again<br/>at 3 — lease_exhausted, terminal · a failed row is never claimed
 ```
 
-The third branch is the one nobody reports: if the process vanished, the row is
-repaired only by the lease running out. That is what the heartbeat exists for.
+The first branch is what the deployed `7.0` contract does: a provider that stays
+down costs the round its model-written copy, not the round. Older contracts
+ended the same exhaustion with a failure payload, `provider_unavailable_<reason>`.
+
+The last branch is the one nobody reports, and it has three causes. In none of
+them does the worker write anything: the row is repaired only by the lease
+running out, which is what the heartbeat exists for, and a queue nobody is
+taking work from is what `/api/health/ai-queue` reports as `stalled` (*Whether
+anybody is taking the work*). A crash inside the analysis is reported twice —
+the runner delivers `service_error` and then re-raises, so the worker's own
+`fail` meets a run that is already finished and is answered `409`.
 
 ## Run states
 
@@ -174,14 +189,15 @@ stateDiagram-v2
     queued --> running: claim · attempt+1 · lease 90 s
     running --> running: heartbeat every 30 s
     running --> running: lease expired and attempt below 3 — claimed again
-    running --> succeeded: callback passed identity and validation
-    running --> failed: fail, rejected validation, or lease_exhausted
+    running --> succeeded: a success or locked result passed identity and validation
+    running --> failed: a failure payload, fail, rejected validation, or lease_exhausted
     succeeded --> [*]
     failed --> [*]
 ```
 
 A retry is not a separate state: it is the same `running` row with an expired
-lease becoming eligible again. Expiring the exhausted ones is part of claiming
+lease becoming eligible again, and `failed` is final — a new analysis is a new
+row. Expiring the exhausted ones is part of claiming
 rather than a separate collector — every `claim` first marks `lease_exhausted`
 on whatever ran out of attempts, then looks for its own work. There is no cron.
 
@@ -255,10 +271,13 @@ un-suffixed shape and the behaviour is what it always was.
 The lanes are safe to add because they share the one thing that must not be
 duplicated: `provider_rate_limiter` is a module-level object behind a lock, so
 every concurrent round books turns from the same per-model queue and the
-account's quota is spent once. **A second container would not have that
-property** — two processes keep two private counters and together exceed the
-quota — which is why more lanes come before more instances, and why a shared
-limiter is a prerequisite for ever adding one.
+account's quota is spent once. A second container keeps a counter of its own,
+which until 2026-08-23 meant two processes together sending at twice the pace.
+Since then each divides its pace by the number of worker processes Core reports
+as holding a live lease, so a second instance is a scaling decision rather than
+a quota bug. Lanes remain the simpler step: they share one limiter exactly,
+where processes share it through a count Core refreshes only on a claim or a
+heartbeat.
 
 What the lanes buy is idle quota rather than more quota. A `6.0` round was
 roughly 28 provider calls over about three minutes, near 11 a minute, so a
@@ -387,20 +406,20 @@ An endpoint the code has and this table does not is what happened on
 <!-- generated:endpoint-surface -->
 | Direction | Endpoint | Secret | Answers |
 | --- | --- | --- | --- |
-| worker → Core | `POST /api/ai-analysis-runs/claim` | `AI_CALLBACK_SECRET` | 200 · 204 · 401 |
-| worker → Core | `POST /api/ai-analysis-runs/:runId/heartbeat` | `AI_CALLBACK_SECRET` | 200 · 409 · 400 |
-| worker → Core | `POST /api/ai-analysis-runs/:runId/fail` | `AI_CALLBACK_SECRET` | 200 · 404 · 409 |
-| worker → Core | `POST /api/rounds/:roundId/ai-insights` | `AI_CALLBACK_SECRET` | 200 · 400 |
-| worker → Core | `POST /api/mcp` | `MCP_SHARED_SECRET` | 200 |
+| worker → Core | `POST /api/ai-analysis-runs/claim` | `AI_CALLBACK_SECRET` | 200 · 204 · 400 · 401 · 503 |
+| worker → Core | `POST /api/ai-analysis-runs/:runId/heartbeat` | `AI_CALLBACK_SECRET` | 200 · 400 · 401 · 409 · 503 |
+| worker → Core | `POST /api/ai-analysis-runs/:runId/fail` | `AI_CALLBACK_SECRET` | 200 · 400 · 401 · 404 · 409 · 503 |
+| worker → Core | `POST /api/rounds/:roundId/ai-insights` | `AI_CALLBACK_SECRET` | 200 · 400 · 401 · 404 · 409 · 500 · 503 |
+| worker → Core | `POST /api/mcp` | `MCP_SHARED_SECRET` | 200 · 400 · 401 · 404 · 500 |
 | operator → Core | `GET /api/ai-analysis-runs/queue` | `AI_CALLBACK_SECRET` | 200 · 401 · 503 |
 | operator → Core | `GET /api/observability` | `AI_CALLBACK_SECRET` | 200 · 401 · 503 |
 | public | `GET /health` | none | 200 |
 | public | `GET /api/v1/provider-status` | none | 200 |
 | public | `GET /api/v1/fallback-status` | none | 200 |
-| operator → worker | `GET /api/v1/provider-health` | `AI_WEBHOOK_SECRET` | 200 · 401 |
-| Core → worker | `POST /api/v1/questions/suggest` | `AI_WEBHOOK_SECRET` | 200 |
+| operator → worker | `GET /api/v1/provider-health` | `AI_WEBHOOK_SECRET` | 200 · 401 · 503 |
+| Core → worker | `POST /api/v1/questions/suggest` | `AI_WEBHOOK_SECRET` | 200 · 400 · 401 · 503 |
 | development only | `POST /api/v1/rounds/:round_id/analyze` | none | 200 · 404 outside development |
-| legacy, dispatched by nothing | `POST /api/v1/webhook/events` | `AI_WEBHOOK_SECRET` | 202 · 401 · 503 |
+| legacy, dispatched by nothing | `POST /api/v1/webhook/events` | `AI_WEBHOOK_SECRET` | 202 · 400 · 401 · 503 |
 <!-- /generated:endpoint-surface -->
 
 The three public paths answer three different questions and are deliberately

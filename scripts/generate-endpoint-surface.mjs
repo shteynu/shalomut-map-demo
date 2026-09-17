@@ -60,23 +60,23 @@ export const END_MARKER = '<!-- /generated:endpoint-surface -->';
 const DECLARATIONS = {
   'POST /api/ai-analysis-runs/claim': {
     direction: 'worker → Core',
-    answers: '200 · 204 · 401',
+    answers: '200 · 204 · 400 · 401 · 503',
   },
   'POST /api/ai-analysis-runs/:runId/heartbeat': {
     direction: 'worker → Core',
-    answers: '200 · 409 · 400',
+    answers: '200 · 400 · 401 · 409 · 503',
   },
   'POST /api/ai-analysis-runs/:runId/fail': {
     direction: 'worker → Core',
-    answers: '200 · 404 · 409',
+    answers: '200 · 400 · 401 · 404 · 409 · 503',
   },
   'POST /api/rounds/:roundId/ai-insights': {
     direction: 'worker → Core',
-    answers: '200 · 400',
+    answers: '200 · 400 · 401 · 404 · 409 · 500 · 503',
   },
   'POST /api/mcp': {
     direction: 'worker → Core',
-    answers: '200',
+    answers: '200 · 400 · 401 · 404 · 500',
   },
   'GET /api/ai-analysis-runs/queue': {
     // Not part of a run's life, which is why it sits after the four rows that
@@ -110,11 +110,11 @@ const DECLARATIONS = {
   },
   'GET /api/v1/provider-health': {
     direction: 'operator → worker',
-    answers: '200 · 401',
+    answers: '200 · 401 · 503',
   },
   'POST /api/v1/questions/suggest': {
     direction: 'Core → worker',
-    answers: '200',
+    answers: '200 · 400 · 401 · 503',
   },
   'POST /api/v1/rounds/:round_id/analyze': {
     // Closed by environment rather than by a secret: outside `development` the
@@ -126,7 +126,7 @@ const DECLARATIONS = {
   },
   'POST /api/v1/webhook/events': {
     direction: 'legacy, dispatched by nothing',
-    answers: '202 · 401 · 503',
+    answers: '202 · 400 · 401 · 503',
   },
 };
 

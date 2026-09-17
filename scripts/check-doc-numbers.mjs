@@ -171,7 +171,7 @@ export const CLAIMS = [
   // docs/ai-analysis-jobs.html — the settings table.
   ...['AI_JOB_POLL_INTERVAL_SECONDS', 'AI_JOB_POLL_MAX_INTERVAL_SECONDS',
     'AI_JOB_HEARTBEAT_INTERVAL_SECONDS', 'AI_ANALYSIS_JOB_LEASE_MS',
-    'AI_ANALYSIS_JOB_MAX_ATTEMPTS'].map((setting) => ({
+    'AI_ANALYSIS_JOB_MAX_ATTEMPTS', 'AI_ANALYSIS_QUEUE_STALL_AFTER_MS'].map((setting) => ({
     document: 'docs/ai-analysis-jobs.html',
     setting,
     where: 'the settings table',
