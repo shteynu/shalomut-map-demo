@@ -99,7 +99,7 @@ task requires all of it, such as an audit of the document itself.
   If the safe data is not enough to cover all eight dimensions, finish the
   analysis in a locked/validation state rather than inventing the missing
   stones.
-- Do not silently change the semantics of published contracts `1.0`–`6.0`.
+- Do not silently change the semantics of published contracts `1.0`–`7.0`.
   Capability policy lives in `contracts/capabilities.json` and runtime status in
   `docs/ai-contract-version-matrix.md`. Incompatible new semantics require a new
   versioned manifest and a consumer-first rollout.

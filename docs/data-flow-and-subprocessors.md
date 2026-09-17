@@ -81,16 +81,18 @@ schema.
 
 **Core → the AI service (Render) → Google.** Only aggregates cross:
 `encodeAnalyticsInput` in `src/lib/analytics-encoder.ts` sends dimension scores,
-per-question averages and counts, the questionnaire's own question texts, and —
-on contract versions that carry it and only for an unlocked round — the school
-background context the manager typed. No response row, no answer row and no
+per-question averages, counts and the split of each question's answers across
+the colour bands (`scoreDistribution`), the questionnaire's own question texts —
+with each question's scale and polarity on `7.0` — and, on contract versions
+that carry it and only for an unlocked round, the school background context an
+administrator entered. No response row, no answer row and no
 token hash is in that payload. A locked round sends nothing at all, because the
 provider is not called for one.
 
-The manager-authored `backgroundContext.notes` is free text about the school
-that reaches the model prompt. Respondents are told the model receives
-question-level averages; they are not told what a manager may have written about
-their school, because the product cannot know what that says.
+The administrator-authored `backgroundContext.notes` is free text about the
+school that reaches the model prompt. Respondents are told the model receives
+question-level averages; they are not told what an administrator may have
+written about their school, because the product cannot know what that says.
 
 ## What the browser is told
 
