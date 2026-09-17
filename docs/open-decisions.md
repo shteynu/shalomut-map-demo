@@ -47,6 +47,13 @@ do them and nothing in it can verify them either.
    claim depends on an employment agreement no agent can read. A one-line change
    to a public file. **Unblocks:** nothing technical; it is a correctness claim
    about a public repository. → handoff, same section, 6.
+26. **Top up the Gemini prepayment**, after rotating the key (item 1). It was
+    found depleted on 2026-09-12, auto-reload is off, and a depleted account
+    does not stop a round: it reports `success` on fallback copy. **Unblocks:**
+    the first round analysed on the instrument through the deployment, the two
+    `7.0` eval cases the 2026-09-12 run could not reach, and timing a `7.0`
+    round, which item 4's pool arithmetic now waits on. → handoff, *Last read*
+    and *Provider account*; *External blockers and approval gates* 7 and 9.
 
 ## Waiting on somebody outside the project
 
