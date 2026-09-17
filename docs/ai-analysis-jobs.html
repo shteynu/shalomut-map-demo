@@ -109,7 +109,7 @@
     gap: clamp(2.5rem, 2rem + 2vw, 4rem);
   }
 
-  h1, h2, h3, .eyebrow, .label {
+  h1, h2, h3, .eyebrow {
     font-family: 'Golos Text', 'PT Sans', system-ui, sans-serif;
     text-wrap: balance;
   }
@@ -197,6 +197,14 @@
     min-width: 34rem;
     background: transparent;
     text-align: center;
+  }
+
+  /* A state diagram's labels are HTML, inherit the page font and are measured
+     before they are drawn, and the renderer may run before the web fonts arrive.
+     A label drawn in a font that loaded later is wider than its box and clipped,
+     so these take a font the reader already has. */
+  .nodeLabel, .edgeLabel {
+    font-family: Georgia, 'Times New Roman', serif;
   }
 
   .figure-caption {
@@ -543,8 +551,7 @@ sequenceDiagram
 stateDiagram-v2
     [*] --> queued: закрытие раунда или ручной перезапуск
     queued --> running: claim · attempt+1 · lease 90 с
-    running --> running: heartbeat каждые 30 с
-    running --> running: аренда истекла и attempt меньше 3 — повторный claim
+    note left of running: heartbeat каждые 30 с продлевает аренду, а истёкшую при attempt меньше 3 забирает повторный claim
     running --> succeeded: callback с картой или блокировкой прошёл сверку и валидацию
     running --> failed: callback с отказом, fail, отказ валидации или lease_exhausted
     succeeded --> [*]

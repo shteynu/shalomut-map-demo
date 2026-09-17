@@ -270,6 +270,14 @@
     min-width: 30rem;
   }
 
+  /* A flowchart's labels are HTML, inherit the page font and are measured
+     before they are drawn, and the renderer may run before the web fonts arrive.
+     A label drawn in a font that loaded later can be wider than its box and
+     clipped, so these take a font the reader already has. */
+  .nodeLabel, .edgeLabel {
+    font-family: system-ui, 'Segoe UI', sans-serif;
+  }
+
   figcaption, .caption {
     margin: 0.7rem 0 0;
     max-width: var(--measure);

@@ -187,8 +187,7 @@ the runner delivers `service_error` and then re-raises, so the worker's own
 stateDiagram-v2
     [*] --> queued: round closed, or a manual re-run
     queued --> running: claim · attempt+1 · lease 90 s
-    running --> running: heartbeat every 30 s
-    running --> running: lease expired and attempt below 3 — claimed again
+    note left of running: a heartbeat every 30 s extends the lease, and a lease that expired with attempt below 3 is claimed again
     running --> succeeded: a success or locked result passed identity and validation
     running --> failed: a failure payload, fail, rejected validation, or lease_exhausted
     succeeded --> [*]
