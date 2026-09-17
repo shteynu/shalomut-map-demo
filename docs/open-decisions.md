@@ -213,11 +213,16 @@ mapping does not answer them.
 
 22. **Republish the three HTML documents** through `npm run docs:publish`. It
     removes the `claude-mermaid-runtime` block whole, which is what ends the
-    duplicated `<style>` two published pages have carried since 2026-08-20. The
-    input needed is the URL of each existing artifact; without it a republish
-    creates a second artifact instead of updating the first.
+    duplicated `<style>` two published pages have carried since 2026-08-20. Each
+    republish needs its artifact's URL, or it creates a second artifact instead of
+    updating the first; the URLs stay out of the repository, and an agent with
+    access to the owner's claude.ai artifacts can list them, as one did on
+    2026-09-17. The input needed is the owner's yes, and whether the pages' drift
+    that is not about `7.0` is reconciled first.
     → [`README.md`](README.md) owns the publishing rule; the handoff's *Published
-    documents* section records what the hand version left behind.
+    documents* section records what the hand version left behind; the drift is
+    listed in
+    [`agent-tasks/archive/docs--living-docs-catch-up-with-7-0.md`](agent-tasks/archive/docs--living-docs-catch-up-with-7-0.md).
 
 ## Decided or conditional — listed so they are not reopened
 
