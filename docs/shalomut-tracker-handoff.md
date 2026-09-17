@@ -993,12 +993,45 @@ service's own fallback copy and reports `success`. Check the balance *before*
 starting a corpus run, not after.
 
 **A free tier is not a way out**, read from AI Studio's own comparison on
-2026-08-19: `gemini-3.5-flash` gets 5 RPM / 250K TPM / **20 RPD** free, and a
-round is about 28 calls — so the free tier cannot finish one round a day on the
-model whose Hebrew this project verified. The only free-tier model that could is
-the one measured on 2026-08-09 as splicing Arabic letters into Hebrew words.
-Enabling billing also moves a project to the paid tier permanently, so a
-free-tier key means a different project rather than a different key.
+2026-08-19: `gemini-3.5-flash` gets 5 RPM / 250K TPM / **20 RPD** free. That was
+first weighed against a round of about 28 calls, and that round was `6.0`: the
+two live rounds measured that day sent 27 and 28 requests against a structural
+25. The deployment produces `7.0` since 2026-09-13 (*Last read*),
+and a `7.0` round is smaller:
+
+- **17 requests on a clean pass, the fewest a round written wholly by the model
+  can send** — 8 structured summaries, 1 overall summary, 8 adaptation batches,
+  each answered the first time. The 8 metric-insight batches that made a `6.0`
+  first pass 25 are not sent, because `7.0` declares
+  `usesNarrativeMetrics: false`. Read from `psychologist_node.py`,
+  `intervention_nodes.py` and `graph.py`, and counted through the real graph
+  with `urlopen` stubbed and no real key — on 2026-09-16 on a synthetic
+  research-instrument round, and on 2026-09-17 on each contract's test fixture:
+  17 on `7.0`, 25 on `6.0`.
+- **51 on a first pass at most.** Each call sends up to `LLM_MAX_ATTEMPTS`
+  requests — 3 by default, and `render.yaml` does not set it. Counted the same
+  way, a provider whose every answer is refused spends all 51, and the round
+  still reports `success` on fallback copy. Replays come on top: the graph
+  re-sends what the safety validator or the outgoing check refused, on the heavy
+  tier, up to three times and at most the whole round each time, so the code's
+  ceiling is four passes of 51 — 204. That is a bound, not an estimate.
+- **Its retry share and its rate per minute are unmeasured.** As of 2026-09-17
+  no `7.0` round has been analysed through the deployment (*Last read*).
+
+**The conclusion survives, on a narrower reason.** A `7.0` round that retries
+nothing fits in the day with three requests to spare — about what each `6.0`
+round above sent beyond its 25. On a key nothing else uses that day, the fourth
+retry or replayed request, in any mix, is past twenty, and a replay is no way
+around it, because both tiers are the same model (below). Past twenty the provider refuses, and a refused call does
+not stop a `7.0` round: it ends `success` with fallback copy wherever the model
+never answered, which is the depleted account above by another road. Staying
+clean also means pacing that key at its own 5 a minute rather than the
+deployment's 30, or its `429`s become the retries. So the free tier can finish a
+clean `7.0` round on the model whose Hebrew this project verified, and cannot be
+counted on to. The only free-tier model with room for retries is the one measured
+on 2026-08-09 as splicing Arabic letters into Hebrew words. Enabling billing also
+moves a project to the paid tier permanently, so a free-tier key means a
+different project rather than a different key.
 
 Both model tiers are `gemini-3.5-flash` since 2026-08-09. **A probe that wants to
 reproduce deployed behaviour must read `LLM_MODEL_FAST` first** — `config.py`'s
@@ -1238,21 +1271,36 @@ here; when the two disagree, this section wins.
    axis 7 (fair-use commitment, and how small a staff room is too small to measure
    safely). Both are legal and editorial judgement, not engineering.
 9. **How many rounds the deployed service analyses at once — answered in the
-   code, and what is left of it is the provider tier.** This entry said
-   `AI_JOB_POOL_SIZE` was `1` until 2026-08-23; it has been `3` in `render.yaml`
-   since `ce6d1b0` the same day, and the entry was simply stale — the `Now`
-   section above knew about the three-lane pool while this one still described
-   the world before it. Three is not a guess: a round is about 28 calls over
-   three minutes, near 11 a minute, and the deployment's real pace is **30, not
-   60**, because `render.yaml` points `LLM_MODEL_HEAVY` at the fast model and
-   one name means one queue at the stricter tier. 30/11 is three. Read the pace
-   off `requests_per_minute_for`, never off `LLM_MAX_REQUESTS_PER_MINUTE`.
+   code, and what is left of it is the provider tier and a timed `7.0`
+   round.** This entry said `AI_JOB_POOL_SIZE` was `1` until 2026-08-23; it has
+   been `3` in `render.yaml` since `ce6d1b0` the same day, and the entry was
+   simply stale — the `Now` section above knew about the three-lane pool while
+   this one still described the world before it. Three is not a guess, but its
+   divisor was measured on `6.0`: a round of that contract was about 28 calls
+   over three minutes, near 11 a minute, and the deployment's real pace is **30,
+   not 60**, because `render.yaml` points `LLM_MODEL_HEAVY` at the fast model
+   and one name means one queue at the stricter tier. 30/11 is three. Read the
+   pace off `requests_per_minute_for`, never off `LLM_MAX_REQUESTS_PER_MINUTE`.
+
+   **On `7.0` the arithmetic keeps its form and loses its divisor.** Lanes are
+   still the pace over one round's requests a minute, and the pace is still 30.
+   The round is what changed: 17 requests on a clean pass where `6.0` sent 25,
+   and up to 51 on a first pass that retries every call (*Provider account*).
+   Fewer requests need not mean fewer a minute. The eight metric-insight batches
+   `7.0` stopped sending were a phase of their own — the graph waits for every
+   summary, then every batch, then the round sentence, then the adaptations —
+   so the round lost minutes along with requests; and a new round's calls now
+   carry the research instrument, which no `6.0` round could. The rate can have
+   moved either way, no `7.0` round has been timed, and 17 over the old three
+   minutes would be an invented divisor. **Three stays as deployed** — derived
+   for `6.0`, not shown wrong for `7.0` — and waits to be re-derived from the
+   first `7.0` round the deployment analyses: its requests over its duration.
 
    **What is still the owner's:** whether the real provider tier allows more
    than 30 a minute. Nothing in the repository can read it, and it is the
-   ceiling above every number here. Raising the pool past three without raising
-   the pace buys nothing — a fourth lane queues behind the pace while still
-   holding a lease and polling on its own.
+   ceiling above every number here. On the `6.0` divisor, raising the pool past
+   three without raising the pace buys nothing — a fourth lane queues behind the
+   pace while still holding a lease and polling on its own.
 
    **A second Render instance stopped being forbidden on 2026-08-23**, and that
    is a change of fact rather than of advice. It used to be unsafe because

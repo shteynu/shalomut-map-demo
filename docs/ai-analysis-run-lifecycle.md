@@ -260,11 +260,19 @@ property** — two processes keep two private counters and together exceed the
 quota — which is why more lanes come before more instances, and why a shared
 limiter is a prerequisite for ever adding one.
 
-What the lanes buy is idle quota rather than more quota. A round is roughly 28
-provider calls over about three minutes, near 11 a minute, so a single lane
-leaves most of the paid rate unspent: ten rounds closing together take about
-half an hour on one lane and about ten minutes on three. The deployment runs
-three since 2026-08-23.
+What the lanes buy is idle quota rather than more quota. A `6.0` round was
+roughly 28 provider calls over about three minutes, near 11 a minute, so a
+single lane leaves most of the paid rate unspent: ten such rounds closing
+together take about half an hour on one lane and about ten minutes on three. The
+deployment runs three since 2026-08-23.
+
+Every per-round figure in this section is that `6.0` one. The deployment
+produces `7.0` since 2026-09-13, and a `7.0` round sends 17 requests on a clean
+pass — no metric-insight batches — and has not been timed. Fewer requests need
+not mean fewer a minute, since the round loses minutes along with them; item 9
+of *External blockers and approval gates* in
+[`shalomut-tracker-handoff.md`](shalomut-tracker-handoff.md) says what
+re-derives the divisor.
 
 **Three, and the reason is a number that is not where it looks.** The pace is
 counted per model *name*, and `requests_per_minute_for` takes the stricter tier

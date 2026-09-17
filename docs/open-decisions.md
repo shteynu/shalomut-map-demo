@@ -39,9 +39,10 @@ do them and nothing in it can verify them either.
    notification, so it reaches nobody until something watches it.
    **Unblocks:** noticing any of the above. → handoff, same section, 4 and 5.
 4. **Read the provider tier**: does the real account allow more than 30 requests
-   a minute? It is the ceiling above every pool number, and raising lanes past
-   three without raising the pace buys nothing. **Unblocks:** any decision about
-   analysis throughput. → handoff, same section, 9.
+   a minute? It is the ceiling above every pool number, and at the `6.0` round's
+   rate raising lanes past three without raising the pace buys nothing; the
+   `7.0` rate is unmeasured. **Unblocks:** any decision about analysis
+   throughput. → handoff, same section, 9.
 5. **The copyright line in `NOTICE`.** Whether personal ownership is the correct
    claim depends on an employment agreement no agent can read. A one-line change
    to a public file. **Unblocks:** nothing technical; it is a correctness claim

@@ -329,11 +329,13 @@ rebuild the defect the next time the fast number was raised.
 by model *name*, and `requests_per_minute_for` takes the stricter tier when one
 name is configured on both — naming one model twice must not buy twice the
 quota. The deployment sets `LLM_MODEL_HEAVY` to the same `gemini-3.5-flash`, so
-its effective pace is `30`, not `60`. A single round never notices, because it
-asks for about eleven a minute. What notices is `AI_JOB_POOL_SIZE`: the useful
-number of lanes is the effective pace over ~11, which is three rather than five.
-Read the pace off `requests_per_minute_for` before sizing a pool, not off
-`LLM_MAX_REQUESTS_PER_MINUTE`.
+its effective pace is `30`, not `60`. A single `6.0` round never noticed,
+because it asked for about eleven a minute. What notices is `AI_JOB_POOL_SIZE`:
+the useful number of lanes is the effective pace over one round's rate, which on
+that `6.0` figure is three rather than five. A `7.0` round sends 17 requests on
+a clean pass and has not been timed, so three is the `6.0` answer still standing
+rather than a `7.0` one. Read the pace off `requests_per_minute_for` before
+sizing a pool, not off `LLM_MAX_REQUESTS_PER_MINUTE`.
 
 Both values assume the billed key is the one on the Render dashboard, which
 `render.yaml` cannot check because `GEMINI_API_KEY` is `sync: false`. On a free
