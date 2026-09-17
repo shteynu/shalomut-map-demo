@@ -73,8 +73,10 @@ are the reason it does: `supportsPartialMaps` and
 ADR-007 owns their behaviour.
 
 Core currently can produce `3.0`–`7.0`. An unset
-`AI_ANALYTICS_CONTRACT_VERSION` resolves to rollback-safe `5.0`; the deployed
-environment explicitly selects `6.0`. Unknown values fail closed. A new
+`AI_ANALYTICS_CONTRACT_VERSION` resolves to rollback-safe `5.0`, which refuses
+to analyse a round on the research instrument (ADR-004 as amended); the
+deployed environment explicitly selects `7.0` since 2026-09-13. Unknown values
+fail closed. A new
 incompatible exchange requires a new manifest and a consumer-first sequence:
 consumer acceptance, callback/read compatibility, producer capability, then
 the configured switch.

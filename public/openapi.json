@@ -3416,7 +3416,7 @@
         }
       },
       "RoundAnalyticsResult": {
-        "description": "Consumer-first input compatibility union. Consumers accept immutable 2.0, dynamic 3.0, 4.0, the deployed 5.0 shape (which 6.0 shares) and the instrument-scale 7.0.",
+        "description": "Consumer-first input compatibility union. Consumers accept immutable 2.0, dynamic 3.0, 4.0, the 5.0 shape (which 6.0 shares) and the instrument-scale 7.0, which the deployment produces since 2026-09-13.",
         "oneOf": [
           {
             "$ref": "#/components/schemas/RoundAnalyticsResultV2"
@@ -4618,7 +4618,7 @@
       },
       "StoneMapResultV6": {
         "type": "object",
-        "description": "Consumer-side output contract 6.0. Core accepts and verifies this shape while the analytics producer remains on 5.0 during consumer-first rollout.",
+        "description": "Consumer-side output contract 6.0. Core accepts and verifies this shape; the deployment produced it until 2026-09-13, when it moved to 7.0.",
         "required": [
           "contractVersion",
           "roundId",
@@ -4841,7 +4841,7 @@
       },
       "StoneMapResultV7": {
         "type": "object",
-        "description": "Consumer-side output contract 7.0, the instrument-scale exchange. Core accepts and verifies this shape; the producer selects it per deployment only once the Python service reports it.",
+        "description": "Consumer-side output contract 7.0, the instrument-scale exchange. Core accepts and verifies this shape; the producer selects it per deployment only once the Python service reports it, and the deployment does since 2026-09-13.",
         "required": [
           "contractVersion",
           "roundId",

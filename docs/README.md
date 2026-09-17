@@ -39,7 +39,7 @@ These documents define behavior that remains testable, even when their rollout
 sections are historical:
 
 - [`dashboard-semantic-contract.md`](dashboard-semantic-contract.md) — semantic
-  foundation introduced in `2.0`; current runtime extends it through `6.0`.
+  foundation introduced in `2.0`; current runtime extends it through `7.0`.
 - [`dynamic-questionnaire-ai-contract.md`](dynamic-questionnaire-ai-contract.md)
   — dynamic-questionnaire foundation introduced in `3.0`.
 - [`product-requirements-summary.md`](product-requirements-summary.md) — source

@@ -56,14 +56,17 @@ services:
         value: "true"
       # How many rounds this container analyses at once, each holding its own
       # lease. Three since 2026-08-23, and the number is chosen rather than
-      # rounded: it is the smallest pool that keeps this account's pace fully
-      # spent, and one more would buy nothing.
+      # rounded: on a `6.0` round's rate it is the smallest pool that keeps this
+      # account's pace fully spent, and one more would buy nothing.
       #
-      # What it buys: a round is about 28 provider calls over roughly three
-      # minutes, near 11 a minute, so one lane leaves most of the pace unspent
-      # and fifty schools closing together queue behind one another for hours.
-      # Ten rounds closing at once take about half an hour on one lane and
-      # about ten minutes on three. Extra lanes are safe because the pace is
+      # What it buys: a `6.0` round was about 28 provider calls over roughly
+      # three minutes, near 11 a minute, so one lane leaves most of the pace
+      # unspent and fifty schools closing together queue behind one another for
+      # hours. Ten such rounds closing at once take about half an hour on one
+      # lane and about ten minutes on three. The deployment produces `7.0` since
+      # 2026-09-13, and a `7.0` round is 17 requests on a clean pass and has not
+      # been timed, so the rate here and the divisor below are the `6.0` ones
+      # still standing. Extra lanes are safe because the pace is
       # charged per process by one shared limiter; two containers would keep two
       # private counters and together exceed the quota, which is the failure
       # this knob exists to avoid, and the reason more lanes come before more
@@ -77,8 +80,9 @@ services:
       # `requests_per_minute_for`, and the test named
       # `two_tiers_on_one_model_share_one_queue`): naming one model twice must
       # not buy twice the quota. So the binding arithmetic is 30/11, not 60/11,
-      # and a fourth lane would only queue behind the pace while still holding
-      # a lease Core has to keep alive and running a poll loop of its own.
+      # on the `6.0` divisor, and a fourth lane would only queue behind the
+      # pace while still holding a lease Core has to keep alive and running a
+      # poll loop of its own.
       #
       # Which also names the lever for anyone who wants more than three: it is
       # not this knob. It is either a distinct model for the heavy tier or a
@@ -88,7 +92,8 @@ services:
       #
       # `config.py` still caps this at 10. The cap is a guardrail against a
       # typo, not a recommendation; the useful ceiling is whatever the
-      # configured pace divided by ~11 comes to, and today that is three.
+      # configured pace divided by one round's rate comes to — three on the
+      # `6.0` rate of ~11, and not yet re-derived for `7.0`.
       - key: AI_JOB_POOL_SIZE
         value: "3"
       # The ceiling on one dimension's answer, and it was the default — 2048 in
@@ -231,15 +236,17 @@ services:
       #
       # One limit on that figure, found when this branch met `main`: every
       # single-round cost run above went through `local-unlocked-pipeline.ts`,
-      # which pinned itself to contract `5.0` while the deployment produces
+      # which pinned itself to contract `5.0` while the deployment produced
       # `6.0`. So the dollars are a `5.0` round — a round whose adaptation was
       # failing on every dimension at the time — and not the round this file
-      # configures. What is measured on `6.0` is the half that decides the
-      # setting anyway: the eval corpus runs `6.0`, and at `low` it returned 56
-      # of 56 stones written by the model with the graders flat. The thinking
+      # configures. What was measured on `6.0` is the half that decides the
+      # setting anyway: the eval corpus ran `6.0` then, and at `low` it returned
+      # 56 of 56 stones written by the model with the graders flat. The thinking
       # share itself is a property of one answer, not of a contract. Both are
-      # reasons to keep `low`; neither makes 67% a `6.0` number, and a run with
-      # `AI_ANALYTICS_CONTRACT_VERSION=6.0` set is what would.
+      # reasons to keep `low`; neither makes 67% the deployed round's number.
+      # That round is `7.0` since 2026-09-13, and the eval corpus runs `7.0`
+      # since 2026-09-12, so a cost run with `AI_ANALYTICS_CONTRACT_VERSION=7.0`
+      # set is what would.
       #
       # That is 67%, not the 39% one round on the old bounds suggested, and the
       # reason is worth keeping: the old 20-second timeout was quietly saving

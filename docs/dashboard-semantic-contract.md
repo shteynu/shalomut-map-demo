@@ -2,8 +2,8 @@
 
 > Lifecycle note (2026-08-02): this document defines the semantic foundation
 > introduced by contracts `2.0` and `3.0`. The current runtime extends it
-> through deployed `6.0`; current capabilities and sentence/output differences
-> are canonical in `contracts/capabilities.json` and
+> through `7.0`, deployed since 2026-09-13; current capabilities and
+> sentence/output differences are canonical in `contracts/capabilities.json` and
 > `docs/ai-contract-version-matrix.md`. Historical rollout steps below are not
 > the current producer configuration.
 

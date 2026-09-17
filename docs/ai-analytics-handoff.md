@@ -21,8 +21,9 @@ and archived task files.
    questionnaire and encodes the configured contract at the MCP boundary.
 5. Python validates the versioned payload and maps it to
    `CanonicalAnalysisInput`.
-6. The graph generates interpretations, summary, narrative metrics and
-   recommendations; selective safety replay touches only rejected parts.
+6. The graph generates interpretations, summary, narrative metrics (`6.0`
+   only) and recommendations; selective safety replay touches only rejected
+   parts.
 7. A single output adapter builds the versioned Stone Map and validates it
    before transport.
 8. The callback includes run/lease identity. Core rechecks contract semantics
@@ -65,11 +66,16 @@ Neither side sends or stores respondent identity in the AI exchange.
 - `5.0`: per-question score distributions, partial-map/adaptation semantics.
 - `6.0`: structured three-part summaries, narrative metrics and exactly five
   recommendations per stone; successful output returns all eight stones.
+- `7.0`: the research instrument — every question aggregate names its answer
+  scale and polarity, and metrics carry no narrative; otherwise `6.0`'s shape.
 
 Shared capability policy is `../contracts/capabilities.json`. Core can produce
-`3.0`–`7.0`; an unset producer setting means rollback-safe `5.0`, while the
-deployed environment explicitly selects `6.0`. Both runtimes accept the
-versions required by `1.0`–`7.0` callback/parser compatibility.
+`3.0`–`7.0`; an unset producer setting means `5.0`, while the deployed
+environment explicitly selects `7.0` since 2026-09-13. Below `7.0` a round on
+the research instrument is refused analysis at the MCP boundary, so `5.0` is a
+rollback for the rounds a colour scale can describe and a refusal for the rest.
+Both runtimes accept the versions required by `1.0`–`7.0` callback/parser
+compatibility.
 
 Published versions are not edited silently. A new incompatible exchange gets a
 new manifest and rolls out consumer-first.

@@ -5,12 +5,12 @@
 | Boundary | Source of supported versions | Current result |
 | --- | --- | --- |
 | Shared capability registry | `contracts/capabilities.json` | `1.0`–`7.0` capability metadata |
-| Core callback validators | `AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS` | `1.0`–`7.0` in `main` since 2026-09-12; deployed Core still `1.0`–`6.0` |
-| Core producer | `PRODUCIBLE_ANALYTICS_CONTRACT_VERSIONS` | `3.0`–`7.0` in `main`; unset defaults to `5.0`; deployed Production explicitly selects `6.0` |
-| Core health | producer resolver + callback list | reports produced/producible/supported separately |
-| Core MCP/OpenAPI | registry plus OpenAPI discriminator integrity tests | callback output `1.0`–`7.0` in `main`; deployed round analytics are produced as `6.0` |
-| Python parser and pipeline | Python supported-version tuple plus shared capabilities | `1.0`–`7.0` in `main` since 2026-09-12; V7 answer scales, no metric narrative |
-| Python health | `AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS` | deployed health reports `1.0`–`6.0`; deployed source includes `97f0641`; `7.0` is not deployed |
+| Core callback validators | `AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS` | `1.0`–`7.0`; in `main` since 2026-09-12, deployed since 2026-09-13 |
+| Core producer | `PRODUCIBLE_ANALYTICS_CONTRACT_VERSIONS` | `3.0`–`7.0`; unset defaults to `5.0`; deployed Production explicitly selects `7.0` since 2026-09-13 |
+| Core health | producer resolver + callback list | reports produced/producible/supported separately; deployed Core reports `7.0` produced from configuration, read 2026-09-17 |
+| Core MCP/OpenAPI | registry plus OpenAPI discriminator integrity tests | callback output `1.0`–`7.0`; deployed round analytics are produced as `7.0` since 2026-09-13 |
+| Python parser and pipeline | Python supported-version tuple plus shared capabilities | `1.0`–`7.0`; in `main` since 2026-09-12, deployed since 2026-09-13; V7 answer scales, no metric narrative |
+| Python health | `AI_ANALYTICS_SUPPORTED_CONTRACT_VERSIONS` | deployed health reports `1.0`–`7.0`, read 2026-09-17 |
 | Shared golden corpus | `contracts/fixtures/golden_corpus.json` | positive/negative cases for `1.0`, `3.0`, `4.0`, `5.0`, `6.0`, `7.0` |
 | Shared callback corpus | `contracts/fixtures/callback_corpus.json` | accepted payloads `1.0`–`7.0`, refused mutations both runtimes judge by the same rule; `7.0` since 2026-09-12 |
 
@@ -37,16 +37,19 @@ service did not answer, `validation_rejected` when this service wrote the copy
 and then refused it. The field is optional, is only accepted beside
 `outcome: "unavailable"`, and rounds analysed before it existed carry none.
 
-The consumer-first rollout is complete. Deployed Python and Core source includes
-`97f0641`; Python health reports V6 support, Core permits V6 production, and
-Production explicitly selects `6.0`. The unset default remains `5.0`, which is
-also the configuration rollback value.
+The consumer-first rollout completed with deployed source at `97f0641`, and
+Production selected `6.0` from then until 2026-09-13, when it moved to `7.0`
+(see *Contract `7.0`*). Both deployed halves still accept `6.0` — each health
+endpoint lists it. The unset default remains `5.0`, which is also the
+configuration rollback value.
 
-The local stack selects `6.0` too, since 2026-08-09. It had been pinned to `5.0`
-in `.env.local` — which overrides `.env` in both `scripts/local-stack.mjs` and
+The local stack selected `6.0` from 2026-08-09. It had been pinned to `5.0` in
+`.env.local` — which overrides `.env` in both `scripts/local-stack.mjs` and
 Next.js — so a local run exercised a lighter contract than the deployment
-produces, and did so silently. The stack banner prints the version it resolved;
-that line is the check after any env change.
+produced, and did so silently. On a new round it can no longer be silent:
+since the swap of 2026-09-12 a stack producing anything below `7.0` refuses to
+analyse a round on the research instrument. The stack banner prints the version
+it resolved; that line is the check after any env change.
 
 Since 2026-08-05 a stone also says who wrote its metric narratives, in
 `generationProvenance.metricInsightsOutcome`: `llm` or `deterministic_fallback`,
@@ -93,19 +96,30 @@ flag, `carriesAnswerScale: true`; every earlier version declares the flag
 false. The refusal-suite gate now groups versions by `usesNarrativeMetrics` as
 well, so `7.0` has its own validation path and its own refusal suite.
 
-**Rollout state, 2026-09-12: steps 1 and 4 of the sequence below are done,
-steps 2, 3 and 5 are not.** The manifest and capability entry are published;
-the Python parser, pipeline and outgoing gate accept and produce `7.0`; Core
-validates, verifies, persists and renders it; `7.0` is in Core's producible
-list with the unset default unmoved at `5.0`; and a complete local round on a
-mixed-scale questionnaire has crossed MCP → the shipping Python pipeline →
-callback verification → the Dashboard DTO under `AI_ANALYTICS_CONTRACT_VERSION=7.0`.
-What has not happened is any deployment: Python health still reports
-`1.0`–`6.0` and Production still produces `6.0`. Deploying Python first, then
-Core, then selecting `7.0`, is the owner's sequence — and since the swap of
-2026-09-12 (ADR-004 as amended) every new round is on the instrument, so until
-Core produces `7.0` such a round is refused analysis by `encodeAnalyticsInput`
-at the MCP boundary rather than analysed under `6.0`.
+**Rollout state: all six steps of the sequence below are done, and Production
+produces `7.0` since 2026-09-13.** Steps 1 and 4 landed on 2026-09-12: the
+manifest and capability entry are published; the Python parser, pipeline and
+outgoing gate accept and produce `7.0`; Core validates, verifies, persists and
+renders it; `7.0` is in Core's producible list with the unset default unmoved
+at `5.0`; and a complete local round on a mixed-scale questionnaire has crossed
+MCP → the shipping Python pipeline → callback verification → the Dashboard DTO
+under `AI_ANALYTICS_CONTRACT_VERSION=7.0`. The branch's local checks for step 6
+are in its archived task file, `claude--methodology-questions-analysis-gvh18u.md`.
+Steps 2, 3 and 5 followed on 2026-09-13: both halves were deployed with the
+`7.0` code, then Production's `AI_ANALYTICS_CONTRACT_VERSION` moved from `6.0`
+to `7.0` and Core was redeployed, and both health endpoints were read saying so
+— that day, and again on 2026-09-17. The tracker handoff's *Last read* owns the
+reading.
+
+The refusal the swap made necessary still exists and no longer fires on the
+deployment. Since 2026-09-12 (ADR-004 as amended) every new round is on the
+instrument, and any environment producing a version without
+`carriesAnswerScale` refuses to analyse such a round at the MCP boundary —
+`encodeAnalyticsInput`, naming the variable to change — rather than analysing
+it as a colour-scale round. That includes the unset default: a rollback to
+`5.0` refuses every round on the instrument. No round on the instrument has
+been analysed through the deployment yet; what that waits on is in the tracker
+handoff.
 
 ## Amending a published version
 

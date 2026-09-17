@@ -55,7 +55,7 @@ sequenceDiagram
         C-->>W: 200 running
     and the analysis itself
         W->>W: privacy gate, before the first token
-        W->>G: roughly 30 calls across 8 dimensions
+        W->>G: 17 requests on a clean 7.0 pass, across 8 dimensions
         G-->>W: Hebrew copy
         W->>W: safety validator · up to 3 repair passes
     end

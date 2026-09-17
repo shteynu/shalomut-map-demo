@@ -7,14 +7,15 @@
  * MCP handler over it, and pipes the result through the real Python pipeline —
  * no database, no server, no manager login.
  *
- *   AI_ANALYTICS_CONTRACT_VERSION=6.0 npx tsx scripts/local-unlocked-pipeline.ts
+ *   AI_ANALYTICS_CONTRACT_VERSION=7.0 npx tsx scripts/local-unlocked-pipeline.ts
  *
  * The contract version is required and has no default. This script is how the
  * cost and provenance of a round get looked at, and a version nobody typed is
  * the one nobody checks: until 2026-08-19 it defaulted to `5.0` while the
  * deployment produced `6.0`, so three runs measured an adaptation branch
  * nothing runs and the numbers were read as if they were about production.
- * Name the version you mean — `6.0` for what the deployment produces.
+ * Name the version you mean — `7.0` for what the deployment produces since
+ * 2026-09-13.
  *
  * Export the provider key first (`GEMINI_API_KEY=...`) to exercise the model.
  * Without one the pipeline still completes and reports `heuristic` provenance,
@@ -93,8 +94,8 @@ function requireContractVersion(): string {
   console.error(
     "AI_ANALYTICS_CONTRACT_VERSION is required and has no default.\n" +
       `Producible versions: ${PRODUCIBLE_ANALYTICS_CONTRACT_VERSIONS.join(", ")}. ` +
-      "The deployment produces 6.0.\n" +
-      "  AI_ANALYTICS_CONTRACT_VERSION=6.0 npx tsx " +
+      "The deployment produces 7.0.\n" +
+      "  AI_ANALYTICS_CONTRACT_VERSION=7.0 npx tsx " +
       "scripts/local-unlocked-pipeline.ts",
   );
   process.exit(1);

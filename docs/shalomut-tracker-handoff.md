@@ -980,9 +980,11 @@ free service does not fit beside it.
 Gemini, project `Default Gemini Project`, billing tier `Paid 1`, **prepaid with
 auto-reload Off**. That last fact is the operational one: the balance empties, the
 API answers `429 RESOURCE_EXHAUSTED` — *"Your prepayment credits are depleted"* —
-and whoever notices tops it up. It has depleted twice, on 2026-08-17 and again on
-2026-08-19. A round ran successfully on 2026-08-20, so the account had credit
-then; nothing in this repository can read the balance.
+and whoever notices tops it up. It has depleted three times: on 2026-08-17, on
+2026-08-19, and a third time found on 2026-09-12, when the credit ran out during
+the first `7.0` eval run. A round ran successfully on 2026-08-20, so the account
+had credit then; the owner reported it still depleted on 2026-09-17, and nothing
+in this repository can read the balance.
 
 Rate limits are not what causes this and have been ruled out by reading: the
 28-day peak for `gemini-3.5-flash` is `27/1K` requests per minute and `160/10K`
@@ -1067,18 +1069,21 @@ Runtime contract details and the rollout rule are canonical in
 `docs/ai-contract-version-matrix.md`; do not reconstruct them from old rollout
 plans. What belongs here is the operational reading.
 
-- Contract `6.0` completed its consumer-first rollout. Deployed Core explicitly
-  produces `6.0`; unset configuration remains `5.0`, the rollback value. Core can
-  produce `3.0`–`6.0`; callback and parser support spans `1.0`–`6.0`.
-- **A silent provider does not fail a dimension on `6.0`.** The structured summary
-  and metric narratives fall back to aggregate-derived copy and the round reports
-  `success`. Read
+- Contract `7.0` completed its consumer-first rollout on 2026-09-13. Deployed
+  Core explicitly produces `7.0`; unset configuration remains `5.0`, the rollback
+  value, which refuses to analyse a round on the research instrument. Core can
+  produce `3.0`–`7.0`; callback and parser support spans `1.0`–`7.0` on both
+  deployed health endpoints, read 2026-09-17.
+- **A silent provider does not fail a dimension on `6.0` or `7.0`.** The
+  structured summary — and on `6.0` the metric narratives — fall back to
+  aggregate-derived copy and the round reports `success`. Read
   `ai_deterministic_summary_ratio_sample` **before** reading any round as evidence
   about the prompts: on a rate-limited key it is close to 1 while
-  `ai_jobs_succeeded` looks healthy. Read
+  `ai_jobs_succeeded` looks healthy. On a `6.0` round read
   `ai_deterministic_metric_narrative_ratio_sample` *beside* it, not instead — a key
   that answers the short prompt and times out on the longer one shows a healthy
-  summary ratio with derived narratives underneath.
+  summary ratio with derived narratives underneath. A `7.0` round has no metric
+  narratives and emits no such sample.
 - **`ai_jobs_rearmed` no longer exists.** It counted re-arms of the automatic
   analysis path, removed on 2026-08-17 when analysis moved to round closure. Point
   anything that watched it at
@@ -1092,9 +1097,10 @@ plans. What belongs here is the operational reading.
 - **A per-dimension re-run is not a contract change.** Since 2026-08-19 a run may
   name the dimensions it rewrites; the service asks the provider for those only
   and starts the rest from the stored map, and the callback is an ordinary
-  eight-stone `6.0` payload with every number recomputed. There is no
-  partial-payload shape and no merge step, and `verifyAiResultAgainstRound` is
-  untouched. An empty list still means the whole round. `PROJECT_CONTEXT.md`
+  eight-stone payload of the round's contract with every number recomputed.
+  There is no partial-payload shape and no merge step, and
+  `verifyAiResultAgainstRound` is untouched. An empty list still means the whole
+  round. `PROJECT_CONTEXT.md`
   ADR-024 owns it. Exercised on the deployed stack 2026-08-19: a re-run of
   `balance` came back `succeeded` with eight stones, `balance` at `attempts: 3`
   and the other seven carrying the previous paragraphs verbatim at `attempts: 1`.

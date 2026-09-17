@@ -8,8 +8,10 @@
 `1.0` и `2.0` остаются immutable. Реализация `3.0` завершена, проверена,
 зафиксирована в ordered commits `f1cd906`, `6833cb2` и `3e3f43f` и развёрнута
 consumer-first 2026-07-26. Это историческая основа dynamic-questionnaire:
-текущий deployed Core формирует `6.0`, а rollback-safe producer value — `5.0`.
-Текущий version status находится в `docs/ai-contract-version-matrix.md`.
+текущий deployed Core формирует `7.0` (с 2026-09-13), а rollback producer
+value — `5.0`, который отказывается анализировать раунд на исследовательском
+инструменте. Текущий version status находится в
+`docs/ai-contract-version-matrix.md`.
 
 ## Цель
 

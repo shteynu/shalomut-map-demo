@@ -8,11 +8,11 @@ The current implementation is deliberately small:
 - it reads aggregate round data through the core app's JSON-RPC MCP endpoint;
 - it enforces the privacy lock before any interpretation;
 - it runs an async graph-style sequence of interpretation, narrative metric
-  generation, intervention lookup, intervention adaptation (`5.0` and `6.0`),
-  safety validation, and formatting;
+  generation (`6.0` only), intervention lookup, intervention adaptation (`5.0`
+  and later), safety validation, and formatting;
 - it reads interventions from the structured local
   `data/interventions_kb.json` catalog, scoped strictly by dimension and
-  status, and on `5.0`/`6.0` ranks the candidates by the round's distributions;
+  status, and from `5.0` on ranks the candidates by the round's distributions;
 - it polls durable analysis jobs from Core, keeps each lease alive while the
   pipeline runs, and posts the validated result back with the run identity.
 
@@ -60,7 +60,9 @@ each one is responsible for:
 
 Runtime input/output support spans `1.0` through `7.0`. Python health advertises
 that range, Core can produce `3.0`–`7.0`, and the deployed Core explicitly
-produces `6.0`; an unset Core setting remains rollback-safe `5.0`. See
+produces `7.0` since 2026-09-13; an unset Core setting remains `5.0`, which
+refuses to analyse a round on the research instrument rather than describe it
+wrongly. See
 [`../docs/ai-contract-version-matrix.md`](../docs/ai-contract-version-matrix.md).
 
 The immutable deployed source of truth for structural contract `1.0` is
@@ -75,7 +77,7 @@ keeps the same eight dimensions and score/status semantics, but replaces the
 24-question allowlist with exact persisted round question IDs, text and counts.
 This implementation was deployed consumer-first. Contract `3.0` remains the
 dynamic-questionnaire foundation used by later versions; current deployed
-production is `6.0` and rollback configuration is `5.0`.
+production is `7.0` and rollback configuration is `5.0`.
 
 Every rollout remains consumer-first: Python/parser support first, Core
 callback/read compatibility second, Core producer capability third, and only
@@ -93,8 +95,8 @@ Privacy-locked rounds return a `locked_error` payload without stones or any
 detailed aggregates. The core app validates callback payloads again before
 persisting them.
 
-The historical `3.0` rollout completed in that order. Later `4.0`/`5.0` and
-`6.0` capabilities follow the same registry in
+The historical `3.0` rollout completed in that order. Later `4.0`/`5.0`,
+`6.0` and `7.0` capabilities follow the same registry in
 `../contracts/capabilities.json`; current runtime status belongs in the version
 matrix rather than in old rollout prose.
 
@@ -154,11 +156,28 @@ returns malformed/unsafe copy.
 Each dimension selects five recommendations from at least eight exact
 dimension/status candidates. The five objects are adapted in one
 identity-preserving JSON batch call; reordered, duplicate, missing or invalid
-items fall back together to enriched human-authored catalog copy. V6 does not
-allow partial maps: success always contains eight stones, three summary
-paragraphs, every input question metric and five recommendations per stone.
-Locked input still short-circuits before any provider call and contains no
-details.
+items fall back together to enriched human-authored catalog copy. A successful
+map always contains eight stones, every input question metric and five
+recommendations per stone. Since 2026-08-04 it may be a partial map: a stone
+whose three paragraphs repair could not write carries none and says so, while
+its metric narratives and recommendations stay required — the version matrix
+has the rule. Locked input still short-circuits before any provider call and
+contains no details.
+
+### `7.0`
+
+`7.0` ([`../contracts/ai-analytics-v7.json`](../contracts/ai-analytics-v7.json))
+carries the research instrument, and it is `6.0` in shape with two changes of
+meaning. Every question aggregate names its answer scale and polarity
+(`scaleId`, `polarity`) beside an average already normalised to 0–100 with the
+polarity applied, and every metric echoes both back for Core to verify. And
+metrics carry no narrative: `insightText` is refused on a metric, the three
+summary paragraphs are the reading of a dimension's questions, and the eight
+metric-insight batches a `6.0` round sends are not sent. A `7.0` round is
+therefore 17 provider requests on a clean pass — eight structured summaries,
+one round summary, eight adaptation batches — where `6.0` sends 25; how far
+retries and replays can take it is under *Provider account* in
+[`../docs/shalomut-tracker-handoff.md`](../docs/shalomut-tracker-handoff.md).
 
 ## Local setup
 
@@ -286,9 +305,10 @@ defaults remain `gpt-4o-mini` and `gpt-4o`.
 
 `LLM_MAX_CONCURRENT_REQUESTS` caps how many provider requests one round has in
 flight and defaults to `2`. Both LLM nodes hand their whole batch to
-`asyncio.gather`, so a round otherwise puts eight interpretations, and then up
-to two dozen recommendation adaptations, on the wire at once — which is what a
-free tier answers `429` to. The slot is taken before the worker thread is
+`asyncio.gather`, so a round otherwise puts eight interpretations, and then
+eight adaptation batches — one request per dimension, carrying all of its
+recommendations — on the wire at once, which is what a free tier answers `429`
+to. The slot is taken before the worker thread is
 dispatched, so waiting for one costs no part of the per-dimension retry budget;
 it only makes the round longer while the durable worker keeps its lease alive.
 Raise it for a paid key.

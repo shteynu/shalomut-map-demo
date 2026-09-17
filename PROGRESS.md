@@ -382,10 +382,11 @@ inside it.
   history a manager can restore from, an archived round became genuinely
   read-only rather than merely hidden, and a school reads its goals in one place
   across every round it has run.
-- Contract `6.0` is deployed end to end and the deployed Core explicitly
-  produces it. The unset configuration default remains rollback-safe `5.0`. A
-  published version may gain an optional additive field under ADR-002's stated
-  rule; a changed meaning still needs a new version.
+- Contract `7.0` is deployed end to end since 2026-09-13 and the deployed Core
+  explicitly produces it; `6.0` before it went the same way. The unset
+  configuration default remains `5.0`, which refuses to analyse a round on the
+  research instrument. A published version may gain an optional additive field
+  under ADR-002's stated rule; a changed meaning still needs a new version.
 - **The administrator's screen costs the same whatever the platform holds** as
   of 2026-08-22. It asks five queries for the whole list instead of three per
   school inside a loop; at a hundred schools that was around 300 sequential

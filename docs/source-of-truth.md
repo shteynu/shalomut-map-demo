@@ -3,20 +3,19 @@
 This project keeps the stable Dashboard taxonomy separate from configurable
 round questionnaires and from demo result data.
 
-> Deployed contract `6.0` is what Core produces; `3.0` introduced dynamic round
+> Deployed contract `7.0` is what Core produces; `3.0` introduced dynamic round
 > questionnaires, `4.0` added the school background context and `5.0` added
 > per-question score distributions, while `6.0` adds three-part summaries,
 > qualitative question insights and five recommendations per stone, and `7.0`
-> — published 2026-09-12, accepted by both runtimes in `main` and deployed by
-> neither — carries the research instrument: every aggregate names its answer
-> scale and polarity, and metrics carry no per-question narrative. Immutable
-> contract `2.0`
+> — published 2026-09-12 and deployed on both runtimes 2026-09-13 — carries the
+> research instrument: every aggregate names its answer scale and polarity, and
+> metrics carry no per-question narrative. Immutable contract `2.0`
 > continues to describe the exact default 24-question legacy exchange. The
 > consumer-first boundary is described in
 > `docs/dynamic-questionnaire-ai-contract.md`.
-> An unset Core producer version still defaults to the rollback-safe `5.0`;
-> Production explicitly selects `6.0` after the completed consumer-first
-> rollout.
+> An unset Core producer version still defaults to `5.0`, which refuses to
+> analyse a round on the research instrument; Production explicitly selects
+> `7.0` since 2026-09-13, after the completed consumer-first rollout.
 
 > **The default questionnaire is the 126-item research instrument since
 > 2026-09-12** (owner decision 2026-08-14, delivered through the six phases of

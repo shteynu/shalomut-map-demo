@@ -162,10 +162,13 @@ class Settings:
         # lease. One is the shape the service ran in until 2026-08-18: claim,
         # finish, claim again — so fifty schools closing together queued behind
         # one another for hours, while the account's paid quota sat mostly idle.
-        # A round is about 28 provider calls over roughly three minutes, near
-        # 11 a minute, so the process spends most of a round waiting on an
+        # A `6.0` round was about 28 provider calls over roughly three minutes,
+        # near 11 a minute, so the process spends most of a round waiting on an
         # answer rather than on its own rate limit. The slots that wait are what
-        # this fills.
+        # this fills. A `7.0` round — the deployment's contract since
+        # 2026-09-13 — is 17 requests on a clean pass and has not been timed;
+        # fewer requests need not mean fewer a minute, because the round loses
+        # the minutes those requests took along with them.
         #
         # Raising it is safe because the pace is charged per process, not per
         # round: `provider_rate_limiter` is one module-level object behind a
@@ -179,15 +182,16 @@ class Settings:
         # still the cheaper knob (they share one queue rather than dividing
         # it), but they are no longer the only safe one.
         #
-        # **The useful ceiling is the configured pace over ~11, and the pace is
-        # not always the number that looks like it.** `requests_per_minute_for`
-        # counts per model name and takes the stricter tier when one name is
-        # configured on both, so a deployment that points `LLM_MODEL_HEAVY` at
-        # the fast model runs the whole round at the heavy pace. The deployment
-        # does exactly that (`render.yaml`), which makes its real pace 30 rather
-        # than 60 and its useful ceiling three rather than five. Read the pace
-        # off `requests_per_minute_for`, never off `LLM_MAX_REQUESTS_PER_MINUTE`
-        # alone.
+        # **The useful ceiling is the configured pace over one round's rate —
+        # ~11 on the `6.0` measurement — and the pace is not always the number
+        # that looks like it.** `requests_per_minute_for` counts per model name
+        # and takes the stricter tier when one name is configured on both, so a
+        # deployment that points `LLM_MODEL_HEAVY` at the fast model runs the
+        # whole round at the heavy pace. The deployment does exactly that
+        # (`render.yaml`), which makes its real pace 30 rather than 60 and, on
+        # that `6.0` rate, its useful ceiling three rather than five. Read the
+        # pace off `requests_per_minute_for`, never off
+        # `LLM_MAX_REQUESTS_PER_MINUTE` alone.
         #
         # The hard cap of 10 is a guardrail against a typo rather than a
         # recommendation: past the useful ceiling further slots only queue
@@ -376,10 +380,11 @@ class Settings:
                 float(os.getenv("LLM_MIN_RETRY_WINDOW_SECONDS", "20.0")),
             ),
         )
-        # How many provider requests one round may have in flight. A round is
-        # roughly 33 calls and both LLM nodes gather their whole batch at once,
-        # so without a bound a free tier sees eight interpretations, then two
-        # dozen adaptations, arrive together and answers 429 to most of them.
+        # How many provider requests one round may have in flight. Both LLM
+        # nodes gather their whole batch at once — eight dimension summaries,
+        # then eight adaptation requests, one per dimension — so without a
+        # bound a free tier sees eight arrive together and answers 429 to most
+        # of them.
         # Two is what the strictest free tier allows concurrently; raise it for
         # a paid key. Waiting for a slot happens before the request starts, so
         # it never eats into the per-dimension retry budget.
