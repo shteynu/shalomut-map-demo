@@ -5,7 +5,7 @@
 - Branch: `docs/published-copy-names-its-source`
 - Base branch: `origin/main`
 - Base commit: `3037cc7`
-- Current HEAD: `3037cc7`
+- Current HEAD: `88eeaec`
 - Status: ready for review; republish pending the owner
 - Last updated: 2026-09-18
 - Last agent/tool: Claude Opus 5 (Claude Code)
