@@ -76,11 +76,19 @@ def is_worth_another_attempt(error: BaseException) -> bool:
 
     A delivery that ran out of attempts against a Core that was unreachable,
     timing out or answering `5xx` is a statement about the network, not about
-    the map: the roughly two dozen provider calls behind that payload are
-    already spent, and a reclaimed attempt re-sends the same bytes under the
-    same run identity, which Core recognises as the result it already has.
-    Everything else — a refused payload, a stale lease, a crash in our own
-    code — repeats verdict for verdict, so it is failed once and left failed.
+    the map, so the run keeps the attempts it has left. Everything else — a
+    refused payload, a stale lease, a crash in our own code — repeats verdict
+    for verdict, so it is failed once and left failed.
+
+    Releasing the lease is not free, which is the easy thing to assume and
+    wrong. Nothing caches the payload: the worker that reclaims the run is
+    minted a new lease token for the same run row (`claimNext` in
+    `prisma-ai-analysis-run.repository.ts`), and `process_round` fetches the
+    round's aggregates and walks the whole graph again. So the calls behind
+    the first map are paid a second time — 17 on a `7.0` round that needs no
+    retries, up to 51 when every one of them takes all three of
+    `LLM_MAX_ATTEMPTS`. That is the argument for the attempt budget being
+    finite, not an argument against releasing a lease the network lost.
     """
     return isinstance(error, CallbackDeliveryError) and error.transient
 

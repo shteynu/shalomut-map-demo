@@ -424,8 +424,9 @@ async def test_a_heartbeat_that_could_not_be_sent_is_tried_again():
     Core serves claims, heartbeats, callbacks and manager screens from the same
     deployment: on a busy day of closings a renewal meets a 502 or takes longer
     than the ten-second timeout. That said nothing about this run — and before
-    this, it ended it, cancelling the analysis and burning up to 28 provider
-    calls that had already been paid for.
+    this, it ended it, cancelling the analysis and burning the provider calls
+    that had already been paid for: up to the 28 a `6.0` round cost when this
+    was written, up to 51 on the `7.0` the deployment produces now.
     """
     beats = []
     renewed = asyncio.Event()

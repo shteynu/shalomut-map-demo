@@ -116,7 +116,7 @@ def test_an_unsupported_effort_is_refused_rather_than_forwarded(monkeypatch):
     """A typo costs the previous behaviour, not the round.
 
     Forwarded, `reasoning_effert: hihg` is a `400` on every one of the round's
-    twenty-eight calls — every dimension on the deterministic sentence, and a
+    seventeen calls — every dimension on the deterministic sentence, and a
     run that reports success. Refused, it is the bill this service was already
     paying plus a configuration error that names the variable.
     """

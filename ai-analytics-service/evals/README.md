@@ -221,8 +221,8 @@ failing test.
 
 What does **not** run automatically is the part that costs money: producing
 payloads from a real provider and scoring those. That is deliberate — the
-output is stochastic and each round is roughly two dozen provider calls — but
-it does mean the loop is only closed when a person runs it. Until someone
+output is stochastic and each round is 17 provider requests before retries —
+but it does mean the loop is only closed when a person runs it. Until someone
 does, this directory measures nothing about the deployed prompts.
 
 The natural next steps, in order, are: run the corpus against the current

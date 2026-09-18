@@ -1,9 +1,10 @@
 """What happens to a finished Stone Map between the graph and Core.
 
-The payload behind one delivery cost roughly two dozen provider calls, so the
-question these tests ask is narrow: which failures are worth another attempt,
-which are a verdict on the payload itself, and does every attempt send the same
-bytes under the same run identity so Core can recognise a repeat.
+The payload behind one delivery cost 17 provider calls on a clean `7.0` round
+and up to 51 with retries, so the question these tests ask is narrow: which
+failures are worth another attempt, which are a verdict on the payload itself,
+and does every attempt send the same bytes under the same run identity so Core
+can recognise a repeat.
 """
 
 import io

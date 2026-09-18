@@ -66,11 +66,16 @@ services:
       # lane and about ten minutes on three. The deployment produces `7.0` since
       # 2026-09-13, and a `7.0` round is 17 requests on a clean pass and has not
       # been timed, so the rate here and the divisor below are the `6.0` ones
-      # still standing. Extra lanes are safe because the pace is
-      # charged per process by one shared limiter; two containers would keep two
-      # private counters and together exceed the quota, which is the failure
-      # this knob exists to avoid, and the reason more lanes come before more
-      # instances.
+      # still standing. Extra lanes are safe because the pace is charged per
+      # process by one shared limiter, and lanes of one container share that
+      # limiter exactly. Two containers used to keep two private
+      # counters and together exceed the quota; since 2026-08-23 each process
+      # divides its pace by the number of workers Core reports as holding a
+      # live lease (`set_sending_processes` in `provider_rate_limit.py`, fed by
+      # `liveWorkerIds` on the claim and on every heartbeat), so a second
+      # instance is a scaling decision rather than a quota bug. Lanes still
+      # come first: they share one limiter exactly, where processes share it
+      # through a count Core refreshes only on a claim or a heartbeat.
       #
       # **Three, not five, and the reason is two settings below.** The pace
       # this service may actually use is not the 60 set for the fast model: the

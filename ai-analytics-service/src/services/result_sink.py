@@ -7,8 +7,9 @@ lives here, behind the `ResultSink` port.
 
 Two levels, deliberately: `post` is one HTTP attempt and `deliver` is the
 promise the port makes — that a finished analysis reaches Core or says clearly
-that it did not. The analysis behind one payload costs roughly two dozen
-provider calls, so a lost TCP connection is not a reason to throw it away.
+that it did not. The analysis behind one payload costs 17 provider calls on a
+clean `7.0` round and up to 51 when every one of them is retried, so a lost TCP
+connection is not a reason to throw it away.
 """
 
 import asyncio

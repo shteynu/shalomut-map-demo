@@ -204,10 +204,10 @@ alongside the AI service — but nothing in the daily loop needs that.
   caller now resolves the interpreter through `scripts/ai-service-python.mjs`
   and names the missing virtualenv instead. Git worktrees each need their own —
   `.venv/` is ignored, so a new worktree starts without one.
-- **Gemini free-tier quota.** One round is roughly 33 provider calls and `429`
-  arrives after a handful. A local round that ends in `deterministic_fallback`
-  everywhere is usually the quota, not the code: check the AI service log for
-  `status=429`.
+- **Gemini free-tier quota.** One round is 17 provider calls before retries
+  and `429` arrives after a handful. A local round that ends in
+  `deterministic_fallback` everywhere is usually the quota, not the code:
+  check the AI service log for `status=429`.
 
 ## Verification commands
 

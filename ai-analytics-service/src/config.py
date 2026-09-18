@@ -405,7 +405,10 @@ class Settings:
         # model it belongs to: rates are counted per model, so the number is
         # only meaningful beside the name. Nobody waits on either — the webhook
         # answered `202` long before, and Core reads a run as stalled only
-        # after fifteen minutes. Zero turns the pace off.
+        # after ten minutes (`AI_ANALYSIS_QUEUE_STALL_AFTER_MS` in
+        # `src/lib/server/ai-analysis-worker.ts`, published as
+        # `stallAfterSeconds` by `GET /api/health/ai-queue`). Zero turns the
+        # pace off.
         self.llm_max_requests_per_minute: float = max(
             0.0,
             float(os.getenv("LLM_MAX_REQUESTS_PER_MINUTE", "5")),
