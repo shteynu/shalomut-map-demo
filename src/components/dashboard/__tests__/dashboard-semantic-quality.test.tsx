@@ -60,6 +60,7 @@ test("DashboardOverviewSummary renders the organization summary exactly once", (
     <DashboardOverviewSummary
       state={{ status: "ready", value: createReadyResult(summary) }}
       onRetry={() => undefined}
+      mayAct
     />,
   );
 
@@ -73,6 +74,7 @@ test("DashboardOverviewSummary discloses a summary the model did not write", () 
     <DashboardOverviewSummary
       state={{ status: "ready", value: createReadyResult(summary, true) }}
       onRetry={() => undefined}
+      mayAct
     />,
   );
 
@@ -86,6 +88,7 @@ test("DashboardOverviewSummary adds no note when the model wrote the summary", (
     <DashboardOverviewSummary
       state={{ status: "ready", value: createReadyResult(summary, false) }}
       onRetry={() => undefined}
+      mayAct
     />,
   );
 
@@ -98,6 +101,7 @@ test("DashboardOverviewSummary localizes invalid or unavailable insight states",
     <DashboardOverviewSummary
       state={{ status: "error", error: rawError }}
       onRetry={() => undefined}
+      mayAct
     />,
   );
 
@@ -113,6 +117,7 @@ test("DashboardOverviewSummary tells a run in flight apart from a failed one", (
     <DashboardOverviewSummary
       state={{ status: "running" }}
       onRetry={() => undefined}
+      mayAct
     />,
   );
 

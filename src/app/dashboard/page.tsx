@@ -6,6 +6,7 @@ import { isRoundCollecting } from "@/lib/rounds/round-status";
 import { readRoundParam, roundSwitcherAction } from "@/lib/navigation";
 import {
   loadManagerContext,
+  loadManagerRole,
   loadRoundComparison,
   loadSchoolChoices,
 } from "@/lib/server/manager-context";
@@ -17,7 +18,10 @@ export default async function DashboardPage({
   searchParams: Promise<{ round?: string | string[] }>;
 }) {
   const requestedRound = readRoundParam(await searchParams);
-  const context = await loadManagerContext(requestedRound);
+  const [context, role] = await Promise.all([
+    loadManagerContext(requestedRound),
+    loadManagerRole(),
+  ]);
 
   if (
     !context.organization ||
@@ -68,6 +72,10 @@ export default async function DashboardPage({
       // instead of promising the map after N more answers.
       isCollecting={isRoundCollecting(selectedRound.status)}
       dimensionScores={dimensionScores}
+      // The sidebar summary is where a missing or failed analysis is offered a
+      // way on, and starting one is an administrator's act (owner decision,
+      // 2026-08-23). This screen used to pass no role at all.
+      mayAct={role === "admin"}
       roundOptions={toRoundSwitcherOptions(
         context.rounds,
         selectedRound.id,

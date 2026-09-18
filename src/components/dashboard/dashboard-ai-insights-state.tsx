@@ -201,12 +201,34 @@ export function DashboardAiInsightsState({
   onRetry,
   roundId,
   watch,
+  mayAct,
 }: {
   state: Exclude<AiInsightsUiState, { status: "ready" }>;
   onRetry: () => void;
   roundId?: string;
   watch?: AiInsightsWatchStatus;
+  /**
+   * Whether the reader may order an analysis. A school user reads the map and
+   * does not run it (owner decision, 2026-08-23), so the two states that offer
+   * a way to start one offer it to an administrator alone.
+   *
+   * Required rather than defaulted, and that is the point of it: four screens
+   * render this component, and the gate used to be "do we know the round id",
+   * which every one of them always does. A default would let the fifth screen
+   * forget, and forgetting here means handing a school user a button whose only
+   * outcome is a 403 rendered as "the analysis service is unavailable".
+   */
+  mayAct: boolean;
 }) {
+  /*
+   * The button's own gate. `undefined` and not a second flag beside `roundId`:
+   * the button exists to POST to one round, so a reader who may not do that has
+   * no round to give it. The re-check buttons below are reads and are
+   * deliberately outside this — a school user who cannot start an analysis can
+   * still look again at one somebody else started.
+   */
+  const generateRoundId = mayAct ? roundId : undefined;
+
   if (state.status === "loading") {
     return (
       <section className="dashboard-ai-state" aria-live="polite">
@@ -266,9 +288,9 @@ export function DashboardAiInsightsState({
           לא נמצאה מפת תובנות עבור הסבב הזה. הניתוח מופק בסגירת הסבב, ואם הסבב
           כבר נסגר אפשר להפעיל אותו כאן.
         </p>
-        {roundId ? (
+        {generateRoundId ? (
           <GenerateAnalysisButton
-            roundId={roundId}
+            roundId={generateRoundId}
             label="יצירת ניתוח עכשיו"
             onQueued={onRetry}
           />
@@ -292,9 +314,9 @@ export function DashboardAiInsightsState({
         לא הופק ניתוח לסבב הזה. התשובות שנאספו נשמרו במלואן, ואפשר להפעיל את
         הניתוח מחדש בעוד מספר דקות.
       </p>
-      {roundId ? (
+      {generateRoundId ? (
         <GenerateAnalysisButton
-          roundId={roundId}
+          roundId={generateRoundId}
           label="הפעלת ניתוח מחדש"
           onQueued={onRetry}
         />

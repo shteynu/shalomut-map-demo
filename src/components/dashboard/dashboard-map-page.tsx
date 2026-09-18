@@ -61,6 +61,12 @@ type DashboardMapPageProps = {
   isLocked: boolean;
   /** Whether the round can still receive an answer, so the locked screen says the true reason. */
   isCollecting: boolean;
+  /**
+   * Whether the reader may order an analysis for this round. A school user
+   * reads the map and does not run it (owner decision, 2026-08-23), so the
+   * empty and failed states of the sidebar summary lose their button.
+   */
+  mayAct: boolean;
 };
 
 export function DashboardMapPage({
@@ -77,6 +83,7 @@ export function DashboardMapPage({
   divisions,
   isLocked,
   isCollecting,
+  mayAct,
 }: DashboardMapPageProps) {
 
   if (isLocked) {
@@ -115,6 +122,7 @@ export function DashboardMapPage({
       comparison={comparison}
       divisions={divisions}
       responseCount={responseCount}
+      mayAct={mayAct}
     />
   );
 }
@@ -124,11 +132,17 @@ export function DashboardOverviewSummary({
   onRetry,
   roundId,
   watch,
+  mayAct,
 }: {
   state: AiInsightsUiState;
   onRetry: () => void;
   roundId?: string;
   watch?: AiInsightsWatchStatus;
+  /**
+   * See `DashboardMapPageProps`. Required for the reason spelled out on
+   * `DashboardAiInsightsState`: both branches below reach that component.
+   */
+  mayAct: boolean;
 }) {
   if (state.status !== "ready") {
     return (
@@ -137,6 +151,7 @@ export function DashboardOverviewSummary({
         onRetry={onRetry}
         roundId={roundId}
         watch={watch}
+        mayAct={mayAct}
       />
     );
   }
@@ -150,6 +165,7 @@ export function DashboardOverviewSummary({
         state={{ status: "error", error: "Missing organization summary." }}
         onRetry={onRetry}
         roundId={roundId}
+        mayAct={mayAct}
       />
     );
   }
@@ -181,6 +197,7 @@ function DashboardMapReady({
   comparison,
   divisions,
   responseCount,
+  mayAct,
 }: Omit<DashboardMapPageProps, "isLocked" | "isCollecting">) {
   const { state, reload, watch } = useAiInsights(roundId);
 
@@ -251,6 +268,7 @@ function DashboardMapReady({
             onRetry={reload}
             watch={watch}
             roundId={roundId}
+            mayAct={mayAct}
           />
 
           {/* Beside the summary, not above the map: the gap is a fact about

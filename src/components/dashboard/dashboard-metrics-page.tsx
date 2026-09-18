@@ -30,11 +30,19 @@ export function DashboardMetricsPage({
   roundId,
   organizationName,
   roundTitle,
+  mayAct,
 }: {
   dimension: DimensionPresentation;
   roundId: string;
   organizationName: string;
   roundTitle: string;
+  /**
+   * Whether the reader may order an analysis. A school user reads the metrics
+   * and does not run the analysis behind them (owner decision, 2026-08-23).
+   * The screen has nothing else to gate — every metric on it is a read — so
+   * the flag travels only as far as the empty and failed states.
+   */
+  mayAct: boolean;
 }) {
   const { state, reload, watch } = useAiInsights(roundId);
   const stone =
@@ -55,6 +63,7 @@ export function DashboardMetricsPage({
           onRetry={reload}
           roundId={roundId}
           watch={watch}
+          mayAct={mayAct}
         />
         <DashboardCtaRow
           actions={getDashboardMetricsActions(dimension.id, roundId)}
@@ -75,6 +84,7 @@ export function DashboardMetricsPage({
           state={{ status: "error", error: "Missing dimension insight." }}
           onRetry={reload}
           roundId={roundId}
+          mayAct={mayAct}
         />
       </div>
     );

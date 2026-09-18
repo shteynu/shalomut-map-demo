@@ -36,7 +36,8 @@ export function DashboardDimensionPage({
   organizationName: string;
   roundTitle: string;
   /**
-   * Whether the reader may ask for this dimension to be analysed again. A
+   * Whether the reader may ask for this dimension to be analysed again, and
+   * whether the empty and failed states offer to run the whole analysis. A
    * school user reads the map and does not re-run it (owner decision,
    * 2026-08-23); the note explaining that the text is deterministic stays,
    * because it is true whoever is reading.
@@ -65,6 +66,7 @@ export function DashboardDimensionPage({
           onRetry={reload}
           watch={watch}
           roundId={roundId}
+          mayAct={mayAct}
         />
         <DashboardCtaRow
           actions={getDashboardDetailActions(dimension.id, roundId)}
@@ -85,6 +87,7 @@ export function DashboardDimensionPage({
           state={{ status: "error", error: "Missing dimension insight." }}
           onRetry={reload}
           roundId={roundId}
+          mayAct={mayAct}
         />
       </div>
     );

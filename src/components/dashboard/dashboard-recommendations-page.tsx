@@ -88,10 +88,10 @@ export function DashboardRecommendationsPage({
   organizationName: string;
   roundTitle: string;
   /**
-   * Whether the reader may record a goal. A school user reads the
-   * recommendations and does not choose from them (owner decision,
-   * 2026-08-23), so the board below is left out rather than shown with buttons
-   * the route refuses.
+   * Whether the reader may record a goal, and whether the empty and failed
+   * states offer to run the analysis. A school user reads the recommendations
+   * and does not choose from them (owner decision, 2026-08-23), so the board
+   * below is left out rather than shown with buttons the route refuses.
    */
   mayAct: boolean;
 }) {
@@ -114,6 +114,7 @@ export function DashboardRecommendationsPage({
           onRetry={reload}
           roundId={roundId}
           watch={watch}
+          mayAct={mayAct}
         />
         <DashboardCtaRow
           center
@@ -135,6 +136,7 @@ export function DashboardRecommendationsPage({
           state={{ status: "error", error: "Missing dimension insight." }}
           onRetry={reload}
           roundId={roundId}
+          mayAct={mayAct}
         />
       </div>
     );

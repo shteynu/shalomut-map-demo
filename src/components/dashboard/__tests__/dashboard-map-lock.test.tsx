@@ -157,6 +157,7 @@ test("the map page obeys the analysis about being locked, and does not re-decide
       divisions={[]}
       isLocked
       isCollecting={false}
+      mayAct
     />,
   );
 
