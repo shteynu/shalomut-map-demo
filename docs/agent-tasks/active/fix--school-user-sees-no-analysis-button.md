@@ -5,7 +5,8 @@
 - Branch: `fix/school-user-sees-no-analysis-button`
 - Base branch: `origin/main`
 - Base commit: `6c06ceb`
-- Current HEAD: see `git log -1` — the single commit on this branch
+- Current HEAD: the second of the two commits on this branch. The fix is
+  `19c70ec`; this file's own update follows it.
 - Status: ready to land, awaiting the owner's push
 - Last updated: 2026-09-18
 - Last agent/tool: Claude Opus 5 (Claude Code)
@@ -85,7 +86,7 @@ None outstanding.
 
 ## Completed
 
-All of it. One commit.
+All of it, in `19c70ec`.
 
 ## In progress
 
