@@ -31,8 +31,18 @@ import process from 'node:process';
  *    every external host and a relative path resolves against the platform's
  *    origin, where the file does not exist. A `vendor/` reference outside the
  *    runtime block is something new that this script has not been taught;
- * 4. refuses if a page-level tag survived, or if `<title>` is missing or sits
- *    past the 8 KB the platform scans for it.
+ * 4. refuses if a page-level tag survived;
+ * 5. opens the body with a comment naming the repository file the page was
+ *    generated from and warning that an edit made on the platform is lost;
+ * 6. refuses if `<title>` is missing or sits past the 8 KB the platform scans
+ *    for it, measured on the published body with that comment counted in.
+ *
+ * Step 5 is the hand version's, restored. The 2026-08-20 pass opened each
+ * published body with that comment; this script, written five days later, was
+ * never taught it, so the 2026-09-17 republish of all three pages dropped it and
+ * the published copies stopped saying where their source lives. It is the only
+ * thing here that adds rather than removes, and the path in it is the one the
+ * repository uses, whatever the command line said — see `repositoryPath`.
  *
  * It reports rather than refuses on two mermaid hazards that have each cost a
  * session: a `;` inside a quoted node label takes the whole diagram down, and a
@@ -58,6 +68,51 @@ const PAGE_TAGS = /<!doctype\b|<html\b|<\/html>|<head\b|<\/head>|<body\b|<\/body
 
 /** The platform scans this many bytes of the file for a `<title>`. */
 export const TITLE_SCAN_BYTES = 8192;
+
+/**
+ * The comment every published body opens with, naming the file it came from.
+ *
+ * It is addressed to a reader of the published page, the one place where "edit
+ * the source, not this" is not already obvious — which is why the documents
+ * under `docs/` do not carry it themselves.
+ *
+ * @param {string} file the document's path inside the repository
+ * @returns {string}
+ */
+export function sourceComment(file) {
+  return (
+    `<!-- Источник этой страницы — файл ${file} в репозитории shalomut-map-demo. ` +
+    'Правки вносятся там и переиздаются сюда; правка здесь будет потеряна. -->'
+  );
+}
+
+/**
+ * Where the document sits inside the repository, from however it was named on
+ * the command line.
+ *
+ * The comment is published, so the path in it has to be the repository's own:
+ * `npm run` runs the script from the repository root, and `docs/page.html`,
+ * `./docs/page.html` and an absolute path to the same file all have to reach
+ * the same string. A path that leaves the root is refused rather than named,
+ * because the one thing worse than a body with no comment is a public page
+ * carrying somebody's home directory.
+ *
+ * @param {string} file as it was given
+ * @param {string} root the directory the script is running from
+ * @returns {string}
+ */
+export function repositoryPath(file, root) {
+  const inside = path.relative(root, path.resolve(root, file));
+  const segments = inside.split(path.sep);
+  if (inside === '' || segments[0] === '..' || path.isAbsolute(inside)) {
+    throw new Error(
+      `${file}: is not inside ${root}, so the comment at the top of the ` +
+        'published body would name a path no reader of it can follow. Run the ' +
+        'script from the repository root, on a document inside the repository.',
+    );
+  }
+  return segments.join('/');
+}
 
 const MERMAID_BLOCK = /<pre class="mermaid">([\s\S]*?)<\/pre>/g;
 
@@ -88,7 +143,8 @@ export function decodeEntities(text) {
  * without a file on disk.
  *
  * @param {string} html one whole document
- * @param {string} name what to call it in a message
+ * @param {string} name the document's path inside the repository: what the
+ *   messages call it, and what the comment at the top of the body names
  * @returns {{ body: string, title: string, notes: string[] }}
  */
 export function toArtifactBody(html, name) {
@@ -117,22 +173,25 @@ export function toArtifactBody(html, name) {
     );
   }
 
-  const title = /<title>([\s\S]*?)<\/title>/i.exec(body);
+  const published = `${sourceComment(name)}\n${body}`;
+
+  const title = /<title>([\s\S]*?)<\/title>/i.exec(published);
   if (!title) {
     throw new Error(
       `${name}: no <title>. It names the artifact in the tab and the gallery, ` +
         'and nothing else supplies it.',
     );
   }
-  const titleAt = Buffer.byteLength(body.slice(0, title.index), 'utf8');
+  const titleAt = Buffer.byteLength(published.slice(0, title.index), 'utf8');
   if (titleAt >= TITLE_SCAN_BYTES) {
     throw new Error(
       `${name}: <title> starts at byte ${titleAt}, past the ${TITLE_SCAN_BYTES} ` +
-        'the platform reads. Move it to the top of the body.',
+        'the platform reads, the source comment above it counted in. Move it to ' +
+        'the top of the body.',
     );
   }
 
-  return { body, title: title[1].trim(), notes: mermaidNotes(body) };
+  return { body: published, title: title[1].trim(), notes: mermaidNotes(published) };
 }
 
 /**
@@ -185,8 +244,9 @@ function main(argv) {
     return 1;
   }
 
+  const name = repositoryPath(source, process.cwd());
   const html = fs.readFileSync(source, 'utf8');
-  const { body, title, notes } = toArtifactBody(html, source);
+  const { body, title, notes } = toArtifactBody(html, name);
 
   fs.mkdirSync(OUTPUT_DIRECTORY, { recursive: true });
   const target = path.join(OUTPUT_DIRECTORY, path.basename(source));
@@ -195,9 +255,10 @@ function main(argv) {
   const kept = Buffer.byteLength(body, 'utf8');
   const whole = Buffer.byteLength(html, 'utf8');
   console.log(`${target}`);
-  console.log(`  title: ${title}`);
-  console.log(`  body:  ${kept} bytes of ${whole} (page skeleton and runtime removed)`);
-  for (const note of notes) console.log(`  note:  ${note}`);
+  console.log(`  title:  ${title}`);
+  console.log(`  source: ${name}, named in the comment the body opens with`);
+  console.log(`  body:   ${kept} bytes of ${whole} (page skeleton and runtime removed)`);
+  for (const note of notes) console.log(`  note:   ${note}`);
   console.log(
     '  Publish this file, not the source. Republishing an existing artifact ' +
       'needs its URL, or it becomes a second one.',

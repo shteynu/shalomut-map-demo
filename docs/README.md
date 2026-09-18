@@ -251,6 +251,14 @@ Branch-local in-progress state belongs only in
   the 2026-08-20 pass removed the two `vendor/` script tags and left the
   `<style>` between the same markers, so two published pages carried that rule
   twice until the script republished them on 2026-09-17.
+- The script opens each published body with a comment naming the repository file
+  the page was generated from and warning that an edit made on the platform is
+  lost — the one line that tells a reader of the published copy which of the two
+  is the source. The `docs/` files do not carry it themselves; it is written on
+  the way out, from the path given on the command line, and a file outside the
+  repository is refused rather than named. The hand version wrote this comment
+  and the script did not, so the 2026-09-17 republish dropped it from all three
+  pages; it returns to a published page when that page is next republished.
 - Give a diagram label that mermaid draws as HTML, a flowchart's or a state
   diagram's, a font the reader already has. The publishing platform draws the
   diagrams without waiting for web fonts, a label's box is sized in the font

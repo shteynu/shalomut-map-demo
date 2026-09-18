@@ -1490,18 +1490,26 @@ and was an undocumented hand transformation before that. A repository document i
 a whole HTML page; the platform wraps content in its own skeleton and injects its
 own mermaid, so publishing means handing over the body alone, without
 `<!doctype>`/`<html>`/`<head>`/`<body>`, without the `claude-mermaid-runtime`
-block, and with `<title>` inside the first 8 KB. The script does that and refuses
-the three ways it can go wrong; `scripts/publish-doc.test.mjs` is a gate in
+block, and with `<title>` inside the first 8 KB. The script does that, opens the
+body with a comment naming the repository file the page came from, and refuses
+the ways it can go wrong; `scripts/publish-doc.test.mjs` is a gate in
 `verify:core`, so a document that stops publishing fails before anyone tries.
 
 **The 2026-09-17 republish ended what the hand version left behind.** The
 2026-08-20 pass dropped the two `vendor/` script tags but not the `<style>`
 between the same markers, so two published pages carried that rule twice. Read
 back after the republish, each of those two pages carries one runtime block, the
-platform's own. The hand version also opened each body with a comment naming the
-page's repository file and warning that an edit made on claude.ai is lost. The
-script does not write that comment, so the published copies no longer say where
-their source lives.
+platform's own.
+
+**The source comment is back in the script, not yet in the published copies.**
+The hand version opened each body with a comment naming the page's repository
+file and warning that an edit made on claude.ai is lost; the script never wrote
+it, so the 2026-09-17 republish dropped it from all three pages. Since
+2026-09-18 `scripts/publish-doc.mjs` writes it, deriving the path from the input
+file and refusing a file outside the repository rather than publishing somebody's
+home directory. The three published copies still lack the comment until they are
+republished, which is the owner's call: the documents themselves have not
+changed, only what the script makes of them.
 
 **The platform's mermaid is not the repository's.** Read from the stored pages on
 2026-09-17, it loads mermaid `11.16.1` where `docs/vendor/` ships `11.15.0`, takes
