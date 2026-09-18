@@ -5,9 +5,9 @@
 - Branch: `fix/school-user-sees-no-analysis-button`
 - Base branch: `origin/main`
 - Base commit: `6c06ceb`
-- Current HEAD: the second of the two commits on this branch. The fix is
-  `19c70ec`; this file's own update follows it.
-- Status: ready to land, awaiting the owner's push
+- Current HEAD: `5e75154`, which is also `origin/main`. The fix is `19c70ec`;
+  the two commits after it are this file.
+- Status: complete, verified, and landed on `main` as `5e75154`
 - Last updated: 2026-09-18
 - Last agent/tool: Claude Opus 5 (Claude Code)
 
@@ -94,11 +94,8 @@ Nothing.
 
 ## Remaining
 
-The push, which is the owner's:
-
-```bash
-git push origin fix/school-user-sees-no-analysis-button:main
-```
+Nothing. The owner pushed the branch to `main` on 2026-09-18, and Vercel deploys
+every push to `main` on its own.
 
 ## Changed files
 
@@ -169,8 +166,9 @@ None outstanding.
 
 ## Approval gates
 
-The push. `main` is checked out in another worktree, so this branch is landed
-with `git push origin <branch>:main` rather than a local merge.
+The push, which the owner made. `main` is checked out in another worktree, so
+the branch was landed with `git push origin <branch>:main` rather than a local
+merge.
 
 ## Questions requiring an owner decision
 
@@ -178,5 +176,4 @@ None.
 
 ## Next concrete step
 
-Run the push command under `Remaining`. Vercel deploys every push to `main` on
-its own, so nothing further is needed after it lands.
+None. The task is closed.
