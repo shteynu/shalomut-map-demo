@@ -5,8 +5,11 @@
 - Branch: `docs/published-copy-names-its-source`
 - Base branch: `origin/main`
 - Base commit: `3037cc7`
-- Current HEAD: `6f24fe3`
-- Status: complete; awaiting the owner’s push to `main`
+- Current HEAD: the commit that archives this file, one ahead of `origin/main`
+  and the only thing on the branch not yet on `main`. The work itself landed as
+  `2d14a03`: the script change is `88eeaec` and the republish record `6f24fe3`,
+  with the two commits between and after them being this file.
+- Status: complete, verified, republished, and landed on `main` as `2d14a03`
 - Last updated: 2026-09-18
 - Last agent/tool: Claude Opus 5 (Claude Code)
 
@@ -131,7 +134,9 @@ without a file on disk, and `name` is already the input path.
 
 ## Remaining
 
-- The push to `main`, which is the owner's.
+- Nothing to do. The owner pushed the work to `main` on 2026-09-18; the later
+  commit that archived this file rides along with whatever is pushed next, the
+  way `ce26aae` did for the branch before this one.
 
 ## Changed files
 
@@ -204,7 +209,7 @@ without a file on disk, and `name` is already the input path.
 - The republish of the three artifacts needed the owner's explicit approval, and
   had it on 2026-09-18 after they asked for a check that the change had not
   already been made elsewhere.
-- The push to `main` is the owner's: `git push origin docs/published-copy-names-its-source:main`.
+- The push to `main` was the owner's, and they made it on 2026-09-18.
 
 ## Questions requiring an owner decision
 
@@ -212,6 +217,9 @@ without a file on disk, and `name` is already the input path.
 
 ## Next concrete step
 
-Nothing is left in the worktree. The owner lands the branch with
-`git push origin docs/published-copy-names-its-source:main`, after which this
-task file moves to `docs/agent-tasks/archive/`.
+None. The branch landed and this file is archived; the worktree is clean, with
+nothing staged, unstaged or untracked. The rule it leaves behind
+lives in `scripts/publish-doc.mjs` and its gate: a published body names the file
+it came from, and a document that changes without a republish drifts from its
+published copy silently — the handoff's *Published documents* date is the only
+record of when the two sides were last level.
