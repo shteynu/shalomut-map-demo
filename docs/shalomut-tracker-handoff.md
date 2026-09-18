@@ -1479,11 +1479,11 @@ in code" is still a question for the owner or the methodologist.
 ## Published documents
 
 The three HTML documents under `docs/` also exist as artifacts on claude.ai. They
-were republished through the script below on **2026-09-17**, the last date the
+were republished through the script below on **2026-09-18**, the last date the
 two sides are known to have been level, from the pages as committed in `42abc5b`
-on `docs/html-pages-catch-up`; that stops being true the moment a document
-changes without a republish. The branch was not on `main` when it was published,
-so until it lands `main` holds the older pages. `docs/README.md` owns the rule.
+on `docs/html-pages-catch-up` — which `main` has held since `6c06ceb`, and which
+the documents still match byte for byte. That stops being true the moment a
+document changes without a republish. `docs/README.md` owns the rule.
 
 **Publishing is `npm run docs:publish -- docs/<page>.html` since 2026-08-25**,
 and was an undocumented hand transformation before that. A repository document is
@@ -1501,15 +1501,15 @@ between the same markers, so two published pages carried that rule twice. Read
 back after the republish, each of those two pages carries one runtime block, the
 platform's own.
 
-**The source comment is back in the script, not yet in the published copies.**
-The hand version opened each body with a comment naming the page's repository
-file and warning that an edit made on claude.ai is lost; the script never wrote
-it, so the 2026-09-17 republish dropped it from all three pages. Since
-2026-09-18 `scripts/publish-doc.mjs` writes it, deriving the path from the input
-file and refusing a file outside the repository rather than publishing somebody's
-home directory. The three published copies still lack the comment until they are
-republished, which is the owner's call: the documents themselves have not
-changed, only what the script makes of them.
+**The source comment is back, in the script and in all three pages.** The hand
+version opened each body with a comment naming the page's repository file and
+warning that an edit made on claude.ai is lost; the script never wrote it, so the
+2026-09-17 republish dropped it from all three pages. Since 2026-09-18
+`scripts/publish-doc.mjs` writes it, deriving the path from the input file and
+refusing a file outside the repository rather than publishing somebody's home
+directory. The three pages were republished the same day for that comment and
+nothing else — the documents had not changed — and read back afterwards, each
+carries the comment naming its own file.
 
 **The platform's mermaid is not the repository's.** Read from the stored pages on
 2026-09-17, it loads mermaid `11.16.1` where `docs/vendor/` ships `11.15.0`, takes

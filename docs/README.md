@@ -258,7 +258,7 @@ Branch-local in-progress state belongs only in
   the way out, from the path given on the command line, and a file outside the
   repository is refused rather than named. The hand version wrote this comment
   and the script did not, so the 2026-09-17 republish dropped it from all three
-  pages; it returns to a published page when that page is next republished.
+  pages; a republish on 2026-09-18, for the comment and nothing else, put it back.
 - Give a diagram label that mermaid draws as HTML, a flowchart's or a state
   diagram's, a font the reader already has. The publishing platform draws the
   diagrams without waiting for web fonts, a label's box is sized in the font

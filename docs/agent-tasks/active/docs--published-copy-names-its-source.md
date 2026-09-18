@@ -5,8 +5,8 @@
 - Branch: `docs/published-copy-names-its-source`
 - Base branch: `origin/main`
 - Base commit: `3037cc7`
-- Current HEAD: `88eeaec`
-- Status: ready for review; republish pending the owner
+- Current HEAD: `<this commit>`
+- Status: complete; awaiting the owner’s push to `main`
 - Last updated: 2026-09-18
 - Last agent/tool: Claude Opus 5 (Claude Code)
 
@@ -116,6 +116,14 @@ without a file on disk, and `name` is already the input path.
 - `docs/shalomut-tracker-handoff.md` *Published documents* and `docs/README.md`
   *Update rules* updated.
 - Gates run green (see *Verification evidence*).
+- Checked, at the owner's request, that the change had not already been made in
+  another thread. It had not, on either side: only `8d59f3b` (which created the
+  script) and this branch's commit ever touched `scripts/publish-doc.mjs`, no
+  remote branch's copy carried the comment, and all three published pages were
+  still at their 2026-09-17 version containing neither the comment nor the string
+  `shalomut-map-demo` anywhere.
+- Republished all three artifacts on 2026-09-18 with the owner's explicit yes,
+  reading each by `url` first and publishing with `url` + `file_path` only.
 
 ## In progress
 
@@ -123,8 +131,6 @@ without a file on disk, and `name` is already the input path.
 
 ## Remaining
 
-- The republish of the three artifacts, pending the owner's yes. If it happens,
-  the handoff paragraph's "not yet in the published copies" becomes a date.
 - The push to `main`, which is the owner's.
 
 ## Changed files
@@ -149,10 +155,17 @@ without a file on disk, and `name` is already the input path.
   Checked by hand on `tmp/published/ai-analysis-jobs.html`.
 - The same script invoked with an absolute path reports
   `source: docs/ai-analysis-jobs.html`; invoked on `/etc/hosts` it refuses.
+- Republish read back: each of the three published pages now opens with the
+  comment naming its own file. `how-shalomut-works` and `ai-analysis-jobs` still
+  carry exactly one `claude-mermaid-runtime` block, the platform's own;
+  `ai-analysis-run-mechanics` carries none, because its figures are inline SVG.
+- The three documents are byte-identical to `42abc5b`
+  (`git diff --stat 42abc5b HEAD -- docs/*.html` empty), so the republish changed
+  the comment and nothing else.
 
 ### Failed
 
-- (none yet)
+- (none)
 
 ### Blocked or not run
 
@@ -162,43 +175,43 @@ without a file on disk, and `name` is already the input path.
   No `.ts`/`.tsx` changed, so `typecheck` has nothing new to see.
 - `npm run lint:skills` — not run and not required: no file under
   `.agents/skills/**` changed.
-- The republish itself — waiting on the owner.
+- Nothing else: the republish ran.
 
 ### Environment
 
-- local
+- local, plus the claude.ai artifact platform for the republish and its read-back
 
 ### Residual risk
 
-- The published copies on claude.ai still carry no source comment. The gate
-  cannot see them; only a republish changes that.
+- Nothing keeps the published copies level with `docs/` except doing the
+  republish. The gate cannot see claude.ai, so a document that changes without
+  one drifts silently; the handoff's *Published documents* date is the only
+  record of when the two sides were last level.
 - `repositoryPath` resolves against `process.cwd()`. Run from a subdirectory
   rather than through `npm run`, the refusal fires instead of a wrong path being
   published, which is the safe direction but is not the same as being right.
 
 ## Failed approaches
 
-- (none yet)
+- (none)
 
 ## Known risks
 
-- Republishing changes the owner's published content and is gated on an
-  explicit yes.
+- (none outstanding)
 
 ## Approval gates
 
-- The republish of the three artifacts needs the owner's explicit approval.
+- The republish of the three artifacts needed the owner's explicit approval, and
+  had it on 2026-09-18 after they asked for a check that the change had not
+  already been made elsewhere.
 - The push to `main` is the owner's: `git push origin docs/published-copy-names-its-source:main`.
 
 ## Questions requiring an owner decision
 
-- Whether to republish now.
+- None. The republish was approved and done.
 
 ## Next concrete step
 
-Ask the owner whether to republish the three artifacts now. On a yes: find their
-URLs with the Artifact tool's `list` (scope mine) by title, read each by `url`
-first, publish with `url` and `file_path` only — no `favicon`, no `description`,
-either of which overwrites the gallery subtitle — then record the date in the
-handoff's *Published documents*. On a no: nothing further; the branch is ready
-for `git push origin docs/published-copy-names-its-source:main`.
+Nothing is left in the worktree. The owner lands the branch with
+`git push origin docs/published-copy-names-its-source:main`, after which this
+task file moves to `docs/agent-tasks/archive/`.
