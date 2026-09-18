@@ -5,10 +5,12 @@
 - Branch: `fix/school-user-sees-no-analysis-button`
 - Base branch: `origin/main`
 - Base commit: `6c06ceb`
-- Current HEAD: `5e75154`, which is also `origin/main`. The fix is `19c70ec`;
-  the two commits after it are this file.
-- Status: complete, verified, and landed on `main` as `5e75154`
-- Last updated: 2026-09-18
+- Current HEAD: the branch tip. `origin/main` is `5e75154` and contains the
+  fix, `19c70ec`. Every commit after that point is documentation — this file's
+  move to the archive and the handoff's `Now` entry — and is **unpushed**.
+- Status: the fix is complete, verified and deployed; the documentation
+  commits behind it are unpushed
+- Last updated: 2026-09-18 (session close)
 - Last agent/tool: Claude Opus 5 (Claude Code)
 
 ## Objective
@@ -94,8 +96,13 @@ Nothing.
 
 ## Remaining
 
-Nothing. The owner pushed the branch to `main` on 2026-09-18, and Vercel deploys
-every push to `main` on its own.
+Nothing in the product. The owner pushed the fix to `main` on 2026-09-18, Vercel
+deploys every push to `main` on its own, and all four workflows on `5e75154`
+finished green: `Core verification`, `Browser smoke`, `Vercel Deployment &
+Pipeline Checks` and `CodeQL`.
+
+What is left is the documentation commits on this branch, which exist only in
+this worktree until they are pushed.
 
 ## Changed files
 
@@ -176,4 +183,11 @@ None.
 
 ## Next concrete step
 
-None. The task is closed.
+Push the documentation commits, which is the owner's:
+
+```bash
+git push origin fix/school-user-sees-no-analysis-button:main
+```
+
+Nothing depends on them. They carry no product change, so a push that waits
+costs nothing but a stale `Now` section in the handoff.

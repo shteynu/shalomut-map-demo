@@ -19,8 +19,26 @@ and in Git; what was durable in them is below.
 Verified on 2026-08-23, in this worktree and on both deployed endpoints, except
 where a later date says otherwise:
 
-- **The last commit that changed deployed behaviour is `7ad7b81`**, and Core
-  answered it over HTTPS on 2026-08-25, forty-five seconds after the push. The
+- **The last commit that changed deployed behaviour is `19c70ec`**, landed on
+  2026-09-18 with `5e75154` behind it, and all four workflows on that commit —
+  `Core verification`, `Browser smoke`, `Vercel Deployment & Pipeline Checks`
+  and `CodeQL` — finished green. A school user reading a round whose analysis is
+  missing or failed is no longer offered «יצירת ניתוח עכשיו» /
+  «הפעלת ניתוח מחדש» on any of the four dashboard screens. The button's only
+  gate had been "do we know the round id", which every one of those screens
+  always does, so pressing it earned the 403 that `trigger-ai` owes the
+  `manager` role and the button rendered that as «שירות הניתוח אינו זמין כרגע» —
+  the provider blamed for a decision about the reader. The «בדיקה חוזרת» /
+  «ניסיון נוסף» re-checks stay for both roles, because re-reading a round is a
+  read. **The deployed dashboard was not read**: it is behind sign-in and no
+  session was open. What stands behind the claim instead is a local signed-in
+  walk in a real browser as both roles, on a closed round with zero
+  `ai_analysis_runs` — the school user saw «הניתוח עדיין לא נוצר» with the
+  re-check alone on all four screens and the administrator saw the same text
+  with the button — plus `Browser smoke` against a production build in CI.
+
+  Before it, `7ad7b81`, which Core answered over HTTPS on 2026-08-25,
+  forty-five seconds after the push. The
   floating header card and the content below it are now sized by one pair of
   tokens, `--shell-width` and `--shell-gutter`, instead of four declarations in
   three media blocks: on a phone the content used to finish two pixels outside
